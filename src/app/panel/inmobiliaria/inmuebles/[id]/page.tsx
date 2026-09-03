@@ -539,6 +539,7 @@ function ConsignacionDetailContent() {
           >
             <PropietarioSection
               propietario={propietario ?? undefined}
+              copropietarios={consignacion.copropietarios}
               onCambiar={() => setShowCambiarPropietario(true)}
               rutaDeOrigen={`/panel/inmobiliaria/inmuebles/${consignacionId}`}
             />

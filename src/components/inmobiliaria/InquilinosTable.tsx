@@ -19,6 +19,19 @@
  *   - con UN arriendo, sus datos van en las columnas de la fila;
  *   - con VARIOS, la fila resume y se despliega para verlos todos.
  * Nadie pierde un dato por el cambio de formato.
+ *
+ * ── Y lo del 2026-09-03 ───────────────────────────────────────────────────
+ * «Nuestras tablas tienen el buscador y las tabs también asociadas a la
+ * tabla, no fuera de ella» + «lo de "ver ficha" sobra, mejor que al dar clic
+ * se abra un drawer».
+ *
+ * Por eso el buscador y las pestañas viven acá (`BarraDeInquilinos`), en la
+ * misma tarjeta que la tabla — igual que `PropietarioTable` —, y la última
+ * columna con el botón ya no existe: la fila entera abre el cajón.
+ *
+ * 🔴 Quitar ese botón dejaba el cajón sin camino de teclado (un `<tr>` con
+ * `onClick` no se tabula). Por eso el NOMBRE es un `<button>` real: el mouse
+ * usa toda la fila, el teclado usa el nombre. No es decoración.
  */
 
 import { useMemo, useState } from 'react';
@@ -30,9 +43,8 @@ import {
   SortDescending,
   Warning,
 } from '@phosphor-icons/react';
-import { IconButton } from '@leasefy/cadence';
+import { IconButton, SearchInput, SegmentedControl } from '@leasefy/cadence';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   Table,
   TableHeader,
@@ -47,6 +59,7 @@ import {
   arriendosVigentes,
   type ArriendoDeInquilino,
   type EstadoDeArriendo,
+  type FiltroDeEstado,
   type Inquilino,
 } from '@/lib/api/inquilinos.service';
 
@@ -99,12 +112,55 @@ export function ordenarInquilinos(
   });
 }
 
-export interface InquilinosTableProps {
-  inquilinos: readonly Inquilino[];
-  onVerFicha: (persona: Inquilino) => void;
+export interface BarraDeInquilinosProps {
+  buscar: string;
+  onBuscar: (valor: string) => void;
+  estado: FiltroDeEstado;
+  onEstado: (estado: FiltroDeEstado) => void;
 }
 
-export function InquilinosTable({ inquilinos, onVerFicha }: InquilinosTableProps) {
+/**
+ * El buscador y las pestañas, ADENTRO de la tarjeta de la tabla.
+ *
+ * Va separada de `InquilinosTable` a propósito: cuando la búsqueda no
+ * devuelve a nadie, la tabla no se pinta pero la barra TIENE que seguir ahí
+ * —si desaparece con el último resultado, la persona se queda encerrada en
+ * una búsqueda que ya no puede borrar—. La página la pone arriba del vacío.
+ */
+export function BarraDeInquilinos({ buscar, onBuscar, estado, onEstado }: BarraDeInquilinosProps) {
+  const { t } = useI18n();
+  return (
+    <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+      <SearchInput
+        value={buscar}
+        onChange={(e) => onBuscar(e.target.value)}
+        onClear={() => onBuscar('')}
+        placeholder={t('inquilinos.buscarPlaceholder')}
+        inputSize="md"
+        className="w-full sm:max-w-md"
+        data-testid="inquilinos-buscar"
+      />
+      <SegmentedControl<FiltroDeEstado>
+        value={estado}
+        onChange={onEstado}
+        aria-label={t('inquilinos.filtroEstado')}
+        options={[
+          { value: 'activos', label: t('inquilinos.filtros.activos') },
+          { value: 'terminados', label: t('inquilinos.filtros.terminados') },
+          { value: 'todos', label: t('inquilinos.filtros.todos') },
+        ]}
+      />
+    </div>
+  );
+}
+
+export interface InquilinosTableProps {
+  inquilinos: readonly Inquilino[];
+  /** Abre el cajón de detalle. La fila entera, y el nombre por teclado. */
+  onAbrir: (persona: Inquilino) => void;
+}
+
+export function InquilinosTable({ inquilinos, onAbrir }: InquilinosTableProps) {
   const { t } = useI18n();
   const [campo, setCampo] = useState<CampoDeOrden>('nombre');
   const [sentido, setSentido] = useState<Sentido>('asc');
@@ -155,7 +211,7 @@ export function InquilinosTable({ inquilinos, onVerFicha }: InquilinosTableProps
 
   return (
     <div className="overflow-x-auto">
-      <Table className="min-w-[860px]" data-testid="inquilinos-tabla">
+      <Table className="min-w-[760px]" data-testid="inquilinos-tabla">
         <TableHeader>
           <TableRow className="border-b border-border bg-muted/30">
             <TableHead className="w-10 p-4" />
@@ -165,7 +221,6 @@ export function InquilinosTable({ inquilinos, onVerFicha }: InquilinosTableProps
             <TableHead className="p-4 text-left">{t('inquilinos.tabla.estado')}</TableHead>
             <Ordenable campo="canon">{t('inquilinos.tabla.canon')}</Ordenable>
             <TableHead className="p-4 text-left">{t('inquilinos.tabla.vigencia')}</TableHead>
-            <TableHead className="w-28 p-4" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -175,7 +230,7 @@ export function InquilinosTable({ inquilinos, onVerFicha }: InquilinosTableProps
               persona={persona}
               desplegada={desplegados.has(persona.tenantId)}
               onAlternar={() => alternar(persona.tenantId)}
-              onVerFicha={() => onVerFicha(persona)}
+              onAbrir={() => onAbrir(persona)}
             />
           ))}
         </TableBody>
@@ -188,12 +243,12 @@ function FilaDeInquilino({
   persona,
   desplegada,
   onAlternar,
-  onVerFicha,
+  onAbrir,
 }: {
   persona: Inquilino;
   desplegada: boolean;
   onAlternar: () => void;
-  onVerFicha: () => void;
+  onAbrir: () => void;
 }) {
   const { t, formatCurrency, formatDate } = useI18n();
   const vigentes = arriendosVigentes(persona);
@@ -205,8 +260,8 @@ function FilaDeInquilino({
   return (
     <>
       <TableRow
-        className="cursor-pointer border-b border-border/50 transition-colors hover:bg-muted/50"
-        onClick={onVerFicha}
+        className="group cursor-pointer border-b border-border/50 transition-colors hover:bg-muted/50"
+        onClick={onAbrir}
         data-testid="inquilino-fila"
         data-tenant-id={persona.tenantId}
       >
@@ -233,14 +288,29 @@ function FilaDeInquilino({
         {/* Nombre + correo, como en la tabla de propietarios — pero SIN el
             avatar: allá el ícono distingue persona de empresa, y acá todos
             los inquilinos son personas, así que serían 52 px que no dicen
-            nada y que empujaban «Ver ficha» fuera de la pantalla. */}
+            nada.
+
+            allowlist: el nombre es un <button> porque es el ÚNICO camino de
+            teclado al cajón desde que se fue la columna «Ver ficha» — un
+            <tr onClick> no se tabula. `text-left` porque un botón centra por
+            defecto y desalineaba la columna. */}
         <TableCell className="p-4 align-middle">
-          <div className="min-w-0">
-            <p className="truncate font-medium text-fg">{persona.nombre}</p>
-            <p className="truncate text-sm text-fg-muted">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAbrir();
+            }}
+            className="block min-w-0 max-w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            data-testid="inquilino-abrir"
+          >
+            <span className="block truncate font-medium text-fg group-hover:text-primary">
+              {persona.nombre}
+            </span>
+            <span className="block truncate text-sm text-fg-muted">
               {persona.email ?? t('inquilinos.tabla.sinCorreo')}
-            </p>
-          </div>
+            </span>
+          </button>
         </TableCell>
 
         <TableCell className="p-4 align-middle">
@@ -322,24 +392,11 @@ function FilaDeInquilino({
           )}
         </TableCell>
 
-        <TableCell className="p-4 align-middle text-right">
-          <Button
-            variant="outline"
-            size="sm"
-            hideArrow
-            onClick={(e) => {
-              e.stopPropagation();
-              onVerFicha();
-            }}
-          >
-            {t('inquilinos.verFicha')}
-          </Button>
-        </TableCell>
       </TableRow>
 
       {varios && desplegada && (
         <TableRow data-testid="inquilino-arriendos">
-          <TableCell colSpan={8} className="bg-surface-muted/50 p-4">
+          <TableCell colSpan={7} className="bg-surface-muted/50 p-4">
             <ul className="space-y-2">
               {persona.arriendos.map((a) => (
                 <li key={a.leaseId}>

@@ -61,6 +61,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useI18n } from '@/lib/i18n'
+import { nombreDelMes } from '@/lib/utils/mes'
 import type { CarteraItem } from '@/lib/types/inmobiliaria'
 
 export type CampoDeOrdenDeCartera = 'inquilino' | 'mes' | 'debe' | 'mora'
@@ -191,7 +192,7 @@ function FilaDeCartera({
   item: CarteraItem
   onVerCobro?: () => void
 }) {
-  const { t, formatCurrency, formatDate } = useI18n()
+  const { t, locale, formatCurrency, formatDate } = useI18n()
 
   const inmueble = item.propertyAddress ?? item.propertyTitle
   const whatsapp = item.tenantPhone
@@ -275,7 +276,9 @@ function FilaDeCartera({
           inquilino, y no cabía como columna aparte. */}
       <TableCell className="p-4 align-middle">
         <div className="whitespace-nowrap">
-          <div className="font-mono text-sm tabular-nums text-fg">{item.month}</div>
+          {/* «2026-09» es el identificador del mes, no cómo se lee: la casa
+              lo escribe con letras (`nombreDelMes`, ver DispersionCard). */}
+          <div className="whitespace-nowrap text-sm text-fg">{nombreDelMes(item.month, locale)}</div>
           <div className="font-mono text-xs tabular-nums text-fg-subtle">
             {t('cartera.tabla.vence', { fecha: formatDate(item.dueDate) })}
           </div>

@@ -156,10 +156,55 @@ export interface AgenteFormData {
 export type ConsignacionStatus = 'active' | 'terminated' | 'expired' | 'pending';
 export type PropertyAvailability = 'available' | 'rented' | 'in_process' | 'maintenance';
 
+/**
+ * Un dueño del inmueble, con su tajada del mandato.
+ *
+ * `participacionBps` va en puntos básicos: 100 % = 10000, un tercio = 3333.
+ * Entero y no decimal porque la invariante que importa es «suman 100», y sobre
+ * enteros eso se verifica exacto (33.33 × 3 nunca da 100).
+ */
+export interface Copropietario {
+  propietarioId: string;
+  participacionBps: number;
+  /** Lo que hace falta para mostrarlo sin ir a buscarlo. Viene del back. */
+  propietario?: {
+    id: string;
+    name: string;
+    email?: string | null;
+    phone?: string | null;
+    documentNumber?: string | null;
+  };
+}
+
+/** 100 % en puntos básicos — el mismo `BPS_TOTAL` del back. */
+export const BPS_TOTAL = 10000;
+
+/** `3333` → `"33,33 %"`. Sin decimales cuando son redondos: `5000` → `"50 %"`. */
+export function formatParticipacion(bps: number): string {
+  const pct = bps / 100;
+  return `${pct.toLocaleString('es-CO', { maximumFractionDigits: 2 })} %`;
+}
+
 export interface Consignacion {
   id: string;
   propertyId: string;
+  /**
+   * El propietario PRINCIPAL — el de mayor participación.
+   *
+   * Un inmueble puede tener más de un dueño (2026-09-03): la lista completa es
+   * `copropietarios`. Este campo es DERIVADO del de mayor participación y se
+   * mantiene porque es el que sigue leyendo todo el circuito de plata del back.
+   * Para mostrar «de quién es el inmueble», usá `copropietarios` cuando tenga
+   * más de uno.
+   */
   propietarioId: string;
+  /**
+   * Todos los dueños con su participación, de mayor a menor.
+   *
+   * Vacío sólo contra un back viejo que todavía no manda el campo — en ese caso
+   * hay que caer a `propietarioId`, nunca fabricar una participación.
+   */
+  copropietarios: Copropietario[];
   agenteId: string;
 
   // Property info (denormalized for convenience)
@@ -238,6 +283,12 @@ export interface InventoryItem {
 
 export interface ConsignacionFormData {
   propietarioId: string;
+  /**
+   * Varios dueños con su participación. Excluyente con `propietarioId`: el back
+   * 400ea si llegan los dos, así que `toConsignacionPayload` quita el suelto
+   * cuando esta lista viene cargada. Ausente = un solo dueño, la forma vieja.
+   */
+  copropietarios?: { propietarioId: string; participacionBps: number }[];
   propertyTitle: string;
   propertyAddress: string;
   propertyCity: string;

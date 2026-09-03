@@ -10807,7 +10807,6 @@
     "sinInmueble": "Sin inmueble asignado",
     "conteoArriendoUno": "1 arriendo · {{vigentes}} vigente",
     "conteoArriendos": "{{n}} arriendos · {{vigentes}} vigentes",
-    "verFicha": "Ver ficha",
     "tabla": {
       "inquilino": "Inquilino",
       "telefono": "Teléfono",
@@ -10822,20 +10821,38 @@
       "desplegar": "Ver los arriendos de {{nombre}}",
       "contraer": "Ocultar los arriendos de {{nombre}}"
     },
+    "cajon": {
+      "canonVigente": "Canon vigente",
+      "arriendosVigentes": "Arriendos vigentes",
+      "deTotal": "de {{n}} en total",
+      "saldoPendiente": "Saldo pendiente",
+      "diasDeMora": "{{n}} días de mora",
+      "arriendos": "Arriendos ({{n}})",
+      "arriendosIncluyeTerminados": "Todos los que tiene con vos, incluidos los terminados.",
+      "cargandoArriendos": "Buscando los terminados…",
+      "arriendosIncompletos": "No se pudo traer el detalle completo: puede faltar algún arriendo terminado.",
+      "verContrato": "Ver el contrato",
+      "pagos": "Pagos",
+      "pagosDeSusContratos": "Los cobros de sus contratos, del más reciente al más viejo.",
+      "cargandoPagos": "Cargando sus pagos…",
+      "errorPagos": "No se pudieron cargar los pagos.",
+      "pagosIncompletos": "Falta el detalle de alguno de sus contratos: lo que ves está incompleto.",
+      "sinPagos": "Todavía no se ha generado ningún cobro para sus contratos.",
+      "sinContratos": "No tiene ningún contrato al cual colgarle un cobro.",
+      "reintentar": "Reintentar",
+      "ultimoPago": "Último pago el {{fecha}}",
+      "recordatorios": "{{n}} recordatorios · último el {{fecha}}",
+      "pagadoEl": "Pagado el {{fecha}}",
+      "venceEl": "Vence el {{fecha}}",
+      "debe": "Debe {{monto}}",
+      "yMasCobros": "y {{n}} cobros más, en el contrato.",
+      "verCobrosDelContrato": "Ver todos sus cobros en el contrato"
+    },
     "estados": {
       "activo": "Activo",
       "porVencer": "Por vencer",
       "terminado": "Terminado",
       "cancelado": "Cancelado"
-    },
-    "ficha": {
-      "correo": "Correo",
-      "telefono": "Teléfono",
-      "canonVigente": "Canon vigente",
-      "arriendos": "Arriendos ({{n}})",
-      "verContrato": "Ver el contrato",
-      "verCobros": "Ver sus cobros",
-      "sinDato": "No registrado"
     }
   },
   "cartera": {

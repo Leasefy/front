@@ -1,16 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v7.0
-milestone_name: Portal del Inquilino
-status: planning
-last_updated: "2026-07-16T22:30:00.000Z"
-last_activity: 2026-07-16
+milestone_name: — Portal del Inquilino
+status: "Roadmap creado (7 fases, 27/27 REQ mapeados) — listo para `/gsd:plan-phase v7-01`"
+stopped_at: context exhaustion at 77% (2026-09-03)
+last_updated: "2026-09-03T05:10:28.462Z"
+last_activity: 2026-07-16 — ROADMAP.md v7.0 creado (7 fases v7-01..v7-07); traceability REQ→fase completa
 progress:
-  total_phases: 7
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 58
+  completed_phases: 43
+  total_plans: 170
+  completed_plans: 158
+  percent: 74
 ---
 
 # Project State
@@ -92,21 +93,24 @@ Orden: v7-01 → v7-02 → v7-03 → v7-04 → v7-05 → v7-06 → v7-07 (Acuerd
 
 ## Session Continuity
 
-Last session: 2026-07-16 — v7.0 ROADMAP creado. 7 fases (v7-01..v7-07), 27/27 REQ-IDs mapeados, success criteria con guardrails legales codificados, deps externas por fase. Rama de planning `plan/v7.0-portal-inquilino` (off `feat/leasefy-ds-redesign`).
-Stopped at: ROADMAP.md + REQUIREMENTS.md (traceability) + STATE.md escritos → siguiente `/gsd:plan-phase v7-01`.
-Resume file: `.planning/ROADMAP.md`
+Last session: 2026-09-03T05:10:28.449Z
+Stopped at: context exhaustion at 77% (2026-09-03)
+Resume file: None
 
 ## Accumulated Context
 
 ### Roadmap Evolution
+
 - 2026-07-16: v7.0 Portal del Inquilino definido. Portal existente auditado: funnel de adquisición completo (backend real, firma OTP) **sin capa post-firma**. Gap: pilares 2/4/5 (casos, PQRS, acuerdos) FALTAN; 1/3/6 (pagos, docs, comunicación) PARCIALES; perfil/dashboard/config fake.
 - 2026-07-16: ROADMAP creado — **7 fases v7-01..v7-07** derivadas de las 7 categorías (BASE+PAGO-01 fusionados en la fundación; PAGO-02..05 en Pagos). Orden dependency-aware (ARCHITECTURE.md). Acuerdos (v7-07) AL FINAL por dep dura cross-repo. Todos los pilares son UI (UI hint: yes en cada fase).
 
 ### External blockers (v7.0 — bloquean *data real*, no la UI frontend-first)
+
 - **Pasarela real (v7-04):** Wompi/Bold productivo para arriendo (hoy PSE-mock `/pse-mock/*`). Patrón ya existe (avalúos: `WompiPayButton` + ruta server-side hash de integridad). Webhook rent-specific en NestJS.
 - **`agent` tenant-scoped (v7-07, v7-03, v7-05):** rutas + RLS tenant para Acuerdos de pago (pilar 5), push de estado de casos, y gate de contacto/`requiresHumanReview` vía HTTP. Hoy agency-only; `agent` ya expone `cartera/payment-plans` con `paymentUrl`.
 - **Backend NestJS (v7-01, v7-02, v7-05, v7-06):** endpoints lease-scoped (documentos/mensajes), `slaVenceAt` PQRS, perfil get/update, config actions.
 - **Dev local:** `NEXT_PUBLIC_BACKEND_URL` apunta a prod (api.leasefy.co) → CORS bloquea localhost.
 
 ### v6.0 (histórico) — External blockers del programa
+
 - Motor ERP (M1) bloqueado en decisión de equipo (¿qué monolito?); DIAN requiere proveedor autorizado (M2).

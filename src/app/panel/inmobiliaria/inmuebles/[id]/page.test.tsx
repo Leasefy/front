@@ -118,6 +118,8 @@ const BASE_CONSIGNACION: Consignacion = {
   id: 'consig-1',
   propertyId: 'prop-1',
   propietarioId: 'own-1',
+  // Un solo dueño al 100 % — la forma que dejó el backfill de la migración.
+  copropietarios: [{ propietarioId: 'own-1', participacionBps: 10000 }],
   agenteId: 'agent-1',
   propertyTitle: 'Apto Chapinero',
   propertyAddress: 'Cra 1 # 2-3',

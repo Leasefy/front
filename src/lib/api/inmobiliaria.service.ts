@@ -428,6 +428,8 @@ type RawConsignacion = Omit<
   propertyType?: string | null;
   agenteUserId?: string | null;
   agenteId?: string | null;
+  /** Ausente en un back anterior a copropietarios (2026-09-03). */
+  copropietarios?: Consignacion['copropietarios'];
   /**
    * contract-addendum-2.md §A.1/§A.9.1 — UPPER_SNAKE on the wire, absent on
    * an older back build (degrades to RENT). Same wire field name and shape
@@ -453,6 +455,11 @@ export function normalizeConsignacion(raw: RawConsignacion): Consignacion {
     // §A.9.1 — NEW, closes W3-c. `null` when the mandate has no linked
     // property (a migrated cartera row).
     propertyCode: raw.propertyCode ?? null,
+    // Los dueños con su participación. `[]` sólo contra un back viejo que
+    // todavía no manda el campo: la ficha cae a `propietarioId` en ese caso.
+    // NO se fabrica `[{ propietarioId, 10000 }]` acá — sería inventar un dato
+    // que el servidor no dijo, y taparía el día que el back deje de mandarlo.
+    copropietarios: raw.copropietarios ?? [],
   };
 }
 
@@ -494,6 +501,14 @@ function toConsignacionPayload(data: ConsignacionUpdateInput): Record<string, un
   const { agenteId: _agenteId, propertyType, status, availability, ...rest } = data;
   void _agenteId;
   const payload: Record<string, unknown> = { ...rest };
+  // El back 400ea si llegan `propietarioId` Y `copropietarios` (es ambiguo cuál
+  // manda). Con la lista cargada, ella es la verdad y el suelto sobra: el
+  // servidor deriva el principal del de mayor participación.
+  if (Array.isArray(payload.copropietarios) && payload.copropietarios.length > 0) {
+    delete payload.propietarioId;
+  } else {
+    delete payload.copropietarios;
+  }
   if (propertyType !== undefined) payload.propertyType = propertyType.toUpperCase();
   if (status !== undefined) payload.status = status.toUpperCase();
   if (availability !== undefined) payload.availability = availability.toUpperCase();

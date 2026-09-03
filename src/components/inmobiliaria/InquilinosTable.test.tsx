@@ -28,7 +28,13 @@ vi.mock('next/link', () => ({
     React.createElement('a', { href, ...r }, children),
 }))
 
-import { InquilinosTable, canonVigente, arriendoPrincipal, ordenarInquilinos } from './InquilinosTable'
+import {
+  BarraDeInquilinos,
+  InquilinosTable,
+  canonVigente,
+  arriendoPrincipal,
+  ordenarInquilinos,
+} from './InquilinosTable'
 
 function arriendo(p: Partial<ArriendoDeInquilino> = {}): ArriendoDeInquilino {
   return {
@@ -65,17 +71,21 @@ afterEach(() => {
   container = undefined
 })
 
-function montar(inquilinos: Inquilino[]) {
+function montarEn(nodo: React.ReactElement) {
   const c = document.createElement('div')
   document.body.appendChild(c)
   const r = createRoot(c)
   container = c
   root = r
-  const onVerFicha = vi.fn()
   act(() => {
-    r.render(<InquilinosTable inquilinos={inquilinos} onVerFicha={onVerFicha} />)
+    r.render(nodo)
   })
-  return { onVerFicha }
+}
+
+function montar(inquilinos: Inquilino[]) {
+  const onAbrir = vi.fn()
+  montarEn(<InquilinosTable inquilinos={inquilinos} onAbrir={onAbrir} />)
+  return { onAbrir }
 }
 
 const filas = () => Array.from(container!.querySelectorAll<HTMLElement>('[data-testid="inquilino-fila"]'))
@@ -151,17 +161,38 @@ describe('<InquilinosTable>', () => {
     expect(container!.querySelector('[data-testid="inquilino-arriendos"]')).toBeNull()
   })
 
-  it('desplegar no abre la ficha (el clic no se propaga a la fila)', () => {
-    const { onVerFicha } = montar([persona({ arriendos: [arriendo({ leaseId: 'a' }), arriendo({ leaseId: 'b' })] })])
+  it('desplegar no abre el cajón (el clic no se propaga a la fila)', () => {
+    const { onAbrir } = montar([persona({ arriendos: [arriendo({ leaseId: 'a' }), arriendo({ leaseId: 'b' })] })])
     act(() => container!.querySelector<HTMLButtonElement>('[data-testid="inquilino-desplegar"]')!.click())
-    expect(onVerFicha).not.toHaveBeenCalled()
+    expect(onAbrir).not.toHaveBeenCalled()
   })
 
-  it('la fila abre la ficha', () => {
-    const { onVerFicha } = montar([persona()])
+  it('la fila abre el cajón', () => {
+    const { onAbrir } = montar([persona()])
     act(() => filas()[0].click())
-    expect(onVerFicha).toHaveBeenCalledTimes(1)
-    expect(onVerFicha.mock.calls[0][0].tenantId).toBe('t1')
+    expect(onAbrir).toHaveBeenCalledTimes(1)
+    expect(onAbrir.mock.calls[0][0].tenantId).toBe('t1')
+  })
+
+  /*
+   * Nico (2026-09-03): «lo de "ver ficha" sobra». Se fue el botón — y con él
+   * se habría ido el único camino de teclado al detalle, porque un <tr> con
+   * onClick no se tabula. Estas dos pruebas son las dos mitades de eso.
+   */
+  it('ya no hay botón «Ver ficha» en la fila', () => {
+    montar([persona()])
+    const textos = Array.from(container!.querySelectorAll('button')).map((b) => b.textContent ?? '')
+    expect(textos.some((x) => x.includes('verFicha'))).toBe(false)
+  })
+
+  it('el nombre es un botón: el teclado también abre el cajón', () => {
+    const { onAbrir } = montar([persona()])
+    const nombre = container!.querySelector<HTMLButtonElement>('[data-testid="inquilino-abrir"]')
+    expect(nombre).not.toBeNull()
+    expect(nombre!.tagName).toBe('BUTTON')
+    act(() => nombre!.click())
+    // Una sola vez: el botón corta la propagación, no dispara también la fila.
+    expect(onAbrir).toHaveBeenCalledTimes(1)
   })
 
   it('sin correo ni teléfono lo dice: es a quién no se le puede cobrar', () => {
@@ -182,5 +213,47 @@ describe('<InquilinosTable>', () => {
     expect(filas().map((f) => f.dataset.tenantId)).toEqual(['a', 'z'])
     act(() => container!.querySelector<HTMLButtonElement>('[data-testid="ordenar-nombre"]')!.click())
     expect(filas().map((f) => f.dataset.tenantId)).toEqual(['z', 'a'])
+  })
+})
+
+/*
+ * Nico (2026-09-03): «nuestras tablas tienen el buscador y las tabs también
+ * asociadas a la tabla, no fuera de ella». La barra vive con la tabla, pero
+ * es un componente aparte para que la página la pueda pintar ARRIBA del
+ * vacío: si desapareciera con la última fila, quien buscó algo que no existe
+ * se quedaría sin campo para borrar lo que escribió.
+ */
+describe('<BarraDeInquilinos>', () => {
+  it('escribir en el buscador avisa hacia arriba', () => {
+    const onBuscar = vi.fn()
+    montarEn(
+      <BarraDeInquilinos buscar="" onBuscar={onBuscar} estado="activos" onEstado={vi.fn()} />,
+    )
+    const campo = container!.querySelector<HTMLInputElement>('[data-testid="inquilinos-buscar"] input')
+      ?? container!.querySelector<HTMLInputElement>('input')
+    expect(campo).not.toBeNull()
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!
+    act(() => {
+      setter.call(campo!, 'lopez')
+      campo!.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    expect(onBuscar).toHaveBeenCalledWith('lopez')
+  })
+
+  it('las tres pestañas están y cambiar de pestaña avisa hacia arriba', () => {
+    const onEstado = vi.fn()
+    montarEn(
+      <BarraDeInquilinos buscar="" onBuscar={vi.fn()} estado="activos" onEstado={onEstado} />,
+    )
+    const texto = container!.textContent ?? ''
+    expect(texto).toContain('inquilinos.filtros.activos')
+    expect(texto).toContain('inquilinos.filtros.terminados')
+    expect(texto).toContain('inquilinos.filtros.todos')
+
+    const terminados = Array.from(container!.querySelectorAll('button')).find((b) =>
+      (b.textContent ?? '').includes('inquilinos.filtros.terminados'),
+    )
+    act(() => terminados!.click())
+    expect(onEstado).toHaveBeenCalledWith('terminados')
   })
 })

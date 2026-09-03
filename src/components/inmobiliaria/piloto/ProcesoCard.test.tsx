@@ -46,7 +46,7 @@ const DEPOSITO: Proceso = {
     { at: '2026-09-02T01:14:59.619-05:00', titulo: 'Conciliado por el Piloto', detalle: 'Recibo de caja #1', estado: 'hecho' },
   ],
   enVivo: false,
-  enlace: { label: 'Ver en el extracto', href: '/panel/inmobiliaria/cobros/extracto-bancario' },
+  enlace: { label: 'Ver en el extracto', href: '/panel/inmobiliaria/ai/conciliacion/movimientos' },
 }
 
 let container: HTMLDivElement
@@ -75,7 +75,7 @@ describe('ProcesoCard', () => {
     expect(riel.querySelectorAll('li')).toHaveLength(3)
     // Plegada: el detalle de los pasos no está.
     expect(container.querySelector('[data-testid="proceso-detalle-mov:m-1"]')).toBeNull()
-    expect(container.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/cobros/extracto-bancario')
+    expect(container.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/ai/conciliacion/movimientos')
   })
 
   it('expandir muestra cada paso con su detalle; el título abre el cajón', async () => {

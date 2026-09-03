@@ -10806,7 +10806,6 @@
     "sinInmueble": "No property assigned",
     "conteoArriendoUno": "1 lease · {{vigentes}} current",
     "conteoArriendos": "{{n}} leases · {{vigentes}} current",
-    "verFicha": "View profile",
     "tabla": {
       "inquilino": "Tenant",
       "telefono": "Phone",
@@ -10821,20 +10820,38 @@
       "desplegar": "See {{nombre}}'s leases",
       "contraer": "Hide {{nombre}}'s leases"
     },
+    "cajon": {
+      "canonVigente": "Current rent",
+      "arriendosVigentes": "Current leases",
+      "deTotal": "of {{n}} in total",
+      "saldoPendiente": "Outstanding balance",
+      "diasDeMora": "{{n}} days overdue",
+      "arriendos": "Leases ({{n}})",
+      "arriendosIncluyeTerminados": "Every lease they have with you, ended ones included.",
+      "cargandoArriendos": "Looking for the ended ones…",
+      "arriendosIncompletos": "The full detail could not be loaded — an ended lease may be missing.",
+      "verContrato": "View the lease",
+      "pagos": "Payments",
+      "pagosDeSusContratos": "The charges on their leases, most recent first.",
+      "cargandoPagos": "Loading their payments…",
+      "errorPagos": "Payments could not be loaded.",
+      "pagosIncompletos": "One of their leases did not respond — what you see is incomplete.",
+      "sinPagos": "No charge has been generated for their leases yet.",
+      "sinContratos": "They have no lease to hang a charge on.",
+      "reintentar": "Retry",
+      "ultimoPago": "Last paid on {{fecha}}",
+      "recordatorios": "{{n}} reminders · last one on {{fecha}}",
+      "pagadoEl": "Paid on {{fecha}}",
+      "venceEl": "Due on {{fecha}}",
+      "debe": "Owes {{monto}}",
+      "yMasCobros": "and {{n}} more charges, on the lease.",
+      "verCobrosDelContrato": "See all their charges on the lease"
+    },
     "estados": {
       "activo": "Active",
       "porVencer": "Ending soon",
       "terminado": "Ended",
       "cancelado": "Terminated"
-    },
-    "ficha": {
-      "correo": "Email",
-      "telefono": "Phone",
-      "canonVigente": "Current rent",
-      "arriendos": "Leases ({{n}})",
-      "verContrato": "View the lease",
-      "verCobros": "View their charges",
-      "sinDato": "Not on file"
     }
   },
   "cartera": {

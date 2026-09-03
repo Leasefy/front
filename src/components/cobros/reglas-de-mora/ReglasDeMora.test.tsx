@@ -201,7 +201,8 @@ describe('ReglasDeMora — la tabla', () => {
 
     expect(celdas(filas[0]).slice(0, 5)).toEqual([
       '#0',
-      'Interés de moraInterés de mora',
+      // El concepto ya no se repite cuando dice lo mismo que el nombre.
+      'Interés de mora',
       'Desde el primer día de moraDías de mora',
       '0,0667 % diario sobre el canonInterés diario',
       'Sin tope',

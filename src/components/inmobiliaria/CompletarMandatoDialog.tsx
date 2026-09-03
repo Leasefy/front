@@ -26,6 +26,12 @@ import type {
   PropietarioFormData,
 } from '@/lib/types/inmobiliaria';
 import { PropietarioSelector } from './PropietarioSelector';
+import {
+  CopropietariosField,
+  aListaDelCable,
+  motivoInvalido,
+  type FilaCopropietario,
+} from './CopropietariosField';
 import { AgenteSelector } from './AgenteSelector';
 
 /**
@@ -41,6 +47,12 @@ import { AgenteSelector } from './AgenteSelector';
  */
 export interface MandatoWirePayload {
   propietarioId: string;
+  /**
+   * Los dueños con su participación, cuando hay más de uno (2026-09-03).
+   * Ausente = un solo dueño, y ahí manda `propietarioId` — la forma vieja del
+   * cable, que el back sigue aceptando tal cual.
+   */
+  copropietarios?: { propietarioId: string; participacionBps: number }[];
   propertyId: string;
   propertyTitle: string;
   propertyAddress: string;
@@ -63,6 +75,8 @@ export interface MandatoWirePayload {
 
 export interface MandatoFormValues {
   propietarioId: string;
+  /** Ver `MandatoWirePayload.copropietarios`. */
+  copropietarios?: { propietarioId: string; participacionBps: number }[];
   commissionPercent: number;
   contractDate: string;
   agenteUserId?: string;
@@ -108,6 +122,15 @@ export function buildMandatoPayload(
     // monthlyRent stays OMITTED — never null-with-a-value, never 0 (R2, C6).
   } else {
     payload.monthlyRent = inmueble.monthlyRent as number;
+  }
+
+  // Varios dueños: la lista es la verdad y el `propietarioId` suelto sobra —
+  // mandar los dos es un 400 («no se sabe cuál manda»). `toConsignacionPayload`
+  // en la capa de API hace el mismo descarte; acá se hace también porque este
+  // payload viaja por `consignacionesApi.create` con un cast.
+  if (values.copropietarios && values.copropietarios.length > 1) {
+    payload.copropietarios = values.copropietarios;
+    delete (payload as Partial<MandatoWirePayload>).propietarioId;
   }
 
   if (inmueble.propertyZone) payload.propertyZone = inmueble.propertyZone;
@@ -285,6 +308,8 @@ export function CompletarMandatoDialog({
   const [formError, setFormError] = useState<string | null>(null);
   // Se entró desde la ficha de un propietario: ya sabemos de quién es.
   const [cambiandoDueno, setCambiandoDueno] = useState(false);
+  // Los dueños de más. Vacío = un solo dueño, la forma de siempre.
+  const [copropietarios, setCopropietarios] = useState<FilaCopropietario[]>([]);
   const duenoConocido =
     !cambiandoDueno && propietarioInicial
       ? (propietarios.find((p) => p.id === propietarioInicial) ?? null)
@@ -302,6 +327,7 @@ export function CompletarMandatoDialog({
     setAgenteId(null);
     setFormError(null);
     setCambiandoDueno(false);
+    setCopropietarios([]);
   }, [inmueble, propietarioInicial]);
 
   if (!inmueble) return null;
@@ -310,9 +336,14 @@ export function CompletarMandatoDialog({
   // now carries a REDUCED mandate: propietario + consignedAt + sale
   // commission. No canon, no minimum term, no acta.
   const isSaleListing = inmueble.monthlyRent == null;
+  // El principal es el que se eligió arriba, o el que ya venía sabido cuando se
+  // entra desde la ficha de un propietario.
+  const principalId = duenoConocido?.id ?? propietarioId;
+  const problemaCopropietarios = motivoInvalido(copropietarios, principalId);
   const isValid =
-    Boolean(propietarioId) &&
+    Boolean(principalId) &&
     Boolean(contractDate) &&
+    !problemaCopropietarios &&
     (isSaleListing ? saleCommissionPercent > 0 : commissionPercent >= 0);
 
   const handleSubmit = async () => {
@@ -321,11 +352,16 @@ export function CompletarMandatoDialog({
     setFormError(null);
 
     try {
-      const finalPropietarioId = await persistPropietarioIfNeeded(propietarioId!, newPropietarioData);
+      const finalPropietarioId = await persistPropietarioIfNeeded(principalId!, newPropietarioData);
       const selectedAgente = agentes.find((a) => a.id === agenteId);
+
+      // La lista sólo viaja si hay copropietarios de verdad. `null` = un solo
+      // dueño y se manda la forma vieja, sin tocar nada.
+      const listaDeDuenos = aListaDelCable(copropietarios, finalPropietarioId);
 
       const outcome = await completeMandatoAndPublish(inmueble, {
         propietarioId: finalPropietarioId,
+        ...(listaDeDuenos ? { copropietarios: listaDeDuenos } : {}),
         commissionPercent,
         contractDate,
         agenteUserId: selectedAgente?.userId ?? (agenteId ? undefined : user?.id),
@@ -458,6 +494,21 @@ export function CompletarMandatoDialog({
             />
           </div>
           )}
+
+          {/* Un inmueble puede tener más de un dueño (Nico, 2026-09-03). El
+              porcentaje del principal es el resto, así que la suma da 100 por
+              construcción y no hay forma de guardar un 99 %. */}
+          <CopropietariosField
+            propietarios={propietarios}
+            principalId={principalId}
+            principalNombre={
+              duenoConocido?.name ??
+              propietarios.find((p) => p.id === propietarioId)?.name ??
+              newPropietarioData?.name
+            }
+            filas={copropietarios}
+            onChange={setCopropietarios}
+          />
 
           <div>
             <label className="block text-sm font-medium text-fg-muted mb-2">

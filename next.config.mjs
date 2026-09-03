@@ -4,6 +4,7 @@ import path from "path";
 // src/lib/landing/legacy-redirects.ts for the typed re-export + rationale.
 import { LEGACY_PRODUCT_REDIRECTS_DATA } from "./src/lib/landing/legacy-redirects.data.mjs";
 import { RUTAS_UNIFICADAS_DEL_PANEL_DATA } from "./src/lib/nav/rutas-unificadas-del-panel.data.mjs";
+import { CONCILIACION_EN_UN_SOLO_LUGAR_DATA } from "./src/lib/nav/conciliacion-en-un-solo-lugar.data.mjs";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -118,8 +119,15 @@ const nextConfig = {
   // Las del panel van PRIMERO: son las que reciben enlaces guardados de
   // /portafolio y /propiedades, unificados en /inmuebles. Ver
   // src/lib/nav/rutas-unificadas-del-panel.ts para el porqué (con test).
+  // La conciliación bancaria también quedó en UN solo lugar: la vieja
+  // /cobros/extracto-bancario ahora vive dentro del workspace del agente. Ver
+  // src/lib/nav/conciliacion-en-un-solo-lugar.ts para el porqué (con test).
   async redirects() {
-    return [...RUTAS_UNIFICADAS_DEL_PANEL_DATA, ...LEGACY_PRODUCT_REDIRECTS_DATA];
+    return [
+      ...RUTAS_UNIFICADAS_DEL_PANEL_DATA,
+      ...CONCILIACION_EN_UN_SOLO_LUGAR_DATA,
+      ...LEGACY_PRODUCT_REDIRECTS_DATA,
+    ];
   },
 };
 

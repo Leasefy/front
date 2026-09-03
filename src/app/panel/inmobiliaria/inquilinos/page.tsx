@@ -28,20 +28,31 @@
  *    mostraba anidado —cada arriendo con su estado, canon y vigencia— vive en
  *    las columnas cuando hay uno solo, y se despliega cuando hay varios. Ver
  *    `InquilinosTable`.
+ *
+ * ── Y una quinta, del 2026-09-03 ────────────────────────────────────────────
+ * 5. **Una sola tarjeta: barra, tabla, vacío y paginador.** Nico: «nuestras
+ *    tablas tienen el buscador y las tabs también asociadas a la tabla, no
+ *    fuera de ella». El buscador y las pestañas estaban flotando encima.
+ *
+ *    Consecuencia que NO es cosmética: la tarjeta se pinta aunque la lista
+ *    venga vacía, y el vacío va adentro. Antes, buscar algo que no existe
+ *    reemplazaba toda la tarjeta por el vacío; con el buscador adentro eso
+ *    habría borrado el campo con el texto que la persona acababa de escribir.
+ *
+ * 6. **El detalle es un CAJÓN, no un diálogo** («que al dar clic se abra un
+ *    drawer y muestre todo el detalle»). Ver `InquilinoDrawer`.
  */
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
-  ArrowSquareOut,
   Buildings,
   CurrencyDollar,
-  MagnifyingGlass,
   UploadSimple,
   UserCircle,
   Users,
 } from '@phosphor-icons/react';
-import { SearchInput, SegmentedControl, KpiCard, Eyebrow } from '@leasefy/cadence';
+import { KpiCard, Eyebrow } from '@leasefy/cadence';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -49,13 +60,8 @@ import { SinDatos } from '@/components/estado/SinDatos';
 import { Button } from '@/components/ui/button';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination } from '@/lib/hooks/use-table-pagination';
-import { InquilinosTable, RenglonDeArriendo } from '@/components/inmobiliaria/InquilinosTable';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { BarraDeInquilinos, InquilinosTable } from '@/components/inmobiliaria/InquilinosTable';
+import { InquilinoDrawer } from '@/components/inmobiliaria/InquilinoDrawer';
 import { useI18n } from '@/lib/i18n';
 import { useInquilinos } from '@/lib/hooks/use-inquilinos';
 import {
@@ -141,197 +147,97 @@ function ContenidoDeInquilinos() {
         />
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <SearchInput
-          value={buscar}
-          onChange={(e) => setBuscar(e.target.value)}
-          onClear={() => setBuscar('')}
-          placeholder={t('inquilinos.buscarPlaceholder')}
-          inputSize="md"
-          className="w-full sm:w-80"
-        />
-        <SegmentedControl<FiltroDeEstado>
-          value={estado}
-          onChange={setEstado}
-          aria-label={t('inquilinos.filtroEstado')}
-          options={[
-            { value: 'activos', label: t('inquilinos.filtros.activos') },
-            { value: 'terminados', label: t('inquilinos.filtros.terminados') },
-            { value: 'todos', label: t('inquilinos.filtros.todos') },
-          ]}
-        />
-      </div>
-
       <EstadoDeDatos
         cargando={cargando}
         error={error}
         queEs={t('inquilinos.queEs')}
         onReintentar={refrescar}
       >
-        {inquilinos.length === 0 ? (
-          <SinDatos
-            hayFiltros={hayFiltros}
-            queSon={t('inquilinos.queSon')}
-            icono={UserCircle}
-            descripcion={t('inquilinos.vacioDescripcion')}
-            onLimpiarFiltros={
-              hayFiltros
-                ? () => {
-                    setBuscar('');
-                    setEstado('activos');
-                  }
-                : undefined
-            }
-            /*
-             * No hay «crear»: un inquilino nace de un contrato o de la
-             * migración, y el back ni siquiera expone un POST. Ofrecer un
-             * formulario acá crearía gente sin arriendo.
-             *
-             * 🔴 Y el segundo botón NO puede ser `/contratos/nuevo`: esa ruta
-             * sin `?applicationId=` responde «Falta el parámetro
-             * applicationId» —un contrato nace de una postulación aprobada—.
-             * Sería un botón que lleva a un error. Las dos salidas reales para
-             * quien todavía no tiene inquilinos son las dos migraciones.
-             */
-            accion={
-              hayFiltros ? undefined : (
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  <Button asChild hideArrow>
-                    <Link href="/panel/inmobiliaria/migracion/terceros?tipo=inquilinos">
-                      <UploadSimple className="mr-1.5 h-4 w-4" />
-                      {t('inquilinos.vacioMigrar')}
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline" hideArrow>
-                    <Link href="/panel/inmobiliaria/contratos/migrar">
-                      {t('inquilinos.vacioContrato')}
-                    </Link>
-                  </Button>
+        {/* UNA tarjeta: barra, tabla (o vacío) y paginador. `rounded-lg` son
+            los 22px de la tarjeta del panel — `rounded-xl` en cadence son 32
+            y no es el radio de una tabla. */}
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
+          {/*
+            La barra se pinta aunque no haya filas, PERO no cuando la
+            inmobiliaria todavía no tiene un solo inquilino: un buscador sobre
+            la nada es un campo que no puede encontrar nada. Con filtros
+            puestos es al revés — es la única forma de volver.
+          */}
+          {(inquilinos.length > 0 || hayFiltros) && (
+            <BarraDeInquilinos
+              buscar={buscar}
+              onBuscar={setBuscar}
+              estado={estado}
+              onEstado={setEstado}
+            />
+          )}
+
+          {inquilinos.length === 0 ? (
+            <SinDatos
+              hayFiltros={hayFiltros}
+              queSon={t('inquilinos.queSon')}
+              icono={UserCircle}
+              descripcion={t('inquilinos.vacioDescripcion')}
+              onLimpiarFiltros={
+                hayFiltros
+                  ? () => {
+                      setBuscar('');
+                      setEstado('activos');
+                    }
+                  : undefined
+              }
+              /*
+               * No hay «crear»: un inquilino nace de un contrato o de la
+               * migración, y el back ni siquiera expone un POST. Ofrecer un
+               * formulario acá crearía gente sin arriendo.
+               *
+               * 🔴 Y el segundo botón NO puede ser `/contratos/nuevo`: esa ruta
+               * sin `?applicationId=` responde «Falta el parámetro
+               * applicationId» —un contrato nace de una postulación aprobada—.
+               * Sería un botón que lleva a un error. Las dos salidas reales para
+               * quien todavía no tiene inquilinos son las dos migraciones.
+               */
+              accion={
+                hayFiltros ? undefined : (
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <Button asChild hideArrow>
+                      <Link href="/panel/inmobiliaria/migracion/terceros?tipo=inquilinos">
+                        <UploadSimple className="mr-1.5 h-4 w-4" />
+                        {t('inquilinos.vacioMigrar')}
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" hideArrow>
+                      <Link href="/panel/inmobiliaria/contratos/migrar">
+                        {t('inquilinos.vacioContrato')}
+                      </Link>
+                    </Button>
+                  </div>
+                )
+              }
+            />
+          ) : (
+            <>
+              <InquilinosTable inquilinos={pageItems} onAbrir={setAbierto} />
+              {/* El pie sólo aparece cuando hay más de una página: un
+                  paginador sobre 3 filas es ruido. */}
+              {total > pageSize && (
+                <div className="border-t border-border bg-muted/10 px-4 py-3">
+                  <TablePagination
+                    total={total}
+                    page={page}
+                    pageSize={pageSize}
+                    pageSizeOptions={[10, 20, 50]}
+                    onPageChange={setPage}
+                    onPageSizeChange={setPageSize}
+                  />
                 </div>
-              )
-            }
-          />
-        ) : (
-          <div className="overflow-hidden rounded-lg border border-border bg-card">
-            <InquilinosTable inquilinos={pageItems} onVerFicha={setAbierto} />
-            {/* El pie sólo aparece cuando hay más de una página: un paginador
-                sobre 3 filas es ruido. */}
-            {total > pageSize && (
-              <div className="border-t border-border bg-muted/10 px-4 py-3">
-                <TablePagination
-                  total={total}
-                  page={page}
-                  pageSize={pageSize}
-                  pageSizeOptions={[10, 20, 50]}
-                  onPageChange={setPage}
-                  onPageSizeChange={setPageSize}
-                />
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </>
+          )}
+        </div>
       </EstadoDeDatos>
 
-      <FichaDeInquilino persona={abierto} onCerrar={() => setAbierto(null)} />
-    </div>
-  );
-}
-
-/**
- * La ficha.
- *
- * Muestra TODOS los arriendos, incluidos los terminados — el back resuelve
- * `GET /:tenantId` con `estado: 'todos'`. Abrirla desde «activos» y no ver el
- * contrato del año pasado sería esconder justo lo que se vino a buscar.
- */
-function FichaDeInquilino({
-  persona,
-  onCerrar,
-}: {
-  persona: Inquilino | null;
-  onCerrar: () => void;
-}) {
-  const { t, formatCurrency } = useI18n();
-
-  if (!persona) return null;
-
-  const vigentes = arriendosVigentes(persona);
-  const canon = vigentes.reduce((suma, a) => suma + a.canonCop, 0);
-
-  return (
-    <Dialog open onOpenChange={(abierto) => !abierto && onCerrar()}>
-      <DialogContent size="lg">
-        <DialogHeader>
-          <DialogTitle>{persona.nombre}</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-2">
-          <Dato etiqueta={t('inquilinos.ficha.correo')} valor={persona.email} />
-          <Dato etiqueta={t('inquilinos.ficha.telefono')} valor={persona.telefono} mono />
-          <Dato
-            etiqueta={t('inquilinos.ficha.canonVigente')}
-            valor={formatCurrency(canon)}
-            mono
-          />
-        </div>
-
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-fg">
-            {t('inquilinos.ficha.arriendos', { n: persona.arriendos.length })}
-          </p>
-          <ul className="space-y-2">
-            {persona.arriendos.map((a) => (
-              <li key={a.leaseId} className="space-y-1">
-                <RenglonDeArriendo arriendo={a} />
-                <Link
-                  href={`/panel/inmobiliaria/contratos/${a.contractId}`}
-                  className="inline-flex items-center gap-1 px-3 text-xs text-primary hover:underline"
-                >
-                  {t('inquilinos.ficha.verContrato')}
-                  <ArrowSquareOut className="h-3 w-3" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" size="sm" hideArrow>
-            <Link href={`/panel/inmobiliaria/cobros?buscar=${encodeURIComponent(persona.nombre)}`}>
-              <MagnifyingGlass className="mr-1.5 h-4 w-4" />
-              {t('inquilinos.ficha.verCobros')}
-            </Link>
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function Dato({
-  etiqueta,
-  valor,
-  mono,
-}: {
-  etiqueta: string;
-  valor: string | null;
-  mono?: boolean;
-}) {
-  const { t } = useI18n();
-  return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-border-faint pb-2">
-      <span className="text-sm text-fg-muted">{etiqueta}</span>
-      <span
-        className={
-          valor
-            ? `text-sm text-fg${mono ? ' font-mono tabular-nums' : ''}`
-            : 'text-sm text-fg-subtle'
-        }
-      >
-        {/* «—» diría que el dato es vacío; «no registrado» dice que nadie lo
-            cargó, que es lo que hay que arreglar. */}
-        {valor || t('inquilinos.ficha.sinDato')}
-      </span>
+      <InquilinoDrawer persona={abierto} onCerrar={() => setAbierto(null)} />
     </div>
   );
 }

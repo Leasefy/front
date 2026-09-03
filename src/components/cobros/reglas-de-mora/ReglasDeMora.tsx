@@ -386,7 +386,12 @@ function FilaDeRegla({
       <TableCell className="p-4 align-middle">
         <div className="min-w-0">
           <p className="truncate font-medium text-fg">{regla.nombre}</p>
-          <p className="truncate text-sm text-fg-muted">{NOMBRE_DEL_CONCEPTO[regla.concepto]}</p>
+          {/* El concepto sólo agrega algo cuando NO repite el nombre: la
+              mayoría de las reglas se llaman igual que su concepto y salían
+              dos veces la misma palabra. */}
+          {NOMBRE_DEL_CONCEPTO[regla.concepto] !== regla.nombre && (
+            <p className="truncate text-sm text-fg-muted">{NOMBRE_DEL_CONCEPTO[regla.concepto]}</p>
+          )}
         </div>
       </TableCell>
 

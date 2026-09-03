@@ -19,13 +19,15 @@ import {
   Briefcase,
   ArrowsClockwise,
   HouseLine,
+  Users,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { IconButton } from '@leasefy/cadence';
-import type { Consignacion, Propietario, Agente, AgenteRole } from '@/lib/types/inmobiliaria';
+import type { Consignacion, Copropietario, Propietario, Agente, AgenteRole } from '@/lib/types/inmobiliaria';
+import { formatParticipacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
 // Bank name mapping
@@ -144,14 +146,28 @@ export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) 
 
 interface PropietarioSectionProps {
   propietario: Propietario | undefined;
+  /**
+   * Todos los dueños con su participación (2026-09-03). Con uno solo, o vacío
+   * contra un back viejo, la sección se ve igual que siempre; con más de uno se
+   * lista quién es quién y cuánto le toca.
+   */
+  copropietarios?: Copropietario[];
   /** Cambiar de propietario (se vendió, heredó). Sin esto no se muestra el botón. */
   onCambiar?: () => void;
   /** La ruta de esta ficha, para que «Volver» en la del propietario regrese acá. */
   rutaDeOrigen?: string;
 }
 
-export function PropietarioSection({ propietario, onCambiar, rutaDeOrigen }: PropietarioSectionProps) {
+export function PropietarioSection({
+  propietario,
+  copropietarios,
+  onCambiar,
+  rutaDeOrigen,
+}: PropietarioSectionProps) {
   const { t } = useI18n();
+  // Sólo cuando hay más de uno. Con un dueño al 100 % mostrar «100 %» al lado
+  // del nombre es ruido: no informa nada que no se supiera.
+  const variosDuenos = (copropietarios?.length ?? 0) > 1;
 
   if (!propietario) {
     return (
@@ -216,6 +232,43 @@ export function PropietarioSection({ propietario, onCambiar, rutaDeOrigen }: Pro
             </Link>
           </div>
         </div>
+
+        {/* Los dueños y su tajada. Sólo con más de uno — ver `variosDuenos`.
+            El principal (el de mayor participación) va marcado: es el que hoy
+            recibe el giro completo mientras el reparto por porcentaje no esté
+            hecho en la liquidación. */}
+        {variosDuenos && (
+          <div
+            className="p-3 rounded-lg bg-surface-muted dark:bg-bg space-y-2"
+            data-testid="copropietarios-lista"
+          >
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-fg-subtle" />
+              <span className="text-xs text-fg-muted dark:text-fg-subtle">
+                Propietarios ({copropietarios!.length})
+              </span>
+            </div>
+            {copropietarios!.map((c, i) => (
+              <div
+                key={c.propietarioId}
+                className="flex items-center justify-between gap-3"
+                data-testid="copropietario-item"
+              >
+                <span className="min-w-0 truncate text-sm text-fg dark:text-white">
+                  {c.propietario?.name ?? c.propietarioId}
+                  {i === 0 && (
+                    <span className="ml-1.5 text-xs text-fg-muted dark:text-fg-subtle">
+                      · principal
+                    </span>
+                  )}
+                </span>
+                <span className="shrink-0 font-mono text-sm tabular-nums text-fg dark:text-white">
+                  {formatParticipacion(c.participacionBps)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Bank Account — only when payout data exists */}
         {propietario.bankAccount ? (

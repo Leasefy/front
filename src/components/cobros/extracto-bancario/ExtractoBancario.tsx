@@ -3,11 +3,14 @@
 /**
  * Extracto bancario — la conciliación que emite recibos de caja.
  *
- * Distinto de la «Conciliación IA» del sidebar (el workspace del micro de
- * agentes): esto es el extracto del banco contra los cobros con saldo, y
- * conciliar una línea es emitir el recibo. Permisos: `cobros`/view para ver,
- * `cobros`/create para conciliar (es emitir un recibo), `cobros`/edit para
- * ignorar y reabrir.
+ * Es el extracto del banco contra los cobros con saldo: conciliar una línea es
+ * emitir el recibo. Permisos: `cobros`/view para ver, `cobros`/create para
+ * conciliar (es emitir un recibo), `cobros`/edit para ignorar y reabrir.
+ *
+ * Desde que la conciliación quedó en UN solo lugar, esto vive DENTRO del
+ * workspace del agente, en `/ai/conciliacion/movimientos`, arriba del bloque
+ * «Lo que vio el agente» (`<ConciliacionDelAgente />`). La página vieja
+ * `/cobros/extracto-bancario` ya no existe: redirige acá.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -58,7 +61,17 @@ const TITULO_DE_LA_PESTANA: Record<EstadoDelMovimientoBancario, string> = {
   IGNORADO: 'Ignorados',
 };
 
-export function ExtractoBancario() {
+interface Props {
+  /**
+   * `id` para el bloque de carga, para que un enlace con ancla caiga en el
+   * cargador y no en el título. La Sala del agente enlaza
+   * `…/movimientos#upload`, que es el ancla que ya usaba la pantalla del micro:
+   * si se le cambia el nombre acá, ese botón deja de llevar a ningún lado.
+   */
+  idDeCarga?: string;
+}
+
+export function ExtractoBancario({ idDeCarga }: Props = {}) {
   const { canAccess, isLoading: permisosCargando } = usePermissions();
   const puedeConciliar = permisosCargando || canAccess('cobros', 'create');
   const puedeEditar = permisosCargando || canAccess('cobros', 'edit');
@@ -194,7 +207,11 @@ export function ExtractoBancario() {
         />
       </div>
 
-      {puedeConciliar && <CargarExtracto onCargado={() => void cargar()} />}
+      {puedeConciliar && (
+        <div id={idDeCarga} className={idDeCarga ? 'scroll-mt-24' : undefined}>
+          <CargarExtracto onCargado={() => void cargar()} />
+        </div>
+      )}
 
       <section className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

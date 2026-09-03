@@ -8,7 +8,7 @@ import { AgencySubscriptionGuard } from '@/components/auth/AgencySubscriptionGua
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
 import { filterAgencyNav, type NavItemWithModule } from '@/lib/nav/agency-nav-filter';
 import { filasDelSidebar } from '@/lib/nav/sidebar-del-panel';
-import { ModuloTabs } from '@/components/inmobiliaria/ModuloTabs';
+import { SeccionesDelModulo } from '@/components/inmobiliaria/SeccionesDelModulo';
 import { CabeceraDelAgente } from '@/components/inmobiliaria/ai/CabeceraDelAgente';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
@@ -189,8 +189,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // src/lib/nav/arquitectura-del-panel.ts (grupos → módulos → pantallas) y
     // sidebar-del-panel.ts la vuelve filas: una por módulo, con la cabecera de
     // su grupo. Las pantallas de cada módulo (Cobranza, Cartera, Renovaciones,
-    // Avalúos…) ya no son filas del sidebar: son las pestañas de ModuloTabs, y
-    // si son un agente traen adentro su propio WorkspaceNav. 38 filas → 21.
+    // Avalúos…) ya no son filas del sidebar: son las cards de SeccionesDelModulo,
+    // y si son un agente traen adentro su propio WorkspaceNav. 38 filas → 21.
     //
     // Los gates NO cambian: cada fila conserva el module/roles/scope que tenía,
     // y si la raíz de un módulo no pasa pero una de sus pantallas sí, la fila
@@ -281,11 +281,14 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
             actions={<PilotoModoHeader />}
           />
           {/* Las dos capas de navegación debajo del header, montadas UNA vez y
-              auto-ocultas fuera de su contexto: ModuloTabs (las pantallas del
-              módulo: Cobros · Recaudo · Cartera · Cobranza) y, dentro de un
-              agente, su WorkspaceNav + la novedad de primera visita. */}
+              auto-ocultas fuera de su contexto, cada una con su cara:
+              SeccionesDelModulo (las secciones del módulo como cards:
+              [Cobros] [Recaudo] [Cartera] [Cobranza]) y, DEBAJO, dentro de un
+              agente, su WorkspaceNav (pestañas) + la novedad de primera visita.
+              Las secciones no se esconden al entrar en el agente: la card
+              sigue marcada y sus pestañas cuelgan de ella. */}
           <main id="main-content" tabIndex={-1}>
-            <ModuloTabs />
+            <SeccionesDelModulo />
             <CabeceraDelAgente />
             {children}
           </main>

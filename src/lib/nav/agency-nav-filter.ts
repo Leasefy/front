@@ -58,7 +58,7 @@ export interface NavFilterContext {
 /**
  * ¿Pasa esta fila su gate de permisos (módulo + roles)? NO mira el `scope`:
  * eso es encuadre, y lo aplica `filterAgencyNav` aparte. Lo comparten el
- * sidebar, `ModuloTabs` (las pestañas de cada módulo) y `sidebar-del-panel.ts`
+ * sidebar, `SeccionesDelModulo` (las secciones de cada módulo) y `sidebar-del-panel.ts`
  * (qué pantalla abre cada fila), para que una misma persona vea lo mismo en
  * los tres lugares.
  */

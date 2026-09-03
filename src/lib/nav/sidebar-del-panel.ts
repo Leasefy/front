@@ -14,7 +14,7 @@ import {
  *
  * Una entrada de sidebar por módulo (N2), agrupadas bajo su cabecera (N1). Las
  * pantallas (N3) NO van al sidebar: viven en la barra de pestañas del módulo
- * (`ModuloTabs`). Así el menú pasa de 38 filas a 21 sin perder ninguna puerta.
+ * (`SeccionesDelModulo`, cards debajo del header). Así el menú pasa de 38 filas a 21 sin perder ninguna puerta.
  *
  * ── La regla que evita perder una puerta ───────────────────────────────────
  *

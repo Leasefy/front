@@ -47,7 +47,7 @@ import type { BusinessModule } from './agency-module-scope';
  * Arquitectura de información del panel de inmobiliaria — LA fuente de verdad.
  *
  * De acá salen el sidebar (`app/panel/inmobiliaria/layout.tsx` vía
- * `sidebar-del-panel.ts`), la barra de pestañas de cada módulo (`ModuloTabs`),
+ * `sidebar-del-panel.ts`), el selector de secciones de cada módulo (`SeccionesDelModulo`),
  * el primer escalón del breadcrumb de los agentes y los tests que cuidan que
  * nada se duplique ni quede huérfano (`arquitectura-del-panel.test.ts`).
  *
@@ -55,10 +55,12 @@ import type { BusinessModule } from './agency-module-scope';
  *
  *   N1 Grupo     una etiqueta del sidebar; no navega, no tiene ruta.
  *   N2 Módulo    la entrada del sidebar; un listado o un tablero. Es la raíz.
- *   N3 Pantalla  hermana del listado, con su propia lógica; se abre desde la
- *                barra de pestañas del módulo. Acá caen Cobranza, Cartera,
- *                Dispersiones, Renovaciones… Si es un agente, adentro trae SU
- *                barra (WorkspaceNav, `agentWorkspaceNav.ts`).
+ *   N3 Sección   hermana del listado, con su propia lógica; se abre desde el
+ *                selector de secciones del módulo (cards debajo del header,
+ *                que NO se esconden al entrar en una). Acá caen Cobranza,
+ *                Cartera, Dispersiones, Renovaciones… Si es un agente, adentro
+ *                trae SU profundidad: pestañas (WorkspaceNav,
+ *                `agentWorkspaceNav.ts`) debajo de las cards.
  *   N4 Ficha     un registro concreto. No se declara acá: es la hoja.
  *
  * Los grupos siguen el ciclo de vida del contrato —captar y arrendar → operar →
@@ -266,7 +268,8 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // —la portada es Inicio—, así que vive con los reportes.
           { labelKey: 'inmobiliaria.nav.resumenDelNegocio', href: r('/reportes/resumen'), icon: SquaresFour, module: 'dashboard' },
           { labelKey: 'inmobiliaria.nav.rentabilidad', href: r('/reportes/rentabilidad'), icon: TrendUp, module: 'reportes' },
-          { labelKey: 'inmobiliaria.nav.desempenoIa', href: r('/reportes/ia'), icon: ChartLineUp, module: 'analytics', ia: true },
+          // Sin `ia: true`: el nombre ya dice «IA», y la píldora al lado repetía «IA IA».
+          { labelKey: 'inmobiliaria.nav.desempenoIa', href: r('/reportes/ia'), icon: ChartLineUp, module: 'analytics' },
         ],
       },
       {
@@ -277,8 +280,10 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         key: 'configuracion', labelKey: 'inmobiliaria.nav.configuracion', href: r('/configuracion'), icon: Gear, module: 'configuracion', scope: 'general', dataTourTarget: 'sidebar-configuraciones',
         pantallas: [
           { labelKey: 'inmobiliaria.nav.equipo', href: r('/configuracion/equipo'), icon: Users, module: 'agentes' },
-          { labelKey: 'inmobiliaria.nav.agentesIa', href: r('/configuracion/agentes'), icon: Robot, module: null, ia: true },
-          { labelKey: 'inmobiliaria.nav.automatizacionIa', href: r('/configuracion/ia'), icon: Brain, module: null, ia: true },
+          // Sin `ia: true`: son pantallas SOBRE la IA (no asistidas por un agente) y
+          // su nombre ya dice «IA»; la píldora al lado repetía «IA IA».
+          { labelKey: 'inmobiliaria.nav.agentesIa', href: r('/configuracion/agentes'), icon: Robot, module: null },
+          { labelKey: 'inmobiliaria.nav.automatizacionIa', href: r('/configuracion/ia'), icon: Brain, module: null },
         ],
       },
     ],

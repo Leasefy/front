@@ -310,12 +310,13 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
             pestañas —que arrancan a los 64px— así que el reproductor se montaba
             sobre ellas. La altura de la barra no era un número disponible en
             ningún lado; ahora `WorkspaceNav` la publica en `--workspace-nav-h`
-            y acá se suma a los 64px del header.
+            y las secciones de Cobros (que van encima) en `--secciones-h`; acá
+            se suman las dos a los 64px del header.
 
             `z-10` y no `z-20`: empatado con las pestañas ganaba el reproductor
             por orden en el DOM, que es justo lo que se veía mal.
           */}
-          <div className="sticky top-[calc(4rem+var(--workspace-nav-h,3rem))] z-10">
+          <div className="sticky top-[calc(4rem+var(--secciones-h,0px)+var(--workspace-nav-h,3rem))] z-10">
             <CallAudioPlayer
               callId={callId}
               agencyId={agencyId}

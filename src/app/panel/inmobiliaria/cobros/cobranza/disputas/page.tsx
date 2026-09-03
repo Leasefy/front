@@ -60,14 +60,16 @@ const REASON_MIN = 1
 const REASON_MAX = 2000
 
 /**
- * Alto de la cabecera del panel + la barra de pestañas, para el sticky.
+ * Alto de la cabecera del panel + las secciones de Cobros + las pestañas de
+ * Cobranza, para el sticky. Las dos barras publican su alto en variables CSS
+ * (`BarraDePestanas`); la de secciones vale 0 si no se dibuja.
  *
  * ⚠️ Los espacios alrededor del `+` NO son opcionales: en `style` inline
  * `calc(4rem+3rem)` es CSS inválido y el navegador lo descarta en silencio.
  * (En una clase de Tailwind se puede escribir pegado porque Tailwind
  * normaliza el `calc` al generar el CSS; acá no hay quien lo haga.)
  */
-const TOPE = 'calc(4rem + var(--workspace-nav-h, 3rem))'
+const TOPE = 'calc(4rem + var(--secciones-h, 0px) + var(--workspace-nav-h, 3rem))'
 
 // ── Filtro por estado (SegmentedControl) ─────────────────────────────────────
 

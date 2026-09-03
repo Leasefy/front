@@ -28,7 +28,7 @@ export default function RetencionLayout({ children }: { children: React.ReactNod
   }
 
   // Sin breadcrumb inline: el header del panel ya dice dónde estás (Contratos ›
-  // Retención | Riesgo | Por aprobar) y la barra de pestañas del módulo es el
+  // Retención | Riesgo | Por aprobar) y las cards de secciones del módulo son el
   // camino entre las tres. Este layout es el ÚNICO gate de la Sala (page.tsx no
   // trae PageGuard propio), por eso se queda.
   return <>{children}</>;

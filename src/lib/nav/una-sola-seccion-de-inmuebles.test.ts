@@ -91,7 +91,7 @@ describe('una sola sección de inmuebles', () => {
   it('el menú tiene UNA entrada de inmuebles, no dos', () => {
     // El sidebar sale de `arquitectura-del-panel.ts` (datos, no regex sobre el
     // layout): se cuenta la fila de nivel módulo; la pestaña «Inmuebles» de
-    // ModuloTabs es la misma fila vista desde adentro y no cuenta.
+    // SeccionesDelModulo es la misma fila vista desde adentro y no cuenta.
     const filas = modulosDelPanel().filter((m) => m.href === '/panel/inmobiliaria/inmuebles')
     expect(filas).toHaveLength(1)
   })

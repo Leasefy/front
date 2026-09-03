@@ -287,3 +287,16 @@ describe('arquitectura del panel — resolución de rutas', () => {
     expect(pestanaActiva(tabs, `${PANEL}/pagos/liquidaciones`)?.href).toBe(`${PANEL}/pagos/liquidaciones`);
   });
 });
+
+describe('secciones (cards debajo del header) — la píldora IA no repite el nombre', () => {
+  // «Agentes IA» + píldora «IA» se leía «Agentes IA IA» en la card de la sección
+  // (visto en el navegador el 2026-09-03). Si el nombre ya dice IA, la marca
+  // `ia: true` sobra: es para pantallas cuyo nombre no lo dice (Cobranza, Avalúos…).
+  it('ninguna pantalla cuyo nombre termina en «IA» lleva además ia: true', () => {
+    const repetidas = pantallas
+      .filter((p) => p.ia)
+      .map((p) => ({ href: p.href, es: String(leer(es, p.labelKey) ?? ''), en: String(leer(en, p.labelKey) ?? '') }))
+      .filter((p) => /\bIA$/.test(p.es) || /\bAI$/.test(p.en));
+    expect(repetidas).toEqual([]);
+  });
+});

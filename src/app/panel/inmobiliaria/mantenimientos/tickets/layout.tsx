@@ -30,7 +30,7 @@ export default function MantenimientoLayout({ children }: { children: React.Reac
   }
 
   // Sin breadcrumb inline: el header del panel ya dice «Mantenimientos › Tickets»
-  // y las pestañas del agente (WorkspaceNav) viven debajo. Este layout es el
+  // y las secciones del módulo (cards) + las pestañas del agente (WorkspaceNav) viven debajo. Este layout es el
   // ÚNICO gate de la bandeja, el resumen y la ficha del ticket: se queda.
   return <>{children}</>;
 }

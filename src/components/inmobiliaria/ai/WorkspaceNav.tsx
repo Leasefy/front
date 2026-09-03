@@ -7,18 +7,22 @@ import { findAgentWorkspace, type WorkspaceNavItem } from '@/lib/nav/agentWorksp
 import { BarraDePestanas, type PestanaDeBarra } from '@/components/inmobiliaria/BarraDePestanas';
 
 /**
- * WorkspaceNav — la navegación INTERNA de un agente de IA, como pestañas
- * horizontales arriba de su workspace: Resumen · Casos · Acuerdos…
+ * WorkspaceNav — la PROFUNDIDAD de un agente de IA: sus funciones internas
+ * como pestañas subrayadas, debajo de las secciones del módulo:
+ *
+ *   [Inmuebles] [Avalúos IA]                 ← SeccionesDelModulo (cards)
+ *   Resumen · Mis solicitudes · Configuración ← esta barra (pestañas)
  *
  * Se monta UNA vez en `app/panel/inmobiliaria/layout.tsx` y se esconde sola
- * fuera de un agente conocido (`findAgentWorkspace` → null). Cuando el agente
- * vive dentro de un módulo con pestañas propias (Cobros → Cobranza), esta
- * barra va DEBAJO de la del módulo (`ModuloTabs`): por eso su `top` suma el
- * alto que aquélla publica en `--modulo-tabs-h`.
+ * fuera de un agente conocido (`findAgentWorkspace` → null). Va SIEMPRE debajo
+ * de las secciones —también cuando el agente es una sección anidada (Cobros →
+ * Cobranza)—: por eso su `top` suma el alto que aquéllas publican en
+ * `--secciones-h`. Cuando el módulo no tiene secciones que mostrar
+ * (Conciliación) la variable vale 0 y la barra queda pegada al header.
  *
  * Los gates espejan el sidebar (PermissionsContext): nadie ve una pestaña que
  * no puede abrir. La mecánica de scroll, flechas y medida vive en
- * `BarraDePestanas`, compartida con la barra del módulo.
+ * `BarraDePestanas`, compartida con las secciones.
  */
 export function WorkspaceNav() {
   const pathname = usePathname();
@@ -57,10 +61,10 @@ export function WorkspaceNav() {
   return (
     <BarraDePestanas
       items={pestanas}
-      ariaLabel={`Secciones de ${t(workspace.labelKey)}`}
+      ariaLabel={`Pestañas de ${t(workspace.labelKey)}`}
       cssVar="--workspace-nav-h"
-      topClass="top-[calc(4rem+var(--modulo-tabs-h,0px))]"
-      nivel="agente"
+      topClass="top-[calc(4rem+var(--secciones-h,0px))]"
+      nivel="pestanas"
       pathname={pathname ?? ''}
     />
   );

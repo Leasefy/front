@@ -41,9 +41,10 @@ import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
  * Historically these lived as `children:[]` arrays on the agent items in the
  * global sidebar (`app/panel/inmobiliaria/layout.tsx`), which made the sidebar
  * overwhelming. They now live here: the sidebar renders each MODULE as a single
- * item, the module's screens are tabs (`ModuloTabs`), and when one of those
- * screens is an agent, `WorkspaceNav` reads this config to render the agent's
- * functions as a second row of tabs (mounted once in the panel layout).
+ * item, the module's screens are section cards (`SeccionesDelModulo`), and
+ * when one of those sections is an agent, `WorkspaceNav` reads this config to
+ * render the agent's functions as a row of tabs UNDER the cards (both mounted
+ * once in the panel layout; the cards stay put while you are inside the agent).
  *
  * ── Dónde vive cada agente (septiembre 2026) ───────────────────────────────
  * La IA es un modo, no un lugar: el namespace `/ai/*` desapareció y cada

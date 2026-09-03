@@ -694,6 +694,53 @@ export interface RenglonDeLiquidacion {
  * abrirlo. Es el mismo defecto que ya había tenido CarteraItem, en el tipo de
  * al lado.
  */
+/**
+ * Huella de un envío del extracto mensual a un propietario
+ * (GET /inmobiliaria/propietarios/:id/extractos, las últimas 12).
+ */
+export type EstadoDelExtractoEnviado = 'ENVIADO' | 'FALLIDO' | 'OMITIDO';
+export type OrigenDelExtractoEnviado = 'automatico' | 'manual';
+
+export interface ExtractoEnviado {
+  id: string;
+  /** 'YYYY-MM' */
+  month: string;
+  origen: OrigenDelExtractoEnviado;
+  estado: EstadoDelExtractoEnviado;
+  destinatario: string | null;
+  /** Por qué falló o se omitió; null cuando salió. */
+  motivo: string | null;
+  enviadoAt: string | null;
+  createdAt: string;
+}
+
+/** GET /inmobiliaria/propietarios/extractos/resumen?month=YYYY-MM */
+export interface ResumenDeExtractos {
+  month: string;
+  enviados: number;
+  fallidos: number;
+  omitidos: number;
+  ultimoEnvioAt: string | null;
+  /** Propietarios con al menos un cobro en ese mes: los que recibirían extracto. */
+  propietariosConActividad: number;
+}
+
+export interface DetalleDeEnvioDeExtracto {
+  propietarioId: string;
+  nombre: string;
+  estado: EstadoDelExtractoEnviado;
+  motivo?: string;
+}
+
+/** POST /inmobiliaria/propietarios/extractos/enviar-mes */
+export interface ResultadoDeEnvioMasivo {
+  month: string;
+  enviados: number;
+  fallidos: number;
+  omitidos: number;
+  detalle: DetalleDeEnvioDeExtracto[];
+}
+
 export interface ExtractoPropietario {
   propietarioId: string;
   propietarioName: string;
@@ -944,6 +991,82 @@ export interface FlujoCajaReport {
   };
 }
 
+// ── Rentabilidad por inmueble ────────────────────────────────────────────────
+//
+// `GET /inmobiliaria/reports/rentabilidad?desde=YYYY-MM&hasta=YYYY-MM`. Los
+// porcentajes vienen en 0-100 con dos decimales. `rentabilidadNetaAnualPct`
+// en `null` significa «sin valor comercial registrado»: no se inventa.
+
+/** De dónde salió la ocupación: del historial de contratos o de los cobros. */
+export type RentabilidadOcupacionFuente = 'leases' | 'cobros';
+
+export interface RentabilidadFila {
+  consignacionId: string;
+  propertyId: string | null;
+  codigo: number | null;
+  propertyTitle: string;
+  propertyAddress: string;
+  propertyCity: string;
+  propertyZone: string | null;
+  propietarioId: string;
+  propietarioNombre: string;
+  canonCop: number;
+  canonDesconocido: boolean;
+  mesesEnRango: number;
+  mesesConCobro: number;
+  esperadoCop: number;
+  recaudadoCop: number;
+  pendienteCop: number;
+  enMoraCop: number;
+  tasaDeRecaudoPct: number;
+  comisionCop: number;
+  retencionesYCargosCop: number;
+  gastosMantenimientoCop: number;
+  netoPropietarioCop: number;
+  margenNetoPct: number;
+  ocupacionPct: number;
+  ocupacionFuente: RentabilidadOcupacionFuente;
+  diasEnRango: number;
+  diasVacantes: number;
+  ingresoPerdidoPorVacanciaCop: number;
+  valorInmuebleCop: number | null;
+  rentabilidadBrutaAnualPct: number | null;
+  rentabilidadNetaAnualPct: number | null;
+  estado: 'ACTIVE' | 'TERMINATED' | 'EXPIRED' | 'PENDING';
+  availability: 'AVAILABLE' | 'RENTED' | 'IN_PROCESS' | 'MAINTENANCE';
+}
+
+export interface RentabilidadTotales {
+  inmuebles: number;
+  esperadoCop: number;
+  recaudadoCop: number;
+  pendienteCop: number;
+  enMoraCop: number;
+  tasaDeRecaudoPct: number;
+  comisionCop: number;
+  retencionesYCargosCop: number;
+  gastosMantenimientoCop: number;
+  netoPropietarioCop: number;
+  ocupacionPromedioPct: number;
+  ingresoPerdidoPorVacanciaCop: number;
+  /** Cuántos inmuebles tienen valor comercial registrado. */
+  conValor: number;
+  gastosDescontadosEnElReporte: true;
+}
+
+export interface RentabilidadReport {
+  /** `YYYY-MM` */
+  desde: string;
+  /** `YYYY-MM` */
+  hasta: string;
+  meses: number;
+  generatedAt: string;
+  /** Ordenadas por `netoPropietarioCop` descendente. */
+  filas: RentabilidadFila[];
+  totales: RentabilidadTotales;
+  notas: string[];
+}
+
 // ============================================================================
 // Dashboard KPIs
 // ============================================================================
@@ -1075,7 +1198,8 @@ export type ReportId =
   | 'ocupacion-portafolio'
   | 'vencimientos'
   | 'rendimiento-agentes'
-  | 'flujo-caja';
+  | 'flujo-caja'
+  | 'rentabilidad-inmueble';
 
 export type ReportFormat = 'pdf' | 'excel';
 export type ReportCategory = 'financiero' | 'operativo' | 'agentes';
@@ -1459,6 +1583,9 @@ export interface AgencyProfile {
   /** Dispersión: código en todos los lotes, y umbral COP para segundo aprobador (null = nunca). */
   dispersionExigePin?: boolean;
   dispersionMontoDobleAprobacion?: number | null;
+  /** Extracto mensual al propietario: se manda solo cada mes (`extractoMensualDia`, 1..28). */
+  extractoMensualAutomatico?: boolean;
+  extractoMensualDia?: number;
   /** Tarifas tributarias (Decimal en el back: viaja como TEXTO; el formulario lo convierte). `reteicaPorMil` y la base mínima: null = no configurada. */
   ivaPorcentaje?: number | string;
   retefuenteArrendamientoPorcentaje?: number | string;
@@ -1530,6 +1657,9 @@ export interface UpdateAgencyPayload {
   dispersionExigePin?: boolean;
   /** COP entero ≥ 0; `null` = nunca por monto */
   dispersionMontoDobleAprobacion?: number | null;
+  extractoMensualAutomatico?: boolean;
+  /** 1..28 */
+  extractoMensualDia?: number;
   /** Tarifas tributarias, 0..100 (la reteICA es por mil). `null` = no configurada. */
   ivaPorcentaje?: number;
   retefuenteArrendamientoPorcentaje?: number;

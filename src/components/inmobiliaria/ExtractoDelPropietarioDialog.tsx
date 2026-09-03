@@ -34,6 +34,8 @@ interface ExtractoDelPropietarioDialogProps {
   propietarioName: string;
   abierto: boolean;
   onOpenChange: (abierto: boolean) => void;
+  /** Se llama cuando «Enviar por email» terminó bien (la ficha refresca sus huellas). */
+  onEnviado?: () => void;
 }
 
 const FORMA_DE_MES = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -60,6 +62,7 @@ export function ExtractoDelPropietarioDialog({
   propietarioName,
   abierto,
   onOpenChange,
+  onEnviado,
 }: ExtractoDelPropietarioDialogProps) {
   const { t } = useI18n();
   const [mes, setMes] = useState(() => mesDeHoy());
@@ -100,7 +103,8 @@ export function ExtractoDelPropietarioDialog({
 
   const enviarPorCorreo = useCallback(async () => {
     await propietariosApi.enviarExtracto(propietarioId, mes);
-  }, [propietarioId, mes]);
+    onEnviado?.();
+  }, [propietarioId, mes, onEnviado]);
 
   return (
     <Dialog open={abierto} onOpenChange={onOpenChange}>

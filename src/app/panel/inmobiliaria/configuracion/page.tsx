@@ -37,6 +37,7 @@ import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n/types';
 import {
   ConfigPerfilAgencia,
+  ConfigExtractoMensual,
   ConfigBranding,
   ConfigUsuarios,
   ConfigPermisos,
@@ -549,11 +550,20 @@ function ConfiguracionContent() {
               <Spinner size="lg" />
             </div>
           ) : config?.agency ? (
-            <ConfigPerfilAgencia
-              agency={config.agency}
-              onSave={handleSaveAgency}
-              canEdit={isAgencyAdmin}
-            />
+            <div className="space-y-6">
+              <ConfigPerfilAgencia
+                agency={config.agency}
+                onSave={handleSaveAgency}
+                canEdit={isAgencyAdmin}
+              />
+              {/* Extracto mensual al propietario — misma perilla por agencia
+                  (PUT /inmobiliaria/agency) y mismo toast que el perfil. */}
+              <ConfigExtractoMensual
+                agency={config.agency}
+                onSave={handleSaveAgency}
+                canEdit={isAgencyAdmin}
+              />
+            </div>
           ) : (
             <div className="text-center py-12 text-muted-foreground">No hay configuración disponible</div>
           )

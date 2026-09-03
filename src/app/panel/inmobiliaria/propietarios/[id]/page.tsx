@@ -39,6 +39,7 @@ import { SegmentedControl, IconButton } from '@leasefy/cadence';
 import { BackButton } from '@/components/ui/back-button';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { PerfilTributarioDelPropietario } from '@/components/inmobiliaria/PerfilTributarioDelPropietario';
+import { ExtractosEnviadosDelPropietario } from '@/components/inmobiliaria/ExtractosEnviadosDelPropietario';
 import {
   DropdownList,
   DropdownListContent,
@@ -394,6 +395,8 @@ function PropietarioDetailContent() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [showExtracto, setShowExtracto] = useState(false);
+  // Sube cada vez que se manda el extracto desde el diálogo: la lista de huellas se relee.
+  const [extractosVersion, setExtractosVersion] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
@@ -695,6 +698,9 @@ function PropietarioDetailContent() {
             }}
           />
 
+          {/* Huellas del extracto mensual: qué mes salió, solo o a mano, y por qué no. */}
+          <ExtractosEnviadosDelPropietario propietarioId={propietario.id} version={extractosVersion} />
+
           {/* Bank Info */}
           <PropietarioBankInfo
             bankAccount={propietario.bankAccount}
@@ -891,6 +897,7 @@ function PropietarioDetailContent() {
         propietarioName={propietario.name}
         abierto={showExtracto}
         onOpenChange={setShowExtracto}
+        onEnviado={() => setExtractosVersion((v) => v + 1)}
       />
 
       {/* Notes Modal */}

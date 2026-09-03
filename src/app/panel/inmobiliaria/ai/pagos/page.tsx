@@ -202,7 +202,13 @@ function PagosHome() {
             solo lugar.
           </p>
         </div>
-        <div className="shrink-0">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <Button asChild variant="secondary" hideArrow>
+            <Link href="/panel/inmobiliaria/tesoreria/facturas/nueva">
+              <Receipt className="h-4 w-4" />
+              Nueva factura
+            </Link>
+          </Button>
           <Button asChild hideArrow>
             <Link href="/panel/inmobiliaria/ai/pagos/generar">Generar cobros del mes</Link>
           </Button>

@@ -8,6 +8,7 @@ import {
   ChartPie,
   Calendar,
   ChartBar,
+  ChartLineUp,
   CurrencyDollar,
   Star,
   Eye,
@@ -58,6 +59,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   ChartPie,
   Calendar,
   ChartBar,
+  ChartLineUp,
   CurrencyDollar,
 };
 

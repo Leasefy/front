@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button, EmptyState } from '@/components/ui';
 import { FotosDelInmueble } from '@/components/inmobiliaria/FotosDelInmueble';
+import { UbicacionDelInmueble } from '@/components/inmobiliaria/inmueble/UbicacionDelInmueble';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -201,7 +202,11 @@ function ConsignacionDetailContent() {
   // (consignacion.propertyThumbnail is never populated by the back — see
   // ledger §2.1). A failed/loading fetch just leaves `property` unset, which
   // ConsignacionHeader already renders as its placeholder icon.
-  const { property, refetch: refetchProperty } = useProperty(consignacion?.propertyId);
+  const {
+    property,
+    isLoading: cargandoProperty,
+    refetch: refetchProperty,
+  } = useProperty(consignacion?.propertyId);
 
   // Handlers
   const handleEdit = useCallback(() => {
@@ -441,6 +446,23 @@ function ConsignacionDetailContent() {
           >
             <PropertyInfoSection consignacion={consignacion} />
           </motion.div>
+
+          {/* Las coordenadas viven en el Property (la consignación no las
+              tiene). Sin propertyId no hay mapa que mostrar. */}
+          {consignacion.propertyId && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.11 }}
+            >
+              <UbicacionDelInmueble
+                property={property}
+                cargando={cargandoProperty}
+                consignacion={consignacion}
+                onActualizado={refetchProperty}
+              />
+            </motion.div>
+          )}
 
           {/* Las fotos viven en el Property; sin propertyId (mandato sin
               inmueble) no hay galería que mostrar. */}

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Wallet, Info, PaperPlaneTilt } from '@phosphor-icons/react';
+import { Wallet, Info, PaperPlaneTilt, Receipt, Sparkle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -40,12 +40,20 @@ function TesoreriaContent() {
           <h1 className="text-2xl font-semibold tracking-tight text-fg">{t(k('title'))}</h1>
           <p className="text-sm text-fg-muted max-w-2xl">{t(k('subtitle'))}</p>
         </div>
-        <Button asChild variant="secondary" hideArrow className="flex-shrink-0">
-          <Link href="/panel/inmobiliaria/dispersiones">
-            <PaperPlaneTilt className="w-4 h-4" />
-            {t(k('processCta'))}
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+          <Button asChild variant="secondary" hideArrow>
+            <Link href="/panel/inmobiliaria/dispersiones">
+              <PaperPlaneTilt className="w-4 h-4" />
+              {t(k('processCta'))}
+            </Link>
+          </Button>
+          <Button asChild hideArrow>
+            <Link href="/panel/inmobiliaria/tesoreria/facturas/nueva" data-testid="tesoreria-registrar-factura">
+              <Receipt className="w-4 h-4" weight="bold" />
+              {t(k('registrarFacturaCta'))}
+            </Link>
+          </Button>
+        </div>
       </header>
 
       {/* Honest M1 banner */}
@@ -56,6 +64,25 @@ function TesoreriaContent() {
           <p className="text-xs text-primary/90 mt-0.5">{t(k('m2BannerDesc'))}</p>
         </div>
       </div>
+
+      {/* Facturas de proveedores — captura desde foto/PDF con IA */}
+      <section className="rounded-xl border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-md bg-primary-soft flex items-center justify-center flex-shrink-0">
+            <Sparkle className="w-[18px] h-[18px] text-primary" weight="fill" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-fg">{t(k('facturasCardTitle'))}</h2>
+            <p className="text-xs text-fg-muted mt-0.5 max-w-xl">{t(k('facturasCardDesc'))}</p>
+          </div>
+        </div>
+        <Button asChild variant="secondary" hideArrow className="flex-shrink-0">
+          <Link href="/panel/inmobiliaria/tesoreria/facturas/nueva">
+            <Receipt className="w-4 h-4" />
+            {t(k('facturasCardCta'))}
+          </Link>
+        </Button>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Fórmula del neto — ejemplo ilustrativo */}

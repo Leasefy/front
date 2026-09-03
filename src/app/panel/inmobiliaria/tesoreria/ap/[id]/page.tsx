@@ -22,6 +22,7 @@ import {
   Receipt,
   Info,
   Warning,
+  ArrowSquareOut,
 } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -47,6 +48,9 @@ interface ApBill {
   createdBy: string;
   approvedBy: string | null;
   approvedAt: string | null;
+  /** Captura por IA (2026-09-02): la factura original en Storage y qué se cobra. */
+  adjuntoUrl?: string | null;
+  concepto?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -325,6 +329,12 @@ function ApBillDetailContent({ billId }: { billId: string }) {
             </span>
           </DetailRow>
 
+          {bill.concepto ? (
+            <DetailRow label={t(k('labelConcepto'))}>
+              <span data-testid="ap-bill-concepto">{bill.concepto}</span>
+            </DetailRow>
+          ) : null}
+
           <DetailRow label={t(k('labelAmount'))}>
             <span className="font-mono tabular-nums text-base font-semibold text-foreground">
               {formatCOP(bill.amountCop)}
@@ -352,6 +362,21 @@ function ApBillDetailContent({ billId }: { billId: string }) {
               </span>
             )}
           </DetailRow>
+
+          {bill.adjuntoUrl ? (
+            <DetailRow label={t(k('labelAdjunto'))}>
+              <a
+                href={bill.adjuntoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-primary hover:underline"
+                data-testid="ap-bill-adjunto"
+              >
+                <ArrowSquareOut className="w-4 h-4" />
+                {t(k('verFactura'))}
+              </a>
+            </DetailRow>
+          ) : null}
         </div>
       </section>
     </div>

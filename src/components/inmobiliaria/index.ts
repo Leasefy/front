@@ -131,6 +131,7 @@ export type { MantenimientoViewerProps } from './MantenimientoViewer';
 
 // Configuracion - Company Profile & Branding (Phase 10)
 export { ConfigPerfilAgencia } from './ConfigPerfilAgencia';
+export { ConfigExtractoMensual } from './ConfigExtractoMensual';
 export { ConfigBranding } from './ConfigBranding';
 
 // Configuracion - Users & Permissions (Phase 10 - Plan 02)

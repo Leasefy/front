@@ -43,7 +43,11 @@ import type {
   RendimientoAgentesReport,
   VencimientosReport,
   FlujoCajaReport,
+  RentabilidadReport,
   ExtractoPropietario,
+  ExtractoEnviado,
+  ResumenDeExtractos,
+  ResultadoDeEnvioMasivo,
   AnalyticsData,
   TrendAnalysis,
   ForecastData,
@@ -325,6 +329,36 @@ export const propietariosApi = {
       `${BASE}/propietarios/${id}/extracto/enviar`,
       { month },
     );
+  },
+
+  /**
+   * GET /inmobiliaria/propietarios/extractos/resumen?month=YYYY-MM
+   * Cuántos extractos del mes salieron, fallaron o se omitieron y cuándo fue
+   * el último. Sin `month`, el back responde por el mes anterior.
+   */
+  async extractosResumen(month?: string): Promise<ResumenDeExtractos> {
+    const qs = month ? `?month=${encodeURIComponent(month)}` : '';
+    return apiClient.get<ResumenDeExtractos>(`${BASE}/propietarios/extractos/resumen${qs}`);
+  },
+
+  /**
+   * POST /inmobiliaria/propietarios/extractos/enviar-mes
+   * Manda correos REALES a todos los propietarios con movimientos del mes.
+   * Con `soloSinEnviar` se saltan los que ya lo recibieron (salen como omitidos).
+   */
+  async enviarExtractosDelMes(month: string, soloSinEnviar = true): Promise<ResultadoDeEnvioMasivo> {
+    return apiClient.post<ResultadoDeEnvioMasivo>(`${BASE}/propietarios/extractos/enviar-mes`, {
+      month,
+      soloSinEnviar,
+    });
+  },
+
+  /** GET /inmobiliaria/propietarios/:id/extractos — las últimas huellas de envío, de la más reciente. */
+  async extractosDe(id: string): Promise<ExtractoEnviado[]> {
+    const res = await apiClient.get<{ data: ExtractoEnviado[] } | ExtractoEnviado[]>(
+      `${BASE}/propietarios/${id}/extractos`,
+    );
+    return lista(res);
   },
 };
 
@@ -1352,6 +1386,18 @@ export const reportesApi = {
   async getRendimientoAgentes(month?: string): Promise<RendimientoAgentesReport> {
     const qs = month ? `?month=${month}` : '';
     return apiClient.get<RendimientoAgentesReport>(`${BASE}/reports/rendimiento-agentes${qs}`);
+  },
+
+  /**
+   * Rentabilidad por inmueble en un rango de meses (`YYYY-MM`). Sin rango el
+   * back toma los últimos 12 meses hasta el actual; el máximo son 24.
+   */
+  async getRentabilidad(desde?: string, hasta?: string): Promise<RentabilidadReport> {
+    const query = new URLSearchParams();
+    if (desde) query.set('desde', desde);
+    if (hasta) query.set('hasta', hasta);
+    const qs = query.toString();
+    return apiClient.get<RentabilidadReport>(`${BASE}/reports/rentabilidad${qs ? `?${qs}` : ''}`);
   },
 
   async getExtracto(propietarioId: string, month?: string): Promise<unknown> {

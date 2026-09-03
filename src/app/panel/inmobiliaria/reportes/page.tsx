@@ -27,7 +27,7 @@ import { EmptyState } from '@/components/ui';
 import { SegmentedControl } from '@leasefy/cadence';
 import type { ReportDefinition, ReportId, ReportCategory } from '@/lib/types/inmobiliaria';
 import { REPORT_DEFINITIONS } from '@/lib/constants/inmobiliaria-data';
-import { comoSeBaja, sePuedeBajar, nombreDelArchivo } from '@/lib/reportes/exportables';
+import { comoSeBaja, sePuedeBajar, nombreDelArchivo, rutaDeExport, descargarBlob } from '@/lib/reportes/exportables';
 import {
   useCarteraReport,
   useOcupacionReport,
@@ -330,17 +330,8 @@ function ReportesContent() {
 
     setGeneratingReports((prev) => new Set([...prev, report.id]));
     try {
-      const blob = await apiClient.getBlob(
-        `/inmobiliaria/reports/export?type=${como.tipo}`,
-      );
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = nombreDelArchivo(como.tipo, new Date().toISOString().slice(0, 10));
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const blob = await apiClient.getBlob(rutaDeExport(como.tipo));
+      descargarBlob(blob, nombreDelArchivo(como.tipo, new Date().toISOString().slice(0, 10)));
 
       const now = new Date().toISOString();
       setReports((prev) =>
@@ -367,9 +358,15 @@ function ReportesContent() {
 
   // Handle preview report
   const handlePreviewReport = useCallback((report: ReportDefinition) => {
+    // La rentabilidad tiene pantalla propia, con periodo, gráfico y tabla
+    // ordenable: «ver» es ir allá, no abrir el cajón de vista previa.
+    if (report.id === 'rentabilidad-inmueble') {
+      router.push('/panel/inmobiliaria/reportes/rentabilidad');
+      return;
+    }
     setSelectedReport(report);
     setIsViewerOpen(true);
-  }, []);
+  }, [router]);
 
   /**
    * Descargar es lo mismo que generar: el back arma el CSV a pedido, no hay un

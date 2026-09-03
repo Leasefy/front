@@ -133,4 +133,15 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     frequency: 'monthly',
     premium: true,
   },
+  {
+    // Tiene pantalla propia (`/reportes/rentabilidad`): «Ver» navega allá y
+    // «Descargar CSV» baja el mismo rango que muestra el back.
+    id: 'rentabilidad-inmueble',
+    title: 'Rentabilidad por inmueble',
+    description: 'Esperado vs recaudado, comisión, gastos, neto al propietario y ocupación por inmueble',
+    icon: 'ChartLineUp',
+    category: 'financiero',
+    format: 'excel',
+    frequency: 'monthly',
+  },
 ];

@@ -20,7 +20,8 @@ void React;
 const { push, refetch, api, exportar, toast, nav } = vi.hoisted(() => ({
   push: vi.fn(),
   refetch: vi.fn(async () => undefined),
-  api: { update: vi.fn(), delete: vi.fn() },
+  // `extractosDe`: la ficha ahora lista las huellas del extracto (sección propia, probada aparte).
+  api: { update: vi.fn(), delete: vi.fn(), extractosDe: vi.fn(async () => []) },
   exportar: vi.fn(),
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
   nav: { volver: null as string | null },

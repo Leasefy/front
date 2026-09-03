@@ -9,6 +9,7 @@ import {
   ChartPie,
   Calendar,
   ChartBar,
+  ChartLineUp,
   CurrencyDollar,
   FilePdf,
   FileXls,
@@ -63,6 +64,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   ChartPie,
   Calendar,
   ChartBar,
+  ChartLineUp,
   CurrencyDollar,
 };
 

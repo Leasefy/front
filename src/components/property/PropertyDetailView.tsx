@@ -5,7 +5,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { MapPin, Bed, Bathtub, ArrowsOut, Buildings, CaretRight, ArrowSquareOut, ArrowLeft } from '@phosphor-icons/react';
 
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { tieneCoordenadas } from '@/components/map/coordenadas';
 import { PhotoGalleryModal } from '@/components/property/PhotoGalleryModal';
 import { PropertyAccordion } from '@/components/property/PropertyAccordion';
 import { StickyCTA, MobileStickyCTA } from '@/components/property/StickyCTA';
@@ -16,6 +19,12 @@ import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import { superaReferencia, referenciaCanon } from '@/lib/api/aprobacion.service';
 import { SobreTopeAlert } from '@/components/tenant/TopeAprobadoBanner';
 import { formatCurrency, formatArea } from '@/lib/format';
+
+// MapLibre toca `window`: sin SSR, con un esqueleto de la misma altura.
+const MapaDelInmueble = dynamic(
+  () => import('@/components/map/MapaDelInmueble').then((m) => m.MapaDelInmueble),
+  { ssr: false, loading: () => <Skeleton className="h-56 sm:h-64 w-full rounded-lg" /> },
+);
 
 // Offering-agency social networks rendered in the compact "Síguenos" row.
 // X / Facebook / Instagram SVGs mirror src/components/layout/FooterCompact.tsx;
@@ -510,9 +519,19 @@ export function PropertyDetailView({
                 </div>
               )}
 
-              {/* Map / Location */}
+              {/* Map / Location. Con coordenadas reales va el mapa (mismo
+                  componente que la ficha del panel); sin ellas queda la
+                  tarjeta con el enlace por barrio y ciudad. */}
               <div className="mt-12">
                 <h2 className="text-[13px] font-semibold text-foreground uppercase tracking-wide mb-4">Ubicación</h2>
+                {tieneCoordenadas(property.latitude, property.longitude) ? (
+                  <MapaDelInmueble
+                    latitude={property.latitude as number}
+                    longitude={property.longitude as number}
+                    titulo={property.title}
+                    direccion={`${property.neighborhood}, ${property.city}, Colombia`}
+                  />
+                ) : (
                 <div className="border border-border rounded-xl bg-surface-muted p-8 flex flex-col items-center justify-center gap-5 text-center">
                   <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
                     <MapPin className="w-6 h-6 text-primary" strokeWidth={1.5} />
@@ -533,6 +552,7 @@ export function PropertyDetailView({
                     Ver en Google Maps
                   </a>
                 </div>
+                )}
               </div>
 
               {/* Offering agency attribution + compact "Síguenos" social row.

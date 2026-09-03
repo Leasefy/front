@@ -599,6 +599,18 @@ export function useRendimientoAgentesReport(month?: string) {
   return { report: data, ...rest };
 }
 
+/** Rentabilidad por inmueble entre `desde` y `hasta` (`YYYY-MM`, opcionales). */
+export function useRentabilidadReport(desde?: string, hasta?: string) {
+  const { data, ...rest } = useApiData(
+    () => reportesApi.getRentabilidad(desde, hasta),
+    [desde, hasta],
+    false,
+    0,
+    ['cobros', 'consignaciones', 'dispersiones'],
+  );
+  return { report: data, ...rest };
+}
+
 export function useExtractoPropietario(propietarioId: string | undefined, month?: string) {
   const { data, ...rest } = useApiData(
     () => (propietarioId ? propietariosApi.getExtracto(propietarioId, month) : Promise.reject('No ID')),

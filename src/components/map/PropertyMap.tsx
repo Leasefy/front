@@ -8,6 +8,7 @@ import { INITIAL_VIEW_STATE, MAP_STYLE, ZOOM_LEVELS } from '@/lib/constants/map'
 import { useSupercluster } from '@/lib/hooks/useSupercluster';
 import { PriceMarker } from './PriceMarker';
 import { ClusterMarker } from './ClusterMarker';
+import { tieneCoordenadas } from './coordenadas';
 import { cn } from '@/lib/utils';
 
 export interface MapBounds {
@@ -33,13 +34,15 @@ interface PropertyMapProps {
  */
 // Calculate initial bounds from properties
 function getInitialBounds(properties: Property[]): MapBounds {
-  if (properties.length === 0) {
+  // Sólo los inmuebles con ubicación real (latitude/longitude pueden ser null).
+  const ubicados = properties.filter((p) => tieneCoordenadas(p.latitude, p.longitude));
+  if (ubicados.length === 0) {
     // Default to Colombia bounds
     return { north: 13.5, south: -4.5, east: -66.5, west: -82.0 };
   }
 
-  const lats = properties.map(p => p.latitude);
-  const lngs = properties.map(p => p.longitude);
+  const lats = ubicados.map((p) => p.latitude as number);
+  const lngs = ubicados.map((p) => p.longitude as number);
 
   return {
     north: Math.max(...lats) + 1,
@@ -107,10 +110,10 @@ export function PropertyMap({
   useEffect(() => {
     if (hoveredPropertyId && mapRef.current) {
       const property = properties.find((p) => p.id === hoveredPropertyId);
-      if (property) {
+      if (property && tieneCoordenadas(property.latitude, property.longitude)) {
         // Fly to property with smooth animation and zoom to neighborhood level
         mapRef.current.flyTo({
-          center: [property.longitude, property.latitude],
+          center: [property.longitude as number, property.latitude as number],
           zoom: Math.max(zoom, ZOOM_LEVELS.neighborhood), // At least neighborhood zoom
           duration: 600,
           essential: true,

@@ -25,13 +25,9 @@ import type {
   Consignacion,
   PropietarioFormData,
 } from '@/lib/types/inmobiliaria';
-import { PropietarioSelector } from './PropietarioSelector';
-import {
-  CopropietariosField,
-  aListaDelCable,
-  motivoInvalido,
-  type FilaCopropietario,
-} from './CopropietariosField';
+import { SelectorDePropietarios, type PropietarioPendiente } from './SelectorDePropietarios';
+import { RepartoEntreDuenos, repartoEnPartesIguales } from './RepartoEntreDuenos';
+import { aListaDelCable, motivoInvalido, type FilaCopropietario } from './CopropietariosField';
 import { AgenteSelector } from './AgenteSelector';
 
 /**
@@ -298,8 +294,12 @@ export function CompletarMandatoDialog({
   const { t } = useI18n();
   const { user } = useAuth();
 
-  const [propietarioId, setPropietarioId] = useState<string | null>(null);
-  const [newPropietarioData, setNewPropietarioData] = useState<PropietarioFormData | undefined>();
+  // Los dueños elegidos, en el orden en que se eligieron: el primero es el
+  // principal (se queda con el resto del reparto). Uno solo = la forma de
+  // siempre. Nico (2026-09-03): «que se pudiera seleccionar más de uno».
+  const [seleccion, setSeleccion] = useState<string[]>([]);
+  // El dueño nuevo que todavía no existe en el back (id `new-…`).
+  const [pendiente, setPendiente] = useState<PropietarioPendiente | undefined>();
   const [commissionPercent, setCommissionPercent] = useState(10);
   const [saleCommissionPercent, setSaleCommissionPercent] = useState(3);
   const [contractDate, setContractDate] = useState(todayISO());
@@ -319,8 +319,8 @@ export function CompletarMandatoDialog({
   // "Completar mandato" of the session reopens with the first one's answers.
   useEffect(() => {
     if (!inmueble) return;
-    setPropietarioId(propietarioInicial ?? null);
-    setNewPropietarioData(undefined);
+    setSeleccion(propietarioInicial ? [propietarioInicial] : []);
+    setPendiente(undefined);
     setCommissionPercent(10);
     setSaleCommissionPercent(3);
     setContractDate(todayISO());
@@ -338,7 +338,17 @@ export function CompletarMandatoDialog({
   const isSaleListing = inmueble.monthlyRent == null;
   // El principal es el que se eligió arriba, o el que ya venía sabido cuando se
   // entra desde la ficha de un propietario.
-  const principalId = duenoConocido?.id ?? propietarioId;
+  const principalId = duenoConocido?.id ?? seleccion[0] ?? null;
+
+  // Cambiar QUIÉNES son vuelve a repartir en partes iguales; los porcentajes
+  // se afinan después en `RepartoEntreDuenos`.
+  const cambiarSeleccion = (ids: string[]) => {
+    setSeleccion(ids);
+    setCopropietarios(repartoEnPartesIguales(ids));
+  };
+
+  const nombreDe = (id: string) =>
+    propietarios.find((p) => p.id === id)?.name ?? (pendiente?.id === id ? pendiente.data.name : id);
   const problemaCopropietarios = motivoInvalido(copropietarios, principalId);
   const isValid =
     Boolean(principalId) &&
@@ -352,12 +362,19 @@ export function CompletarMandatoDialog({
     setFormError(null);
 
     try {
-      const finalPropietarioId = await persistPropietarioIfNeeded(principalId!, newPropietarioData);
+      // El dueño nuevo (si lo hay) se crea primero y su id temporal se cambia
+      // por el real donde aparezca: en el principal y en el reparto.
+      const idReal = pendiente ? await persistPropietarioIfNeeded(pendiente.id, pendiente.data) : null;
+      const real = (id: string) => (pendiente && idReal && id === pendiente.id ? idReal : id);
+      const finalPropietarioId = real(principalId!);
       const selectedAgente = agentes.find((a) => a.id === agenteId);
 
       // La lista sólo viaja si hay copropietarios de verdad. `null` = un solo
       // dueño y se manda la forma vieja, sin tocar nada.
-      const listaDeDuenos = aListaDelCable(copropietarios, finalPropietarioId);
+      const listaDeDuenos = aListaDelCable(
+        copropietarios.map((f) => ({ ...f, propietarioId: f.propietarioId ? real(f.propietarioId) : f.propietarioId })),
+        finalPropietarioId,
+      );
 
       const outcome = await completeMandatoAndPublish(inmueble, {
         propietarioId: finalPropietarioId,
@@ -417,7 +434,10 @@ export function CompletarMandatoDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg">
+      {/* Ancho para tres columnas de propietarios y alto para que la grilla
+          respire: en `max-w-lg` elegir un dueño era «súper dificultoso»
+          (Nico, 2026-09-03). */}
+      <DialogContent className="max-w-3xl max-h-[min(860px,92dvh)]">
         <DialogHeader>
           <DialogTitle>
             {duenoConocido
@@ -483,33 +503,31 @@ export function CompletarMandatoDialog({
             <label className="block text-sm font-medium text-fg-muted mb-2">
               {t('inmobiliaria.consignaciones.mandateDialog.propietarioLabel')}
             </label>
-            <PropietarioSelector
+            <SelectorDePropietarios
               propietarios={propietarios}
-              value={propietarioId}
-              onChange={(id, data) => {
-                setPropietarioId(id);
-                setNewPropietarioData(data);
-              }}
-              newPropietarioData={newPropietarioData}
+              seleccion={seleccion}
+              onCambiarSeleccion={cambiarSeleccion}
+              pendiente={pendiente}
+              onPendiente={setPendiente}
             />
           </div>
           )}
 
-          {/* Un inmueble puede tener más de un dueño (Nico, 2026-09-03). El
-              porcentaje del principal es el resto, así que la suma da 100 por
-              construcción y no hay forma de guardar un 99 %. */}
-          <CopropietariosField
-            propietarios={propietarios}
-            principalId={principalId}
-            principalNombre={
-              duenoConocido?.name ??
-              propietarios.find((p) => p.id === propietarioId)?.name ??
-              newPropietarioData?.name
-            }
-            filas={copropietarios}
-            onChange={setCopropietarios}
-          />
+          {/* Con más de un dueño se pide el reparto. El primero elegido se
+              queda con el resto: la suma da 100 por construcción y no hay
+              forma de guardar un 99 %. */}
+          {!duenoConocido && (
+            <RepartoEntreDuenos
+              seleccion={seleccion}
+              nombreDe={nombreDe}
+              filas={copropietarios}
+              onChange={setCopropietarios}
+            />
+          )}
 
+          {/* Comisión y fecha en dos columnas: el diálogo es ancho y así la
+              grilla de dueños se queda con el alto. */}
+          <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-fg-muted mb-2">
               {isSaleListing
@@ -560,6 +578,7 @@ export function CompletarMandatoDialog({
               value={contractDate}
               onChange={(e) => setContractDate(e.target.value)}
             />
+          </div>
           </div>
 
           <div>

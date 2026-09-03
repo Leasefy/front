@@ -83,7 +83,7 @@ export function SinDatos({
       data-testid="sin-datos"
       data-caso={hayFiltros ? 'filtros' : 'vacio'}
     >
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-surface-muted">
         <Icono weight="duotone" className="h-6 w-6 text-fg-subtle" aria-hidden="true" />
       </div>
 

@@ -156,17 +156,21 @@ export function ActaEntregaView({
             <h3 className="text-base font-semibold text-foreground">{t('inmobiliaria.acta.title')}</h3>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              hideArrow
-              onClick={onPrint}
-              className="h-8 w-8 text-muted-foreground opacity-50 cursor-not-allowed"
-              disabled
-              title={t('inmobiliaria.acta.comingSoon')}
-            >
-              <Printer className="w-4 h-4" />
-            </Button>
+            {/* Imprimir abre la hoja del acta (`/inmuebles/[id]/acta`); sin
+                `onPrint` (sólo lectura) el botón no se muestra. */}
+            {onPrint && (
+              <Button
+                variant="ghost"
+                size="icon"
+                hideArrow
+                onClick={onPrint}
+                className="h-8 w-8 text-muted-foreground"
+                title={t('inmobiliaria.acta.print')}
+                aria-label={t('inmobiliaria.acta.print')}
+              >
+                <Printer className="w-4 h-4" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"

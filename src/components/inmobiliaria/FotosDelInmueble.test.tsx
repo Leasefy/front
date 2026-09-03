@@ -118,3 +118,70 @@ describe('FotosDelInmueble', () => {
     expect(container.querySelector('[data-testid="foto-en-camino"][data-estado="fallo"]')).not.toBeNull()
   })
 })
+
+describe('FotosDelInmueble — quitar y portada (Nico, 2026-09-03)', () => {
+  const dosFotos = [
+    { id: 'i1', url: 'https://cdn/1.jpg', order: 0 },
+    { id: 'i2', url: 'https://cdn/2.jpg', order: 1 },
+  ]
+
+  it('la papelera NO borra de una: abre la confirmación', async () => {
+    api.getImages.mockResolvedValue(dosFotos)
+    await montar()
+    act(() => container.querySelector<HTMLButtonElement>('[aria-label="Quitar la foto 2"]')!.click())
+    await tick()
+    expect(api.deleteImage).not.toHaveBeenCalled()
+    expect(document.body.querySelector('[data-testid="quitar-foto-dialogo"]')).not.toBeNull()
+  })
+
+  it('confirmar borra, avisa con un toast y refresca', async () => {
+    api.getImages.mockResolvedValue(dosFotos)
+    api.deleteImage.mockResolvedValue(undefined)
+    const { onCambio } = await montar()
+    act(() => container.querySelector<HTMLButtonElement>('[aria-label="Quitar la foto 2"]')!.click())
+    await tick()
+    await act(async () => {
+      document.body.querySelector<HTMLButtonElement>('[data-testid="quitar-foto-confirmar"]')!.click()
+    })
+    await tick()
+    expect(api.deleteImage).toHaveBeenCalledWith('prop-1', 'i2')
+    expect(toastMock.success).toHaveBeenCalledWith('Foto quitada')
+    expect(onCambio).toHaveBeenCalled()
+    expect(container.querySelector('[data-testid="foto-ver-1"]')).toBeNull()
+  })
+
+  it('cancelar no toca nada', async () => {
+    api.getImages.mockResolvedValue(dosFotos)
+    await montar()
+    act(() => container.querySelector<HTMLButtonElement>('[aria-label="Quitar la foto 1"]')!.click())
+    await tick()
+    const cancelar = [...document.body.querySelectorAll('button')].find((b) => b.textContent === 'Cancelar')!
+    await act(async () => { cancelar.click() })
+    await tick()
+    expect(api.deleteImage).not.toHaveBeenCalled()
+    expect(document.body.querySelector('[data-testid="quitar-foto-dialogo"]')).toBeNull()
+  })
+
+  it('hacer portada manda el orden con esa foto primero y avisa', async () => {
+    api.getImages.mockResolvedValue(dosFotos)
+    api.reorderImages.mockResolvedValue(undefined)
+    await montar()
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Hacer portada la foto 2"]')!.click()
+    })
+    await tick()
+    expect(api.reorderImages).toHaveBeenCalledWith('prop-1', ['i2', 'i1'])
+    expect(toastMock.success).toHaveBeenCalledWith('Portada actualizada')
+  })
+
+  it('si el back escupe un volcado de Prisma, el toast no lo repite', async () => {
+    api.getImages.mockResolvedValue(dosFotos)
+    api.reorderImages.mockRejectedValue(new Error('Invalid `this.prisma.propertyImage.update()` invocation in /x/y.js:518\nUnique constraint failed'))
+    await montar()
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Hacer portada la foto 2"]')!.click()
+    })
+    await tick()
+    expect(toastMock.error).toHaveBeenCalledWith('No se pudo cambiar la portada', { description: undefined })
+  })
+})

@@ -57,11 +57,11 @@ import {
  * mandate+publish call per property; this dialog only summarizes the
  * outcomes, identically for both modes.
  *
- * Límite del MODELO, no de esta pantalla: una consignación tiene UN
- * propietario (`Consignacion.propietarioId`). Nico pidió «el propietario o
- * los propietarios» — copropietarios no existen en el back hoy, así que
- * acá se elige uno por inmueble. Si el modelo crece a varios, este diálogo
- * cambia el Combobox por un multi-select y nada más.
+ * Acá se elige UN propietario por inmueble. El modelo ya admite varios
+ * (`consignacion_propietarios`, 2026-09-03) y el diálogo de un solo inmueble
+ * (`CompletarMandatoDialog`) los permite; este lote sigue con uno porque el
+ * reparto de porcentajes fila por fila no cabe en una tabla. Si hace falta,
+ * la fila abre el diálogo individual.
  */
 export interface CompletarMandatosLoteDialogProps {
   inmuebles: InmuebleSinConsignacion[];

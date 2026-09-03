@@ -28,9 +28,20 @@ const { useConsignacionMock, usePropietarioMock, useAgenteMock, usePropertyMock 
   usePropertyMock: vi.fn(),
 }));
 
+// `?editar=1` (el «Editar» del kebab de la lista) abre el formulario: el test
+// controla la query con `queryDePrueba`.
+const queryDePrueba = { editar: null as string | null };
+const routerReplaceMock = vi.fn();
 vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'consig-1' }),
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), replace: routerReplaceMock }),
+  useSearchParams: () => ({ get: (k: string) => (k === 'editar' ? queryDePrueba.editar : null) }),
+}));
+
+// El formulario de edición tiene su propio test; acá sólo importa que el modal
+// se abra. (Usa `formatCurrency` del i18n, que este mock no trae.)
+vi.mock('@/components/inmobiliaria/ConsignacionEditForm', () => ({
+  ConsignacionEditForm: () => <div data-testid="edit-form-stub" />,
 }));
 
 vi.mock('@/lib/i18n', () => ({
@@ -196,6 +207,32 @@ describe('<ConsignacionDetailPage> — Ver en Portal', () => {
     act(() => { stub.click(); });
 
     expect(openSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('<ConsignacionDetailPage> — ?editar=1 abre el formulario (Nico, 2026-09-03)', () => {
+  // «Le doy en editar en el kebab y me lleva es a ver el detalle y no me abre
+  // el modal»: la lista ahora navega con `?editar=1` y la ficha lo abre sola.
+  afterEach(() => {
+    queryDePrueba.editar = null;
+    routerReplaceMock.mockReset();
+  });
+
+  it('con ?editar=1 y datos cargados, el modal de edición ya está abierto y la URL se limpia', () => {
+    queryDePrueba.editar = '1';
+    useConsignacionMock.mockReturnValue({ consignacion: BASE_CONSIGNACION });
+    renderPage();
+
+    expect(document.body.querySelector('[data-testid="modal-ficha"]')).not.toBeNull();
+    expect(document.body.querySelector('[data-testid="edit-form-stub"]')).not.toBeNull();
+    expect(routerReplaceMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles/consig-1', { scroll: false });
+  });
+
+  it('sin la query el modal no aparece solo', () => {
+    useConsignacionMock.mockReturnValue({ consignacion: BASE_CONSIGNACION });
+    renderPage();
+    expect(document.body.querySelector('[data-testid="modal-ficha"]')).toBeNull();
+    expect(routerReplaceMock).not.toHaveBeenCalled();
   });
 });
 

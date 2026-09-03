@@ -536,50 +536,83 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
 
 interface DocumentsSectionProps {
   consignacion: Consignacion;
-  onViewInventory?: () => void;
 }
 
-export function DocumentsSection({ consignacion, onViewInventory }: DocumentsSectionProps) {
+/**
+ * Documentos del inmueble — filas que hacen algo, o dicen por qué no.
+ *
+ * Antes (Nico, 2026-09-03: «uno le da clic a acta de entrega y no pasa nada,
+ * y ese otro documento ¿qué es? ¿eso está mockeado?»): el contrato era un
+ * botón deshabilitado «Próximamente» y el acta hacía scroll a una tarjeta que
+ * ya estaba a la vista. Ahora:
+ *   · Contrato de consignación: si hay PDF cargado, lo abre; si no, lo dice y
+ *     lleva a generarlo desde una plantilla en Documentos.
+ *   · Acta de entrega: abre la hoja imprimible (`/inmuebles/[id]/acta`).
+ */
+export function DocumentsSection({ consignacion }: DocumentsSectionProps) {
   const { t } = useI18n();
   const hasPhotos = consignacion.photosUrls && consignacion.photosUrls.length > 0;
+  const filaClase =
+    'w-full flex items-center gap-3 p-3 rounded-lg bg-surface-muted dark:bg-bg hover:bg-surface-hover dark:hover:bg-ink transition-colors text-left';
+  const itemsDeInventario = consignacion.inventoryItems?.length || 0;
 
   return (
     <SectionCard title={t('inmobiliaria.consignaciones.detail.documents')} icon={<FileText className="w-4 h-4" />}>
       <div className="space-y-3">
-        {/* Consignment Contract — allowlist: rich list-row click target (icon-tile + 2-line
-            text + arrow as ONE button); Button can't host this multiline row (same precedent
-            as whole-card/list-row clickables). Kept native. */}
-        <button
-          className="w-full flex items-center gap-3 p-3 rounded-lg bg-surface-muted dark:bg-bg hover:bg-surface-muted dark:hover:bg-ink transition-colors text-left opacity-50 cursor-not-allowed"
-          disabled
-          title={t('inmobiliaria.consignaciones.header.comingSoon')}
-        >
-          <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
-            <FileText className="w-5 h-5 text-primary" />
-          </div>
-          <div className="flex-1">
-            <p className="font-medium text-fg dark:text-white text-sm">{t('inmobiliaria.consignaciones.detail.consignmentContract')}</p>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.detail.consignmentContractDesc')}</p>
-          </div>
-          <ArrowRight className="w-4 h-4 text-fg-subtle" />
-        </button>
+        {consignacion.consignmentContractUrl ? (
+          <a
+            href={consignacion.consignmentContractUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={filaClase}
+            data-testid="documento-contrato"
+          >
+            <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center">
+              <FileText className="w-5 h-5 text-fg-muted" weight="duotone" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-fg text-sm">{t('inmobiliaria.consignaciones.detail.consignmentContract')}</p>
+              <p className="text-xs text-fg-muted">{t('inmobiliaria.consignaciones.detail.consignmentContractView')}</p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-fg-subtle" />
+          </a>
+        ) : (
+          <Link
+            href="/panel/inmobiliaria/documentos?tab=plantillas"
+            className={filaClase}
+            data-testid="documento-contrato-generar"
+          >
+            <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center">
+              <FileText className="w-5 h-5 text-fg-muted" weight="duotone" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-fg text-sm">{t('inmobiliaria.consignaciones.detail.consignmentContract')}</p>
+              <p className="text-xs text-fg-muted">
+                {t('inmobiliaria.consignaciones.detail.consignmentContractMissing')} ·{' '}
+                <span className="text-primary">{t('inmobiliaria.consignaciones.detail.consignmentContractGenerate')}</span>
+              </p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-fg-subtle" />
+          </Link>
+        )}
 
-        {/* Acta de Entrega — allowlist: rich list-row click target (same precedent as above). */}
-        <button
-          onClick={onViewInventory}
-          className="w-full flex items-center gap-3 p-3 rounded-lg bg-surface-muted dark:bg-bg hover:bg-surface-muted dark:hover:bg-ink transition-colors text-left"
+        <Link
+          href={`/panel/inmobiliaria/inmuebles/${consignacion.id}/acta`}
+          className={filaClase}
+          data-testid="documento-acta"
         >
-          <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center">
-            <FileText className="w-5 h-5 text-success" />
+          <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center">
+            <FileText className="w-5 h-5 text-fg-muted" weight="duotone" />
           </div>
-          <div className="flex-1">
-            <p className="font-medium text-fg dark:text-white text-sm">{t('inmobiliaria.consignaciones.detail.handoverReport')}</p>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle">
-              {t('inmobiliaria.consignaciones.detail.inventoryItemsCount', { count: consignacion.inventoryItems?.length || 0 })}
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-fg text-sm">{t('inmobiliaria.consignaciones.detail.handoverReport')}</p>
+            <p className="text-xs text-fg-muted">
+              {t('inmobiliaria.consignaciones.detail.inventoryItemsCount', { count: itemsDeInventario })} ·{' '}
+              <span className="text-primary">{t('inmobiliaria.consignaciones.detail.handoverReportOpen')}</span>
             </p>
           </div>
           <ArrowRight className="w-4 h-4 text-fg-subtle" />
-        </button>
+        </Link>
 
         {/* Photos Gallery */}
         {hasPhotos && (

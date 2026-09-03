@@ -3352,6 +3352,11 @@
         "saleListingNotice": "This property is for sale: no monthly rent, only the commission you charge for selling it.",
         "cancel": "Cancel",
         "confirm": "Save owner",
+        "propietarioHint": "You can pick more than one if the property has several owners.",
+        "seleccionados": "{{n}} owners selected",
+        "repartoTitle": "Split between owners",
+        "repartoResto": "Gets the remainder: {{pct}}",
+        "repartoIguales": "Equal shares",
         "toasts": {
           "successTitle": "Owner assigned",
           "successDesc": "\"{{title}}\" now has an owner and commission, and was published.",
@@ -3397,6 +3402,10 @@
         "consignmentContractDesc": "PDF - Legal document",
         "handoverReport": "Handover report",
         "inventoryItemsCount": "{{count}} inventory items",
+        "consignmentContractView": "Open the PDF",
+        "consignmentContractMissing": "None uploaded yet",
+        "consignmentContractGenerate": "Generate from a template",
+        "handoverReportOpen": "Open the printable report",
         "gallery": "Gallery ({{count}} photos)",
         "photoAlt": "Photo {{number}}",
         "viewMorePhotos": "View {{count}} more photos"
@@ -4078,6 +4087,8 @@
       }
     },
     "acta": {
+      "pageTitle": "Handover report and inventory",
+      "backToProperty": "Back to the property",
       "steps": {
         "info": "Information",
         "spaces": "Spaces",

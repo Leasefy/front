@@ -21,6 +21,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { type ActionType } from '@/components/inmobiliaria/AccionDePostulacion';
 import { useDecisionDeCandidato } from '@/components/inmobiliaria/use-decision-de-candidato';
 import { RecorridoHilo } from '@/components/inmobiliaria/recorrido/RecorridoHilo';
+import type { PasoKey } from '@/lib/recorrido/pasos';
 import { useContracts } from '@/lib/hooks/useContracts';
 import type { LandlordCandidate, LandlordApplicationStatus } from '@/lib/api/applications.types';
 import type { Property } from '@/lib/types/property';
@@ -315,6 +316,13 @@ function CandidatosContent() {
   ).length;
   const approvedCount = candidates.filter((c) => c.status === 'APPROVED').length;
 
+  // El paso del recorrido sale del estado REAL, no de la pantalla: sin
+  // postulaciones no se compara a nadie —la pelota la tiene el inquilino
+  // («Se postula»)—; con una aprobada ya se decidió. Antes decía «Paso 9 ·
+  // Comparas los candidatos · Te toca» con la lista vacía (Nico, 2026-09-03).
+  const pasoDelRecorrido: PasoKey =
+    candidates.length === 0 ? 'postulacion' : approvedCount > 0 ? 'decision' : 'comparacion';
+
   // Solo bloquea la vista en el primer load — los auto-refresh son silenciosos.
   const alternarComparar = useCallback((id: string) => {
     setParaComparar((prev) => {
@@ -371,7 +379,7 @@ function CandidatosContent() {
           Las dos rutas cuelgan de esta misma pantalla, así que se pasan por
           `hrefs` — `pasos.ts` no puede hardcodear una ruta con [id]. */}
       <RecorridoHilo
-        paso="comparacion"
+        paso={pasoDelRecorrido}
         hrefs={{
           // Comparar arranca acá: hay que marcar a quiénes antes de poder
           // compararlos, así que el paso apunta a esta misma lista.

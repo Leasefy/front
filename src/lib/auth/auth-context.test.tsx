@@ -67,6 +67,7 @@ vi.mock('@/lib/api/client', () => {
     getAccessToken: () => 'jwt-token',
     setAccessToken: vi.fn(),
     setUnauthorizedHandler: vi.fn(),
+    setTokenRefresher: vi.fn(),
   }
 })
 

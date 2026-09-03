@@ -22,6 +22,7 @@ import {
   ResponsiveDialogFooter,
 } from '@/components/ui/responsive-dialog';
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria';
+import { ApiError } from '@/lib/api/client';
 import { agendaApi } from '@/lib/api/agenda.service';
 
 interface PedirCitaModalProps {
@@ -114,8 +115,13 @@ export function PedirCitaModal({
       toast.success(t(k('citaSuccess')));
       onCreated();
       onClose();
-    } catch {
-      toast.error(t(k('citaError')));
+    } catch (err) {
+      // Con la sesión vencida el cliente ya está cerrando sesión: un «no se
+      // pudo agendar» encima sería mentira (la cita no falló, la sesión sí).
+      if (err instanceof ApiError && err.status === 401) return;
+      toast.error(t(k('citaError')), {
+        description: err instanceof ApiError && err.message.length < 160 ? err.message : undefined,
+      });
     } finally {
       setSubmitting(false);
     }

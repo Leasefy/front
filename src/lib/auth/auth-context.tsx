@@ -6,7 +6,7 @@ import { toFrontendRole } from './types'
 import { fetchAgencyProfile, type AgencyFetchResult } from './agency-fetch'
 import { toast } from 'sonner'
 import { getSupabase } from '@/lib/supabase/client'
-import { apiClient, ApiError, getAccessToken, setAccessToken, setUnauthorizedHandler } from '@/lib/api/client'
+import { apiClient, ApiError, getAccessToken, setAccessToken, setUnauthorizedHandler, setTokenRefresher } from '@/lib/api/client'
 import {
   terminarSesion,
   purgarSesionLocal,
@@ -877,6 +877,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     })
     return () => setUnauthorizedHandler(null)
   }, [signOut])
+
+  // Un access token vencido se renueva acá antes de dar la sesión por muerta:
+  // el apiClient lo pide cuando el back contesta `AUTH_TOKEN_EXPIRED`
+  // (pestaña dormida, primera petición al volver). Si el refresh token
+  // también murió, Supabase devuelve error y el cliente sí cierra sesión.
+  useEffect(() => {
+    setTokenRefresher(async () => {
+      const supabase = getSupabase()
+      if (!supabase) return null
+      const { data, error } = await supabase.auth.refreshSession()
+      if (error || !data.session) return null
+      return data.session.access_token
+    })
+    return () => setTokenRefresher(null)
+  }, [])
 
   // `terminarSesion` corre fuera de React (lo dispara apiClient). Le pasamos
   // signOut para que la limpieza asíncrona —FCM, signOut de Supabase— también

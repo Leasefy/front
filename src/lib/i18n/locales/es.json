@@ -3353,6 +3353,11 @@
         "saleListingNotice": "Este inmueble está en venta: no lleva canon de arriendo, sólo la comisión que cobras por venderlo.",
         "cancel": "Cancelar",
         "confirm": "Guardar propietario",
+        "propietarioHint": "Podés elegir más de uno si el inmueble tiene varios dueños.",
+        "seleccionados": "{{n}} propietarios seleccionados",
+        "repartoTitle": "Reparto entre los dueños",
+        "repartoResto": "Le queda el resto: {{pct}}",
+        "repartoIguales": "Partes iguales",
         "toasts": {
           "successTitle": "Propietario asignado",
           "successDesc": "«{{title}}» ya tiene propietario y comisión, y quedó publicado.",
@@ -3398,6 +3403,10 @@
         "consignmentContractDesc": "PDF - Documento legal",
         "handoverReport": "Acta de entrega",
         "inventoryItemsCount": "{{count}} items en inventario",
+        "consignmentContractView": "Abrir el PDF",
+        "consignmentContractMissing": "Todavía no hay uno cargado",
+        "consignmentContractGenerate": "Generar desde una plantilla",
+        "handoverReportOpen": "Abrir el acta para imprimir",
         "gallery": "Galería ({{count}} fotos)",
         "photoAlt": "Foto {{number}}",
         "viewMorePhotos": "Ver {{count}} fotos más"
@@ -4079,6 +4088,8 @@
       }
     },
     "acta": {
+      "pageTitle": "Acta de entrega e inventario",
+      "backToProperty": "Volver a la ficha",
       "steps": {
         "info": "Información",
         "spaces": "Espacios",

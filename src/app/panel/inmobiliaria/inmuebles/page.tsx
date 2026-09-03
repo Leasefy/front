@@ -293,8 +293,10 @@ function PortafolioContent() {
   }, [router]);
 
   const handleEdit = useCallback((consignacion: Consignacion) => {
-    // Navigate to detail page where edit actions are available
-    router.push(`/panel/inmobiliaria/inmuebles/${consignacion.id}`);
+    // El formulario de edición vive en la ficha; `?editar=1` la abre con el
+    // modal ya desplegado. Antes «Editar» sólo llevaba a la ficha y había que
+    // volver a buscar el botón (Nico, 2026-09-03).
+    router.push(`/panel/inmobiliaria/inmuebles/${consignacion.id}?editar=1`);
   }, [router]);
 
   const handleNuevaConsignacion = useCallback(() => {

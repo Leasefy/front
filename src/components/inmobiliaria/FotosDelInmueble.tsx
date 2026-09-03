@@ -25,6 +25,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Images, Star, Trash, UploadSimple } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { Spinner } from '@/components/ui/spinner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { PROPERTY_PHOTO_MAX_COUNT } from '@/lib/api/property-photos';
@@ -49,6 +59,18 @@ export interface FotosDelInmuebleProps {
   onCambio?: () => void;
   /** Abrir la foto `indice` en grande (el visor lo pone la ficha, que también lo abre desde la portada). */
   onVer?: (indice: number) => void;
+}
+
+/**
+ * Lo que dice el back cabe en un toast sólo si es una frase. Un volcado de
+ * Prisma («Invalid `this.prisma…` invocation … Unique constraint failed») no
+ * le sirve a nadie en la pantalla: se deja el título y ya.
+ */
+function descripcionDelError(e: unknown): string | undefined {
+  if (!(e instanceof Error) || !e.message) return undefined;
+  const m = e.message.trim();
+  if (m.length > 160 || m.includes('\n') || m.startsWith('Invalid `')) return undefined;
+  return m;
 }
 
 export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmuebleProps) {
@@ -137,17 +159,28 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
     if (validas.length > 0) void subir(validas);
   };
 
+  // Quitar es irreversible: primero se pregunta (AlertDialog), después se borra.
+  // `porQuitar` es la foto que espera confirmación; null = diálogo cerrado.
+  const [porQuitar, setPorQuitar] = useState<Imagen | null>(null);
+
   const quitar = async (img: Imagen) => {
     setOcupada(img.id);
     try {
       await propertiesApi.deleteImage(propertyId, img.id);
       setImagenes((prev) => prev.filter((x) => x.id !== img.id));
+      toast.success('Foto quitada');
       onCambio?.();
     } catch (e) {
-      toast.error('No se pudo quitar la foto', { description: e instanceof Error ? e.message : undefined });
+      toast.error('No se pudo quitar la foto', { description: descripcionDelError(e) });
     } finally {
       setOcupada(null);
     }
+  };
+
+  const confirmarQuitar = async () => {
+    const img = porQuitar;
+    setPorQuitar(null);
+    if (img) await quitar(img);
   };
 
   const hacerPortada = async (img: Imagen) => {
@@ -156,13 +189,16 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
       const orden = [img.id, ...imagenes.filter((x) => x.id !== img.id).map((x) => x.id)];
       await propertiesApi.reorderImages(propertyId, orden);
       setImagenes((prev) => orden.map((id, i) => ({ ...prev.find((x) => x.id === id)!, order: i })));
+      toast.success('Portada actualizada');
       onCambio?.();
     } catch (e) {
-      toast.error('No se pudo cambiar la portada', { description: e instanceof Error ? e.message : undefined });
+      toast.error('No se pudo cambiar la portada', { description: descripcionDelError(e) });
     } finally {
       setOcupada(null);
     }
   };
+
+  const esLaPortada = porQuitar != null && imagenes[0]?.id === porQuitar.id;
 
   return (
     <section
@@ -260,7 +296,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
                   )}
                   <button
                     type="button"
-                    onClick={() => void quitar(img)}
+                    onClick={() => setPorQuitar(img)}
                     disabled={ocupada !== null}
                     className="rounded-md bg-white/90 p-1 text-danger hover:bg-white disabled:opacity-50"
                     aria-label={`Quitar la foto ${i + 1}`}
@@ -309,6 +345,28 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
           </p>
         )}
       </div>
+      <AlertDialog open={porQuitar !== null} onOpenChange={(abierto) => { if (!abierto) setPorQuitar(null); }}>
+        <AlertDialogContent data-testid="quitar-foto-dialogo">
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Quitar esta foto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se borra del inmueble y no se puede deshacer.
+              {esLaPortada ? ' La siguiente pasa a ser la portada.' : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={ocupada !== null}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              tone="danger"
+              disabled={ocupada !== null}
+              onClick={() => void confirmarQuitar()}
+              data-testid="quitar-foto-confirmar"
+            >
+              Quitar foto
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

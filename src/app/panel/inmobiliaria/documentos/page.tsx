@@ -2,6 +2,7 @@
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -182,7 +183,13 @@ function DocumentosContent() {
   const { consignaciones, isLoading: isLoadingConsignaciones } = useConsignaciones({ status: 'active' });
 
   // State
-  const [activeTab, setTab] = useState<DocTab>('documentos');
+  // `?tab=plantillas|actas` abre en esa pestaña: la ficha del inmueble manda
+  // acá a generar el contrato desde una plantilla.
+  const searchParams = useSearchParams();
+  const tabInicial = searchParams.get('tab');
+  const [activeTab, setTab] = useState<DocTab>(
+    tabInicial === 'plantillas' || tabInicial === 'actas' ? tabInicial : 'documentos',
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedActa, setSelectedActa] = useState<ActaEntrega | null>(null);
   const [isActaFormOpen, setIsActaFormOpen] = useState(false);

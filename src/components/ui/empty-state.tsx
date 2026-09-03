@@ -1,18 +1,22 @@
 import type { Icon } from '@phosphor-icons/react';
 import Link from 'next/link';
-import { EmptyState as CadenceEmptyState } from '@leasefy/cadence';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 /**
- * EmptyState — thin wrapper over the Cadence `EmptyState`.
+ * EmptyState — el estado vacío del panel.
  *
- * Renders the Cadence brand moment: a white Phosphor icon on the signature
- * grainy cobalt→cyan gradient tile, ink title + muted description, and an
- * optional CTA as a Cadence pill `Button` (secondary white pill, next/link).
+ * Antes delegaba en el `EmptyState` de cadence, que pinta el icono sobre una
+ * loseta con gradiente cobalto→cian. Nico (2026-09-03): «hay unos gradientes
+ * horribles en esos empty states… todo lo de empty states manejalo en grises
+ * como lo hemos hecho para otras opciones, y siempre todo encerrado en
+ * círculos». Como este wrapper es el único que importan las ~130 pantallas,
+ * el cambio de cara se hace acá una sola vez: icono en un círculo gris
+ * (`bg-surface-muted`), título en tinta, descripción apagada, CTA secundaria.
  *
- * The local prop API is preserved exactly so the 27 importers keep working:
- *   - `icon` is still a Phosphor `Icon` component (rendered as a node here).
- *   - `action` is still `{ label, href }` (mapped to the DS `action` slot).
+ * La API de props se conserva tal cual:
+ *   - `icon` sigue siendo un `Icon` de Phosphor.
+ *   - `action` sigue siendo `{ label, href }` o `{ label, onClick }`.
  */
 
 // ============================================================================
@@ -56,22 +60,31 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <CadenceEmptyState
-      icon={<IconComponent aria-hidden="true" />}
-      title={title}
-      description={description}
-      className={className}
-      action={
-        !action ? undefined : action.href ? (
-          <Button asChild variant="secondary" size="sm">
-            <Link href={action.href}>{action.label}</Link>
-          </Button>
-        ) : (
-          <Button variant="secondary" size="sm" onClick={action.onClick}>
-            {action.label}
-          </Button>
-        )
-      }
-    />
+    <div
+      className={cn('flex flex-col items-center justify-center px-6 py-12 text-center', className)}
+      data-testid="empty-state"
+    >
+      <span
+        className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-surface-muted text-fg-muted"
+        aria-hidden="true"
+      >
+        <IconComponent className="h-6 w-6" weight="duotone" />
+      </span>
+      <p className="text-[15px] font-semibold text-fg">{title}</p>
+      <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-fg-muted">{description}</p>
+      {action && (
+        <div className="mt-5">
+          {action.href ? (
+            <Button asChild variant="secondary" size="sm">
+              <Link href={action.href}>{action.label}</Link>
+            </Button>
+          ) : (
+            <Button variant="secondary" size="sm" onClick={action.onClick}>
+              {action.label}
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

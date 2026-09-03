@@ -1,8 +1,8 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -70,6 +70,17 @@ function AgentesContent() {
     sortBy: 'name',
   });
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // `?invitar=1` abre el formulario de una: es la puerta que ofrece el diálogo
+  // «Asignar agente» de la ficha cuando no hay equipo. Se limpia la URL para
+  // que un refresh no lo vuelva a abrir (mismo patrón que `/propietarios?nuevo`).
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get('invitar') === '1') {
+      setShowAddModal(true);
+      router.replace('/panel/inmobiliaria/configuracion/equipo', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   // Filter agentes
   const filteredAgentes = useMemo(() => {

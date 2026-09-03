@@ -149,11 +149,15 @@ export function ConsignacionHeader({
   const cantidadDeFotos = fotos?.length ?? 0;
   const portadaAbre = cantidadDeFotos > 0 && !!onVerFotos;
 
+  // `overflow-hidden` en el card y NINGÚN radio en la imagen: antes la imagen se
+  // recortaba sola con `rounded-l-xl` (32 px) dentro de un card `rounded-lg`
+  // (22 px) y las dos curvas nunca coincidían —se veía la costura abajo a la
+  // izquierda y la esquina de arriba sin redondear (Nico, 2026-09-03).
   return (
-    <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
-      <div className="flex flex-col lg:flex-row rounded-lg">
+    <div className="overflow-hidden rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
+      <div className="flex flex-col lg:flex-row">
         {/* Image/Thumbnail Section */}
-        <div className="relative w-full lg:w-80 xl:w-96 h-48 lg:h-auto shrink-0 bg-surface-muted dark:bg-ink overflow-hidden rounded-t-xl lg:rounded-t-none lg:rounded-l-xl">
+        <div className="relative w-full lg:w-80 xl:w-96 h-48 lg:h-auto shrink-0 bg-surface-muted dark:bg-ink overflow-hidden">
           {thumbnailUrl && portadaAbre ? (
             <button
               type="button"

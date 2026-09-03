@@ -5,7 +5,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { CaretLeft, Buildings, X, CalendarPlus } from '@phosphor-icons/react';
@@ -159,6 +159,7 @@ function Modal({
       className="fixed inset-0 z-[300]"
       style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
       data-lenis-prevent
+      data-testid="modal-ficha"
     >
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -215,7 +216,6 @@ function ConsignacionDetailContent() {
   const { t } = useI18n();
   const params = useParams();
   const router = useRouter();
-  const inventoryRef = useRef<HTMLDivElement>(null);
 
   const consignacionId = params.id as string;
 
@@ -240,6 +240,16 @@ function ConsignacionDetailContent() {
 
   // Use local state for consignacion to allow updates after edit
   const consignacion = consignacionData || fetchedConsignacion;
+
+  // `?editar=1` (el «Editar» del kebab de la lista) abre el formulario apenas
+  // hay datos, y se limpia la URL para que un refresh no lo vuelva a abrir.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (consignacion && searchParams.get('editar') === '1') {
+      setShowEditModal(true);
+      router.replace(`/panel/inmobiliaria/inmuebles/${consignacionId}`, { scroll: false });
+    }
+  }, [consignacion, searchParams, router, consignacionId]);
 
   const { propietario } = usePropietario(consignacion?.propietarioId);
   // Por `userId` o por `id`: el back guarda el del usuario y `getById`
@@ -419,10 +429,6 @@ function ConsignacionDetailContent() {
     [consignacion?.inventoryItems, guardarInventario, t],
   );
 
-  const handleViewInventory = useCallback(() => {
-    inventoryRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
-
   // Mientras se pide, un esqueleto con la forma de la ficha. Antes esto
   // salía directo a «Consignación no encontrada» durante la carga y recién
   // después aparecía el inmueble (Nico, 2026-09-02: «primero sale esto y
@@ -584,17 +590,13 @@ function ConsignacionDetailContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <DocumentsSection
-              consignacion={consignacion}
-              onViewInventory={handleViewInventory}
-            />
+            <DocumentsSection consignacion={consignacion} />
           </motion.div>
         </div>
 
         {/* Right Column - Sidebar (1/3) */}
         <div className="space-y-6">
           <motion.div
-            ref={inventoryRef}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
@@ -602,6 +604,7 @@ function ConsignacionDetailContent() {
             <ActaEntregaView
               inventoryItems={consignacion.inventoryItems}
               contractDate={consignacion.contractDate}
+              onPrint={() => router.push(`/panel/inmobiliaria/inmuebles/${consignacionId}/acta`)}
               onAddItem={() => setItemDeInventario(null)}
               onEditItem={(item) => setItemDeInventario(item)}
               onDeleteItem={handleQuitarItem}

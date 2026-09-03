@@ -16,6 +16,11 @@
  *
  * Regla que también manda acá: un requisito que NO se pudo medir jamás se
  * pinta en verde. El micro lo reporta con su motivo y acá se ve como falta.
+ *
+ * ── Oculto del render (T-0051, 2026-09-02) ─────────────────────────────────
+ * El botón que abre este panel se sacó de `page.tsx` — decisión de producto
+ * temporal, no un borrado. El componente y su hook (`use-piloto-preparacion`)
+ * quedan intactos para reactivarlo con un solo import cuando corresponda.
  */
 
 import {

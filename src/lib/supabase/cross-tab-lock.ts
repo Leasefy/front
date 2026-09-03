@@ -1,4 +1,5 @@
 import type { LockFunc } from '@supabase/supabase-js'
+import { NavigatorLockAcquireTimeoutError } from '@supabase/supabase-js'
 
 /**
  * El lock que serializa las operaciones de auth de Supabase ENTRE PESTAÑAS.
@@ -32,19 +33,40 @@ import type { LockFunc } from '@supabase/supabase-js'
  * Este lock hace lo mismo que el nativo pero traduce ese abort al contrato
  * documentado de auth-js: un error con `isAcquireTimeout: true`. Así el timeout
  * vuelve a ser algo que auth-js sabe manejar, y NO perdemos la serialización.
+ *
+ * ── Corrección T-0052: la propiedad NO alcanza con la versión instalada ────
+ *
+ * El JSDoc de `@supabase/auth-js` (`lib/locks.ts`) dice: «Use the
+ * `isAcquireTimeout` property instead of checking with `instanceof`». Eso es
+ * aspiracional, no lo que hace el código. `GoTrueClient#_autoRefreshTokenTick`
+ * —el único consumidor real de un lock con `acquireTimeout === 0`— atrapa así
+ * (`GoTrueClient.js`, auth-js 2.106.2):
+ *
+ *   catch (e) {
+ *     if (e instanceof locks_1.LockAcquireTimeoutError) { ... }
+ *     else { throw e; }
+ *   }
+ *
+ * Un `instanceof`, no la propiedad. Un error propio que sólo lleva
+ * `isAcquireTimeout: true` pero no desciende de la clase que auth-js exporta
+ * NO se atrapa ahí: se re-lanza desde el `setTimeout`/`setInterval` que
+ * dispara el tick (nadie los espera), y sale como promesa rechazada sin
+ * dueño — el "Unhandled Runtime Error" que Next linkea en el overlay de dev
+ * (y un `Uncaught (in promise)` silencioso en producción). Por eso el error
+ * de este módulo desciende de `NavigatorLockAcquireTimeoutError`, la clase
+ * que auth-js SÍ exporta y SÍ reconoce por `instanceof` — la propiedad queda
+ * además, heredada, por si algún consumidor la revisa por su cuenta.
  */
 
 /**
  * Error de "no pude tomar el lock a tiempo".
  *
- * auth-js documenta el contrato por PROPIEDAD, no por clase: «An error is a
- * timeout if it has `isAcquireTimeout` set to true». Por eso alcanza con la
- * marca y no hace falta importar su clase interna (que además no está
- * re-exportada por `@supabase/supabase-js`).
+ * Desciende de `NavigatorLockAcquireTimeoutError` (re-exportada por
+ * `@supabase/supabase-js` desde `@supabase/auth-js`) — es la clase que
+ * `_autoRefreshTokenTick` reconoce por `instanceof`. Ver el comentario de
+ * arriba: la propiedad `isAcquireTimeout` sola no alcanza.
  */
-class LockAcquireTimeout extends Error {
-  readonly isAcquireTimeout = true
-
+class LockAcquireTimeout extends NavigatorLockAcquireTimeoutError {
   constructor(name: string) {
     super(`No se pudo tomar el lock de auth "${name}" a tiempo`)
     this.name = 'LockAcquireTimeoutError'

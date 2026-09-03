@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, type CSSProperties } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { X } from '@phosphor-icons/react';
@@ -26,6 +26,20 @@ import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre';
  */
 const POSTER = '/brand/login-poster.jpg';
 
+/**
+ * Cuánto mide el panel del video en escritorio.
+ *
+ * El video es 16:9 y el panel va a toda la altura, así que su ancho «natural»
+ * es `100vh × 16/9`: con eso se ve entero, sin recortar los lados. Antes era
+ * un 52 % fijo y en un portátil se perdía la mitad del cuadro (Nico,
+ * 2026-09-03: «al hacerlo así se pierde mucho del video, empujá a la derecha
+ * todo el formulario»). El tope de `100vw − 30rem` le deja al formulario su
+ * columna de 480 px (400 de formulario + 40 de aire a cada lado); en una
+ * pantalla 16:9 el video queda apenas recortado, en una más alta se ve
+ * completo.
+ */
+const ANCHO_DEL_VIDEO = 'min(calc(100vh * 16 / 9), calc(100vw - 30rem))';
+
 function VideoDeMarca() {
   return (
     <>
@@ -36,7 +50,7 @@ function VideoDeMarca() {
         fill
         priority
         quality={90}
-        sizes="52vw"
+        sizes="(min-width: 1024px) 80vw, 100vw"
         className="object-cover object-center"
       />
       <video
@@ -88,6 +102,7 @@ export default function AuthPage() {
     <ForceLightMode>
       <div
         className="flex min-h-screen flex-col bg-background lg:flex-row"
+        style={{ '--video-w': ANCHO_DEL_VIDEO } as CSSProperties}
         data-lenis-prevent
       >
         {/* ── Izquierda: la obra, sola ──────────────────────────────────── */}
@@ -97,12 +112,12 @@ export default function AuthPage() {
           capa que lo ensucia. El fondo es el tono del propio video, así que
           mientras carga no hay un rectángulo fuera de tono.
         */}
-        <div className="relative hidden overflow-hidden bg-[#0c1a2b] lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-[52%]">
+        <div className="relative hidden overflow-hidden bg-[#0c1a2b] lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-[var(--video-w)]">
           <VideoDeMarca />
         </div>
 
         {/* ── Derecha: el formulario ────────────────────────────────────── */}
-        <div className="relative w-full bg-background lg:ml-[52%] lg:w-[48%]">
+        <div className="relative w-full bg-background lg:ml-[var(--video-w)] lg:w-[calc(100%-var(--video-w))]">
           {/*
            * Una ✕ de cerrar, no un «← Inicio».
            *
@@ -126,7 +141,7 @@ export default function AuthPage() {
             <X size={16} weight="bold" aria-hidden="true" />
           </Link>
 
-          <div className="flex min-h-screen flex-col px-6 py-6 sm:px-10 sm:py-8 lg:px-16">
+          <div className="flex min-h-screen flex-col px-6 py-6 sm:px-10 sm:py-8">
             {/* En móvil no hay panel izquierdo: la marca tiene que estar acá
                 o la pantalla no dice de quién es. La fila mide lo que mide la
                 ✕ (32px) para que las dos queden a la misma altura. */}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { conRegreso } from '@/lib/nav/ruta-de-regreso';
 import { motion } from 'framer-motion';
@@ -20,9 +21,13 @@ import {
   ArrowsClockwise,
   HouseLine,
   Users,
+  UploadSimple,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { toast } from 'sonner';
+import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
+import { ApiError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { IconButton } from '@leasefy/cadence';
@@ -536,7 +541,11 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
 
 interface DocumentsSectionProps {
   consignacion: Consignacion;
+  /** Después de adjuntar o reemplazar el contrato: la ficha se recarga. */
+  onActualizado?: () => void;
 }
+
+const MAX_PDF_BYTES = 10 * 1024 * 1024;
 
 /**
  * Documentos del inmueble — filas que hacen algo, o dicen por qué no.
@@ -545,56 +554,112 @@ interface DocumentsSectionProps {
  * y ese otro documento ¿qué es? ¿eso está mockeado?»): el contrato era un
  * botón deshabilitado «Próximamente» y el acta hacía scroll a una tarjeta que
  * ya estaba a la vista. Ahora:
- *   · Contrato de consignación: si hay PDF cargado, lo abre; si no, lo dice y
- *     lleva a generarlo desde una plantilla en Documentos.
- *   · Acta de entrega: abre la hoja imprimible (`/inmuebles/[id]/acta`).
+ *   · Contrato de consignación: es el PDF que la inmobiliaria firmó con el
+ *     propietario. Se ADJUNTA (PDF, hasta 10 MB) y de ahí en más la fila lo
+ *     abre; «Reemplazar» sube otro. No se genera desde una plantilla: el
+ *     producto no tiene plantilla de contrato y un contrato no se inventa.
+ *   · Acta de entrega: abre la hoja imprimible (`/inmuebles/[id]/acta`), que
+ *     también se baja como PDF.
  */
-export function DocumentsSection({ consignacion }: DocumentsSectionProps) {
+export function DocumentsSection({ consignacion, onActualizado }: DocumentsSectionProps) {
   const { t } = useI18n();
+  const k = (s: string) => `inmobiliaria.consignaciones.detail.${s}`;
   const hasPhotos = consignacion.photosUrls && consignacion.photosUrls.length > 0;
   const filaClase =
     'w-full flex items-center gap-3 p-3 rounded-lg bg-surface-muted dark:bg-bg hover:bg-surface-hover dark:hover:bg-ink transition-colors text-left';
   const itemsDeInventario = consignacion.inventoryItems?.length || 0;
 
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [subiendo, setSubiendo] = useState(false);
+
+  const elegirPdf = () => inputRef.current?.click();
+
+  const alElegir = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Que el mismo archivo se pueda volver a elegir después de un fallo.
+    e.target.value = '';
+    if (!file) return;
+    if (file.type !== 'application/pdf' || file.size > MAX_PDF_BYTES) {
+      toast.error(t(k('consignmentContractOnlyPdf')));
+      return;
+    }
+    setSubiendo(true);
+    try {
+      await consignacionesApi.subirContrato(consignacion.id, file);
+      toast.success(t(k('consignmentContractUploaded')));
+      onActualizado?.();
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) return;
+      toast.error(t(k('consignmentContractUploadError')), {
+        description: err instanceof ApiError && err.message.length < 160 ? err.message : undefined,
+      });
+    } finally {
+      setSubiendo(false);
+    }
+  };
+
   return (
-    <SectionCard title={t('inmobiliaria.consignaciones.detail.documents')} icon={<FileText className="w-4 h-4" />}>
+    <SectionCard title={t(k('documents'))} icon={<FileText className="w-4 h-4" />}>
       <div className="space-y-3">
         {consignacion.consignmentContractUrl ? (
-          <a
-            href={consignacion.consignmentContractUrl}
-            target="_blank"
-            rel="noreferrer"
-            className={filaClase}
-            data-testid="documento-contrato"
-          >
-            <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center">
-              <FileText className="w-5 h-5 text-fg-muted" weight="duotone" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-fg text-sm">{t('inmobiliaria.consignaciones.detail.consignmentContract')}</p>
-              <p className="text-xs text-fg-muted">{t('inmobiliaria.consignaciones.detail.consignmentContractView')}</p>
-            </div>
-            <ArrowRight className="w-4 h-4 text-fg-subtle" />
-          </a>
+          <div className="flex items-center gap-2">
+            <a
+              href={consignacion.consignmentContractUrl}
+              target="_blank"
+              rel="noreferrer"
+              className={filaClase}
+              data-testid="documento-contrato"
+            >
+              <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center">
+                <FileText className="w-5 h-5 text-fg-muted" weight="duotone" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-fg text-sm">{t(k('consignmentContract'))}</p>
+                <p className="text-xs text-fg-muted">{t(k('consignmentContractView'))}</p>
+              </div>
+              <ArrowRight className="w-4 h-4 text-fg-subtle" />
+            </a>
+            <button
+              type="button"
+              onClick={elegirPdf}
+              disabled={subiendo}
+              className="shrink-0 px-2 text-xs text-fg-muted underline-offset-2 hover:text-fg hover:underline disabled:opacity-50"
+              data-testid="documento-contrato-reemplazar"
+            >
+              {subiendo ? t(k('consignmentContractUploading')) : t(k('consignmentContractReplace'))}
+            </button>
+          </div>
         ) : (
-          <Link
-            href="/panel/inmobiliaria/documentos?tab=plantillas"
-            className={filaClase}
-            data-testid="documento-contrato-generar"
+          <button
+            type="button"
+            onClick={elegirPdf}
+            disabled={subiendo}
+            className={cn(filaClase, 'disabled:opacity-60')}
+            data-testid="documento-contrato-adjuntar"
           >
             <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center">
               <FileText className="w-5 h-5 text-fg-muted" weight="duotone" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-fg text-sm">{t('inmobiliaria.consignaciones.detail.consignmentContract')}</p>
+              <p className="font-medium text-fg text-sm">{t(k('consignmentContract'))}</p>
               <p className="text-xs text-fg-muted">
-                {t('inmobiliaria.consignaciones.detail.consignmentContractMissing')} ·{' '}
-                <span className="text-primary">{t('inmobiliaria.consignaciones.detail.consignmentContractGenerate')}</span>
+                {t(k('consignmentContractMissing'))} ·{' '}
+                <span className="text-primary">
+                  {subiendo ? t(k('consignmentContractUploading')) : t(k('consignmentContractAttach'))}
+                </span>
               </p>
             </div>
-            <ArrowRight className="w-4 h-4 text-fg-subtle" />
-          </Link>
+            <UploadSimple className="w-4 h-4 text-fg-subtle" />
+          </button>
         )}
+        <input
+          ref={inputRef}
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          onChange={(e) => void alElegir(e)}
+          data-testid="documento-contrato-input"
+        />
 
         <Link
           href={`/panel/inmobiliaria/inmuebles/${consignacion.id}/acta`}
@@ -605,10 +670,10 @@ export function DocumentsSection({ consignacion }: DocumentsSectionProps) {
             <FileText className="w-5 h-5 text-fg-muted" weight="duotone" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-fg text-sm">{t('inmobiliaria.consignaciones.detail.handoverReport')}</p>
+            <p className="font-medium text-fg text-sm">{t(k('handoverReport'))}</p>
             <p className="text-xs text-fg-muted">
-              {t('inmobiliaria.consignaciones.detail.inventoryItemsCount', { count: itemsDeInventario })} ·{' '}
-              <span className="text-primary">{t('inmobiliaria.consignaciones.detail.handoverReportOpen')}</span>
+              {t(k('inventoryItemsCount'), { count: itemsDeInventario })} ·{' '}
+              <span className="text-primary">{t(k('handoverReportOpen'))}</span>
             </p>
           </div>
           <ArrowRight className="w-4 h-4 text-fg-subtle" />

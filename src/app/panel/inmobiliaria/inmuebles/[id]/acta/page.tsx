@@ -10,12 +10,19 @@
  * el estado de cada ítem y los espacios para firmar. Se imprime con el botón
  * (o Ctrl+P): el `<style>` de abajo esconde el panel al imprimir.
  *
- * Es de sólo lectura: el inventario se edita en la ficha.
+ * «Descargar PDF» la baja como archivo: el back renderiza la misma hoja
+ * (`GET /consignaciones/:id/acta.pdf`). Es de sólo lectura: el inventario se
+ * edita en la ficha.
  */
 
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Printer } from '@phosphor-icons/react';
+import { toast } from 'sonner';
+import { ArrowLeft, DownloadSimple, Printer, SpinnerGap } from '@phosphor-icons/react';
+import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
+import { ApiError } from '@/lib/api/client';
+import { descargar } from '@/lib/propietarios/exportar-datos';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useConsignacion, usePropietario } from '@/lib/hooks/useInmobiliaria';
@@ -41,6 +48,22 @@ export default function ActaDeEntregaPage() {
   const { agency } = useAuth();
   const { consignacion, isLoading, error, refetch } = useConsignacion(consignacionId);
   const { propietario } = usePropietario(consignacion?.propietarioId);
+  const [bajando, setBajando] = useState(false);
+
+  const bajarPdf = async () => {
+    if (!consignacion) return;
+    setBajando(true);
+    try {
+      const blob = await consignacionesApi.getActaPdf(consignacion.id);
+      descargar(blob, `acta-entrega-${consignacion.propertyCode ?? consignacion.id.slice(0, 8)}.pdf`);
+    } catch (err) {
+      toast.error(t('inmobiliaria.acta.downloadError'), {
+        description: err instanceof ApiError && err.message.length < 160 ? err.message : undefined,
+      });
+    } finally {
+      setBajando(false);
+    }
+  };
 
   const condicion: Record<InventoryItem['condition'], string> = {
     excellent: t('inmobiliaria.acta.condExcellent'),
@@ -72,10 +95,16 @@ export default function ActaDeEntregaPage() {
           <ArrowLeft className="h-4 w-4" />
           {t('inmobiliaria.acta.backToProperty')}
         </Link>
-        <Button hideArrow onClick={() => window.print()} disabled={!consignacion} data-testid="acta-imprimir">
-          <Printer className="h-4 w-4" />
-          {t('inmobiliaria.acta.print')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" hideArrow onClick={() => window.print()} disabled={!consignacion} data-testid="acta-imprimir">
+            <Printer className="h-4 w-4" />
+            {t('inmobiliaria.acta.print')}
+          </Button>
+          <Button hideArrow onClick={() => void bajarPdf()} disabled={!consignacion || bajando} data-testid="acta-descargar">
+            {bajando ? <SpinnerGap className="h-4 w-4 animate-spin" /> : <DownloadSimple className="h-4 w-4" />}
+            {t('inmobiliaria.acta.downloadPdf')}
+          </Button>
+        </div>
       </div>
 
       <EstadoDeDatos

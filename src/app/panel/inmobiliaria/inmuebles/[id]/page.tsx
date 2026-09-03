@@ -265,6 +265,17 @@ function ConsignacionDetailContent() {
     refetch: refetchProperty,
   } = useProperty(consignacion?.propertyId);
 
+  // Después de adjuntar el contrato la ficha vuelve a leer el mandato. Va a
+  // la copia local (`consignacionData`), que gana sobre lo que trae el hook:
+  // refrescar el hook solo no cambiaba nada en pantalla.
+  const recargarConsignacion = useCallback(async () => {
+    try {
+      setConsignacionData(await consignacionesApi.getById(consignacionId));
+    } catch {
+      // La subida ya avisó por su lado; si la relectura falla, el refresh la trae.
+    }
+  }, [consignacionId]);
+
   // Handlers
   const handleEdit = useCallback(() => {
     setShowEditModal(true);
@@ -590,7 +601,7 @@ function ConsignacionDetailContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <DocumentsSection consignacion={consignacion} />
+            <DocumentsSection consignacion={consignacion} onActualizado={() => void recargarConsignacion()} />
           </motion.div>
         </div>
 

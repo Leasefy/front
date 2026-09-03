@@ -12,19 +12,55 @@ import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre';
 
 /**
- * La obra de marca que ocupa el panel izquierdo.
+ * La obra de marca del panel izquierdo: un video corto en bucle.
  *
- * Va con `next/image` y no como `background-image`: ahora que no hay nada
- * encima, la única tarea del panel es mostrarla bien. `next/image` sirve la
- * variante del tamaño del dispositivo (y en WebP donde se pueda) en vez de
- * mandar el JPEG entero para que el navegador lo reescale.
+ * Nico (2026-09-03): en vez de la imagen, el video, «comprimido sin que
+ * pierda calidad y con un loop suave». Está codificado con el último segundo
+ * fundido sobre el primero (`xfade` en ffmpeg), así que cuando `loop` lo
+ * reinicia no hay corte: el cuadro final ES el cuadro inicial. WebM (VP9,
+ * 2 MB) para quien lo soporte y MP4 (H.264 CRF 18, 4 MB) de respaldo; el
+ * póster es el primer cuadro, para que no haya un rectángulo vacío mientras
+ * baja. Sin sonido y `playsInline`: es lo que permite el autoplay en todos
+ * los navegadores. Con `prefers-reduced-motion` el video se esconde y queda
+ * el póster.
  */
-const ARTE = '/brand/login.jpg';
+const POSTER = '/brand/login-poster.jpg';
+
+function VideoDeMarca() {
+  return (
+    <>
+      <Image
+        src={POSTER}
+        alt=""
+        aria-hidden="true"
+        fill
+        priority
+        quality={90}
+        sizes="52vw"
+        className="object-cover object-center"
+      />
+      <video
+        className="absolute inset-0 h-full w-full object-cover object-center motion-reduce:hidden"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        poster={POSTER}
+        aria-hidden="true"
+        tabIndex={-1}
+        data-testid="auth-video"
+      >
+        <source src="/brand/login-loop.webm" type="video/webm" />
+        <source src="/brand/login-loop.mp4" type="video/mp4" />
+      </video>
+    </>
+  );
+}
 
 function AuthFormFallback() {
   return (
     <div className="w-full animate-pulse">
-      <div className="mb-4 h-3 w-16 rounded bg-muted" />
       <div className="mb-2 h-8 w-60 rounded bg-muted" />
       <div className="mb-9 h-4 w-64 rounded bg-muted" />
       <div className="space-y-4">
@@ -57,80 +93,53 @@ export default function AuthPage() {
         {/* ── Izquierda: la obra, sola ──────────────────────────────────── */}
         {/*
           Nada encima: ni logotipo, ni frase, ni velos. La marca ya está en el
-          formulario de al lado, y cada capa que se le pone a la obra es una
-          capa que la ensucia. El crema de base es el de la propia pieza, así
-          que mientras carga no hay un rectángulo gris fuera de tono.
+          formulario de al lado, y cada capa que se le pone al video es una
+          capa que lo ensucia. El fondo es el tono del propio video, así que
+          mientras carga no hay un rectángulo fuera de tono.
         */}
-        <div className="relative hidden overflow-hidden bg-[#EFE9E1] lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-[52%]">
-          <Image
-            src={ARTE}
-            alt=""
-            aria-hidden="true"
-            fill
-            priority
-            quality={92}
-            sizes="52vw"
-            className="object-cover object-center"
-          />
+        <div className="relative hidden overflow-hidden bg-[#0c1a2b] lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-[52%]">
+          <VideoDeMarca />
         </div>
 
         {/* ── Derecha: el formulario ────────────────────────────────────── */}
-        <div className="w-full bg-background lg:ml-[52%] lg:w-[48%]">
+        <div className="relative w-full bg-background lg:ml-[52%] lg:w-[48%]">
+          {/*
+           * Una ✕ de cerrar, no un «← Inicio».
+           *
+           * Entrar a la pantalla de acceso es abrir algo encima del sitio, y
+           * lo que se abre se cierra: la ✕ dice eso sin leerse. Va en la
+           * esquina del panel —bien a la derecha, con el mismo aire que tiene
+           * arriba (Nico, 2026-09-03)— y no dentro de la columna del
+           * formulario, donde quedaba a mitad de pantalla.
+           *
+           * Es EL chip del producto (`ASPA_DE_CIERRE`), el mismo que cierra
+           * los 40 modales, y no un dibujo propio de esta pantalla: acá hubo
+           * un aro de trazo fino flotando en el aire que no se leía como botón.
+           */}
+          <Link
+            href="/"
+            aria-label="Cerrar y volver al inicio"
+            title="Cerrar"
+            className={`${ASPA_DE_CIERRE} absolute right-6 top-6 z-10 sm:right-8 sm:top-8`}
+            data-testid="auth-cerrar"
+          >
+            <X size={16} weight="bold" aria-hidden="true" />
+          </Link>
+
           <div className="flex min-h-screen flex-col px-6 py-6 sm:px-10 sm:py-8 lg:px-16">
-            <div className="mx-auto flex w-full max-w-[400px] items-center justify-between">
-              {/* En móvil no hay panel izquierdo: la marca tiene que estar acá
-                  o la pantalla no dice de quién es. */}
+            {/* En móvil no hay panel izquierdo: la marca tiene que estar acá
+                o la pantalla no dice de quién es. La fila mide lo que mide la
+                ✕ (32px) para que las dos queden a la misma altura. */}
+            <div className="mx-auto flex h-8 w-full max-w-[400px] items-center">
               <BrandHomeLink className="inline-flex items-center lg:hidden">
                 <LeasefyLogotype size={20} className="text-fg" title="Leasefy" />
               </BrandHomeLink>
-
-              {/*
-               * Una ✕ de cerrar, no un «← Inicio».
-               *
-               * Entrar a la pantalla de acceso es abrir algo encima del sitio,
-               * y lo que se abre se cierra: la ✕ dice eso sin leerse. Va a la
-               * DERECHA —donde vive el cerrar en la web— y `ml-auto` la
-               * mantiene ahí también en escritorio, donde la marca de al lado
-               * está oculta y sin eso se iría al borde izquierdo.
-               *
-               * Es EL chip del producto (`ASPA_DE_CIERRE`), el mismo que cierra
-               * los 40 modales, y no un dibujo propio de esta pantalla: acá
-               * hubo un aro de trazo fino flotando en el aire que no se leía
-               * como botón.
-               */}
-              <Link
-                href="/"
-                aria-label="Cerrar y volver al inicio"
-                title="Cerrar"
-                className={`${ASPA_DE_CIERRE} ml-auto`}
-                data-testid="auth-cerrar"
-              >
-                <X size={16} weight="bold" aria-hidden="true" />
-              </Link>
             </div>
 
             <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center py-12">
               <Suspense fallback={<AuthFormFallback />}>
                 <AuthForm />
               </Suspense>
-
-              <p className="mt-10 text-[11.5px] leading-relaxed text-fg-subtle">
-                Al continuar, aceptás nuestros{' '}
-                <Link
-                  href="/terminos"
-                  className="text-fg-muted underline-offset-2 hover:text-fg hover:underline"
-                >
-                  Términos
-                </Link>{' '}
-                y la{' '}
-                <Link
-                  href="/privacidad"
-                  className="text-fg-muted underline-offset-2 hover:text-fg hover:underline"
-                >
-                  Política de Privacidad
-                </Link>
-                .
-              </p>
             </div>
           </div>
         </div>

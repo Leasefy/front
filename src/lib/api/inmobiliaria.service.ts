@@ -559,6 +559,40 @@ export const consignacionesApi = {
     return normalizeConsignacion(raw);
   },
 
+  /** El acta de entrega e inventario del inmueble, como PDF para bajar. */
+  async getActaPdf(id: string): Promise<Blob> {
+    return apiClient.getBlob(`${BASE}/consignaciones/${id}/acta.pdf`);
+  },
+
+  /**
+   * Adjunta el PDF firmado del contrato de consignación (multipart `file`).
+   * Devuelve la URL firmada con la que se abre. El contrato no se genera:
+   * no hay plantilla en el producto y un contrato no se inventa.
+   */
+  async subirContrato(id: string, file: File): Promise<{ consignmentContractUrl: string }> {
+    const token = getAccessToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    let res: Response;
+    try {
+      res = await fetch(`${BACKEND_URL}${BASE}/consignaciones/${id}/contrato`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+    } catch (err) {
+      throw new ApiError(0, `No pudimos conectarnos al servidor. ${err instanceof Error ? err.message : String(err)}`);
+    }
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { message?: unknown };
+      throw new ApiError(
+        res.status,
+        typeof body.message === 'string' ? body.message : 'No se pudo adjuntar el contrato',
+      );
+    }
+    return res.json();
+  },
+
   /**
    * El mandato de `/inmuebles/:id`, venga el id que venga.
    *

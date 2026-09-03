@@ -44,10 +44,10 @@ export default function PilotoProcesosPage() {
               {t('inmobiliaria.piloto.procesos.volver')}
             </Link>
           </Button>
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.piloto.procesos.titulo')}
           </h1>
-          <p className="max-w-2xl text-sm text-fg-muted">{t('inmobiliaria.piloto.procesos.descripcion')}</p>
+          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">{t('inmobiliaria.piloto.procesos.descripcion')}</p>
         </div>
       </header>
 

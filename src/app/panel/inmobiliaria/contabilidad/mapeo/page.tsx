@@ -20,8 +20,8 @@ export default function MapeoContablePage() {
             Contabilidad
           </Link>
           <SectionLabel>Finanzas</SectionLabel>
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">Mapeo contable</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
+          <h1 className="text-h2 text-fg">Mapeo contable</h1>
+          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
             A qué cuenta del PUC va cada movimiento que el sistema asienta solo: los recibos de caja
             cuando entran, su reversa cuando se anulan y los giros a propietarios cuando el banco
             paga el lote. Sin una cuenta en un evento, ese asiento no se genera.

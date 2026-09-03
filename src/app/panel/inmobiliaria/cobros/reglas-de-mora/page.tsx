@@ -30,8 +30,8 @@ export default function ReglasDeMoraPage() {
             Volver a cobros
           </Link>
           <SectionLabel>Cobros</SectionLabel>
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">Reglas de mora</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
+          <h1 className="text-h2 text-fg">Reglas de mora</h1>
+          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
             Se aplican en orden, de arriba abajo, sobre cada cobro vencido: primero corre el interés
             pasados los días de plazo y después, si la regla existe, el gasto administrativo. Lo que
             cada una agrega queda como línea propia en el estado de cuenta del inquilino.

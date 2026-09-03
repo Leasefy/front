@@ -849,7 +849,7 @@ export default function ArcoDetailPage({ params }: ArcoDetailPageProps) {
           deducirlo del último evento del timeline. */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.arco.detail.title')}
           </h1>
           <ArcoStatusBadge status={detail.status} />

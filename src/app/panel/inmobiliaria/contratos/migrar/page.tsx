@@ -38,10 +38,10 @@ export default function MigrarContratosPage() {
             Contratos
           </Link>
           <Eyebrow>Portafolio</Eyebrow>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-h2 text-fg">
             Migrar contratos
           </h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
+          <p className="max-w-2xl text-sm text-muted-foreground line-clamp-2">
             Traé los contratos que ya tenés en otro sistema, con sus inquilinos
             y su cartera. Entran vigentes y firmados: no hay que volver a
             firmarlos.{' '}

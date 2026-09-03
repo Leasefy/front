@@ -39,8 +39,8 @@ function NuevaFacturaContent() {
 
       <header className="space-y-1.5">
         <SectionLabel>{t(k('label'))}</SectionLabel>
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">{t(k('title'))}</h1>
-        <p className="text-sm text-fg-muted max-w-2xl">{t(k('subtitle'))}</p>
+        <h1 className="text-h2 text-fg">{t(k('title'))}</h1>
+        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">{t(k('subtitle'))}</p>
       </header>
 
       <section className="rounded-lg border border-border bg-card p-5 lg:p-6 max-w-5xl">

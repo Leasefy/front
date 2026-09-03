@@ -193,8 +193,8 @@ function EquipoCobranzaContent() {
     <main className="p-6 lg:p-8 space-y-8">
       {/* Header */}
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">Equipo IA de cobranza</h1>
-        <p className="text-sm text-fg-muted max-w-2xl">
+        <h1 className="text-h2 text-fg">Equipo IA de cobranza</h1>
+        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
           Un equipo de IA coordina la recuperación de cartera de punta a punta: contacta, registra
           promesas, propone acuerdos, escala casos críticos y reporta a los propietarios.
         </p>

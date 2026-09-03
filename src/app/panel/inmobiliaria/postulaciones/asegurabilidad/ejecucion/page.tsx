@@ -204,10 +204,10 @@ function AsegurabilidadEjecucion() {
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             {t(`${NS}.title`, 'Ejecución en tiempo real')}
           </h1>
-          <p className="text-sm text-fg-muted mt-1 max-w-2xl">
+          <p className="text-sm text-fg-muted mt-1 max-w-2xl line-clamp-2">
             {t(
               `${NS}.subtitle`,
               'Cuando ejecutas una consulta, cada aseguradora avanza en paralelo por su propio estado. Aquí verás el progreso en vivo de cada una.',

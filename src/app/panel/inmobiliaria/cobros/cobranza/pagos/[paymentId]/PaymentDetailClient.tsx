@@ -144,7 +144,7 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
     return (
       <main className="p-4 lg:p-8 max-w-3xl mx-auto space-y-6">
         <BackLink />
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">Detalle de pago</h1>
+        <h1 className="text-h2 text-fg">Detalle de pago</h1>
         <EmptyState
           icon={CurrencyCircleDollar}
           title="Pago no disponible"
@@ -168,8 +168,8 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
 
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">Detalle de pago</h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <h1 className="text-h2 text-fg">Detalle de pago</h1>
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             Información del pago, su estado y verificación.
           </p>
         </div>

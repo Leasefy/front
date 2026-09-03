@@ -242,8 +242,8 @@ export default function PostulacionesPage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-semibold text-fg">Postulaciones</h1>
-        <p className="text-sm text-fg-muted mt-0.5">
+        <h1 className="text-h2 text-fg">Postulaciones</h1>
+        <p className="text-sm text-fg-muted mt-0.5 line-clamp-2 max-w-2xl">
           Postulaciones de inquilinos a tus propiedades. Haz clic en una para revisarla y decidir.
         </p>
       </div>

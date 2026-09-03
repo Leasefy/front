@@ -152,10 +152,10 @@ export default function PilotoPage() {
       {/* Encabezado — mismo patrón que el resto del panel (ver cabecera) */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.piloto.titulo')}
           </h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
+          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
             {t('inmobiliaria.piloto.descripcion')}
           </p>
         </div>

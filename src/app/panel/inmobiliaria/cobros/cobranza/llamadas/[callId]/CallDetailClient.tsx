@@ -215,7 +215,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
         </Link>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-fg tracking-tight">
+            <h1 className="text-h2 text-fg">
               {data.debtorNameMasked}
             </h1>
             <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-fg-muted">

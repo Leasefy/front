@@ -256,10 +256,10 @@ function ConciliacionCola() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.workspace.pages.conciliacion.colaTitle')}
           </h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             {t('inmobiliaria.ai.workspace.pages.conciliacion.colaDesc')}
           </p>
         </div>

@@ -61,10 +61,10 @@ function PagosCaso() {
   // ── Encabezado común (título + descripción) ────────────────────────────────
   const header = (
     <header className="space-y-2">
-      <h1 className="text-2xl font-semibold tracking-tight text-fg">
+      <h1 className="text-h2 text-fg">
         {data ? data.item.titulo : 'Detalle del pago'}
       </h1>
-      <p className="max-w-2xl text-sm text-fg-muted">
+      <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
         Contexto, actividad y la recomendación de la IA para este pago. Las acciones se aprueban
         con control humano.
       </p>

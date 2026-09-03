@@ -449,10 +449,10 @@ function OperacionesContent() {
           ningún menú. */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             {ENCABEZADO[activeTab].titulo}
           </h1>
-          <p className="text-sm text-fg-muted max-w-2xl">{ENCABEZADO[activeTab].bajada}</p>
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">{ENCABEZADO[activeTab].bajada}</p>
         </div>
         {/* La acción principal va arriba a la derecha, como en el resto de las
             páginas (Inmuebles, Contratos…). Antes estaba metida en la barra de

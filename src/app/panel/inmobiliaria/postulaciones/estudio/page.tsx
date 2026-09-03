@@ -58,10 +58,10 @@ function EstudioOverview() {
       {/* Header — resumen ejecutivo */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             {tf(`${NS}.overview.title`, 'Estudios de inquilinos')}
           </h1>
-          <p className="text-sm text-fg-muted mt-0.5 max-w-2xl">
+          <p className="text-sm text-fg-muted mt-0.5 max-w-2xl line-clamp-2">
             {tf(
               `${NS}.overview.subtitle`,
               'Evalúa candidatos, valida su información y decide con mayor seguridad quién puede avanzar en el proceso de arriendo.',

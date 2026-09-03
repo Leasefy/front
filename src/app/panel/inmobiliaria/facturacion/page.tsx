@@ -102,8 +102,8 @@ function FacturacionContent() {
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-1.5">
           <SectionLabel>{t(k('label'))}</SectionLabel>
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">{t(k('title'))}</h1>
-          <p className="text-sm text-fg-muted max-w-2xl">{t(k('subtitle'))}</p>
+          <h1 className="text-h2 text-fg">{t(k('title'))}</h1>
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">{t(k('subtitle'))}</p>
         </div>
         <Button hideArrow onClick={() => toast.info(t(k('newSoon')))} className="flex-shrink-0">
           <Plus className="w-4 h-4" weight="bold" />

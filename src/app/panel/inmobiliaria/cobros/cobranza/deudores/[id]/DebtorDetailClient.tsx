@@ -221,7 +221,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
           className="mb-2"
         />
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
-          <h1 className="text-2xl font-semibold text-fg tracking-tight">
+          <h1 className="text-h2 text-fg">
             {debtorName || t('inmobiliaria.ai.cobranza.detail.title')}
           </h1>
           <div className="flex items-center gap-2">

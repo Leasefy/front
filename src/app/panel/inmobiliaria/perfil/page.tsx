@@ -278,10 +278,10 @@ export default function InmobiliariaPerfilPage() {
 
         {/* Header */}
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             {locale === 'es' ? 'Mi perfil' : 'My profile'}
           </h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             {locale === 'es' ? 'Gestiona tu información personal y preferencias' : 'Manage your personal information and preferences'}
           </p>
         </div>

@@ -265,7 +265,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
       {/* Header */}
       <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-fg">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cobranza.planes.title')}
           </h1>
           <div className="mt-1 flex items-center gap-2 text-sm text-fg-muted">

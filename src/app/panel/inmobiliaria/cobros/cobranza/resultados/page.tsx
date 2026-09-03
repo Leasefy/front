@@ -321,10 +321,10 @@ function ResultadosContent() {
   const header = (
     <header className="flex items-start justify-between gap-4 flex-wrap">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">
+        <h1 className="text-h2 text-fg">
           Resultados del agente
         </h1>
-        <p className="text-sm text-fg-muted max-w-2xl mt-0.5">
+        <p className="text-sm text-fg-muted max-w-2xl mt-0.5 line-clamp-2">
           Cómo rinde tu agente de cobranza, leído como evaluarías a un equipo:
           qué recuperó, cuántos casos gestionó y escaló, y qué tan rápido
           respondió. Para el detalle por etapa, objeciones y costo, abre la

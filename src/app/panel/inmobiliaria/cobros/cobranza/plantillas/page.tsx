@@ -264,7 +264,7 @@ export default function PlantillasPage() {
     return (
       <main className="p-6 lg:p-8 space-y-6">
         <header>
-          <h1 className="text-2xl font-semibold tracking-tight text-fg" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
+          <h1 className="text-h2 text-fg" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
             {t('inmobiliaria.ai.templates.title')}
           </h1>
         </header>
@@ -289,7 +289,7 @@ export default function PlantillasPage() {
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-fg" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
+          <h1 className="text-h2 text-fg" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
             {t('inmobiliaria.ai.templates.title')}
           </h1>
         </div>

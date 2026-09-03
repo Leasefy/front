@@ -447,10 +447,10 @@ function ReportesPropietariosContent() {
       {/* Header */}
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             Reportes a propietarios
           </h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             Resúmenes de gestión de cobranza por propietario: estado de mora, gestiones realizadas y
             recomendación, listos para que los revises y envíes al dueño del inmueble.
           </p>

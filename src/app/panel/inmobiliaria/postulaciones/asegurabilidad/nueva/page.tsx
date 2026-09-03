@@ -359,10 +359,10 @@ export default function NuevaCotizacionPage() {
       <div className="min-h-screen bg-background">
         {/* Header */}
         <div className="border-b border-border bg-card px-4 py-4 sm:px-6">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cotizador.nueva.title')}
           </h1>
-          <p className="mt-1 text-sm text-fg-muted max-w-2xl">
+          <p className="mt-1 text-sm text-fg-muted max-w-2xl line-clamp-2">
             {t('inmobiliaria.ai.cotizador.nueva.subtitle')}
           </p>
         </div>

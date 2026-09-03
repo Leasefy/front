@@ -193,10 +193,10 @@ function PipelineContent() {
     return (
       <div className="p-4 md:p-6 space-y-6">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.pipeline.title')}
           </h1>
-          <p className="text-sm text-muted-foreground max-w-2xl">
+          <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">
             {t('inmobiliaria.pipeline.subtitle')}
           </p>
         </div>
@@ -211,10 +211,10 @@ function PipelineContent() {
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="text-h2 text-fg">
           {t('inmobiliaria.pipeline.title')}
         </h1>
-        <p className="text-sm text-muted-foreground max-w-2xl">
+        <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">
           {t('inmobiliaria.pipeline.subtitle')}
         </p>
       </div>

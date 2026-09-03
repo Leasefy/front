@@ -59,8 +59,8 @@ function PagosReglas() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2 min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">Reglas</h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <h1 className="text-h2 text-fg">Reglas</h1>
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             Define cómo se comporta el agente de pagos para tu inmobiliaria: cuándo genera cobros, cuándo
             recuerda, cuándo escala a cobranza, cómo liquida a propietarios y qué puede aprobar solo.
           </p>

@@ -183,10 +183,10 @@ function InboxContent() {
   return (
     <main className="p-6 lg:p-8 space-y-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">
+        <h1 className="text-h2 text-fg">
           Inbox de conversaciones
         </h1>
-        <p className="text-sm text-fg-muted max-w-2xl">
+        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
           Las respuestas de tus inquilinos, agrupadas por intención. Cada
           conversación muestra el último mensaje y la acción sugerida. Los
           mensajes sin entender y los que requieren humano nunca se responden

@@ -57,7 +57,7 @@ function CompararView() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="min-w-0">
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+        <h1 className="text-h2 text-fg">
           {tf(`${NS}.title`, 'Comparador')}
         </h1>
         <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm max-w-2xl">

@@ -131,10 +131,10 @@ function EquipoIA() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="min-w-0">
-        <h1 className="text-2xl font-semibold text-fg tracking-tight">
+        <h1 className="text-h2 text-fg">
           {tf(`${NS}.title`, 'Equipo IA')}
         </h1>
-        <p className="text-fg-muted mt-0.5 text-sm max-w-2xl">
+        <p className="text-fg-muted mt-0.5 text-sm max-w-2xl line-clamp-2">
           {tf(
             `${NS}.subtitle`,
             'Un equipo de funciones de IA coordina cada estudio de punta a punta y entrega una recomendación explicada, paso a paso.',

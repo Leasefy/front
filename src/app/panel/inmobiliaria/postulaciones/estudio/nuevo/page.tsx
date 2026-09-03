@@ -135,10 +135,10 @@ function EstudioNuevo() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-fg tracking-tight">
+        <h1 className="text-h2 text-fg">
           {tf(`${NS}.nuevo.title`, 'Crear estudio')}
         </h1>
-        <p className="text-sm text-fg-muted max-w-2xl">
+        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
           {tf(
             `${NS}.nuevo.subtitle`,
             'Captura el inmueble y el candidato para abrir un estudio y enviar la solicitud de información.',

@@ -27,8 +27,8 @@ export default function PlanDeCuentasPage() {
             Contabilidad
           </Link>
           <SectionLabel>Finanzas</SectionLabel>
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">Plan de cuentas</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
+          <h1 className="text-h2 text-fg">Plan de cuentas</h1>
+          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
             El PUC de la inmobiliaria. El código de una cuenta no se cambia; una cuenta con
             movimientos no se borra, se desactiva.
           </p>

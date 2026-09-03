@@ -20,8 +20,8 @@ export default function ReportesContablesPage() {
             Contabilidad
           </Link>
           <SectionLabel>Finanzas</SectionLabel>
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">Reportes contables</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
+          <h1 className="text-h2 text-fg">Reportes contables</h1>
+          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
             Todo sale de los movimientos, sin saldos guardados aparte: lo que se ve es lo que hay en
             el libro.
           </p>

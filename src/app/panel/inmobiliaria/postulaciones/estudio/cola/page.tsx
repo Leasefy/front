@@ -29,8 +29,8 @@ function EstudioCola() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold text-fg tracking-tight">{t('inmobiliaria.ai.workspace.pages.estudio.colaTitle')}</h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.workspace.pages.estudio.colaTitle')}</h1>
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             {t('inmobiliaria.ai.workspace.pages.estudio.colaDesc')}
           </p>
           {/* Leyenda de niveles — los items muestran "Nivel A/B/C/D" sin explicación */}

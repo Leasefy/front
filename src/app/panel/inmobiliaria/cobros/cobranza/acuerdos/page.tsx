@@ -822,10 +822,10 @@ function AcuerdosContent() {
     <main className="p-6 lg:p-8 space-y-6">
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             Acuerdos de pago
           </h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             Lo que cada deudor se comprometió a pagar: los compromisos que el
             agente toma en una llamada y los planes de cuotas que armes acá.
             Ningún plan se activa sin que una persona lo apruebe.

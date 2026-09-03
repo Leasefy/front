@@ -200,7 +200,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
         </Button>
       </div>
       <header>
-        <h1 className="text-2xl font-semibold text-fg">
+        <h1 className="text-h2 text-fg">
           {t('inmobiliaria.ai.cobranza.cartas.title')}
         </h1>
       </header>

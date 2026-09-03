@@ -93,13 +93,13 @@ export function DocumentReviewQueueView({
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-fg flex items-center gap-3">
+        <h1 className="text-h2 text-fg flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
             <FileText className="w-5 h-5 text-fg-muted" />
           </div>
           Soportes de candidatos
         </h1>
-        <p className="text-sm text-fg-muted max-w-2xl">
+        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
           Revisa los soportes que adjuntan al postularse —cédula, comprobante de ingresos,
           carta laboral— y apruébalos o recházalos con un motivo.
         </p>

@@ -75,10 +75,10 @@ function RenovacionesContent() {
       {/* Encabezado — el mismo de Contratos (eyebrow + título + qué es). */}
       <header className="space-y-1">
         <Eyebrow>Portafolio</Eyebrow>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="text-h2 text-fg">
           {t('inmobiliaria.nav.renovaciones')}
         </h1>
-        <p className="text-sm text-muted-foreground max-w-2xl">
+        <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">
           Los contratos que entran en sus últimos 90 días y cómo va cada
           renovación: propuesta, aceptación del inquilino y firma.
         </p>

@@ -25,8 +25,8 @@ function CapturaContent() {
             <Sparkle className="w-6 h-6 text-primary" weight="duotone" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-fg">{t(k('pageTitle'))}</h1>
-            <p className="text-sm text-fg-muted">{t(k('pageSubtitle'))}</p>
+            <h1 className="text-h2 text-fg">{t(k('pageTitle'))}</h1>
+            <p className="text-sm text-fg-muted line-clamp-2 max-w-2xl">{t(k('pageSubtitle'))}</p>
           </div>
         </div>
       </div>

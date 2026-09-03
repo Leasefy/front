@@ -130,10 +130,10 @@ function PromesasContent() {
   const header = (
     <header className="flex items-start justify-between gap-4 flex-wrap">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">
+        <h1 className="text-h2 text-fg">
           Promesas de pago
         </h1>
-        <p className="text-sm text-fg-muted max-w-2xl">
+        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
           Las promesas de pago que los inquilinos hicieron al agente, con su estado y
           la acción sugerida. El seguimiento real se hace desde el detalle del deudor.
         </p>

@@ -140,8 +140,8 @@ function PagosRecordatorios() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">Recordatorios</h1>
-        <p className="text-sm text-fg-muted max-w-2xl">
+        <h1 className="text-h2 text-fg">Recordatorios</h1>
+        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
           La secuencia de avisos que enviamos <span className="font-medium text-fg">antes</span> de
           que un pago se atrase. Es prevención: el objetivo es que el inquilino pague a tiempo y el
           caso nunca llegue a cobranza.

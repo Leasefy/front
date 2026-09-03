@@ -369,13 +369,13 @@ function DocumentosContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg flex items-center gap-3">
+          <h1 className="text-h2 text-fg flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
               <FileText className="w-5 h-5 text-fg-muted" />
             </div>
             {t('inmobiliaria.documentos.title')}
           </h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             {t('inmobiliaria.documentos.subtitle')}
           </p>
         </div>

@@ -122,10 +122,10 @@ function ContenidoDeInquilinos() {
     <div className="space-y-6 p-6 lg:p-8">
       <header className="space-y-1">
         <Eyebrow>{t('inquilinos.eyebrow')}</Eyebrow>
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">
+        <h1 className="text-h2 text-fg">
           {t('inquilinos.titulo')}
         </h1>
-        <p className="max-w-2xl text-sm text-fg-muted">{t('inquilinos.subtitulo')}</p>
+        <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">{t('inquilinos.subtitulo')}</p>
       </header>
 
       {/* Los tres números miden lo VIGENTE, no lo histórico: un canon que suma

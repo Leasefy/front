@@ -165,8 +165,8 @@ function ContratosContent() {
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-1">
           <Eyebrow>{tx('Portafolio', 'Portfolio')}</Eyebrow>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">{tx('Contratos', 'Contracts')}</h1>
-          <p className="text-sm text-muted-foreground max-w-2xl">
+          <h1 className="text-h2 text-fg">{tx('Contratos', 'Contracts')}</h1>
+          <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">
             {tx(
               'Gestiona los contratos de arrendamiento de tu inmobiliaria: firma, vigencia y estado.',
               'Manage your agency rental contracts: signing, term and status.',

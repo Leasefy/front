@@ -154,7 +154,7 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
           label={t('inmobiliaria.ai.volverA.estudios')}
           className="mb-2"
         />
-        <h1 className="text-2xl font-semibold text-fg tracking-tight">
+        <h1 className="text-h2 text-fg">
           {tf(`${NS}.detalle.titulo`, 'Detalle del estudio')}
         </h1>
         <p className="text-fg-subtle mt-0.5 text-xs tabular-nums">{runId.slice(0, 8)}</p>

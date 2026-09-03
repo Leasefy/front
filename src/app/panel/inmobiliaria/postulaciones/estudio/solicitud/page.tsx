@@ -170,10 +170,10 @@ function EstudioSolicitud() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-fg tracking-tight">
+        <h1 className="text-h2 text-fg">
           {tf(`${NS}.solicitud.title`, 'Solicitud al candidato')}
         </h1>
-        <p className="text-sm text-fg-muted max-w-2xl">
+        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
           {tf(
             `${NS}.solicitud.subtitle`,
             'Esta es la experiencia que vive el candidato cuando le envías la solicitud de estudio: un formulario guiado, paso a paso, pensado para que la complete sin fricción desde su celular.',

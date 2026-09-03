@@ -204,13 +204,13 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
         />
       </div>
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold text-fg">
+        <h1 className="text-h2 text-fg">
           {t('inmobiliaria.ai.cobranza.siniestros.title')}
         </h1>
         {/* De quién y con qué aseguradora. La pantalla no lo decía: se aprobaba
             la radicación de un siniestro sin saber sobre qué póliza. */}
         {siniestro && (
-          <p className="text-sm text-fg-muted">
+          <p className="text-sm text-fg-muted line-clamp-2 max-w-2xl">
             {siniestro.debtorName ?? 'Deudor sin nombre'}
             {siniestro.aseguradora ? ` · ${siniestro.aseguradora}` : ''}
           </p>

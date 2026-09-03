@@ -405,7 +405,7 @@ export default function ArcoInboxPage() {
       {/* Encabezado */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">{t(`${NS}.title`)}</h1>
+          <h1 className="text-h2 text-fg">{t(`${NS}.title`)}</h1>
           <p
             className="mt-1 flex items-center gap-1.5 text-xs text-fg-subtle"
             aria-live="polite"

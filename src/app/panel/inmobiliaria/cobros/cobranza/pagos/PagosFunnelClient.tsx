@@ -205,10 +205,10 @@ export default function PagosFunnelClient() {
     return (
       <main className="p-4 lg:p-8 max-w-7xl mx-auto">
         <header className="mb-5">
-          <h1 className="text-2xl font-semibold text-fg tracking-tight">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cobranza.pagos.title')}
           </h1>
-          <p className="text-sm text-fg-muted mt-0.5">
+          <p className="text-sm text-fg-muted mt-0.5 line-clamp-2 max-w-2xl">
             {t('inmobiliaria.ai.cobranza.pagos.subtitle')}
           </p>
         </header>
@@ -311,10 +311,10 @@ export default function PagosFunnelClient() {
   return (
     <main className="p-4 lg:p-8 max-w-7xl mx-auto">
       <header className="mb-5">
-        <h1 className="text-2xl font-semibold text-fg tracking-tight">
+        <h1 className="text-h2 text-fg">
           {t('inmobiliaria.ai.cobranza.pagos.title')}
         </h1>
-        <p className="text-sm text-fg-muted mt-0.5">
+        <p className="text-sm text-fg-muted mt-0.5 line-clamp-2 max-w-2xl">
           {t('inmobiliaria.ai.cobranza.pagos.subtitle')}
         </p>
       </header>

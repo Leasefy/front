@@ -563,7 +563,7 @@ function PropietarioDetailContent() {
             {isCompany ? <Buildings className="w-7 h-7" /> : <User className="w-7 h-7" />}
           </div>
           <div className="min-w-0 space-y-1.5">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            <h1 className="text-h2 text-fg">
               {propietario.name}
             </h1>
             <div className="flex flex-wrap items-center gap-1.5" data-testid="propietario-chips">

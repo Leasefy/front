@@ -80,10 +80,10 @@ function NuevaConsignacionContent() {
             <Buildings className="w-6 h-6 text-primary" weight="duotone" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-fg">
+            <h1 className="text-h2 text-fg">
               {t('inmobiliaria.portafolio.new.title')}
             </h1>
-            <p className="text-sm text-fg-muted">
+            <p className="text-sm text-fg-muted line-clamp-2 max-w-2xl">
               {t('inmobiliaria.portafolio.new.subtitle')}
             </p>
           </div>

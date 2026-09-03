@@ -32,7 +32,7 @@ export default function MantenimientoOverviewPage() {
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.mantenimiento.overview.title')}
           </h1>
           <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">

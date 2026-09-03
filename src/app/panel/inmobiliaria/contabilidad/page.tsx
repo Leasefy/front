@@ -23,8 +23,8 @@ export default function ContabilidadPage() {
       <div className="space-y-6 p-6 lg:p-8">
         <header className="space-y-1.5">
           <SectionLabel>Finanzas</SectionLabel>
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">Contabilidad</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
+          <h1 className="text-h2 text-fg">Contabilidad</h1>
+          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
             El plan de cuentas, el libro de asientos y los informes con los que el contador firma.
             Un asiento nunca se edita ni se borra: se reversa.
           </p>

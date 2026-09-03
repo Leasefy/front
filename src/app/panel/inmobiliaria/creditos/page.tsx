@@ -88,11 +88,11 @@ function CreditosContent() {
         </div>
 
         <header className="mb-8 space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg flex items-center gap-2">
+          <h1 className="text-h2 text-fg flex items-center gap-2">
             <Coin className="w-6 h-6 text-primary" weight="duotone" />
             Créditos del agente
           </h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             Cada evaluación del agente de IA consume 1 crédito. Los créditos del plan se
             regeneran cada mes; los comprados no expiran.
           </p>

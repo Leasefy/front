@@ -193,10 +193,10 @@ export default function CobranzaOverviewPage() {
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold text-fg tracking-tight">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cobranza.overview.title')}
           </h1>
-          <p className="text-fg-muted mt-0.5 text-sm">
+          <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
             {t(`${PAGES_NS}.salaDesc`)}
           </p>
         </div>

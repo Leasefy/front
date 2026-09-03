@@ -104,7 +104,7 @@ function AgentDetailView({ agent, agentId }: { agent: AIAgentDefinition; agentId
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">{name}</h1>
+            <h1 className="text-h2 text-fg">{name}</h1>
             <StatusBadge tone="success" pulse>
               {locale === 'es' ? 'Activo' : 'Active'}
             </StatusBadge>
@@ -263,7 +263,7 @@ export default function AIAgentsPage() {
             <MonoLabel className="text-[11px] text-neutral-500 dark:text-neutral-400">
               {locale === 'es' ? 'Agentes IA · Equipo' : 'AI Agents · Team'}
             </MonoLabel>
-            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+            <h1 className="text-h2 text-fg">
               {locale === 'es' ? 'Equipo de agentes' : 'Agent team'}
             </h1>
             <p className="text-neutral-500 dark:text-neutral-400">

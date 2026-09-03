@@ -37,10 +37,10 @@ function ContenidoDeContables() {
           {t('inmobiliaria.nav.contabilidad')}
         </Link>
         <Eyebrow>{t('migracion.eyebrow')}</Eyebrow>
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">
+        <h1 className="text-h2 text-fg">
           {t('migracion.contables.titulo')}
         </h1>
-        <p className="max-w-2xl text-sm text-fg-muted">{t('migracion.contables.subtitulo')}</p>
+        <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">{t('migracion.contables.subtitulo')}</p>
       </header>
 
       <RegistrosContables />

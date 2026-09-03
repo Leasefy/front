@@ -261,10 +261,10 @@ function ApBillDetailContent({ billId }: { billId: string }) {
             <Receipt className="w-5 h-5 text-fg-muted" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-fg">
+            <h1 className="text-h2 text-fg">
               {bill.invoiceNumber}
             </h1>
-            <p className="text-sm text-fg-muted mt-0.5">
+            <p className="text-sm text-fg-muted mt-0.5 line-clamp-2 max-w-2xl">
               {bill.costCenterCode}
             </p>
           </div>

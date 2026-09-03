@@ -35,7 +35,7 @@ export default function ChatLessonsPage() {
             <Brain weight="duotone" className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
           </div>
           <div>
-            <h1 className="font-heading text-2xl font-semibold tracking-tight text-neutral-900 dark:text-white">
+            <h1 className="text-h2 text-fg">
               Aprendizaje del asistente
             </h1>
             <p className="text-neutral-500 dark:text-neutral-400">

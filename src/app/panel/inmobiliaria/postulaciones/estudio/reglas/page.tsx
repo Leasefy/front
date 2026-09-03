@@ -264,10 +264,10 @@ function EstudioReglas() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-fg tracking-tight">
+        <h1 className="text-h2 text-fg">
           {tf(`${NS}.reglas.title`, 'Reglas del estudio')}
         </h1>
-        <p className="text-sm text-fg-muted max-w-2xl">
+        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
           {tf(
             `${NS}.reglas.subtitle`,
             'Define cómo el agente evalúa a los candidatos de tu inmobiliaria: criterios, documentos, escalamientos y cómo se comunica con cada persona.',

@@ -557,8 +557,8 @@ function GenerarCobros() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">Generar cobros</h1>
-        <p className="text-sm text-fg-muted max-w-2xl">
+        <h1 className="text-h2 text-fg">Generar cobros</h1>
+        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
           Crea un cobro y envía el link de pago a tus inquilinos, de a uno o por toda la cartera.
         </p>
       </header>

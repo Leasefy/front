@@ -25,7 +25,7 @@ export default function CotizadorConfiguracionPage() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Page header */}
       <header>
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+        <h1 className="text-h2 text-fg">
           {t('inmobiliaria.ai.cotizador.configuracion.title')}
         </h1>
         <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">

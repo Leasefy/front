@@ -62,10 +62,10 @@ function AgenteDetailContent() {
             <Users weight="duotone" className="w-6 h-6 text-fg-muted" />
           </div>
           <div className="space-y-1.5">
-            <h1 className="text-2xl font-semibold tracking-tight text-fg">
+            <h1 className="text-h2 text-fg">
               {t('inmobiliaria.agentes.notFound')}
             </h1>
-            <p className="text-sm text-fg-muted">
+            <p className="text-sm text-fg-muted line-clamp-2 max-w-2xl">
               {t('inmobiliaria.agentes.notFoundDesc')}
             </p>
           </div>

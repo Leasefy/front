@@ -157,10 +157,10 @@ export default function AseguradorasPage() {
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cotizador.aseguradoras.title')}
           </h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             {t('inmobiliaria.ai.cotizador.aseguradoras.subtitle')}
           </p>
         </div>

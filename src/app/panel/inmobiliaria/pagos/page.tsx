@@ -144,10 +144,10 @@ function PagosHome() {
       {/* Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.pagos_home.title')}
           </h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
+          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
             {t('inmobiliaria.ai.pagos_home.subtitle')}
           </p>
         </div>

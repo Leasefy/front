@@ -53,10 +53,10 @@ export default function CarrierDeepDivePage() {
               {t('inmobiliaria.ai.cotizador.aseguradoras.backToList')}
             </Link>
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             {carrier.toUpperCase()}
           </h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.subtitle')}
           </p>
         </div>

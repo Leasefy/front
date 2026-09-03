@@ -337,7 +337,7 @@ export default function InmobiliariaDashboardPage() {
             {t('inmobiliaria.dashboard.title')}
           </MonoLabel>
         </span>
-        <h1 className="font-heading text-2xl font-semibold text-fg tracking-tight">
+        <h1 className="text-h2 text-fg">
           {t('inmobiliaria.dashboard.subtitle')}
         </h1>
       </div>

@@ -248,7 +248,7 @@ function ContratoDetalleContent() {
             produce—. Sin `#0` ni `#undefined`: o el número, o el id.
           */}
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            <h1 className="text-h2 text-fg">
               {contract.code != null ? `Contrato #${contract.code}` : 'Contrato de arrendamiento'}
             </h1>
             <Badge variant={statusVariant}>

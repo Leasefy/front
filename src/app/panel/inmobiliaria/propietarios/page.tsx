@@ -345,10 +345,10 @@ function PropietariosContent() {
             <CaretRight className="w-3 h-3" />
             <span className="text-foreground">{t('inmobiliaria.propietarios.title')}</span>
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.propietarios.crmTitle')}
           </h1>
-          <p className="text-sm text-muted-foreground max-w-2xl">
+          <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">
             {t('inmobiliaria.propietarios.subtitle')}
           </p>
         </div>

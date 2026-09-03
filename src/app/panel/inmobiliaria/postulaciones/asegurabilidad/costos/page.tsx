@@ -62,10 +62,10 @@ export default function CostosPage() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Page heading */}
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">
+        <h1 className="text-h2 text-fg">
           {t('inmobiliaria.ai.cotizador.costos.pageTitle')}
         </h1>
-        <p className="text-sm text-fg-muted max-w-2xl">
+        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
           {t('inmobiliaria.ai.cotizador.costos.pageSubtitle')}
         </p>
       </div>

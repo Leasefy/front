@@ -337,8 +337,8 @@ function EquipoPagos() {
     <main className="p-6 lg:p-8 space-y-8">
       {/* Header */}
       <header className="min-w-0">
-        <h1 className="text-2xl font-semibold text-fg tracking-tight">Equipo IA</h1>
-        <p className="text-fg-muted mt-0.5 text-sm max-w-2xl">
+        <h1 className="text-h2 text-fg">Equipo IA</h1>
+        <p className="text-fg-muted mt-0.5 text-sm max-w-2xl line-clamp-2">
           Un equipo de agentes —cada uno con su nombre y su rol— se reparte el trabajo de los pagos,
           de generar el cobro a liquidar al propietario. Aquí ves quiénes son y cómo se pasan el caso
           de la mano, paso a paso.

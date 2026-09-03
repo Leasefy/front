@@ -17,8 +17,8 @@ export default function RecaudoPage() {
       <div className="space-y-6 p-6 lg:p-8">
         <header className="space-y-1.5">
           <SectionLabel>Cobros</SectionLabel>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Recaudo</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
+          <h1 className="text-h2 text-fg">Recaudo</h1>
+          <p className="max-w-2xl text-sm text-muted-foreground line-clamp-2">
             Lo que llegó, lo que falta, lo que salió a propietarios y lo que queda en la mano, mes
             por mes. Debajo de cada cifra está escrito de qué se compone.
           </p>

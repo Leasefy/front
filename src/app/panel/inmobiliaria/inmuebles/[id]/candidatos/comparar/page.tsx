@@ -133,8 +133,8 @@ function CompararContent() {
       <div className="space-y-4">
         <BackButton label="Volver a candidatos" onClick={() => router.push(volverALista)} />
         <div>
-          <h1 className="text-xl font-semibold text-fg">Comparar candidatos</h1>
-          <p className="mt-0.5 text-sm text-fg-muted">
+          <h1 className="text-h2 text-fg">Comparar candidatos</h1>
+          <p className="mt-0.5 text-sm text-fg-muted line-clamp-2 max-w-2xl">
             {property?.title ? `Postulantes a ${property.title}.` : 'Postulantes a esta propiedad.'}
             {hayDestacado && ' Lo verde es quien va mejor en esa fila.'}
           </p>

@@ -1798,3 +1798,17 @@ select:-webkit-autofill:active {
 
 /* Sin soporte de container queries la grilla se queda en una columna, que es
    legible en cualquier ancho — nunca en dos columnas de 244px. */
+
+/*
+ * Los popovers de cadence (DatePicker, TimePicker, Combobox, Select, menús)
+ * se portalean al body con `z-50`; los Dialog/Sheet del panel viven en
+ * `z-[300]`. Sin esto, un calendario abierto dentro de un drawer se dibuja
+ * DETRÁS del drawer y parece que no pasó nada. `SelectContent` y `Combobox`
+ * ya lo resuelven con `z-[400]` a mano; DatePicker/TimePicker no exponen
+ * una clase para su contenido, así que la regla va acá, sobre el wrapper de
+ * Radix (el `!important` gana al `z-index` inline que Radix le copia al
+ * contenido). Un popover siempre es lo último que se abrió: arriba de todo.
+ */
+[data-radix-popper-content-wrapper] {
+  z-index: 400 !important;
+}

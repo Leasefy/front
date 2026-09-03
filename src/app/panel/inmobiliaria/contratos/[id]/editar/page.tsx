@@ -275,8 +275,8 @@ function EditarContratoContent() {
         >
           <CaretLeft className="w-4 h-4" /> Volver
         </Button>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Editar contrato</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h1 className="text-h2 text-fg">Editar contrato</h1>
+        <p className="text-sm text-muted-foreground mt-1 line-clamp-2 max-w-2xl">
           Inquilino: <span className="font-medium text-foreground">{contract.tenantName}</span> ·
           Propiedad: <span className="font-medium text-foreground">{contract.propertyAddress}</span>
         </p>

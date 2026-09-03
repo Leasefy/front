@@ -469,7 +469,7 @@ function TemplateEditorContent({
       <div className="sticky top-0 z-20 bg-surface border-b border-border py-3 px-4 flex items-center justify-between gap-4 flex-wrap">
         {/* Left: name + status pill */}
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <h1 className="text-xl font-semibold text-fg truncate">
+          <h1 className="text-h2 text-fg truncate">
             {template.name}
           </h1>
           <StatusPill status={localStatus} t={t} />

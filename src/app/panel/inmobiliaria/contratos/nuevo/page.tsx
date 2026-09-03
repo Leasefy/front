@@ -399,9 +399,9 @@ function NuevoContratoContent() {
         >
           <CaretLeft className="w-4 h-4" /> Volver
         </Button>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Crear contrato</h1>
+        <h1 className="text-h2 text-fg">Crear contrato</h1>
         {esManual ? (
-          <p className="text-sm text-muted-foreground mt-1" data-testid="nuevo-contrato-manual">
+          <p className="text-sm text-muted-foreground mt-1 line-clamp-2 max-w-2xl" data-testid="nuevo-contrato-manual">
             Sin postulación: elegís el inmueble y el inquilino, y el resto es igual que cualquier contrato.
             {inmuebleElegido && (
               <> · Inmueble: <span className="font-medium text-foreground">{inmuebleElegido}</span></>

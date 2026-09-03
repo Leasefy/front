@@ -58,10 +58,10 @@ export function PagosHomeClient() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header>
-        <h1 className="text-2xl font-semibold text-foreground tracking-tight">
+        <h1 className="text-h2 text-fg">
           {t('inmobiliaria.ai.pagos_home.title')}
         </h1>
-        <p className="text-muted-foreground mt-0.5 text-sm">
+        <p className="text-muted-foreground mt-0.5 text-sm line-clamp-2 max-w-2xl">
           {t('inmobiliaria.ai.pagos_home.subtitle')}
         </p>
       </header>

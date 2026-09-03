@@ -158,10 +158,10 @@ function SiniestrosContent() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-5">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-fg tracking-tight">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cobranza.siniestros.list.pageTitle')}
           </h1>
-          <p className="text-sm text-fg-muted">
+          <p className="text-sm text-fg-muted line-clamp-2 max-w-2xl">
             {t('inmobiliaria.ai.cobranza.siniestros.list.pageSubtitle')}
           </p>
         </div>

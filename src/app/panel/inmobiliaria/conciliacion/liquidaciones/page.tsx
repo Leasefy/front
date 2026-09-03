@@ -293,10 +293,10 @@ function ConciliacionLiquidaciones() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             Liquidaciones a propietario
           </h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             Lo que la inmobiliaria debe a cada propietario por periodo: canon recaudado menos
             comisión y otros descuentos. Aquí solo se registra y aprueba — el pago real lo hace
             pagos.

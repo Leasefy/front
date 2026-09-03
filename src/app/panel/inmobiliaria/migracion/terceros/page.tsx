@@ -53,10 +53,10 @@ function ContenidoDeTerceros() {
           {tipoInicial === 'INQUILINO' ? t('inmobiliaria.nav.inquilinos') : t('inmobiliaria.nav.propietarios')}
         </Link>
         <Eyebrow>{t('migracion.eyebrow')}</Eyebrow>
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">
+        <h1 className="text-h2 text-fg">
           {t('migracion.terceros.titulo')}
         </h1>
-        <p className="max-w-2xl text-sm text-fg-muted">{t('migracion.terceros.subtitulo')}</p>
+        <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">{t('migracion.terceros.subtitulo')}</p>
       </header>
 
       {/* `key`: si cambia el `?tipo=` de la URL, la pantalla arranca limpia (misma razón que en el muro). */}

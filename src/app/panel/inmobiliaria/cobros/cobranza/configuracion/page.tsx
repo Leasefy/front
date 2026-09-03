@@ -454,11 +454,11 @@ function CobranzaConfiguracionContent() {
             </Link>
           </Button>
         )}
-        <h1 className="text-3xl font-semibold font-heading text-foreground">
+        <h1 className="text-h2 text-fg">
           Configuración de cobranza
         </h1>
         {!canEdit && (
-          <p className="mt-1 text-sm text-fg-muted" data-testid="readonly-banner">
+          <p className="mt-1 text-sm text-fg-muted line-clamp-2 max-w-2xl" data-testid="readonly-banner">
             Tu rol solo tiene acceso de lectura a esta configuración.
           </p>
         )}

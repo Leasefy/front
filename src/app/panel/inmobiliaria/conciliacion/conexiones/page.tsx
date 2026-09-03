@@ -362,8 +362,8 @@ function ConciliacionConexiones() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">Conexiones</h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <h1 className="text-h2 text-fg">Conexiones</h1>
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             Registrá y administrá las fuentes de movimientos (bancos, pasarelas y extractos) que
             alimentan la conciliación. Nunca guardamos credenciales, solo una referencia segura.
           </p>

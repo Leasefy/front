@@ -20,8 +20,8 @@ export default function AsientosPage() {
             Contabilidad
           </Link>
           <SectionLabel>Finanzas</SectionLabel>
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">Asientos</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
+          <h1 className="text-h2 text-fg">Asientos</h1>
+          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
             El libro, del más reciente al más viejo. Cada asiento se abre con sus líneas; lo que
             está mal se reversa, y un período cerrado ya no admite fechas adentro.
           </p>

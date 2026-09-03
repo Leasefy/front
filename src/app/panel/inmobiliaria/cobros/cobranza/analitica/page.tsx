@@ -28,10 +28,10 @@ export default function CobranzaAnaliticaPage() {
     return (
       <main className="p-6 lg:p-8 space-y-6">
         <header>
-          <h1 className="text-2xl font-semibold text-fg tracking-tight">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.title')}
           </h1>
-          <p className="text-fg-muted mt-0.5 text-sm">
+          <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
             {t('inmobiliaria.ai.cobranza.analitica.subtitle')}
           </p>
         </header>
@@ -56,7 +56,7 @@ export default function CobranzaAnaliticaPage() {
     return (
       <main className="p-6 lg:p-8 space-y-6">
         <header>
-          <h1 className="text-2xl font-semibold text-fg tracking-tight">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.title')}
           </h1>
         </header>
@@ -86,7 +86,7 @@ export default function CobranzaAnaliticaPage() {
     return (
       <main className="p-6 lg:p-8 space-y-6">
         <header>
-          <h1 className="text-2xl font-semibold text-fg tracking-tight">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.title')}
           </h1>
         </header>
@@ -104,7 +104,7 @@ export default function CobranzaAnaliticaPage() {
     return (
       <main className="p-6 lg:p-8">
         <header className="mb-6">
-          <h1 className="text-2xl font-semibold text-fg tracking-tight">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.title')}
           </h1>
         </header>
@@ -127,10 +127,10 @@ export default function CobranzaAnaliticaPage() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Page header */}
       <header>
-        <h1 className="text-2xl font-semibold text-fg tracking-tight">
+        <h1 className="text-h2 text-fg">
           {t('inmobiliaria.ai.cobranza.analitica.title')}
         </h1>
-        <p className="text-fg-muted mt-0.5 text-sm">
+        <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
           {t('inmobiliaria.ai.cobranza.analitica.subtitle')}
         </p>
       </header>

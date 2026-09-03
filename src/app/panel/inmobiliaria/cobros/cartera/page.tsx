@@ -22,10 +22,10 @@ export default function CarteraPage() {
       <div className="space-y-6 p-6 lg:p-8">
         <header className="space-y-1.5">
           <SectionLabel>Cobros</SectionLabel>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-h2 text-fg">
             Cartera
           </h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
+          <p className="max-w-2xl text-sm text-muted-foreground line-clamp-2">
             Todo lo pendiente y lo vencido, por edad de la deuda. Lo que todavía
             no vence va aparte: no es mora.
           </p>

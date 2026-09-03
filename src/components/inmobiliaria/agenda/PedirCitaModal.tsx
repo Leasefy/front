@@ -21,6 +21,10 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogFooter,
 } from '@/components/ui/responsive-dialog';
+import { DatePicker, TimePicker } from '@leasefy/cadence';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { etiquetaDeInmueble } from '@/components/contratos/VincularInmueble';
+import { aFechaIso, fechaLocal, hoyLocal } from '@/lib/fechas-locales';
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria';
 import { ApiError } from '@/lib/api/client';
 import { agendaApi } from '@/lib/api/agenda.service';
@@ -49,9 +53,16 @@ export function PedirCitaModal({
   const isPreset = !!presetPropertyId;
 
   // Only properties that carry a real propertyId can host a PropertyVisit.
+  // TODOS los del portafolio, en un Combobox con buscador: una inmobiliaria
+  // con doscientos inmuebles no encuentra el suyo bajando un Select (Nico,
+  // 2026-09-03: «no aparecen todos y dejá un buscador ahí»).
   const { consignaciones } = useConsignaciones();
-  const properties = useMemo(
-    () => consignaciones.filter((c) => c.propertyId),
+  const opcionesInmueble = useMemo<ComboboxOption[]>(
+    () =>
+      consignaciones
+        .filter((c) => c.propertyId)
+        .sort((a, b) => a.propertyTitle.localeCompare(b.propertyTitle))
+        .map((c) => ({ value: c.propertyId, label: etiquetaDeInmueble(c) })),
     [consignaciones],
   );
 
@@ -154,18 +165,14 @@ export function PedirCitaModal({
                 {presetPropertyTitle ?? presetPropertyId}
               </div>
             ) : (
-              <Select value={propertyId || undefined} onValueChange={setPropertyId}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t(k('citaSelectProperty'))} />
-                </SelectTrigger>
-                <SelectContent>
-                  {properties.map((c) => (
-                    <SelectItem key={c.id} value={c.propertyId}>
-                      {c.propertyTitle}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                value={propertyId || undefined}
+                onChange={(v) => setPropertyId(v ?? '')}
+                options={opcionesInmueble}
+                placeholder={t(k('citaSelectProperty'))}
+                searchPlaceholder="Escribí #código, título o dirección"
+                contentClassName="z-[400]"
+              />
             )}
           </div>
 
@@ -213,19 +220,25 @@ export function PedirCitaModal({
               <label className="mb-1.5 block text-caption text-muted-foreground">
                 {t(k('citaDate'))} <span className="text-danger">*</span>
               </label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              <DatePicker
+                value={fechaLocal(date)}
+                onChange={(d) => setDate(aFechaIso(d))}
+                minDate={hoyLocal()}
+                placeholder="Elegí el día"
+                className="w-full"
+              />
             </div>
             <div>
               <label className="mb-1.5 block text-caption text-muted-foreground">
                 {t(k('citaStart'))} <span className="text-danger">*</span>
               </label>
-              <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+              <TimePicker value={startTime} onChange={setStartTime} step={30} className="w-full" />
             </div>
             <div>
               <label className="mb-1.5 block text-caption text-muted-foreground">
                 {t(k('citaEnd'))} <span className="text-danger">*</span>
               </label>
-              <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+              <TimePicker value={endTime} onChange={setEndTime} step={30} error={endTime <= startTime} className="w-full" />
             </div>
           </div>
 

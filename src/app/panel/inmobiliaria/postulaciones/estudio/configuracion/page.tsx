@@ -22,8 +22,8 @@ function EstudioConfiguracion() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-fg tracking-tight">{t('inmobiliaria.ai.workspace.pages.comun.configTitle')}</h1>
-        <p className="text-sm text-fg-muted max-w-2xl">
+        <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.workspace.pages.comun.configTitle')}</h1>
+        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
           {t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
         </p>
       </header>

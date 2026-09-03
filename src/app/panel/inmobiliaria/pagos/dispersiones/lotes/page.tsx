@@ -17,8 +17,8 @@ export default function LotesDeDispersionPage() {
       <div className="space-y-6 p-6 lg:p-8">
         <header className="space-y-1.5">
           <SectionLabel>Pagos</SectionLabel>
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">Lotes al banco</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
+          <h1 className="text-h2 text-fg">Lotes al banco</h1>
+          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
             Los pagos a propietarios de un mes, juntos: se arma el lote, lo aprueba otra persona y
             sale el archivo plano para subir al banco.
           </p>

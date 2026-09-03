@@ -335,10 +335,10 @@ function LlamadasContent() {
   return (
     <main className="p-4 lg:p-8 max-w-7xl mx-auto">
       <div className="mb-5 space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">
+        <h1 className="text-h2 text-fg">
           {t('inmobiliaria.ai.cobranza.llamadas.list.pageTitle')}
         </h1>
-        <p className="text-sm text-fg-muted">
+        <p className="text-sm text-fg-muted line-clamp-2 max-w-2xl">
           {t('inmobiliaria.ai.cobranza.llamadas.list.pageSubtitle')}
         </p>
       </div>

@@ -221,8 +221,8 @@ function PagosPropietarios() {
       {/* Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">Pagos a propietarios</h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <h1 className="text-h2 text-fg">Pagos a propietarios</h1>
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             La liquidación al dueño del inmueble: canon menos comisión, administración y descuentos.
             Revisa, aprueba y deja todo listo para dispersar.
           </p>

@@ -214,7 +214,7 @@ function EscalacionesContent() {
           >
             ← Volver
           </button>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
           </h1>
           {lastUpdated && (

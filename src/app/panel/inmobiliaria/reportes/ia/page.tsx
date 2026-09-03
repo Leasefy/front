@@ -397,13 +397,13 @@ function AnalyticsContent() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg flex items-center gap-3">
+          <h1 className="text-h2 text-fg flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
               <ChartLineUp className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="duotone" />
             </div>
             {t('inmobiliaria.analytics.title')}
           </h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             {t('inmobiliaria.analytics.subtitle')}
           </p>
         </div>

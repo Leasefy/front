@@ -11,6 +11,7 @@ import { AuthForm } from '@/components/auth/AuthForm';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre';
 import LogoDefs from '@/components/landing-v2/LogoDefs';
+import { TestimoniosFlotantes } from '@/components/auth/TestimoniosFlotantes';
 
 /**
  * La obra de marca del panel izquierdo: un video corto en bucle.
@@ -75,20 +76,13 @@ function AuthFormFallback() {
 }
 
 /**
- * La frase de la marca, abajo a la izquierda del video. Es el titular del
- * hero de la landing (`LandingHome`): la misma frase en la puerta y en la
- * vitrina. Si cambia allá, cambia acá.
- */
-const FRASE = 'Tu operación inmobiliaria en piloto automático.';
-
-/**
  * Entrada a Leasefy.
  *
  * El video ocupa TODA la pantalla y el formulario flota encima, en una
  * tarjeta a la derecha (Nico, 2026-09-03). Arriba a la izquierda va el
- * logotipo de la landing (el símbolo `#lfLogo`, a 32 px como en su header) y
- * abajo a la izquierda la frase del hero, las dos en la tinta de la marca
- * sobre el video claro. Antes era un panel partido —52 %,
+ * logotipo de la landing (el símbolo `#lfLogo`, a 32 px como en su header),
+ * en blanco; abajo a la izquierda, los testimonios que rotan en su tarjeta
+ * de vidrio (`TestimoniosFlotantes`). Antes era un panel partido —52 %,
  * después «el ancho natural»— y en cualquier pantalla 16:9 el video terminaba
  * recortado, porque un 16:9 a toda la altura nunca cabe al lado de una
  * columna de formulario. A pantalla completa se ve entero, sin «zoom».
@@ -113,29 +107,24 @@ export default function AuthPage() {
           <VideoDeMarca />
         </div>
 
-        {/* ── Logo arriba y frase abajo, sobre el video (sólo escritorio) ── */}
+        {/* ── Logo arriba y testimonios abajo, sobre el video (escritorio) ── */}
         {/*
           Van en su propia capa y no dentro de la del video, que es
-          `aria-hidden`: el logotipo es un enlace y la frase se lee. La capa no
-          recibe clics (`pointer-events-none`) para no tapar nada; el enlace sí.
-          Mismo margen de 32 px que la tarjeta.
+          `aria-hidden`: el logotipo es un enlace y los testimonios se leen. La
+          capa no recibe clics (`pointer-events-none`) para no tapar nada; el
+          enlace sí. Mismo margen de 32 px que la tarjeta.
         */}
         <LogoDefs />
         <div className="pointer-events-none fixed inset-0 z-[1] hidden lg:block">
           <BrandHomeLink
             aria-label="Leasefy — inicio"
-            className="pointer-events-auto absolute left-8 top-8 inline-flex text-[#14130f]"
+            className="pointer-events-auto absolute left-8 top-8 inline-flex text-white drop-shadow-[0_1px_2px_rgba(20,19,15,0.35)]"
           >
             <svg viewBox="0 0 947 235" className="block h-8 w-auto" role="img" aria-label="Leasefy" data-testid="auth-logo">
               <use href="#lfLogo" />
             </svg>
           </BrandHomeLink>
-          <p
-            className="absolute bottom-8 left-8 max-w-[15ch] font-heading text-[34px] font-medium leading-[1.12] tracking-[-0.025em] text-[#14130f] xl:text-[40px]"
-            data-testid="auth-frase"
-          >
-            {FRASE}
-          </p>
+          <TestimoniosFlotantes />
         </div>
 
         {/* ── La tarjeta del formulario ──────────────────────────────────── */}

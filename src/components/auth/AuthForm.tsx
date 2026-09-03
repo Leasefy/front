@@ -88,7 +88,7 @@ function NotaLegal() {
 /** Hairline divider with a mono technical label — DS signature. */
 function MonoDivider({ children }: { children: React.ReactNode }) {
   return (
-    <div className="my-7 flex items-center gap-4">
+    <div className="my-6 flex items-center gap-4">
       <div className="h-px flex-1 bg-border/70" />
       <span className="font-mono text-[9.5px] font-medium uppercase tracking-[0.14em] text-fg-subtle">
         {children}
@@ -105,7 +105,7 @@ function GoogleButton({ onClick, disabled, isLoading, children }: { onClick: () 
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex h-12 w-full items-center justify-center gap-2.5 rounded-full border border-border bg-surface text-[14px] font-medium text-fg transition-all hover:border-border-strong hover:bg-surface-muted active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-50"
+      className="flex h-12 w-full items-center justify-center gap-2.5 rounded-full border border-border bg-surface text-[14px] font-medium text-fg shadow-[0_1px_2px_rgba(20,19,15,0.05)] transition-all hover:-translate-y-px hover:border-border-strong hover:shadow-[0_6px_16px_-8px_rgba(20,19,15,0.25)] active:translate-y-0 active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-50"
     >
       {isLoading ? (
         <SpinnerGap className="w-4 h-4 animate-spin text-fg-subtle" />
@@ -475,8 +475,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
 
   return (
     <div className={cn('w-full', className)}>
-      {/* Header — left-aligned, quiet hierarchy */}
-      <div className="mb-8">
+      {/* Header — left-aligned, quiet hierarchy. `lg:pr-12`: la ✕ de la
+          tarjeta vive en esta misma fila, a la derecha. */}
+      <div className="mb-7 lg:pr-12">
         {(mode === 'forgot-password' || mode === 'reset-sent') && (
           <button
             type="button"
@@ -500,14 +501,14 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
         )}
 
         {/* Sin eyebrow («● ACCESO»): el título ya dice qué es (Nico, 2026-09-03). */}
-        <h1 className="font-heading text-[30px] font-medium leading-[1.15] tracking-[-0.025em] text-fg">
+        <h1 className="font-heading text-[30px] font-medium leading-[1.1] tracking-[-0.03em] text-fg">
           {mode === 'login' && 'Bienvenido de vuelta'}
           {mode === 'register' && registerStep === 'credentials' && 'Crea tu cuenta'}
           {mode === 'register' && registerStep === 'confirm-email' && 'Revisa tu correo'}
           {mode === 'forgot-password' && 'Recupera tu contraseña'}
           {mode === 'reset-sent' && 'Revisa tu correo'}
         </h1>
-        <p className="mt-2.5 text-[14px] leading-relaxed text-fg-subtle">
+        <p className="mt-2 text-[14px] leading-relaxed text-fg-subtle">
           {mode === 'login' && 'Ingresá a tu cuenta para continuar.'}
           {mode === 'register' && registerStep === 'credentials' && 'Ingresa tus datos para continuar.'}
           {mode === 'register' && registerStep === 'confirm-email' && (
@@ -573,7 +574,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="h-12 w-full rounded-full text-[14px] transition-transform active:scale-[0.995]"
+                className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] transition-all hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]"
               >
                 {isLoading ? (
                   <>
@@ -588,7 +589,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
 
             <NotaLegal />
 
-            <p className="mt-6 text-[13px] text-fg-subtle">
+            <p className="mt-6 border-t border-border/70 pt-5 text-[13px] text-fg-subtle">
               ¿Todavía no tenés cuenta?{' '}
               <button
                 type="button"
@@ -651,14 +652,14 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               />
               {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
-              <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-full text-[14px]">
+              <Button type="submit" disabled={isLoading} className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] transition-all hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]">
                 {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : 'Crear cuenta'}
               </Button>
             </form>
 
             <NotaLegal />
 
-            <p className="mt-6 text-[13px] text-fg-subtle">
+            <p className="mt-6 border-t border-border/70 pt-5 text-[13px] text-fg-subtle">
               ¿Ya tienes cuenta?{' '}
               <button
                 type="button"

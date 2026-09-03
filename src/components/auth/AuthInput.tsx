@@ -54,14 +54,17 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
             aria-invalid={!!error}
             aria-describedby={error ? errorId : undefined}
             className={cn(
-              'h-12 w-full rounded-lg border bg-surface px-4 text-base md:text-[14px] text-fg',
-              'transition-colors duration-150 placeholder:text-fg-subtle',
-              'focus:outline-none focus:border-[#1A40FF] focus:shadow-[0_0_0_3px_rgba(26,64,255,0.12)]',
+              // En reposo, un relleno apenas gris y sin filete: el campo se lee
+              // como un lugar donde escribir, no como una caja. Al enfocar se
+              // vuelve blanco con el azul de la marca y un halo suave.
+              'h-12 w-full rounded-lg border bg-surface-muted/70 px-4 text-base md:text-[14px] text-fg',
+              'transition-[background-color,border-color,box-shadow] duration-150 placeholder:text-fg-subtle',
+              'focus:outline-none focus:bg-surface focus:border-[#1A40FF] focus:shadow-[0_0_0_4px_rgba(26,64,255,0.10)]',
               'disabled:cursor-not-allowed disabled:opacity-50',
               isPassword && 'pr-11',
               error
-                ? 'border-danger focus:border-danger focus:shadow-[0_0_0_3px_rgba(192,57,43,0.12)]'
-                : 'border-border hover:border-border-strong',
+                ? 'border-danger bg-surface focus:border-danger focus:shadow-[0_0_0_4px_rgba(192,57,43,0.10)]'
+                : 'border-transparent hover:border-border',
               className
             )}
             {...props}

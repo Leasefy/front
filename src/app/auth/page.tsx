@@ -160,12 +160,17 @@ export default function AuthPage() {
              * Es EL chip del producto (`ASPA_DE_CIERRE`), el mismo que cierra
              * los 40 modales, y no un dibujo propio de esta pantalla: acá hubo
              * un aro de trazo fino flotando en el aire que no se leía como botón.
+             *
+             * En escritorio va a la altura del título (`top-10` = el padding
+             * de la tarjeta, donde arranca el título), no flotando encima con
+             * un vacío debajo (Nico, 2026-09-03: «mucho espacio del título
+             * hacia arriba»).
              */}
             <Link
               href="/"
               aria-label="Cerrar y volver al inicio"
               title="Cerrar"
-              className={`${ASPA_DE_CIERRE} absolute right-6 top-6 z-10 sm:right-8 sm:top-8 lg:right-6 lg:top-6`}
+              className={`${ASPA_DE_CIERRE} absolute right-6 top-6 z-10 sm:right-8 sm:top-8 lg:right-10 lg:top-10`}
               data-testid="auth-cerrar"
             >
               <X size={16} weight="bold" aria-hidden="true" />
@@ -180,7 +185,7 @@ export default function AuthPage() {
               </BrandHomeLink>
             </div>
 
-            <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center py-12 lg:justify-start lg:py-0 lg:pt-8">
+            <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center py-12 lg:justify-start lg:py-0">
               <Suspense fallback={<AuthFormFallback />}>
                 <AuthForm />
               </Suspense>

@@ -10,6 +10,7 @@ import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre';
+import LogoDefs from '@/components/landing-v2/LogoDefs';
 
 /**
  * La obra de marca del panel izquierdo: un video corto en bucle.
@@ -74,10 +75,20 @@ function AuthFormFallback() {
 }
 
 /**
+ * La frase de la marca, abajo a la izquierda del video. Es el titular del
+ * hero de la landing (`LandingHome`): la misma frase en la puerta y en la
+ * vitrina. Si cambia allá, cambia acá.
+ */
+const FRASE = 'Tu operación inmobiliaria en piloto automático.';
+
+/**
  * Entrada a Leasefy.
  *
  * El video ocupa TODA la pantalla y el formulario flota encima, en una
- * tarjeta a la derecha (Nico, 2026-09-03). Antes era un panel partido —52 %,
+ * tarjeta a la derecha (Nico, 2026-09-03). Arriba a la izquierda va el
+ * logotipo de la landing (el símbolo `#lfLogo`, a 32 px como en su header) y
+ * abajo a la izquierda la frase del hero, las dos en la tinta de la marca
+ * sobre el video claro. Antes era un panel partido —52 %,
  * después «el ancho natural»— y en cualquier pantalla 16:9 el video terminaba
  * recortado, porque un 16:9 a toda la altura nunca cabe al lado de una
  * columna de formulario. A pantalla completa se ve entero, sin «zoom».
@@ -102,8 +113,33 @@ export default function AuthPage() {
           <VideoDeMarca />
         </div>
 
+        {/* ── Logo arriba y frase abajo, sobre el video (sólo escritorio) ── */}
+        {/*
+          Van en su propia capa y no dentro de la del video, que es
+          `aria-hidden`: el logotipo es un enlace y la frase se lee. La capa no
+          recibe clics (`pointer-events-none`) para no tapar nada; el enlace sí.
+          Mismo margen de 32 px que la tarjeta.
+        */}
+        <LogoDefs />
+        <div className="pointer-events-none fixed inset-0 z-[1] hidden lg:block">
+          <BrandHomeLink
+            aria-label="Leasefy — inicio"
+            className="pointer-events-auto absolute left-8 top-8 inline-flex text-[#14130f]"
+          >
+            <svg viewBox="0 0 947 235" className="block h-8 w-auto" role="img" aria-label="Leasefy" data-testid="auth-logo">
+              <use href="#lfLogo" />
+            </svg>
+          </BrandHomeLink>
+          <p
+            className="absolute bottom-8 left-8 max-w-[15ch] font-heading text-[34px] font-medium leading-[1.12] tracking-[-0.025em] text-[#14130f] xl:text-[40px]"
+            data-testid="auth-frase"
+          >
+            {FRASE}
+          </p>
+        </div>
+
         {/* ── La tarjeta del formulario ──────────────────────────────────── */}
-        <div className="relative flex min-h-screen flex-col lg:flex-row lg:items-center lg:justify-end lg:p-8">
+        <div className="relative z-10 flex min-h-screen flex-col lg:flex-row lg:items-center lg:justify-end lg:p-8">
           <div
             className="relative flex w-full flex-col px-6 py-6 sm:px-10 sm:py-8 lg:max-h-[calc(100vh-4rem)] lg:w-[480px] lg:overflow-y-auto lg:rounded-lg lg:bg-surface lg:p-10 lg:shadow-[0_24px_64px_-16px_rgba(20,19,15,0.45)] lg:ring-1 lg:ring-black/5"
             data-lenis-prevent

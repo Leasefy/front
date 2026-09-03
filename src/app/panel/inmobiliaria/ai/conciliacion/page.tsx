@@ -22,7 +22,7 @@
  * conserva su estado actual (Sala overview / vacíos).
  */
 
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { ArrowsClockwise, Bank, CheckCircle, UploadSimple } from '@phosphor-icons/react'
@@ -60,6 +60,67 @@ const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] =
   { icon: CheckCircle, titleKey: `${PAGES_NS}.comoFunciona.step3.title`, descKey: `${PAGES_NS}.comoFunciona.step3.desc` },
 ]
 
+/**
+ * Qué pasó con la última corrida pedida a mano.
+ *
+ * `corriendo`  → se pidió y todavía no se ve nada.
+ * `lista`      → el resumen cambió: se dice CUÁNTO cambió.
+ * `sinCambios` → pasaron ~30 s y el resumen sigue igual. No se declara
+ *                fracaso: la corrida puede seguir procesando. Se dice eso.
+ */
+type Corrida =
+  | { estado: 'corriendo' }
+  | { estado: 'lista'; conciliados: number; enCola: number }
+  | { estado: 'sinCambios' }
+
+function ResultadoDeLaCorrida({ corrida }: { corrida: Corrida | null }) {
+  if (!corrida) return null
+
+  const texto =
+    corrida.estado === 'corriendo'
+      ? 'Corrida en marcha: el agente está cruzando tus movimientos contra los cobros.'
+      : corrida.estado === 'sinCambios'
+        ? 'La corrida sigue procesando: todavía no cambió nada en el resumen. Volvé en un rato o mirá la cola.'
+        : [
+            corrida.conciliados > 0
+              ? `${corrida.conciliados} ${corrida.conciliados === 1 ? 'movimiento conciliado' : 'movimientos conciliados'}`
+              : null,
+            corrida.enCola > 0
+              ? `${corrida.enCola} ${corrida.enCola === 1 ? 'caso quedó' : 'casos quedaron'} en la cola para que los apruebes`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')
+
+  return (
+    <div
+      className="max-w-3xl rounded-lg border border-border bg-card p-4"
+      role="status"
+      data-testid="conciliacion-resultado-corrida"
+      data-estado={corrida.estado}
+    >
+      <div className="flex items-start gap-3">
+        <ArrowsClockwise
+          className={`mt-0.5 h-4 w-4 shrink-0 text-muted-foreground ${corrida.estado === 'corriendo' ? 'motion-safe:animate-spin' : ''}`}
+          aria-hidden="true"
+        />
+        <div className="min-w-0 space-y-1">
+          <p className="text-sm font-medium text-foreground">Última corrida</p>
+          <p className="text-sm text-muted-foreground">{texto}</p>
+          {corrida.estado === 'lista' && corrida.enCola > 0 && (
+            <Link
+              href="/panel/inmobiliaria/ai/conciliacion/cola"
+              className="inline-block text-sm text-primary underline-offset-2 hover:underline"
+            >
+              Ver la cola
+            </Link>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ConciliacionSala() {
   const { t } = useI18n()
   const { data, isLoading, error } = useAgentOverview('conciliacion')
@@ -70,6 +131,60 @@ function ConciliacionSala() {
   const { isRunning, requestRun } = useConciliacionRun()
   const [confirmOpen, setConfirmOpen] = useState(false)
 
+  /*
+   * Qué pasó con la última corrida (Nico, 2026-09-02: «hice el conciliar
+   * ahora… no sé si sirvió o no, no hay dónde se pueda ver ese resultado»).
+   *
+   * La corrida es asíncrona: la ruta encola un evento y el trabajo durable
+   * cruza los movimientos después. Antes el botón prometía «las sugerencias
+   * aparecerán en la cola en unos minutos» y ahí terminaba: ni el resultado,
+   * ni un lugar donde mirarlo. Ahora la pantalla se queda mirando el resumen
+   * y CUENTA lo que cambió — y si no cambió nada, también lo dice.
+   */
+  const [corrida, setCorrida] = useState<Corrida | null>(null)
+  const sondeo = useRef<ReturnType<typeof setInterval> | null>(null)
+  useEffect(() => () => { if (sondeo.current) clearInterval(sondeo.current) }, [])
+
+  const movimientos = summary?.totals.movimientos ?? null
+  const conciliados = summary?.totals.conciliados ?? null
+  // Sin movimientos cargados no hay nada que cruzar: el extracto va primero.
+  const sinMovimientos = movimientos === 0
+
+  // `refetchSummary` devuelve void: el dato fresco llega por estado, así que
+  // el sondeo lo lee de una referencia en vez de esperar un valor de retorno.
+  const ultimoResumen = useRef(summary)
+  ultimoResumen.current = summary
+
+  /** Mira el resumen unas cuantas veces y reporta el delta real. */
+  const vigilarLaCorrida = useCallback(
+    (antes: { conciliados: number; enCola: number }) => {
+      if (sondeo.current) clearInterval(sondeo.current)
+      let vueltas = 0
+      sondeo.current = setInterval(() => {
+        vueltas += 1
+        void refetchSummary().then(() => {
+          const ahora = ultimoResumen.current?.totals
+          if (ahora) {
+            const nuevosConciliados = ahora.conciliados - antes.conciliados
+            const nuevosEnCola = ahora.en_cola - antes.enCola
+            if (nuevosConciliados > 0 || nuevosEnCola > 0) {
+              setCorrida({ estado: 'lista', conciliados: nuevosConciliados, enCola: nuevosEnCola })
+              if (sondeo.current) clearInterval(sondeo.current)
+              return
+            }
+          }
+          if (vueltas >= 6) {
+            // Seis vueltas (~30 s) sin cambios. No se declara éxito ni fracaso:
+            // se dice lo que se sabe, que es que todavía no hay resultado.
+            setCorrida({ estado: 'sinCambios' })
+            if (sondeo.current) clearInterval(sondeo.current)
+          }
+        })
+      }, 5000)
+    },
+    [refetchSummary],
+  )
+
   // CTA count: prefer the backend's "en_cola" KPI; absent → fall back to summary; else CTA without count.
   const colaCount =
     data?.kpis.find((kpi) => kpi.id === 'en_cola')?.value ?? summary?.totals.en_cola
@@ -77,11 +192,15 @@ function ConciliacionSala() {
   // T-323: la conciliación se dispara SOLO tras confirmación humana explícita.
   async function handleConciliarAhora() {
     setConfirmOpen(false)
+    const antes = {
+      conciliados: summary?.totals.conciliados ?? 0,
+      enCola: summary?.totals.en_cola ?? 0,
+    }
     const res = await requestRun()
     if (res.ok && res.enqueued) {
-      toast.success('Conciliación encolada. Las sugerencias aparecerán en la cola en unos minutos.')
-      // Refresca el resumen para reflejar el nuevo estado.
-      void refetchSummary()
+      toast.success('Corrida pedida. Acá abajo te digo qué encontró.')
+      setCorrida({ estado: 'corriendo' })
+      vigilarLaCorrida(antes)
     } else if (res.ok && !res.enqueued) {
       // Backend respondió pero no pudo encolar (db/inngest no disponible).
       toast.error('No se pudo iniciar la conciliación en este momento. Intenta de nuevo más tarde.')
@@ -129,18 +248,39 @@ function ConciliacionSala() {
                 </Link>
               </Button>
               {/* Acción PRINCIPAL del slot: conciliar ahora (T-323, confirmación humana) */}
+              {/* Sin movimientos cargados el botón no promete nada: dice por
+                  qué no se puede y deja el extracto como el paso que sigue. */}
               <Button
                 hideArrow
-                disabled={isRunning}
+                disabled={isRunning || sinMovimientos}
                 onClick={() => setConfirmOpen(true)}
                 data-testid="conciliacion-run-cta"
+                title={
+                  sinMovimientos
+                    ? 'Todavía no hay movimientos cargados: subí el extracto del banco primero.'
+                    : undefined
+                }
               >
                 <ArrowsClockwise className="w-4 h-4" aria-hidden="true" />
-                {isRunning ? 'Conciliando…' : 'Conciliar ahora'}
+                {isRunning
+                  ? 'Conciliando…'
+                  : movimientos != null && conciliados != null && movimientos > conciliados
+                    ? `Conciliar ${movimientos - conciliados} movimientos`
+                    : 'Conciliar ahora'}
               </Button>
             </div>
           </div>
         </div>
+
+        {sinMovimientos && (
+          <p className="max-w-3xl text-sm text-muted-foreground" data-testid="conciliacion-sin-movimientos">
+            Todavía no cargaste ningún extracto, así que no hay movimientos que cruzar. Subí el del
+            banco y el agente los compara contra tus cobros.
+          </p>
+        )}
+
+        {/* Qué pasó con la última corrida. */}
+        <ResultadoDeLaCorrida corrida={corrida} />
 
         {/* Resumen real del backend: taxonomía + totales + tasa (fail-soft: null → nada) */}
         <ConciliacionResumen data={summary} />

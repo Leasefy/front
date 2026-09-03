@@ -3323,6 +3323,9 @@
       },
       "mandateDialog": {
         "title": "Whose property is this?",
+        "titleConDueno": "Consign to {{nombre}}",
+        "subtitleConDueno": "\"{{title}}\" goes under {{nombre}}. We still need the commission you charge to manage it and since when.",
+        "cambiarPropietario": "It belongs to someone else",
         "subtitle": "\"{{title}}\" is already in your portfolio, but we do not know who owns it or what commission you charge to manage it. Without that it can't be published or paid out to anyone.",
         "propietarioLabel": "Owner",
         "commissionLabel": "Agency commission",
@@ -8486,6 +8489,59 @@
       "pagos_home": {
         "title": "Payments AI",
         "subtitle": "Charges, received payments and owner payouts, orchestrated by the agent.",
+        "resumen": {
+          "nuevaFactura": "New invoice",
+          "atencion": {
+            "aria": "Needs your attention",
+            "titulo": "Needs your attention",
+            "verCola": "See the full queue",
+            "fallo": "We couldn't load the inbox. Try again in a few minutes."
+          },
+          "cobros": {
+            "aria": "Charges for the month",
+            "titulo": "Charges for",
+            "mesAria": "Month of the charges",
+            "queEs": "the charges for the month",
+            "queSon": "charges",
+            "generarCta": "Generate the charges for {{mes}}",
+            "vacioTitulo": "No charges for {{mes}} yet",
+            "vacioDescripcion": "Generate the charges for {{mes}} for the active leases and they'll show up here."
+          },
+          "kpi": {
+            "cobrosDelMes": "Charges this month",
+            "recaudado": "Collected",
+            "pendiente": "Outstanding",
+            "enMora": "Overdue"
+          },
+          "generar": {
+            "titulo": "Generate the charges for {{mes}}",
+            "descripcion": "Creates the {{mes}} rent charge for your agency's active leases. Check the scope before confirming.",
+            "queEs": "the charge generation",
+            "mesLabel": "Month it runs on",
+            "yaGeneradosLabel": "Charges for that month that already exist",
+            "avisoYaHay": "There are already {{n}} charges for {{mes}}. Check the table before generating again.",
+            "avisoLimpio": "There are no charges for {{mes}} yet.",
+            "confirmar": "Generate the charges for {{mes}}",
+            "enviando": "Generating…"
+          },
+          "accesos": {
+            "aria": "Links to the detailed operations",
+            "titulo": "Detailed operations",
+            "cobros": "Tenant charges",
+            "cobrosDetalle": "Invoices, aging and reconciliation",
+            "propietarios": "Owner payouts",
+            "propietariosDetalle": "Settlements and payout batches",
+            "tesoreria": "Treasury",
+            "tesoreriaDetalle": "Balances, movements and approvals"
+          },
+          "actividad": {
+            "aria": "Recent activity",
+            "titulo": "Recent activity",
+            "queEs": "the recent activity",
+            "verTodo": "See all {{n}}",
+            "vacio": "No recent activity yet."
+          }
+        },
         "disabled": {
           "title": "Payments AI isn't active yet",
           "description": "This feature is in preview and not enabled for your agency yet. We'll let you know when it's ready."
@@ -10781,6 +10837,30 @@
       "sinDato": "Not on file"
     }
   },
+  "cartera": {
+    "tabla": {
+      "inquilino": "Tenant",
+      "inmueble": "Property",
+      "propietario": "Owner",
+      "mes": "Month",
+      "debe": "Owes",
+      "mora": "Overdue",
+      "verCobro": "View the charge",
+      "whatsapp": "Message on WhatsApp",
+      "vence": "due {{fecha}}",
+      "abonado": "paid {{monto}}",
+      "alDia": "Not due yet",
+      "unDiaDeMora": "1 day",
+      "diasDeMora": "{{n}} days",
+      "unRecordatorio": "1 reminder",
+      "recordatorios": "{{n}} reminders",
+      "sinRecordatorios": "No reminders sent",
+      "sinInquilino": "No tenant on file",
+      "sinTelefono": "No phone number",
+      "sinDireccion": "No address",
+      "sinPropietario": "Owner not on file"
+    }
+  },
   "migracion": {
     "nav": "Migration",
     "puc": {
@@ -10891,6 +10971,39 @@
     "terceros": {
       "titulo": "Third parties: owners and tenants",
       "subtitulo": "Upload the file you already have — it does not need to match our format. Nothing is created until you review it: whatever a row is missing gets filled in right here, without uploading anything again."
+    }
+  },
+  "reglasDeMora": {
+    "queEs": "the late-fee rules",
+    "queSon": "late-fee rules",
+    "conteo": {
+      "una": "rule, in the order it is applied",
+      "varias": "rules, in the order they are applied"
+    },
+    "tabla": {
+      "orden": "Order",
+      "regla": "Rule",
+      "disparo": "When it triggers",
+      "cobro": "What it charges",
+      "tope": "Cap",
+      "estado": "Status",
+      "acciones": "Actions",
+      "activa": "Active",
+      "apagada": "Off",
+      "editar": "Edit"
+    },
+    "vacio": {
+      "titulo": "No late-fee rules yet",
+      "descripcion": "With no rules, an overdue charge adds nothing: the tenant's balance stays the same no matter how much time goes by.",
+      "crear": "Create a rule"
+    },
+    "sugerencias": {
+      "etiqueta": "Suggestion",
+      "usar": "Use this rule",
+      "vacioTitulo": "Start with one of these",
+      "vacioDescripcion": "These are the two rules every property manager charges. They do not exist yet: they are created only when you tap “Use this rule”, and you can edit or turn them off from there.",
+      "conReglasTitulo": "Others you could add",
+      "conReglasDescripcion": "These are not created. They are suggestions on top of what you already have above; if one is useful, it is created with a single tap."
     }
   }
 }

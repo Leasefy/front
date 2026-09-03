@@ -3324,6 +3324,9 @@
       },
       "mandateDialog": {
         "title": "¿De quién es este inmueble?",
+        "titleConDueno": "Consignar a {{nombre}}",
+        "subtitleConDueno": "«{{title}}» queda a nombre de {{nombre}}. Falta la comisión que cobrás por administrarlo y desde cuándo.",
+        "cambiarPropietario": "Es de otro",
         "subtitle": "«{{title}}» ya está en tu portafolio, pero no sabemos quién es el dueño ni qué comisión cobras por administrarlo. Sin eso no se puede publicar ni pagarle a nadie.",
         "propietarioLabel": "Propietario",
         "commissionLabel": "Comisión de la agencia",
@@ -8487,6 +8490,59 @@
       "pagos_home": {
         "title": "Pagos IA",
         "subtitle": "Cobros, pagos recibidos y liquidaciones a propietarios, orquestados por el agente.",
+        "resumen": {
+          "nuevaFactura": "Nueva factura",
+          "atencion": {
+            "aria": "Qué necesita tu atención",
+            "titulo": "Qué necesita tu atención",
+            "verCola": "Ver la cola completa",
+            "fallo": "No pudimos cargar la bandeja. Intentá de nuevo en unos minutos."
+          },
+          "cobros": {
+            "aria": "Cobros del mes",
+            "titulo": "Cobros de",
+            "mesAria": "Mes de los cobros",
+            "queEs": "los cobros del mes",
+            "queSon": "cobros",
+            "generarCta": "Generar los cobros de {{mes}}",
+            "vacioTitulo": "Todavía no hay cobros de {{mes}}",
+            "vacioDescripcion": "Generá los cobros de {{mes}} para los contratos activos y aparecen acá."
+          },
+          "kpi": {
+            "cobrosDelMes": "Cobros del mes",
+            "recaudado": "Recaudado",
+            "pendiente": "Pendiente por cobrar",
+            "enMora": "En mora"
+          },
+          "generar": {
+            "titulo": "Generar los cobros de {{mes}}",
+            "descripcion": "Crea el cobro de arriendo de {{mes}} para los contratos activos de tu inmobiliaria. Revisá el alcance antes de confirmar.",
+            "queEs": "la generación de cobros",
+            "mesLabel": "Mes sobre el que se genera",
+            "yaGeneradosLabel": "Cobros de ese mes que ya existen",
+            "avisoYaHay": "Ya hay {{n}} cobros de {{mes}}. Revisá la tabla antes de volver a generar.",
+            "avisoLimpio": "Todavía no hay ningún cobro de {{mes}}.",
+            "confirmar": "Generar los cobros de {{mes}}",
+            "enviando": "Generando…"
+          },
+          "accesos": {
+            "aria": "Accesos a las operaciones detalladas",
+            "titulo": "Operaciones detalladas",
+            "cobros": "Cobros a inquilinos",
+            "cobrosDetalle": "Facturas, cartera y conciliación",
+            "propietarios": "Pagos a propietarios",
+            "propietariosDetalle": "Liquidaciones y lotes de dispersión",
+            "tesoreria": "Tesorería",
+            "tesoreriaDetalle": "Saldos, movimientos y aprobaciones"
+          },
+          "actividad": {
+            "aria": "Actividad reciente",
+            "titulo": "Actividad reciente",
+            "queEs": "la actividad reciente",
+            "verTodo": "Ver las {{n}}",
+            "vacio": "Sin actividad reciente todavía."
+          }
+        },
         "disabled": {
           "title": "Pagos IA no está activo todavía",
           "description": "Esta funcionalidad está en vista previa y aún no está habilitada para tu inmobiliaria. Te avisaremos cuando esté lista."
@@ -10782,6 +10838,30 @@
       "sinDato": "No registrado"
     }
   },
+  "cartera": {
+    "tabla": {
+      "inquilino": "Inquilino",
+      "inmueble": "Inmueble",
+      "propietario": "Propietario",
+      "mes": "Mes",
+      "debe": "Debe",
+      "mora": "Mora",
+      "verCobro": "Ver el cobro",
+      "whatsapp": "Escribir por WhatsApp",
+      "vence": "vence {{fecha}}",
+      "abonado": "abon\u00f3 {{monto}}",
+      "alDia": "Al d\u00eda",
+      "unDiaDeMora": "1 d\u00eda",
+      "diasDeMora": "{{n}} d\u00edas",
+      "unRecordatorio": "1 recordatorio",
+      "recordatorios": "{{n}} recordatorios",
+      "sinRecordatorios": "Sin recordatorios",
+      "sinInquilino": "Sin inquilino registrado",
+      "sinTelefono": "Sin tel\u00e9fono",
+      "sinDireccion": "Sin direcci\u00f3n",
+      "sinPropietario": "Sin consignar"
+    }
+  },
   "migracion": {
     "nav": "Migración",
     "puc": {
@@ -10892,6 +10972,39 @@
     "terceros": {
       "titulo": "Terceros: propietarios e inquilinos",
       "subtitulo": "Subí el archivo que ya tenés — no hace falta que tenga nuestro formato. Nada se crea hasta que revises: lo que le falte a una fila se completa acá mismo, sin volver a subir nada."
+    }
+  },
+  "reglasDeMora": {
+    "queEs": "las reglas de mora",
+    "queSon": "reglas de mora",
+    "conteo": {
+      "una": "regla, en el orden en que se aplica",
+      "varias": "reglas, en el orden en que se aplican"
+    },
+    "tabla": {
+      "orden": "Orden",
+      "regla": "Regla",
+      "disparo": "Cuándo se dispara",
+      "cobro": "Cuánto cobra",
+      "tope": "Tope",
+      "estado": "Estado",
+      "acciones": "Acciones",
+      "activa": "Activa",
+      "apagada": "Apagada",
+      "editar": "Editar"
+    },
+    "vacio": {
+      "titulo": "Todavía no hay reglas de mora",
+      "descripcion": "Sin reglas, un cobro vencido no suma nada: el saldo del inquilino queda igual pase el tiempo que pase.",
+      "crear": "Crear una regla"
+    },
+    "sugerencias": {
+      "etiqueta": "Sugerencia",
+      "usar": "Usar esta regla",
+      "vacioTitulo": "Empezá con una de estas",
+      "vacioDescripcion": "Son las dos reglas con las que cobra cualquier inmobiliaria. Todavía no existen: se crean recién cuando toques «Usar esta regla», y desde ahí las podés editar o apagar.",
+      "conReglasTitulo": "Otras que podrías agregar",
+      "conReglasDescripcion": "No están creadas. Son sugerencias sobre lo que ya tenés arriba; si te sirve alguna, se crea con un toque."
     }
   }
 }

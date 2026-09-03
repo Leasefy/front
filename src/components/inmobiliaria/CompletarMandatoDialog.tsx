@@ -283,6 +283,12 @@ export function CompletarMandatoDialog({
   const [agenteId, setAgenteId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  // Se entró desde la ficha de un propietario: ya sabemos de quién es.
+  const [cambiandoDueno, setCambiandoDueno] = useState(false);
+  const duenoConocido =
+    !cambiandoDueno && propietarioInicial
+      ? (propietarios.find((p) => p.id === propietarioInicial) ?? null)
+      : null;
 
   // Reset the form every time a NEW row is opened — otherwise the second
   // "Completar mandato" of the session reopens with the first one's answers.
@@ -295,6 +301,7 @@ export function CompletarMandatoDialog({
     setContractDate(todayISO());
     setAgenteId(null);
     setFormError(null);
+    setCambiandoDueno(false);
   }, [inmueble, propietarioInicial]);
 
   if (!inmueble) return null;
@@ -376,9 +383,18 @@ export function CompletarMandatoDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t('inmobiliaria.consignaciones.mandateDialog.title')}</DialogTitle>
+          <DialogTitle>
+            {duenoConocido
+              ? t('inmobiliaria.consignaciones.mandateDialog.titleConDueno', { nombre: duenoConocido.name })
+              : t('inmobiliaria.consignaciones.mandateDialog.title')}
+          </DialogTitle>
           <DialogDescription>
-            {t('inmobiliaria.consignaciones.mandateDialog.subtitle', { title: inmueble.propertyTitle })}
+            {duenoConocido
+              ? t('inmobiliaria.consignaciones.mandateDialog.subtitleConDueno', {
+                  title: inmueble.propertyTitle,
+                  nombre: duenoConocido.name,
+                })
+              : t('inmobiliaria.consignaciones.mandateDialog.subtitle', { title: inmueble.propertyTitle })}
           </DialogDescription>
         </DialogHeader>
 
@@ -402,6 +418,31 @@ export function CompletarMandatoDialog({
             </p>
           )}
 
+          {/* Viniendo de la ficha de un propietario ya sabemos de quién es:
+              preguntarlo otra vez es preguntar lo que la pantalla anterior
+              acaba de decir (Nico, 2026-09-02). Se confirma y se ofrece la
+              salida por si se equivocó de puerta. */}
+          {duenoConocido && !cambiandoDueno ? (
+            <div
+              className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface-muted px-3 py-2.5"
+              data-testid="mandato-dueno-conocido"
+            >
+              <span className="min-w-0 text-sm text-fg">
+                <span className="text-fg-muted">
+                  {t('inmobiliaria.consignaciones.mandateDialog.propietarioLabel')}:{' '}
+                </span>
+                <span className="font-medium">{duenoConocido.name}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setCambiandoDueno(true)}
+                className="shrink-0 text-sm text-primary underline-offset-2 hover:underline"
+                data-testid="mandato-cambiar-dueno"
+              >
+                {t('inmobiliaria.consignaciones.mandateDialog.cambiarPropietario')}
+              </button>
+            </div>
+          ) : (
           <div>
             <label className="block text-sm font-medium text-fg-muted mb-2">
               {t('inmobiliaria.consignaciones.mandateDialog.propietarioLabel')}
@@ -416,6 +457,7 @@ export function CompletarMandatoDialog({
               newPropietarioData={newPropietarioData}
             />
           </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-fg-muted mb-2">

@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * PilotoDock.tsx — el tray de procesos, abajo a la derecha.
+ * PilotoDock.tsx — el tray de procesos, colgando del header.
  *
  * Nico (2026-09-02): «la vista de procesos normalmente es un menú flotante
  * en la parte inferior derecha que se abre a demanda y ver todo lo que hay
@@ -26,6 +26,7 @@ import { AirTrafficControl, ArrowUpRight, X } from '@phosphor-icons/react'
 import { Chip } from '@leasefy/cadence'
 
 import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
+import { usePilotoDock } from '@/lib/hooks/piloto/piloto-dock-context'
 import { usePilotoFlotaCompartida } from '@/lib/hooks/piloto/piloto-flota-context'
 import { usePilotoProcesos } from '@/lib/hooks/piloto/use-piloto-procesos'
 import { useI18n } from '@/lib/i18n'
@@ -35,49 +36,21 @@ import { PilotoCajon, type PilotoApertura } from './PilotoCajon'
 import { ProcesoFila } from './ProcesoCard'
 import { RUTA_PROCESOS } from './PilotoModoHeader'
 
-const CLAVE_ABIERTO = 'piloto-dock-abierto'
 const TIPOS: Array<TipoDeProceso | 'todos'> = ['todos', 'deposito', 'llamada', 'whatsapp']
 /** Cuántas filas caben sin que el tray se vuelva la página. */
 const TOPE = 25
-
-function leerAbierto(): boolean {
-  try {
-    return window.localStorage.getItem(CLAVE_ABIERTO) === '1'
-  } catch {
-    return false
-  }
-}
-
-function guardarAbierto(v: boolean): void {
-  try {
-    window.localStorage.setItem(CLAVE_ABIERTO, v ? '1' : '0')
-  } catch {
-    // sin localStorage no se recuerda: no pasa nada
-  }
-}
 
 export function PilotoDock() {
   const { t } = useI18n()
   const pathname = usePathname()
   const flota = usePilotoFlotaCompartida()
-  const [abierto, setAbierto] = useState(false)
+  // Lo abre la píldora del Piloto en el header: el estado es compartido.
+  const { abierto, alternar } = usePilotoDock()
   const [tipo, setTipo] = useState<TipoDeProceso | 'todos'>('todos')
   const [pila, setPila] = useState<PilotoApertura[]>([])
 
-  // El estado recordado se lee DESPUÉS de montar: en el servidor no hay ventana.
-  useEffect(() => {
-    setAbierto(leerAbierto())
-  }, [])
-
   const enLaPagina = pathname?.startsWith(RUTA_PROCESOS) ?? false
   const procesos = usePilotoProcesos({ tipo, limite: TOPE, activo: abierto && !enLaPagina })
-
-  const alternar = useCallback(() => {
-    setAbierto((v) => {
-      guardarAbierto(!v)
-      return !v
-    })
-  }, [])
 
   // Escape o un clic AFUERA cierran el tray (si no hay un cajón encima: ese
   // cierra el suyo). El clic afuera se escucha en `mousedown` para que un
@@ -113,21 +86,12 @@ export function PilotoDock() {
   // Sin flota (sin micro, sin agencia) no hay tray: no se inventa nada.
   if (flota.notAvailable || enLaPagina) return null
 
-  const etiquetaBoton =
-    vivo.llamadas > 0
-      ? t('inmobiliaria.piloto.flota.llamadas', { n: String(vivo.llamadas) })
-      : vivo.conciliando > 0
-        ? t('inmobiliaria.piloto.flota.conciliando', { n: String(vivo.conciliando) })
-        : vivo.esperando > 0
-          ? t('inmobiliaria.piloto.flota.esperando', { n: String(vivo.esperando) })
-          : t('inmobiliaria.piloto.dock.boton')
-
   return (
     <>
       {/* bottom-24 en móvil: por encima de la barra de navegación inferior (h-16 + safe area). */}
       <div
         ref={contenedorRef}
-        className="pointer-events-none fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-3 z-40 flex flex-col items-end gap-2 sm:right-5 lg:bottom-5"
+        className="pointer-events-none fixed right-3 top-[calc(var(--plan-header-h,4rem)+0.5rem)] z-40 flex max-h-[calc(100dvh-var(--plan-header-h,4rem)-1.5rem)] flex-col items-end gap-2 sm:right-5"
         data-testid="piloto-dock"
         data-abierto={abierto ? '1' : '0'}
       >
@@ -231,36 +195,6 @@ export function PilotoDock() {
           </section>
         )}
 
-        <button
-          type="button"
-          onClick={alternar}
-          aria-expanded={abierto}
-          aria-label={t('inmobiliaria.piloto.dock.aria')}
-          data-testid="piloto-dock-boton"
-          className={cn(
-            'pointer-events-auto inline-flex h-11 items-center gap-2 rounded-full border px-3.5 text-body-sm font-medium shadow-lg transition-colors',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
-            abierto
-              ? 'border-border bg-surface text-fg hover:bg-surface-muted'
-              : 'border-fg bg-fg text-bg hover:opacity-90',
-          )}
-        >
-          <span className="relative flex h-5 w-5 items-center justify-center" aria-hidden="true">
-            <AirTrafficControl weight="duotone" className="h-5 w-5" />
-            {enVivo > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
-              </span>
-            )}
-          </span>
-          <span className="max-w-[220px] truncate">{etiquetaBoton}</span>
-          {!abierto && vivo.esperando > 0 && enVivo === 0 && (
-            <span className="rounded-full bg-warning px-1.5 font-mono text-[11px] tabular-nums text-primary-fg" data-testid="piloto-dock-badge">
-              {vivo.esperando}
-            </span>
-          )}
-        </button>
       </div>
 
       <PilotoCajon

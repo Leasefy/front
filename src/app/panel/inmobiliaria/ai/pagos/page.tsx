@@ -1,58 +1,72 @@
 'use client'
 
 /**
- * /ai/pagos — HOME BESPOKE "Pagos IA".
+ * /ai/pagos — HOME "Pagos IA", pestaña «Resumen».
  *
- * Reemplaza la home genérica (<SalaAgente>) por una superficie a medida del
- * agente de Pagos (visión): 8 KPIs, la bandeja "Qué necesita tu atención", los
- * dos mundos (cobros a inquilinos / pagos a propietarios), el "cómo funciona" en
- * 4 pasos y el feed de actividad reciente.
+ * ── Qué cambió y por qué (2026-09-02) ────────────────────────────────────────
+ * Nico: «no tiene la tabla que usamos, eso de "generar cobros del mes" no se
+ * entiende, y la actividad reciente es enorme».
  *
- * SOLO UX sobre el backend ya funcional: useAgentOverview('pagos') (KPIs + feed)
- * + useAgentWorkItems('pagos') (la cola humana, T-323). Las operaciones profundas
- * (facturas, aging, payment-runs, dispersiones) VIVEN en /cobros, /dispersiones y
- * /tesoreria — acá se cross-linkean, NUNCA se duplican.
+ * 1. LOS 8 KPIs EN «—». No era falta de datos: `useAgentOverview('pagos')`
+ *    responde **200 con datos**, pero el microservicio emite otros tres
+ *    indicadores (`collected_30d_cop`, `approval_rate_30d`,
+ *    `pending_verification`) que no se cruzan con NINGUNO de los 8 ids que esta
+ *    pantalla buscaba. Cero intersección ⇒ los 8 caían al `'—'` por defecto, y
+ *    como la respuesta fue exitosa `error` quedaba en `null`: un «—» silencioso
+ *    que en realidad significaba «pregunté otra cosa».
+ *    Y encima era otro dominio: esos KPIs salen de la tabla `payment` del micro,
+ *    que sólo escriben los flujos de cobranza por VOZ — no los cobros del ERP.
+ *    ⇒ Los 8 slots muertos se retiran. Los indicadores ahora se derivan de los
+ *      cobros REALES del mes (back-erp, desplegado), en `CobrosDelMesPanel`.
+ *
+ * 2. «GENERAR COBROS DEL MES» no se entendía y además no generaba nada: llevaba
+ *    a `/ai/pagos/generar`, cuyo modo masivo es una vista previa ILUSTRATIVA con
+ *    el CTA en «Próximamente». El endpoint real (`POST /inmobiliaria/cobros/
+ *    generate`) existía, estaba desplegado y no lo llamaba nadie.
+ *    ⇒ Ahora es «Generar los cobros de {mes}», vive al lado del selector de mes
+ *      (para que su alcance se vea) y pasa por una confirmación que dice el mes
+ *      y cuántos cobros de ese mes YA existen. Ver `GenerarCobrosDialog`.
+ *
+ * 3. LA TABLA QUE FALTABA. Se reusa `CobroTable` —la tabla de la casa— con
+ *    `useTablePagination` + `TablePagination`, y `SinDatos` para el vacío.
+ *
+ * 4. ACTIVIDAD RECIENTE. Era una sección a página completa; queda acotada a las
+ *    últimas 5 con «ver todo».
+ *
+ * 5. «DOS MUNDOS» + «CÓMO FUNCIONA» + «OPERACIONES DETALLADAS» eran tres
+ *    secciones de texto explicativo (dos con viñetas largas) que ocupaban más
+ *    que la operación. Se funden en UNA fila compacta de accesos. La pantalla es
+ *    para operar, no para leer.
  *
  * Tokens del DS en todo (CERO hex). Un solo CTA primary por vista.
  */
 
 import Link from 'next/link'
 import {
-  CurrencyDollar,
   Receipt,
-  PaperPlaneTilt,
-  CheckCircle,
-  Link as LinkIcon,
-  XCircle,
   Wallet,
-  ListChecks,
-  BellRinging,
-  ArrowsClockwise,
   CaretRight,
-  ArrowSquareOut,
   Clock,
   Robot,
   User as UserIcon,
   Gear,
+  PaperPlaneTilt,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
-import { Button, Card, EmptyState, Badge } from '@/components/ui'
+import { Button, Card, Badge } from '@/components/ui'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { PrioridadInbox } from '@/components/inmobiliaria/pagos/PrioridadInbox'
+import { CobrosDelMesPanel } from '@/components/inmobiliaria/pagos/CobrosDelMesPanel'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import type { OverviewFeedEntry } from '@/lib/api/agent-workspace'
+import { useI18n } from '@/lib/i18n'
 
-// ── Formateadores ──────────────────────────────────────────────────────────
-
-const copFormatter = new Intl.NumberFormat('es-CO', {
-  style: 'currency',
-  currency: 'COP',
-  maximumFractionDigits: 0,
-})
-const numberFormatter = new Intl.NumberFormat('es-CO')
+/** Cuántas entradas del feed caben antes de que la sección deje de ser un resumen. */
+const MAX_ACTIVIDAD = 5
 
 /** Tiempo relativo en español, autosuficiente (no depende de keys i18n). */
 function tiempoRelativo(iso: string): string {
@@ -67,88 +81,34 @@ function tiempoRelativo(iso: string): string {
   return `hace ${Math.round(h / 24)} d`
 }
 
-// ── KPIs (visión §3) ─────────────────────────────────────────────────────────
-// 8 tarjetas con orden y formato fijos. Cada una se llena con overview.kpis si
-// hay match por id/label; si no hay dato → "—" (NUNCA inventamos números).
+// ── Accesos (reemplazan «Dos mundos» + «Cómo funciona» + «Operaciones») ──────
 
-type KpiSlot = {
-  /** Posibles ids del backend que corresponden a esta tarjeta. */
-  ids: string[]
-  label: string
-  icon: Icon
-  format: 'number' | 'cop'
-}
-
-const KPI_SLOTS: KpiSlot[] = [
-  { ids: ['cobros_programados', 'programados'], label: 'Cobros programados', icon: ListChecks, format: 'number' },
-  { ids: ['cobros_enviados', 'enviados'], label: 'Cobros enviados', icon: PaperPlaneTilt, format: 'number' },
-  { ids: ['pagos_recibidos', 'recibidos'], label: 'Pagos recibidos', icon: CheckCircle, format: 'number' },
-  { ids: ['links_pendientes', 'links'], label: 'Links pendientes', icon: LinkIcon, format: 'number' },
-  { ids: ['pagos_fallidos', 'fallidos'], label: 'Pagos fallidos', icon: XCircle, format: 'number' },
-  { ids: ['valor_recaudado', 'recaudado'], label: 'Valor recaudado', icon: CurrencyDollar, format: 'cop' },
-  { ids: ['pagos_propietarios_listos', 'propietarios_listos'], label: 'Pagos a propietarios listos', icon: Wallet, format: 'number' },
-  { ids: ['valor_pendiente_liquidar', 'pendiente_liquidar'], label: 'Valor pendiente por liquidar', icon: Receipt, format: 'cop' },
-]
-
-// ── "Dos mundos" (visión §2) ──────────────────────────────────────────────────
-
-const DOS_MUNDOS: {
-  titulo: string
-  desc: string
-  href: string
-  icon: Icon
-  bullets: string[]
-}[] = [
+const ACCESOS: { claveLabel: string; claveDetalle: string; href: string; icon: Icon }[] = [
   {
-    titulo: 'Cobros a inquilinos',
-    desc: 'El dinero que entra: arriendos, administración y cuotas.',
-    href: '/panel/inmobiliaria/ai/pagos/cobros',
+    claveLabel: 'inmobiliaria.ai.pagos_home.resumen.accesos.cobros',
+    claveDetalle: 'inmobiliaria.ai.pagos_home.resumen.accesos.cobrosDetalle',
+    href: '/panel/inmobiliaria/cobros',
     icon: Receipt,
-    bullets: [
-      'Genera el cobro y el link de pago del mes',
-      'Envía recordatorios automáticos antes y después del vencimiento',
-      'Detecta pagos fallidos y reintenta el cobro',
-      'Concilia el pago contra el contrato',
-    ],
   },
   {
-    titulo: 'Pagos a propietarios',
-    desc: 'El dinero que sale: liquidación al dueño del inmueble.',
-    href: '/panel/inmobiliaria/ai/pagos/propietarios',
+    claveLabel: 'inmobiliaria.ai.pagos_home.resumen.accesos.propietarios',
+    claveDetalle: 'inmobiliaria.ai.pagos_home.resumen.accesos.propietariosDetalle',
+    href: '/panel/inmobiliaria/dispersiones',
     icon: Wallet,
-    bullets: [
-      'Calcula la liquidación: arriendo menos comisión y descuentos',
-      'Arma el lote de pagos listos para dispersar',
-      'Deja la dispersión lista para tu aprobación',
-      'Genera el soporte y el comprobante para el propietario',
-    ],
+  },
+  {
+    claveLabel: 'inmobiliaria.ai.pagos_home.resumen.accesos.tesoreria',
+    claveDetalle: 'inmobiliaria.ai.pagos_home.resumen.accesos.tesoreriaDetalle',
+    href: '/panel/inmobiliaria/tesoreria',
+    icon: PaperPlaneTilt,
   },
 ]
-
-// ── "Cómo funciona" (visión) — 4 pasos ────────────────────────────────────────
-
-const COMO_FUNCIONA: { icon: Icon; titulo: string; desc: string }[] = [
-  { icon: Receipt, titulo: 'El contrato genera la obligación', desc: 'Cada contrato activo crea el cobro del periodo automáticamente.' },
-  { icon: PaperPlaneTilt, titulo: 'El agente crea el cobro y el link', desc: 'Arma el cobro, genera el link de pago y lo envía al inquilino.' },
-  { icon: BellRinging, titulo: 'Monitorea y recuerda', desc: 'Sigue el estado del pago y envía recordatorios cuando hace falta.' },
-  { icon: ArrowsClockwise, titulo: 'Concilia, cobra o liquida', desc: 'Concilia el ingreso, escala a cobranza si vence y liquida al propietario.' },
-]
-
-// ── Operaciones profundas — cross-links, no duplicación ────────────────────────
-
-const OPERACIONES_PROFUNDAS: { label: string; detalle: string; href: string; icon: Icon }[] = [
-  { label: 'Cobros', detalle: 'Facturas, aging y conciliación detallada', href: '/panel/inmobiliaria/cobros', icon: Receipt },
-  { label: 'Dispersiones', detalle: 'Lotes de pago y payment-runs a propietarios', href: '/panel/inmobiliaria/dispersiones', icon: PaperPlaneTilt },
-  { label: 'Tesorería', detalle: 'Saldos, movimientos y aprobaciones', href: '/panel/inmobiliaria/tesoreria', icon: Wallet },
-]
-
-// ── Feed actor chip ────────────────────────────────────────────────────────────
 
 function FeedActorChip({ actorType }: { actorType: OverviewFeedEntry['actorType'] }) {
   if (actorType === 'agent') {
     return (
       <Badge variant="default" className="shrink-0">
-        <Robot className="w-3 h-3" weight="duotone" aria-hidden="true" />
+        <Robot className="h-3 w-3" weight="duotone" aria-hidden="true" />
         Agente
       </Badge>
     )
@@ -156,187 +116,98 @@ function FeedActorChip({ actorType }: { actorType: OverviewFeedEntry['actorType'
   if (actorType === 'user') {
     return (
       <Badge variant="secondary" className="shrink-0">
-        <UserIcon className="w-3 h-3" weight="duotone" aria-hidden="true" />
+        <UserIcon className="h-3 w-3" weight="duotone" aria-hidden="true" />
         Tú
       </Badge>
     )
   }
   return (
     <Badge variant="secondary" className="shrink-0">
-      <Gear className="w-3 h-3" weight="duotone" aria-hidden="true" />
+      <Gear className="h-3 w-3" weight="duotone" aria-hidden="true" />
       Sistema
     </Badge>
   )
 }
 
-// ── Página ──────────────────────────────────────────────────────────────────
-
 function PagosHome() {
-  const { data, isLoading: ovLoading, error: ovError } = useAgentOverview('pagos')
+  const { t } = useI18n()
+  const { data, isLoading: ovLoading, errorCrudo: ovError, refetch: ovRefetch } =
+    useAgentOverview('pagos')
   const { items, isLoading: wiLoading, error: wiError, runAction } = useAgentWorkItems('pagos')
 
-  /** Resuelve el valor de un slot de KPI desde overview.kpis (por id o label). */
-  function kpiValue(slot: KpiSlot): string {
-    const kpis = data?.kpis ?? []
-    const match = kpis.find(
-      (k) =>
-        slot.ids.includes(k.id) ||
-        slot.label.toLowerCase() === k.label.toLowerCase(),
-    )
-    if (!match) return '—'
-    return slot.format === 'cop'
-      ? copFormatter.format(match.value)
-      : numberFormatter.format(match.value)
-  }
-
   const feed = data?.feed ?? []
+  const feedVisible = feed.slice(0, MAX_ACTIVIDAD)
+  const hayAtencion = items.length > 0
 
   return (
-    <div className="p-6 lg:p-8 space-y-8">
+    <div className="space-y-8 p-6 lg:p-8">
       {/* Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">Pagos IA</h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
-            Gestiona cobros, links de pago, recordatorios, pagos fallidos y liquidaciones desde un
-            solo lugar.
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+            {t('inmobiliaria.ai.pagos_home.title')}
+          </h1>
+          <p className="max-w-2xl text-sm text-fg-muted">
+            {t('inmobiliaria.ai.pagos_home.subtitle')}
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {/* El CTA primary de la vista es «Generar los cobros de {mes}», y vive
+              en el panel de abajo, pegado al selector de mes: es la única forma
+              de que su alcance se lea sin abrir nada. Acá queda la acción
+              secundaria. */}
           <Button asChild variant="secondary" hideArrow>
             <Link href="/panel/inmobiliaria/tesoreria/facturas/nueva">
               <Receipt className="h-4 w-4" />
-              Nueva factura
+              {t('inmobiliaria.ai.pagos_home.resumen.nuevaFactura')}
             </Link>
-          </Button>
-          <Button asChild hideArrow>
-            <Link href="/panel/inmobiliaria/ai/pagos/generar">Generar cobros del mes</Link>
           </Button>
         </div>
       </header>
 
-      {/* KPIs (§3) */}
-      <section className="space-y-3" aria-label="Indicadores de pagos">
-        {ovError ? (
+      {/* Qué necesita tu atención — SÓLO si hay algo.
+          Antes ocupaba media pantalla con un «Todo al día» gigante. Esa bandeja
+          se alimenta de los work-items del micro (tabla `payment`, dominio de
+          cobranza por voz), así que para una agencia del ERP viene vacía casi
+          siempre: reservarle media pantalla a un vacío estructural es regalarle
+          el lugar más valioso de la vista a la nada. */}
+      {wiError ? (
+        <section className="space-y-3" aria-label={t('inmobiliaria.ai.pagos_home.resumen.atencion.aria')}>
+          <h2 className="text-base font-semibold text-fg">
+            {t('inmobiliaria.ai.pagos_home.resumen.atencion.titulo')}
+          </h2>
           <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
-            No pudimos cargar los indicadores. Intenta de nuevo en unos minutos.
+            {t('inmobiliaria.ai.pagos_home.resumen.atencion.fallo')}
           </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {KPI_SLOTS.map((slot) => {
-              const SlotIcon = slot.icon
-              return (
-                <div key={slot.label} className="rounded-lg border border-border bg-card p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-xs text-fg-muted leading-tight">{slot.label}</p>
-                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-surface-muted text-fg-muted">
-                      <SlotIcon className="w-4 h-4" weight="duotone" aria-hidden="true" />
-                    </span>
-                  </div>
-                  <p className="mt-2 text-xl font-semibold text-fg tabular-nums">
-                    {ovLoading ? '—' : kpiValue(slot)}
-                  </p>
-                </div>
-              )
-            })}
+        </section>
+      ) : hayAtencion || wiLoading ? (
+        <section className="space-y-3" aria-label={t('inmobiliaria.ai.pagos_home.resumen.atencion.aria')}>
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-base font-semibold text-fg">
+              {t('inmobiliaria.ai.pagos_home.resumen.atencion.titulo')}
+            </h2>
+            <Link
+              href="/panel/inmobiliaria/ai/pagos/cola"
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+            >
+              {t('inmobiliaria.ai.pagos_home.resumen.atencion.verCola')}
+              <CaretRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
           </div>
-        )}
-      </section>
-
-      {/* Qué necesita tu atención (§3) */}
-      <section className="space-y-3" aria-label="Qué necesita tu atención">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-base font-semibold text-fg">Qué necesita tu atención</h2>
-          <Link
-            href="/panel/inmobiliaria/ai/pagos/cola"
-            className="text-sm font-medium text-primary underline-offset-4 hover:underline inline-flex items-center gap-1"
-          >
-            Ver la cola completa
-            <CaretRight className="w-3.5 h-3.5" aria-hidden="true" />
-          </Link>
-        </div>
-        {wiError ? (
-          <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
-            No pudimos cargar la bandeja. Intenta de nuevo en unos minutos.
-          </div>
-        ) : (
           <PrioridadInbox items={items} onAction={runAction} isLoading={wiLoading} />
-        )}
-      </section>
+        </section>
+      ) : null}
 
-      {/* Dos mundos (§2) */}
-      <section className="space-y-3" aria-label="Cobros y pagos">
-        <h2 className="text-base font-semibold text-fg">Dos mundos en un solo lugar</h2>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {DOS_MUNDOS.map((mundo) => {
-            const MundoIcon = mundo.icon
-            return (
-              <Link key={mundo.href} href={mundo.href} className="group block h-full">
-                <Card interactive className="h-full p-5">
-                  <div className="flex items-start gap-3">
-                    <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary">
-                      <MundoIcon className="w-5 h-5" weight="duotone" aria-hidden="true" />
-                    </span>
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="text-base font-semibold text-fg">{mundo.titulo}</h3>
-                        <CaretRight
-                          className="w-4 h-4 text-fg-muted transition group-hover:translate-x-0.5 group-hover:text-fg shrink-0"
-                          aria-hidden="true"
-                        />
-                      </div>
-                      <p className="text-sm text-fg-muted">{mundo.desc}</p>
-                    </div>
-                  </div>
-                  <ul className="mt-4 space-y-2">
-                    {mundo.bullets.map((b) => (
-                      <li key={b} className="flex items-start gap-2 text-sm text-fg">
-                        <CheckCircle
-                          className="w-4 h-4 text-success shrink-0 mt-0.5"
-                          weight="duotone"
-                          aria-hidden="true"
-                        />
-                        <span className="leading-snug">{b}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-              </Link>
-            )
-          })}
-        </div>
-      </section>
+      {/* El bloque operativo: mes + indicadores reales + acción masiva + tabla. */}
+      <CobrosDelMesPanel />
 
-      {/* Cómo funciona — 4 pasos */}
-      <section className="space-y-3" aria-label="Cómo funciona">
-        <h2 className="text-base font-semibold text-fg">Cómo funciona</h2>
-        <ol className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {COMO_FUNCIONA.map((step, i) => {
-            const StepIcon = step.icon
-            return (
-              <li
-                key={step.titulo}
-                className="flex h-full flex-col gap-2 rounded-lg border border-border bg-card p-4"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary">
-                    <StepIcon className="w-4 h-4" weight="duotone" aria-hidden="true" />
-                  </span>
-                  <span className="text-xs tabular-nums text-fg-muted">Paso {i + 1}</span>
-                </div>
-                <p className="text-sm font-semibold text-fg leading-tight">{step.titulo}</p>
-                <p className="text-xs text-fg-muted leading-snug">{step.desc}</p>
-              </li>
-            )
-          })}
-        </ol>
-      </section>
-
-      {/* Operaciones profundas — cross-links */}
-      <section className="space-y-3" aria-label="Operaciones detalladas">
-        <h2 className="text-base font-semibold text-fg">Operaciones detalladas</h2>
+      {/* Accesos — una fila, no tres secciones de texto. */}
+      <section className="space-y-3" aria-label={t('inmobiliaria.ai.pagos_home.resumen.accesos.aria')}>
+        <h2 className="text-base font-semibold text-fg">
+          {t('inmobiliaria.ai.pagos_home.resumen.accesos.titulo')}
+        </h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {OPERACIONES_PROFUNDAS.map((op) => {
+          {ACCESOS.map((op) => {
             const OpIcon = op.icon
             return (
               <Link
@@ -344,15 +215,15 @@ function PagosHome() {
                 href={op.href}
                 className="group flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 transition hover:bg-surface-muted/50"
               >
-                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-muted text-fg-muted group-hover:text-fg transition">
-                  <OpIcon className="w-5 h-5" weight="duotone" aria-hidden="true" />
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-muted text-fg-muted transition group-hover:text-fg">
+                  <OpIcon className="h-5 w-5" weight="duotone" aria-hidden="true" />
                 </span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-sm font-medium text-fg">{op.label}</span>
-                  <span className="block text-xs text-fg-muted truncate">{op.detalle}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-medium text-fg">{t(op.claveLabel)}</span>
+                  <span className="block truncate text-xs text-fg-muted">{t(op.claveDetalle)}</span>
                 </span>
-                <ArrowSquareOut
-                  className="w-3.5 h-3.5 text-fg-muted group-hover:text-fg transition shrink-0"
+                <CaretRight
+                  className="h-3.5 w-3.5 shrink-0 text-fg-muted transition group-hover:translate-x-0.5 group-hover:text-fg"
                   aria-hidden="true"
                 />
               </Link>
@@ -361,28 +232,51 @@ function PagosHome() {
         </div>
       </section>
 
-      {/* Actividad reciente */}
-      <section className="space-y-3" aria-label="Actividad reciente">
-        <h2 className="text-base font-semibold text-fg">Actividad reciente</h2>
-        {ovLoading ? (
-          <div className="h-40 rounded-lg border border-border bg-surface-muted animate-pulse" />
-        ) : feed.length === 0 ? (
-          <EmptyState
-            icon={Clock}
-            title="Sin actividad reciente"
-            description="Cuando el agente genere cobros, envíe links o registre pagos, lo verás aquí."
+      {/* Actividad reciente — acotada a 5. */}
+      <section className="space-y-3" aria-label={t('inmobiliaria.ai.pagos_home.resumen.actividad.aria')}>
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-base font-semibold text-fg">
+            {t('inmobiliaria.ai.pagos_home.resumen.actividad.titulo')}
+          </h2>
+          {feed.length > MAX_ACTIVIDAD && (
+            <Link
+              href="/panel/inmobiliaria/ai/pagos/cola"
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+              data-testid="actividad-ver-todo"
+            >
+              {t('inmobiliaria.ai.pagos_home.resumen.actividad.verTodo', { n: feed.length })}
+              <CaretRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          )}
+        </div>
+        {ovError ? (
+          <FalloDeCarga
+            error={ovError}
+            queEs={t('inmobiliaria.ai.pagos_home.resumen.actividad.queEs')}
+            onReintentar={ovRefetch}
           />
+        ) : ovLoading ? (
+          <div className="h-24 animate-pulse rounded-lg border border-border bg-surface-muted" />
+        ) : feedVisible.length === 0 ? (
+          /* Vacío en una línea, no en un cartel de 200 px. */
+          <p
+            className="rounded-lg border border-border bg-card px-4 py-3 text-sm text-fg-muted"
+            data-testid="actividad-vacia"
+          >
+            <Clock className="mr-2 inline h-4 w-4 align-text-bottom" weight="duotone" aria-hidden="true" />
+            {t('inmobiliaria.ai.pagos_home.resumen.actividad.vacio')}
+          </p>
         ) : (
           <Card className="p-2">
             <ul className="divide-y divide-border">
-              {feed.map((entry) => (
+              {feedVisible.map((entry) => (
                 <li key={entry.id} className="flex items-start gap-3 px-3 py-3">
                   <FeedActorChip actorType={entry.actorType} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-fg truncate">{entry.titulo}</p>
-                    <p className="text-xs text-fg-muted truncate">{entry.detalle}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-fg">{entry.titulo}</p>
+                    <p className="truncate text-xs text-fg-muted">{entry.detalle}</p>
                   </div>
-                  <span className="text-xs text-fg-muted tabular-nums shrink-0">
+                  <span className="shrink-0 text-xs tabular-nums text-fg-muted">
                     {tiempoRelativo(entry.occurredAt)}
                   </span>
                 </li>

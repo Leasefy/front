@@ -1,41 +1,80 @@
 'use client';
 
 /**
- * Reglas de mora — la lista, el estado vacío con las dos plantillas, y el
- * editor.
+ * Reglas de mora — la tabla, el vacío, las sugerencias, y el editor.
  *
- * Los permisos son los del back: ver con `cobros/view`, crear con
- * `cobros/create`, editar y apagar con `cobros/edit`. Mientras los permisos
- * cargan se muestra todo; si después el back dice que no, devuelve 403 y el
- * mensaje se ve igual.
+ * ── Por qué es una tabla (Nico, 2026-09-02) ───────────────────────────────
+ * «Esto se ve raro, ahí se ve como un empty state pero también hay reglas
+ * creadas, quizás mejor acá manejemos una tabla de las que usamos completas
+ * para cuando haya reglas creadas.»
+ *
+ * El problema no era la lista: era que las dos PLANTILLAS —tarjetas con
+ * botón «Usar esta regla»— quedaban justo debajo del vacío y se leían como
+ * reglas ya creadas. Una plantilla no existe en la base, no tiene `id`, no
+ * cobra un peso y no está en ningún orden de aplicación. Así que ahora:
+ *
+ *   - lo creado va en la TABLA de la casa (Table/TableHeader/…, celdas `p-4`,
+ *     `overflow-x-auto`, fila clickeable, paginación con `useTablePagination`),
+ *     igual que inquilinos y propietarios;
+ *   - lo sugerido va en una zona aparte, con encabezado propio, borde
+ *     punteado y chip «Sugerencia»: nada que se pueda confundir con una fila
+ *     de datos.
+ *
+ * ── Permisos ──────────────────────────────────────────────────────────────
+ * Los del back: ver con `cobros/view`, crear con `cobros/create`, editar y
+ * apagar con `cobros/edit`. Mientras los permisos cargan se muestra todo; si
+ * después el back dice que no, devuelve 403 y el mensaje se ve igual.
  *
  * Una regla no se borra: se apaga. Los cobros ya emitidos apuntan a ella y
  * ahí vive la explicación de por qué se cobró eso.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Info, PencilSimple, Percent, Plus, Receipt, Scales } from '@phosphor-icons/react';
+import { Info, Lightbulb, PencilSimple, Percent, Plus, Receipt, Scales } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-state';
-import { Spinner } from '@/components/ui/spinner';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/toast';
-import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { SinDatos } from '@/components/estado/SinDatos';
+import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
+import { useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { ordenarReglas, reglasDeMoraApi } from '@/lib/api/reglas-de-mora.service';
 import type { ReglaDeMora } from '@/lib/api/reglas-de-mora.types';
 import { cn } from '@/lib/utils';
 import { EditorDeRegla } from './EditorDeRegla';
 import { PLANTILLAS, type PlantillaDeRegla, type ValoresDeRegla } from './esquema';
-import { describirRegla, NOMBRE_DEL_CONCEPTO } from './legible';
+import {
+  describirDisparador,
+  describirFormula,
+  describirRegla,
+  describirTope,
+  NOMBRE_DEL_CONCEPTO,
+  NOMBRE_DEL_DISPARADOR,
+  NOMBRE_DE_LA_FORMULA,
+} from './legible';
 
 const ICONO_DE_LA_PLANTILLA: Record<PlantillaDeRegla['id'], typeof Percent> = {
   'interes-diario': Percent,
   'gasto-administrativo': Receipt,
 };
+
+/** «desde el primer día de mora» → «Desde el primer día de mora». */
+function capitalizar(texto: string): string {
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
 
 /**
  * Las plantillas que todavía no están entre las reglas. Se comparan por lo que
@@ -59,6 +98,7 @@ function mensajeDe(error: unknown, siNo: string): string {
 }
 
 export function ReglasDeMora() {
+  const { t } = useI18n();
   const { canAccess, isLoading: permisosCargando } = usePermissions();
   const puedeCrear = permisosCargando || canAccess('cobros', 'create');
   const puedeEditar = permisosCargando || canAccess('cobros', 'edit');
@@ -93,6 +133,19 @@ export function ReglasDeMora() {
   useEffect(() => {
     void cargar();
   }, [cargar]);
+
+  /** Identidad estable: `useTablePagination` recorta sobre esta lista. */
+  const lista = useMemo(() => reglas ?? [], [reglas]);
+
+  /*
+   * Paginación en el cliente: el back devuelve las reglas de la agencia
+   * enteras, sin `page`. Suelen ser dos o tres, así que el pie casi nunca
+   * aparece —sólo cuando `total > pageSize`—; existe igual porque nada impide
+   * que una inmobiliaria arme quince y entonces la tabla sí necesita cortarse.
+   */
+  const { pageItems, total, page, pageSize, setPage, setPageSize } = useTablePagination(lista, {
+    initialPageSize: 10,
+  });
 
   const ponerRegla = useCallback((regla: ReglaDeMora) => {
     setReglas((previas) => {
@@ -152,6 +205,8 @@ export function ReglasDeMora() {
     }
   };
 
+  const faltantes = plantillasQueFaltan(lista);
+
   return (
     <div className="space-y-5">
       <p className="flex items-start gap-2 text-xs text-fg-muted" data-testid="aviso-motor" data-motor={String(motorPrendido)}>
@@ -179,121 +234,255 @@ export function ReglasDeMora() {
         )}
       </p>
 
-      {cargando ? (
-        <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <Spinner size="lg" />
-          <p className="text-sm text-fg-muted">Cargando reglas...</p>
-        </div>
-      ) : errorDeCarga ? (
-        <FalloDeCarga error={errorDeCarga} queEs="las reglas de mora" onReintentar={cargar} />
-      ) : !reglas || reglas.length === 0 ? (
-        <div className="space-y-5" data-testid="reglas-vacio">
-          {/* El vacío es la tabla sin filas: va encerrado en la misma tarjeta
-              que la tabla, como todos los vacíos del panel (Nico, 2026-09-01). */}
-          <div className="rounded-lg border border-border bg-surface">
-            <EmptyState
-              icon={Scales}
-              title="Todavía no hay reglas de mora"
-              description="Sin reglas, un cobro vencido no suma nada. Empezá con las dos que usa cualquier inmobiliaria, o armá la tuya."
-              action={puedeCrear ? { label: 'Crear una regla', onClick: abrirNueva } : undefined}
-            />
-          </div>
-          {puedeCrear && (
-            <div className="grid gap-4 md:grid-cols-2">
-              {PLANTILLAS.map((plantilla) => (
-                <TarjetaDePlantilla
-                  key={plantilla.id}
-                  plantilla={plantilla}
-                  ocupada={plantillaEnCurso === plantilla.id}
-                  deshabilitada={plantillaEnCurso !== null}
-                  onUsar={() => usarPlantilla(plantilla)}
-                />
-              ))}
+      <EstadoDeDatos
+        cargando={cargando}
+        error={errorDeCarga}
+        queEs={t('reglasDeMora.queEs')}
+        onReintentar={cargar}
+      >
+        {lista.length === 0 ? (
+          <div className="space-y-5" data-testid="reglas-vacio">
+            {/* El vacío es la tabla sin filas: va encerrado en la misma tarjeta
+                que la tabla, como todos los vacíos del panel (Nico, 2026-09-01). */}
+            <div className="overflow-hidden rounded-lg border border-border bg-card">
+              <SinDatos
+                queSon={t('reglasDeMora.queSon')}
+                icono={Scales}
+                titulo={t('reglasDeMora.vacio.titulo')}
+                descripcion={t('reglasDeMora.vacio.descripcion')}
+                crear={puedeCrear ? { label: t('reglasDeMora.vacio.crear'), onClick: abrirNueva } : undefined}
+              />
             </div>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-fg-muted">
-              <span className="font-mono tabular-nums">{reglas.length}</span>{' '}
-              {reglas.length === 1 ? 'regla' : 'reglas'}, en el orden en que se aplican
-            </p>
+
+            {/* 🔴 Fuera de la tarjeta y con encabezado propio: acá empieza otra
+                cosa. Antes esto colgaba pelado del vacío y las dos tarjetas se
+                leían como las reglas que la agencia ya tenía. */}
             {puedeCrear && (
-              <Button hideArrow size="sm" onClick={abrirNueva}>
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                Nueva regla
-              </Button>
+              <Sugerencias
+                titulo={t('reglasDeMora.sugerencias.vacioTitulo')}
+                descripcion={t('reglasDeMora.sugerencias.vacioDescripcion')}
+                plantillas={faltantes}
+                enCurso={plantillaEnCurso}
+                onUsar={usarPlantilla}
+              />
             )}
           </div>
-
-          <ul className="divide-y divide-border rounded-lg border border-border bg-surface" data-testid="reglas-lista">
-            {reglas.map((regla) => (
-              <li
-                key={regla.id}
-                data-testid={`regla-${regla.id}`}
-                className={cn(
-                  'flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4',
-                  !regla.activa && 'opacity-70',
-                )}
-              >
-                <span className="w-8 shrink-0 font-mono text-xs tabular-nums text-fg-muted">#{regla.orden}</span>
-                <div className="min-w-0 flex-1 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate font-medium text-fg">{regla.nombre}</p>
-                    <Badge variant="secondary">{NOMBRE_DEL_CONCEPTO[regla.concepto]}</Badge>
-                    {!regla.activa && <Badge variant="outline">Apagada</Badge>}
-                  </div>
-                  <p className="text-sm text-fg-muted">{describirRegla(regla)}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-3">
-                  <label className="flex items-center gap-2 text-xs text-fg-muted">
-                    <Switch
-                      checked={regla.activa}
-                      onCheckedChange={(activa) => void cambiarActiva(regla, activa)}
-                      disabled={!puedeEditar || ocupadas.has(regla.id)}
-                      aria-label={`${regla.activa ? 'Apagar' : 'Prender'} «${regla.nombre}»`}
-                      data-testid={`activa-${regla.id}`}
-                    />
-                    {regla.activa ? 'Activa' : 'Apagada'}
-                  </label>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    hideArrow
-                    onClick={() => abrirEdicion(regla)}
-                    disabled={!puedeEditar}
-                    aria-label={`Editar «${regla.nombre}»`}
-                  >
-                    <PencilSimple className="h-4 w-4" aria-hidden="true" />
-                    Editar
+        ) : (
+          <div className="space-y-5">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-fg-muted">
+                  <span className="font-mono tabular-nums">{total}</span>{' '}
+                  {t(total === 1 ? 'reglasDeMora.conteo.una' : 'reglasDeMora.conteo.varias')}
+                </p>
+                {puedeCrear && (
+                  <Button hideArrow size="sm" onClick={abrirNueva}>
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    Nueva regla
                   </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
+                )}
+              </div>
 
-          {puedeCrear && plantillasQueFaltan(reglas).length > 0 && (
-            <div className="space-y-3 pt-2" data-testid="reglas-sugerencias">
-              <p className="text-xs uppercase tracking-wide text-fg-muted">Sugerencias que todavía no tenés</p>
-              <div className="grid gap-4 md:grid-cols-2">
-                {plantillasQueFaltan(reglas).map((plantilla) => (
-                  <TarjetaDePlantilla
-                    key={plantilla.id}
-                    plantilla={plantilla}
-                    ocupada={plantillaEnCurso === plantilla.id}
-                    deshabilitada={plantillaEnCurso !== null}
-                    onUsar={() => usarPlantilla(plantilla)}
-                  />
-                ))}
+              <div className="overflow-hidden rounded-lg border border-border bg-card">
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[900px]" data-testid="reglas-lista">
+                    <TableHeader>
+                      <TableRow className="border-b border-border bg-muted/30">
+                        <TableHead className="w-14 p-4 text-left">
+                          {t('reglasDeMora.tabla.orden')}
+                        </TableHead>
+                        <TableHead className="p-4 text-left">{t('reglasDeMora.tabla.regla')}</TableHead>
+                        <TableHead className="p-4 text-left">{t('reglasDeMora.tabla.disparo')}</TableHead>
+                        <TableHead className="p-4 text-left">{t('reglasDeMora.tabla.cobro')}</TableHead>
+                        <TableHead className="p-4 text-left">{t('reglasDeMora.tabla.tope')}</TableHead>
+                        <TableHead className="p-4 text-left">{t('reglasDeMora.tabla.estado')}</TableHead>
+                        <TableHead className="w-28 p-4 text-left">
+                          <span className="sr-only">{t('reglasDeMora.tabla.acciones')}</span>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pageItems.map((regla) => (
+                        <FilaDeRegla
+                          key={regla.id}
+                          regla={regla}
+                          puedeEditar={puedeEditar}
+                          ocupada={ocupadas.has(regla.id)}
+                          onEditar={() => abrirEdicion(regla)}
+                          onCambiarActiva={(activa) => void cambiarActiva(regla, activa)}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* El pie sólo aparece cuando hay más de una página: un
+                    paginador sobre tres reglas es ruido. */}
+                {total > pageSize && (
+                  <div className="border-t border-border bg-muted/10 px-4 py-3">
+                    <TablePagination
+                      total={total}
+                      page={page}
+                      pageSize={pageSize}
+                      pageSizeOptions={[10, 20, 50]}
+                      onPageChange={setPage}
+                      onPageSizeChange={setPageSize}
+                    />
+                  </div>
+                )}
               </div>
             </div>
-          )}
-        </div>
-      )}
+
+            {puedeCrear && faltantes.length > 0 && (
+              <Sugerencias
+                titulo={t('reglasDeMora.sugerencias.conReglasTitulo')}
+                descripcion={t('reglasDeMora.sugerencias.conReglasDescripcion')}
+                plantillas={faltantes}
+                enCurso={plantillaEnCurso}
+                onUsar={usarPlantilla}
+              />
+            )}
+          </div>
+        )}
+      </EstadoDeDatos>
 
       <EditorDeRegla abierto={editor.abierto} regla={editor.regla} onCerrar={cerrarEditor} onGuardar={guardar} />
     </div>
+  );
+}
+
+function FilaDeRegla({
+  regla,
+  puedeEditar,
+  ocupada,
+  onEditar,
+  onCambiarActiva,
+}: {
+  regla: ReglaDeMora;
+  puedeEditar: boolean;
+  ocupada: boolean;
+  onEditar: () => void;
+  onCambiarActiva: (activa: boolean) => void;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <TableRow
+      data-testid={`regla-${regla.id}`}
+      // La frase entera sigue disponible al pasar el mouse: las columnas la
+      // parten para poder comparar dos reglas de un vistazo, no para esconderla.
+      title={describirRegla(regla)}
+      onClick={puedeEditar ? onEditar : undefined}
+      className={cn(
+        'border-b border-border/50 transition-colors',
+        puedeEditar && 'cursor-pointer hover:bg-muted/50',
+        !regla.activa && 'opacity-70',
+      )}
+    >
+      <TableCell className="p-4 align-middle">
+        <span className="font-mono text-xs tabular-nums text-fg-muted">#{regla.orden}</span>
+      </TableCell>
+
+      <TableCell className="p-4 align-middle">
+        <div className="min-w-0">
+          <p className="truncate font-medium text-fg">{regla.nombre}</p>
+          <p className="truncate text-sm text-fg-muted">{NOMBRE_DEL_CONCEPTO[regla.concepto]}</p>
+        </div>
+      </TableCell>
+
+      <TableCell className="p-4 align-middle">
+        <div className="min-w-0">
+          <p className="text-sm text-fg">{capitalizar(describirDisparador(regla))}</p>
+          <p className="text-xs text-fg-subtle">{NOMBRE_DEL_DISPARADOR[regla.disparador]}</p>
+        </div>
+      </TableCell>
+
+      <TableCell className="p-4 align-middle">
+        <div className="min-w-0">
+          <p className="text-sm text-fg">{capitalizar(describirFormula(regla))}</p>
+          <p className="text-xs text-fg-subtle">{NOMBRE_DE_LA_FORMULA[regla.formula]}</p>
+        </div>
+      </TableCell>
+
+      <TableCell className="p-4 align-middle">
+        <span className={cn('text-sm', regla.topeCop === null ? 'text-fg-subtle' : 'text-fg tabular-nums')}>
+          {capitalizar(describirTope(regla.topeCop))}
+        </span>
+      </TableCell>
+
+      {/* El switch y «Editar» son acciones propias: no deben disparar el clic
+          de la fila, que abre el editor. */}
+      <TableCell className="p-4 align-middle" onClick={(e) => e.stopPropagation()}>
+        <label className="flex items-center gap-2 text-xs text-fg-muted">
+          <Switch
+            checked={regla.activa}
+            onCheckedChange={onCambiarActiva}
+            disabled={!puedeEditar || ocupada}
+            aria-label={`${regla.activa ? 'Apagar' : 'Prender'} «${regla.nombre}»`}
+            data-testid={`activa-${regla.id}`}
+          />
+          {regla.activa ? t('reglasDeMora.tabla.activa') : t('reglasDeMora.tabla.apagada')}
+        </label>
+      </TableCell>
+
+      <TableCell className="p-4 align-middle" onClick={(e) => e.stopPropagation()}>
+        <Button
+          variant="secondary"
+          size="sm"
+          hideArrow
+          onClick={onEditar}
+          disabled={!puedeEditar}
+          aria-label={`Editar «${regla.nombre}»`}
+        >
+          <PencilSimple className="h-4 w-4" aria-hidden="true" />
+          {t('reglasDeMora.tabla.editar')}
+        </Button>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+/**
+ * La zona de sugerencias. Deliberadamente NO parece una tabla ni una fila:
+ * encabezado propio, borde punteado y chip «Sugerencia» en cada tarjeta. Lo
+ * que hay acá todavía no existe en la base de datos.
+ */
+function Sugerencias({
+  titulo,
+  descripcion,
+  plantillas,
+  enCurso,
+  onUsar,
+}: {
+  titulo: string;
+  descripcion: string;
+  plantillas: readonly PlantillaDeRegla[];
+  enCurso: PlantillaDeRegla['id'] | null;
+  onUsar: (plantilla: PlantillaDeRegla) => void;
+}) {
+  if (plantillas.length === 0) return null;
+
+  return (
+    <section className="space-y-3" data-testid="reglas-sugerencias" aria-label={titulo}>
+      <div className="flex items-start gap-2.5">
+        <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-fg-subtle" weight="duotone" aria-hidden="true" />
+        <div className="space-y-0.5">
+          <h2 className="text-sm font-semibold text-fg">{titulo}</h2>
+          <p className="max-w-2xl text-xs text-fg-muted">{descripcion}</p>
+        </div>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        {plantillas.map((plantilla) => (
+          <TarjetaDePlantilla
+            key={plantilla.id}
+            plantilla={plantilla}
+            ocupada={enCurso === plantilla.id}
+            deshabilitada={enCurso !== null}
+            onUsar={() => onUsar(plantilla)}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -308,23 +497,33 @@ function TarjetaDePlantilla({
   deshabilitada: boolean;
   onUsar: () => void;
 }) {
+  const { t } = useI18n();
   const Icono = ICONO_DE_LA_PLANTILLA[plantilla.id];
   return (
     <div
-      className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5"
+      // Punteado y sin fondo de tarjeta: el borde discontinuo es lo que en
+      // todo el panel significa «todavía no existe».
+      className="flex flex-col gap-3 rounded-lg border border-dashed border-border bg-surface-muted/30 p-5"
       data-testid={`plantilla-${plantilla.id}`}
     >
-      <div className="flex items-center gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-muted text-fg">
+      <div className="flex items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface text-fg-muted">
           <Icono className="h-4 w-4" aria-hidden="true" />
         </span>
-        <p className="font-medium text-fg">{plantilla.titulo}</p>
+        <div className="min-w-0 flex-1 space-y-1">
+          <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+            {t('reglasDeMora.sugerencias.etiqueta')}
+          </Badge>
+          <p className="font-medium text-fg">{plantilla.titulo}</p>
+        </div>
       </div>
       <p className="text-sm text-fg-muted">{plantilla.explicacion}</p>
-      <p className="text-xs text-fg-muted">{describirRegla({ ...plantilla.valores, topeCop: plantilla.valores.topeCop ?? null })}</p>
+      <p className="text-xs text-fg-subtle">
+        {describirRegla({ ...plantilla.valores, topeCop: plantilla.valores.topeCop ?? null })}
+      </p>
       <div>
         <Button variant="secondary" size="sm" hideArrow onClick={onUsar} isLoading={ocupada} disabled={deshabilitada}>
-          Usar esta regla
+          {t('reglasDeMora.sugerencias.usar')}
         </Button>
       </div>
     </div>

@@ -43,6 +43,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { usePilotoFlotaCompartida } from '@/lib/hooks/piloto/piloto-flota-context'
+import { usePilotoDock } from '@/lib/hooks/piloto/piloto-dock-context'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { AutonomiaModo, ModoDeLaFlota } from '@/lib/api/piloto'
@@ -71,6 +72,7 @@ export function PilotoModoHeader() {
   const { isAdmin } = usePermissionsContext()
   const flota = usePilotoFlotaCompartida()
   const [abierto, setAbierto] = useState(false)
+  const dock = usePilotoDock()
   const [confirmando, setConfirmando] = useState<AutonomiaModo | null>(null)
 
   const data = flota.data
@@ -288,10 +290,20 @@ export function PilotoModoHeader() {
         )}
 
         <div className="flex items-center justify-between border-t border-faint px-2 py-1.5">
-          <Button asChild variant="ghost" size="sm" hideArrow>
-            <Link href={RUTA_PROCESOS} onClick={() => setAbierto(false)} data-testid="piloto-modo-procesos">
-              {t('inmobiliaria.piloto.flota.verProcesos')}
-            </Link>
+          {/* Abre el tray flotante en vez de navegar: Nico (2026-09-02) pidió
+              que el acceso viviera arriba y que igual abriera el menú
+              flotante — el botón fijo de abajo tapaba el paginador. */}
+          <Button
+            variant="ghost"
+            size="sm"
+            hideArrow
+            onClick={() => {
+              setAbierto(false)
+              dock.alternar()
+            }}
+            data-testid="piloto-modo-procesos"
+          >
+            {t('inmobiliaria.piloto.flota.verProcesos')}
           </Button>
           <Button asChild variant="ghost" size="sm" hideArrow>
             <Link href={RUTA_PILOTO} onClick={() => setAbierto(false)}>

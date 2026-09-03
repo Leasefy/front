@@ -2,7 +2,10 @@
  * ReglasDeMora — la pantalla contra el API mockeado.
  *
  * Lo que fija:
- *  - la lista se pinta en orden de aplicación y con la frase legible,
+ *  - lo creado va en la TABLA de la casa, en orden de aplicación, con una
+ *    columna por dato de la regla, y con paginación cuando pasa de diez,
+ *  - una plantilla NO es una regla: no cuenta en el conteo, no entra a la
+ *    tabla y vive en su propia zona de sugerencias,
  *  - el estado vacío ofrece las dos plantillas y «Usar esta regla» manda el
  *    cuerpo EXACTO de la plantilla al back,
  *  - el switch de una fila manda `{ activa: false }` y la fila lo refleja,
@@ -53,12 +56,17 @@ vi.mock('@/lib/hooks/usePermissions', () => ({
   usePermissions: () => permisos,
 }));
 
-// FalloDeCarga arrastra next/link y el clasificador; acá sólo importa que se pinte.
+// FalloDeCarga arrastra next/link y el clasificador; acá sólo importa que se
+// pinte. Lo usa <EstadoDeDatos> por dentro, así que el mock vale igual.
 vi.mock('@/components/estado/FalloDeCarga', () => ({
   FalloDeCarga: ({ error }: { error: unknown }) => (
     <div data-testid="fallo-de-carga">{error instanceof Error ? error.message : 'fallo'}</div>
   ),
 }));
+
+// El stub resuelve las claves contra el es.json REAL: los literales que se
+// afirman más abajo siguen siendo los que ve una persona en español.
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
 
 import { ReglasDeMora } from './ReglasDeMora';
 import { PLANTILLAS } from './esquema';
@@ -153,8 +161,8 @@ afterEach(async () => {
   document.body.innerHTML = '';
 });
 
-describe('ReglasDeMora — la lista', () => {
-  it('pinta las reglas en orden de aplicación, con nombre, concepto y frase legible', async () => {
+describe('ReglasDeMora — la tabla', () => {
+  it('pinta las reglas en la tabla, en orden de aplicación y con una columna por dato', async () => {
     listarMock.mockResolvedValueOnce([
       regla({ id: 'r-1', orden: 0 }),
       regla({
@@ -171,18 +179,80 @@ describe('ReglasDeMora — la lista', () => {
     ]);
     await montar();
 
-    const filas = Array.from(document.querySelectorAll('[data-testid^="regla-r-"]'));
+    const tabla = $('[data-testid="reglas-lista"]');
+    expect(tabla.tagName).toBe('TABLE');
+    expect(Array.from(tabla.querySelectorAll('th')).map((th) => th.textContent?.trim())).toEqual([
+      'Orden',
+      'Regla',
+      'Cuándo se dispara',
+      'Cuánto cobra',
+      'Tope',
+      'Estado',
+      'Acciones',
+    ]);
+
+    // Las filas son <tr> DE LA TABLA, no tarjetas sueltas en la página.
+    const filas = Array.from(tabla.querySelectorAll<HTMLElement>('tbody [data-testid^="regla-r-"]'));
     expect(filas.map((f) => f.getAttribute('data-testid'))).toEqual(['regla-r-1', 'regla-r-2']);
-    expect(filas[0].textContent).toContain('Interés de mora');
-    expect(filas[0].textContent).toContain('Interés de mora');
-    expect(filas[0].textContent).toContain(
+    expect(filas.every((f) => f.tagName === 'TR')).toBe(true);
+
+    const celdas = (fila: HTMLElement) =>
+      Array.from(fila.querySelectorAll('td')).map((td) => td.textContent?.trim() ?? '');
+
+    expect(celdas(filas[0]).slice(0, 5)).toEqual([
+      '#0',
+      'Interés de moraInterés de mora',
+      'Desde el primer día de moraDías de mora',
+      '0,0667 % diario sobre el canonInterés diario',
+      'Sin tope',
+    ]);
+    expect(celdas(filas[1]).slice(0, 5)).toEqual([
+      '#1',
+      'Gasto administrativo de cobranzaGasto administrativo',
+      'El día 15 de cada mesDía del mes',
+      '10 % del canonPorcentaje de la base',
+      'Hasta $ 500.000',
+    ]);
+
+    // La frase entera no se pierde: queda en el `title` de la fila.
+    expect(filas[0].getAttribute('title')).toBe(
       'Se dispara desde el primer día de mora y cobra 0,0667 % diario sobre el canon, sin tope.',
     );
-    expect(filas[1].textContent).toContain('Gasto administrativo');
-    expect(filas[1].textContent).toContain(
+    expect(filas[1].getAttribute('title')).toBe(
       'Se dispara el día 15 de cada mes y cobra 10 % del canon, hasta $ 500.000.',
     );
     expect(document.querySelector('[data-testid="reglas-vacio"]')).toBeNull();
+  });
+
+  it('con pocas reglas el pie de paginación no aparece; con once, la tabla corta en diez', async () => {
+    listarMock.mockResolvedValueOnce([regla({ id: 'r-1' }), regla({ id: 'r-2', orden: 1 })]);
+    await montar();
+    expect(document.querySelectorAll('[data-testid^="regla-r-"]')).toHaveLength(2);
+    expect(document.body.textContent).not.toContain('por página');
+
+    await act(async () => {
+      root!.unmount();
+    });
+    root = null;
+    contenedor?.remove();
+    document.body.innerHTML = '';
+
+    listarMock.mockResolvedValueOnce(
+      Array.from({ length: 11 }, (_, i) => regla({ id: `r-${i}`, orden: i })),
+    );
+    await montar();
+    expect(document.querySelectorAll('[data-testid^="regla-r-"]')).toHaveLength(10);
+    expect(document.querySelector('[data-testid="regla-r-10"]')).toBeNull();
+  });
+
+  it('la fila abre el editor con la regla cargada', async () => {
+    listarMock.mockResolvedValueOnce([regla({ nombre: 'Interés de mora' })]);
+    await montar();
+
+    await clic($('[data-testid="regla-r-1"]'));
+
+    expect(document.querySelector('[data-testid="editor-de-regla"]')).not.toBeNull();
+    expect(($('#regla-nombre') as HTMLInputElement).value).toBe('Interés de mora');
   });
 
   it('el switch de una fila manda { activa: false } y la fila queda apagada', async () => {
@@ -240,6 +310,20 @@ describe('ReglasDeMora — el estado vacío y las plantillas', () => {
     expect($('[data-testid="plantilla-gasto-administrativo"]').textContent).toContain(
       '10 % de gasto administrativo desde el 15',
     );
+
+    // 🔴 El bug que originó el rediseño: las dos tarjetas se leían como reglas
+    // ya creadas. No hay tabla, no hay filas, y la zona se anuncia como lo que
+    // es —una sugerencia— con su propio encabezado y su chip en cada tarjeta.
+    expect(document.querySelector('[data-testid="reglas-lista"]')).toBeNull();
+    expect(document.querySelector('[data-testid^="regla-"]')).toBeNull();
+    const zona = $('[data-testid="reglas-sugerencias"]');
+    expect(zona.textContent).toContain('Empezá con una de estas');
+    expect(zona.textContent).toContain('Todavía no existen');
+    // Las dos tarjetas cuelgan de la zona de sugerencias, no de la página.
+    expect(zona.querySelectorAll('[data-testid^="plantilla-"]')).toHaveLength(2);
+    for (const id of ['interes-diario', 'gasto-administrativo']) {
+      expect($(`[data-testid="plantilla-${id}"]`).textContent).toContain('Sugerencia');
+    }
 
     await clic(botonConTexto('Usar esta regla', $('[data-testid="plantilla-interes-diario"]')));
 
@@ -416,6 +500,14 @@ describe('ReglasDeMora — sugerencias con reglas ya creadas y el aviso del moto
     const sugerencias = $('[data-testid="reglas-sugerencias"]');
     expect(document.querySelector('[data-testid="plantilla-interes-diario"]')).toBeNull();
     expect(sugerencias.querySelector('[data-testid="plantilla-gasto-administrativo"]')).not.toBeNull();
+
+    // La plantilla que falta NO se cuenta como regla ni entra a la tabla: hay
+    // una regla creada, y el conteo dice una.
+    expect(document.body.textContent).toContain('1 regla, en el orden en que se aplica');
+    expect($('[data-testid="reglas-lista"]').querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(sugerencias.querySelector('[data-testid^="regla-"]')).toBeNull();
+    expect(sugerencias.textContent).toContain('Otras que podrías agregar');
+    expect(sugerencias.textContent).toContain('No están creadas');
   });
 
   it('con las dos reglas creadas no queda ninguna sugerencia', async () => {

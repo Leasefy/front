@@ -63,6 +63,7 @@ import { BotonNuevo } from '@/components/inmobiliaria/BotonNuevo';
 import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
 import { PilotoModoHeader } from '@/components/inmobiliaria/piloto/PilotoModoHeader';
 import { PilotoDock } from '@/components/inmobiliaria/piloto/PilotoDock';
+import { PilotoDockProvider } from '@/lib/hooks/piloto/piloto-dock-context'
 import { PilotoFlotaProvider } from '@/lib/hooks/piloto/piloto-flota-context';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { usePostulacionesPendientes } from '@/lib/hooks/use-postulaciones-pendientes';
@@ -566,9 +567,11 @@ export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps
                 {/* CommandPaletteProvider wraps the inner layout so both the
                     shortcut hook and the modal can read/write palette state. */}
                 <CommandPaletteProvider>
-                  <PilotoFlotaProvider>
+                  <PilotoDockProvider>
+      <PilotoFlotaProvider>
                     <InmobiliariaLayoutInner>{children}</InmobiliariaLayoutInner>
                   </PilotoFlotaProvider>
+    </PilotoDockProvider>
                 </CommandPaletteProvider>
               </SidebarProvider>
             </PanelPrefsProvider>

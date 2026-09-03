@@ -25,22 +25,13 @@
  */
 
 import { useMemo, useState } from 'react'
-import Link from 'next/link'
-import {
-  ArrowSquareOut,
-  CurrencyCircleDollar,
-  MagnifyingGlass,
-  Phone,
-  Users,
-  WhatsappLogo,
-} from '@phosphor-icons/react'
+import { useRouter } from 'next/navigation'
+import { CurrencyCircleDollar, MagnifyingGlass, Users } from '@phosphor-icons/react'
 
-import { Badge } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
-import { Pagination } from '@/components/ui/pagination'
+import { TablePagination } from '@/components/ui/pagination'
 import {
   Table,
   TableBody,
@@ -49,9 +40,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { SinDatos } from '@/components/estado/SinDatos'
+import { CarteraTable } from '@/components/cartera/CarteraTable'
 import { EnSiniestro } from '@/components/cartera/EnSiniestro'
-import { Spinner } from '@/components/ui'
+import { useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useCarteraReport } from '@/lib/hooks/useInmobiliaria'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import type { CarteraItem } from '@/lib/types/inmobiliaria'
@@ -66,8 +59,6 @@ import {
 } from '@/lib/cartera/edades'
 import { cn } from '@/lib/utils'
 
-const POR_PAGINA = 20
-
 const TONO: Record<Edad, string> = {
   por_vencer: 'text-muted-foreground',
   '1-30': 'text-foreground',
@@ -80,8 +71,8 @@ export function CarteraCompleta() {
   const { report, isLoading, error, errorCrudo, refetch } = useCarteraReport()
   const [edad, setEdad] = useState<Edad | null>(null)
   const [busqueda, setBusqueda] = useState('')
-  const [pagina, setPagina] = useState(1)
   const [vista, setVista] = useState<'deudas' | 'propietarios'>('deudas')
+  const router = useRouter()
 
   const items = useMemo<CarteraItem[]>(() => report?.items ?? [], [report])
   const cartera = useMemo(() => discriminar(items), [items])
@@ -98,276 +89,188 @@ export function CarteraCompleta() {
     })
   }, [items, edad, busqueda])
 
-  const totalPaginas = Math.max(1, Math.ceil(filtradas.length / POR_PAGINA))
-  const pagActual = Math.min(pagina, totalPaginas)
-  const visibles = filtradas.slice(
-    (pagActual - 1) * POR_PAGINA,
-    pagActual * POR_PAGINA,
+  /*
+   * Paginado en cliente, con el hook que ya usan Inquilinos y Habeas Data: el
+   * reporte llega entero (una fila por cobro) y el recorte es de presentación.
+   * `resetKey` la manda a la página 1 cuando cambia un filtro — sin eso,
+   * elegir un tramo estando en la página 4 deja la tabla en blanco y se lee
+   * como «no hay nada».
+   */
+  const { pageItems, total, page, pageSize, setPage, setPageSize } = useTablePagination(
+    filtradas,
+    { initialPageSize: 10, resetKey: `${edad ?? ''}|${busqueda}` },
   )
 
-  // ── 1. Cargando ───────────────────────────────────────────────────────────
-  if (isLoading && !report) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <Spinner />
-      </div>
-    )
-  }
+  /*
+   * Los dos vacíos NO se distinguen por «la lista quedó corta», sino por si
+   * hay algo puesto: un tramo elegido también es un filtro, no sólo la
+   * búsqueda.
+   */
+  const hayFiltros = Boolean(edad) || busqueda.trim().length > 0
 
   /*
-   * 2. Falló. NO se puede caer al estado vacío: una cartera vacía significa
-   * «nadie te debe nada», que es justo lo contrario de «no pudimos preguntar».
+   * Cargando → falló → contenido, en ese orden y con el componente de la casa.
+   *
+   * Va por FUERA de los tramos a propósito: una cartera pintada en $0 mientras
+   * todavía se está preguntando afirma «nadie te debe nada», que es lo
+   * contrario de «no pudimos preguntar». `isLoading && !report` deja pasar el
+   * refresco de fondo sin blanquear lo que ya se está viendo.
    */
-  if (error) {
-    return (
-      <FalloDeCarga
-        error={errorCrudo ?? new Error(error)}
-        queEs="la cartera"
-        onReintentar={() => void refetch()}
-      />
-    )
-  }
-
   return (
-    <div className="space-y-6">
-      {/* Los tramos. Cada uno es un filtro: la cifra y la lista son lo mismo. */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {cartera.tramos.map((t) => (
-          <button
-            key={t.edad}
-            type="button"
-            onClick={() => {
-              setEdad(edad === t.edad ? null : t.edad)
-              setPagina(1)
-            }}
-            aria-pressed={edad === t.edad}
-            className={cn(
-              'rounded-lg border p-3 text-left transition-colors',
-              edad === t.edad
-                ? 'border-primary bg-primary-soft/40'
-                : 'border-border hover:border-primary/40',
-            )}
-          >
-            <p className="text-xs text-muted-foreground">{NOMBRE_DE_EDAD[t.edad]}</p>
-            <p className={cn('text-lg font-semibold tabular-nums', TONO[t.edad])}>
-              {formatCurrency(t.monto)}
+    <EstadoDeDatos
+      cargando={isLoading && !report}
+      error={error ? (errorCrudo ?? new Error(error)) : null}
+      queEs="la cartera"
+      onReintentar={() => void refetch()}
+    >
+      <div className="space-y-6">
+        {/* Los tramos. Cada uno es un filtro: la cifra y la lista son lo mismo. */}
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {cartera.tramos.map((t) => (
+            <button
+              key={t.edad}
+              type="button"
+              onClick={() => setEdad(edad === t.edad ? null : t.edad)}
+              aria-pressed={edad === t.edad}
+              className={cn(
+                'rounded-lg border p-3 text-left transition-colors',
+                edad === t.edad
+                  ? 'border-primary bg-primary-soft/40'
+                  : 'border-border hover:border-primary/40',
+              )}
+            >
+              <p className="text-xs text-muted-foreground">{NOMBRE_DE_EDAD[t.edad]}</p>
+              <p className={cn('text-lg font-semibold tabular-nums', TONO[t.edad])}>
+                {formatCurrency(t.monto)}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t.items.length} {t.items.length === 1 ? 'deuda' : 'deudas'}
+              </p>
+            </button>
+          ))}
+        </div>
+
+        <Card className="flex flex-wrap items-center justify-between gap-4 p-4">
+          <div>
+            <p className="text-xs text-muted-foreground">En mora</p>
+            <p className="text-2xl font-semibold tabular-nums text-foreground">
+              {formatCurrency(cartera.enMora)}
             </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {t.items.length} {t.items.length === 1 ? 'deuda' : 'deudas'}
+            <p className="text-xs text-muted-foreground">
+              {cartera.deudasEnMora}{' '}
+              {cartera.deudasEnMora === 1 ? 'deuda vencida' : 'deudas vencidas'}
             </p>
-          </button>
-        ))}
-      </div>
-
-      <Card className="flex flex-wrap items-center justify-between gap-4 p-4">
-        <div>
-          <p className="text-xs text-muted-foreground">En mora</p>
-          <p className="text-2xl font-semibold tabular-nums text-foreground">
-            {formatCurrency(cartera.enMora)}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {cartera.deudasEnMora}{' '}
-            {cartera.deudasEnMora === 1 ? 'deuda vencida' : 'deudas vencidas'}
-          </p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">Por vencer</p>
-          <p className="text-2xl font-semibold tabular-nums text-muted-foreground">
-            {formatCurrency(cartera.porVencer)}
-          </p>
-          {/* Se dice explícito: si no, se lee como mora y la infla. */}
-          <p className="text-xs text-muted-foreground">Todavía no es mora</p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant={vista === 'deudas' ? 'default' : 'outline'}
-            size="sm"
-            hideArrow
-            onClick={() => setVista('deudas')}
-          >
-            Por deuda
-          </Button>
-          <Button
-            variant={vista === 'propietarios' ? 'default' : 'outline'}
-            size="sm"
-            hideArrow
-            onClick={() => setVista('propietarios')}
-          >
-            <Users className="mr-1.5 h-3.5 w-3.5" />
-            Por propietario
-          </Button>
-        </div>
-      </Card>
-
-      {/* Los siniestros van aparte de la mora: ya no son cobranza. Sólo si
-          el back los manda — uno anterior no tiene la sección. */}
-      {report?.siniestros ? <EnSiniestro siniestros={report.siniestros} /> : null}
-
-      {edad ? (
-        <p className="text-sm text-muted-foreground">
-          {QUE_SIGNIFICA[edad]}{' '}
-          <button
-            type="button"
-            className="underline underline-offset-2"
-            onClick={() => setEdad(null)}
-          >
-            Ver toda la cartera
-          </button>
-        </p>
-      ) : null}
-
-      {vista === 'propietarios' ? (
-        <PorPropietario propietarios={propietarios} />
-      ) : (
-        <>
-          <div className="relative max-w-sm">
-            <MagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              placeholder="Inquilino, inmueble o propietario"
-              value={busqueda}
-              onChange={(e) => {
-                setBusqueda(e.target.value)
-                setPagina(1)
-              }}
-            />
           </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Por vencer</p>
+            <p className="text-2xl font-semibold tabular-nums text-muted-foreground">
+              {formatCurrency(cartera.porVencer)}
+            </p>
+            {/* Se dice explícito: si no, se lee como mora y la infla. */}
+            <p className="text-xs text-muted-foreground">Todavía no es mora</p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant={vista === 'deudas' ? 'default' : 'outline'}
+              size="sm"
+              hideArrow
+              onClick={() => setVista('deudas')}
+            >
+              Por deuda
+            </Button>
+            <Button
+              variant={vista === 'propietarios' ? 'default' : 'outline'}
+              size="sm"
+              hideArrow
+              onClick={() => setVista('propietarios')}
+            >
+              <Users className="mr-1.5 h-3.5 w-3.5" />
+              Por propietario
+            </Button>
+          </div>
+        </Card>
 
-          {filtradas.length === 0 ? (
-            /* Dos vacíos distintos: no deber nada es una buena noticia; no
-               encontrar nada con un filtro puesto se arregla quitándolo. */
-            items.length === 0 ? (
-              <EmptyState
-                icon={CurrencyCircleDollar}
-                title="Nadie te debe nada"
-                description="No hay cobros pendientes ni vencidos en toda la cartera."
+        {/* Los siniestros van aparte de la mora: ya no son cobranza. Sólo si
+            el back los manda — uno anterior no tiene la sección. */}
+        {report?.siniestros ? <EnSiniestro siniestros={report.siniestros} /> : null}
+
+        {edad ? (
+          <p className="text-sm text-muted-foreground">
+            {QUE_SIGNIFICA[edad]}{' '}
+            <button
+              type="button"
+              className="underline underline-offset-2"
+              onClick={() => setEdad(null)}
+            >
+              Ver toda la cartera
+            </button>
+          </p>
+        ) : null}
+
+        {vista === 'propietarios' ? (
+          <PorPropietario propietarios={propietarios} />
+        ) : (
+          <>
+            <div className="relative max-w-sm">
+              <MagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                placeholder="Inquilino, inmueble o propietario"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
               />
-            ) : (
-              <EmptyState
-                icon={MagnifyingGlass}
-                title="Ninguna deuda coincide"
-                description="Hay cartera, pero no con estos filtros."
-                action={{
-                  label: 'Quitar los filtros',
-                  onClick: () => {
-                    setEdad(null)
-                    setBusqueda('')
-                  },
-                }}
-              />
-            )
-          ) : (
-            <>
+            </div>
+
+            {filtradas.length === 0 ? (
+              /* Dos vacíos distintos: no deber nada es una buena noticia; no
+                 encontrar nada con un filtro puesto se arregla quitándolo. Lo
+                 decide `hayFiltros`, que sale del estado real de los filtros y
+                 no de que la lista haya quedado corta. */
               <Card className="overflow-hidden">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Inquilino</TableHead>
-                        <TableHead>Inmueble</TableHead>
-                        <TableHead>Propietario</TableHead>
-                        <TableHead>Mes</TableHead>
-                        <TableHead className="text-right">Debe</TableHead>
-                        <TableHead className="text-right">Mora</TableHead>
-                        <TableHead className="text-right">Recordatorios</TableHead>
-                        <TableHead />
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {visibles.map((i) => (
-                        <TableRow key={i.cobroId}>
-                          <TableCell>
-                            <span className="font-medium text-foreground">
-                              {i.tenantName ?? 'Sin nombre'}
-                            </span>
-                            {i.tenantPhone ? (
-                              <span className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                                <a
-                                  href={`tel:${i.tenantPhone}`}
-                                  className="flex items-center gap-1 hover:underline"
-                                >
-                                  <Phone className="h-3 w-3" />
-                                  {i.tenantPhone}
-                                </a>
-                                {/* En Colombia la cobranza pasa por WhatsApp
-                                    antes que por una llamada. */}
-                                <a
-                                  href={`https://wa.me/57${i.tenantPhone.replace(/\D/g, '').slice(-10)}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  title="Escribir por WhatsApp"
-                                  className="text-success hover:opacity-80"
-                                >
-                                  <WhatsappLogo className="h-3.5 w-3.5" weight="fill" />
-                                  <span className="sr-only">WhatsApp</span>
-                                </a>
-                              </span>
-                            ) : null}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {i.propertyAddress ?? i.propertyTitle}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {i.propietarioName ?? (
-                              <span className="text-warning">Sin consignar</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm tabular-nums text-muted-foreground">
-                            {i.month}
-                          </TableCell>
-                          <TableCell className="text-right font-medium tabular-nums text-foreground">
-                            {formatCurrency(i.pendingAmount)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Badge
-                              variant={
-                                i.daysLate > 60
-                                  ? 'destructive'
-                                  : i.daysLate > 0
-                                    ? 'secondary'
-                                    : 'outline'
-                              }
-                            >
-                              {i.daysLate > 0 ? `${i.daysLate} días` : 'Al día'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
-                            {i.remindersSent}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button asChild variant="ghost" size="sm" hideArrow>
-                              <Link href={`/panel/inmobiliaria/cobros?cobro=${i.cobroId}`}>
-                                <ArrowSquareOut className="h-4 w-4" />
-                                <span className="sr-only">Ver el cobro</span>
-                              </Link>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                <SinDatos
+                  hayFiltros={hayFiltros}
+                  queSon="cobros"
+                  icono={CurrencyCircleDollar}
+                  titulo="Nadie te debe nada"
+                  descripcion="No hay cobros pendientes ni vencidos en toda la cartera."
+                  onLimpiarFiltros={
+                    hayFiltros
+                      ? () => {
+                          setEdad(null)
+                          setBusqueda('')
+                        }
+                      : undefined
+                  }
+                />
               </Card>
-
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-xs text-muted-foreground">
-                  {filtradas.length}{' '}
-                  {filtradas.length === 1 ? 'deuda' : 'deudas'}
-                  {filtradas.length !== items.length ? ` de ${items.length}` : ''}
-                </p>
-                {totalPaginas > 1 ? (
-                  <Pagination
-                    currentPage={pagActual}
-                    totalPages={totalPaginas}
-                    onPageChange={setPagina}
-                  />
-                ) : null}
-              </div>
-            </>
-          )}
-        </>
-      )}
-    </div>
+            ) : (
+              <Card className="overflow-hidden">
+                <CarteraTable
+                  items={pageItems}
+                  onVerCobro={(i) =>
+                    router.push(`/panel/inmobiliaria/cobros?cobro=${i.cobroId}`)
+                  }
+                />
+                {/* El pie sólo aparece cuando hay más de una página: un paginador
+                    sobre tres filas es ruido. */}
+                {total > pageSize && (
+                  <div className="border-t border-border bg-muted/10 px-4 py-3">
+                    <TablePagination
+                      total={total}
+                      page={page}
+                      pageSize={pageSize}
+                      pageSizeOptions={[10, 20, 50]}
+                      onPageChange={setPage}
+                      onPageSizeChange={setPageSize}
+                    />
+                  </div>
+                )}
+              </Card>
+            )}
+          </>
+        )}
+      </div>
+    </EstadoDeDatos>
   )
 }
 
@@ -385,11 +288,14 @@ function PorPropietario({
 }) {
   if (propietarios.length === 0) {
     return (
-      <EmptyState
-        icon={Users}
-        title="Nadie te debe nada"
-        description="Ningún propietario tiene cobros pendientes."
-      />
+      <Card className="overflow-hidden">
+        <SinDatos
+          queSon="propietarios con deuda"
+          icono={Users}
+          titulo="Nadie te debe nada"
+          descripcion="Ningún propietario tiene cobros pendientes."
+        />
+      </Card>
     )
   }
 
@@ -398,28 +304,31 @@ function PorPropietario({
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Propietario</TableHead>
-              <TableHead className="text-right">Deudas</TableHead>
-              <TableHead>Lo peor</TableHead>
-              <TableHead className="text-right">Total</TableHead>
+            <TableRow className="border-b border-border bg-muted/30">
+              <TableHead className="p-4 text-left">Propietario</TableHead>
+              <TableHead className="p-4 text-right">Deudas</TableHead>
+              <TableHead className="p-4 text-left">Lo peor</TableHead>
+              <TableHead className="p-4 text-right">Total</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {propietarios.map((p) => (
-              <TableRow key={p.propietarioId ?? 'sin'}>
-                <TableCell className="font-medium text-foreground">
+              <TableRow
+                key={p.propietarioId ?? 'sin'}
+                className="border-b border-border/50"
+              >
+                <TableCell className="p-4 font-medium text-foreground">
                   {p.propietarioName}
                 </TableCell>
-                <TableCell className="text-right tabular-nums text-muted-foreground">
+                <TableCell className="p-4 text-right tabular-nums text-muted-foreground">
                   {p.deudas}
                 </TableCell>
-                <TableCell>
+                <TableCell className="p-4">
                   <span className={cn('text-sm', TONO[p.peorEdad])}>
                     {NOMBRE_DE_EDAD[p.peorEdad]}
                   </span>
                 </TableCell>
-                <TableCell className="text-right font-medium tabular-nums text-foreground">
+                <TableCell className="p-4 text-right font-medium tabular-nums text-foreground">
                   {formatCurrency(p.monto)}
                 </TableCell>
               </TableRow>

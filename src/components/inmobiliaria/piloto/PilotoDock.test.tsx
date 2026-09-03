@@ -71,6 +71,7 @@ vi.mock('@leasefy/cadence', () => ({
 vi.mock('./PilotoCajon', () => ({ PilotoCajon: () => null }))
 
 import { PilotoDock } from './PilotoDock'
+import { PilotoDockProvider, usePilotoDock } from '@/lib/hooks/piloto/piloto-dock-context'
 
 const FLOTA = (enVivo = { llamadas: 0, conciliando: 0, esperando: 0 }) => ({
   activo: true,
@@ -110,12 +111,31 @@ const PROCESOS = {
 
 let container: HTMLDivElement
 let root: Root
+/**
+ * El tray perdió su botón fijo (tapaba el paginador, Nico 2026-09-02): ahora
+ * lo abre la píldora del header a través de `PilotoDockProvider`. El test
+ * monta ese proveedor y un disparador que hace lo mismo que el header.
+ */
+function Disparador() {
+  const dock = usePilotoDock()
+  return (
+    <button type="button" data-testid="abrir-dock" onClick={dock.alternar}>
+      abrir
+    </button>
+  )
+}
+
 function render() {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
   act(() => {
-    root.render(<PilotoDock />)
+    root.render(
+      <PilotoDockProvider>
+        <Disparador />
+        <PilotoDock />
+      </PilotoDockProvider>,
+    )
   })
 }
 const q = (s: string) => container.querySelector(s)
@@ -141,16 +161,19 @@ afterEach(() => {
 describe('PilotoDock', () => {
   it('cerrado: el botón está, el panel no, y NO se consultan procesos', () => {
     render()
-    expect(q('[data-testid="piloto-dock-boton"]')).not.toBeNull()
+    expect(q('[data-testid="abrir-dock"]')).not.toBeNull()
     expect(q('[data-testid="piloto-dock-panel"]')).toBeNull()
     expect(ultimaOpcion().activo).toBe(false)
-    expect(q('[data-testid="piloto-dock-boton"]')?.textContent).toContain('inmobiliaria.piloto.dock.boton')
+    // La etiqueta viva («1 llamada en curso») vive ahora en la píldora del
+    // header, que tiene su propio test: acá sólo importa que cerrado no pinte
+    // el panel ni consulte procesos.
+    expect(q('[data-testid="piloto-dock-panel"]')).toBeNull()
   })
 
   it('abierto: lista, fila expandible con pasos, «ver todos» y se consulta', async () => {
     render()
     await act(async () => {
-      ;(q('[data-testid="piloto-dock-boton"]') as HTMLButtonElement).click()
+      ;(q('[data-testid="abrir-dock"]') as HTMLButtonElement).click()
     })
     expect(q('[data-testid="piloto-dock-panel"]')).not.toBeNull()
     expect(ultimaOpcion().activo).toBe(true)
@@ -172,7 +195,7 @@ describe('PilotoDock', () => {
   it('un clic afuera lo cierra; adentro no', async () => {
     render()
     await act(async () => {
-      ;(q('[data-testid="piloto-dock-boton"]') as HTMLButtonElement).click()
+      ;(q('[data-testid="abrir-dock"]') as HTMLButtonElement).click()
     })
     expect(q('[data-testid="piloto-dock-panel"]')).not.toBeNull()
     // Adentro: sigue abierto.
@@ -187,16 +210,6 @@ describe('PilotoDock', () => {
     expect(q('[data-testid="piloto-dock-panel"]')).toBeNull()
   })
 
-  it('el botón dice lo que pasa: llamada en curso gana; si no, lo que te espera', () => {
-    estado.flota = FLOTA({ llamadas: 1, conciliando: 2, esperando: 3 })
-    render()
-    expect(q('[data-testid="piloto-dock-boton"]')?.textContent).toContain('inmobiliaria.piloto.flota.llamadas(1)')
-    act(() => root.unmount()); container.remove()
-    estado.flota = FLOTA({ llamadas: 0, conciliando: 0, esperando: 3 })
-    render()
-    expect(q('[data-testid="piloto-dock-boton"]')?.textContent).toContain('inmobiliaria.piloto.flota.esperando(3)')
-    expect(q('[data-testid="piloto-dock-badge"]')?.textContent).toBe('3')
-  })
 
   it('sin flota no hay tray; en la página de procesos tampoco', () => {
     estado.notAvailable = true

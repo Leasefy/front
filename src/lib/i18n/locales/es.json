@@ -961,6 +961,83 @@
         "sinFuente": "No pudimos consultar la actividad",
         "sinFuenteHint": "La fuente no respondió; esto no significa que no haya pasado nada."
       },
+      "flota": {
+        "piloto": "Piloto",
+        "apagado": "Apagado",
+        "apagadoHint": "El Piloto está apagado en el servidor (PILOTO_ENABLED). Lo enciende el equipo técnico.",
+        "cargando": "Leyendo el estado de la flota…",
+        "corriendo": "{{n}} agentes corriendo con este modo.",
+        "mixtoHint": "Los agentes no comparten modo: {{autonomo}} en automático · {{copiloto}} en copiloto · {{sombra}} en sombra. Elige uno para toda la flota o ajusta por agente.",
+        "aria": "Piloto automático: modo {{modo}}. Abrir para cambiarlo",
+        "elegir": "Modo del Piloto",
+        "modo": {
+          "sombra": "Sombra",
+          "copiloto": "Copiloto",
+          "autonomo": "Automático",
+          "mixto": "Mixto"
+        },
+        "que": {
+          "sombra": "Mira, registra y propone. No contacta a nadie ni firma nada, y no te interrumpe con avisos.",
+          "copiloto": "Prepara cada acción y te la deja en la bandeja: nada sale sin tu visto bueno.",
+          "autonomo": "Llama, escribe y emite recibos solo, dentro de la ley y de tus topes. Te cuenta lo que hizo."
+        },
+        "confirmarAutonomo": "En automático el Piloto llama, escribe y emite recibos sin preguntarte. ¿Lo pasamos?",
+        "confirmarSi": "Sí, automático",
+        "cancelar": "Cancelar",
+        "toastOk": "Piloto en modo {{modo}} para toda la flota",
+        "toastParcial": "Piloto en modo {{modo}}, salvo: {{agentes}}",
+        "toastFail": "No se pudo cambiar el modo: {{error}}",
+        "ahora": "Ahora mismo",
+        "llamadas": "{{n}} llamada(s) en curso",
+        "conciliando": "{{n}} depósito(s) conciliándose",
+        "esperando": "{{n}} depósito(s) esperando tu visto bueno",
+        "verProcesos": "Ver procesos",
+        "porAgente": "Por agente"
+      },
+      "procesos": {
+        "titulo": "Procesos",
+        "descripcion": "Lo que el Piloto hizo, paso a paso: depósitos que detectó y concilió, llamadas de Laura y mensajes con los inquilinos.",
+        "volver": "Piloto automático",
+        "enVivo": "En vivo",
+        "enVivoVacio": "Nada en curso ahora mismo",
+        "tipo": {
+          "todos": "Todo",
+          "deposito": "Depósitos",
+          "llamada": "Llamadas",
+          "whatsapp": "WhatsApp"
+        },
+        "estado": {
+          "todos": "Todos",
+          "en_curso": "En curso",
+          "esperando": "Te esperan",
+          "hecho": "Hechos",
+          "sin_resultado": "Sin resultado"
+        },
+        "filtrarTipo": "Filtrar por tipo de proceso",
+        "filtrarEstado": "Filtrar por estado",
+        "vacio": "Todavía no hay procesos",
+        "vacioHint": "Cuando el Piloto detecte un depósito, llame a alguien o escriba por WhatsApp, aparece aquí con sus pasos.",
+        "vacioFiltro": "Nada con ese filtro",
+        "vacioFiltroHint": "Hay {{n}} procesos en total; prueba con otro tipo o estado.",
+        "error": "No se pudieron cargar los procesos: {{error}}",
+        "sinFuente": "No pudimos consultar los procesos",
+        "sinFuenteHint": "La fuente no respondió; esto no significa que no haya pasado nada.",
+        "fuenteCaida": "{{fuente}} no respondió: esos procesos no están en esta lista.",
+        "sinBack": "El ERP no está conectado al Piloto: los depósitos no se ven acá.",
+        "contador": "{{visibles}} de {{total}}",
+        "verPasos": "Ver pasos",
+        "ocultarPasos": "Ocultar pasos",
+        "abrir": "Abrir",
+        "mensajes": "Mensajes",
+        "yo": "Piloto",
+        "ellos": "Inquilino",
+        "actualizado": "Actualizado {{hace}}",
+        "fuente": {
+          "deposito": "El ERP",
+          "llamada": "Las llamadas",
+          "whatsapp": "WhatsApp"
+        }
+      },
       "autonomia": {
         "titulo": "Autonomía",
         "hint": "Define cuánto puede hacer cada agente sin ti.",

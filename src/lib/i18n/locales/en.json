@@ -960,6 +960,83 @@
         "sinFuente": "We couldn't load the activity",
         "sinFuenteHint": "The source didn't respond; that doesn't mean nothing happened."
       },
+      "flota": {
+        "piloto": "Pilot",
+        "apagado": "Off",
+        "apagadoHint": "The Pilot is switched off on the server (PILOTO_ENABLED). The tech team turns it on.",
+        "cargando": "Reading the fleet state…",
+        "corriendo": "{{n}} agents running in this mode.",
+        "mixtoHint": "Agents don't share a mode: {{autonomo}} autopilot · {{copiloto}} copilot · {{sombra}} shadow. Pick one for the whole fleet or adjust per agent.",
+        "aria": "Autopilot: {{modo}} mode. Open to change it",
+        "elegir": "Pilot mode",
+        "modo": {
+          "sombra": "Shadow",
+          "copiloto": "Copilot",
+          "autonomo": "Autopilot",
+          "mixto": "Mixed"
+        },
+        "que": {
+          "sombra": "Watches, records and proposes. Contacts nobody, signs nothing, and doesn't interrupt you.",
+          "copiloto": "Prepares every action and leaves it in your inbox: nothing goes out without your OK.",
+          "autonomo": "Calls, writes and issues receipts on its own, within the law and your limits. Tells you what it did."
+        },
+        "confirmarAutonomo": "On autopilot the Pilot calls, writes and issues receipts without asking. Switch it on?",
+        "confirmarSi": "Yes, autopilot",
+        "cancelar": "Cancel",
+        "toastOk": "Pilot in {{modo}} mode for the whole fleet",
+        "toastParcial": "Pilot in {{modo}} mode, except: {{agentes}}",
+        "toastFail": "Couldn't change the mode: {{error}}",
+        "ahora": "Right now",
+        "llamadas": "{{n}} call(s) in progress",
+        "conciliando": "{{n}} deposit(s) being reconciled",
+        "esperando": "{{n}} deposit(s) waiting for your OK",
+        "verProcesos": "See processes",
+        "porAgente": "Per agent"
+      },
+      "procesos": {
+        "titulo": "Processes",
+        "descripcion": "What the Pilot did, step by step: deposits it detected and reconciled, Laura's calls and messages with tenants.",
+        "volver": "Autopilot",
+        "enVivo": "Live",
+        "enVivoVacio": "Nothing in progress right now",
+        "tipo": {
+          "todos": "All",
+          "deposito": "Deposits",
+          "llamada": "Calls",
+          "whatsapp": "WhatsApp"
+        },
+        "estado": {
+          "todos": "All",
+          "en_curso": "In progress",
+          "esperando": "Waiting for you",
+          "hecho": "Done",
+          "sin_resultado": "No result"
+        },
+        "filtrarTipo": "Filter by process type",
+        "filtrarEstado": "Filter by state",
+        "vacio": "No processes yet",
+        "vacioHint": "When the Pilot detects a deposit, calls someone or writes on WhatsApp, it shows up here with its steps.",
+        "vacioFiltro": "Nothing with that filter",
+        "vacioFiltroHint": "There are {{n}} processes in total; try another type or state.",
+        "error": "Couldn't load the processes: {{error}}",
+        "sinFuente": "We couldn't query the processes",
+        "sinFuenteHint": "The source didn't answer; that doesn't mean nothing happened.",
+        "fuenteCaida": "{{fuente}} didn't answer: those processes aren't in this list.",
+        "sinBack": "The ERP isn't connected to the Pilot: deposits don't show here.",
+        "contador": "{{visibles}} of {{total}}",
+        "verPasos": "Show steps",
+        "ocultarPasos": "Hide steps",
+        "abrir": "Open",
+        "mensajes": "Messages",
+        "yo": "Pilot",
+        "ellos": "Tenant",
+        "actualizado": "Updated {{hace}}",
+        "fuente": {
+          "deposito": "The ERP",
+          "llamada": "Calls",
+          "whatsapp": "WhatsApp"
+        }
+      },
       "autonomia": {
         "titulo": "Autonomy",
         "hint": "Define how much each agent can do without you.",

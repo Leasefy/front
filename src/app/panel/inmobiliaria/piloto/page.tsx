@@ -49,6 +49,10 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { ListChecks } from '@phosphor-icons/react'
+
+import { Button } from '@/components/ui/button'
 
 import { useI18n } from '@/lib/i18n'
 import { usePilotoInbox } from '@/lib/hooks/piloto/use-piloto-inbox'
@@ -155,8 +159,16 @@ export default function PilotoPage() {
             {t('inmobiliaria.piloto.descripcion')}
           </p>
         </div>
-        {/* Configuración, no operación: las dos viven en el encabezado. */}
+        {/* Configuración, no operación: las dos viven en el encabezado.
+            «Procesos» es la ventana por la que se ve trabajar al Piloto
+            (process view, 2026-09-02): también va acá, no en el flujo diario. */}
         <div className="flex shrink-0 items-center gap-2">
+          <Button asChild variant="outline" size="sm" hideArrow>
+            <Link href="/panel/inmobiliaria/piloto/procesos" data-testid="piloto-ver-procesos">
+              <ListChecks weight="duotone" className="mr-1.5 h-4 w-4" aria-hidden="true" />
+              {t('inmobiliaria.piloto.procesos.titulo')}
+            </Link>
+          </Button>
           <PilotoPreparacion />
           <PilotoAutonomia autonomia={autonomia} />
         </div>

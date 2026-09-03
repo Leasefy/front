@@ -934,6 +934,18 @@
     animation: pulse-subtle 2s ease-in-out infinite;
   }
 
+  /* Onda de una llamada en curso (Piloto → procesos). Se aquieta con
+     prefers-reduced-motion porque la clase va con `motion-safe:`. */
+  @keyframes onda {
+    0%, 100% { transform: scaleY(0.35); }
+    50% { transform: scaleY(1); }
+  }
+
+  .animate-onda {
+    transform-origin: bottom;
+    animation: onda 0.9s ease-in-out infinite;
+  }
+
   /* Sparkle animation for AI indicator */
   @keyframes sparkle {
     0%, 100% { transform: scale(1); opacity: 1; }

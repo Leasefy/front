@@ -61,6 +61,7 @@ import { CommandPaletteProvider, useCommandPalette } from '@/lib/context/Command
 import { CommandPalette } from '@/components/inmobiliaria/CommandPalette';
 import { BotonNuevo } from '@/components/inmobiliaria/BotonNuevo';
 import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
+import { PilotoModoHeader } from '@/components/inmobiliaria/piloto/PilotoModoHeader';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { usePostulacionesPendientes } from '@/lib/hooks/use-postulaciones-pendientes';
 import { MuroDeMigracion } from '@/components/migracion/MuroDeMigracion';
@@ -518,7 +519,14 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           {/* Search lives only in the sidebar (aboveNav). Top bar keeps notifications + avatar.
               leftSlot carries the AI agent breadcrumb — all agent nav lives at the top now
               (breadcrumb here + WorkspaceNav tabs below), so pages drop their MigaDePan. */}
-          <PlanHeader showMagnifyingGlass={false} leftSlot={<AgentHeaderBreadcrumb />} />
+          {/* La píldora del Piloto («Piloto · Copiloto») va en `actions`, a la
+              izquierda de la campana: en cada pantalla se ve en qué modo está
+              la flota y se cambia con un clic (Nico, 2026-09-02). */}
+          <PlanHeader
+            showMagnifyingGlass={false}
+            leftSlot={<AgentHeaderBreadcrumb />}
+            actions={<PilotoModoHeader />}
+          />
           <main id="main-content" tabIndex={-1}>{children}</main>
         </div>
 

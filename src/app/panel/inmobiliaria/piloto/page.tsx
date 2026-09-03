@@ -59,7 +59,6 @@ import { usePilotoPulso } from '@/lib/hooks/piloto/use-piloto-pulso'
 import { PilotoPulso } from '@/components/inmobiliaria/piloto/PilotoPulso'
 import { PilotoBandeja } from '@/components/inmobiliaria/piloto/PilotoBandeja'
 import { PilotoAutonomia } from '@/components/inmobiliaria/piloto/PilotoAutonomia'
-import { PilotoPreparacion } from '@/components/inmobiliaria/piloto/PilotoPreparacion'
 import { PilotoFeed } from '@/components/inmobiliaria/piloto/PilotoFeed'
 import {
   PilotoCajon,
@@ -155,9 +154,10 @@ export default function PilotoPage() {
             {t('inmobiliaria.piloto.descripcion')}
           </p>
         </div>
-        {/* Configuración, no operación: las dos viven en el encabezado. */}
+        {/* Configuración, no operación: vive en el encabezado.
+            «Preparación» (T-0051) se sacó del render — hidden temporarily
+            as a product decision, not deleted; ver PilotoPreparacion.tsx. */}
         <div className="flex shrink-0 items-center gap-2">
-          <PilotoPreparacion />
           <PilotoAutonomia autonomia={autonomia} />
         </div>
       </header>

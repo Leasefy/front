@@ -10751,6 +10751,20 @@
     "conteoArriendoUno": "1 lease · {{vigentes}} current",
     "conteoArriendos": "{{n}} leases · {{vigentes}} current",
     "verFicha": "View profile",
+    "tabla": {
+      "inquilino": "Tenant",
+      "telefono": "Phone",
+      "inmueble": "Property",
+      "estado": "Status",
+      "canon": "Rent",
+      "vigencia": "Term",
+      "arriendos": "Leases",
+      "sinCorreo": "No email",
+      "variosInmuebles": "{{n}} properties",
+      "nVigentes": "{{n}} active",
+      "desplegar": "See {{nombre}}'s leases",
+      "contraer": "Hide {{nombre}}'s leases"
+    },
     "estados": {
       "activo": "Active",
       "porVencer": "Ending soon",

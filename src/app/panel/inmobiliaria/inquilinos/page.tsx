@@ -20,6 +20,14 @@
  *    significar «a quién le administro un inmueble». El vacío ofrece las dos
  *    salidas reales: migrar o crear el contrato.
  * 3. **La búsqueda viaja al back.** Ver `use-inquilinos.ts`.
+ *
+ * ── Y una cuarta, del 2026-09-02 ────────────────────────────────────────────
+ * 4. **Es una TABLA, no tarjetas** (Nico: «mejor en una tabla como las otras
+ *    que tenemos, con toda la información que tienes igual, y con
+ *    paginación»). La fila sigue siendo una persona; lo que la tarjeta
+ *    mostraba anidado —cada arriendo con su estado, canon y vigencia— vive en
+ *    las columnas cuando hay uno solo, y se despliega cuando hay varios. Ver
+ *    `InquilinosTable`.
  */
 
 import { useMemo, useState } from 'react';
@@ -28,9 +36,7 @@ import {
   ArrowSquareOut,
   Buildings,
   CurrencyDollar,
-  Envelope,
   MagnifyingGlass,
-  Phone,
   UploadSimple,
   UserCircle,
   Users,
@@ -40,8 +46,10 @@ import { SearchInput, SegmentedControl, KpiCard, Eyebrow } from '@leasefy/cadenc
 import { PageGuard } from '@/components/auth/PageGuard';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination } from '@/lib/hooks/use-table-pagination';
+import { InquilinosTable, RenglonDeArriendo } from '@/components/inmobiliaria/InquilinosTable';
 import {
   Dialog,
   DialogContent,
@@ -52,8 +60,6 @@ import { useI18n } from '@/lib/i18n';
 import { useInquilinos } from '@/lib/hooks/use-inquilinos';
 import {
   arriendosVigentes,
-  type ArriendoDeInquilino,
-  type EstadoDeArriendo,
   type FiltroDeEstado,
   type Inquilino,
 } from '@/lib/api/inquilinos.service';
@@ -74,17 +80,6 @@ export default function InquilinosPage() {
   );
 }
 
-/** Cómo se pinta cada estado de `LeaseStatus`. Color + palabra, nunca color solo. */
-const TONO_DEL_ARRIENDO: Record<
-  EstadoDeArriendo,
-  { variant: 'success' | 'warning' | 'secondary'; clave: string }
-> = {
-  ACTIVE: { variant: 'success', clave: 'inquilinos.estados.activo' },
-  ENDING_SOON: { variant: 'warning', clave: 'inquilinos.estados.porVencer' },
-  ENDED: { variant: 'secondary', clave: 'inquilinos.estados.terminado' },
-  TERMINATED: { variant: 'secondary', clave: 'inquilinos.estados.cancelado' },
-};
-
 function ContenidoDeInquilinos() {
   const { t, formatCurrency } = useI18n();
 
@@ -93,6 +88,17 @@ function ContenidoDeInquilinos() {
   const [abierto, setAbierto] = useState<Inquilino | null>(null);
 
   const { inquilinos, cargando, error, refrescar } = useInquilinos({ buscar, estado });
+
+  /*
+   * Paginación en el cliente: la lista viene entera del back (una fila por
+   * persona, sin `page`), igual que propietarios y el portafolio. `resetKey`
+   * la manda a la página 1 cuando cambia el filtro — si no, filtrar desde la
+   * página 3 deja la tabla en blanco.
+   */
+  const { pageItems, total, page, pageSize, setPage, setPageSize } = useTablePagination(
+    inquilinos,
+    { initialPageSize: 10, resetKey: `${buscar}|${estado}` },
+  );
 
   const totales = useMemo(() => {
     const vigentes = inquilinos.flatMap(arriendosVigentes);
@@ -206,126 +212,27 @@ function ContenidoDeInquilinos() {
             }
           />
         ) : (
-          <div className="space-y-3">
-            {inquilinos.map((persona) => (
-              <TarjetaDeInquilino
-                key={persona.tenantId}
-                persona={persona}
-                onAbrir={() => setAbierto(persona)}
-              />
-            ))}
+          <div className="overflow-hidden rounded-lg border border-border bg-card">
+            <InquilinosTable inquilinos={pageItems} onVerFicha={setAbierto} />
+            {/* El pie sólo aparece cuando hay más de una página: un paginador
+                sobre 3 filas es ruido. */}
+            {total > pageSize && (
+              <div className="border-t border-border bg-muted/10 px-4 py-3">
+                <TablePagination
+                  total={total}
+                  page={page}
+                  pageSize={pageSize}
+                  pageSizeOptions={[10, 20, 50]}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </div>
+            )}
           </div>
         )}
       </EstadoDeDatos>
 
       <FichaDeInquilino persona={abierto} onCerrar={() => setAbierto(null)} />
-    </div>
-  );
-}
-
-/**
- * Una persona con sus arriendos adentro.
- *
- * Se muestran TODOS los que trajo el filtro, no los primeros dos con un «+3
- * más»: la pregunta que trae a alguien a esta pantalla es «¿qué le administro
- * a esta persona?», y esconder la mitad la deja sin responder.
- */
-function TarjetaDeInquilino({
-  persona,
-  onAbrir,
-}: {
-  persona: Inquilino;
-  onAbrir: () => void;
-}) {
-  const { t } = useI18n();
-  const vigentes = arriendosVigentes(persona).length;
-
-  return (
-    <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <p className="truncate font-medium text-fg">{persona.nombre}</p>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-muted">
-            {persona.email ? (
-              <span className="inline-flex min-w-0 items-center gap-1.5">
-                <Envelope className="h-4 w-4 shrink-0" />
-                <span className="truncate">{persona.email}</span>
-              </span>
-            ) : null}
-            {persona.telefono ? (
-              <span className="inline-flex items-center gap-1.5">
-                <Phone className="h-4 w-4 shrink-0" />
-                <span className="font-mono tabular-nums">{persona.telefono}</span>
-              </span>
-            ) : null}
-            {/* Sin correo NI teléfono: no es un detalle estético — es a quién
-                no se le puede cobrar ni avisar. */}
-            {!persona.email && !persona.telefono ? (
-              <span className="text-warning">{t('inquilinos.sinContacto')}</span>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-3">
-          <span className="text-sm text-fg-muted">
-            {t(
-              persona.arriendos.length === 1
-                ? 'inquilinos.conteoArriendoUno'
-                : 'inquilinos.conteoArriendos',
-              { n: persona.arriendos.length, vigentes },
-            )}
-          </span>
-          <Button variant="outline" size="sm" hideArrow onClick={onAbrir}>
-            {t('inquilinos.verFicha')}
-          </Button>
-        </div>
-      </div>
-
-      <ul className="mt-4 space-y-2">
-        {persona.arriendos.map((a) => (
-          <li key={a.leaseId}>
-            <RenglonDeArriendo arriendo={a} />
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function RenglonDeArriendo({ arriendo }: { arriendo: ArriendoDeInquilino }) {
-  const { t, formatCurrency, formatDate } = useI18n();
-  const tono = TONO_DEL_ARRIENDO[arriendo.estado];
-
-  return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-surface-muted px-3 py-2">
-      <Badge variant={tono?.variant ?? 'secondary'}>
-        {/* Un estado que el back agregue mañana se muestra crudo, no se
-            esconde: mejor una etiqueta rara que una fila que miente. */}
-        {tono ? t(tono.clave) : arriendo.estado}
-      </Badge>
-
-      {arriendo.inmueble ? (
-        <Link
-          href={`/panel/inmobiliaria/inmuebles/${arriendo.inmueble.id}`}
-          className="min-w-0 flex-1 truncate text-sm text-fg hover:text-primary"
-        >
-          {arriendo.inmueble.address}
-          <span className="text-fg-muted"> · {arriendo.inmueble.city}</span>
-        </Link>
-      ) : (
-        /* Pasa de verdad: un contrato migrado sin inmueble asignado. Decirlo
-           es lo que hace que alguien lo complete. */
-        <span className="min-w-0 flex-1 truncate text-sm text-warning">
-          {t('inquilinos.sinInmueble')}
-        </span>
-      )}
-
-      <span className="font-mono text-sm tabular-nums text-fg">
-        {formatCurrency(arriendo.canonCop)}
-      </span>
-      <span className="font-mono text-xs tabular-nums text-fg-muted">
-        {formatDate(arriendo.desde)} — {formatDate(arriendo.hasta)}
-      </span>
     </div>
   );
 }

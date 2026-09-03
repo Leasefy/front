@@ -60,7 +60,9 @@ export interface UseTablePaginationResult<T> {
 }
 
 export function useTablePagination<T>(
-  items: T[],
+  // `readonly`: el hook sólo LEE (`length` y `slice`). Sin esto, una lista
+  // que el dueño expone como inmutable —`useInquilinos`— no se puede paginar.
+  items: readonly T[],
   options: UseTablePaginationOptions = {},
 ): UseTablePaginationResult<T> {
   const { initialPageSize = DEFAULT_PAGE_SIZE, resetKey } = options

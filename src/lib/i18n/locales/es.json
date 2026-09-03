@@ -10752,6 +10752,20 @@
     "conteoArriendoUno": "1 arriendo · {{vigentes}} vigente",
     "conteoArriendos": "{{n}} arriendos · {{vigentes}} vigentes",
     "verFicha": "Ver ficha",
+    "tabla": {
+      "inquilino": "Inquilino",
+      "telefono": "Teléfono",
+      "inmueble": "Inmueble",
+      "estado": "Estado",
+      "canon": "Canon",
+      "vigencia": "Vigencia",
+      "arriendos": "Arriendos",
+      "sinCorreo": "Sin correo",
+      "variosInmuebles": "{{n}} inmuebles",
+      "nVigentes": "{{n}} vigentes",
+      "desplegar": "Ver los arriendos de {{nombre}}",
+      "contraer": "Ocultar los arriendos de {{nombre}}"
+    },
     "estados": {
       "activo": "Activo",
       "porVencer": "Por vencer",

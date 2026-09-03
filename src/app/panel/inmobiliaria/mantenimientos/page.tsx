@@ -25,7 +25,6 @@ import {
   MagnifyingGlass,
   SquaresFour,
   Kanban,
-  Bell,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -46,8 +45,8 @@ import type {
   MantenimientoStatus,
   Consignacion,
 } from '@/lib/types/inmobiliaria';
-import { formatCurrency, getRenovacionStatusLabel } from '@/lib/types/inmobiliaria';
-import { getCurrentIPC } from '@/lib/constants/inmobiliaria-data';
+import { getRenovacionStatusLabel } from '@/lib/types/inmobiliaria';
+import { getCurrentIPC, formatearTasaIPC } from '@/lib/constants/inmobiliaria-data';
 import {
   useMantenimientos,
   useRenovaciones,
@@ -65,15 +64,6 @@ import {
   MantenimientoViewer,
   type MantenimientoFormData,
 } from '@/components/inmobiliaria';
-import { ReminderConfigPanel } from '@/components/inmobiliaria/reminders/ReminderConfig';
-import { ReminderLog } from '@/components/inmobiliaria/reminders/ReminderLog';
-import type { ReminderConfig } from '@/lib/types/reminders';
-
-const DEFAULT_REMINDER_CONFIG: ReminderConfig = {
-  globalEnabled: false,
-  types: [],
-};
-import { FeatureGate } from '@/components/inmobiliaria/UpgradePrompt';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 
@@ -81,7 +71,7 @@ import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 // Types
 // ============================================================================
 
-type TabValue = 'renovaciones' | 'mantenimiento' | 'ipc' | 'recordatorios';
+type TabValue = 'renovaciones' | 'mantenimiento' | 'ipc';
 type MantenimientoViewMode = 'cards' | 'kanban';
 
 /**
@@ -98,7 +88,12 @@ type MantenimientoViewMode = 'cards' | 'kanban';
  * tiene su propia ruta de primer nivel (`/panel/inmobiliaria/contratos/renovaciones`),
  * creada justamente para dejar de estar enterrada acá adentro.
  */
-const TABS: TabValue[] = ['mantenimiento', 'renovaciones', 'ipc', 'recordatorios'];
+// Sin «Recordatorios»: era una fachada —un switch que no guardaba nada y una
+// lista de tipos vacía— sin nada en el back que la leyera. Los días de aviso
+// reales se configuran en Configuración › Perfil de la agencia
+// (`reminderDaysBefore/After`) y los envíos los hace Cobranza (Nico,
+// 2026-09-03: «eso de configuración de recordatorios no funciona»).
+const TABS: TabValue[] = ['mantenimiento', 'renovaciones', 'ipc'];
 const TAB_POR_DEFECTO: TabValue = 'mantenimiento';
 
 const ENCABEZADO: Record<TabValue, { titulo: string; bajada: string }> = {
@@ -113,10 +108,6 @@ const ENCABEZADO: Record<TabValue, { titulo: string; bajada: string }> = {
   ipc: {
     titulo: 'Calculadora de IPC',
     bajada: 'Calculá el canon del año que viene con el IPC vigente.',
-  },
-  recordatorios: {
-    titulo: 'Recordatorios',
-    bajada: 'Qué se avisa solo, a quién y cuándo.',
   },
 };
 
@@ -217,7 +208,7 @@ function StatCard({
  * Route: /panel/inmobiliaria/mantenimientos
  */
 function OperacionesContent() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   // API Hooks
   // `errorCrudo` y no `error`: el string es sólo el mensaje, y sin el status
@@ -456,13 +447,24 @@ function OperacionesContent() {
       {/* Header — dice la pestaña en la que estás, no el nombre del archivo.
           Antes decía siempre «Operaciones», que no es como se llama esto en
           ningún menú. */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight text-fg">
             {ENCABEZADO[activeTab].titulo}
           </h1>
           <p className="text-sm text-fg-muted max-w-2xl">{ENCABEZADO[activeTab].bajada}</p>
         </div>
+        {/* La acción principal va arriba a la derecha, como en el resto de las
+            páginas (Inmuebles, Contratos…). Antes estaba metida en la barra de
+            pestañas de la tabla: «raro» (Nico, 2026-09-03). */}
+        {activeTab === 'mantenimiento' && (
+          <div className="flex items-center gap-2 shrink-0">
+            <Button hideArrow onClick={handleNewMantenimiento} data-testid="nueva-solicitud">
+              <Plus className="w-4 h-4" />
+              {t('inmobiliaria.operaciones.maintenance.new')}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* El cartel rojo que había acá decía lo mismo para tres fallos
@@ -537,7 +539,7 @@ function OperacionesContent() {
           <StatCard
             icon={TrendUp}
             label={t('inmobiliaria.operaciones.stats.currentIPC')}
-            value={`${stats.ipc.currentRate.toFixed(2)}%`}
+            value={formatearTasaIPC(stats.ipc.currentRate, locale)}
             subValue={stats.ipc.description}
             bgColor="bg-success-soft"
             iconColor="text-success"
@@ -554,7 +556,7 @@ function OperacionesContent() {
       >
         <Tabs value={activeTab} onValueChange={(v) => setTab(v as TabValue)}>
           {/* Tab Header */}
-          <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-border">
+          <div className="px-5 py-4 border-b border-border">
             {/* Mantenimiento primero: es la pestaña que abre por defecto y la
                 que promete el menú. */}
             <TabsList variant="segmented">
@@ -589,31 +591,7 @@ function OperacionesContent() {
                 <Calculator className="w-4 h-4 mr-2" />
                 {t('inmobiliaria.operaciones.tabs.ipc')}
               </TabsTrigger>
-              <TabsTrigger
-                value="recordatorios"
-                className="inline-flex items-center"
-              >
-                <Bell className="w-4 h-4 mr-2" />
-                Recordatorios
-              </TabsTrigger>
             </TabsList>
-
-            {/* Tab-specific Actions */}
-            <AnimatePresence mode="wait">
-              {activeTab === 'mantenimiento' && (
-                <motion.div
-                  key="new-mant"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                >
-                  <Button size="sm" hideArrow onClick={handleNewMantenimiento} className="gap-2">
-                    <Plus className="w-4 h-4" />
-                    {t('inmobiliaria.operaciones.maintenance.new')}
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
 
           {/* Renovaciones Tab — sin esto, una consulta que falló entraba a la
@@ -742,23 +720,9 @@ function OperacionesContent() {
 
           {/* IPC Tab */}
           <TabsContent value="ipc" className="mt-0 p-5">
-            <IPCCalculator
-              onCalculate={(result) => {
-                toast.success(t('inmobiliaria.operaciones.toasts.calculationComplete'), {
-                  description: t('inmobiliaria.operaciones.toasts.newRent', { amount: formatCurrency(result.newRent) }),
-                });
-              }}
-            />
-          </TabsContent>
-
-          {/* Recordatorios Tab */}
-          <TabsContent value="recordatorios" className="mt-0 p-5">
-            <FeatureGate feature="automatic-reminders">
-              <div className="space-y-6">
-                <ReminderConfigPanel config={DEFAULT_REMINDER_CONFIG} />
-                <ReminderLog entries={[]} />
-              </div>
-            </FeatureGate>
+            {/* El resultado se calcula en vivo dentro de la calculadora: un
+                toast por cada tecla sería ruido. */}
+            <IPCCalculator />
           </TabsContent>
         </Tabs>
       </motion.div>

@@ -64,7 +64,6 @@ const NAV_CATALOG: NavEntry[] = [
 
   // ── Operación ─────────────────────────────────────────────────────────────
   { kind: 'page', title: 'Mantenimientos', context: 'Operación', href: `${P}/mantenimientos`, keywords: 'reparaciones arreglos operaciones', permission: { module: 'operaciones', action: 'view' } },
-  { kind: 'page', title: 'Tickets', context: 'Mantenimientos', href: `${P}/mantenimientos/tickets`, keywords: 'tickets mantenimiento ia bandeja proveedor', permission: { module: 'mantenimiento', action: 'view' } },
   { kind: 'page', title: 'Solicitudes', context: 'Operación', href: `${P}/solicitudes`, keywords: 'pqrs peticiones quejas reclamos soporte' },
   { kind: 'page', title: 'Mensajes', context: 'Operación', href: `${P}/mensajes`, keywords: 'chat conversaciones inbox' },
   { kind: 'page', title: 'Agenda', context: 'Operación', href: `${P}/agenda`, keywords: 'calendario citas visitas' },

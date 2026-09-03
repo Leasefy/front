@@ -4846,7 +4846,19 @@
         "rentIncrease": "Rent increase by CPI",
         "trend12m": "12-month trend",
         "useOfficial": "Use official",
-        "viewOfficialIPC": "View official CPI DANE"
+        "viewOfficialIPC": "View official CPI DANE",
+        "currentTitle": "Current CPI",
+        "currentDesc": "Annual change as of {{month}} · governs {{year}} rent increases",
+        "vsPrevMonth": "Versus previous month",
+        "trendTitle": "{{year}} trend",
+        "trendCaption": "Annual CPI change at the close of each month, per DANE.",
+        "increasing": "Increasing",
+        "chartAria": "Chart of the annual CPI change, month by month",
+        "emptyHint": "Enter the current rent to see the new value.",
+        "invalidRent": "The rent must be a number greater than zero.",
+        "invalidRate": "The rate must be a number (for example 5.10).",
+        "appliesFrom": "Applies from",
+        "aboveLegal": "Above the official CPI ({{rate}}): the law does not allow a larger increase."
       },
       "export": {
         "analysisFormat": "Analysis format",

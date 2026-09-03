@@ -4847,7 +4847,19 @@
         "rentIncrease": "Incremento de arriendo por IPC",
         "trend12m": "Tendencia 12 meses",
         "useOfficial": "Usar oficial",
-        "viewOfficialIPC": "Ver IPC oficial DANE"
+        "viewOfficialIPC": "Ver IPC oficial DANE",
+        "currentTitle": "IPC vigente",
+        "currentDesc": "Variación anual a {{month}} · rige los aumentos de canon de {{year}}",
+        "vsPrevMonth": "Frente al mes anterior",
+        "trendTitle": "Tendencia {{year}}",
+        "trendCaption": "Variación anual del IPC al cierre de cada mes, según el DANE.",
+        "increasing": "Ascendente",
+        "chartAria": "Gráfico de la variación anual del IPC, mes a mes",
+        "emptyHint": "Escribí el canon actual para ver el nuevo valor.",
+        "invalidRent": "El canon tiene que ser un número mayor que cero.",
+        "invalidRate": "La tasa tiene que ser un número (por ejemplo 5,10).",
+        "appliesFrom": "Rige desde",
+        "aboveLegal": "Está por encima del IPC oficial ({{rate}}): la ley no permite aumentar más que eso."
       },
       "export": {
         "analysisFormat": "Formato para análisis",

@@ -244,6 +244,14 @@ describe('arquitectura del panel — agentes', () => {
     }
   });
 
+  it('Tickets (agente de mantenimiento) NO está en el catálogo ni tiene workspace: es mock-first sin endpoint (Nico, 2026-09-03)', () => {
+    const hrefs = pantallas.map((p) => p.href);
+    expect(hrefs.some((h) => h.includes('/mantenimientos/tickets'))).toBe(false);
+    expect(AGENT_WORKSPACES.find((w) => w.slug === 'mantenimiento')).toBeUndefined();
+    // Y el módulo no promete IA que no tiene.
+    expect(modulos.find((m) => m.key === 'mantenimientos')?.ia).toBeFalsy();
+  });
+
   it('un agente que es raíz de módulo excluye a sus hermanas (Pagos)', () => {
     const pagos = AGENT_WORKSPACES.find((w) => w.slug === 'pagos')!;
     const modulo = modulos.find((m) => m.key === 'pagos')!;

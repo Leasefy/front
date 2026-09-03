@@ -24,7 +24,6 @@ import {
   ListChecks,
   Umbrella,
   ArrowsClockwise,
-  Ticket,
   Coins,
   CurrencyCircleDollar,
   ChatCircleText,
@@ -189,15 +188,15 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
     key: 'operacion',
     labelKey: 'inmobiliaria.nav.secOperacionDelContrato',
     modulos: [
-      {
-        key: 'mantenimientos', labelKey: 'inmobiliaria.nav.mantenimientos', href: r('/mantenimientos'), icon: Wrench, module: 'operaciones', scope: 'administracion', ia: true,
-        pantallas: [
-          // El agente de tickets. Estaba duplicado en dos grupos del sidebar
-          // (/operaciones y /ai/mantenimiento/tickets); ahora es UNA entrada.
-          // Era una fila de General: conserva ese encuadre.
-          { labelKey: 'inmobiliaria.ai.nav.mantenimientoTickets', href: r('/mantenimientos/tickets'), icon: Ticket, module: 'mantenimiento', scope: 'general', ia: true, agente: 'mantenimiento', dataTourTarget: 'sidebar-mantenimiento' },
-        ],
-      },
+      // Sin `ia: true` ni la pantalla «Tickets»: el agente de mantenimiento
+      // (bandeja de tickets, resumen, ficha) es mock-first y el micro no tiene
+      // su endpoint (`/api/agency/:id/mantenimiento/inbox` no existe). Con
+      // `NEXT_PUBLIC_USE_MOCK_API=false` la bandeja quedaba vacía o en error.
+      // NO está en el catálogo a propósito: no va a producción todavía
+      // (Nico, 2026-09-03: «¿qué es eso de tickets? no veo que funcione»).
+      // Las rutas `mantenimientos/tickets/*` siguen existiendo para cuando el
+      // micro lo sirva; el workspace está apagado en `agentWorkspaceNav.ts`.
+      { key: 'mantenimientos', labelKey: 'inmobiliaria.nav.mantenimientos', href: r('/mantenimientos'), icon: Wrench, module: 'operaciones', scope: 'administracion' },
       { key: 'solicitudes', labelKey: 'inmobiliaria.nav.solicitudes', href: r('/solicitudes'), icon: Lifebuoy, module: null, scope: 'administracion', ia: true, hintKey: 'inmobiliaria.nav.pqrs' },
       { key: 'mensajes', labelKey: 'inmobiliaria.nav.mensajes', href: r('/mensajes'), icon: Chat, module: null, scope: 'administracion' },
       { key: 'agenda', labelKey: 'inmobiliaria.nav.agenda', href: r('/agenda'), icon: CalendarBlank, module: null, scope: 'administracion' },

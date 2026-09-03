@@ -178,8 +178,6 @@ export { AIAgentDetailSidebar } from './ai/AIAgentDetailSidebar';
 export { AIAgentExecutionPanel } from './ai/AIAgentExecutionPanel';
 
 // Reminder Components
-export { ReminderConfigPanel } from './reminders/ReminderConfig';
-export { ReminderLog } from './reminders/ReminderLog';
 
 // Advanced Report Components
 export { AgentPerformanceReport } from './reports/AgentPerformanceReport';

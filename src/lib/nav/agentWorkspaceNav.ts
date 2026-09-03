@@ -31,7 +31,6 @@ import {
   Receipt,
   WarningCircle,
   Bank,
-  Ticket,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 
@@ -99,7 +98,6 @@ const CONCILIACION = `${PANEL}/conciliacion`;
 const ESTUDIO = `${PANEL}/postulaciones/estudio`;
 const MATCHING = `${PANEL}/postulaciones/matching`;
 const PAGOS = `${PANEL}/pagos`;
-const MANTENIMIENTO = `${PANEL}/mantenimientos/tickets`;
 const CONTADOR_ROLES: AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR];
 
 export const AGENT_WORKSPACES: AgentWorkspace[] = [
@@ -252,22 +250,27 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.pagosConfiguracion', href: `${PAGOS}/configuracion`, icon: SlidersHorizontal, module: null, roles: CONTADOR_ROLES },
     ],
   },
-  // ── Mantenimiento (tickets) ───────────────────────────────────────────────
-  // Estaba en dos grupos del sidebar (/operaciones y /ai/mantenimiento/tickets).
-  // La raíz es la bandeja de tickets —lo que la gente abre—; el Resumen (KPIs,
-  // mock-first) queda una pestaña al lado. Gate 'mantenimiento' en el layout
-  // del segmento (mantenimientos/tickets/layout.tsx).
-  {
-    slug: 'mantenimiento',
-    basePath: MANTENIMIENTO,
-    labelKey: 'inmobiliaria.ai.nav.mantenimientoTickets',
-    icon: Ticket,
-    module: 'mantenimiento',
-    items: [
-      { labelKey: 'inmobiliaria.ai.nav.mantenimientoTickets', href: MANTENIMIENTO, icon: Ticket, exact: true, module: 'mantenimiento', dataTourTarget: 'sidebar-mantenimiento' },
-      { labelKey: 'inmobiliaria.ai.nav.mantenimientoResumen', href: `${MANTENIMIENTO}/resumen`, icon: SquaresFour, module: 'mantenimiento' },
-    ],
-  },
+  // ── Mantenimiento (tickets) — APAGADO ─────────────────────────────────────
+  // El agente es mock-first y el micro no sirve `/api/agency/:id/mantenimiento/inbox`:
+  // con `NEXT_PUBLIC_USE_MOCK_API=false` la bandeja quedaba vacía o en error.
+  // No va a producción todavía (Nico, 2026-09-03). Las páginas siguen en
+  // `mantenimientos/tickets/*`; para reactivarlo, descomentar este bloque y la
+  // pantalla en `arquitectura-del-panel.ts` (el test exige las dos puertas).
+  //   // Estaba en dos grupos del sidebar (/operaciones y /ai/mantenimiento/tickets).
+  //   // La raíz es la bandeja de tickets —lo que la gente abre—; el Resumen (KPIs,
+  //   // mock-first) queda una pestaña al lado. Gate 'mantenimiento' en el layout
+  //   // del segmento (mantenimientos/tickets/layout.tsx).
+  //   {
+  //     slug: 'mantenimiento',
+  //     basePath: MANTENIMIENTO,
+  //     labelKey: 'inmobiliaria.ai.nav.mantenimientoTickets',
+  //     icon: Ticket,
+  //     module: 'mantenimiento',
+  //     items: [
+  //       { labelKey: 'inmobiliaria.ai.nav.mantenimientoTickets', href: MANTENIMIENTO, icon: Ticket, exact: true, module: 'mantenimiento', dataTourTarget: 'sidebar-mantenimiento' },
+  //       { labelKey: 'inmobiliaria.ai.nav.mantenimientoResumen', href: `${MANTENIMIENTO}/resumen`, icon: SquaresFour, module: 'mantenimiento' },
+  //     ],
+  //   },
 ];
 
 /**

@@ -1,23 +1,24 @@
 'use client'
 
 /**
- * RecorridoMapa — los 11 pasos completos, en vertical, con el corte donde el
- * recorrido cambia de manos.
+ * RecorridoMapa — los 11 pasos del recorrido, en dos tramos: lo que hace el
+ * inquilino (1–6) y lo que te toca a vos (7–11), con el corte donde cambia de
+ * manos dibujado entre los dos.
+ *
+ * Antes era una lista vertical de once filas con riel: correcta, pero larga y
+ * fea como presentación («esto está horrible… mejorá muchísimo eso a nivel
+ * UI», Nico, 2026-09-03). Ahora cada paso es una card chica en una grilla por
+ * tramo: se ve de un vistazo quién hace qué y dónde entra la inmobiliaria.
  *
  * Por qué no usa el `Stepper` de Cadence: el de Cadence es de solo lectura
- * (`Step` no acepta `href` ni `onClick`, ver `@leasefy/cadence` §42). Acá los
- * pasos de la inmobiliaria tienen que ser navegables — el mapa no sirve solo
- * para entender el recorrido, sirve para meterse en él. El lenguaje visual sí
- * es el mismo: círculo numerado, riel, descripción por paso.
- *
- * La línea entre el paso 6 y el 7 es lo más importante de este componente. Es
- * el momento en que la pelota pasa del inquilino a la inmobiliaria, y hoy no
- * está dibujado en ningún lado del panel.
+ * (`Step` no acepta `href` ni `onClick`). Los pasos de la inmobiliaria son
+ * navegables — el mapa sirve para meterse en el recorrido, no sólo para
+ * entenderlo.
  */
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ArrowRight, Check } from '@phosphor-icons/react'
+import { ArrowRight, ArrowsLeftRight, Check } from '@phosphor-icons/react'
 
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
@@ -47,7 +48,14 @@ const MARCA: Record<Estado, string> = {
   hecho: 'bg-primary/15 text-primary border-primary/30',
   actual: 'bg-primary text-white border-primary',
   pendiente: 'border-border bg-bg text-fg-subtle',
-  neutro: 'border-border bg-bg text-fg-muted',
+  neutro: 'border-border bg-surface-muted text-fg-muted',
+}
+
+const CARD: Record<Estado, string> = {
+  hecho: 'border-border bg-surface-muted/50',
+  actual: 'border-primary bg-surface shadow-sm ring-1 ring-primary/20',
+  pendiente: 'border-border bg-surface',
+  neutro: 'border-border bg-surface',
 }
 
 export function RecorridoMapa({ pasoActual, hrefs, className }: RecorridoMapaProps) {
@@ -55,105 +63,113 @@ export function RecorridoMapa({ pasoActual, hrefs, className }: RecorridoMapaPro
   const pathname = usePathname()
   const actual = pasoActual ? PASOS_RECORRIDO.find((p) => p.key === pasoActual) : undefined
 
-  return (
-    <ol className={cn('space-y-0', className)}>
-      {PASOS_RECORRIDO.map((paso, i) => {
-        const estado = estadoDe(paso, actual)
-        const declarado = hrefs?.[paso.key] ?? paso.href
-        // Un "Ver →" que lleva a la pantalla en la que ya estás es ruido; se
-        // oculta. Pero ese paso SÍ tiene pantalla —estás en ella—, así que no
-        // debe caer en el "todavía sin pantalla" de abajo.
-        const esLaPantallaActual = declarado != null && declarado === pathname
-        // Un paso del inquilino no se enlaza NUNCA, ni con un `hrefs` a mano:
-        // sus pantallas están cerradas con `allowedRoles={['tenant']}` y el
-        // guard devuelve al agente al mismo lugar. Un link que parpadea y no
-        // lleva a ningún lado es peor que ningún link.
-        const href = esLaPantallaActual || paso.actor === 'inquilino' ? null : declarado
-        const esUltimo = i === PASOS_RECORRIDO.length - 1
-        // El corte: este paso abre el tramo de la inmobiliaria.
-        const cambiaDeManos = i > 0 && PASOS_RECORRIDO[i - 1].actor !== paso.actor
+  const delInquilino = PASOS_RECORRIDO.filter((p) => p.actor === 'inquilino')
+  const delaInmobiliaria = PASOS_RECORRIDO.filter((p) => p.actor === 'inmobiliaria')
 
-        return (
-          <li key={paso.key}>
-            {cambiaDeManos && (
-              <div className="flex items-center gap-3 py-4 pl-1">
-                <span className="h-px flex-1 bg-border" />
-                <span className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-                  {t('inmobiliaria.recorrido.cambioDeManos')}
-                </span>
-                <span className="h-px flex-1 bg-border" />
-              </div>
+  const card = (paso: PasoRecorrido) => {
+    const estado = estadoDe(paso, actual)
+    const declarado = hrefs?.[paso.key] ?? paso.href
+    // Un «Ver →» que lleva a la pantalla en la que ya estás es ruido; se
+    // oculta. Pero ese paso SÍ tiene pantalla —estás en ella—, así que no
+    // debe caer en el «todavía sin pantalla» de abajo.
+    const esLaPantallaActual = declarado != null && declarado === pathname
+    // Un paso del inquilino no se enlaza NUNCA: sus pantallas están cerradas
+    // con `allowedRoles={['tenant']}` y el guard devuelve al agente al mismo
+    // lugar. Un link que parpadea y no lleva a ningún lado es peor que ninguno.
+    const href = esLaPantallaActual || paso.actor === 'inquilino' ? null : declarado
+    const esDeLaInmobiliaria = paso.actor === 'inmobiliaria'
+
+    return (
+      <li
+        key={paso.key}
+        className={cn('flex h-full flex-col gap-2.5 rounded-lg border p-4 transition-colors', CARD[estado])}
+        data-estado={estado}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span
+            data-paso={paso.numero}
+            className={cn(
+              'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border font-mono text-xs tabular-nums',
+              MARCA[estado],
             )}
+          >
+            {estado === 'hecho' ? <Check className="h-3.5 w-3.5" weight="bold" /> : paso.numero}
+          </span>
+          <span
+            className={cn(
+              'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em]',
+              esDeLaInmobiliaria ? 'bg-primary-soft text-primary' : 'bg-surface-muted text-fg-muted',
+            )}
+          >
+            {esDeLaInmobiliaria ? t('inmobiliaria.recorrido.actorInmobiliaria') : t('inmobiliaria.recorrido.actorInquilino')}
+          </span>
+        </div>
 
-            <div className="flex gap-4">
-              {/* Riel: marca + línea de continuidad */}
-              <div className="flex flex-col items-center">
-                <span
-                  data-paso={paso.numero}
-                  className={cn(
-                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border',
-                    'font-mono text-xs tabular-nums',
-                    MARCA[estado],
-                  )}
-                >
-                  {estado === 'hecho' ? (
-                    <Check className="h-4 w-4" weight="bold" />
-                  ) : (
-                    paso.numero
-                  )}
-                </span>
-                {!esUltimo && <span className="w-px flex-1 bg-border" aria-hidden="true" />}
-              </div>
+        <div className="min-w-0">
+          <p className={cn('text-sm font-semibold leading-snug', estado === 'pendiente' ? 'text-fg-muted' : 'text-fg')}>
+            {t(paso.labelKey)}
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-fg-muted">{t(paso.descKey)}</p>
+        </div>
 
-              {/* Contenido */}
-              <div className={cn('min-w-0 flex-1', esUltimo ? 'pb-0' : 'pb-6')}>
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <p
-                    className={cn(
-                      'text-sm font-medium',
-                      estado === 'pendiente' ? 'text-fg-muted' : 'text-fg',
-                    )}
-                  >
-                    {t(paso.labelKey)}
-                  </p>
-                  <span
-                    className={cn(
-                      'rounded-full px-2 py-0.5 text-xs',
-                      paso.actor === 'inmobiliaria'
-                        ? 'bg-primary-soft text-primary'
-                        : 'bg-surface-muted text-fg-muted',
-                    )}
-                  >
-                    {paso.actor === 'inmobiliaria'
-                      ? t('inmobiliaria.recorrido.actorInmobiliaria')
-                      : t('inmobiliaria.recorrido.actorInquilino')}
-                  </span>
-                </div>
+        {href ? (
+          <Link
+            href={href}
+            className="mt-auto inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          >
+            {t('inmobiliaria.recorrido.verPaso')}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        ) : (
+          esDeLaInmobiliaria &&
+          !esLaPantallaActual && (
+            // Honestidad: es un paso suyo y todavía no tiene pantalla propia.
+            <p className="mt-auto text-xs text-fg-subtle">{t('inmobiliaria.recorrido.sinPantalla')}</p>
+          )
+        )}
+      </li>
+    )
+  }
 
-                <p className="mt-1 text-sm text-fg-muted">{t(paso.descKey)}</p>
+  const tramo = (titulo: string, rango: string, pasos: PasoRecorrido[], columnas: string, tono: string) => (
+    <section>
+      <div className="mb-3 flex items-center gap-2">
+        <span className={cn('h-2 w-2 rounded-full', tono)} aria-hidden="true" />
+        <h3 className="text-sm font-medium text-fg">{titulo}</h3>
+        <span className="font-mono text-xs tabular-nums text-fg-subtle">{rango}</span>
+      </div>
+      <ol className={cn('grid gap-3 sm:grid-cols-2 lg:grid-cols-3', columnas)}>{pasos.map(card)}</ol>
+    </section>
+  )
 
-                {href ? (
-                  <Link
-                    href={href}
-                    className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                  >
-                    {t('inmobiliaria.recorrido.verPaso')}
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                ) : (
-                  paso.actor === 'inmobiliaria' &&
-                  !esLaPantallaActual && (
-                    // Honestidad: es un paso suyo y todavía no tiene pantalla propia.
-                    <p className="mt-2 text-xs text-fg-subtle">
-                      {t('inmobiliaria.recorrido.sinPantalla')}
-                    </p>
-                  )
-                )}
-              </div>
-            </div>
-          </li>
-        )
-      })}
-    </ol>
+  return (
+    <div className={cn('space-y-5', className)} data-testid="recorrido-mapa">
+      {tramo(
+        t('inmobiliaria.recorrido.esperandoAlInquilino'),
+        `${delInquilino[0]?.numero}–${delInquilino[delInquilino.length - 1]?.numero}`,
+        delInquilino,
+        'xl:grid-cols-6',
+        'bg-fg-subtle',
+      )}
+
+      {/* El corte: acá la pelota pasa del inquilino a la inmobiliaria. Es lo
+          más importante del mapa, por eso va dibujado y no sólo implícito. */}
+      <div className="flex items-center gap-3" role="separator" data-corte>
+        <span className="h-px flex-1 bg-border" aria-hidden="true" />
+        <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary-soft px-3 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-primary">
+          <ArrowsLeftRight className="h-3.5 w-3.5" weight="bold" aria-hidden="true" />
+          {t('inmobiliaria.recorrido.cambioDeManos')}
+        </span>
+        <span className="h-px flex-1 bg-border" aria-hidden="true" />
+      </div>
+
+      {tramo(
+        t('inmobiliaria.recorrido.teToca'),
+        `${delaInmobiliaria[0]?.numero}–${delaInmobiliaria[delaInmobiliaria.length - 1]?.numero}`,
+        delaInmobiliaria,
+        'xl:grid-cols-5',
+        'bg-primary',
+      )}
+    </div>
   )
 }

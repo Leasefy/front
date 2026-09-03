@@ -184,6 +184,14 @@ function AvaluosSala() {
     page,
   })
 
+  // El servicio puede estar configurado (hay URL) y aun así no contestar: el
+  // back responde 502 «Avaluo service unreachable» al listar. Con el servicio
+  // caído, los botones abrían una pestaña a un host muerto y parecía que «no
+  // hacían nada» (Nico, 2026-09-03). El mismo aviso de «desconectado» que ya
+  // existía para la URL vacía vale para este caso, y apaga los dos botones.
+  const servicioCaido = errorCrudo instanceof ApiError && errorCrudo.status === 502
+  const servicioDesconectado = !servicioConfigurado || servicioCaido
+
   const onStateChange = (state: string) => {
     setActiveState(state)
     setPage(0)
@@ -286,7 +294,7 @@ function AvaluosSala() {
       >
         <h2 className="text-base font-semibold text-foreground">{t(`${NS}.solicitarTitle`)}</h2>
 
-        {!servicioConfigurado && (
+        {servicioDesconectado && (
           <div
             className="rounded-md bg-warning-soft border border-border p-3 flex items-start gap-2"
             data-testid="avaluos-servicio-no-configurado"
@@ -327,7 +335,7 @@ function AvaluosSala() {
               hideArrow
               className="mt-auto w-full"
               isLoading={openingWizard}
-              disabled={openingWizard || !servicioConfigurado}
+              disabled={openingWizard || servicioDesconectado}
               onClick={onSolicitarDirecto}
               data-testid="avaluos-solicitar-directo-cta"
             >
@@ -348,7 +356,7 @@ function AvaluosSala() {
               variant="secondary"
               className="mt-auto w-full"
               isLoading={generatingLink}
-              disabled={generatingLink || !servicioConfigurado}
+              disabled={generatingLink || servicioDesconectado}
               onClick={onGenerarLink}
               data-testid="avaluos-generar-link-cta"
             >

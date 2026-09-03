@@ -19,10 +19,10 @@
  * y en móvil sube por encima de la barra de navegación inferior.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { AirTrafficControl, ArrowUpRight, ArrowsClockwise, X } from '@phosphor-icons/react'
+import { AirTrafficControl, ArrowUpRight, X } from '@phosphor-icons/react'
 import { Chip } from '@leasefy/cadence'
 
 import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
@@ -79,14 +79,26 @@ export function PilotoDock() {
     })
   }, [])
 
-  // Escape cierra el tray (si no hay un cajón encima: ese cierra el suyo).
+  // Escape o un clic AFUERA cierran el tray (si no hay un cajón encima: ese
+  // cierra el suyo). El clic afuera se escucha en `mousedown` para que un
+  // clic que arranca adentro y termina afuera (seleccionar texto) no lo cierre.
+  const contenedorRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     if (!abierto || pila.length > 0) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') alternar()
     }
+    const onAfuera = (e: MouseEvent) => {
+      const objetivo = e.target
+      if (objetivo instanceof Node && contenedorRef.current?.contains(objetivo)) return
+      alternar()
+    }
     document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
+    document.addEventListener('mousedown', onAfuera)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('mousedown', onAfuera)
+    }
   }, [abierto, pila.length, alternar])
 
   const apertura = pila.length > 0 ? (pila[pila.length - 1] as PilotoApertura) : null
@@ -114,6 +126,7 @@ export function PilotoDock() {
     <>
       {/* bottom-24 en móvil: por encima de la barra de navegación inferior (h-16 + safe area). */}
       <div
+        ref={contenedorRef}
         className="pointer-events-none fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-3 z-40 flex flex-col items-end gap-2 sm:right-5 lg:bottom-5"
         data-testid="piloto-dock"
         data-abierto={abierto ? '1' : '0'}
@@ -142,14 +155,6 @@ export function PilotoDock() {
                 </span>
               )}
               <span className="ml-auto flex items-center gap-0.5">
-                <button
-                  type="button"
-                  onClick={() => void procesos.refetch()}
-                  aria-label={t('inmobiliaria.piloto.cajon.reintentar')}
-                  className="flex h-7 w-7 items-center justify-center rounded-md text-fg-muted hover:bg-surface-muted hover:text-fg"
-                >
-                  <ArrowsClockwise className={cn('h-3.5 w-3.5', procesos.isLoading && 'animate-spin')} aria-hidden="true" />
-                </button>
                 <button
                   type="button"
                   onClick={alternar}

@@ -169,6 +169,24 @@ describe('PilotoDock', () => {
     expect(ultimaOpcion().tipo).toBe('llamada')
   })
 
+  it('un clic afuera lo cierra; adentro no', async () => {
+    render()
+    await act(async () => {
+      ;(q('[data-testid="piloto-dock-boton"]') as HTMLButtonElement).click()
+    })
+    expect(q('[data-testid="piloto-dock-panel"]')).not.toBeNull()
+    // Adentro: sigue abierto.
+    await act(async () => {
+      q('[data-testid="piloto-dock-panel"]')!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    })
+    expect(q('[data-testid="piloto-dock-panel"]')).not.toBeNull()
+    // Afuera: se cierra.
+    await act(async () => {
+      document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    })
+    expect(q('[data-testid="piloto-dock-panel"]')).toBeNull()
+  })
+
   it('el botón dice lo que pasa: llamada en curso gana; si no, lo que te espera', () => {
     estado.flota = FLOTA({ llamadas: 1, conciliando: 2, esperando: 3 })
     render()

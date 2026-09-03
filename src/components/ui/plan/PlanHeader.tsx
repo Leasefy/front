@@ -526,7 +526,6 @@ export function PlanHeader({
               <MagnifyingGlass className="w-5 h-5" />
             </button>
           )}
-          {actions}
 
           {/*
             Los tres portales, no solo los de `/panel`. Va fuera del bloque de
@@ -547,6 +546,10 @@ export function PlanHeader({
               ruta: pathname ?? '',
             }}
           />
+          {/* Lo contextual (la píldora del Piloto) va DESPUÉS del CTA de
+              feedback y pegado a los íconos: el CTA queda al borde izquierdo
+              del bloque (Nico, 2026-09-02). */}
+          {actions}
 
           {/* Quick Action Icons - Only for Landlords */}
           {isLandlord && (

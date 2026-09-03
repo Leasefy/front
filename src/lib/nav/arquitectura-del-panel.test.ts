@@ -235,13 +235,13 @@ describe('arquitectura del panel — agentes', () => {
     for (const p of pantallas.filter((x) => x.agente)) expect(p.ia, p.href).toBe(true);
   });
 
-  it('las pantallas de Retención son hermanas directas de Contratos, no un workspace anidado', () => {
-    // La propuesta las dibuja como N3 de Contratos (/contratos/riesgo, /contratos/aprobar)
-    // y comparten un solo gate vía el route group `contratos/(retencion)/`.
-    const contratos = modulos.find((m) => m.key === 'contratos')!;
-    const hrefs = (contratos.pantallas ?? []).map((p) => p.href);
-    expect(hrefs).toEqual(expect.arrayContaining([`${PANEL}/contratos/retencion`, `${PANEL}/contratos/riesgo`, `${PANEL}/contratos/aprobar`]));
-    expect(AGENT_WORKSPACES.some((w) => w.slug === 'retencion')).toBe(false);
+  it('Retención NO está en el catálogo: no va a producción todavía (Nico, 2026-09-03)', () => {
+    // Las rutas existen bajo `contratos/(retencion)/`, pero ninguna pestaña,
+    // fila ni píldora las ofrece.
+    const hrefs = pantallas.map((p) => p.href);
+    for (const seg of ['/contratos/retencion', '/contratos/riesgo', '/contratos/aprobar']) {
+      expect(hrefs).not.toContain(`${PANEL}${seg}`);
+    }
   });
 
   it('un agente que es raíz de módulo excluye a sus hermanas (Pagos)', () => {

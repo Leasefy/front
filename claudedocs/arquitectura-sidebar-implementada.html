@@ -227,7 +227,7 @@ footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);font-si
     <h2>Cinco decisiones tomadas en el código</h2>
     <div class="list">
       <div class="row"><span class="k">1</span><div><b>Dashboard → Reportes › Resumen del negocio</b>, no → Inicio. <span>El Piloto no muestra esos KPIs, así que «Inicio ya lo reemplazó» era falso; borrarlo rompía la regla de no eliminar pantallas. En Reportes deja de competir como portada.</span></div></div>
-      <div class="row"><span class="k">2</span><div><b>Retención con tres pestañas hermanas</b> (Retención · Riesgo · Por aprobar). <span>La propuesta no conocía la Sala del agente. Se conservó con las URLs exactas del documento gracias a un route group con un solo guard.</span></div></div>
+      <div class="row"><span class="k">2</span><div><b>Retención retirada del catálogo</b> (2026-09-03 tarde, Nico: el agente de retención no va a producción todavía; las rutas quedan sólo por URL). Antes: tres pestañas hermanas (Retención · Riesgo · Por aprobar). <span>La propuesta no conocía la Sala del agente. Se conservó con las URLs exactas del documento gracias a un route group con un solo guard.</span></div></div>
       <div class="row"><span class="k">3</span><div><b>Cuentas por pagar sin pestaña.</b> <span>No existe un listado; inventarlo rompía la regla. <code>/pagos/cxp</code> redirige a Liquidaciones y sus hijas (ficha, alta desde foto) siguen ahí.</span></div></div>
       <div class="row"><span class="k">4</span><div><b>307 en vez de 301.</b> <span>Convención escrita y testeada del repo (reversibilidad).</span></div></div>
       <div class="row"><span class="k">5</span><div><b>20 filas, no 21.</b> <span>«Ayuda» nunca fue una fila del sidebar real; no se crea.</span></div></div>

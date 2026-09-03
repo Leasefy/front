@@ -24,9 +24,6 @@ import {
   ListChecks,
   Umbrella,
   ArrowsClockwise,
-  Warning,
-  Queue,
-  HeartStraight,
   Ticket,
   Coins,
   CurrencyCircleDollar,
@@ -178,14 +175,10 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         key: 'contratos', labelKey: 'inmobiliaria.nav.contratos', href: r('/contratos'), icon: FilePlus, module: 'contratos', scope: 'administracion',
         pantallas: [
           { labelKey: 'inmobiliaria.nav.renovaciones', href: r('/contratos/renovaciones'), icon: ArrowsClockwise, module: 'operaciones' },
-          // Retención: el riesgo de no renovación es un estado del contrato, y
-          // acá está el contexto para decidir. Tres pantallas hermanas, las
-          // mismas que tenía el grupo «Retención» del sidebar viejo (era de
-          // General: conservan ese encuadre). Comparten un layout con el guard
-          // vía el route group `contratos/(retencion)/`.
-          { labelKey: 'inmobiliaria.nav.retencion', href: r('/contratos/retencion'), icon: HeartStraight, module: 'retencion', scope: 'general', ia: true },
-          { labelKey: 'inmobiliaria.nav.riesgo', href: r('/contratos/riesgo'), icon: Warning, module: 'retencion', scope: 'general', ia: true },
-          { labelKey: 'inmobiliaria.nav.porAprobar', href: r('/contratos/aprobar'), icon: Queue, module: 'retencion', scope: 'general', ia: true },
+          // Retención (el agente Laura: tablero, riesgo de salida y decisiones
+          // por aprobar) NO está en el catálogo a propósito: no va a producción
+          // todavía (Nico, 2026-09-03). Las tres rutas siguen existiendo bajo
+          // `contratos/(retencion)/` y sólo se alcanzan escribiendo la URL.
         ],
       },
     ],

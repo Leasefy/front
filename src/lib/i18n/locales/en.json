@@ -970,7 +970,7 @@
         "toastOk": "{{agente}} is now in {{modo}} mode",
         "toastFail": "Could not change the mode: {{error}}",
         "modo": {
-          "sombra": "Shadow",
+          "sombra": "Manual",
           "copiloto": "Copilot",
           "autonomo": "Autonomous"
         },
@@ -1028,6 +1028,7 @@
         "activo": "Active",
         "inactivo": "Off for your agency",
         "apagadoServidor": "Off at the server",
+        "proximamente": "Coming soon",
         "switchAria": "Turn {agente} on or off for your agency",
         "toastOn": "{agente} turned on for your agency",
         "toastOff": "{agente} turned off for your agency"

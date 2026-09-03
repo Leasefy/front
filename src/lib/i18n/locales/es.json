@@ -971,7 +971,7 @@
         "toastOk": "{{agente}} ahora en modo {{modo}}",
         "toastFail": "No se pudo cambiar el modo: {{error}}",
         "modo": {
-          "sombra": "Sombra",
+          "sombra": "Manual",
           "copiloto": "Copiloto",
           "autonomo": "Autónomo"
         },
@@ -1029,6 +1029,7 @@
         "activo": "Activa",
         "inactivo": "Apagada para tu inmobiliaria",
         "apagadoServidor": "Apagada en el servidor",
+        "proximamente": "Próximamente",
         "switchAria": "Encender o apagar {agente} para tu inmobiliaria",
         "toastOn": "{agente} encendida para tu inmobiliaria",
         "toastOff": "{agente} apagada para tu inmobiliaria"

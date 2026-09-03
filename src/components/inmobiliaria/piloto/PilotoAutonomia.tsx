@@ -34,7 +34,8 @@ import {
 import { useI18n } from '@/lib/i18n'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { workspaceVocab } from '@/components/inmobiliaria/ai/ColaHumana'
-import type { UsePilotoAutonomiaResult } from '@/lib/hooks/piloto/use-piloto-autonomia'
+import { cn } from '@/lib/utils'
+import type { AgentePiloto, UsePilotoAutonomiaResult } from '@/lib/hooks/piloto/use-piloto-autonomia'
 import type { AutonomiaModo } from '@/lib/api/piloto'
 import {
   fetchPilotoGobierno,
@@ -44,6 +45,17 @@ import {
 import { useAuth } from '@/lib/auth'
 
 const MODOS: AutonomiaModo[] = ['sombra', 'copiloto', 'autonomo']
+
+/**
+ * Agentes que hoy NO están disponibles en el Piloto — decisión de producto
+ * TEMPORAL (T-0051, 2026-09-02), no un estado que publique el micro. La
+ * tarjeta se sigue viendo (nunca se borra), pero muda y sin controles.
+ * Reactivar un agente es sacarlo de esta lista, nada más.
+ */
+export const AGENTES_NO_DISPONIBLES: ReadonlySet<AgentePiloto> = new Set<AgentePiloto>([
+  'retencion',
+  'prospectos',
+])
 
 /** Qué significa cada modo, en una línea. Es lo que faltaba para decidir. */
 const MODO_EXPLICACION: Record<AutonomiaModo, string> = {
@@ -201,23 +213,44 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
               label: t(`inmobiliaria.piloto.autonomia.modo.${m}`),
             }))
             const gob = gobierno.get(row.agente)
+            // T-0051: agente en pausa de producto — la tarjeta entera se lee
+            // como no disponible, sin importar lo que diga el gobierno real.
+            const noDisponible = AGENTES_NO_DISPONIBLES.has(row.agente)
+            const estadoTexto = noDisponible
+              ? t('inmobiliaria.piloto.gobierno.proximamente')
+              : gob
+                ? !gob.disponibleGlobal
+                  ? t('inmobiliaria.piloto.gobierno.apagadoServidor')
+                  : gob.corre
+                    ? t('inmobiliaria.piloto.gobierno.activo')
+                    : t('inmobiliaria.piloto.gobierno.inactivo')
+                : null
             return (
-              <div key={row.agente} className="space-y-1.5">
+              <div
+                key={row.agente}
+                className={cn('space-y-1.5', noDisponible && 'opacity-60')}
+                data-testid={`piloto-autonomia-fila-${row.agente}`}
+              >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-body-sm font-medium text-fg">{etiqueta}</p>
-                  {gob && (
+                  <p
+                    className={cn(
+                      'text-body-sm font-medium',
+                      noDisponible ? 'text-fg-muted' : 'text-fg',
+                    )}
+                  >
+                    {etiqueta}
+                  </p>
+                  {(gob || noDisponible) && (
                     <span className="flex items-center gap-1.5">
-                      <span className="text-caption text-fg-subtle">
-                        {!gob.disponibleGlobal
-                          ? t('inmobiliaria.piloto.gobierno.apagadoServidor')
-                          : gob.corre
-                            ? t('inmobiliaria.piloto.gobierno.activo')
-                            : t('inmobiliaria.piloto.gobierno.inactivo')}
-                      </span>
+                      {estadoTexto && (
+                        <span className="text-caption text-fg-subtle">{estadoTexto}</span>
+                      )}
                       {isAdmin && (
                         <Switch
-                          checked={gob.corre}
-                          disabled={!gob.disponibleGlobal || gobiernoBusy === row.agente}
+                          checked={noDisponible ? false : Boolean(gob?.corre)}
+                          disabled={
+                            noDisponible || !gob?.disponibleGlobal || gobiernoBusy === row.agente
+                          }
                           onCheckedChange={(v: boolean) => void cambiarCorre(row.agente, v)}
                           aria-label={t('inmobiliaria.piloto.gobierno.switchAria', { agente: etiqueta })}
                         />
@@ -230,7 +263,7 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
                     options={opciones}
                     value={row.modo}
                     onChange={(modo) => void cambiar(row.agente, modo)}
-                    disabled={busyAgente === row.agente}
+                    disabled={noDisponible || busyAgente === row.agente}
                     size="sm"
                     fullWidth
                     aria-label={t('inmobiliaria.piloto.autonomia.grupoAria', {

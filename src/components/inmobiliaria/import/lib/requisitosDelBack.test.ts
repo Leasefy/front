@@ -4,6 +4,7 @@ import {
   recalcularEstado,
   escribirCampo,
   resolveImportListingType,
+  requisitoDe,
   MINIMO_CANON,
   MINIMO_AREA,
   MINIMO_VENTA,
@@ -210,5 +211,18 @@ describe('escribirCampo — el input de reparación entiende los mismos formatos
 
   it('un texto que no es número queda vacío, nunca un número inventado', () => {
     expect(escribirCampo(inmueble(), 'monthlyRent', 'tres millones').monthlyRent).toBeUndefined();
+  });
+});
+
+describe('requisitoDe', () => {
+  it('describe un campo aunque ya esté completo — lo necesita el input que se queda', () => {
+    const r = requisitoDe('propertyZone');
+    expect(r).toEqual({ campo: 'propertyZone', etiqueta: 'Barrio', ayuda: 'El barrio o sector del inmueble.', tipo: 'texto' });
+    expect(requisitoDe('monthlyRent').sufijo).toBe('COP');
+  });
+
+  it('faltantesParaElBack devuelve exactamente lo que dice el catálogo', () => {
+    const faltan = faltantesParaElBack(inmueble({ propertyZone: '', propertyArea: undefined }));
+    expect(faltan).toEqual([requisitoDe('propertyZone'), requisitoDe('propertyArea')]);
   });
 });

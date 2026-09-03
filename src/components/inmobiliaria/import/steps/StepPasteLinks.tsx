@@ -43,6 +43,7 @@ import {
 } from '@/lib/inmuebles/enlaces.service';
 import { analyzeProperties } from '../lib/gapFiller';
 import { faltantesParaElBack, recalcularEstado, escribirCampo } from '../lib/requisitosDelBack';
+import { useCamposQueSeQuedan } from '../lib/useCamposQueSeQuedan';
 import type { ImportStepProps } from '../ImportWizard';
 import type { ImportProperty } from '../lib/importTypes';
 
@@ -119,6 +120,17 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
       ),
     });
   };
+
+  // Las filas donde se abrió el campo de dirección lo conservan: si se
+  // pintara sólo mientras falta o es aproximada, la primera letra lo haría
+  // desaparecer (escribir la dirección la vuelve exacta y ya no falta).
+  // Se identifican por el enlace, que sobrevive a volver a pegar la lista.
+  const claveDe = (p: ImportProperty) => p.enlaceOrigen ?? String(p._rowIndex);
+  const filasConDireccionAbierta = useCamposQueSeQuedan(
+    state.properties
+      .filter((p) => !p.propertyAddress?.trim() || !!p.direccionAproximada)
+      .map(claveDe),
+  );
 
   return (
     <div className="space-y-6">
@@ -235,7 +247,10 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
               // apareciera cuando `propertyAddress` está vacío, ese relleno lo
               // volvería incorregible — peor que el defecto que se arregla acá.
               const direccionEsAproximada = !!p.direccionAproximada;
-              const mostrarCampoDireccion = leFaltaDireccion || direccionEsAproximada;
+              const mostrarCampoDireccion =
+                leFaltaDireccion ||
+                direccionEsAproximada ||
+                filasConDireccionAbierta.includes(claveDe(p));
 
               return (
                 <li key={p._rowIndex} className="p-3 flex items-start gap-3 bg-surface">
@@ -298,12 +313,17 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
                     {mostrarCampoDireccion && (
                       <div className="mt-2">
                         <label
-                          className="block text-xs text-warning mb-1"
+                          className={cn(
+                            'block text-xs mb-1',
+                            leFaltaDireccion || direccionEsAproximada ? 'text-warning' : 'text-fg-muted',
+                          )}
                           htmlFor={`direccion-${p._rowIndex}`}
                         >
                           {leFaltaDireccion
                             ? 'El portal no publica la dirección. Escribila para poder importarlo:'
-                            : 'El portal no publica la dirección exacta — usamos una aproximación. Escribí la dirección real si la tenés:'}
+                            : direccionEsAproximada
+                              ? 'El portal no publica la dirección exacta — usamos una aproximación. Escribí la dirección real si la tenés:'
+                              : 'Dirección del inmueble:'}
                         </label>
                         <Input
                           id={`direccion-${p._rowIndex}`}

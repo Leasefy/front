@@ -60,6 +60,58 @@ export function resolveImportListingType(raw: string | undefined): 'rent' | 'sal
 }
 
 /**
+ * Cómo se llama, qué pide y cómo se escribe cada campo que puede bloquear la
+ * creación. Vive aparte de `faltantesParaElBack` porque la revisión necesita
+ * describir un campo **también cuando ya está completo**: el input que la
+ * persona está escribiendo no puede desaparecer con la primera letra
+ * (Nico, 2026-09-02: «pone una letra y de una lo quita»).
+ */
+export const REQUISITOS: Record<CampoRequerido, Omit<RequisitoFaltante, 'campo'>> = {
+  propertyAddress: {
+    etiqueta: 'Dirección',
+    ayuda: 'Sin dirección el inmueble no se puede crear.',
+    tipo: 'texto',
+  },
+  // El barrio lo exige la activación en el back (`revisar()` →
+  // `faltantes: ['barrio']`) igual que lo exige el asistente de consignación.
+  // Faltaba ACÁ: la revisión decía «3 listos» y el back devolvía uno
+  // pendiente por barrio — dos listas que dicen lo mismo terminan diciendo
+  // cosas distintas (2026-09-01, tres enlaces reales de Fincaraíz).
+  propertyZone: {
+    etiqueta: 'Barrio',
+    ayuda: 'El barrio o sector del inmueble.',
+    tipo: 'texto',
+  },
+  salePrice: {
+    etiqueta: 'Precio de venta',
+    ayuda: `Mínimo ${formatearPesos(MINIMO_VENTA)}.`,
+    sufijo: 'COP',
+    tipo: 'numero',
+  },
+  monthlyRent: {
+    etiqueta: 'Canon mensual',
+    ayuda: `Mínimo ${formatearPesos(MINIMO_CANON)}.`,
+    sufijo: 'COP',
+    tipo: 'numero',
+  },
+  bathrooms: {
+    etiqueta: 'Baños',
+    ayuda: `Mínimo ${MINIMO_BANOS}.`,
+    tipo: 'numero',
+  },
+  propertyArea: {
+    etiqueta: 'Área',
+    ayuda: `Mínimo ${MINIMO_AREA} m².`,
+    sufijo: 'm²',
+    tipo: 'numero',
+  },
+};
+
+export function requisitoDe(campo: CampoRequerido): RequisitoFaltante {
+  return { campo, ...REQUISITOS[campo] };
+}
+
+/**
  * Qué le falta a este inmueble para que el back lo acepte.
  *
  * ⚠️ Ninguno se puede inventar: el área de un inmueble es un dato, no una
@@ -67,75 +119,25 @@ export function resolveImportListingType(raw: string | undefined): 'rent' | 'sal
  * regla, para que la persona lo complete.
  */
 export function faltantesParaElBack(p: ImportProperty): RequisitoFaltante[] {
-  const faltan: RequisitoFaltante[] = [];
+  const faltan: CampoRequerido[] = [];
 
-  if (!p.propertyAddress?.trim()) {
-    faltan.push({
-      campo: 'propertyAddress',
-      etiqueta: 'Dirección',
-      ayuda: 'Sin dirección el inmueble no se puede crear.',
-      tipo: 'texto',
-    });
-  }
-
-  // El barrio lo exige la activación en el back (`revisar()` →
-  // `faltantes: ['barrio']`) igual que lo exige el asistente de consignación.
-  // Faltaba ACÁ: la revisión decía «3 listos» y el back devolvía uno
-  // pendiente por barrio — dos listas que dicen lo mismo terminan diciendo
-  // cosas distintas (2026-09-01, tres enlaces reales de Fincaraíz).
-  if (!p.propertyZone?.trim()) {
-    faltan.push({
-      campo: 'propertyZone',
-      etiqueta: 'Barrio',
-      ayuda: 'El barrio o sector del inmueble.',
-      tipo: 'texto',
-    });
-  }
+  if (!p.propertyAddress?.trim()) faltan.push('propertyAddress');
+  if (!p.propertyZone?.trim()) faltan.push('propertyZone');
 
   // T-0038 §3.2.4 — a SALE row needs salePrice, never monthlyRent (the CHECK
   // constraint requires exactly one of the two per listingType). Mirrors
   // ImportWizard.isStepValid / StepColumnMapping's monthlyRent<->salePrice
   // alternative at the column-mapping gate, applied per-row here.
   if (resolveImportListingType(p.listingType) === 'sale') {
-    if (!p.salePrice || p.salePrice < MINIMO_VENTA) {
-      faltan.push({
-        campo: 'salePrice',
-        etiqueta: 'Precio de venta',
-        ayuda: `Mínimo ${formatearPesos(MINIMO_VENTA)}.`,
-        sufijo: 'COP',
-        tipo: 'numero',
-      });
-    }
+    if (!p.salePrice || p.salePrice < MINIMO_VENTA) faltan.push('salePrice');
   } else if (!p.monthlyRent || p.monthlyRent < MINIMO_CANON) {
-    faltan.push({
-      campo: 'monthlyRent',
-      etiqueta: 'Canon mensual',
-      ayuda: `Mínimo ${formatearPesos(MINIMO_CANON)}.`,
-      sufijo: 'COP',
-      tipo: 'numero',
-    });
+    faltan.push('monthlyRent');
   }
 
-  if (!p.bathrooms || p.bathrooms < MINIMO_BANOS) {
-    faltan.push({
-      campo: 'bathrooms',
-      etiqueta: 'Baños',
-      ayuda: `Mínimo ${MINIMO_BANOS}.`,
-      tipo: 'numero',
-    });
-  }
+  if (!p.bathrooms || p.bathrooms < MINIMO_BANOS) faltan.push('bathrooms');
+  if (!p.propertyArea || p.propertyArea < MINIMO_AREA) faltan.push('propertyArea');
 
-  if (!p.propertyArea || p.propertyArea < MINIMO_AREA) {
-    faltan.push({
-      campo: 'propertyArea',
-      etiqueta: 'Área',
-      ayuda: `Mínimo ${MINIMO_AREA} m².`,
-      sufijo: 'm²',
-      tipo: 'numero',
-    });
-  }
-
-  return faltan;
+  return faltan.map(requisitoDe);
 }
 
 function formatearPesos(valor: number): string {

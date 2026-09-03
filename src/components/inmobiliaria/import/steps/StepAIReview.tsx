@@ -17,6 +17,19 @@ import { AISuggestionCard } from '../components/AISuggestionCard';
 import type { ImportStepProps } from '../ImportWizard';
 import type { ImportProperty } from '../lib/importTypes';
 
+/** Con errores primero, después con sugerencias pendientes, después completas. */
+function ordenarPorAtencion(properties: ImportProperty[]): ImportProperty[] {
+  const puntaje = (p: ImportProperty) =>
+    p.hasErrors ? 2 : p.suggestions.some((s) => s.accepted === null) ? 1 : 0;
+  return [...properties].sort((a, b) => puntaje(b) - puntaje(a));
+}
+
+/** Una fila que no estaba cuando se fijó el orden va al final. */
+function posicionEn(orden: number[], rowIndex: number): number {
+  const i = orden.indexOf(rowIndex);
+  return i === -1 ? Number.MAX_SAFE_INTEGER : i;
+}
+
 export function StepAIReview({ state, updateState }: ImportStepProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(!state.aiAnalyzed);
 
@@ -67,12 +80,21 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
   const selectedCount = properties.filter((p) => p.selected).length;
   const allSelected = selectedCount === totalCount && totalCount > 0;
 
-  // Sort: errors first, then with pending suggestions, then complete
-  const sortedProperties = [...properties].sort((a, b) => {
-    const scoreA = a.hasErrors ? 2 : a.suggestions.some((s) => s.accepted === null) ? 1 : 0;
-    const scoreB = b.hasErrors ? 2 : b.suggestions.some((s) => s.accepted === null) ? 1 : 0;
-    return scoreB - scoreA;
-  });
+  // Orden: con errores primero, después con sugerencias pendientes, después
+  // las completas — pero decidido UNA vez, cuando llega el análisis. Si se
+  // reordenara en vivo, la tarjeta que la persona está completando saltaría
+  // al fondo con la última letra y el input perdería el foco.
+  const [ordenFijo, setOrdenFijo] = useState<number[] | null>(null);
+  useEffect(() => {
+    if (ordenFijo !== null || !state.aiAnalyzed || properties.length === 0) return;
+    setOrdenFijo(ordenarPorAtencion(properties).map((p) => p._rowIndex));
+  }, [ordenFijo, state.aiAnalyzed, properties]);
+
+  const sortedProperties = ordenFijo
+    ? [...properties].sort(
+        (a, b) => posicionEn(ordenFijo, a._rowIndex) - posicionEn(ordenFijo, b._rowIndex)
+      )
+    : ordenarPorAtencion(properties);
 
   // Handlers
   const handleToggleSelect = (rowIndex: number) => {

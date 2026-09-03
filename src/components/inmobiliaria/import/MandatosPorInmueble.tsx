@@ -168,17 +168,21 @@ export function MandatosPorInmueble({
       </div>
 
       <div className="rounded-lg border border-border">
-        <Table>
+        {/* `table-fixed`: con el layout automático la etiqueta larga del
+            propietario elegido (nombre · documento · correo, sin corte de
+            línea) ensanchaba la columna y la tabla se salía del diálogo. Con
+            anchos fijos la etiqueta se recorta con puntos suspensivos. */}
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[38%]">
+              <TableHead className="w-[40%]">
                 {t('inmobiliaria.import.confirm.mandateBatch.porInmueble.colInmueble')}
               </TableHead>
               <TableHead>{t('inmobiliaria.import.confirm.mandateBatch.porInmueble.colPropietario')}</TableHead>
               <TableHead className="w-28">
                 {t('inmobiliaria.import.confirm.mandateBatch.porInmueble.colComision')}
               </TableHead>
-              <TableHead className="w-12">
+              <TableHead className="w-14">
                 <span className="sr-only">
                   {t('inmobiliaria.import.confirm.mandateBatch.porInmueble.copiarAnterior')}
                 </span>
@@ -324,11 +328,12 @@ function FilaDeInmueble({
             </div>
           </div>
         </TableCell>
-        <TableCell className="align-middle">
+        <TableCell className="min-w-0 align-middle">
           {/* El Combobox del DS no recibe aria-label; el grupo le da el nombre
               del inmueble para que un lector de pantalla sepa de qué fila es. */}
           <div
             role="group"
+            className="min-w-0"
             aria-label={`${t('inmobiliaria.import.confirm.mandateBatch.porInmueble.colPropietario')}: ${inmueble.propertyTitle}`}
           >
             <Combobox

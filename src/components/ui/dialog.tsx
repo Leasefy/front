@@ -233,9 +233,13 @@ const DialogContent = React.forwardRef<
       {cabecera}
       {/* El cuerpo es lo ÚNICO que scrollea. `min-h-0` es obligatorio: sin él
           un hijo flex no baja de su altura de contenido y el scroll se lo come
-          el contenedor, que es justo lo que estábamos arreglando. */}
+          el contenedor, que es justo lo que estábamos arreglando.
+          `grid-cols-[minmax(0,1fr)]` también: la columna `1fr` a secas es
+          `minmax(auto,1fr)`, y un hijo ancho (una tabla con etiquetas largas
+          sin corte) la estira más allá del diálogo y lo de la derecha queda
+          cortado (el modo «uno por uno» de los mandatos, Nico 2026-09-02). */}
       <div
-        className="grid min-h-0 flex-1 gap-4 overflow-y-auto overscroll-contain p-6"
+        className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-4 overflow-y-auto overscroll-contain p-6"
         data-lenis-prevent
       >
         {cuerpo}

@@ -13,7 +13,9 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button, EmptyState } from '@/components/ui';
+import { Skeleton } from '@/components/ui/skeleton';
 import { FotosDelInmueble } from '@/components/inmobiliaria/FotosDelInmueble';
+import { VisorDeFotos } from '@/components/inmobiliaria/inmueble/VisorDeFotos';
 import { UbicacionDelInmueble } from '@/components/inmobiliaria/inmueble/UbicacionDelInmueble';
 import {
   AlertDialog,
@@ -53,6 +55,47 @@ import {
   type ItemDeInventarioBorrador,
 } from '@/components/inmobiliaria/InventarioItemDialog';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
+
+/** La forma de la ficha, sin datos: cabecera con foto y dos columnas. */
+function EsqueletoDeLaFicha() {
+  return (
+    <div className="p-4 md:p-6 space-y-6" data-testid="ficha-cargando" aria-busy="true">
+      <div className="flex items-center justify-between gap-4">
+        <Skeleton className="h-5 w-56" />
+        <Skeleton className="h-10 w-32 rounded-full" />
+      </div>
+      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden">
+        <div className="flex flex-col lg:flex-row">
+          <Skeleton className="w-full lg:w-80 xl:w-96 h-48 lg:h-72 rounded-none" />
+          <div className="flex-1 p-5 lg:p-6 space-y-4">
+            <div className="flex gap-2">
+              <Skeleton className="h-7 w-28 rounded-full" />
+              <Skeleton className="h-7 w-40 rounded-full" />
+            </div>
+            <Skeleton className="h-9 w-3/4" />
+            <Skeleton className="h-5 w-1/2" />
+            <Skeleton className="h-10 w-48" />
+            <div className="flex gap-3 pt-2">
+              <Skeleton className="h-11 w-28 rounded-full" />
+              <Skeleton className="h-11 w-36 rounded-full" />
+              <Skeleton className="h-11 w-40 rounded-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Skeleton className="h-56 rounded-xl" />
+          <Skeleton className="h-72 rounded-xl" />
+        </div>
+        <div className="space-y-6">
+          <Skeleton className="h-64 rounded-xl" />
+          <Skeleton className="h-40 rounded-xl" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Modal Component - Uses Portal to escape transformed parents
@@ -187,9 +230,13 @@ function ConsignacionDetailContent() {
   const [showCitaModal, setShowCitaModal] = useState(false);
   const [showAsignarAgente, setShowAsignarAgente] = useState(false);
   const [showCambiarPropietario, setShowCambiarPropietario] = useState(false);
+  // Visor de fotos: qué foto está abierta en grande (`null` = cerrado). La
+  // abren la portada del encabezado y cada miniatura de la galería.
+  const [fotoAbierta, setFotoAbierta] = useState<number | null>(null);
 
   // Fetch data
-  const { consignacion: fetchedConsignacion } = useConsignacion(consignacionId);
+  const { consignacion: fetchedConsignacion, isLoading: cargandoConsignacion } =
+    useConsignacion(consignacionId);
 
   // Use local state for consignacion to allow updates after edit
   const consignacion = consignacionData || fetchedConsignacion;
@@ -376,7 +423,14 @@ function ConsignacionDetailContent() {
     inventoryRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
-  // Load the property's visit availability, then open the schedule editor.
+  // Mientras se pide, un esqueleto con la forma de la ficha. Antes esto
+  // salía directo a «Consignación no encontrada» durante la carga y recién
+  // después aparecía el inmueble (Nico, 2026-09-02: «primero sale esto y
+  // luego carga, muy raro»).
+  if (!consignacion && cargandoConsignacion) {
+    return <EsqueletoDeLaFicha />;
+  }
+
   // 404 if not found
   if (!consignacion) {
     return (
@@ -427,6 +481,8 @@ function ConsignacionDetailContent() {
         <ConsignacionHeader
           consignacion={consignacion}
           propertyThumbnailUrl={property?.thumbnailUrl}
+          fotos={property?.images}
+          onVerFotos={() => setFotoAbierta(0)}
           onEdit={handleEdit}
           onViewPortal={handleViewPortal}
           onChangeStatus={handleChangeStatus}
@@ -472,7 +528,7 @@ function ConsignacionDetailContent() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.12 }}
             >
-              <FotosDelInmueble propertyId={consignacion.propertyId} onCambio={refetchProperty} />
+              <FotosDelInmueble propertyId={consignacion.propertyId} onCambio={refetchProperty} onVer={setFotoAbierta} />
             </motion.div>
           )}
 
@@ -563,6 +619,14 @@ function ConsignacionDetailContent() {
           </motion.div>
         </div>
       </div>
+
+      <VisorDeFotos
+        fotos={property?.images ?? []}
+        indice={fotoAbierta}
+        onCerrar={() => setFotoAbierta(null)}
+        onCambiar={setFotoAbierta}
+        titulo={consignacion.propertyTitle}
+      />
 
       {/* Edit Modal */}
       <Modal

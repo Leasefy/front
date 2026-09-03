@@ -120,6 +120,7 @@ vi.mock('@/components/inmobiliaria/PropietarioForm', () => ({
 }));
 
 import { CompletarMandatosLoteDialog } from './CompletarMandatosLoteDialog';
+import { ApiError } from '@/lib/api/client';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 
 function makePropietario(overrides: Partial<Propietario> = {}): Propietario {
@@ -372,6 +373,30 @@ describe('<CompletarMandatosLoteDialog> — modo «Uno por uno»', () => {
     expect(createPropietarioMock).not.toHaveBeenCalled();
     expect(onDone).toHaveBeenCalledTimes(1);
     expect(onDone.mock.calls[0][0]).toMatchObject({ succeededCount: 2, failedCount: 0 });
+  });
+
+  it('cuando TODAS fallan, el toast dice el motivo del back, no el genérico', async () => {
+    // QA real 2026-09-02: el back devolvió 402 «Alcanzaste el límite de
+    // propiedades de tu plan…» y el diálogo decía «Ningún inmueble quedó con
+    // propietario. Complétalos desde el portafolio» — reintentar era inútil.
+    const { toast } = await import('@/components/ui/toast');
+    createConsignacionMock.mockRejectedValue(
+      new ApiError(402, 'Alcanzaste el límite de propiedades de tu plan. Subí de plan para agregar más.'),
+    );
+    renderDialog([
+      makeInmueble({ propertyId: 'a', propertyTitle: 'Depto A' }),
+      makeInmueble({ propertyId: 'b', propertyTitle: 'Depto B' }),
+    ]);
+    switchToUnoPorUno();
+    const [filaA, filaB] = filas();
+    elegir(selectDeFila(filaA), 'owner-1');
+    elegir(selectDeFila(filaB), 'owner-1');
+    await guardar();
+
+    expect(toast.error).toHaveBeenCalledWith(
+      'inmobiliaria.import.confirm.mandateBatch.toasts.allFailedTitle',
+      { description: 'Alcanzaste el límite de propiedades de tu plan. Subí de plan para agregar más.' },
+    );
   });
 
   it('a per-row commission overrides the general one only for that row', async () => {

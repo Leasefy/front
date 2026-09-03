@@ -122,7 +122,7 @@ export async function leerEnlaces(
 }
 
 /** Cuántas fotos acepta el back por inmueble. */
-export const MAX_FOTOS_POR_INMUEBLE = 10;
+export const MAX_FOTOS_POR_INMUEBLE = 40;
 
 /**
  * Baja una foto por el proxy y la deja como `File`, que es lo que espera

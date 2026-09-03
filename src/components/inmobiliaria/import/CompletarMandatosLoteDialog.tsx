@@ -130,8 +130,12 @@ export function CompletarMandatosLoteDialog({
         }),
       });
     } else if (result.succeededCount === 0) {
+      // El motivo real del back («Alcanzaste el límite de propiedades de tu
+      // plan…») vale más que el texto genérico: sin él, la persona reintenta
+      // sin saber qué cambiar.
+      const motivo = result.outcomes.find((o) => o.status === 'failed')?.mandateErrorMessage;
       toast.error(t('inmobiliaria.import.confirm.mandateBatch.toasts.allFailedTitle'), {
-        description: t('inmobiliaria.import.confirm.mandateBatch.toasts.allFailedDesc'),
+        description: motivo ?? t('inmobiliaria.import.confirm.mandateBatch.toasts.allFailedDesc'),
       });
     } else if (result.failedCount === 0) {
       // contract.md §3.4, amendment A-1.1 — every mandate is kept; only

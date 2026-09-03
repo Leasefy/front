@@ -99,7 +99,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
 
   const totalFotos = leidos.reduce((n, r) => n + r.inmueble.imagenes.length, 0);
   const totalVideos = leidos.reduce((n, r) => n + r.inmueble.videos.length, 0);
-  // Lo que realmente se va a subir: el back acepta 10 por inmueble.
+  // Lo que realmente se va a subir: el back acepta MAX_FOTOS_POR_INMUEBLE por inmueble.
   const totalASubir = state.properties.reduce((n, p) => n + (p.imagenes?.length ?? 0), 0);
 
   /**
@@ -212,7 +212,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
           </div>
 
           {/* Encontrar 53 fotos y subir 30 hay que decirlo. El recuadro cuenta
-              lo que trae la ficha; el inmueble guarda hasta 10. Sin esta línea
+              lo que trae la ficha; el inmueble guarda hasta 40. Sin esta línea
               los dos números se contradicen en la misma pantalla. */}
           {totalFotos > totalASubir && (
             <p className="text-body-sm text-fg-muted">

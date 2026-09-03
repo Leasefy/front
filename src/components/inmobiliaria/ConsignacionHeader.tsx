@@ -19,6 +19,7 @@ import {
   Wrench,
   CheckCircle,
   Timer,
+  Images,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -45,6 +46,14 @@ interface ConsignacionHeaderProps {
    * also the correct state while the property is loading or its fetch failed.
    */
   propertyThumbnailUrl?: string;
+  /**
+   * Todas las fotos del inmueble (ordenadas, la primera es la portada). Con
+   * al menos una, la portada del encabezado se puede abrir en grande y
+   * muestra cuántas hay (Nico, 2026-09-02: «me debería dejar ver todas las
+   * imágenes que tenga el inmueble»).
+   */
+  fotos?: string[];
+  onVerFotos?: () => void;
   onEdit?: () => void;
   onViewPortal?: () => void;
   onChangeStatus?: (status: PropertyAvailability) => void;
@@ -121,6 +130,8 @@ const STATUS_STYLES: Record<ConsignacionStatus, { bg: string; text: string; labe
 export function ConsignacionHeader({
   consignacion,
   propertyThumbnailUrl,
+  fotos,
+  onVerFotos,
   onEdit,
   onViewPortal,
   onChangeStatus,
@@ -135,13 +146,29 @@ export function ConsignacionHeader({
   const AvailabilityIcon = availability.icon;
   const thumbnailUrl = propertyThumbnailUrl || consignacion.propertyThumbnail;
   const canViewPortal = !!consignacion.propertyId;
+  const cantidadDeFotos = fotos?.length ?? 0;
+  const portadaAbre = cantidadDeFotos > 0 && !!onVerFotos;
 
   return (
     <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
       <div className="flex flex-col lg:flex-row rounded-xl">
         {/* Image/Thumbnail Section */}
         <div className="relative w-full lg:w-80 xl:w-96 h-48 lg:h-auto shrink-0 bg-surface-muted dark:bg-ink overflow-hidden rounded-t-xl lg:rounded-t-none lg:rounded-l-xl">
-          {thumbnailUrl ? (
+          {thumbnailUrl && portadaAbre ? (
+            <button
+              type="button"
+              onClick={onVerFotos}
+              className="group block h-full w-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+              aria-label={t('inmobiliaria.consignaciones.header.abrirFotos')}
+              data-testid="portada-abrir"
+            >
+              <img
+                src={thumbnailUrl}
+                alt={consignacion.propertyTitle}
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+              />
+            </button>
+          ) : thumbnailUrl ? (
             <img
               src={thumbnailUrl}
               alt={consignacion.propertyTitle}
@@ -160,6 +187,21 @@ export function ConsignacionHeader({
               {t(`inmobiliaria.consignaciones.propertyType.${consignacion.propertyType}`)}
             </span>
           </div>
+
+          {/* Cuántas fotos hay y que se pueden ver todas */}
+          {portadaAbre && (
+            <button
+              type="button"
+              onClick={onVerFotos}
+              className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-black/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              data-testid="portada-ver-fotos"
+            >
+              <Images className="w-4 h-4" />
+              {cantidadDeFotos === 1
+                ? t('inmobiliaria.consignaciones.header.verFoto')
+                : t('inmobiliaria.consignaciones.header.verFotos', { count: cantidadDeFotos })}
+            </button>
+          )}
 
           {/* Commission pill — a SALE mandate's commissionPercent is always
               0 (contract-addendum-2.md §A.3); show saleCommissionPercent. */}

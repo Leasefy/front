@@ -196,3 +196,25 @@ describe('<ConsignacionDetailPage> — Ver en Portal', () => {
     expect(openSpy).not.toHaveBeenCalled();
   });
 });
+
+describe('<ConsignacionDetailPage> — mientras carga', () => {
+  // Nico (2026-09-02): «cuando uno le da clic a un inmueble primero sale
+  // "Consignación no encontrada" y luego carga, muy raro». La página no
+  // miraba `isLoading`: sin dato = no encontrada, aunque todavía no hubiera
+  // llegado la respuesta.
+  it('muestra un esqueleto y NO «no encontrada» mientras la consignación se pide', () => {
+    useConsignacionMock.mockReturnValue({ consignacion: null, isLoading: true });
+    renderPage();
+
+    expect(container.querySelector('[data-testid="ficha-cargando"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('inmobiliaria.portafolio.detail.notFound');
+  });
+
+  it('«no encontrada» sólo cuando ya respondió y no hay consignación', () => {
+    useConsignacionMock.mockReturnValue({ consignacion: null, isLoading: false });
+    renderPage();
+
+    expect(container.querySelector('[data-testid="ficha-cargando"]')).toBeNull();
+    expect(container.textContent).toContain('inmobiliaria.portafolio.detail.notFound');
+  });
+});

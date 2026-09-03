@@ -45,10 +45,12 @@ export interface SinDatosProps {
   /**
    * Una acción propia, cuando crear no es «ir a una ruta».
    *
-   * ⚠️ Existe porque algunas cosas NO se crean desde cero: un contrato nace de
-   * una postulación aprobada, y `/contratos/nuevo` sin `?applicationId=`
-   * responde «Falta el parámetro applicationId». Un enlace ahí es un botón que
-   * lleva a un error. Tiene prioridad sobre `crear`.
+   * ⚠️ Existe porque algunas cosas no se crean con un enlace pelado: un
+   * contrato se arma sobre una postulación aprobada o a mano
+   * (`/contratos/nuevo?modo=manual`), y `/contratos/nuevo` a secas responde
+   * «Falta el parámetro applicationId». Un enlace ahí es un botón que lleva a
+   * un error; `NuevoContratoBoton` pregunta primero. Tiene prioridad sobre
+   * `crear`.
    */
   accion?: React.ReactNode
   /** Volver a ver todo. Sólo aparece cuando SÍ hay filtros. */

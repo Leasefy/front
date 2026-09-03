@@ -331,8 +331,8 @@ function ContratosContent() {
                        «Falta el parámetro applicationId» en vez de crear nada.
                        Es el mismo defecto que ya estaba resuelto arriba con
                        `NuevoContratoBoton`, que pregunta sobre qué postulación
-                       aprobada se arma el contrato. Un contrato no se crea de
-                       cero: nace de una postulación. */
+                       aprobada se arma el contrato. O lo arma a mano, con un inmueble
+                       consignado y el inquilino (`?modo=manual`). */
                     accion={<NuevoContratoBoton />}
                   />
                 </TableCell>

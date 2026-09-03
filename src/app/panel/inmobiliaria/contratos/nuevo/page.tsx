@@ -30,6 +30,12 @@ import { IconButton } from '@leasefy/cadence';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { RecorridoHilo } from '@/components/inmobiliaria/recorrido/RecorridoHilo';
 import { RespaldoDelArriendo } from '@/components/inmobiliaria/RespaldoDelArriendo';
+import {
+  PARTES_VACIAS,
+  PartesDelContratoManual,
+  validarPartes,
+  type PartesManuales,
+} from '@/components/contratos/PartesDelContratoManual';
 import { useContractActions } from '@/lib/hooks/useContracts';
 import { contractsApi } from '@/lib/api/contracts.service';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
@@ -85,7 +91,18 @@ function NuevoContratoContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const applicationId = searchParams.get('applicationId');
+  /*
+   * `?modo=manual`: sin postulación. El inmueble consignado y el inquilino se
+   * eligen acá mismo; los términos y todo lo que sigue (envío, firma,
+   * activación) son los mismos (Nico, 2026-09-03).
+   */
+  const esManual = !applicationId && searchParams.get('modo') === 'manual';
   const actions = useContractActions();
+  const [partes, setPartes] = useState<PartesManuales>(PARTES_VACIAS);
+  const [inmuebleElegido, setInmuebleElegido] = useState<string | null>(null);
+  // Los «falta esto» del bloque manual recién después de tocarlo: una pantalla
+  // que abre en rojo antes de que la persona haga nada regaña por adelantado.
+  const [partesTocadas, setPartesTocadas] = useState(false);
 
   const [application, setApplication] = useState<LandlordApplicationDetail | null>(null);
   const [property, setProperty] = useState<Property | null>(null);
@@ -119,7 +136,7 @@ function NuevoContratoContent() {
   // Load application + property details
   useEffect(() => {
     if (!applicationId) {
-      setLoadError('Falta el parámetro applicationId en la URL.');
+      if (!esManual) setLoadError('Falta el parámetro applicationId en la URL.');
       setIsLoading(false);
       return;
     }
@@ -184,7 +201,7 @@ function NuevoContratoContent() {
     }
     load();
     return () => { cancelled = true; };
-  }, [applicationId]);
+  }, [applicationId, esManual]);
 
   const updateForm = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -230,8 +247,9 @@ function NuevoContratoContent() {
     if (!day || day < 1 || day > 28) errors.paymentDay = 'Entre 1 y 28';
     const errorDePlazo = validarDiasDePlazo(form.diasDePlazo);
     if (errorDePlazo) errors.diasDePlazo = errorDePlazo;
+    if (esManual) Object.assign(errors, validarPartes(partes));
     return errors;
-  }, [form]);
+  }, [form, esManual, partes]);
 
   // El respaldo es opcional —hay arriendos con codeudor y sin póliza— pero si
   // se empieza a llenar tiene que quedar completo: una aseguradora sin número
@@ -250,7 +268,7 @@ function NuevoContratoContent() {
   // Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValid || !applicationId) return;
+    if (!isValid || (!applicationId && !esManual)) return;
     setSubmitError(null);
 
     try {
@@ -267,8 +285,7 @@ function NuevoContratoContent() {
         contractOrigin = 'UPLOADED_PDF';
       }
 
-      const contract = await actions.create({
-        applicationId,
+      const terminos = {
         startDate: form.startDate,
         endDate: form.endDate,
         monthlyRent: Number(form.monthlyRent),
@@ -286,14 +303,47 @@ function NuevoContratoContent() {
             : undefined,
         contractOrigin,
         uploadedPdfPath,
-      });
+      };
+
+      if (esManual) {
+        const creado = await actions.createManual({
+          ...terminos,
+          propertyId: partes.propertyId,
+          ...(partes.inquilino.modo === 'existente'
+            ? { tenantId: partes.inquilino.tenantId }
+            : {
+                inquilino: {
+                  nombre: partes.inquilino.nombre.trim(),
+                  documento: partes.inquilino.documento.trim(),
+                  correo: partes.inquilino.correo.trim(),
+                  telefono: partes.inquilino.telefono.trim() || undefined,
+                },
+              }),
+        });
+        if (!creado) {
+          setSubmitError(
+            actions.lastError?.message
+              ?? 'No se pudo crear el contrato. Verificá los datos e intentá de nuevo.'
+          );
+          return;
+        }
+        if (creado.inquilino.invitado) {
+          toast.success('Contrato creado. Le mandamos al inquilino la invitación para crear su cuenta.');
+        } else {
+          toast.success('Contrato creado.');
+        }
+        router.push(`/panel/inmobiliaria/contratos/${creado.contract.id}`);
+        return;
+      }
+
+      const contract = await actions.create({ applicationId: applicationId!, ...terminos });
 
       if (!contract) {
         // Race condition: el contrato puede haberse creado desde otra tab o ronda previa.
         // Si el backend rechazó por duplicado, recuperamos el existente y redirigimos.
         const errMsg = actions.lastError?.message?.toLowerCase() ?? '';
         if (errMsg.includes('ya existe un contrato') || errMsg.includes('already exists')) {
-          const existing = await contractsApi.getByApplicationId(applicationId);
+          const existing = await contractsApi.getByApplicationId(applicationId!);
           if (existing) {
             toast.info('Esta aplicación ya tiene un contrato. Te llevamos al detalle.');
             router.replace(`/panel/inmobiliaria/contratos/${existing.id}`);
@@ -323,7 +373,7 @@ function NuevoContratoContent() {
     );
   }
 
-  if (loadError || !application) {
+  if (loadError || (!application && !esManual)) {
     return (
       <div className="max-w-2xl mx-auto p-8">
         <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
@@ -350,18 +400,47 @@ function NuevoContratoContent() {
           <CaretLeft className="w-4 h-4" /> Volver
         </Button>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Crear contrato</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Candidato: <span className="font-medium text-foreground">{application.tenantName}</span>
-          {property && (
-            <> · Propiedad: <span className="font-medium text-foreground">{property.title}</span></>
-          )}
-        </p>
+        {esManual ? (
+          <p className="text-sm text-muted-foreground mt-1" data-testid="nuevo-contrato-manual">
+            Sin postulación: elegís el inmueble y el inquilino, y el resto es igual que cualquier contrato.
+            {inmuebleElegido && (
+              <> · Inmueble: <span className="font-medium text-foreground">{inmuebleElegido}</span></>
+            )}
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground mt-1">
+            Candidato: <span className="font-medium text-foreground">{application?.tenantName}</span>
+            {property && (
+              <> · Propiedad: <span className="font-medium text-foreground">{property.title}</span></>
+            )}
+          </p>
+        )}
       </div>
 
-      {/* Último paso del recorrido del inquilino (11). Ver src/lib/recorrido/pasos.ts. */}
-      <RecorridoHilo paso="contrato" className="mb-6" />
+      {/* Último paso del recorrido del inquilino (11). Ver src/lib/recorrido/pasos.ts.
+          Un contrato manual no viene de ese recorrido: no se dibuja. */}
+      {!esManual && <RecorridoHilo paso="contrato" className="mb-6" />}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {esManual && (
+          <PartesDelContratoManual
+            valor={partes}
+            onCambio={(v) => {
+              setPartesTocadas(true);
+              setPartes(v);
+            }}
+            errores={partesTocadas ? validation : {}}
+            onInmuebleElegido={(c) => {
+              setInmuebleElegido(c.propertyTitle);
+              // El canon del mandato, si lo hay: una tecla menos y un número
+              // que no se contradice con el de la consignación.
+              if (c.monthlyRent != null && c.monthlyRent > 0) {
+                setForm((f) => ({ ...f, monthlyRent: String(c.monthlyRent) }));
+              }
+            }}
+          />
+        )}
+
         {/* 1) Contract origin */}
         <section className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Tipo de contrato</h2>

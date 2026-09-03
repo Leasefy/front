@@ -19,6 +19,8 @@ import type {
   SendOtpResponse,
   VerifyOtpDto,
   VerifyOtpResponse,
+  CrearContratoManualDto,
+  ContratoManualCreadoBackend,
 } from './contracts.types';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
@@ -486,6 +488,16 @@ export const contractsApi = {
   async create(dto: CreateContractDto): Promise<Contract> {
     const raw = await apiClient.post<BackendContract>('/contracts', dto);
     return mapBackendContract(raw);
+  },
+
+  /**
+   * POST /contracts/manual — un contrato sin postulación: inmueble consignado +
+   * inquilino (existente por id, o nuevo por documento y correo) + términos.
+   * El borrador que devuelve es el mismo que el de `create`.
+   */
+  async createManual(dto: CrearContratoManualDto): Promise<{ contract: Contract; inquilino: ContratoManualCreadoBackend['inquilino'] }> {
+    const raw = await apiClient.post<ContratoManualCreadoBackend>('/contracts/manual', dto);
+    return { contract: mapBackendContract(raw.contract), inquilino: raw.inquilino };
   },
 
   /**

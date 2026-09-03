@@ -211,6 +211,34 @@ export interface CreateContractDto {
   uploadedPdfPath?: string;
 }
 
+/**
+ * Contrato armado a mano (sin postulación): inmueble consignado + inquilino +
+ * los mismos términos de `CreateContractDto`. `tenantId` (inquilino existente)
+ * e `inquilino` (nuevo, por documento) son excluyentes.
+ */
+export interface CrearContratoManualDto extends Omit<CreateContractDto, 'applicationId'> {
+  propertyId: string;
+  tenantId?: string;
+  inquilino?: {
+    nombre: string;
+    documento: string;
+    /** Obligatorio si el documento no es de ningún inquilino de la agencia: ahí llega la invitación. */
+    correo?: string;
+    telefono?: string;
+  };
+}
+
+export interface ContratoManualCreadoBackend {
+  contract: BackendContract;
+  inquilino: {
+    userId: string;
+    /** Se le acaba de mandar la invitación a crear su cuenta. */
+    invitado: boolean;
+    /** Ya era inquilino de la agencia. */
+    existente: boolean;
+  };
+}
+
 export interface UploadContractPdfResponse {
   uploadedPdfPath: string;
 }

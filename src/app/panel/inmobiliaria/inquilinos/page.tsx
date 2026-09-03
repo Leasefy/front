@@ -14,9 +14,10 @@
  *    y acá se respeta: alguien con dos inmuebles aparece una vez, con los dos
  *    adentro. Dos filas con el mismo nombre y sin decir por qué es cómo se
  *    termina llamando dos veces al mismo inquilino.
- * 2. **No hay «Agregar inquilino».** Un inquilino nace de un contrato o de la
- *    migración; el back ni siquiera expone un POST. Un botón que abre un
- *    formulario acá crearía gente sin arriendo y la lista dejaría de
+ * 2. **No hay «Agregar inquilino».** Un inquilino nace de un contrato (con
+ *    postulación o armado a mano, donde se lo carga por documento y correo)
+ *    o de la migración; el back no expone un POST suelto. Un botón que abre
+ *    un formulario acá crearía gente sin arriendo y la lista dejaría de
  *    significar «a quién le administro un inmueble». El vacío ofrece las dos
  *    salidas reales: migrar o crear el contrato.
  * 3. **La búsqueda viaja al back.** Ver `use-inquilinos.ts`.

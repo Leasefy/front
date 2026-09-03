@@ -96,6 +96,20 @@ function CommandPaletteShortcuts() {
   return null;
 }
 
+/**
+ * Rutas de nav DESHABILITADAS TEMPORALMENTE — decisión de producto (T-0052,
+ * 2026-09-03), no un estado que publique el back/agente. La fila se sigue
+ * viendo en el menú (nunca desaparece), pero muda, sin ir a ningún lado y
+ * fuera del tab order — sólo la entrada de nav se apaga, la ruta sigue viva.
+ * Reactivar una fila es sacar su href de este set, nada más. Mirror del
+ * patrón `AGENTES_NO_DISPONIBLES` (T-0051, PilotoAutonomia.tsx) — un solo
+ * lugar nombrado en vez de un `disabled: true` repetido y disperso.
+ */
+const ASEGURABILIDAD_HREF = '/panel/inmobiliaria/ai/asegurabilidad';
+const NAV_ITEMS_NO_DISPONIBLES: ReadonlySet<string> = new Set([
+  ASEGURABILIDAD_HREF,
+]);
+
 interface InmobiliariaLayoutProps {
   children: React.ReactNode;
 }
@@ -241,12 +255,23 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       // Asegurabilidad va en COMERCIAL: es el paso previo a rentar — manda el
       // candidato a las aseguradoras y devuelve el máximo afianzable, que es
       // lo que define qué catálogo se le puede ofrecer.
+      //
+      // Deshabilitada temporalmente (ver NAV_ITEMS_NO_DISPONIBLES arriba):
+      // greyed out, «Próximamente», sin ir a ningún lado. La ruta sigue viva
+      // — sólo se apaga la entrada del menú.
       label: t('inmobiliaria.ai.nav.cotizador'),
+      // href literal (no la constante): nav-sidebar.test.ts extrae `href` con
+      // una regex de string literal — una referencia rompería la detección de
+      // choques de icono/nombre para esta fila sin avisar.
       href: '/panel/inmobiliaria/ai/asegurabilidad', scope: 'comercial',
       icon: Umbrella,
       module: 'cotizador',
       ai: true,
       dataTourTarget: 'sidebar-cotizador',
+      disabled: NAV_ITEMS_NO_DISPONIBLES.has(ASEGURABILIDAD_HREF),
+      tag: NAV_ITEMS_NO_DISPONIBLES.has(ASEGURABILIDAD_HREF)
+        ? t('inmobiliaria.nav.proximamente')
+        : undefined,
       // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
     } as NavItemWithModule,
     // Acá hubo un rato una fila «Recorrido» encima de esta, y era la misma

@@ -378,6 +378,39 @@ export function AISuggestionCard({
       {/* Expanded content */}
       {isExpanded && (
         <div className="border-t border-border-faint dark:border-border-strong px-4 pb-4 pt-3 space-y-3">
+          {/* Las fotos que trajo el enlace (Nico, 2026-09-02: «si tiene
+              imágenes, deberíamos mostrarlas»). Son URLs del portal de
+              origen, no del CDN propio: `<img>` a secas, sin next/image. Una
+              foto rota se esconde sola. Hasta 6, el resto se cuenta. */}
+          {property.imagenes && property.imagenes.length > 0 && (
+            <ul
+              className="flex gap-2 overflow-x-auto pb-1"
+              data-testid="import-fotos"
+              aria-label={`${property.imagenes.length} fotos del aviso`}
+            >
+              {property.imagenes.slice(0, 6).map((url, i) => (
+                <li key={`${url}-${i}`} className="relative h-20 w-28 shrink-0 overflow-hidden rounded-md border border-border-faint bg-surface-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- CDN ajeno, sin dominio conocido para next/image */}
+                  <img
+                    src={url}
+                    alt=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      ;(e.currentTarget.parentElement as HTMLElement).style.display = 'none'
+                    }}
+                  />
+                  {i === 5 && property.imagenes && property.imagenes.length > 6 && (
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/55 font-mono text-sm text-white">
+                      +{property.imagenes.length - 6}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
           {/* Property summary pills */}
           <div className="flex flex-wrap gap-2">
             {property.propertyType && (

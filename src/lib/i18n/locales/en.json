@@ -1037,6 +1037,15 @@
           "whatsapp": "WhatsApp"
         }
       },
+      "dock": {
+        "boton": "Processes",
+        "aria": "Open the Pilot's process tray",
+        "cerrar": "Close",
+        "enVivo": "{{n}} live",
+        "vacio": "No processes yet. When the Pilot does something, it shows up here.",
+        "verTodos": "See all processes",
+        "tope": "latest {{n}}"
+      },
       "autonomia": {
         "titulo": "Autonomy",
         "hint": "Define how much each agent can do without you.",

@@ -274,3 +274,119 @@ export function ProcesoCard({ proceso: p, onAbrir, expandida = false }: ProcesoC
     </article>
   )
 }
+
+/**
+ * La misma historia, en una fila compacta para el tray flotante: ícono,
+ * título en una línea, chip de resultado, hace cuánto. Al tocarla se abre
+ * el resumen, los pasos con su hora y (en WhatsApp) los mensajes; el enlace
+ * «abrir» lleva al cajón del caso.
+ */
+export interface ProcesoFilaProps {
+  proceso: Proceso
+  onAbrir?: (id: string) => void
+}
+
+export function ProcesoFila({ proceso: p, onAbrir }: ProcesoFilaProps) {
+  const { t } = useI18n()
+  const [abierta, setAbierta] = useState(p.enVivo)
+  const Icono = ICONO_TIPO[p.tipo]
+
+  return (
+    <li data-testid={`fila-${p.id}`} data-estado={p.estado} className="border-b border-faint last:border-b-0">
+      <button
+        type="button"
+        onClick={() => setAbierta((v) => !v)}
+        aria-expanded={abierta}
+        className="flex w-full items-start gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+      >
+        <span
+          className={cn('mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full', TINTA_TIPO[p.tipo])}
+          aria-hidden="true"
+        >
+          {p.enVivo && p.tipo === 'llamada' ? <OndaEnVivo className="h-3" /> : <Icono weight="duotone" className="h-3.5 w-3.5" />}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-baseline gap-2">
+            <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-fg">{p.titulo}</span>
+            <span className="shrink-0 font-mono text-[11px] tabular-nums text-fg-subtle">{relativeTime(p.ultimoAt, t)}</span>
+          </span>
+          <span className="mt-0.5 flex items-center gap-2">
+            {p.resultado && (
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[11px] font-medium',
+                  CHIP_ESTADO[p.estado],
+                )}
+              >
+                {p.enVivo && (
+                  <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-70" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-current" />
+                  </span>
+                )}
+                {p.resultado}
+              </span>
+            )}
+            {p.quien && (
+              <span className="min-w-0 truncate text-[11px] text-fg-subtle">
+                {[p.quien.nombre, p.quien.inmueble].filter(Boolean).join(' · ')}
+              </span>
+            )}
+          </span>
+        </span>
+      </button>
+
+      {abierta && (
+        <div className="px-3 pb-3 pl-[52px]" data-testid={`fila-detalle-${p.id}`}>
+          {p.resumen && <p className="text-caption text-fg-muted">{p.resumen}</p>}
+          <ol className="mt-2 space-y-1.5">
+            {p.pasos.map((paso, i) => (
+              <li key={`${paso.titulo}-${i}`} className="flex items-start gap-2">
+                <span
+                  className={cn('mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full border', PUNTO_PASO[paso.estado])}
+                  aria-hidden="true"
+                />
+                <span className="min-w-0">
+                  <span className={cn('text-caption', paso.estado === 'pendiente' ? 'text-fg-muted' : 'text-fg')}>
+                    {paso.titulo}
+                  </span>
+                  {paso.at && (
+                    <span className="ml-1.5 font-mono text-[11px] tabular-nums text-fg-subtle">{horaCorta(paso.at)}</span>
+                  )}
+                  {paso.detalle && <span className="block text-[11px] leading-snug text-fg-subtle">{paso.detalle}</span>}
+                </span>
+              </li>
+            ))}
+          </ol>
+          {p.mensajes && p.mensajes.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {p.mensajes.map((m, i) => (
+                <div key={`${m.at}-${i}`} className={cn('flex', m.de === 'yo' ? 'justify-end' : 'justify-start')}>
+                  <span
+                    className={cn(
+                      'max-w-[90%] rounded-xl px-2.5 py-1 text-[12px] text-fg',
+                      m.de === 'yo' ? 'rounded-br-sm bg-primary-soft' : 'rounded-bl-sm bg-surface-muted',
+                    )}
+                  >
+                    {m.texto}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          {onAbrir && (
+            <button
+              type="button"
+              onClick={() => onAbrir(p.id)}
+              className="mt-2 inline-flex items-center gap-1 text-caption font-medium text-primary hover:underline"
+              data-testid={`fila-abrir-${p.id}`}
+            >
+              {t('inmobiliaria.piloto.procesos.abrir')}
+              <ArrowUpRight weight="bold" className="h-3 w-3" aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      )}
+    </li>
+  )
+}

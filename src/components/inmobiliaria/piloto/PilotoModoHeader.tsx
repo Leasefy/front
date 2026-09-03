@@ -42,7 +42,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
-import { usePilotoFlota } from '@/lib/hooks/piloto/use-piloto-flota'
+import { usePilotoFlotaCompartida } from '@/lib/hooks/piloto/piloto-flota-context'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { AutonomiaModo, ModoDeLaFlota } from '@/lib/api/piloto'
@@ -69,7 +69,7 @@ export const RUTA_PILOTO = '/panel/inmobiliaria/piloto'
 export function PilotoModoHeader() {
   const { t } = useI18n()
   const { isAdmin } = usePermissionsContext()
-  const flota = usePilotoFlota()
+  const flota = usePilotoFlotaCompartida()
   const [abierto, setAbierto] = useState(false)
   const [confirmando, setConfirmando] = useState<AutonomiaModo | null>(null)
 

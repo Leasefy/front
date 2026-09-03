@@ -62,6 +62,8 @@ import { CommandPalette } from '@/components/inmobiliaria/CommandPalette';
 import { BotonNuevo } from '@/components/inmobiliaria/BotonNuevo';
 import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
 import { PilotoModoHeader } from '@/components/inmobiliaria/piloto/PilotoModoHeader';
+import { PilotoDock } from '@/components/inmobiliaria/piloto/PilotoDock';
+import { PilotoFlotaProvider } from '@/lib/hooks/piloto/piloto-flota-context';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { usePostulacionesPendientes } from '@/lib/hooks/use-postulaciones-pendientes';
 import { MuroDeMigracion } from '@/components/migracion/MuroDeMigracion';
@@ -532,6 +534,11 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
 
         {/* Mobile bottom navigation — hidden at lg+ (where the sidebar appears) */}
         <MobileNavBar navItems={INMOBILIARIA_NAV_ITEMS} />
+
+        {/* El tray de procesos del Piloto, abajo a la derecha, en cualquier
+            pantalla (Nico, 2026-09-02). Comparte la lectura de la flota con
+            la píldora del header vía el provider de arriba. */}
+        <PilotoDock />
       </MuroDeMigracion>
 
       {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
@@ -559,7 +566,9 @@ export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps
                 {/* CommandPaletteProvider wraps the inner layout so both the
                     shortcut hook and the modal can read/write palette state. */}
                 <CommandPaletteProvider>
-                  <InmobiliariaLayoutInner>{children}</InmobiliariaLayoutInner>
+                  <PilotoFlotaProvider>
+                    <InmobiliariaLayoutInner>{children}</InmobiliariaLayoutInner>
+                  </PilotoFlotaProvider>
                 </CommandPaletteProvider>
               </SidebarProvider>
             </PanelPrefsProvider>

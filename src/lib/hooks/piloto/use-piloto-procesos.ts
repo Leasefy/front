@@ -31,10 +31,25 @@ export interface UsePilotoProcesosResult {
   refetch: () => Promise<void>
 }
 
+export interface OpcionesDeProcesos {
+  tipo?: TipoDeProceso | 'todos'
+  limite?: number
+  /**
+   * `false` = no consultar (el tray cerrado no tiene por qué martillar al
+   * micro desde cada pantalla). Al volver a `true` se lee de inmediato.
+   */
+  activo?: boolean
+}
+
 export function usePilotoProcesos(
-  tipo: TipoDeProceso | 'todos' = 'todos',
-  limite = 60,
+  tipoOOpciones: TipoDeProceso | 'todos' | OpcionesDeProcesos = 'todos',
+  limiteArg = 60,
 ): UsePilotoProcesosResult {
+  const opciones: OpcionesDeProcesos =
+    typeof tipoOOpciones === 'string' ? { tipo: tipoOOpciones, limite: limiteArg } : tipoOOpciones
+  const tipo = opciones.tipo ?? 'todos'
+  const limite = opciones.limite ?? 60
+  const activo = opciones.activo ?? true
   const { agency } = useAuth()
   const agencyId = agency?.id ?? null
 
@@ -78,7 +93,7 @@ export function usePilotoProcesos(
   }, [agencyId, tipo, limite])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId || !activo) return
     let timer: ReturnType<typeof setTimeout> | null = null
     let vivo = true
     const ciclo = async () => {
@@ -92,7 +107,7 @@ export function usePilotoProcesos(
       if (timer) clearTimeout(timer)
       abortRef.current?.abort()
     }
-  }, [fetchData, agencyId])
+  }, [fetchData, agencyId, activo])
 
   return { data, isLoading, error, notAvailable, refetch: fetchData }
 }

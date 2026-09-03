@@ -67,6 +67,7 @@ vi.mock('@/components/ui/button', () => ({
 }))
 
 import { PilotoModoHeader } from './PilotoModoHeader'
+import { PilotoFlotaProvider } from '@/lib/hooks/piloto/piloto-flota-context'
 
 const FLOTA = (extra: Record<string, unknown> = {}) => ({
   activo: true,
@@ -89,7 +90,11 @@ function render() {
   document.body.appendChild(container)
   root = createRoot(container)
   act(() => {
-    root.render(<PilotoModoHeader />)
+    root.render(
+      <PilotoFlotaProvider>
+        <PilotoModoHeader />
+      </PilotoFlotaProvider>,
+    )
   })
 }
 const q = (sel: string) => container.querySelector(sel)

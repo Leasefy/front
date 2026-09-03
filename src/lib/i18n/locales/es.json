@@ -1038,6 +1038,15 @@
           "whatsapp": "WhatsApp"
         }
       },
+      "dock": {
+        "boton": "Procesos",
+        "aria": "Abrir el tray de procesos del Piloto",
+        "cerrar": "Cerrar",
+        "enVivo": "{{n}} en vivo",
+        "vacio": "Todavía no hay procesos. Cuando el Piloto haga algo, aparece aquí.",
+        "verTodos": "Ver todos los procesos",
+        "tope": "los últimos {{n}}"
+      },
       "autonomia": {
         "titulo": "Autonomía",
         "hint": "Define cuánto puede hacer cada agente sin ti.",

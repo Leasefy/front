@@ -7024,7 +7024,7 @@
           "vallaTitle": "Agent limits",
           "vallaEmpty": "No limits published for this agent yet.",
           "modo": {
-            "sombra": "Shadow",
+            "sombra": "Manual",
             "sombraHint": "Only observes and suggests silently",
             "copiloto": "Copilot",
             "copilotoHint": "Suggests; nothing is applied without a human",

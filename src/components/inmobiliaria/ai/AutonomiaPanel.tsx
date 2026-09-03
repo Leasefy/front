@@ -3,7 +3,7 @@
 /**
  * AutonomiaPanel — F6 of the Agent Workspace initiative (AGENT-WORKSPACE-SPEC §1.4).
  *
- * Read-only autonomy posture for an agent: the 3 mode pills (🌑 Sombra /
+ * Read-only autonomy posture for an agent: the 3 mode pills (🌑 Manual /
  * 🤝 Copiloto / 🚀 Autónomo) with the active mode highlighted, the read-only
  * nota, the valla (guardrail) list, and the T-323 callout when the agent
  * decides over personas. No interactivity day-1 — all agents ship 🤝 Copiloto.

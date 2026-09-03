@@ -7025,7 +7025,7 @@
           "vallaTitle": "Límites del agente",
           "vallaEmpty": "Aún no hay límites publicados para este agente.",
           "modo": {
-            "sombra": "Sombra",
+            "sombra": "Manual",
             "sombraHint": "Solo observa y sugiere en silencio",
             "copiloto": "Copiloto",
             "copilotoHint": "Sugiere; nada se aplica sin un humano",

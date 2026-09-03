@@ -105,6 +105,21 @@ export default function AuthPage() {
         */}
         <div className="fixed inset-0 hidden overflow-hidden bg-[#0c1a2b] lg:block" aria-hidden="true">
           <VideoDeMarca />
+          {/*
+            Dos veladuras oscuras, apenas, en las esquinas de la izquierda: una
+            arriba para el logotipo y otra abajo para los testimonios. El video
+            es claro —la toma de la cortina es casi blanca— y sin esto el logo
+            blanco desaparece según qué cuadro quede debajo (Nico, 2026-09-03:
+            «hay veces el logo se pierde»). El centro y la derecha quedan
+            limpios.
+          */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'linear-gradient(to bottom, rgba(20,19,15,0.55) 0%, rgba(20,19,15,0) 26%), radial-gradient(90% 75% at 0% 100%, rgba(20,19,15,0.72) 0%, rgba(20,19,15,0.35) 40%, rgba(20,19,15,0) 70%)',
+            }}
+          />
         </div>
 
         {/* ── Logo arriba y testimonios abajo, sobre el video (escritorio) ── */}
@@ -118,7 +133,7 @@ export default function AuthPage() {
         <div className="pointer-events-none fixed inset-0 z-[1] hidden lg:block">
           <BrandHomeLink
             aria-label="Leasefy — inicio"
-            className="pointer-events-auto absolute left-8 top-8 inline-flex text-white drop-shadow-[0_1px_2px_rgba(20,19,15,0.35)]"
+            className="pointer-events-auto absolute left-8 top-8 inline-flex text-white"
           >
             <svg viewBox="0 0 947 235" className="block h-8 w-auto" role="img" aria-label="Leasefy" data-testid="auth-logo">
               <use href="#lfLogo" />

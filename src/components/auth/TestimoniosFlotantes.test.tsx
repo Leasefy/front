@@ -24,7 +24,7 @@ vi.mock('framer-motion', () => ({
   useReducedMotion: () => false,
 }))
 
-import { TestimoniosFlotantes, TESTIMONIOS } from './TestimoniosFlotantes'
+import { TestimoniosFlotantes, TESTIMONIOS, iniciales } from './TestimoniosFlotantes'
 
 let container: HTMLDivElement
 let root: Root
@@ -40,7 +40,7 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-const agenciaEnPantalla = () => container.querySelector('figcaption')?.textContent ?? ''
+const agenciaEnPantalla = () => container.querySelector('[data-testid="testimonio-agencia"]')?.textContent ?? ''
 
 describe('TestimoniosFlotantes', () => {
   it('son cuatro y empieza por Portofino', () => {
@@ -48,6 +48,13 @@ describe('TestimoniosFlotantes', () => {
     act(() => root.render(<TestimoniosFlotantes intervaloMs={1000} />))
     expect(agenciaEnPantalla()).toContain('Portofino')
     expect(container.querySelector('blockquote')?.textContent).toContain(TESTIMONIOS[0].frase)
+    expect(container.querySelector('figcaption')?.textContent).toContain(TESTIMONIOS[0].nombre)
+  })
+
+  it('las iniciales del monograma', () => {
+    expect(iniciales('Mariana Restrepo')).toBe('MR')
+    expect(iniciales('Julián')).toBe('J')
+    expect(iniciales('  ana  maría  de la torre ')).toBe('AM')
   })
 
   it('cada tantos segundos sale el siguiente, y después del cuarto vuelve el primero', () => {

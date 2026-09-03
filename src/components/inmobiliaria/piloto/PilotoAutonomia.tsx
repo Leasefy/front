@@ -148,7 +148,7 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
 
       <SheetContent side="right" className="w-full sm:max-w-md">
         <SheetHeader>
-          <SheetTitle>{t('inmobiliaria.piloto.autonomia.titulo')}</SheetTitle>
+          <SheetTitle className="text-lg font-semibold text-fg">{t('inmobiliaria.piloto.autonomia.titulo')}</SheetTitle>
           <SheetDescription>{t('inmobiliaria.piloto.autonomia.hint')}</SheetDescription>
         </SheetHeader>
 

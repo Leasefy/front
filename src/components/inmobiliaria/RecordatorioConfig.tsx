@@ -288,7 +288,7 @@ export function RecordatorioConfig({
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader className="mb-6">
-          <SheetTitle className="flex items-center gap-2">
+          <SheetTitle className="flex items-center gap-2 text-lg font-semibold text-fg">
             <Gear className="w-5 h-5 text-primary" />
             {t('inmobiliaria.cobros.recordatorioConfig.title')}
           </SheetTitle>

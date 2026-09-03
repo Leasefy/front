@@ -211,7 +211,7 @@ export function RenovacionWorkflow({
       <Sheet open={open} onOpenChange={(o) => !o && onClose?.()}>
         <SheetContent className="w-full sm:max-w-4xl overflow-y-auto">
           <SheetHeader className="border-b pb-4">
-            <SheetTitle className="flex items-center gap-3">
+            <SheetTitle className="flex items-center gap-3 text-lg font-semibold text-fg">
               <div className="p-2 rounded-md bg-success-soft">
                 <ArrowRight className="h-5 w-5 text-success" />
               </div>

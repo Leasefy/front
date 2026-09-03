@@ -571,7 +571,7 @@ function DocumentosContent() {
       <Sheet open={isActaFormOpen} onOpenChange={setIsActaFormOpen}>
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
+            <SheetTitle className="flex items-center gap-2 text-lg font-semibold text-fg">
               <ClipboardText className="w-5 h-5 text-primary" />
               {t('inmobiliaria.documentos.newActaOf', { type: actaFormType === 'entrega' ? t('inmobiliaria.documentos.actas.typeEntrega') : t('inmobiliaria.documentos.actas.typeDevolucion') })}
             </SheetTitle>
@@ -591,7 +591,7 @@ function DocumentosContent() {
       <Sheet open={isActaViewerOpen} onOpenChange={setIsActaViewerOpen}>
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
+            <SheetTitle className="flex items-center gap-2 text-lg font-semibold text-fg">
               <ClipboardText className="w-5 h-5 text-primary" />
               {t('inmobiliaria.documentos.actaDetail')}
             </SheetTitle>

@@ -472,7 +472,7 @@ export function MantenimientoViewer({
                   <TypeIcon className={cn('w-5 h-5', priorityStyle.text)} />
                 </div>
                 <div>
-                  <SheetTitle className="text-left">{solicitud.title}</SheetTitle>
+                  <SheetTitle className="text-left text-lg font-semibold text-fg">{solicitud.title}</SheetTitle>
                   <p className="text-sm text-muted-foreground mt-0.5">
                     {typeInfo?.labelEs} · {fmtDate(solicitud.createdAt)}
                   </p>

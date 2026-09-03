@@ -111,7 +111,7 @@ export function AsignacionModal({
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader className="pb-4 border-b border-border dark:border-border-strong">
-          <SheetTitle className="flex items-center gap-2 text-fg dark:text-white">
+          <SheetTitle className="flex items-center gap-2 text-lg font-semibold text-fg">
             <User className="w-5 h-5 text-primary" />
             {t('inmobiliaria.agente.reassignProperty')}
           </SheetTitle>

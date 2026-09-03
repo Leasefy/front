@@ -53,7 +53,7 @@ export function PagosHomeDetailPanel({
         aria-label={t('inmobiliaria.ai.pagos_home.detail.title')}
       >
         <SheetHeader className="text-left">
-          <SheetTitle>{t('inmobiliaria.ai.pagos_home.detail.title')}</SheetTitle>
+          <SheetTitle className="text-lg font-semibold text-fg">{t('inmobiliaria.ai.pagos_home.detail.title')}</SheetTitle>
           <SheetDescription>
             {t('inmobiliaria.ai.pagos_home.detail.description')}
           </SheetDescription>

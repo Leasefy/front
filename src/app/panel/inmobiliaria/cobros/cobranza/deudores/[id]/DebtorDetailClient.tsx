@@ -343,7 +343,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
               className="md:hidden max-h-[60vh] overflow-y-auto rounded-t-xl"
             >
               <SheetHeader>
-                <SheetTitle>{t('inmobiliaria.ai.cobranza.detail.tabs.switcher')}</SheetTitle>
+                <SheetTitle className="text-lg font-semibold text-fg">{t('inmobiliaria.ai.cobranza.detail.tabs.switcher')}</SheetTitle>
               </SheetHeader>
               <ul className="mt-3 space-y-1">
                 {TAB_KEYS.map((k) => (

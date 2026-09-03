@@ -101,7 +101,7 @@ export function PilotoPreparacion() {
 
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
         <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
+          <SheetTitle className="flex items-center gap-2 text-lg font-semibold text-fg">
             <Gauge
               weight="duotone"
               className="h-5 w-5 text-fg-muted"

@@ -234,7 +234,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
           <SheetHeader>
             <div className="flex items-start justify-between gap-4 pr-8">
               <div className="min-w-0 flex-1">
-                <SheetTitle className="text-xl font-semibold text-foreground truncate">
+                <SheetTitle className="text-lg font-semibold text-fg truncate">
                   {item.propertyTitle}
                 </SheetTitle>
                 <div className="flex items-center gap-1.5 mt-1.5 text-sm text-muted-foreground">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -10,16 +10,68 @@ import { contractsApi } from '@/lib/api/contracts.service';
 import type { ContractOtpRole } from '@/lib/api/contracts.types';
 
 // ============================================================================
+// Transport seam (additive)
+// ============================================================================
+
+/**
+ * OtpAdapter — the injectable send/verify transport for this OTP flow.
+ * `send()` requests a fresh code; `verify(code)` exchanges it for a one-use token.
+ * The default (contract) transport is built by `resolveOtpAdapter` from
+ * contractId + role; a caller can inject a different transport to reuse the same
+ * Ley 527/1999 flow for a non-contract entity (e.g. an acuerdo de pago).
+ */
+export interface OtpAdapter {
+  send: () => Promise<{ sentTo: string; cooldownSeconds: number }>;
+  verify: (code: string) => Promise<{ verificationToken: string }>;
+}
+
+/**
+ * resolveOtpAdapter — pure, total selector for the OTP transport.
+ *  - `adapter` present → returned verbatim (the entity drives its own transport).
+ *  - else `contractId` + `role` present → the EXISTING contract transport
+ *    (contractsApi.sendOtp/verifyOtp), so the shipped contract-signing flow is unchanged.
+ *  - neither → throws (never a silent no-op that could bypass verification).
+ */
+export function resolveOtpAdapter(opts: {
+  adapter?: OtpAdapter;
+  contractId?: string;
+  role?: ContractOtpRole;
+}): OtpAdapter {
+  if (opts.adapter) return opts.adapter;
+  if (opts.contractId && opts.role) {
+    const contractId = opts.contractId;
+    const role = opts.role;
+    return {
+      send: async () => {
+        const r = await contractsApi.sendOtp(contractId, { role });
+        return { sentTo: r.sentTo, cooldownSeconds: r.cooldownSeconds ?? 60 };
+      },
+      verify: async (code: string) => {
+        const r = await contractsApi.verifyOtp(contractId, { role, code });
+        return { verificationToken: r.verificationToken };
+      },
+    };
+  }
+  throw new Error('OTPVerification requires an adapter or contractId+role');
+}
+
+// ============================================================================
 // Props
 // ============================================================================
 
 export interface OTPVerificationProps {
   /** Whether the OTP modal is open */
   isOpen: boolean;
-  /** Contract ID to send the OTP for */
-  contractId: string;
-  /** Who is signing — determines which endpoint validates membership */
-  role: ContractOtpRole;
+  /** Contract ID to send the OTP for (default contract transport). Optional when `adapter` is passed. */
+  contractId?: string;
+  /** Who is signing — determines which endpoint validates membership. Optional when `adapter` is passed. */
+  role?: ContractOtpRole;
+  /**
+   * Optional injected send/verify transport. Inject it to reuse this Ley 527/1999
+   * flow for a non-contract entity (e.g. an acuerdo de pago); when omitted,
+   * `contractId` + `role` drive the default contract transport.
+   */
+  adapter?: OtpAdapter;
   /** Callback when OTP is verified successfully — recibe el verificationToken one-use */
   onVerified: (verificationToken: string) => void;
   /** Callback to cancel verification */
@@ -51,11 +103,12 @@ export function OTPVerification({
   isOpen,
   contractId,
   role,
+  adapter,
   onVerified,
   onCancel,
   className,
 }: OTPVerificationProps) {
-  const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
+  const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [status, setStatus] = useState<OTPStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<string>('');
@@ -65,12 +118,19 @@ export function OTPVerification({
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const hasSentRef = useRef(false);
 
+  // Resolve the OTP transport: an injected adapter, or the default contract
+  // transport built from contractId + role. Pure + total (throws if neither).
+  const otp = useMemo(
+    () => resolveOtpAdapter({ adapter, contractId, role }),
+    [adapter, contractId, role]
+  );
+
   // Send OTP al abrir el modal
   const sendOtp = useCallback(async () => {
     setStatus('sending');
     setSendError(null);
     try {
-      const { sentTo: maskedEmail, cooldownSeconds } = await contractsApi.sendOtp(contractId, { role });
+      const { sentTo: maskedEmail, cooldownSeconds } = await otp.send();
       setSentTo(maskedEmail);
       setCooldown(cooldownSeconds || 60);
       setStatus('idle');
@@ -79,7 +139,7 @@ export function OTPVerification({
       setSendError(msg);
       setStatus('error');
     }
-  }, [contractId, role]);
+  }, [otp]);
 
   // Trigger send cuando abre el modal — una sola vez por apertura
   useEffect(() => {
@@ -90,7 +150,7 @@ export function OTPVerification({
     if (!isOpen) {
       // Reset para el próximo open
       hasSentRef.current = false;
-      setOtp(Array(OTP_LENGTH).fill(''));
+      setDigits(Array(OTP_LENGTH).fill(''));
       setStatus('idle');
       setError(null);
       setSentTo('');
@@ -120,23 +180,23 @@ export function OTPVerification({
     setStatus('verifying');
     setError(null);
     try {
-      const { verificationToken } = await contractsApi.verifyOtp(contractId, { role, code });
+      const { verificationToken } = await otp.verify(code);
       setStatus('verified');
       setTimeout(() => onVerified(verificationToken), 600);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Código incorrecto.';
       setStatus('error');
       setError(msg);
-      setOtp(Array(OTP_LENGTH).fill(''));
+      setDigits(Array(OTP_LENGTH).fill(''));
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
     }
-  }, [contractId, role, onVerified]);
+  }, [otp, onVerified]);
 
   // Handle input change
   const handleChange = useCallback((index: number, value: string) => {
     if (value && !/^\d$/.test(value)) return;
 
-    setOtp((prevOtp) => {
+    setDigits((prevOtp) => {
       const newOtp = [...prevOtp];
       newOtp[index] = value;
 
@@ -164,7 +224,7 @@ export function OTPVerification({
 
     const newOtp = Array(OTP_LENGTH).fill('');
     pasted.split('').forEach((digit, i) => { newOtp[i] = digit; });
-    setOtp(newOtp);
+    setDigits(newOtp);
     setError(null);
 
     if (pasted.length === OTP_LENGTH) {
@@ -176,14 +236,14 @@ export function OTPVerification({
 
   // Backspace salta al input previo
   const handleKeyDown = useCallback((index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+    if (e.key === 'Backspace' && !digits[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
-  }, [otp]);
+  }, [digits]);
 
   const handleResend = async () => {
     if (cooldown > 0) return;
-    setOtp(Array(OTP_LENGTH).fill(''));
+    setDigits(Array(OTP_LENGTH).fill(''));
     setError(null);
     await sendOtp();
   };
@@ -217,7 +277,7 @@ export function OTPVerification({
           {/* OTP inputs — solo si ya se envió */}
           {sentTo && !sendError && (
             <div className="flex justify-center gap-2" onPaste={handlePaste}>
-              {otp.map((digit, index) => (
+              {digits.map((digit, index) => (
                 <input
                   key={index}
                   ref={(el) => { inputRefs.current[index] = el; }}

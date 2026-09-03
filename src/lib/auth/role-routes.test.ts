@@ -5,35 +5,43 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { getAgencyHomeRoute, getRoleHomeRoute, getUserHomeRoute, isPanelRoleAllowed } from './role-routes'
+import {
+  AGENCY_HOME_ROUTE,
+  getAgencyHomeRoute,
+  getRoleHomeRoute,
+  getUserHomeRoute,
+  isPanelRoleAllowed,
+} from './role-routes'
 import { toFrontendRole } from './types'
 
-describe('getAgencyHomeRoute — per-agency-sub-role landing route', () => {
-  it('maps ADMIN to Inicio (/panel/inmobiliaria, full access)', () => {
-    expect(getAgencyHomeRoute('ADMIN')).toBe('/panel/inmobiliaria')
+/** Donde entra todo miembro de inmobiliaria. */
+const PILOTO = '/panel/inmobiliaria/piloto'
+
+describe('getAgencyHomeRoute — el Piloto automático es la entrada del panel', () => {
+  // Decisión de producto (Nico, 2026-08-31): «piloto automático siempre sea
+  // el inicio». Antes cada sub-rol caía en una pantalla distinta; ahora los
+  // cuatro entran por la torre de control, que no tiene gate de módulo.
+  it('manda a TODOS los sub-roles al Piloto', () => {
+    expect(getAgencyHomeRoute('ADMIN')).toBe(PILOTO)
+    expect(getAgencyHomeRoute('AGENTE')).toBe(PILOTO)
+    expect(getAgencyHomeRoute('CONTADOR')).toBe(PILOTO)
+    expect(getAgencyHomeRoute('VIEWER')).toBe(PILOTO)
   })
 
-  it('maps AGENTE to the pipeline', () => {
-    expect(getAgencyHomeRoute('AGENTE')).toBe('/panel/inmobiliaria/pipeline')
+  it('un sub-rol nulo/desconocido también entra por el Piloto', () => {
+    expect(getAgencyHomeRoute(null)).toBe(PILOTO)
+    expect(getAgencyHomeRoute(undefined)).toBe(PILOTO)
   })
 
-  it('maps CONTADOR to cobros', () => {
-    expect(getAgencyHomeRoute('CONTADOR')).toBe('/panel/inmobiliaria/cobros')
-  })
-
-  it('maps VIEWER to the dashboard', () => {
-    expect(getAgencyHomeRoute('VIEWER')).toBe('/panel/inmobiliaria/dashboard')
-  })
-
-  it('defaults null/undefined sub-role to the safe Inicio route (ungated for all members)', () => {
-    expect(getAgencyHomeRoute(null)).toBe('/panel/inmobiliaria')
-    expect(getAgencyHomeRoute(undefined)).toBe('/panel/inmobiliaria')
+  it('la constante exportada y la función no se pueden separar', () => {
+    expect(AGENCY_HOME_ROUTE).toBe(PILOTO)
+    expect(getAgencyHomeRoute('ADMIN')).toBe(AGENCY_HOME_ROUTE)
   })
 })
 
 describe('getRoleHomeRoute', () => {
   it('maps agency to the inmobiliaria panel', () => {
-    expect(getRoleHomeRoute('agency')).toBe('/panel/inmobiliaria')
+    expect(getRoleHomeRoute('agency')).toBe(PILOTO)
   })
 
   it('maps landlord to /panel', () => {
@@ -48,15 +56,15 @@ describe('getRoleHomeRoute', () => {
     expect(getRoleHomeRoute(undefined)).toBe('/inquilino')
   })
 
-  it('routes an agency user to the safe default when no agencyRole is passed (backward-compat)', () => {
-    expect(getRoleHomeRoute('agency')).toBe('/panel/inmobiliaria')
+  it('routes an agency user to the Piloto when no agencyRole is passed', () => {
+    expect(getRoleHomeRoute('agency')).toBe(PILOTO)
   })
 
-  it('threads agencyRole through to the per-sub-role route for agency users', () => {
-    expect(getRoleHomeRoute('agency', 'AGENTE')).toBe('/panel/inmobiliaria/pipeline')
-    expect(getRoleHomeRoute('agency', 'CONTADOR')).toBe('/panel/inmobiliaria/cobros')
-    expect(getRoleHomeRoute('agency', 'VIEWER')).toBe('/panel/inmobiliaria/dashboard')
-    expect(getRoleHomeRoute('agency', 'ADMIN')).toBe('/panel/inmobiliaria')
+  it('el agencyRole ya no cambia el destino (sigue en la firma por los llamadores)', () => {
+    expect(getRoleHomeRoute('agency', 'AGENTE')).toBe(PILOTO)
+    expect(getRoleHomeRoute('agency', 'CONTADOR')).toBe(PILOTO)
+    expect(getRoleHomeRoute('agency', 'VIEWER')).toBe(PILOTO)
+    expect(getRoleHomeRoute('agency', 'ADMIN')).toBe(PILOTO)
   })
 
   it('ignores agencyRole for non-agency roles', () => {
@@ -75,14 +83,14 @@ describe('getUserHomeRoute — user-aware home/dashboard destination (logged in 
   })
 
   it('routes agency users (frontend role) to /panel/inmobiliaria', () => {
-    expect(getUserHomeRoute({ role: 'agency' })).toBe('/panel/inmobiliaria')
+    expect(getUserHomeRoute({ role: 'agency' })).toBe(PILOTO)
   })
 
   it('routes agency MEMBERS mapped from backend AGENT/INMOBILIARIA roles to /panel/inmobiliaria', () => {
     // toFrontendRole is how the auth context derives user.role — the helper
     // needs no separate membership detection.
-    expect(getUserHomeRoute({ role: toFrontendRole('AGENT') })).toBe('/panel/inmobiliaria')
-    expect(getUserHomeRoute({ role: toFrontendRole('INMOBILIARIA') })).toBe('/panel/inmobiliaria')
+    expect(getUserHomeRoute({ role: toFrontendRole('AGENT') })).toBe(PILOTO)
+    expect(getUserHomeRoute({ role: toFrontendRole('INMOBILIARIA') })).toBe(PILOTO)
   })
 
   it('works for session-degraded profiles (they still carry a role)', () => {
@@ -102,8 +110,8 @@ describe('getUserHomeRoute — user-aware home/dashboard destination (logged in 
 
 describe('getUserHomeRoute — dual-context disambiguation (active context)', () => {
   it("routes to the agency panel when the active context is 'agency'", () => {
-    expect(getUserHomeRoute({ role: 'tenant' }, 'agency')).toBe('/panel/inmobiliaria')
-    expect(getUserHomeRoute({ role: 'landlord' }, 'agency')).toBe('/panel/inmobiliaria')
+    expect(getUserHomeRoute({ role: 'tenant' }, 'agency')).toBe(PILOTO)
+    expect(getUserHomeRoute({ role: 'landlord' }, 'agency')).toBe(PILOTO)
   })
 
   it("routes to the personal home when the active context is 'personal'", () => {
@@ -113,7 +121,7 @@ describe('getUserHomeRoute — dual-context disambiguation (active context)', ()
 
   it('falls back to the role route when no active context is passed (single-context, unchanged)', () => {
     expect(getUserHomeRoute({ role: 'tenant' })).toBe('/inquilino')
-    expect(getUserHomeRoute({ role: 'agency' })).toBe('/panel/inmobiliaria')
+    expect(getUserHomeRoute({ role: 'agency' })).toBe(PILOTO)
   })
 
   it('anonymous still goes to / regardless of context', () => {

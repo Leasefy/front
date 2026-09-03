@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
+import { NavigatorLockAcquireTimeoutError } from '@supabase/supabase-js'
 
 import { crossTabLock } from './cross-tab-lock'
 
@@ -166,6 +167,36 @@ describe('crossTabLock', () => {
       liberar()
       await ocupado
     })
+
+    /**
+     * EL bug real de T-0052: `_autoRefreshTokenTick()` (GoTrueClient.js) NO
+     * revisa la propiedad `isAcquireTimeout` a pesar de que el JSDoc de
+     * auth-js dice que debería alcanzar con ella — revisa
+     * `e instanceof LockAcquireTimeoutError`, la clase que auth-js exporta.
+     * Un error que sólo lleva la propiedad, pero no desciende de esa clase,
+     * NO se atrapa ahí: se re-lanza (`throw e`) y sale como una promesa
+     * rechazada sin dueño desde el `setTimeout`/`setInterval` que dispara el
+     * tick — el "Unhandled Runtime Error" que ve el dueño en la consola del
+     * navegador. Por eso el error de este lock tiene que ser reconocido por
+     * `instanceof` contra la clase que auth-js REALMENTE importa, no sólo
+     * llevar la marca documentada.
+     */
+    it('el error es reconocido por instanceof NavigatorLockAcquireTimeoutError del auth-js instalado (lo que auth-js realmente revisa, no sólo la propiedad documentada)', async () => {
+      instalarLockManager()
+      let liberar: () => void = () => {}
+      const ocupado = crossTabLock(
+        'sesion',
+        5000,
+        () => new Promise<void>((r) => (liberar = r)),
+      )
+
+      const err = await crossTabLock('sesion', 0, async () => 'nunca').catch((e) => e)
+
+      expect(err).toBeInstanceOf(NavigatorLockAcquireTimeoutError)
+
+      liberar()
+      await ocupado
+    })
   })
 
   /**
@@ -190,6 +221,8 @@ describe('crossTabLock', () => {
     expect((err as { isAcquireTimeout?: boolean }).isAcquireTimeout).toBe(true)
     // Y NO el AbortError crudo que auth-js no sabe manejar.
     expect((err as Error).name).not.toBe('AbortError')
+    // Y reconocido por instanceof — no sólo por la propiedad (ver arriba).
+    expect(err).toBeInstanceOf(NavigatorLockAcquireTimeoutError)
 
     liberar()
     await ocupado

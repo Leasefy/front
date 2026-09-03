@@ -1,4 +1,6 @@
 'use client';
+import { AsignarAgente } from '@/components/inmobiliaria/AsignarAgente';
+import { CandidatosDelInmueble } from '@/components/inmobiliaria/CandidatosDelInmueble';
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
@@ -26,7 +28,7 @@ import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import {
   useConsignacion,
   usePropietario,
-  useAgente,
+  useAgenteDeConsignacion,
 } from '@/lib/hooks/useInmobiliaria';
 import { useProperty } from '@/lib/hooks/useProperties';
 import type { PropertyAvailability, ConsignacionFormData, Consignacion } from '@/lib/types/inmobiliaria';
@@ -173,6 +175,7 @@ function ConsignacionDetailContent() {
   const [showTerminateDialog, setShowTerminateDialog] = useState(false);
   const [isTerminating, setIsTerminating] = useState(false);
   const [showCitaModal, setShowCitaModal] = useState(false);
+  const [showAsignarAgente, setShowAsignarAgente] = useState(false);
 
   // Fetch data
   const { consignacion: fetchedConsignacion } = useConsignacion(consignacionId);
@@ -181,7 +184,9 @@ function ConsignacionDetailContent() {
   const consignacion = consignacionData || fetchedConsignacion;
 
   const { propietario } = usePropietario(consignacion?.propietarioId);
-  const { agente } = useAgente(consignacion?.agenteId);
+  // Por `userId` o por `id`: el back guarda el del usuario y `getById`
+  // esperaba el del miembro, así que nunca resolvía. Ver el hook.
+  const { agente } = useAgenteDeConsignacion(consignacion?.agenteId);
   // The photos live on the Property entity, not on the consignación
   // (consignacion.propertyThumbnail is never populated by the back — see
   // ledger §2.1). A failed/loading fetch just leaves `property` unset, which
@@ -287,11 +292,15 @@ function ConsignacionDetailContent() {
     });
   }, [t]);
 
+  /*
+   * Antes esto era un toast de «próximamente». Con eso, un inmueble sin agente
+   * no tenía forma de conseguir uno: el vacío no ofrecía nada y el botón de la
+   * tarjeta con agente tampoco hacía nada. El back tenía la ruta desde hace
+   * rato (`PUT /consignaciones/:id/assign-agent`).
+   */
   const handleReassignAgent = useCallback(() => {
-    toast.info(t('inmobiliaria.portafolio.detail.toasts.reassignSoon'), {
-      description: t('inmobiliaria.portafolio.detail.toasts.reassignDesc'),
-    });
-  }, [t]);
+    setShowAsignarAgente(true);
+  }, []);
 
   const handleViewInventory = useCallback(() => {
     inventoryRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -386,6 +395,19 @@ function ConsignacionDetailContent() {
               commissionPercent={consignacion.commissionPercent}
               isSaleListing={consignacion.listingType === 'sale'}
               onReassign={handleReassignAgent}
+            />
+          </motion.div>
+
+          {/* Quién se postuló. Vive acá, antes del contrato vigente: es lo que
+              pasa mientras el inmueble está disponible. */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.22 }}
+          >
+            <CandidatosDelInmueble
+              propertyId={consignacion.propertyId}
+              consignacionId={consignacion.id}
             />
           </motion.div>
 
@@ -492,6 +514,17 @@ function ConsignacionDetailContent() {
         onCreated={() => {}}
         presetPropertyId={consignacion.propertyId}
         presetPropertyTitle={consignacion.propertyTitle}
+      />
+
+      <AsignarAgente
+        abierto={showAsignarAgente}
+        onCerrar={() => setShowAsignarAgente(false)}
+        consignacionId={consignacion.id}
+        agenteActualId={consignacion.agenteId}
+        // La copia local gana sobre lo que trae el hook (`consignacionData ||
+        // fetchedConsignacion`), así que hay que soltarla: si no, el refresco
+        // llega y la pantalla sigue mostrando el agente viejo.
+        onAsignado={() => setConsignacionData(null)}
       />
     </div>
   );

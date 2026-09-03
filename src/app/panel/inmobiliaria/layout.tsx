@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   SquaresFour,
   Buildings,
-  House,
   Users,
   Chat,
   Gear,
@@ -23,6 +22,7 @@ import {
   UserCircle,
   PaperPlaneTilt,
   ChatCircleText,
+  ChatsCircle,
   ShieldCheck,
   Receipt,
   Bank,
@@ -41,6 +41,7 @@ import {
   CurrencyCircleDollar,
   Umbrella,
   Warning,
+  AirTrafficControl,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AgencySubscriptionGuard } from '@/components/auth/AgencySubscriptionGuard';
@@ -61,6 +62,7 @@ import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderB
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { usePostulacionesPendientes } from '@/lib/hooks/use-postulaciones-pendientes';
 import { useMigracionesPendientes } from '@/lib/hooks/use-migraciones-pendientes';
+import { usePilotoBadge } from '@/lib/hooks/piloto/use-piloto-badge';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { useAuth } from '@/lib/auth/use-auth';
 import { hexToHslTriplet } from '@/lib/utils/hex-to-hsl';
@@ -93,6 +95,20 @@ function CommandPaletteShortcuts() {
 
   return null;
 }
+
+/**
+ * Rutas de nav DESHABILITADAS TEMPORALMENTE — decisión de producto (T-0052,
+ * 2026-09-03), no un estado que publique el back/agente. La fila se sigue
+ * viendo en el menú (nunca desaparece), pero muda, sin ir a ningún lado y
+ * fuera del tab order — sólo la entrada de nav se apaga, la ruta sigue viva.
+ * Reactivar una fila es sacar su href de este set, nada más. Mirror del
+ * patrón `AGENTES_NO_DISPONIBLES` (T-0051, PilotoAutonomia.tsx) — un solo
+ * lugar nombrado en vez de un `disabled: true` repetido y disperso.
+ */
+const ASEGURABILIDAD_HREF = '/panel/inmobiliaria/ai/asegurabilidad';
+const NAV_ITEMS_NO_DISPONIBLES: ReadonlySet<string> = new Set([
+  ASEGURABILIDAD_HREF,
+]);
 
 interface InmobiliariaLayoutProps {
   children: React.ReactNode;
@@ -137,10 +153,12 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // permission gate, an optional `roles` role gate, and `adminOnly`.
   // Paso 7: cuánta gente está esperando gestión, con dato real.
   const { pendientes: postulacionesPendientes } = usePostulacionesPendientes();
-  // T-0031 WU-4: el "Retomar" del importador era page-local (N10) — sólo se
-  // veía si ya se había entrado a /contratos/migrar. Este badge lo hace
-  // visible siempre, en la nav.
+  // Migración de contratos: lotes abiertos con pendientes (poll 5min;
+  // fail-soft a undefined ⇒ sin badge, ver use-migraciones-pendientes.ts).
   const { pendientes: migracionesPendientes } = useMigracionesPendientes();
+  // Piloto automático: total de la bandeja (poll 60s; fail-soft a undefined ⇒
+  // sin badge — un cero afirmaría que no hay nada, que es lo que no sabemos).
+  const { total: pilotoPendientes } = usePilotoBadge();
 
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
     // ═══════════════════════════════════════════════════════════════════════
@@ -168,10 +186,35 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // ═══════════════════════════════════════════════════════════════════════
 
     // ── INICIO ──
-    { kind: 'section', label: t('inmobiliaria.nav.secInicio'), href: '#sec-inicio', icon: SquaresFour, module: null },
-    // AI CHAT HOME F3: "Inicio" opens the embedded chat at the panel root —
-    // exact match so it doesn't stay highlighted on every subroute.
-    { label: t('inmobiliaria.nav.inicio'),       href: '/panel/inmobiliaria',              icon: House,         exact: true, module: null },
+    // Sin encabezado de sección: la fila YA se llama «Inicio», y un rótulo
+    // «INICIO» encima de una fila «Inicio» es un tartamudeo. Las dos filas de
+    // arriba (Inicio · Chat) abren el grupo sin necesitar título.
+    {
+      // ── PILOTO AUTOMÁTICO ── la torre de control transversal de los agentes
+      // (piloto-contratos-v1 §5). Va PRIMERO y es el destino de entrada al
+      // panel (`getAgencyHomeRoute`): decisión de Nico el 2026-08-31 — «que
+      // piloto automático siempre sea el inicio». Gate: como el hub /ai — sin
+      // módulo (`module: null`), visible a todo miembro; cada widget de la
+      // página se defiende solo (fail-soft por endpoint), que es lo que hace
+      // seguro mandar ahí también a AGENTE/CONTADOR/VIEWER.
+      // La fila se llama «Inicio» y no «Piloto» (Nico, 2026-08-31): es el
+      // destino de entrada al panel, y quien abre el menú busca «dónde
+      // empiezo», no el nombre del producto. El nombre propio —«Piloto
+      // automático»— vive en el H1 de la sección, que es donde identifica.
+      label: t('inmobiliaria.nav.piloto'),
+      href: '/panel/inmobiliaria/piloto',
+      icon: AirTrafficControl,
+      module: null,
+      // Sin píldora `ai`: el rótulo ya no nombra un agente, y «Inicio · IA»
+      // se lee como si el inicio fuera un agente. El badge sí queda: dice
+      // cuántas decisiones te esperan, que es información.
+      badge: pilotoPendientes,
+    } as NavItemWithModule,
+    // AI CHAT HOME F3: la raíz del panel es el chat embebido. Se llamaba
+    // «Inicio» y eso lo escondía: nadie busca un chat bajo ese nombre, y el
+    // inicio ahora es el Piloto. Se llama por lo que es (Nico, 2026-08-31).
+    // `exact` para que no quede resaltado en cada subruta.
+    { label: t('inmobiliaria.nav.chat'),         href: '/panel/inmobiliaria',              icon: ChatsCircle,   exact: true, module: null },
 
     // ── COMERCIAL ──  Conseguir inmuebles, estudiar clientes y cerrar renta.
     { kind: 'section', label: t('inmobiliaria.nav.secComercial'), href: '#sec-comercial', scope: 'comercial', icon: Kanban, module: null },
@@ -212,12 +255,23 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       // Asegurabilidad va en COMERCIAL: es el paso previo a rentar — manda el
       // candidato a las aseguradoras y devuelve el máximo afianzable, que es
       // lo que define qué catálogo se le puede ofrecer.
+      //
+      // Deshabilitada temporalmente (ver NAV_ITEMS_NO_DISPONIBLES arriba):
+      // greyed out, «Próximamente», sin ir a ningún lado. La ruta sigue viva
+      // — sólo se apaga la entrada del menú.
       label: t('inmobiliaria.ai.nav.cotizador'),
+      // href literal (no la constante): nav-sidebar.test.ts extrae `href` con
+      // una regex de string literal — una referencia rompería la detección de
+      // choques de icono/nombre para esta fila sin avisar.
       href: '/panel/inmobiliaria/ai/asegurabilidad', scope: 'comercial',
       icon: Umbrella,
       module: 'cotizador',
       ai: true,
       dataTourTarget: 'sidebar-cotizador',
+      disabled: NAV_ITEMS_NO_DISPONIBLES.has(ASEGURABILIDAD_HREF),
+      tag: NAV_ITEMS_NO_DISPONIBLES.has(ASEGURABILIDAD_HREF)
+        ? t('inmobiliaria.nav.proximamente')
+        : undefined,
       // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
     } as NavItemWithModule,
     // Acá hubo un rato una fila «Recorrido» encima de esta, y era la misma
@@ -400,7 +454,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // Configuración → gated on 'configuracion': only ADMIN has it in the matrix
     // (AGENTE/CONTADOR/VIEWER all have configuracion:[]) ⇒ effectively admin-only.
     { label: t('inmobiliaria.nav.configuracion'), href: '/panel/inmobiliaria/configuracion', scope: 'general', icon: Gear,         module: 'configuracion', dataTourTarget: 'sidebar-configuraciones' },
-  ], [t, postulacionesPendientes, migracionesPendientes]);
+  ], [t, postulacionesPendientes, migracionesPendientes, pilotoPendientes]);
 
   const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => {
     // Filter by permission/role via the shared, unit-tested helper. While

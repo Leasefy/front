@@ -256,9 +256,10 @@ export function useMyPayments() {
 // historial: incluye PENDING_VALIDATION, APPROVED, REJECTED, etc).
 // ============================================================================
 
-export function useMyPaymentRequests() {
+export function useMyPaymentRequests(options?: { skip?: boolean }) {
+  const skip = options?.skip ?? false;
   const [requests, setRequests] = useState<BackendTenantPaymentRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!skip);
   const [error, setError] = useState<string | null>(null);
   const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
@@ -280,8 +281,12 @@ export function useMyPaymentRequests() {
   }, []);
 
   useEffect(() => {
+    if (skip) {
+      setIsLoading(false);
+      return;
+    }
     fetchRequests();
-  }, [fetchRequests]);
+  }, [fetchRequests, skip]);
 
   const getForLease = useCallback(
     (leaseId: string) => requests.filter((r) => r.leaseId === leaseId),
@@ -302,7 +307,8 @@ export function useMyPaymentRequests() {
 // motivo de rechazo). Necesario para gating del CTA "Pagar arriendo".
 // ============================================================================
 
-export function useLeasePaymentInfo(leaseId: string | null) {
+export function useLeasePaymentInfo(leaseId: string | null, options?: { skip?: boolean }) {
+  const skip = options?.skip ?? false;
   const [info, setInfo] = useState<BackendPaymentInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -331,8 +337,12 @@ export function useLeasePaymentInfo(leaseId: string | null) {
   }, [leaseId]);
 
   useEffect(() => {
+    if (skip) {
+      setIsLoading(false);
+      return;
+    }
     fetchInfo();
-  }, [fetchInfo]);
+  }, [fetchInfo, skip]);
 
   return { info, isLoading, error, errorCrudo, refetch: fetchInfo };
 }

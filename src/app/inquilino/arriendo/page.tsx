@@ -3,10 +3,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, House, CreditCard, ArrowUpRight, CheckCircle, Clock } from '@phosphor-icons/react';
+import { MapPin, Calendar, House, CreditCard, ArrowUpRight, CheckCircle, Clock, WarningCircle } from '@phosphor-icons/react';
 
 import { toast } from 'sonner';
-import { useLeases, useMyPayments } from '@/lib/hooks/useLeases';
+import { useLeases, useMyPayments, useLeasePaymentInfo } from '@/lib/hooks/useLeases';
 import { leasesApi } from '@/lib/api/leases.service';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -27,6 +27,10 @@ export default function ArriendoPage() {
   const { getNextPayment } = useMyPayments();
 
   const activeLeases = isOnboardingComplete ? getActive() : [];
+  const primaryLease = activeLeases[0];
+
+  // Estado del período actual — misma fuente única que pagos/page.tsx.
+  const { info: paymentInfo } = useLeasePaymentInfo(primaryLease?.id ?? null);
 
   // Calculate totals
   const totalMonthlyRent = activeLeases.reduce(
@@ -35,7 +39,7 @@ export default function ArriendoPage() {
   );
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -43,7 +47,7 @@ export default function ArriendoPage() {
   };
 
   const formatShortDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'short',
     });
@@ -99,6 +103,47 @@ export default function ArriendoPage() {
       </div>
     );
   }
+
+  // Estado general — refleja el período actual real (currentPeriodStatus), no una
+  // constante "Al día". Neutral y factual: sin "EN MORA", sin countdown, sin
+  // referencias a centrales de riesgo (PAGO-01 / PITFALLS 8).
+  const overallStatus = (() => {
+    switch (paymentInfo?.currentPeriodStatus) {
+      case 'APPROVED':
+        return {
+          label: locale === 'es' ? 'Al día' : 'Up to date',
+          detail: locale === 'es' ? 'Pago del período confirmado' : 'Current period confirmed',
+          Icon: CheckCircle,
+          iconColor: 'text-success',
+        };
+      case 'PENDING_VALIDATION':
+        return {
+          label: locale === 'es' ? 'En verificación' : 'In verification',
+          detail: locale === 'es' ? 'Pago en proceso de validación' : 'Payment being validated',
+          Icon: Clock,
+          iconColor: 'text-warning',
+        };
+      case 'REJECTED':
+        return {
+          label: locale === 'es' ? 'Pago rechazado' : 'Payment rejected',
+          detail:
+            paymentInfo?.currentPeriodRejectionReason ??
+            (locale === 'es' ? 'Revisa el estado de cuenta' : 'Check your account status'),
+          Icon: WarningCircle,
+          iconColor: 'text-danger',
+        };
+      case 'NONE':
+        return {
+          label: locale === 'es' ? 'Pendiente' : 'Pending',
+          detail: locale === 'es' ? 'Pago del período pendiente' : 'Current period pending',
+          Icon: Clock,
+          iconColor: 'text-fg-subtle',
+        };
+      default:
+        return null; // sin arriendo activo / info no cargada
+    }
+  })();
+  const OverallStatusIcon = overallStatus?.Icon ?? Clock;
 
   return (
     <div className="min-h-screen bg-bg">
@@ -160,17 +205,19 @@ export default function ArriendoPage() {
             </p>
           </div>
 
-          {/* Status */}
+          {/* Status — refleja el currentPeriodStatus real, no una constante */}
           <div className="rounded-xl bg-surface-muted p-6">
             <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
-              <CheckCircle className="w-5 h-5 text-success" />
+              <OverallStatusIcon className={cn('w-5 h-5', overallStatus?.iconColor ?? 'text-fg-subtle')} />
             </div>
             <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Estado general' : 'Overall status'}</p>
             <p className="text-3xl font-bold text-fg tracking-tight">
-              {locale === 'es' ? 'Al día' : 'Up to date'}
+              {overallStatus ? overallStatus.label : '—'}
             </p>
             <p className="text-sm text-fg-muted mt-2">
-              {locale === 'es' ? 'Todos los pagos al día' : 'All payments up to date'}
+              {overallStatus
+                ? overallStatus.detail
+                : (locale === 'es' ? 'Sin información de pago' : 'No payment info')}
             </p>
           </div>
         </motion.div>

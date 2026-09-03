@@ -47,9 +47,16 @@ interface HeatmapGrid24x7Props {
 const DAYS_ES: string[] = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const DAYS_EN: string[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-// Only label hours 0, 6, 12, 18; others empty
+// Horas legibles cada 3 columnas — «00/06/12/18» no le decía nada a nadie
+// (feedback de Nico 2026-08-25: «arriba coloca bien los horarios porque no se
+// entiende muy bien»). El formato 12h con a.m./p.m. es el que se usa en
+// Colombia; las columnas vecinas van vacías, así que el texto puede respirar.
+function horaLegible(h: number): string {
+  const doce = h % 12 === 0 ? 12 : h % 12;
+  return `${doce} ${h < 12 ? 'a.m.' : 'p.m.'}`;
+}
 const HOURS_LABELS: string[] = Array.from({ length: 24 }, (_, h) =>
-  h === 0 ? '00' : h === 6 ? '06' : h === 12 ? '12' : h === 18 ? '18' : ''
+  h % 3 === 0 ? horaLegible(h) : ''
 );
 
 // ─── Color Helper ─────────────────────────────────────────────────────────────
@@ -145,8 +152,8 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
             <div
               key={`h-${h}`}
               role="columnheader"
-              aria-label={label ? `${label}:00` : undefined}
-              className="text-center text-[9px] text-fg-subtle pb-0.5"
+              aria-label={label || undefined}
+              className="text-center text-[10px] text-fg-subtle pb-0.5 whitespace-nowrap"
             >
               {label}
             </div>
@@ -205,9 +212,41 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
             ? 'Toca una celda para ver el detalle'
             : 'Tap a cell to see details'}
       </p>
-      <p className="text-[10px] text-fg-subtle mt-1">
-        {t('inmobiliaria.ai.cobranza.analitica.widgets.cadence.heatmap.legend')}
-      </p>
+      {/* Leyenda visual — «Intensidad = volumen + tasa positiva» era una
+          fórmula, no una guía. Quien mira el mapa necesita saber qué buscar:
+          el más oscuro es la mejor hora. Las muestras usan el MISMO
+          cellBgColor de las celdas, para que la escala nunca se desfase del
+          mapa. */}
+      <div
+        data-testid="heatmap-leyenda"
+        className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-fg-subtle"
+      >
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            className="inline-block w-3 h-3 rounded-[2px] shrink-0"
+            style={{ backgroundColor: cellBgColor(0, 0, 1) }}
+            aria-hidden="true"
+          />
+          {isEs ? 'Sin llamadas' : 'No calls'}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="whitespace-nowrap">
+            {isEs ? 'Claro: pocas llamadas o poca respuesta' : 'Light: few calls or low response'}
+          </span>
+          <span className="inline-flex gap-px" aria-hidden="true">
+            {[0.2, 0.4, 0.6, 0.8, 1].map((f) => (
+              <span
+                key={f}
+                className="inline-block w-3 h-3 rounded-[2px]"
+                style={{ backgroundColor: cellBgColor(f, f, 1) }}
+              />
+            ))}
+          </span>
+          <span className="whitespace-nowrap font-medium text-fg-muted">
+            {isEs ? 'Oscuro: la mejor hora — contestan y sale bien' : 'Dark: best hour — they answer and it goes well'}
+          </span>
+        </span>
+      </div>
     </div>
   );
 }

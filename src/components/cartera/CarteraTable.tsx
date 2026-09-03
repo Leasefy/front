@@ -7,32 +7,25 @@
  * «Esto sabés que debe tener una tabla como las que ya usamos, y hasta para
  * los empty state, y cuando tenga datos que tenga paginación.»
  *
- * La lista de deudas ya era un `<table>`, pero no era LA tabla del panel:
- * celdas sin `p-4`, encabezados que no ordenaban, filas que no se podían
- * clickear y un paginador propio de 20 filas fijas sin selector de tamaño.
- * Al lado de Inquilinos y Propietarios se leía como otra pantalla. Acá se
- * alinea con `InquilinosTable`: mismos primitivos, mismo `p-4`, encabezados
- * ordenables con `<button>` + `uppercase` explícito, fila clickeable.
+ * Mismos primitivos que Agenda e Inquilinos (`Table` de `@/components/ui/table`,
+ * que son los del DS: encabezados mono en mayúscula, divisores finos, hover de
+ * fila), encabezados ordenables con `<button>` + `uppercase` explícito, fila
+ * clickeable. El vacío entra por `vacio` y se pinta DENTRO del `<TableBody>`
+ * para que los encabezados de columna sigan a la vista.
  *
- * ── Las columnas, y por qué son SIETE y no nueve ───────────────────────────
- * El contenedor útil en desktop son ~1206 px. Con una columna por dato la
- * tabla se salía de la pantalla (el mismo problema que obligó a sacar el
- * avatar y a apilar las fechas en Inquilinos), así que dos datos viajan
- * apilados dentro de la celda a la que pertenecen en vez de pedir columna:
+ * ── Las columnas, en el orden que pidió Nico (2026-09-03) ──────────────────
+ * inquilino · inmueble · propietario · período · días de mora · saldo ·
+ * acciones. Dos datos viajan apilados dentro de la celda a la que pertenecen
+ * en vez de pedir columna (el contenedor útil en desktop son ~1206 px):
  *
- *   - `dueDate`  → bajo el mes («vence …»). Antes NI SE MOSTRABA.
- *   - `paidAmount` → bajo lo que debe («abonó …»), sólo si hubo abono.
- *     Un pago parcial cambia la conversación con el inquilino y la tabla
- *     vieja lo escondía: mostraba el pendiente y nada más.
- *   - `remindersSent` + `lastReminderDate` → bajo la mora. Responden la
- *     misma pregunta que la mora («qué tan tarde va y qué hemos hecho»), y
- *     como columna propia el encabezado «RECORDATORIOS» costaba ~130 px que
- *     empujaban la última columna fuera de la pantalla.
+ *   - `dueDate`  → bajo el período («vence …»).
+ *   - `paidAmount` → bajo el saldo («abonó …»), sólo si hubo abono.
+ *   - `remindersSent` → bajo la mora: responde la misma pregunta («qué tan
+ *     tarde va y qué hemos hecho»).
  *
- * No se pierde ningún dato del que hoy se ve. Los que el back manda y siguen
- * sin pintarse son de identificación, no de lectura: `consignacionId`,
- * `propietarioId`, `agenteId`/`agenteName` (nadie filtra por agente acá) y
- * `status`, que es redundante con la mora en una pantalla de deuda.
+ * Los que el back manda y siguen sin pintarse son de identificación, no de
+ * lectura: `consignacionId`, `propietarioId`, `agenteId`/`agenteName` y
+ * `status`, redundante con la mora en una pantalla de deuda.
  *
  * ── Y lo que se niega a hacer ──────────────────────────────────────────────
  * Un dato que el back no mandó se DICE. `remindersSent: 0` es un cero de
@@ -67,6 +60,9 @@ import type { CarteraItem } from '@/lib/types/inmobiliaria'
 export type CampoDeOrdenDeCartera = 'inquilino' | 'mes' | 'debe' | 'mora'
 type Sentido = 'asc' | 'desc'
 
+/** Cuántas columnas tiene la tabla: el vacío las abarca todas. */
+export const COLUMNAS_DE_CARTERA = 7
+
 /**
  * Ordena sin mutar.
  *
@@ -100,9 +96,11 @@ export interface CarteraTableProps {
   items: readonly CarteraItem[]
   /** Abrir el cobro. La fila entera lo dispara; el botón de la derecha también. */
   onVerCobro?: (item: CarteraItem) => void
+  /** El vacío de esta pantalla (`<SinDatos>`), pintado dentro del cuerpo. */
+  vacio?: React.ReactNode
 }
 
-export function CarteraTable({ items, onVerCobro }: CarteraTableProps) {
+export function CarteraTable({ items, onVerCobro, vacio }: CarteraTableProps) {
   const { t } = useI18n()
   /*
    * Por defecto, lo más vencido arriba. Una pantalla de cartera se abre para
@@ -136,52 +134,59 @@ export function CarteraTable({ items, onVerCobro }: CarteraTableProps) {
   }) => {
     const Icono = sentido === 'asc' ? SortAscending : SortDescending
     return (
-      <TableHead className="p-4 text-left">
+      <TableHead className="whitespace-nowrap">
         {/* allowlist: disparador de orden — no hay primitiva en Cadence.
             `uppercase` explícito: un <button> trae text-transform:none del
             navegador y perdía las mayúsculas del TH. Ver InquilinosTable. */}
         <button
           type="button"
           onClick={() => ordenarPor(propio)}
+          aria-sort={campo === propio ? (sentido === 'asc' ? 'ascending' : 'descending') : undefined}
           className={`flex w-full items-center gap-2 uppercase hover:text-fg ${
             alineado === 'right' ? 'justify-end' : ''
           }`}
           data-testid={`ordenar-${propio}`}
         >
           {children}
-          {campo === propio && <Icono className="h-3.5 w-3.5" />}
+          {campo === propio && <Icono className="h-3.5 w-3.5" aria-hidden="true" />}
         </button>
       </TableHead>
     )
   }
 
   return (
-    <div className="overflow-x-auto">
-      <Table className="min-w-[1040px]" data-testid="cartera-tabla">
-        <TableHeader>
-          <TableRow className="border-b border-border bg-muted/30">
-            <Ordenable campo="inquilino">{t('cartera.tabla.inquilino')}</Ordenable>
-            <TableHead className="p-4 text-left">{t('cartera.tabla.inmueble')}</TableHead>
-            <TableHead className="p-4 text-left">{t('cartera.tabla.propietario')}</TableHead>
-            <Ordenable campo="mes">{t('cartera.tabla.mes')}</Ordenable>
-            <Ordenable campo="debe" alineado="right">
-              {t('cartera.tabla.debe')}
-            </Ordenable>
-            <Ordenable campo="mora">{t('cartera.tabla.mora')}</Ordenable>
-            <TableHead className="w-16 p-4" />
+    <Table className="min-w-[1040px]" data-testid="cartera-tabla">
+      <TableHeader>
+        <TableRow>
+          <Ordenable campo="inquilino">{t('cartera.tabla.inquilino')}</Ordenable>
+          <TableHead className="whitespace-nowrap">{t('cartera.tabla.inmueble')}</TableHead>
+          <TableHead className="whitespace-nowrap">{t('cartera.tabla.propietario')}</TableHead>
+          <Ordenable campo="mes">{t('cartera.tabla.mes')}</Ordenable>
+          <Ordenable campo="mora">{t('cartera.tabla.mora')}</Ordenable>
+          <Ordenable campo="debe" alineado="right">
+            {t('cartera.tabla.debe')}
+          </Ordenable>
+          <TableHead className="w-16" />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {ordenados.length === 0 && vacio ? (
+          <TableRow>
+            <TableCell colSpan={COLUMNAS_DE_CARTERA} className="p-0">
+              {vacio}
+            </TableCell>
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {ordenados.map((item) => (
+        ) : (
+          ordenados.map((item) => (
             <FilaDeCartera
               key={item.cobroId}
               item={item}
               onVerCobro={onVerCobro ? () => onVerCobro(item) : undefined}
             />
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          ))
+        )}
+      </TableBody>
+    </Table>
   )
 }
 
@@ -201,13 +206,13 @@ function FilaDeCartera({
 
   return (
     <TableRow
-      className="cursor-pointer border-b border-border/50 transition-colors hover:bg-muted/50"
+      className="cursor-pointer"
       onClick={onVerCobro}
       data-testid="cartera-fila"
       data-cobro-id={item.cobroId}
     >
       {/* Inquilino: quién debe y por dónde se le habla. */}
-      <TableCell className="p-4 align-middle">
+      <TableCell className="align-middle">
         <div className="min-w-0 max-w-[12rem]">
           {item.tenantName ? (
             <p className="truncate font-medium text-fg">{item.tenantName}</p>
@@ -225,7 +230,7 @@ function FilaDeCartera({
                 onClick={(e) => e.stopPropagation()}
                 className="flex items-center gap-1 font-mono tabular-nums hover:underline"
               >
-                <Phone className="h-3 w-3 shrink-0" />
+                <Phone className="h-3 w-3 shrink-0" aria-hidden="true" />
                 {item.tenantPhone}
               </a>
               {/* En Colombia la cobranza pasa por WhatsApp antes que por una
@@ -238,7 +243,7 @@ function FilaDeCartera({
                 onClick={(e) => e.stopPropagation()}
                 className="text-success hover:opacity-80"
               >
-                <WhatsappLogo className="h-3.5 w-3.5" weight="fill" />
+                <WhatsappLogo className="h-3.5 w-3.5" weight="fill" aria-hidden="true" />
                 <span className="sr-only">{t('cartera.tabla.whatsapp')}</span>
               </a>
             </span>
@@ -253,54 +258,40 @@ function FilaDeCartera({
       </TableCell>
 
       {/* Inmueble */}
-      <TableCell className="p-4 align-middle">
+      <TableCell className="align-middle">
         {inmueble ? (
-          <span className="block max-w-[11rem] truncate text-sm text-fg-muted">{inmueble}</span>
+          <span className="block max-w-[11rem] truncate text-fg-muted">{inmueble}</span>
         ) : (
-          <span className="text-sm text-warning">{t('cartera.tabla.sinDireccion')}</span>
+          <span className="text-warning">{t('cartera.tabla.sinDireccion')}</span>
         )}
       </TableCell>
 
       {/* Propietario — a quién le estamos quedando mal. */}
-      <TableCell className="p-4 align-middle">
+      <TableCell className="align-middle">
         {item.propietarioName ? (
-          <span className="block max-w-[9rem] truncate text-sm text-fg-muted">
+          <span className="block max-w-[9rem] truncate text-fg-muted">
             {item.propietarioName}
           </span>
         ) : (
-          <span className="text-sm text-warning">{t('cartera.tabla.sinPropietario')}</span>
+          <span className="text-warning">{t('cartera.tabla.sinPropietario')}</span>
         )}
       </TableCell>
 
-      {/* Mes + vencimiento apilado: la fecha exacta es lo que se discute con el
-          inquilino, y no cabía como columna aparte. */}
-      <TableCell className="p-4 align-middle">
+      {/* Período + vencimiento apilado: la fecha exacta es lo que se discute
+          con el inquilino, y no cabía como columna aparte. */}
+      <TableCell className="align-middle">
         <div className="whitespace-nowrap">
           {/* «2026-09» es el identificador del mes, no cómo se lee: la casa
               lo escribe con letras (`nombreDelMes`, ver DispersionCard). */}
-          <div className="whitespace-nowrap text-sm text-fg">{nombreDelMes(item.month, locale)}</div>
+          <div className="whitespace-nowrap text-fg">{nombreDelMes(item.month, locale)}</div>
           <div className="font-mono text-xs tabular-nums text-fg-subtle">
             {t('cartera.tabla.vence', { fecha: formatDate(item.dueDate) })}
           </div>
         </div>
       </TableCell>
 
-      {/* Debe: el pendiente manda; el abono va debajo sólo si lo hubo. */}
-      <TableCell className="p-4 align-middle text-right">
-        <div className="whitespace-nowrap">
-          <div className="font-mono text-sm font-medium tabular-nums text-fg">
-            {formatCurrency(item.pendingAmount)}
-          </div>
-          {item.paidAmount > 0 && (
-            <div className="font-mono text-xs tabular-nums text-fg-subtle">
-              {t('cartera.tabla.abonado', { monto: formatCurrency(item.paidAmount) })}
-            </div>
-          )}
-        </div>
-      </TableCell>
-
       {/* Mora + gestión: qué tan tarde va y qué hemos hecho al respecto. */}
-      <TableCell className="p-4 align-middle">
+      <TableCell className="align-middle">
         <div className="space-y-1">
           <Badge
             variant={
@@ -329,14 +320,28 @@ function FilaDeCartera({
         </div>
       </TableCell>
 
-      <TableCell className="p-4 align-middle text-right">
+      {/* Saldo: el pendiente manda; el abono va debajo sólo si lo hubo. */}
+      <TableCell className="align-middle text-right">
+        <div className="whitespace-nowrap">
+          <div className="font-mono font-medium tabular-nums text-fg">
+            {formatCurrency(item.pendingAmount)}
+          </div>
+          {item.paidAmount > 0 && (
+            <div className="font-mono text-xs tabular-nums text-fg-subtle">
+              {t('cartera.tabla.abonado', { monto: formatCurrency(item.paidAmount) })}
+            </div>
+          )}
+        </div>
+      </TableCell>
+
+      <TableCell className="align-middle text-right">
         {/* Enlace de verdad, no un onClick: se puede abrir en otra pestaña. */}
         <Button asChild variant="ghost" size="sm" hideArrow>
           <Link
             href={`/panel/inmobiliaria/cobros?cobro=${item.cobroId}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <ArrowSquareOut className="h-4 w-4" />
+            <ArrowSquareOut className="h-4 w-4" aria-hidden="true" />
             <span className="sr-only">{t('cartera.tabla.verCobro')}</span>
           </Link>
         </Button>

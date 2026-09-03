@@ -8,8 +8,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   CurrencyCircleDollar,
-  Gear,
-  Bank,
+  GearSix,
   Scales,
   Table,
   SquaresFour,
@@ -22,7 +21,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Pagination } from '@/components/ui/pagination';
 import { Button, Spinner } from '@/components/ui';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { SegmentedControl } from '@leasefy/cadence';
+import { IconButton, SegmentedControl } from '@leasefy/cadence';
 import {
   useCobros,
   useCobroSummary,
@@ -376,23 +375,23 @@ function CobrosContent() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {/* El engranaje va PRIMERO y sin texto: es la acción que menos se
+              usa y la que menos tiene que pesar (Nico, 2026-09-03). El
+              extracto bancario ya no se enlaza desde acá — vive en
+              Conciliación, que es otra sección. */}
+          <IconButton
+            variant="outline"
+            icon={<GearSix className="w-4 h-4" />}
+            aria-label="Configuración de cobros"
+            title="Configuración de cobros"
+            data-testid="configuracion-de-cobros"
+            onClick={() => setIsConfigOpen(true)}
+          />
           <Button asChild variant="secondary" hideArrow>
             <Link href="/panel/inmobiliaria/cobros/reglas-de-mora">
               <Scales className="w-4 h-4" />
               <span className="hidden sm:inline">Reglas de mora</span>
             </Link>
-          </Button>
-          <Button asChild variant="secondary" hideArrow>
-            {/* La conciliación bancaria vive en el workspace del agente
-                desde que se unificaron las dos pantallas; acá quedó el atajo. */}
-            <Link href="/panel/inmobiliaria/conciliacion/movimientos">
-              <Bank className="w-4 h-4" />
-              <span className="hidden sm:inline">Extracto bancario</span>
-            </Link>
-          </Button>
-          <Button variant="secondary" hideArrow onClick={() => setIsConfigOpen(true)}>
-            <Gear className="w-4 h-4" />
-            <span className="hidden sm:inline">{t('inmobiliaria.config.title')}</span>
           </Button>
           <Button
             hideArrow
@@ -586,7 +585,12 @@ function CobrosContent() {
         isOpen={isPaymentModalOpen}
         onClose={handlePaymentModalClose}
         cobro={paymentCobro}
-        cobrosList={filteredCobros}
+        consignaciones={consignaciones}
+        mesActual={getCurrentMonth()}
+        onCobrosGenerados={() => {
+          refetchCobros();
+          refetchSummary();
+        }}
         onSubmit={emitirRecibo}
         onConciliar={conciliarPagoAnterior}
       />

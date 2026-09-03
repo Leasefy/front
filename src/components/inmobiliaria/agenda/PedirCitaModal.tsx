@@ -21,13 +21,19 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogFooter,
 } from '@/components/ui/responsive-dialog';
-import { DatePicker, TimePicker } from '@leasefy/cadence';
+import { DatePicker } from '@leasefy/cadence';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { etiquetaDeInmueble } from '@/components/contratos/VincularInmueble';
 import { aFechaIso, fechaLocal, hoyLocal } from '@/lib/fechas-locales';
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria';
 import { ApiError } from '@/lib/api/client';
 import { agendaApi } from '@/lib/api/agenda.service';
+
+/** Cada media hora, de 6:00 a 21:00: lo que se agenda de verdad. */
+export const HORAS: string[] = Array.from({ length: 31 }, (_, i) => {
+  const m = 6 * 60 + i * 30;
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+});
 
 interface PedirCitaModalProps {
   isOpen: boolean;
@@ -214,8 +220,9 @@ export function PedirCitaModal({
             </div>
           </div>
 
-          {/* Date + times */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Fecha en su fila; inicio y fin en la de abajo, como selects
+              (Nico, 2026-09-03: «están súper pegados y se ven como inputs»). */}
+          <div className="space-y-4">
             <div>
               <label className="mb-1.5 block text-caption text-muted-foreground">
                 {t(k('citaDate'))} <span className="text-danger">*</span>
@@ -228,17 +235,29 @@ export function PedirCitaModal({
                 className="w-full"
               />
             </div>
-            <div>
-              <label className="mb-1.5 block text-caption text-muted-foreground">
-                {t(k('citaStart'))} <span className="text-danger">*</span>
-              </label>
-              <TimePicker value={startTime} onChange={setStartTime} step={30} className="w-full" />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-caption text-muted-foreground">
-                {t(k('citaEnd'))} <span className="text-danger">*</span>
-              </label>
-              <TimePicker value={endTime} onChange={setEndTime} step={30} error={endTime <= startTime} className="w-full" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1.5 block text-caption text-muted-foreground">
+                  {t(k('citaStart'))} <span className="text-danger">*</span>
+                </label>
+                <Select value={startTime} onValueChange={setStartTime}>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {HORAS.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-caption text-muted-foreground">
+                  {t(k('citaEnd'))} <span className="text-danger">*</span>
+                </label>
+                <Select value={endTime} onValueChange={setEndTime}>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {HORAS.filter((h) => h > startTime).map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 

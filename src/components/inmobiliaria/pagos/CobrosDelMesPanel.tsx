@@ -20,8 +20,9 @@
  * Por eso este panel NO le pregunta al agente. Lee los cobros de verdad
  * (`useCobros({ month })` → `GET /inmobiliaria/cobros`, back-erp, desplegado) y
  * deriva los cuatro números de las MISMAS filas que se ven en la tabla de
- * abajo. Son auditables a ojo: si el usuario duda de «Recaudado», suma la
- * columna. Nada se inventa y nada se trae de un dominio ajeno.
+ * abajo (`CobrosDelMesTabla`: la tabla de la casa, no `CobroTable`). Son
+ * auditables a ojo: si el usuario duda de «Recaudado», suma la columna. Nada
+ * se inventa y nada se trae de un dominio ajeno.
  *
  * ── Los cuatro estados ───────────────────────────────────────────────────────
  * `EstadoDeDatos` resuelve cargando / falló / vacío / datos en ese orden. El
@@ -43,11 +44,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
-import { SinDatos } from '@/components/estado/SinDatos'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
-import { TablePagination } from '@/components/ui/pagination'
-import { useTablePagination } from '@/lib/hooks/use-table-pagination'
-import { CobroTable } from '@/components/inmobiliaria/CobroTable'
+import { CobroDetail } from '@/components/inmobiliaria/CobroDetail'
+import { CobrosDelMesTabla } from '@/components/inmobiliaria/pagos/CobrosDelMesTabla'
 import { GenerarCobrosDialog } from '@/components/inmobiliaria/pagos/GenerarCobrosDialog'
 import { useCobros } from '@/lib/hooks/useInmobiliaria'
 import type { Cobro } from '@/lib/types/inmobiliaria'
@@ -146,6 +145,9 @@ export function CobrosDelMesPanel({ mesInicial }: CobrosDelMesPanelProps) {
   const { t } = useI18n()
   const [mes, setMes] = useState(() => mesInicial ?? mesActual())
   const [generarAbierto, setGenerarAbierto] = useState(false)
+  // La fila abre el mismo detalle que usa /cobros (`CobroDetail`): ver el
+  // cobro no debería obligar a cambiar de pantalla.
+  const [seleccionado, setSeleccionado] = useState<Cobro | null>(null)
 
   // `params` se memoiza: useCobros lo usa como dependencia por `params?.month`,
   // pero un objeto nuevo en cada render igual hace ruido en las dependencias.
@@ -154,13 +156,6 @@ export function CobrosDelMesPanel({ mesInicial }: CobrosDelMesPanelProps) {
 
   const filas = cobros as Cobro[]
   const resumen = useMemo(() => resumirCobros(filas), [filas])
-
-  const { pageItems, total, page, pageSize, setPage, setPageSize } = useTablePagination(filas, {
-    initialPageSize: 10,
-    // Cambiar de mes vuelve a la página 1: quedarse en la 4 de un mes que tiene
-    // 2 páginas mostraría una tabla vacía sin explicar por qué.
-    resetKey: mes,
-  })
 
   const opciones = useMemo(() => mesesRecientes(12), [])
   const titulo = mesEnTitulo(mes)
@@ -199,7 +194,7 @@ export function CobrosDelMesPanel({ mesInicial }: CobrosDelMesPanelProps) {
         error={errorCrudo}
         queEs={t('inmobiliaria.ai.pagos_home.resumen.cobros.queEs')}
         onReintentar={refetch}
-        esqueleto={<EsqueletoTabla columnas={6} filas={6} />}
+        esqueleto={<EsqueletoTabla columnas={7} filas={6} />}
       >
         {/* Indicadores REALES del mes, derivados de las filas de abajo. */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -226,42 +221,15 @@ export function CobrosDelMesPanel({ mesInicial }: CobrosDelMesPanelProps) {
           />
         </div>
 
-        {filas.length === 0 ? (
-          <SinDatos
-            queSon={t('inmobiliaria.ai.pagos_home.resumen.cobros.queSon')}
-            icono={Receipt}
-            titulo={t('inmobiliaria.ai.pagos_home.resumen.cobros.vacioTitulo', { mes: titulo })}
-            descripcion={t('inmobiliaria.ai.pagos_home.resumen.cobros.vacioDescripcion', {
-              mes: titulo,
-            })}
-            accion={
-              <Button hideArrow onClick={() => setGenerarAbierto(true)}>
-                {t('inmobiliaria.ai.pagos_home.resumen.cobros.generarCta', { mes: titulo })}
-              </Button>
-            }
-          />
-        ) : (
-          <div className="overflow-hidden rounded-lg border border-border bg-card">
-            <CobroTable cobros={pageItems} />
-            {/* El pie sólo si hay más de una página: un paginador sobre 3 filas
-                es ruido. Mismo criterio que la tabla de inquilinos. */}
-            {total > pageSize && (
-              <div
-                className="border-t border-border bg-muted/10 px-4 py-3"
-                data-testid="pagos-cobros-pie"
-              >
-                <TablePagination
-                  total={total}
-                  page={page}
-                  pageSize={pageSize}
-                  pageSizeOptions={[10, 20, 50]}
-                  onPageChange={setPage}
-                  onPageSizeChange={setPageSize}
-                />
-              </div>
-            )}
-          </div>
-        )}
+        {/* La tabla de la casa. El vacío vive adentro (en el <tbody>) para
+            que los encabezados se sigan viendo; carga y fallo los resolvió
+            `EstadoDeDatos` arriba. Cambiar de mes vuelve a la página 1. */}
+        <CobrosDelMesTabla
+          cobros={filas}
+          mes={mes}
+          onGenerar={() => setGenerarAbierto(true)}
+          onCobroClick={setSeleccionado}
+        />
       </EstadoDeDatos>
 
       <GenerarCobrosDialog
@@ -270,6 +238,13 @@ export function CobrosDelMesPanel({ mesInicial }: CobrosDelMesPanelProps) {
         mes={mes}
         yaGenerados={filas.length}
         onGenerado={refetch}
+      />
+
+      <CobroDetail
+        isOpen={seleccionado !== null}
+        onClose={() => setSeleccionado(null)}
+        cobro={seleccionado}
+        onCobroActualizado={refetch}
       />
     </section>
   )

@@ -5968,7 +5968,6 @@
         "overview": {
           "title": "Collections",
           "subtitle": "The agent collects for you; you only decide the critical cases.",
-          "lastUpdated": "Updated",
           "kpis": {
             "deudoresActivos": "Active debtors",
             "pagadoHoy": "Paid today",
@@ -10735,8 +10734,8 @@
       "titulo": "Create cash receipt",
       "descripcion": "You are recording that money came in against this collection. It issues a numbered receipt and lowers the balance.",
       "elegirCobro": "Which collection?",
-      "elegirCobroAyuda": "Pick the collection the money came in for.",
-      "sinCobros": "No collections with an outstanding balance this month.",
+      "elegirCobroAyuda": "Pick the property, then the charge the money came in for.",
+      "sinCobros": "This property has no charges with an outstanding balance.",
       "montoLabel": "How much came in?",
       "maximo": "Maximum you can apply: {{monto}}",
       "abonarTodo": "Apply the whole balance",
@@ -10768,6 +10767,24 @@
         "cheque": "Check",
         "pse": "PSE",
         "otro": "Other"
+      },
+      "elegir": {
+        "inmueble": "Which property is the money for?",
+        "inmueblePlaceholder": "Pick the property",
+        "buscar": "Code, name, address or tenant…",
+        "sinInmuebles": "There are no active mandates. Without a listed property there is no charge to receive money against.",
+        "cobro": "Against which charge?",
+        "cargandoCobros": "Looking for charges with a balance…",
+        "falloCobros": "We could not load the charges for this property.",
+        "reintentar": "Retry",
+        "sinCobros": "This property has no charges with an outstanding balance.",
+        "sinCobrosAyuda": "The {{mes}} charges have not been generated yet. Generating creates the month’s charge for every rented mandate of the agency; then you can continue with the receipt.",
+        "sinCobrosMesGenerado": "The {{mes}} charge already exists and is fully paid. If money came in for something else, create the charge first.",
+        "generar": "Generate {{mes}} charges",
+        "generando": "Generating…",
+        "falloGenerar": "The charges were not generated.",
+        "total": "Total",
+        "otro": "Pick another charge"
       }
     },
     "historial": {

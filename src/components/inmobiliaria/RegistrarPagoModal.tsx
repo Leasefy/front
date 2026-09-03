@@ -59,7 +59,7 @@ import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui';
 import { Banner, Chip, CurrencyInput } from '@leasefy/cadence';
 import { ApiError } from '@/lib/api/client';
-import type { Cobro } from '@/lib/types/inmobiliaria';
+import type { Cobro, Consignacion } from '@/lib/types/inmobiliaria';
 import type {
   ConciliacionDePagoAnterior,
   NuevoReciboDeCaja,
@@ -69,6 +69,7 @@ import { useDetalleDeCobro } from '@/lib/hooks/useDetalleDeCobro';
 import { useMediosDePago } from '@/lib/hooks/use-medios-de-pago';
 import { ICONO_DEL_TIPO } from './medios-de-pago/legible';
 import { DesgloseAdeudado } from './DesgloseAdeudado';
+import { ElegirCobroParaRecibo } from './ElegirCobroParaRecibo';
 
 /**
  * Los medios de pago. `medio` viaja como `string` libre en el contrato del
@@ -116,8 +117,16 @@ export interface RegistrarPagoModalProps {
   isOpen: boolean;
   onClose: () => void;
   cobro: Cobro | null;
-  /** Cobros entre los que elegir cuando no viene uno preseleccionado. */
-  cobrosList?: Cobro[];
+  /**
+   * Sin cobro preseleccionado se elige acá adentro EMPEZANDO POR EL INMUEBLE:
+   * los mandatos de la inmobiliaria, y de ahí los cobros con saldo de ese
+   * mandato, de cualquier mes (ver `ElegirCobroParaRecibo`).
+   */
+  consignaciones?: readonly Consignacion[];
+  /** 'YYYY-MM' del mes en curso: el que se ofrece generar si el mandato no tiene cobros. */
+  mesActual?: string;
+  /** Se generaron cobros desde el selector: la tabla de atrás tiene que releerse. */
+  onCobrosGenerados?: () => void;
   /**
    * Emite el recibo.
    * 🔴 Tiene que RELANZAR el error: el 400 del sobrepago y el 409 del pago sin
@@ -135,7 +144,9 @@ export function RegistrarPagoModal({
   isOpen,
   onClose,
   cobro: cobroPreseleccionado,
-  cobrosList,
+  consignaciones,
+  mesActual,
+  onCobrosGenerados,
   onSubmit,
   onConciliar,
 }: RegistrarPagoModalProps) {
@@ -145,9 +156,10 @@ export function RegistrarPagoModal({
 
   const hoy = React.useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  const [cobroElegidoId, setCobroElegidoId] = React.useState<string | null>(null);
-  const cobro =
-    cobroPreseleccionado ?? cobrosList?.find((c) => c.id === cobroElegidoId) ?? null;
+  // El cobro elegido desde el selector viene entero (con su saldo): no está
+  // en ninguna lista de la pantalla, porque puede ser de otro mes.
+  const [cobroElegido, setCobroElegido] = React.useState<Cobro | null>(null);
+  const cobro = cobroPreseleccionado ?? cobroElegido;
 
   const [monto, setMonto] = React.useState<number>(NaN);
   const [medio, setMedio] = React.useState('');
@@ -209,7 +221,7 @@ export function RegistrarPagoModal({
   }, [cobro?.id, hoy]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cerrar = React.useCallback(() => {
-    setCobroElegidoId(null);
+    setCobroElegido(null);
     setMonto(NaN);
     setMedio('');
     setReferencia('');
@@ -312,19 +324,16 @@ export function RegistrarPagoModal({
     }
   }, [cobro, onConciliar, origen, recargar, t]);
 
-  const cobrosConSaldo = React.useMemo(
-    () => (cobrosList ?? []).filter((c) => c.status !== 'paid' && c.pendingAmount > 0),
-    [cobrosList],
-  );
-  const mostrarSelector = !cobroPreseleccionado && !cobro && cobrosList !== undefined;
+  const mostrarSelector = !cobroPreseleccionado && !cobro && consignaciones !== undefined;
+  const mesDelSelector = mesActual ?? new Date().toISOString().slice(0, 7);
 
-  if (!cobro && !cobrosList) return null;
+  if (!cobro && !consignaciones) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={(abierto) => !abierto && cerrar()}>
       <DialogContent className="max-h-[85vh] sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-foreground">
+          <DialogTitle className="flex items-center gap-2">
             <Receipt className="h-5 w-5 text-primary" />
             {t('recibos.form.titulo')}
           </DialogTitle>
@@ -332,49 +341,35 @@ export function RegistrarPagoModal({
             {cobro
               ? `${cobro.propertyTitle} · ${cobro.tenantName}`
               : t('recibos.form.elegirCobroAyuda')}
+            {/* Vino del selector: se puede volver a elegir sin cerrar. */}
+            {cobro && !cobroPreseleccionado && (
+              <>
+                {' · '}
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  hideArrow
+                  className="h-auto p-0 text-xs"
+                  onClick={() => setCobroElegido(null)}
+                  data-testid="elegir-otro-cobro"
+                >
+                  {t('recibos.form.elegir.otro')}
+                </Button>
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 
         {/* ── Elegir contra cuál cobro ─────────────────────────────────── */}
         <>
           {mostrarSelector && (
-            <div className="space-y-3">
-              <p className="text-sm text-fg-muted">{t('recibos.form.elegirCobroAyuda')}</p>
-              <div
-                className="max-h-64 space-y-2 overflow-y-auto"
-                data-lenis-prevent
-                style={{ overscrollBehavior: 'contain' }}
-              >
-                {cobrosConSaldo.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-fg-muted">
-                    {t('recibos.form.sinCobros')}
-                  </div>
-                ) : (
-                  cobrosConSaldo.map((c) => (
-                    // allowlist: fila de lista rica (inmueble + inquilino + saldo)
-                    // como UN solo objetivo de clic — Button no puede hospedarla.
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setCobroElegidoId(c.id)}
-                      className="w-full rounded-lg border border-border bg-background p-3 text-left transition-all hover:border-foreground/30"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-foreground">
-                            {c.propertyTitle}
-                          </p>
-                          <p className="truncate text-xs text-fg-muted">{c.tenantName}</p>
-                        </div>
-                        <p className="shrink-0 font-mono text-sm font-semibold tabular-nums text-warning">
-                          {formatCurrency(c.pendingAmount)}
-                        </p>
-                      </div>
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
+            <ElegirCobroParaRecibo
+              consignaciones={consignaciones ?? []}
+              mesActual={mesDelSelector}
+              onElegir={setCobroElegido}
+              onCobrosGenerados={onCobrosGenerados}
+            />
           )}
 
           {/* ── Conciliar la plata vieja (409) ───────────────────────────── */}

@@ -28,6 +28,13 @@
  *
  * Las alertas de umbral del reporte diario (morosidad sobre el límite, etc.)
  * son información, no trabajo: van al pie del tablero, en una línea.
+ *
+ * ── El título vive DENTRO del recuadro ──────────────────────────────────────
+ * «Te toca a ti» y la frase de cuántas decisiones esperan flotaban ENCIMA del
+ * tablero, como un título de sección más. Nico (2026-09-03): «lo de te toca a
+ * ti debería estar dentro del tablero». Ahora son la primera fila del mismo
+ * recuadro — y el recuadro está siempre, también cargando o vacío, para que
+ * el título nunca vuelva a quedar suelto sobre otra tarjeta.
  */
 
 import Link from 'next/link'
@@ -167,152 +174,157 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
       : `${totalQueEspera} ${totalQueEspera === 1 ? 'decisión espera' : 'decisiones esperan'} tu aprobación.`
 
   return (
-    <section className="space-y-3" data-testid="cobranza-te-toca">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-fg">Te toca a ti</h2>
-        <p className="text-sm text-fg-muted max-w-2xl">
-          <span className="text-fg font-medium">{frase}</span>{' '}
-          El agente gestionó{' '}
-          <span className="font-mono tabular-nums text-fg">{gestionados}</span> de tus{' '}
-          <span className="font-mono tabular-nums text-fg">{enMora}</span> casos en mora hoy.
-        </p>
-      </div>
-
-      {contando && (
-        <div
-          className="rounded-lg border border-border bg-card p-4 grid grid-cols-2 lg:grid-cols-4 gap-3"
-          aria-hidden="true"
-        >
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-40 rounded-lg bg-surface-muted animate-pulse" />
-          ))}
+    <section data-testid="cobranza-te-toca" aria-labelledby="cobranza-te-toca-titulo">
+      {/* UN recuadro: título arriba, columnas debajo, alertas y pie al final. */}
+      <div
+        data-testid="te-toca-tablero"
+        className="rounded-lg border border-border bg-card p-3 sm:p-4 space-y-3"
+      >
+        <div className="space-y-0.5">
+          <h2 id="cobranza-te-toca-titulo" className="text-base font-semibold text-fg">
+            Te toca a ti
+          </h2>
+          <p className="text-sm text-fg-muted max-w-2xl">
+            <span className="text-fg font-medium">{frase}</span>{' '}
+            El agente gestionó{' '}
+            <span className="font-mono tabular-nums text-fg">{gestionados}</span> de tus{' '}
+            <span className="font-mono tabular-nums text-fg">{enMora}</span> casos en mora hoy.
+          </p>
         </div>
-      )}
 
-      {/* Un fallo PARCIAL no es un fallo total: `usePendientes` junta seis
-          fuentes y sigue rindiendo las que sí respondieron. Decir «no pudimos
-          cargar tus pendientes» encima de un tablero con fichas es falso de
-          las dos maneras — ni cargó todo, ni falló todo. */}
-      {error && !isLoading && (
-        <div
-          role="alert"
-          className={[
-            'rounded-lg border p-3 text-sm',
-            totalQueEspera > 0
-              ? 'border-warning/30 bg-warning-soft text-warning'
-              : 'border-danger/30 bg-danger-soft text-danger',
-          ].join(' ')}
-        >
-          {totalQueEspera > 0
-            ? 'Puede que falte algo en este tablero: una de las fuentes no respondió.'
-            : 'No pudimos cargar tus pendientes.'}{' '}
-          <span className="opacity-80">{error}</span>
-        </div>
-      )}
-
-      {!isLoading && !error && totalQueEspera === 0 && (
-        <div className="rounded-lg border border-border bg-card px-4 py-8 text-center space-y-1">
-          <CheckCircle
-            className="w-6 h-6 text-success mx-auto"
-            weight="duotone"
+        {contando && (
+          <div
+            className="grid grid-cols-2 lg:grid-cols-4 gap-3"
             aria-hidden="true"
-          />
-          <p className="text-sm font-medium text-fg">{t(`${NS}.vacio`)}</p>
-          <p className="text-xs text-fg-muted">{t(`${NS}.vacioHint`)}</p>
-        </div>
-      )}
-
-      {/* El tablero: un recuadro, cuatro columnas, todo visible. */}
-      {totalQueEspera > 0 && (
-        <div
-          data-testid="te-toca-tablero"
-          className="rounded-lg border border-border bg-card p-3 sm:p-4 space-y-3"
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-start">
-            {COLUMNAS.map((col) => {
-              const fichas = porColumna[col.id]
-              const vacia = fichas.length === 0
-              return (
-                <div
-                  key={col.id}
-                  data-testid={`te-toca-col-${col.id}`}
-                  className="rounded-lg bg-surface-muted p-2.5 space-y-2 min-w-0"
-                >
-                  <p className="flex items-center gap-1.5 px-0.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
-                    {col.id === 'siniestros' ? (
-                      <Siren
-                        className={`w-3.5 h-3.5 ${vacia ? '' : col.tinte}`}
-                        weight="fill"
-                        aria-hidden="true"
-                      />
-                    ) : (
-                      <span
-                        className={`inline-block w-1.5 h-1.5 rounded-full ${vacia ? 'bg-border-strong' : col.punto}`}
-                        aria-hidden="true"
-                      />
-                    )}
-                    <span className="truncate">{col.label}</span>
-                    <span
-                      className={`ml-auto font-mono tabular-nums text-sm ${vacia ? 'text-fg-muted' : col.tinte}`}
-                    >
-                      {fichas.length}
-                    </span>
-                  </p>
-
-                  {col.id === 'siniestros' && !vacia && (
-                    <p className="px-0.5 text-xs text-fg-muted">
-                      Sin tu firma no se radican ante la aseguradora.
-                    </p>
-                  )}
-
-                  {vacia ? (
-                    <p className="px-0.5 py-6 text-center text-xs text-fg-muted">
-                      Nada pendiente
-                    </p>
-                  ) : (
-                    <ul
-                      data-lenis-prevent
-                      className="space-y-1.5 max-h-96 overflow-y-auto pr-0.5"
-                      style={{ overscrollBehavior: 'contain' }}
-                    >
-                      {fichas.map((item) => (
-                        <Ficha key={item.key} item={item} />
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )
-            })}
+          >
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-40 rounded-lg bg-surface-muted animate-pulse" />
+            ))}
           </div>
+        )}
 
-          {/* Alertas de umbral del reporte diario: información, no trabajo —
-              una línea al pie, no un banner. `message_es` viene redactado del
-              agente. */}
-          {alertas.length > 0 && (
-            <div className="space-y-1 border-t border-border pt-2.5">
-              {alertas.map((a, i) => (
-                <p
-                  key={`${a.code}-${i}`}
-                  role="alert"
-                  className={[
-                    'flex items-center gap-2 text-xs px-1',
-                    a.level === 'CRITICAL' ? 'text-danger' : 'text-warning',
-                  ].join(' ')}
-                >
-                  <Warning className="w-3.5 h-3.5 shrink-0" weight="fill" aria-hidden="true" />
-                  {a.message_es}
-                </p>
-              ))}
+        {/* Un fallo PARCIAL no es un fallo total: `usePendientes` junta seis
+            fuentes y sigue rindiendo las que sí respondieron. Decir «no pudimos
+            cargar tus pendientes» encima de un tablero con fichas es falso de
+            las dos maneras — ni cargó todo, ni falló todo. */}
+        {error && !isLoading && (
+          <div
+            role="alert"
+            className={[
+              'rounded-lg border p-3 text-sm',
+              totalQueEspera > 0
+                ? 'border-warning/30 bg-warning-soft text-warning'
+                : 'border-danger/30 bg-danger-soft text-danger',
+            ].join(' ')}
+          >
+            {totalQueEspera > 0
+              ? 'Puede que falte algo en este tablero: una de las fuentes no respondió.'
+              : 'No pudimos cargar tus pendientes.'}{' '}
+            <span className="opacity-80">{error}</span>
+          </div>
+        )}
+
+        {!isLoading && !error && totalQueEspera === 0 && (
+          <div className="px-4 py-6 text-center space-y-1">
+            <CheckCircle
+              className="w-6 h-6 text-success mx-auto"
+              weight="duotone"
+              aria-hidden="true"
+            />
+            <p className="text-sm font-medium text-fg">{t(`${NS}.vacio`)}</p>
+            <p className="text-xs text-fg-muted">{t(`${NS}.vacioHint`)}</p>
+          </div>
+        )}
+
+        {/* Las columnas: cuatro, todo visible. */}
+        {totalQueEspera > 0 && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-start">
+              {COLUMNAS.map((col) => {
+                const fichas = porColumna[col.id]
+                const vacia = fichas.length === 0
+                return (
+                  <div
+                    key={col.id}
+                    data-testid={`te-toca-col-${col.id}`}
+                    className="rounded-lg bg-surface-muted p-2.5 space-y-2 min-w-0"
+                  >
+                    <p className="flex items-center gap-1.5 px-0.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
+                      {col.id === 'siniestros' ? (
+                        <Siren
+                          className={`w-3.5 h-3.5 ${vacia ? '' : col.tinte}`}
+                          weight="fill"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <span
+                          className={`inline-block w-1.5 h-1.5 rounded-full ${vacia ? 'bg-border-strong' : col.punto}`}
+                          aria-hidden="true"
+                        />
+                      )}
+                      <span className="truncate">{col.label}</span>
+                      <span
+                        className={`ml-auto font-mono tabular-nums text-sm ${vacia ? 'text-fg-muted' : col.tinte}`}
+                      >
+                        {fichas.length}
+                      </span>
+                    </p>
+
+                    {col.id === 'siniestros' && !vacia && (
+                      <p className="px-0.5 text-xs text-fg-muted">
+                        Sin tu firma no se radican ante la aseguradora.
+                      </p>
+                    )}
+
+                    {vacia ? (
+                      <p className="px-0.5 py-6 text-center text-xs text-fg-muted">
+                        Nada pendiente
+                      </p>
+                    ) : (
+                      <ul
+                        data-lenis-prevent
+                        className="space-y-1.5 max-h-96 overflow-y-auto pr-0.5"
+                        style={{ overscrollBehavior: 'contain' }}
+                      >
+                        {fichas.map((item) => (
+                          <Ficha key={item.key} item={item} />
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )
+              })}
             </div>
-          )}
 
-          <Button asChild variant="outline" size="sm" hideArrow className="w-full sm:w-auto">
-            <Link href={PENDIENTES_HREF}>
-              Ver los {totalQueEspera} pendientes
-            </Link>
-          </Button>
-        </div>
-      )}
+            {/* Alertas de umbral del reporte diario: información, no trabajo —
+                una línea al pie, no un banner. `message_es` viene redactado del
+                agente. */}
+            {alertas.length > 0 && (
+              <div className="space-y-1 border-t border-border pt-2.5">
+                {alertas.map((a, i) => (
+                  <p
+                    key={`${a.code}-${i}`}
+                    role="alert"
+                    className={[
+                      'flex items-center gap-2 text-xs px-1',
+                      a.level === 'CRITICAL' ? 'text-danger' : 'text-warning',
+                    ].join(' ')}
+                  >
+                    <Warning className="w-3.5 h-3.5 shrink-0" weight="fill" aria-hidden="true" />
+                    {a.message_es}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            <Button asChild variant="outline" size="sm" hideArrow className="w-full sm:w-auto">
+              <Link href={PENDIENTES_HREF}>
+                Ver los {totalQueEspera} pendientes
+              </Link>
+            </Button>
+          </>
+        )}
+      </div>
     </section>
   )
 }

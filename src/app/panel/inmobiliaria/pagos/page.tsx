@@ -27,8 +27,11 @@
  *      (para que su alcance se vea) y pasa por una confirmación que dice el mes
  *      y cuántos cobros de ese mes YA existen. Ver `GenerarCobrosDialog`.
  *
- * 3. LA TABLA QUE FALTABA. Se reusa `CobroTable` —la tabla de la casa— con
- *    `useTablePagination` + `TablePagination`, y `SinDatos` para el vacío.
+ * 3. LA TABLA QUE FALTABA. Nico (2026-09-03): «aquí tampoco está la tabla que
+ *    usamos nosotros» — `CobroTable` NO era la de la casa. Ahora es
+ *    `CobrosDelMesTabla` (`Table` del DS + `useTablePagination` +
+ *    `TablePagination`, sin título encima, `SinDatos` DENTRO del tbody y la
+ *    fila abre `CobroDetail`). Vive en `CobrosDelMesPanel`.
  *
  * 4. ACTIVIDAD RECIENTE. Era una sección a página completa; queda acotada a las
  *    últimas 5 con «ver todo».

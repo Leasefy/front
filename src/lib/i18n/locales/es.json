@@ -5969,7 +5969,6 @@
         "overview": {
           "title": "Cobranza",
           "subtitle": "El agente cobra por ti; tú decides solo los casos críticos.",
-          "lastUpdated": "Actualizado hace",
           "kpis": {
             "deudoresActivos": "Deudores activos",
             "pagadoHoy": "Pagado hoy",
@@ -10736,8 +10735,8 @@
       "titulo": "Hacer recibo de caja",
       "descripcion": "Vas a dejar constancia de que entró plata contra este cobro. Sale un recibo numerado y el saldo baja.",
       "elegirCobro": "¿Contra cuál cobro?",
-      "elegirCobroAyuda": "Elegí el cobro al que le entró la plata.",
-      "sinCobros": "No hay cobros con saldo pendiente para este mes.",
+      "elegirCobroAyuda": "Elegí el inmueble y después el cobro al que le entró la plata.",
+      "sinCobros": "Este inmueble no tiene cobros con saldo pendiente.",
       "montoLabel": "¿Cuánto entró?",
       "maximo": "Máximo abonable: {{monto}}",
       "abonarTodo": "Abonar todo el saldo",
@@ -10769,6 +10768,24 @@
         "cheque": "Cheque",
         "pse": "PSE",
         "otro": "Otro"
+      },
+      "elegir": {
+        "inmueble": "¿De qué inmueble es la plata?",
+        "inmueblePlaceholder": "Elegí el inmueble",
+        "buscar": "Código, nombre, dirección o inquilino…",
+        "sinInmuebles": "No hay mandatos activos. Sin un inmueble consignado no hay cobros contra los que recibir plata.",
+        "cobro": "¿Contra cuál cobro?",
+        "cargandoCobros": "Buscando los cobros con saldo…",
+        "falloCobros": "No pudimos traer los cobros de este inmueble.",
+        "reintentar": "Reintentar",
+        "sinCobros": "Este inmueble no tiene cobros con saldo pendiente.",
+        "sinCobrosAyuda": "Los de {{mes}} todavía no se generaron. Generarlos crea el cobro del mes para todos los mandatos arrendados de la inmobiliaria, y después podés seguir con el recibo.",
+        "sinCobrosMesGenerado": "El cobro de {{mes}} ya existe y está en cero. Si entró plata de otro concepto, primero hay que crear el cobro.",
+        "generar": "Generar los cobros de {{mes}}",
+        "generando": "Generando…",
+        "falloGenerar": "No se generaron los cobros.",
+        "total": "Total",
+        "otro": "Elegir otro cobro"
       }
     },
     "historial": {

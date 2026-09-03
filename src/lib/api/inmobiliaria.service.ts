@@ -875,11 +875,23 @@ export function normalizeCobro<T extends Cobro>(raw: T): T {
 }
 
 export const cobrosApi = {
-  async getAll(params?: { month?: string; status?: string; propietarioId?: string }): Promise<Cobro[]> {
+  /**
+   * Sin `month` trae TODOS los meses. `consignacionId` (el mandato del
+   * inmueble) es el filtro con que el recibo de caja busca los cobros con
+   * saldo de UN inmueble, sea del mes que sea — el back ya lo aceptaba y
+   * ninguna pantalla lo mandaba.
+   */
+  async getAll(params?: {
+    month?: string;
+    status?: string;
+    propietarioId?: string;
+    consignacionId?: string;
+  }): Promise<Cobro[]> {
     const query = new URLSearchParams();
     if (params?.month) query.set('month', params.month);
     if (params?.status) query.set('status', params.status);
     if (params?.propietarioId) query.set('propietarioId', params.propietarioId);
+    if (params?.consignacionId) query.set('consignacionId', params.consignacionId);
     const qs = query.toString();
     const res = await apiClient.get<Cobro[] | { data: Cobro[] }>(
       `${BASE}/cobros${qs ? `?${qs}` : ''}`,

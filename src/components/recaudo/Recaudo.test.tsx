@@ -48,7 +48,7 @@ vi.mock('@/components/estado/FalloDeCarga', () => ({
     ),
 }));
 
-import { Recaudo, mesSinMovimiento } from './Recaudo';
+import { Recaudo, mesSinMovimiento, porcentajeRecaudado, serieParaLaTabla } from './Recaudo';
 
 const HOY = mesActual();
 const ANTERIOR = sumarMeses(HOY, -1);
@@ -204,10 +204,64 @@ describe('Recaudo', () => {
     expect(resumenMock).toHaveBeenLastCalledWith(HOY);
   });
 
+  it('los doce meses van en la tabla de la casa, el más reciente arriba, y tocar una fila cambia el mes', async () => {
+    resumenMock.mockResolvedValue(resumen());
+    await montar();
+
+    const filas = Array.from(host.querySelectorAll<HTMLElement>('[data-testid="serie-fila"]'));
+    expect(filas).toHaveLength(2);
+    expect(filas[0].getAttribute('data-mes')).toBe(HOY);
+    expect(filas[0].getAttribute('aria-current')).toBe('true');
+    expect(filas[0].textContent).toContain('$ 3.000.000');
+    expect(filas[0].textContent).toContain('50 %');
+    // Un mes sin facturar no tiene porcentaje: «0 %» diría que no se cobró.
+    expect(filas[1].getAttribute('aria-current')).toBeNull();
+
+    resumenMock.mockResolvedValue(resumen({ month: ANTERIOR }));
+    await clic(filas[1]);
+    expect(resumenMock).toHaveBeenLastCalledWith(ANTERIOR);
+    expect($('[data-testid="mes-en-foco"]').textContent?.toLowerCase()).toContain(ANTERIOR.slice(0, 4));
+  });
+
+  it('por medio de pago: una fila por medio y un pie que suma lo que llegó', async () => {
+    resumenMock.mockResolvedValue(resumen());
+    await montar();
+    expect(host.querySelectorAll('[data-testid="medio-fila"]')).toHaveLength(2);
+    const total = $('[data-testid="medio-total"]').textContent ?? '';
+    expect(total).toContain('2');
+    expect(total).toContain('$ 1.500.000');
+  });
+
+  it('un mes con cobros pero sin recibos dice que no hay recibos, dentro de la tabla', async () => {
+    resumenMock.mockResolvedValue(resumen({ porMedio: [], recaudadoCop: 0, recaudadoDelMesCop: 0 }));
+    await montar();
+    expect(host.querySelector('[data-testid="cifras"]')).not.toBeNull();
+    expect($('[data-testid="sin-recibos"]').textContent).toContain('Ningún recibo de caja');
+    expect(host.querySelector('[data-testid="medio-total"]')).toBeNull();
+  });
+
   it('si el back falla se ve el fallo, no un mes vacío', async () => {
     resumenMock.mockRejectedValue(new Error('Se cayó la red.'));
     await montar();
     expect($('[data-testid="fallo-de-carga"]').textContent).toContain('el recaudo: Se cayó la red.');
     expect(host.textContent).not.toContain('Nada que contar');
+  });
+});
+
+describe('los helpers de la tabla', () => {
+  it('el porcentaje recaudado es null sin facturación, entero con ella', () => {
+    expect(porcentajeRecaudado({ facturadoCop: 0, recaudadoCop: 0 })).toBeNull();
+    expect(porcentajeRecaudado({ facturadoCop: 3_000_000, recaudadoCop: 1_500_000 })).toBe(50);
+    expect(porcentajeRecaudado({ facturadoCop: 3, recaudadoCop: 1 })).toBe(33);
+  });
+
+  it('la serie se ordena del mes más reciente al más viejo sin mutar la original', () => {
+    const serie = [
+      { month: '2026-07', facturadoCop: 1, recaudadoCop: 1, dispersadoCop: 0 },
+      { month: '2026-09', facturadoCop: 1, recaudadoCop: 1, dispersadoCop: 0 },
+      { month: '2026-08', facturadoCop: 1, recaudadoCop: 1, dispersadoCop: 0 },
+    ];
+    expect(serieParaLaTabla(serie).map((p) => p.month)).toEqual(['2026-09', '2026-08', '2026-07']);
+    expect(serie[0].month).toBe('2026-07');
   });
 });

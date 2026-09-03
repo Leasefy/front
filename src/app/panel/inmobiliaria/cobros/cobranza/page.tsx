@@ -30,7 +30,7 @@ import { CobranzaOverviewSkeleton } from '@/components/skeleton/panel/CobranzaOv
 import { CobranzaImportCard } from '@/components/inmobiliaria/cobranza/CobranzaImportCard'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button } from '@/components/ui'
-import { CARTERA_STAGES, relativeTime } from '@/lib/cartera'
+import { CARTERA_STAGES } from '@/lib/cartera'
 import type { CarteraStage } from '@/lib/cartera'
 
 // PermissionsContext has no tenantId field — backend derives tenant from JWT.
@@ -48,7 +48,7 @@ const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] =
 ]
 
 export default function CobranzaOverviewPage() {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const router = useRouter()
 
   // Data hook
@@ -61,8 +61,10 @@ export default function CobranzaOverviewPage() {
     setRealtimeTransitions((prev) => [transition, ...prev].slice(0, 25))
   }, [])
 
-  // Realtime subscription
-  const { isConnected } = useStageTransitionsRealtime({
+  // Realtime subscription. Sólo nos importa el callback: el punto verde de
+  // «conectado» que vivía en el header se fue con el «Actualizado hace …»
+  // (Nico, 2026-09-03) — no le decía nada a nadie.
+  useStageTransitionsRealtime({
     tenantId: TENANT_PLACEHOLDER,
     onNewTransition: handleNewTransition,
   })
@@ -190,28 +192,16 @@ export default function CobranzaOverviewPage() {
         {transitionAnnouncement}
       </div>
 
-      {/* Header */}
-      <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.ai.cobranza.overview.title')}
-          </h1>
-          <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
-            {t(`${PAGES_NS}.salaDesc`)}
-          </p>
-        </div>
-        {data?.generatedAt && (
-          <p className="text-xs text-fg-subtle whitespace-nowrap mt-1 flex items-center gap-2">
-            {t('inmobiliaria.ai.cobranza.overview.lastUpdated')}{' '}
-            {relativeTime(data.generatedAt, locale)}
-            {isConnected && (
-              <span
-                className="inline-flex h-1.5 w-1.5 rounded-full bg-success animate-ping"
-                aria-hidden="true"
-              />
-            )}
-          </p>
-        )}
+      {/* Header. Sin el «Actualizado hace ahora mismo» de la derecha: la
+          página se carga al entrar y no hay botón de refrescar al que ese
+          dato le sirva (Nico, 2026-09-03). */}
+      <header>
+        <h1 className="text-h2 text-fg">
+          {t('inmobiliaria.ai.cobranza.overview.title')}
+        </h1>
+        <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
+          {t(`${PAGES_NS}.salaDesc`)}
+        </p>
       </header>
 
       {/* ═══ 1. TE TOCA A TI ═══════════════════════════════════════════════

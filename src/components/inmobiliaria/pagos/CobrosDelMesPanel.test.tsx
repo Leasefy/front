@@ -6,9 +6,12 @@
  *  · los indicadores salen de las filas REALES que se están mostrando, no de un
  *    agente que responde otra cosa — si se pudieran desincronizar, volvería el
  *    «—» silencioso por otra puerta;
- *  · la pantalla tiene la tabla de la casa, con paginación, y el pie sólo
- *    aparece cuando hay más de una página;
- *  · el vacío es `SinDatos` (no un cartel de error ni un «—»).
+ *  · la pantalla tiene LA tabla de la casa (2026-09-03: «aquí tampoco está la
+ *    tabla que usamos nosotros»): `Table` del DS, sin título encima, el vacío
+ *    DENTRO del tbody con los encabezados visibles, pie de paginación siempre
+ *    que haya filas, y la fila abre el detalle del cobro;
+ *  · el vacío es `SinDatos` (no un cartel de error ni un «—») y su CTA abre el
+ *    mismo diálogo de generar que el botón de arriba.
  */
 import * as React from 'react'
 import { describe, it, expect, vi, afterEach } from 'vitest'
@@ -21,10 +24,9 @@ void React
 
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({
+    locale: 'es',
     t: (k: string, p?: Record<string, unknown>) => (p ? `${k}:${Object.values(p).join(',')}` : k),
     formatCurrency: (n: number) => `$${n.toLocaleString('es-CO')}`,
-    // CobroTable le pasa un Date, no un string: devolver el argumento tal cual
-    // haría que React intente pintar el objeto. Siempre string.
     formatDate: (d: unknown) => String(d),
   }),
 }))
@@ -56,6 +58,16 @@ vi.mock('@/components/ui/select', () => ({
   SelectContent: ({ children }: { children?: React.ReactNode }) => children,
   SelectItem: ({ value, children }: { value: string; children?: React.ReactNode }) =>
     React.createElement('option', { value }, children),
+}))
+
+// Los dos overlays (Radix) se reducen a su contrato: ¿están abiertos y con qué?
+vi.mock('@/components/inmobiliaria/CobroDetail', () => ({
+  CobroDetail: ({ isOpen, cobro }: { isOpen: boolean; cobro: Cobro | null }) =>
+    isOpen ? React.createElement('div', { 'data-testid': 'cobro-detail' }, cobro?.id ?? '') : null,
+}))
+vi.mock('@/components/inmobiliaria/pagos/GenerarCobrosDialog', () => ({
+  GenerarCobrosDialog: ({ open, mes }: { open: boolean; mes: string }) =>
+    open ? React.createElement('div', { 'data-testid': 'generar-dialog' }, mes) : null,
 }))
 
 const useCobrosMock = vi.fn()
@@ -128,9 +140,13 @@ function montar() {
   })
 }
 
-const indicadores = () =>
-  Array.from(container!.querySelectorAll<HTMLElement>('[data-testid="pagos-indicador"]'))
-const filasTabla = () => Array.from(container!.querySelectorAll('tbody tr'))
+const q = <T extends Element = HTMLElement>(sel: string) => container!.querySelector<T>(sel)
+const indicadores = () => Array.from(container!.querySelectorAll<HTMLElement>('[data-testid="pagos-indicador"]'))
+const filasTabla = () => Array.from(container!.querySelectorAll('[data-testid="cobro-fila"]'))
+const click = (el: Element) =>
+  act(() => {
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  })
 
 describe('resumirCobros', () => {
   it('suma lo pagado y lo pendiente, y cuenta la mora', () => {
@@ -186,45 +202,106 @@ describe('CobrosDelMesPanel', () => {
     expect(filasTabla()).toHaveLength(2)
   })
 
-  it('sin cobros muestra SinDatos y NO la tabla', () => {
+  it('pinta las filas en la tabla de la casa: inquilino, inmueble, saldo y estado', () => {
+    useCobrosMock.mockReturnValue(
+      respuesta([
+        cobro({ id: '1', tenantName: 'Esteban López', propertyTitle: 'Apto 301', status: 'pending' }),
+        cobro({
+          id: '2',
+          tenantName: 'Marta Ruiz',
+          propertyTitle: 'Casa 12',
+          status: 'late',
+          daysLate: 9,
+          paidAmount: 0,
+          pendingAmount: 2_500_000,
+        }),
+      ]),
+    )
+    montar()
+
+    // Sin título encima de la tabla, pero SÍ los siete encabezados.
+    expect(q('[data-testid="pagos-cobros-tabla"]')).not.toBeNull()
+    expect(container!.querySelectorAll('thead th')).toHaveLength(7)
+
+    const [f1, f2] = filasTabla()
+    expect(f1.textContent).toContain('Esteban López')
+    expect(f1.textContent).toContain('Apto 301')
+    expect(f1.textContent).toContain('inmobiliaria.cobros.status.pending')
+    expect(f2.textContent).toContain('Marta Ruiz')
+    expect(f2.textContent).toContain('inmobiliaria.cobros.status.late')
+    expect(f2.textContent?.replace(/\D/g, '')).toContain('2500000') // saldo
+    expect(f2.textContent).toContain('9 días')
+  })
+
+  it('sin cobros, SinDatos vive DENTRO de la tabla y los encabezados se siguen viendo', () => {
     useCobrosMock.mockReturnValue(respuesta([]))
     montar()
 
-    expect(container!.querySelector('[data-testid="sin-datos"]')).not.toBeNull()
+    const vacio = q('[data-testid="sin-datos"]')
+    expect(vacio).not.toBeNull()
     // El vacío es «todavía no hay», no «ningún resultado»: no hay filtro puesto.
-    expect(container!.querySelector('[data-testid="sin-datos"]')?.getAttribute('data-caso')).toBe(
-      'vacio',
-    )
-    expect(container!.querySelector('tbody')).toBeNull()
+    expect(vacio!.getAttribute('data-caso')).toBe('vacio')
+    // Adentro del <tbody>, no en lugar de la tabla.
+    expect(vacio!.closest('tbody')).not.toBeNull()
+    expect(container!.querySelectorAll('thead th')).toHaveLength(7)
+    expect(filasTabla()).toHaveLength(0)
+    // Sin filas no hay nada que paginar.
+    expect(q('[data-testid="pagos-cobros-pie"]')).toBeNull()
   })
 
-  it('con 10 filas o menos no pinta el pie de paginación', () => {
+  it('el CTA del vacío abre el mismo diálogo de generar, con el mes en cuestión', () => {
+    useCobrosMock.mockReturnValue(respuesta([]))
+    montar()
+
+    expect(q('[data-testid="generar-dialog"]')).toBeNull()
+    const cta = q('[data-testid="crear-el-primero"]')
+    expect(cta).not.toBeNull()
+    expect(cta!.textContent).toContain('generarCta:Septiembre de 2026')
+    click(cta!)
+    expect(q('[data-testid="generar-dialog"]')?.textContent).toBe('2026-09')
+  })
+
+  it('con filas el pie de paginación está siempre, aunque quepan en una página', () => {
     useCobrosMock.mockReturnValue(
-      respuesta(Array.from({ length: 10 }, (_, i) => cobro({ id: `c${i}` }))),
+      respuesta(Array.from({ length: 3 }, (_, i) => cobro({ id: `c${i}` }))),
     )
     montar()
 
-    expect(filasTabla()).toHaveLength(10)
-    // Un paginador sobre una sola página es ruido: el pie no se pinta.
-    expect(container!.querySelector('[data-testid="pagos-cobros-pie"]')).toBeNull()
+    expect(filasTabla()).toHaveLength(3)
+    // Criterio de `useTablePagination`: con filas, el pie va siempre.
+    expect(q('[data-testid="pagos-cobros-pie"]')).not.toBeNull()
   })
 
-  it('con más de 10 filas pagina de a 10 y muestra el pie', () => {
+  it('con más de 10 filas pagina de a 10', () => {
     useCobrosMock.mockReturnValue(
       respuesta(Array.from({ length: 23 }, (_, i) => cobro({ id: `c${i}` }))),
     )
     montar()
 
-    // La tabla recibe SÓLO la página, no las 23 filas.
+    // La tabla pinta SÓLO la página, no las 23 filas.
     expect(filasTabla()).toHaveLength(10)
-    expect(container!.querySelector('[data-testid="pagos-cobros-pie"]')).not.toBeNull()
+    expect(q('[data-testid="pagos-cobros-pie"]')).not.toBeNull()
+  })
+
+  it('clic (o Enter) en una fila abre el detalle de ESE cobro', () => {
+    useCobrosMock.mockReturnValue(
+      respuesta([cobro({ id: 'uno' }), cobro({ id: 'dos', tenantName: 'Marta Ruiz' })]),
+    )
+    montar()
+
+    expect(q('[data-testid="cobro-detail"]')).toBeNull()
+    const [, fila2] = filasTabla()
+    // La fila es alcanzable con teclado: no es sólo un target de mouse.
+    expect(fila2.getAttribute('tabindex')).toBe('0')
+    click(fila2)
+    expect(q('[data-testid="cobro-detail"]')?.textContent).toBe('dos')
   })
 
   it('el botón de generar dice el mes en el nombre (no «del mes»)', () => {
     useCobrosMock.mockReturnValue(respuesta([]))
     montar()
 
-    const cta = container!.querySelector<HTMLElement>('[data-testid="abrir-generar-cobros"]')
+    const cta = q('[data-testid="abrir-generar-cobros"]')
     expect(cta).not.toBeNull()
     // La clave lleva el mes interpolado: nunca un «del mes» sin decir cuál.
     expect(cta!.textContent).toContain('generarCta:Septiembre de 2026')
@@ -236,7 +313,7 @@ describe('CobrosDelMesPanel', () => {
     )
     montar()
 
-    expect(container!.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
-    expect(container!.querySelector('[data-testid="sin-datos"]')).toBeNull()
+    expect(q('[data-testid="fallo-de-carga"]')).not.toBeNull()
+    expect(q('[data-testid="sin-datos"]')).toBeNull()
   })
 })

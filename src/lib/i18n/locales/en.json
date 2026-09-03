@@ -3287,9 +3287,43 @@
         "adminFee": "+ {{amount}} admin",
         "missingMandate": "No owner yet"
       },
+      "origen": {
+        "titulo": "Which property are you consigning?",
+        "subtitulo": "If you already imported it, there is no need to enter it again.",
+        "nuevo": {
+          "titulo": "A new property",
+          "detalle": "We enter it from scratch: address, rent, photos and inventory.",
+          "pie": "The full flow"
+        },
+        "existente": {
+          "titulo": "One I already have",
+          "detalle": "Pick one from your portfolio that has no owner assigned yet.",
+          "pie": "{{count}} without an owner",
+          "contando": "Looking…",
+          "ninguno": "None without an owner"
+        }
+      },
+      "elegirInmueble": {
+        "titulo": "Which one is it?",
+        "subtitulo": "{{count}} properties in your portfolio have no owner assigned yet.",
+        "buscar": "Search by title, address, neighborhood or code…",
+        "cargando": "Loading your properties…",
+        "porMes": "/mo",
+        "enVenta": "{{precio}} for sale",
+        "sinPrecio": "No price",
+        "noEsta": "It is not on the list — enter it as new",
+        "vacio": {
+          "titulo": "All your properties already have an owner",
+          "detalle": "To consign a new one, enter the property from scratch."
+        },
+        "sinResultados": {
+          "titulo": "None matches «{{q}}»",
+          "detalle": "Try the address, the neighborhood or the property code."
+        }
+      },
       "mandateDialog": {
         "title": "Whose property is this?",
-        "subtitle": "The link gave us the details of \"{{title}}\", but not who owns it or what commission you charge to manage it. Without that it can't be published or paid out to anyone.",
+        "subtitle": "\"{{title}}\" is already in your portfolio, but we do not know who owns it or what commission you charge to manage it. Without that it can't be published or paid out to anyone.",
         "propietarioLabel": "Owner",
         "commissionLabel": "Agency commission",
         "saleCommissionLabel": "Sale commission",

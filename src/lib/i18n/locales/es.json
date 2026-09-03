@@ -3288,9 +3288,43 @@
         "adminFee": "+ {{amount}} admin",
         "missingMandate": "Sin propietario"
       },
+      "origen": {
+        "titulo": "¿Qué inmueble vas a consignar?",
+        "subtitulo": "Si ya lo trajiste en una importación, no hace falta volver a cargarlo.",
+        "nuevo": {
+          "titulo": "Un inmueble nuevo",
+          "detalle": "Lo cargamos desde cero: dirección, canon, fotos e inventario.",
+          "pie": "El flujo completo"
+        },
+        "existente": {
+          "titulo": "Uno que ya tengo",
+          "detalle": "Elegí uno de tu portafolio que todavía no tiene propietario asignado.",
+          "pie": "{{count}} sin propietario",
+          "contando": "Buscando…",
+          "ninguno": "No hay ninguno sin propietario"
+        }
+      },
+      "elegirInmueble": {
+        "titulo": "¿Cuál de estos es?",
+        "subtitulo": "{{count}} inmuebles de tu portafolio todavía no tienen propietario asignado.",
+        "buscar": "Buscá por título, dirección, barrio o código…",
+        "cargando": "Cargando tus inmuebles…",
+        "porMes": "/mes",
+        "enVenta": "{{precio}} en venta",
+        "sinPrecio": "Sin precio",
+        "noEsta": "No está en la lista — cargarlo como nuevo",
+        "vacio": {
+          "titulo": "Todos tus inmuebles ya tienen propietario",
+          "detalle": "Para consignar uno nuevo, cargá el inmueble desde cero."
+        },
+        "sinResultados": {
+          "titulo": "Ninguno coincide con «{{q}}»",
+          "detalle": "Probá con la dirección, el barrio o el código del inmueble."
+        }
+      },
       "mandateDialog": {
         "title": "¿De quién es este inmueble?",
-        "subtitle": "El enlace nos dio los datos de «{{title}}», pero no quién es el dueño ni qué comisión cobras por administrarlo. Sin eso no se puede publicar ni pagarle a nadie.",
+        "subtitle": "«{{title}}» ya está en tu portafolio, pero no sabemos quién es el dueño ni qué comisión cobras por administrarlo. Sin eso no se puede publicar ni pagarle a nadie.",
         "propietarioLabel": "Propietario",
         "commissionLabel": "Comisión de la agencia",
         "saleCommissionLabel": "Comisión de venta",

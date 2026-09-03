@@ -249,6 +249,12 @@ interface CompletarMandatoDialogProps {
   propietarios: Propietario[];
   agentes: Agente[];
   /**
+   * Propietario preseleccionado. Llega cuando se entra desde la ficha de un
+   * propietario (`/inmuebles/nuevo?propietarioId=`): ya se sabe de quién es,
+   * pedirlo de nuevo sería preguntar lo que la pantalla anterior ya dijo.
+   */
+  propietarioInicial?: string;
+  /**
    * Fired after a successful create (or a 409 treated as success-equivalent,
    * contract §3.3) — the caller MUST refetch both portfolio sources or the
    * row appears twice until the next full reload (contract §3.4).
@@ -263,6 +269,7 @@ export function CompletarMandatoDialog({
   onClose,
   propietarios,
   agentes,
+  propietarioInicial,
   onCompleted,
 }: CompletarMandatoDialogProps) {
   const { t } = useI18n();
@@ -281,14 +288,14 @@ export function CompletarMandatoDialog({
   // "Completar mandato" of the session reopens with the first one's answers.
   useEffect(() => {
     if (!inmueble) return;
-    setPropietarioId(null);
+    setPropietarioId(propietarioInicial ?? null);
     setNewPropietarioData(undefined);
     setCommissionPercent(10);
     setSaleCommissionPercent(3);
     setContractDate(todayISO());
     setAgenteId(null);
     setFormError(null);
-  }, [inmueble]);
+  }, [inmueble, propietarioInicial]);
 
   if (!inmueble) return null;
 

@@ -37,7 +37,7 @@ const NS = 'inmobiliaria.ai.cotizador.overview.inbox'
 const SEVERIDAD_RANK: Record<Severidad, number> = { critica: 3, alta: 2, media: 1, baja: 0 }
 
 function detailHref(item: WorkItem): string {
-  return `/panel/inmobiliaria/ai/asegurabilidad/${item.id}`
+  return `/panel/inmobiliaria/postulaciones/asegurabilidad/${item.id}`
 }
 
 /** Best-effort masked label for the caso row title. */
@@ -128,7 +128,7 @@ export function CotizadorPriorityInbox() {
         </div>
         {sorted.length > 0 && (
           <Link
-            href="/panel/inmobiliaria/ai/asegurabilidad/cola"
+            href="/panel/inmobiliaria/postulaciones/asegurabilidad/cola"
             className="shrink-0 rounded text-xs font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring"
           >
             {tf(`${NS}.verTodas`, 'Ver todas')}

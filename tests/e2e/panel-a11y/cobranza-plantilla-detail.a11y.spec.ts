@@ -9,7 +9,7 @@ import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const TPL_ID = 'test-tpl-id'
-const ROUTE = `/panel/inmobiliaria/ai/cobranza/plantillas/${TPL_ID}`
+const ROUTE = `/panel/inmobiliaria/cobros/cobranza/plantillas/${TPL_ID}`
 const DETAIL_MOCK = `**/script-templates/${TPL_ID}**`
 const SKELETON_DELAY_MS = 2500
 

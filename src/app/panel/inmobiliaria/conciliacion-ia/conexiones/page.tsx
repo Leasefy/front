@@ -42,14 +42,14 @@ interface Conexion {
 }
 
 const ENTRADAS: Conexion[] = [
-  { icon: Bank, modulo: 'Banco y pasarelas', ejemplo: 'Laura lee los movimientos de Bancolombia .360, links de pago, PSE y transferencias.', tipo: 'auto', href: '/panel/inmobiliaria/ai/conciliacion/movimientos' },
+  { icon: Bank, modulo: 'Banco y pasarelas', ejemplo: 'Laura lee los movimientos de Bancolombia .360, links de pago, PSE y transferencias.', tipo: 'auto', href: '/panel/inmobiliaria/conciliacion/movimientos' },
   { icon: FilePlus, modulo: 'Contratos', ejemplo: 'Nicolás cruza cada pago contra las obligaciones y el canon de cada contrato.', tipo: 'auto', href: '/panel/inmobiliaria/contratos' },
   { icon: Receipt, modulo: 'Cartera y facturas', ejemplo: 'Sabe qué facturas están pendientes o vencidas para cada inquilino.', tipo: 'auto', href: '/panel/inmobiliaria/cobros' },
 ]
 
 const SALIDAS: Conexion[] = [
   { icon: FilePlus, modulo: 'Contratos', ejemplo: 'Marca la obligación como pagada, parcial o vencida y deja el contrato al día.', tipo: 'auto', href: '/panel/inmobiliaria/contratos' },
-  { icon: ChatCircleText, modulo: 'Cobranza IA', ejemplo: 'Si queda saldo o no hay pago, activa la cobranza por el monto exacto.', tipo: 'auto', href: '/panel/inmobiliaria/ai/cobranza' },
+  { icon: ChatCircleText, modulo: 'Cobranza IA', ejemplo: 'Si queda saldo o no hay pago, activa la cobranza por el monto exacto.', tipo: 'auto', href: '/panel/inmobiliaria/cobros/cobranza' },
   { icon: UserCircle, modulo: 'Propietarios', ejemplo: 'Prepara la liquidación: canon recibido, comisión y neto a transferir.', tipo: 'click', href: '/panel/inmobiliaria/propietarios' },
   { icon: Bank, modulo: 'Contabilidad', ejemplo: 'Genera los soportes y la trazabilidad financiera del recaudo.', tipo: 'auto', href: '/panel/inmobiliaria/facturacion' },
   { icon: ChartLineUp, modulo: 'Dashboard financiero', ejemplo: 'Actualiza recaudo, mora, cartera y flujo de caja.', tipo: 'auto', href: '/panel/inmobiliaria/reportes' },

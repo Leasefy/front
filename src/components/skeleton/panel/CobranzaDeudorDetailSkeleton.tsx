@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 /**
  * CobranzaDeudorDetailSkeleton — Phase 38 plan 38-04a (D-38-02 hybrid skeletons).
  *
- * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/ai/cobranza/deudores/[id]`.
+ * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/cobros/cobranza/deudores/[id]`.
  * Mirrors DebtorDetailClient: header card (avatar + name + stage row) → 5-tab pill row →
  * tab content area, with a sidebar next-action card on lg+ as a 2-col split.
  *

@@ -27,7 +27,7 @@ export default function NoEncontradoEnPanel() {
         </div>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
           <Link
-            href="/panel/inmobiliaria/dashboard"
+            href="/panel/inmobiliaria/piloto"
             className="inline-flex h-10 items-center rounded-full border border-border px-5 text-sm font-medium text-fg transition-colors hover:bg-surface-muted"
           >
             Volver al panel

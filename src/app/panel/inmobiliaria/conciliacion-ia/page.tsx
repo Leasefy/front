@@ -114,7 +114,7 @@ export default function ConciliacionIAHomePage() {
       <div className="mx-auto max-w-[1240px] space-y-7">
         {/* Breadcrumb + preview */}
         <div className="flex items-center justify-between gap-4">
-          <Link href="/panel/inmobiliaria/ai" className="inline-flex items-center gap-2 text-[13px] text-fg-muted hover:text-[#14130f] transition-colors">
+          <Link href="/panel/inmobiliaria/configuracion/agentes" className="inline-flex items-center gap-2 text-[13px] text-fg-muted hover:text-[#14130f] transition-colors">
             <ArrowLeft className="w-4 h-4" />
             Agentes IA
           </Link>

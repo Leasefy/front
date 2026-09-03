@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 /**
  * CobranzaEscalacionesSkeleton — Phase 38 plan 38-04a (D-38-02 hybrid skeletons).
  *
- * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/ai/cobranza/escalaciones`.
+ * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/cobros/cobranza/escalaciones`.
  * Mirrors the kanban layout: header (title + refresh) → 3 columns side-by-side
  * (sm stacked, md+ 3-col), each with a column header (label + count badge) and
  * 3 card placeholders.

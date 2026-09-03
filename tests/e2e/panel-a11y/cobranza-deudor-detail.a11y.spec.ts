@@ -13,7 +13,7 @@ import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const DEBTOR_ID = 'test-debtor-id'
-const ROUTE = `/panel/inmobiliaria/ai/cobranza/deudores/${DEBTOR_ID}`
+const ROUTE = `/panel/inmobiliaria/cobros/cobranza/deudores/${DEBTOR_ID}`
 const DETAIL_MOCK = `**/cobranza/debtors/${DEBTOR_ID}**`
 const SKELETON_DELAY_MS = 2500
 

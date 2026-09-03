@@ -111,10 +111,10 @@ export function Recaudo() {
             <Link href="/panel/inmobiliaria/cobros">Ver cobros del mes</Link>
           </Button>
           <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/cartera">Ver cartera</Link>
+            <Link href="/panel/inmobiliaria/cobros/cartera">Ver cartera</Link>
           </Button>
           <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/dispersiones/lotes">
+            <Link href="/panel/inmobiliaria/pagos/dispersiones/lotes">
               Lotes al banco
               <ArrowRight className="ml-1 h-4 w-4" aria-hidden="true" />
             </Link>

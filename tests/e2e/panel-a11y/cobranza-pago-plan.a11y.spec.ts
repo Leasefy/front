@@ -11,7 +11,7 @@ import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const PLAN_ID = 'test-plan-id'
-const ROUTE = `/panel/inmobiliaria/ai/cobranza/pagos/planes/${PLAN_ID}`
+const ROUTE = `/panel/inmobiliaria/cobros/cobranza/pagos/planes/${PLAN_ID}`
 const PLAN_MOCK = `**/cobranza/payment-plans/${PLAN_ID}**`
 const SKELETON_DELAY_MS = 2500
 

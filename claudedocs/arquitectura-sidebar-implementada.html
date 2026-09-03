@@ -1,0 +1,251 @@
+<title>Sidebar por ciclo de vida</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#F7F7F4; --surface:#FFFFFF; --surface-2:#EEF0EA; --ink:#171A1F; --ink-2:#4B5563; --ink-3:#7B8494;
+  --line:#E3E4DE; --line-2:#CFD2C9; --accent:#1F5A4A; --accent-soft:#E2EFEA;
+  --agente:#6B3FBF; --agente-soft:#EEE8FA; --asistida:#9A5B00; --asistida-soft:#FBF0DC;
+  --ok:#256048; --ok-soft:#E3F1EA; --warn:#8F5A0E; --warn-soft:#FBF1DC;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --ground:#0F1113; --surface:#171A1D; --surface-2:#1E2226; --ink:#E8E9E4; --ink-2:#AEB4BE; --ink-3:#7E8794;
+  --line:#272B30; --line-2:#363B42; --accent:#6FC1A8; --accent-soft:#16302A;
+  --agente:#B79BF0; --agente-soft:#241C3A; --asistida:#E0A94F; --asistida-soft:#312610;
+  --ok:#68C495; --ok-soft:#12281F; --warn:#E0A94F; --warn-soft:#312610;
+}}
+:root[data-theme="dark"]{
+  --ground:#0F1113; --surface:#171A1D; --surface-2:#1E2226; --ink:#E8E9E4; --ink-2:#AEB4BE; --ink-3:#7E8794;
+  --line:#272B30; --line-2:#363B42; --accent:#6FC1A8; --accent-soft:#16302A;
+  --agente:#B79BF0; --agente-soft:#241C3A; --asistida:#E0A94F; --asistida-soft:#312610;
+  --ok:#68C495; --ok-soft:#12281F; --warn:#E0A94F; --warn-soft:#312610;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font:16px/1.6 "Source Sans 3","Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.page{max-width:920px;margin:0 auto;padding:56px 24px 96px}
+h1,h2,h3{font-family:Sora,"Helvetica Neue",Arial,sans-serif;margin:0;text-wrap:balance;letter-spacing:-.02em}
+h1{font-size:clamp(1.9rem,4vw,2.7rem);font-weight:700;line-height:1.08}
+h2{font-size:1.45rem;font-weight:600;line-height:1.2}
+h3{font-size:1rem;font-weight:600}
+p{margin:0;max-width:68ch}
+code,.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.85em}
+.eyebrow{font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:500}
+.lede{font-size:1.1rem;color:var(--ink-2);margin-top:14px}
+section{margin-top:56px;display:flex;flex-direction:column;gap:16px}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:22px}
+.meta div{background:var(--surface);padding:12px 14px}
+.meta b{display:block;font-family:Sora,sans-serif;font-size:1.25rem;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.meta span{font-size:.78rem;color:var(--ink-2)}
+.kinds{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.kind{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:8px}
+.kind.agente{border-top:3px solid var(--agente)} .kind.asistida{border-top:3px solid var(--asistida)} .kind.comun{border-top:3px solid var(--line-2)}
+.kind p{font-size:.9rem;color:var(--ink-2)}
+.kind .ej{font-size:.8rem;color:var(--ink-3);margin-top:auto;padding-top:6px}
+.pill{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border-radius:999px;border:1px solid;vertical-align:middle;margin-left:6px}
+.pill.ia{color:var(--agente);background:var(--agente-soft);border-color:transparent}
+.pill.as{color:var(--asistida);background:var(--asistida-soft);border-color:transparent}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+@media (max-width:760px){.compare{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.panel-h{padding:10px 14px;border-bottom:1px solid var(--line);background:var(--surface-2);display:flex;justify-content:space-between;font-family:Sora,sans-serif;font-size:.85rem;font-weight:600}
+.panel-h span{font-family:"JetBrains Mono",monospace;font-weight:400;font-size:.7rem;color:var(--ink-3)}
+.nav{padding:8px 8px 12px;display:flex;flex-direction:column;gap:1px}
+.g{font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);padding:12px 8px 4px}
+.i{display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:6px;font-size:.86rem}
+.i .rt{font-family:"JetBrains Mono",monospace;font-size:.66rem;color:var(--ink-3);margin-left:auto}
+.i.dim{color:var(--ink-3)}
+.mods{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.mod{background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.mod h3 code{color:var(--accent);font-weight:400;margin-left:6px}
+.tabs{display:flex;flex-wrap:wrap;gap:5px}
+.tab{font-size:.78rem;padding:2px 9px;border-radius:6px;border:1px solid var(--line-2);background:var(--surface-2)}
+.tab.ag{border-color:var(--agente);color:var(--agente);background:var(--agente-soft)}
+.tab.as{border-color:transparent;color:var(--asistida);background:var(--asistida-soft)}
+.mod .n{font-size:.8rem;color:var(--ink-3)}
+.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:.84rem}
+th{text-align:left;padding:9px 12px;background:var(--surface-2);font-family:"JetBrains Mono",monospace;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 12px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-2)}
+tr:last-child td{border-bottom:0}
+td.rt{font-family:"JetBrains Mono",monospace;font-size:.76rem;white-space:nowrap;color:var(--ink)}
+td.to{font-family:"JetBrains Mono",monospace;font-size:.76rem;white-space:nowrap;color:var(--accent)}
+tr.band td{background:var(--surface-2);font-family:"JetBrains Mono",monospace;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding:6px 12px}
+.list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+.row{padding:13px 18px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:22px 1fr;gap:12px;font-size:.92rem}
+.row:last-child{border-bottom:0}
+.row .k{font-family:"JetBrains Mono",monospace;font-size:.7rem;color:var(--ink-3);padding-top:4px}
+.row b{font-weight:600}
+.row span{color:var(--ink-2)}
+.status{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.st{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface);display:flex;flex-direction:column;gap:3px}
+.st b{font-family:Sora,sans-serif;font-size:.95rem}
+.st.ok{border-left:3px solid var(--ok)} .st.pend{border-left:3px solid var(--warn)}
+.st span{font-size:.82rem;color:var(--ink-2)}
+footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);font-size:.78rem;color:var(--ink-3);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+</style>
+
+<div class="page">
+  <header>
+    <div class="eyebrow">Leasefy · panel de inmobiliaria · front <code>cambios-nico-1</code></div>
+    <h1 style="margin-top:10px">El sidebar por ciclo de vida, implementado</h1>
+    <p class="lede">Lo que pedía la propuesta «Arquitectura de Leasefy», ya en código: <strong>4 grupos, 20 filas, la IA como un modo dentro de cada módulo</strong>. Ninguna pantalla se eliminó ni se reescribió, ningún permiso cambió, Inicio y Chat quedaron igual. Este documento dice qué es agente y qué no, adónde fue cada pantalla y cómo se llega a ella.</p>
+    <div class="meta">
+      <div><b>38 → 20</b><span>filas en el sidebar (la propuesta decía 21: «Ayuda» no existía)</span></div>
+      <div><b>101 → 0</b><span>páginas bajo <code>/ai/*</code>; todas viven en su módulo</span></div>
+      <div><b>38</b><span>redirecciones 307 de URL vieja a nueva, con test</span></div>
+      <div><b>0</b><span>pantallas eliminadas · gates cambiados</span></div>
+      <div><b>527 / 527</b><span>archivos de test en verde · <code>tsc</code> 0 errores</span></div>
+    </div>
+  </header>
+
+  <section>
+    <div class="eyebrow">01 · Qué es un agente y qué no</div>
+    <h2>Tres clases de pantalla, y cómo se distinguen en la interfaz</h2>
+    <p>La palabra «IA» ya no está en el nombre de ninguna sección. La distinción vive en el código (<code>arquitectura-del-panel.ts</code>) y se ve en la pantalla como una píldora. Un test cuida que cada workspace declarado exista y apunte a la misma ruta.</p>
+    <div class="kinds">
+      <div class="kind agente">
+        <h3>Workspace de agente <span class="pill ia">IA</span></h3>
+        <p>Un agente completo: tiene su Sala (resumen), sus pestañas internas, su historial y su configuración, exactamente como estaban bajo <code>/ai/*</code>. En código: <code>agente: '&lt;slug&gt;'</code> y una entrada en <code>AGENT_WORKSPACES</code>. Al entrar aparece su barra propia (WorkspaceNav) y el breadcrumb «Módulo › Agente › Pestaña».</p>
+        <div class="ej">Cobranza · Pagos · Conciliación · Avalúos · Matching · Evaluación de candidatos · Asegurabilidad · Tickets</div>
+      </div>
+      <div class="kind asistida">
+        <h3>Pantalla asistida por IA <span class="pill as">IA</span></h3>
+        <p>La IA llena una cola y una persona decide, o es una pantalla del agente que ya es hermana directa del módulo. Lleva la misma píldora pero no abre pestañas propias. En código: <code>ia: true</code> sin <code>agente</code>.</p>
+        <div class="ej">Postulaciones · Soportes · Solicitudes · Mantenimientos · Retención, Riesgo y Por aprobar · Desempeño IA · Agentes IA · Automatización IA</div>
+      </div>
+      <div class="kind comun">
+        <h3>Pantalla común</h3>
+        <p>Listados, fichas y reportes que una persona trabaja sin agente detrás. Sin píldora.</p>
+        <div class="ej">Pipeline · Inmuebles · Contratos · Renovaciones · Cobros · Recaudo · Cartera · Liquidaciones · Dispersiones · Facturación · Contabilidad · Propietarios · Inquilinos · Documentos · Reportes · Configuración · Equipo</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">02 · El sidebar</div>
+    <h2>Antes y después, con las rutas reales</h2>
+    <p>La cabecera no se tocó: <strong>Inicio</strong> sigue siendo el Piloto (<code>/piloto</code>) y <strong>Chat</strong> la raíz. Los grupos siguen el ciclo de vida del contrato; cada fila conserva el permiso y el encuadre por rol que tenía antes de cambiar de grupo.</p>
+    <div class="compare">
+      <div class="panel">
+        <div class="panel-h">Antes <span>38 filas · 7 grupos</span></div>
+        <nav class="nav">
+          <div class="i">Inicio</div><div class="i">Chat</div>
+          <div class="g">Comercial</div>
+          <div class="i dim">Prospección · pipeline</div><div class="i dim">Inmuebles · portafolio</div><div class="i dim">Avalúos IA</div><div class="i dim">Evaluación de candidatos IA</div><div class="i dim">Asegurabilidad IA</div><div class="i dim">Postulaciones IA</div><div class="i dim">Matching IA</div>
+          <div class="g">Administración</div>
+          <div class="i dim">Contratos</div><div class="i dim">Renovaciones</div><div class="i dim">Propietarios</div><div class="i dim">Inquilinos</div><div class="i dim">Mantenimientos IA</div><div class="i dim">Solicitudes · PQRS IA</div><div class="i dim">Mensajes</div><div class="i dim">Agenda</div><div class="i dim">Soportes de candidatos IA</div>
+          <div class="g">Finanzas</div>
+          <div class="i dim">Cobranza IA</div><div class="i dim">Cobros</div><div class="i dim">Cartera</div><div class="i dim">Recaudo</div><div class="i dim">Conciliación IA</div><div class="i dim">Pagos IA</div><div class="i dim">Dispersiones</div><div class="i dim">Tesorería</div><div class="i dim">Facturación</div><div class="i dim">Contabilidad general</div>
+          <div class="g">General</div>
+          <div class="i dim">Dashboard</div><div class="i dim">Reportes</div><div class="i dim">Métricas IA</div><div class="i dim">Equipo</div><div class="i dim">Documentos</div><div class="i dim">Aprendizaje del asistente IA</div><div class="i dim">Mantenimientos IA › Tickets</div><div class="i dim">Retención › Bandeja · Cola</div>
+          <div class="i dim">Configuración</div>
+        </nav>
+      </div>
+      <div class="panel">
+        <div class="panel-h">Ahora <span>20 filas · 4 grupos</span></div>
+        <nav class="nav">
+          <div class="i">Inicio <span class="rt">/piloto</span></div><div class="i">Chat <span class="rt">/</span></div>
+          <div class="g">Captación y arriendo</div>
+          <div class="i">Pipeline <span class="rt">/pipeline</span></div><div class="i">Inmuebles <span class="rt">/inmuebles</span></div><div class="i">Postulaciones <span class="pill as">IA</span><span class="rt">/postulaciones</span></div><div class="i">Contratos <span class="rt">/contratos</span></div>
+          <div class="g">Operación</div>
+          <div class="i">Mantenimientos <span class="pill as">IA</span><span class="rt">/mantenimientos</span></div><div class="i">Solicitudes · PQRS <span class="pill as">IA</span><span class="rt">/solicitudes</span></div><div class="i">Mensajes <span class="rt">/mensajes</span></div><div class="i">Agenda <span class="rt">/agenda</span></div>
+          <div class="g">Dinero</div>
+          <div class="i">Cobros <span class="rt">/cobros</span></div><div class="i">Pagos <span class="pill ia">IA</span><span class="rt">/pagos</span></div><div class="i">Facturación <span class="rt">/facturacion</span></div><div class="i">Conciliación <span class="pill ia">IA</span><span class="rt">/conciliacion</span></div><div class="i">Contabilidad <span class="rt">/contabilidad</span></div>
+          <div class="g">Directorio</div>
+          <div class="i">Propietarios <span class="rt">/propietarios</span></div><div class="i">Inquilinos <span class="rt">/inquilinos</span></div><div class="i">Documentos <span class="rt">/documentos</span></div>
+          <div class="g">&nbsp;</div>
+          <div class="i">Reportes <span class="rt">/reportes</span></div><div class="i">Configuración <span class="rt">/configuracion</span></div>
+        </nav>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">03 · Adentro de cada módulo</div>
+    <h2>Las pantallas que absorbió cada módulo, como pestañas</h2>
+    <p>Debajo del header aparece una barra con las pantallas del módulo (<code>ModuloTabs</code>). Si la pestaña es un agente, adentro trae su propia barra (WorkspaceNav) y la barra del módulo se retira para no apilar tres niveles: el breadcrumb ya dice «Cobros › Cobranza». En una ficha (un contrato, un inmueble) la barra no se dibuja. <span class="tab ag">violeta</span> = workspace de agente · <span class="tab as">ámbar</span> = asistida por IA.</p>
+    <div class="mods">
+      <div class="mod"><h3>Inmuebles<code>/inmuebles</code></h3><div class="tabs"><span class="tab">Inmuebles</span><span class="tab ag">Avalúos</span></div><div class="n">Avalúos entra con el inmueble ya en contexto. Su detalle de certificado sigue en <code>/avaluos/:id</code>.</div></div>
+      <div class="mod"><h3>Postulaciones<code>/postulaciones</code></h3><div class="tabs"><span class="tab as">Postulaciones</span><span class="tab ag">Matching</span><span class="tab ag">Evaluación de candidatos</span><span class="tab as">Soportes</span><span class="tab ag">Asegurabilidad</span></div><div class="n">El flujo del candidato en el orden en que se recorre. Soportes conserva su encuadre de Administración: el contador no la pierde.</div></div>
+      <div class="mod"><h3>Contratos<code>/contratos</code></h3><div class="tabs"><span class="tab">Contratos</span><span class="tab">Renovaciones</span><span class="tab as">Retención</span><span class="tab as">Riesgo</span><span class="tab as">Por aprobar</span></div><div class="n">Riesgo es la bandeja de riesgos; Por aprobar es la cola de revisión; Retención es la Sala que las resume. Un solo guard vía route group <code>contratos/(retencion)/</code>.</div></div>
+      <div class="mod"><h3>Mantenimientos<code>/mantenimientos</code></h3><div class="tabs"><span class="tab as">Mantenimientos</span><span class="tab ag">Tickets</span></div><div class="n">Tickets estaba duplicado en dos grupos; ahora es uno. Adentro: Tickets (la lista) · Resumen.</div></div>
+      <div class="mod"><h3>Cobros<code>/cobros</code></h3><div class="tabs"><span class="tab">Cobros</span><span class="tab">Recaudo</span><span class="tab">Cartera</span><span class="tab ag">Cobranza</span></div><div class="n">Cobranza conserva sus 12 pestañas internas intactas (Casos, Acuerdos, Llamadas, Cartas, Cumplimiento…).</div></div>
+      <div class="mod"><h3>Pagos<code>/pagos</code></h3><div class="tabs"><span class="tab ag">Pagos</span><span class="tab">Liquidaciones</span><span class="tab">Dispersiones</span></div><div class="n">La raíz es la Sala del agente. Liquidaciones es la Tesorería de siempre; las facturas de proveedor cuelgan de ahí (<code>/pagos/cxp/…</code>), sin inventar un listado.</div></div>
+      <div class="mod"><h3>Reportes<code>/reportes</code></h3><div class="tabs"><span class="tab">Reportes</span><span class="tab">Resumen del negocio</span><span class="tab">Rentabilidad</span><span class="tab as">Desempeño IA</span></div><div class="n">Resumen del negocio es el Dashboard de siempre; Desempeño IA eran las Métricas IA.</div></div>
+      <div class="mod"><h3>Configuración<code>/configuracion</code></h3><div class="tabs"><span class="tab">Configuración</span><span class="tab">Equipo</span><span class="tab as">Agentes IA</span><span class="tab as">Automatización IA</span></div><div class="n">Equipo eran las personas de <code>/agentes</code>; Agentes IA es la vitrina que vivía en <code>/ai</code>; Automatización IA es el aprendizaje del asistente.</div></div>
+    </div>
+    <p style="font-size:.9rem;color:var(--ink-3)">Sin pestañas (no cambian por dentro): Pipeline, Solicitudes, Mensajes, Agenda, Facturación, Conciliación (su Sala ya trae sus pestañas), Contabilidad, Propietarios, Inquilinos, Documentos.</p>
+  </section>
+
+  <section>
+    <div class="eyebrow">04 · Rutas</div>
+    <h2>Cada URL vieja llega a la nueva</h2>
+    <p>Redirecciones 307 en <code>next.config.mjs</code> (tabla <code>rutas-por-ciclo-de-vida.data.mjs</code>, con test de 38 casos y sin cadenas). Son 307 y no 301 por la convención del repo: un 301 lo cachea el navegador para siempre y no se podría revertir; se sube a permanente cuando la arquitectura esté validada. Los enlaces que hoy emite el micro (Piloto, cajones de conciliación) siguen funcionando por estas reglas.</p>
+    <div class="wrap"><table>
+      <thead><tr><th>Antes</th><th>Ahora</th><th>Nota</th></tr></thead>
+      <tbody>
+        <tr class="band"><td colspan="3">Captación y arriendo</td></tr>
+        <tr><td class="rt">/ai/avaluos/*</td><td class="to">/inmuebles/avaluos/*</td><td>Workspace intacto</td></tr>
+        <tr><td class="rt">/ai/matching/* · /ai/estudio/* · /ai/asegurabilidad/*</td><td class="to">/postulaciones/matching · /estudio · /asegurabilidad</td><td>También el alias muerto <code>/ai/cotizador/*</code> que usaban 18 specs e2e</td></tr>
+        <tr><td class="rt">/documentos/revision</td><td class="to">/postulaciones/soportes</td><td>Vuelve al flujo del candidato</td></tr>
+        <tr><td class="rt">/renovaciones</td><td class="to">/contratos/renovaciones</td><td></td></tr>
+        <tr><td class="rt">/ai/retencion · /bandeja/* · /revisiones</td><td class="to">/contratos/retencion · /contratos/riesgo/* · /contratos/aprobar</td><td>Las URLs exactas de la propuesta</td></tr>
+        <tr class="band"><td colspan="3">Operación</td></tr>
+        <tr><td class="rt">/operaciones</td><td class="to">/mantenimientos</td><td>La ruta por fin dice lo que es</td></tr>
+        <tr><td class="rt">/ai/mantenimiento · /ai/mantenimiento/tickets/*</td><td class="to">/mantenimientos/tickets/resumen · /mantenimientos/tickets/*</td><td>Landing = la lista, no el resumen mock</td></tr>
+        <tr><td class="rt">/pqrs</td><td class="to">/solicitudes</td><td></td></tr>
+        <tr class="band"><td colspan="3">Dinero</td></tr>
+        <tr><td class="rt">/ai/cobranza/*</td><td class="to">/cobros/cobranza/*</td><td>50 páginas, gate <code>cobranza</code> intacto</td></tr>
+        <tr><td class="rt">/cartera · /recaudo</td><td class="to">/cobros/cartera · /cobros/recaudo</td><td></td></tr>
+        <tr><td class="rt">/ai/pagos/*</td><td class="to">/pagos/*</td><td>La Sala es la raíz del módulo</td></tr>
+        <tr><td class="rt">/dispersiones/*</td><td class="to">/pagos/dispersiones/*</td><td></td></tr>
+        <tr><td class="rt">/tesoreria · /tesoreria/ap/:id · /tesoreria/facturas/nueva</td><td class="to">/pagos/liquidaciones · /pagos/cxp/:id · /pagos/cxp/nueva</td><td>Tesorería se llama Liquidaciones</td></tr>
+        <tr><td class="rt">/ai/conciliacion/*</td><td class="to">/conciliacion/*</td><td>El stub viejo de <code>/conciliacion</code> se retiró</td></tr>
+        <tr class="band"><td colspan="3">Pie</td></tr>
+        <tr><td class="rt">/dashboard</td><td class="to">/reportes/resumen</td><td>Inicio sigue siendo la única portada</td></tr>
+        <tr><td class="rt">/analytics</td><td class="to">/reportes/ia</td><td></td></tr>
+        <tr><td class="rt">/agentes/*</td><td class="to">/configuracion/equipo/*</td><td>Libera «agentes» para los agentes de IA</td></tr>
+        <tr><td class="rt">/ai (el hub) · /ai/aprendizaje</td><td class="to">/configuracion/agentes · /configuracion/ia</td><td></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="eyebrow">05 · Cómo está hecho</div>
+    <h2>Una sola fuente de verdad y tres piezas que la leen</h2>
+    <div class="list">
+      <div class="row"><span class="k">A</span><div><b><code>src/lib/nav/arquitectura-del-panel.ts</code></b> <span>— grupos → módulos → pantallas, con etiqueta i18n, ruta, icono, gate (<code>module</code>/<code>roles</code>), encuadre por rol (<code>scope</code>), marca <code>ia</code> y <code>agente</code>. De acá salen el sidebar, las pestañas, el breadcrumb y los tests.</span></div></div>
+      <div class="row"><span class="k">B</span><div><b>Sidebar</b> <span>— <code>sidebar-del-panel.ts</code> vuelve el árbol filas. Regla que evita perder puertas: si la raíz de un módulo no pasa el gate pero una de sus pantallas sí, la fila aparece igual y abre esa pantalla, heredando su gate. Nadie pierde una pantalla a la que antes llegaba por el menú; nadie gana una.</span></div></div>
+      <div class="row"><span class="k">C</span><div><b>Pestañas</b> <span>— <code>ModuloTabs</code> (pantallas del módulo) y <code>WorkspaceNav</code> (funciones del agente) comparten la misma barra (<code>BarraDePestanas</code>): rueda horizontal, flechas, alto publicado en una variable CSS para lo que se pegue debajo. Los gates de cada pestaña son los que tenía como fila.</span></div></div>
+      <div class="row"><span class="k">D</span><div><b>Agentes</b> <span>— <code>agentWorkspaceNav.ts</code> tiene un <code>basePath</code> por agente (ya no una constante <code>/ai</code>) y <code>excluir</code> para Pagos, cuya Sala convive con Liquidaciones y Dispersiones. WorkspaceNav, el breadcrumb, la novedad de primera visita y las acciones del chat resuelven el agente con la misma función.</span></div></div>
+      <div class="row"><span class="k">E</span><div><b>Guardianes</b> <span>— <code>arquitectura-del-panel.test.ts</code>: toda ruta y pestaña tiene su <code>page.tsx</code> (entiende route groups), iconos y nombres únicos, etiqueta ≡ ruta, ningún <code>/panel/inmobiliaria/ai</code> queda en el código, agentes ↔ workspaces. <code>rutas-por-ciclo-de-vida.test.ts</code>: las 38 URLs viejas llegan, sin cadenas.</span></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">06 · Dónde me aparté de la propuesta, y por qué</div>
+    <h2>Cinco decisiones tomadas en el código</h2>
+    <div class="list">
+      <div class="row"><span class="k">1</span><div><b>Dashboard → Reportes › Resumen del negocio</b>, no → Inicio. <span>El Piloto no muestra esos KPIs, así que «Inicio ya lo reemplazó» era falso; borrarlo rompía la regla de no eliminar pantallas. En Reportes deja de competir como portada.</span></div></div>
+      <div class="row"><span class="k">2</span><div><b>Retención con tres pestañas hermanas</b> (Retención · Riesgo · Por aprobar). <span>La propuesta no conocía la Sala del agente. Se conservó con las URLs exactas del documento gracias a un route group con un solo guard.</span></div></div>
+      <div class="row"><span class="k">3</span><div><b>Cuentas por pagar sin pestaña.</b> <span>No existe un listado; inventarlo rompía la regla. <code>/pagos/cxp</code> redirige a Liquidaciones y sus hijas (ficha, alta desde foto) siguen ahí.</span></div></div>
+      <div class="row"><span class="k">4</span><div><b>307 en vez de 301.</b> <span>Convención escrita y testeada del repo (reversibilidad).</span></div></div>
+      <div class="row"><span class="k">5</span><div><b>20 filas, no 21.</b> <span>«Ayuda» nunca fue una fila del sidebar real; no se crea.</span></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">07 · Estado</div>
+    <h2>Verificado y pendiente</h2>
+    <div class="status">
+      <div class="st ok"><b>tsc · vitest</b><span>0 errores · 527 archivos, 5407 tests en verde (incluye los guardianes nuevos)</span></div>
+      <div class="st ok"><b>Rutas nuevas</b><span>200 en el dev de :3011 para los módulos y pantallas movidas</span></div>
+      <div class="st ok"><b>Redirecciones</b><span>307 verificado por HTTP en 10 URLs viejas representativas</span></div>
+      <div class="st pend"><b>QA de navegador por rol</b><span>Sidebar, pestañas, breadcrumb y la cuenta de cobro impresa, con ADMIN, AGENTE y CONTADOR</span></div>
+      <div class="st pend"><b>Repo <code>agent</code></b><span>El micro sigue emitiendo enlaces viejos (<code>/ai/cobranza/pagos</code>, <code>/ai/conciliacion/movimientos</code>); viven del 307 hasta que se actualicen</span></div>
+      <div class="st pend"><b>Huecos preexistentes destapados</b><span>Liquidaciones exige admin pero su pestaña la ve el contador (rebota, como antes) · «Renovaciones» también es un tab dentro de Mantenimientos · «Usuarios» en Configuración y «Equipo» gestionan a las mismas personas</span></div>
+    </div>
+  </section>
+
+  <footer><span>Leasefy · arquitectura de información implementada · 3 de septiembre de 2026</span><span class="mono">38 → 20 filas · /ai/* retirado</span></footer>
+</div>

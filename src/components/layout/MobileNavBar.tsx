@@ -28,7 +28,7 @@ export function MobileNavBar({ navItems }: MobileNavBarProps) {
     if (item.exact) {
       return pathname === item.href;
     }
-    return pathname.startsWith(item.href);
+    return pathname === item.href || pathname.startsWith(`${item.href}/`);
   }
 
   return (

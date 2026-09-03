@@ -91,7 +91,7 @@ Verificado contra catálogo de paths del back (los reales existen, los llamados 
 ---
 
 ## 6. Living-docs / drift menor
-- SKILL `cotizador-domain`: rutas reales bajo `/panel/inmobiliaria/ai/asegurabilidad/*`, no `/cotizador/*`.
+- SKILL `cotizador-domain`: rutas reales bajo `/panel/inmobiliaria/postulaciones/asegurabilidad/*`, no `/cotizador/*`.
 - SKILL `cobranza-domain`: dice que `useCartaApproval` manda solo `{confirmation}`; en realidad manda `physicalSendMethod/sentToAddress` (el spec los acepta).
 - `use-conciliacion-queue.ts:16`: comentario dice que no hay endpoint de summary; ya existe `/conciliacion/summary` → `deriveQueueSummary` es 2ª fuente de verdad (puede divergir).
 - `ai-hub-chat.ts targetToHref`: caso `'avaluo'` cae al landing genérico en vez de `/ai/avaluos` (singular vs plural en los rosters).

@@ -32,7 +32,7 @@ import type { AgenteRole, AgencyRole, UserInvite } from '@/lib/types/inmobiliari
 /**
  * Unified modal for creating agents AND inviting users.
  *
- * - variant='agent'  → from /panel/inmobiliaria/agentes: role locked to agente, agent fields only
+ * - variant='agent'  → from /panel/inmobiliaria/configuracion/equipo: role locked to agente, agent fields only
  * - variant='member' → from /panel/inmobiliaria/configuracion: role selector, agent fields shown when role='agente'
  *
  * Both submit a UserInvite object to the same endpoint (POST /inmobiliaria/agency/members).

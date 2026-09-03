@@ -106,7 +106,7 @@ export function CotizadorRecentQuotesFeed({
                 transition={{ duration: 0.25 }}
               >
                 <Link
-                  href={`/panel/inmobiliaria/ai/asegurabilidad/${q.id}`}
+                  href={`/panel/inmobiliaria/postulaciones/asegurabilidad/${q.id}`}
                   className="flex items-center justify-between py-3 px-1 hover:bg-surface-muted rounded-md transition-colors"
                   aria-label={t('inmobiliaria.ai.cotizador.overview.recentQuotes.ariaRow')
                     .replace('{{name}}', `Ref. ${q.cedulaHashPrefix8}`)

@@ -269,7 +269,7 @@ export function PropietarioStats({
         <AlertaAccionable
           severidad="warning"
           titulo={t('inmobiliaria.propietario.alertas.pendienteDeGiro.titulo', { monto: formatCurrency(propietario.pendingBalance) })}
-          accion={{ label: t('inmobiliaria.propietario.alertas.pendienteDeGiro.accion'), href: '/panel/inmobiliaria/dispersiones' }}
+          accion={{ label: t('inmobiliaria.propietario.alertas.pendienteDeGiro.accion'), href: '/panel/inmobiliaria/pagos/dispersiones' }}
           data-testid="alerta-pendiente-de-giro"
         >
           {t('inmobiliaria.propietario.alertas.pendienteDeGiro.detalle')}

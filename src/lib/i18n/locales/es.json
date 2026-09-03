@@ -920,7 +920,24 @@
       "recorrido": "Recorrido",
       "soportes": "Soportes de candidatos",
       "piloto": "Inicio",
-      "chat": "Chat"
+      "chat": "Chat",
+      "secCaptacion": "Captación y arriendo",
+      "secOperacionDelContrato": "Operación",
+      "secDinero": "Dinero",
+      "secDirectorio": "Directorio",
+      "pipelineCorto": "Pipeline",
+      "mantenimientos": "Mantenimientos",
+      "soportesCorto": "Soportes",
+      "contabilidadCorta": "Contabilidad",
+      "liquidaciones": "Liquidaciones",
+      "retencion": "Retención",
+      "resumenDelNegocio": "Resumen del negocio",
+      "rentabilidad": "Rentabilidad",
+      "desempenoIa": "Desempeño IA",
+      "agentesIa": "Agentes IA",
+      "automatizacionIa": "Automatización IA",
+      "riesgo": "Riesgo",
+      "porAprobar": "Por aprobar"
     },
     "piloto": {
       "titulo": "Piloto automático",
@@ -4089,7 +4106,7 @@
       "inventoryDesc": "Registra los elementos y su estado en cada espacio",
       "defectPlaceholder": "Describir defecto o nota...",
       "addPhotoSoon": "Agregar foto (próximamente)",
-      "deleteItem": "Eliminar ítem",
+      "deleteItem": "Quitar ítem",
       "addItem": "Agregar ítem",
       "noSpacesSelected": "No hay espacios seleccionados",
       "noSpacesSelectedDesc": "Selecciona espacios en el paso anterior para agregar inventario",
@@ -4163,7 +4180,6 @@
       "addInventory": "Agregar inventario",
       "thActions": "Acciones",
       "editItem": "Editar ítem",
-      "deleteItem": "Quitar ítem",
       "itemDialog": {
         "titleNew": "Agregar al inventario",
         "titleEdit": "Editar ítem del inventario",
@@ -4930,7 +4946,8 @@
         "cotizadorIntegraciones": "Integraciones",
         "pagosHome": "Pagos IA",
         "mantenimiento": "Mantenimiento",
-        "mantenimientoTickets": "Tickets"
+        "mantenimientoTickets": "Tickets",
+        "mantenimientoResumen": "Resumen"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",
@@ -4945,7 +4962,8 @@
         "cartas": "Volver a cartas",
         "pagos": "Volver a pagos",
         "siniestros": "Volver a siniestros",
-        "estudios": "Volver a estudios"
+        "estudios": "Volver a estudios",
+        "tickets": "Volver a tickets"
       },
       "cotizador": {
         "placeholder": {
@@ -8531,8 +8549,8 @@
             "cobros": "Cobros a inquilinos",
             "cobrosDetalle": "Facturas, cartera y conciliación",
             "propietarios": "Pagos a propietarios",
-            "propietariosDetalle": "Liquidaciones y lotes de dispersión",
-            "tesoreria": "Tesorería",
+            "propietariosDetalle": "Giros a propietarios y lotes al banco",
+            "tesoreria": "Liquidaciones",
             "tesoreriaDetalle": "Saldos, movimientos y aprobaciones"
           },
           "actividad": {
@@ -8768,8 +8786,8 @@
       "uploadSoon": "La ingesta y el matching se conectan con el motor (M2)."
     },
     "tesoreria": {
-      "label": "Tesorería",
-      "title": "Egresos a propietarios",
+      "label": "Liquidaciones",
+      "title": "Liquidaciones",
       "subtitle": "El neto a pagar a cada propietario, con su desglose completo y comprobante. El procesamiento del pago vive en Dispersiones.",
       "processCta": "Procesar en Dispersiones",
       "m2BannerTitle": "Estructura lista — el ledger autoritativo llega en M1",
@@ -8802,7 +8820,7 @@
         "label": "Cuentas por pagar",
         "title": "Registrar factura de proveedor",
         "subtitle": "Subí la factura y la IA arma el registro. Revisá cada dato antes de guardar: queda pendiente de aprobación.",
-        "back": "Volver a Tesorería",
+        "back": "Volver a liquidaciones",
         "intro": "Subí la factura (foto o PDF). Sirve una factura electrónica, una cuenta de cobro, un tiquete POS o el recibo de un técnico.",
         "uploadTitle": "Subí la factura (foto o PDF)",
         "uploadMore": "Subir otra página",
@@ -8897,7 +8915,7 @@
     "ap": {
       "bill": {
         "title": "Factura AP",
-        "backToList": "Volver a Tesorería",
+        "backToList": "Volver a liquidaciones",
         "notFound": "Factura no encontrada",
         "notFoundDesc": "La factura solicitada no existe o no tienes acceso.",
         "labelInvoiceNumber": "Número de factura",
@@ -8940,7 +8958,7 @@
       "estado_resueltas": "Resueltas",
       "estado_cerradas": "Cerradas",
       "repairFlowTitle": "Reparaciones → cotización con proveedor",
-      "repairFlowDesc": "Una solicitud de reparación pasa al flujo de cotización y aprobación en Operaciones.",
+      "repairFlowDesc": "Una solicitud de reparación pasa al flujo de cotización y aprobación en Mantenimientos.",
       "listTitle": "Solicitudes",
       "listDesc": "Cada solicitud queda radicada con su solicitante, tipo, inmueble, responsable y estado.",
       "colRadicado": "Radicado",
@@ -10866,16 +10884,16 @@
       "verCobro": "Ver el cobro",
       "whatsapp": "Escribir por WhatsApp",
       "vence": "vence {{fecha}}",
-      "abonado": "abon\u00f3 {{monto}}",
-      "alDia": "Al d\u00eda",
-      "unDiaDeMora": "1 d\u00eda",
-      "diasDeMora": "{{n}} d\u00edas",
+      "abonado": "abonó {{monto}}",
+      "alDia": "Al día",
+      "unDiaDeMora": "1 día",
+      "diasDeMora": "{{n}} días",
       "unRecordatorio": "1 recordatorio",
       "recordatorios": "{{n}} recordatorios",
       "sinRecordatorios": "Sin recordatorios",
       "sinInquilino": "Sin inquilino registrado",
-      "sinTelefono": "Sin tel\u00e9fono",
-      "sinDireccion": "Sin direcci\u00f3n",
+      "sinTelefono": "Sin teléfono",
+      "sinDireccion": "Sin dirección",
       "sinPropietario": "Sin consignar"
     }
   },

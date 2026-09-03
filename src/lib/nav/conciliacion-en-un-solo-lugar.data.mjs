@@ -1,6 +1,6 @@
 /**
  * conciliacion-en-un-solo-lugar.data.mjs — había DOS pantallas para conciliar
- * el banco y ahora hay una: `/panel/inmobiliaria/ai/conciliacion/movimientos`.
+ * el banco y ahora hay una: `/panel/inmobiliaria/conciliacion/movimientos`.
  *
  * ── Qué era cada una ───────────────────────────────────────────────────────
  *
@@ -8,7 +8,7 @@
  *     vía `conciliacion-bancaria.service.ts`: subía el extracto en CSV **o
  *     Excel** de cualquier banco, lo cruzaba contra los cobros con saldo,
  *     conciliar EMITÍA UN RECIBO DE CAJA y tenía el lote de seguros.
- *   · `/ai/conciliacion/movimientos` habla con el MICRO: taxonomía de
+ *   · `/conciliacion/movimientos` habla con el MICRO: taxonomía de
  *     excepciones, sugerencias y `reverse`. Confirmar ahí no emite recibo.
  *
  * ── Por qué gana la del workspace ──────────────────────────────────────────
@@ -43,12 +43,12 @@ const PANEL = '/panel/inmobiliaria'
 export const CONCILIACION_EN_UN_SOLO_LUGAR_DATA = [
   {
     source: `${PANEL}/cobros/extracto-bancario`,
-    destination: `${PANEL}/ai/conciliacion/movimientos`,
+    destination: `${PANEL}/conciliacion/movimientos`,
     permanent: false,
   },
   {
     source: `${PANEL}/cobros/extracto-bancario/:path*`,
-    destination: `${PANEL}/ai/conciliacion/movimientos`,
+    destination: `${PANEL}/conciliacion/movimientos`,
     permanent: false,
   },
 ]

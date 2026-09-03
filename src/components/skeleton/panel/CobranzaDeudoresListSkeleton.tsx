@@ -6,7 +6,7 @@ import { RowSkeleton } from '@/components/skeleton/panel/RowSkeleton'
 /**
  * CobranzaDeudoresListSkeleton — Phase 38 plan 38-04a (D-38-02 hybrid skeletons).
  *
- * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/ai/cobranza/deudores`.
+ * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/cobros/cobranza/deudores`.
  * Mirrors the DeudoresListClient layout: header → filter bar (chip rows + search) →
  * table header → 5 RowSkeleton rows → pagination stub.
  *

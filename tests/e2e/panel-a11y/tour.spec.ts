@@ -28,7 +28,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { seedAuthState } from './_helpers/auth-helpers'
 
-const HUB_ROUTE = '/panel/inmobiliaria/ai'
+const HUB_ROUTE = '/panel/inmobiliaria/configuracion/agentes'
 const STORAGE_KEY = 'leasefy_panel_tour_dismissed_v1'
 const TOUR_DIALOG = '[role="dialog"][aria-modal="false"]'
 

@@ -158,7 +158,7 @@ test.describe('Print proxy — compliance/audit', () => {
       })
     )
 
-    await page.goto('/panel/inmobiliaria/ai/cobranza/compliance/audit', {
+    await page.goto('/panel/inmobiliaria/cobros/cobranza/compliance/audit', {
       waitUntil: 'domcontentloaded',
     })
 
@@ -229,7 +229,7 @@ test.describe('Print proxy — deudor detail', () => {
       })
     )
 
-    await page.goto('/panel/inmobiliaria/ai/cobranza/deudores/test-debtor-id', {
+    await page.goto('/panel/inmobiliaria/cobros/cobranza/deudores/test-debtor-id', {
       waitUntil: 'domcontentloaded',
     })
 
@@ -311,7 +311,7 @@ test.describe('Print proxy — call detail with transcript', () => {
       })
     )
 
-    await page.goto('/panel/inmobiliaria/ai/cobranza/llamadas/test-call-id', {
+    await page.goto('/panel/inmobiliaria/cobros/cobranza/llamadas/test-call-id', {
       waitUntil: 'domcontentloaded',
     })
 

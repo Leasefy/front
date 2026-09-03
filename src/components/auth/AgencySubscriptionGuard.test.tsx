@@ -17,7 +17,7 @@ void React; // jsx-preserve
 const mockUseAgencySubscription = vi.fn();
 const mockUseAuth = vi.fn();
 const mockReplace = vi.fn();
-let mockPathname = '/panel/inmobiliaria/dashboard';
+let mockPathname = '/panel/inmobiliaria/reportes/resumen';
 
 vi.mock('@/lib/hooks/useAgencySubscription', () => ({
   useAgencySubscription: () => mockUseAgencySubscription(),
@@ -52,7 +52,7 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
   vi.clearAllMocks();
-  mockPathname = '/panel/inmobiliaria/dashboard';
+  mockPathname = '/panel/inmobiliaria/reportes/resumen';
   mockUseAuth.mockReturnValue({ agencyRole: 'ADMIN' });
 });
 

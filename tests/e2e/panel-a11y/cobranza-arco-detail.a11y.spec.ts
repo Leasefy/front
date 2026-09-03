@@ -10,7 +10,7 @@ import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const ARCO_ID = 'test-arco-id'
-const ROUTE = `/panel/inmobiliaria/ai/cobranza/arco/${ARCO_ID}`
+const ROUTE = `/panel/inmobiliaria/cobros/cobranza/arco/${ARCO_ID}`
 const DETAIL_MOCK = `**/arco/requests/${ARCO_ID}**`
 const SKELETON_DELAY_MS = 2500
 

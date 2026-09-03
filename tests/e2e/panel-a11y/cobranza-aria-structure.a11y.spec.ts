@@ -127,7 +127,7 @@ const POPULATED_DEUDORES = {
 const PAGES: PageDef[] = [
   {
     label: 'AI hub landing',
-    route: '/panel/inmobiliaria/ai',
+    route: '/panel/inmobiliaria/configuracion/agentes',
     mockUrls: async (page) => {
       await fulfillJson(page, '**/ai-hub/landing**', POPULATED_HUB)
       await fulfillJson(page, '**/ai-hub/metrics**', {
@@ -138,18 +138,18 @@ const PAGES: PageDef[] = [
   },
   {
     label: 'Cobranza overview',
-    route: '/panel/inmobiliaria/ai/cobranza',
+    route: '/panel/inmobiliaria/cobros/cobranza',
     mockUrls: async (page) => {
       await fulfillJson(page, '**/cartera/overview', POPULATED_OVERVIEW)
     },
   },
   {
     label: 'Cobranza deudores list',
-    route: '/panel/inmobiliaria/ai/cobranza/deudores',
+    route: '/panel/inmobiliaria/cobros/cobranza/deudores',
     mockUrls: async (page) => {
       // Scope to `/api/agency/.../cobranza/deudores` — anchoring on `/api/`
       // prevents the glob from also matching the page route
-      // `/panel/inmobiliaria/ai/cobranza/deudores`.
+      // `/panel/inmobiliaria/cobros/cobranza/deudores`.
       await fulfillJson(page, '**/api/agency/*/cobranza/deudores**', POPULATED_DEUDORES)
     },
     // Pre-existing runtime bug in DeudoresListClient.tsx:162 — a useRef
@@ -160,7 +160,7 @@ const PAGES: PageDef[] = [
   },
   {
     label: 'Cobranza deudor detail',
-    route: '/panel/inmobiliaria/ai/cobranza/deudores/test-debtor-id',
+    route: '/panel/inmobiliaria/cobros/cobranza/deudores/test-debtor-id',
     mockUrls: async (page) => {
       // Anchor on `/api/` to avoid swallowing the page route navigation.
       await fulfillJson(page, '**/api/agency/*/cobranza/deudores/test-debtor-id', {
@@ -180,7 +180,7 @@ const PAGES: PageDef[] = [
   },
   {
     label: 'Cobranza escalaciones',
-    route: '/panel/inmobiliaria/ai/cobranza/escalaciones',
+    route: '/panel/inmobiliaria/cobros/cobranza/escalaciones',
     mockUrls: async (page) => {
       // EscalationsListResponse shape from use-escalations.ts —
       //   { open, assigned, resolved, resolvedNextCursor, generatedAt }
@@ -214,7 +214,7 @@ const PAGES: PageDef[] = [
   },
   {
     label: 'Cobranza reporte diario',
-    route: '/panel/inmobiliaria/ai/cobranza/reporte',
+    route: '/panel/inmobiliaria/cobros/cobranza/reporte',
     mockUrls: async (page) => {
       // Real shape: DailyReportResponse from use-daily-report.ts —
       //   { report_date, computed_at?, summary, top_debtors, alerts }
@@ -234,7 +234,7 @@ const PAGES: PageDef[] = [
   },
   {
     label: 'Cobranza configuración',
-    route: '/panel/inmobiliaria/ai/cobranza/configuracion',
+    route: '/panel/inmobiliaria/cobros/cobranza/configuracion',
     mockUrls: async (page) => {
       // Real endpoint per use-policies-config.ts:45 — `/api/agency/:id/policies`,
       // NOT `cobranza/policies/current`. The configuracion page renders a
@@ -251,7 +251,7 @@ const PAGES: PageDef[] = [
   },
   {
     label: 'Cotizador overview',
-    route: '/panel/inmobiliaria/ai/cotizador',
+    route: '/panel/inmobiliaria/postulaciones/asegurabilidad',
     mockUrls: async (page) => {
       // Canonical shape from use-cotizador-overview.ts CotizadorOverviewResponse:
       //   { kpis, lastQuotes, carriers }
@@ -287,7 +287,7 @@ const PAGES: PageDef[] = [
   },
   {
     label: 'Cotizador nueva (wizard)',
-    route: '/panel/inmobiliaria/ai/cotizador/nueva',
+    route: '/panel/inmobiliaria/postulaciones/asegurabilidad/nueva',
     // Nueva wizard renders the wizard from local state, no fetch required
     // unless re-quote is hydrated. The bare wizard form is enough for SR
     // structural checks.
@@ -295,7 +295,7 @@ const PAGES: PageDef[] = [
   },
   {
     label: 'Cotizador quote detail',
-    route: '/panel/inmobiliaria/ai/cotizador/test-quote-id',
+    route: '/panel/inmobiliaria/postulaciones/asegurabilidad/test-quote-id',
     mockUrls: async (page) => {
       // Real endpoint per use-quote-metadata.ts:59 —
       // `/api/agency/:id/cotizador/quote/{id}` (singular `quote`, not `quotes`).

@@ -179,7 +179,7 @@ export function DetalleDeAsiento({ asiento, abierto, onCerrar, onReversado }: De
                     <>
                       Generado por el lote de dispersión ·{' '}
                       <Link
-                        href={`/panel/inmobiliaria/dispersiones/lotes/${asiento.origenId}`}
+                        href={`/panel/inmobiliaria/pagos/dispersiones/lotes/${asiento.origenId}`}
                         className="underline underline-offset-2 hover:text-fg"
                       >
                         abrir el lote

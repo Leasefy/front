@@ -183,7 +183,7 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
                 {/* Ver link */}
                 <TableCell className="px-4 py-3 text-center">
                   <Link
-                    href={`/panel/inmobiliaria/ai/asegurabilidad/${quote.id}`}
+                    href={`/panel/inmobiliaria/postulaciones/asegurabilidad/${quote.id}`}
                     className="text-fg-muted hover:text-primary transition-colors inline-flex items-center justify-center"
                     aria-label={t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.viewAriaLabel')}
                   >

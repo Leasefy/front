@@ -18,7 +18,7 @@ import { useI18n } from '@/lib/i18n'
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { toDebtorRef } from '@/lib/hooks/cobranza/compliance-entries'
 
-const CASOS_HREF = '/panel/inmobiliaria/ai/cobranza/deudores'
+const CASOS_HREF = '/panel/inmobiliaria/cobros/cobranza/deudores'
 const TOP_N = 5
 
 export function CobranzaDeudoresQuePesan() {

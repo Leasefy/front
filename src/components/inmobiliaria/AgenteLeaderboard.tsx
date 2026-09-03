@@ -84,7 +84,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
   };
 
   const handleRowClick = (agenteId: string) => {
-    router.push(`/panel/inmobiliaria/agentes/${agenteId}`);
+    router.push(`/panel/inmobiliaria/configuracion/equipo/${agenteId}`);
   };
 
   const containerVariants = {

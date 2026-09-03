@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton'
  * EstudioDetailSkeleton — Tier-B estudio UX.
  *
  * Bespoke 3-zone layout placeholder for
- * `/panel/inmobiliaria/ai/estudio/[id]`. Mirrors EstudioDetailClient:
+ * `/panel/inmobiliaria/postulaciones/estudio/[id]`. Mirrors EstudioDetailClient:
  *   IZQUIERDA  → contexto sidebar card
  *   CENTRO     → eyebrow + tab pill row + tab content area
  *   DERECHA    → recomendación rail (next-action + quick-actions cards)

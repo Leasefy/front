@@ -29,7 +29,7 @@ export default function ReglasDeMoraPage() {
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Volver a cobros
           </Link>
-          <SectionLabel>Finanzas</SectionLabel>
+          <SectionLabel>Cobros</SectionLabel>
           <h1 className="text-2xl font-semibold tracking-tight text-fg">Reglas de mora</h1>
           <p className="max-w-2xl text-sm text-fg-muted">
             Se aplican en orden, de arriba abajo, sobre cada cobro vencido: primero corre el interés

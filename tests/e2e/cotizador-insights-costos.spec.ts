@@ -336,7 +336,7 @@ for (const viewport of VIEWPORTS) {
     await seedAuth(page)
     await mockInsightsEndpoints(page)
     await mockPermissions(page)
-    await page.goto('/panel/inmobiliaria/ai/cotizador/insights')
+    await page.goto('/panel/inmobiliaria/postulaciones/asegurabilidad/insights')
     await page.waitForLoadState('domcontentloaded')
     // Soft wait — chart data requires real Supabase session; capture whatever renders
     await page.locator('text=/sura|Supuesto/i').first().waitFor({ timeout: 8_000 }).catch(() => {})
@@ -362,7 +362,7 @@ for (const viewport of VIEWPORTS) {
     await seedAuth(page)
     await mockCostosEndpoints(page)
     await mockPermissions(page)
-    await page.goto('/panel/inmobiliaria/ai/cotizador/costos')
+    await page.goto('/panel/inmobiliaria/postulaciones/asegurabilidad/costos')
     await page.waitForLoadState('domcontentloaded')
     // Soft wait — KPI data requires real Supabase session; capture whatever renders
     await page.locator('text=/0\\.018|costo.*cotización|por cotización/i').first().waitFor({ timeout: 8_000 }).catch(() => {})
@@ -382,8 +382,8 @@ for (const viewport of VIEWPORTS) {
 // ---------------------------------------------------------------------------
 
 for (const route of [
-  '/panel/inmobiliaria/ai/cotizador/insights',
-  '/panel/inmobiliaria/ai/cotizador/costos',
+  '/panel/inmobiliaria/postulaciones/asegurabilidad/insights',
+  '/panel/inmobiliaria/postulaciones/asegurabilidad/costos',
 ]) {
   const slug = route.split('/').at(-1)!
   test.skip(`no horizontal scroll at iPhone-14 — ${slug} — D-35-09 XR-03`, async ({ page }) => {
@@ -414,7 +414,7 @@ test('NoDataYetBadge present for cohort-match-quality widget — D-35-04', async
   await seedAuth(page)
   await mockInsightsEndpoints(page)
   await mockPermissions(page)
-  await page.goto('/panel/inmobiliaria/ai/cotizador/insights')
+  await page.goto('/panel/inmobiliaria/postulaciones/asegurabilidad/insights')
   await page.waitForLoadState('domcontentloaded')
   // No console errors
   expect(consoleErrors.filter((e) => !e.includes('Warning:') && !e.includes('CORS') && !e.includes('ERR_FAILED') && !e.includes('ERR_NETWORK') && !e.includes('subscriptions') && !e.includes('notifications') && !e.includes('Access-Control-Allow-Origin') && !e.includes('Failed to load resource') && !e.includes('Status code: 204'))).toHaveLength(0)
@@ -441,7 +441,7 @@ test('costos pie has muted legend rows for unpopulated sources — D-35-06', asy
   await seedAuth(page)
   await mockCostosEndpoints(page)
   await mockPermissions(page)
-  await page.goto('/panel/inmobiliaria/ai/cotizador/costos')
+  await page.goto('/panel/inmobiliaria/postulaciones/asegurabilidad/costos')
   await page.waitForLoadState('domcontentloaded')
   // No console errors
   expect(consoleErrors.filter((e) => !e.includes('Warning:') && !e.includes('CORS') && !e.includes('ERR_FAILED') && !e.includes('ERR_NETWORK') && !e.includes('subscriptions') && !e.includes('notifications') && !e.includes('Access-Control-Allow-Origin') && !e.includes('Failed to load resource') && !e.includes('Status code: 204'))).toHaveLength(0)
@@ -464,7 +464,7 @@ test('forecast KPI shows trailing-avg caption — D-35-07', async ({ page }) => 
   await seedAuth(page)
   await mockCostosEndpoints(page)
   await mockPermissions(page)
-  await page.goto('/panel/inmobiliaria/ai/cotizador/costos')
+  await page.goto('/panel/inmobiliaria/postulaciones/asegurabilidad/costos')
   await page.waitForLoadState('domcontentloaded')
   // No console errors
   expect(consoleErrors.filter((e) => !e.includes('Warning:') && !e.includes('CORS') && !e.includes('ERR_FAILED') && !e.includes('ERR_NETWORK') && !e.includes('subscriptions') && !e.includes('notifications') && !e.includes('Access-Control-Allow-Origin') && !e.includes('Failed to load resource') && !e.includes('Status code: 204'))).toHaveLength(0)
@@ -484,7 +484,7 @@ test('insights approval-rate chart Recharts container has non-zero bbox — XR-0
   await seedAuth(page)
   await mockInsightsEndpoints(page)
   await mockPermissions(page)
-  await page.goto('/panel/inmobiliaria/ai/cotizador/insights')
+  await page.goto('/panel/inmobiliaria/postulaciones/asegurabilidad/insights')
   await page.waitForLoadState('domcontentloaded')
   await page.waitForTimeout(800) // allow recharts to measure
   // No console errors
@@ -514,7 +514,7 @@ test.skip('assumptions registry table renders 20 rows — D-35-04', async ({ pag
   await seedAuth(page)
   await mockInsightsEndpoints(page)
   await mockPermissions(page)
-  await page.goto('/panel/inmobiliaria/ai/cotizador/insights')
+  await page.goto('/panel/inmobiliaria/postulaciones/asegurabilidad/insights')
   await page.waitForLoadState('domcontentloaded')
   // No console errors
   expect(consoleErrors.filter((e) => !e.includes('Warning:') && !e.includes('CORS') && !e.includes('ERR_FAILED') && !e.includes('ERR_NETWORK') && !e.includes('subscriptions') && !e.includes('notifications') && !e.includes('Access-Control-Allow-Origin') && !e.includes('Failed to load resource') && !e.includes('Status code: 204'))).toHaveLength(0)

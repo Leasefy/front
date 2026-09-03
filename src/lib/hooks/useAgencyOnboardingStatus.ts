@@ -39,7 +39,7 @@ const MOCK_STEPS: OnboardingStep[] = [
     key: 'invite_agent',
     label: 'Invita a un agente a tu equipo',
     completed: false,
-    action: { label: 'Invitar', href: '/panel/inmobiliaria/agentes' },
+    action: { label: 'Invitar', href: '/panel/inmobiliaria/configuracion/equipo' },
   },
   {
     key: 'first_collection',

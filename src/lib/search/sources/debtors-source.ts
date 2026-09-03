@@ -15,7 +15,7 @@
  * PII: cedulaMasked / phoneMasked / emailMasked are already masked by the
  * backend (Phase 31 D-31-04). We never unmask here.
  *
- * href: /panel/inmobiliaria/ai/cobranza/deudores/:id
+ * href: /panel/inmobiliaria/cobros/cobranza/deudores/:id
  */
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
@@ -70,7 +70,7 @@ export const debtorsSource: SearchSource = {
           title: item.title,
           subtitle: item.ref ?? undefined,
           badges,
-          href: `/panel/inmobiliaria/ai/cobranza/deudores/${item.id}`,
+          href: `/panel/inmobiliaria/cobros/cobranza/deudores/${item.id}`,
           // Preview degrades gracefully — panel already null-guards all fields.
           preview: {
             type: 'debtor',
@@ -129,7 +129,7 @@ export const debtorsSource: SearchSource = {
               ]
             : []),
         ],
-        href: `/panel/inmobiliaria/ai/cobranza/deudores/${item.id}`,
+        href: `/panel/inmobiliaria/cobros/cobranza/deudores/${item.id}`,
         preview: {
           type: 'debtor',
           id: item.id,

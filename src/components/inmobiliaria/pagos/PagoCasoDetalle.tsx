@@ -285,7 +285,7 @@ export function PagoCasoDetalle({ data, onAction, crossLink }: PagoCasoDetallePr
               ejecutarse. La configuración de autonomía vive en la superficie del agente.
             </p>
             <Link
-              href="/panel/inmobiliaria/ai/pagos/configuracion"
+              href="/panel/inmobiliaria/pagos/configuracion"
               className="text-primary text-sm font-medium underline-offset-4 hover:underline"
             >
               Ver configuración del agente

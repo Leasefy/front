@@ -34,6 +34,7 @@ import { MonoLabel } from '@leasefy/cadence'
 
 import type { AiHubResumenResponse } from '@/lib/api/agent-workspace'
 import type { AgenteId } from '@/lib/api/work-item'
+import { AGENT_WORKSPACES } from '@/lib/nav/agentWorkspaceNav'
 import { useI18n } from '@/lib/i18n'
 import { relativeTime, workspaceVocab, type TranslateFn } from './ColaHumana'
 
@@ -68,30 +69,37 @@ function rolLabel(t: TranslateFn, rol: string): string {
   return workspaceVocab(t, 'rol', rol)
 }
 
-const AI_BASE = '/panel/inmobiliaria/ai'
-
-/** Sala (overview) route per agent. */
-export function salaHref(agente: AgenteId): string {
-  return `${AI_BASE}/${routeSegment(agente)}`
-}
-
 /**
- * Route segment overrides — the data/API id (`cotizador`) differs from the
- * renamed app route segment (`asegurabilidad`). Map here so links stay correct
+ * Workspace slug overrides — the data/API id (`cotizador`) differs from the
+ * app route segment (`asegurabilidad`). Map here so links stay correct
  * without changing the AgenteId type or backend contract.
  */
-const ROUTE_SEGMENT: Partial<Record<AgenteId, string>> = {
+const WORKSPACE_SLUG: Partial<Record<AgenteId, string>> = {
   cotizador: 'asegurabilidad',
 }
 
-function routeSegment(agente: AgenteId): string {
-  return ROUTE_SEGMENT[agente] ?? agente
+/**
+ * Dónde vive cada agente lo dice `agentWorkspaceNav.ts` (la IA es un modo
+ * dentro de cada módulo, no un namespace propio): un agente sin workspace
+ * registrado cae en la vitrina de agentes de Configuración.
+ */
+const VITRINA_DE_AGENTES = '/panel/inmobiliaria/configuracion/agentes'
+
+function basePathDe(agente: AgenteId): string | null {
+  const slug = WORKSPACE_SLUG[agente] ?? agente
+  return AGENT_WORKSPACES.find((w) => w.slug === slug)?.basePath ?? null
+}
+
+/** Sala (overview) route per agent. */
+export function salaHref(agente: AgenteId): string {
+  return basePathDe(agente) ?? VITRINA_DE_AGENTES
 }
 
 /** Cola (queue) route per agent — cobranza's human queue = escalaciones. */
 export function colaHref(agente: AgenteId): string {
-  if (agente === 'cobranza') return `${AI_BASE}/cobranza/escalaciones`
-  return `${AI_BASE}/${routeSegment(agente)}/cola`
+  const base = basePathDe(agente)
+  if (!base) return VITRINA_DE_AGENTES
+  return agente === 'cobranza' ? `${base}/escalaciones` : `${base}/cola`
 }
 
 const numberFormatter = new Intl.NumberFormat('es-CO')

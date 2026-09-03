@@ -6,7 +6,7 @@
  * Eran dos pantallas sobre el mismo trabajo y con backends distintos:
  * `/cobros/extracto-bancario` contra el monolito (extracto CSV/Excel de
  * cualquier banco → cobros con saldo → RECIBO DE CAJA → lote de seguros) y
- * `/ai/conciliacion/movimientos` contra el micro (taxonomía, sugerencias,
+ * `/conciliacion/movimientos` contra el micro (taxonomía, sugerencias,
  * reverse). Medido antes de unificarlas: 6 filas en `movimientos_bancarios`
  * del ERP contra 0 en `agent.bank_movements` del micro. La del agente estaba
  * mirando una tabla vacía.
@@ -32,7 +32,7 @@ import { CONCILIACION_EN_UN_SOLO_LUGAR } from './conciliacion-en-un-solo-lugar'
 
 const RAIZ = join(process.cwd(), 'src')
 
-const DESTINO = '/panel/inmobiliaria/ai/conciliacion/movimientos'
+const DESTINO = '/panel/inmobiliaria/conciliacion/movimientos'
 const RUTA_VIEJA = 'panel/inmobiliaria/cobros/extracto-bancario'
 
 /** Los únicos a los que les toca nombrar la ruta vieja: el que redirige, y este test. */
@@ -97,7 +97,7 @@ describe('la conciliación bancaria en un solo lugar', () => {
   it('la carpeta vieja ya no existe — la redirección es la única puerta', () => {
     expect(existsSync(join(RAIZ, 'app/panel/inmobiliaria/cobros/extracto-bancario'))).toBe(false)
     expect(
-      existsSync(join(RAIZ, 'app/panel/inmobiliaria/ai/conciliacion/movimientos/page.tsx')),
+      existsSync(join(RAIZ, 'app/panel/inmobiliaria/conciliacion/movimientos/page.tsx')),
     ).toBe(true)
   })
 
@@ -106,7 +106,7 @@ describe('la conciliación bancaria en un solo lugar', () => {
     // seguros. Los tres son `<ExtractoBancario />`; si alguien lo desmonta,
     // la pantalla sigue compilando y la plata deja de conciliarse.
     const pagina = readFileSync(
-      join(RAIZ, 'app/panel/inmobiliaria/ai/conciliacion/movimientos/page.tsx'),
+      join(RAIZ, 'app/panel/inmobiliaria/conciliacion/movimientos/page.tsx'),
       'utf8',
     )
     expect(pagina).toContain("from '@/components/cobros/extracto-bancario/ExtractoBancario'")
@@ -137,7 +137,7 @@ describe('la conciliación bancaria en un solo lugar', () => {
 
   it('lo del micro no se borró: sigue montado debajo', () => {
     const pagina = readFileSync(
-      join(RAIZ, 'app/panel/inmobiliaria/ai/conciliacion/movimientos/page.tsx'),
+      join(RAIZ, 'app/panel/inmobiliaria/conciliacion/movimientos/page.tsx'),
       'utf8',
     )
     expect(pagina).toMatch(/<ConciliacionDelAgente\b/)

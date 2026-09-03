@@ -868,7 +868,7 @@
       "agentes": "Agents",
       "cobros": "Collections",
       "cartera": "Portfolio due",
-      "recaudo": "Collections",
+      "recaudo": "Cash received",
       "contratos": "Contracts",
       "dispersiones": "Disbursements",
       "renovaciones": "Renewals",
@@ -919,7 +919,24 @@
       "recorrido": "Journey",
       "soportes": "Candidate documents",
       "piloto": "Home",
-      "chat": "Chat"
+      "chat": "Chat",
+      "secCaptacion": "Acquisition & leasing",
+      "secOperacionDelContrato": "Operations",
+      "secDinero": "Money",
+      "secDirectorio": "Directory",
+      "pipelineCorto": "Pipeline",
+      "mantenimientos": "Maintenance",
+      "soportesCorto": "Documents",
+      "contabilidadCorta": "Accounting",
+      "liquidaciones": "Settlements",
+      "retencion": "Retention",
+      "resumenDelNegocio": "Business overview",
+      "rentabilidad": "Profitability",
+      "desempenoIa": "AI performance",
+      "agentesIa": "AI agents",
+      "automatizacionIa": "AI automation",
+      "riesgo": "Risk",
+      "porAprobar": "To approve"
     },
     "piloto": {
       "titulo": "Autopilot",
@@ -4088,7 +4105,7 @@
       "inventoryDesc": "Record items and their condition in each space",
       "defectPlaceholder": "Describe defect or note...",
       "addPhotoSoon": "Add photo (coming soon)",
-      "deleteItem": "Delete item",
+      "deleteItem": "Remove item",
       "addItem": "Add item",
       "noSpacesSelected": "No spaces selected",
       "noSpacesSelectedDesc": "Select spaces in the previous step to add inventory",
@@ -4162,7 +4179,6 @@
       "addInventory": "Add inventory",
       "thActions": "Actions",
       "editItem": "Edit item",
-      "deleteItem": "Remove item",
       "itemDialog": {
         "titleNew": "Add to inventory",
         "titleEdit": "Edit inventory item",
@@ -4929,7 +4945,8 @@
         "cotizadorIntegraciones": "Integrations",
         "pagosHome": "Payments AI",
         "mantenimiento": "Maintenance",
-        "mantenimientoTickets": "Tickets"
+        "mantenimientoTickets": "Tickets",
+        "mantenimientoResumen": "Overview"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",
@@ -4944,7 +4961,8 @@
         "cartas": "Back to letters",
         "pagos": "Back to payments",
         "siniestros": "Back to claims",
-        "estudios": "Back to screenings"
+        "estudios": "Back to screenings",
+        "tickets": "Back to tickets"
       },
       "cotizador": {
         "placeholder": {
@@ -8530,8 +8548,8 @@
             "cobros": "Tenant charges",
             "cobrosDetalle": "Invoices, aging and reconciliation",
             "propietarios": "Owner payouts",
-            "propietariosDetalle": "Settlements and payout batches",
-            "tesoreria": "Treasury",
+            "propietariosDetalle": "Owner payouts and bank batches",
+            "tesoreria": "Settlements",
             "tesoreriaDetalle": "Balances, movements and approvals"
           },
           "actividad": {
@@ -8767,8 +8785,8 @@
       "uploadSoon": "Ingestion and matching connect to the engine (M2)."
     },
     "tesoreria": {
-      "label": "Treasury",
-      "title": "Owner payouts",
+      "label": "Settlements",
+      "title": "Settlements",
       "subtitle": "The net amount payable to each owner, with full breakdown and receipt. Payment processing lives in Disbursements.",
       "processCta": "Process in Disbursements",
       "m2BannerTitle": "Structure ready — the authoritative ledger arrives in M1",
@@ -8801,7 +8819,7 @@
         "label": "Accounts payable",
         "title": "Register supplier invoice",
         "subtitle": "Upload the invoice and the AI drafts the record. Review every field before saving: it stays pending approval.",
-        "back": "Back to Treasury",
+        "back": "Back to settlements",
         "intro": "Upload the invoice (photo or PDF). An electronic invoice, a cuenta de cobro, a POS ticket or a technician's receipt all work.",
         "uploadTitle": "Upload the invoice (photo or PDF)",
         "uploadMore": "Upload another page",
@@ -8896,7 +8914,7 @@
     "ap": {
       "bill": {
         "title": "AP Invoice",
-        "backToList": "Back to Treasury",
+        "backToList": "Back to settlements",
         "notFound": "Invoice not found",
         "notFoundDesc": "The requested invoice does not exist or you do not have access.",
         "labelInvoiceNumber": "Invoice number",
@@ -8939,7 +8957,7 @@
       "estado_resueltas": "Resolved",
       "estado_cerradas": "Closed",
       "repairFlowTitle": "Repairs → vendor quoting",
-      "repairFlowDesc": "A repair request moves to the quoting and approval flow in Operations.",
+      "repairFlowDesc": "A repair request goes into the quoting and approval flow in Maintenance.",
       "listTitle": "Requests",
       "listDesc": "Each request is filed with its requester, type, property, assignee and status.",
       "colRadicado": "Ticket",

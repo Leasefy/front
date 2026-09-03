@@ -154,14 +154,14 @@ const QUICK_ACTIONS: QuickAction[] = [
     id: 'qa-cobranza',
     labelKey: 'inmobiliaria.commandPalette.quickActions.cobranza',
     icon: ChatCircleText,
-    href: '/panel/inmobiliaria/ai/cobranza',
+    href: '/panel/inmobiliaria/cobros/cobranza',
     permission: { module: 'cobranza', action: 'view' },
   },
   {
     id: 'qa-cotizador',
     labelKey: 'inmobiliaria.commandPalette.quickActions.cotizador',
     icon: FileText,
-    href: '/panel/inmobiliaria/ai/asegurabilidad',
+    href: '/panel/inmobiliaria/postulaciones/asegurabilidad',
     permission: { module: 'cotizador', action: 'view' },
   },
   {

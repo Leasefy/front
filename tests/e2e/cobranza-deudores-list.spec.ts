@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-// Phase 31 plan 31-08 (COBR-UI-02) visual smoke for /panel/inmobiliaria/ai/cobranza/deudores.
+// Phase 31 plan 31-08 (COBR-UI-02) visual smoke for /panel/inmobiliaria/cobros/cobranza/deudores.
 //
 // Mirrors the cobranza-overview.spec.ts pattern: mocks the agent endpoint at
 // the network level so the backend does NOT need to be running. Still requires
@@ -16,7 +16,7 @@ import { test, expect } from '@playwright/test'
 // chrome-level expectations that work even without a live agent (the hook's
 // null-guard handles the unset env var).
 
-const PAGE_PATH = '/panel/inmobiliaria/ai/cobranza/deudores'
+const PAGE_PATH = '/panel/inmobiliaria/cobros/cobranza/deudores'
 import path from 'node:path'
 import os from 'node:os'
 

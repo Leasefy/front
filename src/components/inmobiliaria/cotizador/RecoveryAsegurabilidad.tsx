@@ -229,7 +229,7 @@ function RecoveryBlock({
             asChild
             className="group w-full justify-between gap-2 text-left"
           >
-            <Link href="/panel/inmobiliaria/ai/asegurabilidad/nueva">
+            <Link href="/panel/inmobiliaria/postulaciones/asegurabilidad/nueva">
               <span className="flex items-center gap-2 min-w-0">
                 <MagnifyingGlass weight="duotone" className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
                 <span className="text-sm font-medium text-fg truncate">
@@ -248,7 +248,7 @@ function RecoveryBlock({
             asChild
             className="group w-full justify-between gap-2 text-left"
           >
-            <Link href="/panel/inmobiliaria/ai/matching">
+            <Link href="/panel/inmobiliaria/postulaciones/matching">
               <span className="flex items-center gap-2 min-w-0">
                 <House weight="duotone" className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
                 <span className="text-sm font-medium text-fg truncate">

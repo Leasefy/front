@@ -23,6 +23,7 @@ import { readdirSync, readFileSync, existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
 import { RUTAS_UNIFICADAS_DEL_PANEL } from './rutas-unificadas-del-panel'
+import { modulosDelPanel } from './arquitectura-del-panel'
 
 const RAIZ = join(process.cwd(), 'src')
 
@@ -88,12 +89,11 @@ describe('una sola sección de inmuebles', () => {
   })
 
   it('el menú tiene UNA entrada de inmuebles, no dos', () => {
-    const layout = readFileSync(
-      join(RAIZ, 'app/panel/inmobiliaria/layout.tsx'),
-      'utf8',
-    )
-    const entradas = layout.match(/href: '\/panel\/inmobiliaria\/inmuebles'/g) ?? []
-    expect(entradas).toHaveLength(1)
+    // El sidebar sale de `arquitectura-del-panel.ts` (datos, no regex sobre el
+    // layout): se cuenta la fila de nivel módulo; la pestaña «Inmuebles» de
+    // ModuloTabs es la misma fila vista desde adentro y no cuenta.
+    const filas = modulosDelPanel().filter((m) => m.href === '/panel/inmobiliaria/inmuebles')
+    expect(filas).toHaveLength(1)
   })
 
   it('la ruta vieja ya no existe como carpeta — la redirección es la única puerta', () => {

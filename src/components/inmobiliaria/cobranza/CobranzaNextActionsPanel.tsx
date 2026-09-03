@@ -84,7 +84,7 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
         <li key={action.id}>
           <button
             type="button"
-            onClick={() => router.push(`/panel/inmobiliaria/ai/cobranza/deudores/${action.id}`)}
+            onClick={() => router.push(`/panel/inmobiliaria/cobros/cobranza/deudores/${action.id}`)}
             className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-surface-muted transition-colors"
           >
             <ChannelIcon channel={action.channel} />

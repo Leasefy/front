@@ -155,22 +155,22 @@ describe('EquipoAgentes — happy path', () => {
 
     expect(
       container.querySelector('[data-testid="equipo-sala-conciliacion"]')!.getAttribute('href'),
-    ).toBe('/panel/inmobiliaria/ai/conciliacion')
+    ).toBe('/panel/inmobiliaria/conciliacion')
     expect(
       container.querySelector('[data-testid="equipo-cola-conciliacion"]')!.getAttribute('href'),
-    ).toBe('/panel/inmobiliaria/ai/conciliacion/cola')
+    ).toBe('/panel/inmobiliaria/conciliacion/cola')
 
     // cobranza's human queue is escalaciones
     expect(
       container.querySelector('[data-testid="equipo-cola-cobranza"]')!.getAttribute('href'),
-    ).toBe('/panel/inmobiliaria/ai/cobranza/escalaciones')
+    ).toBe('/panel/inmobiliaria/cobros/cobranza/escalaciones')
 
     // cotizador's cola
     expect(
       container.querySelector('[data-testid="equipo-cola-cotizador"]')!.getAttribute('href'),
-    ).toBe('/panel/inmobiliaria/ai/asegurabilidad/cola')
+    ).toBe('/panel/inmobiliaria/postulaciones/asegurabilidad/cola')
     expect(
       container.querySelector('[data-testid="equipo-sala-cotizador"]')!.getAttribute('href'),
-    ).toBe('/panel/inmobiliaria/ai/asegurabilidad')
+    ).toBe('/panel/inmobiliaria/postulaciones/asegurabilidad')
   })
 })

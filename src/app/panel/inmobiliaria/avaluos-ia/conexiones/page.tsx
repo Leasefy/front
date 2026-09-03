@@ -55,8 +55,8 @@ const ENTRADAS: Conexion[] = [
 const SALIDAS: Conexion[] = [
   { icon: Megaphone, modulo: 'Publicaciones', ejemplo: 'Publicar al precio recomendado crea el aviso en tu portafolio.', tipo: 'click', href: '/panel/inmobiliaria/inmuebles' },
   { icon: FilePlus, modulo: 'Contratos', ejemplo: 'El canon acordado pre-llena el contrato de arrendamiento.', tipo: 'click', href: '/panel/inmobiliaria/contratos' },
-  { icon: ChatCircleText, modulo: 'Cobranza IA', ejemplo: 'Al arrendarse, el canon entra al recaudo mensual de cobranza.', tipo: 'auto', href: '/panel/inmobiliaria/ai/cobranza' },
-  { icon: ShieldCheck, modulo: 'Estudio del inquilino IA', ejemplo: 'Pasas al interesado a estudio con un clic, sin redigitar nada.', tipo: 'click', href: '/panel/inmobiliaria/ai/estudio' },
+  { icon: ChatCircleText, modulo: 'Cobranza IA', ejemplo: 'Al arrendarse, el canon entra al recaudo mensual de cobranza.', tipo: 'auto', href: '/panel/inmobiliaria/cobros/cobranza' },
+  { icon: ShieldCheck, modulo: 'Estudio del inquilino IA', ejemplo: 'Pasas al interesado a estudio con un clic, sin redigitar nada.', tipo: 'click', href: '/panel/inmobiliaria/postulaciones/estudio' },
   { icon: Kanban, modulo: 'Pipeline', ejemplo: 'Cada solicitud de avalúo entra como oportunidad en tu pipeline.', tipo: 'auto', href: '/panel/inmobiliaria/pipeline' },
   { icon: ChartLine, modulo: 'Reportes y analítica', ejemplo: 'Tus avalúos alimentan las métricas de la inmobiliaria.', tipo: 'auto', href: '/panel/inmobiliaria/reportes' },
 ]

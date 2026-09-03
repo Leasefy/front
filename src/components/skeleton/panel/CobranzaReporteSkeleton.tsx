@@ -6,7 +6,7 @@ import { RowSkeleton } from '@/components/skeleton/panel/RowSkeleton'
 /**
  * CobranzaReporteSkeleton — Phase 38 plan 38-04a (D-38-02 hybrid skeletons).
  *
- * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/ai/cobranza/reporte`.
+ * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/cobros/cobranza/reporte`.
  * Mirrors ReporteViewerContent: header (title + date selector + action buttons) →
  * KPI tile row (3 cards) → alert banner stub → top-debtors section (5 RowSkeleton) →
  * history table section (5 RowSkeleton) → CSV export button stub.

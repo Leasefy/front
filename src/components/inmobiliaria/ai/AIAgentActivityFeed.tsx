@@ -60,7 +60,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
           </p>
         </div>
         <Link
-          href="/panel/inmobiliaria/ai"
+          href="/panel/inmobiliaria/configuracion/agentes"
           className="flex items-center gap-1 text-sm font-medium text-primary hover:text-primary transition-colors"
         >
           {locale === 'es' ? 'Ver toda' : 'View all'}

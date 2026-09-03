@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 /**
  * CotizadorQuoteDetailSkeleton — Phase 38 plan 38-04b (D-38-02 hybrid skeletons).
  *
- * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/ai/asegurabilidad/[quoteId]`.
+ * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/postulaciones/asegurabilidad/[quoteId]`.
  * Mirrors the streaming detail page composition:
  *   - Sticky <QuoteHeader> bar (title + meta + cost + connection dot)
  *   - max-w-6xl content area with quote header card, action row, 3 carrier

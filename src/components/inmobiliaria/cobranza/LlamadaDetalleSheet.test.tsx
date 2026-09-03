@@ -142,7 +142,7 @@ describe('LlamadaDetalleSheet', () => {
   it('el pie enlaza la página completa de la llamada', () => {
     render('call-1')
     const enlaces = [...container.querySelectorAll('a')].map((a) => a.getAttribute('href'))
-    expect(enlaces).toContain('/panel/inmobiliaria/ai/cobranza/llamadas/call-1')
+    expect(enlaces).toContain('/panel/inmobiliaria/cobros/cobranza/llamadas/call-1')
   })
 
   it('error → aviso con reintento, nunca un cajón vacío en silencio', () => {

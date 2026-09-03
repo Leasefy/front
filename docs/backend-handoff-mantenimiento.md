@@ -1,7 +1,7 @@
 # Handoff front → agent — Mantenimiento (Fixi)
 
 > Origen: API audit `feature/mvp-1-1` (2026-08-17). El panel de Mantenimiento del front
-> (`/panel/inmobiliaria/ai/mantenimiento/*`) está **mock-only**: consume 3 endpoints del agent que
+> (`/panel/inmobiliaria/mantenimientos/tickets/resumen/*`) está **mock-only**: consume 3 endpoints del agent que
 > **no existen** todavía. Fixi está registrado en Mastra (`agent/src/mastra/index.ts`) pero **sin ruta
 > HTTP, sin Inngest, sin caller** (solo lo llama su test). El front ya tiene las shapes definidas (los
 > mocks) — este handoff las publica para que el agent exponga los endpoints.

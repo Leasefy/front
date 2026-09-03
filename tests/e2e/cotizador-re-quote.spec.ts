@@ -154,7 +154,7 @@ for (const viewport of VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
     await seedAuth(page)
     await mockQuoteMetadata(page, PARENT_QUOTE_ID)
-    await page.goto(`/panel/inmobiliaria/ai/cotizador/${PARENT_QUOTE_ID}`, {
+    await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/${PARENT_QUOTE_ID}`, {
       waitUntil: 'domcontentloaded',
     })
     const reQuoteBtn = page
@@ -182,7 +182,7 @@ test('wizard pre-fill + submit: no raw cédula in any request body — D-08 COTI
   await seedAuth(page)
   await mockQuoteMetadata(page, PARENT_QUOTE_ID)
   await mockQuoteSubmit(page, 'test-new-quote-33')
-  await page.goto(`/panel/inmobiliaria/ai/cotizador/nueva?from=${PARENT_QUOTE_ID}`, {
+  await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/nueva?from=${PARENT_QUOTE_ID}`, {
     waitUntil: 'networkidle',
   })
   // Pre-fill notice should appear.
@@ -216,7 +216,7 @@ test('pre-fill notice "Re-usando cédula" visible when ?from= present — D-33-1
   await page.setViewportSize({ width: 1440, height: 900 })
   await seedAuth(page)
   await mockQuoteMetadata(page, PARENT_QUOTE_ID)
-  await page.goto(`/panel/inmobiliaria/ai/cotizador/nueva?from=${PARENT_QUOTE_ID}`, {
+  await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/nueva?from=${PARENT_QUOTE_ID}`, {
     waitUntil: 'networkidle',
   })
   await expect(
@@ -230,7 +230,7 @@ test('"Cambiar candidato" button is visible in re-quote pre-fill mode — D-33-1
   await page.setViewportSize({ width: 1440, height: 900 })
   await seedAuth(page)
   await mockQuoteMetadata(page, PARENT_QUOTE_ID)
-  await page.goto(`/panel/inmobiliaria/ai/cotizador/nueva?from=${PARENT_QUOTE_ID}`, {
+  await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/nueva?from=${PARENT_QUOTE_ID}`, {
     waitUntil: 'networkidle',
   })
   await expect(
@@ -249,7 +249,7 @@ test('"Cambiar candidato" clears hash and shows raw cédula input — D-33-10', 
   await page.setViewportSize({ width: 1440, height: 900 })
   await seedAuth(page)
   await mockQuoteMetadata(page, PARENT_QUOTE_ID)
-  await page.goto(`/panel/inmobiliaria/ai/cotizador/nueva?from=${PARENT_QUOTE_ID}`, {
+  await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/nueva?from=${PARENT_QUOTE_ID}`, {
     waitUntil: 'networkidle',
   })
   const cambiarBtn = page
@@ -289,7 +289,7 @@ test('child quote detail renders ReQuoteOfBadge with parent shortId — D-33-11'
       }),
     })
   })
-  await page.goto(`/panel/inmobiliaria/ai/cotizador/${childId}`, {
+  await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/${childId}`, {
     waitUntil: 'domcontentloaded',
   })
   const badge = page
@@ -335,7 +335,7 @@ test('re-quote-of-re-quote: badge shows IMMEDIATE parent only, 1-hop — D-33-11
       }),
     })
   })
-  await page.goto(`/panel/inmobiliaria/ai/cotizador/${childId}`, {
+  await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/${childId}`, {
     waitUntil: 'domcontentloaded',
   })
   const badge = page
@@ -366,7 +366,7 @@ test('pre-fill GET 404 shows step-1 banner with Volver + Continuar — D-33-14',
   await page.route('**/api/agency/*/cotizador/quote/nonexistent-parent', async (route) => {
     await route.fulfill({ status: 404, contentType: 'application/json', body: '{}' })
   })
-  await page.goto('/panel/inmobiliaria/ai/cotizador/nueva?from=nonexistent-parent', {
+  await page.goto('/panel/inmobiliaria/postulaciones/asegurabilidad/nueva?from=nonexistent-parent', {
     waitUntil: 'networkidle',
   })
   await expect(
@@ -394,7 +394,7 @@ for (const locale of ['es', 'en'] as const) {
     }
     await seedAuth(page)
     await mockQuoteMetadata(page, PARENT_QUOTE_ID)
-    await page.goto(`/panel/inmobiliaria/ai/cotizador/nueva?from=${PARENT_QUOTE_ID}`, {
+    await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/nueva?from=${PARENT_QUOTE_ID}`, {
       waitUntil: 'networkidle',
     })
     if (locale === 'es') {
@@ -419,7 +419,7 @@ test('parent quote detail shows "Re-cotizar con cambios" button — D-33-10', as
   await page.setViewportSize({ width: 1440, height: 900 })
   await seedAuth(page)
   await mockQuoteMetadata(page, PARENT_QUOTE_ID)
-  await page.goto(`/panel/inmobiliaria/ai/cotizador/${PARENT_QUOTE_ID}`, {
+  await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/${PARENT_QUOTE_ID}`, {
     waitUntil: 'domcontentloaded',
   })
   await expect(
@@ -447,7 +447,7 @@ test('quote without re_quote_of does NOT render ReQuoteOfBadge — D-33-11', asy
       }),
     })
   })
-  await page.goto(`/panel/inmobiliaria/ai/cotizador/${standaloneId}`, {
+  await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/${standaloneId}`, {
     waitUntil: 'domcontentloaded',
   })
   // Wait for page content to settle, then assert badge is absent.
@@ -465,7 +465,7 @@ test('D-08 guard captures NO leak when no interaction (sanity baseline)', async 
   const cedulaLeaks = installCedulaGuard(page)
   await seedAuth(page)
   await mockQuoteMetadata(page, PARENT_QUOTE_ID)
-  await page.goto(`/panel/inmobiliaria/ai/cotizador/nueva?from=${PARENT_QUOTE_ID}`, {
+  await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/nueva?from=${PARENT_QUOTE_ID}`, {
     waitUntil: 'networkidle',
   })
   await page.waitForTimeout(500)
@@ -481,7 +481,7 @@ for (const viewport of VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
     await seedAuth(page)
     await mockQuoteMetadata(page, PARENT_QUOTE_ID)
-    await page.goto(`/panel/inmobiliaria/ai/cotizador/nueva?from=${PARENT_QUOTE_ID}`, {
+    await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/nueva?from=${PARENT_QUOTE_ID}`, {
       waitUntil: 'networkidle',
     })
     await expect(

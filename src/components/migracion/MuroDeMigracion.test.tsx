@@ -27,7 +27,7 @@ vi.mock('@/lib/i18n', () => ({
 }));
 
 const { rutaActual, estadoMock } = vi.hoisted(() => ({
-  rutaActual: { valor: '/panel/inmobiliaria/dashboard' },
+  rutaActual: { valor: '/panel/inmobiliaria/reportes/resumen' },
   estadoMock: { estado: vi.fn(), terminar: vi.fn(), omitir: vi.fn() },
 }));
 
@@ -152,7 +152,7 @@ async function pintar() {
     root = createRoot(container);
     root.render(
       <MuroDeMigracion>
-        <a href="/panel/inmobiliaria/dashboard" data-testid="algo-del-panel">
+        <a href="/panel/inmobiliaria/reportes/resumen" data-testid="algo-del-panel">
           Panel
         </a>
       </MuroDeMigracion>,
@@ -175,7 +175,7 @@ async function click(testid: string) {
 }
 
 beforeEach(() => {
-  rutaActual.valor = '/panel/inmobiliaria/dashboard';
+  rutaActual.valor = '/panel/inmobiliaria/reportes/resumen';
   permisos.puede = true;
   permisos.cargando = false;
   estadoMock.estado.mockReset();
@@ -307,7 +307,7 @@ describe('el muro tapa TODAS las rutas del panel — también las de los pasos',
   });
 
   it.each([
-    '/panel/inmobiliaria/dashboard',
+    '/panel/inmobiliaria/reportes/resumen',
     '/panel/inmobiliaria/inmuebles',
     '/panel/inmobiliaria/migracion/terceros',
     '/panel/inmobiliaria/inmuebles/importar',

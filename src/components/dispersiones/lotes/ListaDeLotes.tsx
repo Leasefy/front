@@ -92,7 +92,7 @@ export function ListaDeLotes() {
   const visibles = useMemo(() => lotes.filter((l) => pasaElFiltro(l, filtro)), [lotes, filtro]);
 
   const irAlLote = useCallback(
-    (id: string) => router.push(`/panel/inmobiliaria/dispersiones/lotes/${id}`),
+    (id: string) => router.push(`/panel/inmobiliaria/pagos/dispersiones/lotes/${id}`),
     [router],
   );
 
@@ -227,7 +227,7 @@ export function ListaDeLotes() {
                       </TableCell>
                       <TableCell className="text-right">
                         <Button asChild variant="ghost" size="sm" hideArrow onClick={(e) => e.stopPropagation()}>
-                          <Link href={`/panel/inmobiliaria/dispersiones/lotes/${lote.id}`}>
+                          <Link href={`/panel/inmobiliaria/pagos/dispersiones/lotes/${lote.id}`}>
                             Abrir
                             <ArrowRight className="h-3.5 w-3.5" />
                           </Link>

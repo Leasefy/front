@@ -107,7 +107,7 @@ describe('<PropietarioStats> — alertas', () => {
     render({ propietario: { ...base, pendingBalance: 1_800_000 }, consignaciones: [] });
     const a = container.querySelector('[data-testid="alerta-pendiente-de-giro"]')!;
     expect(a.textContent).toContain('inmobiliaria.propietario.alertas.pendienteDeGiro.titulo($1.800.000)');
-    expect(a.querySelector('a')!.getAttribute('href')).toBe('/panel/inmobiliaria/dispersiones');
+    expect(a.querySelector('a')!.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/dispersiones');
   });
 
   it('arrendado y sin cuenta bancaria: alerta roja con el botón que abre el formulario', () => {

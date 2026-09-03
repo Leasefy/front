@@ -84,7 +84,7 @@ const MIRA_EL_ERROR = /\berror\b|isError/
  * `portafolio/page.tsx`, que fueron las dos primeras.
  */
 const VACIO_SIN_MIRAR_EL_ERROR = [
-  'src/app/panel/inmobiliaria/ai/asegurabilidad/[quoteId]/RecomendacionRail.tsx',
+  'src/app/panel/inmobiliaria/postulaciones/asegurabilidad/[quoteId]/RecomendacionRail.tsx',
   'src/components/inmobiliaria/cobranza/TopScriptsTable.tsx',
 ]
 
@@ -98,11 +98,10 @@ const ERROR_STATE_VIEJO = [
   'src/app/inquilino/aprobacion/page.tsx',
   'src/app/panel/inmobiliaria/inmuebles/page.tsx',
   'src/app/panel/inmobiliaria/inmuebles/[id]/candidatos/page.tsx',
-  'src/app/panel/inmobiliaria/dashboard/page.tsx',
+  'src/app/panel/inmobiliaria/reportes/resumen/page.tsx',
   'src/app/panel/inmobiliaria/cobros/page.tsx',
-  'src/app/panel/inmobiliaria/ai/error.tsx',
-  'src/app/panel/inmobiliaria/ai/cobranza/llamadas/page.tsx',
-  'src/app/panel/inmobiliaria/renovaciones/page.tsx',
+  'src/app/panel/inmobiliaria/cobros/cobranza/llamadas/page.tsx',
+  'src/app/panel/inmobiliaria/contratos/renovaciones/page.tsx',
   'src/app/panel/(landlord)/leases/page.tsx',
   'src/app/panel/(landlord)/contratos/page.tsx',
   'src/components/inmobiliaria/ai/lessons/ChatLessonsPanel.tsx',

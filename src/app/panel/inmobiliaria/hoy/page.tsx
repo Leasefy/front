@@ -40,7 +40,7 @@ const BLOCKS: SystemBlock[] = [
       { labelKey: 'inmobiliaria.nav.propiedades', href: '/panel/inmobiliaria/inmuebles' },
       { labelKey: 'inmobiliaria.nav.portafolio', href: '/panel/inmobiliaria/inmuebles' },
       { labelKey: 'inmobiliaria.nav.pipeline', href: '/panel/inmobiliaria/pipeline' },
-      { labelKey: 'inmobiliaria.nav.agentes', href: '/panel/inmobiliaria/agentes' },
+      { labelKey: 'inmobiliaria.nav.agentes', href: '/panel/inmobiliaria/configuracion/equipo' },
       { labelKey: 'inmobiliaria.nav.mensajes', href: '/panel/inmobiliaria/mensajes' },
     ],
   },
@@ -54,12 +54,12 @@ const BLOCKS: SystemBlock[] = [
     cta: '/panel/inmobiliaria/cobros',
     items: [
       { labelKey: 'inmobiliaria.nav.cobros', href: '/panel/inmobiliaria/cobros' },
-      { labelKey: 'inmobiliaria.nav.dispersiones', href: '/panel/inmobiliaria/dispersiones' },
-      { labelKey: 'inmobiliaria.nav.tesoreria', href: '/panel/inmobiliaria/tesoreria' },
+      { labelKey: 'inmobiliaria.nav.dispersiones', href: '/panel/inmobiliaria/pagos/dispersiones' },
+      { labelKey: 'inmobiliaria.nav.tesoreria', href: '/panel/inmobiliaria/pagos/liquidaciones' },
       { labelKey: 'inmobiliaria.nav.facturacion', href: '/panel/inmobiliaria/facturacion' },
       { labelKey: 'inmobiliaria.nav.conciliacion', href: '/panel/inmobiliaria/conciliacion' },
       { labelKey: 'inmobiliaria.nav.reportes', href: '/panel/inmobiliaria/reportes' },
-      { labelKey: 'inmobiliaria.nav.analitica', href: '/panel/inmobiliaria/analytics' },
+      { labelKey: 'inmobiliaria.nav.analitica', href: '/panel/inmobiliaria/reportes/ia' },
     ],
   },
   {
@@ -69,10 +69,10 @@ const BLOCKS: SystemBlock[] = [
     iconColor: 'text-fg-muted',
     titleKey: 'inmobiliaria.hoy.autopilotTitle',
     descKey: 'inmobiliaria.hoy.autopilotDesc',
-    cta: '/panel/inmobiliaria/ai',
+    cta: '/panel/inmobiliaria/configuracion/agentes',
     items: [
-      { labelKey: 'inmobiliaria.ai.nav.cobranza', href: '/panel/inmobiliaria/ai/cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cotizador', href: '/panel/inmobiliaria/ai/asegurabilidad' },
+      { labelKey: 'inmobiliaria.ai.nav.cobranza', href: '/panel/inmobiliaria/cobros/cobranza' },
+      { labelKey: 'inmobiliaria.ai.nav.cotizador', href: '/panel/inmobiliaria/postulaciones/asegurabilidad' },
     ],
   },
   {
@@ -82,10 +82,10 @@ const BLOCKS: SystemBlock[] = [
     iconColor: 'text-warning',
     titleKey: 'inmobiliaria.hoy.opsTitle',
     descKey: 'inmobiliaria.hoy.opsDesc',
-    cta: '/panel/inmobiliaria/operaciones',
+    cta: '/panel/inmobiliaria/mantenimientos',
     items: [
-      { labelKey: 'inmobiliaria.nav.operaciones', href: '/panel/inmobiliaria/operaciones' },
-      { labelKey: 'inmobiliaria.nav.pqrs', href: '/panel/inmobiliaria/pqrs' },
+      { labelKey: 'inmobiliaria.nav.operaciones', href: '/panel/inmobiliaria/mantenimientos' },
+      { labelKey: 'inmobiliaria.nav.pqrs', href: '/panel/inmobiliaria/solicitudes' },
       { labelKey: 'inmobiliaria.nav.documentos', href: '/panel/inmobiliaria/documentos' },
       { labelKey: 'inmobiliaria.nav.agenda', href: '/panel/inmobiliaria/agenda' },
     ],
@@ -127,7 +127,7 @@ export default function HoyPage() {
             </div>
           </div>
           <Link
-            href="/panel/inmobiliaria/ai"
+            href="/panel/inmobiliaria/configuracion/agentes"
             className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline transition-colors flex-shrink-0"
           >
             {t('inmobiliaria.common.viewAll')}

@@ -202,7 +202,7 @@ function CajonAbierto({ callId, onClose }: { callId: string; onClose: () => void
             transcripción y del replay a pantalla llena. */}
         <div className="flex-none border-t border-border p-4">
           <Button asChild variant="outline" size="sm" hideArrow>
-            <Link href={`/panel/inmobiliaria/ai/cobranza/llamadas/${callId}`}>
+            <Link href={`/panel/inmobiliaria/cobros/cobranza/llamadas/${callId}`}>
               Abrir la página completa
             </Link>
           </Button>

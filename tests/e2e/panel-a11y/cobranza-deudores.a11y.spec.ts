@@ -11,14 +11,14 @@
  * `pages` is the flat paginated list. The wire shape from the agent endpoint
  * is `{ items, nextCursor, generatedAt }`.
  *
- * D-38-04 EmptyState CTA: "Importar cartera" → /panel/inmobiliaria/ai/cobranza/configuracion
+ * D-38-04 EmptyState CTA: "Importar cartera" → /panel/inmobiliaria/cobros/cobranza/configuracion
  */
 
 import { test, expect } from '@playwright/test'
 import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
-const ROUTE = '/panel/inmobiliaria/ai/cobranza/deudores'
+const ROUTE = '/panel/inmobiliaria/cobros/cobranza/deudores'
 const DEBTORS_MOCK = '**/cobranza/debtors**'
 const SKELETON_DELAY_MS = 2500
 

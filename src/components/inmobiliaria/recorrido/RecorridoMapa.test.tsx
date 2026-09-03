@@ -118,7 +118,7 @@ describe('RecorridoMapa', () => {
     const el = montar(<RecorridoMapa />)
     const hrefs = [...el.querySelectorAll('a')].map((a) => a.getAttribute('href'))
     expect(hrefs).toContain('/panel/inmobiliaria/postulaciones')
-    expect(hrefs).toContain('/panel/inmobiliaria/ai/estudio/cola')
+    expect(hrefs).toContain('/panel/inmobiliaria/postulaciones/estudio/cola')
     expect(hrefs).toContain('/panel/inmobiliaria/contratos')
   })
 

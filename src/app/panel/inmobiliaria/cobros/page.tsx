@@ -385,7 +385,7 @@ function CobrosContent() {
           <Button asChild variant="secondary" hideArrow>
             {/* La conciliación bancaria vive en el workspace del agente
                 desde que se unificaron las dos pantallas; acá quedó el atajo. */}
-            <Link href="/panel/inmobiliaria/ai/conciliacion/movimientos">
+            <Link href="/panel/inmobiliaria/conciliacion/movimientos">
               <Bank className="w-4 h-4" />
               <span className="hidden sm:inline">Extracto bancario</span>
             </Link>

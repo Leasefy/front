@@ -76,7 +76,7 @@ const CATALOGO: Record<ReportId, Exportable> = {
   'extractos-propietarios': {
     disponible: false,
     motivo: 'El extracto se arma por propietario, desde la dispersión de su mes.',
-    dondeSiHay: { label: 'Ir a dispersiones', href: '/panel/inmobiliaria/dispersiones' },
+    dondeSiHay: { label: 'Ir a dispersiones', href: '/panel/inmobiliaria/pagos/dispersiones' },
   },
 
   // Tenía el mapeo a `comisiones-agente`, que devuelve otro reporte. Mejor

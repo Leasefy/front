@@ -12,7 +12,7 @@ import { test, expect } from '@playwright/test'
 import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
-const ROUTE = '/panel/inmobiliaria/ai/cobranza/compliance/audit'
+const ROUTE = '/panel/inmobiliaria/cobros/cobranza/compliance/audit'
 // The hook in src/lib/hooks/cobranza/use-audit-log.ts (line 108) calls
 // `/api/agency/:agencyId/cobranza/audit-log` — NOT `compliance/audit-log`.
 // The page lives under `/compliance/audit` but the backend endpoint is in

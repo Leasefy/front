@@ -119,7 +119,7 @@ test.describe('Tour viewport smoke — iPhone 14', () => {
   test('mounts, cycles 3 steps, dismisses with Escape, fits viewport', async ({
     page,
   }) => {
-    await page.goto('/panel/inmobiliaria/ai', {
+    await page.goto('/panel/inmobiliaria/configuracion/agentes', {
       waitUntil: 'domcontentloaded',
     })
 
@@ -159,7 +159,7 @@ test.describe('Tour viewport smoke — iPad Mini', () => {
   })
 
   test('mounts, advances, fits viewport, escapes cleanly', async ({ page }) => {
-    await page.goto('/panel/inmobiliaria/ai', {
+    await page.goto('/panel/inmobiliaria/configuracion/agentes', {
       waitUntil: 'domcontentloaded',
     })
 
@@ -193,7 +193,7 @@ test.describe('Tour viewport smoke — Desktop 1440', () => {
   test('mounts in dialog with aria-modal=false, restores focus on close', async ({
     page,
   }) => {
-    await page.goto('/panel/inmobiliaria/ai', {
+    await page.goto('/panel/inmobiliaria/configuracion/agentes', {
       waitUntil: 'domcontentloaded',
     })
 

@@ -55,31 +55,46 @@ export interface NavFilterContext {
  * - isAdmin sees everything: `canAccess` returns true for all modules and
  *   `isAdmin` bypasses every role gate.
  */
+/**
+ * ¿Pasa esta fila su gate de permisos (módulo + roles)? NO mira el `scope`:
+ * eso es encuadre, y lo aplica `filterAgencyNav` aparte. Lo comparten el
+ * sidebar, `ModuloTabs` (las pestañas de cada módulo) y `sidebar-del-panel.ts`
+ * (qué pantalla abre cada fila), para que una misma persona vea lo mismo en
+ * los tres lugares.
+ */
+export function pasaGateDeFila(
+  fila: { module?: string | null; roles?: readonly string[] },
+  ctx: NavFilterContext,
+): boolean {
+  // Module-based gate: agent modules use agent permissions, others use the
+  // monolith effectivePermissions map — both resolved inside canAccess.
+  if (fila.module && !ctx.canAccess(fila.module, 'view')) {
+    // Excepción única: el agente no contestó y el módulo es suyo. No es que
+    // no tenga permiso — es que no pudimos preguntar. Ver `agentUnverified`.
+    const esDelAgente = ctx.agentUnverified === true && isAgentModule(fila.module);
+    if (!esDelAgente) return false;
+  }
+  // Role-based gate: isAdmin bypasses; otherwise the current agencyRole must
+  // be in the item's allow-list.
+  if (fila.roles && fila.roles.length > 0) {
+    const roleAllowed =
+      ctx.isAdmin || (ctx.agencyRole !== null && fila.roles.includes(ctx.agencyRole));
+    if (!roleAllowed) return false;
+  }
+  return true;
+}
+
 export function filterAgencyNav(
   items: NavItemWithModule[],
   ctx: NavFilterContext,
 ): NavItem[] {
   const filterItem = (item: NavItemWithModule): NavItemWithModule | null => {
-    // Module-based gate: agent modules use agent permissions, others use the
-    // monolith effectivePermissions map — both resolved inside canAccess.
-    if (item.module && !ctx.canAccess(item.module, 'view')) {
-      // Excepción única: el agente no contestó y el módulo es suyo. No es que
-      // no tenga permiso — es que no pudimos preguntar. Ver `agentUnverified`.
-      const esDelAgente = ctx.agentUnverified === true && isAgentModule(item.module);
-      if (!esDelAgente) return null;
-    }
+    if (!pasaGateDeFila(item, ctx)) return null;
     // Encuadre por módulo de negocio: recorta el menú al trabajo del rol.
     // Corre DESPUÉS del gate de permisos a propósito — solo puede quitar filas
     // que el permiso ya concedía, nunca devolver una que el permiso negó.
     if (!canSeeBusinessModule(item.scope, { isAdmin: ctx.isAdmin, agencyRole: ctx.agencyRole })) {
       return null;
-    }
-    // Role-based gate: isAdmin bypasses; otherwise the current agencyRole must
-    // be in the item's allow-list.
-    if (item.roles && item.roles.length > 0) {
-      const roleAllowed =
-        ctx.isAdmin || (ctx.agencyRole !== null && item.roles.includes(ctx.agencyRole));
-      if (!roleAllowed) return null;
     }
     if (item.children && item.children.length > 0) {
       const filteredChildren = (item.children as NavItemWithModule[])

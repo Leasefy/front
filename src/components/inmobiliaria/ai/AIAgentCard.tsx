@@ -153,7 +153,7 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
 
   return (
     <div className="relative">
-      <Link href={`/panel/inmobiliaria/ai?agent=${agent.id}`} className="group block rounded-lg border border-border bg-surface p-4 hover:border-border-strong hover:shadow-sm transition-all overflow-hidden cursor-pointer">
+      <Link href={`/panel/inmobiliaria/configuracion/agentes?agent=${agent.id}`} className="group block rounded-lg border border-border bg-surface p-4 hover:border-border-strong hover:shadow-sm transition-all overflow-hidden cursor-pointer">
         {/* Header: badge + active + info */}
         <div className="flex items-center gap-2 mb-3">
           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-surface-muted text-fg-subtle">

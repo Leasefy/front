@@ -9,14 +9,14 @@
  * Mock contract reused from the existing structural spec at
  *   mvp/tests/e2e/cobranza-overview.spec.ts (Phase 29 canonical shape).
  *
- * D-38-04 EmptyState CTA: "Importar cartera" → /panel/inmobiliaria/ai/cobranza/configuracion
+ * D-38-04 EmptyState CTA: "Importar cartera" → /panel/inmobiliaria/cobros/cobranza/configuracion
  */
 
 import { test, expect } from '@playwright/test'
 import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
-const ROUTE = '/panel/inmobiliaria/ai/cobranza'
+const ROUTE = '/panel/inmobiliaria/cobros/cobranza'
 const OVERVIEW_MOCK = '**/cartera/overview'
 const SKELETON_DELAY_MS = 2500
 

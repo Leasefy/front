@@ -78,7 +78,7 @@ flowchart LR
 | Cliente | `src/lib/api/avaluo.service.ts` — `fetch` directo, **sin token de auth** (micro público/semi-público) |
 | Endpoints | `POST /api/avaluo/photo-presign` (URL S3), `PUT <uploadUrl>` directo a S3, `POST /api/avaluo/intake` (form; maneja 429/422/503), `GET /api/avaluo/:id/status` (polling 15s, con mock fallback `{status:'en_revisión'}` si el endpoint no existe) |
 | Páginas | `/avaluo` (landing), `/avaluo/nuevo` (wizard 4 pasos), `/avaluo/estado/[submissionId]` (polling + retorno Wompi), `/avaluo/verificar/[slug]` |
-| Panel | `/panel/inmobiliaria/ai/avaluos` usa el **agent** (`GET /api/agency/:id/ai-hub/agentes/avaluos/overview`), NO el micro avaluo; el CTA externo linkea a `NEXT_PUBLIC_AVALUO_URL` |
+| Panel | `/panel/inmobiliaria/inmuebles/avaluos` usa el **agent** (`GET /api/agency/:id/ai-hub/agentes/avaluos/overview`), NO el micro avaluo; el CTA externo linkea a `NEXT_PUBLIC_AVALUO_URL` |
 
 ⚠️ **El único route handler de avaluo NO es un proxy al micro.** `src/app/api/avaluo/wompi-session/route.ts` solo computa el HMAC-SHA256 de integridad de Wompi server-side (usa `WOMPI_INTEGRITY_SECRET`/`WOMPI_PUBLIC_KEY`, sin `NEXT_PUBLIC_`) y devuelve la firma; `WompiPayButton.tsx` redirige a `checkout.wompi.co`. Precio hardcodeado: `5_000_000` ($50.000 COP).
 

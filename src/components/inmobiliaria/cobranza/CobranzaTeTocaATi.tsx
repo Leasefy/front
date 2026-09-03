@@ -39,7 +39,7 @@ import { usePendientes, type PendienteItem } from '@/lib/hooks/cobranza/use-pend
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 
 const NS = 'inmobiliaria.ai.cobranza.pendientes'
-const PENDIENTES_HREF = '/panel/inmobiliaria/ai/cobranza/pendientes'
+const PENDIENTES_HREF = '/panel/inmobiliaria/cobros/cobranza/pendientes'
 
 // ── Columnas del tablero ─────────────────────────────────────────────────────
 

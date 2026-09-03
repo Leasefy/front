@@ -40,22 +40,37 @@ export type LugarDeRegreso =
   | 'lista'
   | 'otro';
 
+/**
+ * Segundos tramos que NO son una ficha sino una pantalla hermana del listado
+ * (pestañas del módulo, flujos, ajustes). `/cobros/cartera` no es «un cobro»,
+ * `/contratos/renovaciones` no es «un contrato», `/inmuebles/nuevo` no es «un
+ * inmueble». Espeja `arquitectura-del-panel.ts` más los flujos de cada módulo.
+ */
+const NO_ES_FICHA: Record<string, ReadonlySet<string>> = {
+  contratos: new Set(['renovaciones', 'retencion', 'riesgo', 'aprobar', 'nuevo', 'migrar', 'conceptos']),
+  inmuebles: new Set(['avaluos', 'nuevo', 'importar', 'captura']),
+  cobros: new Set(['recaudo', 'cartera', 'cobranza', 'reglas-de-mora']),
+  propietarios: new Set([]),
+};
+
 export function lugarDeRegreso(ruta: string): LugarDeRegreso {
   const sinQuery = ruta.split('?')[0] ?? ruta;
   const tramos = sinQuery.replace(/^\/panel\/inmobiliaria\/?/, '').split('/').filter(Boolean);
   const seccion = tramos[0];
-  const tieneId = tramos.length >= 2;
+  const segundo = tramos[1];
+  const esFicha = tramos.length >= 2 && !(seccion && NO_ES_FICHA[seccion]?.has(segundo ?? ''));
   switch (seccion) {
     case 'contratos':
-      return tieneId ? 'contrato' : 'lista';
+      return esFicha ? 'contrato' : 'lista';
     case 'inmuebles':
-      return tieneId ? 'inmueble' : 'lista';
+      return esFicha ? 'inmueble' : 'lista';
     case 'cobros':
-      return tieneId ? 'cobro' : 'lista';
+      return esFicha ? 'cobro' : 'lista';
     case 'propietarios':
-      return tieneId ? 'propietario' : 'lista';
-    case 'dispersiones':
-      return 'dispersiones';
+      return esFicha ? 'propietario' : 'lista';
+    case 'pagos':
+      // Dispersiones vive dentro de Pagos (`/pagos/dispersiones/...`).
+      return segundo === 'dispersiones' ? 'dispersiones' : 'otro';
     default:
       return 'otro';
   }

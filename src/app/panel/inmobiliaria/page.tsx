@@ -9,7 +9,7 @@ import { ChatContainer } from '@/components/beta/ChatContainer';
  *
  * The chat IS `/panel/inmobiliaria`: opens with the welcome state, converses
  * over the agency's real data, and dispatches the AI agents (wired in F2).
- * The classic dashboard now lives at `/panel/inmobiliaria/dashboard` and is
+ * The classic dashboard now lives at `/panel/inmobiliaria/reportes/resumen` and is
  * reachable from the chat's AppSwitcher (and the sidebar "dashboard" item).
  *
  * Renders the same `BetaLayout` (which mounts BetaChatProvider) + ChatContainer

@@ -110,7 +110,7 @@ function parseLocalDate(iso: string): Date | null {
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
 }
 
-const DEUDOR_BASE = '/panel/inmobiliaria/ai/cobranza/deudores'
+const DEUDOR_BASE = '/panel/inmobiliaria/cobros/cobranza/deudores'
 
 interface DatoProps {
   icon: React.ComponentType<any>

@@ -8,10 +8,10 @@
  *
  * Usage:
  *   <MigaDePan
- *     backHref="/panel/inmobiliaria/ai/avaluos"
+ *     backHref="/panel/inmobiliaria/inmuebles/avaluos"
  *     crumbs={[
- *       { label: 'Agentes IA', href: '/panel/inmobiliaria/ai' },
- *       { label: 'Avalúos', href: '/panel/inmobiliaria/ai/avaluos' },
+ *       { label: 'Agentes IA', href: '/panel/inmobiliaria/configuracion/agentes' },
+ *       { label: 'Avalúos', href: '/panel/inmobiliaria/inmuebles/avaluos' },
  *       { label: 'Mis solicitudes' },           // current page — not a link
  *     ]}
  *   />

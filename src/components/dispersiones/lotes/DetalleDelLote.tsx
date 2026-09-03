@@ -169,7 +169,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         error={error}
         queEs="el lote"
         onReintentar={() => void refetch()}
-        volverA={{ label: 'Volver a los lotes', href: '/panel/inmobiliaria/dispersiones/lotes' }}
+        volverA={{ label: 'Volver a los lotes', href: '/panel/inmobiliaria/pagos/dispersiones/lotes' }}
       />
     );
   }
@@ -184,7 +184,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
   return (
     <div className="space-y-6" data-testid="detalle-del-lote" data-estado={lote.estado}>
       <Button asChild variant="ghost" size="sm" hideArrow className="-ml-2">
-        <Link href="/panel/inmobiliaria/dispersiones/lotes">
+        <Link href="/panel/inmobiliaria/pagos/dispersiones/lotes">
           <CaretLeft className="h-4 w-4" />
           Lotes al banco
         </Link>

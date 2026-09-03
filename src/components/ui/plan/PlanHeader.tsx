@@ -837,7 +837,7 @@ export function PlanHeader({
                               </button>
                             ))}
 
-                            {/* Agente — redirige a /panel/inmobiliaria/agentes */}
+                            {/* Agente — redirige a /panel/inmobiliaria/configuracion/equipo */}
                             <button
                               onClick={() => {
                                 setTeamInviteOpen(false);

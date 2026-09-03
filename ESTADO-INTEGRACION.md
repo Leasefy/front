@@ -218,14 +218,14 @@ Ultima actualizacion: 2026-02-17
 - `/panel/inmobiliaria/portafolio/nuevo` - consignacionesApi.create + usePropietarios + useAgentes
 - `/panel/inmobiliaria/propietarios` - usePropietarios
 - `/panel/inmobiliaria/propietarios/[id]` - usePropietarios(id) + useConsignaciones + useDispersiones
-- `/panel/inmobiliaria/agentes` - useAgentes
-- `/panel/inmobiliaria/agentes/[id]` - useAgentes(id) + useConsignaciones
+- `/panel/inmobiliaria/configuracion/equipo` - useAgentes
+- `/panel/inmobiliaria/configuracion/equipo/[id]` - useAgentes(id) + useConsignaciones
 - `/panel/inmobiliaria/cobros` - useCobros + cobrosApi.registerPayment
-- `/panel/inmobiliaria/dispersiones` - useDispersiones + usePropietarios
-- `/panel/inmobiliaria/dispersiones/generar` - dispersionesApi.create + usePropietarios + useCobros
-- `/panel/inmobiliaria/operaciones` - useMantenimientos + useRenovaciones
+- `/panel/inmobiliaria/pagos/dispersiones` - useDispersiones + usePropietarios
+- `/panel/inmobiliaria/pagos/dispersiones/generar` - dispersionesApi.create + usePropietarios + useCobros
+- `/panel/inmobiliaria/mantenimientos` - useMantenimientos + useRenovaciones
 - `/panel/inmobiliaria/reportes` - useReportes + useInmobiliariaConfig
-- `/panel/inmobiliaria/analytics` - useAnalytics
+- `/panel/inmobiliaria/reportes/ia` - useAnalytics
 - `/panel/inmobiliaria/documentos` - useDocumentTemplates + useActasEntrega
 - `/panel/inmobiliaria/configuracion` - useInmobiliariaConfig + inmobiliariaConfigApi.update
 - `/panel/inmobiliaria/page.tsx` (dashboard) - inmobiliariaDashboardApi.get

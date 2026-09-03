@@ -176,7 +176,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
   const checkChildActive = (children: NavItem[]) => {
     return children.some(child => {
       if (child.exact) return pathname === child.href;
-      return pathname.startsWith(child.href);
+      return pathname === child.href || pathname.startsWith(`${child.href}/`);
     });
   };
 
@@ -254,7 +254,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
               <NavItemComponent
                 key={child.href}
                 item={child}
-                isActive={child.exact ? pathname === child.href : pathname.startsWith(child.href)}
+                isActive={child.exact ? pathname === child.href : pathname === child.href || pathname.startsWith(`${child.href}/`)}
                 isCollapsed={false}
                 onClick={onClick}
                 depth={depth + 1}
@@ -420,7 +420,7 @@ function SidebarContent({
 
   const isActive = (item: NavItem) => {
     if (item.exact) return pathname === item.href;
-    return pathname.startsWith(item.href);
+    return pathname === item.href || pathname.startsWith(`${item.href}/`);
   };
 
   return (

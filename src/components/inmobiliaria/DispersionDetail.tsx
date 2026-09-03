@@ -407,7 +407,7 @@ export function DispersionDetail({
                   titulo="Sin cuenta bancaria: no se le puede girar"
                   accion={{
                     label: 'Cargar cuenta bancaria',
-                    href: `/panel/inmobiliaria/propietarios/${dispersion.propietarioId}?volver=${encodeURIComponent('/panel/inmobiliaria/dispersiones')}`,
+                    href: `/panel/inmobiliaria/propietarios/${dispersion.propietarioId}?volver=${encodeURIComponent('/panel/inmobiliaria/pagos/dispersiones')}`,
                   }}
                   data-testid="dispersion-sin-cuenta"
                 >

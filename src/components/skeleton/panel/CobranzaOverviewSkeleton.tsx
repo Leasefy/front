@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 /**
  * CobranzaOverviewSkeleton — Phase 38 plan 38-04a (D-38-02 hybrid skeletons).
  *
- * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/ai/cobranza`. Mirrors
+ * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/cobros/cobranza`. Mirrors
  * the real overview page composition: header → 4-KPI strip → 7-stage grid →
  * funnel chart → transitions feed (3 col) + next-actions panel (2 col).
  *

@@ -43,7 +43,7 @@ describe('lugarDeRegreso', () => {
     expect(lugarDeRegreso('/panel/inmobiliaria/inmuebles/i1')).toBe('inmueble');
     expect(lugarDeRegreso('/panel/inmobiliaria/cobros/co1')).toBe('cobro');
     expect(lugarDeRegreso('/panel/inmobiliaria/propietarios/p1?tab=pagos')).toBe('propietario');
-    expect(lugarDeRegreso('/panel/inmobiliaria/dispersiones')).toBe('dispersiones');
+    expect(lugarDeRegreso('/panel/inmobiliaria/pagos/dispersiones')).toBe('dispersiones');
   });
 
   it('una lista es «lista», y lo desconocido es «otro»', () => {

@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test'
 import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
-const ROUTE = '/panel/inmobiliaria/ai/cobranza/arco'
+const ROUTE = '/panel/inmobiliaria/cobros/cobranza/arco'
 const ARCO_MOCK = '**/arco/requests**'
 const SKELETON_DELAY_MS = 2500
 

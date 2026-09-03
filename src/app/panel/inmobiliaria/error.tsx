@@ -61,7 +61,7 @@ export default function ErrorDelPanel({
               Volver a cargar
             </button>
             <Link
-              href="/panel/inmobiliaria/dashboard"
+              href="/panel/inmobiliaria/piloto"
               className="inline-flex h-10 items-center rounded-full px-5 text-sm font-medium text-fg-muted transition-colors hover:text-fg"
             >
               Ir al panel

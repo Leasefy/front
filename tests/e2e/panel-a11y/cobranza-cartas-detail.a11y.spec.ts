@@ -16,7 +16,7 @@ import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const CARTA_ID = 'test-carta-id'
-const ROUTE = `/panel/inmobiliaria/ai/cobranza/cartas/${CARTA_ID}`
+const ROUTE = `/panel/inmobiliaria/cobros/cobranza/cartas/${CARTA_ID}`
 // Cartas may live under "letters" OR "cartas" depending on backend naming.
 // Broad mock covers both. The page may also fetch from a debtor detail
 // endpoint depending on the embed pattern.

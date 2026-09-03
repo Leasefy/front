@@ -1,7 +1,7 @@
 # Front — Config de cobranza cableada a los endpoints reales del agente
 
 > Spec entregada por el equipo del micro (agents-worker). Migrar la pantalla
-> `/panel/inmobiliaria/ai/cobranza/configuracion` de `/policies` (decorativo) a los
+> `/panel/inmobiliaria/cobros/cobranza/configuracion` de `/policies` (decorativo) a los
 > TRES endpoints que el runtime del agente realmente lee.
 
 ## Contexto (bug de raíz)

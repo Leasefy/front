@@ -44,17 +44,32 @@ vi.mock('@/lib/i18n', () => ({
 // all). Only the 4 components this suite actually stubs get replaced.
 vi.mock('@leasefy/cadence', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@leasefy/cadence')>();
+  // `react/display-name` can infer a name for a plain arrow-function property
+  // (IconButton/MonoLabel below) but not for one wrapped in `forwardRef` — the
+  // render function forwardRef sees is anonymous to the rule's static
+  // analysis. Naming these two mocks and setting `.displayName` explicitly is
+  // the standard forwardRef fix rather than disabling the rule.
+  const MockInput = React.forwardRef(function MockInput(
+    props: Record<string, unknown>,
+    ref: React.Ref<HTMLInputElement>,
+  ) {
+    return React.createElement('input', { ...props, ref });
+  });
+  MockInput.displayName = 'Input';
+  const MockButton = React.forwardRef(function MockButton(
+    props: Record<string, unknown> & { children?: React.ReactNode },
+    ref: React.Ref<HTMLButtonElement>,
+  ) {
+    const { children, ...rest } = props;
+    return React.createElement('button', { ...rest, ref }, children);
+  });
+  MockButton.displayName = 'Button';
   return {
     ...actual,
     IconButton: (props: Record<string, unknown>) => React.createElement('button', { 'aria-label': props['aria-label'] }),
     MonoLabel: ({ children }: { children?: React.ReactNode }) => React.createElement('span', null, children),
-    Input: React.forwardRef((props: Record<string, unknown>, ref: React.Ref<HTMLInputElement>) =>
-      React.createElement('input', { ...props, ref }),
-    ),
-    Button: React.forwardRef((props: Record<string, unknown> & { children?: React.ReactNode }, ref: React.Ref<HTMLButtonElement>) => {
-      const { children, ...rest } = props;
-      return React.createElement('button', { ...rest, ref }, children);
-    }),
+    Input: MockInput,
+    Button: MockButton,
   };
 });
 

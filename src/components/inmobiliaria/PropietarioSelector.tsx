@@ -31,6 +31,12 @@ interface PropietarioSelectorProps {
    * right field (e.g. a 409 duplicate-document conflict).
    */
   serverError?: { field: keyof PropietarioFormData; message: string } | null;
+  /**
+   * Columnas de la grilla de propietarios en pantallas anchas. `3` es para
+   * contenedores de ~900 px (el diálogo de mandatos del final de la
+   * importación, `max-w-4xl`); en el wizard de consignación siguen siendo 2.
+   */
+  columnas?: 2 | 3;
 }
 
 /**
@@ -44,6 +50,7 @@ export function PropietarioSelector({
   newPropietarioData,
   className,
   serverError,
+  columnas = 2,
 }: PropietarioSelectorProps) {
   const { t } = useI18n();
   const [search, setSearch] = useState('');
@@ -252,7 +259,12 @@ export function PropietarioSelector({
       {!showNewForm && !hasNewPropietario && (
         <>
           {filteredPropietarios.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div
+              className={cn(
+                'grid grid-cols-1 sm:grid-cols-2 gap-3',
+                columnas === 3 && 'lg:grid-cols-3',
+              )}
+            >
               {filteredPropietarios.map((propietario) => (
                 <PropietarioCard
                   key={propietario.id}

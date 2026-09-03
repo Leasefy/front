@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, type CSSProperties } from 'react';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { X } from '@phosphor-icons/react';
@@ -26,19 +26,6 @@ import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre';
  */
 const POSTER = '/brand/login-poster.jpg';
 
-/**
- * Cuánto mide el panel del video en escritorio.
- *
- * El video es 16:9 y el panel va a toda la altura, así que su ancho «natural»
- * es `100vh × 16/9`: con eso se ve entero, sin recortar los lados. Antes era
- * un 52 % fijo y en un portátil se perdía la mitad del cuadro (Nico,
- * 2026-09-03: «al hacerlo así se pierde mucho del video, empujá a la derecha
- * todo el formulario»). El tope de `100vw − 30rem` le deja al formulario su
- * columna de 480 px (400 de formulario + 40 de aire a cada lado); en una
- * pantalla 16:9 el video queda apenas recortado, en una más alta se ve
- * completo.
- */
-const ANCHO_DEL_VIDEO = 'min(calc(100vh * 16 / 9), calc(100vw - 30rem))';
 
 function VideoDeMarca() {
   return (
@@ -50,7 +37,7 @@ function VideoDeMarca() {
         fill
         priority
         quality={90}
-        sizes="(min-width: 1024px) 80vw, 100vw"
+        sizes="100vw"
         className="object-cover object-center"
       />
       <video
@@ -89,69 +76,71 @@ function AuthFormFallback() {
 /**
  * Entrada a Leasefy.
  *
- * Izquierda: la marca, en silencio. Una obra a sangre, el logotipo arriba y
- * **una** frase abajo. Antes había tres beneficios y tres métricas: en una
- * pantalla donde la única tarea es entrar, cada línea de más compite con el
- * formulario y no convence a nadie — quien llega acá ya decidió.
+ * El video ocupa TODA la pantalla y el formulario flota encima, en una
+ * tarjeta a la derecha (Nico, 2026-09-03). Antes era un panel partido —52 %,
+ * después «el ancho natural»— y en cualquier pantalla 16:9 el video terminaba
+ * recortado, porque un 16:9 a toda la altura nunca cabe al lado de una
+ * columna de formulario. A pantalla completa se ve entero, sin «zoom».
  *
- * Derecha: el formulario solo, sin caja. La jerarquía la hace la tipografía y
- * el aire, no un borde.
+ * La tarjeta mide 480 px (400 de formulario + 40 de aire por lado), va
+ * centrada en vertical y, si el contenido no cabe (registro en una pantalla
+ * baja), se desplaza por dentro. En móvil no hay video: la tarjeta ES la
+ * pantalla, a todo el ancho, como siempre.
  */
 export default function AuthPage() {
   return (
     <ForceLightMode>
-      <div
-        className="flex min-h-screen flex-col bg-background lg:flex-row"
-        style={{ '--video-w': ANCHO_DEL_VIDEO } as CSSProperties}
-        data-lenis-prevent
-      >
-        {/* ── Izquierda: la obra, sola ──────────────────────────────────── */}
+      <div className="relative min-h-screen bg-background" data-lenis-prevent>
+        {/* ── El video, a pantalla completa (sólo escritorio) ─────────────── */}
         {/*
-          Nada encima: ni logotipo, ni frase, ni velos. La marca ya está en el
-          formulario de al lado, y cada capa que se le pone al video es una
-          capa que lo ensucia. El fondo es el tono del propio video, así que
-          mientras carga no hay un rectángulo fuera de tono.
+          Nada encima: ni logotipo, ni frase, ni velos. La marca ya está en la
+          tarjeta, y cada capa que se le pone al video es una capa que lo
+          ensucia. El fondo es el tono del propio video, así que mientras carga
+          no hay un rectángulo fuera de tono.
         */}
-        <div className="relative hidden overflow-hidden bg-[#0c1a2b] lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-[var(--video-w)]">
+        <div className="fixed inset-0 hidden overflow-hidden bg-[#0c1a2b] lg:block" aria-hidden="true">
           <VideoDeMarca />
         </div>
 
-        {/* ── Derecha: el formulario ────────────────────────────────────── */}
-        <div className="relative w-full bg-background lg:ml-[var(--video-w)] lg:w-[calc(100%-var(--video-w))]">
-          {/*
-           * Una ✕ de cerrar, no un «← Inicio».
-           *
-           * Entrar a la pantalla de acceso es abrir algo encima del sitio, y
-           * lo que se abre se cierra: la ✕ dice eso sin leerse. Va en la
-           * esquina del panel —bien a la derecha, con el mismo aire que tiene
-           * arriba (Nico, 2026-09-03)— y no dentro de la columna del
-           * formulario, donde quedaba a mitad de pantalla.
-           *
-           * Es EL chip del producto (`ASPA_DE_CIERRE`), el mismo que cierra
-           * los 40 modales, y no un dibujo propio de esta pantalla: acá hubo
-           * un aro de trazo fino flotando en el aire que no se leía como botón.
-           */}
-          <Link
-            href="/"
-            aria-label="Cerrar y volver al inicio"
-            title="Cerrar"
-            className={`${ASPA_DE_CIERRE} absolute right-6 top-6 z-10 sm:right-8 sm:top-8`}
-            data-testid="auth-cerrar"
+        {/* ── La tarjeta del formulario ──────────────────────────────────── */}
+        <div className="relative flex min-h-screen flex-col lg:flex-row lg:items-center lg:justify-end lg:p-8">
+          <div
+            className="relative flex w-full flex-col px-6 py-6 sm:px-10 sm:py-8 lg:max-h-[calc(100vh-4rem)] lg:w-[480px] lg:overflow-y-auto lg:rounded-lg lg:bg-surface lg:p-10 lg:shadow-[0_24px_64px_-16px_rgba(20,19,15,0.45)] lg:ring-1 lg:ring-black/5"
+            data-lenis-prevent
+            data-testid="auth-tarjeta"
           >
-            <X size={16} weight="bold" aria-hidden="true" />
-          </Link>
+            {/*
+             * Una ✕ de cerrar, no un «← Inicio».
+             *
+             * Entrar a la pantalla de acceso es abrir algo encima del sitio, y
+             * lo que se abre se cierra: la ✕ dice eso sin leerse. Va en la
+             * esquina de la tarjeta, con el mismo aire arriba que a la derecha
+             * (Nico, 2026-09-03).
+             *
+             * Es EL chip del producto (`ASPA_DE_CIERRE`), el mismo que cierra
+             * los 40 modales, y no un dibujo propio de esta pantalla: acá hubo
+             * un aro de trazo fino flotando en el aire que no se leía como botón.
+             */}
+            <Link
+              href="/"
+              aria-label="Cerrar y volver al inicio"
+              title="Cerrar"
+              className={`${ASPA_DE_CIERRE} absolute right-6 top-6 z-10 sm:right-8 sm:top-8 lg:right-6 lg:top-6`}
+              data-testid="auth-cerrar"
+            >
+              <X size={16} weight="bold" aria-hidden="true" />
+            </Link>
 
-          <div className="flex min-h-screen flex-col px-6 py-6 sm:px-10 sm:py-8">
-            {/* En móvil no hay panel izquierdo: la marca tiene que estar acá
-                o la pantalla no dice de quién es. La fila mide lo que mide la
-                ✕ (32px) para que las dos queden a la misma altura. */}
-            <div className="mx-auto flex h-8 w-full max-w-[400px] items-center">
-              <BrandHomeLink className="inline-flex items-center lg:hidden">
+            {/* En móvil no hay video: la marca tiene que estar acá o la
+                pantalla no dice de quién es. La fila mide lo que mide la ✕
+                (32px) para que las dos queden a la misma altura. */}
+            <div className="mx-auto flex h-8 w-full max-w-[400px] items-center lg:hidden">
+              <BrandHomeLink className="inline-flex items-center">
                 <LeasefyLogotype size={20} className="text-fg" title="Leasefy" />
               </BrandHomeLink>
             </div>
 
-            <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center py-12">
+            <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center py-12 lg:justify-start lg:py-0 lg:pt-8">
               <Suspense fallback={<AuthFormFallback />}>
                 <AuthForm />
               </Suspense>

@@ -9,7 +9,7 @@ export function CasoSidebar({ bundle }: { bundle: CaseBundle }) {
   const guard = bundle.guard
 
   return (
-    <aside className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 space-y-4">
+    <aside className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 space-y-4">
       {/* Próxima acción */}
       <div>
         <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">Próxima acción</p>

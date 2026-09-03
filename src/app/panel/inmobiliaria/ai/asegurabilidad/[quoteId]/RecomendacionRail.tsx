@@ -73,7 +73,7 @@ export function RecomendacionRail({
     return (
       <div className="space-y-4">
         {eyebrow}
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="rounded-lg border border-border bg-card p-4">
           <p className="text-sm text-fg-muted">
             {tf(
               `${NS}.recomendacion.sinRecomendacion`,
@@ -91,7 +91,7 @@ export function RecomendacionRail({
 
       {/* Conclusión — mejor opción del agente */}
       <section
-        className="rounded-xl border border-border bg-card p-4"
+        className="rounded-lg border border-border bg-card p-4"
         data-testid="recomendacion-rail-conclusion"
       >
         <h3 className="text-sm font-semibold text-fg">
@@ -137,7 +137,7 @@ export function RecomendacionRail({
 
       {/* Siguiente mejor acción */}
       <section
-        className="rounded-xl border border-border bg-card p-4"
+        className="rounded-lg border border-border bg-card p-4"
         data-testid="recomendacion-rail-next-action"
       >
         <h3 className="text-sm font-semibold text-fg">

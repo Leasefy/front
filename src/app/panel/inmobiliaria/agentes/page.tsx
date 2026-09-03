@@ -276,7 +276,7 @@ function AgentesContent() {
       {/* Stats Row — neutral icon tiles (blue = actionable only, DS golden rule) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {/* Total Agents */}
-        <div className="p-4 rounded-xl border border-border bg-card">
+        <div className="p-4 rounded-lg border border-border bg-card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
               <Users className="w-5 h-5 text-fg-muted" />
@@ -293,7 +293,7 @@ function AgentesContent() {
         </div>
 
         {/* Active Agents */}
-        <div className="p-4 rounded-xl border border-border bg-card">
+        <div className="p-4 rounded-lg border border-border bg-card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-fg-muted" />
@@ -315,7 +315,7 @@ function AgentesContent() {
         </div>
 
         {/* Closings This Month */}
-        <div className="p-4 rounded-xl border border-border bg-card">
+        <div className="p-4 rounded-lg border border-border bg-card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
               <ChartLineUp className="w-5 h-5 text-fg-muted" />
@@ -332,7 +332,7 @@ function AgentesContent() {
         </div>
 
         {/* Commissions This Month */}
-        <div className="p-4 rounded-xl border border-border bg-card">
+        <div className="p-4 rounded-lg border border-border bg-card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
               <CurrencyDollar className="w-5 h-5 text-fg-muted" />
@@ -350,7 +350,7 @@ function AgentesContent() {
       </div>
 
       {/* Tab Content - Tabs integrated into card */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
         {/* Tab Navigation - Inside the card (exclusive selector → SegmentedControl) */}
         <div className="px-4 py-3 border-b border-border bg-muted/20">
           <SegmentedControl<TabType>

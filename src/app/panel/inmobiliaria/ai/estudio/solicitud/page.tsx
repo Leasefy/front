@@ -184,7 +184,7 @@ function EstudioSolicitud() {
       {/* Nota de contexto — "así lo ve el candidato" */}
       <div
         role="note"
-        className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary-soft p-4"
+        className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary-soft p-4"
       >
         <Eye className="w-5 h-5 text-primary shrink-0 mt-0.5" weight="duotone" aria-hidden="true" />
         <div className="min-w-0">
@@ -278,7 +278,7 @@ function EstudioSolicitud() {
         </nav>
 
         {/* Tarjeta del paso activo — preview de lo que el candidato ve */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-5" aria-live="polite">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-5" aria-live="polite">
           <div className="flex items-start gap-3">
             <span className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center shrink-0">
               <ActiveIcon className="w-5 h-5 text-fg" weight="duotone" aria-hidden="true" />

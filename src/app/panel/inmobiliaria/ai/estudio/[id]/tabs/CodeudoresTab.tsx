@@ -61,7 +61,7 @@ export function CodeudoresTab({ decision }: CodeudoresTabProps) {
     <div className="space-y-5">
       {/* Nota de recomendación (esto SÍ viene del pipeline) */}
       {recomendado && (
-        <div className="rounded-xl border border-warning/30 bg-warning-soft px-4 py-3">
+        <div className="rounded-lg border border-warning/30 bg-warning-soft px-4 py-3">
           <p className="text-sm text-warning-700 leading-snug">
             {tf(
               `${NS}.detalle.codeudores.recomendado`,
@@ -83,7 +83,7 @@ export function CodeudoresTab({ decision }: CodeudoresTabProps) {
       {/* Estructura de ejemplo — cómo se verá una ficha de codeudor (sin datos reales) */}
       <section
         aria-label={tf(`${NS}.detalle.codeudores.ejemplo.title`, 'Ejemplo de una ficha de codeudor')}
-        className="rounded-xl border border-border bg-card p-5"
+        className="rounded-lg border border-border bg-card p-5"
       >
         <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
           {tf(`${NS}.detalle.codeudores.ejemplo.title`, 'Ejemplo de una ficha de codeudor')}

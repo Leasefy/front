@@ -237,7 +237,7 @@ function PagosPropietarios() {
 
       {/* Banner del agente */}
       <section aria-label="Recomendación del agente">
-        <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary-soft p-4">
+        <div className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary-soft p-4">
           <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
             <Sparkle className="w-5 h-5" weight="duotone" aria-hidden="true" />
           </span>
@@ -267,7 +267,7 @@ function PagosPropietarios() {
             description="Cuando se concilien los cobros del mes, las liquidaciones a los propietarios aparecerán aquí."
           />
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-border bg-card">
+          <div className="overflow-x-auto rounded-lg border border-border bg-card">
             <Table className="w-full min-w-[720px] text-left">
               <TableHeader>
                 <TableRow>
@@ -411,7 +411,7 @@ function PagosPropietarios() {
           {NOVEDADES_COMUNES.map((nov) => (
             <div
               key={nov.titulo}
-              className="flex h-full flex-col gap-1.5 rounded-xl border border-border bg-card p-4"
+              className="flex h-full flex-col gap-1.5 rounded-lg border border-border bg-card p-4"
             >
               <div className="flex items-center gap-2">
                 <WarningCircle
@@ -437,7 +437,7 @@ function PagosPropietarios() {
               <Link
                 key={op.href}
                 href={op.href}
-                className="group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 transition hover:bg-surface-muted/50"
+                className="group flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 transition hover:bg-surface-muted/50"
               >
                 <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-muted text-fg-muted group-hover:text-fg transition">
                   <OpIcon className="w-5 h-5" weight="duotone" aria-hidden="true" />

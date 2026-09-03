@@ -116,7 +116,7 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
 
         {/* Multi-select carrier list — only when "favoritas" is chosen */}
         {isFavoritas && (
-          <div className="mt-2 rounded-xl border border-border bg-card p-3">
+          <div className="mt-2 rounded-lg border border-border bg-card p-3">
             {registry.isLoading ? (
               <p className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Spinner size="sm" variant="current" className="shrink-0" aria-hidden />

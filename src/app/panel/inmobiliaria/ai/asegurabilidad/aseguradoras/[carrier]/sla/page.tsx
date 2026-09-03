@@ -84,7 +84,7 @@ export default function CarrierSlaPage() {
 
       {/* Error state */}
       {error && !isLoading && (
-        <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
           <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.errorLoading')}: {error}
           </p>

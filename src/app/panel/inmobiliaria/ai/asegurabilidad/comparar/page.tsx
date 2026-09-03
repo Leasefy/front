@@ -70,7 +70,7 @@ function CompararView() {
 
       {/* Preview de la tabla criterio × aseguradoras (esqueleto, no datos) */}
       <section
-        className="rounded-xl border border-border bg-card overflow-hidden"
+        className="rounded-lg border border-border bg-card overflow-hidden"
         aria-label={tf(`${NS}.preview.aria`, 'Vista previa del comparador')}
       >
         {/* Empty-state explicativo encima del preview */}

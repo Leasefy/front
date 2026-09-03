@@ -218,7 +218,7 @@ function PagosHome() {
       {/* KPIs (§3) */}
       <section className="space-y-3" aria-label="Indicadores de pagos">
         {ovError ? (
-          <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
+          <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
             No pudimos cargar los indicadores. Intenta de nuevo en unos minutos.
           </div>
         ) : (
@@ -226,7 +226,7 @@ function PagosHome() {
             {KPI_SLOTS.map((slot) => {
               const SlotIcon = slot.icon
               return (
-                <div key={slot.label} className="rounded-xl border border-border bg-card p-4">
+                <div key={slot.label} className="rounded-lg border border-border bg-card p-4">
                   <div className="flex items-start justify-between gap-3">
                     <p className="text-xs text-fg-muted leading-tight">{slot.label}</p>
                     <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-surface-muted text-fg-muted">
@@ -256,7 +256,7 @@ function PagosHome() {
           </Link>
         </div>
         {wiError ? (
-          <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
+          <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
             No pudimos cargar la bandeja. Intenta de nuevo en unos minutos.
           </div>
         ) : (
@@ -316,7 +316,7 @@ function PagosHome() {
             return (
               <li
                 key={step.titulo}
-                className="flex h-full flex-col gap-2 rounded-xl border border-border bg-card p-4"
+                className="flex h-full flex-col gap-2 rounded-lg border border-border bg-card p-4"
               >
                 <div className="flex items-center gap-2">
                   <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary">
@@ -342,7 +342,7 @@ function PagosHome() {
               <Link
                 key={op.href}
                 href={op.href}
-                className="group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 transition hover:bg-surface-muted/50"
+                className="group flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 transition hover:bg-surface-muted/50"
               >
                 <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-muted text-fg-muted group-hover:text-fg transition">
                   <OpIcon className="w-5 h-5" weight="duotone" aria-hidden="true" />
@@ -365,7 +365,7 @@ function PagosHome() {
       <section className="space-y-3" aria-label="Actividad reciente">
         <h2 className="text-base font-semibold text-fg">Actividad reciente</h2>
         {ovLoading ? (
-          <div className="h-40 rounded-xl border border-border bg-surface-muted animate-pulse" />
+          <div className="h-40 rounded-lg border border-border bg-surface-muted animate-pulse" />
         ) : feed.length === 0 ? (
           <EmptyState
             icon={Clock}

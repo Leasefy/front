@@ -99,7 +99,7 @@ function AgentDetailView({ agent, agentId }: { agent: AIAgentDefinition; agentId
 
       {/* Agent header */}
       <div className="flex items-center gap-4 animate-stagger-in" style={{ animationDelay: '0.06s' }}>
-        <div className={cn('rounded-xl p-3', agent.colorBg)}>
+        <div className={cn('rounded-lg p-3', agent.colorBg)}>
           <AgentIcon weight="duotone" className={cn('h-6 w-6', agent.color)} />
         </div>
         <div>
@@ -116,7 +116,7 @@ function AgentDetailView({ agent, agentId }: { agent: AIAgentDefinition; agentId
       {/* Metrics grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {detailMetrics.map((m, i) => (
-          <div key={m.label} className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 animate-stagger-in" style={{ animationDelay: `${0.1 + i * 0.05}s` }}>
+          <div key={m.label} className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 animate-stagger-in" style={{ animationDelay: `${0.1 + i * 0.05}s` }}>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">{m.label}</p>
             <p className="text-xl font-semibold text-neutral-900 dark:text-white mt-1">{m.value}</p>
           </div>
@@ -131,7 +131,7 @@ function AgentDetailView({ agent, agentId }: { agent: AIAgentDefinition; agentId
         </div>
 
         {/* How it works — 1 col */}
-        <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6">
+        <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6">
           <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
             {locale === 'es' ? 'Cómo funciona' : 'How it works'}
           </h2>
@@ -288,7 +288,7 @@ export default function AIAgentsPage() {
 
       {/* Summary stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-stagger-in" style={{ animationDelay: '0.08s' }}>
-        <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
+        <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-md p-2 bg-neutral-100 dark:bg-neutral-800">
               <CheckCircle weight="duotone" className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
@@ -301,7 +301,7 @@ export default function AIAgentsPage() {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
+        <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-md p-2 bg-neutral-100 dark:bg-neutral-800">
               <TrendUp weight="duotone" className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
@@ -316,7 +316,7 @@ export default function AIAgentsPage() {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
+        <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-md p-2 bg-neutral-100 dark:bg-neutral-800">
               <Clock weight="duotone" className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
@@ -447,7 +447,7 @@ export default function AIAgentsPage() {
           </span>
         </div>
 
-        <div className="mb-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-white/[0.02] px-5 py-4">
+        <div className="mb-4 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-white/[0.02] px-5 py-4">
           <div className="flex items-start gap-3">
             <Info weight="duotone" className="h-5 w-5 text-neutral-500 dark:text-neutral-400 mt-0.5 flex-shrink-0" />
             <div>

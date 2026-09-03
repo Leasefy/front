@@ -67,7 +67,7 @@ export function MobileNavSheet({ open, items, onClose }: MobileNavSheetProps) {
                   aria-label={rowItem.label}
                   aria-current={rowActive ? 'page' : undefined}
                   className={cn(
-                    'flex items-center gap-4 px-4 py-3 min-h-[52px] rounded-xl',
+                    'flex items-center gap-4 px-4 py-3 min-h-[52px] rounded-lg',
                     rowActive
                       ? 'bg-primary-soft text-primary'
                       : 'text-fg hover:bg-surface-muted'

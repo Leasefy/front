@@ -36,7 +36,7 @@ export default function CotizadorColaPage() {
         </div>
 
         {/* Pending KPI */}
-        <div className="shrink-0 rounded-xl border border-border bg-card px-4 py-3 text-center">
+        <div className="shrink-0 rounded-lg border border-border bg-card px-4 py-3 text-center">
           <p className="text-2xl font-semibold text-foreground tabular-nums">
             {isLoading ? '—' : total}
           </p>

@@ -32,7 +32,7 @@ export function DocumentRowSkeleton() {
  */
 export function DocumentRowSkeletonList({ count = 5 }: { count?: number }) {
   return (
-    <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+    <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
       {Array.from({ length: count }).map((_, i) => (
         <DocumentRowSkeleton key={i} />
       ))}

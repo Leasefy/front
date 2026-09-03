@@ -48,7 +48,7 @@ function PqrsContent() {
       </header>
 
       {/* Honest M1 banner — triage IA (Mastra en agent) */}
-      <div className="rounded-xl bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
+      <div className="rounded-lg bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
         <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
         <div>
           <p className="text-xs font-semibold text-primary">{t(k('m1BannerTitle'))}</p>
@@ -61,7 +61,7 @@ function PqrsContent() {
         <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {RESUMEN_ITEMS.map((item) => (
-            <div key={item.key} className="rounded-xl border border-border bg-card p-4">
+            <div key={item.key} className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2">
                 <span className={cn('w-2 h-2 rounded-full flex-shrink-0', item.dot)} />
                 <span className="text-caption text-muted-foreground truncate">{t(k(`estado_${item.key}`))}</span>
@@ -75,7 +75,7 @@ function PqrsContent() {
       {/* Reparación → cotización (PQRS-03) */}
       <Link
         href="/panel/inmobiliaria/operaciones"
-        className="flex items-center gap-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors p-4"
+        className="flex items-center gap-3 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors p-4"
       >
         <div className="w-9 h-9 rounded-md bg-surface-muted flex items-center justify-center flex-shrink-0">
           <Wrench className="w-[18px] h-[18px] text-fg-muted" />
@@ -88,7 +88,7 @@ function PqrsContent() {
       </Link>
 
       {/* Solicitudes */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="flex items-center gap-3 p-5 border-b border-border">
           <div className="w-9 h-9 rounded-md bg-surface-muted flex items-center justify-center flex-shrink-0">
             <Lifebuoy className="w-[18px] h-[18px] text-fg-muted" />

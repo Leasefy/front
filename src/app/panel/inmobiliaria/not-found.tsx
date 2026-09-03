@@ -14,7 +14,7 @@ import { MagnifyingGlass } from '@phosphor-icons/react/dist/ssr'
 export default function NoEncontradoEnPanel() {
   return (
     <div className="p-4 md:p-6">
-      <div className="rounded-xl border border-border bg-card px-6 py-20 text-center">
+      <div className="rounded-lg border border-border bg-card px-6 py-20 text-center">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
           <MagnifyingGlass weight="duotone" className="h-6 w-6 text-fg-subtle" aria-hidden="true" />
         </div>

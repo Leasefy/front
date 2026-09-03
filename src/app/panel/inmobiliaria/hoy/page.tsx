@@ -112,7 +112,7 @@ export default function HoyPage() {
 
       {/* Autopilot activo */}
       {agents.length > 0 && (
-        <section className="rounded-xl border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <section className="rounded-lg border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 bg-success" />
@@ -143,7 +143,7 @@ export default function HoyPage() {
           {BLOCKS.map((block) => {
             const Icon = block.icon;
             return (
-              <div key={block.key} className="rounded-xl border border-border bg-card p-5 space-y-4">
+              <div key={block.key} className="rounded-lg border border-border bg-card p-5 space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0', block.iconWrap)}>

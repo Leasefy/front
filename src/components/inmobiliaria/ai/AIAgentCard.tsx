@@ -129,9 +129,9 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
 
   if (!isActive) {
     return (
-      <div className="relative rounded-xl border border-dashed border-border-strong bg-surface-muted/50 p-5 opacity-75">
+      <div className="relative rounded-lg border border-dashed border-border-strong bg-surface-muted/50 p-5 opacity-75">
         <div className="flex items-start gap-4">
-          <div className={cn('rounded-xl p-3', 'bg-surface-muted')}>
+          <div className={cn('rounded-lg p-3', 'bg-surface-muted')}>
             <AgentIcon weight="duotone" className="h-5 w-5 text-fg-subtle" />
           </div>
           <div className="flex-1 min-w-0">
@@ -153,7 +153,7 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
 
   return (
     <div className="relative">
-      <Link href={`/panel/inmobiliaria/ai?agent=${agent.id}`} className="group block rounded-xl border border-border bg-surface p-4 hover:border-border-strong hover:shadow-sm transition-all overflow-hidden cursor-pointer">
+      <Link href={`/panel/inmobiliaria/ai?agent=${agent.id}`} className="group block rounded-lg border border-border bg-surface p-4 hover:border-border-strong hover:shadow-sm transition-all overflow-hidden cursor-pointer">
         {/* Header: badge + active + info */}
         <div className="flex items-center gap-2 mb-3">
           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-surface-muted text-fg-subtle">

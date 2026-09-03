@@ -351,7 +351,7 @@ export function ActaEntregaForm({
       </div>
 
       {/* Step Content */}
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
+      <div className="bg-card rounded-lg border border-border overflow-hidden">
         <div className="p-6">
           <AnimatePresence mode="wait">
             <motion.div

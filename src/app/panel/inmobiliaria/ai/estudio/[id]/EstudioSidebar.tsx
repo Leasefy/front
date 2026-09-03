@@ -30,7 +30,7 @@ export function EstudioSidebar({ decision, result, isLoading }: EstudioSidebarPr
 
   if (isLoading && !decision) {
     return (
-      <aside className="rounded-xl border border-border bg-card p-4 animate-pulse">
+      <aside className="rounded-lg border border-border bg-card p-4 animate-pulse">
         <div className="h-4 w-1/2 bg-surface-muted rounded mb-3" />
         <div className="h-6 w-2/3 bg-surface-muted rounded-full mb-4" />
         <div className="h-3 w-3/4 bg-surface-muted rounded mb-2" />
@@ -41,7 +41,7 @@ export function EstudioSidebar({ decision, result, isLoading }: EstudioSidebarPr
 
   if (!decision) {
     return (
-      <aside className="rounded-xl border border-border bg-card p-4">
+      <aside className="rounded-lg border border-border bg-card p-4">
         <p className="text-sm text-fg-muted">
           {t(`${NS}.detalle.sinDatos`)}
         </p>
@@ -54,7 +54,7 @@ export function EstudioSidebar({ decision, result, isLoading }: EstudioSidebarPr
   const docs = result?.documents_summary ?? null
 
   return (
-    <aside className="rounded-xl border border-border bg-card p-4 space-y-4">
+    <aside className="rounded-lg border border-border bg-card p-4 space-y-4">
       {/* Zone eyebrow */}
       <h2 className="flex items-center gap-2">
         <span

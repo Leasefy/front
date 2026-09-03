@@ -55,7 +55,7 @@ export function InsightsPanel({ insights, preview, className }: InsightsPanelPro
   }
 
   return (
-    <section className={cn('rounded-xl border border-border bg-card p-6 space-y-5', className)}>
+    <section className={cn('rounded-lg border border-border bg-card p-6 space-y-5', className)}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
@@ -74,7 +74,7 @@ export function InsightsPanel({ insights, preview, className }: InsightsPanelPro
       </div>
 
       {insights.length === 0 ? (
-        <div className="rounded-xl bg-muted/30 py-10 px-6 text-center">
+        <div className="rounded-lg bg-muted/30 py-10 px-6 text-center">
           <div className="w-12 h-12 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-3">
             <CheckCircle className="w-6 h-6 text-success" />
           </div>
@@ -91,7 +91,7 @@ export function InsightsPanel({ insights, preview, className }: InsightsPanelPro
               <Link
                 key={ins.id}
                 href={pres.href}
-                className="group flex items-center gap-3 rounded-xl border border-border bg-background hover:bg-muted/50 hover:border-foreground/15 transition-colors p-3.5"
+                className="group flex items-center gap-3 rounded-lg border border-border bg-background hover:bg-muted/50 hover:border-foreground/15 transition-colors p-3.5"
               >
                 <div className={cn('w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0', sev.wrap)}>
                   <Icon className={cn('w-[18px] h-[18px]', sev.color)} />

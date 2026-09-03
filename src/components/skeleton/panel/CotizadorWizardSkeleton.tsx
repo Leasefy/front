@@ -46,14 +46,14 @@ export function CotizadorWizardSkeleton() {
         {[0, 1, 2, 3, 4].map((i) => (
           <div key={i} className="space-y-1">
             <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-11 w-full rounded-xl" />
+            <Skeleton className="h-11 w-full rounded-lg" />
           </div>
         ))}
 
         {/* Button bar — mirrors WizardStep1Candidato "Continuar" layout */}
         <div className="flex justify-end gap-3 pt-4">
-          <Skeleton className="h-10 w-24 rounded-xl" />
-          <Skeleton className="h-10 w-32 rounded-xl" />
+          <Skeleton className="h-10 w-24 rounded-lg" />
+          <Skeleton className="h-10 w-32 rounded-lg" />
         </div>
       </div>
     </div>

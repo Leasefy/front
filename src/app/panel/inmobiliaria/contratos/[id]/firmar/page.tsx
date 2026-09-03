@@ -98,7 +98,7 @@ function FirmarContratoContent() {
   if (!contract) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
           <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-danger">No se pudo cargar el contrato</p>
@@ -131,7 +131,7 @@ function FirmarContratoContent() {
   if (signed) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-xl border border-emerald-600/30 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-900/15 p-8 text-center space-y-4">
+        <div className="rounded-lg border border-emerald-600/30 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-900/15 p-8 text-center space-y-4">
           <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center mx-auto">
             <SealCheck className="w-8 h-8 text-emerald-700 dark:text-emerald-400" />
           </div>
@@ -172,13 +172,13 @@ function FirmarContratoContent() {
       </div>
 
       {/* Preview */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="px-5 py-4 border-b border-border">
           <h3 className="text-base font-semibold text-foreground">Documento a firmar</h3>
         </div>
         <div className="p-5 space-y-3">
           {hasTenantSignature && (
-            <div className="rounded-xl border border-amber-600/30 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-900/15 px-4 py-2.5 flex items-start gap-2">
+            <div className="rounded-lg border border-amber-600/30 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-900/15 px-4 py-2.5 flex items-start gap-2">
               <Info className="w-4 h-4 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-amber-700 dark:text-amber-400">
                 Este PDF ya incluye la <strong>firma del inquilino</strong> y un certificado parcial.

@@ -118,7 +118,7 @@ function MessagesSkeleton() {
       {Array.from({ length: 5 }).map((_, i) => (
         <div key={i} className={cn('flex', i % 2 === 0 ? 'justify-start' : 'justify-end')}>
           <div className={cn(
-            'h-12 rounded-xl',
+            'h-12 rounded-lg',
             i % 2 === 0
               ? 'w-3/5 bg-neutral-200 dark:bg-neutral-700 rounded-bl-sm'
               : 'w-2/5 bg-primary-soft rounded-br-sm'
@@ -417,7 +417,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
           transition={{ delay: pantallaCompleta ? 0 : 0.1 }}
           className={cn(
             'bg-card overflow-hidden flex-1 min-h-0',
-            !pantallaCompleta && 'rounded-xl border border-border',
+            !pantallaCompleta && 'rounded-lg border border-border',
           )}
         >
           <div className="h-full flex">
@@ -614,7 +614,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.95, y: -10 }}
                               transition={{ duration: 0.15 }}
-                              className="absolute right-0 top-full mt-2 w-52 bg-card rounded-xl border border-border py-2 z-50"
+                              className="absolute right-0 top-full mt-2 w-52 bg-card rounded-lg border border-border py-2 z-50"
                             >
                               <button
                                 onClick={handleArchive}
@@ -704,7 +704,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                 >
                                   <div
                                     className={cn(
-                                      'max-w-[75%] px-4 py-3 rounded-xl',
+                                      'max-w-[75%] px-4 py-3 rounded-lg',
                                       message.isMine
                                         ? 'bg-primary-soft text-primary border border-primary/30 rounded-br-sm'
                                         : 'bg-card text-foreground border border-border rounded-bl-sm',
@@ -850,7 +850,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
 
                             <div className="space-y-4">
                               {selectedConversation.property && (
-                                <div className="flex items-start gap-3 p-3 bg-muted rounded-xl">
+                                <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
                                   <div className="w-9 h-9 rounded-md bg-card flex items-center justify-center">
                                     <House className="w-4 h-4 text-muted-foreground" />
                                   </div>
@@ -866,7 +866,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               )}
 
                               {selectedConversation.email && (
-                                <div className="flex items-start gap-3 p-3 bg-muted rounded-xl">
+                                <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
                                   <div className="w-9 h-9 rounded-md bg-card flex items-center justify-center">
                                     <Envelope className="w-4 h-4 text-muted-foreground" />
                                   </div>
@@ -900,7 +900,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                   <div
                                     aria-disabled={!whatsappRoutingAllowed}
                                     title={locale === 'es' ? 'Aún no disponible' : 'Not available yet'}
-                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground bg-muted/50 rounded-xl select-none cursor-not-allowed"
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground bg-muted/50 rounded-lg select-none cursor-not-allowed"
                                   >
                                     <ChatCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                                     <span>
@@ -912,14 +912,14 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                 )}
                                 <button
                                   onClick={handleMute}
-                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted rounded-xl transition-colors"
+                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
                                 >
                                   <BellSlash className="w-4 h-4 text-muted-foreground" />
                                   {locale === 'es' ? 'Silenciar notificaciones' : 'Mute notifications'}
                                 </button>
                                 <button
                                   onClick={handleArchive}
-                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted rounded-xl transition-colors"
+                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
                                 >
                                   <Archive className="w-4 h-4 text-muted-foreground" />
                                   {locale === 'es' ? 'Archivar conversación' : 'Archive conversation'}

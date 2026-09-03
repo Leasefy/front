@@ -23,7 +23,7 @@
  *
  * Espeja los idioms de /ai/asegurabilidad/equipo/page.tsx y /ai/estudio/page.tsx:
  * PageGuard module="cotizador", MigaDePan, useI18n + tf(), card
- * 'rounded-xl border border-border bg-card p-5', EmptyState '—'.
+ * 'rounded-lg border border-border bg-card p-5', EmptyState '—'.
  */
 
 import {
@@ -108,7 +108,7 @@ function IntegracionCard({
 }) {
   const Ico = integ.icon
   return (
-    <article className="rounded-xl border border-border bg-card p-5 flex flex-col gap-4">
+    <article className="rounded-lg border border-border bg-card p-5 flex flex-col gap-4">
       <div className="flex items-start gap-3">
         <span className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
           <Ico className="w-5 h-5 text-foreground" weight="duotone" aria-hidden="true" />
@@ -306,7 +306,7 @@ function IntegracionesAsegurabilidad() {
         </div>
         <ul
           role="list"
-          className="rounded-xl border border-border bg-card divide-y divide-neutral-200/70 dark:divide-neutral-800"
+          className="rounded-lg border border-border bg-card divide-y divide-neutral-200/70 dark:divide-neutral-800"
         >
           {FUENTES.map((fuente) => (
             <TrazabilidadFila key={fuente.variant} fuente={fuente} tf={tf} />

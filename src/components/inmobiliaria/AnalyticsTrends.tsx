@@ -73,7 +73,7 @@ function PeriodComparisonCard({ analysis }: { analysis: TrendAnalysis }) {
   const isPercentMetric = analysis.metricId !== 'revenue' && analysis.metricId !== 'commissions';
 
   return (
-    <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
+    <div className="p-6 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
       <h3 className="text-sm font-medium text-fg-muted dark:text-fg-subtle mb-4">
         {t('inmobiliaria.analytics.trendsComp.periodComparison')}
       </h3>
@@ -211,7 +211,7 @@ function TrendChart({ analysis }: { analysis: TrendAnalysis }) {
   const isPercentMetric = analysis.metricId !== 'revenue' && analysis.metricId !== 'commissions';
 
   return (
-    <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
+    <div className="p-6 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-fg-muted dark:text-fg-subtle">
           {t('inmobiliaria.analytics.trendsComp.historicTrend')}
@@ -418,7 +418,7 @@ function SeasonalPatternsSection({ patterns }: { patterns: SeasonalPattern[] }) 
   const maxDev = Math.max(...allMonths.map((m) => Math.abs(m.deviation)));
 
   return (
-    <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
+    <div className="p-6 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
       <div className="flex items-center gap-2 mb-4">
         <div className="w-8 h-8 rounded-md bg-warning-soft flex items-center justify-center">
           <Calendar className="w-4 h-4 text-warning" />
@@ -534,7 +534,7 @@ function AnomaliesTable({ anomalies, metricId }: { anomalies: TrendAnomaly[]; me
 
   if (anomalies.length === 0) {
     return (
-      <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
+      <div className="p-6 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-8 h-8 rounded-md bg-success-soft flex items-center justify-center">
             <Warning className="w-4 h-4 text-success" />
@@ -549,7 +549,7 @@ function AnomaliesTable({ anomalies, metricId }: { anomalies: TrendAnomaly[]; me
   }
 
   return (
-    <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
+    <div className="p-6 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
       <div className="flex items-center gap-2 mb-4">
         <div className="w-8 h-8 rounded-md bg-warning-soft flex items-center justify-center">
           <Warning className="w-4 h-4 text-warning" />
@@ -655,7 +655,7 @@ function AnomaliesTable({ anomalies, metricId }: { anomalies: TrendAnomaly[]; me
 function InsightsPanel({ insights }: { insights: string[] }) {
   const { t } = useI18n();
   return (
-    <div className="p-6 rounded-xl border border-primary/30 bg-primary-soft">
+    <div className="p-6 rounded-lg border border-primary/30 bg-primary-soft">
       <div className="flex items-center gap-2 mb-4">
         <div className="w-8 h-8 rounded-md bg-primary-soft flex items-center justify-center">
           <Lightbulb className="w-4 h-4 text-primary" weight="fill" />
@@ -778,7 +778,7 @@ export function AnalyticsTrends({
         <PeriodComparisonCard analysis={currentAnalysis} />
 
         {/* Trend Summary Card */}
-        <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
+        <div className="p-6 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
           <h3 className="text-sm font-medium text-fg-muted dark:text-fg-subtle mb-4">
             {t('inmobiliaria.analytics.trendsComp.trendLine')}
           </h3>

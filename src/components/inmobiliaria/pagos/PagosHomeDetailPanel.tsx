@@ -67,7 +67,7 @@ export function PagosHomeDetailPanel({
           ) : error ? (
             <div
               role="alert"
-              className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 flex items-center justify-between gap-4"
+              className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 flex items-center justify-between gap-4"
             >
               <span className="inline-flex items-center gap-2 text-sm text-rose-600 dark:text-rose-400">
                 <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
@@ -82,7 +82,7 @@ export function PagosHomeDetailPanel({
               </button>
             </div>
           ) : !data ? (
-            <div className="rounded-xl border-2 border-dashed border-border bg-muted/30 px-6 py-10 text-center">
+            <div className="rounded-lg border-2 border-dashed border-border bg-muted/30 px-6 py-10 text-center">
               <p className="text-sm font-semibold text-foreground">
                 {t('inmobiliaria.ai.pagos_home.detail.notFound.title')}
               </p>
@@ -179,7 +179,7 @@ function DetailBody({ detail }: { detail: PaymentDetail }) {
           <Lightbulb className="w-4 h-4" aria-hidden="true" />
           {t('inmobiliaria.ai.pagos_home.detail.recomendacion.title')}
         </h3>
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
           <p className="text-sm text-foreground leading-relaxed">{recomendacionIA.text}</p>
           {recomendacionIA.suggestedAction ? (
             <p className="text-xs font-medium text-primary">{recomendacionIA.suggestedAction}</p>

@@ -692,7 +692,7 @@ function NovadadesState({
             <button
               key={qa.id}
               onClick={() => onNavigate(qa.href)}
-              className="group w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-left hover:bg-accent transition-colors"
+              className="group w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-left hover:bg-accent transition-colors"
             >
               <div className="grid place-items-center w-9 h-9 rounded-xl bg-muted group-hover:bg-primary/15 flex-shrink-0 transition-colors">
                 <Icon className="w-[18px] h-[18px] text-muted-foreground group-hover:text-primary transition-colors" />
@@ -875,7 +875,7 @@ export function CommandPalette() {
           'fixed inset-x-0 left-0 top-0 translate-x-0 translate-y-0',
           'h-[100dvh] max-h-[100dvh] w-full max-w-none rounded-none',
           'md:inset-x-auto md:left-1/2 md:top-[12%] md:-translate-x-1/2 md:translate-y-0',
-          'md:h-auto md:max-h-none md:w-[min(720px,94vw)] md:rounded-xl',
+          'md:h-auto md:max-h-none md:w-[min(720px,94vw)] md:rounded-lg',
           'flex flex-col p-0 gap-0',
           'border border-border bg-popover text-popover-foreground',
           'overflow-hidden md:[&>button]:hidden',

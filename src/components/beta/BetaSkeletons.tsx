@@ -36,8 +36,8 @@ export function ChatMessageSkeleton() {
       {/* User bubble - right aligned */}
       <div className="flex justify-end">
         <div className="w-2/3 space-y-1.5">
-          <div className="h-4 bg-primary-soft rounded-xl w-full" />
-          <div className="h-4 bg-primary-soft rounded-xl w-3/4 ml-auto" />
+          <div className="h-4 bg-primary-soft rounded-lg w-full" />
+          <div className="h-4 bg-primary-soft rounded-lg w-3/4 ml-auto" />
         </div>
       </div>
 
@@ -54,7 +54,7 @@ export function ChatMessageSkeleton() {
       {/* User bubble - right aligned */}
       <div className="flex justify-end">
         <div className="w-1/2 space-y-1.5">
-          <div className="h-4 bg-primary-soft rounded-xl w-full" />
+          <div className="h-4 bg-primary-soft rounded-lg w-full" />
         </div>
       </div>
     </div>
@@ -73,7 +73,7 @@ export function DecisionHistorySkeleton() {
       {Array.from({ length: 2 }).map((_, i) => (
         <div
           key={i}
-          className="p-3 rounded-xl border border-neutral-200/60 dark:border-border/50 space-y-2"
+          className="p-3 rounded-lg border border-neutral-200/60 dark:border-border/50 space-y-2"
         >
           <div className="flex items-start justify-between gap-2">
             <div className="h-3.5 bg-neutral-200 dark:bg-neutral-700 rounded flex-1" />

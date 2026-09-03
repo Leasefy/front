@@ -10,7 +10,7 @@
  * Orden: Alta → Media → Baja; dentro de cada prioridad, fecha DESC.
  * Chips de conteo por grupo arriba (click = filtro). Empty state celebratorio.
  *
- * Estilo: brand-pass — MigaDePan + cards rounded-xl border-border bg-card,
+ * Estilo: brand-pass — MigaDePan + cards rounded-lg border-border bg-card,
  * pills de prioridad con los tokens semánticos de COLOR_SYSTEM.md
  * (rose=alta, amber=media, emerald=baja — mismos de EscalationCard).
  */
@@ -164,7 +164,7 @@ function PendienteCard({ item }: { item: PendienteItem }) {
 
   return (
     <li
-      className="rounded-xl border border-border bg-card p-4 space-y-2.5"
+      className="rounded-lg border border-border bg-card p-4 space-y-2.5"
       data-testid={`pendiente-item-${item.key}`}
     >
       {/* Header: pill prioridad + grupo + tiempo relativo */}
@@ -279,7 +279,7 @@ function PendientesContent() {
       {error && items.length === 0 && (
         <div
           role="alert"
-          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
+          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>

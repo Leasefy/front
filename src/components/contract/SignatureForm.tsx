@@ -130,7 +130,7 @@ export function SignatureForm({
             <p className="text-xs text-fg-muted">Como {role}</p>
           </div>
         </div>
-        <div className="rounded-xl border border-success/30 bg-success-soft p-4">
+        <div className="rounded-lg border border-success/30 bg-success-soft p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success">
               <Check className="h-5 w-5 text-white" />
@@ -166,7 +166,7 @@ export function SignatureForm({
         />
 
         {/* Checkboxes - Single card with dividers */}
-        <div className="rounded-xl border border-border bg-surface overflow-hidden">
+        <div className="rounded-lg border border-border bg-surface overflow-hidden">
           {/* Terms checkbox */}
           <label className={cn(
             'flex cursor-pointer items-start gap-3 p-4 transition-all',

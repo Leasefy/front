@@ -45,7 +45,7 @@ export function PropietarioBankInfo({
     return (
       <div
         className={cn(
-          'p-4 rounded-xl border border-dashed border-border bg-surface dark:bg-bg',
+          'p-4 rounded-lg border border-dashed border-border bg-surface dark:bg-bg',
           className
         )}
         data-testid="bank-info-vacio"
@@ -104,7 +104,7 @@ export function PropietarioBankInfo({
   return (
     <div
       className={cn(
-        'p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg',
+        'p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg',
         className
       )}
     >

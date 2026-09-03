@@ -77,7 +77,7 @@ function StatCard({ icon: Icon, label, value, subValue, trend, color }: StatCard
   const colors = colorClasses[color];
 
   return (
-    <div className="p-4 rounded-xl border border-border bg-card">
+    <div className="p-4 rounded-lg border border-border bg-card">
       <div className="flex items-start justify-between mb-3">
         <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', colors.bg)}>
           <Icon className={cn('w-5 h-5', colors.icon)} />
@@ -169,26 +169,26 @@ export function PropietarioStats({
   if (variant === 'compact') {
     return (
       <div className={cn('grid grid-cols-2 sm:grid-cols-4 gap-3', className)}>
-        <div className="p-3 rounded-xl bg-muted/50">
+        <div className="p-3 rounded-lg bg-muted/50">
           <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietario.stats.properties')}</p>
           <p className="text-xl font-semibold text-foreground">
             {propietario.propertyCount}
           </p>
         </div>
-        <div className="p-3 rounded-xl bg-muted/50">
+        <div className="p-3 rounded-lg bg-muted/50">
           <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietario.stats.rented')}</p>
           <p className="text-xl font-semibold text-foreground">
             {propietario.activeLeases}
           </p>
         </div>
-        <div className="p-3 rounded-xl bg-muted/50">
+        <div className="p-3 rounded-lg bg-muted/50">
           <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietario.stats.monthlyRent')}</p>
           <p className="text-xl font-semibold text-foreground">
             {formatCurrency(propietario.totalMonthlyRent)}
           </p>
         </div>
         <div className={cn(
-          'p-3 rounded-xl',
+          'p-3 rounded-lg',
           hasPendingBalance
             ? 'bg-warning-soft'
             : 'bg-success-soft'
@@ -218,7 +218,7 @@ export function PropietarioStats({
     : null;
   return (
     <div className={cn('space-y-4', className)}>
-      <StatStrip className="rounded-xl border border-border bg-card px-4" data-testid="resumen-del-propietario">
+      <StatStrip className="rounded-lg border border-border bg-card px-4" data-testid="resumen-del-propietario">
         <Stat
           label={t('inmobiliaria.propietario.stats.properties')}
           value={String(propietario.propertyCount)}

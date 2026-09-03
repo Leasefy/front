@@ -89,7 +89,7 @@ export function DebtorPicker({ value, onChange, inputId }: DebtorPickerProps) {
   // Ya hay un deudor elegido: se muestra la selección, no el buscador.
   if (value) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface-muted px-3 py-2.5">
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface-muted px-3 py-2.5">
         <div className="flex items-center gap-2 min-w-0">
           <User
             className="w-4 h-4 shrink-0 text-fg-muted"
@@ -162,7 +162,7 @@ export function DebtorPicker({ value, onChange, inputId }: DebtorPickerProps) {
               la lista no scrollea dentro del modal. */}
           <ul
             data-lenis-prevent
-            className="max-h-56 overflow-y-auto rounded-xl border border-border divide-y divide-border"
+            className="max-h-56 overflow-y-auto rounded-lg border border-border divide-y divide-border"
             aria-label="Resultados de deudores"
           >
             {visibles.map((d) => (

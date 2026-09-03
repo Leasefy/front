@@ -145,7 +145,7 @@ export function ActaEntregaView({
     : { excellent: 0, good: 0, fair: 0, poor: 0 };
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b border-border">
         <div className="flex items-center justify-between mb-2">
@@ -197,7 +197,7 @@ export function ActaEntregaView({
                   <div
                     key={condition}
                     className={cn(
-                      'px-3 py-2 rounded-xl text-center',
+                      'px-3 py-2 rounded-lg text-center',
                       style.bg
                     )}
                   >
@@ -359,7 +359,7 @@ export function ActaEntregaView({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="p-4 rounded-xl bg-surface-muted"
+                    className="p-4 rounded-lg bg-surface-muted"
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div>
@@ -496,7 +496,7 @@ export function ActaEntregaView({
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative max-w-3xl max-h-[80vh] rounded-xl overflow-hidden"
+              className="relative max-w-3xl max-h-[80vh] rounded-lg overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <img

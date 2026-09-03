@@ -66,7 +66,7 @@ export function CarrierSlaBreachWindows({
   const { t } = useI18n()
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
+    <div className="rounded-lg border border-border bg-card p-5">
       <p className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-3">
         {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.title')}
       </p>

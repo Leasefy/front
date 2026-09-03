@@ -181,7 +181,7 @@ export function ConfigExtractoMensual({ agency, onSave, canEdit = true }: Config
 
   return (
     <section
-      className="space-y-4 p-5 rounded-xl bg-card border border-border"
+      className="space-y-4 p-5 rounded-lg bg-card border border-border"
       data-testid="config-extracto-mensual"
       aria-labelledby="extracto-mensual-titulo"
     >

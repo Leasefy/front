@@ -164,7 +164,7 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
       {error && (
         <div
           role="alert"
-          className="mb-5 rounded-xl border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-3"
+          className="mb-5 rounded-lg border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-3"
         >
           <span className="text-sm text-danger">
             {tf(`${NS}.detalle.error`, 'No se pudo cargar el estudio')}: {error}
@@ -193,7 +193,7 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
           </h2>
 
           {inProgress || !decision || !result ? (
-            <div className="rounded-xl border border-border bg-card p-8 text-center">
+            <div className="rounded-lg border border-border bg-card p-8 text-center">
               {inProgress ? (
                 <>
                   <Spinner size="md" className="mx-auto" aria-hidden="true" />

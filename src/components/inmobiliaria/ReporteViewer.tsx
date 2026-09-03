@@ -182,7 +182,7 @@ function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, stri
   return (
     <div className="space-y-4">
       {/* Overall Summary */}
-      <div className="p-4 rounded-xl bg-primary-soft border border-primary/30">
+      <div className="p-4 rounded-lg bg-primary-soft border border-primary/30">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-primary font-medium">
@@ -433,7 +433,7 @@ function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, 
   return (
     <div className="space-y-4">
       {/* Summary Cards */}
-      <div className="p-4 rounded-xl bg-danger-soft text-fg">
+      <div className="p-4 rounded-lg bg-danger-soft text-fg">
         <p className="text-sm font-medium text-danger">{t('inmobiliaria.reporte.totalOverduePortfolio')}</p>
         <p className="text-2xl font-bold">{formatCurrency(data.summary.totalPending)}</p>
         <p className="text-xs text-danger mt-1">{t('inmobiliaria.reporte.pendingCharges', { count: data.items.length })}</p>
@@ -510,7 +510,7 @@ function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, 
  */
 function GenericPreview({ report, t }: { report: ReportDefinition; t: (key: string, params?: Record<string, string | number>) => string }) {
   return (
-    <div className="p-8 rounded-xl bg-muted/50 text-center">
+    <div className="p-8 rounded-lg bg-muted/50 text-center">
       <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
       <h4 className="text-lg font-semibold text-foreground mb-2">
         {t('inmobiliaria.reporte.previewNotAvailable')}
@@ -652,7 +652,7 @@ export function ReporteViewer({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-xl border border-border bg-card p-4"
+            className="rounded-lg border border-border bg-card p-4"
           >
             <PreviewContent />
           </motion.div>

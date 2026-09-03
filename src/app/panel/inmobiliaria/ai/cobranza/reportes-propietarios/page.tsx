@@ -164,7 +164,7 @@ function ReporteRow({
         onClick={onSelect}
         aria-pressed={selected}
         className={[
-          'w-full text-left rounded-xl border bg-card p-4 transition-colors',
+          'w-full text-left rounded-lg border bg-card p-4 transition-colors',
           'hover:border-primary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
           selected ? 'border-primary ring-1 ring-primary/30' : 'border-border',
         ].join(' ')}
@@ -480,7 +480,7 @@ function ReportesPropietariosContent() {
         producir jamás su primer reporte. Ahora el camino de salida es generarlo.
       */}
       {isLoading && !hayReales ? (
-        <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-4 text-sm text-fg-muted">
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-4 text-sm text-fg-muted">
           <Spinner size="sm" variant="muted" className="shrink-0" />
           Cargando reportes…
         </div>
@@ -506,7 +506,7 @@ function ReportesPropietariosContent() {
           </div>
 
           {isLoading && !hayReales ? (
-            <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-4 text-sm text-fg-muted">
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-4 text-sm text-fg-muted">
               <Spinner size="sm" variant="muted" className="shrink-0" />
               Cargando reportes…
             </div>

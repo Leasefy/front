@@ -43,7 +43,7 @@ function NuevaFacturaContent() {
         <p className="text-sm text-fg-muted max-w-2xl">{t(k('subtitle'))}</p>
       </header>
 
-      <section className="rounded-xl border border-border bg-card p-5 lg:p-6 max-w-5xl">
+      <section className="rounded-lg border border-border bg-card p-5 lg:p-6 max-w-5xl">
         {agency?.id ? (
           <FacturaProveedorIACapture
             agencyId={agency.id}

@@ -30,7 +30,7 @@ export function CobranzaOverviewSkeleton() {
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 h-24 space-y-2"
+            className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 h-24 space-y-2"
           >
             <Skeleton className="h-4 w-16" />
             <Skeleton className="h-8 w-24" />
@@ -43,7 +43,7 @@ export function CobranzaOverviewSkeleton() {
         <Skeleton className="h-5 w-32" />
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
           {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className="h-28 w-full rounded-xl" />
+            <Skeleton key={i} className="h-28 w-full rounded-lg" />
           ))}
         </div>
       </section>
@@ -51,13 +51,13 @@ export function CobranzaOverviewSkeleton() {
       {/* Funnel chart */}
       <section className="space-y-3">
         <Skeleton className="h-5 w-32" />
-        <Skeleton className="h-48 w-full rounded-xl" />
+        <Skeleton className="h-48 w-full rounded-lg" />
       </section>
 
       {/* Transitions feed (3 col) + next-actions panel (2 col) */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-        <Skeleton className="h-56 w-full rounded-xl md:col-span-3" />
-        <Skeleton className="h-40 w-full rounded-xl md:col-span-2" />
+        <Skeleton className="h-56 w-full rounded-lg md:col-span-3" />
+        <Skeleton className="h-40 w-full rounded-lg md:col-span-2" />
       </div>
     </main>
   )

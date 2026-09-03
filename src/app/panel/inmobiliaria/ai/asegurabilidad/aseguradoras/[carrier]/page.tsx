@@ -84,7 +84,7 @@ export default function CarrierDeepDivePage() {
 
       {/* Error state */}
       {error && !isLoading && (
-        <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
           <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.errorLoading')}: {error}
           </p>
@@ -106,7 +106,7 @@ export default function CarrierDeepDivePage() {
       {/* Charts grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Latency sparkline */}
-        <div className="rounded-xl border border-border bg-card p-5">
+        <div className="rounded-lg border border-border bg-card p-5">
           <p className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-3">
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.charts.latency.title')}
           </p>
@@ -114,7 +114,7 @@ export default function CarrierDeepDivePage() {
         </div>
 
         {/* Error rate chart */}
-        <div className="rounded-xl border border-border bg-card p-5">
+        <div className="rounded-lg border border-border bg-card p-5">
           <p className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-3">
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.charts.errorRate.title')}
           </p>
@@ -123,7 +123,7 @@ export default function CarrierDeepDivePage() {
       </div>
 
       {/* Approval by canon — full width */}
-      <div className="rounded-xl border border-border bg-card p-5">
+      <div className="rounded-lg border border-border bg-card p-5">
         <p className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-3">
           {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.charts.approvalByCanon.title')}
         </p>

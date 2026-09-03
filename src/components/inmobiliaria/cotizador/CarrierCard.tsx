@@ -114,7 +114,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className={[
-        'rounded-xl border p-4 space-y-3 transition-colors duration-300',
+        'rounded-lg border p-4 space-y-3 transition-colors duration-300',
         colors.bg,
         colors.border,
       ].join(' ')}

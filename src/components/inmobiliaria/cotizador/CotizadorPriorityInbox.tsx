@@ -55,7 +55,7 @@ function InboxRow({ item, tf }: { item: WorkItem; tf: (k: string, fb: string) =>
   return (
     <Link
       href={detailHref(item)}
-      className="group flex items-start justify-between gap-3 rounded-xl border border-border bg-card p-3.5 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring"
+      className="group flex items-start justify-between gap-3 rounded-lg border border-border bg-card p-3.5 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring"
       data-testid={`cotizador-inbox-row-${item.id}`}
     >
       <div className="min-w-0 flex-1 space-y-1.5">
@@ -147,12 +147,12 @@ export function CotizadorPriorityInbox() {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="h-[88px] rounded-xl border border-border bg-surface-muted/60 animate-pulse"
+              className="h-[88px] rounded-lg border border-border bg-surface-muted/60 animate-pulse"
             />
           ))}
         </div>
       ) : error ? (
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
           <FalloDeCarga
             error={errorCrudo ?? error}
             queEs="la cola de consultas"
@@ -161,7 +161,7 @@ export function CotizadorPriorityInbox() {
           />
         </div>
       ) : sorted.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
           <SinDatos
             queSon="consultas"
             icono={Tray}

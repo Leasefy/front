@@ -84,7 +84,7 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
   };
 
   return (
-    <div className={cn('rounded-xl border border-border bg-card overflow-hidden', className)}>
+    <div className={cn('rounded-lg border border-border bg-card overflow-hidden', className)}>
       {/* Header */}
       <div className="px-5 py-4 border-b border-border bg-muted/20">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

@@ -151,7 +151,7 @@ export function Navbar() {
     )}>
       {/* Navbar bar with glass effect */}
       <div className={cn(
-        "rounded-xl backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-300 overflow-visible",
+        "rounded-lg backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-300 overflow-visible",
         isScrolled
           ? "bg-surface/95 border border-border"
           : "bg-white/10 dark:bg-black/20 border border-white/20 dark:border-white/10"
@@ -318,7 +318,7 @@ export function Navbar() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -8, scale: 0.96 }}
                         transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                        className="absolute right-0 top-full mt-2 w-56 bg-surface border border-border rounded-xl z-50 origin-top-right shadow-[0_12px_36px_rgba(20,19,15,0.14)]"
+                        className="absolute right-0 top-full mt-2 w-56 bg-surface border border-border rounded-lg z-50 origin-top-right shadow-[0_12px_36px_rgba(20,19,15,0.14)]"
                       >
                         {/* User info */}
                         <div className="px-4 py-3 border-b border-border">
@@ -416,7 +416,7 @@ export function Navbar() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-              className="absolute left-0 right-0 top-[calc(100%+4px)] bg-black/70 backdrop-blur-2xl backdrop-saturate-150 border border-white/10 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] z-50 overflow-hidden"
+              className="absolute left-0 right-0 top-[calc(100%+4px)] bg-black/70 backdrop-blur-2xl backdrop-saturate-150 border border-white/10 rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.3)] z-50 overflow-hidden"
             >
               <div className="p-8">
                 {/* Header */}
@@ -444,7 +444,7 @@ export function Navbar() {
                         key={item.href}
                         href={item.href}
                         onClick={() => setIsParaQuienOpen(false)}
-                        className="group p-4 rounded-xl border border-transparent hover:border-white/20 hover:bg-white/10 transition-all duration-200"
+                        className="group p-4 rounded-lg border border-transparent hover:border-white/20 hover:bg-white/10 transition-all duration-200"
                       >
                         {/* Icon container */}
                         <div className="w-11 h-11 rounded-md bg-white/10 flex items-center justify-center mb-4 group-hover:bg-white/20 transition-colors">
@@ -484,7 +484,7 @@ export function Navbar() {
                   <Link
                     href="/publicar"
                     onClick={() => setIsParaQuienOpen(false)}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium text-white bg-white/15 border border-white/20 rounded-xl hover:bg-white/25 transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium text-white bg-white/15 border border-white/20 rounded-lg hover:bg-white/25 transition-colors"
                   >
                     Comenzar gratis
                     <ArrowRight className="w-3 h-3" />
@@ -514,7 +514,7 @@ export function Navbar() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-              className="absolute left-0 right-0 top-[calc(100%+4px)] bg-black/70 backdrop-blur-2xl backdrop-saturate-150 border border-white/10 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] z-50 overflow-hidden"
+              className="absolute left-0 right-0 top-[calc(100%+4px)] bg-black/70 backdrop-blur-2xl backdrop-saturate-150 border border-white/10 rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.3)] z-50 overflow-hidden"
             >
               <div className="flex">
                 {/* Main products grid - Left side */}
@@ -535,7 +535,7 @@ export function Navbar() {
                         return (
                           <div
                             key={item.href}
-                            className="p-4 rounded-xl border border-white/10 bg-white/5 opacity-70 cursor-not-allowed"
+                            className="p-4 rounded-lg border border-white/10 bg-white/5 opacity-70 cursor-not-allowed"
                           >
                             {/* Icon container */}
                             <div className="w-10 h-10 rounded-md bg-white/10 flex items-center justify-center mb-3">
@@ -563,7 +563,7 @@ export function Navbar() {
                           key={item.href}
                           href={item.href}
                           onClick={() => setIsProductosOpen(false)}
-                          className="group p-4 rounded-xl border border-transparent hover:border-white/20 hover:bg-white/10 transition-all duration-200"
+                          className="group p-4 rounded-lg border border-transparent hover:border-white/20 hover:bg-white/10 transition-all duration-200"
                         >
                           {/* Icon container */}
                           <div className="w-10 h-10 rounded-md bg-white/10 flex items-center justify-center mb-3 group-hover:bg-white/20 transition-colors">
@@ -588,7 +588,7 @@ export function Navbar() {
                   {/* Featured product highlight */}
                   <div className="mb-6">
                     <span className="inline-block text-[10px] font-medium text-white/50 uppercase tracking-wider mb-3">Destacado</span>
-                    <div className="p-4 bg-white/10 rounded-xl border border-white/10">
+                    <div className="p-4 bg-white/10 rounded-lg border border-white/10">
                       <div className="w-9 h-9 rounded-md bg-white/10 flex items-center justify-center mb-3">
                         <ShieldCheck className="w-4 h-4 text-white/60" strokeWidth={1.5} />
                       </div>
@@ -638,7 +638,7 @@ export function Navbar() {
                   <Link
                     href="/publicar"
                     onClick={() => setIsProductosOpen(false)}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium text-white bg-white/15 border border-white/20 rounded-xl hover:bg-white/25 transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium text-white bg-white/15 border border-white/20 rounded-lg hover:bg-white/25 transition-colors"
                   >
                     Comenzar ahora
                     <ArrowRight className="w-3 h-3" />

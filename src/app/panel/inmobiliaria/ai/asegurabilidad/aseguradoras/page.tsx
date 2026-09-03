@@ -177,7 +177,7 @@ export default function AseguradorasPage() {
 
       {/* Error banner */}
       {error && !data && (
-        <div className="rounded-xl bg-danger-soft border border-danger/30 text-danger px-4 py-3 text-sm flex items-center justify-between gap-4">
+        <div className="rounded-lg bg-danger-soft border border-danger/30 text-danger px-4 py-3 text-sm flex items-center justify-between gap-4">
           <span>{t('inmobiliaria.ai.cotizador.aseguradoras.errorLoading')}</span>
           <Button
             variant="outline"
@@ -203,7 +203,7 @@ export default function AseguradorasPage() {
 
       {/* Error toast — mutation failures */}
       {errorToast && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-xl border border-danger/30 bg-danger-soft text-danger px-4 py-3 text-sm">
+        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-lg border border-danger/30 bg-danger-soft text-danger px-4 py-3 text-sm">
           {errorToast}
         </div>
       )}

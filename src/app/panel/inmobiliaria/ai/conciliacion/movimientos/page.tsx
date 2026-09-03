@@ -363,7 +363,7 @@ function ConciliacionContent() {
       </header>
 
       {/* Phase-honest banner */}
-      <div className="rounded-xl bg-surface-muted border border-border p-3 flex items-start gap-2.5">
+      <div className="rounded-lg bg-surface-muted border border-border p-3 flex items-start gap-2.5">
         <Info className="w-5 h-5 text-fg-muted flex-shrink-0 mt-0.5" weight="duotone" />
         <div>
           <p className="text-xs font-semibold text-fg-muted">{t(k('m2BannerTitle'))}</p>
@@ -377,7 +377,7 @@ function ConciliacionContent() {
         reconciliation run; matching is async (Inngest), so new suggestions surface
         on a later refresh of the queue below.
       */}
-      <div id="upload" className="scroll-mt-24 rounded-xl border-2 border-dashed border-border bg-muted/20 p-5 space-y-4">
+      <div id="upload" className="scroll-mt-24 rounded-lg border-2 border-dashed border-border bg-muted/20 p-5 space-y-4">
         {/* Bank selector — selector excluyente → SegmentedControl del DS */}
         <div className="flex items-center gap-2">
           <span className="text-caption text-muted-foreground">{t(k('uploadBankLabel'))}</span>
@@ -399,7 +399,7 @@ function ConciliacionContent() {
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
           aria-label={t(k('uploadTitle'))}
-          className="w-full rounded-xl border-2 border-dashed border-border bg-background/40 p-8 flex flex-col items-center justify-center gap-2 text-center transition-colors hover:border-primary/30 hover:bg-primary/5 disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="w-full rounded-lg border-2 border-dashed border-border bg-background/40 p-8 flex flex-col items-center justify-center gap-2 text-center transition-colors hover:border-primary/30 hover:bg-primary/5 disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-1">
             {uploading ? (
@@ -437,7 +437,7 @@ function ConciliacionContent() {
           {RESUMEN_ITEMS.map((item) => {
             const value = isLoading ? '—' : summary[item.field as keyof typeof summary];
             return (
-              <div key={item.key} className="rounded-xl border border-border bg-card p-4">
+              <div key={item.key} className="rounded-lg border border-border bg-card p-4">
                 <div className="flex items-center gap-2">
                   <span className={cn('w-2 h-2 rounded-full flex-shrink-0', item.dot)} />
                   <span className="text-caption text-muted-foreground truncate">{t(k(`caso_${item.key}`))}</span>
@@ -453,7 +453,7 @@ function ConciliacionContent() {
 
       {/* Error state */}
       {error && (
-        <div className="rounded-xl border border-error-500/30 dark:border-error-500/40 bg-error-50 dark:bg-error-500/15 p-4 flex items-start gap-2.5">
+        <div className="rounded-lg border border-error-500/30 dark:border-error-500/40 bg-error-50 dark:bg-error-500/15 p-4 flex items-start gap-2.5">
           <Warning className="w-5 h-5 text-error-700 dark:text-error-500 flex-shrink-0 mt-0.5" weight="fill" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-error-700 dark:text-error-500">{t(k('errorTitle'))}</p>
@@ -472,7 +472,7 @@ function ConciliacionContent() {
       )}
 
       {/* Movimientos table */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-surface-muted flex items-center justify-center flex-shrink-0">

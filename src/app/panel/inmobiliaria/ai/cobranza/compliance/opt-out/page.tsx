@@ -155,7 +155,7 @@ function OptOutContent() {
       </div>
 
       {error && (
-        <div className="rounded-xl bg-danger-soft text-danger">
+        <div className="rounded-lg bg-danger-soft text-danger">
           Error: {error}
         </div>
       )}

@@ -142,7 +142,7 @@ export function ExtractoDelPropietarioDialog({
 
           {cargando && (
             <div
-              className="flex items-center gap-3 rounded-xl border border-border bg-card p-6 text-sm text-fg-muted"
+              className="flex items-center gap-3 rounded-lg border border-border bg-card p-6 text-sm text-fg-muted"
               role="status"
               aria-live="polite"
               data-testid="extracto-cargando"
@@ -153,7 +153,7 @@ export function ExtractoDelPropietarioDialog({
           )}
 
           {!cargando && error && (
-            <p className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger" data-testid="extracto-error">
+            <p className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger" data-testid="extracto-error">
               {error}
             </p>
           )}

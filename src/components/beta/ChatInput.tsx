@@ -472,7 +472,7 @@ export function ChatInput({
           className={cn(
             'relative flex items-end gap-2',
             'px-4 py-2',
-            topSlot ? 'rounded-b-xl rounded-t-none' : 'rounded-xl',
+            topSlot ? 'rounded-b-xl rounded-t-none' : 'rounded-lg',
             'bg-surface',
             'border border-border',
             'shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]',

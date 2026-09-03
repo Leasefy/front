@@ -55,7 +55,7 @@ export function StreamCompleteBanner({
     return (
       <div
         role="status"
-        className="rounded-xl border border-border bg-surface-muted p-5 flex items-center justify-between gap-4 flex-wrap"
+        className="rounded-lg border border-border bg-surface-muted p-5 flex items-center justify-between gap-4 flex-wrap"
       >
         <p className="text-sm font-medium text-fg-muted">
           {t('inmobiliaria.ai.cotizador.detail.banner.stubModeWarning')}
@@ -82,7 +82,7 @@ export function StreamCompleteBanner({
     <div
       role="status"
       aria-live="polite"
-      className="rounded-xl border border-success/30 bg-success-soft p-5 flex items-center justify-between gap-4 flex-wrap"
+      className="rounded-lg border border-success/30 bg-success-soft p-5 flex items-center justify-between gap-4 flex-wrap"
     >
       {/* Left: completion summary */}
       <div className="flex items-center gap-3">

@@ -107,7 +107,7 @@ function AgencyCheckoutInner() {
         <div className="grid gap-6 lg:grid-cols-5">
           {/* Left — plan summary */}
           <div className="lg:col-span-3 space-y-6">
-            <div className="bg-card rounded-xl border border-border p-5">
+            <div className="bg-card rounded-lg border border-border p-5">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-lg bg-surface-muted flex items-center justify-center shrink-0">
                   <Buildings className="w-6 h-6 text-fg-muted" />
@@ -127,7 +127,7 @@ function AgencyCheckoutInner() {
               </div>
             </div>
 
-            <div className="bg-card rounded-xl border border-border p-5">
+            <div className="bg-card rounded-lg border border-border p-5">
               <p className="text-sm font-medium text-foreground mb-3">Límites del plan</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 rounded-md bg-muted/50 text-center">
@@ -149,7 +149,7 @@ function AgencyCheckoutInner() {
           {/* Right — price + CTA / states */}
           <div className="lg:col-span-2">
             <div className="lg:sticky lg:top-8 space-y-4">
-              <div className="bg-card rounded-xl border border-border p-5">
+              <div className="bg-card rounded-lg border border-border p-5">
                 <p className="text-sm font-medium text-foreground mb-4">Resumen</p>
                 <div className="flex items-baseline justify-between mb-2">
                   <span className="text-sm text-muted-foreground">Plan {plan.name}</span>
@@ -179,7 +179,7 @@ function AgencyCheckoutInner() {
               </div>
 
               {error && (
-                <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                   <WarningCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                   <p className="text-[13px] text-destructive">{error}</p>
                 </div>
@@ -187,7 +187,7 @@ function AgencyCheckoutInner() {
 
               {/* Success */}
               {state === 'success' && (
-                <div className="bg-card rounded-xl border border-border p-5 flex flex-col items-center text-center gap-2">
+                <div className="bg-card rounded-lg border border-border p-5 flex flex-col items-center text-center gap-2">
                   <CheckCircle className="w-10 h-10 text-success" />
                   <p className="font-semibold text-foreground">
                     {isPaid ? '¡Pago confirmado!' : 'Plan activado'}
@@ -198,7 +198,7 @@ function AgencyCheckoutInner() {
 
               {/* Awaiting payment — hosted Wompi tab */}
               {state === 'awaiting' && (
-                <div className="bg-card rounded-xl border border-border p-5 flex flex-col items-center text-center gap-3">
+                <div className="bg-card rounded-lg border border-border p-5 flex flex-col items-center text-center gap-3">
                   <Spinner size="lg" variant="current" className="text-primary" />
                   <p className="text-sm font-medium text-foreground">Esperando la confirmación de tu pago…</p>
                   <p className="text-xs text-muted-foreground">

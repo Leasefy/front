@@ -69,7 +69,7 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
   const StatusIcon = config.icon;
 
   return (
-    <div className={cn('rounded-xl border border-border overflow-hidden', config.bg)}>
+    <div className={cn('rounded-lg border border-border overflow-hidden', config.bg)}>
       {/* Header */}
       <button
         type="button"
@@ -270,7 +270,7 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
 
       {/* Average score (when done) */}
       {allDone && summary.averageScore !== null && (
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-muted border border-border">
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-surface-muted border border-border">
           <div className="text-center">
             <p className="text-2xl font-bold text-fg">{summary.averageScore}</p>
             <p className="text-[11px] text-fg-muted">/100</p>
@@ -292,7 +292,7 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
       {/* Cross-validation */}
       {results?.crossValidation && (
         <div className={cn(
-          'p-3 rounded-xl border',
+          'p-3 rounded-lg border',
           results.crossValidation.consistencyScore >= 80
             ? 'bg-success-soft dark:bg-[#2C7A53]/15 border-success/30 dark:border-[#2C7A53]/40'
             : 'bg-warning-soft dark:bg-[#B7791F]/15 border-warning/30 dark:border-[#B7791F]/40'

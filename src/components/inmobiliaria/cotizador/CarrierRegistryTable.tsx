@@ -332,7 +332,7 @@ export function CarrierRegistryTable({
   const { t } = useI18n()
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
       <div className="overflow-x-auto">
         <Table className="min-w-full divide-y divide-border">
           <TableHeader className="bg-surface-muted/60">

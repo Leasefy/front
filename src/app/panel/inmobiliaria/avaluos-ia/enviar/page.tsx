@@ -116,7 +116,7 @@ export default function EnviarReportePage() {
           {/* ── Compose (left) ──────────────────────────────────────────── */}
           <div className="space-y-5 min-w-0">
             {/* Recipient */}
-            <Card className="rounded-2xl p-5">
+            <Card className="rounded-lg p-5">
               <div className="mb-3"><MonoLabel>Para</MonoLabel></div>
               <div className="flex items-center gap-3">
                 <span className="inline-flex items-center justify-center w-10 h-10 rounded-full text-[14px] font-medium shrink-0 bg-surface-muted text-fg-muted">
@@ -130,7 +130,7 @@ export default function EnviarReportePage() {
             </Card>
 
             {/* Channel */}
-            <Card className="rounded-2xl p-5">
+            <Card className="rounded-lg p-5">
               <div className="mb-3"><MonoLabel>Cómo enviarlo</MonoLabel></div>
               <div className="grid grid-cols-3 gap-3">
                 {CHANNELS.map((c) => {
@@ -142,7 +142,7 @@ export default function EnviarReportePage() {
                       type="button"
                       onClick={() => setChannel(c.key)}
                       aria-pressed={isSel}
-                      className="relative rounded-xl border bg-surface p-3.5 text-left transition-all active:scale-[0.99]"
+                      className="relative rounded-lg border bg-surface p-3.5 text-left transition-all active:scale-[0.99]"
                       style={{ borderColor: isSel ? BLUE : 'rgba(0,0,0,0.10)', boxShadow: isSel ? `0 0 0 1px ${BLUE}` : 'none' }}
                     >
                       <CIcon className="w-6 h-6 mb-2" weight="fill" style={{ color: c.color }} />
@@ -161,7 +161,7 @@ export default function EnviarReportePage() {
 
             {/* Message */}
             {channel !== 'pdf' && (
-              <Card className="rounded-2xl p-5">
+              <Card className="rounded-lg p-5">
                 <div className="flex items-center justify-between mb-3">
                   <MonoLabel>Mensaje</MonoLabel>
                   <span className="text-[11.5px] text-fg-subtle">Redactado por Sofía · editable</span>
@@ -182,13 +182,13 @@ export default function EnviarReportePage() {
 
           {/* ── Report preview (right) ──────────────────────────────────── */}
           <aside className="lg:sticky lg:top-6">
-            <section className="rounded-2xl border border-border bg-surface overflow-hidden">
+            <section className="rounded-lg border border-border bg-surface overflow-hidden">
               <div className="px-4 pt-4 pb-3 border-b border-border-faint">
                 <MonoLabel>Lo que verá Carlos</MonoLabel>
               </div>
               {/* mini ink preview */}
               <div className="p-4">
-                <div className="relative overflow-hidden rounded-xl px-4 py-5 text-center" style={{ background: INK_GRADIENT }}>
+                <div className="relative overflow-hidden rounded-lg px-4 py-5 text-center" style={{ background: INK_GRADIENT }}>
                   <div className="pointer-events-none absolute -inset-x-2 top-[54%] h-[40%] text-white/[0.10]">
                     <BrandContour />
                   </div>

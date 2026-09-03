@@ -117,7 +117,7 @@ function SettlementCard({
 
   return (
     <div
-      className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
+      className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
       data-testid={`liquidacion-row-${item.id}`}
     >
       {/* Identidad: propietario + periodo + estado */}
@@ -305,7 +305,7 @@ function ConciliacionLiquidaciones() {
 
         {/* Acción principal: generar + KPI total */}
         <div className="flex shrink-0 items-center gap-3">
-          <div className="rounded-xl border border-border bg-card px-4 py-3 text-center">
+          <div className="rounded-lg border border-border bg-card px-4 py-3 text-center">
             <p className="text-2xl font-semibold text-fg tabular-nums">
               {isLoading ? '—' : total}
             </p>
@@ -348,7 +348,7 @@ function ConciliacionLiquidaciones() {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="h-24 rounded-xl border border-border bg-surface-muted animate-pulse"
+              className="h-24 rounded-lg border border-border bg-surface-muted animate-pulse"
             />
           ))}
         </div>

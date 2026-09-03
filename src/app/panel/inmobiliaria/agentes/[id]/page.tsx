@@ -121,7 +121,7 @@ function AgenteDetailContent() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-xl border border-border bg-card p-5"
+            className="rounded-lg border border-border bg-card p-5"
           >
             <AgenteMetrics metrics={agente.metrics} />
           </motion.div>
@@ -164,7 +164,7 @@ function AgenteDetailContent() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="rounded-xl border border-border bg-card overflow-hidden"
+            className="rounded-lg border border-border bg-card overflow-hidden"
           >
             <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
               <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center">

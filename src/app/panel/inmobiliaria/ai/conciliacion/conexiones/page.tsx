@@ -156,7 +156,7 @@ function RegistrarConexion({
 
   return (
     <section
-      className="rounded-xl border border-border bg-card p-5 space-y-5"
+      className="rounded-lg border border-border bg-card p-5 space-y-5"
       aria-labelledby="seccion-registrar"
       data-testid="conexiones-registrar"
     >
@@ -271,7 +271,7 @@ function ConexionRow({
 
   return (
     <div
-      className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
+      className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
       data-testid={`conexion-row-${item.id}`}
     >
       {/* Identidad */}
@@ -370,7 +370,7 @@ function ConciliacionConexiones() {
         </div>
 
         {/* KPI: conectadas */}
-        <div className="shrink-0 rounded-xl border border-border bg-card px-4 py-3 text-center">
+        <div className="shrink-0 rounded-lg border border-border bg-card px-4 py-3 text-center">
           <p className="text-2xl font-semibold text-fg tabular-nums">
             {isLoading && items.length === 0 ? '—' : connectedCount}
           </p>
@@ -406,7 +406,7 @@ function ConciliacionConexiones() {
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className="h-20 rounded-xl border border-border bg-surface-muted animate-pulse"
+                className="h-20 rounded-lg border border-border bg-surface-muted animate-pulse"
               />
             ))}
           </div>

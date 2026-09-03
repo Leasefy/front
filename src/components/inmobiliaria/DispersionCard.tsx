@@ -99,7 +99,7 @@ export function DispersionCard({
         whileTap={{ scale: 0.995 }}
         onClick={() => onViewDetail?.(dispersion)}
         className={cn(
-          'w-full flex items-center gap-4 p-4 rounded-xl border-l-4 border bg-surface dark:bg-card border-border dark:border-border-strong cursor-pointer transition-all duration-200 hover:',
+          'w-full flex items-center gap-4 p-4 rounded-lg border-l-4 border bg-surface dark:bg-card border-border dark:border-border-strong cursor-pointer transition-all duration-200 hover:',
           borderColor
         )}
       >
@@ -144,7 +144,7 @@ export function DispersionCard({
     <motion.div
       whileHover={{ y: -2 }}
       className={cn(
-        'w-full rounded-xl border-l-4 border bg-surface dark:bg-card overflow-hidden transition-all duration-200 group hover:',
+        'w-full rounded-lg border-l-4 border bg-surface dark:bg-card overflow-hidden transition-all duration-200 group hover:',
         borderColor,
         'border-border dark:border-border-strong',
         onViewDetail && 'cursor-pointer'

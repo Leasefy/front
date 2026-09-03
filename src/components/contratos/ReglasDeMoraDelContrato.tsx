@@ -82,7 +82,7 @@ export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
 
   return (
     <section
-      className="rounded-xl border border-border bg-card p-5 space-y-3"
+      className="rounded-lg border border-border bg-card p-5 space-y-3"
       data-testid="reglas-de-mora-del-contrato"
     >
       <div className="flex items-center justify-between gap-2">

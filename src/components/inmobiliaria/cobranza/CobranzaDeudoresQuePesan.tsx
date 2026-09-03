@@ -29,7 +29,7 @@ export function CobranzaDeudoresQuePesan() {
   if (isLoading || deudores.length === 0) return null
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
       <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-fg">Los que más pesan</h3>
         <Link

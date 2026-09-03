@@ -651,7 +651,7 @@ export function ConsignacionWizard({
       </div>
 
       {/* Step Content */}
-      <div className="bg-surface dark:bg-bg rounded-xl border border-border dark:border-border-strong overflow-hidden">
+      <div className="bg-surface dark:bg-bg rounded-lg border border-border dark:border-border-strong overflow-hidden">
         <div className="p-6">
           <AnimatePresence mode="wait">
             <motion.div
@@ -744,7 +744,7 @@ export function ConsignacionWizard({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-xl bg-surface dark:bg-bg border border-border dark:border-border-strong"
+              className="w-full max-w-md p-6 rounded-lg bg-surface dark:bg-bg border border-border dark:border-border-strong"
             >
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center">

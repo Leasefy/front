@@ -269,7 +269,7 @@ export function ExtractoPropietario({
          * tarjeta medía más que el modal (1059px en 1024) y la tabla se salía
          * por la derecha en vez de scrollear en su propio contenedor.
          */
-        'min-w-0 bg-surface dark:bg-card rounded-xl border border-border overflow-hidden print:shadow-none print:border-0',
+        'min-w-0 bg-surface dark:bg-card rounded-lg border border-border overflow-hidden print:shadow-none print:border-0',
         className
       )}
     >
@@ -510,7 +510,7 @@ export function ExtractoPropietario({
       <div className="p-6 border-b border-border">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Net Amount Highlight */}
-          <div className="p-6 rounded-xl bg-success-soft border border-success/30 dark:border-success/40">
+          <div className="p-6 rounded-lg bg-success-soft border border-success/30 dark:border-success/40">
             <div className="flex items-center gap-2 text-sm font-medium text-success mb-2">
               <CurrencyCircleDollar className="w-5 h-5" weight="fill" />
               {t('inmobiliaria.propietario.extracto.netToReceive')}
@@ -521,7 +521,7 @@ export function ExtractoPropietario({
           </div>
 
           {/* Payment Details */}
-          <div className="p-6 rounded-xl bg-muted/50 border border-border">
+          <div className="p-6 rounded-lg bg-muted/50 border border-border">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Canon recaudado</span>

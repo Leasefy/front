@@ -77,9 +77,9 @@ function PagosCaso() {
       <div className="space-y-6 p-6 lg:p-8" data-testid="pago-caso-loading">
         {header}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          <div className="lg:col-span-4 h-72 animate-pulse rounded-xl border border-border bg-surface-muted" />
-          <div className="lg:col-span-4 h-72 animate-pulse rounded-xl border border-border bg-surface-muted" />
-          <div className="lg:col-span-4 h-72 animate-pulse rounded-xl border border-border bg-surface-muted" />
+          <div className="lg:col-span-4 h-72 animate-pulse rounded-lg border border-border bg-surface-muted" />
+          <div className="lg:col-span-4 h-72 animate-pulse rounded-lg border border-border bg-surface-muted" />
+          <div className="lg:col-span-4 h-72 animate-pulse rounded-lg border border-border bg-surface-muted" />
         </div>
       </div>
     )

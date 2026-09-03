@@ -45,7 +45,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
 
   return (
     <div className={cn(
-      'rounded-xl border border-border bg-surface',
+      'rounded-lg border border-border bg-surface',
       'overflow-hidden',
       className,
     )}>
@@ -71,7 +71,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
       {/* Content */}
       {items.length === 0 ? (
         <div className="px-6 pb-6">
-          <div className="rounded-xl bg-surface-muted py-10 px-6 text-center">
+          <div className="rounded-lg bg-surface-muted py-10 px-6 text-center">
             <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center mx-auto mb-4">
               <Lightning className="h-5 w-5 text-fg-subtle" />
             </div>

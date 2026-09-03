@@ -96,7 +96,7 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
 
   return (
     <section
-      className="rounded-xl border border-border bg-card"
+      className="rounded-lg border border-border bg-card"
       data-testid="cobros-del-contrato"
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-4">

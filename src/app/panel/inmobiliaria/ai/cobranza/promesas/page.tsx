@@ -161,7 +161,7 @@ function PromesasContent() {
       {error && (
         <div
           role="alert"
-          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
+          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>No se pudo cargar las promesas. {error}</span>
@@ -172,7 +172,7 @@ function PromesasContent() {
       {incumplidas.length > 0 && (
         <section
           role="status"
-          className="rounded-xl border border-danger/30 bg-danger-soft p-4 flex items-start gap-3"
+          className="rounded-lg border border-danger/30 bg-danger-soft p-4 flex items-start gap-3"
           data-testid="promesas-banner-incumplidas"
         >
           <Warning

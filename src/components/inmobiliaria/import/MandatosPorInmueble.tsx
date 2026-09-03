@@ -385,7 +385,7 @@ function FilaDeInmueble({
       {formularioAbierto && (
         <TableRow data-testid="fila-nuevo-propietario">
           <TableCell colSpan={4} className="bg-surface-muted/60">
-            <div className="rounded-xl border border-border bg-card p-5">
+            <div className="rounded-lg border border-border bg-card p-5">
               <h3 className="mb-4 text-base font-semibold text-fg">
                 {t('inmobiliaria.import.confirm.mandateBatch.porInmueble.nuevoPropietarioTitulo', {
                   title: inmueble.propertyTitle,

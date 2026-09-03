@@ -608,7 +608,7 @@ function TemplateEditorContent({
         {template.category === 'whatsapp' && (
           <section
             data-wa-status-section
-            className="rounded-xl border border-border bg-card p-4 mt-4 space-y-3"
+            className="rounded-lg border border-border bg-card p-4 mt-4 space-y-3"
           >
             <h2 className="text-sm font-semibold text-fg">
               {t('inmobiliaria.ai.templates.editor.waStatusTitle')}

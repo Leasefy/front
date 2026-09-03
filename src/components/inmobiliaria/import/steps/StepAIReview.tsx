@@ -245,7 +245,7 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
           {[...Array(Math.min(state.rawRows.length, 4))].map((_, i) => (
             <div
               key={i}
-              className="h-14 rounded-xl overflow-hidden relative bg-surface-muted dark:bg-ink"
+              className="h-14 rounded-lg overflow-hidden relative bg-surface-muted dark:bg-ink"
               style={{ animationDelay: `${i * 100}ms` }}
             >
               <div

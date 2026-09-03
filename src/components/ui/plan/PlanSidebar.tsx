@@ -572,7 +572,7 @@ function SidebarContent({
             <Link
               href={profileCompletion.href}
               onClick={onItemClick}
-              className="block p-3 rounded-xl bg-surface-muted border border-border-faint hover:bg-surface-hover transition-colors group"
+              className="block p-3 rounded-lg bg-surface-muted border border-border-faint hover:bg-surface-hover transition-colors group"
             >
               {/* Header with progress */}
               <div className="flex items-center justify-between mb-3">

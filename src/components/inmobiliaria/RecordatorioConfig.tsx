@@ -151,7 +151,7 @@ function ChannelToggle({
   return (
     <div
       className={cn(
-        'flex items-center justify-between p-4 rounded-xl border transition-colors',
+        'flex items-center justify-between p-4 rounded-lg border transition-colors',
         enabled
           ? 'border-primary/30 bg-primary-soft/50 dark:border-primary/30 dark:bg-primary/20'
           : 'border-border bg-card'
@@ -208,7 +208,7 @@ function MessagePreview({
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium text-foreground">{title}</label>
-      <div className="p-4 rounded-xl border border-border bg-muted/30">
+      <div className="p-4 rounded-lg border border-border bg-muted/30">
         <p
           className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed"
           dangerouslySetInnerHTML={{ __html: highlightedTemplate }}

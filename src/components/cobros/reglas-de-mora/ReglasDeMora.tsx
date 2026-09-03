@@ -190,7 +190,7 @@ export function ReglasDeMora() {
         <div className="space-y-5" data-testid="reglas-vacio">
           {/* El vacío es la tabla sin filas: va encerrado en la misma tarjeta
               que la tabla, como todos los vacíos del panel (Nico, 2026-09-01). */}
-          <div className="rounded-xl border border-border bg-surface">
+          <div className="rounded-lg border border-border bg-surface">
             <EmptyState
               icon={Scales}
               title="Todavía no hay reglas de mora"

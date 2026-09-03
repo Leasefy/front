@@ -70,7 +70,7 @@ export function ApprovalRateMonthlyChart({
     return (
       <div className="h-[280px] space-y-3 animate-pulse">
         <div className="h-4 w-32 bg-surface-muted rounded" />
-        <div className="h-[240px] bg-surface-muted rounded-xl" />
+        <div className="h-[240px] bg-surface-muted rounded-lg" />
       </div>
     )
   }

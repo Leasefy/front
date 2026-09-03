@@ -101,7 +101,7 @@ function EstudioOverview() {
           <EstudioKpiStrip kpis={data.kpis} isLoading={isLoading} />
 
           {/* Qué necesita tu atención (visión §3) → bandeja /estudios */}
-          <section className="rounded-xl border border-border bg-card p-5 flex items-start justify-between gap-4 flex-wrap">
+          <section className="rounded-lg border border-border bg-card p-5 flex items-start justify-between gap-4 flex-wrap">
             <div className="flex items-start gap-3 min-w-0">
               <span className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center shrink-0">
                 <ClipboardText className="w-5 h-5 text-fg" weight="duotone" aria-hidden="true" />
@@ -135,7 +135,7 @@ function EstudioOverview() {
                 {data.pipeline.map((seg) => (
                   <div
                     key={seg.estado}
-                    className="rounded-xl border border-border bg-card p-4"
+                    className="rounded-lg border border-border bg-card p-4"
                     data-estado={seg.estado}
                   >
                     <p className="text-xs font-medium text-fg-muted truncate">
@@ -158,7 +158,7 @@ function EstudioOverview() {
               </h2>
               <ul
                 role="list"
-                className="rounded-xl border border-border bg-card divide-y divide-border"
+                className="rounded-lg border border-border bg-card divide-y divide-border"
               >
                 {data.feed.slice(0, 8).map((f) => (
                   <li key={f.id} className="px-4 py-3 flex items-start gap-3">
@@ -197,7 +197,7 @@ function EstudioOverview() {
             return (
               <li
                 key={step.titleKey}
-                className="h-full rounded-xl border border-border bg-card p-5 flex flex-col gap-3"
+                className="h-full rounded-lg border border-border bg-card p-5 flex flex-col gap-3"
               >
                 <div className="flex items-center gap-2">
                   <span className="w-9 h-9 rounded-lg bg-primary-soft flex items-center justify-center shrink-0">

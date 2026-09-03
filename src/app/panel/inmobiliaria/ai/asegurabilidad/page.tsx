@@ -44,7 +44,7 @@ function ComoFuncionaCotizador() {
   const { t } = useI18n()
   return (
     <div
-      className="rounded-xl border border-border bg-card p-5 space-y-4"
+      className="rounded-lg border border-border bg-card p-5 space-y-4"
       data-testid="cotizador-como-funciona"
     >
       <h2 className="text-base font-semibold text-fg">
@@ -129,7 +129,7 @@ export default function CotizadorOverviewPage() {
       <main className="p-6 lg:p-8 space-y-6">
         {/* Dentro de un recuadro: sin él el mensaje quedaba flotando en el
             medio de la página y no se leía como una sección. */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
           <SinDatos
             queSon="cotizaciones"
             icono={Tray}
@@ -228,7 +228,7 @@ export default function CotizadorOverviewPage() {
 
       {/* Error state */}
       {error && !isLoading && (
-        <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
           {t('inmobiliaria.ai.cotizador.overview.errorLoading')}: {error}
         </div>
       )}

@@ -377,7 +377,7 @@ function DisputasContent() {
       {hayError && (
         <div
           role="alert"
-          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center justify-between gap-3 flex-wrap"
+          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center justify-between gap-3 flex-wrap"
         >
           <span className="flex items-center gap-2">
             <ShieldWarning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />

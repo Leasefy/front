@@ -132,7 +132,7 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
   return (
     <form
       onSubmit={(e) => void onFormSubmit(e)}
-      className="rounded-xl border border-border bg-card p-4 space-y-4"
+      className="rounded-lg border border-border bg-card p-4 space-y-4"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>

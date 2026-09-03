@@ -410,7 +410,7 @@ export function PropietarioForm({
           <h3 className="font-semibold">{t('inmobiliaria.propietario.form.bankDataTitle')}</h3>
         </div>
 
-        <div className="p-4 rounded-xl bg-primary-soft border border-primary/30">
+        <div className="p-4 rounded-lg bg-primary-soft border border-primary/30">
           <div className="flex gap-3">
             <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <p className="text-sm text-primary">

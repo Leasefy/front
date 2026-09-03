@@ -177,7 +177,7 @@ export function AdministracionDelContrato({
   const ivaDelCanon = leerIvaDelCanon(contract)
 
   return (
-    <section className="rounded-xl border border-border bg-card p-5 space-y-4" data-testid="administracion">
+    <section className="rounded-lg border border-border bg-card p-5 space-y-4" data-testid="administracion">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Receipt className="w-4 h-4 text-muted-foreground" />

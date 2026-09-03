@@ -62,7 +62,7 @@ function SectionCard({ title, icon, children, className }: SectionCardProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden',
+        'rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden',
         className
       )}
     >
@@ -219,7 +219,7 @@ export function PropietarioSection({ propietario, onCambiar, rutaDeOrigen }: Pro
 
         {/* Bank Account — only when payout data exists */}
         {propietario.bankAccount ? (
-          <div className="p-3 rounded-xl bg-surface-muted dark:bg-bg">
+          <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
             <div className="flex items-center gap-2 mb-2">
               <Bank className="w-4 h-4 text-fg-subtle" />
               <span className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.detail.paymentAccount')}</span>
@@ -236,7 +236,7 @@ export function PropietarioSection({ propietario, onCambiar, rutaDeOrigen }: Pro
           {propietario.email && (
             <a
               href={`mailto:${propietario.email}`}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
             >
               <Envelope className="w-4 h-4" />
               {t('inmobiliaria.consignaciones.detail.email')}
@@ -245,7 +245,7 @@ export function PropietarioSection({ propietario, onCambiar, rutaDeOrigen }: Pro
           {propietario.phone && (
             <a
               href={`tel:${propietario.phone}`}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
             >
               <Phone className="w-4 h-4" />
               {t('inmobiliaria.consignaciones.detail.call')}
@@ -339,13 +339,13 @@ export function AgenteSection({ agente, commissionPercent, isSaleListing, onReas
         {/* Commission Split — not computed for a sale mandate (§8.6: no
             sale-commission money movement anywhere in T-0038). */}
         {isSaleListing ? (
-          <div className="p-3 rounded-xl bg-surface-muted dark:bg-bg">
+          <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
             <p className="text-xs text-fg-muted dark:text-fg-subtle">
               {t('inmobiliaria.consignaciones.detail.commissionSplitNotAvailableForSale')}
             </p>
           </div>
         ) : (
-          <div className="p-3 rounded-xl bg-surface-muted dark:bg-bg">
+          <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
             <div className="flex items-center gap-2 mb-2">
               <CurrencyDollar className="w-4 h-4 text-fg-subtle" />
               <span className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.detail.commissionDistribution')}</span>
@@ -377,14 +377,14 @@ export function AgenteSection({ agente, commissionPercent, isSaleListing, onReas
         <div className="flex items-center gap-2">
           <a
             href={`mailto:${agente.email}`}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
           >
             <Envelope className="w-4 h-4" />
             {t('inmobiliaria.consignaciones.detail.email')}
           </a>
           <a
             href={`tel:${agente.phone}`}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
           >
             <Phone className="w-4 h-4" />
             {t('inmobiliaria.consignaciones.detail.call')}
@@ -432,14 +432,14 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
           {/* Lease Details */}
           <div className="grid grid-cols-2 gap-3">
             {consignacion.leaseEndDate && (
-              <div className="p-3 rounded-xl bg-surface-muted dark:bg-bg">
+              <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
                 <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.leaseEnd')}</p>
                 <p className="text-sm font-medium text-fg dark:text-white">
                   {formatDate(consignacion.leaseEndDate)}
                 </p>
               </div>
             )}
-            <div className="p-3 rounded-xl bg-surface-muted dark:bg-bg">
+            <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.monthlyRentLabel')}</p>
               <p className="text-sm font-medium text-fg dark:text-white">
                 {/* A SALE mandate can never have `availability: 'RENTED'`
@@ -497,7 +497,7 @@ export function DocumentsSection({ consignacion, onViewInventory }: DocumentsSec
             text + arrow as ONE button); Button can't host this multiline row (same precedent
             as whole-card/list-row clickables). Kept native. */}
         <button
-          className="w-full flex items-center gap-3 p-3 rounded-xl bg-surface-muted dark:bg-bg hover:bg-surface-muted dark:hover:bg-ink transition-colors text-left opacity-50 cursor-not-allowed"
+          className="w-full flex items-center gap-3 p-3 rounded-lg bg-surface-muted dark:bg-bg hover:bg-surface-muted dark:hover:bg-ink transition-colors text-left opacity-50 cursor-not-allowed"
           disabled
           title={t('inmobiliaria.consignaciones.header.comingSoon')}
         >
@@ -514,7 +514,7 @@ export function DocumentsSection({ consignacion, onViewInventory }: DocumentsSec
         {/* Acta de Entrega — allowlist: rich list-row click target (same precedent as above). */}
         <button
           onClick={onViewInventory}
-          className="w-full flex items-center gap-3 p-3 rounded-xl bg-surface-muted dark:bg-bg hover:bg-surface-muted dark:hover:bg-ink transition-colors text-left"
+          className="w-full flex items-center gap-3 p-3 rounded-lg bg-surface-muted dark:bg-bg hover:bg-surface-muted dark:hover:bg-ink transition-colors text-left"
         >
           <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center">
             <FileText className="w-5 h-5 text-success" />

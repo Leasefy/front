@@ -354,7 +354,7 @@ export function ConsignacionTimeline({
   const hasMoreEvents = events.length > maxVisibleItems;
 
   return (
-    <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden">
+    <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b border-border-faint dark:border-border-strong">
         <div className="flex items-center gap-3">
@@ -417,7 +417,7 @@ export function ConsignacionTimeline({
                     </div>
 
                     {/* Content */}
-                    <div className="p-3 rounded-xl bg-surface-muted dark:bg-bg">
+                    <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <h4 className="font-medium text-fg dark:text-white text-sm">
                           {event.title}

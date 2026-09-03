@@ -277,7 +277,7 @@ function EstudioReglas() {
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
         {/* 1 — Relación mínima ingreso/canon */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-5">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-5">
           <SectionHeader
             icon={Scales}
             title={tf(`${NS}.reglas.relacion.title`, 'Relación mínima ingreso/canon')}
@@ -308,7 +308,7 @@ function EstudioReglas() {
         </section>
 
         {/* 2 — Cuándo pedir codeudor */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-5">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-5">
           <SectionHeader
             icon={Users}
             title={tf(`${NS}.reglas.codeudor.title`, 'Cuándo pedir codeudor')}
@@ -358,7 +358,7 @@ function EstudioReglas() {
         </section>
 
         {/* 3 — Documentos requeridos por ocupación */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-5">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-5">
           <SectionHeader
             icon={ShieldCheck}
             title={tf(`${NS}.reglas.docs.title`, 'Documentos requeridos por ocupación')}
@@ -398,7 +398,7 @@ function EstudioReglas() {
         </section>
 
         {/* 4 — Casos que requieren revisión humana */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-5">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-5">
           <SectionHeader
             icon={UserFocus}
             title={tf(`${NS}.reglas.revision.title`, 'Casos que requieren revisión humana')}
@@ -421,7 +421,7 @@ function EstudioReglas() {
         </section>
 
         {/* 5 — Cuándo enviar a asegurabilidad */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-5">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-5">
           <SectionHeader
             icon={ShieldCheck}
             title={tf(`${NS}.reglas.asegurabilidad.title`, 'Cuándo enviar a asegurabilidad')}
@@ -455,7 +455,7 @@ function EstudioReglas() {
         </section>
 
         {/* 6 — Info a compartir con propietarios */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-5">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-5">
           <SectionHeader
             icon={Users}
             title={tf(`${NS}.reglas.propietario.title`, 'Información a compartir con propietarios')}
@@ -493,7 +493,7 @@ function EstudioReglas() {
         </section>
 
         {/* 7 — Tono de mensajes al candidato */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-5">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-5">
           <SectionHeader
             icon={ChatCircleText}
             title={tf(`${NS}.reglas.tono.title`, 'Tono de los mensajes al candidato')}
@@ -514,7 +514,7 @@ function EstudioReglas() {
         </section>
 
         {/* 8 — Tiempo de recordatorios */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-5">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-5">
           <SectionHeader
             icon={Bell}
             title={tf(`${NS}.reglas.recordatorios.title`, 'Tiempo de recordatorios')}
@@ -556,7 +556,7 @@ function EstudioReglas() {
         </section>
 
         {/* 9 — Canales permitidos */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-5">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-5">
           <SectionHeader
             icon={ChatsCircle}
             title={tf(`${NS}.reglas.canales.title`, 'Canales permitidos')}

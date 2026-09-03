@@ -85,7 +85,7 @@ interface StatCardProps {
 // Neutral icon tile per DS golden rule (blue = actionable only).
 function StatCard({ icon: Icon, label, value }: StatCardProps) {
   return (
-    <div className="p-4 rounded-xl border border-border bg-card">
+    <div className="p-4 rounded-lg border border-border bg-card">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
           <Icon className="w-5 h-5 text-fg-muted" />
@@ -136,7 +136,7 @@ function ActaCard({ acta, onClick }: ActaCardProps) {
       onClick={onClick}
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
-      className="w-full p-4 rounded-xl border border-border bg-card hover:border-fg/20 transition-colors text-left"
+      className="w-full p-4 rounded-lg border border-border bg-card hover:border-fg/20 transition-colors text-left"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
@@ -411,7 +411,7 @@ function DocumentosContent() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-xl border border-border bg-card overflow-hidden"
+        className="rounded-lg border border-border bg-card overflow-hidden"
       >
         <Tabs value={activeTab} onValueChange={(v) => setTab(v as DocTab)}>
         {/* Tabs Header */}

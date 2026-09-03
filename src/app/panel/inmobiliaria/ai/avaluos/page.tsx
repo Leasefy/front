@@ -281,7 +281,7 @@ function AvaluosSala() {
           shareable URL (se lo mando a un cliente). Each has its own loading
           state so one spinner never blocks the other. */}
       <div
-        className="rounded-xl border border-border bg-card p-5 space-y-4"
+        className="rounded-lg border border-border bg-card p-5 space-y-4"
         data-testid="avaluos-solicitar"
       >
         <h2 className="text-base font-semibold text-foreground">{t(`${NS}.solicitarTitle`)}</h2>
@@ -365,7 +365,7 @@ function AvaluosSala() {
           name. The agency copies it and sends it to their client. */}
       {shareUrl && (
         <div
-          className="rounded-xl border border-border bg-card p-4 space-y-3"
+          className="rounded-lg border border-border bg-card p-4 space-y-3"
           data-testid="avaluos-share-link"
         >
           <p className="text-sm text-muted-foreground">{t(`${NS}.linkListoDetalle`)}</p>
@@ -404,7 +404,7 @@ function AvaluosSala() {
 
       {/* ── ¿Cómo funciona? ────────────────────────────────────────── */}
       <div
-        className="rounded-xl border border-border bg-card p-5 space-y-4"
+        className="rounded-lg border border-border bg-card p-5 space-y-4"
         data-testid="avaluos-como-funciona"
       >
         <h2 className="text-base font-semibold text-foreground">
@@ -476,7 +476,7 @@ function AvaluosSala() {
             agencia leía «Error 502». <EstadoDeDatos> los ordena (cargando →
             falló → vacío → datos), clasifica el fallo y sólo ofrece reintentar
             cuando reintentar puede cambiar algo. */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
           <EstadoDeDatos
             cargando={isLoading}
             error={errorCrudo}

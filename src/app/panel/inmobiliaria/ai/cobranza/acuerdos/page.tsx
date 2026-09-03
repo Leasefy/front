@@ -133,7 +133,7 @@ function AcuerdoListaCard({ row }: { row: PaymentsFunnelItem }) {
   const href = `${PLANES_BASE}/${row.paymentPlanId}`
 
   return (
-    <li className="rounded-xl border border-border bg-card p-4 space-y-3">
+    <li className="rounded-lg border border-border bg-card p-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 space-y-0.5">
           <p className="text-sm font-semibold text-fg truncate">
@@ -194,7 +194,7 @@ function AcuerdoPropuestoCard({
   }, [primerPago, formatDate])
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
       {/* Cabecera con estado */}
       <div className="flex items-center justify-between gap-2 px-5 py-3 bg-surface-muted border-b border-border">
         <div className="flex items-center gap-2 min-w-0">
@@ -392,7 +392,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Columna izquierda — formulario */}
       <form
-        className="rounded-xl border border-border bg-card p-5 space-y-5"
+        className="rounded-lg border border-border bg-card p-5 space-y-5"
         onSubmit={(e) => e.preventDefault()}
       >
         <div className="space-y-1">
@@ -657,7 +657,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
             consecuencia={consecuenciaLabel}
           />
         ) : (
-          <div className="rounded-xl border border-dashed border-border bg-surface-muted p-8 text-center">
+          <div className="rounded-lg border border-dashed border-border bg-surface-muted p-8 text-center">
             <FileText className="w-8 h-8 mx-auto text-fg-muted mb-3" weight="duotone" aria-hidden="true" />
             <p className="text-sm font-medium text-fg">Completa las condiciones</p>
             <p className="text-xs text-fg-muted mt-1 max-w-xs mx-auto">
@@ -742,7 +742,7 @@ function AcuerdosLista() {
       {error && acuerdos.length === 0 && (
         <div
           role="alert"
-          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center justify-between gap-3"
+          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center justify-between gap-3"
         >
           <span className="flex items-center gap-2 min-w-0">
             <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />

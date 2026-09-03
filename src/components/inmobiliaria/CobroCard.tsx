@@ -77,7 +77,7 @@ export function CobroCard({
         whileTap={{ scale: 0.995 }}
         onClick={() => onClick?.(cobro)}
         className={cn(
-          'w-full flex items-center gap-4 p-4 rounded-xl border-l-4 border bg-card border-border cursor-pointer transition-all duration-200 hover:shadow-sm',
+          'w-full flex items-center gap-4 p-4 rounded-lg border-l-4 border bg-card border-border cursor-pointer transition-all duration-200 hover:shadow-sm',
           borderColor
         )}
       >
@@ -124,7 +124,7 @@ export function CobroCard({
     <motion.div
       whileHover={{ y: -2 }}
       className={cn(
-        'w-full rounded-xl border-l-4 border bg-card overflow-hidden transition-all duration-200 group',
+        'w-full rounded-lg border-l-4 border bg-card overflow-hidden transition-all duration-200 group',
         borderColor,
         'border-border',
         onClick && 'cursor-pointer'

@@ -39,7 +39,7 @@ export function RacionalTab({ decision, result }: RacionalTabProps) {
     <div className="space-y-5">
       {/* Motivos */}
       {decision.motivos.length > 0 && (
-        <section className="rounded-xl border border-border bg-card p-4">
+        <section className="rounded-lg border border-border bg-card p-4">
           <h3 className="text-base font-semibold text-fg">
             {t(`${NS}.detalle.motivos`)}
           </h3>
@@ -62,7 +62,7 @@ export function RacionalTab({ decision, result }: RacionalTabProps) {
 
       {/* Explicación del motor */}
       {explanation && (
-        <section className="rounded-xl border border-border bg-card p-4">
+        <section className="rounded-lg border border-border bg-card p-4">
           <h3 className="text-base font-semibold text-fg">
             {t(`${NS}.detalle.racional.explicacionTitulo`)}
           </h3>
@@ -78,7 +78,7 @@ export function RacionalTab({ decision, result }: RacionalTabProps) {
           <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
             {t(`${NS}.detalle.racional.aporteTitulo`)}
           </p>
-          <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
+          <div className="rounded-lg border border-border bg-card overflow-hidden divide-y divide-border">
             {FACTOR_KEYS.map((factor) => {
               const f = breakdown[factor]
               if (!f) return null

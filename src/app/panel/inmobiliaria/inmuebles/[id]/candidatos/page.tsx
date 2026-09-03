@@ -389,7 +389,7 @@ function CandidatosContent() {
       )}
 
       {/* Table */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
         {candidates.length === 0 ? (
           <EmptyState
             icon={User}
@@ -605,7 +605,7 @@ function CandidateStatTile({
   tone: keyof typeof CANDIDATE_TILE_TONES;
 }) {
   return (
-    <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card">
+    <div className="flex items-center gap-3 p-4 rounded-lg border border-border bg-card">
       <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', CANDIDATE_TILE_TONES[tone])}>
         <User className="w-5 h-5" weight="duotone" />
       </div>

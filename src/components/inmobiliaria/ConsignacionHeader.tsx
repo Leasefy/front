@@ -150,8 +150,8 @@ export function ConsignacionHeader({
   const portadaAbre = cantidadDeFotos > 0 && !!onVerFotos;
 
   return (
-    <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
-      <div className="flex flex-col lg:flex-row rounded-xl">
+    <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
+      <div className="flex flex-col lg:flex-row rounded-lg">
         {/* Image/Thumbnail Section */}
         <div className="relative w-full lg:w-80 xl:w-96 h-48 lg:h-auto shrink-0 bg-surface-muted dark:bg-ink overflow-hidden rounded-t-xl lg:rounded-t-none lg:rounded-l-xl">
           {thumbnailUrl && portadaAbre ? (

@@ -388,7 +388,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
     return (
       <form onSubmit={handleSubmit} className="space-y-5" noValidate data-testid="factura-form">
         {extracted ? (
-          <div className="rounded-xl bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5">
+          <div className="rounded-lg bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5">
             <PencilSimple className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="fill" />
             <div className="min-w-0">
               <p className="text-xs font-semibold text-warning">{t(k('reviewBannerTitle'))}</p>
@@ -420,7 +420,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
         ) : null}
 
         {extracted && conflictos.length > 0 ? (
-          <div className="rounded-xl border border-danger/30 bg-danger-soft p-3 space-y-2" data-testid="conflictos">
+          <div className="rounded-lg border border-danger/30 bg-danger-soft p-3 space-y-2" data-testid="conflictos">
             <div className="flex items-start gap-2.5">
               <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" weight="fill" />
               <div>
@@ -477,7 +477,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
 
               {proveedorSinMatch ? (
                 <div
-                  className="rounded-xl border border-primary/30 bg-primary-soft p-3 space-y-2"
+                  className="rounded-lg border border-primary/30 bg-primary-soft p-3 space-y-2"
                   data-testid="proveedor-nuevo"
                 >
                   <p className="text-xs font-medium text-primary inline-flex items-center gap-1.5">
@@ -646,7 +646,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
           {/* Adjunto + ítems */}
           <aside className="space-y-4">
             {files.length > 0 ? (
-              <div className="rounded-xl border border-border bg-card p-3 space-y-2" data-testid="factura-adjunto">
+              <div className="rounded-lg border border-border bg-card p-3 space-y-2" data-testid="factura-adjunto">
                 <p className="text-xs font-semibold text-foreground">{t(k('adjuntoLabel'))}</p>
                 {miniaturaUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element -- URL local de un File, no una imagen remota optimizable
@@ -686,7 +686,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
             ) : null}
 
             {items.length > 0 ? (
-              <div className="rounded-xl border border-border bg-card p-3 space-y-1.5" data-testid="factura-items">
+              <div className="rounded-lg border border-border bg-card p-3 space-y-1.5" data-testid="factura-items">
                 <p className="text-xs font-semibold text-foreground">{t(k('itemsLabel'))}</p>
                 <ul className="space-y-1">
                   {items.map((it, i) => (
@@ -794,7 +794,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
           setArrastrando(false);
           agregar(Array.from(e.dataTransfer.files ?? []));
         }}
-        className={`w-full rounded-xl border-2 border-dashed bg-muted/30 hover:bg-muted/50 transition-colors p-6 flex flex-col items-center justify-center gap-2 text-center ${
+        className={`w-full rounded-lg border-2 border-dashed bg-muted/30 hover:bg-muted/50 transition-colors p-6 flex flex-col items-center justify-center gap-2 text-center ${
           arrastrando ? 'border-primary bg-primary-soft/40' : 'border-border hover:border-foreground/20'
         }`}
         data-testid="factura-ia-dropzone"
@@ -812,7 +812,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
       </button>
 
       {files.length > 0 ? (
-        <ul className="divide-y divide-border rounded-xl border border-border" data-testid="factura-ia-archivos">
+        <ul className="divide-y divide-border rounded-lg border border-border" data-testid="factura-ia-archivos">
           {files.map((f, i) => (
             <li key={`${f.name}:${f.size}`} className="flex items-center gap-3 px-3 py-2 text-sm">
               <IconoDeArchivo file={f} />

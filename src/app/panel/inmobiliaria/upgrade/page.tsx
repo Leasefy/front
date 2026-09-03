@@ -103,7 +103,7 @@ function AgencyUpgradeContent() {
         </div>
 
         {/* Header — brand hero surface (ink), the page's single brand anchor */}
-        <div className="relative rounded-xl overflow-hidden mb-8 bg-ink">
+        <div className="relative rounded-lg overflow-hidden mb-8 bg-ink">
           <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
@@ -151,7 +151,7 @@ function AgencyUpgradeContent() {
             { icon: Buildings, title: 'Propiedades ilimitadas', desc: 'Sin límites en tu portafolio' },
             { icon: ChartBar, title: 'Reportes avanzados', desc: 'Analytics en tiempo real' },
           ].map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="bg-card rounded-xl border border-border p-4">
+            <div key={title} className="bg-card rounded-lg border border-border p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
                   <Icon className="w-5 h-5 text-fg-muted" />
@@ -169,7 +169,7 @@ function AgencyUpgradeContent() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-80 rounded-xl bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+              <div key={i} className="h-80 rounded-lg bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
             ))}
           </div>
         ) : (
@@ -182,7 +182,7 @@ function AgencyUpgradeContent() {
 
         {/* Trust indicators */}
         <div className="mt-12 text-center">
-          <div className="inline-flex items-center gap-6 px-6 py-4 bg-card rounded-xl border border-border">
+          <div className="inline-flex items-center gap-6 px-6 py-4 bg-card rounded-lg border border-border">
             {[
               { icon: Lock, label: 'Pago seguro' },
               { icon: CheckCircle, label: 'Cancela cuando quieras' },

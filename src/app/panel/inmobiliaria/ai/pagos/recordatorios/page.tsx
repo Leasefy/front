@@ -295,7 +295,7 @@ function PagosRecordatorios() {
           </div>
 
           {/* Burbuja de mensaje de muestra */}
-          <div className="rounded-xl border border-border bg-surface-muted p-4">
+          <div className="rounded-lg border border-border bg-surface-muted p-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="grid h-7 w-7 place-items-center rounded-md bg-primary-soft text-primary">
                 <Sparkle className="h-4 w-4" weight="duotone" aria-hidden="true" />

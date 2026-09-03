@@ -60,7 +60,7 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
     return (
       <Link
         href={href ?? '#'}
-        className="group relative h-full rounded-xl p-5 flex flex-col overflow-hidden"
+        className="group relative h-full rounded-lg p-5 flex flex-col overflow-hidden"
         style={{ background: 'linear-gradient(150deg, #14130f 58%, #2a2824 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
       >
         {/* Brand contour — single hairline tracing the roof profile (badge grammar) */}
@@ -69,7 +69,7 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
         </div>
         <div className="flex items-start justify-between">
           <MonoLabel className="text-[11px] font-medium text-white/55">{title}</MonoLabel>
-          <div className="rounded-xl p-2.5" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}>
+          <div className="rounded-lg p-2.5" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}>
             <Icon weight="duotone" className="h-4 w-4 text-white/90" />
           </div>
         </div>
@@ -98,13 +98,13 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
   const content = (
     <div
       className={cn(
-        'group relative h-full rounded-xl border border-border bg-card p-5 flex flex-col transition-colors',
+        'group relative h-full rounded-lg border border-border bg-card p-5 flex flex-col transition-colors',
         href && 'hover:bg-surface-hover'
       )}
     >
       <div className="flex items-start justify-between">
         <MonoLabel>{title}</MonoLabel>
-        <div className="rounded-xl p-2.5 bg-surface-muted text-fg-muted">
+        <div className="rounded-lg p-2.5 bg-surface-muted text-fg-muted">
           <Icon weight="duotone" className="h-4 w-4" />
         </div>
       </div>
@@ -147,7 +147,7 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
  */
 function SecondaryStat({ icon: Icon, value, label }: { icon: React.ElementType; value: string | number; label: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-center gap-3">
         <div className="rounded-md p-2 bg-surface-muted text-fg-muted">
           <Icon weight="duotone" className="h-4 w-4" />
@@ -175,7 +175,7 @@ function QuickAction({ title, description, href, icon: Icon }: QuickActionProps)
   return (
     <Link
       href={href}
-      className="group flex items-center gap-4 rounded-xl border border-border bg-card p-4 hover:bg-surface-hover transition-colors"
+      className="group flex items-center gap-4 rounded-lg border border-border bg-card p-4 hover:bg-surface-hover transition-colors"
     >
       <div className="rounded-md p-2.5 bg-surface-muted text-fg-muted">
         <Icon weight="duotone" className="h-5 w-5" />
@@ -386,7 +386,7 @@ export default function InmobiliariaDashboardPage() {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Pipeline Activity */}
-        <div className="lg:col-span-2 rounded-xl border border-border bg-card p-6">
+        <div className="lg:col-span-2 rounded-lg border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.pipeline.title')}</h2>
@@ -417,7 +417,7 @@ export default function InmobiliariaDashboardPage() {
         </div>
 
         {/* Team Performance */}
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-lg border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.team.title')}</h2>
@@ -508,7 +508,7 @@ export default function InmobiliariaDashboardPage() {
       )}
 
       {/* Financial Summary */}
-      <div className="rounded-xl border border-border bg-card p-6">
+      <div className="rounded-lg border border-border bg-card p-6">
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.financial.title')}</h2>

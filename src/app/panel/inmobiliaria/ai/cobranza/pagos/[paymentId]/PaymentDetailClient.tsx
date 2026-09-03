@@ -188,7 +188,7 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
         )}
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
+      <div className="rounded-lg border border-border bg-card p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
         <Field label="Monto">
           <span className="text-lg font-semibold text-fg">{formatCop(data.amount)}</span>
         </Field>

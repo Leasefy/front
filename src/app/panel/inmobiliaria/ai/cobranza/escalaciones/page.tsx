@@ -11,7 +11,7 @@
  * RBAC (D-34-02: operator sees Tomar; admin sees Asignar; assignee/admin
  * sees Resolver).
  *
- * Refs mvp:docs/DESIGN.md §1 (sobrio + warm), §4 (cards rounded-xl + shadow),
+ * Refs mvp:docs/DESIGN.md §1 (sobrio + warm), §4 (cards rounded-lg + shadow),
  * §11 (loading state), §16 (numeric tabular-nums).
  */
 
@@ -236,7 +236,7 @@ function EscalacionesContent() {
       {error && !data && (
         <div
           role="alert"
-          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
+          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
@@ -252,7 +252,7 @@ function EscalacionesContent() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 * idx }}
-              className="rounded-xl border border-border bg-card/50 overflow-hidden"
+              className="rounded-lg border border-border bg-card/50 overflow-hidden"
               aria-labelledby={`column-${col.key}-heading`}
             >
               <div className="px-3 py-2 border-b border-border bg-muted/30 flex items-center justify-between">

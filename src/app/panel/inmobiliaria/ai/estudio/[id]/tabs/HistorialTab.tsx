@@ -79,7 +79,7 @@ export function HistorialTab(_props: HistorialTabProps) {
       {/* Estructura de ejemplo — cómo se verá la línea de tiempo (sin datos reales) */}
       <section
         aria-label={tf(`${NS}.detalle.historial.ejemplo.title`, 'Ejemplo de la línea de tiempo')}
-        className="rounded-xl border border-border bg-card p-5"
+        className="rounded-lg border border-border bg-card p-5"
       >
         <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
           {tf(`${NS}.detalle.historial.ejemplo.title`, 'Ejemplo de la línea de tiempo')}

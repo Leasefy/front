@@ -57,7 +57,7 @@ function TesoreriaContent() {
       </header>
 
       {/* Honest M1 banner */}
-      <div className="rounded-xl bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
+      <div className="rounded-lg bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
         <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
         <div>
           <p className="text-xs font-semibold text-primary">{t(k('m2BannerTitle'))}</p>
@@ -66,7 +66,7 @@ function TesoreriaContent() {
       </div>
 
       {/* Facturas de proveedores — captura desde foto/PDF con IA */}
-      <section className="rounded-xl border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <section className="rounded-lg border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-md bg-primary-soft flex items-center justify-center flex-shrink-0">
             <Sparkle className="w-[18px] h-[18px] text-primary" weight="fill" />
@@ -86,7 +86,7 @@ function TesoreriaContent() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Fórmula del neto — ejemplo ilustrativo */}
-        <section className="lg:col-span-1 rounded-xl border border-border bg-card p-5 space-y-4 h-fit">
+        <section className="lg:col-span-1 rounded-lg border border-border bg-card p-5 space-y-4 h-fit">
           <div className="flex items-center justify-between">
             <SectionLabel>{t(k('formulaLabel'))}</SectionLabel>
             <Badge variant="secondary">{t(k('ejemplo'))}</Badge>
@@ -116,7 +116,7 @@ function TesoreriaContent() {
         </section>
 
         {/* Egresos table */}
-        <section className="lg:col-span-2 rounded-xl border border-border bg-card overflow-hidden">
+        <section className="lg:col-span-2 rounded-lg border border-border bg-card overflow-hidden">
           <div className="flex items-center gap-3 p-5 border-b border-border">
             <div className="w-9 h-9 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
               <Wallet className="w-[18px] h-[18px] text-neutral-600 dark:text-neutral-300" />

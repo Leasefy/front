@@ -54,7 +54,7 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
             aria-invalid={!!error}
             aria-describedby={error ? errorId : undefined}
             className={cn(
-              'h-12 w-full rounded-xl border bg-surface px-4 text-base md:text-[14px] text-fg',
+              'h-12 w-full rounded-lg border bg-surface px-4 text-base md:text-[14px] text-fg',
               'transition-colors duration-150 placeholder:text-fg-subtle',
               'focus:outline-none focus:border-[#1A40FF] focus:shadow-[0_0_0_3px_rgba(26,64,255,0.12)]',
               'disabled:cursor-not-allowed disabled:opacity-50',

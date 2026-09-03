@@ -121,7 +121,7 @@ export function CobroResumen({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'rounded-xl border border-border bg-card overflow-hidden',
+        'rounded-lg border border-border bg-card overflow-hidden',
         className
       )}
     >
@@ -324,7 +324,7 @@ export function CobroResumenCompact({
   const rateInfo = getCollectionRateInfo(summary.collectionRate);
 
   return (
-    <div className={cn('p-4 rounded-xl border border-border bg-card', className)}>
+    <div className={cn('p-4 rounded-lg border border-border bg-card', className)}>
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-foreground">{t('inmobiliaria.cobros.resumen.compactCollection')}</span>
         <div className="flex items-center gap-1.5">

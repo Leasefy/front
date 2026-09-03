@@ -168,7 +168,7 @@ export function PagoCasoDetalle({ data, onAction, crossLink }: PagoCasoDetallePr
         {crossLink && (
           <Link
             href={crossLink.href}
-            className="group flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 transition hover:bg-surface-muted"
+            className="group flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-4 transition hover:bg-surface-muted"
             data-testid="pago-cross-link"
           >
             <div className="min-w-0">

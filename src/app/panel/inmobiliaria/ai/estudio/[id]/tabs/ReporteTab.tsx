@@ -108,7 +108,7 @@ export function ReporteTab({ decision, result }: ReporteTabProps) {
       {/* Documento del reporte */}
       <article
         data-audiencia={audiencia}
-        className="rounded-xl border border-border bg-card p-5 space-y-4"
+        className="rounded-lg border border-border bg-card p-5 space-y-4"
       >
         {/* Encabezado del reporte */}
         <header className="flex items-start gap-3 pb-4 border-b border-border">

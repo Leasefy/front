@@ -34,7 +34,7 @@ export function EstudioKpiStrip({ kpis, isLoading, className }: EstudioKpiStripP
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border bg-card p-4"
+            className="rounded-lg border border-border bg-card p-4"
           >
             <div className="h-3 w-20 rounded bg-surface-muted animate-pulse" />
             <div className="mt-3 h-6 w-16 rounded bg-surface-muted animate-pulse" />
@@ -51,7 +51,7 @@ export function EstudioKpiStrip({ kpis, isLoading, className }: EstudioKpiStripP
       {items.map((k) => (
         <div
           key={k.id}
-          className="rounded-xl border border-border bg-card p-4"
+          className="rounded-lg border border-border bg-card p-4"
         >
           <p className="text-xs font-medium text-fg-muted truncate">{k.label}</p>
           <p className="mt-2 text-2xl font-semibold tracking-tight text-fg tabular-nums">

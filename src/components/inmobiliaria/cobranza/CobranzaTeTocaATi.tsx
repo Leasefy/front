@@ -180,11 +180,11 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
 
       {contando && (
         <div
-          className="rounded-2xl border border-border bg-card p-4 grid grid-cols-2 lg:grid-cols-4 gap-3"
+          className="rounded-lg border border-border bg-card p-4 grid grid-cols-2 lg:grid-cols-4 gap-3"
           aria-hidden="true"
         >
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-40 rounded-xl bg-surface-muted animate-pulse" />
+            <div key={i} className="h-40 rounded-lg bg-surface-muted animate-pulse" />
           ))}
         </div>
       )}
@@ -197,7 +197,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
         <div
           role="alert"
           className={[
-            'rounded-xl border p-3 text-sm',
+            'rounded-lg border p-3 text-sm',
             totalQueEspera > 0
               ? 'border-warning/30 bg-warning-soft text-warning'
               : 'border-danger/30 bg-danger-soft text-danger',
@@ -211,7 +211,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
       )}
 
       {!isLoading && !error && totalQueEspera === 0 && (
-        <div className="rounded-xl border border-border bg-card px-4 py-8 text-center space-y-1">
+        <div className="rounded-lg border border-border bg-card px-4 py-8 text-center space-y-1">
           <CheckCircle
             className="w-6 h-6 text-success mx-auto"
             weight="duotone"
@@ -226,7 +226,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
       {totalQueEspera > 0 && (
         <div
           data-testid="te-toca-tablero"
-          className="rounded-2xl border border-border bg-card p-3 sm:p-4 space-y-3"
+          className="rounded-lg border border-border bg-card p-3 sm:p-4 space-y-3"
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-start">
             {COLUMNAS.map((col) => {
@@ -236,7 +236,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
                 <div
                   key={col.id}
                   data-testid={`te-toca-col-${col.id}`}
-                  className="rounded-xl bg-surface-muted p-2.5 space-y-2 min-w-0"
+                  className="rounded-lg bg-surface-muted p-2.5 space-y-2 min-w-0"
                 >
                   <p className="flex items-center gap-1.5 px-0.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
                     {col.id === 'siniestros' ? (

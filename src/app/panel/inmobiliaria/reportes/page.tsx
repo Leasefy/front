@@ -485,7 +485,7 @@ function ReportesContent() {
         animate={{ opacity: 1, y: 0 }}
         className="grid grid-cols-2 md:grid-cols-4 gap-4"
       >
-        <div className="p-4 rounded-xl border border-border bg-card">
+        <div className="p-4 rounded-lg border border-border bg-card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
               <ChartLine className="w-5 h-5 text-primary" />
@@ -499,7 +499,7 @@ function ReportesContent() {
           </div>
         </div>
 
-        <div className="p-4 rounded-xl border border-border bg-card">
+        <div className="p-4 rounded-lg border border-border bg-card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-md bg-warning-soft flex items-center justify-center">
               <Star className="w-5 h-5 text-warning" weight="fill" />
@@ -513,7 +513,7 @@ function ReportesContent() {
           </div>
         </div>
 
-        <div className="p-4 rounded-xl border border-border bg-card col-span-2">
+        <div className="p-4 rounded-lg border border-border bg-card col-span-2">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center">
               <Clock className="w-5 h-5 text-success" />
@@ -535,7 +535,7 @@ function ReportesContent() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-xl border border-border bg-card overflow-hidden"
+        className="rounded-lg border border-border bg-card overflow-hidden"
       >
         {/* Header: View Toggle & Count */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
@@ -705,7 +705,7 @@ function ReportesContent() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="rounded-xl border border-border bg-card overflow-hidden print:border-none print:shadow-none"
+        className="rounded-lg border border-border bg-card overflow-hidden print:border-none print:shadow-none"
       >
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-b border-border bg-muted/30 print:hidden">

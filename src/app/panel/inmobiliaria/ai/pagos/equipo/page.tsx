@@ -293,7 +293,7 @@ function FlowStep({ node }: { node: FlowNode }) {
   const accent = FLOW_ACCENT[node.accent]
 
   return (
-    <article className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
+    <article className="flex items-start gap-3 rounded-lg border border-border bg-card p-4">
       <span
         className={cn('w-10 h-10 rounded-xl flex items-center justify-center shrink-0', accent.chip)}
         aria-hidden="true"
@@ -386,7 +386,7 @@ function EquipoPagos() {
 
           {/* Cierre del recorrido — vuelve a Gabriela, que supervisa el ciclo. */}
           <FlowConnector />
-          <article className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary-soft p-4">
+          <article className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary-soft p-4">
             <span
               className="w-10 h-10 rounded-xl bg-card flex items-center justify-center shrink-0"
               aria-hidden="true"
@@ -442,7 +442,7 @@ function EquipoPagos() {
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+        <div className="overflow-x-auto rounded-lg border border-border bg-card">
           <Table className="w-full min-w-[640px] text-left">
             <TableHeader>
               <TableRow>

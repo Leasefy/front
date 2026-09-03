@@ -10,7 +10,7 @@
  *   - Admin (assign-perm): "Asignar" always
  *   - Anyone with resolve-perm who is the assignee OR has assign-perm: "Resolver"
  *
- * Styling: follows mvp:docs/DESIGN.md §4 (cards `rounded-xl` + ``,
+ * Styling: follows mvp:docs/DESIGN.md §4 (cards `rounded-lg` + ``,
  * indigo accent for primary, rose for severe). Urgency colors follow
  * mvp:docs/COLOR_SYSTEM.md (rose = error, amber = warning, emerald = ok).
  */
@@ -109,7 +109,7 @@ export function EscalationCard({
 
   return (
     <div
-      className="rounded-xl border border-border bg-card hover: transition-shadow p-3 space-y-2"
+      className="rounded-lg border border-border bg-card hover: transition-shadow p-3 space-y-2"
       data-testid={`escalation-card-${escalation.id}`}
     >
       {/* Header: urgency + relative time */}

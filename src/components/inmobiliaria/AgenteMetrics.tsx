@@ -39,7 +39,7 @@ function MetricCard({ label, value, icon, iconBg, performance }: MetricCardProps
   return (
     <div
       className={cn(
-        'p-4 rounded-xl border transition-all hover: hover:-translate-y-0.5',
+        'p-4 rounded-lg border transition-all hover: hover:-translate-y-0.5',
         cardBg
       )}
     >

@@ -27,7 +27,7 @@ function KpiCard({ card }: { card: DashboardCard }) {
   const Icon = CARD_ICON[card.key] ?? Users
   const tone = card.tone ?? 'default'
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
+    <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
       <div className="flex items-center gap-2 mb-2">
         <Icon size={18} weight="duotone" className={TONE_TEXT[tone]} />
         <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-tight">{card.label}</p>
@@ -46,7 +46,7 @@ export default function RetencionDashboardPage() {
       <main className="p-6 lg:p-8">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
+            <div key={i} className="rounded-lg border border-neutral-200 dark:border-neutral-700 p-4">
               <div className="h-4 w-24 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse mb-3" />
               <div className="h-6 w-16 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
             </div>
@@ -79,7 +79,7 @@ export default function RetencionDashboardPage() {
           </div>
         </section>
       ) : (
-        <div className="flex flex-col items-center justify-center py-16 gap-2 text-center rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700">
+        <div className="flex flex-col items-center justify-center py-16 gap-2 text-center rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700">
           <FolderOpen size={28} weight="duotone" className="text-neutral-400" />
           <p className="text-sm text-neutral-500 dark:text-neutral-400">Sin datos de portafolio todavía.</p>
         </div>
@@ -87,7 +87,7 @@ export default function RetencionDashboardPage() {
 
       <section aria-label="Lo más urgente">
         <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-3">Lo más urgente</h2>
-        <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 divide-y divide-neutral-200 dark:divide-neutral-800 overflow-hidden">
+        <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 divide-y divide-neutral-200 dark:divide-neutral-800 overflow-hidden">
           {(data?.urgent ?? []).map((u) => (
             <Link
               key={u.caseId}
@@ -119,7 +119,7 @@ export default function RetencionDashboardPage() {
       </section>
 
       {error && !isLoading ? (
-        <div className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-600 dark:text-rose-400">
+        <div className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-600 dark:text-rose-400">
           No pude cargar el dashboard: {error}
         </div>
       ) : null}

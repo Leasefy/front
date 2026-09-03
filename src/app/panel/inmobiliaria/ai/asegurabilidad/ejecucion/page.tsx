@@ -250,7 +250,7 @@ function AsegurabilidadEjecucion() {
             return (
               <div
                 key={estado.key}
-                className="rounded-xl border border-border bg-card p-4 flex items-start gap-3"
+                className="rounded-lg border border-border bg-card p-4 flex items-start gap-3"
                 data-estado={estado.key}
               >
                 <span
@@ -285,7 +285,7 @@ function AsegurabilidadEjecucion() {
         </p>
         <ul
           role="list"
-          className="rounded-xl border border-border bg-card divide-y divide-border"
+          className="rounded-lg border border-border bg-card divide-y divide-border"
         >
           {FILAS_EJEMPLO.map((fila) => {
             const estado = estadoByKey(fila.estadoKey)
@@ -316,7 +316,7 @@ function AsegurabilidadEjecucion() {
       </section>
 
       {/* Cómo funciona — la ejecución en paralelo */}
-      <section className="rounded-xl border border-border bg-card p-5 flex items-start gap-3 max-w-3xl">
+      <section className="rounded-lg border border-border bg-card p-5 flex items-start gap-3 max-w-3xl">
         <span className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center shrink-0">
           <Lightning className="w-5 h-5 text-fg" weight="duotone" aria-hidden="true" />
         </span>

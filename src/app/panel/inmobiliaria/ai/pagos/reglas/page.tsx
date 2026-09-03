@@ -75,7 +75,7 @@ function PagosReglas() {
       </header>
 
       {/* Aviso de preview — honesto: los cambios no se guardan aún. */}
-      <div className="flex items-start gap-3 rounded-xl border border-border bg-surface-muted p-4">
+      <div className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4">
         <Info className="w-5 h-5 shrink-0 text-fg-muted mt-0.5" weight="duotone" aria-hidden="true" />
         <div className="space-y-0.5">
           <p className="text-sm font-medium text-fg">Vista previa de configuración</p>

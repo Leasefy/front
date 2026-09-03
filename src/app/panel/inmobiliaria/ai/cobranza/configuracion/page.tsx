@@ -477,7 +477,7 @@ function CobranzaConfiguracionContent() {
       {!policy.notProvisioned && negDraft && (
         <section
           data-testid="section-comercial"
-          className="rounded-xl border border-border bg-card p-6 space-y-4"
+          className="rounded-lg border border-border bg-card p-6 space-y-4"
           aria-labelledby="heading-comercial"
         >
           <div>
@@ -682,7 +682,7 @@ function CobranzaConfiguracionContent() {
       {/* ② Autonomía ────────────────────────────────────────────────────── */}
       <section
         data-testid="section-autonomia"
-        className="rounded-xl border border-border bg-card p-6 space-y-4"
+        className="rounded-lg border border-border bg-card p-6 space-y-4"
         aria-labelledby="heading-autonomia"
       >
         <div>
@@ -747,7 +747,7 @@ function CobranzaConfiguracionContent() {
       {/* ④ Horario y frecuencia — informativo, Ley 2300, sin inputs ──────── */}
       <section
         data-testid="section-horario"
-        className="rounded-xl border border-border bg-card p-6 space-y-3"
+        className="rounded-lg border border-border bg-card p-6 space-y-3"
         aria-labelledby="heading-horario"
       >
         <div>
@@ -777,7 +777,7 @@ function CobranzaConfiguracionContent() {
       */}
       <section
         data-testid="section-reporte"
-        className="rounded-xl border border-border bg-card p-6 space-y-3"
+        className="rounded-lg border border-border bg-card p-6 space-y-3"
         aria-labelledby="heading-reporte"
       >
         <div>

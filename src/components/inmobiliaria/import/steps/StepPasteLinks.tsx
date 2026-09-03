@@ -234,7 +234,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
           )}
 
           {/* Lo leído, uno por uno, con lo que le falta a cada uno. */}
-          <ul className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+          <ul className="divide-y divide-border rounded-lg border border-border overflow-hidden">
             {/* Se dibuja desde el ESTADO, no desde lo que devolvió la lectura:
                 si no, escribir la dirección no se vería reflejado acá. */}
             {state.properties.map((p) => {

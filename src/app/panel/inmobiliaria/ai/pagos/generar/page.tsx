@@ -268,7 +268,7 @@ function ModoIndividual() {
               <span className="text-xs font-medium uppercase tracking-wide text-fg-muted">
                 Vista previa
               </span>
-              <div className="rounded-xl border border-border bg-surface-muted p-4">
+              <div className="rounded-lg border border-border bg-surface-muted p-4">
                 <p className="text-sm text-fg leading-relaxed whitespace-pre-line">{mensajePreview}</p>
                 <div className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary-soft px-3 py-1.5 text-xs font-medium text-primary">
                   <CurrencyDollar className="h-3.5 w-3.5" weight="bold" aria-hidden="true" />
@@ -449,7 +449,7 @@ function ModoMasivo() {
   return (
     <div className="space-y-6">
       {/* Aviso de que el preview es ilustrativo */}
-      <div className="flex items-start gap-3 rounded-xl border border-border bg-surface-muted p-4">
+      <div className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4">
         <Info className="h-5 w-5 shrink-0 text-fg-muted" weight="duotone" aria-hidden="true" />
         <div className="space-y-1">
           <p className="text-sm font-medium text-fg">Vista previa ilustrativa</p>

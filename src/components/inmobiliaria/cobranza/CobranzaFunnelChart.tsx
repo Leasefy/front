@@ -17,16 +17,16 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-border bg-surface p-5">
-        <div className="h-10 w-full rounded-xl bg-surface-muted animate-pulse" />
+      <div className="rounded-lg border border-border bg-surface p-5">
+        <div className="h-10 w-full rounded-lg bg-surface-muted animate-pulse" />
       </div>
     )
   }
 
   if (total === 0) {
     return (
-      <div className="rounded-xl border border-border bg-surface p-5">
-        <div className="flex items-center justify-center h-10 rounded-xl bg-surface-muted text-sm text-fg-subtle">
+      <div className="rounded-lg border border-border bg-surface p-5">
+        <div className="flex items-center justify-center h-10 rounded-lg bg-surface-muted text-sm text-fg-subtle">
           {t('inmobiliaria.ai.cobranza.overview.funnel.empty')}
         </div>
       </div>
@@ -41,7 +41,7 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
   }))
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-5">
+    <div className="rounded-lg border border-border bg-surface p-5">
       {/* Título DENTRO de la tarjeta. Al reordenar el Resumen se quedó sin el
           encabezado que tenía afuera, y una barra de colores con códigos S0…SX
           y ningún texto no dice qué es. */}
@@ -56,7 +56,7 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
 
       {/* Horizontal bar — md+ */}
       <div
-        className="hidden md:flex rounded-xl overflow-hidden h-10"
+        className="hidden md:flex rounded-lg overflow-hidden h-10"
         role="img"
         aria-describedby="funnel-summary-table"
         aria-label={t('inmobiliaria.ai.cobranza.overview.funnel.ariaDescription')}
@@ -73,7 +73,7 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
 
       {/* Vertical stacked — sm */}
       <div
-        className="flex flex-col md:hidden rounded-xl overflow-hidden"
+        className="flex flex-col md:hidden rounded-lg overflow-hidden"
         role="img"
         aria-describedby="funnel-summary-table"
         aria-label={t('inmobiliaria.ai.cobranza.overview.funnel.ariaDescription')}

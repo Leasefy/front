@@ -33,7 +33,7 @@ export function CobranzaTransitionsFeed({
   const { t, locale } = useI18n()
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-5">
+    <div className="rounded-lg border border-border bg-surface p-5">
       <h2 className="text-base font-semibold text-fg">
         {t('inmobiliaria.ai.cobranza.overview.transitions.title')}
       </h2>

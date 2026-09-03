@@ -76,7 +76,7 @@ export function EstudioRecommendationRail({
             {t(`${NS}.detalle.recomendacion`)}
           </span>
         </h2>
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="rounded-lg border border-border bg-card p-4">
           <p className="text-sm text-fg-muted">
             {t(`${NS}.detalle.sinRecomendacion`)}
           </p>
@@ -103,7 +103,7 @@ export function EstudioRecommendationRail({
 
       {/* Siguiente mejor acción */}
       <section
-        className="rounded-xl border border-border bg-card p-4"
+        className="rounded-lg border border-border bg-card p-4"
         data-testid="estudio-rail-next-action"
       >
         <h3 className="text-base font-semibold text-fg">
@@ -143,7 +143,7 @@ export function EstudioRecommendationRail({
       {/* Acciones rápidas — el resto de los CTAs derivados */}
       {decision.ctas.length > 0 && (
         <section
-          className="rounded-xl border border-border bg-card p-4"
+          className="rounded-lg border border-border bg-card p-4"
           data-testid="estudio-rail-quick-actions"
         >
           <h3 className="text-base font-semibold text-fg">

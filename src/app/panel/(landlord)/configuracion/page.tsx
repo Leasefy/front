@@ -218,7 +218,7 @@ export default function ConfiguracionPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 overflow-hidden relative"
+            className="rounded-lg bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 overflow-hidden relative"
           >
             <div className="relative px-6 py-6">
               {subscriptionError ? (
@@ -240,7 +240,7 @@ export default function ConfiguracionPage() {
                   <button
                     type="button"
                     onClick={subscriptionRefetch}
-                    className="px-5 py-2.5 border border-[#1A40FF]/40 text-[#1A40FF] dark:text-[#5570FF] text-sm font-semibold rounded-xl hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 transition-colors self-start sm:self-auto"
+                    className="px-5 py-2.5 border border-[#1A40FF]/40 text-[#1A40FF] dark:text-[#5570FF] text-sm font-semibold rounded-lg hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 transition-colors self-start sm:self-auto"
                   >
                     {t('landlordSettings.subscription.retry')}
                   </button>
@@ -278,7 +278,7 @@ export default function ConfiguracionPage() {
                   {currentPlanId !== 'flex' && (
                     <Link
                       href="/panel/upgrade"
-                      className="px-5 py-2.5 bg-[#1A40FF] dark:bg-[#5570FF] text-white text-sm font-semibold rounded-xl hover:opacity-90 dark:hover:opacity-90 transition-colors flex items-center gap-2"
+                      className="px-5 py-2.5 bg-[#1A40FF] dark:bg-[#5570FF] text-white text-sm font-semibold rounded-lg hover:opacity-90 dark:hover:opacity-90 transition-colors flex items-center gap-2"
                     >
                       {t('landlordSettings.subscription.upgradePlan')}
                       <ArrowUpRight className="w-4 h-4" />
@@ -294,7 +294,7 @@ export default function ConfiguracionPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden"
+            className="rounded-lg bg-neutral-50 dark:bg-[#141416] overflow-hidden"
           >
             <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
               <div className="flex items-center gap-3">
@@ -359,7 +359,7 @@ export default function ConfiguracionPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden"
+              className="rounded-lg bg-neutral-50 dark:bg-[#141416] overflow-hidden"
             >
               <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
                 <div className="flex items-center gap-3">
@@ -394,7 +394,7 @@ export default function ConfiguracionPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden"
+              className="rounded-lg bg-neutral-50 dark:bg-[#141416] overflow-hidden"
             >
               <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
                 <div className="flex items-center gap-3">
@@ -452,7 +452,7 @@ export default function ConfiguracionPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden"
+              className="rounded-lg bg-neutral-50 dark:bg-[#141416] overflow-hidden"
             >
               <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
                 <div className="flex items-center gap-3">
@@ -500,7 +500,7 @@ export default function ConfiguracionPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35 }}
-              className="rounded-xl border-2 border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7]/30 dark:bg-[#C4503B]/20 overflow-hidden h-fit"
+              className="rounded-lg border-2 border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7]/30 dark:bg-[#C4503B]/20 overflow-hidden h-fit"
             >
               <div className="px-6 py-5 border-b border-[#C4503B]/30 dark:border-[#C4503B]/40">
                 <div className="flex items-center gap-3">
@@ -518,7 +518,7 @@ export default function ConfiguracionPage() {
                   {t('landlordSettings.dangerZone.deleteDescription')}
                 </p>
                 {hasCriticalBlockers && (
-                  <div className="mb-4 p-3 bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 rounded-xl">
+                  <div className="mb-4 p-3 bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 rounded-lg">
                     <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">
                       {t('landlordSettings.dangerZone.activeLeasesWarning', { count: activeLeases.length })}
                     </p>
@@ -594,7 +594,7 @@ export default function ConfiguracionPage() {
       <SettingsModal open={showSessionsModal} onClose={() => setShowSessionsModal(false)} title={t('landlordSettings.modals.sessions.title')}>
         <div className="space-y-3">
           {/* Current session (derived from browser) */}
-          <div className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-xl bg-white dark:bg-[#1f1f21]">
+          <div className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-[#1f1f21]">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
                 <Laptop className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
@@ -624,7 +624,7 @@ export default function ConfiguracionPage() {
           <p className="text-sm text-neutral-600 dark:text-neutral-300">
             {t('landlordSettings.modals.downloadData.description')}
           </p>
-          <div className="p-4 bg-neutral-50 dark:bg-[#1f1f21] rounded-xl space-y-2">
+          <div className="p-4 bg-neutral-50 dark:bg-[#1f1f21] rounded-lg space-y-2">
             {[
               t('landlordSettings.modals.downloadData.profileInfo'),
               t('landlordSettings.modals.downloadData.paymentHistory'),
@@ -667,7 +667,7 @@ export default function ConfiguracionPage() {
       {/* Delete Account Modal */}
       <SettingsModal open={showDeleteModal} onClose={() => setShowDeleteModal(false)} title={t('landlordSettings.modals.deleteAccount.title')}>
         <div className="space-y-4">
-          <div className="p-4 bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 rounded-xl flex gap-3">
+          <div className="p-4 bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 rounded-lg flex gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center flex-shrink-0">
               <Warning className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D]" />
             </div>

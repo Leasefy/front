@@ -72,7 +72,7 @@ export function CasoSidebar({ metadata, finalVerdict, isConnected }: CasoSidebar
       : '—'
 
   return (
-    <aside className="rounded-xl border border-border bg-card p-4 space-y-4">
+    <aside className="rounded-lg border border-border bg-card p-4 space-y-4">
       {/* Zone eyebrow */}
       <h2 className="flex items-center gap-2.5">
         <span aria-hidden="true" className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0" />

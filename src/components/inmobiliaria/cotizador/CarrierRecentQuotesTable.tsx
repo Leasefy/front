@@ -64,7 +64,7 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <Table className="min-w-full divide-y divide-border">
             <TableBody className="divide-y divide-border">
@@ -102,7 +102,7 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
 
   if (!quotes || quotes.length === 0) {
     return (
-      <div className="rounded-xl border border-border bg-card p-8 text-center">
+      <div className="rounded-lg border border-border bg-card p-8 text-center">
         <p className="text-sm text-fg-muted">
           {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.empty')}
         </p>
@@ -111,7 +111,7 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
       <div className="overflow-x-auto">
         <Table className="min-w-full divide-y divide-border">
           <TableHeader className="bg-surface-muted/60">

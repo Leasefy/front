@@ -47,7 +47,7 @@ function DashboardVariant() {
           <div
             key={i}
             data-testid="kpi-card-skeleton"
-            className="rounded-xl border p-6 space-y-3"
+            className="rounded-lg border p-6 space-y-3"
           >
             <Skeleton className="h-3 w-20" />
             <Skeleton className="h-8 w-28" />
@@ -57,7 +57,7 @@ function DashboardVariant() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {Array.from({ length: 2 }).map((_, i) => (
-          <div key={i} className="rounded-xl border p-6">
+          <div key={i} className="rounded-lg border p-6">
             <Skeleton className="h-4 w-32 mb-4" />
             <Skeleton className="h-48 w-full" />
           </div>
@@ -117,8 +117,8 @@ function DetailVariant() {
         ))}
       </div>
       <div data-testid="detail-sidebar" className="lg:col-span-1 space-y-4">
-        <Skeleton className="h-48 w-full rounded-xl" />
-        <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-48 w-full rounded-lg" />
+        <Skeleton className="h-32 w-full rounded-lg" />
       </div>
     </div>
   )

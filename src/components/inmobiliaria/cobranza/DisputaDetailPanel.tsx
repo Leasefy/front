@@ -189,7 +189,7 @@ export function DisputaDetailPanel({
             </p>
           )}
           {recomendacion && (
-            <div className="flex items-start gap-2 rounded-xl bg-surface-muted p-3">
+            <div className="flex items-start gap-2 rounded-lg bg-surface-muted p-3">
               <Info
                 className="w-4 h-4 mt-0.5 shrink-0 text-fg-muted"
                 weight="duotone"

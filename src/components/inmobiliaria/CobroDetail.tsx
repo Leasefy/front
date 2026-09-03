@@ -263,7 +263,7 @@ export function CobroDetail({
               <Buildings className="w-4 h-4 text-primary" />
               {t('inmobiliaria.cobros.detail.propertySection')}
             </h3>
-            <div className="p-4 rounded-xl border border-border bg-muted/30">
+            <div className="p-4 rounded-lg border border-border bg-muted/30">
               {consignacion?.propertyThumbnail && (
                 <div className="w-full h-32 rounded-md overflow-hidden mb-3">
                   <img
@@ -306,7 +306,7 @@ export function CobroDetail({
               <User className="w-4 h-4 text-primary" />
               {t('inmobiliaria.cobros.detail.tenantSection')}
             </h3>
-            <div className="p-4 rounded-xl border border-border bg-muted/30 space-y-4">
+            <div className="p-4 rounded-lg border border-border bg-muted/30 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center">
                   <User className="w-6 h-6 text-primary" />
@@ -363,7 +363,7 @@ export function CobroDetail({
                 <Bank className="w-4 h-4 text-primary" />
                 {t('inmobiliaria.cobros.detail.ownerSection')}
               </h3>
-              <div className="p-4 rounded-xl border border-border bg-muted/30">
+              <div className="p-4 rounded-lg border border-border bg-muted/30">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-foreground">{propietario.name}</p>
@@ -394,7 +394,7 @@ export function CobroDetail({
             {/* Mes y vencimiento. Va en su propia tarjeta: el desglose trae la
                 suya, y una tarjeta dentro de otra con el mismo fondo y el
                 mismo borde no se lee como jerarquía, se lee como un error. */}
-            <div className="rounded-xl border border-border bg-muted/30 p-4">
+            <div className="rounded-lg border border-border bg-muted/30 p-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.detail.monthLabel')}</p>
@@ -478,7 +478,7 @@ export function CobroDetail({
                 WhatsApp alternado, «pre-vencimiento»/«mora») a partir del
                 contador — recordatorios que nunca existieron, con fecha. */}
             {cobro.remindersSent > 0 ? (
-              <div className="p-3 rounded-xl border border-border bg-muted/30 flex items-center gap-3" data-testid="recordatorios-resumen">
+              <div className="p-3 rounded-lg border border-border bg-muted/30 flex items-center gap-3" data-testid="recordatorios-resumen">
                 <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center">
                   <Bell className="w-4 h-4 text-primary" />
                 </div>
@@ -499,7 +499,7 @@ export function CobroDetail({
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground p-4 rounded-xl border border-dashed border-border text-center">
+              <p className="text-sm text-muted-foreground p-4 rounded-lg border border-dashed border-border text-center">
                 {t('inmobiliaria.cobros.detail.noReminders')}
               </p>
             )}

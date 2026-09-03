@@ -228,7 +228,7 @@ function WorkItemCard({
 
   return (
     <div
-      className="rounded-xl border border-border bg-card p-3 space-y-2"
+      className="rounded-lg border border-border bg-card p-3 space-y-2"
       data-testid={`work-item-${item.id}`}
     >
       {/* Header: severidad + estado + flags + relative time */}
@@ -406,7 +406,7 @@ export function ColaHumana({
     return (
       <div className="space-y-2" data-testid="cola-humana-loading">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="h-24 rounded-xl border border-border bg-muted/40 animate-pulse" />
+          <div key={i} className="h-24 rounded-lg border border-border bg-muted/40 animate-pulse" />
         ))}
       </div>
     )
@@ -415,7 +415,7 @@ export function ColaHumana({
   if (error) {
     return (
       <div
-        className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
+        className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
         data-testid="cola-humana-error"
       >
         {t(`${WORKSPACE_NS}.cola.error`, { error })}

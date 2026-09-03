@@ -282,7 +282,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
             {error && !isConnected && (
               <div
                 role="alert"
-                className="rounded-xl border border-warning/30 bg-warning-soft p-4 flex items-center justify-between gap-3"
+                className="rounded-lg border border-warning/30 bg-warning-soft p-4 flex items-center justify-between gap-3"
               >
                 <span className="text-sm text-warning">
                   {t('inmobiliaria.ai.cotizador.detail.connectionInterrupted')}
@@ -373,7 +373,7 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
             {proximamente && (
               <div
                 role="status"
-                className="rounded-xl border border-border bg-surface-muted p-3 flex items-center justify-between gap-3"
+                className="rounded-lg border border-border bg-surface-muted p-3 flex items-center justify-between gap-3"
               >
                 <span className="text-sm text-fg-muted">
                   <span className="font-medium text-fg">

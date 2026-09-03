@@ -86,7 +86,7 @@ function PagosFallidos() {
         </div>
 
         {/* KPI: total de fallidos */}
-        <div className="shrink-0 rounded-xl border border-border bg-card px-4 py-3 text-center">
+        <div className="shrink-0 rounded-lg border border-border bg-card px-4 py-3 text-center">
           <p className="text-2xl font-semibold text-fg tabular-nums">
             {isLoading ? '—' : total}
           </p>
@@ -96,7 +96,7 @@ function PagosFallidos() {
 
       {/* Banner del agente — resumen accionable del diagnóstico */}
       {!isLoading && !error && total > 0 && (
-        <div className="rounded-xl border border-border bg-primary-soft p-4">
+        <div className="rounded-lg border border-border bg-primary-soft p-4">
           <div className="flex items-start gap-3">
             <span className="shrink-0 flex h-9 w-9 items-center justify-center rounded-lg bg-primary-soft text-primary">
               <Robot className="h-5 w-5" weight="duotone" aria-hidden="true" />
@@ -151,7 +151,7 @@ function PagosFallidos() {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="h-14 rounded-xl border border-border bg-surface-muted animate-pulse"
+              className="h-14 rounded-lg border border-border bg-surface-muted animate-pulse"
             />
           ))}
         </div>

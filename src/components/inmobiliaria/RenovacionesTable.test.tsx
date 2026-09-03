@@ -73,7 +73,7 @@ describe('<RenovacionesTable>', () => {
     render({ data: [] });
 
     const tarjeta = container.querySelector('[data-testid="renovaciones-tabla"]')!;
-    expect(tarjeta.className).toContain('rounded-xl');
+    expect(tarjeta.className).toContain('rounded-lg');
     expect(tarjeta.className).toContain('bg-card');
     // El vacío es una fila de la tabla, no un cartel suelto debajo.
     const vacio = tarjeta.querySelector('tbody [data-testid="sin-datos"]');

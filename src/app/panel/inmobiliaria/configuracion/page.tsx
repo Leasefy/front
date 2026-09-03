@@ -650,7 +650,7 @@ function ConfiguracionContent() {
 
         {/* Notificaciones Tab */}
         {activeTab === 'notificaciones' && (
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="px-6 py-5 border-b border-border">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
@@ -702,7 +702,7 @@ function ConfiguracionContent() {
 
         {/* Preferencias Tab */}
         {activeTab === 'preferencias' && (
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="px-6 py-5 border-b border-border">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
@@ -830,7 +830,7 @@ function ConfiguracionContent() {
 
         {/* Seguridad Tab */}
         {activeTab === 'seguridad' && (
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="px-6 py-5 border-b border-border">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">

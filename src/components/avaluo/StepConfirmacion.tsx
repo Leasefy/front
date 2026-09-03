@@ -40,7 +40,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <p className="font-mono text-xs text-muted-foreground uppercase tracking-[0.08em] mb-1">
         {title}
       </p>
-      <div className="bg-muted/40 rounded-xl px-4 py-0.5">{children}</div>
+      <div className="bg-muted/40 rounded-lg px-4 py-0.5">{children}</div>
     </div>
   );
 }

@@ -326,7 +326,7 @@ function NuevoContratoContent() {
   if (loadError || !application) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
           <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-danger">No se pudo cargar la aplicación</p>
@@ -363,7 +363,7 @@ function NuevoContratoContent() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 1) Contract origin */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Tipo de contrato</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <ModeOption
@@ -394,10 +394,10 @@ function NuevoContratoContent() {
 
         {/* 2) PDF upload */}
         {form.mode === 'upload' && (
-          <section className="rounded-xl border border-border bg-card p-5 space-y-3">
+          <section className="rounded-lg border border-border bg-card p-5 space-y-3">
             <h2 className="text-base font-semibold text-foreground">PDF del contrato</h2>
             {form.pdfFile ? (
-              <div className="flex items-center gap-3 p-3 rounded-xl border border-emerald-600/30 bg-emerald-50/60 dark:bg-emerald-900/20">
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-emerald-600/30 bg-emerald-50/60 dark:bg-emerald-900/20">
                 <FileText className="w-5 h-5 text-primary flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>
@@ -422,7 +422,7 @@ function NuevoContratoContent() {
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={onDrop}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors',
+                  'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors',
                   isDragging
                     ? 'border-primary/40 bg-primary-soft/40'
                     : 'border-border hover:border-primary/40 hover:bg-muted/50'
@@ -457,7 +457,7 @@ function NuevoContratoContent() {
         )}
 
         {/* 3) Dates + amounts */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Fecha de inicio" error={validation.startDate}>
@@ -568,7 +568,7 @@ function NuevoContratoContent() {
 
         {/* Errors + submit */}
         {submitError && (
-          <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
+          <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
             <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
             <p className="text-sm text-danger">{submitError}</p>
           </div>
@@ -628,7 +628,7 @@ function ModeOption({
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       className={cn(
-        'relative text-left p-4 rounded-xl border transition-colors',
+        'relative text-left p-4 rounded-lg border transition-colors',
         active && 'border-primary/40 bg-primary-soft/40',
         !active && !disabled && 'border-border hover:border-primary/40 hover:bg-muted/50',
         disabled && 'border-border opacity-50 cursor-not-allowed'

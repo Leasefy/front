@@ -404,7 +404,7 @@ export function ConfigUsuarios({
       </div>
 
       {/* Users Table */}
-      <div className="overflow-x-auto rounded-xl border border-border bg-card">
+      <div className="overflow-x-auto rounded-lg border border-border bg-card">
         <Table className="w-full min-w-[800px]">
           <TableHeader>
             <TableRow className="border-b border-border-faint dark:border-border-strong">

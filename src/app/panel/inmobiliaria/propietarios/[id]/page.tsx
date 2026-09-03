@@ -188,7 +188,7 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
   return (
     <motion.div
       whileHover={{ y: -2 }}
-      className="p-4 rounded-xl border border-border bg-card transition-all cursor-pointer"
+      className="p-4 rounded-lg border border-border bg-card transition-all cursor-pointer"
     >
       <div className="flex items-start gap-4">
         {/* Thumbnail */}
@@ -291,7 +291,7 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
   const monthLabel = mesEnTitulo(dispersion.month, locale === 'en' ? 'en' : 'es');
 
   return (
-    <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-card">
+    <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card">
       <div className="flex items-center gap-4">
         <div className={cn(
           'w-10 h-10 rounded-xl flex items-center justify-center',
@@ -656,7 +656,7 @@ function PropietarioDetailContent() {
           {/* Contacto en filas compactas, como la ficha del contrato: antes
               cada dato tenía su ícono en un cuadro de 40 px y la tarjeta
               ocupaba media pantalla para tres líneas. */}
-          <section className="rounded-xl border border-border bg-card p-5 space-y-3" data-testid="contacto">
+          <section className="rounded-lg border border-border bg-card p-5 space-y-3" data-testid="contacto">
             <div className="flex items-center gap-2">
               <Envelope className="w-4 h-4 text-muted-foreground" />
               <h3 className="text-base font-semibold text-foreground">
@@ -758,7 +758,7 @@ function PropietarioDetailContent() {
                     <PropertyCard key={consignacion.id} consignacion={consignacion} />
                   ))
                 ) : (
-                  <div className="flex flex-col items-center text-center py-14 rounded-xl border border-border bg-card">
+                  <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
                     <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
                       <House className="w-6 h-6 text-muted-foreground" weight="duotone" />
                     </div>
@@ -787,7 +787,7 @@ function PropietarioDetailContent() {
                     <PaymentHistoryItem key={dispersion.id} dispersion={dispersion} />
                   ))
                 ) : (
-                  <div className="flex flex-col items-center text-center py-14 rounded-xl border border-border bg-card">
+                  <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
                     <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
                       <CurrencyDollar className="w-6 h-6 text-muted-foreground" weight="duotone" />
                     </div>
@@ -806,7 +806,7 @@ function PropietarioDetailContent() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
               >
-                <div className="p-5 rounded-xl border border-border bg-card">
+                <div className="p-5 rounded-lg border border-border bg-card">
                   <div className="flex items-center gap-2 mb-4">
                     <Note className="w-5 h-5 text-muted-foreground" />
                     <h3 className="text-base font-semibold text-foreground">

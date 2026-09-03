@@ -111,7 +111,7 @@ export function DocumentReviewQueueView({
           <div
             key={key}
             data-testid={`count-${key}`}
-            className="p-4 rounded-xl border border-border bg-card"
+            className="p-4 rounded-lg border border-border bg-card"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
@@ -164,7 +164,7 @@ export function DocumentReviewQueueView({
             <section
               key={item.applicationId}
               data-testid="review-group"
-              className="rounded-xl border border-border bg-card overflow-hidden"
+              className="rounded-lg border border-border bg-card overflow-hidden"
             >
               {/* Tenant header */}
               <header className="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-3">

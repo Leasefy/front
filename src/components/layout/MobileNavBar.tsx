@@ -52,7 +52,7 @@ export function MobileNavBar({ navItems }: MobileNavBarProps) {
                 aria-label={item.label}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'min-h-[56px] min-w-[56px] flex flex-col items-center justify-center px-2 py-2 rounded-xl',
+                  'min-h-[56px] min-w-[56px] flex flex-col items-center justify-center px-2 py-2 rounded-lg',
                   active
                     ? 'bg-primary-soft text-primary'
                     : 'text-fg-muted'

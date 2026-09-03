@@ -220,7 +220,7 @@ function RentabilidadContent() {
 
       {/* Periodo */}
       <section
-        className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between"
+        className="rounded-lg border border-border bg-card p-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between"
         aria-labelledby="rentabilidad-periodo"
       >
         <div className="space-y-2">
@@ -293,12 +293,12 @@ function RentabilidadContent() {
         onReintentar={() => void refetch()}
         esqueleto={
           <div className="space-y-6">
-            <div className="h-24 animate-pulse rounded-xl border border-border bg-card" aria-hidden="true" />
+            <div className="h-24 animate-pulse rounded-lg border border-border bg-card" aria-hidden="true" />
             <EsqueletoTabla columnas={COLUMNAS.length} />
           </div>
         }
         cuandoVacio={
-          <div className="rounded-xl border border-border bg-card">
+          <div className="rounded-lg border border-border bg-card">
             <SinDatos
               queSon="inmuebles"
               icono={Buildings}
@@ -310,7 +310,7 @@ function RentabilidadContent() {
       >
         {totales && (
           <StatStrip
-            className="flex-wrap rounded-xl border border-border bg-card px-4 [&>*]:basis-1/2 sm:[&>*]:basis-1/3 xl:[&>*]:basis-auto"
+            className="flex-wrap rounded-lg border border-border bg-card px-4 [&>*]:basis-1/2 sm:[&>*]:basis-1/3 xl:[&>*]:basis-auto"
             data-testid="totales-de-rentabilidad"
           >
             <Stat
@@ -356,7 +356,7 @@ function RentabilidadContent() {
         )}
 
         {/* Gráfico */}
-        <section className="rounded-xl border border-border bg-card overflow-hidden">
+        <section className="rounded-lg border border-border bg-card overflow-hidden">
           <div className="border-b border-border p-5">
             <h2 className="text-base font-semibold text-fg">
               {t('inmobiliaria.reportes.rentabilidad.chart.title', {
@@ -373,7 +373,7 @@ function RentabilidadContent() {
         </section>
 
         {/* Tabla */}
-        <section className="rounded-xl border border-border bg-card overflow-hidden">
+        <section className="rounded-lg border border-border bg-card overflow-hidden">
           <div className="border-b border-border p-5">
             <h2 className="text-base font-semibold text-fg">
               {t('inmobiliaria.reportes.rentabilidad.table.title')}

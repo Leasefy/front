@@ -195,7 +195,7 @@ export function AgenteSelector({
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.99 }}
               className={cn(
-                'relative p-4 rounded-xl border text-left transition-all duration-200',
+                'relative p-4 rounded-lg border text-left transition-all duration-200',
                 value === null
                   ? 'border-primary/30 bg-primary-soft ring-2 ring-primary/30'
                   : 'border-border dark:border-border-strong bg-surface dark:bg-bg hover:border-border dark:hover:border-border-strong hover:'
@@ -245,7 +245,7 @@ export function AgenteSelector({
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.99 }}
               className={cn(
-                'relative p-4 rounded-xl border text-left transition-all duration-200',
+                'relative p-4 rounded-lg border text-left transition-all duration-200',
                 value === agente.id
                   ? 'border-primary/30 bg-primary-soft ring-2 ring-primary/30'
                   : 'border-border dark:border-border-strong bg-surface dark:bg-bg hover:border-border dark:hover:border-border-strong hover:'
@@ -355,7 +355,7 @@ export function AgenteSelector({
           ))}
         </div>
       ) : (
-        <div className="p-8 text-center rounded-xl border border-border dark:border-border-strong bg-surface-muted dark:bg-bg">
+        <div className="p-8 text-center rounded-lg border border-border dark:border-border-strong bg-surface-muted dark:bg-bg">
           <User className="w-12 h-12 mx-auto mb-3 text-fg-subtle dark:text-fg-muted" />
           <p className="text-fg-muted dark:text-fg-subtle">
             {zoneFilter !== 'all'

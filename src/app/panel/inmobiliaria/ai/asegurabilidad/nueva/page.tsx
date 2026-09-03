@@ -376,7 +376,7 @@ export default function NuevaCotizacionPage() {
           {isReQuoteMode && prefillFailed && !prefillDismissed && (
             <div
               role="alert"
-              className="mb-6 rounded-xl border border-warning/30 bg-warning-soft p-4"
+              className="mb-6 rounded-lg border border-warning/30 bg-warning-soft p-4"
             >
               <p className="text-sm text-warning">
                 {t('inmobiliaria.ai.cotizador.reQuote.prefillFailed.banner')}
@@ -417,7 +417,7 @@ export default function NuevaCotizacionPage() {
             <div
               role="region"
               aria-label={t('inmobiliaria.ai.cotizador.reQuote.cedulaNotice.ariaLabel')}
-              className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary-soft px-4 py-3"
+              className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary-soft px-4 py-3"
             >
               <p className="text-sm text-primary">
                 {t('inmobiliaria.ai.cotizador.reQuote.cedulaNotice.message')}
@@ -481,7 +481,7 @@ export default function NuevaCotizacionPage() {
           {sessionCapError && (
             <div
               role="alert"
-              className="mt-4 rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
+              className="mt-4 rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
             >
               {t('inmobiliaria.ai.cotizador.reQuote.sessionCapHit')}
             </div>
@@ -490,7 +490,7 @@ export default function NuevaCotizacionPage() {
           {submitError && (
             <div
               role="alert"
-              className="mt-4 rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
+              className="mt-4 rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
             >
               {submitError}
             </div>

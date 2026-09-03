@@ -106,7 +106,7 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
   return (
     <>
       {/* Flat list — md+ */}
-      <div className="hidden md:block rounded-xl border border-border bg-card">
+      <div className="hidden md:block rounded-lg border border-border bg-card">
         <div className="px-5 py-4 border-b border-border-faint">
           <h2 className="text-base font-semibold text-fg">
             {t('inmobiliaria.ai.cobranza.overview.nextActions.title')}
@@ -116,7 +116,7 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
       </div>
 
       {/* Accordion — sm */}
-      <details className="md:hidden rounded-xl border border-border bg-card group">
+      <details className="md:hidden rounded-lg border border-border bg-card group">
         <summary className="px-5 py-4 cursor-pointer flex items-center justify-between list-none">
           <span className="text-base font-semibold text-fg">
             {t('inmobiliaria.ai.cobranza.overview.nextActions.title')}

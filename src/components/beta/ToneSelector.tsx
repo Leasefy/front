@@ -92,7 +92,7 @@ export function ToneSelector({ className }: ToneSelectorProps) {
               key={option.id}
               onClick={() => handleToneChange(option.id)}
               className={cn(
-                'flex flex-col items-start gap-2 p-3.5 rounded-xl',
+                'flex flex-col items-start gap-2 p-3.5 rounded-lg',
                 'border text-left transition-all duration-150',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                 isSelected

@@ -135,7 +135,7 @@ export function PilotoDock() {
           <section
             role="dialog"
             aria-label={t('inmobiliaria.piloto.procesos.titulo')}
-            className="pointer-events-auto flex w-[calc(100vw-1.5rem)] max-w-[420px] flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-[0_18px_50px_-12px_rgba(0,0,0,0.35)] motion-safe:animate-fade-in-up"
+            className="pointer-events-auto flex w-[calc(100vw-1.5rem)] max-w-[420px] flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-[0_18px_50px_-12px_rgba(0,0,0,0.35)] motion-safe:animate-fade-in-up"
             style={{ maxHeight: 'min(72vh, 640px)' }}
             data-testid="piloto-dock-panel"
           >

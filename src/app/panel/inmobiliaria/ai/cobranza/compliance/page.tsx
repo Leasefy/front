@@ -11,7 +11,7 @@
  * "any open request exists" — but the explicit `<= 15` check stays for
  * clarity and to defend against future server changes.
  *
- * Refs mvp:docs/DESIGN.md §1 (sobrio + warm), §4 (cards rounded-xl border
+ * Refs mvp:docs/DESIGN.md §1 (sobrio + warm), §4 (cards rounded-lg border
  * bg-card), §11 (loading state spinner), mvp:docs/COLOR_SYSTEM.md
  * (rose for warning/error, emerald for ok).
  */
@@ -115,7 +115,7 @@ function ComplianceOverviewContent() {
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border border-danger/30 bg-danger-soft p-4 flex items-start gap-3"
+          className="rounded-lg border border-danger/30 bg-danger-soft p-4 flex items-start gap-3"
           role="alert"
         >
           <Warning
@@ -133,7 +133,7 @@ function ComplianceOverviewContent() {
       {error && !data && (
         <div
           role="alert"
-          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
+          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
@@ -143,7 +143,7 @@ function ComplianceOverviewContent() {
       {data && (
         <>
           {/* Section 1: Ley 2300 weekly counter */}
-          <section className="rounded-xl border border-border bg-card p-4">
+          <section className="rounded-lg border border-border bg-card p-4">
             <MonoLabel>
               {t('inmobiliaria.ai.cobranza.compliance.overview.ley2300Heading')}
             </MonoLabel>
@@ -202,7 +202,7 @@ function ComplianceOverviewContent() {
           </section>
 
           {/* Section 3: Retention gauge */}
-          <section className="rounded-xl border border-border bg-card p-4">
+          <section className="rounded-lg border border-border bg-card p-4">
             <MonoLabel>
               {t('inmobiliaria.ai.cobranza.compliance.overview.retentionHeading')}
             </MonoLabel>
@@ -264,7 +264,7 @@ function ComplianceOverviewContent() {
           </section>
 
           {/* Section 4: 30-day sparkline */}
-          <section className="rounded-xl border border-border bg-card p-4">
+          <section className="rounded-lg border border-border bg-card p-4">
             <MonoLabel className="mb-3">
               {t('inmobiliaria.ai.cobranza.compliance.overview.sparklineHeading')}
             </MonoLabel>
@@ -277,7 +277,7 @@ function ComplianceOverviewContent() {
               <Link
                 key={href}
                 href={href}
-                className="rounded-xl border border-border bg-card p-4 hover:border-primary hover:bg-accent/30 transition flex items-center gap-3"
+                className="rounded-lg border border-border bg-card p-4 hover:border-primary hover:bg-accent/30 transition flex items-center gap-3"
               >
                 <Icon className="w-5 h-5 text-primary" aria-hidden="true" />
                 <span className="text-sm font-medium text-foreground">{title}</span>

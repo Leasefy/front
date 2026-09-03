@@ -112,7 +112,7 @@ function FacturacionContent() {
       </header>
 
       {/* Honest "engine arrives in M2" banner */}
-      <div className="rounded-xl bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
+      <div className="rounded-lg bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
         <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
         <div>
           <p className="text-xs font-semibold text-primary">{t(k('m2BannerTitle'))}</p>
@@ -133,7 +133,7 @@ function FacturacionContent() {
       {/* Active tab panel */}
       <TabsContent value={active} className="mt-4">
       <section
-        className="rounded-xl border border-border bg-card overflow-hidden"
+        className="rounded-lg border border-border bg-card overflow-hidden"
       >
         {/* Panel header: descriptor + estados legend */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 p-5 border-b border-border">

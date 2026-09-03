@@ -241,7 +241,7 @@ export function PagoFallidoTabla({ items, onAction, onOpen }: PagoFallidoTablaPr
   } = useTablePagination(items)
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card">
+    <div className="overflow-x-auto rounded-lg border border-border bg-card">
       <Table className="min-w-[720px] text-left">
         <TableHeader>
           <TableRow>

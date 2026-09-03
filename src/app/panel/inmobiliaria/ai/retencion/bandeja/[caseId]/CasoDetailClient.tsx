@@ -35,7 +35,7 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
     return (
       <main className="p-6 lg:p-8">
         <div className="h-6 w-48 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse mb-4" />
-        <div className="h-40 rounded-xl bg-neutral-100 dark:bg-neutral-800/50 animate-pulse" />
+        <div className="h-40 rounded-lg bg-neutral-100 dark:bg-neutral-800/50 animate-pulse" />
       </main>
     )
   }
@@ -43,7 +43,7 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
   if (error && !data) {
     return (
       <main className="p-6 lg:p-8">
-        <div className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-600 dark:text-rose-400">
+        <div className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-600 dark:text-rose-400">
           No pude cargar el caso: {error}
         </div>
       </main>
@@ -118,7 +118,7 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
+    <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
       <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-2">{title}</h3>
       {children}
     </div>

@@ -7,7 +7,7 @@
  * Bottom-anchored "Resolver" button opens EscalationResolveModal locked
  * to this escalation. Breadcrumb back to the kanban list.
  *
- * Refs mvp:docs/DESIGN.md §3 (typography), §4 (cards rounded-xl +).
+ * Refs mvp:docs/DESIGN.md §3 (typography), §4 (cards rounded-lg +).
  * Refs mvp:docs/COLOR_SYSTEM.md (rose for warning, emerald for resolve).
  */
 
@@ -96,7 +96,7 @@ function EscalationDetailContent() {
           <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
           {t('inmobiliaria.ai.cobranza.escalaciones.kanbanColumns.open')}
         </Button>
-        <div className="mt-4 rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger">
+        <div className="mt-4 rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger">
           {error ?? t('inmobiliaria.ai.cobranza.escalaciones.errors.notFound')}
         </div>
       </div>
@@ -138,7 +138,7 @@ function EscalationDetailContent() {
       </div>
 
       {/* Card 1 — Linked call */}
-      <section className="rounded-xl border border-border bg-card p-4 space-y-2">
+      <section className="rounded-lg border border-border bg-card p-4 space-y-2">
         <MonoLabel className="text-xs text-muted-foreground flex items-center gap-1.5">
           <Phone className="w-3.5 h-3.5" aria-hidden="true" />
           {t('inmobiliaria.ai.cobranza.escalaciones.detail.linkedCall')}
@@ -162,7 +162,7 @@ function EscalationDetailContent() {
       </section>
 
       {/* Card 2 — Reason */}
-      <section className="rounded-xl border border-border bg-card p-4 space-y-2">
+      <section className="rounded-lg border border-border bg-card p-4 space-y-2">
         <MonoLabel className="text-xs text-muted-foreground flex items-center gap-1.5">
           <FileText className="w-3.5 h-3.5" aria-hidden="true" />
           {t('inmobiliaria.ai.cobranza.escalaciones.detail.reason')}
@@ -173,7 +173,7 @@ function EscalationDetailContent() {
       </section>
 
       {/* Card 3 — Agent state trace (collapsible) */}
-      <section className="rounded-xl border border-border bg-card p-4 space-y-2">
+      <section className="rounded-lg border border-border bg-card p-4 space-y-2">
         <details>
           <summary className="cursor-pointer list-none">
             <MonoLabel className="text-xs text-muted-foreground hover:text-foreground transition">
@@ -189,7 +189,7 @@ function EscalationDetailContent() {
       </section>
 
       {/* Card 4 — Assignee + timing */}
-      <section className="rounded-xl border border-border bg-card p-4 space-y-2">
+      <section className="rounded-lg border border-border bg-card p-4 space-y-2">
         <MonoLabel className="text-xs text-muted-foreground flex items-center gap-1.5">
           <User className="w-3.5 h-3.5" aria-hidden="true" />
           {t('inmobiliaria.ai.cobranza.escalaciones.detail.assignee')}

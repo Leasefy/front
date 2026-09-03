@@ -167,7 +167,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
   return (
     <section
       className={cn(
-        'relative rounded-xl border bg-surface dark:bg-bg overflow-hidden transition-colors',
+        'relative rounded-lg border bg-surface dark:bg-bg overflow-hidden transition-colors',
         arrastrandoEncima ? 'border-primary' : 'border-border dark:border-border-strong',
       )}
       data-testid="fotos-del-inmueble"

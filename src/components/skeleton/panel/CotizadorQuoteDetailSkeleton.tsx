@@ -41,7 +41,7 @@ export function CotizadorQuoteDetailSkeleton() {
       {/* Content area — max-w-6xl mirrors real page main */}
       <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
         {/* Quote header card */}
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="rounded-lg border border-border bg-card p-4">
           <div className="flex items-center justify-between mb-2">
             <Skeleton className="h-5 w-40" />
             <Skeleton className="h-5 w-20 rounded-full" />
@@ -54,7 +54,7 @@ export function CotizadorQuoteDetailSkeleton() {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="rounded-xl border border-border bg-card p-5 space-y-3"
+              className="rounded-lg border border-border bg-card p-5 space-y-3"
             >
               <div className="flex items-center justify-between">
                 <Skeleton className="h-5 w-20" />
@@ -68,7 +68,7 @@ export function CotizadorQuoteDetailSkeleton() {
         </div>
 
         {/* Live cost ticker placeholder */}
-        <div className="rounded-xl border border-border bg-card p-4 flex items-center justify-between">
+        <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between">
           <Skeleton className="h-4 w-32" />
           <Skeleton className="h-8 w-24" />
         </div>

@@ -666,7 +666,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
 
           {/* Commission Summary */}
           {monthlyRent > 0 && (
-            <div className="p-4 rounded-xl bg-surface-muted dark:bg-bg border border-border-faint dark:border-border-strong">
+            <div className="p-4 rounded-lg bg-surface-muted dark:bg-bg border border-border-faint dark:border-border-strong">
               <h4 className="text-sm font-medium text-fg dark:text-fg-subtle mb-3">
                 {t('inmobiliaria.consignaciones.wizard.step3.monthlySummary')}
               </h4>
@@ -746,7 +746,7 @@ export function StepAssignAgent({ formData, updateFormData, agentes }: StepProps
       />
 
       {!formData.agenteId && (
-        <div className="flex items-start gap-3 p-4 rounded-xl border border-border dark:border-border-strong bg-surface-muted dark:bg-bg">
+        <div className="flex items-start gap-3 p-4 rounded-lg border border-border dark:border-border-strong bg-surface-muted dark:bg-bg">
           <UserCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
           <p className="text-sm text-fg-muted dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.wizard.step4.selfAssignNotice')}
@@ -833,7 +833,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg"
+                className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg"
               >
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center text-fg-muted dark:text-fg-subtle text-sm font-medium shrink-0">
@@ -905,7 +905,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
             ))}
           </div>
         ) : (
-          <div className="p-8 text-center rounded-xl border border-dashed border-border dark:border-border-strong bg-surface-muted dark:bg-bg">
+          <div className="p-8 text-center rounded-lg border border-dashed border-border dark:border-border-strong bg-surface-muted dark:bg-bg">
             <Package className="w-12 h-12 mx-auto mb-3 text-fg-subtle dark:text-fg-muted" />
             <p className="text-fg-muted dark:text-fg-subtle mb-3">
               {t('inmobiliaria.consignaciones.wizard.step5.emptyInventory')}
@@ -1017,7 +1017,7 @@ export function StepConfirmation({
 
       <div className="space-y-4">
         {/* Propietario Section */}
-        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
+        <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.ownerSection')} step={1} />
           <div className="flex items-center gap-3">
             <div className={cn(
@@ -1049,7 +1049,7 @@ export function StepConfirmation({
         </div>
 
         {/* Property Section */}
-        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
+        <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.propertySection')} step={2} />
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center text-2xl">
@@ -1092,7 +1092,7 @@ export function StepConfirmation({
             carries a REDUCED mandate (propietario + consignedAt + sale
             commission). No canon, no minimumTerm, no adminFee. */}
         {isSaleListing ? (
-          <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
+          <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
             <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.termsSection')} step={3} />
             <div>
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.wizard.step6.saleCommission')}</p>
@@ -1100,7 +1100,7 @@ export function StepConfirmation({
             </div>
           </div>
         ) : (
-        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
+        <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.termsSection')} step={3} />
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -1130,7 +1130,7 @@ export function StepConfirmation({
         )}
 
         {/* Agent Section */}
-        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
+        <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.agentSection')} step={4} />
           {agente ? (
             <div className="flex items-center gap-3">
@@ -1152,7 +1152,7 @@ export function StepConfirmation({
         {/* Inventory Section — step 5 renders photos-only on the sale path
             (T-0042, ledger.md §3), so there is no inventory to confirm here. */}
         {!isSaleListing && (
-        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
+        <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.inventorySection')} step={5} />
           {inventoryItems.length > 0 ? (
             <div className="space-y-2">

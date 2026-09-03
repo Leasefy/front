@@ -205,7 +205,7 @@ function ContratoDetalleContent() {
   if (!contract) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
           <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-danger">No se pudo cargar el contrato</p>
@@ -325,7 +325,7 @@ function ContratoDetalleContent() {
       )}
 
       {actionError && (
-        <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
           <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <p className="text-sm text-danger">{actionError}</p>
         </div>
@@ -454,7 +454,7 @@ function ContratoDetalleContent() {
             </>
           )}
 
-          <section className="rounded-xl border border-border bg-card overflow-hidden">
+          <section className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
               <FileText className="w-4 h-4 text-muted-foreground" />
               <h3 className="text-base font-semibold text-foreground">Documento</h3>
@@ -465,7 +465,7 @@ function ContratoDetalleContent() {
               {hasAnySignature && (isLoadingSignedPdf || signedPdfUrl) ? (
                 <div className="space-y-3">
                   {contract.tenantSignature && !contract.landlordSignature && (
-                    <div className="rounded-xl border border-amber-600/30 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-900/15 px-4 py-2.5 flex items-start gap-2">
+                    <div className="rounded-lg border border-amber-600/30 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-900/15 px-4 py-2.5 flex items-start gap-2">
                       <Info className="w-4 h-4 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                       <p className="text-xs text-amber-700 dark:text-amber-400">
                         Este PDF ya incluye la <strong>firma del inquilino</strong> y un certificado parcial.
@@ -474,7 +474,7 @@ function ContratoDetalleContent() {
                     </div>
                   )}
                   {contract.tenantSignature && contract.landlordSignature && (
-                    <div className="rounded-xl border border-emerald-600/30 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-900/15 px-4 py-2.5 flex items-start gap-2">
+                    <div className="rounded-lg border border-emerald-600/30 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-900/15 px-4 py-2.5 flex items-start gap-2">
                       <Info className="w-4 h-4 text-emerald-700 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                       <p className="text-xs text-emerald-700 dark:text-emerald-400">
                         PDF final con <strong>ambas firmas</strong>, certificado completo y hash SHA-256.
@@ -715,7 +715,7 @@ function ActionBar({
   };
 
   return (
-    <section className={cn('rounded-xl border p-5 space-y-3', toneClasses[tone])}>
+    <section className={cn('rounded-lg border p-5 space-y-3', toneClasses[tone])}>
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-base font-semibold text-foreground">{title}</p>
@@ -781,7 +781,7 @@ function ResumenDelContrato({
           : { value: formatCurrency(0), delta: 'al día', dir: 'up' as const };
 
   return (
-    <StatStrip className="rounded-xl border border-border bg-card px-4" data-testid="resumen-del-contrato">
+    <StatStrip className="rounded-lg border border-border bg-card px-4" data-testid="resumen-del-contrato">
       <Stat label="Canon" value={contract.monthlyRent ? formatCurrency(contract.monthlyRent) : '—'} compact />
       <Stat
         label="Vence"
@@ -861,7 +861,7 @@ function InfoCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-border bg-card p-5 space-y-3">
+    <section className="rounded-lg border border-border bg-card p-5 space-y-3">
       <div className="flex items-center gap-2">
         <Icon className="w-4 h-4 text-muted-foreground" />
         <h3 className="text-base font-semibold text-foreground">{title}</h3>

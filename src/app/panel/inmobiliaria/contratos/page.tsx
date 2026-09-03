@@ -72,7 +72,7 @@ function fmtDate(iso: string | null | undefined, locale: string): string {
 
 function StatCard({ label, value, dot }: { label: string; value: number | string; dot: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-center gap-2">
         <span className={cn('w-2 h-2 rounded-full flex-shrink-0', dot)} />
         <span className="text-caption text-muted-foreground truncate">{label}</span>
@@ -263,7 +263,7 @@ function ContratosContent() {
 
       {/* Error */}
       {error && (
-        <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2.5">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2.5">
           <Warning className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" weight="fill" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium text-danger">
@@ -284,7 +284,7 @@ function ContratosContent() {
       )}
 
       {/* Table */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-surface-muted flex items-center justify-center flex-shrink-0">

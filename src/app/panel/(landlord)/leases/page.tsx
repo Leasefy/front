@@ -158,7 +158,7 @@ export default function LandlordLeasesPage() {
         </div>
 
         {/* Financial Summary Card */}
-        <div className="bg-primary-soft border border-primary/30 rounded-xl p-6 mb-8">
+        <div className="bg-primary-soft border border-primary/30 rounded-lg p-6 mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
               <div className="flex items-center gap-3 mb-3">
@@ -189,7 +189,7 @@ export default function LandlordLeasesPage() {
 
         {/* Ending Soon Warning */}
         {stats.endingSoon > 0 && (
-          <div className="mb-6 p-4 bg-warning-soft border border-warning/30 rounded-xl">
+          <div className="mb-6 p-4 bg-warning-soft border border-warning/30 rounded-lg">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-warning-soft flex items-center justify-center">
                 <WarningCircle className="w-5 h-5 text-warning" />
@@ -235,7 +235,7 @@ export default function LandlordLeasesPage() {
                 action={{ label: t('landlord.leases.emptyAction'), href: "/panel/contratos" }}
               />
             ) : (
-              <section className="bg-surface rounded-xl border border-border overflow-hidden">
+              <section className="bg-surface rounded-lg border border-border overflow-hidden">
                 {filteredLeases.length > 0 ? (
                   <div className="divide-y divide-border-faint">
                     {filteredLeases.map((lease) => (
@@ -246,7 +246,7 @@ export default function LandlordLeasesPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-xl bg-surface-muted py-14 px-6 text-center">
+                  <div className="rounded-lg bg-surface-muted py-14 px-6 text-center">
                     <div className="w-14 h-14 rounded-xl bg-surface flex items-center justify-center mx-auto mb-5">
                       <House className="w-6 h-6 text-fg-subtle" />
                     </div>

@@ -16,7 +16,7 @@
  * escale o rechace automáticamente. Las acciones viven en la fila de la tabla
  * y son placeholders honestos ("Próximamente") salvo el cross-link al detalle.
  *
- * Estilo: contrato DS 2026-06-16 — rounded-xl border-border bg-card, tonos
+ * Estilo: contrato DS 2026-06-16 — rounded-lg border-border bg-card, tonos
  * semánticos por token (success/warning/danger/primary + *-soft), sin hex.
  */
 
@@ -175,7 +175,7 @@ export function PromesaCard({ promesa }: { promesa: Promesa }) {
 
   return (
     <li
-      className="rounded-xl border border-border bg-surface overflow-hidden"
+      className="rounded-lg border border-border bg-surface overflow-hidden"
       data-testid={`promesa-card-${promesa.key}`}
     >
       {/* Cabecera clicable — quién, valor, fecha, estado */}

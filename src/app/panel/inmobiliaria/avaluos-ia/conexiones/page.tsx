@@ -102,7 +102,7 @@ function ConexionCard({ c }: { c: Conexion }) {
     </>
   )
 
-  const cls = 'group block rounded-xl border border-border bg-surface p-4 transition-colors hover:border-border-strong'
+  const cls = 'group block rounded-lg border border-border bg-surface p-4 transition-colors hover:border-border-strong'
   return c.href ? (
     <Link href={c.href} className={cls}>{inner}</Link>
   ) : (
@@ -125,7 +125,7 @@ export default function ConexionesPage() {
 
         {/* ── Hero (ink anchor) — el flujo ─────────────────────────────── */}
         <section
-          className="relative overflow-hidden rounded-2xl px-7 py-8"
+          className="relative overflow-hidden rounded-lg px-7 py-8"
           style={{ background: INK_GRADIENT, boxShadow: '0 26px 64px -28px rgba(20, 19, 15,0.55)' }}
         >
           <div className="pointer-events-none absolute -inset-x-2 top-[52%] h-[42%] text-white/[0.10]">
@@ -159,7 +159,7 @@ export default function ConexionesPage() {
             </div>
             <ArrowRight className="w-5 h-5 text-white/35" weight="bold" />
             <span
-              className="inline-flex items-center justify-center rounded-xl text-base font-semibold text-white shrink-0"
+              className="inline-flex items-center justify-center rounded-lg text-base font-semibold text-white shrink-0"
               style={{ width: 48, height: 48, background: BLUE, boxShadow: '0 0 0 4px rgba(26,64,255,0.18)' }}
             >
               G

@@ -227,7 +227,7 @@ function EditarContratoContent() {
   if (!contract) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
           <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-danger">No se pudo cargar el contrato</p>
@@ -249,7 +249,7 @@ function EditarContratoContent() {
         >
           <CaretLeft className="w-4 h-4" /> Volver
         </Button>
-        <div className="rounded-xl border border-amber-600/30 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-900/15 p-5 flex items-start gap-3">
+        <div className="rounded-lg border border-amber-600/30 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-900/15 p-5 flex items-start gap-3">
           <WarningCircle className="w-5 h-5 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-amber-700 dark:text-amber-400">Este contrato no se puede editar</p>
@@ -289,7 +289,7 @@ function EditarContratoContent() {
 
       {/* Warning about signature invalidation */}
       {contract.landlordSignature && (
-        <div className="rounded-xl border border-amber-600/30 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-900/15 p-4 flex items-start gap-2">
+        <div className="rounded-lg border border-amber-600/30 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-900/15 p-4 flex items-start gap-2">
           <Info className="w-5 h-5 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-amber-700 dark:text-amber-400">
             Al guardar cambios, tu firma previa se invalida. Tendrás que volver a firmar el contrato.
@@ -300,7 +300,7 @@ function EditarContratoContent() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* PDF replacement — only for UPLOADED_PDF contracts */}
         {isUploadedPdf && (
-          <section className="rounded-xl border border-border bg-card p-5 space-y-3">
+          <section className="rounded-lg border border-border bg-card p-5 space-y-3">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-base font-semibold text-foreground">PDF del contrato</h2>
@@ -323,7 +323,7 @@ function EditarContratoContent() {
 
             {replacePdf && (
               form.pdfFile ? (
-                <div className="flex items-center gap-3 p-3 rounded-xl border border-emerald-600/30 bg-emerald-50/60 dark:bg-emerald-900/20">
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-emerald-600/30 bg-emerald-50/60 dark:bg-emerald-900/20">
                   <FileText className="w-5 h-5 text-primary flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>
@@ -346,7 +346,7 @@ function EditarContratoContent() {
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={onDrop}
                   className={cn(
-                    'flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed rounded-xl cursor-pointer transition-colors',
+                    'flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors',
                     isDragging
                       ? 'border-primary/40 bg-primary-soft/40'
                       : 'border-border hover:border-primary/40 hover:bg-muted/50'
@@ -375,7 +375,7 @@ function EditarContratoContent() {
         )}
 
         {/* Terms */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Fecha de inicio" error={validation.startDate}>
@@ -472,7 +472,7 @@ function EditarContratoContent() {
         </section>
 
         {submitError && (
-          <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
+          <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
             <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
             <p className="text-sm text-danger">{submitError}</p>
           </div>

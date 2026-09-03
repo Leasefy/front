@@ -329,7 +329,7 @@ export default function CobranzaOverviewPage() {
           alguien lo pide, y arranca ABIERTO cuando no hay cartera todavía, que
           es cuando de verdad sirve. */}
       <details
-        className="group rounded-xl border border-border bg-card"
+        className="group rounded-lg border border-border bg-card"
         open={enMora === 0}
         data-testid="cobranza-como-funciona"
       >
@@ -366,7 +366,7 @@ export default function CobranzaOverviewPage() {
       {error && !isLoading && (
         <div
           role="alert"
-          className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
+          className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
         >
           {t('inmobiliaria.ai.cobranza.overview.errorLoading')}: {error}
         </div>

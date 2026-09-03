@@ -164,7 +164,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
   if (error && !data) {
     return (
       <main className="p-6 lg:p-8">
-        <div className="rounded-xl border border-danger/30 bg-danger-soft p-6 max-w-xl">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft p-6 max-w-xl">
           <p className="text-sm text-danger font-medium">
             {t('inmobiliaria.ai.cobranza.call.error')}
           </p>

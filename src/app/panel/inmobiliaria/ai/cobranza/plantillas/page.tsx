@@ -138,7 +138,7 @@ function TemplateCard({
   const level = tokenBadgeLevel(tpl.tokenCount)
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3">
+    <div className="rounded-lg border border-border bg-card p-4 flex flex-col gap-3">
       {/* Top row: name + pills */}
       <div className="flex items-center flex-wrap gap-2">
         <span className="font-medium text-sm text-fg flex-1 min-w-0 truncate">

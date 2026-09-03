@@ -393,7 +393,7 @@ export function PanelDeMigracion({
         role="dialog"
         aria-modal="true"
         aria-labelledby="muro-migracion-titulo"
-        className="flex h-full w-full max-w-[1200px] flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-lg outline-none motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-300"
+        className="flex h-full w-full max-w-[1200px] flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-lg outline-none motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-300"
       >
         {/* ── Arriba, fijo: el mapa ─────────────────────────────────────── */}
         <header className="shrink-0 border-b border-border-faint px-5 pb-5 pt-5 sm:px-8 sm:pt-6">

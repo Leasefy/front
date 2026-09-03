@@ -99,7 +99,7 @@ export function StepPortalImport({ updateState }: ImportStepProps) {
         {PORTALS.map((portal, index) => (
           <div
             key={portal.id}
-            className="animate-stagger-in rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg p-5 flex flex-col gap-3"
+            className="animate-stagger-in rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg p-5 flex flex-col gap-3"
             style={{ animationDelay: `${index * 80}ms` }}
           >
             <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', portal.color)}>

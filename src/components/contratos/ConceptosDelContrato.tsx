@@ -164,7 +164,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-5 space-y-3">
+    <section className="rounded-lg border border-border bg-card p-5 space-y-3">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Receipt className="h-4 w-4 text-muted-foreground" />

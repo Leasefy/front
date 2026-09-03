@@ -63,7 +63,7 @@ export function PerfilTributarioDelPropietario({
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-5 space-y-3" data-testid="perfil-tributario">
+    <section className="rounded-lg border border-border bg-card p-5 space-y-3" data-testid="perfil-tributario">
       <div className="flex items-center gap-2">
         <Scales className="w-4 h-4 text-muted-foreground" />
         <h3 className="text-base font-semibold text-foreground">{t('inmobiliaria.propietarios.detail.perfilTributario')}</h3>

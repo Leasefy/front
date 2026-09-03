@@ -119,7 +119,7 @@ export default function CallQAPanel({ qa }: CallQAPanelProps) {
   return (
     <section
       aria-label={t('inmobiliaria.ai.cobranza.call.qa.title')}
-      className="rounded-xl border border-border bg-surface p-4"
+      className="rounded-lg border border-border bg-surface p-4"
     >
       <h2 className="text-sm font-semibold text-fg mb-3">
         {t('inmobiliaria.ai.cobranza.call.qa.title')}

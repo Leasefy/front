@@ -150,7 +150,7 @@ function AgendaContent() {
       </header>
 
       {/* Engine note — system events are live; tasks/follow-ups are next */}
-      <div className="rounded-xl bg-primary/10 border border-primary/30 p-3 flex items-start gap-2.5">
+      <div className="rounded-lg bg-primary/10 border border-primary/30 p-3 flex items-start gap-2.5">
         <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
         <p className="text-xs text-primary/90">{t(k('engineNote'))}</p>
       </div>
@@ -160,7 +160,7 @@ function AgendaContent() {
         <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {RESUMEN_ITEMS.map((item) => (
-            <div key={item.key} className="rounded-xl border border-border bg-card p-4">
+            <div key={item.key} className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2">
                 <span className={cn('w-2 h-2 rounded-full flex-shrink-0', item.dot)} />
                 <span className="text-caption text-muted-foreground truncate">{t(k(`tipo_${item.key}`))}</span>
@@ -172,7 +172,7 @@ function AgendaContent() {
       </section>
 
       {/* Eventos y tareas */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="flex items-center gap-3 p-5 border-b border-border">
           <div className="w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
             <CalendarBlank className="w-[18px] h-[18px] text-primary" />

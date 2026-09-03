@@ -217,7 +217,7 @@ function AuditContent() {
       </div>
 
       {/* Filters grid */}
-      <div className="rounded-xl border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="rounded-lg border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {/* Actor */}
         <div>
           <label htmlFor="audit-actor" className="block mb-1">
@@ -374,7 +374,7 @@ function AuditContent() {
 
       {/* Error state */}
       {error && (
-        <div className="rounded-xl bg-danger-soft text-danger">
+        <div className="rounded-lg bg-danger-soft text-danger">
           Error: {error}
         </div>
       )}
@@ -390,7 +390,7 @@ function AuditContent() {
 
       {/* Table */}
       {items.length > 0 && (
-        <div className="rounded-xl border border-border bg-card overflow-x-auto">
+        <div className="rounded-lg border border-border bg-card overflow-x-auto">
           <Table className="w-full text-sm">
             <TableHeader className="bg-muted/30">
               <TableRow>

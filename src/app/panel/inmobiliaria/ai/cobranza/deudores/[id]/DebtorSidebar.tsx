@@ -53,7 +53,7 @@ export function DebtorSidebar({
 
   if (isLoading && !data) {
     return (
-      <aside className="rounded-xl border border-border bg-surface p-4 animate-pulse">
+      <aside className="rounded-lg border border-border bg-surface p-4 animate-pulse">
         <div className="h-4 w-1/2 bg-surface-muted rounded mb-3" />
         <div className="h-3 w-3/4 bg-surface-muted rounded mb-2" />
         <div className="h-3 w-2/3 bg-surface-muted rounded" />
@@ -63,7 +63,7 @@ export function DebtorSidebar({
 
   if (!data) {
     return (
-      <aside className="rounded-xl border border-border bg-surface p-4">
+      <aside className="rounded-lg border border-border bg-surface p-4">
         <p className="text-sm text-fg-muted">
           {t(`${NS}.detail.empty`)}
         </p>
@@ -94,7 +94,7 @@ export function DebtorSidebar({
   }
 
   return (
-    <aside className="rounded-xl border border-border bg-surface p-4 space-y-4">
+    <aside className="rounded-lg border border-border bg-surface p-4 space-y-4">
       {/* Zone eyebrow — brand mono + dot (FeatureAnnouncementCard pattern) */}
       <h2 className="flex items-center gap-2.5">
         <span

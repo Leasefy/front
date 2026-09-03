@@ -45,7 +45,7 @@ export function InmuebleSinMandatoCard({
       whileHover={{ y: -2 }}
       onClick={onClick}
       className={cn(
-        'w-full rounded-xl border bg-surface dark:bg-bg overflow-hidden transition-all duration-200 group',
+        'w-full rounded-lg border bg-surface dark:bg-bg overflow-hidden transition-all duration-200 group',
         'border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong',
         onClick && 'cursor-pointer',
       )}

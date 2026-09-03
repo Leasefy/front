@@ -73,7 +73,7 @@ function ToggleRow({
   onChange: (v: boolean) => void
 }) {
   return (
-    <label className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 cursor-pointer hover:bg-muted/30 transition">
+    <label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-4 cursor-pointer hover:bg-muted/30 transition">
       <span className="flex items-center gap-2 text-sm text-foreground">
         <Icon className="w-4 h-4 text-muted-foreground" aria-hidden={true} />
         {label}

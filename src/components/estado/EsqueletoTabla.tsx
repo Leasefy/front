@@ -30,7 +30,7 @@ export function EsqueletoTabla({
 }) {
   return (
     <div
-      className={cn('overflow-hidden rounded-xl border border-border bg-card', className)}
+      className={cn('overflow-hidden rounded-lg border border-border bg-card', className)}
       role="status"
       aria-label="Cargando"
       data-testid="esqueleto-tabla"
@@ -74,7 +74,7 @@ export function EsqueletoTarjetas({
       data-testid="esqueleto-tarjetas"
     >
       {Array.from({ length: cantidad }).map((_, i) => (
-        <div key={i} className="space-y-3 rounded-xl border border-border bg-card p-5">
+        <div key={i} className="space-y-3 rounded-lg border border-border bg-card p-5">
           <Barra className="h-2.5 w-20" />
           <Barra className="h-5 w-3/4" />
           <Barra className="w-1/2" />
@@ -101,7 +101,7 @@ export function EsqueletoIndicadores({
       data-testid="esqueleto-indicadores"
     >
       {Array.from({ length: cantidad }).map((_, i) => (
-        <div key={i} className="space-y-3 rounded-xl border border-border bg-card p-5">
+        <div key={i} className="space-y-3 rounded-lg border border-border bg-card p-5">
           <Barra className="h-2.5 w-24" />
           <Barra className="h-7 w-28" />
         </div>

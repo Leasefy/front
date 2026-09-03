@@ -143,7 +143,7 @@ export function ReminderConfigPanel({ config, onConfigChange }: ReminderConfigPa
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card">
+    <div className="rounded-lg border border-border bg-card">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
         <div className="flex items-center gap-3">
@@ -188,7 +188,7 @@ export function ReminderConfigPanel({ config, onConfigChange }: ReminderConfigPa
             <div
               key={meta.type}
               className={cn(
-                'flex items-center gap-4 p-4 rounded-xl border transition-colors',
+                'flex items-center gap-4 p-4 rounded-lg border transition-colors',
                 isDisabled
                   ? 'border-border/50 bg-muted/30 opacity-50'
                   : isTypeEnabled

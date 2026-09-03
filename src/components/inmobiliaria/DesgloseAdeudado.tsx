@@ -182,7 +182,7 @@ export function DesgloseAdeudado({
         </Callout>
       )}
 
-      <div className="rounded-xl border border-border bg-muted/30 px-4 py-2">
+      <div className="rounded-lg border border-border bg-muted/30 px-4 py-2">
         <KeyValueList items={filas} />
         <div className="mt-1 flex items-center justify-between gap-4 border-t border-border py-3">
           <span className="text-sm font-semibold text-fg">{t('recibos.desglose.total')}</span>
@@ -202,7 +202,7 @@ export function DesgloseAdeudado({
       )}
 
       {filasDePago.length > 0 && (
-        <div className="rounded-xl border border-border bg-card px-4 py-1">
+        <div className="rounded-lg border border-border bg-card px-4 py-1">
           <KeyValueList items={filasDePago} compact />
         </div>
       )}

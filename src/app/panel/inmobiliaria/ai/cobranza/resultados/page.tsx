@@ -338,7 +338,7 @@ function ResultadosContent() {
   const crossLinks = (
     <section
       aria-label="Ver el detalle"
-      className="rounded-xl border border-border bg-card p-5 space-y-3 max-w-2xl"
+      className="rounded-lg border border-border bg-card p-5 space-y-3 max-w-2xl"
     >
       <h2 className="text-base font-semibold text-fg">¿Querés el detalle?</h2>
       <p className="text-sm text-fg-muted">
@@ -398,7 +398,7 @@ function ResultadosContent() {
       {(recovery.error || overview.error || daily.error) && hasAnyData && (
         <div
           role="alert"
-          className="rounded-xl bg-warning-soft border border-warning/30 p-3 text-sm text-warning flex items-center gap-2 max-w-2xl"
+          className="rounded-lg bg-warning-soft border border-warning/30 p-3 text-sm text-warning flex items-center gap-2 max-w-2xl"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>
@@ -409,7 +409,7 @@ function ResultadosContent() {
 
       {/* Narrativa resumen del agente */}
       {narrativa && (
-        <section className="rounded-xl border border-border bg-surface p-5 max-w-2xl">
+        <section className="rounded-lg border border-border bg-surface p-5 max-w-2xl">
           <p className="text-sm leading-relaxed text-fg">{narrativa}</p>
         </section>
       )}

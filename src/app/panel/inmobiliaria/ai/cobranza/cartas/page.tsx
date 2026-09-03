@@ -7,7 +7,7 @@
  * GET /api/agency/{agencyId}/cartera/legal-artifacts (listCarteraLegalArtifacts).
  *
  * Pattern matches: deudores/DeudoresListClient + escalaciones/page conventions.
- * Refs DESIGN.md §1 (sobrio + warm), §4 (cards rounded-xl + shadow),
+ * Refs DESIGN.md §1 (sobrio + warm), §4 (cards rounded-lg + shadow),
  * §11 (loading skeleton), §16 (tabular-nums).
  */
 

@@ -188,7 +188,7 @@ function StatCard({
   };
 
   return (
-    <div className="p-4 rounded-xl border border-border bg-card">
+    <div className="p-4 rounded-lg border border-border bg-card">
       <div className="flex items-center gap-3">
         <div className={cn('w-10 h-10 rounded-md flex items-center justify-center', bgColor)}>
           <Icon className={cn('w-5 h-5', iconColor)} />
@@ -475,7 +475,7 @@ function OperacionesContent() {
       {isLoading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="p-4 rounded-xl border border-border bg-card animate-pulse">
+            <div key={i} className="p-4 rounded-lg border border-border bg-card animate-pulse">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-md bg-muted" />
                 <div className="flex-1 space-y-2">
@@ -549,7 +549,7 @@ function OperacionesContent() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-xl border border-border bg-card"
+        className="rounded-lg border border-border bg-card"
       >
         <Tabs value={activeTab} onValueChange={(v) => setTab(v as TabValue)}>
           {/* Tab Header */}

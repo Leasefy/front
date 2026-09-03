@@ -122,7 +122,7 @@ export default function ConciliacionIAHomePage() {
         </div>
 
         {/* ── 1. HERO (ink anchor) ──────────────────────────────────────── */}
-        <section className="relative overflow-hidden rounded-2xl px-7 py-7 sm:px-9 sm:py-8" style={{ background: INK_GRADIENT, boxShadow: '0 26px 64px -28px rgba(20, 19, 15,0.55)' }}>
+        <section className="relative overflow-hidden rounded-lg px-7 py-7 sm:px-9 sm:py-8" style={{ background: INK_GRADIENT, boxShadow: '0 26px 64px -28px rgba(20, 19, 15,0.55)' }}>
           <div className="pointer-events-none absolute -inset-x-2 top-[42%] h-[46%] text-white/[0.10]">
             <BrandContour />
           </div>
@@ -164,7 +164,7 @@ export default function ConciliacionIAHomePage() {
 
             {/* Team cluster */}
             <div className="hidden lg:flex flex-col items-center gap-3 shrink-0 pr-2">
-              <span className="inline-flex items-center justify-center rounded-2xl text-2xl font-semibold text-white" style={{ width: 76, height: 76, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)' }}>G</span>
+              <span className="inline-flex items-center justify-center rounded-lg text-2xl font-semibold text-white" style={{ width: 76, height: 76, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)' }}>G</span>
               <div className="flex -space-x-2">
                 {EQUIPO.slice(1).map((m, i) => (
                   <span key={i} className="inline-flex items-center justify-center rounded-full text-[11px] font-medium text-white/80" style={{ width: 26, height: 26, background: 'rgba(255,255,255,0.10)', border: '1.5px solid #0E1730' }}>{m.inicial}</span>

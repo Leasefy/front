@@ -207,10 +207,10 @@ export function ConfigFacturacion({
       <div className="animate-pulse space-y-6">
         <div className="h-8 bg-muted rounded-md w-1/3" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="h-48 bg-muted rounded-xl" />
-          <div className="h-48 bg-muted rounded-xl" />
+          <div className="h-48 bg-muted rounded-lg" />
+          <div className="h-48 bg-muted rounded-lg" />
         </div>
-        <div className="h-64 bg-muted rounded-xl" />
+        <div className="h-64 bg-muted rounded-lg" />
       </div>
     );
   }
@@ -241,7 +241,7 @@ export function ConfigFacturacion({
       {/* Plan & Usage Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Current Plan Card */}
-        <div className="p-5 rounded-xl bg-card border border-border">
+        <div className="p-5 rounded-lg bg-card border border-border">
           {currentPlan ? (
             <>
               <div className="flex items-start justify-between mb-4">
@@ -314,7 +314,7 @@ export function ConfigFacturacion({
         </div>
 
         {/* Usage Meters Card */}
-        <div className="p-5 rounded-xl bg-card border border-border">
+        <div className="p-5 rounded-lg bg-card border border-border">
           <div className="flex items-center gap-2 mb-4">
             <ChartLineUp className="w-5 h-5 text-fg-muted" />
             <h3 className="text-base font-semibold text-fg">
@@ -373,7 +373,7 @@ export function ConfigFacturacion({
       {/* Payment Method & Features Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Payment Method Card */}
-        <div className="p-5 rounded-xl bg-card border border-border">
+        <div className="p-5 rounded-lg bg-card border border-border">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-fg-muted" />
@@ -445,7 +445,7 @@ export function ConfigFacturacion({
         </div>
 
         {/* Plan Features Card — derived from the real plan columns (same as /upgrade) */}
-        <div className="p-5 rounded-xl bg-card border border-border">
+        <div className="p-5 rounded-lg bg-card border border-border">
           <div className="flex items-center gap-2 mb-4">
             <Sparkle className="w-5 h-5 text-fg-muted" />
             <h3 className="text-base font-semibold text-fg">
@@ -471,7 +471,7 @@ export function ConfigFacturacion({
       </div>
 
       {/* Invoice History */}
-      <div className="p-5 rounded-xl bg-card border border-border">
+      <div className="p-5 rounded-lg bg-card border border-border">
         <div className="flex items-center gap-2 mb-4">
           <Receipt className="w-5 h-5 text-fg-muted" />
           <h3 className="text-base font-semibold text-fg">

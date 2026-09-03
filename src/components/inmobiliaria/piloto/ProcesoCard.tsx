@@ -252,7 +252,7 @@ export function ProcesoCard({ proceso: p, onAbrir, expandida = false }: ProcesoC
                     <div key={`${m.at}-${i}`} className={cn('flex', m.de === 'yo' ? 'justify-end' : 'justify-start')}>
                       <div
                         className={cn(
-                          'max-w-[85%] rounded-2xl px-3 py-1.5 text-body-sm',
+                          'max-w-[85%] rounded-lg px-3 py-1.5 text-body-sm',
                           m.de === 'yo'
                             ? 'rounded-br-sm bg-primary-soft text-fg'
                             : 'rounded-bl-sm bg-surface-muted text-fg',
@@ -364,7 +364,7 @@ export function ProcesoFila({ proceso: p, onAbrir }: ProcesoFilaProps) {
                 <div key={`${m.at}-${i}`} className={cn('flex', m.de === 'yo' ? 'justify-end' : 'justify-start')}>
                   <span
                     className={cn(
-                      'max-w-[90%] rounded-xl px-2.5 py-1 text-[12px] text-fg',
+                      'max-w-[90%] rounded-lg px-2.5 py-1 text-[12px] text-fg',
                       m.de === 'yo' ? 'rounded-br-sm bg-primary-soft' : 'rounded-bl-sm bg-surface-muted',
                     )}
                   >

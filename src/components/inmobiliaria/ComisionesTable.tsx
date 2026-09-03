@@ -207,7 +207,7 @@ export function ComisionesTable({
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Total Comisiones */}
-        <div className="p-4 rounded-xl bg-success-soft dark:bg-success/10 text-fg">
+        <div className="p-4 rounded-lg bg-success-soft dark:bg-success/10 text-fg">
           <div className="flex items-center gap-2 mb-2">
             <CurrencyDollar className="w-5 h-5 text-success" />
             <span className="text-sm font-medium text-success">{t('inmobiliaria.finance.commissionsTable.totalCommissions')}</span>
@@ -216,7 +216,7 @@ export function ComisionesTable({
         </div>
 
         {/* Promedio por Agente */}
-        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-card">
+        <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-card">
           <div className="flex items-center gap-2 mb-2">
             <Users className="w-5 h-5 text-primary" />
             <span className="text-sm font-medium text-fg-muted dark:text-fg-subtle">
@@ -229,7 +229,7 @@ export function ComisionesTable({
         </div>
 
         {/* Mejor Agente */}
-        <div className="p-4 rounded-xl border border-warning/30 dark:border-warning/40 bg-warning-soft">
+        <div className="p-4 rounded-lg border border-warning/30 dark:border-warning/40 bg-warning-soft">
           <div className="flex items-center gap-2 mb-2">
             <Medal className="w-5 h-5 text-warning" weight="fill" />
             <span className="text-sm font-medium text-warning">
@@ -242,7 +242,7 @@ export function ComisionesTable({
         </div>
 
         {/* Cierres Totales */}
-        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-card">
+        <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-card">
           <div className="flex items-center gap-2 mb-2">
             <ChartLineUp className="w-5 h-5 text-primary" />
             <span className="text-sm font-medium text-fg-muted dark:text-fg-subtle">
@@ -271,7 +271,7 @@ export function ComisionesTable({
       </div>
 
       {/* Data Table */}
-      <div className="overflow-x-auto rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-card">
+      <div className="overflow-x-auto rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-card">
         <Table className="min-w-[800px]">
           <TableHeader>
             <TableRow className="border-b border-border-faint dark:border-border-strong">

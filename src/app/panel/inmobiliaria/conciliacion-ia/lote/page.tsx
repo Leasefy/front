@@ -139,7 +139,7 @@ export default function ConciliacionLotePage() {
         </Card>
 
         {/* ── Banner de aprobación masiva (ink anchor §14) ───────────────── */}
-        <section className="relative overflow-hidden rounded-2xl px-6 py-5 sm:px-7" style={{ background: INK_GRADIENT, boxShadow: '0 24px 60px -28px rgba(20, 19, 15,0.5)' }}>
+        <section className="relative overflow-hidden rounded-lg px-6 py-5 sm:px-7" style={{ background: INK_GRADIENT, boxShadow: '0 24px 60px -28px rgba(20, 19, 15,0.5)' }}>
           <div className="pointer-events-none absolute -inset-x-2 top-[40%] h-[48%] text-white/[0.10]">
             <BrandContour />
           </div>

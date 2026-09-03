@@ -442,7 +442,7 @@ export function DispersionWizard({
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-4 rounded-xl bg-warning-soft border border-warning/30 dark:border-warning/40"
+                className="p-4 rounded-lg bg-warning-soft border border-warning/30 dark:border-warning/40"
               >
                 <div className="flex items-start gap-3">
                   <Warning
@@ -498,7 +498,7 @@ export function DispersionWizard({
               {state.dispersionDrafts.map((draft) => (
                 <div
                   key={draft.propietarioId}
-                  className="p-4 rounded-xl border border-border bg-card"
+                  className="p-4 rounded-lg border border-border bg-card"
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center">
@@ -544,18 +544,18 @@ export function DispersionWizard({
                 generaron todas. Meterlas en el mismo cartel manda a buscar el
                 problema donde no está. */}
             {cargandoPrevia ? (
-              <div className="p-12 text-center rounded-xl border border-dashed border-border">
+              <div className="p-12 text-center rounded-lg border border-dashed border-border">
                 <p className="text-muted-foreground">Calculando…</p>
               </div>
             ) : errorPrevia ? (
-              <div className="p-12 text-center rounded-xl border border-dashed border-destructive/40">
+              <div className="p-12 text-center rounded-lg border border-dashed border-destructive/40">
                 <h3 className="text-lg font-semibold text-foreground mb-2">
                   No pudimos calcular este mes
                 </h3>
                 <p className="text-muted-foreground">{errorPrevia}</p>
               </div>
             ) : state.dispersionDrafts.length === 0 ? (
-              <div className="p-12 text-center rounded-xl border border-dashed border-border">
+              <div className="p-12 text-center rounded-lg border border-dashed border-border">
                 <CurrencyCircleDollar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">
                   {yaGenerados > 0
@@ -611,7 +611,7 @@ export function DispersionWizard({
               {state.dispersionDrafts.map((draft) => (
                 <div
                   key={draft.propietarioId}
-                  className="rounded-xl border border-border bg-card overflow-hidden"
+                  className="rounded-lg border border-border bg-card overflow-hidden"
                 >
                   {/* Propietario Header */}
                   <div className="flex items-center justify-between px-4 py-3 bg-muted/20">
@@ -657,7 +657,7 @@ export function DispersionWizard({
             </div>
 
             {/* Total Card */}
-            <div className="p-6 rounded-xl bg-muted/30 border border-border">
+            <div className="p-6 rounded-lg bg-muted/30 border border-border">
               <p className="text-sm text-muted-foreground mb-2">
                 Total a Dispersar
               </p>
@@ -677,7 +677,7 @@ export function DispersionWizard({
                   key={draft.propietarioId}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-5 rounded-xl border border-border bg-card"
+                  className="p-5 rounded-lg border border-border bg-card"
                 >
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center">
@@ -757,7 +757,7 @@ export function DispersionWizard({
             </div>
 
             {/* Select All Toggle */}
-            <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border">
+            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border">
               <div className="flex items-center gap-3">
                 <Button
                   variant="ghost"
@@ -798,7 +798,7 @@ export function DispersionWizard({
                     onClick={() => alternarSeleccion(draft.propietarioId)}
                     aria-pressed={isSelected}
                     className={cn(
-                      'w-full p-4 rounded-xl border-2 text-left transition-all',
+                      'w-full p-4 rounded-lg border-2 text-left transition-all',
                       isSelected
                         ? 'border-primary/30 bg-primary-soft'
                         : 'border-border bg-card hover:border-primary/30'
@@ -907,7 +907,7 @@ export function DispersionWizard({
 
             {/* Actions */}
             <div className="space-y-3">
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/30 border border-border">
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/30 border border-border">
                 <Lightning className="w-5 h-5 text-primary" />
                 <p className="text-sm text-foreground">
                   Al confirmar, las dispersiones quedaran listas para procesamiento
@@ -1018,7 +1018,7 @@ export function DispersionWizard({
       </div>
 
       {/* Step Content */}
-      <div className="bg-surface dark:bg-card rounded-xl border border-border dark:border-border-strong overflow-hidden">
+      <div className="bg-surface dark:bg-card rounded-lg border border-border dark:border-border-strong overflow-hidden">
         <div className="p-6">
           <AnimatePresence mode="wait">
             <motion.div
@@ -1120,7 +1120,7 @@ export function DispersionWizard({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-xl bg-surface dark:bg-card border border-border dark:border-border-strong"
+              className="w-full max-w-md p-6 rounded-lg bg-surface dark:bg-card border border-border dark:border-border-strong"
             >
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center">

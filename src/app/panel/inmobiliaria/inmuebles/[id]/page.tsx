@@ -64,7 +64,7 @@ function EsqueletoDeLaFicha() {
         <Skeleton className="h-5 w-56" />
         <Skeleton className="h-10 w-32 rounded-full" />
       </div>
-      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden">
+      <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden">
         <div className="flex flex-col lg:flex-row">
           <Skeleton className="w-full lg:w-80 xl:w-96 h-48 lg:h-72 rounded-none" />
           <div className="flex-1 p-5 lg:p-6 space-y-4">
@@ -85,12 +85,12 @@ function EsqueletoDeLaFicha() {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Skeleton className="h-56 rounded-xl" />
-          <Skeleton className="h-72 rounded-xl" />
+          <Skeleton className="h-56 rounded-lg" />
+          <Skeleton className="h-72 rounded-lg" />
         </div>
         <div className="space-y-6">
-          <Skeleton className="h-64 rounded-xl" />
-          <Skeleton className="h-40 rounded-xl" />
+          <Skeleton className="h-64 rounded-lg" />
+          <Skeleton className="h-40 rounded-lg" />
         </div>
       </div>
     </div>

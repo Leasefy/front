@@ -63,7 +63,7 @@ export function ExtractosEnviadosDelPropietario({ propietarioId, version = 0 }: 
 
   return (
     <section
-      className="rounded-xl border border-border bg-card p-5 space-y-3"
+      className="rounded-lg border border-border bg-card p-5 space-y-3"
       data-testid="extractos-enviados"
       aria-labelledby="extractos-enviados-titulo"
     >

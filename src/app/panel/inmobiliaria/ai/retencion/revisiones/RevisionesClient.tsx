@@ -291,14 +291,14 @@ export default function RevisionesClient() {
           ))}
         </div>
       ) : rows.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-2 text-center rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700">
+        <div className="flex flex-col items-center justify-center py-16 gap-2 text-center rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700">
           <Gavel size={26} weight="duotone" className="text-neutral-400" />
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
             No hay decisiones en este filtro.
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-700">
+        <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
           <table className="w-full text-sm">
             <thead className="bg-neutral-50 dark:bg-neutral-900/60 text-left text-xs text-neutral-500 dark:text-neutral-400">
               <tr>
@@ -401,7 +401,7 @@ export default function RevisionesClient() {
       )}
 
       {error && !isLoading ? (
-        <div className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-600 dark:text-rose-400">
+        <div className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-600 dark:text-rose-400">
           No pude cargar la cola de revisión: {error}
         </div>
       ) : null}

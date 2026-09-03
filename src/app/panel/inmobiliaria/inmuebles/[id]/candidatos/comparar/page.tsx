@@ -151,7 +151,7 @@ function CompararContent() {
           volverA={{ label: 'Volver a candidatos', href: volverALista }}
         />
       ) : entradas.length < MINIMO_A_COMPARAR ? (
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
           <EmptyState
             icon={Users}
             title={
@@ -175,7 +175,7 @@ function CompararContent() {
               aparecen nivel, ingresos y señales de riesgo.
             </Callout>
           )}
-          <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="overflow-hidden rounded-lg border border-border bg-card">
           <ComparadorCandidatos
             entradas={entradas}
             onVerFicha={(id) => router.push(`${volverALista}?candidato=${encodeURIComponent(id)}`)}

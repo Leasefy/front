@@ -281,7 +281,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay }}
-        className="rounded-xl bg-surface-muted overflow-hidden"
+        className="rounded-lg bg-surface-muted overflow-hidden"
       >
         <div className="px-6 py-5 border-b border-border-faint">
           <div className="flex items-center justify-between">
@@ -318,7 +318,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 return (
                   <div
                     key={account.id}
-                    className="flex items-start justify-between p-4 border border-border rounded-xl bg-surface"
+                    className="flex items-start justify-between p-4 border border-border rounded-lg bg-surface"
                   >
                     <div className="flex items-start gap-4">
                       <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -390,7 +390,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
             variant="outline"
             hideArrow
             onClick={() => { resetForms(); setShowAddAccountModal(true); }}
-            className="w-full border-2 border-dashed border-border-strong text-fg-muted rounded-xl hover:border-[#1A40FF]/30 hover:text-[#1A40FF]"
+            className="w-full border-2 border-dashed border-border-strong text-fg-muted rounded-lg hover:border-[#1A40FF]/30 hover:text-[#1A40FF]"
           >
             <Plus className="w-5 h-5" />
             <span className="text-sm font-medium">{t('landlordSettings.paymentAccounts.addAccount')}</span>
@@ -410,7 +410,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
             <label className="block text-sm font-medium text-fg-muted mb-2">
               {t('landlordSettings.paymentAccounts.modals.addAccount.methodType')}
             </label>
-            <div className="flex gap-1 p-1 bg-surface-muted rounded-xl">
+            <div className="flex gap-1 p-1 bg-surface-muted rounded-lg">
               <button
                 type="button"
                 onClick={() => setAccountMethodType('bank')}
@@ -452,7 +452,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   value={bankForm.bankCode}
                   onValueChange={(v) => setBankForm(prev => ({ ...prev, bankCode: v as BankCode }))}
                 >
-                  <SelectTrigger className="h-12 rounded-xl">
+                  <SelectTrigger className="h-12 rounded-lg">
                     <SelectValue placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.selectBank')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -473,7 +473,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     type="button"
                     onClick={() => setBankForm(prev => ({ ...prev, accountType: 'savings' }))}
                     className={cn(
-                      'flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-all',
+                      'flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-all',
                       bankForm.accountType === 'savings'
                         ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 text-[#1A40FF]'
                         : 'border-border text-fg-muted hover:border-border-strong'
@@ -485,7 +485,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     type="button"
                     onClick={() => setBankForm(prev => ({ ...prev, accountType: 'checking' }))}
                     className={cn(
-                      'flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-all',
+                      'flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-all',
                       bankForm.accountType === 'checking'
                         ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 text-[#1A40FF]'
                         : 'border-border text-fg-muted hover:border-border-strong'
@@ -505,7 +505,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   type="text"
                   value={bankForm.accountNumber}
                   onChange={(e) => { setBankForm(prev => ({ ...prev, accountNumber: e.target.value.replace(/\D/g, '') })); setFieldErrors(prev => { const n = { ...prev }; delete n.accountNumber; return n; }); }}
-                  className={cn('h-12 rounded-xl', fieldErrors.accountNumber && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40')}
+                  className={cn('h-12 rounded-lg', fieldErrors.accountNumber && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40')}
                   placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.accountNumberPlaceholder')}
                   maxLength={20}
                 />
@@ -523,7 +523,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   type="text"
                   value={bankForm.accountHolderName}
                   onChange={(e) => setBankForm(prev => ({ ...prev, accountHolderName: e.target.value }))}
-                  className="h-12 rounded-xl"
+                  className="h-12 rounded-lg"
                   placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.accountHolderPlaceholder')}
                 />
               </div>
@@ -537,7 +537,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   type="text"
                   value={bankForm.accountHolderDocument}
                   onChange={(e) => { setBankForm(prev => ({ ...prev, accountHolderDocument: e.target.value.replace(/\D/g, '') })); setFieldErrors(prev => { const n = { ...prev }; delete n.document; return n; }); }}
-                  className={cn('h-12 rounded-xl', fieldErrors.document && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40')}
+                  className={cn('h-12 rounded-lg', fieldErrors.document && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40')}
                   placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.documentPlaceholder')}
                   maxLength={12}
                 />
@@ -557,7 +557,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   value={walletForm.walletCode}
                   onValueChange={(v) => setWalletForm(prev => ({ ...prev, walletCode: v as WalletCode }))}
                 >
-                  <SelectTrigger className="h-12 rounded-xl">
+                  <SelectTrigger className="h-12 rounded-lg">
                     <SelectValue placeholder={t('landlordSettings.paymentAccounts.modals.addWallet.selectWallet')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -575,7 +575,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 </label>
                 <div className="flex gap-2">
                   <div className={cn(
-                    'w-16 h-12 px-3 border rounded-xl bg-surface-muted flex items-center justify-center text-sm text-fg-subtle',
+                    'w-16 h-12 px-3 border rounded-lg bg-surface-muted flex items-center justify-center text-sm text-fg-subtle',
                     fieldErrors.phone ? 'border-danger/30' : 'border-border'
                   )}>
                     +57
@@ -584,7 +584,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     type="text"
                     value={walletForm.phoneNumber}
                     onChange={(e) => { setWalletForm(prev => ({ ...prev, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })); setFieldErrors(prev => { const n = { ...prev }; delete n.phone; return n; }); }}
-                    className={cn('flex-1 h-12 rounded-xl', fieldErrors.phone && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40')}
+                    className={cn('flex-1 h-12 rounded-lg', fieldErrors.phone && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40')}
                     placeholder={t('landlordSettings.paymentAccounts.modals.addWallet.phonePlaceholder')}
                     maxLength={10}
                   />
@@ -603,7 +603,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   type="text"
                   value={walletForm.holderName}
                   onChange={(e) => setWalletForm(prev => ({ ...prev, holderName: e.target.value }))}
-                  className="h-12 rounded-xl"
+                  className="h-12 rounded-lg"
                   placeholder={t('landlordSettings.paymentAccounts.modals.addWallet.holderPlaceholder')}
                 />
               </div>
@@ -621,7 +621,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 type="button"
                 onClick={() => setShowPropertyDropdown(prev => !prev)}
                 className={cn(
-                  'w-full h-10 px-3 pr-10 border rounded-xl text-sm text-left relative transition-all appearance-none cursor-pointer',
+                  'w-full h-10 px-3 pr-10 border rounded-lg text-sm text-left relative transition-all appearance-none cursor-pointer',
                   showPropertyDropdown
                     ? 'border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/20 bg-surface'
                     : 'border-border bg-surface'
@@ -670,7 +670,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
               )}
               {/* Dropdown panel with checkboxes */}
               {showPropertyDropdown && (
-                <div className="mt-1 border border-border rounded-xl bg-surface overflow-hidden max-h-48 overflow-y-auto">
+                <div className="mt-1 border border-border rounded-lg bg-surface overflow-hidden max-h-48 overflow-y-auto">
                   {landlordProperties.map((property) => {
                     const isSelected = selectedPropertyIds.includes(property.id);
                     return (
@@ -726,7 +726,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
               variant="outline"
               hideArrow
               onClick={() => { setShowAddAccountModal(false); resetForms(); }}
-              className="flex-1 rounded-xl"
+              className="flex-1 rounded-lg"
             >
               {t('landlordSettings.modals.cancel')}
             </Button>
@@ -734,7 +734,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
               hideArrow
               onClick={handleAddAccount}
               disabled={isLoading}
-              className="flex-1 rounded-xl"
+              className="flex-1 rounded-lg"
             >
               {isLoading ? (
                 <Spinner size="xs" variant="current" />
@@ -754,7 +754,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
         <div className="space-y-4">
           {editingAccount && (
             <>
-              <div className="p-4 bg-danger-soft border border-danger/30 rounded-xl flex gap-3">
+              <div className="p-4 bg-danger-soft border border-danger/30 rounded-lg flex gap-3">
                 <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center flex-shrink-0">
                   <Warning className="w-5 h-5 text-danger" />
                 </div>
@@ -770,14 +770,14 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 </div>
               </div>
               {getPropertyCountForAccount(editingAccount.id) > 0 && (
-                <div className="p-3 bg-warning-soft border border-warning/30 rounded-xl">
+                <div className="p-3 bg-warning-soft border border-warning/30 rounded-lg">
                   <p className="text-xs text-warning">
                     {t('landlordSettings.paymentAccounts.modals.deleteAccount.warningWithProperties', { count: getPropertyCountForAccount(editingAccount.id) })}
                   </p>
                 </div>
               )}
               {editingAccount.isDefault && paymentAccounts.length > 1 && (
-                <div className="p-3 bg-warning-soft border border-warning/30 rounded-xl">
+                <div className="p-3 bg-warning-soft border border-warning/30 rounded-lg">
                   <p className="text-xs text-warning">
                     {t('landlordSettings.paymentAccounts.modals.deleteAccount.warningDefault')}
                   </p>
@@ -788,7 +788,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   variant="outline"
                   hideArrow
                   onClick={() => { setShowDeleteAccountModal(false); setEditingAccount(null); }}
-                  className="flex-1 rounded-xl"
+                  className="flex-1 rounded-lg"
                 >
                   {t('landlordSettings.modals.cancel')}
                 </Button>
@@ -797,7 +797,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   hideArrow
                   onClick={handleDeletePaymentAccount}
                   disabled={isLoading || getPropertyCountForAccount(editingAccount.id) > 0 || (editingAccount.isDefault && paymentAccounts.length > 1)}
-                  className="flex-1 rounded-xl"
+                  className="flex-1 rounded-lg"
                 >
                   {isLoading ? <Spinner size="xs" variant="current" /> : <TrashSimple className="w-4 h-4" />}
                   {isLoading ? t('landlordSettings.paymentAccounts.modals.deleteAccount.deleting') : t('landlordSettings.paymentAccounts.modals.deleteAccount.deleteButton')}

@@ -41,7 +41,7 @@ export function InsightsMonthlyCostPreview({
   if (isLoading && trend === null) {
     return (
       <div className="space-y-3 animate-pulse">
-        <div className="h-[160px] bg-surface-muted rounded-xl" />
+        <div className="h-[160px] bg-surface-muted rounded-lg" />
         <div className="h-4 w-40 bg-surface-muted rounded" />
       </div>
     )

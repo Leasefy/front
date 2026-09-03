@@ -58,7 +58,7 @@ function SerieBlock({ serie }: { serie: AnaliticaSerie }) {
 
   return (
     <section
-      className="rounded-xl border border-border bg-card p-4 space-y-3"
+      className="rounded-lg border border-border bg-card p-4 space-y-3"
       data-testid={`analitica-serie-${serie.id}`}
     >
       <h2 className="text-sm font-semibold text-foreground">{serie.label}</h2>
@@ -111,11 +111,11 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
       <div className="space-y-4" data-testid="analitica-loading">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-20 rounded-xl border border-border bg-muted/40 animate-pulse" />
+            <div key={i} className="h-20 rounded-lg border border-border bg-muted/40 animate-pulse" />
           ))}
         </div>
-        <div className="h-40 rounded-xl border border-border bg-muted/40 animate-pulse" />
-        <div className="h-40 rounded-xl border border-border bg-muted/40 animate-pulse" />
+        <div className="h-40 rounded-lg border border-border bg-muted/40 animate-pulse" />
+        <div className="h-40 rounded-lg border border-border bg-muted/40 animate-pulse" />
       </div>
     )
   }
@@ -123,7 +123,7 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
   if (error) {
     return (
       <div
-        className="rounded-xl border border-danger/30 bg-danger-soft text-danger"
+        className="rounded-lg border border-danger/30 bg-danger-soft text-danger"
         data-testid="analitica-error"
       >
         {t(`${NS}.error`, { error })}
@@ -135,7 +135,7 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
     // 404 / not deployed — graceful empty state, NOT an error banner.
     return (
       <div
-        className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center"
+        className="rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center"
         data-testid="analitica-empty"
       >
         <Robot className="w-8 h-8 mx-auto text-muted-foreground mb-2" weight="duotone" aria-hidden="true" />
@@ -153,7 +153,7 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
           {data.resumen.map((kpi) => (
             <div
               key={kpi.id}
-              className="rounded-xl border border-border bg-card p-4"
+              className="rounded-lg border border-border bg-card p-4"
               data-testid={`analitica-kpi-${kpi.id}`}
             >
               <p className="text-xs text-muted-foreground leading-tight">{kpi.label}</p>
@@ -167,7 +167,7 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
 
       {/* One bar-chart block per serie */}
       {data.series.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center">
+        <div className="rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center">
           <ChartBar className="w-8 h-8 mx-auto text-muted-foreground mb-2" weight="duotone" aria-hidden="true" />
           <p className="text-sm text-muted-foreground">{t(`${NS}.sinSeries`)}</p>
         </div>

@@ -203,7 +203,7 @@ function ApBillDetailContent({ billId }: { billId: string }) {
         <BackNav t={t} k={k} />
         <div
           role="alert"
-          className="flex items-start gap-3 rounded-xl border border-danger/30 bg-danger-soft p-4"
+          className="flex items-start gap-3 rounded-lg border border-danger/30 bg-danger-soft p-4"
         >
           <Warning
             className="w-5 h-5 text-danger flex-shrink-0 mt-0.5"
@@ -284,7 +284,7 @@ function ApBillDetailContent({ billId }: { billId: string }) {
       </header>
 
       {/* M1 info banner */}
-      <div className="rounded-xl bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
+      <div className="rounded-lg bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
         <Info
           className="w-5 h-5 text-primary dark:text-primary flex-shrink-0 mt-0.5"
           weight="fill"
@@ -300,7 +300,7 @@ function ApBillDetailContent({ billId }: { billId: string }) {
       </div>
 
       {/* Detail card */}
-      <section className="rounded-xl border border-border bg-card p-6">
+      <section className="rounded-lg border border-border bg-card p-6">
         <div className="divide-y divide-border">
           <DetailRow label={t(k('labelInvoiceNumber'))}>
             <span className="font-mono">{bill.invoiceNumber}</span>

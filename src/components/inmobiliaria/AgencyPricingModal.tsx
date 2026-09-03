@@ -104,7 +104,7 @@ export function AgencyPricingModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.2 }}
-          className="bg-surface dark:bg-ink rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+          className="bg-surface dark:bg-ink rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -133,7 +133,7 @@ export function AgencyPricingModal({
                 <div
                   key={plan.id}
                   className={cn(
-                    'relative rounded-xl p-5 flex flex-col transition-all duration-200 cursor-pointer',
+                    'relative rounded-lg p-5 flex flex-col transition-all duration-200 cursor-pointer',
                     selectedPlan === plan.id
                       ? 'ring-2 ring-primary bg-primary-soft/50 dark:bg-primary/20'
                       : plan.isFlex

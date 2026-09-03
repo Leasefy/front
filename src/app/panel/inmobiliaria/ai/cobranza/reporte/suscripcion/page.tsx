@@ -103,7 +103,7 @@ function SuscripcionContent() {
           />
 
           {/* Habeas Data / autodeterminación rationale (D-34-06) */}
-          <div className="rounded-xl border border-border bg-muted/20 p-3 text-xs text-muted-foreground leading-relaxed">
+          <div className="rounded-lg border border-border bg-muted/20 p-3 text-xs text-muted-foreground leading-relaxed">
             {locale.startsWith('es')
               ? 'Tu suscripción es individual. Sólo tú puedes activarla o desactivarla, en cumplimiento de la Ley de Habeas Data y el principio de autodeterminación informativa. Los administradores pueden ver el total agregado pero NO añadir personas por la fuerza.'
               : 'Your subscription is individual. Only you can enable or disable it, per Colombia\'s Habeas Data law and the informational self-determination principle. Admins can see the aggregate count but CANNOT force-subscribe anyone.'}
@@ -111,7 +111,7 @@ function SuscripcionContent() {
 
           {/* Admin aggregate — read only */}
           {isAdmin && (
-            <div className="rounded-xl border border-border bg-card p-4 space-y-1">
+            <div className="rounded-lg border border-border bg-card p-4 space-y-1">
               <MonoLabel>
                 {locale.startsWith('es') ? 'Vista agregada (admin)' : 'Aggregate view (admin)'}
               </MonoLabel>

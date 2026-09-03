@@ -139,7 +139,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
       </label>
 
       {selectedConsignacion ? (
-        <div className="p-4 rounded-xl border border-primary/30 bg-primary-soft">
+        <div className="p-4 rounded-lg border border-primary/30 bg-primary-soft">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3">
               {selectedConsignacion.propertyThumbnail ? (
@@ -203,7 +203,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg"
+                className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg"
               >
                 {filteredConsignaciones.length > 0 ? (
                   filteredConsignaciones.map((consignacion) => (
@@ -427,7 +427,7 @@ function PaidBySelector({ selected, onSelect, t }: PaidBySelectorProps) {
         {t('inmobiliaria.mantenimiento.paymentResponsible')} <span className="text-danger">*</span>
       </label>
 
-      <div className="p-4 rounded-xl bg-primary-soft border border-primary/30 mb-4">
+      <div className="p-4 rounded-lg bg-primary-soft border border-primary/30 mb-4">
         <div className="flex gap-3">
           <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
           <p className="text-sm text-primary">
@@ -621,7 +621,7 @@ export function MantenimientoForm({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="p-4 rounded-xl bg-warning-soft border border-warning/30"
+            className="p-4 rounded-lg bg-warning-soft border border-warning/30"
           >
             <div className="flex gap-3">
               <Warning className="w-5 h-5 text-warning shrink-0 mt-0.5" />

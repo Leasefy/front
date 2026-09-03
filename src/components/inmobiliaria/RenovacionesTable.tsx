@@ -270,7 +270,7 @@ export function RenovacionesTable({
 
   return (
     <section
-      className="rounded-xl border border-border bg-card overflow-hidden"
+      className="rounded-lg border border-border bg-card overflow-hidden"
       data-testid="renovaciones-tabla"
     >
       {/* Encabezado de la tarjeta — el mismo de Contratos. */}

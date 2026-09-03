@@ -41,7 +41,7 @@ export function ConciliacionResumen({ data, isLoading, showSkeleton }: Conciliac
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="conciliacion-resumen-loading">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-20 rounded-xl border border-border bg-muted/40 animate-pulse" />
+          <div key={i} className="h-20 rounded-lg border border-border bg-muted/40 animate-pulse" />
         ))}
       </div>
     )
@@ -76,7 +76,7 @@ export function ConciliacionResumen({ data, isLoading, showSkeleton }: Conciliac
         {totalCards.map((card) => (
           <div
             key={card.id}
-            className="rounded-xl border border-border bg-card p-4"
+            className="rounded-lg border border-border bg-card p-4"
             data-testid={`conciliacion-total-${card.id}`}
           >
             <p className="text-xs text-muted-foreground leading-tight">{card.label}</p>
@@ -86,7 +86,7 @@ export function ConciliacionResumen({ data, isLoading, showSkeleton }: Conciliac
       </div>
 
       {/* Monto conciliado */}
-      <div className="rounded-xl border border-border bg-card p-4">
+      <div className="rounded-lg border border-border bg-card p-4">
         <p className="text-xs text-muted-foreground leading-tight">Monto conciliado</p>
         <p className="text-xl font-semibold text-foreground mt-1 tabular-nums">
           {copFormatter.format(totals.monto_conciliado_cop)}
@@ -94,7 +94,7 @@ export function ConciliacionResumen({ data, isLoading, showSkeleton }: Conciliac
       </div>
 
       {/* Taxonomía de excepciones */}
-      <section className="rounded-xl border border-border bg-card p-4 space-y-3" data-testid="conciliacion-taxonomia">
+      <section className="rounded-lg border border-border bg-card p-4 space-y-3" data-testid="conciliacion-taxonomia">
         <h2 className="text-sm font-semibold text-foreground">Excepciones por tipo</h2>
         {taxonomyTotal === 0 ? (
           <p className="text-xs text-muted-foreground">Sin excepciones por revisar.</p>

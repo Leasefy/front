@@ -62,7 +62,7 @@ export function DocumentosTab({ result }: DocumentosTabProps) {
 
   if (!hasAnything) {
     return (
-      <div className="rounded-xl border border-dashed border-border p-8 text-center">
+      <div className="rounded-lg border border-dashed border-border p-8 text-center">
         <p className="text-sm text-fg-muted">
           {t(`${NS}.detalle.documentos.empty`)}
         </p>
@@ -74,7 +74,7 @@ export function DocumentosTab({ result }: DocumentosTabProps) {
     <div className="space-y-5">
       {/* Resumen de documentos */}
       {docs && (
-        <section className="rounded-xl border border-border bg-card p-4">
+        <section className="rounded-lg border border-border bg-card p-4">
           <h3 className="flex items-center gap-2 text-base font-semibold text-fg">
             <FileText
               className="w-4 h-4 text-primary"

@@ -17,7 +17,7 @@
  *
  * Refs:
  *   mvp:docs/DESIGN.md §1 (sobrio + warm, no raw Tailwind colors that bypass
- *     the scales), §4 (cards rounded-xl border bg-card), §11
+ *     the scales), §4 (cards rounded-lg border bg-card), §11
  *     (loading spinner), §16 (numeric tabular-nums + font-mono)
  *   mvp:docs/COLOR_SYSTEM.md (rose=error, amber=warn, emerald=ok)
  *   34-CONTEXT.md D-34-04 (1h cache TTL), D-34-06 (per-user opt-in)
@@ -173,7 +173,7 @@ function ReporteViewerContent() {
 
       {/* Error */}
       {error && !data && (
-        <div className="rounded-xl bg-danger-soft text-danger">
+        <div className="rounded-lg bg-danger-soft text-danger">
           Error: {error}
         </div>
       )}
@@ -208,7 +208,7 @@ function ReporteViewerContent() {
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={[
-                    'rounded-xl border p-3 flex items-start gap-3',
+                    'rounded-lg border p-3 flex items-start gap-3',
                     alert.level === 'CRITICAL'
                       ? 'border-danger/30 bg-danger-soft'
                       : 'border-warning/30 bg-warning-soft',
@@ -240,7 +240,7 @@ function ReporteViewerContent() {
           )}
 
           {/* 3. Top-N debtors */}
-          <section className="rounded-xl border border-border bg-card overflow-hidden">
+          <section className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b border-border bg-muted/20">
               <MonoLabel>
                 {t('inmobiliaria.ai.cobranza.reporte.topDebtors.heading')} · Top {topN}
@@ -305,7 +305,7 @@ function ReporteViewerContent() {
           </section>
 
           {/* 4. 30-day history + CSV export */}
-          <section className="rounded-xl border border-border bg-card overflow-hidden">
+          <section className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b border-border bg-muted/20 flex items-center justify-between gap-3">
               <MonoLabel>
                 {t('inmobiliaria.ai.cobranza.reporte.history.heading')}
@@ -406,7 +406,7 @@ function KpiTile({
   return (
     <div
       className={[
-        'rounded-xl border bg-card p-4',
+        'rounded-lg border bg-card p-4',
         alert
           ? 'border-danger/30'
           : 'border-border',

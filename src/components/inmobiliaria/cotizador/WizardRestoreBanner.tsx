@@ -14,7 +14,7 @@ export function WizardRestoreBanner({ onContinue, onStartFresh }: WizardRestoreB
   const { t } = useI18n()
 
   return (
-    <div className="mb-6 rounded-xl border border-warning/30 bg-warning-soft p-4">
+    <div className="mb-6 rounded-lg border border-warning/30 bg-warning-soft p-4">
       <div className="flex items-start gap-3">
         <ClockClockwise
           size={18}

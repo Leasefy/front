@@ -481,7 +481,7 @@ function PortafolioContent() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-xl border border-border bg-card overflow-hidden"
+        className="rounded-lg border border-border bg-card overflow-hidden"
       >
         {/* View Toggle Header - First */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
@@ -736,7 +736,7 @@ function StatTile({
   className?: string;
 }) {
   return (
-    <div className={cn('flex items-center gap-3 p-4 rounded-xl border border-border bg-card', className)}>
+    <div className={cn('flex items-center gap-3 p-4 rounded-lg border border-border bg-card', className)}>
       <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', TILE_TONES[tone])}>
         {icon}
       </div>

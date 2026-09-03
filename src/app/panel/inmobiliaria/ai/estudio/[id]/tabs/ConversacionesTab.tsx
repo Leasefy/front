@@ -71,7 +71,7 @@ export function ConversacionesTab(_props: ConversacionesTabProps) {
       {/* Estructura de ejemplo — cómo se verá el hilo (sin datos reales) */}
       <section
         aria-label={tf(`${NS}.detalle.conversaciones.ejemplo.title`, 'Ejemplo de la conversación')}
-        className="rounded-xl border border-border bg-card p-5"
+        className="rounded-lg border border-border bg-card p-5"
       >
         <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
           {tf(`${NS}.detalle.conversaciones.ejemplo.title`, 'Ejemplo de la conversación')}
@@ -93,7 +93,7 @@ export function ConversacionesTab(_props: ConversacionesTabProps) {
                   </span>
                   <div
                     className={cn(
-                      'rounded-2xl px-3.5 py-2 text-sm leading-snug',
+                      'rounded-lg px-3.5 py-2 text-sm leading-snug',
                       esAgencia
                         ? 'rounded-br-sm bg-primary-soft text-primary'
                         : 'rounded-bl-sm bg-surface-muted text-fg border border-border',

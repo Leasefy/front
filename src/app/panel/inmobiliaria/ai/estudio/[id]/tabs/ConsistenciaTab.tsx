@@ -59,7 +59,7 @@ export function ConsistenciaTab({ result }: ConsistenciaTabProps) {
 
   if (!hasAnything) {
     return (
-      <div className="rounded-xl border border-dashed border-border p-8 text-center">
+      <div className="rounded-lg border border-dashed border-border p-8 text-center">
         <p className="text-sm text-fg-muted">
           {t(`${NS}.detalle.consistencia.empty`)}
         </p>
@@ -75,7 +75,7 @@ export function ConsistenciaTab({ result }: ConsistenciaTabProps) {
           <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
             {t(`${NS}.detalle.consistencia.verificacionesTitulo`)}
           </p>
-          <ul role="list" className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
+          <ul role="list" className="rounded-lg border border-border bg-card overflow-hidden divide-y divide-border">
             {checks.map((c, i) => {
               const st = checkState(c)
               const { icon: Ico, color } = STATE_ICON[st]
@@ -119,7 +119,7 @@ export function ConsistenciaTab({ result }: ConsistenciaTabProps) {
           <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
             {t(`${NS}.detalle.consistencia.desgloseTitulo`)}
           </p>
-          <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
+          <div className="rounded-lg border border-border bg-card overflow-hidden divide-y divide-border">
             {FACTOR_KEYS.map((factor) => {
               const f = breakdown[factor]
               if (!f) return null

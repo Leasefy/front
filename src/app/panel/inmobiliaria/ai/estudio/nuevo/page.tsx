@@ -148,7 +148,7 @@ function EstudioNuevo() {
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
         {/* Tarjeta 1 — Inmueble */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-5">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-5">
           <div className="flex items-start gap-3">
             <span className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center shrink-0">
               <Buildings className="w-5 h-5 text-fg" weight="duotone" aria-hidden="true" />
@@ -273,7 +273,7 @@ function EstudioNuevo() {
         </section>
 
         {/* Tarjeta 2 — Candidato */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-5">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-5">
           <div className="flex items-start gap-3">
             <span className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center shrink-0">
               <IdentificationCard className="w-5 h-5 text-fg" weight="duotone" aria-hidden="true" />
@@ -405,7 +405,7 @@ function EstudioNuevo() {
         {confirmed && (
           <div
             role="status"
-            className="flex items-start gap-3 rounded-xl border border-success/30 bg-success-soft p-4"
+            className="flex items-start gap-3 rounded-lg border border-success/30 bg-success-soft p-4"
           >
             <CheckCircle className="w-5 h-5 text-success-700 shrink-0 mt-0.5" weight="duotone" aria-hidden="true" />
             <p className="text-sm text-success-700">

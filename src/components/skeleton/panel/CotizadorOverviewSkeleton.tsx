@@ -35,7 +35,7 @@ export function CotizadorOverviewSkeleton() {
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-2"
+            className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-2"
           >
             <Skeleton className="h-3 w-24" />
             <Skeleton className="h-8 w-16" />
@@ -47,7 +47,7 @@ export function CotizadorOverviewSkeleton() {
       {/* Recent quotes feed — heading + 5-row table-like list */}
       <section aria-label="Cotizaciones recientes" className="space-y-3">
         <Skeleton className="h-5 w-40" />
-        <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 divide-y divide-neutral-100 dark:divide-neutral-800">
+        <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 divide-y divide-neutral-100 dark:divide-neutral-800">
           {[0, 1, 2, 3, 4].map((i) => (
             <div
               key={i}
@@ -68,7 +68,7 @@ export function CotizadorOverviewSkeleton() {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-2"
+              className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-2"
             >
               <Skeleton className="h-5 w-24" />
               <Skeleton className="h-3 w-32" />

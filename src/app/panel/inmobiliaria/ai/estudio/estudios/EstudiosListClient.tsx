@@ -282,7 +282,7 @@ export default function EstudiosListClient() {
 
           {/* Error banner (inline bottom-style, not a toast) */}
           {error && (
-            <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 mb-4 flex items-center justify-between gap-3">
+            <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 mb-4 flex items-center justify-between gap-3">
               <p className="text-sm text-danger">
                 {t('inmobiliaria.ai.estudio.list.error')}: {error}
               </p>
@@ -293,7 +293,7 @@ export default function EstudiosListClient() {
           )}
 
           {/* md+ table */}
-          <div className="hidden md:block overflow-x-auto overscroll-contain rounded-xl border border-border bg-card">
+          <div className="hidden md:block overflow-x-auto overscroll-contain rounded-lg border border-border bg-card">
             <Table className="min-w-full divide-y divide-border text-sm [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-surface-muted">
               <TableHeader className="bg-surface-muted">
                 <TableRow>
@@ -396,7 +396,7 @@ export default function EstudiosListClient() {
           {/* sm cards fallback */}
           <div className="md:hidden">
             {filtered.length === 0 ? (
-              <div className="rounded-xl border border-border bg-card px-3 py-12 text-center">
+              <div className="rounded-lg border border-border bg-card px-3 py-12 text-center">
                 <p className="text-sm text-fg-muted mb-3">
                   {t('inmobiliaria.ai.estudio.list.emptyFiltered')}
                 </p>
@@ -414,7 +414,7 @@ export default function EstudiosListClient() {
                         type="button"
                         onClick={() => navigateToEstudio(it.id)}
                         data-testid={`estudio-card-${it.id}`}
-                        className="w-full min-h-11 text-left rounded-xl border border-border bg-card px-3 py-3 transition-colors hover:bg-surface-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="w-full min-h-11 text-left rounded-lg border border-border bg-card px-3 py-3 transition-colors hover:bg-surface-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-sm font-medium text-fg">

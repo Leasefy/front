@@ -62,7 +62,7 @@ function IPCTrendChart({ data, t }: { data: IPCRecord[]; t: (key: string) => str
           <span>{t('inmobiliaria.finance.ipc.decreasing')}</span>
         </Badge>
       </div>
-      <div className="relative h-28 flex items-end gap-2 p-3 rounded-xl bg-muted/30">
+      <div className="relative h-28 flex items-end gap-2 p-3 rounded-lg bg-muted/30">
         <TooltipProvider>
           {last12Months.map((record, index) => {
             const height = ((record.rate - minRate) / range) * 75 + 25;
@@ -244,7 +244,7 @@ function CalculatorForm({
             placeholder="Ej: 5.20"
           />
         ) : (
-          <div className="h-12 px-4 rounded-xl bg-primary-soft border border-primary/30 dark:border-primary/40 flex items-center justify-between">
+          <div className="h-12 px-4 rounded-lg bg-primary-soft border border-primary/30 dark:border-primary/40 flex items-center justify-between">
             <span className="text-xl font-bold text-primary">{ipcRate.toFixed(2)}%</span>
             <span className="text-xs font-medium text-primary/70 dark:text-primary/70 flex items-center gap-1.5">
               <Info className="h-3.5 w-3.5" />
@@ -279,26 +279,26 @@ function CalculatorForm({
 
       {/* Result Display */}
       {result && (
-        <div className="p-5 rounded-xl border border-border bg-muted/20">
+        <div className="p-5 rounded-lg border border-border bg-muted/20">
           <div className="flex items-center justify-center gap-4 mb-5">
-            <div className="text-center p-4 rounded-xl bg-card border border-border flex-1">
+            <div className="text-center p-4 rounded-lg bg-card border border-border flex-1">
               <p className="text-xs font-medium text-muted-foreground mb-1">{t('inmobiliaria.finance.ipc.currentRent')}</p>
               <p className="text-xl font-bold text-foreground">{formatCurrency(result.currentRent)}</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
               <ArrowRight className="h-5 w-5 text-white" weight="bold" />
             </div>
-            <div className="text-center p-4 rounded-xl bg-primary-soft flex-1 border border-primary/30 dark:border-primary/40">
+            <div className="text-center p-4 rounded-lg bg-primary-soft flex-1 border border-primary/30 dark:border-primary/40">
               <p className="text-xs font-medium text-primary mb-1">{t('inmobiliaria.finance.ipc.newRent')}</p>
               <p className="text-2xl font-bold text-primary">{formatCurrency(result.newRent)}</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="text-center p-3 rounded-xl bg-card border border-border">
+            <div className="text-center p-3 rounded-lg bg-card border border-border">
               <p className="text-xs font-medium text-muted-foreground mb-0.5">{t('inmobiliaria.finance.ipc.increase')}</p>
               <p className="text-lg font-bold text-primary">+{formatCurrency(result.increase)}</p>
             </div>
-            <div className="text-center p-3 rounded-xl bg-card border border-border">
+            <div className="text-center p-3 rounded-lg bg-card border border-border">
               <p className="text-xs font-medium text-muted-foreground mb-0.5">{t('inmobiliaria.finance.ipc.percentage')}</p>
               <p className="text-lg font-bold text-primary">+{result.ipcRate.toFixed(2)}%</p>
             </div>
@@ -315,7 +315,7 @@ function CalculatorForm({
 
 function InfoSection({ t }: { t: (key: string) => string }) {
   return (
-    <div className="p-5 rounded-xl border border-border bg-muted/20">
+    <div className="p-5 rounded-lg border border-border bg-muted/20">
       <div className="flex items-start gap-4">
         <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
           <Info className="h-5 w-5 text-primary" />
@@ -355,7 +355,7 @@ export function IPCCalculator({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <Card className="rounded-xl">
+      <Card className="rounded-lg">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -380,14 +380,14 @@ export function IPCCalculator({
       </Card>
 
       {/* IPC Trend */}
-      <Card className="rounded-xl">
+      <Card className="rounded-lg">
         <CardContent className="pt-4">
           <IPCTrendChart data={IPC_HISTORICAL} t={t} />
         </CardContent>
       </Card>
 
       {/* Calculator */}
-      <Card className="rounded-xl">
+      <Card className="rounded-lg">
         <CardHeader className="pb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-success-soft">

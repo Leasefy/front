@@ -65,7 +65,7 @@ export function CotizadorRecentQuotesFeed({
   const { t } = useI18n()
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
+    <div className="rounded-lg border border-border bg-card p-5">
       {/* Loading skeleton */}
       {isLoading && quotes.length === 0 ? (
         <ul className="divide-y divide-border">

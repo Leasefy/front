@@ -123,7 +123,7 @@ function AgenteCard({
 
   return (
     <div
-      className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3"
+      className="rounded-lg border border-border bg-card p-4 flex flex-col gap-3"
       data-testid={`equipo-agente-${agente}`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -184,7 +184,7 @@ export function EquipoAgentes({ data, isLoading, error, notAvailable }: EquipoAg
         <div className="h-8 w-56 rounded-lg bg-muted/40 animate-pulse" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[0, 1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-24 rounded-xl border border-border bg-muted/40 animate-pulse" />
+            <div key={i} className="h-24 rounded-lg border border-border bg-muted/40 animate-pulse" />
           ))}
         </div>
       </div>
@@ -194,7 +194,7 @@ export function EquipoAgentes({ data, isLoading, error, notAvailable }: EquipoAg
   if (error) {
     return (
       <div
-        className="rounded-xl border border-danger/30 bg-danger-soft text-danger"
+        className="rounded-lg border border-danger/30 bg-danger-soft text-danger"
         data-testid="equipo-agentes-error"
       >
         {t(`${NS}.error`, { error })}
@@ -206,7 +206,7 @@ export function EquipoAgentes({ data, isLoading, error, notAvailable }: EquipoAg
     // 404 / backend not deployed — graceful panel; rest of the hub keeps working.
     return (
       <div
-        className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center"
+        className="rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center"
         data-testid="equipo-agentes-empty"
       >
         <UsersThree className="w-8 h-8 mx-auto text-muted-foreground mb-2" weight="duotone" aria-hidden="true" />

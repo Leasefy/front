@@ -108,7 +108,7 @@ function ConciliacionSala() {
       {/* Domain slot: acción principal + cómo funciona (patrón avalúos) */}
       <section className="space-y-4" data-testid="conciliacion-subir-extracto">
         {/* Acción principal — subir el extracto del banco + conciliar ahora */}
-        <div className="rounded-xl border border-border bg-card p-5 max-w-3xl">
+        <div className="rounded-lg border border-border bg-card p-5 max-w-3xl">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="w-10 h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
               <UploadSimple className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="duotone" aria-hidden="true" />
@@ -146,7 +146,7 @@ function ConciliacionSala() {
         <ConciliacionResumen data={summary} />
 
         {/* Cómo funciona — el viaje de la conciliación en 3 pasos */}
-        <div className="rounded-xl border border-border bg-card p-5 max-w-3xl space-y-4" data-testid="conciliacion-como-funciona">
+        <div className="rounded-lg border border-border bg-card p-5 max-w-3xl space-y-4" data-testid="conciliacion-como-funciona">
           <h2 className="text-base font-semibold text-foreground">
             {t(`${PAGES_NS}.comoFunciona.title`)}
           </h2>

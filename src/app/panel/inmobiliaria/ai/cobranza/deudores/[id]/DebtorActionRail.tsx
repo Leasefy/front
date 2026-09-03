@@ -142,7 +142,7 @@ export function DebtorActionRail({
 
       {/* Próxima acción programada */}
       <section
-        className="rounded-xl border border-border bg-surface p-4"
+        className="rounded-lg border border-border bg-surface p-4"
         data-testid="rail-next-action"
       >
         <h3 className="text-sm font-semibold text-fg">
@@ -184,7 +184,7 @@ export function DebtorActionRail({
 
       {/* Acciones rápidas */}
       <section
-        className="rounded-xl border border-border bg-surface p-4"
+        className="rounded-lg border border-border bg-surface p-4"
         data-testid="rail-quick-actions"
       >
         <h3 className="text-sm font-semibold text-fg">

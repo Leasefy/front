@@ -274,7 +274,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
               role="alert"
               aria-live="assertive"
               data-testid="cf-cap-banner"
-              className="rounded-xl border border-[#B7791F]/30 bg-[#F8F0E0] px-4 py-3 text-sm text-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F] dark:border-[#B7791F]/30"
+              className="rounded-lg border border-[#B7791F]/30 bg-[#F8F0E0] px-4 py-3 text-sm text-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F] dark:border-[#B7791F]/30"
             >
               {t('inmobiliaria.ai.cotizador.askWhy.capExhausted.body', {
                 cap: error && error.code === 429 ? error.cap : capCount,
@@ -330,7 +330,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                 aria-disabled={isReadonly('ciudad') ? 'true' : 'false'}
                 disabled={isReadonly('ciudad') || capExhausted}
                 onChange={e => activate('ciudad', e.currentTarget.value)}
-                className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
               >
                 {!CIUDAD_OPTIONS.includes(originalInputs.ciudad as (typeof CIUDAD_OPTIONS)[number]) && (
                   <option value={originalInputs.ciudad}>{originalInputs.ciudad}</option>
@@ -365,7 +365,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                       disabled={ro}
                       onClick={() => activate('tipo', tipo)}
                       className={[
-                        'rounded-xl border px-2 py-1.5 text-xs font-medium transition-colors',
+                        'rounded-lg border px-2 py-1.5 text-xs font-medium transition-colors',
                         isActive
                           ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary'
                           : 'border-border bg-card text-foreground hover:bg-muted',
@@ -491,7 +491,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                   data-testid="cf-retry"
                   aria-label={t('inmobiliaria.ai.cotizador.askWhy.retryButton')}
                   onClick={() => { void handleSubmit() }}
-                  className="rounded-xl border border-border bg-card px-3 py-1.5 text-xs hover:bg-muted"
+                  className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs hover:bg-muted"
                 >
                   {t('inmobiliaria.ai.cotizador.askWhy.retryButton')}
                 </button>
@@ -507,7 +507,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                   data-testid="cf-retry"
                   aria-label={t('inmobiliaria.ai.cotizador.askWhy.retryButton')}
                   onClick={() => { void handleSubmit() }}
-                  className="rounded-xl border border-border bg-card px-3 py-1.5 text-xs hover:bg-muted"
+                  className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs hover:bg-muted"
                 >
                   {t('inmobiliaria.ai.cotizador.askWhy.retryButton')}
                 </button>
@@ -542,7 +542,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                   void handleSubmit()
                 }}
                 className={[
-                  'w-full rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors',
+                  'w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors',
                   canSubmit
                     ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                     : 'bg-muted text-muted-foreground cursor-not-allowed',

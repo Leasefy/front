@@ -19,7 +19,7 @@
  * instead of bg-error-500 / bg-danger)". The backend's abstract color enum
  * (green/yellow/red/red-pulse) maps to the design system below.
  *
- * Refs mvp:docs/DESIGN.md §4 (cards: rounded-xl border bg-card),
+ * Refs mvp:docs/DESIGN.md §4 (cards: rounded-lg border bg-card),
  * §16 (numeric tabular-nums), mvp:docs/COLOR_SYSTEM.md (rose=error, amber=warn,
  * emerald=ok).
  */
@@ -122,7 +122,7 @@ export function HabeasDataSlaCard({ request }: HabeasDataSlaCardProps) {
       data-color={color}
       data-event-id={request.id}
       className={[
-        'block rounded-xl border bg-card p-4 space-y-3 transition-opacity hover:opacity-80',
+        'block rounded-lg border bg-card p-4 space-y-3 transition-opacity hover:opacity-80',
         'outline-none focus-visible:ring-2 focus-visible:ring-ring',
         CARD_BORDER_BY_COLOR[color],
       ].join(' ')}

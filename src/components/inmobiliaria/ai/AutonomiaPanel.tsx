@@ -40,8 +40,8 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
   if (isLoading) {
     return (
       <div className="space-y-3" data-testid="autonomia-panel-loading">
-        <div className="h-12 rounded-xl border border-border bg-muted/40 animate-pulse" />
-        <div className="h-32 rounded-xl border border-border bg-muted/40 animate-pulse" />
+        <div className="h-12 rounded-lg border border-border bg-muted/40 animate-pulse" />
+        <div className="h-32 rounded-lg border border-border bg-muted/40 animate-pulse" />
       </div>
     )
   }
@@ -49,7 +49,7 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
   if (error) {
     return (
       <div
-        className="rounded-xl border border-danger/30 bg-danger-soft text-danger"
+        className="rounded-lg border border-danger/30 bg-danger-soft text-danger"
         data-testid="autonomia-panel-error"
       >
         {t(`${NS}.error`, { error })}
@@ -61,7 +61,7 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
     // 404 / notAvailable — graceful empty state, NOT an error banner.
     return (
       <div
-        className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center"
+        className="rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center"
         data-testid="autonomia-panel-empty"
       >
         <Scales className="w-8 h-8 mx-auto text-muted-foreground mb-2" weight="duotone" aria-hidden="true" />
@@ -119,7 +119,7 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
       {/* T-323 callout */}
       {data.t323 && (
         <div
-          className="rounded-xl border border-warning/30 bg-warning-soft text-warning"
+          className="rounded-lg border border-warning/30 bg-warning-soft text-warning"
           data-testid="autonomia-t323"
         >
           {t(`${NS}.t323`)}
@@ -127,7 +127,7 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
       )}
 
       {/* Valla (guardrails) */}
-      <section className="rounded-xl border border-border bg-card p-4 space-y-2" data-testid="autonomia-valla">
+      <section className="rounded-lg border border-border bg-card p-4 space-y-2" data-testid="autonomia-valla">
         <h2 className="text-sm font-semibold text-foreground">{t(`${NS}.vallaTitle`)}</h2>
         {data.valla.length === 0 ? (
           <p className="text-xs text-muted-foreground">{t(`${NS}.vallaEmpty`)}</p>

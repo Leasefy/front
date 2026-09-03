@@ -123,7 +123,7 @@ export function RecibosDeCajaHistorial({
           {t('recibos.historial.cargando')}
         </p>
       ) : ordenados.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border p-6 text-center">
+        <div className="rounded-lg border border-dashed border-border p-6 text-center">
           <Receipt className="mx-auto mb-2 h-6 w-6 text-fg-muted" weight="duotone" />
           <p className="text-sm font-medium text-fg">{t('recibos.historial.vacio')}</p>
           <p className="mt-1 text-sm text-fg-muted">{t('recibos.historial.vacioDesc')}</p>
@@ -138,7 +138,7 @@ export function RecibosDeCajaHistorial({
                 <li
                   key={recibo.id}
                   className={cn(
-                    'rounded-xl border p-3',
+                    'rounded-lg border p-3',
                     vivo ? 'border-border bg-muted/30' : 'border-dashed border-border bg-transparent',
                   )}
                   data-anulado={vivo ? undefined : 'true'}
@@ -222,7 +222,7 @@ export function RecibosDeCajaHistorial({
             })}
           </ul>
 
-          <div className="rounded-xl border border-border bg-card px-4 py-1">
+          <div className="rounded-lg border border-border bg-card px-4 py-1">
             <KeyValueList
               compact
               items={[

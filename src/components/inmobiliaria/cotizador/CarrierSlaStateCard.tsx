@@ -83,7 +83,7 @@ export function CarrierSlaStateCard({
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-border bg-card p-5">
+      <div className="rounded-lg border border-border bg-card p-5">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 rounded-full bg-surface-muted animate-pulse" />
           <div className="h-5 w-24 rounded bg-surface-muted animate-pulse" />
@@ -102,7 +102,7 @@ export function CarrierSlaStateCard({
   const iconWeight = resolvedState === 'breached' ? 'fill' : 'duotone'
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 space-y-5">
+    <div className="rounded-lg border border-border bg-card p-5 space-y-5">
       {/* State pill */}
       <div className={`flex flex-col items-center gap-2 rounded-md p-4 ${bgClass}`}>
         <Icon weight={iconWeight} className={`h-8 w-8 ${colorClass}`} />

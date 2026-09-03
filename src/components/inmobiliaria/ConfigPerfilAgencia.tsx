@@ -563,7 +563,7 @@ export function ConfigPerfilAgencia({
 
       {/* Agency Name */}
       {isEditing && (
-        <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
+        <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
           <SectionHeader icon={Buildings} title={t('inmobiliaria.config.profile.agencyName')} />
           <InputWrapper
             label={t('inmobiliaria.config.profile.agencyName')}
@@ -584,7 +584,7 @@ export function ConfigPerfilAgencia({
       )}
 
       {/* Contact Information */}
-      <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
+      <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <SectionHeader
           icon={Phone}
           title={t('inmobiliaria.config.profile.contactInfo')}
@@ -753,7 +753,7 @@ export function ConfigPerfilAgencia({
       </div>
 
       {/* Legal Information */}
-      <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
+      <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <SectionHeader
           icon={Certificate}
           title={t('inmobiliaria.config.profile.legalInfo')}
@@ -877,7 +877,7 @@ export function ConfigPerfilAgencia({
       </div>
 
       {/* Default Settings */}
-      <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
+      <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <SectionHeader
           icon={Percent}
           title={t('inmobiliaria.config.profile.defaultSettings')}
@@ -1075,7 +1075,7 @@ export function ConfigPerfilAgencia({
       {/* Cobros y mora — Agency.motorDeCobrosV2 / Agency.diasDePlazo.
           Prender el motor cambia lo que se le cobra a un inquilino real: por
           eso es un switch explícito acá y no un default. */}
-      <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
+      <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <SectionHeader icon={Receipt} title="Cobros y mora" />
 
         {isEditing ? (
@@ -1244,7 +1244,7 @@ export function ConfigPerfilAgencia({
       {/* Dispersiones — Agency.dispersionExigePin / dispersionMontoDobleAprobacion.
           El código lo recibe por correo OTRA persona con permiso sobre
           dispersiones (lotes.service.ts): acá sólo se decide cuándo se pide. */}
-      <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
+      <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <SectionHeader icon={Bank} title="Dispersiones" />
 
         {isEditing ? (
@@ -1306,7 +1306,7 @@ export function ConfigPerfilAgencia({
       {/* Impuestos y retenciones — Agency.ivaPorcentaje … baseMinimaRetefuenteCop.
           El sistema no decide impuestos: aplica estas tarifas cuando el perfil
           tributario de las partes dice que corresponde. */}
-      <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
+      <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <SectionHeader icon={Percent} title="Impuestos y retenciones" />
         <p className="text-xs text-muted-foreground">
           Tarifas por defecto de Colombia: confirmalas con tu contador. La reteICA depende del municipio

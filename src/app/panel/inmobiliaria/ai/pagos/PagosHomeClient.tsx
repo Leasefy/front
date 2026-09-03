@@ -70,7 +70,7 @@ export function PagosHomeClient() {
         /* ── Feature off (503 'pagos_disabled') — info panel, not an error ── */
         <section
           role="status"
-          className="rounded-xl border-2 border-dashed border-border bg-muted/30 px-6 py-12 flex flex-col items-center gap-3 text-center"
+          className="rounded-lg border-2 border-dashed border-border bg-muted/30 px-6 py-12 flex flex-col items-center gap-3 text-center"
         >
           <PlugsConnected className="h-10 w-10 text-muted-foreground" aria-hidden="true" />
           <p className="text-sm font-semibold text-foreground">

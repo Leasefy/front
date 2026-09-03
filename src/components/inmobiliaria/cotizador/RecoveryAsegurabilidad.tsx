@@ -155,7 +155,7 @@ function RecoveryBlock({
   return (
     <section
       aria-labelledby="recovery-heading"
-      className="rounded-xl border border-border bg-card overflow-hidden"
+      className="rounded-lg border border-border bg-card overflow-hidden"
     >
       <div className="px-5 pt-5 pb-4 border-b border-border">
         <div className="flex items-center gap-2.5">
@@ -335,7 +335,7 @@ function CondicionadoBlock({
   return (
     <section
       aria-labelledby="condicionado-heading"
-      className="rounded-xl border border-warning/25 bg-warning-soft/40 overflow-hidden"
+      className="rounded-lg border border-warning/25 bg-warning-soft/40 overflow-hidden"
     >
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-center gap-2">

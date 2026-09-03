@@ -98,7 +98,7 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
                     type={show.current ? 'text' : 'password'}
                     value={form.current}
                     onChange={(e) => setForm(prev => ({ ...prev, current: e.target.value }))}
-                    className="h-12 pr-12 rounded-xl"
+                    className="h-12 pr-12 rounded-lg"
                     placeholder="Tu contraseña actual"
                   />
                   <IconButton
@@ -122,7 +122,7 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
                     type={show.new ? 'text' : 'password'}
                     value={form.new}
                     onChange={(e) => setForm(prev => ({ ...prev, new: e.target.value }))}
-                    className="h-12 pr-12 rounded-xl"
+                    className="h-12 pr-12 rounded-lg"
                     placeholder="Mínimo 8 caracteres"
                   />
                   <IconButton
@@ -146,7 +146,7 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
                     type={show.confirm ? 'text' : 'password'}
                     value={form.confirm}
                     onChange={(e) => setForm(prev => ({ ...prev, confirm: e.target.value }))}
-                    className="h-12 pr-12 rounded-xl"
+                    className="h-12 pr-12 rounded-lg"
                     placeholder="Repetir nueva contraseña"
                   />
                   <IconButton
@@ -166,7 +166,7 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
                   variant="outline"
                   hideArrow
                   onClick={handleClose}
-                  className="flex-1 rounded-xl"
+                  className="flex-1 rounded-lg"
                 >
                   Cancelar
                 </Button>
@@ -176,7 +176,7 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
                   isLoading={isLoading}
                   onClick={handleSubmit}
                   disabled={isLoading || !form.new || !form.confirm}
-                  className="flex-1 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100"
+                  className="flex-1 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100"
                 >
                   {isLoading ? 'Guardando...' : 'Cambiar contraseña'}
                 </Button>

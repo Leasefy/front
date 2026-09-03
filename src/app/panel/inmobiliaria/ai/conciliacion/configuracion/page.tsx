@@ -167,7 +167,7 @@ function PoliticaAutoMatch() {
 
   return (
     <section
-      className="rounded-xl border border-border bg-card p-5 space-y-5"
+      className="rounded-lg border border-border bg-card p-5 space-y-5"
       aria-labelledby="seccion-automatch"
       data-testid="conciliacion-automatch"
     >

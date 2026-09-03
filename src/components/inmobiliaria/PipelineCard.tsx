@@ -71,7 +71,7 @@ export function PipelineCard({
       animate={isDragging ? { scale: 1.02, boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.2)' } : { scale: 1 }}
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
       className={cn(
-        'w-full rounded-xl border bg-card overflow-hidden transition-all duration-200 cursor-pointer group',
+        'w-full rounded-lg border bg-card overflow-hidden transition-all duration-200 cursor-pointer group',
         isDragging
           ? 'border-primary/30 ring-2 ring-primary/20'
           : 'border-border hover:border-primary/30',

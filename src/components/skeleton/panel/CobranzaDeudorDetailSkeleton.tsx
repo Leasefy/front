@@ -19,7 +19,7 @@ export function CobranzaDeudorDetailSkeleton() {
       className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6 animate-pulse"
     >
       {/* Header card */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-6 flex items-start gap-4">
+      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-6 flex items-start gap-4">
         <Skeleton className="h-12 w-12 rounded-full" />
         <div className="flex-1 space-y-2">
           <Skeleton className="h-6 w-48" />
@@ -39,12 +39,12 @@ export function CobranzaDeudorDetailSkeleton() {
           </div>
 
           {/* Tab content placeholder */}
-          <Skeleton className="h-64 w-full rounded-xl" />
+          <Skeleton className="h-64 w-full rounded-lg" />
         </div>
 
         {/* Sidebar next-action card */}
         <div className="space-y-4">
-          <Skeleton className="h-40 w-full rounded-xl" />
+          <Skeleton className="h-40 w-full rounded-lg" />
         </div>
       </div>
     </main>

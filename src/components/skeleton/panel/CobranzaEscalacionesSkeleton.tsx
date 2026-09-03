@@ -32,7 +32,7 @@ export function CobranzaEscalacionesSkeleton() {
         {[0, 1, 2].map((col) => (
           <div
             key={col}
-            className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-card/50 p-4 space-y-3"
+            className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-card/50 p-4 space-y-3"
           >
             {/* Column header */}
             <div className="flex items-center justify-between">
@@ -42,7 +42,7 @@ export function CobranzaEscalacionesSkeleton() {
 
             {/* 3 card placeholders */}
             {[0, 1, 2].map((card) => (
-              <Skeleton key={card} className="h-28 w-full rounded-xl" />
+              <Skeleton key={card} className="h-28 w-full rounded-lg" />
             ))}
           </div>
         ))}

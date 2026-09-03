@@ -151,7 +151,7 @@ function FlowNode({ node, tf }: { node: NodeDef; tf: (k: string, fb: string) => 
   const accent = ACCENT[node.accent]
 
   return (
-    <article className="rounded-xl border border-border bg-card p-5 h-full flex flex-col gap-4">
+    <article className="rounded-lg border border-border bg-card p-5 h-full flex flex-col gap-4">
       {/* Encabezado del nodo */}
       <header className="flex items-start gap-3">
         <span

@@ -150,7 +150,7 @@ function EquipoIA() {
             const isLast = i === STEPS.length - 1
             return (
               <li key={step.id} data-step={step.id}>
-                <article className="rounded-xl border border-border bg-card p-5">
+                <article className="rounded-lg border border-border bg-card p-5">
                   {/* Título del paso */}
                   <div className="flex items-center gap-3">
                     <span className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
@@ -231,7 +231,7 @@ function EquipoIA() {
           Sin CTA: "Ver estudios" ya es la acción dueña del overview/bandeja
           (contrato §6, no duplicar el CTA). */}
       <section className="max-w-3xl">
-        <div className="rounded-xl border border-border bg-card p-5">
+        <div className="rounded-lg border border-border bg-card p-5">
           <EmptyState
             icon={UsersThree}
             title={tf(`${NS}.empty.title`, 'Aún no hay actividad del equipo')}

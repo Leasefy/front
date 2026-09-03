@@ -149,7 +149,7 @@ function HeroKPICard({
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        'w-full p-5 rounded-xl border bg-card text-left transition-all',
+        'w-full p-5 rounded-lg border bg-card text-left transition-all',
         colors.border
       )}
     >
@@ -493,7 +493,7 @@ function AnalyticsContent() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="rounded-xl border border-border bg-card overflow-hidden"
+        className="rounded-lg border border-border bg-card overflow-hidden"
       >
         {/* View Tabs */}
         <div className="m-4 mb-0 w-fit">

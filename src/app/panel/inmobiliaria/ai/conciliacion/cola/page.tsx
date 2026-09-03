@@ -107,7 +107,7 @@ function QueueRow({
 
   return (
     <div
-      className="flex items-start gap-3 rounded-xl border border-border bg-card p-3"
+      className="flex items-start gap-3 rounded-lg border border-border bg-card p-3"
       data-testid={`conciliacion-row-${item.id}`}
     >
       {/* Select — only high-confidence suggested matches can be bulk-confirmed */}
@@ -265,7 +265,7 @@ function ConciliacionCola() {
         </div>
 
         {/* Pending KPI */}
-        <div className="shrink-0 rounded-xl border border-border bg-card px-4 py-3 text-center">
+        <div className="shrink-0 rounded-lg border border-border bg-card px-4 py-3 text-center">
           <p className="text-2xl font-semibold text-fg tabular-nums">
             {isLoading ? '—' : total}
           </p>
@@ -297,7 +297,7 @@ function ConciliacionCola() {
 
       {/* Bulk toolbar — appears when there are bulk-eligible matches */}
       {!isLoading && !error && eligibleIds.length > 0 && (
-        <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface-muted p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface-muted p-3 sm:flex-row sm:items-center sm:justify-between">
           <label className="flex items-center gap-2 text-sm text-fg">
             <Checkbox
               checked={allEligibleSelected}
@@ -356,7 +356,7 @@ function ConciliacionCola() {
       {isLoading ? (
         <div className="space-y-2" data-testid="conciliacion-cola-loading">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-20 rounded-xl border border-border bg-surface-muted animate-pulse" />
+            <div key={i} className="h-20 rounded-lg border border-border bg-surface-muted animate-pulse" />
           ))}
         </div>
       ) : error ? (

@@ -69,7 +69,7 @@ export function PostSeleccionSheet({ onAction, disabled = false }: PostSeleccion
 
   return (
     <section
-      className="rounded-xl border border-border bg-card p-4"
+      className="rounded-lg border border-border bg-card p-4"
       data-testid="post-seleccion-sheet"
     >
       <button

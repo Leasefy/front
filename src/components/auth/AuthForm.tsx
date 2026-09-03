@@ -118,7 +118,7 @@ function AvisoBanner({ children }: { children: React.ReactNode }) {
     <motion.div
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="px-3.5 py-2.5 rounded-xl bg-warning-soft border border-warning/30"
+      className="px-3.5 py-2.5 rounded-lg bg-warning-soft border border-warning/30"
     >
       <p className="text-[12.5px] text-warning">{children}</p>
     </motion.div>
@@ -131,7 +131,7 @@ function ErrorBanner({ children }: { children: React.ReactNode }) {
     <motion.div
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="px-3.5 py-2.5 rounded-xl bg-danger-soft border border-danger/30"
+      className="px-3.5 py-2.5 rounded-lg bg-danger-soft border border-danger/30"
     >
       <p className="text-[12.5px] text-danger">{children}</p>
     </motion.div>
@@ -665,7 +665,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             transition={{ duration: 0.15 }}
             className="space-y-5"
           >
-            <div className="rounded-xl border border-border bg-surface p-4 space-y-2.5">
+            <div className="rounded-lg border border-border bg-surface p-4 space-y-2.5">
               <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
                 Próximos pasos
               </span>
@@ -723,7 +723,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             transition={{ duration: 0.15 }}
             className="space-y-5"
           >
-            <div className="rounded-xl border border-border bg-surface p-4 space-y-2.5">
+            <div className="rounded-lg border border-border bg-surface p-4 space-y-2.5">
               <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
                 Próximos pasos
               </span>

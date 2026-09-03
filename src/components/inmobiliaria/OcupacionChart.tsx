@@ -156,7 +156,7 @@ function ZoneCard({ zone, t }: { zone: OcupacionZone; t: (key: string) => string
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg"
+      className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg"
     >
       <div className="flex items-center justify-between mb-3">
         <h4 className="font-semibold text-fg dark:text-white">{zone.zone}</h4>
@@ -272,7 +272,7 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
       {/* Summary Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Donut Chart */}
-        <div className="lg:col-span-1 flex flex-col items-center justify-center p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
+        <div className="lg:col-span-1 flex flex-col items-center justify-center p-6 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
           <DonutChart percentage={data.overallOccupancyRate} label={t('inmobiliaria.finance.occupancy.occupancy')} />
 
           {/* Trend indicator */}
@@ -306,7 +306,7 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
 
         {/* Summary Cards */}
         <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
+          <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
             <div className="w-10 h-10 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center mb-3">
               <Buildings className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
             </div>
@@ -314,7 +314,7 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
             <p className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.finance.occupancy.totalProperties')}</p>
           </div>
 
-          <div className="p-4 rounded-xl border border-success/30 bg-success-soft">
+          <div className="p-4 rounded-lg border border-success/30 bg-success-soft">
             <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center mb-3">
               <HouseLine className="w-5 h-5 text-success" weight="fill" />
             </div>
@@ -322,7 +322,7 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
             <p className="text-sm text-success">{t('inmobiliaria.finance.occupancy.occupiedPlural')}</p>
           </div>
 
-          <div className="p-4 rounded-xl border border-primary/30 bg-primary-soft">
+          <div className="p-4 rounded-lg border border-primary/30 bg-primary-soft">
             <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center mb-3">
               <Hourglass className="w-5 h-5 text-primary" />
             </div>
@@ -330,7 +330,7 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
             <p className="text-sm text-primary">{t('inmobiliaria.finance.occupancy.inProcess')}</p>
           </div>
 
-          <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface-muted">
+          <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface-muted">
             <div className="w-10 h-10 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center mb-3">
               <Buildings className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
             </div>
@@ -358,7 +358,7 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
 
       {/* Zone Breakdown */}
       {viewVariant === 'chart' ? (
-        <div className="space-y-6 p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
+        <div className="space-y-6 p-6 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
           <h3 className="font-semibold text-fg dark:text-white">{t('inmobiliaria.finance.occupancy.breakdownByZone')}</h3>
           <div className="space-y-6">
             {data.zones.map((zone, index) => (

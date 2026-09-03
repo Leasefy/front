@@ -25,7 +25,7 @@ interface CallAudioPlayerProps {
  *  no, para que la ausencia no se lea como una pantalla rota. */
 function PlayerSlot({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-border bg-surface px-4 py-3">
+    <div className="rounded-lg border border-border bg-surface px-4 py-3">
       {children}
     </div>
   )
@@ -157,7 +157,7 @@ export default function CallAudioPlayer({
       aria-describedby="audio-seek-help"
       onKeyDown={onContainerKey}
       tabIndex={0}
-      className="rounded-xl border border-border bg-surface px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
+      className="rounded-lg border border-border bg-surface px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
     >
       {/* Visually-hidden keyboard help for screen-reader users (XR-06) */}
       <span id="audio-seek-help" className="sr-only">

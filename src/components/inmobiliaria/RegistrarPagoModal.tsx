@@ -346,7 +346,7 @@ export function RegistrarPagoModal({
                 style={{ overscrollBehavior: 'contain' }}
               >
                 {cobrosConSaldo.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-border p-4 text-center text-sm text-fg-muted">
+                  <div className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-fg-muted">
                     {t('recibos.form.sinCobros')}
                   </div>
                 ) : (
@@ -357,7 +357,7 @@ export function RegistrarPagoModal({
                       key={c.id}
                       type="button"
                       onClick={() => setCobroElegidoId(c.id)}
-                      className="w-full rounded-xl border border-border bg-background p-3 text-left transition-all hover:border-foreground/30"
+                      className="w-full rounded-lg border border-border bg-background p-3 text-left transition-all hover:border-foreground/30"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">
@@ -385,7 +385,7 @@ export function RegistrarPagoModal({
               </Banner>
 
               {/* El mensaje del back, tal cual: trae la cifra que no cuadra. */}
-              <p className="rounded-xl border border-border bg-muted/30 p-3 text-sm text-foreground">
+              <p className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-foreground">
                 {conciliando}
               </p>
 
@@ -422,7 +422,7 @@ export function RegistrarPagoModal({
               <p className="text-sm text-fg-muted">{t('recibos.form.descripcion')}</p>
 
               {/* Inmueble e inquilino */}
-              <div className="flex gap-4 rounded-xl border border-border bg-muted/30 p-4">
+              <div className="flex gap-4 rounded-lg border border-border bg-muted/30 p-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted">
                   <Buildings className="h-6 w-6 text-fg-muted" />
                 </div>

@@ -58,7 +58,7 @@ export function UbicacionDelInmueble({ property, cargando, consignacion, onActua
 
   return (
     <section
-      className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden"
+      className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden"
       data-testid="ubicacion-del-inmueble"
     >
       <div className="flex items-center gap-3 px-5 py-4 border-b border-border-faint dark:border-border-strong">

@@ -197,7 +197,7 @@ function InboxContent() {
       {/* Resumen del agente */}
       <section
         role="status"
-        className="rounded-xl border border-border bg-surface-muted p-4 flex items-start gap-3"
+        className="rounded-lg border border-border bg-surface-muted p-4 flex items-start gap-3"
         data-testid="inbox-resumen"
       >
         <Tray
@@ -306,7 +306,7 @@ function InboxContent() {
       <section className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-3xl">
         <Link
           href={LLAMADAS_HREF}
-          className="rounded-xl border border-border bg-card p-4 hover:bg-surface-muted/50 transition-colors flex items-start gap-3"
+          className="rounded-lg border border-border bg-card p-4 hover:bg-surface-muted/50 transition-colors flex items-start gap-3"
         >
           <PhoneCall
             className="w-5 h-5 shrink-0 text-fg-muted mt-0.5"
@@ -322,7 +322,7 @@ function InboxContent() {
         </Link>
         <Link
           href={DEUDORES_HREF}
-          className="rounded-xl border border-border bg-card p-4 hover:bg-surface-muted/50 transition-colors flex items-start gap-3"
+          className="rounded-lg border border-border bg-card p-4 hover:bg-surface-muted/50 transition-colors flex items-start gap-3"
         >
           <Users
             className="w-5 h-5 shrink-0 text-fg-muted mt-0.5"

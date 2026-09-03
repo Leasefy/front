@@ -208,7 +208,7 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
     return (
       <div className="space-y-4">
         {extracted ? (
-          <div className="rounded-xl bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5">
+          <div className="rounded-lg bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5">
             <PencilSimple className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="fill" />
             <div className="min-w-0">
               <p className="text-xs font-semibold text-warning">{t(k('reviewBannerTitle'))}</p>
@@ -233,7 +233,7 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
 
         {extracted && conflictos.length > 0 ? (
           <div
-            className="rounded-xl border border-danger/30 bg-danger-soft p-3 space-y-2"
+            className="rounded-lg border border-danger/30 bg-danger-soft p-3 space-y-2"
             data-testid="conflictos"
           >
             <div className="flex items-start gap-2.5">
@@ -354,7 +354,7 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
           setArrastrando(false);
           agregar(Array.from(e.dataTransfer.files ?? []));
         }}
-        className={`w-full rounded-xl border-2 border-dashed bg-muted/30 hover:bg-muted/50 transition-colors p-6 flex flex-col items-center justify-center gap-2 text-center ${
+        className={`w-full rounded-lg border-2 border-dashed bg-muted/30 hover:bg-muted/50 transition-colors p-6 flex flex-col items-center justify-center gap-2 text-center ${
           arrastrando ? 'border-primary bg-primary-soft/40' : 'border-border hover:border-foreground/20'
         }`}
         data-testid="tercero-ia-dropzone"
@@ -372,7 +372,7 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
       </button>
 
       {files.length > 0 ? (
-        <ul className="divide-y divide-border rounded-xl border border-border" data-testid="tercero-ia-archivos">
+        <ul className="divide-y divide-border rounded-lg border border-border" data-testid="tercero-ia-archivos">
           {files.map((f, i) => (
             <li key={`${f.name}:${f.size}`} className="flex items-center gap-3 px-3 py-2 text-sm">
               <IconoDeArchivo file={f} />

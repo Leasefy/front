@@ -3,17 +3,121 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { House, Buildings, Storefront } from '@phosphor-icons/react'
+import { House, Buildings, Storefront, Check, type Icon } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth/use-auth'
 import { useEnabledProfiles } from '@/lib/hooks/use-enabled-profiles'
 import { getAgencyHomeRoute } from '@/lib/auth/role-routes'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { LeasefyLogo } from '@/components/brand'
+import { SalirDelRegistro } from '@/components/onboarding/SalirDelRegistro'
+import { saludo } from '@/lib/onboarding/saludo'
 
 type RoleChoice = 'tenant' | 'landlord' | 'inmobiliaria' | null
 
 const PENDING_INVITATION_KEY = 'pending-invitation-token'
+
+interface OpcionDePerfil {
+  valor: Exclude<RoleChoice, null>
+  /** La clave con la que el admin puede apagar el perfil en /admin/registration-profiles. */
+  bandera: 'tenant' | 'landlord' | 'agency'
+  titulo: string
+  descripcion: string
+  icono: Icon
+}
+
+/** El orden es el de la conversación: primero lo simple, al final lo que trae equipo. */
+const PERFILES: OpcionDePerfil[] = [
+  {
+    valor: 'tenant',
+    bandera: 'tenant',
+    titulo: 'Inquilino',
+    descripcion: 'Busco un lugar para vivir',
+    icono: House,
+  },
+  {
+    valor: 'landlord',
+    bandera: 'landlord',
+    titulo: 'Propietario',
+    descripcion: 'Quiero arrendar mi propiedad',
+    icono: Buildings,
+  },
+  {
+    valor: 'inmobiliaria',
+    bandera: 'agency',
+    titulo: 'Soy una inmobiliaria',
+    descripcion: 'Gestiona propiedades de múltiples propietarios con tu equipo',
+    icono: Storefront,
+  },
+]
+
+/**
+ * Una tarjeta de perfil.
+ *
+ * Antes había tres copias de este bloque y las tres no pintaban igual: las de
+ * inquilino y propietario se marcaban en negro (`bg-ink`) y sólo la de
+ * inmobiliaria en azul. Lo seleccionado en el producto es azul primary, sin
+ * excepciones — de ahí que esto sea UN componente y no tres bloques.
+ */
+function TarjetaDePerfil({
+  opcion,
+  seleccionada,
+  onSelect,
+}: {
+  opcion: OpcionDePerfil
+  seleccionada: boolean
+  onSelect: () => void
+}) {
+  const Icono = opcion.icono
+
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={seleccionada}
+      onClick={onSelect}
+      data-testid={`perfil-${opcion.valor}`}
+      className={cn(
+        'group relative flex w-full items-center gap-4 rounded-lg border p-5 text-left',
+        'transition-[border-color,background-color,box-shadow] duration-200',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+        seleccionada
+          ? 'border-primary bg-primary-soft shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
+          : 'border-border bg-surface hover:border-border-strong hover:bg-surface-muted/40',
+      )}
+    >
+      <span
+        className={cn(
+          'flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md transition-colors',
+          seleccionada
+            ? 'bg-primary text-primary-fg'
+            : 'bg-surface-muted text-fg-subtle group-hover:text-fg-muted',
+        )}
+      >
+        <Icono className="h-6 w-6" weight={seleccionada ? 'fill' : 'regular'} aria-hidden />
+      </span>
+
+      <span className="min-w-0 flex-1 pr-7">
+        <span className="block text-[15px] font-semibold text-fg">{opcion.titulo}</span>
+        <span className="mt-0.5 block text-[13px] leading-snug text-fg-muted">
+          {opcion.descripcion}
+        </span>
+      </span>
+
+      {seleccionada && (
+        <motion.span
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 28 }}
+          className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-fg"
+        >
+          <Check className="h-3.5 w-3.5" weight="bold" aria-hidden />
+        </motion.span>
+      )}
+    </button>
+  )
+}
 
 export default function SeleccionarRolPage() {
   const router = useRouter()
@@ -88,144 +192,57 @@ export default function SeleccionarRolPage() {
     }
   }
 
+  const visibles = PERFILES.filter((perfil) => isProfileEnabled(perfil.bandera))
+
   return (
-    <div className="min-h-screen bg-bg flex items-center justify-center p-6">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-10">
-          <h1 className="text-2xl sm:text-3xl font-bold text-fg mb-3">
-            {user?.name ? `Hola, ${user.name.split(' ')[0]}` : 'Bienvenido a Leasefy'}
-          </h1>
-          <p className="text-fg-muted">
-            Selecciona tu perfil para personalizar tu experiencia
+    <div className="min-h-screen bg-bg">
+      <header className="flex items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
+        <LeasefyLogo className="h-6 w-auto" />
+        <SalirDelRegistro />
+      </header>
+
+      <main className="flex min-h-[calc(100vh-5rem)] items-start justify-center px-6 pb-16 pt-6 sm:items-center sm:pt-0">
+        <div className="w-full max-w-md">
+          <div className="mb-8 text-center">
+            <h1 className="text-2xl font-bold tracking-tight text-fg sm:text-3xl">
+              {saludo(user?.name)}
+            </h1>
+            <p className="mx-auto mt-2 max-w-sm text-body-sm text-fg-muted">
+              Selecciona tu perfil para personalizar tu experiencia
+            </p>
+          </div>
+
+          <div
+            role="radiogroup"
+            aria-label="Tu perfil"
+            className="mb-7 grid grid-cols-1 gap-3"
+          >
+            {visibles.map((perfil) => (
+              <TarjetaDePerfil
+                key={perfil.valor}
+                opcion={perfil}
+                seleccionada={selected === perfil.valor}
+                onSelect={() => setSelected(perfil.valor)}
+              />
+            ))}
+          </div>
+
+          <Button
+            type="button"
+            onClick={handleContinue}
+            disabled={!selected || isLoading}
+            hideArrow
+            size="lg"
+            className="w-full"
+          >
+            {isLoading ? <Spinner size="sm" variant="current" /> : 'Continuar'}
+          </Button>
+
+          <p className="mt-4 text-center text-caption text-fg-subtle">
+            Puedes cambiar esto después desde tu perfil.
           </p>
         </div>
-
-        <div className="grid grid-cols-1 gap-4 mb-8">
-          {/* Tenant card */}
-          {isProfileEnabled('tenant') && (
-          <button
-            type="button"
-            onClick={() => setSelected('tenant')}
-            className={cn(
-              'relative flex items-center gap-4 p-5 rounded-[20px] border-2 text-left transition-all duration-200',
-              selected === 'tenant'
-                ? 'border-fg bg-surface-muted'
-                : 'border-border hover:border-border-strong bg-surface'
-            )}
-          >
-            <div className={cn(
-              'w-12 h-12 rounded-[14px] flex items-center justify-center transition-colors flex-shrink-0',
-              selected === 'tenant' ? 'bg-ink text-ink-fg' : 'bg-surface-muted text-fg-subtle'
-            )}>
-              <House className="w-6 h-6" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[15px] font-semibold text-fg">Inquilino</p>
-              <p className="text-[13px] text-fg-muted mt-0.5">Busco un lugar para vivir</p>
-            </div>
-            {selected === 'tenant' && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute top-4 right-4 w-6 h-6 rounded-full bg-ink flex items-center justify-center"
-              >
-                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              </motion.div>
-            )}
-          </button>
-          )}
-
-          {/* Landlord card */}
-          {isProfileEnabled('landlord') && (
-          <button
-            type="button"
-            onClick={() => setSelected('landlord')}
-            className={cn(
-              'relative flex items-center gap-4 p-5 rounded-[20px] border-2 text-left transition-all duration-200',
-              selected === 'landlord'
-                ? 'border-fg bg-surface-muted'
-                : 'border-border hover:border-border-strong bg-surface'
-            )}
-          >
-            <div className={cn(
-              'w-12 h-12 rounded-[14px] flex items-center justify-center transition-colors flex-shrink-0',
-              selected === 'landlord' ? 'bg-ink text-ink-fg' : 'bg-surface-muted text-fg-subtle'
-            )}>
-              <Buildings className="w-6 h-6" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[15px] font-semibold text-fg">Propietario</p>
-              <p className="text-[13px] text-fg-muted mt-0.5">Quiero arrendar mi propiedad</p>
-            </div>
-            {selected === 'landlord' && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute top-4 right-4 w-6 h-6 rounded-full bg-ink flex items-center justify-center"
-              >
-                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              </motion.div>
-            )}
-          </button>
-          )}
-
-          {/* Inmobiliaria card */}
-          {isProfileEnabled('agency') && (
-          <button
-            type="button"
-            onClick={() => setSelected('inmobiliaria')}
-            className={cn(
-              'relative flex items-center gap-4 p-5 rounded-[20px] border-2 text-left transition-all duration-200',
-              selected === 'inmobiliaria'
-                ? 'border-primary/30 bg-primary-soft'
-                : 'border-border hover:border-border-strong bg-surface'
-            )}
-          >
-            <div className={cn(
-              'w-12 h-12 rounded-[14px] flex items-center justify-center transition-colors flex-shrink-0',
-              selected === 'inmobiliaria' ? 'bg-primary text-primary-fg' : 'bg-surface-muted text-fg-subtle'
-            )}>
-              <Storefront className="w-6 h-6" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[15px] font-semibold text-fg">Soy una inmobiliaria</p>
-              <p className="text-[13px] text-fg-muted mt-0.5">Gestiona propiedades de múltiples propietarios con tu equipo</p>
-            </div>
-            {selected === 'inmobiliaria' && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute top-4 right-4 w-6 h-6 rounded-full bg-primary flex items-center justify-center"
-              >
-                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              </motion.div>
-            )}
-          </button>
-          )}
-        </div>
-
-        {/* Continue button */}
-        <Button
-          type="button"
-          onClick={handleContinue}
-          disabled={!selected || isLoading}
-          hideArrow
-          size="lg"
-          className="w-full"
-        >
-          {isLoading ? (
-            <Spinner size="sm" variant="current" />
-          ) : (
-            'Continuar'
-          )}
-        </Button>
-      </div>
+      </main>
     </div>
   )
 }

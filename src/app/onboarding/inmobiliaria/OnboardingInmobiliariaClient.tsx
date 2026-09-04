@@ -11,6 +11,7 @@ import { OnboardingWizardStepper } from '@/components/onboarding/inmobiliaria/On
 import { OnboardingSessionErrorBanner } from '@/components/onboarding/inmobiliaria/OnboardingSessionErrorBanner'
 import { OnboardingProvisioningErrorBanner } from '@/components/onboarding/inmobiliaria/OnboardingProvisioningErrorBanner'
 import { OwnerNameStepForm } from '@/components/onboarding/inmobiliaria/OwnerNameStepForm'
+import { SalirDelRegistro } from '@/components/onboarding/SalirDelRegistro'
 import { AgencyStepForm } from '@/components/onboarding/inmobiliaria/AgencyStepForm'
 import {
   computeAgencyStepPrefill,
@@ -50,7 +51,22 @@ export default function OnboardingInmobiliariaClient() {
 }
 
 function ProvisionedOnboardingWizard() {
-  const { status, sessionId, agencyPrefill, retry, provision } = useOnboardingProvisioning()
+  const { status, sessionId, agencyPrefill, valoresGuardados, fallo, retry, provision } =
+    useOnboardingProvisioning()
+
+  // Mientras se pregunta dónde quedó esta persona no se le muestra el paso
+  // previo: pedirle la razón social para tapársela medio segundo después con
+  // el asistente ya empezado sería peor que esperar.
+  if (status === 'resuming') {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-3" data-testid="onboarding-resuming">
+          <div className="w-8 h-8 border-2 border-border border-t-primary rounded-full animate-spin" />
+          <p className="text-body-sm text-fg-muted">Buscando dónde quedaste...</p>
+        </div>
+      </div>
+    )
+  }
 
   // Provisioning always needs the owner's name plus the agency's razón
   // social and NIT — collect them here and provision explicitly (see
@@ -58,20 +74,30 @@ function ProvisionedOnboardingWizard() {
   // in flight so the submit button can disable itself (double-submit guard).
   if (status === 'needs-info' || status === 'provisioning') {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center p-6">
-        <div className="max-w-sm w-full">
-          <OwnerNameStepForm onSubmit={provision} isSubmitting={status === 'provisioning'} />
-        </div>
-      </div>
+      <OwnerNameStepForm
+        onSubmit={provision}
+        isSubmitting={status === 'provisioning'}
+        valoresIniciales={
+          valoresGuardados
+            ? { razonSocial: valoresGuardados.razonSocial, nit: valoresGuardados.nit }
+            : undefined
+        }
+      />
     )
   }
 
   if (status === 'error') {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center p-6">
-        <div className="max-w-sm w-full">
-          <OnboardingProvisioningErrorBanner onRetry={retry} />
-        </div>
+      <div className="min-h-screen bg-bg">
+        <header className="flex items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
+          <LeasefyLogo className="h-6 w-auto" />
+          <SalirDelRegistro />
+        </header>
+        <main className="flex min-h-[calc(100vh-5rem)] items-center justify-center px-6 pb-16">
+          <div className="w-full max-w-md">
+            <OnboardingProvisioningErrorBanner onRetry={retry} fallo={fallo} />
+          </div>
+        </main>
       </div>
     )
   }
@@ -171,12 +197,19 @@ function OnboardingWizard({
   return (
     <div className="min-h-screen bg-bg">
       <header className="sticky top-0 z-20 bg-surface/95 backdrop-blur-sm border-b border-border-faint">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16">
+        {/* Más ancho que el `max-w-md` del cuerpo a propósito: con el logo, los
+            cuatro pasos y la salida en la misma fila, a 2xl el rótulo de un
+            paso se partía en dos renglones. */}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between gap-4 h-16">
             <BrandHomeLink className="flex items-center gap-2">
               <LeasefyLogo size={28} tone="brand" />
             </BrandHomeLink>
             <OnboardingWizardStepper currentStep={displayStep} />
+            {/* El asistente tampoco tenía salida: la única era cerrar la
+                pestaña. Ahora sí, y la promesa de volver donde quedaste la
+                cumple el punto de retorno del back. */}
+            <SalirDelRegistro />
           </div>
         </div>
       </header>

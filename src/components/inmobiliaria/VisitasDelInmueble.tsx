@@ -138,7 +138,12 @@ type Estado = 'cargando' | 'listo' | 'error';
 
 export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
   const [estado, setEstado] = useState<Estado>('cargando');
-  const [schedule, setSchedule] = useState<AvailabilitySchedule | null>(null);
+  // Una agenda por modalidad. Son distintas a propósito.
+  const [agendas, setAgendas] = useState<Record<TipoDeVisita, AvailabilitySchedule | null>>({
+    IN_PERSON: null,
+    VIRTUAL: null,
+  });
+  const [modalidadActiva, setModalidadActiva] = useState<TipoDeVisita>('IN_PERSON');
   const [slotDuration, setSlotDuration] = useState(30);
   const [modalidades, setModalidades] = useState<TipoDeVisita[]>([]);
   const [guardando, setGuardando] = useState(false);
@@ -147,9 +152,14 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
     setEstado('cargando');
     agendaApi
       .getDisponibilidad(propertyId)
-      .then(({ windows, visitTypes }) => {
-        setSlotDuration(windows[0]?.slotDuration ?? 30);
-        setSchedule(windows.length > 0 ? windowsToSchedule(windows) : null);
+      .then(({ windows, agendas: delBack, visitTypes }) => {
+        const presencial = delBack?.IN_PERSON ?? windows;
+        const virtual = delBack?.VIRTUAL ?? [];
+        setSlotDuration(presencial[0]?.slotDuration ?? virtual[0]?.slotDuration ?? 30);
+        setAgendas({
+          IN_PERSON: presencial.length > 0 ? windowsToSchedule(presencial) : null,
+          VIRTUAL: virtual.length > 0 ? windowsToSchedule(virtual) : null,
+        });
         setModalidades(visitTypes ?? []);
         setEstado('listo');
       })
@@ -159,13 +169,23 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
   useEffect(cargar, [cargar]);
 
   const guardar = useCallback(
-    async (nuevo: AvailabilitySchedule | null, tipos?: TipoDeVisita[]) => {
+    async (
+      nuevo: AvailabilitySchedule | null,
+      tipos?: TipoDeVisita[],
+      deModalidad: TipoDeVisita = 'IN_PERSON',
+    ) => {
       setGuardando(true);
       try {
-        // `null` = apagar: se manda la lista vacía, que borra las ventanas.
+        // `null` = apagar: se manda la lista vacía, que borra las ventanas de
+        // ESA modalidad. El back acota el borrado, así que la otra no se toca.
         const windows = nuevo ? scheduleToWindows(nuevo, slotDuration) : [];
-        const res = await agendaApi.setDisponibilidad(propertyId, windows, tipos);
-        setSchedule(nuevo);
+        const res = await agendaApi.setDisponibilidad(
+          propertyId,
+          windows,
+          tipos,
+          deModalidad,
+        );
+        setAgendas((prev) => ({ ...prev, [deModalidad]: nuevo }));
         setModalidades(res.visitTypes ?? []);
         toast.success(
           nuevo ? 'Horarios de visita guardados' : 'Visitas apagadas para este inmueble',
@@ -181,14 +201,18 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
     [propertyId, slotDuration],
   );
 
-  const prendido = franjasDe(schedule) > 0;
+  const scheduleActivo = agendas[modalidadActiva];
+  const prendido =
+    franjasDe(agendas.IN_PERSON) > 0 || franjasDe(agendas.VIRTUAL) > 0;
 
   /** Marcar o desmarcar una modalidad. Quedarse sin ninguna es válido. */
   const alternarModalidad = (tipo: TipoDeVisita) => {
     const siguiente = modalidades.includes(tipo)
       ? modalidades.filter((t) => t !== tipo)
       : [...modalidades, tipo];
-    void guardar(schedule, siguiente);
+    // Sólo cambian las modalidades ofrecidas: la agenda presencial se reenvía
+    // tal cual para no borrarla al pasar por acá.
+    void guardar(agendas.IN_PERSON, siguiente, 'IN_PERSON');
   };
 
   return (
@@ -205,7 +229,7 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
             <h3 className="text-sm font-semibold text-fg">Visitas</h3>
             <p className="mt-0.5 text-body-sm text-fg-muted">
               {prendido
-                ? `Se pueden agendar · ${resumenDeLaSemana(schedule)}`
+                ? `Se pueden agendar · ${resumenDeLaSemana(scheduleActivo ?? agendas.IN_PERSON ?? agendas.VIRTUAL)}`
                 : 'Nadie puede agendar una visita a este inmueble'}
             </p>
           </div>
@@ -220,10 +244,21 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
             onCheckedChange={(activar) => {
               // Prender sin modalidad dejaría cupos que nadie puede reservar:
               // si no había ninguna, entra presencial, que es el caso normal.
-              void guardar(
-                activar ? DEFAULT_AVAILABILITY_SCHEDULE : null,
-                activar && modalidades.length === 0 ? ['IN_PERSON'] : undefined,
-              );
+              if (activar) {
+                void guardar(
+                  DEFAULT_AVAILABILITY_SCHEDULE,
+                  modalidades.length === 0 ? ['IN_PERSON'] : undefined,
+                  'IN_PERSON',
+                );
+              } else {
+                // Apagar borra las DOS agendas: dejar una viva sería seguir
+                // ofreciendo cupos con el interruptor en «no».
+                void guardar(null, undefined, 'IN_PERSON').then(() =>
+                  franjasDe(agendas.VIRTUAL) > 0
+                    ? guardar(null, undefined, 'VIRTUAL')
+                    : undefined,
+                );
+              }
             }}
           />
         )}
@@ -256,7 +291,7 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
           </p>
         )}
 
-        {estado === 'listo' && prendido && schedule && (
+        {estado === 'listo' && prendido && (
           <div className="space-y-5">
             <div>
               <h4 className="text-sm font-semibold text-fg">Cómo se puede visitar</h4>
@@ -291,11 +326,65 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
               )}
             </div>
 
-            <AvailabilityScheduleEditor
-              schedule={schedule}
-              onSave={(nuevo) => void guardar(nuevo)}
-              isLoading={guardando}
-            />
+            {/* Los horarios son POR modalidad. Con las dos ofrecidas hay que
+                poder verlas y editarlas por separado — antes lo que se cargaba
+                valía para las dos, que es falso: una videollamada se atiende a
+                una hora en que nadie va a abrir el inmueble. */}
+            {modalidades.length > 1 && (
+              <div
+                role="tablist"
+                aria-label="Modalidad de los horarios"
+                className="inline-flex rounded-full border border-border bg-surface-muted/60 p-0.5"
+              >
+                {(['IN_PERSON', 'VIRTUAL'] as TipoDeVisita[]).map((tipo) => (
+                  <button
+                    key={tipo}
+                    type="button"
+                    role="tab"
+                    aria-selected={modalidadActiva === tipo}
+                    onClick={() => setModalidadActiva(tipo)}
+                    data-testid={`horarios-de-${tipo}`}
+                    className={cn(
+                      'rounded-full px-3.5 py-1.5 text-body-sm transition-colors',
+                      modalidadActiva === tipo
+                        ? 'bg-surface font-medium text-fg shadow-[0_1px_2px_rgba(20,19,15,0.06)]'
+                        : 'text-fg-muted hover:text-fg',
+                    )}
+                  >
+                    Horario {tipo === 'IN_PERSON' ? 'presencial' : 'virtual'}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {scheduleActivo ? (
+              <AvailabilityScheduleEditor
+                key={modalidadActiva}
+                schedule={scheduleActivo}
+                onSave={(nuevo) => void guardar(nuevo, undefined, modalidadActiva)}
+                isLoading={guardando}
+              />
+            ) : (
+              <div className="rounded-lg border border-dashed border-border p-5 text-center">
+                <p className="text-body-sm text-fg-muted">
+                  Esta modalidad todavía no tiene horarios, así que no se puede
+                  reservar por acá.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  hideArrow
+                  disabled={guardando}
+                  className="mt-3"
+                  onClick={() =>
+                    void guardar(DEFAULT_AVAILABILITY_SCHEDULE, undefined, modalidadActiva)
+                  }
+                  data-testid="cargar-horario-modalidad"
+                >
+                  Cargar una semana para empezar
+                </Button>
+              </div>
+            )}
             <div className="flex items-start gap-2.5 rounded-lg bg-surface-muted/60 p-3">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-fg-subtle" aria-hidden />
               <p className="text-caption text-fg-muted">

@@ -27,7 +27,14 @@ export interface CreateCitaInput {
 export type TipoDeVisita = 'IN_PERSON' | 'VIRTUAL';
 
 export interface DisponibilidadDeVisitas {
+  /** La agenda PRESENCIAL. Se conserva por compatibilidad. */
   windows: AvailabilityWindow[];
+  /**
+   * Una agenda por modalidad. Son distintas a propósito: una videollamada se
+   * atiende a las 8 de la noche y abrir el inmueble a esa hora no.
+   * Ausente = un back anterior a la separación.
+   */
+  agendas?: Record<TipoDeVisita, AvailabilityWindow[]>;
   /** Vacío = no se acepta ninguna, aunque haya horarios cargados. */
   visitTypes: TipoDeVisita[];
 }
@@ -83,10 +90,11 @@ export const agendaApi = {
     propertyId: string,
     windows: AvailabilityWindow[],
     visitTypes?: TipoDeVisita[],
+    visitType: TipoDeVisita = 'IN_PERSON',
   ): Promise<DisponibilidadDeVisitas> {
     return apiClient.put<DisponibilidadDeVisitas>(
       `/inmobiliaria/agenda/propiedades/${propertyId}/disponibilidad`,
-      { windows, ...(visitTypes ? { visitTypes } : {}) },
+      { windows, visitType, ...(visitTypes ? { visitTypes } : {}) },
     );
   },
 

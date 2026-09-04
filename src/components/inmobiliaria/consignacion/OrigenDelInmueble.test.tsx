@@ -16,7 +16,7 @@ vi.mock('@/lib/i18n', () => ({
   }),
 }))
 
-import { OrigenDelInmueble } from './OrigenDelInmueble'
+import { OrigenDelInmueble, origenInicial } from './OrigenDelInmueble'
 
 let container: HTMLDivElement
 let root: Root
@@ -70,5 +70,30 @@ describe('<OrigenDelInmueble>', () => {
   it('«un inmueble nuevo» siempre se puede', () => {
     montar({ disponibles: 0 })
     expect(nuevo().disabled).toBe(false)
+  })
+})
+
+describe('origenInicial — cuándo se pregunta y cuándo no', () => {
+  it('🔴 desde «Nueva consignación» NO se pregunta: va derecho al flujo completo', () => {
+    // El botón del portafolio, la barra lateral, el buscador y el panel de
+    // inicio entran sin `propietarioId`. Nico (2026-09-03): «desde el nueva
+    // consignación de inmuebles siempre es el flujo de nueva consignación».
+    expect(origenInicial({ origenEnLaUrl: null, propietarioId: undefined })).toBe('nuevo')
+  })
+
+  it('asignando a un propietario concreto SÍ se pregunta', () => {
+    // Se llega desde su ficha: ahí ofrecer los del portafolio sin dueño ahorra
+    // volver a cargar un inmueble que ya existe.
+    expect(origenInicial({ origenEnLaUrl: null, propietarioId: 'p-1' })).toBeNull()
+  })
+
+  it('`?origen=` manda sobre todo, con propietario y sin él', () => {
+    expect(origenInicial({ origenEnLaUrl: 'existente', propietarioId: undefined })).toBe('existente')
+    expect(origenInicial({ origenEnLaUrl: 'nuevo', propietarioId: 'p-1' })).toBe('nuevo')
+  })
+
+  it('un `?origen=` que no existe se ignora, no rompe la pantalla', () => {
+    expect(origenInicial({ origenEnLaUrl: 'cualquiera', propietarioId: undefined })).toBe('nuevo')
+    expect(origenInicial({ origenEnLaUrl: '', propietarioId: 'p-1' })).toBeNull()
   })
 })

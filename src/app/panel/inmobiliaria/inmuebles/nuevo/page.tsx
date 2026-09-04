@@ -7,7 +7,10 @@ import { Buildings } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@leasefy/cadence';
 import { ConsignacionWizard } from '@/components/inmobiliaria/ConsignacionWizard';
-import { OrigenDelInmueble } from '@/components/inmobiliaria/consignacion/OrigenDelInmueble';
+import {
+  OrigenDelInmueble,
+  origenInicial,
+} from '@/components/inmobiliaria/consignacion/OrigenDelInmueble';
 import { ElegirInmuebleDrawer } from '@/components/inmobiliaria/consignacion/ElegirInmuebleDrawer';
 import { CompletarMandatoDialog } from '@/components/inmobiliaria/CompletarMandatoDialog';
 import {
@@ -22,7 +25,8 @@ const PORTAFOLIO = '/panel/inmobiliaria/inmuebles';
 
 /**
  * Qué se está haciendo:
- *  - `null`      → todavía no eligió: se pregunta (`OrigenDelInmueble`).
+ *  - `null`      → todavía no eligió: se pregunta (`OrigenDelInmueble`). Sólo
+ *                  ocurre cuando se asigna a un propietario concreto.
  *  - `nuevo`     → el asistente de siempre, intacto.
  *  - `existente` → drawer con los inmuebles sin mandato + el diálogo de mandato.
  */
@@ -44,17 +48,12 @@ function NuevaConsignacionContent() {
       ? t('inmobiliaria.portafolio.new.backToOwner')
       : t('inmobiliaria.portafolio.detail.backToPortfolio');
 
-  /**
-   * Nico (2026-09-02): la consignación puede ser sobre un inmueble nuevo o
-   * sobre uno que ya está en el portafolio (migrado por Excel o por enlace y
-   * todavía sin mandato). Se pregunta ANTES de pedir un solo dato.
-   *
-   * `?origen=nuevo` salta la pregunta: lo usa quien ya sabe, y deja el enlace
-   * viejo al asistente funcionando igual que siempre.
-   */
+  // Con qué arranca la pantalla: la regla vive en `origenInicial`, con su
+  // porqué. Resumen: sólo se pregunta cuando se asigna a un propietario.
   const origenEnLaUrl = searchParams.get('origen');
-  const [origen, setOrigen] = useState<Origen | null>(
-    origenEnLaUrl === 'nuevo' || origenEnLaUrl === 'existente' ? origenEnLaUrl : null,
+  const seAsignaAUnPropietario = propietarioInicial !== undefined;
+  const [origen, setOrigen] = useState<Origen | null>(() =>
+    origenInicial({ origenEnLaUrl, propietarioId: propietarioInicial }),
   );
   const [drawerAbierto, setDrawerAbierto] = useState(origenEnLaUrl === 'existente');
   const [elegido, setElegido] = useState<InmuebleSinConsignacion | null>(null);
@@ -114,9 +113,10 @@ function NuevaConsignacionContent() {
         abierto={drawerAbierto}
         onOpenChange={(abierto) => {
           setDrawerAbierto(abierto);
-          // Cerrar el drawer sin elegir vuelve a la pregunta, no a una
-          // pantalla en blanco.
-          if (!abierto && !elegido) setOrigen(null);
+          // Cerrar el drawer sin elegir vuelve a donde se venía: a la
+          // pregunta si la hubo, y al asistente si no —nunca a una pantalla
+          // en blanco.
+          if (!abierto && !elegido) setOrigen(seAsignaAUnPropietario ? null : 'nuevo');
         }}
         inmuebles={sinMandato}
         cargando={cargandoSinMandato}

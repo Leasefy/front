@@ -1,9 +1,20 @@
 /**
- * El owner no puede exigir un archivo estándar: cualquier Excel tiene que
- * poder llegar a la lista de trabajo, columnas mapeadas o no. Antes de este
- * cambio, `OBLIGATORIOS`/`faltantes()` deshabilitaban el botón «Revisar» si
- * faltaba una sola de 8 columnas — el archivo real del owner no tenía
- * `diaDePago` ni `inquilinoCorreo`, así que nunca llegaba a revisar.
+ * El importador de contratos, de punta a punta.
+ *
+ * Dos reglas que se ven contradictorias y no lo son:
+ *
+ *  1. El owner no puede exigir un archivo estándar: cualquier Excel tiene que
+ *     poder llegar a la lista de trabajo. El viejo gate de 8 columnas
+ *     (`OBLIGATORIOS`/`faltantes()`) apagaba «Revisar» si faltaba una sola —
+ *     el archivo real del owner no tenía `uso`, así que nunca llegaba.
+ *  2. Pero un archivo del que NO se entiende nada tampoco puede pasar. El
+ *     2026-09-03 entró uno de 110 contratos con todas las columnas en
+ *     «Ignorar» y creó 110 filas `{"direccion":"","inquilino":{...}}`.
+ *
+ * Lo que las concilia es el tamaño de la exigencia: `faltantesEsenciales` pide
+ * lo mínimo para que una fila SIRVA (identificar el inmueble, identificar al
+ * inquilino, poder cobrarle) y nada más. `uso`, depósito, comisión y
+ * periodicidad siguen sin bloquear.
  */
 
 import * as React from 'react'
@@ -15,6 +26,10 @@ void React // evita que el transform de JSX tree-shakee el import
 
 vi.mock('@/components/inmobiliaria/import/lib/parseFile', () => ({
   parseSpreadsheetFile: vi.fn(),
+  // El componente explora las primeras filas para saber DÓNDE están los
+  // encabezados (un export puede traer un título arriba). Sin filas de
+  // muestra se queda en la primera, que es el caso de estos tests.
+  leerPrimerasFilas: vi.fn(async () => [] as string[][]),
 }))
 
 vi.mock('@/lib/api/contracts.service', () => ({
@@ -39,7 +54,10 @@ vi.mock('@/lib/api/contracts.service', () => ({
   },
 }))
 
-import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile'
+import {
+  leerPrimerasFilas,
+  parseSpreadsheetFile,
+} from '@/components/inmobiliaria/import/lib/parseFile'
 import { contractsApi, type FilaDeMigracion } from '@/lib/api/contracts.service'
 import { MigrarContratos } from './MigrarContratos'
 
@@ -85,6 +103,45 @@ function subirArchivo(headers: string[], filas: Record<string, unknown>[]) {
     input.dispatchEvent(new Event('change', { bubbles: true }))
     await new Promise((r) => setTimeout(r, 0))
   })
+}
+
+/**
+ * Los encabezados mínimos que la compuerta deja pasar: identificar el
+ * inmueble, identificar al inquilino y poder cobrarle.
+ *
+ * Antes estos tests subían `['Columna A']` —cero columnas reconocidas— porque
+ * el importador dejaba continuar con todo en «Ignorar». Eso es exactamente lo
+ * que el 2026-09-03 creó 110 filas vacías, así que ya no se puede: un test
+ * que llega a la lista de trabajo tiene que subir un archivo que sirva, igual
+ * que una persona.
+ */
+const ENCABEZADOS_MINIMOS = [
+  'Dirección del inmueble',
+  'Nombre del arrendatario',
+  'Correo del arrendatario',
+  'Fecha de inicio',
+  'Fecha de terminación',
+  'Canon',
+  'Día de pago',
+]
+
+function filaMinima(i = 0): Record<string, unknown> {
+  return {
+    'Dirección del inmueble': `Calle ${10 + i} # 20-30`,
+    'Nombre del arrendatario': `Inquilino ${i}`,
+    'Correo del arrendatario': `inquilino${i}@correo.co`,
+    'Fecha de inicio': '2026-01-01',
+    'Fecha de terminación': '2027-01-01',
+    Canon: '1800000',
+    'Día de pago': '5',
+  }
+}
+
+function subirArchivoMinimo(cuantas = 1) {
+  return subirArchivo(
+    ENCABEZADOS_MINIMOS,
+    Array.from({ length: cuantas }, (_, i) => filaMinima(i)),
+  )
 }
 
 function botonRevisar() {
@@ -153,7 +210,7 @@ function filaDeMigracion(over: Partial<FilaDeMigracion> = {}): FilaDeMigracion {
  * paginación como el control "Seleccionar las {total} del lote".
  */
 async function avanzarAListaDeTrabajo(activables = 0) {
-  await subirArchivo(['Columna A'], [{ 'Columna A': 'x' }])
+  await subirArchivoMinimo()
   const b = botonRevisar()
 
   vi.mocked(contractsApi.migracion.preparar).mockResolvedValue({
@@ -198,17 +255,84 @@ async function avanzarAListaDeTrabajo(activables = 0) {
   })
 }
 
-describe('<MigrarContratos> — sin gate de columnas', () => {
-  it('un archivo cuyas columnas no mapean nada igual llega a la lista de trabajo', async () => {
+/**
+ * 🔴 La compuerta.
+ *
+ * El 2026-09-03 este mismo componente dejó continuar con TODAS las columnas
+ * en «Ignorar»: se crearon 110 filas
+ * `{"direccion":"","inquilino":{"correo":"","nombre":""}}` y el aviso llegó
+ * después. No es el viejo gate de 8 columnas obligatorias —el archivo real
+ * del owner no tenía `uso` y tiene que poder entrar—: es el mínimo para que
+ * una fila SIRVA.
+ */
+describe('<MigrarContratos> — la compuerta de lo esencial', () => {
+  it('un archivo cuyas columnas no mapean nada NO deja continuar', async () => {
     render()
     await esperar()
 
     await subirArchivo(['Columna A', 'Columna B'], [{ 'Columna A': 'x', 'Columna B': 'y' }])
 
+    // Antes: `disabled === false` y 110 filas basura del otro lado.
+    expect(botonRevisar()?.disabled).toBe(true)
+    expect(container.querySelector('[data-testid="faltan-esenciales"]')).toBeTruthy()
+  })
+
+  it('dice CUÁLES faltan, no «faltan datos»', async () => {
+    render()
+    await esperar()
+    await subirArchivo(['Columna A'], [{ 'Columna A': 'x' }])
+
+    const aviso = container.querySelector('[data-testid="faltan-esenciales"]')
+    const texto = aviso?.textContent ?? ''
+    // Los siete requisitos, cada uno nombrado.
+    for (const clave of [
+      'inmueble',
+      'inquilino',
+      'contactoInquilino',
+      'fechaInicio',
+      'fechaFin',
+      'canon',
+      'diaDePago',
+    ]) {
+      expect(container.querySelector(`[data-testid="falta-${clave}"]`)).toBeTruthy()
+    }
+    // Y dice qué hacer: el archivo no las trae, no es que haya que elegirlas.
+    expect(texto).toContain('Tu archivo no trae ninguna columna de canon')
+    expect(texto).toContain('volvé a subirlo')
+  })
+
+  it('cuando la columna existe pero no se reconoció, manda al desplegable', async () => {
+    render()
+    await esperar()
+    // «Corte facturación» no se reconoce, pero habla de un corte de cobro:
+    // hay una columna que elegir, así que el consejo no es «volvé a subirlo».
+    await subirArchivo(
+      [...ENCABEZADOS_MINIMOS.filter((h) => h !== 'Día de pago'), 'Corte facturación'],
+      [{ ...filaMinima(), 'Corte facturación': '5' }],
+    )
+
+    const texto =
+      container.querySelector('[data-testid="faltan-esenciales"]')?.textContent ?? ''
+    expect(texto).toContain(
+      'Elegí en el desplegable la columna de tu archivo que trae el día de pago',
+    )
+    expect(texto).not.toContain('volvé a subirlo')
+    expect(botonRevisar()?.disabled).toBe(true)
+    // La columna sigue estando, con su desplegable, para elegirla.
+    expect(
+      container.querySelector('[data-testid="mapeo-Corte facturación"]'),
+    ).toBeTruthy()
+  })
+
+  it('con lo esencial mapeado sigue de largo, y no inventa lo que no está', async () => {
+    render()
+    await esperar()
+
+    // Sin `uso`, sin depósito, sin comisión: eso NO bloquea (se completa en la
+    // lista de trabajo). Lo esencial sí está.
+    await subirArchivoMinimo()
+
     const boton = botonRevisar()
-    expect(boton).toBeTruthy()
-    // Ni `diaDePago` ni `inquilinoCorreo` ni ningún otro campo bloquean el
-    // botón — sólo si hay filas y no está cargando.
     expect(boton?.disabled).toBe(false)
 
     vi.mocked(contractsApi.migracion.preparar).mockResolvedValue({
@@ -223,9 +347,6 @@ describe('<MigrarContratos> — sin gate de columnas', () => {
     })
     // WU-4, ítem 1: `preparar()` sólo encola el job — el sondeo
     // (`useEstadoDeLote`) es quien decide cuándo ya hay lista de trabajo.
-    // Resuelve LISTO directamente: este test cubre el payload enviado y el
-    // arribo final a la lista de trabajo, no la espera intermedia (eso lo
-    // cubre el test siguiente).
     vi.mocked(contractsApi.migracion.estadoDeLote).mockResolvedValue({
       lote: 'lote-servidor-1',
       estado: 'LISTO',
@@ -264,26 +385,39 @@ describe('<MigrarContratos> — sin gate de columnas', () => {
     expect(contractsApi.migracion.preparar).toHaveBeenCalledTimes(1)
     const [filasEnviadas] = vi.mocked(contractsApi.migracion.preparar).mock.calls[0]
     expect(filasEnviadas).toHaveLength(1)
-    // Nada se inventó para lo que no se pudo mapear.
-    expect(filasEnviadas[0].paymentDay).toBeUndefined()
-    expect(filasEnviadas[0].monthlyRent).toBeUndefined()
+    // Lo mapeado viaja…
+    expect(filasEnviadas[0].direccion).toBe('Calle 10 # 20-30')
+    expect(filasEnviadas[0].monthlyRent).toBe(1800000)
+    expect(filasEnviadas[0].paymentDay).toBe(5)
+    // …y lo que no se mapeó viaja ausente, nunca un default inventado.
     expect(filasEnviadas[0].usoInmueble).toBeUndefined()
-    // Estructuralmente obligatorios: nunca se omiten, aunque vayan vacíos.
-    expect(filasEnviadas[0].direccion).toBe('')
-    expect(filasEnviadas[0].inquilino).toEqual({
-      nombre: '',
-      correo: '',
-      telefono: undefined,
-      documento: undefined,
-    })
+    expect(filasEnviadas[0].deposit).toBeUndefined()
 
     expect(container.querySelector('[data-testid="lista-de-trabajo"]')).toBeTruthy()
+  })
+
+  it('un archivo sin nada reconocible nunca llega a crear filas', async () => {
+    // Los mocks del factory viven todo el archivo: `restoreAllMocks` restaura
+    // spies, no borra el historial de un `vi.fn()`.
+    vi.mocked(contractsApi.migracion.preparar).mockClear()
+    render()
+    await esperar()
+    await subirArchivo(['Columna A', 'Columna B'], [{ 'Columna A': 'x', 'Columna B': 'y' }])
+
+    await act(async () => {
+      botonRevisar()?.click()
+      for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0))
+    })
+
+    // Cero llamadas: las 110 filas vacías del incidente no se crean.
+    expect(contractsApi.migracion.preparar).not.toHaveBeenCalled()
+    expect(container.querySelector('[data-testid="lista-de-trabajo"]')).toBeNull()
   })
 
   it('mientras el lote sigue ENCOLADO/PROCESANDO, muestra progreso — nunca la lista de trabajo vacía', async () => {
     render()
     await esperar()
-    await subirArchivo(['Columna A'], [{ 'Columna A': 'x' }])
+    await subirArchivoMinimo()
     const boton = botonRevisar()
 
     vi.mocked(contractsApi.migracion.preparar).mockResolvedValue({
@@ -490,7 +624,7 @@ describe('<MigrarContratos> — activables, el botón de activar (T-0035)', () =
   it('cuando activables === listos (nada incompleto), no muestra el aviso de incompletos', async () => {
     render()
     await esperar()
-    await subirArchivo(['Columna A'], [{ 'Columna A': 'x' }])
+    await subirArchivoMinimo()
     const b = botonRevisar()
 
     vi.mocked(contractsApi.migracion.preparar).mockResolvedValue({
@@ -709,7 +843,7 @@ describe('<MigrarContratos> — descartar un lote entero (T-0036 §3.2.C)', () =
   it('sin nada pendiente ni listo (todo activado o descartado), el botón no aparece', async () => {
     render()
     await esperar()
-    await subirArchivo(['Columna A'], [{ 'Columna A': 'x' }])
+    await subirArchivoMinimo()
     const b = botonRevisar()
 
     vi.mocked(contractsApi.migracion.preparar).mockResolvedValue({
@@ -1331,7 +1465,7 @@ describe('<MigrarContratos> — errores visibles y recuperables', () => {
   it('un job FALLIDO ofrece volver al cargador, y el botón funciona', async () => {
     render()
     await esperar()
-    await subirArchivo(['Columna A'], [{ 'Columna A': 'x' }])
+    await subirArchivoMinimo()
     vi.mocked(contractsApi.migracion.preparar).mockResolvedValue({
       lote: 'lote-f',
       estado: 'ENCOLADO',
@@ -1383,7 +1517,7 @@ describe('<MigrarContratos> — errores visibles y recuperables', () => {
     // Sin nada en vuelo, el muro quedó libre.
     expect(onOcupado).toHaveBeenLastCalledWith(false)
 
-    await subirArchivo(['Columna A'], [{ 'Columna A': 'x' }])
+    await subirArchivoMinimo()
     vi.mocked(contractsApi.migracion.preparar).mockResolvedValue({
       lote: 'lote-1',
       estado: 'ENCOLADO',
@@ -1523,5 +1657,196 @@ describe('<MigrarContratos> — el archivo se puede ARRASTRAR', () => {
     await soltar('roto.xlsx')
 
     expect(container.textContent).toContain('El archivo está dañado')
+  })
+})
+
+/**
+ * La vista previa y los avisos de contenido. La compuerta cubre «el archivo no
+ * trae la columna»; esto cubre el otro medio incidente: la columna está, se
+ * mapeó bien, y las celdas vienen vacías. Sin esto, eso se descubre con los
+ * contratos ya creados.
+ */
+describe('<MigrarContratos> — vista previa honesta antes de guardar', () => {
+  it('muestra las tres primeras filas ya interpretadas, no la celda cruda', async () => {
+    render()
+    await esperar()
+    await subirArchivoMinimo(5)
+
+    const previa = container.querySelector('[data-testid="vista-previa-migracion"]')
+    expect(previa).toBeTruthy()
+    const texto = previa?.textContent ?? ''
+    // Sale de `armarFilaAMigrar`: lo mismo que va a viajar al back.
+    expect(texto).toContain('$ 1.800.000')
+    expect(texto).toContain('el 5 de cada mes')
+    expect(texto).toContain('Calle 10 # 20-30')
+    // Tres filas, aunque el archivo traiga cinco.
+    expect(texto).toContain('Fila 3')
+    expect(texto).not.toContain('Fila 4')
+  })
+
+  it('un dato que no se pudo leer se ve como «sin dato», nunca como un cero', async () => {
+    render()
+    await esperar()
+    // El día 30 no existe en todos los meses: viaja ausente.
+    await subirArchivo(ENCABEZADOS_MINIMOS, [{ ...filaMinima(), 'Día de pago': '30' }])
+
+    const texto =
+      container.querySelector('[data-testid="vista-previa-migracion"]')?.textContent ?? ''
+    expect(texto).toContain('sin dato')
+  })
+
+  it('lee los encabezados de la fila donde están de verdad, no siempre de la primera', async () => {
+    render()
+    await esperar()
+    // Un export con el título de la inmobiliaria arriba y una fila en blanco.
+    vi.mocked(leerPrimerasFilas).mockResolvedValue([
+      ['INMOBILIARIA X — CONTRATOS VIGENTES', '', '', ''],
+      ['', '', '', ''],
+      ['Dirección', 'Arrendatario', 'Canon', 'Fecha de inicio'],
+      ['Calle 1', 'Ana', '1800000', '2026-01-01'],
+    ])
+    await subirArchivoMinimo()
+
+    // Sin esto, los encabezados serían «INMOBILIARIA X…» y «(sin nombre)»:
+    // cero columnas reconocidas y todas las filas vacías.
+    expect(vi.mocked(parseSpreadsheetFile).mock.calls.at(-1)?.[2]).toEqual({
+      filaDeEncabezado: 2,
+    })
+    // Y lo dice: saltarse dos filas en silencio es indistinguible de perder
+    // dos contratos.
+    expect(
+      container.querySelector('[data-testid="fila-de-encabezado"]')?.textContent,
+    ).toContain('fila 3')
+  })
+
+  it('cuando los encabezados están en la primera fila no dice nada', async () => {
+    render()
+    await esperar()
+    vi.mocked(leerPrimerasFilas).mockResolvedValue([])
+    await subirArchivoMinimo()
+    expect(container.querySelector('[data-testid="fila-de-encabezado"]')).toBeNull()
+  })
+
+  it('avisa con el número exacto cuántas filas quedan sin un dato esencial', async () => {
+    render()
+    await esperar()
+    await subirArchivo(ENCABEZADOS_MINIMOS, [
+      ...Array.from({ length: 38 }, (_, i) => ({ ...filaMinima(i), Canon: '' })),
+      ...Array.from({ length: 72 }, (_, i) => filaMinima(i + 38)),
+    ])
+
+    const aviso = container.querySelector('[data-testid="avisos-del-archivo"]')
+    expect(aviso?.textContent).toContain('38 de 110 filas quedan sin canon')
+    // Avisa, no bloquea: esas filas piden el dato en la lista de trabajo.
+    expect(botonRevisar()?.disabled).toBe(false)
+  })
+
+  it('no avisa cuando el archivo viene completo', async () => {
+    render()
+    await esperar()
+    await subirArchivoMinimo(10)
+    expect(container.querySelector('[data-testid="avisos-del-archivo"]')).toBeNull()
+  })
+
+  it('marca en la tabla la columna que se entendió por una palabra genérica', async () => {
+    render()
+    await esperar()
+    // «Ciudad» a secas puede ser la del inmueble o la del propietario.
+    await subirArchivo(
+      [...ENCABEZADOS_MINIMOS, 'Ciudad'],
+      [{ ...filaMinima(), Ciudad: 'Bogotá' }],
+    )
+
+    expect(container.querySelector('[data-testid="dudosa-Ciudad"]')).toBeTruthy()
+    expect(
+      container.querySelector('[data-testid="mapeos-dudosos"]')?.textContent,
+    ).toContain('«Ciudad»')
+    // Una columna dudosa NO frena: se confirma, no se exige.
+    expect(botonRevisar()?.disabled).toBe(false)
+  })
+
+  it('lo que se entendió sin dudas no lleva marca', async () => {
+    render()
+    await esperar()
+    await subirArchivoMinimo()
+    expect(container.querySelector('[data-testid="mapeos-dudosos"]')).toBeNull()
+    expect(
+      container.querySelector('[data-testid="dudosa-Dirección del inmueble"]'),
+    ).toBeNull()
+  })
+})
+
+/**
+ * La cuota de administración: Nico confirmó que en sus archivos es el
+ * porcentaje de la inmobiliaria, pero en el mercado suele ser la cuota del
+ * edificio EN PESOS. Mapea, pide confirmación, y avisa si los valores tienen
+ * cara de plata.
+ */
+describe('<MigrarContratos> — la cuota de administración', () => {
+  it('se mapea a comisión, marcada para confirmar', async () => {
+    render()
+    await esperar()
+    await subirArchivo(
+      [...ENCABEZADOS_MINIMOS, 'Cuota de administración'],
+      [{ ...filaMinima(), 'Cuota de administración': '10' }],
+    )
+
+    expect(
+      container.querySelector('[data-testid="dudosa-Cuota de administración"]'),
+    ).toBeTruthy()
+    expect(botonRevisar()?.disabled).toBe(false)
+  })
+
+  it('si el archivo también trae «Comisión», ésa gana y la cuota queda en Ignorar', async () => {
+    render()
+    await esperar()
+    await subirArchivo(
+      [...ENCABEZADOS_MINIMOS, 'Cuota de administración', 'Comisión'],
+      [{ ...filaMinima(), 'Cuota de administración': '350.000', Comisión: '10' }],
+    )
+
+    const previa =
+      container.querySelector('[data-testid="vista-previa-migracion"]')?.textContent ?? ''
+    // La comisión que viaja es el 10 %, no los $350.000.
+    expect(previa).toContain('10 %')
+    expect(previa).not.toContain('350.000')
+    // Y la cuota, al no quedarse con el campo, no se marca como dudosa.
+    expect(
+      container.querySelector('[data-testid="dudosa-Cuota de administración"]'),
+    ).toBeNull()
+  })
+
+  it('avisa con el valor exacto cuando la cuota trae pesos', async () => {
+    render()
+    await esperar()
+    await subirArchivo(
+      [...ENCABEZADOS_MINIMOS, 'Cuota de administración'],
+      Array.from({ length: 110 }, (_, i) => ({
+        ...filaMinima(i),
+        'Cuota de administración': '350.000',
+      })),
+    )
+
+    const aviso = container.querySelector('[data-testid="aviso-comision"]')?.textContent ?? ''
+    expect(aviso).toContain('«Cuota de administración»')
+    expect(aviso).toContain('«350.000»')
+    expect(aviso).toContain('110 de 110 filas')
+    expect(aviso).toContain('no parecen un porcentaje')
+    // Aviso, no bloqueo.
+    expect(botonRevisar()?.disabled).toBe(false)
+  })
+
+  it('con porcentajes de verdad no aparece ningún aviso', async () => {
+    render()
+    await esperar()
+    await subirArchivo(
+      [...ENCABEZADOS_MINIMOS, 'Cuota de administración'],
+      Array.from({ length: 10 }, (_, i) => ({
+        ...filaMinima(i),
+        'Cuota de administración': '10',
+      })),
+    )
+    expect(container.querySelector('[data-testid="aviso-comision"]')).toBeNull()
+    expect(container.querySelector('[data-testid="avisos-del-archivo"]')).toBeNull()
   })
 })

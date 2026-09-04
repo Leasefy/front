@@ -63,7 +63,13 @@ import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { BarraDeInquilinos, InquilinosTable } from '@/components/inmobiliaria/InquilinosTable';
 import { InquilinoDrawer } from '@/components/inmobiliaria/InquilinoDrawer';
+import {
+  RUTA_DE_LA_MIGRACION,
+  useCopyDeMigracionEnLista,
+} from '@/components/migracion/VeredictoDeMigracion';
+import { vacioPorMigracion } from '@/components/migracion/muro-reglas';
 import { useI18n } from '@/lib/i18n';
+import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
 import { useInquilinos } from '@/lib/hooks/use-inquilinos';
 import {
   arriendosVigentes,
@@ -118,6 +124,24 @@ function ContenidoDeInquilinos() {
   }, [inquilinos]);
 
   const hayFiltros = buscar.trim().length > 0 || estado !== 'activos';
+
+  /*
+   * 🔴 El vacío tiene que decir la verdad.
+   *
+   * Esta lista sale de `lease.findMany` agrupado por `tenantId`, y un
+   * contrato migrado sin inmueble no produce arriendo: la lista queda vacía
+   * y hasta hoy decía «Todavía no hay ningún arriendo… traé los que ya tenés
+   * en otro sistema» — o sea, le pedía migrar a alguien que acababa de
+   * migrar 91 contratos. Nico: «va y ve y sólo existen los contratos pero
+   * sin nada asociado».
+   *
+   * Con deuda de migración se dice el número real y el botón lleva a
+   * completarla. Sin deuda —o sin poder saberlo— queda el vacío de siempre.
+   */
+  const deuda = useMigracionConDeuda();
+  const copyDeMigracion = useCopyDeMigracionEnLista();
+  const vacioPorLaMigracion = !hayFiltros && vacioPorMigracion(deuda);
+  const copy = deuda && vacioPorLaMigracion ? copyDeMigracion(deuda) : null;
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
@@ -179,7 +203,8 @@ function ContenidoDeInquilinos() {
               hayFiltros={hayFiltros}
               queSon={t('inquilinos.queSon')}
               icono={UserCircle}
-              descripcion={t('inquilinos.vacioDescripcion')}
+              titulo={copy?.titulo}
+              descripcion={copy?.detalle ?? t('inquilinos.vacioDescripcion')}
               onLimpiarFiltros={
                 hayFiltros
                   ? () => {
@@ -212,9 +237,11 @@ function ContenidoDeInquilinos() {
               accion={
                 hayFiltros ? undefined : (
                   <Button asChild hideArrow>
-                    <Link href="/panel/inmobiliaria/contratos/migrar">
+                    <Link href={RUTA_DE_LA_MIGRACION}>
                       <UploadSimple className="mr-1.5 h-4 w-4" />
-                      {t('inquilinos.vacioContrato')}
+                      {/* Con deuda el botón no dice «migrar» —ya migró—:
+                          dice completar la migración que quedó a medias. */}
+                      {copy?.accion ?? t('inquilinos.vacioContrato')}
                     </Link>
                   </Button>
                 )

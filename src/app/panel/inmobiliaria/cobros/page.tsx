@@ -49,6 +49,12 @@ import {
 } from '@/components/inmobiliaria';
 import { CobroCard } from '@/components/inmobiliaria/CobroCard';
 import { type RecordatorioConfigData } from '@/components/inmobiliaria/RecordatorioConfig';
+import {
+  RUTA_DE_LA_MIGRACION,
+  useCopyDeMigracionEnLista,
+} from '@/components/migracion/VeredictoDeMigracion';
+import { vacioPorMigracion } from '@/components/migracion/muro-reglas';
+import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
 
 // View modes
 type ViewMode = 'table' | 'cards';
@@ -188,6 +194,21 @@ function CobrosContent() {
   } = useTablePagination(filteredCobros, {
     resetKey: `${filters.month}|${filters.status}|${filters.consignacionId ?? ''}|${filters.search}`,
   });
+
+  /*
+   * ¿La tabla está vacía por la migración a medias? Sin inmueble no hay
+   * consignación y sin consignación no hay cobro: 89 contratos migrados
+   * dejan esta pantalla en cero sin que nada lo explique. Sólo cuando NO hay
+   * filtros puestos — con un filtro, el vacío es del filtro.
+   */
+  const deudaDeMigracion = useMigracionConDeuda();
+  const armarCopyDeMigracion = useCopyDeMigracionEnLista();
+  const sinFiltrosPropios =
+    filters.status === 'all' && !filters.consignacionId && !filters.search;
+  const copyDeMigracion =
+    sinFiltrosPropios && deudaDeMigracion && vacioPorMigracion(deudaDeMigracion)
+      ? armarCopyDeMigracion(deudaDeMigracion)
+      : null;
 
   // Use summary from API (fallback to default if loading)
   const summary: CobroSummary = useMemo(() => {
@@ -542,14 +563,25 @@ function CobrosContent() {
                   aria-hidden="true"
                 />
               </div>
+              {/*
+                Un cobro sale de la consignación del inmueble. Si la migración
+                dejó contratos sin inmueble o sin propietario, esta tabla está
+                vacía POR ESO — decir «todavía no generaste cobros» es cierto y
+                a la vez inútil: esconde la causa. Una línea, con el botón.
+              */}
               <div className="space-y-1.5">
                 <p className="text-base font-semibold text-fg">
-                  {t('inmobiliaria.cobros.noPayments')}
+                  {copyDeMigracion?.titulo ?? t('inmobiliaria.cobros.noPayments')}
                 </p>
                 <p className="mx-auto max-w-sm text-sm leading-relaxed text-fg-muted">
-                  {t('inmobiliaria.cobros.noPaymentsDesc')}
+                  {copyDeMigracion?.detalle ?? t('inmobiliaria.cobros.noPaymentsDesc')}
                 </p>
               </div>
+              {copyDeMigracion && (
+                <Button asChild hideArrow>
+                  <Link href={RUTA_DE_LA_MIGRACION}>{copyDeMigracion.accion}</Link>
+                </Button>
+              )}
               {filters.status !== 'all' && (
                 <Button
                   variant="link"

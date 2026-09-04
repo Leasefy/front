@@ -215,7 +215,13 @@ function ContratosContent() {
         </div>
       </header>
 
-      {deuda ? (
+      {/*
+        Dos deudas distintas, dos alertas distintas: la que existe y no cobra
+        (activada sin inmueble o sin propietario) y la que ni siquiera llegó a
+        ser contrato (filas sin activar). Decir la segunda con el texto de la
+        primera daría «0 contratos migrados sin propietario».
+      */}
+      {deuda && deuda.sinInmueble + deuda.sinPropietario > 0 ? (
         <AlertaAccionable
           severidad="danger"
           titulo={
@@ -243,6 +249,28 @@ function ContratosContent() {
           {tx(
             'El cobro sale de la consignación del inmueble. Desde la migración se les crea el inmueble que falta y se elige el propietario, de a uno o en masa.',
             'Billing comes from the property consignment. From the migration you can create the missing property and pick the owner, one by one or in bulk.',
+          )}
+        </AlertaAccionable>
+      ) : null}
+
+      {/* Filas que entraron con el archivo y nunca se activaron: no hay
+          contrato, así que no aparecen ni en la tabla de abajo. */}
+      {deuda && deuda.sinInmueble + deuda.sinPropietario === 0 && deuda.pendientes > 0 ? (
+        <AlertaAccionable
+          severidad="warning"
+          titulo={tx(
+            `${deuda.pendientes} filas de tu migración nunca se activaron: no existen como contrato.`,
+            `${deuda.pendientes} rows of your migration were never activated: they do not exist as contracts.`,
+          )}
+          accion={{
+            label: tx('Revisar las filas', 'Review the rows'),
+            href: '/panel/inmobiliaria/contratos/migrar',
+          }}
+          data-testid="alerta-migracion-sin-activar"
+        >
+          {tx(
+            'Les falta algo del archivo —el inmueble, el inquilino o los datos del contrato— y hasta que no se complete no se crea el contrato.',
+            'Something from the file is missing —the property, the tenant or the contract data— and until it is complete no contract is created.',
           )}
         </AlertaAccionable>
       ) : null}

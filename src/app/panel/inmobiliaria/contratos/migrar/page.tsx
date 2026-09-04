@@ -14,6 +14,11 @@ import { Eyebrow } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { MigrarContratos } from '@/components/contratos/MigrarContratos'
+import {
+  FilasFrenadas,
+  VeredictoDeMigracion,
+} from '@/components/migracion/VeredictoDeMigracion'
+import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda'
 
 export default function MigrarContratosPage() {
   /*
@@ -26,6 +31,15 @@ export default function MigrarContratosPage() {
    * Quién puede importar de verdad lo decide el back, que es donde no se puede
    * saltar: `@RequirePermission('contratos', 'create')`.
    */
+  /*
+   * El estado de la migración, cuando el muro ya bajó. Todas las alertas del
+   * panel —Contratos, Inquilinos, Propietarios, Cobros— traen acá; si al
+   * llegar sólo se viera «subí un archivo», la persona no sabría qué le
+   * quedó pendiente de los 91 contratos que ya subió. Sin botón por línea:
+   * ya está en la pantalla donde se resuelve.
+   */
+  const deuda = useMigracionConDeuda()
+
   return (
     <PageGuard module="contratos">
       <div className="space-y-6 p-6 lg:p-8">
@@ -51,6 +65,13 @@ export default function MigrarContratosPage() {
             — y si el inmueble no está cargado, se crea desde el archivo.
           </p>
         </header>
+
+        {deuda ? (
+          <>
+            <VeredictoDeMigracion deuda={deuda} resolver={{}} />
+            <FilasFrenadas deuda={deuda} resolver={{}} />
+          </>
+        ) : null}
 
         <MigrarContratos />
       </div>

@@ -10999,6 +10999,11 @@
   },
   "migracion": {
     "nav": "Migration",
+    "enLaLista": {
+      "titulo": "{{n}} migrated contracts are still incomplete",
+      "detalle": "{{deuda}}. Until they are linked they do not bill and they do not show up here.",
+      "accion": "Complete the migration"
+    },
     "puc": {
       "titulo": "Chart of accounts",
       "subtitulo": "Your chart of accounts: where entries land. Start from the Decree 2650 base plan and adjust it with your accountant."
@@ -11033,6 +11038,56 @@
         "eyebrow": "All set",
         "titulo": "Your operation is in",
         "detalle": "Every step is complete. You can keep loading from here or enter the panel; the migration stays in the menu in case something is missing."
+      },
+      "veredicto": {
+        "eyebrow": "How your migration ended up",
+        "titulo": "The contracts are in, but they are not billing yet",
+        "detalle": "A contract bills through its property: no property means no consignment, no consignment means no billing, and the tenant shows up in no list. This is what is still unlinked.",
+        "contratos": "{{n}} migrated contracts",
+        "sinInmueble": {
+          "linea": "{{n}} with no property",
+          "detalle": "They exist and earn nothing: nobody knows which property they rent.",
+          "accion": "Link the properties"
+        },
+        "sinPropietario": {
+          "linea": "{{n}} with no owner",
+          "detalle": "The property is not consigned to anyone, so there is nobody to settle with.",
+          "accion": "Pick an owner"
+        },
+        "sinInquilino": {
+          "linea": "{{n}} with no tenant",
+          "detalle": "The tenant's name, email or ID is missing from the file.",
+          "accion": "Complete the tenants"
+        },
+        "pendientes": {
+          "linea": "{{n}} rows not activated",
+          "detalle": "They came in with the file and are not contracts yet.",
+          "accion": "Review the rows"
+        },
+        "seguir": "Complete what is missing",
+        "entrarIgual": "Enter the panel as is",
+        "tabla": {
+          "eyebrow": "Row by row",
+          "queEs": "the migration rows",
+          "queSon": "rows",
+          "fila": "Row",
+          "direccion": "Address",
+          "inquilino": "Tenant",
+          "falta": "What is missing",
+          "resolver": "Resolve",
+          "sinDato": "No data",
+          "nada": "Nothing",
+          "vacio": "No row in this list has anything pending.",
+          "verPendientes": "Not activated ({{n}})",
+          "verActivadas": "Activated ({{n}})",
+          "queMirar": "Which rows to look at",
+          "faltas": {
+            "inmueble": "Property",
+            "propietario": "Owner",
+            "inquilino": "Tenant",
+            "datos": "Contract data"
+          }
+        }
       },
       "siguiente": "Continue with {{paso}}",
       "ocupado": "This step is still creating records — wait for it to finish.",

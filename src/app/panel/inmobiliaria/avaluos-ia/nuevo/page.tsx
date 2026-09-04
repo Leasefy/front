@@ -172,7 +172,7 @@ export default function NuevoAvaluoPage() {
                     type="button"
                     onClick={() => setTipo(tp.key)}
                     aria-pressed={isSel}
-                    className="relative rounded-xl border bg-surface p-5 text-left transition-all active:scale-[0.99]"
+                    className="relative rounded-lg border bg-surface p-5 text-left transition-all active:scale-[0.99]"
                     style={{ borderColor: isSel ? BLUE : 'rgba(0,0,0,0.10)', boxShadow: isSel ? `0 0 0 1px ${BLUE}` : 'none' }}
                   >
                     <span
@@ -219,7 +219,7 @@ export default function NuevoAvaluoPage() {
                       type="button"
                       onClick={() => setInmueble(p.id)}
                       aria-pressed={isSel}
-                      className="w-full flex items-center gap-4 rounded-xl border bg-surface p-3.5 text-left transition-all"
+                      className="w-full flex items-center gap-4 rounded-lg border bg-surface p-3.5 text-left transition-all"
                       style={{ borderColor: isSel ? BLUE : 'rgba(0,0,0,0.10)', boxShadow: isSel ? `0 0 0 1px ${BLUE}` : 'none' }}
                     >
                       <span className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-surface-muted shrink-0">
@@ -251,7 +251,7 @@ export default function NuevoAvaluoPage() {
               type="button"
               variant="outline"
               hideArrow
-              className="w-full justify-center gap-2 h-11 rounded-xl border-dashed text-[13.5px] text-fg-muted"
+              className="w-full justify-center gap-2 h-11 rounded-lg border-dashed text-[13.5px] text-fg-muted"
             >
               <Plus className="w-4 h-4" weight="bold" />
               Avaluar un inmueble que no está en mi portafolio
@@ -364,7 +364,7 @@ function Procesando() {
       <div className="mx-auto max-w-[560px]">
         {/* Gabriela hero */}
         <section
-          className="relative overflow-hidden rounded-2xl px-7 py-8 text-center"
+          className="relative overflow-hidden rounded-lg px-7 py-8 text-center"
           style={{ background: INK_GRADIENT, boxShadow: '0 26px 64px -28px rgba(20, 19, 15,0.55)' }}
         >
           <div className="pointer-events-none absolute -inset-x-2 top-[58%] h-[40%] text-white/[0.10]">
@@ -373,9 +373,9 @@ function Procesando() {
 
           <div className="relative flex flex-col items-center gap-4">
             <span className="relative inline-flex items-center justify-center">
-              <span className="absolute inline-flex h-[76px] w-[76px] rounded-2xl opacity-30 animate-ping" style={{ background: BLUE }} />
+              <span className="absolute inline-flex h-[76px] w-[76px] rounded-lg opacity-30 animate-ping" style={{ background: BLUE }} />
               <span
-                className="relative inline-flex items-center justify-center rounded-2xl text-2xl font-semibold text-white"
+                className="relative inline-flex items-center justify-center rounded-lg text-2xl font-semibold text-white"
                 style={{ width: 72, height: 72, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)' }}
               >
                 G
@@ -406,7 +406,7 @@ function Procesando() {
         </section>
 
         {/* Team checklist */}
-        <ul className="mt-6 rounded-2xl border border-border bg-surface divide-y divide-border-faint overflow-hidden">
+        <ul className="mt-6 rounded-lg border border-border bg-surface divide-y divide-border-faint overflow-hidden">
           {TEAM_STEPS.map((m, i) => {
             const done = i < ACTIVE
             const active = i === ACTIVE

@@ -5,7 +5,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { MapPin, Bed, Bathtub, ArrowsOut, Buildings, CaretRight, ArrowSquareOut, ArrowLeft } from '@phosphor-icons/react';
 
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { tieneCoordenadas } from '@/components/map/coordenadas';
 import { PhotoGalleryModal } from '@/components/property/PhotoGalleryModal';
 import { PropertyAccordion } from '@/components/property/PropertyAccordion';
 import { StickyCTA, MobileStickyCTA } from '@/components/property/StickyCTA';
@@ -16,6 +19,12 @@ import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import { superaReferencia, referenciaCanon } from '@/lib/api/aprobacion.service';
 import { SobreTopeAlert } from '@/components/tenant/TopeAprobadoBanner';
 import { formatCurrency, formatArea } from '@/lib/format';
+
+// MapLibre toca `window`: sin SSR, con un esqueleto de la misma altura.
+const MapaDelInmueble = dynamic(
+  () => import('@/components/map/MapaDelInmueble').then((m) => m.MapaDelInmueble),
+  { ssr: false, loading: () => <Skeleton className="h-56 sm:h-64 w-full rounded-lg" /> },
+);
 
 // Offering-agency social networks rendered in the compact "Síguenos" row.
 // X / Facebook / Instagram SVGs mirror src/components/layout/FooterCompact.tsx;
@@ -251,6 +260,40 @@ export function PropertyDetailView({
         {/* Hero Image Grid - Premium style with rounded corners */}
         <section className="pt-4 md:pt-6">
           <div className="container-platform">
+            {property.images.length === 0 ? (
+              /* Sin fotos (importado por CSV, o el agente todavía no las subió):
+                 un espacio acotado y con marca, no una imagen rota en un hero
+                 de 65vh en blanco (Nico, 2026-09-02). */
+              <div
+                className="flex h-[220px] md:h-[280px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-surface-muted text-center"
+                data-testid="hero-sin-fotos"
+                role="img"
+                aria-label={`Sin fotos de ${property.title}`}
+              >
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <Buildings className="h-8 w-8" weight="duotone" />
+                </div>
+                <p className="text-[15px] font-medium text-foreground">Todavía no hay fotos de este inmueble</p>
+                <p className="text-[13px] text-muted-foreground">
+                  Pídelas por el chat o agenda una visita para conocerlo.
+                </p>
+              </div>
+            ) : property.images.length === 1 ? (
+              <button
+                onClick={() => openGallery(0)}
+                aria-label={`Ver galeria de imagenes de ${property.title}`}
+                className="relative block h-[45vh] w-full overflow-hidden rounded-xl md:h-[55vh] cursor-pointer group"
+              >
+                <Image
+                  src={property.images[0]}
+                  alt={property.title}
+                  fill
+                  className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  sizes="100vw"
+                  priority
+                />
+              </button>
+            ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3 h-[45vh] md:h-[65vh]">
               {/* Main large image */}
               <button
@@ -317,6 +360,7 @@ export function PropertyDetailView({
                 )}
               </div>
             </div>
+            )}
           </div>
         </section>
 
@@ -475,9 +519,19 @@ export function PropertyDetailView({
                 </div>
               )}
 
-              {/* Map / Location */}
+              {/* Map / Location. Con coordenadas reales va el mapa (mismo
+                  componente que la ficha del panel); sin ellas queda la
+                  tarjeta con el enlace por barrio y ciudad. */}
               <div className="mt-12">
                 <h2 className="text-[13px] font-semibold text-foreground uppercase tracking-wide mb-4">Ubicación</h2>
+                {tieneCoordenadas(property.latitude, property.longitude) ? (
+                  <MapaDelInmueble
+                    latitude={property.latitude as number}
+                    longitude={property.longitude as number}
+                    titulo={property.title}
+                    direccion={`${property.neighborhood}, ${property.city}, Colombia`}
+                  />
+                ) : (
                 <div className="border border-border rounded-xl bg-surface-muted p-8 flex flex-col items-center justify-center gap-5 text-center">
                   <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
                     <MapPin className="w-6 h-6 text-primary" strokeWidth={1.5} />
@@ -498,6 +552,7 @@ export function PropertyDetailView({
                     Ver en Google Maps
                   </a>
                 </div>
+                )}
               </div>
 
               {/* Offering agency attribution + compact "Síguenos" social row.

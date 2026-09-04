@@ -91,7 +91,7 @@ export function CobranzaAnaliticaResumen() {
     return (
       <section aria-label="Cómo lo está logrando" className="space-y-3">
         <h2 className="text-base font-semibold text-fg">Cómo lo está logrando</h2>
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-sm text-fg-muted">
             No pudimos traer la analítica del agente.
           </p>
@@ -116,7 +116,7 @@ export function CobranzaAnaliticaResumen() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 [&>*:only-child]:md:col-span-2">
         {hayRecuperacion && (
-          <div className="rounded-xl border border-border bg-card p-6 space-y-4 md:col-span-2">
+          <div className="rounded-lg border border-border bg-card p-6 space-y-4 md:col-span-2">
             <RecoveryRateChart
               data={{
                 populated: true,
@@ -131,7 +131,7 @@ export function CobranzaAnaliticaResumen() {
         )}
 
         {hayObjeciones && (
-          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <div className="rounded-lg border border-border bg-card p-6 space-y-4">
             <TopObjectionsTable
               data={{
                 populated: true,
@@ -143,7 +143,7 @@ export function CobranzaAnaliticaResumen() {
         )}
 
         {hayMixDeCanal && (
-          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <div className="rounded-lg border border-border bg-card p-6 space-y-4">
             <CadenceChannelMixChart
               data={{ populated: true, rows: data?.cadence?.channelMix?.rows ?? [] }}
             />
@@ -151,7 +151,7 @@ export function CobranzaAnaliticaResumen() {
         )}
 
         {hayMapa && (
-          <div className="rounded-xl border border-border bg-card p-6 space-y-4 md:col-span-2">
+          <div className="rounded-lg border border-border bg-card p-6 space-y-4 md:col-span-2">
             <HeatmapGrid24x7 data={{ populated: true, cells: celdasMapa, maxCount }} />
           </div>
         )}

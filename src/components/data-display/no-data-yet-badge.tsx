@@ -18,7 +18,7 @@ export function NoDataYetBadge({ reason, phase, cta, ctaHref }: NoDataYetBadgePr
     // get the same "informational region" semantics whether the page renders
     // a "below threshold" placeholder (this badge) or a true "no data" empty
     // state. Phase 38-08 a11y specs detect both via `[role="status"].border-dashed`.
-    <div role="status" className="rounded-xl border-2 border-dashed border-border bg-surface-muted px-6 py-8 flex flex-col items-center gap-3 text-center">
+    <div role="status" className="rounded-lg border-2 border-dashed border-border bg-surface-muted px-6 py-8 flex flex-col items-center gap-3 text-center">
       <Hourglass weight="duotone" className="h-8 w-8 text-fg-subtle" />
       <p className="text-sm font-semibold text-fg-muted">
         {t('inmobiliaria.ai.cotizador.noDataYet.heading')}

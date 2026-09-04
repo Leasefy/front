@@ -119,7 +119,7 @@ export default function CallTranscript({
   return (
     <section
       aria-label={t('inmobiliaria.ai.cobranza.call.transcript.title')}
-      className="rounded-xl border border-border bg-surface"
+      className="rounded-lg border border-border bg-surface"
     >
       <header className="px-4 py-3 border-b border-border">
         <h2 className="text-sm font-semibold text-fg">

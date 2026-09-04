@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { MoneyInput } from '@/components/ui/money-input';
 import { Spinner } from '@/components/ui/spinner';
 import {
@@ -29,6 +30,12 @@ import { IconButton } from '@leasefy/cadence';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { RecorridoHilo } from '@/components/inmobiliaria/recorrido/RecorridoHilo';
 import { RespaldoDelArriendo } from '@/components/inmobiliaria/RespaldoDelArriendo';
+import {
+  PARTES_VACIAS,
+  PartesDelContratoManual,
+  validarPartes,
+  type PartesManuales,
+} from '@/components/contratos/PartesDelContratoManual';
 import { useContractActions } from '@/lib/hooks/useContracts';
 import { contractsApi } from '@/lib/api/contracts.service';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
@@ -42,6 +49,11 @@ import {
   type Respaldo,
 } from '@/lib/inmobiliaria/respaldo';
 import type { EvaluationResult } from '@/lib/api/applications.types';
+import {
+  MAX_DIAS_DE_PLAZO,
+  terminosDeCobro,
+  validarDiasDePlazo,
+} from '@/lib/contratos/terminos-de-cobro';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -55,6 +67,10 @@ interface FormState {
   monthlyRent: string;    // string for input binding
   deposit: string;
   paymentDay: string;
+  /** Prorratear el primer cobro por los días realmente ocupados. */
+  prorratearPrimerMes: boolean;
+  /** Texto del input; vacío = hereda los días de plazo de la inmobiliaria. */
+  diasDePlazo: string;
   insuranceTier: InsuranceTier;
 }
 
@@ -75,7 +91,18 @@ function NuevoContratoContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const applicationId = searchParams.get('applicationId');
+  /*
+   * `?modo=manual`: sin postulación. El inmueble consignado y el inquilino se
+   * eligen acá mismo; los términos y todo lo que sigue (envío, firma,
+   * activación) son los mismos (Nico, 2026-09-03).
+   */
+  const esManual = !applicationId && searchParams.get('modo') === 'manual';
   const actions = useContractActions();
+  const [partes, setPartes] = useState<PartesManuales>(PARTES_VACIAS);
+  const [inmuebleElegido, setInmuebleElegido] = useState<string | null>(null);
+  // Los «falta esto» del bloque manual recién después de tocarlo: una pantalla
+  // que abre en rojo antes de que la persona haga nada regaña por adelantado.
+  const [partesTocadas, setPartesTocadas] = useState(false);
 
   const [application, setApplication] = useState<LandlordApplicationDetail | null>(null);
   const [property, setProperty] = useState<Property | null>(null);
@@ -92,6 +119,8 @@ function NuevoContratoContent() {
       monthlyRent: '',
       deposit: '',
       paymentDay: '1',
+      prorratearPrimerMes: false,
+      diasDePlazo: '',
       insuranceTier: 'NONE',
     };
   });
@@ -107,7 +136,7 @@ function NuevoContratoContent() {
   // Load application + property details
   useEffect(() => {
     if (!applicationId) {
-      setLoadError('Falta el parámetro applicationId en la URL.');
+      if (!esManual) setLoadError('Falta el parámetro applicationId en la URL.');
       setIsLoading(false);
       return;
     }
@@ -172,7 +201,7 @@ function NuevoContratoContent() {
     }
     load();
     return () => { cancelled = true; };
-  }, [applicationId]);
+  }, [applicationId, esManual]);
 
   const updateForm = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -216,8 +245,11 @@ function NuevoContratoContent() {
     if (isNaN(dep) || dep < 0) errors.deposit = 'Ingresá un valor válido';
     const day = Number(form.paymentDay);
     if (!day || day < 1 || day > 28) errors.paymentDay = 'Entre 1 y 28';
+    const errorDePlazo = validarDiasDePlazo(form.diasDePlazo);
+    if (errorDePlazo) errors.diasDePlazo = errorDePlazo;
+    if (esManual) Object.assign(errors, validarPartes(partes));
     return errors;
-  }, [form]);
+  }, [form, esManual, partes]);
 
   // El respaldo es opcional —hay arriendos con codeudor y sin póliza— pero si
   // se empieza a llenar tiene que quedar completo: una aseguradora sin número
@@ -236,7 +268,7 @@ function NuevoContratoContent() {
   // Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValid || !applicationId) return;
+    if (!isValid || (!applicationId && !esManual)) return;
     setSubmitError(null);
 
     try {
@@ -253,13 +285,13 @@ function NuevoContratoContent() {
         contractOrigin = 'UPLOADED_PDF';
       }
 
-      const contract = await actions.create({
-        applicationId,
+      const terminos = {
         startDate: form.startDate,
         endDate: form.endDate,
         monthlyRent: Number(form.monthlyRent),
         deposit: Number(form.deposit),
         paymentDay: Number(form.paymentDay),
+        ...terminosDeCobro(form),
         insuranceTier: form.insuranceTier,
         // El respaldo va como cláusula del contrato: es un campo real y
         // persistido, y una póliza de respaldo pertenece al texto que firman
@@ -271,14 +303,47 @@ function NuevoContratoContent() {
             : undefined,
         contractOrigin,
         uploadedPdfPath,
-      });
+      };
+
+      if (esManual) {
+        const creado = await actions.createManual({
+          ...terminos,
+          propertyId: partes.propertyId,
+          ...(partes.inquilino.modo === 'existente'
+            ? { tenantId: partes.inquilino.tenantId }
+            : {
+                inquilino: {
+                  nombre: partes.inquilino.nombre.trim(),
+                  documento: partes.inquilino.documento.trim(),
+                  correo: partes.inquilino.correo.trim(),
+                  telefono: partes.inquilino.telefono.trim() || undefined,
+                },
+              }),
+        });
+        if (!creado) {
+          setSubmitError(
+            actions.lastError?.message
+              ?? 'No se pudo crear el contrato. Verificá los datos e intentá de nuevo.'
+          );
+          return;
+        }
+        if (creado.inquilino.invitado) {
+          toast.success('Contrato creado. Le mandamos al inquilino la invitación para crear su cuenta.');
+        } else {
+          toast.success('Contrato creado.');
+        }
+        router.push(`/panel/inmobiliaria/contratos/${creado.contract.id}`);
+        return;
+      }
+
+      const contract = await actions.create({ applicationId: applicationId!, ...terminos });
 
       if (!contract) {
         // Race condition: el contrato puede haberse creado desde otra tab o ronda previa.
         // Si el backend rechazó por duplicado, recuperamos el existente y redirigimos.
         const errMsg = actions.lastError?.message?.toLowerCase() ?? '';
         if (errMsg.includes('ya existe un contrato') || errMsg.includes('already exists')) {
-          const existing = await contractsApi.getByApplicationId(applicationId);
+          const existing = await contractsApi.getByApplicationId(applicationId!);
           if (existing) {
             toast.info('Esta aplicación ya tiene un contrato. Te llevamos al detalle.');
             router.replace(`/panel/inmobiliaria/contratos/${existing.id}`);
@@ -308,10 +373,10 @@ function NuevoContratoContent() {
     );
   }
 
-  if (loadError || !application) {
+  if (loadError || (!application && !esManual)) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
           <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-danger">No se pudo cargar la aplicación</p>
@@ -334,21 +399,50 @@ function NuevoContratoContent() {
         >
           <CaretLeft className="w-4 h-4" /> Volver
         </Button>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Crear contrato</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Candidato: <span className="font-medium text-foreground">{application.tenantName}</span>
-          {property && (
-            <> · Propiedad: <span className="font-medium text-foreground">{property.title}</span></>
-          )}
-        </p>
+        <h1 className="text-h2 text-fg">Crear contrato</h1>
+        {esManual ? (
+          <p className="text-sm text-muted-foreground mt-1 line-clamp-2 max-w-2xl" data-testid="nuevo-contrato-manual">
+            Sin postulación: elegís el inmueble y el inquilino, y el resto es igual que cualquier contrato.
+            {inmuebleElegido && (
+              <> · Inmueble: <span className="font-medium text-foreground">{inmuebleElegido}</span></>
+            )}
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground mt-1">
+            Candidato: <span className="font-medium text-foreground">{application?.tenantName}</span>
+            {property && (
+              <> · Propiedad: <span className="font-medium text-foreground">{property.title}</span></>
+            )}
+          </p>
+        )}
       </div>
 
-      {/* Último paso del recorrido del inquilino (11). Ver src/lib/recorrido/pasos.ts. */}
-      <RecorridoHilo paso="contrato" className="mb-6" />
+      {/* Último paso del recorrido del inquilino (11). Ver src/lib/recorrido/pasos.ts.
+          Un contrato manual no viene de ese recorrido: no se dibuja. */}
+      {!esManual && <RecorridoHilo paso="contrato" className="mb-6" />}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {esManual && (
+          <PartesDelContratoManual
+            valor={partes}
+            onCambio={(v) => {
+              setPartesTocadas(true);
+              setPartes(v);
+            }}
+            errores={partesTocadas ? validation : {}}
+            onInmuebleElegido={(c) => {
+              setInmuebleElegido(c.propertyTitle);
+              // El canon del mandato, si lo hay: una tecla menos y un número
+              // que no se contradice con el de la consignación.
+              if (c.monthlyRent != null && c.monthlyRent > 0) {
+                setForm((f) => ({ ...f, monthlyRent: String(c.monthlyRent) }));
+              }
+            }}
+          />
+        )}
+
         {/* 1) Contract origin */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Tipo de contrato</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <ModeOption
@@ -379,10 +473,10 @@ function NuevoContratoContent() {
 
         {/* 2) PDF upload */}
         {form.mode === 'upload' && (
-          <section className="rounded-xl border border-border bg-card p-5 space-y-3">
+          <section className="rounded-lg border border-border bg-card p-5 space-y-3">
             <h2 className="text-base font-semibold text-foreground">PDF del contrato</h2>
             {form.pdfFile ? (
-              <div className="flex items-center gap-3 p-3 rounded-xl border border-emerald-600/30 bg-emerald-50/60 dark:bg-emerald-900/20">
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-emerald-600/30 bg-emerald-50/60 dark:bg-emerald-900/20">
                 <FileText className="w-5 h-5 text-primary flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>
@@ -407,7 +501,7 @@ function NuevoContratoContent() {
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={onDrop}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors',
+                  'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors',
                   isDragging
                     ? 'border-primary/40 bg-primary-soft/40'
                     : 'border-border hover:border-primary/40 hover:bg-muted/50'
@@ -442,7 +536,7 @@ function NuevoContratoContent() {
         )}
 
         {/* 3) Dates + amounts */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Fecha de inicio" error={validation.startDate}>
@@ -486,6 +580,24 @@ function NuevoContratoContent() {
                 className="tabular-nums"
               />
             </Field>
+            <Field
+              label="Días de plazo antes de la mora"
+              error={validation.diasDePlazo}
+              hint="Vacío = los de la inmobiliaria. Días después de la fecha de pago en los que todavía no corre mora."
+            >
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={MAX_DIAS_DE_PLAZO}
+                step={1}
+                placeholder="Los de la inmobiliaria"
+                value={form.diasDePlazo}
+                onChange={(e) => updateForm('diasDePlazo', e.target.value)}
+                className="tabular-nums"
+                data-testid="dias-de-plazo"
+              />
+            </Field>
             <Field label="Seguro" hint="Opcional">
               <Select
                 value={form.insuranceTier}
@@ -503,6 +615,25 @@ function NuevoContratoContent() {
             </Field>
           </div>
 
+          {/* Prorrateo del primer mes: fuera de la grilla porque es un switch con explicación, no un campo más. */}
+          <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-surface-muted p-4">
+            <div className="space-y-1">
+              <label htmlFor="prorratear-primer-mes" className="block text-sm font-medium text-foreground">
+                Prorratear el primer mes
+              </label>
+              <p className="text-xs text-muted-foreground">
+                El primer cobro se calcula por los días realmente ocupados del mes de inicio.
+                Un contrato que arranca el 19 paga sólo lo que queda del mes; el siguiente ya sale completo.
+              </p>
+            </div>
+            <Switch
+              id="prorratear-primer-mes"
+              data-testid="prorratear-primer-mes"
+              checked={form.prorratearPrimerMes}
+              onCheckedChange={(v) => updateForm('prorratearPrimerMes', v)}
+            />
+          </div>
+
           {/* Paso 11 del recorrido */}
           <div className="mt-6 border-t border-border pt-6">
             <RespaldoDelArriendo
@@ -516,7 +647,7 @@ function NuevoContratoContent() {
 
         {/* Errors + submit */}
         {submitError && (
-          <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
+          <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
             <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
             <p className="text-sm text-danger">{submitError}</p>
           </div>
@@ -576,7 +707,7 @@ function ModeOption({
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       className={cn(
-        'relative text-left p-4 rounded-xl border transition-colors',
+        'relative text-left p-4 rounded-lg border transition-colors',
         active && 'border-primary/40 bg-primary-soft/40',
         !active && !disabled && 'border-border hover:border-primary/40 hover:bg-muted/50',
         disabled && 'border-border opacity-50 cursor-not-allowed'

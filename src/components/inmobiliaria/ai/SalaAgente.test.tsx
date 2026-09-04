@@ -83,7 +83,7 @@ function render(props: Partial<React.ComponentProps<typeof SalaAgente>> = {}) {
           titulo: 'Conciliación bancaria',
           descripcion: 'El agente cruza los movimientos.',
           overview: null,
-          colaHref: '/panel/inmobiliaria/ai/conciliacion/cola',
+          colaHref: '/panel/inmobiliaria/conciliacion/cola',
           ...props,
         }),
       ),
@@ -133,7 +133,7 @@ describe('SalaAgente — states', () => {
     const cta = container.querySelector('[data-testid="sala-cola-cta"]')
     expect(cta).not.toBeNull()
     expect(cta!.textContent).toContain('Por revisar (12)')
-    expect(cta!.getAttribute('href')).toBe('/panel/inmobiliaria/ai/conciliacion/cola')
+    expect(cta!.getAttribute('href')).toBe('/panel/inmobiliaria/conciliacion/cola')
 
     // KPI strip with formatted values
     expect(container.querySelector('[data-testid="sala-kpi-en_cola"]')!.textContent).toContain('1.234')

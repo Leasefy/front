@@ -10,6 +10,7 @@ import type {
   UpdateContractDto,
   RejectContractDto,
   CancelContractDto,
+  CrearContratoManualDto,
 } from '@/lib/api/contracts.types';
 import { useRefrescoAutomatico } from './use-refresco-automatico';
 
@@ -276,6 +277,11 @@ export function useContractActions() {
     []
   );
 
+  const createManual = useCallback(
+    (dto: CrearContratoManualDto) => run(() => contractsApi.createManual(dto)),
+    []
+  );
+
   const send = useCallback(
     (id: string) => run(() => contractsApi.send(id)),
     []
@@ -322,7 +328,7 @@ export function useContractActions() {
   );
 
   return {
-    uploadPdf, create, send, signAsLandlord, signAsTenant, activate, remind,
+    uploadPdf, create, createManual, send, signAsLandlord, signAsTenant, activate, remind,
     cancel, update, rejectAsTenant, getRejections,
     isSubmitting,
     lastError,

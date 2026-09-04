@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import {
   Buildings,
   CurrencyDollar,
@@ -9,18 +8,28 @@ import {
   CalendarCheck,
   TrendUp,
   TrendDown,
-  ArrowRight,
 } from '@phosphor-icons/react';
+import { Stat, StatStrip } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Badge } from '@/components/ui/badge';
-import type { Propietario } from '@/lib/types/inmobiliaria';
+import { AlertaAccionable } from '@/components/ui/alerta-accionable';
+import type { Consignacion, Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
 interface PropietarioStatsProps {
   propietario: Propietario;
   variant?: 'full' | 'compact' | 'mini';
   className?: string;
+  /**
+   * Los mandatos del propietario (la ficha ya los tiene). Con ellos la alerta
+   * de «sin arrendar» dice CUÁLES y lleva al inmueble; sin ellos no se muestra
+   * — antes salía «la ocupación está por debajo del 70 %» hasta con cero
+   * inmuebles (Nico, 2026-09-02 13:23).
+   */
+  consignaciones?: Consignacion[];
+  /** Abre el formulario para cargar la cuenta bancaria (alerta «no se le puede girar»). */
+  onCargarCuenta?: () => void;
 }
 
 interface StatCardProps {
@@ -34,7 +43,6 @@ interface StatCardProps {
     positive?: boolean;
   };
   color: 'indigo' | 'emerald' | 'amber' | 'rose' | 'purple';
-  warning?: boolean;
 }
 
 const colorClasses = {
@@ -65,20 +73,15 @@ const colorClasses = {
   },
 };
 
-function StatCard({ icon: Icon, label, value, subValue, trend, color, warning }: StatCardProps) {
+function StatCard({ icon: Icon, label, value, subValue, trend, color }: StatCardProps) {
   const colors = colorClasses[color];
 
   return (
-    <div className="p-4 rounded-xl border border-border bg-card">
+    <div className="p-4 rounded-lg border border-border bg-card">
       <div className="flex items-start justify-between mb-3">
         <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', colors.bg)}>
           <Icon className={cn('w-5 h-5', colors.icon)} />
         </div>
-        {warning && (
-          <Badge variant="warning" aria-label="Atención requerida">
-            <Warning className="w-3.5 h-3.5" />
-          </Badge>
-        )}
       </div>
 
       <div>
@@ -118,6 +121,8 @@ export function PropietarioStats({
   propietario,
   variant = 'full',
   className,
+  consignaciones,
+  onCargarCuenta,
 }: PropietarioStatsProps) {
   const { t, locale } = useI18n();
   const hasPendingBalance = propietario.pendingBalance > 0;
@@ -125,8 +130,16 @@ export function PropietarioStats({
     ? Math.round((propietario.activeLeases / propietario.propertyCount) * 100)
     : 0;
 
-  // Calculate estimated commission (assuming 10% average)
-  const estimatedCommission = Math.round(propietario.totalMonthlyRent * 0.10);
+  // La comisión real viene del back (Σ canon × % de cada mandato). Antes se
+  // «estimaba» al 10 % parejo — un número inventado al lado de uno real.
+  const comisionReal = propietario.totalCommission;
+
+  // Inmuebles en arriendo que hoy no están arrendados: cada mes vacío es
+  // canon que el propietario no recibe. Una venta no cuenta.
+  const sinArrendar = (consignaciones ?? []).filter(
+    (c) => c.listingType !== 'sale' && c.availability === 'available',
+  );
+  const sinCuenta = !propietario.bankAccount?.accountNumber;
 
   if (variant === 'mini') {
     return (
@@ -156,26 +169,26 @@ export function PropietarioStats({
   if (variant === 'compact') {
     return (
       <div className={cn('grid grid-cols-2 sm:grid-cols-4 gap-3', className)}>
-        <div className="p-3 rounded-xl bg-muted/50">
+        <div className="p-3 rounded-lg bg-muted/50">
           <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietario.stats.properties')}</p>
           <p className="text-xl font-semibold text-foreground">
             {propietario.propertyCount}
           </p>
         </div>
-        <div className="p-3 rounded-xl bg-muted/50">
+        <div className="p-3 rounded-lg bg-muted/50">
           <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietario.stats.rented')}</p>
           <p className="text-xl font-semibold text-foreground">
             {propietario.activeLeases}
           </p>
         </div>
-        <div className="p-3 rounded-xl bg-muted/50">
+        <div className="p-3 rounded-lg bg-muted/50">
           <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietario.stats.monthlyRent')}</p>
           <p className="text-xl font-semibold text-foreground">
             {formatCurrency(propietario.totalMonthlyRent)}
           </p>
         </div>
         <div className={cn(
-          'p-3 rounded-xl',
+          'p-3 rounded-lg',
           hasPendingBalance
             ? 'bg-warning-soft'
             : 'bg-success-soft'
@@ -194,86 +207,92 @@ export function PropietarioStats({
     );
   }
 
-  // Full variant
+  // Full variant — la franja de la ficha (2026-09-02, mismo patrón que la
+  // ficha del contrato): cuatro números de un vistazo en vez de cuatro
+  // tarjetas con ícono de color. La ocupación no es un número propio: es el
+  // «2 de 3 arrendados» debajo de Inmuebles — con uno o tres inmuebles, un
+  // «0 %» grande no dice nada.
+  const neto = propietario.netToOwner ?? propietario.totalMonthlyRent - (comisionReal ?? 0);
+  const ultimoGiro = propietario.lastPaymentDate
+    ? new Date(propietario.lastPaymentDate).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', { day: 'numeric', month: 'short' })
+    : null;
   return (
     <div className={cn('space-y-4', className)}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          icon={Buildings}
-          label={t('inmobiliaria.propietario.stats.consignedProperties')}
-          value={propietario.propertyCount}
-          subValue={`${propietario.activeLeases} ${t('inmobiliaria.propietario.stats.rented')}`}
-          color="indigo"
+      <StatStrip className="rounded-lg border border-border bg-card px-4" data-testid="resumen-del-propietario">
+        <Stat
+          label={t('inmobiliaria.propietario.stats.properties')}
+          value={String(propietario.propertyCount)}
+          delta={
+            propietario.propertyCount > 0
+              ? t('inmobiliaria.propietario.stats.ofTotalRented', { rentados: propietario.activeLeases, total: propietario.propertyCount })
+              : t('inmobiliaria.propietario.stats.sinPropiedades')
+          }
+          deltaDirection={
+            propietario.propertyCount > 0 && propietario.activeLeases < propietario.propertyCount ? 'down' : 'neutral'
+          }
+          compact
         />
-
-        <StatCard
-          icon={CurrencyDollar}
-          label={t('inmobiliaria.propietario.stats.totalMonthlyRent')}
+        <Stat
+          label={t('inmobiliaria.propietario.stats.monthlyRent')}
           value={formatCurrency(propietario.totalMonthlyRent)}
-          subValue={`~${formatCurrency(estimatedCommission)} ${t('inmobiliaria.propietario.stats.commission')}`}
-          color="emerald"
+          delta={comisionReal != null ? `${formatCurrency(comisionReal)} ${t('inmobiliaria.propietario.stats.commission')}` : undefined}
+          compact
         />
-
-        <StatCard
-          icon={ChartLineUp}
-          label={t('inmobiliaria.propietario.stats.occupancyRate')}
-          value={`${occupancyRate}%`}
-          subValue={propietario.propertyCount > 0
-            ? `${propietario.propertyCount - propietario.activeLeases} ${t('inmobiliaria.propietario.stats.available')}`
-            : t('inmobiliaria.propietario.stats.noProperties')
-          }
-          trend={occupancyRate >= 80
-            ? { value: 5, label: t('inmobiliaria.propietario.stats.vsPrevMonth'), positive: true }
-            : occupancyRate < 50
-              ? { value: -10, label: t('inmobiliaria.propietario.stats.vsPrevMonth'), positive: false }
-              : undefined
-          }
-          color="purple"
+        <Stat
+          label={t('inmobiliaria.propietario.stats.netToOwner')}
+          value={formatCurrency(neto)}
+          delta={t('inmobiliaria.propietario.stats.netToOwnerHint')}
+          compact
         />
-
-        <StatCard
-          icon={hasPendingBalance ? Warning : CalendarCheck}
+        <Stat
           label={t('inmobiliaria.propietario.stats.pendingBalance')}
           value={hasPendingBalance ? formatCurrency(propietario.pendingBalance) : t('inmobiliaria.propietario.stats.upToDate')}
-          subValue={propietario.lastPaymentDate
-            ? `${t('inmobiliaria.propietario.stats.lastPayment')}: ${new Date(propietario.lastPaymentDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', { month: 'short', day: 'numeric' })}`
-            : undefined
-          }
-          color={hasPendingBalance ? 'amber' : 'emerald'}
-          warning={hasPendingBalance}
+          delta={ultimoGiro ? `${t('inmobiliaria.propietario.stats.lastPayment')}: ${ultimoGiro}` : undefined}
+          deltaDirection={hasPendingBalance ? 'down' : 'up'}
+          compact
         />
-      </div>
+      </StatStrip>
 
-      {/* Additional insights */}
-      {(hasPendingBalance || occupancyRate < 70) && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl border border-warning/30 bg-warning-soft"
+      {/* Alertas: qué pasó (con el número), qué hacer, y el botón que lo hace. */}
+      {sinCuenta && propietario.activeLeases > 0 && (
+        <AlertaAccionable
+          severidad="danger"
+          titulo={t('inmobiliaria.propietario.alertas.sinCuenta.titulo')}
+          accion={onCargarCuenta ? { label: t('inmobiliaria.propietario.alertas.sinCuenta.accion'), onClick: onCargarCuenta } : undefined}
+          data-testid="alerta-sin-cuenta"
         >
-          <div className="flex items-start gap-3">
-            <Warning className="w-5 h-5 text-warning shrink-0 mt-0.5" />
-            <div>
-              <h4 className="text-base font-semibold text-warning mb-1">
-                {t('inmobiliaria.propietario.stats.attentionRequired')}
-              </h4>
-              <ul className="text-sm text-warning space-y-1">
-                {hasPendingBalance && (
-                  <li className="flex items-center gap-2">
-                    <ArrowRight className="w-3 h-3" />
-                    {t('inmobiliaria.propietario.stats.pendingCollection', { amount: formatCurrency(propietario.pendingBalance) })}
-                  </li>
-                )}
-                {occupancyRate < 70 && (
-                  <li className="flex items-center gap-2">
-                    <ArrowRight className="w-3 h-3" />
-                    {t('inmobiliaria.propietario.stats.lowOccupancy')}
-                  </li>
-                )}
-              </ul>
-            </div>
-          </div>
-        </motion.div>
+          {t('inmobiliaria.propietario.alertas.sinCuenta.detalle', { n: propietario.activeLeases })}
+        </AlertaAccionable>
+      )}
+
+      {hasPendingBalance && (
+        <AlertaAccionable
+          severidad="warning"
+          titulo={t('inmobiliaria.propietario.alertas.pendienteDeGiro.titulo', { monto: formatCurrency(propietario.pendingBalance) })}
+          accion={{ label: t('inmobiliaria.propietario.alertas.pendienteDeGiro.accion'), href: '/panel/inmobiliaria/pagos/dispersiones' }}
+          data-testid="alerta-pendiente-de-giro"
+        >
+          {t('inmobiliaria.propietario.alertas.pendienteDeGiro.detalle')}
+        </AlertaAccionable>
+      )}
+
+      {sinArrendar.length > 0 && (
+        <AlertaAccionable
+          severidad="info"
+          titulo={
+            sinArrendar.length === 1
+              ? t('inmobiliaria.propietario.alertas.sinArrendar.tituloUno', { inmueble: sinArrendar[0].propertyTitle })
+              : t('inmobiliaria.propietario.alertas.sinArrendar.titulo', { n: sinArrendar.length, total: propietario.propertyCount })
+          }
+          accion={
+            sinArrendar.length === 1
+              ? { label: t('inmobiliaria.propietario.alertas.sinArrendar.accionUno'), href: `/panel/inmobiliaria/inmuebles/${sinArrendar[0].id}` }
+              : { label: t('inmobiliaria.propietario.alertas.sinArrendar.accion'), href: '/panel/inmobiliaria/inmuebles' }
+          }
+          data-testid="alerta-sin-arrendar"
+        >
+          {t('inmobiliaria.propietario.alertas.sinArrendar.detalle')}
+        </AlertaAccionable>
       )}
     </div>
   );

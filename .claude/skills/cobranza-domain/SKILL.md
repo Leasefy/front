@@ -19,7 +19,7 @@ Activar cuando la tarea toque cualquiera de: deudores, siniestros, cartas/artefa
 - **Polling**: `useVisibilityPolling(fn, 30_000, Boolean(agencyId))` — nunca usar `setInterval` directamente en hooks nuevos.
 - **Realtime**: suscripciones Supabase Realtime (`cartera_stage_transitions`, `debtor_calls`) NO reemplazan el polling; coexisten. El ARIA live region de transiciones NUNCA debe exponer PII del deudor.
 - **Approval flows**: `useCartaApproval` envía solo `{ confirmation: 'yes' }` al backend; `physicalSendMethod`/`sentToAddress` son estado UI local. `useSiniestroApproval` envía `{ selectedInsurers }` en approve y `{ rejectReason, rejectComment? }` en reject. Respetar ese contrato exacto.
-- **Permiso de acceso**: el layout en `src/app/panel/inmobiliaria/ai/cobranza/layout.tsx` gate-keepea con `canAccess('cobranza', 'view')`. Páginas de configuración usan módulos adicionales vía `[[agency-permissions]]`.
+- **Permiso de acceso**: el layout en `src/app/panel/inmobiliaria/cobros/cobranza/layout.tsx` gate-keepea con `canAccess('cobranza', 'view')`. Páginas de configuración usan módulos adicionales vía `[[agency-permissions]]`.
 - **UI**: leer `docs/DESIGN.md` antes de tocar cualquier componente. Componentes en `src/components/inmobiliaria/cobranza/`.
 
 ## Key Paths
@@ -29,7 +29,7 @@ Activar cuando la tarea toque cualquiera de: deudores, siniestros, cartas/artefa
 | Lib cobranza | `src/lib/cobranza/` |
 | Hooks | `src/lib/hooks/cobranza/` (38 hooks) |
 | Stages util | `src/lib/cartera.ts` — `CARTERA_STAGES`, `stageColorClasses`, `stageChannelIcon`, `relativeTime` |
-| Rutas panel | `src/app/panel/inmobiliaria/ai/cobranza/` |
+| Rutas panel | `src/app/panel/inmobiliaria/cobros/cobranza/` |
 | Componentes | `src/components/inmobiliaria/cobranza/` |
 | Tipos generados | `src/lib/api/generated/cartera.ts` (re-export facade de `agent.ts`) |
 | Tipos agent | `src/lib/api/generated/agent.ts` (auto-gen — NO editar) |

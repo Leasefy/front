@@ -127,7 +127,7 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'flex-shrink-0 w-72 rounded-xl border transition-all',
+        'flex-shrink-0 w-72 rounded-lg border transition-all',
         isSelected
           ? 'border-success/30 bg-success-soft/50'
           : 'border-border bg-card hover:border-primary/30'
@@ -278,7 +278,7 @@ export function CotizacionComparator({
   // No quotes state
   if (solicitud.quotes.length === 0) {
     return (
-      <div className="p-6 rounded-xl border border-dashed border-border text-center space-y-4">
+      <div className="p-6 rounded-lg border border-dashed border-border text-center space-y-4">
         <div className="w-14 h-14 mx-auto rounded-full bg-muted flex items-center justify-center">
           <CurrencyDollar className="w-7 h-7 text-muted-foreground" />
         </div>
@@ -303,7 +303,7 @@ export function CotizacionComparator({
     const quote = solicitud.quotes[0];
     return (
       <div className="space-y-4">
-        <div className="p-4 rounded-xl border border-border bg-card">
+        <div className="p-4 rounded-lg border border-border bg-card">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-2">
               <h4 className="font-semibold text-foreground">{quote.providerName}</h4>
@@ -438,7 +438,7 @@ export function CotizacionComparator({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl bg-success-soft border border-success/30"
+          className="p-4 rounded-lg bg-success-soft border border-success/30"
         >
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">

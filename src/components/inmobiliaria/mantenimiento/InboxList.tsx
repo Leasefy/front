@@ -69,7 +69,7 @@ export function InboxList({
   // 2. Empty WITH active filters → "no match" + clear.
   if (!isLoading && sorted.length === 0 && hasActiveFilters) {
     return (
-      <div className="rounded-xl border border-dashed border-neutral-200 dark:border-neutral-700 px-6 py-12 text-center">
+      <div className="rounded-lg border border-dashed border-neutral-200 dark:border-neutral-700 px-6 py-12 text-center">
         <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
           {t('inmobiliaria.ai.mantenimiento.inbox.emptyFiltered')}
         </p>

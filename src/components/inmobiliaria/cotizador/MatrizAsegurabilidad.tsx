@@ -166,7 +166,7 @@ function MatrizTable({
   const [expanded, setExpanded] = useState<string | null>(null)
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border">
+    <div className="overflow-x-auto rounded-lg border border-border">
       <Table className="w-full text-left border-collapse">
         <TableHeader>
           <TableRow className="border-b border-border bg-surface-muted/60">

@@ -67,7 +67,7 @@ export default function ConciliacionLiquidacionesPage() {
         </div>
 
         {/* Ink summary (anchor) */}
-        <section className="relative overflow-hidden rounded-2xl px-6 py-6 sm:px-7" style={{ background: INK_GRADIENT, boxShadow: '0 24px 60px -28px rgba(20, 19, 15,0.5)' }}>
+        <section className="relative overflow-hidden rounded-lg px-6 py-6 sm:px-7" style={{ background: INK_GRADIENT, boxShadow: '0 24px 60px -28px rgba(20, 19, 15,0.5)' }}>
           <div className="pointer-events-none absolute -inset-x-2 top-[44%] h-[46%] text-white/[0.10]">
             <BrandContour />
           </div>
@@ -87,7 +87,7 @@ export default function ConciliacionLiquidacionesPage() {
         </section>
 
         {/* Table */}
-        <section className="rounded-2xl border border-border bg-surface overflow-hidden">
+        <section className="rounded-lg border border-border bg-surface overflow-hidden">
           <div className="px-5 pt-5 pb-3">
             <Eyebrow>Propietarios del cierre</Eyebrow>
           </div>
@@ -134,7 +134,7 @@ export default function ConciliacionLiquidacionesPage() {
                   {/* §17 breakdown */}
                   {isOpen && (
                     <div id={`liq-${l.id}-panel`} role="region" aria-label={`Desglose de ${l.propietario}`} className="px-5 pb-4 pt-1 sm:pl-5">
-                      <div className="rounded-xl bg-surface-muted p-4 max-w-md">
+                      <div className="rounded-lg bg-surface-muted p-4 max-w-md">
                         {hasNet ? (
                           <dl className="space-y-2">
                             <div className="flex items-center justify-between text-[13px]">

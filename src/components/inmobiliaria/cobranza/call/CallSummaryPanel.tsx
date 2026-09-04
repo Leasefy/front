@@ -51,7 +51,7 @@ export default function CallSummaryPanel({ summary }: CallSummaryPanelProps) {
   return (
     <section
       aria-label="Resumen de la llamada"
-      className="rounded-xl border border-border bg-surface p-4 space-y-4"
+      className="rounded-lg border border-border bg-surface p-4 space-y-4"
     >
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold text-fg">Qué pasó en la llamada</h2>

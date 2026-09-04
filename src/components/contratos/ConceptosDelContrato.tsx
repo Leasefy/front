@@ -26,7 +26,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Plus, Receipt, Trash, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { MoneyInput } from '@/components/ui/money-input'
 import {
   Select,
   SelectContent,
@@ -164,12 +164,12 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-5 space-y-3">
+    <section className="rounded-lg border border-border bg-card p-5 space-y-3">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Receipt className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-base font-semibold text-foreground">
-            Cobra además del canon
+            Conceptos del contrato
           </h3>
         </div>
         {puedeEditar && !agregando ? (
@@ -185,7 +185,8 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
       ) : conceptos.length === 0 && !agregando ? (
         <p className="text-sm text-muted-foreground">
           Sólo el canon. Si este contrato cobra administración, parqueadero o
-          alguna cuota, agregala acá y entra en el cobro de cada mes.
+          alguna cuota, agregala acá: los recurrentes entran en el cobro de
+          cada mes con su IVA y sus retenciones, y salen en la cuenta de cobro.
         </p>
       ) : null}
 
@@ -254,12 +255,13 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
             <label className="text-xs text-muted-foreground">
               Valor mensual (antes de impuestos)
             </label>
-            <Input
-              type="number"
-              min="1"
+            {/* Agrupa de a miles mientras se escribe: «5.678.888» se lee;
+                «5678888» se cuenta con el dedo. */}
+            <MoneyInput
               value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              placeholder="180000"
+              onChange={setValor}
+              placeholder="180.000"
+              data-testid="valor-del-concepto"
             />
           </div>
 

@@ -277,7 +277,7 @@ export function MfaSetupSection() {
           title="Desactivar 2FA"
         >
           <div className="space-y-4">
-            <div className="p-4 bg-danger-soft border border-danger/30 rounded-xl flex gap-3">
+            <div className="p-4 bg-danger-soft border border-danger/30 rounded-lg flex gap-3">
               <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center flex-shrink-0">
                 <Warning className="w-5 h-5 text-danger" />
               </div>
@@ -290,7 +290,7 @@ export function MfaSetupSection() {
                 variant="outline"
                 hideArrow
                 onClick={() => setShowDisableModal(false)}
-                className="flex-1 rounded-xl"
+                className="flex-1 rounded-lg"
               >
                 Cancelar
               </Button>
@@ -300,7 +300,7 @@ export function MfaSetupSection() {
                 isLoading={isLoading}
                 onClick={handleUnenroll}
                 disabled={isLoading}
-                className="flex-1 rounded-xl"
+                className="flex-1 rounded-lg"
               >
                 {isLoading ? 'Desactivando...' : 'Desactivar 2FA'}
               </Button>
@@ -327,7 +327,7 @@ export function MfaSetupSection() {
 
         {/* QR Code */}
         <div className="flex justify-center py-2">
-          <div className="p-4 bg-white rounded-xl border border-border">
+          <div className="p-4 bg-white rounded-lg border border-border">
             <img
               src={enrollData.qrCode}
               alt="Codigo QR para autenticacion"
@@ -337,7 +337,7 @@ export function MfaSetupSection() {
         </div>
 
         {/* Secret key for manual entry */}
-        <div className="p-3 bg-surface-muted rounded-xl">
+        <div className="p-3 bg-surface-muted rounded-lg">
           <p className="text-xs text-fg-subtle mb-1">O ingresa este codigo manualmente:</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 text-xs font-mono text-fg break-all select-all">
@@ -371,7 +371,7 @@ export function MfaSetupSection() {
               }
             }}
             autoFocus
-            className="h-12 rounded-xl text-center tracking-[0.5em] font-mono"
+            className="h-12 rounded-lg text-center tracking-[0.5em] font-mono"
             placeholder="000000"
           />
         </div>
@@ -382,7 +382,7 @@ export function MfaSetupSection() {
             variant="outline"
             hideArrow
             onClick={handleCancelEnroll}
-            className="flex-1 rounded-xl"
+            className="flex-1 rounded-lg"
           >
             Cancelar
           </Button>
@@ -394,7 +394,7 @@ export function MfaSetupSection() {
               handleVerifyCode();
             }}
             disabled={isLoading || code.length !== 6}
-            className="flex-1 rounded-xl bg-success text-white hover:bg-success"
+            className="flex-1 rounded-lg bg-success text-white hover:bg-success"
           >
             {isLoading ? <Spinner size="xs" variant="current" /> : <ShieldCheck className="w-4 h-4" />}
             {isLoading ? 'Verificando...' : 'Verificar'}

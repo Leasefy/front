@@ -48,6 +48,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { TablePagination } from '@/components/ui/pagination'
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import { useI18n } from '@/lib/i18n'
 
 import { CarrierOverridePopover } from './CarrierOverridePopover'
@@ -331,8 +333,13 @@ export function CarrierRegistryTable({
 }: CarrierRegistryTableProps) {
   const { t } = useI18n()
 
+  // El registro crece con cada aseguradora que se da de alta; la página de
+  // aseguradoras le pasa la lista entera, así que el recorte va acá.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(rows)
+
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
       <div className="overflow-x-auto">
         <Table className="min-w-full divide-y divide-border">
           <TableHeader className="bg-surface-muted/60">
@@ -364,7 +371,7 @@ export function CarrierRegistryTable({
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y divide-border">
-            {rows.map((row) => (
+            {pageItems.map((row) => (
               <CarrierTableRow
                 key={`${row.global.name}:${row.global.route}`}
                 row={row}
@@ -376,6 +383,19 @@ export function CarrierRegistryTable({
           </TableBody>
         </Table>
       </div>
+
+      {shouldPaginate && (
+        <div className="border-t border-border px-4 py-3">
+          <TablePagination
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+        </div>
+      )}
     </div>
   )
 }

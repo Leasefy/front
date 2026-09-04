@@ -144,7 +144,7 @@ async function mockAskWhyUsage(
 }
 
 async function openModal(page: Page): Promise<void> {
-  await page.goto(`/panel/inmobiliaria/ai/cotizador/${TEST_QUOTE_ID}`, {
+  await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/${TEST_QUOTE_ID}`, {
     waitUntil: 'domcontentloaded',
   })
   const askWhyBtn = page
@@ -198,7 +198,7 @@ test('"Pedir explicación" button is visible on quote detail header — COTI-UI-
   await seedAuth(page)
   await mockQuoteDetail(page)
   await mockAskWhyUsage(page)
-  await page.goto(`/panel/inmobiliaria/ai/cotizador/${TEST_QUOTE_ID}`, {
+  await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/${TEST_QUOTE_ID}`, {
     waitUntil: 'domcontentloaded',
   })
   await expect(

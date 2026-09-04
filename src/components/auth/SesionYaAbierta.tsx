@@ -76,7 +76,7 @@ export function SesionYaAbierta({ destino, onCambiarDeCuenta }: Props) {
         </p>
       </div>
 
-      <div className="mb-6 flex items-center gap-3 rounded-xl border border-border bg-muted/40 p-4">
+      <div className="mb-6 flex items-center gap-3 rounded-lg border border-border bg-muted/40 p-4">
         <UserCircle className="h-8 w-8 shrink-0 text-muted-foreground" weight="light" />
         <div className="min-w-0">
           {user?.name ? (

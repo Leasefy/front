@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { CalendarBlank, CalendarPlus, Plus, Info } from '@phosphor-icons/react';
+import { CalendarBlank, CalendarPlus, Plus } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,8 @@ import { RESUMEN_AGENDA_VACIO } from '@/lib/api/agenda.types';
 import type { AgendaListResponse, EventoAgenda, EventoTipo, EventoEstado } from '@/lib/api/agenda.types';
 import { agendaApi } from '@/lib/api/agenda.service';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
+import { NuevaTareaDrawer } from '@/components/inmobiliaria/agenda/NuevaTareaDrawer';
+import { EventoAgendaDrawer } from '@/components/inmobiliaria/agenda/EventoAgendaDrawer';
 
 /** Resumen por tipo de evento — color por tipo (estático). */
 const RESUMEN_ITEMS: { key: string; dot: string; field: keyof typeof RESUMEN_AGENDA_VACIO }[] = [
@@ -67,6 +69,8 @@ function AgendaContent() {
   // sobre el 401 no arregla nada.
   const [error, setError] = useState<unknown>(null);
   const [citaOpen, setCitaOpen] = useState(false);
+  const [tareaOpen, setTareaOpen] = useState(false);
+  const [seleccionado, setSeleccionado] = useState<EventoAgenda | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -135,32 +139,26 @@ function AgendaContent() {
         <div className="space-y-2">
           <SectionLabel>{t(k('label'))}</SectionLabel>
           <h1 className="text-h2 text-foreground">{t(k('title'))}</h1>
-          <p className="text-body text-muted-foreground max-w-2xl">{t(k('subtitle'))}</p>
+          <p className="text-body text-muted-foreground max-w-2xl line-clamp-2">{t(k('subtitle'))}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Button variant="outline" onClick={() => setCitaOpen(true)} hideArrow>
             <CalendarPlus className="w-4 h-4" weight="bold" />
             {t(k('pedirCita'))}
           </Button>
-          <Button onClick={() => toast.info(t(k('newSoon')))} hideArrow>
+          <Button onClick={() => setTareaOpen(true)} hideArrow data-testid="nueva-tarea">
             <Plus className="w-4 h-4" weight="bold" />
             {t(k('new'))}
           </Button>
         </div>
       </header>
 
-      {/* Engine note — system events are live; tasks/follow-ups are next */}
-      <div className="rounded-xl bg-primary/10 border border-primary/30 p-3 flex items-start gap-2.5">
-        <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
-        <p className="text-xs text-primary/90">{t(k('engineNote'))}</p>
-      </div>
-
       {/* Resumen por tipo */}
       <section className="space-y-3">
         <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {RESUMEN_ITEMS.map((item) => (
-            <div key={item.key} className="rounded-xl border border-border bg-card p-4">
+            <div key={item.key} className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2">
                 <span className={cn('w-2 h-2 rounded-full flex-shrink-0', item.dot)} />
                 <span className="text-caption text-muted-foreground truncate">{t(k(`tipo_${item.key}`))}</span>
@@ -171,17 +169,8 @@ function AgendaContent() {
         </div>
       </section>
 
-      {/* Eventos y tareas */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="flex items-center gap-3 p-5 border-b border-border">
-          <div className="w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <CalendarBlank className="w-[18px] h-[18px] text-primary" />
-          </div>
-          <div>
-            <h2 className="text-h4 text-foreground">{t(k('listTitle'))}</h2>
-            <p className="text-caption text-muted-foreground mt-0.5">{t(k('listDesc'))}</p>
-          </div>
-        </div>
+      {/* La tabla, sin título encima: no se nombran las tablas (Nico, 2026-09-03). */}
+      <section className="rounded-lg border border-border bg-card overflow-hidden">
 
         {/* El vacío NO va acá: vive dentro del <TableBody> para que se sigan
             viendo los encabezados de columna. Acá sólo carga y fallo. */}
@@ -224,7 +213,12 @@ function AgendaContent() {
                 </TableRow>
               ) : (
                 pageItems.map((e: EventoAgenda) => (
-                  <TableRow key={e.id}>
+                  <TableRow
+                    key={e.id}
+                    onClick={() => setSeleccionado(e)}
+                    className="cursor-pointer"
+                    data-testid="agenda-fila"
+                  >
                     <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
                       {formatFecha(e.fecha)}
                     </TableCell>
@@ -263,7 +257,7 @@ function AgendaContent() {
                             <button
                               type="button"
                               disabled={actingId === visitIdOf(e.id)}
-                              onClick={() => runCitaAction(visitIdOf(e.id), () => agendaApi.aceptarCita(visitIdOf(e.id)))}
+                              onClick={(ev) => { ev.stopPropagation(); void runCitaAction(visitIdOf(e.id), () => agendaApi.aceptarCita(visitIdOf(e.id))); }}
                               className="text-caption font-medium text-success hover:underline disabled:opacity-50"
                             >
                               {t(k('citaConfirmar'))}
@@ -272,7 +266,7 @@ function AgendaContent() {
                             <button
                               type="button"
                               disabled={actingId === visitIdOf(e.id)}
-                              onClick={() => runCitaAction(visitIdOf(e.id), () => agendaApi.rechazarCita(visitIdOf(e.id)))}
+                              onClick={(ev) => { ev.stopPropagation(); void runCitaAction(visitIdOf(e.id), () => agendaApi.rechazarCita(visitIdOf(e.id))); }}
                               className="text-caption font-medium text-danger hover:underline disabled:opacity-50"
                             >
                               {t(k('citaRechazar'))}
@@ -283,7 +277,7 @@ function AgendaContent() {
                           <button
                             type="button"
                             disabled={actingId === visitIdOf(e.id)}
-                            onClick={() => runCitaAction(visitIdOf(e.id), () => agendaApi.cancelarCita(visitIdOf(e.id)))}
+                            onClick={(ev) => { ev.stopPropagation(); void runCitaAction(visitIdOf(e.id), () => agendaApi.cancelarCita(visitIdOf(e.id))); }}
                             className="text-caption font-medium text-muted-foreground hover:underline disabled:opacity-50"
                           >
                             {t(k('citaCancelar'))}
@@ -314,6 +308,13 @@ function AgendaContent() {
       </section>
 
       <PedirCitaModal isOpen={citaOpen} onClose={() => setCitaOpen(false)} onCreated={load} />
+      <NuevaTareaDrawer abierto={tareaOpen} onOpenChange={setTareaOpen} onCreada={load} />
+      <EventoAgendaDrawer
+        evento={seleccionado}
+        onOpenChange={(o) => { if (!o) setSeleccionado(null); }}
+        onCambio={load}
+        onAccionVisita={runCitaAction}
+      />
     </div>
   );
 }

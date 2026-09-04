@@ -38,11 +38,11 @@ export default function PanelAvaluoDetailPage() {
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Avalúo comercial
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="text-h2 text-fg">
           Detalle del avalúo
         </h1>
         {id && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground line-clamp-2 max-w-2xl">
             Referencia: <span className="font-mono">{id}</span>
           </p>
         )}

@@ -34,12 +34,12 @@ function MetricCard({ label, value, icon, iconBg, performance }: MetricCardProps
     ? 'bg-success-soft border-success/30'
     : performance === 'below'
     ? 'bg-danger-soft border-danger/30'
-    : 'bg-surface dark:bg-[#14130F] border-border dark:border-border-strong';
+    : 'bg-surface dark:bg-bg border-border dark:border-border-strong';
 
   return (
     <div
       className={cn(
-        'p-4 rounded-xl border transition-all hover: hover:-translate-y-0.5',
+        'p-4 rounded-lg border transition-all hover: hover:-translate-y-0.5',
         cardBg
       )}
     >

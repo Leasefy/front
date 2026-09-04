@@ -56,7 +56,7 @@ function DecisionItem({ entry, onNavigate }: DecisionItemProps) {
     <button
       onClick={() => onNavigate(entry.conversationId)}
       className={cn(
-        'w-full text-left p-3 rounded-xl',
+        'w-full text-left p-3 rounded-lg',
         'border transition-colors',
         isResolved
           ? 'border-success/30 hover:bg-success-soft'

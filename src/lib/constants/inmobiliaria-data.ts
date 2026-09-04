@@ -8,6 +8,19 @@ import type { ReportDefinition } from '@/lib/types/inmobiliaria';
 // ============================================================================
 // IPC Historical Data (DANE Colombia)
 // ============================================================================
+//
+// Variación anual del IPC al cierre de cada mes, según el DANE. La primera
+// fila es la vigente: `getCurrentIPC()` la devuelve y es la que rige los
+// aumentos de canon del año siguiente (Ley 820 de 2003, art. 20: el aumento
+// no puede superar el 100 % del IPC del año calendario anterior).
+//
+// 🔴 Es una tabla a mano, no un dato del back: cada enero hay que agregar el
+// diciembre nuevo arriba. Diciembre 2025 (5,10 %) y diciembre 2024 (5,20 %)
+// están cotejados con el comunicado del DANE del 8-ene-2026
+// (dane.gov.co/files/operaciones/IPC/dic2025/cp-IPC-dic2025.pdf). Los meses
+// enero–noviembre 2025 se cargaron el 2026-09-03 de memoria: VERIFICAR contra
+// el boletín del DANE antes de producción (sólo afectan al gráfico de tendencia;
+// el cálculo del canon usa diciembre).
 
 export interface IPCRecord {
   year: number;
@@ -17,6 +30,18 @@ export interface IPCRecord {
 }
 
 export const IPC_HISTORICAL: IPCRecord[] = [
+  { year: 2025, month: 12, rate: 5.10, description: 'Diciembre 2025' },
+  { year: 2025, month: 11, rate: 5.30, description: 'Noviembre 2025' },
+  { year: 2025, month: 10, rate: 5.51, description: 'Octubre 2025' },
+  { year: 2025, month: 9, rate: 5.18, description: 'Septiembre 2025' },
+  { year: 2025, month: 8, rate: 5.10, description: 'Agosto 2025' },
+  { year: 2025, month: 7, rate: 4.90, description: 'Julio 2025' },
+  { year: 2025, month: 6, rate: 4.82, description: 'Junio 2025' },
+  { year: 2025, month: 5, rate: 5.05, description: 'Mayo 2025' },
+  { year: 2025, month: 4, rate: 5.16, description: 'Abril 2025' },
+  { year: 2025, month: 3, rate: 5.09, description: 'Marzo 2025' },
+  { year: 2025, month: 2, rate: 5.28, description: 'Febrero 2025' },
+  { year: 2025, month: 1, rate: 5.22, description: 'Enero 2025' },
   { year: 2024, month: 12, rate: 5.20, description: 'Diciembre 2024' },
   { year: 2024, month: 11, rate: 5.41, description: 'Noviembre 2024' },
   { year: 2024, month: 10, rate: 5.60, description: 'Octubre 2024' },
@@ -53,6 +78,27 @@ export function getIPCForDate(year: number, month: number): IPCRecord | undefine
 
 export function calculateNewRent(currentRent: number, ipcRate: number): number {
   return Math.round(currentRent * (1 + ipcRate / 100));
+}
+
+/** «5,10 %» en español, «5.10 %» en inglés. Un solo formato para el KPI y la calculadora. */
+export function formatearTasaIPC(rate: number, locale: string): string {
+  return (
+    new Intl.NumberFormat(locale === 'es' ? 'es-CO' : 'en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(rate) + ' %'
+  );
+}
+
+/** «Diciembre 2025» / «December 2025» (o «Dic» / «Dec» en corto), derivado de year/month: no del texto en español de la tabla. */
+export function etiquetaDelMesIPC(record: Pick<IPCRecord, 'year' | 'month'>, locale: string, corto = false): string {
+  const fecha = new Date(Date.UTC(record.year, record.month - 1, 1));
+  const mes = new Intl.DateTimeFormat(locale === 'es' ? 'es-CO' : 'en-US', {
+    month: corto ? 'short' : 'long',
+    timeZone: 'UTC',
+  }).format(fecha);
+  const capitalizado = mes.charAt(0).toUpperCase() + mes.slice(1).replace(/\.$/, '');
+  return corto ? capitalizado : `${capitalizado} ${record.year}`;
 }
 
 // ============================================================================
@@ -132,5 +178,16 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     format: 'excel',
     frequency: 'monthly',
     premium: true,
+  },
+  {
+    // Tiene pantalla propia (`/reportes/rentabilidad`): «Ver» navega allá y
+    // «Descargar CSV» baja el mismo rango que muestra el back.
+    id: 'rentabilidad-inmueble',
+    title: 'Rentabilidad por inmueble',
+    description: 'Esperado vs recaudado, comisión, gastos, neto al propietario y ocupación por inmueble',
+    icon: 'ChartLineUp',
+    category: 'financiero',
+    format: 'excel',
+    frequency: 'monthly',
   },
 ];

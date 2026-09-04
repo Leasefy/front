@@ -21,7 +21,7 @@ export function MobileNavSheet({ open, items, onClose }: MobileNavSheetProps) {
     if (item.exact) {
       return pathname === item.href;
     }
-    return pathname.startsWith(item.href);
+    return pathname === item.href || pathname.startsWith(`${item.href}/`);
   }
 
   return (
@@ -53,7 +53,7 @@ export function MobileNavSheet({ open, items, onClose }: MobileNavSheetProps) {
               const rowItem = row as NavItem;
               const rowActive = rowItem.exact
                 ? pathname === rowItem.href
-                : pathname.startsWith(rowItem.href);
+                : pathname === rowItem.href || pathname.startsWith(`${rowItem.href}/`);
               const RowIcon = rowItem.icon as React.ComponentType<{
                 className?: string;
                 weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone';
@@ -67,7 +67,7 @@ export function MobileNavSheet({ open, items, onClose }: MobileNavSheetProps) {
                   aria-label={rowItem.label}
                   aria-current={rowActive ? 'page' : undefined}
                   className={cn(
-                    'flex items-center gap-4 px-4 py-3 min-h-[52px] rounded-xl',
+                    'flex items-center gap-4 px-4 py-3 min-h-[52px] rounded-lg',
                     rowActive
                       ? 'bg-primary-soft text-primary'
                       : 'text-fg hover:bg-surface-muted'

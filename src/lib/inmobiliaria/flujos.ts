@@ -101,7 +101,7 @@ export const FLUJOS: readonly FlujoNuevo[] = [
     key: 'asegurabilidad',
     grupo: 'evaluar',
     icon: ShieldCheck,
-    href: '/panel/inmobiliaria/ai/asegurabilidad/nueva',
+    href: '/panel/inmobiliaria/postulaciones/asegurabilidad/nueva',
     module: 'cotizador',
   },
 

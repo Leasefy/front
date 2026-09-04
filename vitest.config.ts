@@ -8,6 +8,16 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     globals: true,
+    /*
+     * Le devuelve al entorno un `localStorage` usable. Node 25 expone uno
+     * NATIVO roto (sin `--localstorage-file` devuelve un objeto pelado) y
+     * vitest no lo pisa con el de happy-dom, porque `localStorage` no está en
+     * su lista interna de claves que sobrescriben. Sin esto, ~195 tests de
+     * auth/contexts/landing mueren con «localStorage.clear is not a function»
+     * sin que nadie haya tocado una línea de producto. El archivo se
+     * auto-desactiva el día que deje de hacer falta — ver su encabezado.
+     */
+    setupFiles: ['./vitest.setup.ts'],
     // `scripts/` entra al include porque el codegen del back tiene lógica
     // propia (desambiguar `operationId` colisionados) y esa lógica decide qué
     // tipos ve el front. Sin test corriendo en el CI, se rompe en silencio.

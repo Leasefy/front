@@ -140,7 +140,7 @@ export function PlanDetailSheet({
             Detalles
           </h2>
           <div className="flex items-center gap-2">
-            <button className="p-2 rounded-xl hover:bg-muted text-plan-secondary transition-colors">
+            <button className="p-2 rounded-lg hover:bg-muted text-plan-secondary transition-colors">
               <DotsThree className="w-5 h-5" />
             </button>
             <button

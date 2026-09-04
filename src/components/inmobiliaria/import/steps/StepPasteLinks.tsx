@@ -28,6 +28,7 @@ import {
   VideoCamera,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { formatCurrency as formatearPesos } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -42,6 +43,7 @@ import {
 } from '@/lib/inmuebles/enlaces.service';
 import { analyzeProperties } from '../lib/gapFiller';
 import { faltantesParaElBack, recalcularEstado, escribirCampo } from '../lib/requisitosDelBack';
+import { useCamposQueSeQuedan } from '../lib/useCamposQueSeQuedan';
 import type { ImportStepProps } from '../ImportWizard';
 import type { ImportProperty } from '../lib/importTypes';
 
@@ -97,7 +99,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
 
   const totalFotos = leidos.reduce((n, r) => n + r.inmueble.imagenes.length, 0);
   const totalVideos = leidos.reduce((n, r) => n + r.inmueble.videos.length, 0);
-  // Lo que realmente se va a subir: el back acepta 10 por inmueble.
+  // Lo que realmente se va a subir: el back acepta MAX_FOTOS_POR_INMUEBLE por inmueble.
   const totalASubir = state.properties.reduce((n, p) => n + (p.imagenes?.length ?? 0), 0);
 
   /**
@@ -118,6 +120,17 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
       ),
     });
   };
+
+  // Las filas donde se abrió el campo de dirección lo conservan: si se
+  // pintara sólo mientras falta o es aproximada, la primera letra lo haría
+  // desaparecer (escribir la dirección la vuelve exacta y ya no falta).
+  // Se identifican por el enlace, que sobrevive a volver a pegar la lista.
+  const claveDe = (p: ImportProperty) => p.enlaceOrigen ?? String(p._rowIndex);
+  const filasConDireccionAbierta = useCamposQueSeQuedan(
+    state.properties
+      .filter((p) => !p.propertyAddress?.trim() || !!p.direccionAproximada)
+      .map(claveDe),
+  );
 
   return (
     <div className="space-y-6">
@@ -199,7 +212,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
           </div>
 
           {/* Encontrar 53 fotos y subir 30 hay que decirlo. El recuadro cuenta
-              lo que trae la ficha; el inmueble guarda hasta 10. Sin esta línea
+              lo que trae la ficha; el inmueble guarda hasta 40. Sin esta línea
               los dos números se contradicen en la misma pantalla. */}
           {totalFotos > totalASubir && (
             <p className="text-body-sm text-fg-muted">
@@ -221,7 +234,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
           )}
 
           {/* Lo leído, uno por uno, con lo que le falta a cada uno. */}
-          <ul className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+          <ul className="divide-y divide-border rounded-lg border border-border overflow-hidden">
             {/* Se dibuja desde el ESTADO, no desde lo que devolvió la lectura:
                 si no, escribir la dirección no se vería reflejado acá. */}
             {state.properties.map((p) => {
@@ -234,7 +247,10 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
               // apareciera cuando `propertyAddress` está vacío, ese relleno lo
               // volvería incorregible — peor que el defecto que se arregla acá.
               const direccionEsAproximada = !!p.direccionAproximada;
-              const mostrarCampoDireccion = leFaltaDireccion || direccionEsAproximada;
+              const mostrarCampoDireccion =
+                leFaltaDireccion ||
+                direccionEsAproximada ||
+                filasConDireccionAbierta.includes(claveDe(p));
 
               return (
                 <li key={p._rowIndex} className="p-3 flex items-start gap-3 bg-surface">
@@ -262,6 +278,18 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
                       {p.propertyArea && (
                         <span className="text-xs text-fg-muted">{p.propertyArea} m²</span>
                       )}
+                      {/* Qué se ofrece y por cuánto, en la misma línea: una
+                          venta de $320.000.000 que se lee como un canon mensual
+                          pasa desapercibida si el precio no dice de qué es. */}
+                      {p.salePrice ? (
+                        <span className="text-xs text-fg-muted" data-testid={`negocio-${p._rowIndex}`}>
+                          venta · {formatearPesos(p.salePrice)}
+                        </span>
+                      ) : p.monthlyRent ? (
+                        <span className="text-xs text-fg-muted" data-testid={`negocio-${p._rowIndex}`}>
+                          arriendo · {formatearPesos(p.monthlyRent)}/mes
+                        </span>
+                      ) : null}
                       {otrosFaltantes.length > 0 && (
                         <span className="text-xs text-warning">
                           falta {otrosFaltantes.join(', ')}
@@ -285,12 +313,17 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
                     {mostrarCampoDireccion && (
                       <div className="mt-2">
                         <label
-                          className="block text-xs text-warning mb-1"
+                          className={cn(
+                            'block text-xs mb-1',
+                            leFaltaDireccion || direccionEsAproximada ? 'text-warning' : 'text-fg-muted',
+                          )}
                           htmlFor={`direccion-${p._rowIndex}`}
                         >
                           {leFaltaDireccion
                             ? 'El portal no publica la dirección. Escribila para poder importarlo:'
-                            : 'El portal no publica la dirección exacta — usamos una aproximación. Escribí la dirección real si la tenés:'}
+                            : direccionEsAproximada
+                              ? 'El portal no publica la dirección exacta — usamos una aproximación. Escribí la dirección real si la tenés:'
+                              : 'Dirección del inmueble:'}
                         </label>
                         <Input
                           id={`direccion-${p._rowIndex}`}

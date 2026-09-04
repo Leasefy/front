@@ -22,7 +22,7 @@ export type WidgetSkeletonProps = {
 
 export function WidgetSkeleton({ variant }: WidgetSkeletonProps) {
   return (
-    <div className="rounded-xl border bg-card p-6">
+    <div className="rounded-lg border bg-card p-6">
       {variant === 'kpi' ? <KpiVariant /> : null}
       {variant === 'table' ? <TableVariant /> : null}
       {variant === 'chart' ? <ChartVariant /> : null}

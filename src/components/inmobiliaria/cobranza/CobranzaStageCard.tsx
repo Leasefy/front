@@ -76,7 +76,7 @@ export const CobranzaStageCard = React.forwardRef<
         id={id}
         aria-controls={ariaControls}
         className={[
-          'w-full text-left rounded-xl border p-4 transition-shadow',
+          'w-full text-left rounded-lg border p-4 transition-shadow',
           colors.bg,
           colors.border,
           'hover:ring-2 hover:ring-offset-1',

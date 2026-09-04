@@ -108,7 +108,7 @@ async function mockAllAnalyticsEndpoints(
  */
 test('navigates to analytics page and renders heading', async ({ page }) => {
   await mockAllAnalyticsEndpoints(page, GATE_POPULATED)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/analitica')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/analitica')
   // Page renders without crashing — heading visible
   // .first() avoids strict-mode violation when auth-redirect page contains multiple h1s
   await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible({ timeout: 12_000 })
@@ -128,7 +128,7 @@ test('navigates to analytics page and renders heading', async ({ page }) => {
  */
 test.fixme('shows full-page NoDataYetBadge when agency-gate populated=false', async ({ page }) => {
   await mockAllAnalyticsEndpoints(page, GATE_EMPTY)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/analitica')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/analitica')
 
   // NoDataYetBadge reason text is visible (i18n key: inmobiliaria.ai.cobranza.analitica.agencyGate.reason)
   // Using a broad regex so this survives i18n key changes
@@ -159,7 +159,7 @@ test.fixme('shows full-page NoDataYetBadge when agency-gate populated=false', as
  */
 test.fixme('renders all 5 widget headings when agency-gate populated=true', async ({ page }) => {
   await mockAllAnalyticsEndpoints(page, GATE_POPULATED)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/analitica')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/analitica')
 
   // All 5 widget section headings must be visible
   await expect(page.getByRole('heading', { name: /recuperación|recovery/i }).first()).toBeVisible({ timeout: 12_000 })
@@ -183,7 +183,7 @@ for (const vp of VIEWPORTS) {
   test(`no horizontal scroll at ${vp.name} (${vp.width}×${vp.height}) — XR-03`, async ({ page }) => {
     await page.setViewportSize({ width: vp.width, height: vp.height })
     await mockAllAnalyticsEndpoints(page, GATE_POPULATED)
-    await page.goto('/panel/inmobiliaria/ai/cobranza/analitica')
+    await page.goto('/panel/inmobiliaria/cobros/cobranza/analitica')
 
     // Wait for page to be interactive (heading visible)
     // .first() avoids strict-mode violation when auth-redirect page contains multiple h1s

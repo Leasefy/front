@@ -26,7 +26,7 @@
 import { test, expect } from '@playwright/test'
 import { seedAuthState } from './_helpers/auth-helpers'
 
-const ROUTE = '/panel/inmobiliaria/ai/cobranza'
+const ROUTE = '/panel/inmobiliaria/cobros/cobranza'
 const OVERVIEW_MOCK = '**/cartera/overview'
 
 const POPULATED_OVERVIEW = {

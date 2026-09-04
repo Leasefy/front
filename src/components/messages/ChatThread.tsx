@@ -63,7 +63,7 @@ export function ChatThread({ applicationId, className }: ChatThreadProps) {
   };
 
   return (
-    <div className={cn('flex flex-col rounded-xl border border-border bg-card overflow-hidden', className)}>
+    <div className={cn('flex flex-col rounded-lg border border-border bg-card overflow-hidden', className)}>
       <div
         ref={scrollRef}
         className="flex-1 min-h-0 overflow-y-auto p-4 bg-muted/30 max-h-72"
@@ -87,7 +87,7 @@ export function ChatThread({ applicationId, className }: ChatThreadProps) {
               <div key={message.id} className={cn('flex', message.isMine ? 'justify-end' : 'justify-start')}>
                 <div
                   className={cn(
-                    'max-w-[80%] px-3 py-2 rounded-xl',
+                    'max-w-[80%] px-3 py-2 rounded-lg',
                     message.isMine
                       ? 'bg-primary-soft text-primary border border-primary/30 rounded-br-sm'
                       : 'bg-card text-foreground border border-border rounded-bl-sm',

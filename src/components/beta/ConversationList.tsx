@@ -173,7 +173,7 @@ export function ConversationList() {
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={t('beta.sidebar.searchPlaceholder')}
           className={cn(
-            'w-full pl-9 pr-3 py-2 h-10 rounded-xl',
+            'w-full pl-9 pr-3 py-2 h-10 rounded-lg',
             'text-[13px] placeholder:text-fg-subtle',
             'bg-surface-muted/80',
             'border-transparent'

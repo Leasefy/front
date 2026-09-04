@@ -7,7 +7,7 @@
  * cadence aurora (Nico's call).
  *
  * The FIRST time the user enters an agent's workspace
- * (/panel/inmobiliaria/ai/<agente>/…) a centered announcement presents that
+ * (el workspace del agente dentro de su módulo) a centered announcement presents that
  * agent: what it does and how to work with it. Dismissal persists per agent in
  * localStorage (any close — backdrop, Escape or the CTA — marks it as seen).
  *
@@ -19,12 +19,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FeatureAnnouncement } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
+import { findAgentWorkspace } from '@/lib/nav/agentWorkspaceNav'
 
 export interface AgentIntroConfig {
   /** Agent id — also the localStorage suffix + i18n block name. */
   id: string
   /** Route prefix under which this agent's workspace lives. */
-  pathPrefix: string
+  /** Slug del workspace en `agentWorkspaceNav.ts` (findAgentWorkspace decide cuál aplica). */
+  slug: string
   titleKey: string
   descriptionKey: string
   image: string
@@ -34,49 +36,49 @@ export interface AgentIntroConfig {
 export const AGENT_INTROS: AgentIntroConfig[] = [
   {
     id: 'cobranza',
-    pathPrefix: '/panel/inmobiliaria/ai/cobranza',
+    slug: 'cobranza',
     titleKey: 'inmobiliaria.ai.intro.cobranza.title',
     descriptionKey: 'inmobiliaria.ai.intro.cobranza.description',
     image: '/images/features/leasefy-brand-01.jpg',
   },
   {
     id: 'cotizador',
-    pathPrefix: '/panel/inmobiliaria/ai/asegurabilidad',
+    slug: 'asegurabilidad',
     titleKey: 'inmobiliaria.ai.intro.cotizador.title',
     descriptionKey: 'inmobiliaria.ai.intro.cotizador.description',
     image: '/images/features/leasefy-brand-03.jpg',
   },
   {
     id: 'avaluos',
-    pathPrefix: '/panel/inmobiliaria/ai/avaluos',
+    slug: 'avaluos',
     titleKey: 'inmobiliaria.ai.intro.avaluos.title',
     descriptionKey: 'inmobiliaria.ai.intro.avaluos.description',
     image: '/images/features/leasefy-brand-04.jpg',
   },
   {
     id: 'conciliacion',
-    pathPrefix: '/panel/inmobiliaria/ai/conciliacion',
+    slug: 'conciliacion',
     titleKey: 'inmobiliaria.ai.intro.conciliacion.title',
     descriptionKey: 'inmobiliaria.ai.intro.conciliacion.description',
     image: '/images/features/leasefy-brand-05.jpg',
   },
   {
     id: 'estudio',
-    pathPrefix: '/panel/inmobiliaria/ai/estudio',
+    slug: 'estudio',
     titleKey: 'inmobiliaria.ai.intro.estudio.title',
     descriptionKey: 'inmobiliaria.ai.intro.estudio.description',
     image: '/images/features/leasefy-brand-06.jpg',
   },
   {
     id: 'matching',
-    pathPrefix: '/panel/inmobiliaria/ai/matching',
+    slug: 'matching',
     titleKey: 'inmobiliaria.ai.intro.matching.title',
     descriptionKey: 'inmobiliaria.ai.intro.matching.description',
     image: '/images/features/leasefy-brand-07.jpg',
   },
   {
     id: 'pagos',
-    pathPrefix: '/panel/inmobiliaria/ai/pagos',
+    slug: 'pagos',
     titleKey: 'inmobiliaria.ai.intro.pagos.title',
     descriptionKey: 'inmobiliaria.ai.intro.pagos.description',
     image: '/images/features/leasefy-brand-08.jpg',
@@ -132,7 +134,11 @@ export function AgentIntroModal({ pathname, suppressed = false }: AgentIntroModa
   const prevFocusRef = useRef<HTMLElement | null>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
 
-  const agent = AGENT_INTROS.find((a) => pathname.startsWith(a.pathPrefix)) ?? null
+  // El agente lo decide la MISMA función que las pestañas y el breadcrumb:
+  // respeta el borde de segmento y el `excluir` (en /pagos/dispersiones no se
+  // presenta el agente de Pagos; en /conciliacion-ia tampoco el de Conciliación).
+  const slug = findAgentWorkspace(pathname)?.slug ?? null
+  const agent = slug ? (AGENT_INTROS.find((a) => a.slug === slug) ?? null) : null
 
   useEffect(() => {
     setMounted(true)

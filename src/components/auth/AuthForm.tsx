@@ -1,12 +1,12 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { AuthInput } from './AuthInput';
-import { Eyebrow } from '@/components/brand';
 import { useAuth } from '@/lib/auth/use-auth';
 import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
@@ -64,10 +64,31 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
+/**
+ * «Al continuar, aceptás…» — debajo del botón principal y no al pie de la
+ * pantalla (Nico, 2026-09-03): lo que uno acepta se lee junto a lo que uno
+ * aprieta. Va en los dos formularios que crean o abren una sesión.
+ */
+function NotaLegal() {
+  return (
+    <p className="mt-4 text-[11.5px] leading-relaxed text-fg-subtle" data-testid="auth-nota-legal">
+      Al continuar, aceptás nuestros{' '}
+      <Link href="/terminos" className="text-fg-muted underline-offset-2 hover:text-fg hover:underline">
+        Términos
+      </Link>{' '}
+      y la{' '}
+      <Link href="/privacidad" className="text-fg-muted underline-offset-2 hover:text-fg hover:underline">
+        Política de Privacidad
+      </Link>
+      .
+    </p>
+  );
+}
+
 /** Hairline divider with a mono technical label — DS signature. */
 function MonoDivider({ children }: { children: React.ReactNode }) {
   return (
-    <div className="my-7 flex items-center gap-4">
+    <div className="my-6 flex items-center gap-4">
       <div className="h-px flex-1 bg-border/70" />
       <span className="font-mono text-[9.5px] font-medium uppercase tracking-[0.14em] text-fg-subtle">
         {children}
@@ -84,7 +105,7 @@ function GoogleButton({ onClick, disabled, isLoading, children }: { onClick: () 
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex h-12 w-full items-center justify-center gap-2.5 rounded-full border border-border bg-surface text-[14px] font-medium text-fg transition-all hover:border-border-strong hover:bg-surface-muted active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-50"
+      className="flex h-12 w-full items-center justify-center gap-2.5 rounded-full border border-border bg-surface text-[14px] font-medium text-fg shadow-[0_1px_2px_rgba(20,19,15,0.05)] transition-all hover:-translate-y-px hover:border-border-strong hover:shadow-[0_6px_16px_-8px_rgba(20,19,15,0.25)] active:translate-y-0 active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-50"
     >
       {isLoading ? (
         <SpinnerGap className="w-4 h-4 animate-spin text-fg-subtle" />
@@ -118,7 +139,7 @@ function AvisoBanner({ children }: { children: React.ReactNode }) {
     <motion.div
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="px-3.5 py-2.5 rounded-xl bg-warning-soft border border-warning/30"
+      className="px-3.5 py-2.5 rounded-lg bg-warning-soft border border-warning/30"
     >
       <p className="text-[12.5px] text-warning">{children}</p>
     </motion.div>
@@ -131,7 +152,7 @@ function ErrorBanner({ children }: { children: React.ReactNode }) {
     <motion.div
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="px-3.5 py-2.5 rounded-xl bg-danger-soft border border-danger/30"
+      className="px-3.5 py-2.5 rounded-lg bg-danger-soft border border-danger/30"
     >
       <p className="text-[12.5px] text-danger">{children}</p>
     </motion.div>
@@ -426,14 +447,6 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     }
   };
 
-  // ── Header copy per mode — eyebrow (mono) + Satoshi heading, left-aligned ──
-  const eyebrow =
-    mode === 'login' ? 'Acceso'
-    : mode === 'forgot-password' ? 'Recuperación'
-    : mode === 'reset-sent' ? 'Correo enviado'
-    : registerStep === 'confirm-email' ? 'Correo enviado'
-    : 'Crear cuenta';
-
   /*
    * Sesión ya abierta: se pregunta antes de nada.
    *
@@ -462,8 +475,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
 
   return (
     <div className={cn('w-full', className)}>
-      {/* Header — left-aligned, quiet hierarchy */}
-      <div className="mb-8">
+      {/* Header — left-aligned, quiet hierarchy. `lg:pr-12`: la ✕ de la
+          tarjeta vive en esta misma fila, a la derecha. */}
+      <div className="mb-7 lg:pr-12">
         {(mode === 'forgot-password' || mode === 'reset-sent') && (
           <button
             type="button"
@@ -486,16 +500,15 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
           </motion.div>
         )}
 
-        <Eyebrow>{eyebrow}</Eyebrow>
-
-        <h1 className="mt-3 font-heading text-[30px] font-medium leading-[1.15] tracking-[-0.025em] text-fg">
+        {/* Sin eyebrow («● ACCESO»): el título ya dice qué es (Nico, 2026-09-03). */}
+        <h1 className="font-heading text-[30px] font-medium leading-[1.1] tracking-[-0.03em] text-fg">
           {mode === 'login' && 'Bienvenido de vuelta'}
           {mode === 'register' && registerStep === 'credentials' && 'Crea tu cuenta'}
           {mode === 'register' && registerStep === 'confirm-email' && 'Revisa tu correo'}
           {mode === 'forgot-password' && 'Recupera tu contraseña'}
           {mode === 'reset-sent' && 'Revisa tu correo'}
         </h1>
-        <p className="mt-2.5 text-[14px] leading-relaxed text-fg-subtle">
+        <p className="mt-2 text-[14px] leading-relaxed text-fg-subtle">
           {mode === 'login' && 'Ingresá a tu cuenta para continuar.'}
           {mode === 'register' && registerStep === 'credentials' && 'Ingresa tus datos para continuar.'}
           {mode === 'register' && registerStep === 'confirm-email' && (
@@ -561,7 +574,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="h-12 w-full rounded-full text-[14px] transition-transform active:scale-[0.995]"
+                className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] transition-all hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]"
               >
                 {isLoading ? (
                   <>
@@ -574,7 +587,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               </Button>
             </form>
 
-            <p className="mt-7 text-[13px] text-fg-subtle">
+            <NotaLegal />
+
+            <p className="mt-6 border-t border-border/70 pt-5 text-[13px] text-fg-subtle">
               ¿Todavía no tenés cuenta?{' '}
               <button
                 type="button"
@@ -637,12 +652,14 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               />
               {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
-              <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-full text-[14px]">
+              <Button type="submit" disabled={isLoading} className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] transition-all hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]">
                 {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : 'Crear cuenta'}
               </Button>
             </form>
 
-            <p className="mt-7 text-[13px] text-fg-subtle">
+            <NotaLegal />
+
+            <p className="mt-6 border-t border-border/70 pt-5 text-[13px] text-fg-subtle">
               ¿Ya tienes cuenta?{' '}
               <button
                 type="button"
@@ -665,7 +682,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             transition={{ duration: 0.15 }}
             className="space-y-5"
           >
-            <div className="rounded-xl border border-border bg-surface p-4 space-y-2.5">
+            <div className="rounded-lg border border-border bg-surface p-4 space-y-2.5">
               <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
                 Próximos pasos
               </span>
@@ -723,7 +740,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             transition={{ duration: 0.15 }}
             className="space-y-5"
           >
-            <div className="rounded-xl border border-border bg-surface p-4 space-y-2.5">
+            <div className="rounded-lg border border-border bg-surface p-4 space-y-2.5">
               <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
                 Próximos pasos
               </span>

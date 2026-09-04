@@ -3,7 +3,7 @@ import { test, expect, type Page } from '@playwright/test'
 // Phase 36 plan 36-11 — Playwright visual baselines for templates list page.
 //
 // Requirements: XR-03, COTI-UI-10. Admin-only.
-// Routes: /panel/inmobiliaria/ai/cobranza/plantillas (templates list).
+// Routes: /panel/inmobiliaria/cobros/cobranza/plantillas (templates list).
 // Auth: localStorage seed (pruebasarrendador1902@gmail.com / role:agency).
 //
 // v2.1 env workaround (NEVER commit these source tweaks):
@@ -204,7 +204,7 @@ for (const viewport of VIEWPORTS) {
     await seedAuth(page)
     await mockTemplatesEndpoints(page)
     await mockPermissions(page)
-    await page.goto('/panel/inmobiliaria/ai/cobranza/plantillas')
+    await page.goto('/panel/inmobiliaria/cobros/cobranza/plantillas')
     await page.waitForLoadState('domcontentloaded')
     await expect(
       page
@@ -226,7 +226,7 @@ test('WhatsApp pending Meta pill visible — D-36-07', async ({ page }) => {
   await seedAuth(page)
   await mockTemplatesEndpoints(page)
   await mockPermissions(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/plantillas')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/plantillas')
   await page.waitForLoadState('domcontentloaded')
   await expect(
     page.locator('text=/WhatsApp recordatorio/i').first(),
@@ -245,7 +245,7 @@ test('token count badge renders — D-36-06', async ({ page }) => {
   await seedAuth(page)
   await mockTemplatesEndpoints(page)
   await mockPermissions(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/plantillas')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/plantillas')
   await page.waitForLoadState('domcontentloaded')
   await expect(
     page.locator('text=/Llamada inicial/i').first(),

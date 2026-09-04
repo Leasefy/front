@@ -49,6 +49,10 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { ListChecks } from '@phosphor-icons/react'
+
+import { Button } from '@/components/ui/button'
 
 import { useI18n } from '@/lib/i18n'
 import { usePilotoInbox } from '@/lib/hooks/piloto/use-piloto-inbox'
@@ -147,17 +151,25 @@ export default function PilotoPage() {
       {/* Encabezado — mismo patrón que el resto del panel (ver cabecera) */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.piloto.titulo')}
           </h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
+          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
             {t('inmobiliaria.piloto.descripcion')}
           </p>
         </div>
-        {/* Configuración, no operación: vive en el encabezado.
+        {/* Configuración, no operación: las dos viven en el encabezado.
+            «Procesos» es la ventana por la que se ve trabajar al Piloto
+            (process view, 2026-09-02): también va acá, no en el flujo diario.
             «Preparación» (T-0051) se sacó del render — hidden temporarily
             as a product decision, not deleted; ver PilotoPreparacion.tsx. */}
         <div className="flex shrink-0 items-center gap-2">
+          <Button asChild variant="outline" size="sm" hideArrow>
+            <Link href="/panel/inmobiliaria/piloto/procesos" data-testid="piloto-ver-procesos">
+              <ListChecks weight="duotone" className="mr-1.5 h-4 w-4" aria-hidden="true" />
+              {t('inmobiliaria.piloto.procesos.titulo')}
+            </Link>
+          </Button>
           <PilotoAutonomia autonomia={autonomia} />
         </div>
       </header>

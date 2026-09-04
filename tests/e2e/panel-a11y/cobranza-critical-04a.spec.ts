@@ -56,7 +56,7 @@ test.describe('Cobranza overview — Phase 38-04a skeleton + EmptyState', () => 
       })
     })
 
-    await page.goto('/panel/inmobiliaria/ai/cobranza', { waitUntil: 'domcontentloaded' })
+    await page.goto('/panel/inmobiliaria/cobros/cobranza', { waitUntil: 'domcontentloaded' })
     const skeleton = page.getByTestId('cobranza-overview-skeleton')
 
 
@@ -69,7 +69,7 @@ test.describe('Cobranza overview — Phase 38-04a skeleton + EmptyState', () => 
       await route.fulfill({ status: 200, contentType: 'application/json', body: 'null' })
     })
 
-    await page.goto('/panel/inmobiliaria/ai/cobranza', { waitUntil: 'domcontentloaded' })
+    await page.goto('/panel/inmobiliaria/cobros/cobranza', { waitUntil: 'domcontentloaded' })
     // EmptyState wrapper carries `role=status` PLUS the dashed-border container
     // classes. Filtering by .border-dashed scopes the selector to the new primitive
     // and excludes the sidebar's `role=status` sr-only navigation announcer.
@@ -91,7 +91,7 @@ test.describe('Deudores list — Phase 38-04a skeleton + EmptyState', () => {
       })
     })
 
-    await page.goto('/panel/inmobiliaria/ai/cobranza/deudores', { waitUntil: 'domcontentloaded' })
+    await page.goto('/panel/inmobiliaria/cobros/cobranza/deudores', { waitUntil: 'domcontentloaded' })
     // EmptyState wrapper carries `role=status` PLUS the dashed-border container
     // classes. Filtering by .border-dashed scopes the selector to the new primitive
     // and excludes the sidebar's `role=status` sr-only navigation announcer.
@@ -118,7 +118,7 @@ test.describe('Escalaciones — Phase 38-04a celebratory EmptyState', () => {
       })
     })
 
-    await page.goto('/panel/inmobiliaria/ai/cobranza/escalaciones', { waitUntil: 'domcontentloaded' })
+    await page.goto('/panel/inmobiliaria/cobros/cobranza/escalaciones', { waitUntil: 'domcontentloaded' })
     // EmptyState wrapper carries `role=status` PLUS the dashed-border container
     // classes. Filtering by .border-dashed scopes the selector to the new primitive
     // and excludes the sidebar's `role=status` sr-only navigation announcer.
@@ -138,7 +138,7 @@ test.describe('Reporte diario — Phase 38-04a skeleton + EmptyState', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: 'null' })
     })
 
-    await page.goto('/panel/inmobiliaria/ai/cobranza/reporte', { waitUntil: 'domcontentloaded' })
+    await page.goto('/panel/inmobiliaria/cobros/cobranza/reporte', { waitUntil: 'domcontentloaded' })
     // EmptyState wrapper carries `role=status` PLUS the dashed-border container
     // classes. Filtering by .border-dashed scopes the selector to the new primitive
     // and excludes the sidebar's `role=status` sr-only navigation announcer.
@@ -165,7 +165,7 @@ test.describe('TopScriptsTable — Phase 38-04a un-stub', () => {
       })
     })
 
-    await page.goto('/panel/inmobiliaria/ai/cobranza/analitica', { waitUntil: 'domcontentloaded' })
+    await page.goto('/panel/inmobiliaria/cobros/cobranza/analitica', { waitUntil: 'domcontentloaded' })
     // SampleDataWatermark renders a role="note" badge with "Datos de muestra" copy
     const watermark = page.locator('[role="note"]').first()
 

@@ -488,12 +488,16 @@
    * Dark Theme
    * ======================================================== */
   .dark {
-    /* Background & Surface */
-    --background:          240 6% 7%;        /* #111112 */
+    /* Background & Surface — Onyx Black (#0a0a0a) en TODOS los fondos:
+       lienzo, tarjetas, filas, popovers. Nico (2026-09-01): el sidebar era un
+       negro «con café» (#141310) y el centro un negro azulado (#111112); dos
+       negros distintos para el mismo fondo. Un solo negro neutro, y lo que
+       flota encima se distingue por borde y por los grises, no por otro negro. */
+    --background:          0 0% 4%;          /* #0a0a0a */
     --foreground:          0 0% 95%;         /* #F2F2F2 */
-    --card:                240 6% 10%;       /* #18181B */
+    --card:                0 0% 4%;          /* #0a0a0a */
     --card-foreground:     0 0% 95%;
-    --popover:             240 6% 10%;
+    --popover:             0 0% 4%;          /* #0a0a0a */
     --popover-foreground:  0 0% 95%;
 
     /* Primary — lighter indigo on dark */
@@ -536,8 +540,8 @@
     --shadow-xl: 0 20px 40px -8px rgba(0, 0, 0, 0.4), 0 8px 16px -4px rgba(0, 0, 0, 0.25);
 
     /* PLan CRM Namespace */
-    --plan-page-bg: #141310;  /* dark: = sidebar bg (--bg) — shell unificado (body = sidebar = header) */
-    --plan-card-bg: #18181B;
+    --plan-page-bg: #0a0a0a;  /* dark: = sidebar bg (--bg) — shell unificado (body = sidebar = header) */
+    --plan-card-bg: #0a0a0a;
     --plan-border: #2E2E33;
     --plan-text-primary: #F2F2F2;
     --plan-text-secondary: #A1A1AA;
@@ -550,9 +554,10 @@
     --plan-status-purple-bg: #121A36;
     --plan-status-blue-bg: #0F1A2A;
 
-    /* Neutral overrides for dark */
-    --neutral-0:   40 8% 11%;
-    --neutral-50:  42 14% 7%;
+    /* Neutral overrides for dark — los dos que hacen de fondo van al mismo
+       onyx; 100/200 siguen siendo los grises de las superficies hundidas. */
+    --neutral-0:   0 0% 4%;
+    --neutral-50:  0 0% 4%;
     --neutral-100: 40 8% 14%;
     --neutral-200: 40 8% 18%;
   }
@@ -783,7 +788,7 @@
 
   /* Glass effect for navbar */
   .glass {
-    @apply bg-white/95 dark:bg-[#18181B]/95 backdrop-blur-md;
+    @apply bg-white/95 dark:bg-surface/95 backdrop-blur-md;
   }
 
   /* Subtle shadow for elevated elements */
@@ -927,6 +932,18 @@
 
   .animate-pulse-subtle {
     animation: pulse-subtle 2s ease-in-out infinite;
+  }
+
+  /* Onda de una llamada en curso (Piloto → procesos). Se aquieta con
+     prefers-reduced-motion porque la clase va con `motion-safe:`. */
+  @keyframes onda {
+    0%, 100% { transform: scaleY(0.35); }
+    50% { transform: scaleY(1); }
+  }
+
+  .animate-onda {
+    transform-origin: bottom;
+    animation: onda 0.9s ease-in-out infinite;
   }
 
   /* Sparkle animation for AI indicator */
@@ -1470,6 +1487,52 @@ select:-webkit-autofill:active {
    Custom Scrollbar Utilities
    ============================================================================ */
 
+/*
+ * Scrollbars de TODA la app (Nico, 2026-09-02: «arregla esos scroll en
+ * Windows que son horribles»). En macOS el scroll es overlay y no se ve; en
+ * Windows/Linux Chrome pinta la barra clásica de 17 px con flechas, gris
+ * claro sobre el sidebar oscuro. Acá: fina, sin flechas, pista transparente
+ * y pulgar del color del texto atenuado — el mismo en claro y oscuro porque
+ * sale del token. `scrollbar-width`/`scrollbar-color` es el estándar
+ * (Firefox y Chrome ≥ 121); `::-webkit-scrollbar` cubre el resto.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.35) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.35);
+  border-radius: 999px;
+  /* Un borde del color de la pista deja el pulgar «flotando» a 4 px. */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.55);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Thin scrollbar utility class */
 .scrollbar-thin {
   scrollbar-width: thin;
@@ -1558,8 +1621,13 @@ select:-webkit-autofill:active {
 }
 
 .dark {
-  --bg: #141310;
-  --surface: #1c1a16;
+  /* Onyx Black en los fondos (ver el bloque .dark de arriba). `--ink` va acá
+     a propósito: en oscuro `dark:bg-ink` es un fondo más, y antes heredaba el
+     #14130f de :root — el mismo café. Los grises (surface-muted, bordes,
+     textos) no se tocan. */
+  --bg: #0a0a0a;
+  --surface: #0a0a0a;
+  --ink: #0a0a0a;
   --surface-muted: #24221c;
   --surface-hover: rgba(255, 255, 255, 0.05);
   --surface-pressed: rgba(255, 255, 255, 0.08);
@@ -1730,3 +1798,17 @@ select:-webkit-autofill:active {
 
 /* Sin soporte de container queries la grilla se queda en una columna, que es
    legible en cualquier ancho — nunca en dos columnas de 244px. */
+
+/*
+ * Los popovers de cadence (DatePicker, TimePicker, Combobox, Select, menús)
+ * se portalean al body con `z-50`; los Dialog/Sheet del panel viven en
+ * `z-[300]`. Sin esto, un calendario abierto dentro de un drawer se dibuja
+ * DETRÁS del drawer y parece que no pasó nada. `SelectContent` y `Combobox`
+ * ya lo resuelven con `z-[400]` a mano; DatePicker/TimePicker no exponen
+ * una clase para su contenido, así que la regla va acá, sobre el wrapper de
+ * Radix (el `!important` gana al `z-index` inline que Radix le copia al
+ * contenido). Un popover siempre es lo último que se abrió: arriba de todo.
+ */
+[data-radix-popper-content-wrapper] {
+  z-index: 400 !important;
+}

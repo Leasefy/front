@@ -44,6 +44,8 @@ import { useI18n } from '@/lib/i18n'
 import type { TranslationParams } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 
 // ── Vocabulary ──────────────────────────────────────────────────────────────
 // Exported (F6): the workspace primitives (SalaAgente, AccionSugerida, the
@@ -228,7 +230,7 @@ function WorkItemCard({
 
   return (
     <div
-      className="rounded-xl border border-border bg-card p-3 space-y-2"
+      className="rounded-lg border border-border bg-card p-3 space-y-2"
       data-testid={`work-item-${item.id}`}
     >
       {/* Header: severidad + estado + flags + relative time */}
@@ -402,11 +404,19 @@ export function ColaHumana({
     [items],
   )
 
+  // La cola es una lista de registros sin techo: el endpoint unificado devuelve
+  // los work-items del agente y acá se pintaban todos. Mismo pie que las tablas
+  // del panel (lo comparten las cinco colas: pagos, estudio, matching, avalúos
+  // y asegurabilidad). El orden por severidad se calcula sobre la lista
+  // COMPLETA antes de recortar, así la página 1 sigue trayendo lo más urgente.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(sorted, { resetKey: agente })
+
   if (isLoading) {
     return (
       <div className="space-y-2" data-testid="cola-humana-loading">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="h-24 rounded-xl border border-border bg-muted/40 animate-pulse" />
+          <div key={i} className="h-24 rounded-lg border border-border bg-muted/40 animate-pulse" />
         ))}
       </div>
     )
@@ -415,7 +425,7 @@ export function ColaHumana({
   if (error) {
     return (
       <div
-        className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
+        className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
         data-testid="cola-humana-error"
       >
         {t(`${WORKSPACE_NS}.cola.error`, { error })}
@@ -466,9 +476,22 @@ export function ColaHumana({
 
   return (
     <div className="space-y-2" data-testid="cola-humana">
-      {sorted.map((item) => (
+      {pageItems.map((item) => (
         <WorkItemCard key={item.id} item={item} agente={agente} onAction={onAction} onOpen={onOpen} />
       ))}
+
+      {shouldPaginate && (
+        <div className="border-t border-border px-4 py-3">
+          <TablePagination
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+        </div>
+      )}
     </div>
   )
 }

@@ -1,9 +1,9 @@
 import { test, expect, type Page } from '@playwright/test'
 
 // Phase 34 plan 34-09 — Playwright spec for the cobranza DAILY REPORT surfaces:
-//   - /panel/inmobiliaria/ai/cobranza/reporte                (viewer + history + CSV)
-//   - /panel/inmobiliaria/ai/cobranza/reporte/thresholds     (admin editor + versions + rollback)
-//   - /panel/inmobiliaria/ai/cobranza/reporte/suscripcion    (per-user toggles)
+//   - /panel/inmobiliaria/cobros/cobranza/reporte                (viewer + history + CSV)
+//   - /panel/inmobiliaria/cobros/cobranza/reporte/thresholds     (admin editor + versions + rollback)
+//   - /panel/inmobiliaria/cobros/cobranza/reporte/suscripcion    (per-user toggles)
 //
 // Decisions covered (annotated on each test):
 //   - D-34-04   thresholds editor versioned + rollback creates new "vigente" version
@@ -183,7 +183,7 @@ async function assertViewerLoads(page: Page, vp: { width: number; height: number
   await seedAuth(page)
   await mockDailyReport(page)
   await mockThresholds(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/reporte')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/reporte')
   // PKR / morosidad / calls KPIs
   await expect(page.locator('text=/PKR|85/i').first()).toBeVisible({ timeout: 15_000 })
   await expect(page.locator('text=/morosidad|delinquen/i').first()).toBeVisible({ timeout: 5_000 })
@@ -218,7 +218,7 @@ test('KPI tile flags danger when PKR < threshold — D-34-04 COBR-UI-11', async 
     [{ kpi: 'pkr', threshold: 80, actual: 75, severity: 'critical' }],
   )
   await mockThresholds(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/reporte')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/reporte')
   await expect(page.locator('text=/75|PKR/i').first()).toBeVisible({ timeout: 15_000 })
   // At least one of: alert banner mentioning PKR, OR a danger/rose-colored class on the PKR tile area
   const alertBanner = await page
@@ -244,7 +244,7 @@ test('history table renders + CSV download button is wired — D-34-04 COBR-UI-1
   await seedAuth(page)
   await mockDailyReport(page)
   await mockThresholds(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/reporte')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/reporte')
   // History row visible
   await expect(
     page.locator('text=/2026-05-27|Historial|History/i').first(),
@@ -307,7 +307,7 @@ test('thresholds PUT creates new version (v4) — D-34-04', async ({ page }) => 
   await page.route('**/api/agency/*/cobranza/daily-report/thresholds/history**', async (route) => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [], next_cursor: null }) })
   })
-  await page.goto('/panel/inmobiliaria/ai/cobranza/reporte/thresholds')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/reporte/thresholds')
   await page.waitForLoadState('domcontentloaded')
   const topNField = page
     .locator('input[name*="top_n"], input[id*="top_n"], input[type="number"]')
@@ -339,7 +339,7 @@ test('rollback opens confirmation modal before POST fires — D-34-04', async ({
       body: JSON.stringify({ version: 4, is_rollback_of_version: 2 }),
     })
   })
-  await page.goto('/panel/inmobiliaria/ai/cobranza/reporte/thresholds')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/reporte/thresholds')
   await page.waitForLoadState('domcontentloaded')
   const restaurarBtn = page
     .locator('button')
@@ -385,7 +385,7 @@ test('subscription email + WhatsApp toggles PATCH independently — D-34-06', as
       })
     }
   })
-  await page.goto('/panel/inmobiliaria/ai/cobranza/reporte/suscripcion')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/reporte/suscripcion')
   await page.waitForLoadState('domcontentloaded')
   // Two toggles visible (role=switch per 34-08 SUMMARY D-34-08-IMPL-A4)
   const switches = page.locator('[role="switch"]')
@@ -406,7 +406,7 @@ test('subscription panel renders 2 toggles + brand labels — D-34-06', async ({
   await page.setViewportSize({ width: 1440, height: 900 })
   await seedAuth(page)
   await mockSubscription(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/reporte/suscripcion')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/reporte/suscripcion')
   await page.waitForLoadState('domcontentloaded')
   await expect(
     page.locator('text=/email|correo/i').first(),
@@ -425,7 +425,7 @@ test('reporte i18n parity — es — XR-05', async ({ page }) => {
   await seedAuth(page)
   await mockDailyReport(page)
   await mockThresholds(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/reporte')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/reporte')
   await expect(
     page.locator('text=/Reporte|PKR|morosidad/i').first(),
   ).toBeVisible({ timeout: 15_000 })
@@ -439,7 +439,7 @@ test('reporte i18n parity — en — XR-05', async ({ page }) => {
   await seedAuth(page)
   await mockDailyReport(page)
   await mockThresholds(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/reporte')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/reporte')
   await expect(
     page.locator('text=/Daily|PKR|delinquen|Report/i').first(),
   ).toBeVisible({ timeout: 15_000 })
@@ -453,7 +453,7 @@ async function assertThresholdsSnapshot(page: Page, vp: { width: number; height:
   await page.setViewportSize({ width: vp.width, height: vp.height })
   await seedAuth(page)
   await mockThresholds(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/reporte/thresholds')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/reporte/thresholds')
   await page.waitForLoadState('domcontentloaded')
   await expect(page.locator('input, form, h1, h2').first()).toBeVisible({ timeout: 15_000 })
   await expect(page).toHaveScreenshot(
@@ -491,15 +491,15 @@ async function assertNoScroll(page: Page, vp: { width: number; height: number; n
 }
 
 test('reporte no horizontal scroll — iPhone-14 — XR-03', async ({ page }) => {
-  await assertNoScroll(page, VIEWPORTS[0], '/panel/inmobiliaria/ai/cobranza/reporte')
+  await assertNoScroll(page, VIEWPORTS[0], '/panel/inmobiliaria/cobros/cobranza/reporte')
 })
 test('reporte no horizontal scroll — iPad-Mini — XR-03', async ({ page }) => {
-  await assertNoScroll(page, VIEWPORTS[1], '/panel/inmobiliaria/ai/cobranza/reporte')
+  await assertNoScroll(page, VIEWPORTS[1], '/panel/inmobiliaria/cobros/cobranza/reporte')
 })
 test('reporte no horizontal scroll — Desktop — XR-03', async ({ page }) => {
-  await assertNoScroll(page, VIEWPORTS[2], '/panel/inmobiliaria/ai/cobranza/reporte')
+  await assertNoScroll(page, VIEWPORTS[2], '/panel/inmobiliaria/cobros/cobranza/reporte')
 })
 
 test('suscripcion no horizontal scroll — Desktop — XR-03', async ({ page }) => {
-  await assertNoScroll(page, VIEWPORTS[2], '/panel/inmobiliaria/ai/cobranza/reporte/suscripcion')
+  await assertNoScroll(page, VIEWPORTS[2], '/panel/inmobiliaria/cobros/cobranza/reporte/suscripcion')
 })

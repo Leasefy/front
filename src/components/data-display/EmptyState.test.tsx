@@ -63,12 +63,12 @@ describe('EmptyState', () => {
           icon: FakeIcon,
           title: 'No hay cotizaciones',
           description: 'Generá la primera.',
-          primaryCta: { label: 'Nueva cotización', href: '/panel/inmobiliaria/ai/asegurabilidad/nueva' },
+          primaryCta: { label: 'Nueva cotización', href: '/panel/inmobiliaria/postulaciones/asegurabilidad/nueva' },
         }),
       )
     })
 
-    const anchor = container.querySelector('a[href="/panel/inmobiliaria/ai/asegurabilidad/nueva"]')
+    const anchor = container.querySelector('a[href="/panel/inmobiliaria/postulaciones/asegurabilidad/nueva"]')
     expect(anchor).not.toBeNull()
     expect(anchor?.textContent).toBe('Nueva cotización')
   })
@@ -104,7 +104,7 @@ describe('EmptyState', () => {
           icon: FakeIcon,
           title: 'No hay pagos',
           description: 'Los pagos aparecerán acá.',
-          primaryCta: { label: 'Ver deudores', href: '/panel/inmobiliaria/ai/cobranza/deudores' },
+          primaryCta: { label: 'Ver deudores', href: '/panel/inmobiliaria/cobros/cobranza/deudores' },
         }),
       )
     })
@@ -118,8 +118,8 @@ describe('EmptyState', () => {
           icon: FakeIcon,
           title: 'No hay pagos',
           description: 'Los pagos aparecerán acá.',
-          primaryCta: { label: 'Ver deudores', href: '/panel/inmobiliaria/ai/cobranza/deudores' },
-          secondaryCta: { label: 'Ver historial', href: '/panel/inmobiliaria/ai/cobranza/pagos?view=history' },
+          primaryCta: { label: 'Ver deudores', href: '/panel/inmobiliaria/cobros/cobranza/deudores' },
+          secondaryCta: { label: 'Ver historial', href: '/panel/inmobiliaria/cobros/cobranza/pagos?view=history' },
         }),
       )
     })

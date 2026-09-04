@@ -11,7 +11,7 @@ import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const PAYMENT_ID = 'test-payment-id'
-const ROUTE = `/panel/inmobiliaria/ai/cobranza/pagos/${PAYMENT_ID}`
+const ROUTE = `/panel/inmobiliaria/cobros/cobranza/pagos/${PAYMENT_ID}`
 const DETAIL_MOCK = `**/cobranza/payments/${PAYMENT_ID}**`
 const SKELETON_DELAY_MS = 2500
 

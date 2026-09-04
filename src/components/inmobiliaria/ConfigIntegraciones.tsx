@@ -222,7 +222,7 @@ export function ConfigIntegraciones({
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-36 bg-muted rounded-xl" />
+            <div key={i} className="h-36 bg-muted rounded-lg" />
           ))}
         </div>
       </div>
@@ -297,7 +297,7 @@ export function ConfigIntegraciones({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 className={cn(
-                  'p-5 rounded-xl bg-card border transition-colors',
+                  'p-5 rounded-lg bg-card border transition-colors',
                   integration.status === 'error'
                     ? 'border-danger/30'
                     : 'border-border'

@@ -90,7 +90,7 @@ export default function MonitoreoPage() {
 
         {/* ── Camila diagnosis (ink anchor) ──────────────────────────────── */}
         <section
-          className="relative overflow-hidden rounded-2xl px-6 py-6 sm:px-7"
+          className="relative overflow-hidden rounded-lg px-6 py-6 sm:px-7"
           style={{ background: INK_GRADIENT, boxShadow: '0 24px 60px -28px rgba(20, 19, 15,0.5)' }}
         >
           <div className="pointer-events-none absolute -inset-x-2 top-[46%] h-[44%] text-white/[0.10]">
@@ -99,7 +99,7 @@ export default function MonitoreoPage() {
           <div className="relative flex flex-col lg:flex-row lg:items-center gap-6">
             <div className="flex items-start gap-4 flex-1">
               <span
-                className="inline-flex items-center justify-center rounded-2xl text-lg font-semibold text-white shrink-0"
+                className="inline-flex items-center justify-center rounded-lg text-lg font-semibold text-white shrink-0"
                 style={{ width: 48, height: 48, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)' }}
               >
                 C
@@ -136,7 +136,7 @@ export default function MonitoreoPage() {
           {/* LEFT */}
           <div className="space-y-6 min-w-0">
             {/* Rendimiento KPIs */}
-            <Card className="rounded-2xl p-5 sm:p-6">
+            <Card className="rounded-lg p-5 sm:p-6">
               <div className="mb-4">
                 <MonoLabel>Rendimiento desde la publicación</MonoLabel>
               </div>
@@ -162,7 +162,7 @@ export default function MonitoreoPage() {
             </Card>
 
             {/* Ritmo vs esperado */}
-            <Card className="rounded-2xl p-5 sm:p-6">
+            <Card className="rounded-lg p-5 sm:p-6">
               <h3 className="text-[15px] font-semibold text-fg mb-1">El ritmo va por debajo</h3>
               <p className="text-[13px] text-fg-muted mb-4">A día 28, un inmueble bien valorado ya tendría visitas agendadas.</p>
               <div className="space-y-3.5">
@@ -188,7 +188,7 @@ export default function MonitoreoPage() {
             </Card>
 
             {/* Mercado (Valentina) */}
-            <Card className="rounded-2xl p-5 sm:p-6">
+            <Card className="rounded-lg p-5 sm:p-6">
               <div className="flex items-start gap-3">
                 <span className="inline-flex items-center justify-center w-9 h-9 rounded-full text-[12px] font-medium shrink-0 bg-surface-muted text-fg-muted">
                   V
@@ -206,7 +206,7 @@ export default function MonitoreoPage() {
           {/* RIGHT RAIL */}
           <aside className="space-y-6 lg:sticky lg:top-6">
             {/* Recomendación de ajuste */}
-            <section id="ajuste" className="rounded-2xl border-2 bg-surface p-5" style={{ borderColor: aplicado ? '#CBE3D5' : BLUE }}>
+            <section id="ajuste" className="rounded-lg border-2 bg-surface p-5" style={{ borderColor: aplicado ? '#CBE3D5' : BLUE }}>
               {!aplicado ? (
                 <>
                   <div className="flex items-center gap-1.5 mb-3">
@@ -267,7 +267,7 @@ export default function MonitoreoPage() {
             </section>
 
             {/* Línea de tiempo (§13 estados) */}
-            <Card className="rounded-2xl p-5">
+            <Card className="rounded-lg p-5">
               <MonoLabel>Línea de tiempo</MonoLabel>
               <ol className="mt-4 space-y-0">
                 {TIMELINE.map((t, i) => {

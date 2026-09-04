@@ -7,7 +7,11 @@
  *
  * `Table` se reimplementa localmente (mismas clases que el DS) porque el
  * producto añadió comportamiento al wrapper de scroll que el DS no expone:
- *  - `overscroll-contain` en el contenedor (evita scroll-chaining en mobile)
+ *  - `overscroll-x-contain` en el contenedor: frena el gesto de «volver atrás» al
+ *    llegar al borde horizontal en mobile, pero SÓLO en X. Con `overscroll-contain`
+ *    (los dos ejes) una tabla SIN scroll propio igual se tragaba la rueda vertical y
+ *    el contenedor de arriba nunca se movía — en el muro de migración, con el
+ *    puntero sobre la tabla de columnas, no se podía bajar (Nico, 2026-09-01).
  *  - `stickyHeader` opt-in para contenedores con scroll vertical
  *
  * `TableHeader`/`TableFooter` envuelven THead/TFoot del DS para reemplazar el
@@ -32,7 +36,7 @@ export interface TableProps
 
 const Table = React.forwardRef<HTMLTableElement, TableProps>(
   ({ className, stickyHeader = false, ...props }, ref) => (
-    <div className="relative w-full overflow-auto overscroll-contain">
+    <div className="relative w-full overflow-auto overscroll-x-contain">
       <table
         ref={ref}
         className={cn(

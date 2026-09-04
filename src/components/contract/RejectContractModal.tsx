@@ -73,7 +73,7 @@ export function RejectContractModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-surface rounded-xl w-full max-w-lg border border-border"
+            className="bg-surface rounded-lg w-full max-w-lg border border-border"
           >
             {/* Header */}
             <div className="flex items-start justify-between gap-4 p-5 border-b border-border">

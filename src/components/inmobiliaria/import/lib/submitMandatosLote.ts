@@ -1,8 +1,18 @@
 /**
  * submitMandatosLote — creates the mandate for a whole batch of just-imported
- * properties with ONE shared set of terms (T-0030 WU-3, Slice A / R1),
- * publishing each one afterwards (T-0030 WU-4, contract.md §3.4 amendment
- * A-1.1).
+ * properties, publishing each one afterwards (T-0030 WU-3 Slice A / R1,
+ * WU-4, contract.md §3.4 amendment A-1.1).
+ *
+ * Two entry points, ONE loop:
+ *
+ *   - `submitMandatosLote(inmuebles, values)` — one shared set of terms for
+ *     every property («Mismo propietario para todos»). Unchanged signature.
+ *   - `submitMandatosPorInmueble(asignaciones)` — each property carries its
+ *     own terms («Uno por uno», Nico 2026-09-02: «si importo 100 inmuebles
+ *     debería poder decidir para CADA inmueble quién es el propietario»).
+ *
+ * Both return the same `MandatoLoteResult`, so the dialog's summary and
+ * `StepConfirmImport.onDone` do not care which mode produced it.
  *
  * Delegates the per-property "mandate, then publish" outcome to
  * `completeMandatoAndPublish` (T-0030 WU-2/WU-4,
@@ -39,13 +49,23 @@ export interface MandatoLoteResult {
   publishFailedCount: number;
 }
 
-export async function submitMandatosLote(
-  inmuebles: InmuebleSinConsignacion[],
-  values: MandatoFormValues,
+/**
+ * One property with the terms it gets. `values.propietarioId` MUST already
+ * be a persisted id (never a `new-*` temp id): persisting a new owner is the
+ * dialog's job (`persistPropietarioIfNeeded`), done once per owner even when
+ * several rows chose the same new one.
+ */
+export interface AsignacionDeMandato {
+  inmueble: InmuebleSinConsignacion;
+  values: MandatoFormValues;
+}
+
+export async function submitMandatosPorInmueble(
+  asignaciones: readonly AsignacionDeMandato[],
 ): Promise<MandatoLoteResult> {
   const outcomes: MandatoLoteOutcome[] = [];
 
-  for (const inmueble of inmuebles) {
+  for (const { inmueble, values } of asignaciones) {
     outcomes.push(await completeMandatoAndPublish(inmueble, values));
   }
 
@@ -60,4 +80,11 @@ export async function submitMandatosLote(
     publishedCount,
     publishFailedCount: succeededCount - publishedCount,
   };
+}
+
+export async function submitMandatosLote(
+  inmuebles: InmuebleSinConsignacion[],
+  values: MandatoFormValues,
+): Promise<MandatoLoteResult> {
+  return submitMandatosPorInmueble(inmuebles.map((inmueble) => ({ inmueble, values })));
 }

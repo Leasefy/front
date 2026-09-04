@@ -33,7 +33,7 @@ export function NotificationRowSkeleton() {
  */
 export function NotificationRowSkeletonList({ count = 5 }: { count?: number }) {
   return (
-    <div className="bg-white dark:bg-[#1a1a1c] rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+    <div className="bg-white dark:bg-[#1a1a1c] rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
       {Array.from({ length: count }).map((_, i) => (
         <NotificationRowSkeleton key={i} />
       ))}

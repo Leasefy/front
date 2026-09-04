@@ -21,7 +21,7 @@ import { Banner } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import type { ArcoAlertsResult } from '@/lib/hooks/cobranza/use-arco-alerts'
 
-const ARCO_HREF = '/panel/inmobiliaria/ai/cobranza/arco'
+const ARCO_HREF = '/panel/inmobiliaria/cobros/cobranza/arco'
 const NS = 'inmobiliaria.ai.arco'
 
 export function ArcoDeadlineAlert({

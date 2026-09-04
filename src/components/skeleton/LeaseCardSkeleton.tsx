@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
  */
 export function LeaseCardSkeleton() {
   return (
-    <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+    <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
       <div className="p-4">
         <div className="flex items-start gap-4">
           {/* Property image placeholder */}

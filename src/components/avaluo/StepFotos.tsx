@@ -208,7 +208,7 @@ export function StepFotos() {
       )}
 
       {/* Tips */}
-      <div className="flex items-start gap-3 p-4 bg-muted/30 rounded-xl border border-border">
+      <div className="flex items-start gap-3 p-4 bg-muted/30 rounded-lg border border-border">
         <WarningCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
         <div className="text-sm text-muted-foreground">
           <p className="font-medium text-foreground mb-1">Tips para mejores fotos:</p>

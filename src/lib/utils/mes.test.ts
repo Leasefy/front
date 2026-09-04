@@ -59,3 +59,11 @@ describe('nombreDelMes', () => {
     })
   })
 })
+
+describe('mesEnTitulo', () => {
+  it('sólo la inicial en mayúscula: «Septiembre de 2026», no «Septiembre De 2026»', async () => {
+    const { mesEnTitulo } = await import('./mes')
+    expect(mesEnTitulo('2026-09')).toBe('Septiembre de 2026')
+    expect(mesEnTitulo('2026-09', 'en')).toBe('September 2026')
+  })
+})

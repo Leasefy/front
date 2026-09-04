@@ -32,6 +32,8 @@ const BASE_CONSIGNACION: Consignacion = {
   id: 'c1',
   propertyId: 'prop-1',
   propietarioId: 'own-1',
+  // Un solo dueño al 100 % — la forma que dejó el backfill de la migración.
+  copropietarios: [{ propietarioId: 'own-1', participacionBps: 10000 }],
   agenteId: 'agent-1',
   propertyTitle: 'Apto Chapinero',
   propertyAddress: 'Cra 1 # 2-3',
@@ -117,5 +119,33 @@ describe('<ConsignacionHeader> — Ver en Portal', () => {
     expect(button?.disabled).toBe(true);
     act(() => { button?.click(); });
     expect(onViewPortal).not.toHaveBeenCalled();
+  });
+});
+
+describe('<ConsignacionHeader> — abrir las fotos desde la portada', () => {
+  // Nico (2026-09-02): «en la imagen me debería dejar ver todas las imágenes
+  // que tenga el inmueble». Con fotos, la portada es un botón y hay una
+  // píldora que dice cuántas hay; las dos abren el visor.
+  it('con fotos, la portada y la píldora «Ver N fotos» abren el visor', () => {
+    const onVerFotos = vi.fn();
+    render({
+      propertyThumbnailUrl: 'https://cdn.test/1.jpg',
+      fotos: ['https://cdn.test/1.jpg', 'https://cdn.test/2.jpg', 'https://cdn.test/3.jpg'],
+      onVerFotos,
+    });
+    const portada = container.querySelector<HTMLButtonElement>('[data-testid="portada-abrir"]');
+    const pildora = container.querySelector<HTMLButtonElement>('[data-testid="portada-ver-fotos"]');
+    expect(portada).not.toBeNull();
+    expect(pildora?.textContent).toContain('inmobiliaria.consignaciones.header.verFotos');
+    act(() => { portada?.click(); });
+    act(() => { pildora?.click(); });
+    expect(onVerFotos).toHaveBeenCalledTimes(2);
+  });
+
+  it('sin fotos, la portada es una imagen a secas y no hay píldora', () => {
+    render({ propertyThumbnailUrl: 'https://cdn.test/1.jpg', fotos: [], onVerFotos: vi.fn() });
+    expect(container.querySelector('[data-testid="portada-abrir"]')).toBeNull();
+    expect(container.querySelector('[data-testid="portada-ver-fotos"]')).toBeNull();
+    expect(container.querySelector('img')).not.toBeNull();
   });
 });

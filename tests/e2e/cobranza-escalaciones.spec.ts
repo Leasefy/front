@@ -205,7 +205,7 @@ async function assertKanbanThreeColumns(page: Page, viewport: {width:number;heig
   await page.setViewportSize({ width: viewport.width, height: viewport.height })
   await seedAuth(page)
   await mockEscalationsKanban(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/escalaciones')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/escalaciones')
   await expect(page.locator('text=/Abiertas|Pendientes|Open/i').first()).toBeVisible({ timeout: 15_000 })
   await expect(page.locator('text=/Asignadas|Assigned/i').first()).toBeVisible({ timeout: 5_000 })
   await expect(page.locator('text=/Resueltas|Resolved/i').first()).toBeVisible({ timeout: 5_000 })
@@ -294,7 +294,7 @@ test('"Tomar" claims card; POST claim fires — D-34-02 D-34-RES-A3', async ({ p
       body: '{"ok":true}',
     })
   })
-  await page.goto('/panel/inmobiliaria/ai/cobranza/escalaciones')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/escalaciones')
   const tomarBtn = page.locator('button').filter({ hasText: /Tomar/i }).first()
   await expect(tomarBtn).toBeVisible({ timeout: 15_000 })
   await tomarBtn.click()
@@ -313,7 +313,7 @@ test('resolve modal renders 5 categories; escalated-to-legal shows pre_judicial 
   // Operator with own assignment so they can resolve
   await seedAuth(page)
   await mockEscalationsKanban(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/escalaciones')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/escalaciones')
   const resolverBtn = page.locator('button').filter({ hasText: /Resolver/i }).first()
   await expect(resolverBtn).toBeVisible({ timeout: 15_000 })
   await resolverBtn.click()
@@ -372,7 +372,7 @@ test('resolve submit fires POST /resolve (cascade routed via backend) — D-34-0
       body: '{"ok":true,"cascaded_to_legal":false}',
     })
   })
-  await page.goto('/panel/inmobiliaria/ai/cobranza/escalaciones')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/escalaciones')
   const resolverBtn = page.locator('button').filter({ hasText: /Resolver/i }).first()
   await expect(resolverBtn).toBeVisible({ timeout: 15_000 })
   await resolverBtn.click()
@@ -407,7 +407,7 @@ async function assertNoHorizontalScroll(page: Page, viewport: {width:number;heig
   await page.setViewportSize({ width: viewport.width, height: viewport.height })
   await seedAuth(page)
   await mockEscalationsKanban(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/escalaciones')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/escalaciones')
   await page.waitForLoadState('domcontentloaded')
   await page.waitForTimeout(500)
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth)
@@ -433,7 +433,7 @@ test('escalaciones i18n parity — es — XR-05', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await seedAuth(page)
   await mockEscalationsKanban(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/escalaciones')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/escalaciones')
   await expect(
     page.locator('text=/Abiertas|Asignadas|Escalaciones|Pendientes/i').first(),
   ).toBeVisible({ timeout: 15_000 })
@@ -446,7 +446,7 @@ test('escalaciones i18n parity — en — XR-05', async ({ page }) => {
   ])
   await seedAuth(page)
   await mockEscalationsKanban(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/escalaciones')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/escalaciones')
   await expect(
     page.locator('text=/Open|Assigned|Escalations|Pending/i').first(),
   ).toBeVisible({ timeout: 15_000 })
@@ -461,7 +461,7 @@ async function assertDetailSnapshot(page: Page, viewport: {width:number;height:n
   await seedAuth(page)
   await mockEscalationsKanban(page)
   await mockEscalationDetail(page, 'esc-open-01')
-  await page.goto('/panel/inmobiliaria/ai/cobranza/escalaciones/esc-open-01')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/escalaciones/esc-open-01')
   await page.waitForLoadState('domcontentloaded')
   await expect(
     page.locator('h1, h2, [data-testid="escalation-detail-title"]').first(),
@@ -506,7 +506,7 @@ test('admin role sees "Asignar" button — D-34-02 D-34-RES-A3', async ({ page }
       }),
     })
   })
-  await page.goto('/panel/inmobiliaria/ai/cobranza/escalaciones')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/escalaciones')
   await expect(
     page.locator('button').filter({ hasText: /Asignar/i }).first(),
   ).toBeVisible({ timeout: 15_000 })
@@ -518,7 +518,7 @@ test('operator role does NOT see "Asignar" button (only Tomar) — D-34-02 D-34-
   await page.setViewportSize({ width: 1440, height: 900 })
   await seedAuth(page) // default = operator (no assign-escalation perm)
   await mockEscalationsKanban(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/escalaciones')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/escalaciones')
   // Tomar must be visible
   await expect(
     page.locator('button').filter({ hasText: /Tomar/i }).first(),

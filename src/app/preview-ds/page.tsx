@@ -170,8 +170,8 @@ function Sidebar() {
       <NavItem icon={Sparkle} label="Hoy" />
       <NavItem icon={SquaresFour} label="Dashboard" active />
 
-      {/* CRM · Comercial */}
-      <NavSection label="CRM · Comercial" />
+      {/* Comercial */}
+      <NavSection label="Comercial" />
       <NavItem icon={UserCircle} label="Propietarios" />
       <NavItem icon={House} label="Propiedades" />
       <NavItem icon={Kanban} label="Pipeline" />

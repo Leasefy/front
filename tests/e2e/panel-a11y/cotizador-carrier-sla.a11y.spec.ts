@@ -9,7 +9,7 @@ import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const CARRIER = 'sura'
-const ROUTE = `/panel/inmobiliaria/ai/cotizador/aseguradoras/${CARRIER}/sla`
+const ROUTE = `/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras/${CARRIER}/sla`
 const SLA_MOCK = `**/aseguradoras/registry/${CARRIER}/sla**`
 const SKELETON_DELAY_MS = 2500
 

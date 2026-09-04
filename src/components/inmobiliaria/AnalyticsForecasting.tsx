@@ -177,7 +177,7 @@ function ForecastChart({
   const isPercentMetric = forecast.unit === '%';
 
   return (
-    <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
+    <div className="p-6 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-fg-muted dark:text-fg-subtle">
           {t('inmobiliaria.analytics.forecastComp.projectionMonths', { count: horizon })}
@@ -460,10 +460,10 @@ function ScenarioCard({
     <motion.div
       whileHover={{ scale: 1.02 }}
       className={cn(
-        'p-4 rounded-xl border-2 cursor-pointer transition-all',
+        'p-4 rounded-lg border-2 cursor-pointer transition-all',
         isActive
           ? `border-${color}-500 dark:border-${color}-400 bg-${color}-50 dark:bg-${color}-900/20`
-          : 'border-border dark:border-border-strong bg-surface dark:bg-[#14130F] opacity-60 hover:opacity-100'
+          : 'border-border dark:border-border-strong bg-surface dark:bg-bg opacity-60 hover:opacity-100'
       )}
       onClick={onToggle}
     >
@@ -525,7 +525,7 @@ function ScenarioCard({
 function ForecastDetailsTable({ data, unit }: { data: ForecastDataPoint[]; unit: string }) {
   const { t, locale } = useI18n();
   return (
-    <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
+    <div className="p-6 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
       <h3 className="text-sm font-medium text-fg dark:text-white mb-4">
         {t('inmobiliaria.analytics.forecastComp.projectionDetails')}
       </h3>
@@ -615,7 +615,7 @@ function FactorsPanel({
 }) {
   const { t } = useI18n();
   return (
-    <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
+    <div className="p-6 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
       <div className="flex items-center gap-2 mb-4">
         <Funnel className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
         <h3 className="text-sm font-medium text-fg dark:text-white">

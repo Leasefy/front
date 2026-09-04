@@ -43,6 +43,7 @@ export type TipoDeExport =
   | 'vencimientos'
   | 'flujo-caja'
   | 'ocupacion-portafolio'
+  | 'rentabilidad-inmueble'
 
 export interface SePuedeBajar {
   disponible: true
@@ -66,13 +67,16 @@ const CATALOGO: Record<ReportId, Exportable> = {
   'vencimientos': { disponible: true, tipo: 'vencimientos' },
   'flujo-caja': { disponible: true, tipo: 'flujo-caja' },
   'ocupacion-portafolio': { disponible: true, tipo: 'ocupacion-portafolio' },
+  // Acepta `desde`/`hasta` (`YYYY-MM`); sin rango el back toma los últimos
+  // 12 meses. La pantalla propia los manda; la tarjeta baja el default.
+  'rentabilidad-inmueble': { disponible: true, tipo: 'rentabilidad-inmueble' },
 
   // El extracto es POR propietario y sale del flujo de dispersiones: no hay un
   // archivo único que represente «todos los extractos».
   'extractos-propietarios': {
     disponible: false,
     motivo: 'El extracto se arma por propietario, desde la dispersión de su mes.',
-    dondeSiHay: { label: 'Ir a dispersiones', href: '/panel/inmobiliaria/dispersiones' },
+    dondeSiHay: { label: 'Ir a dispersiones', href: '/panel/inmobiliaria/pagos/dispersiones' },
   },
 
   // Tenía el mapeo a `comisiones-agente`, que devuelve otro reporte. Mejor
@@ -101,4 +105,35 @@ export function sePuedeBajar(id: ReportId): boolean {
 /** `cartera-edades-2026-08-12.csv` */
 export function nombreDelArchivo(tipo: TipoDeExport, hoy: string): string {
   return `${tipo}-${hoy}.csv`
+}
+
+/**
+ * La ruta del CSV, con los parámetros que el tipo acepte. Los vacíos no
+ * viajan: `?type=rentabilidad-inmueble` a secas es «el rango por defecto».
+ */
+export function rutaDeExport(
+  tipo: TipoDeExport,
+  params: Record<string, string | undefined> = {},
+): string {
+  const query = new URLSearchParams({ type: tipo })
+  for (const [clave, valor] of Object.entries(params)) {
+    if (valor) query.set(clave, valor)
+  }
+  return `/inmobiliaria/reports/export?${query.toString()}`
+}
+
+/**
+ * Dispara la descarga en el navegador. Es el mismo baile de `<a download>`
+ * que ya hacía `reportes/page.tsx`; sacado acá para que la pantalla de
+ * rentabilidad no lo repita.
+ */
+export function descargarBlob(blob: Blob, nombre: string): void {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = nombre
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }

@@ -70,7 +70,7 @@ export default function SolicitudesPage() {
               <li key={s.id}>
                 <Link
                   href={`/panel/solicitudes/${s.id}`}
-                  className="flex items-center justify-between gap-4 p-4 rounded-xl bg-surface border border-border hover:bg-surface-muted transition-colors"
+                  className="flex items-center justify-between gap-4 p-4 rounded-lg bg-surface border border-border hover:bg-surface-muted transition-colors"
                 >
                   <div className="min-w-0">
                     <p className="font-medium">{TIPO_LABELS[s.tipo] ?? s.tipo}</p>

@@ -6,7 +6,7 @@
  *   (2) uploadPropertyPhotos: uploads valid files in order via propertiesApi.uploadImage
  *   (3) per-file failures are collected, never thrown (property already exists)
  *   (4) invalid files are skipped without calling the API
- *   (5) respects the 10-photo backend cap
+ *   (5) respects the backend photo cap (PROPERTY_PHOTO_MAX_COUNT)
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -99,7 +99,7 @@ describe('uploadPropertyPhotos', () => {
     ]);
   });
 
-  it('caps uploads at the backend limit of 10 photos', async () => {
+  it('caps uploads at the backend limit (PROPERTY_PHOTO_MAX_COUNT)', async () => {
     const files = Array.from({ length: PROPERTY_PHOTO_MAX_COUNT + 3 }, (_, i) =>
       makeFile(`${i}.jpg`, 'image/jpeg'),
     );

@@ -131,7 +131,7 @@ export default function ContratosPage() {
 
         {/* Urgent Action Banner */}
         {needsAction.length > 0 && (
-          <div className="mb-6 p-4 bg-warning-soft border border-warning/30 rounded-xl">
+          <div className="mb-6 p-4 bg-warning-soft border border-warning/30 rounded-lg">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-warning-soft flex items-center justify-center">
                 <WarningCircle className="w-5 h-5 text-warning" />
@@ -169,7 +169,7 @@ export default function ContratosPage() {
 
           {/* Contracts List */}
           <TabsContent value={activeTab} className="mt-0">
-            <section className="bg-surface rounded-xl border border-border overflow-hidden">
+            <section className="bg-surface rounded-lg border border-border overflow-hidden">
               {filteredContracts.length > 0 ? (
                 <div className="divide-y divide-border-faint">
                   {filteredContracts.map((contract) => (

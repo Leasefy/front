@@ -98,7 +98,7 @@ export default function ConciliacionReglasPage() {
         </div>
 
         {/* Ink effect banner (anchor) */}
-        <section className="relative overflow-hidden rounded-2xl px-6 py-5" style={{ background: INK_GRADIENT, boxShadow: '0 24px 60px -28px rgba(20, 19, 15,0.5)' }}>
+        <section className="relative overflow-hidden rounded-lg px-6 py-5" style={{ background: INK_GRADIENT, boxShadow: '0 24px 60px -28px rgba(20, 19, 15,0.5)' }}>
           <div className="pointer-events-none absolute -inset-x-2 top-[42%] h-[46%] text-white/[0.10]">
             <BrandContour />
           </div>
@@ -118,7 +118,7 @@ export default function ConciliacionReglasPage() {
         </section>
 
         {/* Conciliación automática */}
-        <section className="rounded-2xl border border-border bg-surface p-5">
+        <section className="rounded-lg border border-border bg-surface p-5">
           <Eyebrow>Conciliación automática</Eyebrow>
           <div className="mt-2 divide-y divide-border-faint">
             <Row title="Conciliar automáticamente" desc="Cuando la confianza del match supere el umbral, Gabriela concilia sin pedir revisión.">
@@ -143,7 +143,7 @@ export default function ConciliacionReglasPage() {
         </section>
 
         {/* Excedentes y saldos */}
-        <section className="rounded-2xl border border-border bg-surface p-5">
+        <section className="rounded-lg border border-border bg-surface p-5">
           <Eyebrow>Excedentes y saldos</Eyebrow>
           <div className="mt-2 divide-y divide-border-faint">
             <Row title="Aplicar excedentes al mes siguiente" desc="Si el inquilino paga de más, el excedente queda como saldo a favor.">
@@ -165,7 +165,7 @@ export default function ConciliacionReglasPage() {
         </section>
 
         {/* Seguridad */}
-        <section className="rounded-2xl border border-border bg-surface p-5">
+        <section className="rounded-lg border border-border bg-surface p-5">
           <Eyebrow>Seguridad</Eyebrow>
           <div className="mt-2 divide-y divide-border-faint">
             <Row title="No conciliar pagos de terceros automáticamente" desc="Si el pagador no es el inquilino, deja el caso en revisión.">
@@ -181,7 +181,7 @@ export default function ConciliacionReglasPage() {
         </section>
 
         {/* Coincidencia */}
-        <section className="rounded-2xl border border-border bg-surface p-5">
+        <section className="rounded-lg border border-border bg-surface p-5">
           <Eyebrow>Coincidencia</Eyebrow>
           <div className="mt-2 divide-y divide-border-faint">
             <Row title="Asociar la referencia bancaria con el documento del inquilino" desc="Usa el número de referencia como una señal fuerte de coincidencia.">

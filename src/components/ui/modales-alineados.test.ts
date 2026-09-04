@@ -186,11 +186,11 @@ describe('los envoltorios de las bandas declaran su marca', () => {
 describe('las cáscaras de modal escritas a mano usan el mismo radio', () => {
   // No todo modal pasa por la primitiva: propietarios, portafolio, ajustes y
   // visitas montan la suya con `createPortal` + una capa `fixed inset-0`. El
-  // radio del DS (§41) es 20px; una cáscara en `rounded-xl` (12px) al lado de
-  // un modal de la primitiva se nota.
+  // radio del DS (§41) es 20px; una cáscara en `rounded-xl` (32px en esta
+  // escala, NO los 12px de Tailwind) al lado de un modal de la primitiva se nota.
   //
-  // El barrido se limita a ESOS archivos a propósito: buscar `rounded-xl` en
-  // todo `src` marca tarjetas y paneles, que sí van en 12px.
+  // El barrido se limita a ESOS archivos a propósito: las tarjetas y paneles
+  // van en `rounded-lg` (22px, DESIGN.md §4), que es otra regla.
   const cascarasAMano = TODOS.filter((p) => {
     const f = readFileSync(p, 'utf8')
     return f.includes('createPortal') && f.includes('inset-0')

@@ -47,6 +47,8 @@ export interface ImportProperty {
   bedrooms?: number;
   bathrooms?: number;
   ownerName?: string;
+  /** Cédula/NIT del propietario: con esto el back resuelve la ficha sin ambigüedad. */
+  ownerDocument?: string;
   ownerPhone?: string;
   status?: string;
   notes?: string;
@@ -92,6 +94,13 @@ export interface ImportWizardState {
   aiAnalyzed: boolean;
   importProgress: number; // 0-100
   importedCount: number;
+  /**
+   * El lote del servidor que este wizard está trabajando. Se escribe al
+   * preparar y al retomar una carga abierta; StepConfirmImport lo lee al
+   * montar. Vive acá —no en el paso— para sobrevivir a «Anterior» y a un
+   * remount: perderlo hacía re-subir el archivo y duplicar el lote.
+   */
+  loteRetomado?: string | null;
 }
 
 // Target fields that columns can map to
@@ -114,6 +123,7 @@ export const TARGET_FIELDS = [
   { key: 'bedrooms', label: 'Habitaciones', required: false },
   { key: 'bathrooms', label: 'Baños', required: false },
   { key: 'ownerName', label: 'Propietario', required: false },
+  { key: 'ownerDocument', label: 'Cédula / NIT del propietario', required: false },
   { key: 'ownerPhone', label: 'Teléfono propietario', required: false },
   { key: 'status', label: 'Estado', required: false },
   { key: 'notes', label: 'Observaciones', required: false },

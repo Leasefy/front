@@ -85,7 +85,7 @@ describe('FLUJOS', () => {
     // que ya existe. Ofrecerla acá invierte el orden del negocio — y la
     // pantalla a la que llevaba (`/ai/estudio/nuevo`) ni siquiera guarda: su
     // botón responde "Próximamente: esto creará el estudio…".
-    expect(FLUJOS.map((f) => f.href)).not.toContain('/panel/inmobiliaria/ai/estudio/nuevo')
+    expect(FLUJOS.map((f) => f.href)).not.toContain('/panel/inmobiliaria/postulaciones/estudio/nuevo')
     expect(FLUJOS.map((f) => f.key)).toContain('asegurabilidad')
   })
 

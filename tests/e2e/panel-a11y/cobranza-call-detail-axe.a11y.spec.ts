@@ -16,7 +16,7 @@ import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const CALL_ID = 'test-call-id'
-const ROUTE = `/panel/inmobiliaria/ai/cobranza/llamadas/${CALL_ID}`
+const ROUTE = `/panel/inmobiliaria/cobros/cobranza/llamadas/${CALL_ID}`
 const CALL_MOCK = `**/cobranza/calls/${CALL_ID}**`
 const TRANSCRIPT_MOCK = `**/cobranza/calls/${CALL_ID}/transcript**`
 const SKELETON_DELAY_MS = 2500

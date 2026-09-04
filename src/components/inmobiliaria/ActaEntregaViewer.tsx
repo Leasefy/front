@@ -75,7 +75,7 @@ function Section({ title, icon, children, defaultOpen = true }: SectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="border border-border rounded-xl overflow-hidden">
+    <div className="border border-border rounded-lg overflow-hidden">
       {/* allowlist: collapsible-section disclosure toggle (icon-tile + title + caret) that drives a
           framer-motion height animation — Cadence Accordion would replace the bespoke animation and
           can't host the rich header; kept native with aria-expanded */}
@@ -124,7 +124,7 @@ interface PartyCardProps {
 
 function PartyCard({ label, name, cedula, phone, email, icon }: PartyCardProps) {
   return (
-    <div className="p-4 rounded-xl bg-surface-muted border border-border">
+    <div className="p-4 rounded-lg bg-surface-muted border border-border">
       <div className="flex items-center gap-3 mb-3">
         <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
           {icon}
@@ -225,7 +225,7 @@ export function ActaEntregaViewer({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-card rounded-xl border border-border p-6">
+      <div className="bg-card rounded-lg border border-border p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -301,7 +301,7 @@ export function ActaEntregaViewer({
           {(Object.entries(inventorySummary) as [ItemCondition, number][]).map(([condition, count]) => (
             <div
               key={condition}
-              className={cn('px-3 py-2 rounded-xl text-center', getConditionColor(condition))}
+              className={cn('px-3 py-2 rounded-lg text-center', getConditionColor(condition))}
             >
               <p className="text-lg font-bold">{count}</p>
               <p className="text-xs">{getConditionLabel(condition)}</p>
@@ -318,7 +318,7 @@ export function ActaEntregaViewer({
             return (
               <div
                 key={room}
-                className="border border-border rounded-xl overflow-hidden"
+                className="border border-border rounded-lg overflow-hidden"
               >
                 <div className="px-4 py-3 bg-surface-muted border-b border-border">
                   <h4 className="font-medium text-foreground">
@@ -453,7 +453,7 @@ export function ActaEntregaViewer({
             return (
               <div
                 key={meter.type}
-                className="p-4 rounded-xl bg-surface-muted border border-border"
+                className="p-4 rounded-lg bg-surface-muted border border-border"
               >
                 <div className="flex items-center gap-3 mb-3">
                   <div className={cn('w-10 h-10 rounded-md flex items-center justify-center', colors[meter.type])}>
@@ -489,7 +489,7 @@ export function ActaEntregaViewer({
           {acta.keysDelivered.map((key, index) => (
             <div
               key={index}
-              className="flex items-center gap-3 p-4 rounded-xl bg-card border border-border"
+              className="flex items-center gap-3 p-4 rounded-lg bg-card border border-border"
             >
               <div className="w-10 h-10 rounded-md bg-surface-muted flex items-center justify-center">
                 <Key className="w-5 h-5 text-fg-muted" />
@@ -520,7 +520,7 @@ export function ActaEntregaViewer({
             <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
               {t('inmobiliaria.acta.generalCondition')}
             </p>
-            <span className={cn('px-4 py-2 rounded-xl text-sm font-medium', getConditionColor(acta.generalCondition))}>
+            <span className={cn('px-4 py-2 rounded-lg text-sm font-medium', getConditionColor(acta.generalCondition))}>
               {getConditionLabel(acta.generalCondition)}
             </span>
           </div>
@@ -543,7 +543,7 @@ export function ActaEntregaViewer({
         <Section title={t('inmobiliaria.acta.depositAndDeductions')} icon={<Receipt className="w-4 h-4" />}>
           <div className="space-y-4">
             {/* Deposit Amount */}
-            <div className="flex items-center justify-between p-4 rounded-xl bg-surface-muted border border-border">
+            <div className="flex items-center justify-between p-4 rounded-lg bg-surface-muted border border-border">
               <span className="text-muted-foreground">{t('inmobiliaria.acta.originalDeposit')}</span>
               <span className="font-bold text-foreground">
                 ${acta.depositAmount.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}
@@ -579,7 +579,7 @@ export function ActaEntregaViewer({
 
             {/* Net to Return */}
             {acta.depositToReturn !== undefined && (
-              <div className="flex items-center justify-between p-4 rounded-xl bg-success-soft border border-success/30">
+              <div className="flex items-center justify-between p-4 rounded-lg bg-success-soft border border-success/30">
                 <span className="font-medium text-success">
                   {t('inmobiliaria.acta.amountToReturn')}
                 </span>
@@ -613,7 +613,7 @@ export function ActaEntregaViewer({
               <div
                 key={party}
                 className={cn(
-                  'p-4 rounded-xl border-2 text-center transition-all',
+                  'p-4 rounded-lg border-2 text-center transition-all',
                   status === 'signed'
                     ? 'border-success/30 bg-success-soft'
                     : status === 'pending'
@@ -675,7 +675,7 @@ export function ActaEntregaViewer({
         </div>
 
         {acta.status === 'completed' && acta.completedAt && (
-          <div className="mt-4 p-4 rounded-xl bg-success-soft border border-success/30 text-center">
+          <div className="mt-4 p-4 rounded-lg bg-success-soft border border-success/30 text-center">
             <CheckCircle className="w-8 h-8 text-success mx-auto mb-2" weight="fill" />
             <p className="font-medium text-success">{t('inmobiliaria.acta.actaCompleted')}</p>
             <p className="text-sm text-success">
@@ -707,7 +707,7 @@ export function ActaEntregaViewer({
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative max-w-3xl max-h-[80vh] rounded-xl overflow-hidden"
+              className="relative max-w-3xl max-h-[80vh] rounded-lg overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <img

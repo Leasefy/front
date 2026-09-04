@@ -16,6 +16,16 @@
  * ese árbol completo solo para leer un array de navegación es un test caro
  * y frágil frente a uno que verifica exactamente la clase de error que
  * ocurrió: un identificador usado que nunca fue declarado.
+ *
+ * Actualizado en la integración `mvp-v2.0.0` (T-0061): la arquitectura nueva
+ * del sidebar (`arquitectura-del-panel.ts` / `sidebar-del-panel.ts`) mudó el
+ * badge de `migracionesPendientes` de un `badge: <ident>` inline a un campo
+ * `contratos: <ident>` del objeto que recibe `filasDelSidebar(...)` —
+ * `pilotoPendientes` es el único que sigue siendo `badge:` directo (la fila
+ * "Inicio" vive en el layout, no en la arquitectura de datos). El extractor
+ * ahora reconoce las tres formas; la regresión que cuida el test —una
+ * variable de badge que quedó sin declarar o sin usar tras un merge— es la
+ * misma.
  */
 
 import { readFileSync } from 'node:fs'
@@ -43,9 +53,14 @@ function nombresDeclaradosPorHooks(): Set<string> {
   return declarados
 }
 
-/** Identificadores usados como `badge: <ident>` en las filas de nav. */
+/**
+ * Identificadores usados como badge en las filas de nav: `badge: <ident>`
+ * (la fila "Inicio", inline en el layout) o `contratos: <ident>` /
+ * `postulaciones: <ident>` (el objeto de badges que recibe
+ * `filasDelSidebar(...)`, ver `sidebar-del-panel.ts`).
+ */
 function identificadoresDeBadge(): string[] {
-  return [...src.matchAll(/badge:\s*([A-Za-z_][A-Za-z0-9_]*)/g)].map((m) => m[1])
+  return [...src.matchAll(/\b(?:badge|contratos|postulaciones):\s*([A-Za-z_][A-Za-z0-9_]*)/g)].map((m) => m[1])
 }
 
 describe('badges del sidebar de inmobiliaria — regresión T-0049', () => {

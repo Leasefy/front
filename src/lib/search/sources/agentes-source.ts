@@ -7,7 +7,7 @@
  * agentesApi.getAll() has no search param; we fetch all and filter client-side.
  *
  * Permission: agentes:view
- * href: /panel/inmobiliaria/agentes/{id}
+ * href: /panel/inmobiliaria/configuracion/equipo/{id}
  */
 
 import { getAccessToken } from '@/lib/api/client';
@@ -86,7 +86,7 @@ export const agentesSource: SearchSource = {
             color: STATUS_COLORS[item.status] ?? 'neutral',
           },
         ],
-        href: `/panel/inmobiliaria/agentes/${item.id}`,
+        href: `/panel/inmobiliaria/configuracion/equipo/${item.id}`,
         preview: {
           type: 'agente',
           id: item.id,

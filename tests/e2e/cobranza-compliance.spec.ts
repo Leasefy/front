@@ -1,10 +1,10 @@
 import { test, expect, type Page } from '@playwright/test'
 
 // Phase 34 plan 34-09 — Playwright spec for the cobranza COMPLIANCE surfaces:
-//   - /panel/inmobiliaria/ai/cobranza/compliance         (overview)
-//   - /panel/inmobiliaria/ai/cobranza/compliance/ley-2300
-//   - /panel/inmobiliaria/ai/cobranza/compliance/opt-out
-//   - /panel/inmobiliaria/ai/cobranza/compliance/audit
+//   - /panel/inmobiliaria/cobros/cobranza/compliance         (overview)
+//   - /panel/inmobiliaria/cobros/cobranza/compliance/ley-2300
+//   - /panel/inmobiliaria/cobros/cobranza/compliance/opt-out
+//   - /panel/inmobiliaria/cobros/cobranza/compliance/audit
 //
 // Decisions covered (annotated on each test):
 //   - D-34-RES-A1 page-level red banner when ANY open habeas-data request <= 15 days
@@ -162,7 +162,7 @@ async function assertOverviewBanner(page: Page, vp: { width: number; height: num
   await page.setViewportSize({ width: vp.width, height: vp.height })
   await seedAuth(page)
   await mockComplianceOverview(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/compliance')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/compliance')
   const banner = page
     .locator('[role="alert"], [data-testid*="habeas-banner"], [data-testid*="alert-banner"]')
     .filter({ hasText: /.+/ })
@@ -192,7 +192,7 @@ test('compliance overview NO banner when all remaining_days > 15 — D-34-RES-A1
       { event_id: 'hd-safe', debtor_id_masked: '***999', opened_at: '2026-05-01T10:00:00Z', remaining_days: 20, color: 'green' },
     ],
   })
-  await page.goto('/panel/inmobiliaria/ai/cobranza/compliance')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/compliance')
   await page.waitForLoadState('domcontentloaded')
   await page.waitForTimeout(500)
   const alertCount = await page
@@ -210,7 +210,7 @@ test('habeas data progress bars match 4-tier color scheme — D-34-07', async ({
   await page.setViewportSize({ width: 1440, height: 900 })
   await seedAuth(page)
   await mockComplianceOverview(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/compliance')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/compliance')
   // red-pulse — Tailwind animate-pulse on the bar or border (per 34-07 SUMMARY)
   await expect(page.locator('.animate-pulse').first()).toBeVisible({ timeout: 15_000 })
   // amber/yellow tier (Tailwind bg-amber-500 per 34-07 mapping)
@@ -231,7 +231,7 @@ test('sparkline + retention % render on overview — COBR-UI-10', async ({ page 
   await page.setViewportSize({ width: 1440, height: 900 })
   await seedAuth(page)
   await mockComplianceOverview(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/compliance')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/compliance')
   await expect(
     page.locator('text=/94|94 ?%|retención/i').first(),
   ).toBeVisible({ timeout: 15_000 })
@@ -250,7 +250,7 @@ test('audit-log 4 filters present; no Revelar button adjacent to masked cedula �
   await page.setViewportSize({ width: 1440, height: 900 })
   await seedAuth(page)
   await mockAuditLog(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/compliance/audit')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/compliance/audit')
   await page.waitForLoadState('domcontentloaded')
   // Table renders
   await expect(page.locator('table, [role="table"]').first()).toBeVisible({ timeout: 15_000 })
@@ -299,7 +299,7 @@ test('audit-log search filter sends q param to backend — D-34-08', async ({ pa
       body: JSON.stringify({ items: [] }),
     })
   })
-  await page.goto('/panel/inmobiliaria/ai/cobranza/compliance/audit')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/compliance/audit')
   await page.waitForLoadState('domcontentloaded')
   const searchInput = page
     .locator('input[type="text"], input[type="search"]')
@@ -331,7 +331,7 @@ test('audit-log date-range filter sends from/to params — D-34-08', async ({ pa
       body: JSON.stringify({ items: [] }),
     })
   })
-  await page.goto('/panel/inmobiliaria/ai/cobranza/compliance/audit')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/compliance/audit')
   await page.waitForLoadState('domcontentloaded')
   await page.waitForTimeout(800)
   // Default `from`/`to` (last 7d) should be in the initial query
@@ -364,7 +364,7 @@ test('ley-2300 sub-page renders attempt table — COBR-UI-10', async ({ page }) 
       }),
     })
   })
-  await page.goto('/panel/inmobiliaria/ai/cobranza/compliance/ley-2300')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/compliance/ley-2300')
   await expect(page.locator('table, [role="table"]').first()).toBeVisible({ timeout: 15_000 })
   await expect(page.locator('text=***100').first()).toBeVisible({ timeout: 5_000 })
 })
@@ -395,7 +395,7 @@ test('opt-out registry shows pending items + acknowledge button — COBR-UI-10',
       }),
     })
   })
-  await page.goto('/panel/inmobiliaria/ai/cobranza/compliance/opt-out')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/compliance/opt-out')
   await expect(page.locator('table, [role="table"]').first()).toBeVisible({ timeout: 15_000 })
   await expect(
     page.locator('text=/Pendiente|Marcar.?acuse|Acknowledge/i').first(),
@@ -410,7 +410,7 @@ test('compliance i18n parity — es — XR-05', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await seedAuth(page)
   await mockComplianceOverview(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/compliance')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/compliance')
   await expect(
     page.locator('text=/Retención|Habeas Data|Ley 2300/i').first(),
   ).toBeVisible({ timeout: 15_000 })
@@ -423,7 +423,7 @@ test('compliance i18n parity — en — XR-05', async ({ page }) => {
   ])
   await seedAuth(page)
   await mockComplianceOverview(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/compliance')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/compliance')
   await expect(
     page.locator('text=/Retention|Habeas Data|Law 2300|Compliance/i').first(),
   ).toBeVisible({ timeout: 15_000 })
@@ -447,17 +447,17 @@ async function assertNoScroll(page: Page, vp: { width: number; height: number; n
 }
 
 test('compliance overview no horizontal scroll — iPhone-14 — XR-03', async ({ page }) => {
-  await assertNoScroll(page, VIEWPORTS[0], '/panel/inmobiliaria/ai/cobranza/compliance')
+  await assertNoScroll(page, VIEWPORTS[0], '/panel/inmobiliaria/cobros/cobranza/compliance')
 })
 test('compliance overview no horizontal scroll — iPad-Mini — XR-03', async ({ page }) => {
-  await assertNoScroll(page, VIEWPORTS[1], '/panel/inmobiliaria/ai/cobranza/compliance')
+  await assertNoScroll(page, VIEWPORTS[1], '/panel/inmobiliaria/cobros/cobranza/compliance')
 })
 test('compliance overview no horizontal scroll — Desktop — XR-03', async ({ page }) => {
-  await assertNoScroll(page, VIEWPORTS[2], '/panel/inmobiliaria/ai/cobranza/compliance')
+  await assertNoScroll(page, VIEWPORTS[2], '/panel/inmobiliaria/cobros/cobranza/compliance')
 })
 test('compliance audit no horizontal scroll — iPhone-14 — XR-03', async ({ page }) => {
-  await assertNoScroll(page, VIEWPORTS[0], '/panel/inmobiliaria/ai/cobranza/compliance/audit')
+  await assertNoScroll(page, VIEWPORTS[0], '/panel/inmobiliaria/cobros/cobranza/compliance/audit')
 })
 test('compliance audit no horizontal scroll — Desktop — XR-03', async ({ page }) => {
-  await assertNoScroll(page, VIEWPORTS[2], '/panel/inmobiliaria/ai/cobranza/compliance/audit')
+  await assertNoScroll(page, VIEWPORTS[2], '/panel/inmobiliaria/cobros/cobranza/compliance/audit')
 })

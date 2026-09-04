@@ -4,6 +4,7 @@ import {
   recalcularEstado,
   escribirCampo,
   resolveImportListingType,
+  requisitoDe,
   MINIMO_CANON,
   MINIMO_AREA,
   MINIMO_VENTA,
@@ -15,6 +16,7 @@ function inmueble(parcial: Partial<ImportProperty> = {}): ImportProperty {
     _rowIndex: 0,
     propertyAddress: 'Calle 39A # 25-14',
     propertyCity: 'Bogotá',
+    propertyZone: 'Teusaquillo',
     monthlyRent: 1_900_000,
     bathrooms: 1,
     propertyArea: 35,
@@ -33,6 +35,7 @@ describe('faltantesParaElBack', () => {
 
   it.each([
     ['propertyAddress', { propertyAddress: '' }],
+    ['propertyZone', { propertyZone: '' }],
     ['monthlyRent', { monthlyRent: undefined }],
     ['bathrooms', { bathrooms: undefined }],
     ['propertyArea', { propertyArea: undefined }],
@@ -193,5 +196,33 @@ describe('escribirCampo', () => {
   it('escribir otro campo no toca la marca de dirección aproximada', () => {
     const aproximada = inmueble({ propertyAddress: 'Itagüí', direccionAproximada: true });
     expect(escribirCampo(aproximada, 'propertyZone', 'Centro').direccionAproximada).toBe(true);
+  });
+});
+
+describe('escribirCampo — el input de reparación entiende los mismos formatos que el archivo (auditoría 2026-09-01)', () => {
+  it('«65,5» de área tipeada a mano es 65,5 — no 655', () => {
+    const p = escribirCampo(inmueble(), 'propertyArea', '65,5');
+    expect(p.propertyArea).toBe(65.5);
+  });
+
+  it("«1'850.000» con apóstrofo de miles entra entero", () => {
+    expect(escribirCampo(inmueble(), 'monthlyRent', "1'850.000").monthlyRent).toBe(1_850_000);
+  });
+
+  it('un texto que no es número queda vacío, nunca un número inventado', () => {
+    expect(escribirCampo(inmueble(), 'monthlyRent', 'tres millones').monthlyRent).toBeUndefined();
+  });
+});
+
+describe('requisitoDe', () => {
+  it('describe un campo aunque ya esté completo — lo necesita el input que se queda', () => {
+    const r = requisitoDe('propertyZone');
+    expect(r).toEqual({ campo: 'propertyZone', etiqueta: 'Barrio', ayuda: 'El barrio o sector del inmueble.', tipo: 'texto' });
+    expect(requisitoDe('monthlyRent').sufijo).toBe('COP');
+  });
+
+  it('faltantesParaElBack devuelve exactamente lo que dice el catálogo', () => {
+    const faltan = faltantesParaElBack(inmueble({ propertyZone: '', propertyArea: undefined }));
+    expect(faltan).toEqual([requisitoDe('propertyZone'), requisitoDe('propertyArea')]);
   });
 });

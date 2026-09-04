@@ -56,7 +56,7 @@ export default function SeleccionPage() {
                 <li key={p.id}>
                   <Link
                     href={`/panel/seleccion/${p.id}`}
-                    className="flex items-center justify-between gap-4 p-4 rounded-xl bg-surface border border-border hover:bg-surface-muted transition-colors"
+                    className="flex items-center justify-between gap-4 p-4 rounded-lg bg-surface border border-border hover:bg-surface-muted transition-colors"
                   >
                     <div className="min-w-0">
                       <p className="font-medium truncate">{p.propertyLabel}</p>

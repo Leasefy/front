@@ -1,0 +1,91 @@
+﻿Dirección del inmueble,Nombre del arrendatario,Cédula del arrendatario,Correo del arrendatario,Teléfono del arrendatario,Nombre del propietario,Documento del propietario,Fecha de inicio,Fecha de terminación,Canon de arrendamiento,Depósito,Día de pago,Uso del inmueble,Periodicidad,Comisión de administración
+Calle 75 # 57-31 Apto 802,Claudia Patricia Rodríguez Castaño,43106494,claudia.rodriguez@example.com,3239063726,Luisa Fernanda Cardona Torres,1019126067,2024-04-10,2027-04-10,2400000,0,5,VIVIENDA,MENSUAL,9
+Carrera 39D # 12-92 Apto 1003,Nicolás Rojas Vélez,43068270,nicolas.rojas@example.com,3052456341,Isabella Toro Salazar,80178907,2025-01-20,2027-01-20,1600000,0,5,VIVIENDA,MENSUAL,10
+Calle 7 # 91-82 Of. 1301,Mauricio Castaño Sánchez,613797,mauricio.castano@example.com,3165568650,Inversiones Los Cerezos S.A.S.,890501723,2024-06-15,2027-06-15,6050000,6050000,15,COMERCIAL,BIMESTRAL,8
+Carrera 44 # 94-6 Apto 1703,Alejandro Vargas Cardona,80048600,alejandro.vargas86@example.com,3130938319,Gloria Inés Agudelo Botero,52365464,2025-11-20,2026-11-20,4050000,0,15,VIVIENDA,MENSUAL,10
+Calle 51 # 27-72 Casa 1,Nicolás Hoyos Ospina,1065436660,nicolas.hoyos@example.com,3047352286,Nataly Ramírez Valencia,32017049,2024-07-01,2027-07-01,3550000,0,5,VIVIENDA,MENSUAL,10
+Carrera 6 # 81-14 Apto 901,Lina María Agudelo Torres,1007577315,lina.agudelo86@example.com,3147979960,Fabián Agudelo Gómez,1095898901,2024-11-05,2026-11-05,3700000,0,7,VIVIENDA,MENSUAL,8
+Carrera 29 # 35-73,Ana María Vélez Echeverri,51964363,ana.velez@example.com,3017857880,Gloria Inés Gallego Marín,303682,2025-12-05,2026-12-05,2100000,0,5,VIVIENDA,MENSUAL,8
+Carrera 38C # 93-71,Luz Marina Herrera Botero,52068938,luz.herrera75@example.com,3152558821,Esteban Ramírez Franco,1022531659,2025-02-20,2027-02-20,3850000,0,1,VIVIENDA,MENSUAL,8
+Circular 15 # 99-34 Apto 1801,Valentina Jaramillo Botero,16101164,valentina.jaramillo@example.com,3162976750,Fiduciaria del Valle S.A.,901905858,2026-05-05,2027-05-05,1300000,0,3,VIVIENDA,MENSUAL,10
+Carrera 4 # 70-54 Of. 1505,Lina María Salazar Uribe,51856256,lina.salazar@example.com,3133328810,Camila Echeverri Uribe,31671656,2026-05-01,2027-05-01,4600000,9200000,5,COMERCIAL,BIMESTRAL,10
+Calle 135 # 58-45 Apto 1103,Lina María Castaño Hernández,79224353,lina.castano@example.com,3226039649,Luis Alberto García Moreno,1087508433,2024-07-10,2027-07-10,4100000,0,5,VIVIENDA,MENSUAL,10
+Diagonal 38 # 84-69 Apto 1004,Nataly Henao Mejía,1089198623,nataly.henao89@example.com,3040516447,Camila Arango Londoño,70404179,2024-06-01,2027-06-01,1850000,0,5,VIVIENDA,MENSUAL,8
+Carrera 84 # 25-96 Apto 701,Lina María Pérez Castro,1023998502,lina.perez96@example.com,3100033878,Iván Darío Mejía Agudelo,1071161259,2025-06-15,2027-06-15,3300000,0,5,VIVIENDA,MENSUAL,8
+Carrera 143 Sur # 44-68 Local 14,Julián David Herrera Correa,71006561,julian.herrera@example.com,3100026903,Mariana Pérez Hernández,435025,2026-06-01,2027-06-01,5700000,5700000,5,COMERCIAL,MENSUAL,10
+Avenida 10 # 59-90 Local 7,Juliana Arango Muñoz,32949427,juliana.arango@example.com,3008118030,Luis Alberto García Moreno,1087508433,2025-08-15,2027-08-15,8950000,8950000,10,COMERCIAL,MENSUAL,10
+Carrera 55 # 24-3 Apto 202,Ana María Vélez Ospina,1085846331,ana.velez80@example.com,3504287825,Carolina García Duque,1043233293,2025-04-05,2027-04-05,3550000,0,15,VIVIENDA,MENSUAL,10
+Calle 59 # 91-2 Apto 1404,Ana María Henao García,1001183036,ana.henao@example.com,3237996839,Marta Cecilia Torres Correa,1094455983,2025-07-05,2027-07-05,1500000,0,10,VIVIENDA,MENSUAL,10
+Calle 40 # 15-19 Apto 1602,Héctor Fabio Toro López,43492096,hector.toro78@example.com,3180103700,Camila Echeverri Uribe,31671656,2026-02-20,2027-02-20,2050000,0,1,VIVIENDA,MENSUAL,10
+Carrera 31 # 74-29 Apto 903,Nicolás Marín Franco,1011096446,nicolas.marin@example.com,3002653766,Paula Andrea Uribe Castaño,1007772380,2025-06-05,2027-06-05,1000000,0,3,VIVIENDA,MENSUAL,10
+Carrera 53 # 18-70 Apto 802,Carlos Andrés Arango López,1058115576,carlos.arango@example.com,3150730735,Esteban Ramírez Franco,1022531659,2024-06-05,2027-06-05,1400000,0,1,VIVIENDA,MENSUAL,9
+Transversal 43 # 30-93 Local 6,Camilo Londoño Uribe,41271634,camilo.londono70@example.com,3507373537,Mónica Liliana Martínez Franco,16668716,2026-03-15,2027-03-15,7100000,14200000,1,COMERCIAL,MENSUAL,10
+Carrera 17 # 28-49 Apto 801,Mateo Marín Torres,66896304,mateo.marin71@example.com,3171523563,Luisa Fernanda Echeverri Uribe,1097788350,2024-04-05,2027-04-05,1400000,0,3,VIVIENDA,MENSUAL,8
+Calle 72 # 74-77 Apto 504,Luis Alberto Torres Franco,66578576,luis.torres73@example.com,3156296233,Fiduciaria del Valle S.A.,901905858,2024-07-01,2027-07-01,1100000,0,5,VIVIENDA,MENSUAL,10
+Calle 45B # 81-25,Nicolás Londoño Jaramillo,70814637,nicolas.londono@example.com,3014365039,Camila Arango Londoño,70404179,2026-05-20,2027-05-20,5700000,0,5,VIVIENDA,MENSUAL,8
+Diagonal 43 Bis # 37-8 Of. 202,Adriana Castaño Jaramillo,79317028,adriana.castano78@example.com,3209120778,Mariana Pérez Hernández,435025,2026-05-15,2027-05-15,3800000,3800000,5,COMERCIAL,MENSUAL,10
+Carrera 9 # 26-93 Apto 901,Wilmer Zapata Botero,70965794,wilmer.zapata@example.com,3056201407,Nataly Rojas Ochoa,79049567,2026-01-01,2027-01-01,1550000,0,5,VIVIENDA,MENSUAL,10
+Circular 169 # 86-61 Apto 201,Marcela Castro Marín,1038635200,marcela.castro@example.com,3174644590,Camilo Arango Bedoya,79594652,2024-04-20,2027-04-20,1600000,0,10,VIVIENDA,MENSUAL,9
+Calle 155 # 72-12 Casa 3,Nicolás Valencia López,19919717,nicolas.valencia84@example.com,3103469553,Yesica López López,1073813760,2024-11-05,2026-11-05,3650000,0,10,VIVIENDA,MENSUAL,9
+Carrera 136 # 7-36 Casa 17,Nataly Rojas Rojas,1006954622,nataly.rojas86@example.com,,Constructora Altavista S.A.,900748163,2025-02-05,2027-02-05,5050000,0,1,VIVIENDA,MENSUAL,8
+Calle 63 # 66-38 Of. 503,Héctor Fabio Hernández Botero,1054494547,hector.hernandez80@example.com,3006577769,Felipe Ospina Vélez,1068666105,2026-03-20,2027-03-20,4050000,4050000,15,COMERCIAL,MENSUAL,9
+Carrera 17 # 83-96 Apto 1502,Mateo Pérez Jaramillo,79596023,mateo.perez@example.com,3132543924,Juliana Mejía García,19395162,2024-10-01,2026-10-01,1550000,0,1,VIVIENDA,MENSUAL,8
+Avenida 84 # 3-48 Apto 1004,Felipe Pérez Escobar,70432424,felipe.perez76@example.com,,Fiduciaria del Valle S.A.,901905858,2025-04-05,2027-04-05,3700000,0,1,VIVIENDA,MENSUAL,10
+Carrera 23 # 10-81 Apto 1603,Julián David Vargas Zapata,71487190,julian.vargas@example.com,3120827848,Mariana Pérez Hernández,435025,2024-02-20,2027-02-20,5200000,0,10,VIVIENDA,MENSUAL,10
+Calle 150 # 65-70 Casa 31,Rosa Elvira Londoño Ospina,654609,rosa.londono@example.com,3127224305,Constructora Altavista S.A.,900748163,2024-06-05,2027-06-05,6300000,0,3,VIVIENDA,MENSUAL,10
+Diagonal 6 # 64-85 Of. 1205,Nicolás Henao Mejía,1031813835,nicolas.henao81@example.com,3050160847,Jaime Ramírez Echeverri,51617302,2025-10-15,2026-10-15,2100000,4200000,10,COMERCIAL,MENSUAL,10
+Calle 84C # 41-35 Casa 29,María Fernanda Giraldo Osorio,43718020,maria.giraldo96@example.com,3234389591,Nataly Ramírez Valencia,32017049,2025-06-01,2027-06-01,4100000,0,5,VIVIENDA,MENSUAL,9
+Calle 23 # 70-72 Of. 401,Rodrigo Vargas Valencia,19364836,rodrigo.vargas74@example.com,3047509085,Iván Darío Franco Hoyos,43840977,2024-11-15,2026-11-15,2650000,2650000,10,COMERCIAL,BIMESTRAL,10
+Diagonal 28 # 24-85 Apto 1402,Óscar Darío Echeverri Montoya,1057534296,oscar.echeverri@example.com,3100961266,Gloria Inés Betancur Ospina,52292383,2024-02-01,2027-02-01,3700000,0,5,VIVIENDA,MENSUAL,10
+Carrera 10 # 27-27 Apto 803,Catalina García Franco,80938626,catalina.garcia@example.com,3219995829,Camilo Arango Bedoya,79594652,2024-03-01,2027-03-01,4800000,0,1,VIVIENDA,MENSUAL,10
+Calle 166 Sur # 77-28 Apto 202,Felipe Hoyos Marín,32449071,felipe.hoyos76@example.com,3166916848,Marcela Arango Sánchez,1037572235,2024-04-05,2027-04-05,5250000,0,10,VIVIENDA,MENSUAL,9
+Diagonal 17 # 26-8 Bodega 28,Fabián Correa Gallego,1048797819,fabian.correa@example.com,3054853545,Laura Castro Hoyos,1070448134,2026-02-05,2027-02-05,15000000,15000000,15,COMERCIAL,BIMESTRAL,10
+Calle 157 # 26-24 Apto 1101,Mauricio Toro Palacio,574494,mauricio.toro@example.com,3002537274,Felipe Ospina Vélez,1068666105,2024-04-05,2027-04-05,2800000,0,15,VIVIENDA,MENSUAL,10
+Calle 17 # 58-43 Apto 401,Diana Carolina López Agudelo,1068925155,diana.lopez@example.com,3101849931,Yolanda Cardona Valencia,51696863,2025-08-05,2027-08-05,4450000,0,5,VIVIENDA,MENSUAL,9
+Carrera 161 # 4-10 Casa 27,Andrés Felipe Martínez Rodríguez,1093022843,andres.martinez@example.com,3232324655,Camilo Arango Bedoya,79594652,2026-05-20,2027-05-20,7200000,0,5,VIVIENDA,MENSUAL,8
+Calle 75 # 10-91 Apto 1002,Leonardo Martínez Duque,568882,leonardo.martinez@example.com,3058342462,Camila Arango Londoño,70404179,2025-10-10,2026-10-10,1100000,0,3,VIVIENDA,MENSUAL,10
+Diagonal 18D # 80-32 Casa 20,Édgar Uribe Escobar,1017258723,edgar.uribe99@example.com,3238338986,Iván Darío Mejía Agudelo,1071161259,2024-10-20,2026-10-20,2950000,0,3,VIVIENDA,MENSUAL,8
+Calle 53 # 60-72 Apto 1103,Claudia Patricia Giraldo Martínez,1036513818,claudia.giraldo83@example.com,3101789426,Édgar Cardona Vélez,1076067324,2024-07-01,2027-07-01,1950000,0,5,VIVIENDA,MENSUAL,8
+Calle 48 # 53-65 Apto 1104,Mateo Muñoz Cardona,16734726,mateo.munoz@example.com,3135546873,Álvaro Muñoz Gallego,1089571656,2024-11-15,2026-11-15,3650000,0,7,VIVIENDA,MENSUAL,8
+Carrera 26 # 33-94,Héctor Fabio Martínez Hoyos,41611756,hector.martinez@example.com,3045150608,Mariana Pérez Hernández,435025,2024-05-15,2027-05-15,5400000,0,1,VIVIENDA,MENSUAL,10
+Carrera 56 # 50-62 Apto 906,Jaime Duque Vargas,41634666,jaime.duque@example.com,3010856569,Inmobiliaria Santa Ana Ltda.,890527164,2024-03-15,2027-03-15,900000,0,7,VIVIENDA,MENSUAL,10
+Carrera 75 # 86-74 Of. 1104,Carlos Andrés Giraldo Torres,66682699,carlos.giraldo76@example.com,3049554295,Iván Darío Franco Hoyos,43840977,2024-09-01,2027-09-01,5250000,5250000,7,COMERCIAL,MENSUAL,10
+Carrera 35 Bis # 56-82 Of. 1508,Mariana Díaz Rodríguez,1091916798,mariana.diaz83@example.com,3117526935,Yolanda Uribe Ochoa,32294918,2025-06-20,2027-06-20,1550000,3100000,3,COMERCIAL,MENSUAL,10
+Carrera 16 Bis # 97-91 Apto 203,Fabián Hoyos Agudelo,43592571,fabian.hoyos92@example.com,3140047131,Inversiones Los Cerezos S.A.S.,890501723,2024-08-01,2027-08-01,4550000,0,3,VIVIENDA,MENSUAL,10
+Carrera 77 # 16-47 Local 14,Carlos Andrés Montoya Montoya,79264174,carlos.montoya@example.com,3170046930,Patrimonio Familiar Restrepo & Cía. S. en C.,800013137,2024-10-05,2026-10-05,2200000,2200000,1,COMERCIAL,MENSUAL,10
+Calle 4 # 45-16,Nataly Zapata Mejía,51567486,nataly.zapata@example.com,3043995283,Felipe Castro Bedoya,41997305,2024-03-10,2027-03-10,3000000,0,5,VIVIENDA,MENSUAL,8
+Calle 85 # 78-24 Apto 1102,Marta Cecilia García Cardona,1034227969,marta.garcia@example.com,3055478697,Álvaro Muñoz Gallego,1089571656,2026-06-05,2027-06-05,4100000,0,3,VIVIENDA,MENSUAL,8
+Carrera 67 # 27-60 Bodega 5,Hernán Montoya Montoya,41800637,hernan.montoya@example.com,3506546015,Patrimonio Familiar Restrepo & Cía. S. en C.,800013137,2024-02-20,2027-02-20,3650000,7300000,7,COMERCIAL,MENSUAL,10
+Carrera 28 # 5-19 Apto 1003,Sebastián Vargas Escobar,80113128,sebastian.vargas@example.com,3127301927,Felipe Castro Bedoya,41997305,2024-08-05,2027-08-05,1450000,0,7,VIVIENDA,MENSUAL,8
+Calle 6 Bis # 10-96 Local 18,Marta Cecilia Osorio Palacio,51740609,marta.osorio@example.com,3164449517,Marta Cecilia Torres Correa,1094455983,2024-08-05,2027-08-05,9450000,9450000,5,COMERCIAL,MENSUAL,10
+Calle 28 # 42-20 Apto 1403,Mónica Liliana Uribe Ramírez,80659088,monica.uribe@example.com,3509538117,Daniela Quintero Muñoz,1045265284,2025-01-01,2027-01-01,3550000,0,5,VIVIENDA,MENSUAL,9
+Diagonal 39 # 39-66 Apto 1201,Sebastián Restrepo Botero,71442632,sebastian.restrepo@example.com,,Catalina Quintero Moreno,963898,2024-12-15,2026-12-15,750000,0,3,VIVIENDA,MENSUAL,10
+Calle 22 # 77-35 Apto 1804,Gloria Inés Montoya Vélez,1005566885,gloria.montoya76@example.com,3150364540,Gloria Inés Torres Henao,32821863,2024-03-01,2027-03-01,1700000,0,5,VIVIENDA,MENSUAL,9
+Carrera 21 # 3-38 Local 18,Camila García Echeverri,1088980992,camila.garcia@example.com,3200237846,Inversiones Los Cerezos S.A.S.,890501723,2025-07-15,2027-07-15,6750000,13500000,10,COMERCIAL,MENSUAL,9
+Calle 39 # 85-82 Local 17,Álvaro Quintero Toro,1028148910,alvaro.quintero@example.com,3233748476,Luis Alberto García Moreno,1087508433,2025-10-20,2026-10-20,5200000,5200000,3,COMERCIAL,MENSUAL,8
+Diagonal 64B # 16-66 Apto 604,Luz Marina Palacio Arango,94494621,luz.palacio@example.com,3006841647,Juan Camilo Correa Henao,1052462103,2025-12-01,2026-12-01,3500000,0,7,VIVIENDA,MENSUAL,8
+Calle 19 # 46-25 Bodega 19,Daniel Palacio Restrepo,66797537,daniel.palacio@example.com,3055955748,Inmobiliaria Santa Ana Ltda.,890527164,2025-09-05,2026-09-05,10950000,10950000,1,COMERCIAL,MENSUAL,9
+Transversal 135 # 75-66 Apto 404,Héctor Fabio Moreno Restrepo,51053886,hector.moreno@example.com,3132412049,Hernán Hoyos Londoño,1043857358,2024-10-05,2026-10-05,1750000,0,5,VIVIENDA,MENSUAL,8
+Avenida 77 # 25-43 Apto 203,Felipe Ospina Muñoz,1085094965,felipe.ospina82@example.com,3103883411,Rentas Urbanas del Norte S.A.S.,901197238,2024-06-05,2027-06-05,2950000,0,3,VIVIENDA,MENSUAL,10
+Carrera 92 # 78-26 Apto 702,Sandra Milena López Hoyos,66910796,sandra.lopez81@example.com,3201237168,Nicolás Rojas Cardona,1092008255,2024-10-10,2026-10-10,3150000,0,3,VIVIENDA,MENSUAL,9
+Calle 6 # 82-49 Local 16,Alejandro Moreno Uribe,1047511019,alejandro.moreno70@example.com,3106341707,Iván Darío Mejía Agudelo,1071161259,2025-07-01,2027-07-01,4150000,4150000,1,COMERCIAL,MENSUAL,10
+Avenida 89 # 61-20 Apto 601,Iván Darío Bedoya Moreno,1077936570,ivan.bedoya@example.com,3114897528,Felipe Ospina Vélez,1068666105,2024-04-10,2027-04-10,1300000,0,3,VIVIENDA,MENSUAL,8
+Calle 59 # 48-40,Mariana López Jaramillo,1014137653,mariana.lopez87@example.com,3185217914,Luisa Fernanda Cardona Torres,1019126067,2024-06-01,2027-06-01,5800000,0,1,VIVIENDA,MENSUAL,9
+Avenida 41B # 65-56 Apto 1704,Diana Carolina Vélez Palacio,337904,diana.velez90@example.com,3171794678,Constructora Altavista S.A.,900748163,2024-02-15,2027-02-15,4400000,0,1,VIVIENDA,MENSUAL,10
+Calle 40A # 55-12 Apto 1501,Catalina Castro Gómez,71201473,catalina.castro@example.com,3185490571,Angélica Agudelo Giraldo,71880644,2025-06-15,2027-06-15,1750000,0,1,VIVIENDA,MENSUAL,9
+Avenida 41 # 29-72 Apto 102,Luisa Fernanda Ochoa Hernández,381555,luisa.ochoa@example.com,3179070411,Nataly Ramírez Valencia,32017049,2024-02-10,2027-02-10,2400000,0,5,VIVIENDA,MENSUAL,10
+Calle 159 # 86-84 Apto 1004,Esteban Hoyos Londoño,1039108675,esteban.hoyos77@example.com,3014216070,Héctor Fabio Ramírez Zapata,1091653739,2025-12-01,2026-12-01,2300000,0,5,VIVIENDA,MENSUAL,10
+Calle 51 # 75-6,Wilmer García López,1089089857,wilmer.garcia@example.com,3119268455,Yolanda Cardona Salazar,70052644,2026-06-20,2027-06-20,4700000,0,10,VIVIENDA,MENSUAL,10
+Transversal 45 # 41-2 Apto 1503,Beatriz Elena Hoyos Vargas,32310792,beatriz.hoyos81@example.com,3508831049,Patrimonio Familiar Restrepo & Cía. S. en C.,800013137,2024-07-01,2027-07-01,2600000,0,10,VIVIENDA,MENSUAL,10
+Calle 14 # 55-49 Local 13,Camila Torres Uribe,31195669,camila.torres@example.com,3127965662,Felipe Castro Bedoya,41997305,2026-02-05,2027-02-05,6350000,6350000,5,COMERCIAL,MENSUAL,10
+Carrera 81C # 93-26 Apto 202,Manuela Bedoya Castaño,1089150444,manuela.bedoya@example.com,3122889565,Nataly Rojas Ochoa,79049567,2025-02-01,2027-02-01,2100000,0,5,VIVIENDA,MENSUAL,10
+Calle 36D # 24-67 Apto 1001,Hernán Ospina Castro,1018471676,hernan.ospina80@example.com,3142625442,Iván Darío Mejía Agudelo,1071161259,2025-05-05,2027-05-05,750000,0,3,VIVIENDA,MENSUAL,8
+Transversal 11 # 41-72 Apto 502,Juliana Cardona Toro,1079136813,juliana.cardona@example.com,3128580599,Constructora Altavista S.A.,900748163,2025-01-01,2027-01-01,3500000,0,5,VIVIENDA,MENSUAL,9
+Carrera 61A # 98-95 Local 18,Hernán Uribe Osorio,43130083,hernan.uribe@example.com,3014792509,Felipe Ospina Vélez,1068666105,2024-04-01,2027-04-01,6200000,12400000,5,COMERCIAL,MENSUAL,8
+Avenida 44 # 29-91 Apto 102,Héctor Fabio Ochoa Botero,605494,hector.ochoa99@example.com,3017897437,Constructora Altavista S.A.,900748163,2024-09-01,2027-09-01,2150000,0,5,VIVIENDA,MENSUAL,9
+Carrera 52 # 95-89 Apto 104,Juliana Vargas Pérez,32618698,juliana.vargas87@example.com,3122296418,Luis Alberto García Moreno,1087508433,2024-09-01,2027-09-01,2300000,0,7,VIVIENDA,MENSUAL,8
+Carrera 63 # 90-29 Local 2,Esteban López Quintero,1018679046,esteban.lopez@example.com,3010082450,Santiago Betancur Castro,41614582,2025-09-05,2026-09-05,3750000,3750000,1,COMERCIAL,MENSUAL,8
+Circular 84 # 82-74 Of. 504,Beatriz Elena Jaramillo Toro,1065135577,beatriz.jaramillo86@example.com,3132341021,Leonardo Cardona Restrepo,1061339665,2025-11-01,2026-11-01,4650000,4650000,15,COMERCIAL,MENSUAL,8
+Avenida 56 # 58-80 Apto 801,Leonardo Ospina Martínez,1027057265,leonardo.ospina@example.com,3173398589,Marta Cecilia Torres Correa,1094455983,2024-01-20,2027-01-20,2550000,0,3,VIVIENDA,MENSUAL,10
+Carrera 153A # 14-56 Casa 20,Jaime Gómez Martínez,52683121,jaime.gomez88@example.com,3158869845,Juan Camilo Rojas Agudelo,66495936,2024-02-01,2027-02-01,2950000,0,3,VIVIENDA,MENSUAL,10
+Carrera 55 # 72-14 Apto 1101,Luisa Fernanda Castaño Ramírez,51847427,luisa.castano71@example.com,3229524931,Nicolás Rojas Cardona,1092008255,2024-04-15,2027-04-15,2700000,0,15,VIVIENDA,MENSUAL,9

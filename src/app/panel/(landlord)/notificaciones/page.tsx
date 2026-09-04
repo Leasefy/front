@@ -205,7 +205,7 @@ export default function NotificacionesPage() {
       </div>
 
       {/* Notifications List */}
-      <div className="bg-surface rounded-xl border border-border overflow-hidden">
+      <div className="bg-surface rounded-lg border border-border overflow-hidden">
         {isLoading ? (
           // Loading skeleton
           <div>

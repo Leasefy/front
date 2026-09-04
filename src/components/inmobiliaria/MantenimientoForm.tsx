@@ -132,6 +132,25 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
 
   const selectedConsignacion = consignaciones.find((c) => c.id === selectedId);
 
+  // Sin inmuebles arrendados no hay nada que buscar: el buscador abría un
+  // desplegable con «No se encontraron propiedades» encima de la sección
+  // siguiente (Nico, 2026-09-03). Se dice de frente y sin desplegable.
+  if (consignaciones.length === 0) {
+    return (
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+          {t('inmobiliaria.mantenimiento.property')} <span className="text-danger">*</span>
+        </label>
+        <p
+          className="rounded-lg border border-dashed border-border bg-surface-muted px-4 py-3 text-sm text-fg-muted"
+          data-testid="mantenimiento-sin-inmuebles"
+        >
+          {t('inmobiliaria.mantenimiento.noRentedProperties')}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
@@ -139,7 +158,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
       </label>
 
       {selectedConsignacion ? (
-        <div className="p-4 rounded-xl border border-primary/30 bg-primary-soft">
+        <div className="p-4 rounded-lg border border-primary/30 bg-primary-soft">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3">
               {selectedConsignacion.propertyThumbnail ? (
@@ -203,7 +222,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]"
+                className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg"
               >
                 {filteredConsignaciones.length > 0 ? (
                   filteredConsignaciones.map((consignacion) => (
@@ -273,7 +292,7 @@ function TypeSelector({ selected, onSelect, t }: TypeSelectorProps) {
         {t('inmobiliaria.mantenimiento.maintenanceType')} <span className="text-danger">*</span>
       </label>
       <RadioCardGroup
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+        className="grid grid-cols-2 gap-3"
         value={selected || undefined}
         onValueChange={(v) => onSelect(v as MantenimientoType)}
       >
@@ -282,8 +301,8 @@ function TypeSelector({ selected, onSelect, t }: TypeSelectorProps) {
             key={type.type}
             value={type.type}
             label={
-              <span className="flex items-center gap-2 font-medium">
-                <span className="text-xl leading-none">{type.icon}</span>
+              <span className="flex items-center gap-2 text-sm font-medium">
+                <span className="text-base leading-none">{type.icon}</span>
                 {type.labelEs}
               </span>
             }
@@ -310,8 +329,10 @@ function PrioritySelector({ selected, onSelect, t }: PrioritySelectorProps) {
       <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
         {t('inmobiliaria.mantenimiento.priorityLabel')} <span className="text-danger">*</span>
       </label>
+      {/* Dos columnas: en cuatro, la descripción de cada prioridad se partía
+          palabra por palabra (Nico, 2026-09-03). */}
       <RadioCardGroup
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2"
         value={selected || undefined}
         onValueChange={(v) => onSelect(v as MantenimientoPriority)}
       >
@@ -427,7 +448,7 @@ function PaidBySelector({ selected, onSelect, t }: PaidBySelectorProps) {
         {t('inmobiliaria.mantenimiento.paymentResponsible')} <span className="text-danger">*</span>
       </label>
 
-      <div className="p-4 rounded-xl bg-primary-soft border border-primary/30 mb-4">
+      <div className="p-4 rounded-lg bg-primary-soft border border-primary/30 mb-4">
         <div className="flex gap-3">
           <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
           <p className="text-sm text-primary">
@@ -564,8 +585,8 @@ export function MantenimientoForm({
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Section 1: Property Selection */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-fg dark:text-white flex items-center gap-2">
-          <HouseLine className="w-5 h-5 text-primary" />
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
+          <HouseLine className="h-4 w-4 text-fg-muted" />
           {t('inmobiliaria.mantenimiento.property')}
         </h3>
         <PropertySelector
@@ -584,8 +605,8 @@ export function MantenimientoForm({
 
       {/* Section 2: Request Details */}
       <div className="space-y-6 pt-6 border-t border-border-faint dark:border-border-strong">
-        <h3 className="text-lg font-semibold text-fg dark:text-white flex items-center gap-2">
-          <Wrench className="w-5 h-5 text-primary" />
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
+          <Wrench className="h-4 w-4 text-fg-muted" />
           {t('inmobiliaria.mantenimiento.requestDetail')}
         </h3>
 
@@ -621,7 +642,7 @@ export function MantenimientoForm({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="p-4 rounded-xl bg-warning-soft border border-warning/30"
+            className="p-4 rounded-lg bg-warning-soft border border-warning/30"
           >
             <div className="flex gap-3">
               <Warning className="w-5 h-5 text-warning shrink-0 mt-0.5" />
@@ -692,8 +713,8 @@ export function MantenimientoForm({
 
       {/* Section 3: Responsibility */}
       <div className="space-y-6 pt-6 border-t border-border-faint dark:border-border-strong">
-        <h3 className="text-lg font-semibold text-fg dark:text-white flex items-center gap-2">
-          <Wallet className="w-5 h-5 text-primary" />
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
+          <Wallet className="h-4 w-4 text-fg-muted" />
           {t('inmobiliaria.mantenimiento.responsibility')}
         </h3>
 
@@ -706,8 +727,8 @@ export function MantenimientoForm({
 
       {/* Section 4: Additional Info */}
       <div className="space-y-6 pt-6 border-t border-border-faint dark:border-border-strong">
-        <h3 className="text-lg font-semibold text-fg dark:text-white flex items-center gap-2">
-          <Info className="w-5 h-5 text-primary" />
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
+          <Info className="h-4 w-4 text-fg-muted" />
           {t('inmobiliaria.mantenimiento.additionalInfo')}
         </h3>
 

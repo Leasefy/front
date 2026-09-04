@@ -56,7 +56,7 @@ export function DecisionCard({ decision, onAction, className }: DecisionCardProp
 
   return (
     <div
-      className={cn('rounded-xl border bg-card p-5 space-y-5', c.border, className)}
+      className={cn('rounded-lg border bg-card p-5 space-y-5', c.border, className)}
       data-testid="estudio-decision-card"
       data-result-type={decision.resultType}
     >

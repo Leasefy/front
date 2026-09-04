@@ -103,7 +103,7 @@ export interface UsePendientesResult {
 
 // ── Constantes ───────────────────────────────────────────────────────────────
 
-const BASE = '/panel/inmobiliaria/ai/cobranza'
+const BASE = '/panel/inmobiliaria/cobros/cobranza'
 
 const PRIORIDAD_RANK: Record<PendientePrioridad, number> = {
   alta: 0,

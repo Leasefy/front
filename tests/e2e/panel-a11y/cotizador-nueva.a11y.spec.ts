@@ -10,8 +10,8 @@ import { test, expect } from '@playwright/test'
 import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
-const ROUTE = '/panel/inmobiliaria/ai/cotizador/nueva'
-const RE_QUOTE_ROUTE = '/panel/inmobiliaria/ai/cotizador/nueva?from=test-quote-id'
+const ROUTE = '/panel/inmobiliaria/postulaciones/asegurabilidad/nueva'
+const RE_QUOTE_ROUTE = '/panel/inmobiliaria/postulaciones/asegurabilidad/nueva?from=test-quote-id'
 const METADATA_MOCK = '**/cotizador/quote/test-quote-id/metadata'
 const CARRIERS_MOCK = '**/cotizador/carriers**'
 const SKELETON_DELAY_MS = 2500

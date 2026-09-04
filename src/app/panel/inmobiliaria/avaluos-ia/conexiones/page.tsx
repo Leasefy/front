@@ -55,8 +55,8 @@ const ENTRADAS: Conexion[] = [
 const SALIDAS: Conexion[] = [
   { icon: Megaphone, modulo: 'Publicaciones', ejemplo: 'Publicar al precio recomendado crea el aviso en tu portafolio.', tipo: 'click', href: '/panel/inmobiliaria/inmuebles' },
   { icon: FilePlus, modulo: 'Contratos', ejemplo: 'El canon acordado pre-llena el contrato de arrendamiento.', tipo: 'click', href: '/panel/inmobiliaria/contratos' },
-  { icon: ChatCircleText, modulo: 'Cobranza IA', ejemplo: 'Al arrendarse, el canon entra al recaudo mensual de cobranza.', tipo: 'auto', href: '/panel/inmobiliaria/ai/cobranza' },
-  { icon: ShieldCheck, modulo: 'Estudio del inquilino IA', ejemplo: 'Pasas al interesado a estudio con un clic, sin redigitar nada.', tipo: 'click', href: '/panel/inmobiliaria/ai/estudio' },
+  { icon: ChatCircleText, modulo: 'Cobranza IA', ejemplo: 'Al arrendarse, el canon entra al recaudo mensual de cobranza.', tipo: 'auto', href: '/panel/inmobiliaria/cobros/cobranza' },
+  { icon: ShieldCheck, modulo: 'Estudio del inquilino IA', ejemplo: 'Pasas al interesado a estudio con un clic, sin redigitar nada.', tipo: 'click', href: '/panel/inmobiliaria/postulaciones/estudio' },
   { icon: Kanban, modulo: 'Pipeline', ejemplo: 'Cada solicitud de avalúo entra como oportunidad en tu pipeline.', tipo: 'auto', href: '/panel/inmobiliaria/pipeline' },
   { icon: ChartLine, modulo: 'Reportes y analítica', ejemplo: 'Tus avalúos alimentan las métricas de la inmobiliaria.', tipo: 'auto', href: '/panel/inmobiliaria/reportes' },
 ]
@@ -102,7 +102,7 @@ function ConexionCard({ c }: { c: Conexion }) {
     </>
   )
 
-  const cls = 'group block rounded-xl border border-border bg-surface p-4 transition-colors hover:border-border-strong'
+  const cls = 'group block rounded-lg border border-border bg-surface p-4 transition-colors hover:border-border-strong'
   return c.href ? (
     <Link href={c.href} className={cls}>{inner}</Link>
   ) : (
@@ -125,7 +125,7 @@ export default function ConexionesPage() {
 
         {/* ── Hero (ink anchor) — el flujo ─────────────────────────────── */}
         <section
-          className="relative overflow-hidden rounded-2xl px-7 py-8"
+          className="relative overflow-hidden rounded-lg px-7 py-8"
           style={{ background: INK_GRADIENT, boxShadow: '0 26px 64px -28px rgba(20, 19, 15,0.55)' }}
         >
           <div className="pointer-events-none absolute -inset-x-2 top-[52%] h-[42%] text-white/[0.10]">
@@ -159,7 +159,7 @@ export default function ConexionesPage() {
             </div>
             <ArrowRight className="w-5 h-5 text-white/35" weight="bold" />
             <span
-              className="inline-flex items-center justify-center rounded-xl text-base font-semibold text-white shrink-0"
+              className="inline-flex items-center justify-center rounded-lg text-base font-semibold text-white shrink-0"
               style={{ width: 48, height: 48, background: BLUE, boxShadow: '0 0 0 4px rgba(26,64,255,0.18)' }}
             >
               G

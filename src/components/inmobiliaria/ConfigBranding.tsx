@@ -298,8 +298,8 @@ export function ConfigBranding({
     return (
       <div className="animate-pulse space-y-6">
         <div className="h-8 bg-muted rounded-md w-1/3" />
-        <div className="h-48 bg-muted rounded-xl" />
-        <div className="h-32 bg-muted rounded-xl" />
+        <div className="h-48 bg-muted rounded-lg" />
+        <div className="h-32 bg-muted rounded-lg" />
       </div>
     );
   }
@@ -311,7 +311,7 @@ export function ConfigBranding({
       className="space-y-8"
     >
       {/* Logo Section */}
-      <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
+      <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <div className="flex items-center gap-2 text-foreground">
           <Image className="w-5 h-5 text-fg-muted" weight="duotone" />
           <h3 className="text-base font-semibold">{t('inmobiliaria.config.brandingSection.agencyLogo')}</h3>
@@ -328,7 +328,7 @@ export function ConfigBranding({
           {/* Current Logo Preview */}
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">{t('inmobiliaria.config.brandingSection.currentLogo')}</p>
-            <div className="h-32 rounded-xl border-2 border-dashed border-border bg-muted/30 flex items-center justify-center">
+            <div className="h-32 rounded-lg border-2 border-dashed border-border bg-muted/30 flex items-center justify-center">
               {logoUrl ? (
                 <img
                   src={logoUrl}
@@ -407,7 +407,7 @@ export function ConfigBranding({
       </div>
 
       {/* Color Palette Section — persisted via PUT /inmobiliaria/agency (branding) */}
-      <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
+      <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <div className="flex items-center gap-2 text-foreground">
           <Palette className="w-5 h-5 text-fg-muted" weight="duotone" />
           <h3 className="text-base font-semibold">{t('inmobiliaria.config.brandingSection.brandColors')}</h3>
@@ -462,7 +462,7 @@ export function ConfigBranding({
       </div>
 
       {/* Social Media Section — persisted via PUT /inmobiliaria/agency (branding.socials) */}
-      <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
+      <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <div className="flex items-center gap-2 text-foreground">
           <ShareNetwork className="w-5 h-5 text-fg-muted" weight="duotone" />
           <h3 className="text-base font-semibold">{t('inmobiliaria.config.brandingSection.socials')}</h3>
@@ -521,7 +521,7 @@ export function ConfigBranding({
       </div>
 
       {/* Preview Section */}
-      <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
+      <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <div className="flex items-center gap-2 text-foreground">
           <Eye className="w-5 h-5 text-fg-muted" weight="duotone" />
           <h3 className="text-base font-semibold">{t('inmobiliaria.config.brandingSection.preview')}</h3>
@@ -530,7 +530,7 @@ export function ConfigBranding({
         {/* allowlist: the Preview block is a live branding MOCKUP rendered with the
             default brand colors via inline `style`. Kept native (sample/preview
             precedent). */}
-        <div className="p-6 rounded-xl bg-muted/30 border border-border space-y-6">
+        <div className="p-6 rounded-lg bg-muted/30 border border-border space-y-6">
           {/* Header Preview */}
           <div className="flex items-center justify-between p-4 rounded-md bg-background border border-border">
             <div className="flex items-center gap-3">

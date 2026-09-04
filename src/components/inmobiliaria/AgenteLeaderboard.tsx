@@ -84,7 +84,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
   };
 
   const handleRowClick = (agenteId: string) => {
-    router.push(`/panel/inmobiliaria/agentes/${agenteId}`);
+    router.push(`/panel/inmobiliaria/configuracion/equipo/${agenteId}`);
   };
 
   const containerVariants = {
@@ -152,7 +152,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
       </div>
 
       {/* Leaderboard Table */}
-      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
+      <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden">
         {/* Table Header */}
         <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-surface-muted border-b border-border dark:border-border-strong text-xs font-medium text-fg-muted dark:text-fg-subtle uppercase tracking-wide">
           <div className="col-span-1 text-center">#</div>
@@ -318,7 +318,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
       {/* Summary Stats */}
       {rankedAgentes.length > 0 && (
         <div className="grid grid-cols-3 gap-4">
-          <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
+          <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
             <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
               {t('inmobiliaria.agente.totalClosings')} {timeRange === 'month' ? t('inmobiliaria.agente.monthLabel') : t('inmobiliaria.agente.yearLabel')}
             </p>
@@ -330,7 +330,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
               )}
             </p>
           </div>
-          <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
+          <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
             <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
               {t('inmobiliaria.agente.totalCommissions')}
             </p>
@@ -344,7 +344,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
               )}
             </p>
           </div>
-          <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
+          <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
             <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
               {t('inmobiliaria.agente.avgConversion')}
             </p>

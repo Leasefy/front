@@ -146,7 +146,7 @@ function CajonAbierto({ callId, onClose }: { callId: string; onClose: () => void
           {isLoading && !data && (
             <div className="space-y-3" aria-hidden="true">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="h-24 rounded-xl bg-surface-muted animate-pulse" />
+                <div key={i} className="h-24 rounded-lg bg-surface-muted animate-pulse" />
               ))}
             </div>
           )}
@@ -154,7 +154,7 @@ function CajonAbierto({ callId, onClose }: { callId: string; onClose: () => void
           {error && !data && !isLoading && (
             <div
               role="alert"
-              className="rounded-xl border border-danger/30 bg-danger-soft p-4 space-y-2"
+              className="rounded-lg border border-danger/30 bg-danger-soft p-4 space-y-2"
             >
               <p className="text-sm text-danger font-medium">
                 {t('inmobiliaria.ai.cobranza.call.error')}
@@ -202,7 +202,7 @@ function CajonAbierto({ callId, onClose }: { callId: string; onClose: () => void
             transcripción y del replay a pantalla llena. */}
         <div className="flex-none border-t border-border p-4">
           <Button asChild variant="outline" size="sm" hideArrow>
-            <Link href={`/panel/inmobiliaria/ai/cobranza/llamadas/${callId}`}>
+            <Link href={`/panel/inmobiliaria/cobros/cobranza/llamadas/${callId}`}>
               Abrir la página completa
             </Link>
           </Button>

@@ -90,6 +90,9 @@ vi.mock('@leasefy/cadence', () => ({
   // pasar por bueno un botón sin data-testid ni aria-label reales.
   Button: ({ children, ...props }: { children?: React.ReactNode }) =>
     React.createElement('button', props, children),
+  // El pie de tabla se monta siempre que haya filas (2026-09-02); acá no
+  // se prueba, sólo tiene que existir.
+  Pagination: () => React.createElement('nav', { 'data-testid': 'paginacion' }),
   IconButton: ({ onClick, 'aria-label': ariaLabel }: { onClick?: () => void; 'aria-label'?: string }) =>
     React.createElement('button', { onClick, 'aria-label': ariaLabel }),
   SegmentedControl: ({

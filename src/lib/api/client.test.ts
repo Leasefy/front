@@ -1,11 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import {
-  apiClient,
-  ApiError,
-  setAccessToken,
-  setUnauthorizedHandler,
-  esCodigoDeSesionMuerta,
-} from './client'
+import { apiClient, ApiError, setAccessToken, setUnauthorizedHandler, esCodigoDeSesionMuerta, setTokenRefresher, getAccessToken } from './client'
 import { resetSessionTerminal, terminarSesion } from '@/lib/auth/session-terminal'
 
 // ---------------------------------------------------------------------------
@@ -201,11 +195,64 @@ describe('401 con código de sesión muerta', () => {
    * renovación. Con la sesión muerta no hay token nuevo que esperar: ese
    * segundo, una vez por cada petición en vuelo, sólo retrasa la salida.
    */
-  it('no gasta la espera del reintento — sale de una', async () => {
-    vi.stubGlobal('fetch', stubFetch(401, { message: 'expiró', code: 'AUTH_TOKEN_EXPIRED' }))
+  it('no gasta la espera del reintento — sale de una (token inválido, sesión revocada)', async () => {
+    vi.stubGlobal('fetch', stubFetch(401, { message: 'inválido', code: 'AUTH_TOKEN_INVALID' }))
     const antes = Date.now()
     await apiClient.get('/x').catch(() => {})
     expect(Date.now() - antes).toBeLessThan(200)
+  })
+})
+
+/**
+ * `AUTH_TOKEN_EXPIRED` es un ACCESS token vencido, no una sesión muerta: la
+ * pestaña estuvo dormida y la primera petición salió con el token viejo. Antes
+ * cerraba la sesión de una y el usuario veía «Redirigiendo…» con el formulario
+ * a medio llenar (Nico, pedir cita, 2026-09-03). Ahora se renueva y se repite
+ * UNA vez; sólo si no hay token nuevo se sale.
+ */
+describe('AUTH_TOKEN_EXPIRED — renovar y repetir antes de cerrar sesión', () => {
+  afterEach(() => setTokenRefresher(null))
+
+  it('con un refresher que trae token nuevo: repite con él, no avisa al handler y devuelve los datos', async () => {
+    setAccessToken('viejo')
+    const fetchFalso = vi
+      .fn()
+      .mockResolvedValueOnce({ status: 401, ok: false, json: async () => ({ message: 'expiró', code: 'AUTH_TOKEN_EXPIRED' }) })
+      .mockResolvedValueOnce({ status: 200, ok: true, json: async () => ({ ok: true }), text: async () => '{"ok":true}' })
+    vi.stubGlobal('fetch', fetchFalso)
+    setTokenRefresher(async () => 'nuevo')
+    const onUnauthorized = vi.fn()
+    setUnauthorizedHandler(onUnauthorized)
+
+    await expect(apiClient.get('/x')).resolves.toEqual({ ok: true })
+    expect(onUnauthorized).not.toHaveBeenCalled()
+    expect(fetchFalso).toHaveBeenCalledTimes(2)
+    const segunda = fetchFalso.mock.calls[1][1] as { headers: Record<string, string> }
+    expect(segunda.headers.Authorization).toBe('Bearer nuevo')
+    expect(getAccessToken()).toBe('nuevo')
+  })
+
+  it('si el refresher no trae nada (refresh token muerto), ahí sí se cierra la sesión', async () => {
+    setAccessToken('viejo')
+    vi.stubGlobal('fetch', stubFetch(401, { message: 'expiró', code: 'AUTH_TOKEN_EXPIRED' }))
+    setTokenRefresher(async () => null)
+    const onUnauthorized = vi.fn()
+    setUnauthorizedHandler(onUnauthorized)
+
+    await expect(apiClient.get('/x')).rejects.toMatchObject({ status: 401, code: 'AUTH_TOKEN_EXPIRED' })
+    expect(onUnauthorized).toHaveBeenCalledWith('AUTH_TOKEN_EXPIRED')
+  })
+
+  it('no entra en bucle: el reintento que vuelve a vencer cierra sesión', async () => {
+    setAccessToken('viejo')
+    vi.stubGlobal('fetch', stubFetch(401, { message: 'expiró', code: 'AUTH_TOKEN_EXPIRED' }))
+    setTokenRefresher(async () => 'nuevo')
+    const onUnauthorized = vi.fn()
+    setUnauthorizedHandler(onUnauthorized)
+
+    await apiClient.get('/x').catch(() => {})
+    expect(onUnauthorized).toHaveBeenCalledTimes(1)
+    expect((globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(2)
   })
 })
 

@@ -293,8 +293,10 @@ function PortafolioContent() {
   }, [router]);
 
   const handleEdit = useCallback((consignacion: Consignacion) => {
-    // Navigate to detail page where edit actions are available
-    router.push(`/panel/inmobiliaria/inmuebles/${consignacion.id}`);
+    // El formulario de edición vive en la ficha; `?editar=1` la abre con el
+    // modal ya desplegado. Antes «Editar» sólo llevaba a la ficha y había que
+    // volver a buscar el botón (Nico, 2026-09-03).
+    router.push(`/panel/inmobiliaria/inmuebles/${consignacion.id}?editar=1`);
   }, [router]);
 
   const handleNuevaConsignacion = useCallback(() => {
@@ -379,19 +381,23 @@ function PortafolioContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.portafolio.title')}
           </h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             {t('inmobiliaria.portafolio.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {/* Captura con IA — venía de «Inmuebles · catálogo». */}
+          {/* Captura con IA — venía de «Inmuebles · catálogo». Apagada a pedido
+              de Nico (2026-09-02: «eso no sirve ahora»). La ruta
+              /inmuebles/captura sigue existiendo; cuando la captura esté a la
+              altura, se vuelve a mostrar acá.
           <Button variant="secondary" hideArrow onClick={handleCaptura}>
             <Sparkle className="w-4 h-4 text-primary" weight="fill" />
             {t('inmobiliaria.inmuebles.acciones.captura')}
           </Button>
+          */}
           {/* Import (secundaria) */}
           <Button variant="secondary" hideArrow onClick={handleImportar}>
             <FileArrowUp className="w-4 h-4" />
@@ -477,7 +483,7 @@ function PortafolioContent() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-xl border border-border bg-card overflow-hidden"
+        className="rounded-lg border border-border bg-card overflow-hidden"
       >
         {/* View Toggle Header - First */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
@@ -732,7 +738,7 @@ function StatTile({
   className?: string;
 }) {
   return (
-    <div className={cn('flex items-center gap-3 p-4 rounded-xl border border-border bg-card', className)}>
+    <div className={cn('flex items-center gap-3 p-4 rounded-lg border border-border bg-card', className)}>
       <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', TILE_TONES[tone])}>
         {icon}
       </div>

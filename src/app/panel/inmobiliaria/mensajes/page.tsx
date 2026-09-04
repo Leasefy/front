@@ -6,7 +6,7 @@ import { AgencyRoleGuard } from '@/components/auth/AgencyRoleGuard';
 export default function MensajesPage() {
   return (
     <AgencyRoleGuard allowed="managers">
-      <MessagesWidget actor="landlord" />
+      <MessagesWidget actor="landlord" pantallaCompleta />
     </AgencyRoleGuard>
   );
 }

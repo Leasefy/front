@@ -53,3 +53,20 @@ export function nombreDelMes(
     year: 'numeric',
   });
 }
+
+/**
+ * El nombre del mes para un TÍTULO o etiqueta: «Septiembre de 2026».
+ *
+ * `nombreDelMes` va en minúscula porque dentro de una frase es lo correcto
+ * («el extracto de septiembre de 2026»). Para una etiqueta suelta se quería
+ * la inicial en mayúscula y se resolvía con `capitalize` de CSS, que
+ * capitaliza CADA palabra: «Septiembre De 2026». Esto pone sólo la primera.
+ */
+export function mesEnTitulo(
+  mes: Mes,
+  locale: 'es' | 'en' = 'es',
+  formato: 'long' | 'short' = 'long',
+): string {
+  const nombre = nombreDelMes(mes, locale, formato);
+  return nombre.charAt(0).toUpperCase() + nombre.slice(1);
+}

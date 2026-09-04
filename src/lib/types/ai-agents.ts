@@ -304,7 +304,10 @@ const AGENTS: AIAgentDefinition[] = [
     icon: 'Wrench',
     color: 'text-orange-600',
     colorBg: 'bg-orange-50',
-    status: 'active',
+    // 'coming-soon' y no 'active': la bandeja de tickets es mock-first y el
+    // micro no tiene su endpoint. Mientras sea así, no se ofrece como agente
+    // en funcionamiento (Nico, 2026-09-03).
+    status: 'coming-soon',
   },
   {
     id: 'retencion',

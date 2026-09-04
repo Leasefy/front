@@ -76,7 +76,8 @@ export { CobroTable } from './CobroTable';
 export { CobroFilters } from './CobroFilters';
 export type { CobroFiltersState } from './CobroFilters';
 export { RegistrarPagoModal } from './RegistrarPagoModal';
-export { MoraAlert, MoraAlertCompact } from './MoraAlert';
+export { DesgloseAdeudado } from './DesgloseAdeudado';
+export { RecibosDeCajaHistorial } from './RecibosDeCajaHistorial';
 export { CobroResumen, CobroResumenCompact } from './CobroResumen';
 export { RecordatorioConfig } from './RecordatorioConfig';
 export type { RecordatorioConfigData } from './RecordatorioConfig';
@@ -130,6 +131,7 @@ export type { MantenimientoViewerProps } from './MantenimientoViewer';
 
 // Configuracion - Company Profile & Branding (Phase 10)
 export { ConfigPerfilAgencia } from './ConfigPerfilAgencia';
+export { ConfigExtractoMensual } from './ConfigExtractoMensual';
 export { ConfigBranding } from './ConfigBranding';
 
 // Configuracion - Users & Permissions (Phase 10 - Plan 02)
@@ -176,8 +178,6 @@ export { AIAgentDetailSidebar } from './ai/AIAgentDetailSidebar';
 export { AIAgentExecutionPanel } from './ai/AIAgentExecutionPanel';
 
 // Reminder Components
-export { ReminderConfigPanel } from './reminders/ReminderConfig';
-export { ReminderLog } from './reminders/ReminderLog';
 
 // Advanced Report Components
 export { AgentPerformanceReport } from './reports/AgentPerformanceReport';

@@ -1376,7 +1376,30 @@
         "changePasswordDesc": "Actualiza tu clave de acceso",
         "changePasswordToast": "Se enviará un enlace a tu correo",
         "activeSessions": "Sesiones activas",
-        "activeSessionsDesc": "1 dispositivo conectado"
+        "activeSessionsDesc": "Mira qué dispositivo tiene tu sesión",
+        "sessionsTitle": "Sesiones activas",
+        "sessionsIntro": "Leasefy mantiene una sola sesión abierta a la vez. Si entras desde otro dispositivo, este se cierra automáticamente.",
+        "sessionsThisDevice": "Este dispositivo",
+        "sessionsOtherDevice": "Otro dispositivo",
+        "sessionsSince": "Sesión iniciada",
+        "sessionsLastSeen": "Última actividad",
+        "sessionsUnknownTime": "No lo sabemos: esta sesión empezó antes de que guardáramos ese dato.",
+        "sessionsEmpty": "No hay ninguna sesión abierta.",
+        "sessionsError": "No pudimos leer tus sesiones.",
+        "sessionsRetry": "Reintentar",
+        "sessionsCloseAll": "Cerrar sesión en este dispositivo",
+        "sessionsCloseAllHint": "Vuelves al inicio de sesión. Tendrás que entrar de nuevo con tu correo.",
+        "passwordModalTitle": "Cambiar tu contraseña",
+        "passwordModalLead": "Al confirmar te llega un enlace a {{email}}, y desde ahí eliges tu contraseña nueva.",
+        "passwordModalWhy": "Se hace por correo a propósito: así nadie que se siente frente a tu pantalla abierta puede cambiarte la clave sin tener también tu correo.",
+        "passwordModalExpiry": "El enlace sirve una sola vez y vence en una hora. Si se vence, vuelve acá y pide otro.",
+        "passwordModalSpam": "Si no llega en unos minutos, revisa el correo no deseado.",
+        "passwordModalSend": "Enviarme el enlace",
+        "passwordModalSending": "Enviando...",
+        "passwordModalSent": "Enlace enviado a {{email}}",
+        "passwordModalSentBody": "Revisa tu correo. El enlace vence en una hora.",
+        "passwordModalError": "No pudimos enviar el enlace. Intenta de nuevo.",
+        "passwordModalClose": "Entendido"
       },
       "extractoMensual": {
         "title": "Extracto mensual al propietario",
@@ -9463,6 +9486,25 @@
             "necesitas": "Necesitas tener al candidato ya aprobado."
           }
         }
+      }
+    },
+    "tour": {
+      "saltar": "Saltar",
+      "atras": "Atrás",
+      "siguiente": "Siguiente",
+      "terminar": "Listo",
+      "paso": "Paso {{n}} de {{total}}",
+      "buscador": {
+        "titulo": "Busca cualquier cosa desde acá",
+        "cuerpo": "Un inmueble, un contrato, una persona o una pantalla del panel. Se abre también con ⌘K, sin soltar el teclado."
+      },
+      "piloto": {
+        "titulo": "Tú decides cuánto hace la IA sola",
+        "cuerpo": "Sombra mira y propone. Copiloto te deja cada acción lista para tu visto bueno. Automático actúa dentro de la ley y de tus topes. El modo lo cambias acá, y vale para toda la flota."
+      },
+      "agentes": {
+        "titulo": "Cada agente vive dentro de su módulo",
+        "cuerpo": "No hay una sección aparte de «IA»: la cobranza está en Cobros, la asegurabilidad en Postulaciones. Entras donde está el trabajo, no donde está la tecnología."
       }
     }
   },

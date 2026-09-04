@@ -504,7 +504,7 @@ function SidebarContent({
       {/* Search — cadence SidebarSearch opens the command palette (⌘K).
           Falls back to the aboveNav slot for layouts that don't wire it. */}
       {!isCollapsed && (onSearchClick || aboveNav) && (
-        <div className="px-3 pb-1">
+        <div className="px-3 pb-1" data-tour-target="buscador">
           {onSearchClick ? (
             <SidebarSearch
               readOnly

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ShieldCheck, Shield, Check, Copy, Warning } from '@phosphor-icons/react';
-import { getSupabase } from '@/lib/supabase/client';
+import { getAccessToken } from '@/lib/api/client';
 import { toast } from 'sonner';
 import { IconButton } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,81 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { SettingsModal } from './SettingsModal';
+
+/**
+ * Cuánto se espera a Supabase antes de rendirse. Sin tope, el candado interno
+ * del SDK deja la promesa colgada para siempre y el botón se queda en
+ * «Cargando...» sin decir nada — que es exactamente lo que pasaba al activar.
+ */
+const TOPE_MS = 15000;
+
+/**
+ * Llama la API de auth de Supabase por HTTP, sin el SDK.
+ *
+ * Por qué no el SDK: `supabase.auth.mfa.*` serializa todo detrás de un candado
+ * (`navigator.locks`) compartido con el refresco de sesión. Si otra pestaña o
+ * el propio contexto de auth lo tiene tomado, `enroll()` NO resuelve ni
+ * rechaza: se queda esperando. `verify` ya lo evitaba así; ahora lo evitan
+ * también `enroll` y `unenroll`, que eran los que colgaban.
+ *
+ * El `AbortController` es el cinturón: si la red se cuelga, esto falla con un
+ * mensaje en vez de dejar el botón girando.
+ */
+async function apiDeAuth<T>(
+  ruta: string,
+  token: string,
+  init: { method: string; body?: unknown } = { method: 'GET' },
+): Promise<T> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) throw new Error('Falta la configuración de Supabase');
+
+  const control = new AbortController();
+  const reloj = setTimeout(() => control.abort(), TOPE_MS);
+  try {
+    const res = await fetch(`${url}/auth/v1${ruta}`, {
+      method: init.method,
+      signal: control.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: anonKey,
+        Authorization: `Bearer ${token}`,
+      },
+      ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
+    });
+    const cuerpo = (await res.json().catch(() => ({}))) as {
+      message?: string;
+      error_description?: string;
+    };
+    if (!res.ok) {
+      throw new Error(
+        cuerpo.message || cuerpo.error_description || `Error ${res.status}`,
+      );
+    }
+    return cuerpo as T;
+  } catch (err) {
+    if ((err as Error).name === 'AbortError') {
+      throw new Error('Supabase no respondió a tiempo. Intenta de nuevo.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(reloj);
+  }
+}
+
+/**
+ * El QR listo para un `<img src>`.
+ *
+ * El SDK devolvía el código ya envuelto como data URI; la API REST lo devuelve
+ * como SVG crudo («<svg …>»), y puesto tal cual en un `src` la imagen sale
+ * rota. Se envuelve acá. Si ya viene como data URI o como URL, se deja igual.
+ */
+export function qrParaImagen(crudo: string): string {
+  const valor = (crudo ?? '').trim();
+  if (!valor) return '';
+  if (valor.startsWith('data:') || valor.startsWith('http')) return valor;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(valor)}`;
+}
 
 type MfaState = 'idle' | 'enrolling' | 'enrolled';
 
@@ -40,26 +115,26 @@ export function MfaSetupSection() {
 
     const checkFactors = async () => {
       try {
-        const supabase = getSupabase();
-        if (!supabase) return;
-        const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        // Por HTTP, como todo lo demás de esta pantalla: los métodos del SDK
+        // (`mfa.getAuthenticatorAssuranceLevel`, `getSession`) comparten el
+        // candado de auth y se quedaban esperando. `GET /user` trae los
+        // factores y, con ellos, el id que hace falta para poder desactivar.
+        const token = getAccessToken();
+        if (!token) return;
+        const usuario = await apiDeAuth<{
+          factors?: Array<{ id: string; factor_type: string; status: string }>;
+        }>('/user', token);
         if (cancelled) return;
-        // If next level requires aal2, user has a verified TOTP factor
-        if (aal?.nextLevel === 'aal2') {
+
+        const totp = usuario.factors?.find(
+          (f) => f.factor_type === 'totp' && f.status === 'verified',
+        );
+        if (totp) {
           setState('enrolled');
-          // Try to get factorId from session (non-blocking)
-          try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const amrTotp = session?.user?.factors?.find(
-              (f: { factor_type: string; status: string }) => f.factor_type === 'totp' && f.status === 'verified'
-            );
-            if (amrTotp) setFactorId(amrTotp.id);
-          } catch {
-            // Not critical
-          }
+          setFactorId(totp.id);
         }
       } catch {
-        // MFA not available
+        // MFA no disponible: se queda en 'idle', que ofrece activarlo.
       } finally {
         if (!cancelled) {
           setInitializing(false);
@@ -78,29 +153,37 @@ export function MfaSetupSection() {
   const handleStartEnroll = useCallback(async () => {
     setIsLoading(true);
     try {
-      const supabase = getSupabase();
-      if (!supabase) throw new Error('Supabase not initialized');
+      // Ni siquiera `getSession()`: ESE es el que se cuelga. Toma el mismo
+      // candado de auth que `enroll`, así que pedirle el token antes de
+      // esquivar el SDK dejaba el botón en «Cargando...» igual que antes.
+      // El token vivo ya lo tiene el cliente HTTP en memoria — lo escribe el
+      // AuthProvider en cada cambio de sesión — y es el mismo que va en el
+      // Authorization de todas las llamadas del panel.
+      const token = getAccessToken();
+      accessTokenRef.current = token;
+      if (!token) throw new Error('No hay sesión activa');
 
-      // Save access token BEFORE enroll() — SDK lock hangs after enroll
-      const { data: { session } } = await supabase.auth.getSession();
-      accessTokenRef.current = session?.access_token ?? null;
-
-      // Always use unique name to avoid mfa_factor_name_conflict from orphaned factors
-      const { data, error } = await supabase.auth.mfa.enroll({
-        factorType: 'totp',
-        friendlyName: `Leasefy ${Date.now()}`,
+      // Por HTTP, no por el SDK: `mfa.enroll()` se colgaba sin resolver ni
+      // rechazar cuando el candado de auth estaba tomado, y el botón se
+      // quedaba en «Cargando...» para siempre.
+      // El nombre lleva la marca de tiempo para no chocar con factores
+      // huérfanos de intentos anteriores (mfa_factor_name_conflict).
+      const data = await apiDeAuth<{
+        id: string;
+        totp: { qr_code: string; secret: string };
+      }>('/factors', token, {
+        method: 'POST',
+        body: { factor_type: 'totp', friendly_name: `Leasefy ${Date.now()}` },
       });
-
-      if (error) throw error;
 
       setEnrollData({
         factorId: data.id,
-        qrCode: data.totp.qr_code,
+        qrCode: qrParaImagen(data.totp.qr_code),
         secret: data.totp.secret,
       });
       setState('enrolling');
     } catch (err) {
-      toast.error((err as Error).message || 'Error al iniciar configuracion 2FA');
+      toast.error((err as Error).message || 'Error al iniciar la configuración de 2FA');
     } finally {
       setIsLoading(false);
     }
@@ -126,8 +209,8 @@ export function MfaSetupSection() {
     try {
       // Bypass Supabase SDK entirely — internal session lock hangs after enroll().
       // Use token saved before enroll() and call REST API with fetch.
-      const token = accessTokenRef.current;
-      if (!token) throw new Error('No hay sesion activa');
+      const token = getAccessToken() ?? accessTokenRef.current;
+      if (!token) throw new Error('No hay sesión activa');
 
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -162,7 +245,7 @@ export function MfaSetupSection() {
       );
       if (!verifyRes.ok) {
         const err = await verifyRes.json();
-        throw new Error(err.message || 'Error al verificar codigo');
+        throw new Error(err.message || 'Error al verificar código');
       }
 
       setState('enrolled');
@@ -174,37 +257,44 @@ export function MfaSetupSection() {
       console.error('[MFA] Verify error:', err);
       const msg = (err as Error).message || '';
       if (msg.includes('invalid') || msg.includes('expired')) {
-        toast.error('Codigo incorrecto. Intenta de nuevo.');
+        toast.error('Código incorrecto. Intenta de nuevo.');
       } else {
-        toast.error(msg || 'Error al verificar codigo');
+        toast.error(msg || 'Error al verificar código');
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCancelEnroll = useCallback(async () => {
-    if (enrollData) {
-      try {
-        const supabase = getSupabase();
-        if (supabase) await supabase.auth.mfa.unenroll({ factorId: enrollData.factorId });
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
+  const handleCancelEnroll = useCallback(() => {
+    // La pantalla vuelve YA. La limpieza del factor a medio crear se dispara
+    // de fondo: cancelar no puede quedar esperando a la red — antes esto
+    // esperaba al SDK, que es justo el que se cuelga.
+    const aLimpiar = enrollData?.factorId;
+    const token = accessTokenRef.current;
     setEnrollData(null);
     setCode('');
     setState('idle');
+
+    if (aLimpiar && token) {
+      void apiDeAuth(`/factors/${aLimpiar}`, token, { method: 'DELETE' }).catch(
+        () => {
+          // Un factor huérfano no rompe nada: el próximo intento usa otro
+          // nombre (lleva marca de tiempo) y no choca con este.
+        },
+      );
+    }
   }, [enrollData]);
 
   const handleUnenroll = useCallback(async () => {
     if (!factorId) return;
     setIsLoading(true);
     try {
-      const supabase = getSupabase();
-      if (!supabase) throw new Error('Supabase not initialized');
-      const { error } = await supabase.auth.mfa.unenroll({ factorId });
-      if (error) throw error;
+      const token = getAccessToken() ?? accessTokenRef.current;
+      if (!token) throw new Error('No hay sesión activa');
+
+      // Por HTTP, por el mismo candado que colgaba a `enroll`.
+      await apiDeAuth(`/factors/${factorId}`, token, { method: 'DELETE' });
 
       setState('idle');
       setFactorId(null);
@@ -220,7 +310,7 @@ export function MfaSetupSection() {
   const handleCopySecret = useCallback(() => {
     if (enrollData?.secret) {
       navigator.clipboard.writeText(enrollData.secret);
-      toast.success('Codigo secreto copiado');
+      toast.success('Código secreto copiado');
     }
   }, [enrollData]);
 
@@ -282,7 +372,7 @@ export function MfaSetupSection() {
                 <Warning className="w-5 h-5 text-danger" />
               </div>
               <p className="text-sm text-danger">
-                Al desactivar 2FA tu cuenta sera menos segura. Solo necesitaras tu contrasena para iniciar sesion.
+                Al desactivar 2FA tu cuenta queda menos protegida: para entrar bastará tu contraseña.
               </p>
             </div>
             <div className="flex gap-3 pt-2">
@@ -321,7 +411,7 @@ export function MfaSetupSection() {
           </div>
           <div>
             <p className="text-sm font-medium text-fg">Configurar 2FA</p>
-            <p className="text-xs text-fg-subtle">Escanea el codigo QR con tu app de autenticacion</p>
+            <p className="text-xs text-fg-subtle">Escanea el código QR con tu app de autenticación</p>
           </div>
         </div>
 
@@ -330,7 +420,7 @@ export function MfaSetupSection() {
           <div className="p-4 bg-white rounded-lg border border-border">
             <img
               src={enrollData.qrCode}
-              alt="Codigo QR para autenticacion"
+              alt="Código QR para autenticación"
               className="w-48 h-48"
             />
           </div>
@@ -338,7 +428,7 @@ export function MfaSetupSection() {
 
         {/* Secret key for manual entry */}
         <div className="p-3 bg-surface-muted rounded-lg">
-          <p className="text-xs text-fg-subtle mb-1">O ingresa este codigo manualmente:</p>
+          <p className="text-xs text-fg-subtle mb-1">O ingresa este código manualmente:</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 text-xs font-mono text-fg break-all select-all">
               {enrollData.secret}
@@ -357,7 +447,7 @@ export function MfaSetupSection() {
         {/* Code input */}
         <div>
           <label className="block text-sm font-medium text-fg-muted mb-2">
-            Ingresa el codigo de 6 digitos
+            Ingresa el código de 6 dígitos
           </label>
           <Input
             type="text"

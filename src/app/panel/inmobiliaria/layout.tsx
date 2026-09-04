@@ -22,6 +22,7 @@ import { CommandPalette } from '@/components/inmobiliaria/CommandPalette';
 import { BotonNuevo } from '@/components/inmobiliaria/BotonNuevo';
 import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
 import { PilotoModoHeader } from '@/components/inmobiliaria/piloto/PilotoModoHeader';
+import { TourDelPanel } from '@/components/tour/TourDelPanel';
 import { PilotoDock } from '@/components/inmobiliaria/piloto/PilotoDock';
 import { PilotoDockProvider } from '@/lib/hooks/piloto/piloto-dock-context'
 import { PilotoFlotaProvider } from '@/lib/hooks/piloto/piloto-flota-context';
@@ -301,6 +302,11 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
             pantalla (Nico, 2026-09-02). Comparte la lectura de la flota con
             la píldora del header vía el provider de arriba. */}
         <PilotoDock />
+
+        {/* El recorrido guiado de 3 pasos. Se monta acá —no en una pantalla—
+            porque señala el sidebar y el header, que viven en este layout.
+            No pinta nada salvo que la preferencia esté encendida. */}
+        <TourDelPanel />
       </MuroDeMigracion>
 
       {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de

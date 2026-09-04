@@ -1337,7 +1337,30 @@
         "changePasswordDesc": "Update your access credentials",
         "changePasswordToast": "A link will be sent to your email",
         "activeSessions": "Active sessions",
-        "activeSessionsDesc": "1 device connected"
+        "activeSessionsDesc": "See which device holds your session",
+        "sessionsTitle": "Active sessions",
+        "sessionsIntro": "Leasefy keeps a single session open at a time. Signing in from another device closes this one automatically.",
+        "sessionsThisDevice": "This device",
+        "sessionsOtherDevice": "Another device",
+        "sessionsSince": "Signed in",
+        "sessionsLastSeen": "Last activity",
+        "sessionsUnknownTime": "We don't know: this session started before we recorded that.",
+        "sessionsEmpty": "No session is open.",
+        "sessionsError": "We couldn't read your sessions.",
+        "sessionsRetry": "Retry",
+        "sessionsCloseAll": "Sign out on this device",
+        "sessionsCloseAllHint": "You'll go back to sign-in and will need to enter your email again.",
+        "passwordModalTitle": "Change your password",
+        "passwordModalLead": "Confirm and a link goes to {{email}}; you pick your new password from there.",
+        "passwordModalWhy": "It goes through email on purpose: that way nobody sitting at your open screen can change your password without also having your inbox.",
+        "passwordModalExpiry": "The link works once and expires in an hour. If it expires, come back and request another.",
+        "passwordModalSpam": "If it doesn't arrive in a few minutes, check your spam folder.",
+        "passwordModalSend": "Send me the link",
+        "passwordModalSending": "Sending...",
+        "passwordModalSent": "Link sent to {{email}}",
+        "passwordModalSentBody": "Check your inbox. The link expires in an hour.",
+        "passwordModalError": "We couldn't send the link. Try again.",
+        "passwordModalClose": "Got it"
       },
       "extractoMensual": {
         "title": "Monthly statement to owners",
@@ -9424,6 +9447,25 @@
             "necesitas": "You'll need the candidate already approved."
           }
         }
+      }
+    },
+    "tour": {
+      "saltar": "Skip",
+      "atras": "Back",
+      "siguiente": "Next",
+      "terminar": "Done",
+      "paso": "Step {{n}} of {{total}}",
+      "buscador": {
+        "titulo": "Search anything from here",
+        "cuerpo": "A property, a contract, a person or a panel screen. ⌘K opens it too, without leaving the keyboard."
+      },
+      "piloto": {
+        "titulo": "You decide how much the AI does alone",
+        "cuerpo": "Shadow watches and proposes. Copilot leaves each action ready for your approval. Automatic acts within the law and your limits. The mode changes here, for the whole fleet."
+      },
+      "agentes": {
+        "titulo": "Each agent lives inside its module",
+        "cuerpo": "There is no separate «AI» section: collections live in Payments, insurability in Applications. You go where the work is, not where the technology is."
       }
     }
   },

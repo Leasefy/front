@@ -18,8 +18,8 @@
  *    postulación o armado a mano, donde se lo carga por documento y correo)
  *    o de la migración; el back no expone un POST suelto. Un botón que abre
  *    un formulario acá crearía gente sin arriendo y la lista dejaría de
- *    significar «a quién le administro un inmueble». El vacío ofrece UNA
- *    salida: migrar los contratos (ver el comentario sobre `accion`).
+ *    significar «a quién le administro un inmueble». Lo que sí hay es el
+ *    atajo al contrato manual — ver la decisión 7.
  * 3. **La búsqueda viaja al back.** Ver `use-inquilinos.ts`.
  *
  * ── Y una cuarta, del 2026-09-02 ────────────────────────────────────────────
@@ -42,6 +42,22 @@
  *
  * 6. **El detalle es un CAJÓN, no un diálogo** («que al dar clic se abra un
  *    drawer y muestre todo el detalle»). Ver `InquilinoDrawer`.
+ *
+ * ── Y una séptima, del 2026-09-04 ───────────────────────────────────────────
+ * 7. **Sí hay por dónde cargar UNO.** Nico: «¿y si no quiero migrar un montón
+ *    de inquilinos sino que quiero crear uno solo, qué?» → «pues aquí también
+ *    se debería poder». La decisión 2 sigue en pie en lo que importa —el back
+ *    no expone un POST de inquilino suelto y esta lista se arma con
+ *    `lease.findMany`— pero el camino existe desde el 2026-09-03: el contrato
+ *    manual (`/contratos/nuevo?modo=manual`) elige el inmueble consignado y
+ *    escribe al inquilino ahí mismo, sin postulación previa. Migrar era el
+ *    único botón, y para una inmobiliaria con un solo arriendo eso es un
+ *    callejón.
+ *
+ *    Por eso el botón dice «Crear un contrato» y no «Nuevo inquilino»: lo que
+ *    se abre es el contrato entero (inmueble, fechas, canon, PDF), y el
+ *    inquilino es un bloque adentro. No hay forma de guardar una persona sin
+ *    su arriendo, así que prometerlo sería mentir en el clic.
  */
 
 import { useMemo, useState } from 'react';
@@ -49,6 +65,7 @@ import Link from 'next/link';
 import {
   Buildings,
   CurrencyDollar,
+  Plus,
   UploadSimple,
   UserCircle,
   Users,
@@ -56,6 +73,7 @@ import {
 import { KpiCard, Eyebrow } from '@leasefy/cadence';
 
 import { PageGuard } from '@/components/auth/PageGuard';
+import { PermissionGate } from '@/components/auth/PermissionGate';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { Button } from '@/components/ui/button';
@@ -76,6 +94,42 @@ import {
   type FiltroDeEstado,
   type Inquilino,
 } from '@/lib/api/inquilinos.service';
+
+/*
+ * La única variante de `/contratos/nuevo` que carga sin postulación: a secas
+ * esa ruta responde «Falta el parámetro applicationId». Con `?modo=manual` se
+ * elige el inmueble consignado y se escribe el inquilino ahí mismo.
+ */
+const RUTA_DEL_CONTRATO_MANUAL = '/panel/inmobiliaria/contratos/nuevo?modo=manual';
+
+/**
+ * El camino para cargar uno solo.
+ *
+ * 🔴 Va detrás de `contratos`/`create` porque el destino está protegido con
+ * `PageGuard module="contratos" action="create"`: sin ese permiso el clic no
+ * abre nada, redirige. Un botón que rebota no es un botón. Con `fallback={null}`
+ * simplemente no se pinta (el default de `PermissionGate` es un cartel de
+ * «acceso restringido», que adentro de un encabezado no tiene sentido).
+ */
+function CrearContratoBoton({ secundario = false }: { secundario?: boolean }) {
+  const { t } = useI18n();
+  return (
+    <PermissionGate module="contratos" action="create" fallback={null}>
+      <Button
+        asChild
+        hideArrow
+        variant={secundario ? 'outline' : 'default'}
+        className="shrink-0 gap-2"
+        data-testid="crear-contrato-manual"
+      >
+        <Link href={RUTA_DEL_CONTRATO_MANUAL}>
+          <Plus className="h-4 w-4" weight="bold" aria-hidden="true" />
+          {t('inquilinos.crearContrato')}
+        </Link>
+      </Button>
+    </PermissionGate>
+  );
+}
 
 export default function InquilinosPage() {
   /*
@@ -145,12 +199,18 @@ function ContenidoDeInquilinos() {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="space-y-1">
-        <Eyebrow>{t('inquilinos.eyebrow')}</Eyebrow>
-        <h1 className="text-h2 text-fg">
-          {t('inquilinos.titulo')}
-        </h1>
-        <p className="max-w-2xl text-body text-fg-muted line-clamp-2">{t('inquilinos.subtitulo')}</p>
+      {/* El botón vive en el encabezado y no en el vacío: con la lista llena
+          también hace falta —una inmobiliaria que ya tiene 40 inquilinos y
+          firma el 41 no pasa por un estado vacío nunca más—. */}
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-1">
+          <Eyebrow>{t('inquilinos.eyebrow')}</Eyebrow>
+          <h1 className="text-h2 text-fg">
+            {t('inquilinos.titulo')}
+          </h1>
+          <p className="max-w-2xl text-body text-fg-muted line-clamp-2">{t('inquilinos.subtitulo')}</p>
+        </div>
+        <CrearContratoBoton />
       </header>
 
       {/* Los tres números miden lo VIGENTE, no lo histórico: un canon que suma
@@ -214,36 +274,38 @@ function ContenidoDeInquilinos() {
                   : undefined
               }
               /*
-               * No hay «crear»: un inquilino nace de un contrato o de la
-               * migración, y el back ni siquiera expone un POST. Ofrecer un
-               * formulario acá crearía gente sin arriendo.
+               * DOS caminos, porque son dos situaciones distintas y las dos
+               * llegan a este mismo vacío:
                *
-               * UN solo botón, y es «Migrar contratos» (Nico, 2026-09-03: «¿por
-               * qué tengo migrar contrato como CTA secundario?»). Es el único
-               * camino que llena ESTA lista: el back la arma con
-               * `lease.findMany` agrupado por `tenantId`, así que un inquilino
-               * cargado en el paso «Terceros» de la migración (usuario +
-               * invitación al portal) no aparece acá hasta que exista su
-               * contrato — por eso ese camino no merece un botón acá: llevaría
-               * a una pantalla que deja esta lista igual de vacía. El texto del
-               * vacío ya dice de dónde salen («no hay ningún arriendo… los
-               * inquilinos aparecen solos»).
+               *  · muchos arriendos ya andando en otro sistema → migrarlos, y
+               *    los inquilinos salen solos. Sigue siendo el PRIMARIO (Nico,
+               *    2026-09-03: «¿por qué tengo migrar contrato como CTA
+               *    secundario?»). Con deuda de migración el botón no dice
+               *    «migrar» —ya migró— sino completar la que quedó a medias.
+               *  · un solo arriendo, o el 41 → cargarlo a mano. Ofrecer nada
+               *    más que migrar a quien tiene UN inmueble es un callejón
+               *    (Nico, 2026-09-04).
                *
-               * 🔴 Y no puede ser `/contratos/nuevo`: esa ruta sin
-               * `?applicationId=` responde «Falta el parámetro applicationId»
-               * —un contrato nace de una postulación aprobada—. Sería un botón
-               * que lleva a un error.
+               * Los dos llenan ESTA lista, que el back arma con
+               * `lease.findMany` agrupado por `tenantId`. El que sigue sin
+               * botón es el paso «Terceros» de la migración: carga la persona
+               * y la invita al portal, pero sin contrato no aparece acá.
+               *
+               * 🔴 Y el segundo botón lleva a `?modo=manual`, nunca a
+               * `/contratos/nuevo` a secas: esa ruta sin `?applicationId=`
+               * responde «Falta el parámetro applicationId».
                */
               accion={
                 hayFiltros ? undefined : (
-                  <Button asChild hideArrow>
-                    <Link href={RUTA_DE_LA_MIGRACION}>
-                      <UploadSimple className="mr-1.5 h-4 w-4" />
-                      {/* Con deuda el botón no dice «migrar» —ya migró—:
-                          dice completar la migración que quedó a medias. */}
-                      {copy?.accion ?? t('inquilinos.vacioContrato')}
-                    </Link>
-                  </Button>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <Button asChild hideArrow>
+                      <Link href={RUTA_DE_LA_MIGRACION}>
+                        <UploadSimple className="mr-1.5 h-4 w-4" />
+                        {copy?.accion ?? t('inquilinos.vacioContrato')}
+                      </Link>
+                    </Button>
+                    <CrearContratoBoton secundario />
+                  </div>
                 )
               }
             />

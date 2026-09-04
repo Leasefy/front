@@ -10905,7 +10905,7 @@
   "inquilinos": {
     "eyebrow": "Terceros",
     "titulo": "Inquilinos",
-    "subtitulo": "Las personas que viven en los inmuebles que administrás, con todos sus arriendos juntos. Un inquilino nace de un contrato o de una migración: acá no se crea a nadie a mano.",
+    "subtitulo": "Las personas que viven en los inmuebles que administrás, con todos sus arriendos juntos. Cada inquilino nace de su contrato: si es uno solo, cargalo a mano; si son muchos, traelos con la migración.",
     "queEs": "los inquilinos",
     "queSon": "inquilinos",
     "buscarPlaceholder": "Buscá por nombre, correo o teléfono",
@@ -10920,8 +10920,9 @@
       "arriendosVigentes": "Arriendos vigentes",
       "canonVigente": "Canon mensual vigente"
     },
-    "vacioDescripcion": "Todavía no hay ningún arriendo en tu inmobiliaria. Traé los que ya tenés en otro sistema y los inquilinos aparecen solos.",
+    "vacioDescripcion": "Todavía no hay ningún arriendo en tu inmobiliaria. Traé los que ya tenés en otro sistema, o cargá uno a mano y su inquilino aparece acá.",
     "vacioContrato": "Migrar contratos",
+    "crearContrato": "Crear un contrato",
     "sinContacto": "Sin correo ni teléfono",
     "sinInmueble": "Sin inmueble asignado",
     "conteoArriendoUno": "1 arriendo · {{vigentes}} vigente",

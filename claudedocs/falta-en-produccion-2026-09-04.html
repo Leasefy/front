@@ -125,7 +125,7 @@
   <header class="encabezado">
     <p class="sello">Para Víctor · 4 de septiembre de 2026</p>
     <h1>Lo que falta en producción</h1>
-    <p class="bajada">La rama <code>cambios-nico-1</code> <strong>no tiene nada sin subir</strong>: en los tres repos el HEAD local y el de <code>origin</code> son el mismo commit. Lo que pasó es que el corte de la release de hoy quedó antes de los últimos siete commits. Acá están, agrupados por trabajo, con lo que hay que hacer para cerrarlos.</p>
+    <p class="bajada">La rama <code>cambios-nico-1</code> <strong>no tiene nada sin subir</strong>: en los tres repos el HEAD local y el de <code>origin</code> son el mismo commit. Lo que pasó es que el corte de la release de hoy quedó antes de los últimos commits. Acá están, agrupados por trabajo, con lo que hay que hacer para cerrarlos.</p>
   </header>
 
   <h2>Dónde quedó el corte</h2>
@@ -135,8 +135,8 @@
         <tr><th>Repo</th><th>Último commit que sí entró</th><th>Punta de la rama</th><th>Faltan</th></tr>
       </thead>
       <tbody>
-        <tr><td class="repo">mvp-erp</td><td class="sha">f3a3cf41</td><td class="sha">a3ac3c68</td><td>2 commits</td></tr>
-        <tr><td class="repo">back-erp</td><td class="sha">2f2645a</td><td class="sha">5b102af</td><td>2 commits</td></tr>
+        <tr><td class="repo">mvp-erp</td><td class="sha">f3a3cf41</td><td class="sha">8775d2b8</td><td>4 commits</td></tr>
+        <tr><td class="repo">back-erp</td><td class="sha">2f2645a</td><td class="sha">11e8e1d</td><td>3 commits</td></tr>
         <tr><td class="repo">agent-integracion</td><td class="sha">5ca633d6</td><td class="sha">444b6a8d</td><td>3 commits</td></tr>
       </tbody>
     </table>
@@ -203,10 +203,27 @@
     <article class="bloque">
       <div class="bloque-cabeza">
         <span class="num">04</span>
-        <h3>Un documento, sin código</h3>
+        <h3>El registro de una inmobiliaria nueva</h3>
       </div>
-      <p><code>claudedocs/victor-backend-url-produccion.md</code> en el micro: por qué el chat del panel no ve los datos del negocio en producción y cómo se arregla. Es una variable de entorno, <code>LEASIFY_BACKEND_URL</code>, no hace falta desplegar código para probarlo.</p>
-      <ul class="commits"><li>micro 444b6a8d</li></ul>
+      <p>Arregla el error que salió en producción al terminar el formulario, <strong>«No pudimos iniciar tu sesión de onboarding»</strong>. Cuando el aprovisionamiento pasa pero el traspaso al agente falla, la agencia queda <code>ACTIVE</code> sin sesión, y el botón «Reintentar» volvía a caer en la misma rama y devolvía el mismo vacío: no había forma de salir de ahí. Ahora esa rama vuelve a intentar sólo el traspaso.</p>
+      <ul class="limpia">
+        <li><strong>back</strong> — el rescate de la sesión y el <code>GET /users/me/onboarding/session</code> nuevo, que dice dónde quedó cada quien</li>
+        <li><strong>front</strong> — selección en azul primary, campos del DS con el error en su helper, validación real del NIT con el dígito de verificación de la DIAN, salida con confirmación en las tres pantallas y retomar donde se dejó</li>
+      </ul>
+      <div class="nota aviso">
+        <span class="etq">De paso</span>
+        <p>El ejemplo de NIT que mostraba el formulario, <code class="mono">900123456-7</code>, era inválido: para ese número el dígito de verificación es 8. El mismo ejemplo está en el Swagger del back, sin efecto funcional.</p>
+      </div>
+      <ul class="commits"><li>back 11e8e1d</li><li>front 8775d2b8</li></ul>
+    </article>
+
+    <article class="bloque">
+      <div class="bloque-cabeza">
+        <span class="num">05</span>
+        <h3>Dos documentos, sin código</h3>
+      </div>
+      <p><code>claudedocs/victor-backend-url-produccion.md</code> en el micro: por qué el chat del panel no ve los datos del negocio en producción y cómo se arregla. Es una variable de entorno, <code>LEASIFY_BACKEND_URL</code>, no hace falta desplegar código para probarlo. En el front, esta misma página.</p>
+      <ul class="commits"><li>micro 444b6a8d</li><li>front cdf9141c</li></ul>
     </article>
 
   </div>
@@ -224,5 +241,5 @@
     <p>No hace falta configurar nada nuevo. La única variable que aparece, <code>EMAIL_ASSETS_URL</code>, es opcional: sin valor se deriva de <code>SUPABASE_URL</code>, y sin ninguna de las dos el correo sale sin imágenes en vez de con imágenes rotas.</p>
   </div>
 
-  <p class="pie">Los números de commit son de <code>origin/cambios-nico-1</code> al 4 de septiembre. Gates al momento de subirlos: front 5.764 tests · back 4.811 · micro 18.454, y <code>tsc</code> en cero en los tres.</p>
+  <p class="pie">Los números de commit son de <code>origin/cambios-nico-1</code> al 4 de septiembre, 14:10. Gates al momento de subirlos: front 6.142 tests · back 4.813 · micro 18.454, y <code>tsc</code> en cero en los tres. Ninguno de estos commits trae migración de base de datos.</p>
 </div>

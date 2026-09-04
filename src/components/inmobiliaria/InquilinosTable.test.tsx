@@ -55,6 +55,7 @@ function persona(p: Partial<Inquilino> = {}): Inquilino {
     nombre: 'Esteban López Quintero',
     email: 'esteban.lopez@example.com',
     telefono: '3010082450',
+    documento: '1020304050',
     arriendos: [arriendo()],
     ...p,
   }
@@ -255,5 +256,58 @@ describe('<BarraDeInquilinos>', () => {
     )
     act(() => terminados!.click())
     expect(onEstado).toHaveBeenCalledWith('terminados')
+  })
+})
+
+describe('InquilinosTable — la persona sin arriendo', () => {
+  /*
+   * Existe desde que se puede crear un inquilino solo. La fila tiene que
+   * decir DOS cosas: que no tiene arriendo —o sea que no se le está cobrando
+   * nada— y por dónde dárselo.
+   */
+  const sola = persona({ tenantId: 'sin-arriendo', nombre: 'Carla Mesa', arriendos: [] })
+
+  it('la marca «sin arriendo» y ofrece crearle el contrato', () => {
+    montarEn(<InquilinosTable inquilinos={[sola]} onAbrir={() => {}} />)
+
+    const fila = container!.querySelector('[data-tenant-id="sin-arriendo"]')!
+    expect(fila.textContent).toContain('inquilinos.sinArriendo')
+
+    const contrato = fila.querySelector('[data-testid="inquilino-crear-contrato"]')!
+    expect(contrato).not.toBeNull()
+    expect(contrato.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/contratos/nuevo?modo=manual',
+    )
+    expect(contrato.textContent).toContain('inquilinos.crearSuContrato')
+  })
+
+  it('🔴 no dice «$0» ni «sin inmueble asignado»: las dos mienten', () => {
+    montarEn(<InquilinosTable inquilinos={[sola]} onAbrir={() => {}} />)
+    const fila = container!.querySelector('[data-tenant-id="sin-arriendo"]')!
+
+    // «$0» se lee como un inquilino que no paga; «sin inmueble asignado» es un
+    // contrato incompleto, que es otra cosa. Acá simplemente no hay arriendo.
+    expect(fila.textContent).not.toContain('$0')
+    expect(fila.textContent).not.toContain('inquilinos.sinInmueble')
+  })
+
+  it('abrir el contrato desde la fila NO abre el cajón', () => {
+    let abiertos = 0
+    montarEn(
+      <InquilinosTable inquilinos={[sola]} onAbrir={() => { abiertos += 1 }} />,
+    )
+    const contrato = container!.querySelector('[data-testid="inquilino-crear-contrato"]')!
+    act(() => {
+      contrato.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(abiertos).toBe(0)
+  })
+
+  it('la que SÍ tiene arriendo no se marca', () => {
+    montarEn(<InquilinosTable inquilinos={[persona()]} onAbrir={() => {}} />)
+    expect(container!.textContent).not.toContain('inquilinos.sinArriendo')
+    expect(
+      container!.querySelector('[data-testid="inquilino-crear-contrato"]'),
+    ).toBeNull()
   })
 })

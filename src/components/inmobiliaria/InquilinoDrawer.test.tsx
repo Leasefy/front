@@ -53,6 +53,7 @@ function persona(p: Partial<Inquilino> = {}): Inquilino {
     nombre: 'Esteban López Quintero',
     email: 'esteban.lopez@example.com',
     telefono: '3010082450',
+    documento: '1020304050',
     arriendos: [arriendo()],
     ...p,
   }

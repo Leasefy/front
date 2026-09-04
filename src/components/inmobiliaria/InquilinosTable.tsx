@@ -32,6 +32,13 @@
  * 🔴 Quitar ese botón dejaba el cajón sin camino de teclado (un `<tr>` con
  * `onClick` no se tabula). Por eso el NOMBRE es un `<button>` real: el mouse
  * usa toda la fila, el teclado usa el nombre. No es decoración.
+ *
+ * ── Y lo del 2026-09-04: la fila SIN arriendo ─────────────────────────────
+ * Desde que se puede crear un inquilino solo, la lista trae personas con
+ * `arriendos: []`. Esa fila tiene que decir dos cosas y no una: **que no
+ * tiene arriendo** —porque sin contrato no se le cobra nada— y **por dónde
+ * dárselo**. Una fila muda con el canon en $0 se lee como un inquilino que no
+ * paga, que es lo contrario de lo que pasa.
  */
 
 import { useMemo, useState } from 'react';
@@ -39,6 +46,7 @@ import Link from 'next/link';
 import {
   CaretDown,
   CaretRight,
+  Plus,
   SortAscending,
   SortDescending,
   Warning,
@@ -62,6 +70,14 @@ import {
   type FiltroDeEstado,
   type Inquilino,
 } from '@/lib/api/inquilinos.service';
+
+/**
+ * La única variante de `/contratos/nuevo` que carga sin postulación: a secas
+ * esa ruta responde «Falta el parámetro applicationId». Vive acá porque la
+ * usan la página (el botón secundario) y la fila sin arriendo.
+ */
+export const RUTA_DEL_CONTRATO_MANUAL =
+  '/panel/inmobiliaria/contratos/nuevo?modo=manual';
 
 /** Cómo se pinta cada estado de `LeaseStatus`. Color + palabra, nunca color solo. */
 export const TONO_DEL_ARRIENDO: Record<
@@ -256,6 +272,12 @@ function FilaDeInquilino({
   const principal = arriendoPrincipal(persona);
   const tono = principal ? TONO_DEL_ARRIENDO[principal.estado] : undefined;
   const sinContacto = !persona.email && !persona.telefono;
+  /*
+   * Cargada a mano o traída por el paso «Terceros» de la migración, todavía
+   * sin contrato. No es un caso raro: es el estado en el que nace toda
+   * persona creada desde «Nuevo inquilino».
+   */
+  const sinArriendo = persona.arriendos.length === 0;
 
   return (
     <>
@@ -331,7 +353,11 @@ function FilaDeInquilino({
         {/* Inmueble, estado, canon y vigencia describen el arriendo principal
             cuando hay uno solo; con varios resumen y el detalle se despliega. */}
         <TableCell className="p-4 align-middle">
-          {varios ? (
+          {sinArriendo ? (
+            /* Ni «sin inmueble asignado» (eso es un contrato incompleto) ni un
+               inmueble en blanco: no hay arriendo del cual colgar uno. */
+            <span className="text-sm text-fg-subtle">—</span>
+          ) : varios ? (
             <button
               type="button"
               onClick={(e) => {
@@ -359,7 +385,25 @@ function FilaDeInquilino({
         </TableCell>
 
         <TableCell className="p-4 align-middle">
-          {varios ? (
+          {sinArriendo ? (
+            /*
+             * Las DOS cosas, no una: que no tiene arriendo —o sea que no se le
+             * está cobrando nada— y por dónde dárselo. Decir sólo lo primero
+             * deja a alguien mirando una fila que no explica qué hacer.
+             */
+            <div className="flex flex-col items-start gap-1">
+              <Badge variant="secondary">{t('inquilinos.sinArriendo')}</Badge>
+              <Link
+                href={RUTA_DEL_CONTRATO_MANUAL}
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline"
+                data-testid="inquilino-crear-contrato"
+              >
+                <Plus className="h-3 w-3" weight="bold" aria-hidden="true" />
+                {t('inquilinos.crearSuContrato')}
+              </Link>
+            </div>
+          ) : varios ? (
             <span className="text-sm text-fg-muted tabular-nums">
               {t('inquilinos.tabla.nVigentes', { n: vigentes.length })}
             </span>
@@ -373,9 +417,15 @@ function FilaDeInquilino({
         </TableCell>
 
         <TableCell className="p-4 align-middle">
-          <span className="whitespace-nowrap font-mono text-sm tabular-nums text-fg">
-            {formatCurrency(varios ? canonVigente(persona) : (principal?.canonCop ?? 0))}
-          </span>
+          {sinArriendo ? (
+            /* Un «$0» acá se lee como un inquilino que no paga, que es lo
+               contrario de la verdad: todavía no hay nada que cobrarle. */
+            <span className="text-sm text-fg-subtle">—</span>
+          ) : (
+            <span className="whitespace-nowrap font-mono text-sm tabular-nums text-fg">
+              {formatCurrency(varios ? canonVigente(persona) : (principal?.canonCop ?? 0))}
+            </span>
+          )}
         </TableCell>
 
         <TableCell className="p-4 align-middle">

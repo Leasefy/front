@@ -10904,7 +10904,7 @@
   "inquilinos": {
     "eyebrow": "Third parties",
     "titulo": "Tenants",
-    "subtitulo": "The people living in the properties you manage, with all their leases grouped together. Every tenant comes from their lease: add one by hand, or bring many over with the migration.",
+    "subtitulo": "The people living in the properties you manage, with all their leases grouped together. Add one here, or bring over the ones you already have with the migration.",
     "queEs": "the tenants",
     "queSon": "tenants",
     "buscarPlaceholder": "Search by name, email or phone",
@@ -10919,9 +10919,12 @@
       "arriendosVigentes": "Current leases",
       "canonVigente": "Current monthly rent"
     },
-    "vacioDescripcion": "There are no leases in your agency yet. Bring over the ones you already have in another system, or add one by hand and its tenant shows up here.",
+    "vacioDescripcion": "You have no tenants yet. Bring over the ones you already have in another system, or add one right here.",
     "vacioContrato": "Migrate leases",
     "crearContrato": "Create a lease",
+    "nuevoInquilino": "New tenant",
+    "sinArriendo": "No lease",
+    "crearSuContrato": "Create their lease",
     "sinContacto": "No email or phone",
     "sinInmueble": "No property assigned",
     "conteoArriendoUno": "1 lease · {{vigentes}} current",

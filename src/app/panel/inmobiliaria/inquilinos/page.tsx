@@ -44,27 +44,29 @@
  *    drawer y muestre todo el detalle»). Ver `InquilinoDrawer`.
  *
  * ── Y una séptima, del 2026-09-04 ───────────────────────────────────────────
- * 7. **Sí hay por dónde cargar UNO.** Nico: «¿y si no quiero migrar un montón
- *    de inquilinos sino que quiero crear uno solo, qué?» → «pues aquí también
- *    se debería poder». La decisión 2 sigue en pie en lo que importa —el back
- *    no expone un POST de inquilino suelto y esta lista se arma con
- *    `lease.findMany`— pero el camino existe desde el 2026-09-03: el contrato
- *    manual (`/contratos/nuevo?modo=manual`) elige el inmueble consignado y
- *    escribe al inquilino ahí mismo, sin postulación previa. Migrar era el
- *    único botón, y para una inmobiliaria con un solo arriendo eso es un
- *    callejón.
+ * 7. **🔴 Acá se crea un INQUILINO.** Nico, sobre el botón que decía «Crear un
+ *    contrato»: «*¿pero por qué crear contrato en inquilinos? En inquilino es
+ *    crear inquilino*». Como en Propietarios se crea un propietario. Esto
+ *    reemplaza a la decisión 2 —que decía que no había botón porque «no hay
+ *    forma de guardar una persona sin su arriendo»—: sí la hay, es la misma
+ *    que usa el paso «Terceros» de la migración, y ahora el back la expone en
+ *    `POST /inmobiliaria/inquilinos` y la lista la muestra.
  *
- *    Por eso el botón dice «Crear un contrato» y no «Nuevo inquilino»: lo que
- *    se abre es el contrato entero (inmueble, fechas, canon, PDF), y el
- *    inquilino es un bloque adentro. No hay forma de guardar una persona sin
- *    su arriendo, así que prometerlo sería mentir en el clic.
+ *    Los otros dos caminos NO se fueron, pasaron a segundos:
+ *      · **migrar** sigue siendo el primario del vacío (Nico, 2026-09-03) —
+ *        quien tiene 300 arriendos andando no los carga de a uno;
+ *      · **el contrato manual** (`/contratos/nuevo?modo=manual`) sigue
+ *        accesible, porque un inquilino sin contrato no cobra. Está en el
+ *        encabezado como acción secundaria y, sobre todo, en la fila de cada
+ *        persona sin arriendo — que es donde de verdad hace falta.
  */
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   Buildings,
   CurrencyDollar,
+  FileText,
   Plus,
   UploadSimple,
   UserCircle,
@@ -79,8 +81,13 @@ import { SinDatos } from '@/components/estado/SinDatos';
 import { Button } from '@/components/ui/button';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination } from '@/lib/hooks/use-table-pagination';
-import { BarraDeInquilinos, InquilinosTable } from '@/components/inmobiliaria/InquilinosTable';
+import {
+  BarraDeInquilinos,
+  InquilinosTable,
+  RUTA_DEL_CONTRATO_MANUAL,
+} from '@/components/inmobiliaria/InquilinosTable';
 import { InquilinoDrawer } from '@/components/inmobiliaria/InquilinoDrawer';
+import { NuevoInquilinoDrawer } from '@/components/inmobiliaria/NuevoInquilinoDrawer';
 import {
   RUTA_DE_LA_MIGRACION,
   useCopyDeMigracionEnLista,
@@ -95,15 +102,10 @@ import {
   type Inquilino,
 } from '@/lib/api/inquilinos.service';
 
-/*
- * La única variante de `/contratos/nuevo` que carga sin postulación: a secas
- * esa ruta responde «Falta el parámetro applicationId». Con `?modo=manual` se
- * elige el inmueble consignado y se escribe el inquilino ahí mismo.
- */
-const RUTA_DEL_CONTRATO_MANUAL = '/panel/inmobiliaria/contratos/nuevo?modo=manual';
-
 /**
- * El camino para cargar uno solo.
+ * El camino al contrato entero (inmueble, fechas, canon, PDF), donde el
+ * inquilino es un bloque adentro. Secundario desde el 2026-09-04: el primario
+ * es crear la persona.
  *
  * 🔴 Va detrás de `contratos`/`create` porque el destino está protegido con
  * `PageGuard module="contratos" action="create"`: sin ese permiso el clic no
@@ -111,21 +113,45 @@ const RUTA_DEL_CONTRATO_MANUAL = '/panel/inmobiliaria/contratos/nuevo?modo=manua
  * simplemente no se pinta (el default de `PermissionGate` es un cartel de
  * «acceso restringido», que adentro de un encabezado no tiene sentido).
  */
-function CrearContratoBoton({ secundario = false }: { secundario?: boolean }) {
+function CrearContratoBoton() {
   const { t } = useI18n();
   return (
     <PermissionGate module="contratos" action="create" fallback={null}>
       <Button
         asChild
         hideArrow
-        variant={secundario ? 'outline' : 'default'}
+        variant="outline"
         className="shrink-0 gap-2"
         data-testid="crear-contrato-manual"
       >
         <Link href={RUTA_DEL_CONTRATO_MANUAL}>
-          <Plus className="h-4 w-4" weight="bold" aria-hidden="true" />
+          <FileText className="h-4 w-4" weight="bold" aria-hidden="true" />
           {t('inquilinos.crearContrato')}
         </Link>
+      </Button>
+    </PermissionGate>
+  );
+}
+
+/**
+ * El primario: cargar UNA persona.
+ *
+ * Mismo permiso que el contrato manual (`contratos`/`create`, que es con el
+ * que el back protege `POST /inmobiliaria/inquilinos`): un botón que abre un
+ * cajón cuyo guardar devuelve 403 es peor que no tener botón.
+ */
+function NuevoInquilinoBoton({ onAbrir }: { onAbrir: () => void }) {
+  const { t } = useI18n();
+  return (
+    <PermissionGate module="contratos" action="create" fallback={null}>
+      <Button
+        hideArrow
+        className="shrink-0 gap-2"
+        onClick={onAbrir}
+        data-testid="nuevo-inquilino"
+      >
+        <Plus className="h-4 w-4" weight="bold" aria-hidden="true" />
+        {t('inquilinos.nuevoInquilino')}
       </Button>
     </PermissionGate>
   );
@@ -153,8 +179,17 @@ function ContenidoDeInquilinos() {
   const [buscar, setBuscar] = useState('');
   const [estado, setEstado] = useState<FiltroDeEstado>('activos');
   const [abierto, setAbierto] = useState<Inquilino | null>(null);
+  const [creando, setCreando] = useState(false);
 
   const { inquilinos, cargando, error, refrescar } = useInquilinos({ buscar, estado });
+
+  /*
+   * Se vuelve a pedir la lista en vez de empujar la fila a mano: la persona
+   * recién creada tiene que aparecer donde el back diga que va, con el filtro
+   * y la búsqueda que estén puestos. Insertarla en el cliente la mostraría
+   * aunque la búsqueda activa no la incluya.
+   */
+  const alCrear = useCallback(() => refrescar(), [refrescar]);
 
   /*
    * Paginación en el cliente: la lista viene entera del back (una fila por
@@ -210,7 +245,10 @@ function ContenidoDeInquilinos() {
           </h1>
           <p className="max-w-2xl text-body text-fg-muted line-clamp-2">{t('inquilinos.subtitulo')}</p>
         </div>
-        <CrearContratoBoton />
+        <div className="flex flex-wrap items-center gap-2">
+          <CrearContratoBoton />
+          <NuevoInquilinoBoton onAbrir={() => setCreando(true)} />
+        </div>
       </header>
 
       {/* Los tres números miden lo VIGENTE, no lo histórico: un canon que suma
@@ -304,7 +342,8 @@ function ContenidoDeInquilinos() {
                         {copy?.accion ?? t('inquilinos.vacioContrato')}
                       </Link>
                     </Button>
-                    <CrearContratoBoton secundario />
+                    <CrearContratoBoton />
+                    <NuevoInquilinoBoton onAbrir={() => setCreando(true)} />
                   </div>
                 )
               }
@@ -334,6 +373,11 @@ function ContenidoDeInquilinos() {
       </EstadoDeDatos>
 
       <InquilinoDrawer persona={abierto} onCerrar={() => setAbierto(null)} />
+      <NuevoInquilinoDrawer
+        abierto={creando}
+        onOpenChange={setCreando}
+        onCreado={alCrear}
+      />
     </div>
   );
 }

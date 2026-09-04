@@ -29,6 +29,9 @@ const CLAVES_DE_INQUILINOS = [
   'eyebrow',
   'titulo',
   'subtitulo',
+  // El botón «Crear un contrato», la única salida para cargar UN inquilino
+  // (Nico, 2026-09-04: «pues acá también se debería poder»).
+  'crearContrato',
   'queEs',
   'queSon',
   'buscarPlaceholder',

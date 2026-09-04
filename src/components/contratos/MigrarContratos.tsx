@@ -62,14 +62,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { parseSpreadsheetFile } from "@/components/inmobiliaria/import/lib/parseFile";
 import {
+  leerPrimerasFilas,
+  parseSpreadsheetFile,
+} from "@/components/inmobiliaria/import/lib/parseFile";
+import {
+  faltantesEsenciales,
   mapearColumnas,
+  mejorFilaDeEncabezado,
   remapear,
   sinMapear,
   type CampoDeContrato,
   type MapeoDeColumna,
 } from "@/lib/contratos/columnas-de-contrato";
+import {
+  comisionQueNoParecePorcentaje,
+  huecosEsenciales,
+  vistaPreviaDeFilas,
+} from "@/lib/contratos/vista-previa-de-migracion";
 import { armarFilaAMigrar } from "@/lib/contratos/armar-fila";
 import { documentoComoLlave } from "@/lib/contratos/leer-celdas";
 import { generarIdempotencyKey } from "@/lib/contratos/idempotencia";
@@ -178,6 +188,13 @@ export interface MigrarContratosProps {
 export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
   const [filas, setFilas] = useState<Fila[]>([]);
   const [encabezados, setEncabezados] = useState<string[]>([]);
+  /**
+   * En qué fila del archivo estaban los encabezados (0 = la primera).
+   * Se muestra cuando NO es la primera: si el lector se salta dos filas
+   * de título, la persona tiene que enterarse — si se equivocó, lo ve
+   * acá y no cuando falten dos contratos.
+   */
+  const [filaDeEncabezado, setFilaDeEncabezado] = useState(0);
   const [mapeo, setMapeo] = useState<MapeoDeColumna[]>([]);
   const [invitar, setInvitar] = useState(true);
   const [cargando, setCargando] = useState(false);
@@ -272,6 +289,36 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
 
   const noMapeados = useMemo(() => sinMapear(mapeo), [mapeo]);
 
+  /**
+   * 🔴 La compuerta. Sin esto, el 2026-09-03 un archivo de 110 contratos entró
+   * con TODAS las columnas en «Ignorar» y creó 110 filas vacías; el aviso
+   * llegó después, cuando ya había 110 filas que descartar.
+   *
+   * No es el viejo `OBLIGATORIOS` de 8 columnas que impedía subir el archivo
+   * real del owner: es el mínimo para que una fila SIRVA —identificar el
+   * inmueble, identificar al inquilino y poder cobrarle—. `uso`, depósito,
+   * comisión y periodicidad siguen sin bloquear.
+   */
+  const faltanEsenciales = useMemo(() => faltantesEsenciales(mapeo), [mapeo]);
+  const dudosas = useMemo(
+    () => mapeo.filter((m) => m.certeza === "dudosa"),
+    [mapeo],
+  );
+  const vistaPrevia = useMemo(
+    () => vistaPreviaDeFilas(filas, mapeo),
+    [filas, mapeo],
+  );
+  const huecos = useMemo(() => huecosEsenciales(filas, mapeo), [filas, mapeo]);
+  /**
+   * La comisión es un porcentaje y la columna puede traer pesos. Si llega
+   * así, `comoPorcentaje` la descarta por estar fuera de [0,100] y TODAS esas
+   * filas quedan sin comisión en silencio, con la columna mapeada y verde.
+   */
+  const comisionRara = useMemo(
+    () => comisionQueNoParecePorcentaje(filas, mapeo),
+    [filas, mapeo],
+  );
+
   const cambiarMapeo = useCallback(
     (columna: string, campo: CampoDeContrato | null) => {
       setMapeo((actual) => remapear(actual, columna, campo));
@@ -283,11 +330,42 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
     setMapeo(mapearColumnas(encabezados));
   }, [encabezados]);
 
+  /** Vuelve al cargador con el archivo actual soltado. Nada del server. */
+  const limpiarArchivo = useCallback(() => {
+    setFilas([]);
+    setEncabezados([]);
+    setMapeo([]);
+    setFilaDeEncabezado(0);
+    setIdempotencyKey("");
+    setError(null);
+  }, []);
+
   const leerArchivo = useCallback(async (archivo: File) => {
     setError(null);
     setActivacion(null);
     try {
-      const { rows, headers } = await parseSpreadsheetFile(archivo);
+      /*
+       * Dónde están los encabezados de verdad. Un export real no siempre
+       * empieza en A1: arriba puede venir el nombre de la inmobiliaria o el
+       * rango de fechas, y entonces `headers` son «REPORTE DE CONTRATOS» y
+       * celdas en blanco — cero columnas reconocidas y todas las filas
+       * vacías. `mejorFilaDeEncabezado` se queda en la 0 salvo que otra
+       * reconozca claramente más campos.
+       *
+       * Se hace acá y no en `parseSpreadsheetFile` a propósito: ese lector lo
+       * comparte el importador de inmuebles, que tiene otro diccionario.
+       */
+      let fila = 0;
+      try {
+        fila = mejorFilaDeEncabezado(await leerPrimerasFilas(archivo, 15));
+      } catch {
+        // Si la exploración falla, se lee como siempre desde la primera fila:
+        // es una mejora, no un requisito para poder leer el archivo.
+      }
+      const { rows, headers } = await parseSpreadsheetFile(archivo, undefined, {
+        filaDeEncabezado: fila,
+      });
+      setFilaDeEncabezado(fila);
       setFilas(rows as Fila[]);
       setEncabezados(headers);
       setMapeo(mapearColumnas(headers));
@@ -445,6 +523,13 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
   );
 
   const preparar = useCallback(async () => {
+    /*
+     * La compuerta, otra vez, acá. El botón deshabilitado es una comodidad de
+     * la pantalla, no una garantía: lo que no puede pasar NUNCA es que salga
+     * un `preparar()` con lo esencial sin mapear, porque del otro lado se
+     * crean filas de verdad — 110 la última vez.
+     */
+    if (faltantesEsenciales(mapeo).length > 0) return;
     setCargando(true);
     setError(null);
     try {
@@ -988,6 +1073,12 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                 propietario y «arrendatario» es el inquilino, y se parecen
                 demasiado.
               </p>
+              {filaDeEncabezado > 0 ? (
+                <p className="text-xs text-fg-muted" data-testid="fila-de-encabezado">
+                  Los encabezados los leímos de la fila {filaDeEncabezado + 1}:
+                  arriba había títulos, no datos.
+                </p>
+              ) : null}
             </div>
             <Button
               type="button"
@@ -1000,6 +1091,59 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
               Restablecer
             </Button>
           </div>
+
+          {/*
+            🔴 La compuerta, ARRIBA de la tabla: lo que falta se lee antes de
+            empezar a revisar columna por columna, no después de haber creado
+            110 filas vacías.
+          */}
+          {faltanEsenciales.length > 0 ? (
+            <AlertaAccionable
+              severidad="warning"
+              data-testid="faltan-esenciales"
+              titulo={
+                faltanEsenciales.length === 1
+                  ? "Falta 1 dato esencial: así la migración queda vacía"
+                  : `Faltan ${faltanEsenciales.length} datos esenciales: así la migración queda vacía`
+              }
+              accion={
+                faltanEsenciales.some((f) => !f.hayColumnaPosible)
+                  ? { label: "Subir otro archivo", onClick: limpiarArchivo }
+                  : undefined
+              }
+            >
+              <ul className="mt-1 space-y-1">
+                {faltanEsenciales.map((f) => (
+                  <li key={f.clave} data-testid={`falta-${f.clave}`}>
+                    {f.hayColumnaPosible
+                      ? `Elegí en el desplegable la columna de tu archivo que trae ${f.etiqueta}.`
+                      : `Tu archivo no trae ninguna columna de ${f.nombreCorto}. Agregala y volvé a subirlo.`}
+                  </li>
+                ))}
+              </ul>
+            </AlertaAccionable>
+          ) : null}
+
+          {/*
+            Lo que se adivinó. Una columna que empató por una palabra genérica
+            («Ciudad», «Desde», «Honorarios») puede estar bien — pero mapearla
+            con confianza alta es justo el error que se comete una vez y sale
+            en la factura.
+          */}
+          {dudosas.length > 0 ? (
+            <AlertaAccionable
+              severidad="info"
+              data-testid="mapeos-dudosos"
+              titulo={
+                dudosas.length === 1
+                  ? "1 columna se entendió por una palabra genérica"
+                  : `${dudosas.length} columnas se entendieron por una palabra genérica`
+              }
+            >
+              Confirmá abajo que {dudosas.map((m) => `«${m.columna}»`).join(", ")}{" "}
+              {dudosas.length === 1 ? "es" : "son"} lo que dice el campo elegido.
+            </AlertaAccionable>
+          ) : null}
 
           <div className="overflow-x-auto">
             <Table>
@@ -1040,12 +1184,29 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {m.isManual
-                        ? "elegido a mano"
-                        : m.porque
-                          ? `coincidió con «${m.porque}»`
-                          : "—"}
+                    <TableCell className="text-xs text-fg-muted">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span>
+                          {m.isManual
+                            ? "elegido a mano"
+                            : m.porque
+                              ? `coincidió con «${m.porque}»`
+                              : "—"}
+                        </span>
+                        {/*
+                          La marca de lo adivinado. Sin ella, «Ciudad» y
+                          «Ciudad del inmueble» se ven igual de seguras en la
+                          pantalla y no lo son.
+                        */}
+                        {m.certeza === "dudosa" ? (
+                          <span
+                            data-testid={`dudosa-${m.columna}`}
+                            className="rounded-lg border border-warning/40 bg-warning-soft px-1.5 py-0.5 text-warning"
+                          >
+                            confirmá esto
+                          </span>
+                        ) : null}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1053,8 +1214,14 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
             </Table>
           </div>
 
-          {/* Informativo, no bloquea: cualquier archivo se puede revisar. */}
-          {noMapeados.length > 0 ? (
+          {/*
+            Informativo, no bloquea: cualquier archivo se puede revisar. Se
+            calla mientras la compuerta está arriba — ahí ya está dicho lo
+            mismo, con el consejo correcto, y repetirlo con palabras más
+            flojas («podés completarlos después») contradice al aviso que sí
+            frena.
+          */}
+          {noMapeados.length > 0 && faltanEsenciales.length === 0 ? (
             <div className="flex items-start gap-2 rounded-md border border-border bg-info-soft p-3">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
               <div>
@@ -1071,15 +1238,116 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
             </div>
           ) : null}
 
-          {/* No dice "importar": todavía no se crea nada. Sin gate de
-              columnas: cualquier archivo llega a la lista de trabajo. */}
+          {/*
+            La vista previa honesta: el dato YA interpretado, antes de crear
+            nada. Un mapeo se puede leer y parecer razonable; lo que no miente
+            es ver «$ 1.800.000» o «sin dato» en la celda que va a viajar.
+            Sale de `armarFilaAMigrar`, la misma función que arma el payload.
+          */}
+          {vistaPrevia.length > 0 ? (
+            <div className="space-y-2" data-testid="vista-previa-migracion">
+              <div>
+                <h3 className="text-sm font-medium text-fg">
+                  Así quedarían las{" "}
+                  {vistaPrevia[0].valores.length === 1
+                    ? "primera fila"
+                    : `primeras ${vistaPrevia[0].valores.length} filas`}
+                </h3>
+                <p className="text-xs text-fg-muted">
+                  Todavía no se crea nada. Si algo acá está en la fila
+                  equivocada, corregí el mapeo de arriba.
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Campo del contrato</TableHead>
+                      {vistaPrevia[0].valores.map((_, i) => (
+                        <TableHead key={i}>Fila {i + 1}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {vistaPrevia.map((r) => (
+                      <TableRow key={r.campo}>
+                        <TableCell className="whitespace-nowrap font-medium">
+                          {NOMBRE_DE_CAMPO[r.campo]}
+                        </TableCell>
+                        {r.valores.map((v, i) => (
+                          <TableCell
+                            key={i}
+                            className={v ? "text-fg" : "text-fg-muted"}
+                          >
+                            {v ?? "sin dato"}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          ) : null}
+
+          {/*
+            Una columna bien mapeada no garantiza un archivo bien llenado. Con
+            el número exacto: «38 de 110 filas quedan sin canon» se puede
+            decidir; «algunas filas están incompletas» no.
+          */}
+          {huecos.length > 0 || comisionRara ? (
+            <AlertaAccionable
+              severidad="warning"
+              data-testid="avisos-del-archivo"
+              titulo={
+                huecos.length > 0
+                  ? `${huecos[0].sinDato} de ${huecos[0].total} filas quedan sin ${huecos[0].nombreCorto}`
+                  : `La columna «${comisionRara!.columna}» trae valores que no parecen un porcentaje`
+              }
+            >
+              {huecos.length > 1 ? (
+                <ul className="mt-1 space-y-1">
+                  {huecos.slice(1).map((h) => (
+                    <li key={h.clave}>
+                      {h.sinDato} de {h.total} filas quedan sin {h.nombreCorto}.
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {comisionRara ? (
+                <p className="mt-1" data-testid="aviso-comision">
+                  La columna «{comisionRara.columna}» trae valores como{" "}
+                  {comisionRara.ejemplos.map((e) => `«${e}»`).join(" y ")}, que
+                  no parecen un porcentaje ({comisionRara.cuantas} de{" "}
+                  {comisionRara.total} filas). Revisá el mapeo antes de seguir:
+                  la comisión se guarda como porcentaje, así que esos valores
+                  se van a perder.
+                </p>
+              ) : null}
+              {huecos.length > 0 ? (
+                <p className="mt-1">
+                  Podés seguir: esas filas van a pedir el dato una por una en
+                  la lista de trabajo. Si es un error del archivo, corregilo y
+                  volvé a subirlo.
+                </p>
+              ) : null}
+            </AlertaAccionable>
+          ) : null}
+
+          {/*
+            No dice "importar": todavía no se crea nada. Y no se puede seguir
+            con lo esencial sin mapear — ver `faltanEsenciales`.
+          */}
           <Button
             onClick={() => void preparar()}
-            disabled={filas.length === 0 || cargando}
+            disabled={
+              filas.length === 0 || cargando || faltanEsenciales.length > 0
+            }
             isLoading={cargando}
             hideArrow
           >
-            Revisar {filas.length} contratos
+            Revisar {filas.length}{" "}
+            {filas.length === 1 ? "contrato" : "contratos"}
           </Button>
         </Card>
       ) : null}

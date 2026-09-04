@@ -10906,7 +10906,7 @@
   "inquilinos": {
     "eyebrow": "Terceros",
     "titulo": "Inquilinos",
-    "subtitulo": "Las personas que viven en los inmuebles que administrás, con todos sus arriendos juntos. Un inquilino nace de un contrato o de una migración: acá no se crea a nadie a mano.",
+    "subtitulo": "Las personas que viven en los inmuebles que administrás, con todos sus arriendos juntos. Cada inquilino nace de su contrato: si es uno solo, cargalo a mano; si son muchos, traelos con la migración.",
     "queEs": "los inquilinos",
     "queSon": "inquilinos",
     "buscarPlaceholder": "Buscá por nombre, correo o teléfono",
@@ -10921,8 +10921,9 @@
       "arriendosVigentes": "Arriendos vigentes",
       "canonVigente": "Canon mensual vigente"
     },
-    "vacioDescripcion": "Todavía no hay ningún arriendo en tu inmobiliaria. Traé los que ya tenés en otro sistema y los inquilinos aparecen solos.",
+    "vacioDescripcion": "Todavía no hay ningún arriendo en tu inmobiliaria. Traé los que ya tenés en otro sistema, o cargá uno a mano y su inquilino aparece acá.",
     "vacioContrato": "Migrar contratos",
+    "crearContrato": "Crear un contrato",
     "sinContacto": "Sin correo ni teléfono",
     "sinInmueble": "Sin inmueble asignado",
     "conteoArriendoUno": "1 arriendo · {{vigentes}} vigente",
@@ -11001,6 +11002,11 @@
   },
   "migracion": {
     "nav": "Migración",
+    "enLaLista": {
+      "titulo": "{{n}} contratos migrados todavía no están completos",
+      "detalle": "{{deuda}}. Hasta que no queden asociados no generan cobros ni aparecen acá.",
+      "accion": "Completar la migración"
+    },
     "puc": {
       "titulo": "Cuentas del PUC",
       "subtitulo": "Tu plan de cuentas: dónde caen los movimientos. Arrancá con el plan base del Decreto 2650 y ajustalo con tu contador."
@@ -11035,6 +11041,56 @@
         "eyebrow": "Todo listo",
         "titulo": "Tu operación ya está adentro",
         "detalle": "Los pasos están completos. Podés seguir cargando desde acá o entrar al panel; la migración queda en el menú por si te falta algo."
+      },
+      "veredicto": {
+        "eyebrow": "Cómo quedó tu migración",
+        "titulo": "Los contratos entraron, pero todavía no cobran",
+        "detalle": "Un contrato cobra a través del inmueble: sin inmueble no hay consignación, sin consignación no hay cobro, y el inquilino no aparece en ninguna lista. Esto es lo que falta asociar.",
+        "contratos": "{{n}} contratos migrados",
+        "sinInmueble": {
+          "linea": "{{n}} sin inmueble",
+          "detalle": "Existen y no generan un peso: nadie sabe qué inmueble arriendan.",
+          "accion": "Vincular los inmuebles"
+        },
+        "sinPropietario": {
+          "linea": "{{n}} sin propietario",
+          "detalle": "El inmueble no está consignado a nadie, así que no hay a quién liquidarle.",
+          "accion": "Elegir propietario"
+        },
+        "sinInquilino": {
+          "linea": "{{n}} sin inquilino",
+          "detalle": "Falta el nombre, el correo o el documento del inquilino en el archivo.",
+          "accion": "Completar los inquilinos"
+        },
+        "pendientes": {
+          "linea": "{{n}} filas sin activar",
+          "detalle": "Entraron con el archivo y todavía no son contratos.",
+          "accion": "Revisar las filas"
+        },
+        "seguir": "Completar lo que falta",
+        "entrarIgual": "Entrar al panel así como está",
+        "tabla": {
+          "eyebrow": "Fila por fila",
+          "queEs": "las filas de la migración",
+          "queSon": "filas",
+          "fila": "Fila",
+          "direccion": "Dirección",
+          "inquilino": "Inquilino",
+          "falta": "Qué le falta",
+          "resolver": "Resolver",
+          "sinDato": "Sin dato",
+          "nada": "Nada",
+          "vacio": "Ninguna fila de esta lista tiene algo pendiente.",
+          "verPendientes": "Sin activar ({{n}})",
+          "verActivadas": "Activadas ({{n}})",
+          "queMirar": "Qué filas mirar",
+          "faltas": {
+            "inmueble": "Inmueble",
+            "propietario": "Propietario",
+            "inquilino": "Inquilino",
+            "datos": "Datos del contrato"
+          }
+        }
       },
       "siguiente": "Seguir con {{paso}}",
       "ocupado": "Se están creando los registros de este paso — esperá a que termine.",

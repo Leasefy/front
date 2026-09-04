@@ -79,6 +79,7 @@ import {
 import {
   MODULO_DEL_PASO,
   esExigible,
+  hayDeuda,
   normalizarEstado,
   pasoActual,
   pasoHabilitado,
@@ -86,6 +87,8 @@ import {
   siguientePaso,
   todoListo,
 } from "./muro-reglas";
+import { useDeudaDeMigracion } from "@/lib/hooks/use-migracion-con-deuda";
+import { FilasFrenadas, VeredictoDeMigracion } from "./VeredictoDeMigracion";
 import { MigrarTerceros } from "./MigrarTerceros";
 import { PlanDeCuentas } from "./PlanDeCuentas";
 import { RegistrosContables } from "./RegistrosContables";
@@ -257,6 +260,19 @@ export function PanelDeMigracion({
   const hechos = exigibles.filter((p) => p.estado === "listo").length;
 
   /*
+   * 🔴 Terminar los pasos NO es terminar la migración.
+   *
+   * Los seis pasos pueden estar en verde con 89 contratos activados sin
+   * inmueble y sin propietario — existen, y no cobran un peso. Pasó en dev
+   * el 2026-09-03 y el muro felicitó igual. Mientras esto tenga algo que
+   * decir, el muro muestra el veredicto en vez de «tu operación ya está
+   * adentro», y el pie ofrece completar antes que entrar.
+   */
+  const { deuda, recargar: recargarDeuda } = useDeudaDeMigracion();
+  const conDeuda = hayDeuda(deuda);
+  const indiceDeContratos = pasos.findIndex((p) => p.id === "contratos");
+
+  /*
    * Dónde está parada la persona. Arranca en el primer paso sin terminar y
    * SÓLO cambia cuando ella lo cambia: el refresco del estado no la mueve.
    * Si terceros pasa a «listo» mientras revisa las últimas filas, la barra
@@ -275,9 +291,24 @@ export function PanelDeMigracion({
       // Quien acaba de sembrar el PUC y aprieta «continuar» no debería ver
       // «primero terminá el PUC» hasta el próximo refresco de 5 s.
       void onResuelta();
+      // Y quien acaba de vincular 89 inmuebles y vuelve al veredicto no
+      // debería seguir leyendo «89 sin inmueble».
+      void recargarDeuda();
     },
-    [onResuelta],
+    [onResuelta, recargarDeuda],
   );
+
+  /*
+   * La deuda se vuelve a preguntar cuando el paso de contratos se mueve —
+   * su `detalle` es el texto que el back arma con los conteos, así que
+   * cambia con cada activación. No se sondea cada 5 s: `resumen` cuenta
+   * contratos y consignaciones, y no es una lectura barata.
+   */
+  const pasoDeContratos = pasos[indiceDeContratos];
+  const firmaDeContratos = `${pasoDeContratos?.estado ?? ""}|${pasoDeContratos?.detalle ?? ""}`;
+  useEffect(() => {
+    void recargarDeuda();
+  }, [firmaDeContratos, recargarDeuda]);
 
   /*
    * Trampa de foco. No es un modal con «cerrar»: es un muro, así que Escape
@@ -449,7 +480,36 @@ export function PanelDeMigracion({
               style={{ overscrollBehavior: "contain" }}
               data-testid="muro-pasos"
             >
-              {listo ? <TodoListo pasos={pasos} /> : null}
+              {/*
+                Con los pasos completos hay DOS finales posibles, y decir el
+                que no es fue el bug: «Tu operación ya está adentro» sobre 89
+                contratos que no cobran. Con deuda, el veredicto —números,
+                motivos y la tabla fila por fila— reemplaza la felicitación.
+              */}
+              {listo && conDeuda && deuda ? (
+                <div className="mb-6 space-y-4">
+                  <VeredictoDeMigracion
+                    deuda={deuda}
+                    resolver={{
+                      onIr:
+                        indiceDeContratos === -1
+                          ? undefined
+                          : () => irA(indiceDeContratos),
+                    }}
+                  />
+                  <FilasFrenadas
+                    deuda={deuda}
+                    resolver={{
+                      onIr:
+                        indiceDeContratos === -1
+                          ? undefined
+                          : () => irA(indiceDeContratos),
+                    }}
+                  />
+                </div>
+              ) : listo ? (
+                <TodoListo pasos={pasos} />
+              ) : null}
 
               {paso ? (
                 <PasoEnFoco
@@ -499,6 +559,38 @@ export function PanelDeMigracion({
                 <p className="text-sm text-fg-subtle" data-testid="muro-ocupado">
                   {t("migracion.muro.ocupado")}
                 </p>
+              ) : listo && conDeuda ? (
+                /*
+                 * 🔴 Con deuda el pie NO celebra. El principal lleva a
+                 * completarla; entrar igual sigue existiendo —nadie queda
+                 * encerrado, y hay carteras donde el dato no está y no va a
+                 * estar— pero en jerarquía de salida discreta y sin decir
+                 * «ya terminé».
+                 */
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    onClick={() => resolver("terminar")}
+                    disabled={enviando}
+                    data-testid="muro-entrar-igual"
+                    hideArrow
+                  >
+                    {t("migracion.muro.veredicto.entrarIgual")}
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      indiceDeContratos === -1
+                        ? undefined
+                        : irA(indiceDeContratos)
+                    }
+                    disabled={enviando || indiceDeContratos === -1}
+                    data-testid="muro-completar-deuda"
+                    hideArrow
+                  >
+                    {t("migracion.muro.veredicto.seguir")}
+                    <ArrowRight className="ml-1.5 h-4 w-4" />
+                  </Button>
+                </div>
               ) : listo ? (
                 <Button
                   onClick={() => resolver("terminar")}

@@ -25,6 +25,30 @@ import { cn } from '@/lib/utils';
 
 const NS = 'inmobiliaria.consignaciones.origen';
 
+/**
+ * Con qué arranca `/inmuebles/nuevo`: `null` = se pregunta, o el camino directo.
+ *
+ * 🔴 La pregunta «¿un inmueble nuevo o uno que ya tengo?» SÓLO tiene sentido
+ * cuando se le está asignando un inmueble A UN PROPIETARIO concreto (se llega
+ * desde su ficha, con `?propietarioId=`): ahí el trámite es «dale un inmueble a
+ * esta persona» y ofrecer los del portafolio sin dueño ahorra cargarlo de nuevo.
+ *
+ * Desde «Nueva consignación» —el botón del portafolio, la barra lateral, el
+ * buscador, el panel de inicio— la respuesta siempre es la misma: el flujo
+ * completo. Preguntarlo ahí era un paso de más (Nico, 2026-09-03).
+ *
+ * `?origen=` manda sobre todo: hay enlaces que apuntan derecho a un camino.
+ */
+export function origenInicial(entrada: {
+  origenEnLaUrl: string | null;
+  propietarioId: string | undefined;
+}): 'nuevo' | 'existente' | null {
+  if (entrada.origenEnLaUrl === 'nuevo' || entrada.origenEnLaUrl === 'existente') {
+    return entrada.origenEnLaUrl;
+  }
+  return entrada.propietarioId === undefined ? 'nuevo' : null;
+}
+
 export interface OrigenDelInmuebleProps {
   /** Cuántos inmuebles del portafolio están sin mandato. */
   disponibles: number;

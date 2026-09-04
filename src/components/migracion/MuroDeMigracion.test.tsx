@@ -94,6 +94,30 @@ vi.mock('@/components/providers/SmoothScroll', () => ({
   useLenis: () => ({ stop: () => {}, start: () => {} }),
 }));
 
+/*
+ * La deuda de la migración: lo que quedó a medias DESPUÉS de que los pasos
+ * están en verde. `null` por defecto — el muro de siempre. Las pruebas del
+ * veredicto la devuelven con números. `recargar` tiene identidad estable a
+ * propósito: el muro la usa como dependencia de un efecto.
+ */
+const { deudaMock, recargarDeuda } = vi.hoisted(() => ({
+  deudaMock: vi.fn(),
+  recargarDeuda: async () => {},
+}));
+vi.mock('@/lib/hooks/use-migracion-con-deuda', () => ({
+  useDeudaDeMigracion: () => ({ deuda: deudaMock(), recargar: recargarDeuda }),
+  useMigracionConDeuda: () => deudaMock(),
+}));
+
+// El veredicto tiene sus propias pruebas (y `muro-reglas.test.ts` prueba sus
+// números). Acá interesa CUÁNDO lo monta el muro y qué ofrece el pie.
+vi.mock('./VeredictoDeMigracion', () => ({
+  VeredictoDeMigracion: ({ deuda }: { deuda: { contratos: number } }) => (
+    <div data-testid="muro-veredicto" data-contratos={deuda.contratos} />
+  ),
+  FilasFrenadas: () => <div data-testid="veredicto-filas" />,
+}));
+
 const permisos = vi.hoisted(() => ({ puede: true, cargando: false }));
 vi.mock('@/lib/hooks/usePermissions', () => ({
   usePermissions: () => ({
@@ -178,6 +202,8 @@ beforeEach(() => {
   rutaActual.valor = '/panel/inmobiliaria/reportes/resumen';
   permisos.puede = true;
   permisos.cargando = false;
+  deudaMock.mockReset();
+  deudaMock.mockReturnValue(null);
   estadoMock.estado.mockReset();
   estadoMock.terminar.mockReset();
   estadoMock.omitir.mockReset();
@@ -898,5 +924,75 @@ describe('con todo listo', () => {
     // Con todo listo «arranco de cero» sobra: la puerta es entrar.
     expect(q('muro-arrancar-de-cero')).toBeNull();
     expect(q('muro-siguiente')).toBeNull();
+    // Sin deuda no hay veredicto que dar.
+    expect(q('muro-veredicto')).toBeNull();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// Todo listo, y la cartera muerta: el veredicto
+// ══════════════════════════════════════════════════════════════════════════
+
+/**
+ * 🔴 El caso que motivó todo esto (dev, 2026-09-03): los seis pasos en verde
+ * con 91 contratos migrados y 89 sin inmueble ni propietario. El muro decía
+ * «Tu operación ya está adentro» y la inmobiliaria entraba a un panel vacío.
+ */
+describe('con todo listo pero la migración a medias', () => {
+  beforeEach(() => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: TODO_MIGRADO,
+    });
+    deudaMock.mockReturnValue({
+      contratos: 91,
+      sinInmueble: 89,
+      sinPropietario: 89,
+      pendientes: 0,
+      sinInquilino: null,
+    });
+  });
+
+  it('🔴 no dice que terminó: el veredicto reemplaza a la felicitación', async () => {
+    await pintar();
+
+    expect(q('muro-veredicto')).not.toBeNull();
+    expect(q('muro-veredicto')?.getAttribute('data-contratos')).toBe('91');
+    expect(q('muro-todo-listo')).toBeNull();
+  });
+
+  it('el pie ofrece completar, no «entrar al panel»', async () => {
+    await pintar();
+
+    expect(q('muro-completar-deuda')).not.toBeNull();
+    expect(q('muro-ya-termine')).toBeNull();
+  });
+
+  it('«completar» lleva al paso de contratos, que es donde se resuelve', async () => {
+    await pintar();
+    await click('muro-completar-deuda');
+
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('contratos');
+  });
+
+  it('no encierra a nadie: «entrar igual» existe y sale de verdad', async () => {
+    // Hay carteras donde el dato no está y no va a estar. El muro no puede
+    // convertirse en una puerta cerrada por un número que no se puede bajar.
+    estadoMock.terminar.mockResolvedValue({
+      bloquea: false,
+      resuelta: 'completada',
+      pasos: [],
+    });
+    await pintar();
+
+    expect(q('muro-entrar-igual')).not.toBeNull();
+    await click('muro-entrar-igual');
+    expect(estadoMock.terminar).toHaveBeenCalledTimes(1);
+  });
+
+  it('la tabla fila por fila se monta con el veredicto', async () => {
+    await pintar();
+    expect(q('veredicto-filas')).not.toBeNull();
   });
 });

@@ -1011,6 +1011,23 @@ export const cobrosApi = {
     await apiClient.post(`${BASE}/cobros/generate`, { month });
   },
 
+  /**
+   * El cobro de UN inmueble para UN mes. Es lo que pide el recibo de caja
+   * cuando el mes de ese inmueble todavía no se cobró: antes la única salida
+   * era `generate`, la corrida masiva (cien cobros para emitir uno).
+   * `creado: false` = ya existía; el cobro vuelve igual, con su saldo.
+   */
+  async generateOne(
+    consignacionId: string,
+    month: string,
+  ): Promise<{ cobro: Cobro; creado: boolean }> {
+    const res = await apiClient.post<{ cobro: Cobro; creado: boolean }>(
+      `${BASE}/cobros/generate-one`,
+      { consignacionId, month },
+    );
+    return { cobro: normalizeCobro(res.cobro), creado: Boolean(res.creado) };
+  },
+
   async sendReminder(id: string): Promise<void> {
     await apiClient.put(`${BASE}/cobros/${id}/send-reminder`);
   },

@@ -119,13 +119,14 @@ export interface RegistrarPagoModalProps {
   cobro: Cobro | null;
   /**
    * Sin cobro preseleccionado se elige acá adentro EMPEZANDO POR EL INMUEBLE:
-   * los mandatos de la inmobiliaria, y de ahí los cobros con saldo de ese
-   * mandato, de cualquier mes (ver `ElegirCobroParaRecibo`).
+   * los mandatos de la inmobiliaria, y de ahí dos caminos — un cobro con
+   * saldo de ese mandato, de cualquier mes, o crear el cobro de un mes que
+   * todavía no se cobró y recibir contra él (ver `ElegirCobroParaRecibo`).
    */
   consignaciones?: readonly Consignacion[];
-  /** 'YYYY-MM' del mes en curso: el que se ofrece generar si el mandato no tiene cobros. */
+  /** 'YYYY-MM' del mes en curso: el centro de la ventana de meses que se pueden cobrar a mano. */
   mesActual?: string;
-  /** Se generaron cobros desde el selector: la tabla de atrás tiene que releerse. */
+  /** Se creó un cobro desde el selector: la tabla de atrás tiene que releerse. */
   onCobrosGenerados?: () => void;
   /**
    * Emite el recibo.

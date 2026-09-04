@@ -1,0 +1,228 @@
+<title>Lo que falta en producción</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Public+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --papel: #f7f5f1; --superficie: #ffffff; --tinta: #14130f; --tinta-media: #57534a;
+    --tinta-tenue: #8a857a; --filete: #e3dfd6; --filete-fuerte: #cfcabd;
+    --marca: #1a40ff; --marca-suave: #eceffe; --alerta: #b42318; --alerta-suave: #fdeceb;
+    --aviso: #8a5a00; --aviso-suave: #fdf3e2; --ok: #146c43; --ok-suave: #e8f3ec;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --papel: #0f0e0c; --superficie: #191713; --tinta: #f2efe8; --tinta-media: #b5afa2;
+      --tinta-tenue: #8a857a; --filete: #2c2823; --filete-fuerte: #423c33;
+      --marca: #9aabff; --marca-suave: #1b2140; --alerta: #ff9a90; --alerta-suave: #2e1815;
+      --aviso: #e5b45a; --aviso-suave: #2b2113; --ok: #7fd0a2; --ok-suave: #142a1e;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --papel: #0f0e0c; --superficie: #191713; --tinta: #f2efe8; --tinta-media: #b5afa2;
+    --tinta-tenue: #8a857a; --filete: #2c2823; --filete-fuerte: #423c33;
+    --marca: #9aabff; --marca-suave: #1b2140; --alerta: #ff9a90; --alerta-suave: #2e1815;
+    --aviso: #e5b45a; --aviso-suave: #2b2113; --ok: #7fd0a2; --ok-suave: #142a1e;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--papel); color: var(--tinta);
+    font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .hoja { max-width: 61rem; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+  .encabezado { border-bottom: 2px solid var(--tinta); padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+  .sello {
+    font-family: 'IBM Plex Mono', monospace; font-size: .75rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--marca); margin: 0 0 .75rem;
+  }
+  h1 {
+    font-family: 'Archivo', sans-serif; font-weight: 700; font-size: clamp(2rem, 5vw, 2.9rem);
+    line-height: 1.08; letter-spacing: -.02em; margin: 0 0 1rem; text-wrap: balance;
+  }
+  .bajada { font-size: 1.125rem; color: var(--tinta-media); margin: 0; max-width: 46rem; }
+  .bajada strong { color: var(--tinta); font-weight: 600; }
+  h2 {
+    font-family: 'Archivo', sans-serif; font-weight: 600; font-size: 1.5rem;
+    letter-spacing: -.01em; margin: 3.5rem 0 1.25rem; padding-bottom: .5rem;
+    border-bottom: 1px solid var(--filete);
+  }
+  h3 { font-family: 'Archivo', sans-serif; font-weight: 600; font-size: 1.125rem; margin: 0 0 .35rem; }
+  p { margin: 0 0 1rem; }
+  p:last-child { margin-bottom: 0; }
+  code, .mono { font-family: 'IBM Plex Mono', monospace; font-size: .875em; }
+  code {
+    background: var(--marca-suave); color: var(--marca);
+    padding: .1em .4em; border-radius: 4px;
+  }
+  .tabla-envoltura { overflow-x: auto; border: 1px solid var(--filete); border-radius: 10px; background: var(--superficie); }
+  table { width: 100%; border-collapse: collapse; font-size: .9375rem; }
+  th {
+    text-align: left; font-family: 'IBM Plex Mono', monospace; font-weight: 500;
+    font-size: .6875rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--tinta-tenue); padding: .85rem 1rem; border-bottom: 1px solid var(--filete);
+    white-space: nowrap;
+  }
+  td { padding: .85rem 1rem; border-bottom: 1px solid var(--filete); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td.sha { font-family: 'IBM Plex Mono', monospace; font-size: .8125rem; color: var(--tinta-media); white-space: nowrap; }
+  td.repo { font-weight: 600; white-space: nowrap; }
+  .bloques { display: grid; gap: 1.25rem; }
+  .bloque {
+    background: var(--superficie); border: 1px solid var(--filete);
+    border-radius: 12px; padding: 1.5rem;
+  }
+  .bloque-cabeza { display: flex; align-items: baseline; gap: .75rem; flex-wrap: wrap; margin-bottom: .75rem; }
+  .num {
+    font-family: 'IBM Plex Mono', monospace; font-size: .75rem; font-weight: 500;
+    color: var(--tinta-tenue); letter-spacing: .08em;
+  }
+  .commits { display: flex; flex-wrap: wrap; gap: .4rem; margin: 1rem 0 0; padding: 0; list-style: none; }
+  .commits li {
+    font-family: 'IBM Plex Mono', monospace; font-size: .75rem;
+    background: var(--papel); border: 1px solid var(--filete-fuerte);
+    border-radius: 999px; padding: .2rem .65rem; color: var(--tinta-media);
+  }
+  .nota {
+    display: grid; grid-template-columns: auto 1fr; gap: .85rem;
+    border-radius: 10px; padding: 1rem 1.15rem; margin: 1rem 0 0; font-size: .9375rem;
+  }
+  .nota .etq {
+    font-family: 'IBM Plex Mono', monospace; font-size: .6875rem; letter-spacing: .1em;
+    text-transform: uppercase; font-weight: 500; padding-top: .18rem; white-space: nowrap;
+  }
+  .nota p { margin: 0; }
+  .nota.aviso { background: var(--aviso-suave); }
+  .nota.aviso .etq { color: var(--aviso); }
+  .nota.aviso p { color: var(--tinta); }
+  .nota.alerta { background: var(--alerta-suave); }
+  .nota.alerta .etq { color: var(--alerta); }
+  .nota.alerta p { color: var(--tinta); }
+  .nota.ok { background: var(--ok-suave); }
+  .nota.ok .etq { color: var(--ok); }
+  .nota.ok p { color: var(--tinta); }
+  ol.pasos { counter-reset: paso; list-style: none; padding: 0; margin: 0; display: grid; gap: .85rem; }
+  ol.pasos li {
+    counter-increment: paso; position: relative; padding-left: 2.75rem;
+    background: var(--superficie); border: 1px solid var(--filete);
+    border-radius: 10px; padding-top: 1rem; padding-bottom: 1rem; padding-right: 1.15rem;
+  }
+  ol.pasos li::before {
+    content: counter(paso); position: absolute; left: 1rem; top: 1rem;
+    font-family: 'IBM Plex Mono', monospace; font-size: .8125rem; font-weight: 500;
+    color: var(--marca);
+  }
+  ul.limpia { margin: .5rem 0 0; padding-left: 1.15rem; color: var(--tinta-media); }
+  ul.limpia li { margin-bottom: .3rem; }
+  .pie {
+    margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--filete);
+    font-size: .875rem; color: var(--tinta-tenue);
+  }
+  @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="hoja">
+  <header class="encabezado">
+    <p class="sello">Para Víctor · 4 de septiembre de 2026</p>
+    <h1>Lo que falta en producción</h1>
+    <p class="bajada">La rama <code>cambios-nico-1</code> <strong>no tiene nada sin subir</strong>: en los tres repos el HEAD local y el de <code>origin</code> son el mismo commit. Lo que pasó es que el corte de la release de hoy quedó antes de los últimos siete commits. Acá están, agrupados por trabajo, con lo que hay que hacer para cerrarlos.</p>
+  </header>
+
+  <h2>Dónde quedó el corte</h2>
+  <div class="tabla-envoltura">
+    <table>
+      <thead>
+        <tr><th>Repo</th><th>Último commit que sí entró</th><th>Punta de la rama</th><th>Faltan</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="repo">mvp-erp</td><td class="sha">f3a3cf41</td><td class="sha">a3ac3c68</td><td>2 commits</td></tr>
+        <tr><td class="repo">back-erp</td><td class="sha">2f2645a</td><td class="sha">5b102af</td><td>2 commits</td></tr>
+        <tr><td class="repo">agent-integracion</td><td class="sha">5ca633d6</td><td class="sha">444b6a8d</td><td>3 commits</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="nota ok">
+    <span class="etq">Sin conflicto</span>
+    <p>Los tres cortes caen sobre la misma rama en línea recta, así que los commits que faltan aplican encima de lo que ya está en <code>main</code> sin rebase ni resolución manual.</p>
+  </div>
+
+  <h2>Los tres trabajos que quedaron afuera</h2>
+  <div class="bloques">
+
+    <article class="bloque">
+      <div class="bloque-cabeza">
+        <span class="num">01</span>
+        <h3>El catálogo de procesos del Piloto</h3>
+      </div>
+      <p>Es lo que se ve en la captura: la píldora del header funciona y el botón <strong>«Ver procesos»</strong> está, pero abre la pantalla vieja de 7 filas. La pantalla nueva lista los <strong>55 procesos</strong> de la plataforma, agrupados en dinero, operación, captación y plataforma, y dice de cada uno si el modo del piloto realmente lo gobierna.</p>
+      <ul class="limpia">
+        <li><strong>micro</strong> — <code>src/piloto/catalogo.ts</code> y la ruta nueva <code>GET /api/agency/{agencyId}/ai-hub/catalogo</code></li>
+        <li><strong>front</strong> — <code>PilotoCatalogo.tsx</code>, <code>use-piloto-catalogo.ts</code>, <code>piloto/procesos/page.tsx</code></li>
+      </ul>
+      <div class="nota alerta">
+        <span class="etq">Van juntos</span>
+        <p>El front pide ese endpoint por nombre. Si sube el front sin el micro, la pantalla de procesos queda pegada contra un 404. El micro solo, en cambio, no rompe nada: nadie lo llama todavía.</p>
+      </div>
+      <ul class="commits"><li>micro c19da06a</li><li>front a3ac3c68</li></ul>
+    </article>
+
+    <article class="bloque">
+      <div class="bloque-cabeza">
+        <span class="num">02</span>
+        <h3>Crear un inquilino sin pasar por la migración</h3>
+      </div>
+      <p>Un cajón «Nuevo inquilino» que crea la persona y la deja marcada <strong>«Sin arriendo»</strong> hasta que tenga contrato. La lista dejó de armarse desde los arriendos y se arma desde las personas, que es lo que hace que un inquilino sin contrato exista.</p>
+      <ul class="limpia">
+        <li><strong>back</strong> — <code>POST /inmobiliaria/inquilinos</code>, su DTO, el servicio y <code>migracion-terceros.service.ts</code></li>
+        <li><strong>front</strong> — <code>NuevoInquilinoDrawer.tsx</code>, <code>InquilinosTable.tsx</code>, la página y el servicio</li>
+      </ul>
+      <div class="nota aviso">
+        <span class="etq">Ojo</span>
+        <p>Acá no falta código: producción tiene el commit <code class="mono">f3a3cf41</code>, que es la <strong>versión que Nico rechazó</strong> — el botón decía «Crear un contrato» en la sección de inquilinos. El commit que falta es justamente la corrección, así que esto no es una función pendiente sino algo que hoy está mal en producción.</p>
+      </div>
+      <ul class="commits"><li>back 8ae4be2</li><li>front 8cd6bae1</li></ul>
+    </article>
+
+    <article class="bloque">
+      <div class="bloque-cabeza">
+        <span class="num">03</span>
+        <h3>Las plantillas del reporte diario de cartera</h3>
+      </div>
+      <p>El correo de las 6:45 pasó del HTML suelto que estaba dentro del cron al diseño que entregó Nico, en sus dos variantes —sin novedad y con alertas— más su versión en texto plano. Usa el mismo motor de plantillas por archivo que ya tienen los 60 correos del back, no uno nuevo.</p>
+      <ul class="limpia">
+        <li><strong>micro</strong> — <code>src/email/</code> entero y el cron reescrito para llamarlo</li>
+        <li><strong>back</strong> — el banner de la variante con alertas, en la carpeta de assets de correo</li>
+      </ul>
+      <div class="nota aviso">
+        <span class="etq">Paso manual</span>
+        <p>Hay que correr <code>npm run correos:assets</code> en <strong>back-erp, una vez por cada entorno</strong>: cada uno tiene su propio proyecto de Supabase. Sin eso el banner nuevo no está en el bucket. Los otros cuatro archivos ya estaban ahí y no se tocaron.</p>
+      </div>
+      <ul class="commits"><li>micro 916dbc68</li><li>back 5b102af</li></ul>
+    </article>
+
+    <article class="bloque">
+      <div class="bloque-cabeza">
+        <span class="num">04</span>
+        <h3>Un documento, sin código</h3>
+      </div>
+      <p><code>claudedocs/victor-backend-url-produccion.md</code> en el micro: por qué el chat del panel no ve los datos del negocio en producción y cómo se arregla. Es una variable de entorno, <code>LEASIFY_BACKEND_URL</code>, no hace falta desplegar código para probarlo.</p>
+      <ul class="commits"><li>micro 444b6a8d</li></ul>
+    </article>
+
+  </div>
+
+  <h2>El orden para cerrarlo</h2>
+  <ol class="pasos">
+    <li><strong>Micro y back primero.</strong> Los dos traen endpoints nuevos que el front va a llamar, y ninguno de los dos rompe nada por su cuenta mientras el front todavía no los usa.</li>
+    <li><strong><code>npm run correos:assets</code> en back-erp</strong>, en cada entorno donde salga el reporte de cartera.</li>
+    <li><strong>Después el front.</strong> Sus dos commits dependen de los endpoints del paso 1.</li>
+    <li><strong>Mirar la pantalla de procesos con un usuario real.</strong> Es la única de las tres que no se puede dar por buena leyendo el diff: hay que abrir la píldora del header, entrar por «Ver procesos» y ver que carguen las 55 filas con su agrupación.</li>
+  </ol>
+
+  <div class="nota ok">
+    <span class="etq">Variables</span>
+    <p>No hace falta configurar nada nuevo. La única variable que aparece, <code>EMAIL_ASSETS_URL</code>, es opcional: sin valor se deriva de <code>SUPABASE_URL</code>, y sin ninguna de las dos el correo sale sin imágenes en vez de con imágenes rotas.</p>
+  </div>
+
+  <p class="pie">Los números de commit son de <code>origin/cambios-nico-1</code> al 4 de septiembre. Gates al momento de subirlos: front 5.764 tests · back 4.811 · micro 18.454, y <code>tsc</code> en cero en los tres.</p>
+</div>

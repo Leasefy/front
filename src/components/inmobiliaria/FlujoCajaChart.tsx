@@ -347,7 +347,7 @@ export function FlujoCajaChart({
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Total Ingresos */}
-        <div className="p-4 rounded-xl bg-success text-white">
+        <div className="p-4 rounded-lg bg-success text-white">
           <div className="flex items-center gap-2 mb-2">
             <ArrowsInSimple className="w-5 h-5 text-success" />
             <span className="text-sm font-medium text-success">{t('inmobiliaria.finance.cashFlow.totalIncome')}</span>
@@ -356,7 +356,7 @@ export function FlujoCajaChart({
         </div>
 
         {/* Total Dispersiones */}
-        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface-muted dark:bg-ink">
+        <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface-muted dark:bg-ink">
           <div className="flex items-center gap-2 mb-2">
             <ArrowsOutSimple className="w-5 h-5 text-fg dark:text-fg-subtle" />
             <span className="text-sm font-medium text-fg dark:text-fg-subtle">
@@ -369,7 +369,7 @@ export function FlujoCajaChart({
         </div>
 
         {/* Total Comisiones */}
-        <div className="p-4 rounded-xl border border-primary/30 dark:border-primary/40 bg-primary-soft">
+        <div className="p-4 rounded-lg border border-primary/30 dark:border-primary/40 bg-primary-soft">
           <div className="flex items-center gap-2 mb-2">
             <CurrencyDollar className="w-5 h-5 text-primary" />
             <span className="text-sm font-medium text-primary">
@@ -384,7 +384,7 @@ export function FlujoCajaChart({
         {/* Balance Neto */}
         <div
           className={cn(
-            'p-4 rounded-xl border',
+            'p-4 rounded-lg border',
             data.totals.netBalance >= 0
               ? 'border-success/30 dark:border-success/40 bg-success-soft'
               : 'border-danger/30 dark:border-danger/40 bg-danger-soft'
@@ -437,7 +437,7 @@ export function FlujoCajaChart({
       </div>
 
       {/* Chart or Table */}
-      <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-card">
+      <div className="p-6 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-card">
         {viewVariant === 'chart' ? (
           <BarChart data={data.months} locale={locale} t={t} />
         ) : (

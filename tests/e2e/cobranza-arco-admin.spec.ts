@@ -5,8 +5,8 @@ import { test, expect, type Page } from '@playwright/test'
 // Requirements: XR-03 (3-viewport snapshots + 44px touch targets), COBR-UI-12 (ARCO inbox).
 // Auth: localStorage seed (pruebasarrendador1902@gmail.com / role:agency).
 // Routes:
-//   - /panel/inmobiliaria/ai/cobranza/arco             (inbox list)
-//   - /panel/inmobiliaria/ai/cobranza/arco/arco-req-001 (detail)
+//   - /panel/inmobiliaria/cobros/cobranza/arco             (inbox list)
+//   - /panel/inmobiliaria/cobros/cobranza/arco/arco-req-001 (detail)
 // FIXTURE_ID: 'arco-req-001' — used in mock payload and goto URL.
 //
 // v2.1 env workaround (NEVER commit these source tweaks):
@@ -257,7 +257,7 @@ for (const viewport of VIEWPORTS) {
     await seedAuth(page)
     await mockArcoListEndpoints(page)
     await mockPermissions(page)
-    await page.goto('/panel/inmobiliaria/ai/cobranza/arco')
+    await page.goto('/panel/inmobiliaria/cobros/cobranza/arco')
     await page.waitForLoadState('domcontentloaded')
     await expect(
       page
@@ -284,7 +284,7 @@ for (const viewport of VIEWPORTS) {
     await mockArcoListEndpoints(page)
     await mockArcoDetailEndpoints(page)
     await mockPermissions(page)
-    await page.goto(`/panel/inmobiliaria/ai/cobranza/arco/${ARCO_FIXTURE_ID}`)
+    await page.goto(`/panel/inmobiliaria/cobros/cobranza/arco/${ARCO_FIXTURE_ID}`)
     await page.waitForLoadState('domcontentloaded')
     await expect(
       page.locator('text=/María García|acceso|resolv/i').first(),
@@ -304,7 +304,7 @@ test('ARCO inbox no horizontal scroll iPhone-14 — XR-03', async ({ page }) => 
   await seedAuth(page)
   await mockArcoListEndpoints(page)
   await mockPermissions(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/arco')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/arco')
   await page.waitForLoadState('domcontentloaded')
   await expect(
     page
@@ -323,7 +323,7 @@ test('ARCO inbox SLA badge amber for 1-day-remaining row — D-36-05', async ({ 
   await seedAuth(page)
   await mockArcoListEndpoints(page)
   await mockPermissions(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/arco')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/arco')
   await page.waitForLoadState('domcontentloaded')
   await expect(page.locator('text=/Carlos López/i').first()).toBeVisible({ timeout: 12_000 })
   // Row for Carlos López has slaRemainingDays=1 → amber badge

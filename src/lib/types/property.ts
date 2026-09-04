@@ -72,8 +72,15 @@ export interface Property {
   city: string;
   neighborhood: string;
   address: string;
-  latitude: number;
-  longitude: number;
+  /**
+   * `null` cuando el inmueble no está geocodificado (contrato del back,
+   * `properties.types.ts`). Antes el mapper lo convertía en `0` y un inmueble
+   * sin ubicación aterrizaba en (0,0). La regla para pintar un mapa es
+   * `tieneCoordenadas` (`src/components/map/coordenadas.ts`), que por los
+   * datos viejos también trata (0,0) como «sin ubicación».
+   */
+  latitude: number | null;
+  longitude: number | null;
   /** contract.md T-0038 §3.2.1 — `null` when no department could be resolved. */
   department: string | null;
 

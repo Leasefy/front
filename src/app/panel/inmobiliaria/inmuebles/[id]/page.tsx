@@ -5,7 +5,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { CaretLeft, Buildings, X, CalendarPlus } from '@phosphor-icons/react';
@@ -13,6 +13,10 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button, EmptyState } from '@/components/ui';
+import { Skeleton } from '@/components/ui/skeleton';
+import { FotosDelInmueble } from '@/components/inmobiliaria/FotosDelInmueble';
+import { VisorDeFotos } from '@/components/inmobiliaria/inmueble/VisorDeFotos';
+import { UbicacionDelInmueble } from '@/components/inmobiliaria/inmueble/UbicacionDelInmueble';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,7 +35,7 @@ import {
   useAgenteDeConsignacion,
 } from '@/lib/hooks/useInmobiliaria';
 import { useProperty } from '@/lib/hooks/useProperties';
-import type { PropertyAvailability, ConsignacionFormData, Consignacion } from '@/lib/types/inmobiliaria';
+import type { PropertyAvailability, ConsignacionFormData, Consignacion, InventoryItem } from '@/lib/types/inmobiliaria';
 
 // Components
 import { ConsignacionHeader } from '@/components/inmobiliaria/ConsignacionHeader';
@@ -42,10 +46,56 @@ import {
   CurrentLeaseSection,
   DocumentsSection,
 } from '@/components/inmobiliaria/ConsignacionDetailSections';
+import { CambiarPropietarioDialog } from '@/components/inmobiliaria/CambiarPropietarioDialog';
 import { ActaEntregaView } from '@/components/inmobiliaria/ActaEntregaView';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
 import { ConsignacionEditForm } from '@/components/inmobiliaria/ConsignacionEditForm';
+import {
+  InventarioItemDialog,
+  type ItemDeInventarioBorrador,
+} from '@/components/inmobiliaria/InventarioItemDialog';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
+
+/** La forma de la ficha, sin datos: cabecera con foto y dos columnas. */
+function EsqueletoDeLaFicha() {
+  return (
+    <div className="p-4 md:p-6 space-y-6" data-testid="ficha-cargando" aria-busy="true">
+      <div className="flex items-center justify-between gap-4">
+        <Skeleton className="h-5 w-56" />
+        <Skeleton className="h-10 w-32 rounded-full" />
+      </div>
+      <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden">
+        <div className="flex flex-col lg:flex-row">
+          <Skeleton className="w-full lg:w-80 xl:w-96 h-48 lg:h-72 rounded-none" />
+          <div className="flex-1 p-5 lg:p-6 space-y-4">
+            <div className="flex gap-2">
+              <Skeleton className="h-7 w-28 rounded-full" />
+              <Skeleton className="h-7 w-40 rounded-full" />
+            </div>
+            <Skeleton className="h-9 w-3/4" />
+            <Skeleton className="h-5 w-1/2" />
+            <Skeleton className="h-10 w-48" />
+            <div className="flex gap-3 pt-2">
+              <Skeleton className="h-11 w-28 rounded-full" />
+              <Skeleton className="h-11 w-36 rounded-full" />
+              <Skeleton className="h-11 w-40 rounded-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Skeleton className="h-56 rounded-lg" />
+          <Skeleton className="h-72 rounded-lg" />
+        </div>
+        <div className="space-y-6">
+          <Skeleton className="h-64 rounded-lg" />
+          <Skeleton className="h-40 rounded-lg" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Modal Component - Uses Portal to escape transformed parents
@@ -109,6 +159,7 @@ function Modal({
       className="fixed inset-0 z-[300]"
       style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
       data-lenis-prevent
+      data-testid="modal-ficha"
     >
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -165,23 +216,40 @@ function ConsignacionDetailContent() {
   const { t } = useI18n();
   const params = useParams();
   const router = useRouter();
-  const inventoryRef = useRef<HTMLDivElement>(null);
 
   const consignacionId = params.id as string;
 
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [consignacionData, setConsignacionData] = useState<Consignacion | null>(null);
+  // Inventario: `undefined` = diálogo cerrado; `null` = agregar; ítem = editar.
+  const [itemDeInventario, setItemDeInventario] = useState<InventoryItem | null | undefined>(undefined);
+  const [guardandoInventario, setGuardandoInventario] = useState(false);
   const [showTerminateDialog, setShowTerminateDialog] = useState(false);
   const [isTerminating, setIsTerminating] = useState(false);
   const [showCitaModal, setShowCitaModal] = useState(false);
   const [showAsignarAgente, setShowAsignarAgente] = useState(false);
+  const [showCambiarPropietario, setShowCambiarPropietario] = useState(false);
+  // Visor de fotos: qué foto está abierta en grande (`null` = cerrado). La
+  // abren la portada del encabezado y cada miniatura de la galería.
+  const [fotoAbierta, setFotoAbierta] = useState<number | null>(null);
 
   // Fetch data
-  const { consignacion: fetchedConsignacion } = useConsignacion(consignacionId);
+  const { consignacion: fetchedConsignacion, isLoading: cargandoConsignacion } =
+    useConsignacion(consignacionId);
 
   // Use local state for consignacion to allow updates after edit
   const consignacion = consignacionData || fetchedConsignacion;
+
+  // `?editar=1` (el «Editar» del kebab de la lista) abre el formulario apenas
+  // hay datos, y se limpia la URL para que un refresh no lo vuelva a abrir.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (consignacion && searchParams.get('editar') === '1') {
+      setShowEditModal(true);
+      router.replace(`/panel/inmobiliaria/inmuebles/${consignacionId}`, { scroll: false });
+    }
+  }, [consignacion, searchParams, router, consignacionId]);
 
   const { propietario } = usePropietario(consignacion?.propietarioId);
   // Por `userId` o por `id`: el back guarda el del usuario y `getById`
@@ -191,7 +259,22 @@ function ConsignacionDetailContent() {
   // (consignacion.propertyThumbnail is never populated by the back — see
   // ledger §2.1). A failed/loading fetch just leaves `property` unset, which
   // ConsignacionHeader already renders as its placeholder icon.
-  const { property } = useProperty(consignacion?.propertyId);
+  const {
+    property,
+    isLoading: cargandoProperty,
+    refetch: refetchProperty,
+  } = useProperty(consignacion?.propertyId);
+
+  // Después de adjuntar el contrato la ficha vuelve a leer el mandato. Va a
+  // la copia local (`consignacionData`), que gana sobre lo que trae el hook:
+  // refrescar el hook solo no cambiaba nada en pantalla.
+  const recargarConsignacion = useCallback(async () => {
+    try {
+      setConsignacionData(await consignacionesApi.getById(consignacionId));
+    } catch {
+      // La subida ya avisó por su lado; si la relectura falla, el refresh la trae.
+    }
+  }, [consignacionId]);
 
   // Handlers
   const handleEdit = useCallback(() => {
@@ -204,7 +287,7 @@ function ConsignacionDetailContent() {
     try {
       // PUT /inmobiliaria/consignaciones/:id — the service maps enum casing
       // and strips agent reassignment (see ConsignacionUpdateInput).
-      const updated = await consignacionesApi.update(consignacion.id, {
+      let updated = await consignacionesApi.update(consignacion.id, {
         propertyTitle: data.propertyTitle,
         propertyAddress: data.propertyAddress,
         propertyCity: data.propertyCity,
@@ -215,6 +298,12 @@ function ConsignacionDetailContent() {
         commissionPercent: data.commissionPercent,
         minimumTerm: data.minimumTerm,
       });
+
+      // El agente va por su propia ruta (`assign-agent` exige el User id):
+      // el formulario ya trae ese id como valor del selector. Sólo si cambió.
+      if (data.agenteId && data.agenteId !== consignacion.agenteId) {
+        updated = await consignacionesApi.assignAgent(consignacion.id, data.agenteId);
+      }
 
       setConsignacionData(updated);
       setShowEditModal(false);
@@ -302,11 +391,63 @@ function ConsignacionDetailContent() {
     setShowAsignarAgente(true);
   }, []);
 
-  const handleViewInventory = useCallback(() => {
-    inventoryRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
+  /**
+   * El inventario vive en la consignación como lista completa: agregar,
+   * editar y quitar son «mandar la lista nueva» (PUT …/inventario). Se carga
+   * desde que el inmueble entra a la agencia — sin contrato, entrega ni acta.
+   */
+  const guardarInventario = useCallback(
+    async (items: InventoryItem[], mensaje: string) => {
+      if (!consignacion) return;
+      setGuardandoInventario(true);
+      try {
+        const updated = await consignacionesApi.actualizarInventario(consignacion.id, items);
+        setConsignacionData(updated);
+        setItemDeInventario(undefined);
+        toast.success(mensaje);
+      } catch (err) {
+        toast.error(t('inmobiliaria.acta.itemDialog.error'), {
+          description: err instanceof Error ? err.message : undefined,
+        });
+      } finally {
+        setGuardandoInventario(false);
+      }
+    },
+    [consignacion, t],
+  );
 
-  // Load the property's visit availability, then open the schedule editor.
+  const handleGuardarItem = useCallback(
+    (item: ItemDeInventarioBorrador) => {
+      const actuales = consignacion?.inventoryItems ?? [];
+      const completo = { ...item, id: item.id ?? `it-${Date.now()}` } as InventoryItem;
+      const existe = actuales.some((i) => i.id === completo.id);
+      const siguientes = existe
+        ? actuales.map((i) => (i.id === completo.id ? completo : i))
+        : [...actuales, completo];
+      void guardarInventario(siguientes, t('inmobiliaria.acta.itemDialog.saved'));
+    },
+    [consignacion?.inventoryItems, guardarInventario, t],
+  );
+
+  const handleQuitarItem = useCallback(
+    (item: InventoryItem) => {
+      const actuales = consignacion?.inventoryItems ?? [];
+      void guardarInventario(
+        actuales.filter((i) => i.id !== item.id),
+        t('inmobiliaria.acta.itemDialog.removed'),
+      );
+    },
+    [consignacion?.inventoryItems, guardarInventario, t],
+  );
+
+  // Mientras se pide, un esqueleto con la forma de la ficha. Antes esto
+  // salía directo a «Consignación no encontrada» durante la carga y recién
+  // después aparecía el inmueble (Nico, 2026-09-02: «primero sale esto y
+  // luego carga, muy raro»).
+  if (!consignacion && cargandoConsignacion) {
+    return <EsqueletoDeLaFicha />;
+  }
+
   // 404 if not found
   if (!consignacion) {
     return (
@@ -357,6 +498,8 @@ function ConsignacionDetailContent() {
         <ConsignacionHeader
           consignacion={consignacion}
           propertyThumbnailUrl={property?.thumbnailUrl}
+          fotos={property?.images}
+          onVerFotos={() => setFotoAbierta(0)}
           onEdit={handleEdit}
           onViewPortal={handleViewPortal}
           onChangeStatus={handleChangeStatus}
@@ -377,12 +520,46 @@ function ConsignacionDetailContent() {
             <PropertyInfoSection consignacion={consignacion} />
           </motion.div>
 
+          {/* Las coordenadas viven en el Property (la consignación no las
+              tiene). Sin propertyId no hay mapa que mostrar. */}
+          {consignacion.propertyId && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.11 }}
+            >
+              <UbicacionDelInmueble
+                property={property}
+                cargando={cargandoProperty}
+                consignacion={consignacion}
+                onActualizado={refetchProperty}
+              />
+            </motion.div>
+          )}
+
+          {/* Las fotos viven en el Property; sin propertyId (mandato sin
+              inmueble) no hay galería que mostrar. */}
+          {consignacion.propertyId && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.12 }}
+            >
+              <FotosDelInmueble propertyId={consignacion.propertyId} onCambio={refetchProperty} onVer={setFotoAbierta} />
+            </motion.div>
+          )}
+
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
           >
-            <PropietarioSection propietario={propietario ?? undefined} />
+            <PropietarioSection
+              propietario={propietario ?? undefined}
+              copropietarios={consignacion.copropietarios}
+              onCambiar={() => setShowCambiarPropietario(true)}
+              rutaDeOrigen={`/panel/inmobiliaria/inmuebles/${consignacionId}`}
+            />
           </motion.div>
 
           <motion.div
@@ -424,17 +601,13 @@ function ConsignacionDetailContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <DocumentsSection
-              consignacion={consignacion}
-              onViewInventory={handleViewInventory}
-            />
+            <DocumentsSection consignacion={consignacion} onActualizado={() => void recargarConsignacion()} />
           </motion.div>
         </div>
 
         {/* Right Column - Sidebar (1/3) */}
         <div className="space-y-6">
           <motion.div
-            ref={inventoryRef}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
@@ -442,6 +615,10 @@ function ConsignacionDetailContent() {
             <ActaEntregaView
               inventoryItems={consignacion.inventoryItems}
               contractDate={consignacion.contractDate}
+              onPrint={() => router.push(`/panel/inmobiliaria/inmuebles/${consignacionId}/acta`)}
+              onAddItem={() => setItemDeInventario(null)}
+              onEditItem={(item) => setItemDeInventario(item)}
+              onDeleteItem={handleQuitarItem}
             />
           </motion.div>
 
@@ -458,6 +635,14 @@ function ConsignacionDetailContent() {
         </div>
       </div>
 
+      <VisorDeFotos
+        fotos={property?.images ?? []}
+        indice={fotoAbierta}
+        onCerrar={() => setFotoAbierta(null)}
+        onCambiar={setFotoAbierta}
+        titulo={consignacion.propertyTitle}
+      />
+
       {/* Edit Modal */}
       <Modal
         open={showEditModal}
@@ -471,6 +656,16 @@ function ConsignacionDetailContent() {
           onCancel={() => setShowEditModal(false)}
         />
       </Modal>
+
+      {/* Cambiar de propietario: reapunta la consignación, no la tumba. */}
+      {consignacion && (
+        <CambiarPropietarioDialog
+          open={showCambiarPropietario}
+          consignacion={consignacion}
+          onClose={() => setShowCambiarPropietario(false)}
+          onCambiado={(actualizada) => setConsignacionData(actualizada)}
+        />
+      )}
 
       {/* Terminate confirmation — shadcn AlertDialog, NOT browser confirm() */}
       <AlertDialog
@@ -514,6 +709,14 @@ function ConsignacionDetailContent() {
         onCreated={() => {}}
         presetPropertyId={consignacion.propertyId}
         presetPropertyTitle={consignacion.propertyTitle}
+      />
+
+      <InventarioItemDialog
+        abierto={itemDeInventario !== undefined}
+        item={itemDeInventario ?? null}
+        guardando={guardandoInventario}
+        onCerrar={() => setItemDeInventario(undefined)}
+        onGuardar={handleGuardarItem}
       />
 
       <AsignarAgente

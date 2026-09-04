@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test'
 import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
-const ROUTE = '/panel/inmobiliaria/ai'
+const ROUTE = '/panel/inmobiliaria/configuracion/agentes'
 const HUB_LANDING_MOCK = '**/ai-hub/landing**'
 const AGENT_METRICS_MOCK = '**/ai-hub/metrics**'
 const SKELETON_DELAY_MS = 2500

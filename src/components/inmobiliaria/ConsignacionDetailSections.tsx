@@ -1,6 +1,8 @@
 'use client';
 
+import { useRef, useState } from 'react';
 import Link from 'next/link';
+import { conRegreso } from '@/lib/nav/ruta-de-regreso';
 import { motion } from 'framer-motion';
 import {
   User,
@@ -18,13 +20,19 @@ import {
   Briefcase,
   ArrowsClockwise,
   HouseLine,
+  Users,
+  UploadSimple,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { toast } from 'sonner';
+import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
+import { ApiError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { IconButton } from '@leasefy/cadence';
-import type { Consignacion, Propietario, Agente, AgenteRole } from '@/lib/types/inmobiliaria';
+import type { Consignacion, Copropietario, Propietario, Agente, AgenteRole } from '@/lib/types/inmobiliaria';
+import { formatParticipacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
 // Bank name mapping
@@ -61,7 +69,7 @@ function SectionCard({ title, icon, children, className }: SectionCardProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] overflow-hidden',
+        'rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden',
         className
       )}
     >
@@ -143,10 +151,28 @@ export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) 
 
 interface PropietarioSectionProps {
   propietario: Propietario | undefined;
+  /**
+   * Todos los dueños con su participación (2026-09-03). Con uno solo, o vacío
+   * contra un back viejo, la sección se ve igual que siempre; con más de uno se
+   * lista quién es quién y cuánto le toca.
+   */
+  copropietarios?: Copropietario[];
+  /** Cambiar de propietario (se vendió, heredó). Sin esto no se muestra el botón. */
+  onCambiar?: () => void;
+  /** La ruta de esta ficha, para que «Volver» en la del propietario regrese acá. */
+  rutaDeOrigen?: string;
 }
 
-export function PropietarioSection({ propietario }: PropietarioSectionProps) {
+export function PropietarioSection({
+  propietario,
+  copropietarios,
+  onCambiar,
+  rutaDeOrigen,
+}: PropietarioSectionProps) {
   const { t } = useI18n();
+  // Sólo cuando hay más de uno. Con un dueño al 100 % mostrar «100 %» al lado
+  // del nombre es ruido: no informa nada que no se supiera.
+  const variosDuenos = (copropietarios?.length ?? 0) > 1;
 
   if (!propietario) {
     return (
@@ -187,18 +213,71 @@ export function PropietarioSection({ propietario }: PropietarioSectionProps) {
               </p>
             </div>
           </div>
-          <Link
-            href={`/panel/inmobiliaria/propietarios/${propietario.id}`}
-            className="text-sm text-primary hover:text-primary dark:hover:text-primary flex items-center gap-1"
-          >
-            {t('inmobiliaria.consignaciones.detail.viewProfile')}
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+          <div className="flex items-center gap-3">
+            {onCambiar && (
+              <button
+                type="button"
+                onClick={onCambiar}
+                className="text-sm text-fg-muted hover:text-fg"
+                data-testid="cambiar-propietario"
+              >
+                Cambiar
+              </button>
+            )}
+            <Link
+              href={
+                rutaDeOrigen
+                  ? conRegreso(`/panel/inmobiliaria/propietarios/${propietario.id}`, rutaDeOrigen)
+                  : `/panel/inmobiliaria/propietarios/${propietario.id}`
+              }
+              className="text-sm text-primary hover:text-primary dark:hover:text-primary flex items-center gap-1"
+            >
+              {t('inmobiliaria.consignaciones.detail.viewProfile')}
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
+
+        {/* Los dueños y su tajada. Sólo con más de uno — ver `variosDuenos`.
+            El principal (el de mayor participación) va marcado: es el que hoy
+            recibe el giro completo mientras el reparto por porcentaje no esté
+            hecho en la liquidación. */}
+        {variosDuenos && (
+          <div
+            className="p-3 rounded-lg bg-surface-muted dark:bg-bg space-y-2"
+            data-testid="copropietarios-lista"
+          >
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-fg-subtle" />
+              <span className="text-xs text-fg-muted dark:text-fg-subtle">
+                Propietarios ({copropietarios!.length})
+              </span>
+            </div>
+            {copropietarios!.map((c, i) => (
+              <div
+                key={c.propietarioId}
+                className="flex items-center justify-between gap-3"
+                data-testid="copropietario-item"
+              >
+                <span className="min-w-0 truncate text-sm text-fg dark:text-white">
+                  {c.propietario?.name ?? c.propietarioId}
+                  {i === 0 && (
+                    <span className="ml-1.5 text-xs text-fg-muted dark:text-fg-subtle">
+                      · principal
+                    </span>
+                  )}
+                </span>
+                <span className="shrink-0 font-mono text-sm tabular-nums text-fg dark:text-white">
+                  {formatParticipacion(c.participacionBps)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Bank Account — only when payout data exists */}
         {propietario.bankAccount ? (
-          <div className="p-3 rounded-xl bg-surface-muted dark:bg-[#14130F]">
+          <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
             <div className="flex items-center gap-2 mb-2">
               <Bank className="w-4 h-4 text-fg-subtle" />
               <span className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.detail.paymentAccount')}</span>
@@ -215,7 +294,7 @@ export function PropietarioSection({ propietario }: PropietarioSectionProps) {
           {propietario.email && (
             <a
               href={`mailto:${propietario.email}`}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
             >
               <Envelope className="w-4 h-4" />
               {t('inmobiliaria.consignaciones.detail.email')}
@@ -224,7 +303,7 @@ export function PropietarioSection({ propietario }: PropietarioSectionProps) {
           {propietario.phone && (
             <a
               href={`tel:${propietario.phone}`}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
             >
               <Phone className="w-4 h-4" />
               {t('inmobiliaria.consignaciones.detail.call')}
@@ -318,13 +397,13 @@ export function AgenteSection({ agente, commissionPercent, isSaleListing, onReas
         {/* Commission Split — not computed for a sale mandate (§8.6: no
             sale-commission money movement anywhere in T-0038). */}
         {isSaleListing ? (
-          <div className="p-3 rounded-xl bg-surface-muted dark:bg-[#14130F]">
+          <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
             <p className="text-xs text-fg-muted dark:text-fg-subtle">
               {t('inmobiliaria.consignaciones.detail.commissionSplitNotAvailableForSale')}
             </p>
           </div>
         ) : (
-          <div className="p-3 rounded-xl bg-surface-muted dark:bg-[#14130F]">
+          <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
             <div className="flex items-center gap-2 mb-2">
               <CurrencyDollar className="w-4 h-4 text-fg-subtle" />
               <span className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.detail.commissionDistribution')}</span>
@@ -356,14 +435,14 @@ export function AgenteSection({ agente, commissionPercent, isSaleListing, onReas
         <div className="flex items-center gap-2">
           <a
             href={`mailto:${agente.email}`}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
           >
             <Envelope className="w-4 h-4" />
             {t('inmobiliaria.consignaciones.detail.email')}
           </a>
           <a
             href={`tel:${agente.phone}`}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
           >
             <Phone className="w-4 h-4" />
             {t('inmobiliaria.consignaciones.detail.call')}
@@ -411,14 +490,14 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
           {/* Lease Details */}
           <div className="grid grid-cols-2 gap-3">
             {consignacion.leaseEndDate && (
-              <div className="p-3 rounded-xl bg-surface-muted dark:bg-[#14130F]">
+              <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
                 <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.leaseEnd')}</p>
                 <p className="text-sm font-medium text-fg dark:text-white">
                   {formatDate(consignacion.leaseEndDate)}
                 </p>
               </div>
             )}
-            <div className="p-3 rounded-xl bg-surface-muted dark:bg-[#14130F]">
+            <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.monthlyRentLabel')}</p>
               <p className="text-sm font-medium text-fg dark:text-white">
                 {/* A SALE mandate can never have `availability: 'RENTED'`
@@ -462,50 +541,143 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
 
 interface DocumentsSectionProps {
   consignacion: Consignacion;
-  onViewInventory?: () => void;
+  /** Después de adjuntar o reemplazar el contrato: la ficha se recarga. */
+  onActualizado?: () => void;
 }
 
-export function DocumentsSection({ consignacion, onViewInventory }: DocumentsSectionProps) {
+const MAX_PDF_BYTES = 10 * 1024 * 1024;
+
+/**
+ * Documentos del inmueble — filas que hacen algo, o dicen por qué no.
+ *
+ * Antes (Nico, 2026-09-03: «uno le da clic a acta de entrega y no pasa nada,
+ * y ese otro documento ¿qué es? ¿eso está mockeado?»): el contrato era un
+ * botón deshabilitado «Próximamente» y el acta hacía scroll a una tarjeta que
+ * ya estaba a la vista. Ahora:
+ *   · Contrato de consignación: es el PDF que la inmobiliaria firmó con el
+ *     propietario. Se ADJUNTA (PDF, hasta 10 MB) y de ahí en más la fila lo
+ *     abre; «Reemplazar» sube otro. No se genera desde una plantilla: el
+ *     producto no tiene plantilla de contrato y un contrato no se inventa.
+ *   · Acta de entrega: abre la hoja imprimible (`/inmuebles/[id]/acta`), que
+ *     también se baja como PDF.
+ */
+export function DocumentsSection({ consignacion, onActualizado }: DocumentsSectionProps) {
   const { t } = useI18n();
+  const k = (s: string) => `inmobiliaria.consignaciones.detail.${s}`;
   const hasPhotos = consignacion.photosUrls && consignacion.photosUrls.length > 0;
+  const filaClase =
+    'w-full flex items-center gap-3 p-3 rounded-lg bg-surface-muted dark:bg-bg hover:bg-surface-hover dark:hover:bg-ink transition-colors text-left';
+  const itemsDeInventario = consignacion.inventoryItems?.length || 0;
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [subiendo, setSubiendo] = useState(false);
+
+  const elegirPdf = () => inputRef.current?.click();
+
+  const alElegir = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Que el mismo archivo se pueda volver a elegir después de un fallo.
+    e.target.value = '';
+    if (!file) return;
+    if (file.type !== 'application/pdf' || file.size > MAX_PDF_BYTES) {
+      toast.error(t(k('consignmentContractOnlyPdf')));
+      return;
+    }
+    setSubiendo(true);
+    try {
+      await consignacionesApi.subirContrato(consignacion.id, file);
+      toast.success(t(k('consignmentContractUploaded')));
+      onActualizado?.();
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) return;
+      toast.error(t(k('consignmentContractUploadError')), {
+        description: err instanceof ApiError && err.message.length < 160 ? err.message : undefined,
+      });
+    } finally {
+      setSubiendo(false);
+    }
+  };
 
   return (
-    <SectionCard title={t('inmobiliaria.consignaciones.detail.documents')} icon={<FileText className="w-4 h-4" />}>
+    <SectionCard title={t(k('documents'))} icon={<FileText className="w-4 h-4" />}>
       <div className="space-y-3">
-        {/* Consignment Contract — allowlist: rich list-row click target (icon-tile + 2-line
-            text + arrow as ONE button); Button can't host this multiline row (same precedent
-            as whole-card/list-row clickables). Kept native. */}
-        <button
-          className="w-full flex items-center gap-3 p-3 rounded-xl bg-surface-muted dark:bg-[#14130F] hover:bg-surface-muted dark:hover:bg-ink transition-colors text-left opacity-50 cursor-not-allowed"
-          disabled
-          title={t('inmobiliaria.consignaciones.header.comingSoon')}
-        >
-          <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
-            <FileText className="w-5 h-5 text-primary" />
+        {consignacion.consignmentContractUrl ? (
+          <div className="flex items-center gap-2">
+            <a
+              href={consignacion.consignmentContractUrl}
+              target="_blank"
+              rel="noreferrer"
+              className={filaClase}
+              data-testid="documento-contrato"
+            >
+              <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center">
+                <FileText className="w-5 h-5 text-fg-muted" weight="duotone" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-fg text-sm">{t(k('consignmentContract'))}</p>
+                <p className="text-xs text-fg-muted">{t(k('consignmentContractView'))}</p>
+              </div>
+              <ArrowRight className="w-4 h-4 text-fg-subtle" />
+            </a>
+            <button
+              type="button"
+              onClick={elegirPdf}
+              disabled={subiendo}
+              className="shrink-0 px-2 text-xs text-fg-muted underline-offset-2 hover:text-fg hover:underline disabled:opacity-50"
+              data-testid="documento-contrato-reemplazar"
+            >
+              {subiendo ? t(k('consignmentContractUploading')) : t(k('consignmentContractReplace'))}
+            </button>
           </div>
-          <div className="flex-1">
-            <p className="font-medium text-fg dark:text-white text-sm">{t('inmobiliaria.consignaciones.detail.consignmentContract')}</p>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.detail.consignmentContractDesc')}</p>
-          </div>
-          <ArrowRight className="w-4 h-4 text-fg-subtle" />
-        </button>
+        ) : (
+          <button
+            type="button"
+            onClick={elegirPdf}
+            disabled={subiendo}
+            className={cn(filaClase, 'disabled:opacity-60')}
+            data-testid="documento-contrato-adjuntar"
+          >
+            <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center">
+              <FileText className="w-5 h-5 text-fg-muted" weight="duotone" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-fg text-sm">{t(k('consignmentContract'))}</p>
+              <p className="text-xs text-fg-muted">
+                {t(k('consignmentContractMissing'))} ·{' '}
+                <span className="text-primary">
+                  {subiendo ? t(k('consignmentContractUploading')) : t(k('consignmentContractAttach'))}
+                </span>
+              </p>
+            </div>
+            <UploadSimple className="w-4 h-4 text-fg-subtle" />
+          </button>
+        )}
+        <input
+          ref={inputRef}
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          onChange={(e) => void alElegir(e)}
+          data-testid="documento-contrato-input"
+        />
 
-        {/* Acta de Entrega — allowlist: rich list-row click target (same precedent as above). */}
-        <button
-          onClick={onViewInventory}
-          className="w-full flex items-center gap-3 p-3 rounded-xl bg-surface-muted dark:bg-[#14130F] hover:bg-surface-muted dark:hover:bg-ink transition-colors text-left"
+        <Link
+          href={`/panel/inmobiliaria/inmuebles/${consignacion.id}/acta`}
+          className={filaClase}
+          data-testid="documento-acta"
         >
-          <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center">
-            <FileText className="w-5 h-5 text-success" />
+          <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center">
+            <FileText className="w-5 h-5 text-fg-muted" weight="duotone" />
           </div>
-          <div className="flex-1">
-            <p className="font-medium text-fg dark:text-white text-sm">{t('inmobiliaria.consignaciones.detail.handoverReport')}</p>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle">
-              {t('inmobiliaria.consignaciones.detail.inventoryItemsCount', { count: consignacion.inventoryItems?.length || 0 })}
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-fg text-sm">{t(k('handoverReport'))}</p>
+            <p className="text-xs text-fg-muted">
+              {t(k('inventoryItemsCount'), { count: itemsDeInventario })} ·{' '}
+              <span className="text-primary">{t(k('handoverReportOpen'))}</span>
             </p>
           </div>
           <ArrowRight className="w-4 h-4 text-fg-subtle" />
-        </button>
+        </Link>
 
         {/* Photos Gallery */}
         {hasPhotos && (

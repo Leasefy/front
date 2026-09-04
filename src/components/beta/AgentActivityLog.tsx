@@ -137,7 +137,7 @@ function ActivityItem({ entry, onNavigate }: ActivityItemProps) {
     <button
       onClick={() => onNavigate(entry.conversationId)}
       className={cn(
-        'w-full text-left p-3 rounded-xl',
+        'w-full text-left p-3 rounded-lg',
         'border transition-colors',
         isActive
           ? 'border-primary/30 hover:bg-primary-soft'

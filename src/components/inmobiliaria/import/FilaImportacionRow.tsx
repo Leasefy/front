@@ -22,7 +22,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui';
-import { etiquetaDeFaltante, esPosibleDuplicado } from './lib/faltantesInmuebles';
+import {
+  celdaDelFaltanteInmueble,
+  etiquetaDeFaltante,
+  esPosibleDuplicado,
+} from './lib/faltantesInmuebles';
 import {
   formularioDesde,
   cambiosDesdeFormulario,
@@ -104,12 +108,22 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
 
       {fila.faltantes.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {fila.faltantes.map((f) => (
-            <Badge key={f} variant={f === 'posible_duplicado' ? 'warning' : 'secondary'} className="gap-1">
-              <WarningCircle className="w-3 h-3" />
-              {etiquetaDeFaltante(f)}
-            </Badge>
-          ))}
+          {fila.faltantes.map((f) => {
+            // El valor original va PEGADO a la etiqueta: «tipo de inmueble:
+            // "APTO"» se corrige solo; «falta el tipo de inmueble» sobre una
+            // celda escrita manda a buscar en el Excel.
+            const celda = celdaDelFaltanteInmueble(
+              fila.datos as Record<string, unknown> | null,
+              f,
+            );
+            return (
+              <Badge key={f} variant={f === 'posible_duplicado' ? 'warning' : 'secondary'} className="gap-1">
+                <WarningCircle className="w-3 h-3" />
+                {etiquetaDeFaltante(f)}
+                {celda ? <span className="opacity-80">· dice «{celda}»</span> : null}
+              </Badge>
+            );
+          })}
         </div>
       )}
 

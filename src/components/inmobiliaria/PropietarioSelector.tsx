@@ -31,6 +31,12 @@ interface PropietarioSelectorProps {
    * right field (e.g. a 409 duplicate-document conflict).
    */
   serverError?: { field: keyof PropietarioFormData; message: string } | null;
+  /**
+   * Columnas de la grilla de propietarios en pantallas anchas. `3` es para
+   * contenedores de ~900 px (el diálogo de mandatos del final de la
+   * importación, `max-w-4xl`); en el wizard de consignación siguen siendo 2.
+   */
+  columnas?: 2 | 3;
 }
 
 /**
@@ -44,6 +50,7 @@ export function PropietarioSelector({
   newPropietarioData,
   className,
   serverError,
+  columnas = 2,
 }: PropietarioSelectorProps) {
   const { t } = useI18n();
   const [search, setSearch] = useState('');
@@ -58,25 +65,31 @@ export function PropietarioSelector({
 
   // Filter propietarios by search
   const filteredPropietarios = useMemo(() => {
-    if (!search.trim()) return propietarios;
-    const query = search.toLowerCase();
-    return propietarios.filter(
-      (p) =>
-        p.name.toLowerCase().includes(query) ||
-        (p.email?.toLowerCase().includes(query) ?? false) ||
-        p.documentNumber.includes(query)
-    );
-  }, [propietarios, search]);
+    const query = search.trim().toLowerCase();
+    const filtrados = query
+      ? propietarios.filter(
+          (p) =>
+            p.name.toLowerCase().includes(query) ||
+            (p.email?.toLowerCase().includes(query) ?? false) ||
+            p.documentNumber.includes(query)
+        )
+      : propietarios;
+    // El elegido va primero: cuando se llega con el propietario ya marcado
+    // (desde su ficha) tiene que verse arriba, no en la página 4 de 200.
+    const elegido = value ? filtrados.find((p) => p.id === value) : undefined;
+    if (!elegido) return filtrados;
+    return [elegido, ...filtrados.filter((p) => p.id !== elegido.id)];
+  }, [propietarios, search, value]);
 
   const handleSelectPropietario = (propietario: Propietario) => {
-    // If selecting the same propietario, do nothing
-    if (value === propietario.id) return;
-
     // Close new form if open
     setShowNewForm(false);
 
-    // Select propietario
-    onChange(propietario.id);
+    // Tocar el que ya está elegido lo suelta. Antes «no hacía nada»: una vez
+    // elegido un propietario no había forma de quedarse sin ninguno (Nico,
+    // 2026-09-01). `''` es lo que los formularios ya leen como «sin
+    // propietario» — es lo mismo que manda «Agregar nuevo» al empezar.
+    onChange(value === propietario.id ? '' : propietario.id);
   };
 
   const handleStartNewPropietario = () => {
@@ -159,7 +172,7 @@ export function PropietarioSelector({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="p-4 rounded-xl border-2 border-primary/30 bg-primary-soft"
+            className="p-4 rounded-lg border-2 border-primary/30 bg-primary-soft"
           >
             <div className="flex items-start gap-3">
               <div className={cn(
@@ -217,7 +230,7 @@ export function PropietarioSelector({
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="p-5 rounded-xl border border-border bg-card">
+            <div className="p-5 rounded-lg border border-border bg-card">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-semibold text-foreground">
                   {t('inmobiliaria.propietario.selector.newOwner')}
@@ -246,7 +259,12 @@ export function PropietarioSelector({
       {!showNewForm && !hasNewPropietario && (
         <>
           {filteredPropietarios.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div
+              className={cn(
+                'grid grid-cols-1 sm:grid-cols-2 gap-3',
+                columnas === 3 && 'lg:grid-cols-3',
+              )}
+            >
               {filteredPropietarios.map((propietario) => (
                 <PropietarioCard
                   key={propietario.id}
@@ -258,7 +276,7 @@ export function PropietarioSelector({
               ))}
             </div>
           ) : (
-            <div className="p-8 text-center rounded-xl border border-border bg-muted/40">
+            <div className="p-8 text-center rounded-lg border border-border bg-muted/40">
               <User className="w-12 h-12 mx-auto mb-3 text-muted-foreground/60" />
               <p className="text-sm text-muted-foreground mb-3">
                 {search ? t('inmobiliaria.propietario.selector.noResults') : t('inmobiliaria.propietario.selector.noRegistered')}

@@ -230,7 +230,7 @@ export function PrimaDistributionChart({
     return (
       <div className="h-[260px] space-y-3 animate-pulse">
         <div className="h-4 w-48 bg-surface-muted dark:bg-ink rounded" />
-        <div className="h-[220px] bg-surface-muted dark:bg-ink rounded-xl" />
+        <div className="h-[220px] bg-surface-muted dark:bg-ink rounded-lg" />
       </div>
     )
   }

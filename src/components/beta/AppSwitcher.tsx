@@ -25,13 +25,16 @@ export function AppSwitcher({ currentWorkspace, basePath }: AppSwitcherProps) {
   const resolvedBase = basePath ?? (
     pathname.startsWith('/panel/inmobiliaria') ? '/panel/inmobiliaria' : '/panel'
   );
+  // El «panel clásico» al que se salta desde el chat es Inicio (el Piloto):
+  // el Dashboard viejo pasó a ser «Resumen del negocio» dentro de Reportes y ya
+  // no es portada. Se detecta con borde de segmento, no con `includes`.
+  const panelClasico = `${resolvedBase}/piloto`;
   const resolvedWorkspace: Workspace = currentWorkspace ?? (
-    pathname.includes('/dashboard') ? 'dashboard' : 'beta'
+    pathname === panelClasico || pathname.startsWith(`${panelClasico}/`) ? 'dashboard' : 'beta'
   );
   const isDashboard = resolvedWorkspace === 'dashboard';
-  // AI CHAT HOME F3: the chat is the root inicio; the classic dashboard moved
-  // to `${base}/dashboard`. Toggle: chat (root) ⇄ classic dashboard.
-  const targetPath = isDashboard ? resolvedBase : `${resolvedBase}/dashboard`;
+  // Toggle: chat (root) ⇄ panel clásico (Inicio).
+  const targetPath = isDashboard ? resolvedBase : panelClasico;
 
   return (
     <div className="flex items-center justify-between">

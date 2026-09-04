@@ -187,7 +187,7 @@ export function PrioridadInbox({ items, onAction, isLoading }: PrioridadInboxPro
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card">
+    <div className="overflow-x-auto rounded-lg border border-border bg-card">
       <Table className="min-w-[640px]">
         <TableHeader>
           <TableRow>

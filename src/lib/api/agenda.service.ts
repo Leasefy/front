@@ -1,5 +1,8 @@
 import { apiClient } from './client';
-import type { AgendaListResponse } from './agenda.types';
+import type { AgendaListResponse,
+  CrearTareaInput,
+  ActualizarTareaInput,
+} from './agenda.types';
 import { RESUMEN_AGENDA_VACIO } from './agenda.types';
 import { ApiError } from './client';
 
@@ -36,6 +39,16 @@ export const agendaApi = {
   /** POST /inmobiliaria/agenda/citas — schedule a visit for a prospect. */
   async createCita(input: CreateCitaInput): Promise<void> {
     await apiClient.post('/inmobiliaria/agenda/citas', input);
+  },
+
+  /** POST /inmobiliaria/agenda/tareas — una tarea propia. */
+  async crearTarea(input: CrearTareaInput): Promise<void> {
+    await apiClient.post('/inmobiliaria/agenda/tareas', input);
+  },
+
+  /** PATCH /inmobiliaria/agenda/tareas/:id — completar, cancelar o editar. */
+  async actualizarTarea(id: string, input: ActualizarTareaInput): Promise<void> {
+    await apiClient.patch(`/inmobiliaria/agenda/tareas/${id}`, input);
   },
 
   /** GET visit availability windows for one of the agency's properties. */

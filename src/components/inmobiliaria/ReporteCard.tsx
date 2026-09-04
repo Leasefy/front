@@ -8,6 +8,7 @@ import {
   ChartPie,
   Calendar,
   ChartBar,
+  ChartLineUp,
   CurrencyDollar,
   Star,
   Eye,
@@ -58,6 +59,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   ChartPie,
   Calendar,
   ChartBar,
+  ChartLineUp,
   CurrencyDollar,
 };
 
@@ -137,7 +139,7 @@ export function ReporteCard({
       <motion.div
         whileHover={{ y: -2 }}
         className={cn(
-          'w-full p-4 rounded-xl border border-border bg-card transition-all cursor-pointer hover:border-foreground/15',
+          'w-full p-4 rounded-lg border border-border bg-card transition-all cursor-pointer hover:border-foreground/15',
           isLocked && 'opacity-75'
         )}
         onClick={isLocked ? onUpgrade : onPreview}
@@ -205,7 +207,7 @@ export function ReporteCard({
   return (
     <motion.div
       whileHover={{ y: -2 }}
-      className="w-full rounded-xl border border-border bg-card overflow-hidden transition-all hover:border-foreground/15"
+      className="w-full rounded-lg border border-border bg-card overflow-hidden transition-all hover:border-foreground/15"
     >
       {/* Header Section */}
       <div className="p-5 pb-4">

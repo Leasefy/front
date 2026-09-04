@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test'
 import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
-const ROUTE = '/panel/inmobiliaria/ai/cobranza/reporte/thresholds'
+const ROUTE = '/panel/inmobiliaria/cobros/cobranza/reporte/thresholds'
 const THRESHOLDS_MOCK = '**/cobranza/daily-report/thresholds**'
 const SKELETON_DELAY_MS = 2500
 

@@ -71,7 +71,7 @@ export function CobranzaImportCard({
   return (
     <div
       className={
-        'rounded-xl border border-border bg-card p-5 max-w-3xl mx-auto ' +
+        'rounded-lg border border-border bg-card p-5 max-w-3xl mx-auto ' +
         (className ?? '')
       }
     >

@@ -88,11 +88,11 @@ function CreditosContent() {
         </div>
 
         <header className="mb-8 space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg flex items-center gap-2">
+          <h1 className="text-h2 text-fg flex items-center gap-2">
             <Coin className="w-6 h-6 text-primary" weight="duotone" />
             Créditos del agente
           </h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             Cada evaluación del agente de IA consume 1 crédito. Los créditos del plan se
             regeneran cada mes; los comprados no expiran.
           </p>
@@ -100,7 +100,7 @@ function CreditosContent() {
 
         {/* Balance */}
         {isLoading ? (
-          <div className="rounded-xl border border-border bg-card p-8 flex items-center justify-center">
+          <div className="rounded-lg border border-border bg-card p-8 flex items-center justify-center">
             <Spinner size="md" variant="muted" />
           </div>
         ) : error ? (
@@ -111,7 +111,7 @@ function CreditosContent() {
             className="mb-8"
           />
         ) : balance ? (
-          <section className="rounded-xl bg-primary p-6 text-primary-fg mb-8">
+          <section className="rounded-lg bg-primary p-6 text-primary-fg mb-8">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-wider text-white/70 font-medium mb-2">
@@ -146,7 +146,7 @@ function CreditosContent() {
         ) : null}
 
         {/* How consumption works */}
-        <div className="rounded-xl bg-primary-soft border border-primary/30 p-4 mb-8">
+        <div className="rounded-lg bg-primary-soft border border-primary/30 p-4 mb-8">
           <p className="text-xs text-primary flex items-start gap-2">
             <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <span>
@@ -178,7 +178,7 @@ function CreditosContent() {
         )}
 
         {!isLoading && packs.length === 0 && !error && (
-          <div className="rounded-xl border border-dashed border-border p-8 text-center">
+          <div className="rounded-lg border border-dashed border-border p-8 text-center">
             <p className="text-sm text-muted-foreground">
               No hay packs de créditos disponibles por el momento.
             </p>
@@ -221,7 +221,7 @@ function PackCard({
   return (
     <div
       className={cn(
-        'relative rounded-xl border bg-card p-5 flex flex-col',
+        'relative rounded-lg border bg-card p-5 flex flex-col',
         pack.highlighted ? 'border-primary/40 ring-1 ring-primary/20' : 'border-border'
       )}
     >
@@ -358,7 +358,7 @@ function PurchaseModal({
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={isSubmitting ? undefined : onClose}
       />
-      <div className="relative bg-background rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-background rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-background border-b border-border px-6 py-4 flex items-center justify-between">
           <div>
@@ -381,7 +381,7 @@ function PurchaseModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {successMessage ? (
-            <div className="rounded-xl bg-success-soft border border-success/30 p-4 text-sm text-success flex items-start gap-2">
+            <div className="rounded-lg bg-success-soft border border-success/30 p-4 text-sm text-success flex items-start gap-2">
               <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
               <span>{successMessage}</span>
             </div>

@@ -72,7 +72,7 @@ function ScoringGuide() {
         variant="outline"
         hideArrow
         onClick={() => setOpen(!open)}
-        className={cn('gap-2.5 rounded-xl', open && 'bg-primary-soft border-primary/30 text-primary')}
+        className={cn('gap-2.5 rounded-lg', open && 'bg-primary-soft border-primary/30 text-primary')}
       >
         <Question className="w-4 h-4" />
         <span>{t('landlord.candidates.scoringGuideToggle')}</span>
@@ -80,7 +80,7 @@ function ScoringGuide() {
       </Button>
 
       {open && (
-        <div className="mt-4 bg-surface rounded-xl border border-border overflow-hidden">
+        <div className="mt-4 bg-surface rounded-lg border border-border overflow-hidden">
           {/* Header */}
           <div className="px-6 py-5 border-b border-border-faint bg-surface-muted">
             <h3 className="text-base font-semibold text-fg">{t('landlord.candidates.scoringGuideTitle')}</h3>
@@ -119,7 +119,7 @@ function ScoringGuide() {
               <MonoLabel className="block mb-4 tracking-wider text-fg-muted">{t('landlord.candidates.riskLevelsTitle')}</MonoLabel>
               <div className="space-y-3">
                 {RISK_LEVEL_DETAILS.map((risk) => (
-                  <div key={risk.level} className={cn('p-3 rounded-xl', risk.bgColor)}>
+                  <div key={risk.level} className={cn('p-3 rounded-lg', risk.bgColor)}>
                     <div className="flex items-center gap-3 mb-1">
                       <span className={cn('w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold text-white', risk.color)}>
                         {risk.level}
@@ -134,7 +134,7 @@ function ScoringGuide() {
                 ))}
               </div>
 
-              <div className="mt-4 p-3 bg-warning-soft rounded-xl">
+              <div className="mt-4 p-3 bg-warning-soft rounded-lg">
                 <p className="text-xs text-warning leading-relaxed">
                   <strong>{t('landlord.candidates.scoringNoteLabel')}</strong> {t('landlord.candidates.scoringNote')}
                 </p>
@@ -632,7 +632,7 @@ export default function CandidatosPage() {
 
         {/* Error state */}
         {error && !isLoading && (
-          <div className="rounded-xl border border-danger/30 bg-danger-soft p-6 text-center">
+          <div className="rounded-lg border border-danger/30 bg-danger-soft p-6 text-center">
             <p className="text-sm text-danger">{error}</p>
             <Button variant="link" hideArrow onClick={refetch} className="mt-3 h-auto p-0 text-danger hover:text-danger">
               Reintentar
@@ -649,7 +649,7 @@ export default function CandidatosPage() {
             action={{ label: t('landlord.candidates.emptyAction'), href: "/panel/propiedades" }}
           />
         ) : (
-          <div className="bg-surface rounded-xl border border-border overflow-hidden">
+          <div className="bg-surface rounded-lg border border-border overflow-hidden">
             <PlanTable
               data={tableData}
               columns={columns}

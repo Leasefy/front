@@ -200,7 +200,7 @@ export function IdleSessionGuard() {
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
       data-lenis-prevent
     >
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl dark:bg-neutral-900">
+      <div className="w-full max-w-sm rounded-lg bg-white p-6 text-center shadow-xl dark:bg-neutral-900">
         <h2
           id="idle-title"
           className="text-lg font-semibold text-neutral-900 dark:text-neutral-100"
@@ -229,7 +229,7 @@ export function IdleSessionGuard() {
           onClick={continuar}
           disabled={cerrando}
           autoFocus
-          className="mt-5 w-full rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-800 disabled:opacity-60 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+          className="mt-5 w-full rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-800 disabled:opacity-60 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
         >
           {cerrando ? 'Cerrando sesión…' : 'Continuar'}
         </button>

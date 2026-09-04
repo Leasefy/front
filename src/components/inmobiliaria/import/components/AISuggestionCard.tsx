@@ -17,7 +17,8 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { IconButton, MonoLabel } from '@leasefy/cadence';
-import { faltantesParaElBack } from '../lib/requisitosDelBack';
+import { faltantesParaElBack, requisitoDe } from '../lib/requisitosDelBack';
+import { useCamposQueSeQuedan } from '../lib/useCamposQueSeQuedan';
 import type { ImportProperty, AISuggestion } from '../lib/importTypes';
 
 interface AISuggestionCardProps {
@@ -301,6 +302,10 @@ export function AISuggestionCard({
   const pendingSuggestions = property.suggestions.filter((s) => s.accepted === null);
   const hasSuggestions = property.suggestions.length > 0;
   const faltantes = faltantesParaElBack(property);
+  // Lo que se abrió para completar se queda: si el input se pintara sólo
+  // mientras falta, desaparecería con la primera letra.
+  const camposACompletar = useCamposQueSeQuedan(faltantes.map((f) => f.campo));
+  const faltaAlgo = faltantes.length > 0;
 
   // Status
   const statusLabel = (() => {
@@ -329,7 +334,7 @@ export function AISuggestionCard({
 
   return (
     <div
-      className="animate-stagger-in rounded-xl border border-border dark:border-border-strong overflow-hidden bg-surface dark:bg-[#14130F]"
+      className="animate-stagger-in rounded-lg border border-border dark:border-border-strong overflow-hidden bg-surface dark:bg-bg"
       style={{ animationDelay: `${Math.min(index, 20) * 50}ms` }}
     >
       {/* Header row */}
@@ -378,6 +383,39 @@ export function AISuggestionCard({
       {/* Expanded content */}
       {isExpanded && (
         <div className="border-t border-border-faint dark:border-border-strong px-4 pb-4 pt-3 space-y-3">
+          {/* Las fotos que trajo el enlace (Nico, 2026-09-02: «si tiene
+              imágenes, deberíamos mostrarlas»). Son URLs del portal de
+              origen, no del CDN propio: `<img>` a secas, sin next/image. Una
+              foto rota se esconde sola. Hasta 6, el resto se cuenta. */}
+          {property.imagenes && property.imagenes.length > 0 && (
+            <ul
+              className="flex gap-2 overflow-x-auto pb-1"
+              data-testid="import-fotos"
+              aria-label={`${property.imagenes.length} fotos del aviso`}
+            >
+              {property.imagenes.slice(0, 6).map((url, i) => (
+                <li key={`${url}-${i}`} className="relative h-20 w-28 shrink-0 overflow-hidden rounded-md border border-border-faint bg-surface-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- CDN ajeno, sin dominio conocido para next/image */}
+                  <img
+                    src={url}
+                    alt=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      ;(e.currentTarget.parentElement as HTMLElement).style.display = 'none'
+                    }}
+                  />
+                  {i === 5 && property.imagenes && property.imagenes.length > 6 && (
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/55 font-mono text-sm text-white">
+                      +{property.imagenes.length - 6}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
           {/* Property summary pills */}
           <div className="flex flex-wrap gap-2">
             {property.propertyType && (
@@ -413,31 +451,45 @@ export function AISuggestionCard({
           {/* Lo que falta para poder crearlo — editable ACÁ.
               Antes esto aparecía recién en el último paso, en una pantalla sin
               campos: se veía «no se puede importar» y no había qué hacer. */}
-          {faltantes.length > 0 && (
+          {camposACompletar.length > 0 && (
             <div
               className="border-t border-border-faint dark:border-border-strong pt-3"
               data-testid={`completar-${property._rowIndex}`}
+              data-completo={faltaAlgo ? undefined : 'true'}
             >
               <div className="flex items-center gap-2 mb-2">
-                <Warning className="w-3.5 h-3.5 text-danger" />
-                <span className="text-xs font-semibold text-danger uppercase tracking-wide">
-                  Completá esto para poder crearlo
+                {faltaAlgo ? (
+                  <Warning className="w-3.5 h-3.5 text-danger" />
+                ) : (
+                  <Check className="w-3.5 h-3.5 text-success" weight="bold" />
+                )}
+                <span
+                  className={cn(
+                    'text-xs font-semibold uppercase tracking-wide',
+                    faltaAlgo ? 'text-danger' : 'text-success'
+                  )}
+                >
+                  {faltaAlgo ? 'Completá esto para poder crearlo' : 'Listo, ya se puede crear'}
                 </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {faltantes.map((f) => (
-                  <CampoEditable
-                    key={f.campo}
-                    etiqueta={f.etiqueta}
-                    valor={property[f.campo]}
-                    sufijo={f.sufijo}
-                    tipo={f.tipo}
-                    invalido
-                    ayuda={f.ayuda}
-                    testId={`falta-${f.campo}-${property._rowIndex}`}
-                    onCambiar={(v) => onEditField(property._rowIndex, f.campo, v)}
-                  />
-                ))}
+                {camposACompletar.map((campo) => {
+                  const f = requisitoDe(campo);
+                  const falta = faltantes.some((x) => x.campo === campo);
+                  return (
+                    <CampoEditable
+                      key={campo}
+                      etiqueta={f.etiqueta}
+                      valor={property[campo]}
+                      sufijo={f.sufijo}
+                      tipo={f.tipo}
+                      invalido={falta}
+                      ayuda={f.ayuda}
+                      testId={`falta-${campo}-${property._rowIndex}`}
+                      onCambiar={(v) => onEditField(property._rowIndex, campo, v)}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}

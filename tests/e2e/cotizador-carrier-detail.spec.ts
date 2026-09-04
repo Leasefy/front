@@ -307,7 +307,7 @@ for (const viewport of VIEWPORTS) {
     await seedAuth(page)
     await mockDeepDiveEndpoints(page)
     await mockPermissions(page)
-    await page.goto(`/panel/inmobiliaria/ai/cotizador/aseguradoras/${CARRIER_SLUG}`)
+    await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras/${CARRIER_SLUG}`)
     await page.waitForLoadState('domcontentloaded')
     await page.waitForTimeout(1_500)
     // Soft wait for KPI strip — requires real Supabase session; capture whatever renders
@@ -334,7 +334,7 @@ for (const viewport of VIEWPORTS) {
     await seedAuth(page)
     await mockSlaEndpoint(page)
     await mockPermissions(page)
-    await page.goto(`/panel/inmobiliaria/ai/cotizador/aseguradoras/${CARRIER_SLUG}/sla`)
+    await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras/${CARRIER_SLUG}/sla`)
     await page.waitForLoadState('domcontentloaded')
     // Soft wait for SLA state card — requires real Supabase session
     await page.locator('text=/healthy|saludable|normal/i').first().waitFor({ timeout: 8_000 }).catch(() => {})
@@ -359,7 +359,7 @@ test.skip('deep dive no horizontal scroll at iPhone-14 — D-35-09 XR-03', async
   await seedAuth(page)
   await mockDeepDiveEndpoints(page)
   await mockPermissions(page)
-  await page.goto(`/panel/inmobiliaria/ai/cotizador/aseguradoras/${CARRIER_SLUG}`)
+  await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras/${CARRIER_SLUG}`)
   await page.waitForLoadState('domcontentloaded')
   await page.waitForTimeout(1_500)
   // Soft wait — carrier data requires real Supabase session
@@ -382,7 +382,7 @@ test('latency sparkline Recharts container has non-zero height — XR-03', async
   await seedAuth(page)
   await mockDeepDiveEndpoints(page)
   await mockPermissions(page)
-  await page.goto(`/panel/inmobiliaria/ai/cotizador/aseguradoras/${CARRIER_SLUG}`)
+  await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras/${CARRIER_SLUG}`)
   await page.waitForLoadState('domcontentloaded')
   // No console errors
   expect(consoleErrors.filter((e) => !e.includes('Warning:') && !e.includes('CORS') && !e.includes('ERR_FAILED') && !e.includes('ERR_NETWORK') && !e.includes('subscriptions') && !e.includes('notifications') && !e.includes('Access-Control-Allow-Origin') && !e.includes('Failed to load resource') && !e.includes('Status code: 204'))).toHaveLength(0)
@@ -417,7 +417,7 @@ test('recent-quotes table shows masked cédula, no reveal button — D-35-03', a
   await seedAuth(page)
   await mockDeepDiveEndpoints(page)
   await mockPermissions(page)
-  await page.goto(`/panel/inmobiliaria/ai/cotizador/aseguradoras/${CARRIER_SLUG}`)
+  await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras/${CARRIER_SLUG}`)
   await page.waitForLoadState('domcontentloaded')
   // No console errors
   expect(consoleErrors.filter((e) => !e.includes('Warning:') && !e.includes('CORS') && !e.includes('ERR_FAILED') && !e.includes('ERR_NETWORK') && !e.includes('subscriptions') && !e.includes('notifications') && !e.includes('Access-Control-Allow-Origin') && !e.includes('Failed to load resource') && !e.includes('Status code: 204'))).toHaveLength(0)
@@ -449,7 +449,7 @@ test('KPI strip shows approval rate and error rate values — D-35-03', async ({
   await seedAuth(page)
   await mockDeepDiveEndpoints(page)
   await mockPermissions(page)
-  await page.goto(`/panel/inmobiliaria/ai/cotizador/aseguradoras/${CARRIER_SLUG}`)
+  await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras/${CARRIER_SLUG}`)
   await page.waitForLoadState('domcontentloaded')
   // No console errors
   expect(consoleErrors.filter((e) => !e.includes('Warning:') && !e.includes('CORS') && !e.includes('ERR_FAILED') && !e.includes('ERR_NETWORK') && !e.includes('subscriptions') && !e.includes('notifications') && !e.includes('Access-Control-Allow-Origin') && !e.includes('Failed to load resource') && !e.includes('Status code: 204'))).toHaveLength(0)
@@ -473,7 +473,7 @@ test.skip('SLA sub-page no horizontal scroll at iPhone-14 — D-35-09 XR-03', as
   await seedAuth(page)
   await mockSlaEndpoint(page)
   await mockPermissions(page)
-  await page.goto(`/panel/inmobiliaria/ai/cotizador/aseguradoras/${CARRIER_SLUG}/sla`)
+  await page.goto(`/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras/${CARRIER_SLUG}/sla`)
   await page.waitForLoadState('domcontentloaded')
   // Soft wait — requires real Supabase session
   await page.locator('text=/healthy|saludable|normal/i').first().waitFor({ timeout: 8_000 }).catch(() => {})

@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 /**
  * CobranzaEscalacionesSkeleton — Phase 38 plan 38-04a (D-38-02 hybrid skeletons).
  *
- * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/ai/cobranza/escalaciones`.
+ * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/cobros/cobranza/escalaciones`.
  * Mirrors the kanban layout: header (title + refresh) → 3 columns side-by-side
  * (sm stacked, md+ 3-col), each with a column header (label + count badge) and
  * 3 card placeholders.
@@ -32,7 +32,7 @@ export function CobranzaEscalacionesSkeleton() {
         {[0, 1, 2].map((col) => (
           <div
             key={col}
-            className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-card/50 p-4 space-y-3"
+            className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-card/50 p-4 space-y-3"
           >
             {/* Column header */}
             <div className="flex items-center justify-between">
@@ -42,7 +42,7 @@ export function CobranzaEscalacionesSkeleton() {
 
             {/* 3 card placeholders */}
             {[0, 1, 2].map((card) => (
-              <Skeleton key={card} className="h-28 w-full rounded-xl" />
+              <Skeleton key={card} className="h-28 w-full rounded-lg" />
             ))}
           </div>
         ))}

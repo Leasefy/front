@@ -5,7 +5,7 @@
  * decide cómo se ven dentro del hueco de contenido que la página ya envolvió.
  *
  * El defecto que motivó estas pruebas: el fallo pintaba su propia tarjeta
- * (`rounded-xl border bg-card`) adentro de la tarjeta de la tabla, mientras el
+ * (`rounded-lg border bg-card`) adentro de la tarjeta de la tabla, mientras el
  * vacío iba sin marco en ese mismo lugar. Se veía un borde redondeado adentro
  * de otro, y los dos estados no coincidían entre sí.
  */

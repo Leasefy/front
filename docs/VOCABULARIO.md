@@ -128,7 +128,7 @@ Dos reglas que salen de esto:
 ## Deuda conocida
 
 - El módulo de asegurabilidad vive bajo el namespace **`cotizador`** (`inmobiliaria.ai.cotizador.*`,
-  `use-carrier-registry`, rutas `/ai/asegurabilidad`). Interno y ya divergido de la etiqueta.
+  `use-carrier-registry`, rutas `/postulaciones/asegurabilidad`). Interno y ya divergido de la etiqueta.
   Renombrarlo es mecánico y toca muchos archivos: **no se hace ahora**, se anota.
 - **El panel de propietario (`panel/(landlord)`) ya no tiene la pestaña "Pre-aprobados".**
   T-0023 quitó el estado del backend, así que el embudo (Pendientes → Pre-aprobados →

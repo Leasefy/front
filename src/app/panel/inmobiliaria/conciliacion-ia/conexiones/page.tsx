@@ -42,14 +42,14 @@ interface Conexion {
 }
 
 const ENTRADAS: Conexion[] = [
-  { icon: Bank, modulo: 'Banco y pasarelas', ejemplo: 'Laura lee los movimientos de Bancolombia .360, links de pago, PSE y transferencias.', tipo: 'auto', href: '/panel/inmobiliaria/ai/conciliacion/movimientos' },
+  { icon: Bank, modulo: 'Banco y pasarelas', ejemplo: 'Laura lee los movimientos de Bancolombia .360, links de pago, PSE y transferencias.', tipo: 'auto', href: '/panel/inmobiliaria/conciliacion/movimientos' },
   { icon: FilePlus, modulo: 'Contratos', ejemplo: 'Nicolás cruza cada pago contra las obligaciones y el canon de cada contrato.', tipo: 'auto', href: '/panel/inmobiliaria/contratos' },
   { icon: Receipt, modulo: 'Cartera y facturas', ejemplo: 'Sabe qué facturas están pendientes o vencidas para cada inquilino.', tipo: 'auto', href: '/panel/inmobiliaria/cobros' },
 ]
 
 const SALIDAS: Conexion[] = [
   { icon: FilePlus, modulo: 'Contratos', ejemplo: 'Marca la obligación como pagada, parcial o vencida y deja el contrato al día.', tipo: 'auto', href: '/panel/inmobiliaria/contratos' },
-  { icon: ChatCircleText, modulo: 'Cobranza IA', ejemplo: 'Si queda saldo o no hay pago, activa la cobranza por el monto exacto.', tipo: 'auto', href: '/panel/inmobiliaria/ai/cobranza' },
+  { icon: ChatCircleText, modulo: 'Cobranza IA', ejemplo: 'Si queda saldo o no hay pago, activa la cobranza por el monto exacto.', tipo: 'auto', href: '/panel/inmobiliaria/cobros/cobranza' },
   { icon: UserCircle, modulo: 'Propietarios', ejemplo: 'Prepara la liquidación: canon recibido, comisión y neto a transferir.', tipo: 'click', href: '/panel/inmobiliaria/propietarios' },
   { icon: Bank, modulo: 'Contabilidad', ejemplo: 'Genera los soportes y la trazabilidad financiera del recaudo.', tipo: 'auto', href: '/panel/inmobiliaria/facturacion' },
   { icon: ChartLineUp, modulo: 'Dashboard financiero', ejemplo: 'Actualiza recaudo, mora, cartera y flujo de caja.', tipo: 'auto', href: '/panel/inmobiliaria/reportes' },
@@ -89,7 +89,7 @@ function ConexionCard({ c }: { c: Conexion }) {
       <div className="mt-3.5"><TipoChip tipo={c.tipo} /></div>
     </>
   )
-  const cls = 'group block rounded-xl border border-border bg-surface p-4 transition-colors hover:border-border-strong'
+  const cls = 'group block rounded-lg border border-border bg-surface p-4 transition-colors hover:border-border-strong'
   return c.href ? <Link href={c.href} className={cls}>{inner}</Link> : <div className={cls}>{inner}</div>
 }
 
@@ -103,7 +103,7 @@ export default function ConciliacionConexionesPage() {
         </Link>
 
         {/* Hero (ink anchor) — el flujo */}
-        <section className="relative overflow-hidden rounded-2xl px-7 py-8" style={{ background: INK_GRADIENT, boxShadow: '0 26px 64px -28px rgba(20, 19, 15,0.55)' }}>
+        <section className="relative overflow-hidden rounded-lg px-7 py-8" style={{ background: INK_GRADIENT, boxShadow: '0 26px 64px -28px rgba(20, 19, 15,0.55)' }}>
           <div className="pointer-events-none absolute -inset-x-2 top-[52%] h-[42%] text-white/[0.10]">
             <BrandContour />
           </div>
@@ -130,7 +130,7 @@ export default function ConciliacionConexionesPage() {
               ))}
             </div>
             <ArrowRight className="w-5 h-5 text-white/35" weight="bold" />
-            <span className="inline-flex items-center justify-center rounded-xl text-base font-semibold text-white shrink-0" style={{ width: 48, height: 48, background: BLUE, boxShadow: '0 0 0 4px rgba(26,64,255,0.18)' }}>G</span>
+            <span className="inline-flex items-center justify-center rounded-lg text-base font-semibold text-white shrink-0" style={{ width: 48, height: 48, background: BLUE, boxShadow: '0 0 0 4px rgba(26,64,255,0.18)' }}>G</span>
             <ArrowRight className="w-5 h-5 text-white/35" weight="bold" />
             <div className="flex -space-x-1.5">
               {FLOW_OUT.map((Ic, i) => (

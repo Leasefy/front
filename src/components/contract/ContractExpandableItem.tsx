@@ -196,7 +196,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
         <div className="px-6 pb-6">
           <div className="ml-[60px] grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Card 1: Contract Details */}
-            <div className="bg-surface border border-border rounded-xl p-5">
+            <div className="bg-surface border border-border rounded-lg p-5">
               <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
                 Detalles del contrato
               </p>
@@ -227,7 +227,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
             </div>
 
             {/* Card 2: Signatures */}
-            <div className="bg-surface border border-border rounded-xl p-5">
+            <div className="bg-surface border border-border rounded-lg p-5">
               <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
                 Estado de firmas
               </p>
@@ -246,7 +246,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
             </div>
 
             {/* Card 3: Contact & Actions */}
-            <div className="bg-surface border border-border rounded-xl p-5">
+            <div className="bg-surface border border-border rounded-lg p-5">
               <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
                 Contacto arrendatario
               </p>
@@ -271,7 +271,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
               <div className="flex flex-wrap gap-2 pt-4 border-t border-border-faint dark:border-border-strong">
                 {needsLandlordAction && (
                   <Link href={contractUrl} className="flex-1">
-                    <Button className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl">
+                    <Button className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg">
                       <PencilLine className="w-4 h-4" />
                       Firmar
                     </Button>
@@ -280,7 +280,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
                 {needsTenantAction && (
                   <Button
                     variant="outline"
-                    className="flex-1 gap-2 rounded-xl border-border"
+                    className="flex-1 gap-2 rounded-lg border-border"
                     disabled={isPaperPlaneTiltingReminder || reminderCooldown}
                     onClick={handlePaperPlaneTiltReminder}
                   >
@@ -291,7 +291,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
                 <Link href={contractUrl} className={needsLandlordAction || needsTenantAction ? '' : 'flex-1'}>
                   <Button
                     variant="outline"
-                    className="w-full gap-2 rounded-xl border-border"
+                    className="w-full gap-2 rounded-lg border-border"
                   >
                     <FileText className="w-4 h-4" />
                     Ver contrato
@@ -300,7 +300,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
                 {isActive && (
                   <Button
                     variant="outline"
-                    className="gap-2 rounded-xl border-border"
+                    className="gap-2 rounded-lg border-border"
                     onClick={async (e) => {
                       e.stopPropagation();
                       try {

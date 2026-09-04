@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { mesEnTitulo } from '@/lib/utils/mes';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MagnifyingGlass,
@@ -58,14 +59,14 @@ const STATUS_TAB_KEYS: Record<DispersionStatus | 'all', string> = {
 /**
  * Get last N months including current month
  */
-function getRecentMonths(count: number, formatDateFn: (date: Date | string, options?: Intl.DateTimeFormatOptions) => string): { value: string; label: string }[] {
+function getRecentMonths(count: number, locale: 'es' | 'en'): { value: string; label: string }[] {
   const months: { value: string; label: string }[] = [];
   const today = new Date();
 
   for (let i = 0; i < count; i++) {
     const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
     const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const label = formatDateFn(date, { month: 'long', year: 'numeric' });
+    const label = mesEnTitulo(value, locale);
     months.push({ value, label });
   }
 
@@ -82,7 +83,7 @@ export function DispersionFilters({
   propietarios,
   statusCounts,
 }: DispersionFiltersProps) {
-  const { t, formatDate } = useI18n();
+  const { t, locale } = useI18n();
   const [showFilters, setShowFilters] = useState(false);
   const [searchInput, setSearchInput] = useState(filters.search || '');
 
@@ -97,7 +98,7 @@ export function DispersionFilters({
   }, [searchInput, filters, onFiltersChange]);
 
   // Recent months for dropdown
-  const recentMonths = useMemo(() => getRecentMonths(12, formatDate), [formatDate]);
+  const recentMonths = useMemo(() => getRecentMonths(12, locale === 'en' ? 'en' : 'es'), [locale]);
 
   // Count active filters (excluding default values)
   const activeFiltersCount = useMemo(() => {
@@ -195,13 +196,13 @@ export function DispersionFilters({
                     value={filters.month}
                     onValueChange={(value) => updateFilter('month', value)}
                   >
-                    <SelectTrigger className="gap-2 capitalize">
+                    <SelectTrigger className="gap-2">
                       <CalendarBlank className="w-4 h-4 text-muted-foreground shrink-0" />
                       <SelectValue placeholder={t('inmobiliaria.dispersiones.filtersPanel.selectMonth')} />
                     </SelectTrigger>
                     <SelectContent className="max-h-64">
                       {recentMonths.map((month) => (
-                        <SelectItem key={month.value} value={month.value} className="capitalize">
+                        <SelectItem key={month.value} value={month.value}>
                           {month.label}
                         </SelectItem>
                       ))}

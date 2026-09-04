@@ -19,7 +19,7 @@ interface PropertyPhotoPickerProps {
 
 /**
  * Photo picker for panel property forms. Client-side validation mirrors the
- * backend POST /properties/:id/images contract (jpg/png/webp, ≤5MB, max 10).
+ * backend POST /properties/:id/images contract (jpg/png/webp, ≤5MB, max 40).
  * Invalid files are rejected on pick with a Spanish toast so the user knows
  * before the property is created.
  */

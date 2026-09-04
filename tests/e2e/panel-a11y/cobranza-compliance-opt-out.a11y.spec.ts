@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test'
 import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
-const ROUTE = '/panel/inmobiliaria/ai/cobranza/compliance/opt-out'
+const ROUTE = '/panel/inmobiliaria/cobros/cobranza/compliance/opt-out'
 const OPT_OUT_MOCK = '**/compliance/opt-out**'
 const SKELETON_DELAY_MS = 2500
 

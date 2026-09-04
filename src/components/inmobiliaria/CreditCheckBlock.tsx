@@ -72,7 +72,7 @@ export function CreditCheckBlock({
 
   if (status === 'approved') {
     return (
-      <div className="mt-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-3 space-y-1.5">
+      <div className="mt-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-3 space-y-1.5">
         <div className="flex items-center gap-2">
           <CheckCircle weight="fill" className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" aria-hidden="true" />
           <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
@@ -109,7 +109,7 @@ export function CreditCheckBlock({
 
   if (status === 'rejected_credit') {
     return (
-      <div className="mt-2 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 p-3 space-y-1">
+      <div className="mt-2 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 p-3 space-y-1">
         <div className="flex items-center gap-2">
           <Warning weight="fill" className="h-4 w-4 text-rose-600 dark:text-rose-400 flex-shrink-0" aria-hidden="true" />
           <span className="text-xs font-semibold text-rose-700 dark:text-rose-400">
@@ -127,7 +127,7 @@ export function CreditCheckBlock({
 
   if (status === 'rejected_income') {
     return (
-      <div className="mt-2 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 p-3 space-y-1.5">
+      <div className="mt-2 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 p-3 space-y-1.5">
         <div className="flex items-center gap-2">
           <Warning weight="fill" className="h-4 w-4 text-rose-600 dark:text-rose-400 flex-shrink-0" aria-hidden="true" />
           <span className="text-xs font-semibold text-rose-700 dark:text-rose-400">
@@ -153,7 +153,7 @@ export function CreditCheckBlock({
   if (status === 'blocked_admin') {
     // NOT a rejection — neutral internal ops alert
     return (
-      <div className="mt-2 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-700 p-3">
+      <div className="mt-2 rounded-lg bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-700 p-3">
         <div className="flex items-center gap-2">
           <Info className="h-4 w-4 text-neutral-500 dark:text-neutral-400 flex-shrink-0" aria-hidden="true" />
           <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">
@@ -173,7 +173,7 @@ export function CreditCheckBlock({
   if (status === 'awaiting_authorization') {
     const pct = progressPercentage ?? 0;
     return (
-      <div className="mt-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 space-y-2">
+      <div className="mt-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 space-y-2">
         <div className="flex items-center gap-2">
           <HourglassMedium className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" aria-hidden="true" />
           <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
@@ -205,7 +205,7 @@ export function CreditCheckBlock({
 
   if (status === 'error') {
     return (
-      <div className="mt-2 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 p-3">
+      <div className="mt-2 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 p-3">
         <div className="flex items-center gap-2">
           <Warning weight="fill" className="h-4 w-4 text-rose-600 dark:text-rose-400 flex-shrink-0" aria-hidden="true" />
           <span className="text-xs font-semibold text-rose-700 dark:text-rose-400">

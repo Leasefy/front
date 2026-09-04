@@ -24,7 +24,7 @@ export function OnboardingChecklist() {
   if (!isAdmin || isComplete) return null;
 
   return (
-    <div className="rounded-xl border border-primary/30 bg-primary-soft/50 dark:bg-primary/20 p-6">
+    <div className="rounded-lg border border-primary/30 bg-primary-soft/50 dark:bg-primary/20 p-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>

@@ -80,7 +80,7 @@ export function CotizadorCarriersStatus({
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="rounded-xl border border-border bg-card p-4 space-y-3"
+            className="rounded-lg border border-border bg-card p-4 space-y-3"
           >
             <div className="h-4 w-24 rounded bg-surface-muted animate-pulse" />
             <div className="h-3 w-16 rounded bg-surface-muted animate-pulse" />
@@ -106,7 +106,7 @@ export function CotizadorCarriersStatus({
         {enabledCarriers.map((carrier) => (
           <div
             key={carrier.name}
-            className="rounded-xl border border-border bg-card p-4 space-y-3"
+            className="rounded-lg border border-border bg-card p-4 space-y-3"
           >
             {/* Carrier name + route mode badge */}
             <div className="flex items-center justify-between">

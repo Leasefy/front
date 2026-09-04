@@ -90,3 +90,104 @@ describe('analyzeProperties — Rule 1 (missing price) is listingType-aware', ()
     expect(result.salePrice).toBe(350_000_000);
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Batería adversarial de valores (auditoría 2026-09-01): plata, áreas y
+// conteos como los escriben los sistemas colombianos de verdad. La regla es
+// una sola: un valor se entiende ENTERO o no se entiende — jamás un número
+// distinto al de la celda, jamás el prefijo que `parseFloat` alcanzó a leer.
+// ═══════════════════════════════════════════════════════════════════════════
+
+import { cleanNumericValue, mapRowsToProperties as mapear } from './gapFiller';
+
+describe('cleanNumericValue — formatos de plata colombianos', () => {
+  it.each([
+    ['1.800.000', 1_800_000],
+    ['500.000', 500_000], // 🔴 la clase de bug del repo: parseFloat("500.000") = 500
+    ['$ 1.200.000', 1_200_000],
+    ['$1.200.000', 1_200_000],
+    ['1.200.000 COP', 1_200_000],
+    ['1.234.567,89', 1_234_567.89],
+    ['1,200,000', 1_200_000],
+    ['1,200,000.50', 1_200_000.5],
+    ['1200000', 1_200_000],
+    ['2400000.75', 2_400_000.75],
+    ['1.234', 1_234], // un punto con grupo de 3 en un archivo CO = miles
+  ])('«%s» → %d', (crudo, esperado) => {
+    expect(cleanNumericValue(crudo)).toBe(esperado);
+  });
+
+  it('siete cifras con un solo separador no se vuelven la milésima parte', () => {
+    expect(cleanNumericValue('1.500.000')).toBe(1_500_000);
+    expect(cleanNumericValue('12.500.000')).toBe(12_500_000);
+  });
+
+  it("apóstrofo de miles («1'200.000», común en Colombia) no se vuelve 1", () => {
+    expect(cleanNumericValue("1'200.000")).toBe(1_200_000);
+    expect(cleanNumericValue('1’200.000')).toBe(1_200_000); // apóstrofo tipográfico
+    expect(cleanNumericValue("1'200,50")).toBe(1_200.5);
+  });
+
+  it('coma decimal sola («65,5» de un área) es 65,5 — no 655', () => {
+    expect(cleanNumericValue('65,5')).toBe(65.5);
+    expect(cleanNumericValue('65.5')).toBe(65.5);
+  });
+
+  it('sufijos de unidad se quitan; el número queda entero', () => {
+    expect(cleanNumericValue('65 m2')).toBe(65);
+    expect(cleanNumericValue('65m²')).toBe(65);
+    expect(cleanNumericValue('10%')).toBe(10);
+    expect(cleanNumericValue('10 %')).toBe(10);
+  });
+
+  it('🔴 lo que no es un número COMPLETO no produce número: nada de prefijos de parseFloat', () => {
+    expect(cleanNumericValue('$1.2M')).toBeUndefined();
+    expect(cleanNumericValue('1.2 millones')).toBeUndefined();
+    expect(cleanNumericValue('120 millones')).toBeUndefined();
+    expect(cleanNumericValue('tres')).toBeUndefined();
+    expect(cleanNumericValue('1.200.000-1.500.000')).toBeUndefined(); // un rango no es un valor
+    expect(cleanNumericValue('12.34.56')).toBeUndefined(); // separadores incoherentes
+  });
+
+  it('vacíos y marcadores de «sin dato» quedan undefined', () => {
+    for (const v of ['', '   ', '-', 'N/A', 'n/a', 'NA', 'null', 'NULL', 's/d', '#N/A']) {
+      expect(cleanNumericValue(v)).toBeUndefined();
+    }
+  });
+
+  it('un número que ya viene como número pasa tal cual; NaN no', () => {
+    expect(cleanNumericValue(2_400_000)).toBe(2_400_000);
+    expect(cleanNumericValue(Number.NaN)).toBeUndefined();
+  });
+});
+
+describe('mapRowsToProperties — celdas con marcadores de vacío', () => {
+  const mapeo = [
+    { sourceColumn: 'Dirección', targetField: 'propertyAddress', confidence: 0.92, isManual: false },
+    { sourceColumn: 'Barrio', targetField: 'propertyZone', confidence: 0.92, isManual: false },
+    { sourceColumn: 'Canon', targetField: 'monthlyRent', confidence: 0.92, isManual: false },
+  ];
+
+  it('«-», «N/A» y «null» en un campo de texto NO entran como texto real', () => {
+    const [p] = mapear(
+      [{ _rowIndex: 1, 'Dirección': 'N/A', Barrio: '-', Canon: '1.200.000' }],
+      mapeo,
+    );
+    expect(p.propertyAddress).toBeUndefined();
+    expect(p.propertyZone).toBeUndefined();
+    expect(p.monthlyRent).toBe(1_200_000);
+  });
+
+  it('una dirección real con guiones adentro no se confunde con el marcador «-»', () => {
+    const [p] = mapear(
+      [{ _rowIndex: 1, 'Dirección': 'Calle 45 # 12-34', Barrio: 'Centro', Canon: '900.000' }],
+      mapeo,
+    );
+    expect(p.propertyAddress).toBe('Calle 45 # 12-34');
+  });
+
+  it('un numérico ilegible queda vacío (visible en revisión), nunca un número inventado', () => {
+    const [p] = mapear([{ _rowIndex: 1, 'Dirección': 'Cra 7 # 1-2', Barrio: 'X', Canon: 'tres millones' }], mapeo);
+    expect(p.monthlyRent).toBeUndefined();
+  });
+});

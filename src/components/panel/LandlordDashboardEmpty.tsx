@@ -87,7 +87,7 @@ function VideoCameraModal({ open, onClose, onComplete }: { open: boolean; onClos
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="relative w-full max-w-3xl bg-surface rounded-xl overflow-hidden"
+        className="relative w-full max-w-3xl bg-surface rounded-lg overflow-hidden"
       >
         <button
           onClick={onClose}
@@ -122,7 +122,7 @@ function VideoCameraModal({ open, onClose, onComplete }: { open: boolean; onClos
               onComplete();
               onClose();
             }}
-            className="w-full py-3 bg-fg text-bg font-semibold rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
+            className="w-full py-3 bg-fg text-bg font-semibold rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
           >
             {locale === 'es' ? 'Entendido, continuar' : 'Got it, continue'}
           </button>
@@ -234,7 +234,7 @@ export function LandlordDashboardEmpty() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="rounded-xl bg-surface overflow-hidden"
+              className="rounded-lg bg-surface overflow-hidden"
             >
               {/* Header */}
               <button
@@ -285,7 +285,7 @@ export function LandlordDashboardEmpty() {
                     const content = (
                       <div
                         className={cn(
-                          'flex items-center gap-4 p-4 rounded-xl transition-all',
+                          'flex items-center gap-4 p-4 rounded-lg transition-all',
                           step.completed
                             ? 'bg-success-soft dark:bg-[#2C7A53]/15'
                             : isNext
@@ -388,7 +388,7 @@ export function LandlordDashboardEmpty() {
               ].map((card) => (
                 <div
                   key={card.titleEs}
-                  className="rounded-xl bg-surface p-5"
+                  className="rounded-lg bg-surface p-5"
                 >
                   <div className="w-11 h-11 rounded-xl bg-surface-muted flex items-center justify-center mb-4">
                     <card.icon weight="duotone" className="w-5 h-5 text-fg-subtle" />
@@ -443,7 +443,7 @@ export function LandlordDashboardEmpty() {
             className="space-y-6"
           >
             {/* Quick Stats (placeholder) */}
-            <div className="rounded-xl bg-surface p-6">
+            <div className="rounded-lg bg-surface p-6">
               <div className="flex items-center gap-3 mb-4">
                 <TrendUp weight="duotone" className="w-5 h-5 text-fg-subtle" />
                 <span className="text-sm font-medium text-fg-muted">
@@ -457,7 +457,7 @@ export function LandlordDashboardEmpty() {
             </div>
 
             {/* Resources */}
-            <div className="rounded-xl bg-surface p-5">
+            <div className="rounded-lg bg-surface p-5">
               <h3 className="font-semibold text-fg mb-4">
                 {locale === 'es' ? 'Recursos útiles' : 'Helpful resources'}
               </h3>
@@ -470,7 +470,7 @@ export function LandlordDashboardEmpty() {
                   <Link
                     key={resource.labelEs}
                     href={resource.href}
-                    className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface transition-colors group"
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface transition-colors group"
                   >
                     <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center group-hover:bg-surface-muted transition-colors">
                       <resource.icon className="w-5 h-5 text-fg-muted" />
@@ -485,7 +485,7 @@ export function LandlordDashboardEmpty() {
             </div>
 
             {/* Need help */}
-            <div className="rounded-xl bg-surface p-5">
+            <div className="rounded-lg bg-surface p-5">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
                   <Clock weight="duotone" className="w-5 h-5 text-fg-subtle" />

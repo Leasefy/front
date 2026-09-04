@@ -237,6 +237,34 @@ export interface PerfilTributario {
   esPorDefecto: boolean;
 }
 
+/**
+ * El régimen tributario del contrato, ya resuelto por el back con el origen
+ * de cada valor. Se muestra tal cual: si la pantalla lo recalculara, sería
+ * una segunda cuenta que un día no coincide con la que cobra.
+ *
+ * Se declara acá y no se importa de `contracts.types` por la misma razón que
+ * `PerfilesDelContrato`: ese archivo es la forma del cable, éste la del
+ * dominio.
+ */
+export type OrigenDelValorTributario =
+  | 'CONTRATO'
+  | 'PROPIETARIO'
+  | 'TIPO_DE_INMUEBLE'
+  | 'SIN_DEFINIR';
+
+export interface ValorTributarioResuelto {
+  valor: boolean | null;
+  origen: OrigenDelValorTributario;
+}
+
+export interface RegimenTributarioDelContrato {
+  usoComercial: ValorTributarioResuelto;
+  arrendadorResponsableIva: ValorTributarioResuelto;
+  inquilinoRetenedorRenta: ValorTributarioResuelto;
+  inquilinoRetenedorIva: ValorTributarioResuelto;
+  inquilinoRetenedorIca: ValorTributarioResuelto;
+}
+
 export interface PerfilesDelContrato {
   inquilino: PerfilTributario;
   propietario: PerfilTributario;
@@ -305,6 +333,13 @@ export interface Contract {
   startDate: string | null;      // ISO date
   endDate: string | null;        // ISO date
   paymentDueDay: number | null;  // 1-28
+  /**
+   * Términos de cobro. `diasDePlazo: null` = hereda los de la inmobiliaria.
+   * Opcionales en el tipo para no obligar a cada fixture viejo a declararlos;
+   * el mapper (`mapBackendContract`) los llena SIEMPRE.
+   */
+  prorratearPrimerMes?: boolean;
+  diasDePlazo?: number | null;
 
   // ─── Administración ───────────────────────────────────────────────────────
   // No viajan en el documento firmado: corregirlos no invalida ninguna firma.
@@ -323,6 +358,17 @@ export interface Contract {
    * desacuerdo cuando las dos no coinciden, en vez de elegir un número.
    */
   comisionDeConsignacion?: number | null;
+  /**
+   * El propietario de verdad: la ficha de la consignación del inmueble.
+   * `landlordName` en un contrato de inmobiliaria es el usuario que lo creó
+   * o migró — no el dueño. `null` = sin inmueble o sin consignación;
+   * `undefined` = el back no lo mandó (lista, respuesta vieja).
+   */
+  propietarioDeLaConsignacion?: {
+    id: string;
+    name: string;
+    documentNumber: string;
+  } | null;
 
   /**
    * Quién retiene qué. La retención la practica **quien paga**, así que sin
@@ -334,6 +380,10 @@ export interface Contract {
    * retención inventada con la misma cara que una real.
    */
   perfilesTributarios?: PerfilesDelContrato | null;
+  /** El régimen ya resuelto por el back, con el origen de cada valor. */
+  regimenTributario?: RegimenTributarioDelContrato | null;
+  /** null = heredar de la ficha del propietario. */
+  arrendadorResponsableIva?: boolean | null;
 
   /**
    * Lo guardado tal cual, para poblar el formulario. `perfilesTributarios` ya
@@ -351,8 +401,8 @@ export interface Contract {
   landlordSignature: Signature | null;
   tenantSignature: Signature | null;
 
-  // Uploaded PDF flow
-  contractOrigin?: 'GENERATED' | 'UPLOADED_PDF';
+  // Uploaded PDF flow. `MIGRATED` = entró por la migración (casi siempre sin PDF).
+  contractOrigin?: 'GENERATED' | 'UPLOADED_PDF' | 'MIGRATED';
   uploadedPdfPath?: string;
   insuranceTier?: 'NONE' | 'BASIC' | 'PREMIUM';
   customClauses?: Array<{ title: string; content: string }>;

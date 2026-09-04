@@ -35,6 +35,8 @@ import {
   DropdownListContent,
   DropdownListItem,
 } from '@/components/ui/dropdown-menu';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { IconButton, SegmentedControl } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type { VencimientosReport, VencimientoItem, RenewalStatus } from '@/lib/types/inmobiliaria';
@@ -161,6 +163,14 @@ export function VencimientosTable({
     return result;
   }, [data.items, bucketFilter, sortField, sortDirection]);
 
+  // La cantidad de contratos por vencer no tiene techo: se pagina en cliente.
+  // El `resetKey` incluye el orden porque tocar un encabezado es pedir «mostrame
+  // los primeros», no quedarse en la página 4 del orden nuevo.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(filteredAndSortedItems, {
+      resetKey: `${bucketFilter}|${sortField}|${sortDirection}`,
+    });
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -224,7 +234,7 @@ export function VencimientosTable({
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Proximos 30 dias */}
-        <div className="p-4 rounded-xl bg-danger-soft dark:bg-danger/10 text-fg">
+        <div className="p-4 rounded-lg bg-danger-soft dark:bg-danger/10 text-fg">
           <div className="flex items-center gap-2 mb-1">
             <Warning className="w-5 h-5 text-danger" weight="fill" />
             <span className="text-sm font-medium text-danger">{t('inmobiliaria.finance.expirations.critical30d')}</span>
@@ -234,7 +244,7 @@ export function VencimientosTable({
         </div>
 
         {/* 31-60 dias */}
-        <div className="p-4 rounded-xl border border-warning/30 dark:border-warning/40 bg-warning-soft">
+        <div className="p-4 rounded-lg border border-warning/30 dark:border-warning/40 bg-warning-soft">
           <div className="flex items-center gap-2 mb-1">
             <CalendarBlank className="w-5 h-5 text-warning" />
             <span className="text-sm font-medium text-warning">
@@ -247,7 +257,7 @@ export function VencimientosTable({
         </div>
 
         {/* 61-90 dias */}
-        <div className="p-4 rounded-xl border border-primary/30 dark:border-primary/40 bg-primary-soft">
+        <div className="p-4 rounded-lg border border-primary/30 dark:border-primary/40 bg-primary-soft">
           <div className="flex items-center gap-2 mb-1">
             <CalendarBlank className="w-5 h-5 text-primary" />
             <span className="text-sm font-medium text-primary">
@@ -260,7 +270,7 @@ export function VencimientosTable({
         </div>
 
         {/* Total */}
-        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-card">
+        <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-card">
           <div className="flex items-center gap-2 mb-1">
             <HouseLine className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
             <span className="text-sm font-medium text-fg-muted dark:text-fg-subtle">
@@ -367,169 +377,187 @@ export function VencimientosTable({
       </div>
 
       {/* Data Table */}
-      <div className="overflow-x-auto rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-card">
-        <Table className="min-w-[1000px]">
-          <TableHeader>
-            <TableRow className="border-b border-border-faint dark:border-border-strong">
-              <TableHead className="w-12 p-4">
-                <Checkbox
-                  checked={
-                    selectedItems.size === filteredAndSortedItems.length &&
-                    filteredAndSortedItems.length > 0
-                  }
-                  onCheckedChange={toggleSelectAll}
-                  aria-label={t('inmobiliaria.finance.expirations.all')}
-                />
-              </TableHead>
-              <SortableHeader field="propertyTitle">{t('inmobiliaria.finance.expirations.property')}</SortableHeader>
-              <SortableHeader field="tenantName">{t('inmobiliaria.finance.expirations.tenant')}</SortableHeader>
-              <SortableHeader field="propietarioName">{t('inmobiliaria.finance.expirations.owner')}</SortableHeader>
-              <TableHead className="p-4 text-left">
-                {t('inmobiliaria.finance.expirations.expiration')}
-              </TableHead>
-              <SortableHeader field="daysUntilExpiry">{t('inmobiliaria.finance.expirations.days')}</SortableHeader>
-              <SortableHeader field="renewalStatus">{t('inmobiliaria.finance.expirations.status')}</SortableHeader>
-              <TableHead className="w-12 p-4" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredAndSortedItems.map((item, index) => {
-              const isUrgent = item.bucket === '0-30';
-              const isSelected = selectedItems.has(item.propertyId);
+      {/* El scroll horizontal vive en un div interno: si envolviera también al
+          pie, el paginador se iría a los 1000px de la tabla y habría que
+          arrastrar la barra para llegar a «Siguiente». */}
+      <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table className="min-w-[1000px]">
+            <TableHeader>
+              <TableRow className="border-b border-border-faint dark:border-border-strong">
+                <TableHead className="w-12 p-4">
+                  <Checkbox
+                    checked={
+                      selectedItems.size === filteredAndSortedItems.length &&
+                      filteredAndSortedItems.length > 0
+                    }
+                    onCheckedChange={toggleSelectAll}
+                    aria-label={t('inmobiliaria.finance.expirations.all')}
+                  />
+                </TableHead>
+                <SortableHeader field="propertyTitle">{t('inmobiliaria.finance.expirations.property')}</SortableHeader>
+                <SortableHeader field="tenantName">{t('inmobiliaria.finance.expirations.tenant')}</SortableHeader>
+                <SortableHeader field="propietarioName">{t('inmobiliaria.finance.expirations.owner')}</SortableHeader>
+                <TableHead className="p-4 text-left">
+                  {t('inmobiliaria.finance.expirations.expiration')}
+                </TableHead>
+                <SortableHeader field="daysUntilExpiry">{t('inmobiliaria.finance.expirations.days')}</SortableHeader>
+                <SortableHeader field="renewalStatus">{t('inmobiliaria.finance.expirations.status')}</SortableHeader>
+                <TableHead className="w-12 p-4" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pageItems.map((item, index) => {
+                const isUrgent = item.bucket === '0-30';
+                const isSelected = selectedItems.has(item.propertyId);
 
-              return (
-                <motion.tr
-                  key={item.consignacionId}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.02 }}
-                  className={cn(
-                    'border-b border-border-faint dark:border-border-strong transition-colors',
-                    isSelected && 'bg-primary-soft',
-                    !isSelected && 'hover:bg-surface-muted dark:hover:bg-muted/20'
-                  )}
-                >
-                  {/* Checkbox */}
-                  <TableCell className="p-4">
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => toggleSelectItem(item.propertyId)}
-                      aria-label={item.propertyTitle}
-                    />
-                  </TableCell>
+                return (
+                  <motion.tr
+                    key={item.consignacionId}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.02 }}
+                    className={cn(
+                      'border-b border-border-faint dark:border-border-strong transition-colors',
+                      isSelected && 'bg-primary-soft',
+                      !isSelected && 'hover:bg-surface-muted dark:hover:bg-muted/20'
+                    )}
+                  >
+                    {/* Checkbox */}
+                    <TableCell className="p-4">
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleSelectItem(item.propertyId)}
+                        aria-label={item.propertyTitle}
+                      />
+                    </TableCell>
 
-                  {/* Property */}
-                  <TableCell className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          'w-10 h-10 rounded-md flex items-center justify-center shrink-0',
-                          isUrgent
-                            ? 'bg-danger-soft'
-                            : 'bg-primary-soft'
-                        )}
-                      >
-                        <HouseLine
+                    {/* Property */}
+                    <TableCell className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div
                           className={cn(
-                            'w-5 h-5',
+                            'w-10 h-10 rounded-md flex items-center justify-center shrink-0',
                             isUrgent
-                              ? 'text-danger'
-                              : 'text-primary'
+                              ? 'bg-danger-soft'
+                              : 'bg-primary-soft'
                           )}
-                        />
+                        >
+                          <HouseLine
+                            className={cn(
+                              'w-5 h-5',
+                              isUrgent
+                                ? 'text-danger'
+                                : 'text-primary'
+                            )}
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-fg dark:text-white truncate max-w-[160px]">
+                            {item.propertyTitle}
+                          </p>
+                          <p className="text-sm text-fg-muted dark:text-fg-subtle truncate max-w-[160px]">
+                            {item.propertyAddress}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-fg dark:text-white truncate max-w-[160px]">
-                          {item.propertyTitle}
-                        </p>
-                        <p className="text-sm text-fg-muted dark:text-fg-subtle truncate max-w-[160px]">
-                          {item.propertyAddress}
-                        </p>
+                    </TableCell>
+
+                    {/* Tenant */}
+                    <TableCell className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center shrink-0">
+                          <User className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-fg dark:text-white truncate max-w-[120px]">
+                            {item.tenantName}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </TableCell>
+                    </TableCell>
 
-                  {/* Tenant */}
-                  <TableCell className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center shrink-0">
-                        <User className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-fg dark:text-white truncate max-w-[120px]">
-                          {item.tenantName}
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
+                    {/* Propietario */}
+                    <TableCell className="p-4">
+                      <span className="text-sm text-fg dark:text-fg-subtle truncate block max-w-[120px]">
+                        {item.propietarioName}
+                      </span>
+                    </TableCell>
 
-                  {/* Propietario */}
-                  <TableCell className="p-4">
-                    <span className="text-sm text-fg dark:text-fg-subtle truncate block max-w-[120px]">
-                      {item.propietarioName}
-                    </span>
-                  </TableCell>
+                    {/* End Date */}
+                    <TableCell className="p-4">
+                      <span className="text-sm text-fg dark:text-fg-subtle">
+                        {formatDate(item.contractEndDate, locale)}
+                      </span>
+                    </TableCell>
 
-                  {/* End Date */}
-                  <TableCell className="p-4">
-                    <span className="text-sm text-fg dark:text-fg-subtle">
-                      {formatDate(item.contractEndDate, locale)}
-                    </span>
-                  </TableCell>
+                    {/* Days Until Expiry */}
+                    <TableCell className="p-4">
+                      <Badge variant={BUCKET_BADGE_VARIANT[item.bucket]} className="gap-1.5">
+                        {isUrgent && <Warning className="w-3.5 h-3.5" weight="fill" />}
+                        {item.daysUntilExpiry}d
+                      </Badge>
+                    </TableCell>
 
-                  {/* Days Until Expiry */}
-                  <TableCell className="p-4">
-                    <Badge variant={BUCKET_BADGE_VARIANT[item.bucket]} className="gap-1.5">
-                      {isUrgent && <Warning className="w-3.5 h-3.5" weight="fill" />}
-                      {item.daysUntilExpiry}d
-                    </Badge>
-                  </TableCell>
+                    {/* Renewal Status */}
+                    <TableCell className="p-4">
+                      <Badge variant={RENEWAL_STATUS[item.renewalStatus].variant}>
+                        {t(`inmobiliaria.finance.expirations.${RENEWAL_STATUS[item.renewalStatus].key}`)}
+                      </Badge>
+                    </TableCell>
 
-                  {/* Renewal Status */}
-                  <TableCell className="p-4">
-                    <Badge variant={RENEWAL_STATUS[item.renewalStatus].variant}>
-                      {t(`inmobiliaria.finance.expirations.${RENEWAL_STATUS[item.renewalStatus].key}`)}
-                    </Badge>
-                  </TableCell>
+                    {/* Actions */}
+                    <TableCell className="p-4">
+                      <DropdownList>
+                        <DropdownListTrigger asChild>
+                          <IconButton
+                            variant="ghost"
+                            size="sm"
+                            icon={<DotsThree className="w-5 h-5" weight="bold" />}
+                            aria-label="Acciones"
+                          />
+                        </DropdownListTrigger>
+                        <DropdownListContent align="end" className="w-48">
+                          {onContactTenant && (
+                            <DropdownListItem onSelect={() => onContactTenant(item.propertyId)}>
+                              <Phone className="w-4 h-4" />
+                              <span className="text-sm">{t('inmobiliaria.finance.expirations.contactTenant')}</span>
+                            </DropdownListItem>
+                          )}
+                          {onStartRenewal && (
+                            <DropdownListItem onSelect={() => onStartRenewal(item.propertyId)} className="text-primary">
+                              <ArrowsClockwise className="w-4 h-4" />
+                              <span className="text-sm">{t('inmobiliaria.finance.expirations.startRenewal')}</span>
+                            </DropdownListItem>
+                          )}
+                          {onViewContract && (
+                            <DropdownListItem onSelect={() => onViewContract(item)}>
+                              <Eye className="w-4 h-4" />
+                              <span className="text-sm">{t('inmobiliaria.finance.expirations.viewContract')}</span>
+                            </DropdownListItem>
+                          )}
+                        </DropdownListContent>
+                      </DropdownList>
+                    </TableCell>
+                  </motion.tr>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
 
-                  {/* Actions */}
-                  <TableCell className="p-4">
-                    <DropdownList>
-                      <DropdownListTrigger asChild>
-                        <IconButton
-                          variant="ghost"
-                          size="sm"
-                          icon={<DotsThree className="w-5 h-5" weight="bold" />}
-                          aria-label="Acciones"
-                        />
-                      </DropdownListTrigger>
-                      <DropdownListContent align="end" className="w-48">
-                        {onContactTenant && (
-                          <DropdownListItem onSelect={() => onContactTenant(item.propertyId)}>
-                            <Phone className="w-4 h-4" />
-                            <span className="text-sm">{t('inmobiliaria.finance.expirations.contactTenant')}</span>
-                          </DropdownListItem>
-                        )}
-                        {onStartRenewal && (
-                          <DropdownListItem onSelect={() => onStartRenewal(item.propertyId)} className="text-primary">
-                            <ArrowsClockwise className="w-4 h-4" />
-                            <span className="text-sm">{t('inmobiliaria.finance.expirations.startRenewal')}</span>
-                          </DropdownListItem>
-                        )}
-                        {onViewContract && (
-                          <DropdownListItem onSelect={() => onViewContract(item)}>
-                            <Eye className="w-4 h-4" />
-                            <span className="text-sm">{t('inmobiliaria.finance.expirations.viewContract')}</span>
-                          </DropdownListItem>
-                        )}
-                      </DropdownListContent>
-                    </DropdownList>
-                  </TableCell>
-                </motion.tr>
-              );
-            })}
-          </TableBody>
-        </Table>
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
 
         {/* Empty State */}
         {filteredAndSortedItems.length === 0 && (

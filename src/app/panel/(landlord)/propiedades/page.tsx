@@ -156,7 +156,7 @@ export default function PropiedadesPage() {
                   <Link
                     key={property.id}
                     href={`/panel/${property.id}`}
-                    className="bg-surface rounded-xl border border-border overflow-hidden group hover: hover:shadow-neutral-200/50 dark:hover:shadow-neutral-900/50 transition-all duration-300 block"
+                    className="bg-surface rounded-lg border border-border overflow-hidden group hover: hover:shadow-neutral-200/50 dark:hover:shadow-neutral-900/50 transition-all duration-300 block"
                   >
                     {/* Image */}
                     <div className="relative h-48 bg-surface-muted overflow-hidden">
@@ -179,7 +179,7 @@ export default function PropiedadesPage() {
                               aria-label={t('landlord.properties.moreOptions')}
                             />
                           </DropdownListTrigger>
-                          <DropdownListContent align="end" className="w-40 rounded-xl">
+                          <DropdownListContent align="end" className="w-40 rounded-lg">
                             <DropdownListItem asChild className="rounded-md">
                               <Link href={`/panel/${property.id}`}>
                                 <Eye className="w-4 h-4 mr-2" />
@@ -252,7 +252,7 @@ export default function PropiedadesPage() {
             </div>
           ) : (
             /* List View */
-            <div className="bg-surface rounded-xl border border-border overflow-hidden">
+            <div className="bg-surface rounded-lg border border-border overflow-hidden">
               {filteredProperties.map((property, index) => {
                 const candidateCount = property.candidateCount ?? 0;
                 return (
@@ -265,7 +265,7 @@ export default function PropiedadesPage() {
                     )}
                   >
                     {/* Image */}
-                    <div className="relative w-28 h-20 bg-surface-muted rounded-xl flex-shrink-0 overflow-hidden">
+                    <div className="relative w-28 h-20 bg-surface-muted rounded-lg flex-shrink-0 overflow-hidden">
                       <Image
                         src={property.thumbnailUrl}
                         alt={property.title}
@@ -331,7 +331,7 @@ export default function PropiedadesPage() {
                             aria-label={t('landlord.properties.moreOptions')}
                           />
                         </DropdownListTrigger>
-                        <DropdownListContent align="end" className="w-40 rounded-xl">
+                        <DropdownListContent align="end" className="w-40 rounded-lg">
                           <DropdownListItem asChild className="rounded-md">
                             <Link href={`/panel/${property.id}`}>
                               <Eye className="w-4 h-4 mr-2" />
@@ -352,7 +352,7 @@ export default function PropiedadesPage() {
           )
         ) : (
           /* Empty State */
-          <div className="bg-surface rounded-xl border border-border py-20 text-center">
+          <div className="bg-surface rounded-lg border border-border py-20 text-center">
             <div className="w-16 h-16 rounded-xl bg-surface-muted mx-auto mb-5 flex items-center justify-center">
               <Buildings className="w-8 h-8 text-fg-subtle" />
             </div>

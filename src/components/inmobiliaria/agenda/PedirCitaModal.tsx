@@ -21,8 +21,19 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogFooter,
 } from '@/components/ui/responsive-dialog';
+import { DatePicker } from '@leasefy/cadence';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { etiquetaDeInmueble } from '@/components/contratos/VincularInmueble';
+import { aFechaIso, fechaLocal, hoyLocal } from '@/lib/fechas-locales';
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria';
+import { ApiError } from '@/lib/api/client';
 import { agendaApi } from '@/lib/api/agenda.service';
+
+/** Cada media hora, de 6:00 a 21:00: lo que se agenda de verdad. */
+export const HORAS: string[] = Array.from({ length: 31 }, (_, i) => {
+  const m = 6 * 60 + i * 30;
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+});
 
 interface PedirCitaModalProps {
   isOpen: boolean;
@@ -48,9 +59,16 @@ export function PedirCitaModal({
   const isPreset = !!presetPropertyId;
 
   // Only properties that carry a real propertyId can host a PropertyVisit.
+  // TODOS los del portafolio, en un Combobox con buscador: una inmobiliaria
+  // con doscientos inmuebles no encuentra el suyo bajando un Select (Nico,
+  // 2026-09-03: «no aparecen todos y dejá un buscador ahí»).
   const { consignaciones } = useConsignaciones();
-  const properties = useMemo(
-    () => consignaciones.filter((c) => c.propertyId),
+  const opcionesInmueble = useMemo<ComboboxOption[]>(
+    () =>
+      consignaciones
+        .filter((c) => c.propertyId)
+        .sort((a, b) => a.propertyTitle.localeCompare(b.propertyTitle))
+        .map((c) => ({ value: c.propertyId, label: etiquetaDeInmueble(c) })),
     [consignaciones],
   );
 
@@ -114,8 +132,13 @@ export function PedirCitaModal({
       toast.success(t(k('citaSuccess')));
       onCreated();
       onClose();
-    } catch {
-      toast.error(t(k('citaError')));
+    } catch (err) {
+      // Con la sesión vencida el cliente ya está cerrando sesión: un «no se
+      // pudo agendar» encima sería mentira (la cita no falló, la sesión sí).
+      if (err instanceof ApiError && err.status === 401) return;
+      toast.error(t(k('citaError')), {
+        description: err instanceof ApiError && err.message.length < 160 ? err.message : undefined,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -148,18 +171,14 @@ export function PedirCitaModal({
                 {presetPropertyTitle ?? presetPropertyId}
               </div>
             ) : (
-              <Select value={propertyId || undefined} onValueChange={setPropertyId}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t(k('citaSelectProperty'))} />
-                </SelectTrigger>
-                <SelectContent>
-                  {properties.map((c) => (
-                    <SelectItem key={c.id} value={c.propertyId}>
-                      {c.propertyTitle}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                value={propertyId || undefined}
+                onChange={(v) => setPropertyId(v ?? '')}
+                options={opcionesInmueble}
+                placeholder={t(k('citaSelectProperty'))}
+                searchPlaceholder="Escribí #código, título o dirección"
+                contentClassName="z-[400]"
+              />
             )}
           </div>
 
@@ -201,25 +220,44 @@ export function PedirCitaModal({
             </div>
           </div>
 
-          {/* Date + times */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Fecha en su fila; inicio y fin en la de abajo, como selects
+              (Nico, 2026-09-03: «están súper pegados y se ven como inputs»). */}
+          <div className="space-y-4">
             <div>
               <label className="mb-1.5 block text-caption text-muted-foreground">
                 {t(k('citaDate'))} <span className="text-danger">*</span>
               </label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              <DatePicker
+                value={fechaLocal(date)}
+                onChange={(d) => setDate(aFechaIso(d))}
+                minDate={hoyLocal()}
+                placeholder="Elegí el día"
+                className="w-full"
+              />
             </div>
-            <div>
-              <label className="mb-1.5 block text-caption text-muted-foreground">
-                {t(k('citaStart'))} <span className="text-danger">*</span>
-              </label>
-              <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-caption text-muted-foreground">
-                {t(k('citaEnd'))} <span className="text-danger">*</span>
-              </label>
-              <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1.5 block text-caption text-muted-foreground">
+                  {t(k('citaStart'))} <span className="text-danger">*</span>
+                </label>
+                <Select value={startTime} onValueChange={setStartTime}>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {HORAS.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-caption text-muted-foreground">
+                  {t(k('citaEnd'))} <span className="text-danger">*</span>
+                </label>
+                <Select value={endTime} onValueChange={setEndTime}>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {HORAS.filter((h) => h > startTime).map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 

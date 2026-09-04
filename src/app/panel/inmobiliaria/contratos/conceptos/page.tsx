@@ -28,10 +28,10 @@ export default function ConceptosPage() {
             Contratos
           </Link>
           <Eyebrow>Portafolio</Eyebrow>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-h2 text-fg">
             Conceptos y liquidación
           </h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
+          <p className="max-w-2xl text-sm text-muted-foreground line-clamp-2">
             {CONCEPTOS.length} conceptos, uno por cosa que se cobra. Los
             impuestos no van en el nombre: salen de quién le paga a quién y del
             uso del inmueble.

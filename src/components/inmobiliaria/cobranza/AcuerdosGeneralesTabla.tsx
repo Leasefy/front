@@ -45,7 +45,7 @@ import {
 } from '@/lib/hooks/cobranza/use-acuerdos-generales'
 import { cuandoAplica, queOfrece } from '@/lib/cobranza/acuerdo-general-vocab'
 
-const BASE = '/panel/inmobiliaria/ai/cobranza/acuerdos/generales'
+const BASE = '/panel/inmobiliaria/cobros/cobranza/acuerdos/generales'
 
 export function AcuerdosGeneralesTabla() {
   const { canAccess } = usePermissionsContext()

@@ -54,6 +54,24 @@ vi.mock('@/components/inmobiliaria/SelectorPostulacion', () => ({
     React.createElement('button', { 'data-testid': 'nuevo-contrato' }, 'Nuevo'),
 }))
 
+// El engranaje de configuración (migrar / conceptos) es el menú del DS; acá
+// se pinta como lista plana para poder leer sus enlaces.
+vi.mock('@/components/ui/dropdown-menu', () => ({
+  DropdownList: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
+  DropdownListTrigger: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
+  DropdownListContent: ({ children }: { children?: React.ReactNode }) =>
+    React.createElement('div', { 'data-testid': 'menu-configuracion' }, children),
+  DropdownListItem: ({ children, asChild, ...props }: Record<string, unknown> & { children?: React.ReactNode; asChild?: boolean }) => {
+    void asChild
+    return React.createElement('div', props, children)
+  },
+}))
+
+const { deudaMock } = vi.hoisted(() => ({ deudaMock: vi.fn() }))
+vi.mock('@/lib/hooks/use-migracion-con-deuda', () => ({
+  useMigracionConDeuda: () => deudaMock(),
+}))
+
 vi.mock('@/components/estado/SinDatos', () => ({
   SinDatos: ({ titulo }: { titulo: string }) =>
     React.createElement('div', { 'data-testid': 'sin-datos' }, titulo),
@@ -76,6 +94,12 @@ vi.mock('@/components/ui/pagination', () => ({
 vi.mock('@leasefy/cadence', () => ({
   Eyebrow: ({ children }: { children?: React.ReactNode }) =>
     React.createElement('p', null, children),
+  // Lo que usa `AlertaAccionable`: el vestido es del DS, acá sólo el contenido.
+  Alert: ({ children, title, variant, icon, ...props }: Record<string, unknown> & { children?: React.ReactNode; title?: string }) => {
+    void variant; void icon
+    return React.createElement('div', props, React.createElement('strong', null, title), children)
+  },
+  AlertAction: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
 }))
 
 // The table shim re-exports cadence primitives — replace it with plain
@@ -223,5 +247,57 @@ describe('ContratosPage — the loading skeleton', () => {
     for (const row of rows) {
       expect(row.querySelectorAll('td')).toHaveLength(headerCells().length)
     }
+  })
+})
+
+describe('ContratosPage — el engranaje de configuración (2026-09-02)', () => {
+  /*
+   * Nico: «Migrar» y «Conceptos» no son del día a día — van en un engranaje
+   * con la jerarquía del botón secundario, al lado de «Nuevo contrato», y
+   * adentro las dos acciones.
+   */
+  it('en el encabezado quedan el engranaje y «Nuevo contrato»; migrar y conceptos viven adentro del menú', async () => {
+    withContracts([])
+
+    await renderPage()
+
+    expect(container.querySelector('[data-testid="contratos-configuracion"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="nuevo-contrato"]')).not.toBeNull()
+    const menu = container.querySelector('[data-testid="menu-configuracion"]')!
+    const enlaces = Array.from(menu.querySelectorAll('a')).map((a) => [a.textContent, a.getAttribute('href')])
+    expect(enlaces).toEqual([
+      ['Migrar contratos', '/panel/inmobiliaria/contratos/migrar'],
+      ['Agregar conceptos', '/panel/inmobiliaria/contratos/conceptos'],
+    ])
+    // Ya no hay botones sueltos de «Migrar» / «Conceptos» fuera del menú.
+    const sueltos = Array.from(container.querySelectorAll('header a')).filter((a) => !menu.contains(a))
+    expect(sueltos).toHaveLength(0)
+  })
+})
+
+describe('ContratosPage — contratos migrados que no cobran', () => {
+  /*
+   * La página de migración (que decía «N activos sin propietario») ya no
+   * existe; el aviso vive acá, donde la persona mira sus contratos, con el
+   * número, por qué no cobran y el botón a la migración.
+   */
+  it('con deuda, la alerta dice cuántos y manda a la migración', async () => {
+    deudaMock.mockReturnValue({ sinInmueble: 0, sinPropietario: 84 })
+    withContracts([])
+
+    await renderPage()
+
+    const alerta = container.querySelector('[data-testid="alerta-migrados-sin-cobrar"]')!
+    expect(alerta.textContent).toContain('84 contratos migrados sin propietario: no generan cobros.')
+    expect(alerta.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/contratos/migrar')
+  })
+
+  it('sin deuda (o sin dato) no hay alerta', async () => {
+    deudaMock.mockReturnValue(null)
+    withContracts([])
+
+    await renderPage()
+
+    expect(container.querySelector('[data-testid="alerta-migrados-sin-cobrar"]')).toBeNull()
   })
 })

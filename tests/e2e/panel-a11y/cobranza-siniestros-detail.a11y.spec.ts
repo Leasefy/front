@@ -13,7 +13,7 @@ import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const SINIESTRO_ID = 'test-siniestro-id'
-const ROUTE = `/panel/inmobiliaria/ai/cobranza/siniestros/${SINIESTRO_ID}`
+const ROUTE = `/panel/inmobiliaria/cobros/cobranza/siniestros/${SINIESTRO_ID}`
 const SINIESTRO_MOCK_A = `**/siniestros/${SINIESTRO_ID}**`
 const SINIESTRO_MOCK_B = `**/cobranza/claims/${SINIESTRO_ID}**`
 const SKELETON_DELAY_MS = 2500

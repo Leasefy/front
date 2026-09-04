@@ -93,6 +93,13 @@ export interface BackendContract {
   startDate: string | null;
   endDate: string | null;
   paymentDay: number | null;         // backend usa `paymentDay` (el front lo mapea a paymentDueDay)
+  /**
+   * Términos de cobro (columnas `prorratear_primer_mes` / `dias_de_plazo`).
+   * Opcionales acá porque un back anterior a esta rama no los manda;
+   * `diasDePlazo: null` = hereda los de la inmobiliaria.
+   */
+  prorratearPrimerMes?: boolean;
+  diasDePlazo?: number | null;
 
   // ─── Administración (NO viajan en el documento firmado) ──────────────────
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL' | null;
@@ -102,12 +109,30 @@ export interface BackendContract {
   /** La de la consignación — la que de verdad liquida. Sólo la devuelve GET /:id. */
   comisionDeConsignacion?: number | null;
   /**
+   * El dueño según la consignación del inmueble (la ficha `Propietario` de
+   * la inmobiliaria). `landlordName` NO es eso en un contrato migrado: es el
+   * usuario que corrió la migración. Sólo lo devuelve GET /:id.
+   */
+  propietarioDeLaConsignacion?: {
+    id: string;
+    name: string;
+    documentNumber: string;
+  } | null;
+  /**
    * Quién retiene qué, por parte. Sólo lo devuelven GET /:id y
    * PATCH /:id/administracion — las dos con la MISMA forma, a propósito: una
    * respuesta sin el campo se leería como «no hay perfiles» justo después de
    * haberlos guardado.
    */
   perfilesTributarios?: PerfilesDelContrato | null;
+  /**
+   * El régimen tributario YA RESUELTO por el back, con el origen de cada
+   * valor. La pantalla lo muestra tal cual: recalcularlo acá sería una
+   * segunda cuenta que un día no coincide con la que cobra.
+   */
+  regimenTributario?: RegimenTributarioDelContrato | null;
+  /** null = heredar de la ficha del propietario. */
+  arrendadorResponsableIva?: boolean | null;
   /*
    * Los campos CRUDOS del perfil del inquilino, tal cual están guardados.
    * `perfilesTributarios.inquilino` ya viene con los defaults mezclados, así
@@ -174,12 +199,44 @@ export interface CreateContractDto {
   monthlyRent: number;      // COP, min 100000
   deposit: number;          // COP, min 0
   paymentDay: number;       // 1-28
+  /** Prorratear el primer cobro por los días realmente ocupados. Default: false. */
+  prorratearPrimerMes?: boolean;
+  /** Días de plazo antes de la mora (0-60). `null`/ausente = hereda los de la inmobiliaria. */
+  diasDePlazo?: number | null;
   insuranceTier?: InsuranceTier;          // default NONE
   customClauses?: CustomClause[];
   /** Default: 'GENERATED'. Use 'UPLOADED_PDF' when a landlord-provided PDF is attached. */
   contractOrigin?: ContractOrigin;
   /** Required when contractOrigin === 'UPLOADED_PDF'. Returned by POST /contracts/upload-pdf. */
   uploadedPdfPath?: string;
+}
+
+/**
+ * Contrato armado a mano (sin postulación): inmueble consignado + inquilino +
+ * los mismos términos de `CreateContractDto`. `tenantId` (inquilino existente)
+ * e `inquilino` (nuevo, por documento) son excluyentes.
+ */
+export interface CrearContratoManualDto extends Omit<CreateContractDto, 'applicationId'> {
+  propertyId: string;
+  tenantId?: string;
+  inquilino?: {
+    nombre: string;
+    documento: string;
+    /** Obligatorio si el documento no es de ningún inquilino de la agencia: ahí llega la invitación. */
+    correo?: string;
+    telefono?: string;
+  };
+}
+
+export interface ContratoManualCreadoBackend {
+  contract: BackendContract;
+  inquilino: {
+    userId: string;
+    /** Se le acaba de mandar la invitación a crear su cuenta. */
+    invitado: boolean;
+    /** Ya era inquilino de la agencia. */
+    existente: boolean;
+  };
 }
 
 export interface UploadContractPdfResponse {
@@ -258,6 +315,9 @@ export interface UpdateContractDto {
   monthlyRent?: number;
   deposit?: number;
   paymentDay?: number;
+  prorratearPrimerMes?: boolean;
+  /** `null` vuelve a heredar los días de plazo de la inmobiliaria. */
+  diasDePlazo?: number | null;
   insuranceTier?: InsuranceTier;
   customClauses?: CustomClause[];
   /** Only valid for UPLOADED_PDF contracts. 400 otherwise. */
@@ -289,4 +349,24 @@ export interface BackendContractRejection {
     lastName: string;
     email: string;
   };
+}
+
+/** De dónde salió cada valor del régimen. Lo decide el back. */
+export type OrigenDelValorTributario =
+  | 'CONTRATO'
+  | 'PROPIETARIO'
+  | 'TIPO_DE_INMUEBLE'
+  | 'SIN_DEFINIR';
+
+export interface ValorTributarioResuelto {
+  valor: boolean | null;
+  origen: OrigenDelValorTributario;
+}
+
+export interface RegimenTributarioDelContrato {
+  usoComercial: ValorTributarioResuelto;
+  arrendadorResponsableIva: ValorTributarioResuelto;
+  inquilinoRetenedorRenta: ValorTributarioResuelto;
+  inquilinoRetenedorIva: ValorTributarioResuelto;
+  inquilinoRetenedorIca: ValorTributarioResuelto;
 }

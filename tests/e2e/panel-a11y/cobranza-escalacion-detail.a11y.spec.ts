@@ -10,7 +10,7 @@ import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const ESC_ID = 'test-esc-id'
-const ROUTE = `/panel/inmobiliaria/ai/cobranza/escalaciones/${ESC_ID}`
+const ROUTE = `/panel/inmobiliaria/cobros/cobranza/escalaciones/${ESC_ID}`
 const DETAIL_MOCK = `**/cobranza/escalations/${ESC_ID}**`
 const SKELETON_DELAY_MS = 2500
 

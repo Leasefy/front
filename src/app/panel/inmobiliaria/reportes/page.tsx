@@ -27,7 +27,7 @@ import { EmptyState } from '@/components/ui';
 import { SegmentedControl } from '@leasefy/cadence';
 import type { ReportDefinition, ReportId, ReportCategory } from '@/lib/types/inmobiliaria';
 import { REPORT_DEFINITIONS } from '@/lib/constants/inmobiliaria-data';
-import { comoSeBaja, sePuedeBajar, nombreDelArchivo } from '@/lib/reportes/exportables';
+import { comoSeBaja, sePuedeBajar, nombreDelArchivo, rutaDeExport, descargarBlob } from '@/lib/reportes/exportables';
 import {
   useCarteraReport,
   useOcupacionReport,
@@ -330,17 +330,8 @@ function ReportesContent() {
 
     setGeneratingReports((prev) => new Set([...prev, report.id]));
     try {
-      const blob = await apiClient.getBlob(
-        `/inmobiliaria/reports/export?type=${como.tipo}`,
-      );
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = nombreDelArchivo(como.tipo, new Date().toISOString().slice(0, 10));
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const blob = await apiClient.getBlob(rutaDeExport(como.tipo));
+      descargarBlob(blob, nombreDelArchivo(como.tipo, new Date().toISOString().slice(0, 10)));
 
       const now = new Date().toISOString();
       setReports((prev) =>
@@ -367,9 +358,15 @@ function ReportesContent() {
 
   // Handle preview report
   const handlePreviewReport = useCallback((report: ReportDefinition) => {
+    // La rentabilidad tiene pantalla propia, con periodo, gráfico y tabla
+    // ordenable: «ver» es ir allá, no abrir el cajón de vista previa.
+    if (report.id === 'rentabilidad-inmueble') {
+      router.push('/panel/inmobiliaria/reportes/rentabilidad');
+      return;
+    }
     setSelectedReport(report);
     setIsViewerOpen(true);
-  }, []);
+  }, [router]);
 
   /**
    * Descargar es lo mismo que generar: el back arma el CSV a pedido, no hay un
@@ -461,10 +458,10 @@ function ReportesContent() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             {t('inmobiliaria.reportes.title')}
           </h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             {t('inmobiliaria.reportes.subtitle')}
           </p>
         </div>
@@ -488,7 +485,7 @@ function ReportesContent() {
         animate={{ opacity: 1, y: 0 }}
         className="grid grid-cols-2 md:grid-cols-4 gap-4"
       >
-        <div className="p-4 rounded-xl border border-border bg-card">
+        <div className="p-4 rounded-lg border border-border bg-card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
               <ChartLine className="w-5 h-5 text-primary" />
@@ -502,7 +499,7 @@ function ReportesContent() {
           </div>
         </div>
 
-        <div className="p-4 rounded-xl border border-border bg-card">
+        <div className="p-4 rounded-lg border border-border bg-card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-md bg-warning-soft flex items-center justify-center">
               <Star className="w-5 h-5 text-warning" weight="fill" />
@@ -516,7 +513,7 @@ function ReportesContent() {
           </div>
         </div>
 
-        <div className="p-4 rounded-xl border border-border bg-card col-span-2">
+        <div className="p-4 rounded-lg border border-border bg-card col-span-2">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center">
               <Clock className="w-5 h-5 text-success" />
@@ -538,7 +535,7 @@ function ReportesContent() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-xl border border-border bg-card overflow-hidden"
+        className="rounded-lg border border-border bg-card overflow-hidden"
       >
         {/* Header: View Toggle & Count */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
@@ -708,7 +705,7 @@ function ReportesContent() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="rounded-xl border border-border bg-card overflow-hidden print:border-none print:shadow-none"
+        className="rounded-lg border border-border bg-card overflow-hidden print:border-none print:shadow-none"
       >
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-b border-border bg-muted/30 print:hidden">

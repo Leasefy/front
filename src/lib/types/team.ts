@@ -55,7 +55,7 @@ export const TEAM_ROLES: TeamRoleInfo[] = [
 export const AGENTE_TEAM_ENTRY = {
   name: 'Agente',
   description: 'Gestiona propiedades y candidatos',
-  redirectTo: '/panel/inmobiliaria/agentes',
+  redirectTo: '/panel/inmobiliaria/configuracion/equipo',
 } as const;
 
 export type InviteStatus = 'pending' | 'accepted' | 'expired' | 'revoked';

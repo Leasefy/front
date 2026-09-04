@@ -1,0 +1,413 @@
+<title>Entrega del 3 de septiembre</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Public+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --papel: #f7f5f1;
+    --superficie: #ffffff;
+    --tinta: #14130f;
+    --tinta-media: #57534a;
+    --tinta-tenue: #8a857a;
+    --filete: #e3dfd6;
+    --filete-fuerte: #cfcabd;
+    --marca: #1a40ff;
+    --marca-suave: #eceffe;
+    --alerta: #b42318;
+    --alerta-suave: #fdeceb;
+    --aviso: #8a5a00;
+    --aviso-suave: #fdf3e2;
+    --ok: #146c43;
+    --ok-suave: #e8f3ec;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --papel: #0f0e0c;
+      --superficie: #191713;
+      --tinta: #f2efe8;
+      --tinta-media: #b5afa2;
+      --tinta-tenue: #8a857a;
+      --filete: #2c2823;
+      --filete-fuerte: #423c33;
+      --marca: #9aabff;
+      --marca-suave: #1b2140;
+      --alerta: #ff9a90;
+      --alerta-suave: #2e1815;
+      --aviso: #e5b45a;
+      --aviso-suave: #2b2113;
+      --ok: #7fd0a2;
+      --ok-suave: #142a1e;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --papel: #0f0e0c;
+    --superficie: #191713;
+    --tinta: #f2efe8;
+    --tinta-media: #b5afa2;
+    --tinta-tenue: #8a857a;
+    --filete: #2c2823;
+    --filete-fuerte: #423c33;
+    --marca: #9aabff;
+    --marca-suave: #1b2140;
+    --alerta: #ff9a90;
+    --alerta-suave: #2e1815;
+    --aviso: #e5b45a;
+    --aviso-suave: #2b2113;
+    --ok: #7fd0a2;
+    --ok-suave: #142a1e;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--papel);
+    color: var(--tinta);
+    font-family: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .hoja { max-width: 860px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  h1, h2, h3 { font-family: 'Archivo', ui-sans-serif, system-ui, sans-serif; text-wrap: balance; }
+  h1 { font-size: 40px; line-height: 1.08; letter-spacing: -0.025em; font-weight: 700; margin: 0 0 12px; }
+  h2 { font-size: 23px; line-height: 1.2; letter-spacing: -0.015em; font-weight: 600; margin: 0; }
+  h3 { font-size: 16px; line-height: 1.35; font-weight: 600; margin: 0 0 6px; }
+  p { margin: 0 0 14px; max-width: 68ch; }
+  a { color: var(--marca); }
+
+  .sello {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 11.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--tinta-tenue); margin: 0 0 14px;
+  }
+  .bajada { font-size: 18px; color: var(--tinta-media); max-width: 62ch; margin-bottom: 28px; }
+
+  .estado {
+    display: grid; gap: 1px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    background: var(--filete); border: 1px solid var(--filete);
+    border-radius: 10px; overflow: hidden; margin: 0 0 44px;
+  }
+  .estado div { background: var(--superficie); padding: 14px 16px; }
+  .estado dt {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--tinta-tenue); margin-bottom: 4px;
+  }
+  .estado dd {
+    margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 15px;
+    font-weight: 500; font-variant-numeric: tabular-nums;
+  }
+
+  section { margin: 0 0 44px; }
+  .encabezado-seccion {
+    display: flex; align-items: baseline; gap: 12px;
+    padding-bottom: 10px; border-bottom: 2px solid var(--tinta); margin-bottom: 22px;
+  }
+  .encabezado-seccion .n {
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--tinta-tenue);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ficha {
+    border: 1px solid var(--filete); border-radius: 10px;
+    background: var(--superficie); padding: 20px 22px; margin: 0 0 16px;
+  }
+  .ficha:last-child { margin-bottom: 0; }
+  .ficha.critica { border-left: 4px solid var(--alerta); }
+  .ficha.atencion { border-left: 4px solid var(--aviso); }
+  .ficha.hecha { border-left: 4px solid var(--ok); }
+
+  .chip {
+    display: inline-block; font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 999px; margin-bottom: 10px; font-weight: 500;
+  }
+  .chip.critica { background: var(--alerta-suave); color: var(--alerta); }
+  .chip.atencion { background: var(--aviso-suave); color: var(--aviso); }
+  .chip.hecha { background: var(--ok-suave); color: var(--ok); }
+  .chip.neutra { background: var(--marca-suave); color: var(--marca); }
+
+  code, kbd {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.88em;
+    background: var(--marca-suave); color: inherit;
+    padding: 1px 5px; border-radius: 4px; word-break: break-word;
+  }
+  pre {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 13px; line-height: 1.65;
+    background: var(--superficie); border: 1px solid var(--filete); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; margin: 12px 0;
+  }
+  pre code { background: none; padding: 0; }
+
+  ul, ol { margin: 0 0 14px; padding-left: 22px; max-width: 68ch; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--tinta-tenue); }
+
+  .tabla-envoltura { overflow-x: auto; margin: 12px 0 4px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--filete); vertical-align: top; }
+  th {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--tinta-tenue); font-weight: 500;
+    border-bottom: 1px solid var(--filete-fuerte); white-space: nowrap;
+  }
+  td code { white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .pie {
+    margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--filete);
+    font-size: 13.5px; color: var(--tinta-tenue);
+  }
+  @media (max-width: 620px) {
+    h1 { font-size: 31px; }
+    .hoja { padding: 36px 18px 72px; }
+  }
+</style>
+
+<div class="hoja">
+
+  <p class="sello">Leasefy · rama cambios-nico-1 · 3 de septiembre de 2026</p>
+  <h1>Entrega del 3 de septiembre</h1>
+  <p class="bajada">
+    Trece pedidos de Nico sobre el panel de inmobiliaria, más el recibo de caja con dos caminos.
+    Esto es lo que hay que saber antes de desplegar: una migración ya aplicada en dev, seis
+    documentos legales nuevos y una lista corta de cosas que necesitan una decisión humana.
+  </p>
+
+  <dl class="estado">
+    <div><dt>Front</dt><dd>92167421 →</dd></div>
+    <div><dt>Back</dt><dd>d0e5af1 →</dd></div>
+    <div><dt>Suite back</dt><dd>4.769 ✓</dd></div>
+    <div><dt>Suite front</dt><dd>5.764 ✓</dd></div>
+    <div><dt>tsc</dt><dd>0 errores</dd></div>
+  </dl>
+
+  <section>
+    <div class="encabezado-seccion"><span class="n">01</span><h2>Lo primero, antes de desplegar</h2></div>
+
+    <div class="ficha critica">
+      <span class="chip critica">Bloquea el despliegue</span>
+      <h3>Hay una migración de base de datos nueva</h3>
+      <p>
+        <code>20260903210000_plantillas_legales</code>. Ya está aplicada en la base de desarrollo
+        compartida. En cualquier otro ambiente hay que correrla antes de subir el código, porque el
+        servicio de documentos lee esas dos columnas al arrancar.
+      </p>
+      <pre><code>npx prisma migrate deploy
+npx prisma generate</code></pre>
+      <p>Agrega dos columnas y no borra nada:</p>
+      <ul>
+        <li><strong>Un código en las plantillas de documentos.</strong> Es la llave que hace idempotente el sembrado: la inmobiliaria puede renombrar o reescribir su copia y el arranque siguiente no la duplica. Lleva un índice único parcial que vive sólo en el archivo de migración, porque Prisma no sabe expresarlo.</li>
+        <li><strong>El contrato al que pertenece un documento generado.</strong> Se borra en nulo, no en cascada: el papel es la prueba de lo que se firmó y tiene que sobrevivir al contrato.</li>
+      </ul>
+    </div>
+
+    <div class="ficha atencion">
+      <span class="chip atencion">Operación</span>
+      <h3>El back de desarrollo no recarga solo</h3>
+      <p>
+        El proceso del puerto 3007 corre el código ya compilado, sin vigilancia de archivos. Un cambio
+        del back exige reconstruir, matar el proceso por su identificador y volver a lanzarlo. Si se
+        lanza el nuevo antes de que muera el viejo, el nuevo muere por puerto ocupado y el viejo sigue
+        sirviendo código viejo sin que nada avise.
+      </p>
+      <pre><code>npm run build
+pgrep -fl "node dist/src/main.js"     # tomar el identificador
+kill -TERM &lt;identificador&gt;             # y esperar a que muera
+PORT=3007 NODE_ENV=development nohup node dist/src/main.js &gt;&gt; /tmp/back-3007.log 2&gt;&amp;1 &amp;</code></pre>
+    </div>
+  </section>
+
+  <section>
+    <div class="encabezado-seccion"><span class="n">02</span><h2>Lo que necesita un abogado</h2></div>
+
+    <p>
+      El panel ahora genera seis documentos con texto legal propio, no plantillas de relleno. Cada
+      cláusula cita el artículo que la respalda y las fuentes se verificaron contra la Secretaría del
+      Senado y Función Pública. Aun así, nada de esto salió de un abogado: antes de producción hay que
+      pasarlo por uno.
+    </p>
+
+    <div class="tabla-envoltura">
+      <table>
+        <thead>
+          <tr><th>Documento</th><th>Marco legal</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Contrato de arrendamiento de vivienda urbana</td><td>Ley 820 de 2003 y Decreto 1077 de 2015</td></tr>
+          <tr><td>Contrato de arrendamiento de local comercial</td><td>Código de Comercio, artículos 518 a 524</td></tr>
+          <tr><td>Acta de entrega del inmueble</td><td>Ley 820, artículos 8 y 9</td></tr>
+          <tr><td>Acta de devolución del inmueble</td><td>Ley 820, artículos 9 y 22 a 24</td></tr>
+          <tr><td>Inventario del inmueble</td><td>Nace del inventario de la ficha</td></tr>
+          <tr><td>Carta de incremento del canon</td><td>Ley 820, artículo 20, con el índice de precios del DANE</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="ficha atencion" style="margin-top:18px">
+      <span class="chip atencion">Antes de producción</span>
+      <h3>Los seis puntos concretos a revisar</h3>
+      <ol>
+        <li><strong>El contrato de vivienda entero.</strong> Es un modelo genérico: no cubre vivienda compartida ni pensión, que tienen reglas propias, ni contratos anteriores a julio de 2003.</li>
+        <li><strong>La cláusula de notificación personal.</strong> Se pactó el correo electrónico como mecanismo. Es lo que vuelve oponible un aviso digital de incremento, y conviene que un abogado apruebe la redacción exacta.</li>
+        <li><strong>Radicación ante la alcaldía.</strong> La inmobiliaria debe radicar los modelos de contrato que usa. Estos son modelos nuevos.</li>
+        <li><strong>El tope del uno por ciento del valor comercial.</strong> La carta lo advierte pero no lo verifica, porque el sistema no guarda el avalúo catastral.</li>
+        <li><strong>El tope del cincuenta por ciento en servicios adicionales.</strong> El módulo de conceptos no lo valida.</li>
+        <li><strong>Las cláusulas adicionales del contrato comercial.</strong> Toda cláusula que roce los artículos 518 a 523 es ineficaz. El campo lo advierte, pero nadie revisa lo que se escribe ahí.</li>
+      </ol>
+    </div>
+
+    <div class="ficha critica">
+      <span class="chip critica">Falta un dato obligatorio</span>
+      <h3>La matrícula de arrendador no existe como campo</h3>
+      <p>
+        Es obligatoria en toda la documentación contractual. Hoy se escribe a mano en cada documento y,
+        si se deja vacía, sale un guion en el pie del contrato y en el bloque de firmas. Debería ser un
+        campo de la ficha de la inmobiliaria, junto al número de identificación tributaria.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="encabezado-seccion"><span class="n">03</span><h2>Lo que le falta al servidor</h2></div>
+
+    <p>
+      Cuatro cosas que la interfaz ya necesita y el servidor todavía no entrega. Ninguna rompe nada
+      hoy: la pantalla dice la verdad en cada caso, en vez de inventar el dato.
+    </p>
+
+    <div class="ficha">
+      <h3>Conciliación: la sugerencia del agente no se puede enlazar</h3>
+      <p>
+        La cola devuelve un identificador de contrato en texto y un porcentaje de confianza, pero no el
+        identificador del cobro ni el del inmueble. Por eso la celda muestra el contrato sin enlace. Con
+        que la respuesta traiga esos identificadores, la fila lleva directo al cobro.
+      </p>
+    </div>
+
+    <div class="ficha">
+      <h3>Conciliación: dos tipos de excepción no existen en el resumen</h3>
+      <p>
+        El filtro de la cola ofrece siete tipos y el resumen sólo cuenta cinco. La tarjeta que resume lo
+        que encontró el agente no puede contar los dos que faltan.
+      </p>
+    </div>
+
+    <div class="ficha">
+      <h3>Conciliación: el botón de los seguros cuenta de menos</h3>
+      <p>
+        Dice cuántos hay en la página visible, pero el lote corre sobre todos los pendientes. El diálogo
+        de confirmación lo aclara con una línea. El número exacto necesita un campo nuevo en el resumen.
+      </p>
+    </div>
+
+    <div class="ficha">
+      <h3>Contabilidad: el libro se exporta desde el navegador</h3>
+      <p>
+        No hay endpoint de exportación, así que el archivo de valores separados se arma pidiendo el libro
+        de a doscientos asientos. Pasados diez mil en el rango corta y pide achicarlo. Si eso empieza a
+        pasar seguido, la exportación tiene que mudarse al servidor.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="encabezado-seccion"><span class="n">04</span><h2>Rutas que se movieron</h2></div>
+
+    <p>
+      Configuración salió de la barra lateral y ahora se entra por el menú del perfil. Las direcciones
+      viejas siguen funcionando por compatibilidad, pero conviene actualizar cualquier enlace guardado.
+    </p>
+
+    <div class="tabla-envoltura">
+      <table>
+        <thead><tr><th>Antes</th><th>Ahora</th></tr></thead>
+        <tbody>
+          <tr><td><code>/configuracion?tab=usuarios</code></td><td><code>/configuracion/equipo</code></td></tr>
+          <tr><td><code>/configuracion?tab=medios-de-pago</code></td><td><code>/configuracion/medios-de-pago</code></td></tr>
+          <tr><td><code>/configuracion/agentes</code></td><td>Redirige a <code>/configuracion</code>. La pantalla queda oculta.</td></tr>
+          <tr><td><code>/configuracion/ia</code></td><td>Sigue viva, ahora como una sección más.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="ficha atencion" style="margin-top:18px">
+      <span class="chip atencion">Ruido en las pruebas</span>
+      <h3>Cuatro pruebas de navegador apuntan a la pantalla oculta</h3>
+      <p>
+        Las pruebas de accesibilidad del centro de agentes y las dos del recorrido guiado ahora aterrizan
+        en la redirección. No corren en integración continua, pero hay que retirarlas o repuntarlas.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="encabezado-seccion"><span class="n">05</span><h2>Decisiones para Nico</h2></div>
+
+    <div class="ficha">
+      <span class="chip neutra">Decidir</span>
+      <h3>Cinco pantallas de maqueta con datos de ejemplo</h3>
+      <p>
+        Cuatro pantallas del área de pagos y una de cobranza tienen tablas escritas a mano, rotuladas
+        como ilustrativas. Hoy no están enlazadas desde ninguna navegación: sólo se llega escribiendo la
+        dirección. La quinta, liquidaciones, sí está en la barra lateral para el rol contable, pero su
+        ejemplo es la fórmula del neto explicada, no datos que finjan ser reales. Van a la papelera o se
+        conectan cuando exista el servicio.
+      </p>
+    </div>
+
+    <div class="ficha">
+      <span class="chip neutra">Decidir</span>
+      <h3>El buscador perdió la vista previa</h3>
+      <p>
+        Se quitó el panel lateral de doscientos cuarenta píxeles. Con el modal en seiscientos cuarenta
+        dejaba muy poca lista y repetía lo que ya dice cada fila. El costo: la ficha del deudor mostraba
+        cédula y teléfono enmascarados que ya no están. Es reversible.
+      </p>
+    </div>
+
+    <div class="ficha">
+      <span class="chip neutra">Decidir</span>
+      <h3>Los cuatro testimonios del login son inventados</h3>
+      <p>
+        Nombres, cargos y frases de cuatro inmobiliarias que no existen. Hay que reemplazarlos por
+        testimonios reales, con permiso, antes de que la pantalla salga a producción.
+      </p>
+    </div>
+
+    <div class="ficha">
+      <span class="chip neutra">Limpieza</span>
+      <h3>Código que quedó sin dueño</h3>
+      <p>
+        Al unificar Configuración quedaron siete componentes y tres ganchos que ya nadie importa. No se
+        borraron porque hay que tocar los archivos que los reexportan, compartidos por varios frentes al
+        mismo tiempo. Lo mismo con dos gestores viejos de documentos y una función del servicio de
+        documentos que siempre fue rechazada por el validador del servidor.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="encabezado-seccion"><span class="n">06</span><h2>Qué se probó</h2></div>
+
+    <p>
+      Las dos suites completas en verde y el chequeo de tipos limpio en los dos repositorios. Además, el
+      recorrido real en el navegador con una cuenta de prueba distinta a la de Nico, para no tumbarle la
+      sesión: el sistema permite una sola sesión activa por usuario.
+    </p>
+
+    <ul>
+      <li><strong>Documentos.</strong> Seis plantillas sembradas, contrato de vivienda generado sobre un contrato real, archivo imprimible de cuatro páginas con las firmas de las partes y sin variables sin reemplazar.</li>
+      <li><strong>El tope del incremento.</strong> Con vigencia en diciembre de 2026 aparece el índice de 2025 y un porcentaje mayor bloquea el botón citando el artículo. Con vigencia en 2027, la pantalla dice que el índice todavía no se publicó, en vez de inventarlo.</li>
+      <li><strong>Conciliación.</strong> Sin botón principal en el encabezado, con la tarjeta de lo que encontró el agente y una sola franja de números.</li>
+      <li><strong>Contabilidad.</strong> Asientos en una línea por fila, con paginación real contra el servidor: cambiar de página pide datos, no recorta en pantalla.</li>
+      <li><strong>Configuración.</strong> Once secciones, la barra lateral en diecinueve filas y sin la entrada de configuración.</li>
+      <li><strong>El buscador.</strong> Las novedades ya son frases en español, sin identificadores crudos.</li>
+    </ul>
+  </section>
+
+  <p class="pie">
+    Escrito el 3 de septiembre de 2026, al cierre de la tanda. Todo empujado a la rama de trabajo de
+    Nico en los dos repositorios.
+  </p>
+
+</div>

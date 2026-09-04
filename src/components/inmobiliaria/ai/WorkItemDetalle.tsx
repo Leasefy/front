@@ -119,10 +119,10 @@ export function WorkItemDetalle({
         <div className="h-8 w-2/3 rounded bg-muted/40 animate-pulse" />
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div className="lg:col-span-3 space-y-4">
-            <div className="h-48 rounded-xl border border-border bg-muted/40 animate-pulse" />
-            <div className="h-32 rounded-xl border border-border bg-muted/40 animate-pulse" />
+            <div className="h-48 rounded-lg border border-border bg-muted/40 animate-pulse" />
+            <div className="h-32 rounded-lg border border-border bg-muted/40 animate-pulse" />
           </div>
-          <div className="lg:col-span-2 h-64 rounded-xl border border-border bg-muted/40 animate-pulse" />
+          <div className="lg:col-span-2 h-64 rounded-lg border border-border bg-muted/40 animate-pulse" />
         </div>
       </div>
     )
@@ -133,7 +133,7 @@ export function WorkItemDetalle({
     return (
       <div className="p-6 lg:p-8 space-y-4">
         <div
-          className="rounded-xl border border-danger/30 bg-danger-soft text-danger"
+          className="rounded-lg border border-danger/30 bg-danger-soft text-danger"
           data-testid="caso-error"
         >
           {t(`${NS}.error`, { error })}
@@ -268,7 +268,7 @@ export function WorkItemDetalle({
           {!isActionable ? (
             /* No longer actionable — actions hidden, show the status block */
             <div
-              className="rounded-xl border border-border bg-card p-4 space-y-2"
+              className="rounded-lg border border-border bg-card p-4 space-y-2"
               data-testid="caso-decision"
             >
               <MonoLabel className="text-muted-foreground">
@@ -313,7 +313,7 @@ export function WorkItemDetalle({
           {contexto.map((block, i) => (
             <section
               key={`${block.title}-${i}`}
-              className="rounded-xl border border-border bg-card p-4 space-y-2"
+              className="rounded-lg border border-border bg-card p-4 space-y-2"
               data-testid={`caso-contexto-${i}`}
             >
               <h2 className="text-sm font-semibold text-foreground">{block.title}</h2>
@@ -337,7 +337,7 @@ export function WorkItemDetalle({
           {crossLink && (
             <Link
               href={crossLink.href}
-              className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 hover:bg-muted/50 transition group"
+              className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-4 hover:bg-muted/50 transition group"
               data-testid="caso-cross-link"
             >
               <div className="min-w-0">

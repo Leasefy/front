@@ -1,0 +1,322 @@
+# Qué existe hoy y qué falta — inventario medido
+
+Levantado el **2026-08-31** con seis exploraciones paralelas sobre los tres repos, y
+**re-verificado contra `origin/develop`** de cada uno (los checkouts locales estaban 235 y
+434 commits atrás — los primeros hallazgos se comprobaron de nuevo antes de darlos por
+buenos).
+
+Compañero de [SPEC.md](SPEC.md), que es lo que se pidió. Esto es lo que hay.
+
+---
+
+## Los tres repos y quién manda sobre qué
+
+| repo | qué es | base de este trabajo |
+|---|---|---|
+| `back` | monolito NestJS + Prisma. **Fuente de verdad de la plata.** | worktree `back-erp`, rama `feat/erp-cobros` desde `origin/develop` |
+| `mvp` | panel Next.js | worktree `mvp-erp`, rama `feat/erp-financiero` desde `origin/develop` |
+| `agent-integracion` | micro de agentes (Laura cobranza, Piloto) | sin tocar por ahora |
+
+🔴 **El micro NO calcula deuda.** Recibe un lote nocturno del back
+(`POST /internal/cartera/mora-sync`) y lo proyecta. `public.cobros` del monolito es la
+fuente de verdad del monto y del desglose. Todo lo que se construya de cobros va en el
+back, y el micro se entera por ese riel.
+
+---
+
+## 🔴 Defectos verificados (no son features que faltan — es código roto hoy)
+
+### D1 · Registrar un pago devuelve 400
+
+El front manda `paymentDate`; el DTO del back espera `paidDate`. El back arranca con
+`forbidNonWhitelisted: true`, así que una clave desconocida **no se ignora: es 400**.
+
+Es exactamente lo que Nico dijo en la reunión («*ese no funciona, no funciona registrar
+pago*»). En la rama vieja eran tres defectos apilados —verbo, ruta y campo—; en `develop`
+ya arreglaron el verbo y la ruta, **y quedó el campo**. El síntoma cambió de 404 a 400.
+
+- front: `src/lib/api/inmobiliaria.service.ts` · back: `src/inmobiliaria/cobros/dto/register-payment.dto.ts`
+- **Estado: ARREGLADO** en `feat/erp-financiero`, con 7 tests de contrato que fijan método,
+  ruta y el juego exacto de claves.
+
+### D2 · La mora sólo se calcula si un humano abre un reporte
+
+`CobrosService.updateLateFees()` tiene **un solo invocador en todo el repo**: el endpoint
+`GET /inmobiliaria/cobros/cartera-report`. No hay ningún `@Cron` que lo dispare.
+
+Consecuencias medidas:
+- `lateFee`, `totalWithFees`, `daysLate` y el estado `LATE` quedan **congelados** hasta que
+  alguien abra el reporte de cartera.
+- El evento `cobro.vencido` —el que dispara las notificaciones— **sólo se emite desde ahí**.
+- 🔴 El cron nocturno `mora-sync` (2 a.m.) empuja la cartera al micro de cobranza **sin
+  recalcularla antes**. El micro documenta que el `lateFee` que recibe «ya viene calculado
+  por un job del back con el `lateFeePercent` de la agencia». **Ese job no existe.** O sea:
+  Laura le dice al deudor por teléfono una cifra que puede estar semanas vieja.
+
+Es, palabra por palabra, lo que Nico describió: «*como el sistema automáticamente no está
+calculando la mora*».
+
+### D3 · La mora cobra un mes entero desde el primer día
+
+```
+monthsLate = max(1, ceil(daysLate / 30))
+lateFee    = totalAmount × (defaultLateFeePercent/100) × monthsLate
+```
+
+Con el 2% por defecto, **un día de atraso cuesta lo mismo que treinta**. No hay interés
+diario, no hay días de plazo, y el salto del día 30 al 31 duplica el recargo de golpe.
+
+### D4 · El día de pago del contrato se captura y se ignora
+
+`Contract.paymentDay` (1-28) existe, se pide en el formulario de crear contrato y se copia
+a `Lease.paymentDay`. Pero `createCobroForConsignacion` calcula
+`dueDate = new Date(year, mes-1, agency.paymentDueDay)` — **el día por defecto de la
+agencia**. El dato del contrato no se usa nunca.
+
+### D5 · Un abono parcial pisa al anterior
+
+`registerPayment` recibe `paidAmount` como **monto absoluto** y sobreescribe
+`paidAmount`/`paymentMethod`/`paymentReference`/`paidDate` en la misma fila. Dos abonos: el
+segundo borra la huella del primero. No hay histórico. Quien llama tiene que mandar el
+acumulado, cosa que el formulario del panel no hace.
+
+### D6 · El armado automático del siniestro es un no-op silencioso (en el micro)
+
+El cron que arma el paquete de reclamación consulta columnas que no existen
+(`ap.aseguradora_name`, `ap.insurance_policy_active`, `dd.canones_vencidos_count`…), y el
+`try/catch` lo deja en `[]`. Nunca falla, nunca hace nada. **No es de este trabajo pero hay
+que avisarlo.**
+
+---
+
+## Lo que SÍ existe (y no hay que volver a construir)
+
+| capacidad | dónde | estado |
+|---|---|---|
+| Modelo `Cobro` por consignación/mes | `prisma/schema.prisma` | sólido; le faltan conceptos, impuestos y ledger |
+| Estado `PARTIAL` y registro de pago | `cobros.service.ts` | existe, con el defecto D5 |
+| Reporte de cartera con edades 0-30/31-60/61-90/90+ | `reports.service.ts` | funciona |
+| Módulo de **dispersiones** completo | `dispersiones.service.ts` + panel | preview, generate, approve, process, extracto PDF |
+| Comisión y neto al propietario | `liquidacion/` | con conceptos a favor/cargo y de terceros |
+| Datos bancarios del propietario | `Propietario` | banco, tipo, número, titular |
+| Pasarela **Wompi/PSE** con webhook firmado y reconciliación | `tenant-payments/wompi/` | activa, sólo cobro entrante |
+| Vista de recaudo | dashboard + `cobros/summary` + `analytics` | existe en 4 lugares |
+| **Migración de contratos** (preparar → resolver → activar) | `contracts/migracion/` | ya construida por Víctor, entrada JSON |
+| Perfil tributario de las 3 partes | `Contract`, `Agency`, `Propietario` | **booleanos de quién retiene**, sin montos |
+| Conceptos del contrato (`ContratoConcepto`) | schema | con `BaseTributaria`; se agregan a `adminAmount` |
+| Importador de **propiedades** por Excel/CSV | `import/ImportWizard.tsx` | 5 pasos, con revisión IA |
+| Onboarding de agencia | `onboarding/inmobiliaria/` | 4 pasos, sesión en el micro |
+
+---
+
+## Lo que NO existe
+
+### Cobros y mora
+- Días de plazo antes de la mora (hay un `GRACE_PERIOD_DAYS = 5` **hardcodeado y sólo para
+  scoring**, que no toca el cobro).
+- Interés de mora real: diario, con tasa por inmobiliaria.
+- **Reglas encadenadas** (el 10% de gasto administrativo pasado el día 15). Nada parecido.
+- Prorrateo del primer mes. Lo único que se llama «prorrateo» es el reparto de un pago
+  parcial entre propietario e inmobiliaria — otra cosa.
+- Desglose por concepto **del cobro**: `adminAmount` es un agregado; no hay tabla de líneas.
+- Montos de impuestos. Hay banderas de quién retiene, no cuánto. Ni una tasa en el repo.
+- Ledger de abonos.
+- Acuerdo / plan de pago **en el back** (sí existe, y bien, en el micro de cobranza: techo
+  de 4 cuotas por CHECK en base, descuentos por etapa que nunca tocan el principal).
+- Estado de siniestro en `Cobro` (vive en el micro; `CobroStatus` llega hasta `DEFAULTED`).
+
+### Recaudo
+- «Recibo de caja» como documento. El concepto no existe con ese nombre en ningún lado.
+- **Conciliación bancaria**: cero. Lo que se llama «reconciliation» es consultarle a Wompi
+  el estado de una transacción que ya conocíamos.
+- Medios de pago configurables por inmobiliaria. Sólo Wompi, global.
+- OnePay, Paloma, Cobre: ninguno.
+
+### Dispersiones
+- **Archivo plano**. No hay ninguna generación de instrucción de pago bancaria.
+- PIN, código dinámico, doble aprobación, resumen por correo. Hoy `approve()` es **un solo
+  usuario cambiando un estado**, sin segundo control ni tope por monto.
+- El pago sale del sistema y alguien pega la referencia a mano.
+
+### Terceros y migración
+- 🔴 **No hay sección de inquilinos.** Ni ruta, ni ítem de menú, ni modelo propio: el
+  inquilino es un `User` con rol `TENANT`, o un campo `tenantName` dentro de un candidato.
+- No hay carga masiva de propietarios ni de inquilinos.
+- El importador de propiedades **no tiene endpoint de bulk**: crea de a una en un loop
+  desde el navegador.
+- No hay onboarding de migración (el de creación de cuenta existe y es otra cosa).
+
+### Contabilidad
+- **Nada.** Ni PUC, ni cuentas, ni asientos, ni doble partida. Lo único es el valor de enum
+  `IntegrationCategory.ACCOUNTING`, un placeholder sin nada detrás.
+
+---
+
+## Dos cosas que hay que decidir antes de construir
+
+**1. La tasa de mora está definida dos veces, distinta, y las dos corren.**
+El back cobra `Agency.defaultLateFeePercent` (2% **mensual** por defecto ⇒ 24% anual). El
+micro, para las cartas pre-jurídicas, calcula **6% anual** (Art. 884 CCo residencial) o
+1.5× el bancario corriente si es comercial, según `AgencyPolicy.legalInterestRateKind`.
+Son cifras muy distintas para la misma deuda, y la carta legal y el estado de cuenta se
+contradicen. **Hay que unificar, y la respuesta es del abogado** (insumo #3 del SPEC).
+
+**2. El techo legal.** Nico lo preguntó en la reunión y quedó sin responder. En Colombia el
+interés moratorio tiene tope de usura. La configuración por inmobiliaria debería validar
+contra ese tope, no ser libre.
+
+---
+
+## Cómo se va a construir
+
+Todo lo que pueda mover plata o cambiar lo que se le cobra a un inquilino nace **apagado**,
+por inmobiliaria. Una agencia que no lo prenda sigue viendo exactamente el comportamiento
+de hoy. Esa es la única forma de tocar el motor de cobros de un sistema con contratos
+vivos sin arriesgar un cobro mal hecho.
+
+## Cierre 2026-09-01 — qué falta y qué sigue
+
+**Hecho hoy**: muro rediseñado y rehecho (todo pasa adentro, sin rutas exentas, 5 pasos montados en el muro, refresco cada 5 s); caso de muestra `muestras/01–05` verificado E2E; el paso 3 consigna solo con el propietario del archivo y tiene buscador de propietarios; barra de progreso indeterminada; «Ver portafolio» y «Volver a la secuencia» ocultos dentro del muro. Agencia de QA de Nico reseteada a cero.
+
+**Falta — back (Víctor)**
+- Inquilinos: `aplicar` invita por correo en la misma llamada → `429 over_email_send_rate_limit` en dev. Crear el usuario sin invitar y encolar las invitaciones.
+- Contratos: `procesadas` del lote se escribe sólo al final → contar fila a fila.
+- Consecutivos: `external_id` en propietarios/inmuebles/inquilinos y columnas «ID» en los archivos (hoy la llave es documento + dirección).
+- Importación de inmuebles: no crea la consignación aunque el archivo trae Propietario/Tel/Comisión (`CompletarMandatosLoteDialog` existe sin conectar, mono-dueño). Los inmuebles sin contrato quedan sin consignar.
+
+**Falta — front**
+- Scroll dentro del muro sobre selects/tarjetas: no reproducible en el navegador automatizado; pendiente confirmar en Arc.
+- Lista de lo ya importado dentro del muro (sugerencia de Nico).
+- Pantallas de reglas de mora y contabilidad fuera de la migración; conciliación bancaria; medios de pago.
+
+**Sigue**: Nico recorre el muro desde cero con los 5 CSV → feedback → Víctor toma los puntos de back y abre el PR de `cambios-nico-1`.
+
+## 2026-09-01 (tarde) — «lo necesito TODO»: auditoría y bloque 1
+
+Auditoría de la lista completa de Nico contra el código (no contra la memoria): **10 hechos · 10 a medias · 7 sin hacer**. El patrón: el back tenía casi todo y el front no tenía pantalla para seis módulos, así que para la inmobiliaria no existían.
+
+**Bloque 1 — subido** (back `b3e3e9e`, front `1d96e397`, rama `cambios-nico-1`):
+
+| pieza | dónde |
+|---|---|
+| Prorrateo del primer mes + días de plazo por contrato | `/contratos/nuevo`, `/contratos/[id]/editar`; DTOs del back |
+| Configuración «Cobros y mora» (motor con reglas, plazo, siniestro a N días, % fijo) y «Dispersiones» (código en todos los lotes, umbral del segundo aprobador) | `/configuracion` → Perfil; `update-agency.dto.ts` |
+| Reglas de mora (lista, editor, dos plantillas de un clic, aviso vivo del motor) | `/cobros/reglas-de-mora` |
+| Lotes al banco (armar, pedir código, aprobar, archivo PAB, pagado, anular) | `/dispersiones/lotes`, `/dispersiones/lotes/[id]` |
+| Contabilidad fuera del muro (hub, PUC, asientos, reversa, asiento manual, cierre, balance de prueba, libro auxiliar, estado de cuenta) | `/contabilidad/*` — sidebar «Contabilidad general» |
+| Siniestro a N días (cron 1 a. m. con motor v2 → DEFAULTED + evento `cobro.siniestro`; sección «En siniestro» en cartera) | back `cobros.service.ts`, `reports.service.ts`; migración `20260901030000` |
+
+Verificado en navegador (agencia `portofinoqaprb`): configuración guardada contra el back, dos reglas creadas (plantilla y editor), cartera, lotes hasta el error del back sin dispersiones, 1.043 asientos reales y balance de prueba que cuadra. **No se vio en navegador el formulario de contrato** (esa agencia no tiene contratos y `/contratos/nuevo` exige `applicationId`); queda cubierto por tests de payload.
+
+Hallazgos de paso: la validación vieja del NIT exigía dígito de verificación y bloqueaba guardar toda la configuración (se relaja en el bloque 2) · `GET /inmobiliaria/config` sí devuelve la fila entera de la agencia · el back arrancado sin `PORT=3007` toma el `:3000`.
+
+**Bloque 2 — en curso**: impuestos y retenciones por contrato (IVA/RF/ICA/RIVA con tarifas por inmobiliaria), asientos automáticos con mapeo contable, extracto bancario → recibos de caja, vista de recaudo, medios de pago por inmobiliaria (Cobre queda como tarjeta deshabilitada hasta tener cuenta). Esquema y migración `20260901040000` ya aplicados (back `e792547`).
+
+**Bloque 2 — subido** (mismo día, más tarde; hashes en el último commit de cada rama):
+
+| pieza | dónde |
+|---|---|
+| Impuestos y retenciones (IVA sobre canon comercial, retefuente, reteICA, reteIVA — sólo con el motor v2 y cuando el contrato dice quién retiene) + tarifas por inmobiliaria + liquidación del propietario con las retenciones a su nombre y el IVA de la comisión | back `cobros/impuestos/`, `liquidacion/impuestos-de-la-liquidacion.ts`; front Configuración → «Impuestos y retenciones», ficha del contrato → perfil tributario, desglose del cobro |
+| Asientos automáticos (recibo de caja → bancos/caja contra 2815 por concepto; anulación → reversa; lote pagado → giro + comisión) con mapeo contable por evento y semilla de un clic | back `contabilidad/mapeo/`, `asientos-automaticos.service.ts` + listener de eventos; front `/contabilidad/mapeo` |
+| Extracto bancario → recibos de caja (carga CSV/XLSX, huella idempotente, candidatos puntuados, conciliar emite el recibo, «conciliar los seguros», ignorar/reabrir; anular el recibo devuelve la línea a pendiente) | back `conciliacion-bancaria/`; front `/cobros/extracto-bancario` |
+| Vista de recaudo (llegó · pendiente · dispersado · disponible, definidos por escrito; 12 meses; por medio) | back `recaudo/`; front `/recaudo` (sidebar) |
+| Medios de pago por inmobiliaria (transferencia, efectivo, PSE, Nequi, Daviplata, enlace de pago; número tapado al inquilino; alimenta el recibo de caja y «Cómo pagar» del inquilino; Cobre como tarjeta pendiente) | back `medios-de-pago/`; front Configuración → «Medios de pago», `/inquilino/pagos` |
+| NIT sin dígito de verificación ya no bloquea guardar la configuración; las tarifas `Decimal` llegan como texto y el formulario las convierte | `ConfigPerfilAgencia.tsx` |
+
+Verificado en navegador (`portofinoqaprb`): tarifas guardadas (reteICA 9,66 ‰) con el NIT sin DV, medio «Efectivo en la oficina» creado, mapeo sembrado con las 8 cuentas, extracto de 4 líneas cargado (3 nuevas · 1 repetida · 1 salida) y recaudo. Sin cobros en esa agencia no hay candidatos que conciliar ni asientos automáticos que ver: eso queda para probarlo con la agencia de Nico cuando tenga contratos y recibos.
+
+**Lo que sigue sin hacer** (no es código de estas dos ramas): Cobre (cuenta comercial), archivo plano SAP/OnePay y el archivo real de Bancolombia, tope legal y tasa de mora unificada (abogado), los 8 escenarios tributarios de Víctor para confirmar las reglas de impuestos, y los tres puntos del back de la migración (429 de invitaciones, `procesadas`, `external_id`).
+
+**Muro a 6 pasos** (pedido de Nico al ver el switch «Propietarios | Inquilinos»): propietarios e inquilinos son dos pasos, cada uno con su archivo y sin switch adentro del muro; la pantalla suelta `/migracion/terceros?tipo=…` conserva el switch. El back cuenta inquilinos migrados aunque todavía no tengan contrato. Y cuando el proveedor de correo no puede mandar la invitación (límite o SMTP), la cuenta se crea igual y la invitación queda pendiente — el informe lo dice; falta el botón de reenvío.
+
+## Auditoría de parsers de la migración (2026-09-01, pedido de Nico: «nada puede fallar ahí»)
+
+Cinco auditorías adversariales en paralelo (batería de datos sucios ANTES de arreglar; regla: ninguna validación se afloja — lo ilegible grita fila y columna, jamás se adivina). Lo que estaba roto y quedó cerrado:
+
+| parser | lo peor que se encontró |
+|---|---|
+| Base (`parseFile`) | celdas-fecha de Excel salían «6/1/26» (ambiguo) o corridas UN DÍA por zona horaria → ahora siempre ISO; un binario corrupto se parseaba como basura → ahora error claro |
+| Terceros | «CC 1.004.997.858» y «1004997858» eran llaves distintas → los duplicados pasaban; «C.C.»/«Cta. de Ahorros» caían a desconocido |
+| Inmuebles | `1'200.000` → $1 · «65,5» → 655 (10×) · «$1.2M» → 1.2 · «Dirección de notificación del propietario» mapeaba al dueño y las fechas del contrato a la consignación |
+| Contratos | `31/02/2026` fabricaba fecha; una fecha basura tumbaba TODAS las filas; el − tipográfico volvía positivo un negativo; comisión 0 desaparecía y 110 tumbaba el lote; el documento del dueño con puntos duplicaba propietarios |
+| Asientos | `110505.0` de Excel se volvía OTRA cuenta en silencio; una letra en el código se recortaba a una cuenta real equivocada; `CE-1` de enero y febrero se fundían en un asiento; una descripción larga tumbaba el lote entero |
+
+Todo con regresión sobre los archivos de muestra reales (01–05 completos: 60+110+120+90 filas y 2.839 líneas contables, débitos exactos $2.141.126.351). Políticas escritas en el código: fechas día-primero (Colombia) y contra el calendario real; seriales de Excel y años de 2 cifras se rechazan; plata «entero o nada» (jamás el prefijo de `parseFloat`); COP al peso (centavos ≠ 0 se rechazan); paréntesis contable = negativo → se rechaza nombrando el lado correcto.
+
+Pendientes menores anotados por los auditores: el faltante no dice el valor ilegible que lo causó (pide campo nuevo en el back) · centavos reales siempre-presentes pedirían decisión de redondeo con el contador · TOCTOU de idempotencia de asientos (dos operadores a la vez) pide índice único (esquema congelado).
+
+## Cierre 2026-09-01 (tarde-2) — qué falta y fe de erratas
+
+**Ramas al cierre**: back `dc48354` · front `97626523` (`cambios-nico-1`, árboles limpios, todo empujado, sin PR).
+
+⚠️ **Fe de erratas de dos mensajes de commit** (el contenido es correcto; los mensajes se cruzaron): en el FRONT, `1227403e` dice «terceros, contratos y asientos no adivinan nunca» pero contiene los parsers DEL FRONT; en el BACK, `dc48354` dice «cada paso de terceros arranca limpio (key)» pero contiene el endurecimiento de parsers DEL BACK (normalizar-tercero, plantillas, migración de contratos y contable). El arreglo real del `key` es `97626523` (front).
+
+**Hecho en la sesión**: bloques 1 y 2 completos (ver arriba) · muro a 6 pasos con invitación diferida ante el límite de correo · scroll de tablas (`overscroll-x-contain`) · auditoría adversarial de los 5 parsers con regresión sobre las muestras · el pie del muro espera al paso ocupado y sin «» · `key` por paso (el archivo de propietarios ya no se queda pegado en inquilinos; verificado E2E).
+
+**Qué falta**
+- **Nico (QA)**: seguir el muro desde el paso 2 con los 5 CSV; descartar la carga vieja `propietarios-…-1834`; con contratos vivos probar impuestos, asientos automáticos (sembrar el mapeo), extracto bancario real y recaudo.
+- **Back (Víctor)**: reenvío de invitaciones pendientes · `procesadas` fila a fila en contratos · `external_id`/consecutivos · consignación al importar inmuebles sin contrato · el faltante debería decir el valor ilegible que lo causó · índice único para la idempotencia de asientos · abrir el PR de `cambios-nico-1`.
+- **Decisiones (Nico + terceros)**: tasa de mora unificada y tope legal (abogado) · escenarios tributarios de Víctor · archivo plano real de Bancolombia (PAB/SAP) · cuenta de Cobre · redondeo de centavos con el contador · agencias viejas y PUC · ¿paso 6 exige ≥1 asiento?
+- **Entorno**: el `next dev` de :3011 muere por falta de RAM y puede corromper `.next` (estáticos 404) → `rm -rf .next` y relanzar.
+
+---
+
+## Cierre 2026-09-01 (noche) — todo lo pendiente cerrado
+
+**Ramas** (`cambios-nico-1`, limpias y empujadas): back `dccded1` · front `4e76aff9`.
+**Gates**: back 4.217 tests · front 4.513 tests (suite COMPLETA, ya sin los 195 rojos) · `tsc` 0 en ambos · 81 migraciones aplicadas en dev.
+
+### 🔴 El hallazgo de la sesión: el muro era una trampa
+
+Encontrado **caminando el flujo con datos reales**, no en un test. La agencia importó
+120 inmuebles con el importador —que los crea SIN mandato, por diseño: publicar exige
+mandato y el canon no se inventa— y después activó 90 contratos. Los 90 `Contract` y sus
+90 `Lease` existían en la base. Consignaciones: **cero**.
+
+El paso 4 del muro medía la pertenencia SÓLO por `property.consignaciones.some({agencyId})`,
+así que contaba 0 y el muro seguía tapando el panel entero. **Migrar no sacaba nunca a la
+agencia**: cada contrato que subía la dejaba exactamente igual de afuera.
+
+Arreglo: el `where` del `lease.groupBy` pasa a `OR: [consignación, contract.agencyId]`.
+Es la misma entidad por las dos vías, así que no hay doble conteo, sigue siendo una sola
+consulta, y las dos ramas van scopeadas a la agencia. Verificado de punta a punta: tras el
+arreglo el muro se levantó y la agencia entró al panel.
+
+**Lección**: 4.200 tests verdes no lo vieron. Lo vio el recorrido E2E con datos de verdad.
+
+### Lo demás que se cerró
+
+| Qué | Antes | Ahora |
+|---|---|---|
+| Techo legal del interés de mora | La tasa no tenía tope | `Agency.topeInteresMoraEaPorcentaje` (efectiva anual, configurable porque la usura se certifica mes a mes). Valida componiendo `(1+d)^365`, no `d×365`. El honorario de cobranza NO se mide con esa vara. NULL = sin validar |
+| Impuestos por contrato | El lado del arrendador salía sólo de la ficha del propietario | `Contract.arrendadorResponsableIva` con tres estados (null = heredar, false = afirmar que no). Resolutor único `resolverRegimenDelContrato` que devuelve valor + origen |
+| Dos pestañas sobre la misma fila | Ganaba la última, en silencio | `MigracionTercero.version` + comprobar-y-escribir en una sentencia; 409 `FILA_DESACTUALIZADA` que relee sin perder lo tecleado |
+| Progreso de contratos | Saltaba de 0 al total al terminar | Avanza de verdad, cada 25 filas |
+| El faltante | No decía qué decía la celda ilegible | La cita (recortada) en los tres importadores |
+| Inmuebles importados | Nacían sin mandato y no salían en la grilla, sin explicación | Se avisa por qué y se ofrece completarlos ahí mismo |
+| `external_id` | Se perdía el código del sistema anterior | Viaja en propietarios e inmuebles |
+| Paso 4 (contratos) | Único paso sin zona de arrastre | Recibe el archivo arrastrado, como los otros cinco |
+| `/auth` | «← Inicio», que se lee como navegar | X de cerrar dentro del círculo, arriba a la derecha |
+| Suite del front | 195 rojos | 0. Node 25 expone un `localStorage` roto que vitest no pisa → `vitest.setup.ts` instala el `Storage` real de happy-dom, con guard que lo vuelve inerte solo |
+
+### 🔴 Lo que queda, y de quién es
+
+- **Víctor**: confirmar que **sus** 8 escenarios tributarios son los que quedaron en los
+  tests — los derivó el agente del motor porque la lista no está en la transcripción de la
+  reunión. Ojo especialmente si alguno toca retención sobre la **comisión** de la
+  inmobiliaria: ese eje sigue siendo del propietario, no del contrato.
+- **Juan**: el archivo plano real de Bancolombia (PAB/SAP). En la reunión dice que lo manda;
+  sin el formato real, el generador de lotes sigue SIN-VERIFICAR.
+- **Nico**: la cuenta de Cobre (hablar con Emilio) · QA del muro con **sus** CSV, porque
+  todo lo de hoy pasó por la agencia de prueba, no por sus datos · reenvío de invitaciones
+  pendientes (no existe endpoint ni botón; sus 110 inquilinos quedaron con cuenta creada y
+  sin invitación) · abrir el PR de `cambios-nico-1`.
+- **Deuda conocida**: `Contract.externalId` existe pero **nadie la escribe todavía** — el
+  parser descarta el valor crudo antes de subirlo.
+
+### Método (dos veces esta sesión, para no repetirlo)
+
+- Integrar el trabajo de varios agentes con `git add -A` **barre el `schema.prisma` de otro
+  y deja su migración huérfana**. El esquema y su migración van SIEMPRE en el mismo commit.
+- Un agente reescribió dos archivos cambiando CRLF→LF: 900 líneas de ruido para 60 reales.
+  Revisar `git diff --stat --ignore-all-space` antes de commitear trabajo ajeno.

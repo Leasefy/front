@@ -29,12 +29,12 @@ describe('backendAgentToFrontType', () => {
 
 describe('targetToHref', () => {
   it('routes known targets and falls back to the hub for the rest', () => {
-    expect(targetToHref('cobranza')).toBe('/panel/inmobiliaria/ai/cobranza');
-    expect(targetToHref('cotizador')).toBe('/panel/inmobiliaria/ai/asegurabilidad');
-    expect(targetToHref('pagos')).toBe('/panel/inmobiliaria/ai/pagos');
-    expect(targetToHref('cartera')).toBe('/panel/inmobiliaria/ai/cobranza');
-    expect(targetToHref('estudio')).toBe('/panel/inmobiliaria/ai');
-    expect(targetToHref('conciliacion')).toBe('/panel/inmobiliaria/ai');
+    expect(targetToHref('cobranza')).toBe('/panel/inmobiliaria/cobros/cobranza');
+    expect(targetToHref('cotizador')).toBe('/panel/inmobiliaria/postulaciones/asegurabilidad');
+    expect(targetToHref('pagos')).toBe('/panel/inmobiliaria/pagos');
+    expect(targetToHref('cartera')).toBe('/panel/inmobiliaria/cobros/cobranza');
+    expect(targetToHref('estudio')).toBe('/panel/inmobiliaria/postulaciones/estudio');
+    expect(targetToHref('conciliacion')).toBe('/panel/inmobiliaria/conciliacion');
   });
 });
 
@@ -46,7 +46,7 @@ describe('suggestedActionToResponseAction', () => {
     );
     expect(first).toMatchObject({
       label: 'Ver cobranza',
-      href: '/panel/inmobiliaria/ai/cobranza',
+      href: '/panel/inmobiliaria/cobros/cobranza',
       variant: 'primary',
     });
     expect(first.icon.length).toBeGreaterThan(0);

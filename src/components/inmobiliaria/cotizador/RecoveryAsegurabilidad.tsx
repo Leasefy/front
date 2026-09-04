@@ -155,7 +155,7 @@ function RecoveryBlock({
   return (
     <section
       aria-labelledby="recovery-heading"
-      className="rounded-xl border border-border bg-card overflow-hidden"
+      className="rounded-lg border border-border bg-card overflow-hidden"
     >
       <div className="px-5 pt-5 pb-4 border-b border-border">
         <div className="flex items-center gap-2.5">
@@ -229,7 +229,7 @@ function RecoveryBlock({
             asChild
             className="group w-full justify-between gap-2 text-left"
           >
-            <Link href="/panel/inmobiliaria/ai/asegurabilidad/nueva">
+            <Link href="/panel/inmobiliaria/postulaciones/asegurabilidad/nueva">
               <span className="flex items-center gap-2 min-w-0">
                 <MagnifyingGlass weight="duotone" className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
                 <span className="text-sm font-medium text-fg truncate">
@@ -248,7 +248,7 @@ function RecoveryBlock({
             asChild
             className="group w-full justify-between gap-2 text-left"
           >
-            <Link href="/panel/inmobiliaria/ai/matching">
+            <Link href="/panel/inmobiliaria/postulaciones/matching">
               <span className="flex items-center gap-2 min-w-0">
                 <House weight="duotone" className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
                 <span className="text-sm font-medium text-fg truncate">
@@ -335,7 +335,7 @@ function CondicionadoBlock({
   return (
     <section
       aria-labelledby="condicionado-heading"
-      className="rounded-xl border border-warning/25 bg-warning-soft/40 overflow-hidden"
+      className="rounded-lg border border-warning/25 bg-warning-soft/40 overflow-hidden"
     >
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-center gap-2">

@@ -69,5 +69,12 @@ export function toImportarInmuebleDto(p: ImportProperty): ImportarInmuebleDto {
   if (p.adminFee != null) dto.adminFee = p.adminFee;
   if (p.consignedAt) dto.consignedAt = p.consignedAt;
 
+  // El propietario del archivo viaja al back para que el inmueble nazca
+  // consignado (Nico, 2026-09-02: «que tome el que viene desde la
+  // migración»). Vacío no viaja: el back no debe ver '' como un dato.
+  if (p.ownerDocument?.trim()) dto.propietarioDocumento = p.ownerDocument.trim();
+  if (p.ownerName?.trim()) dto.propietarioNombre = p.ownerName.trim();
+  if (p.commissionPercent != null) dto.comisionPorcentaje = p.commissionPercent;
+
   return dto;
 }

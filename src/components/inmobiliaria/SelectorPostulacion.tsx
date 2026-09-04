@@ -16,6 +16,12 @@
  *     cargados y no vale la pena que los cargue en cada pantalla del panel.
  *
  * Las dos llamadas salen al abrir, nunca antes.
+ *
+ * Y una salida que no depende de las postulaciones: «Armarlo a mano»
+ * (`/contratos/nuevo?modo=manual`), para el arriendo que se cerró por fuera
+ * del embudo. Va FUERA de las ramas de carga/vacío a propósito: sin ninguna
+ * postulación es justo cuando más falta hace (Nico, 2026-09-03: «no es
+ * necesario que haya postulaciones para crear un nuevo contrato»).
  */
 
 import { useCallback, useMemo, useState } from 'react'
@@ -131,8 +137,8 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
         <DialogHeader>
           <DialogTitle>¿Para quién es el contrato?</DialogTitle>
           <DialogDescription>
-            Un contrato se arma sobre una postulación aprobada: de ahí salen el inquilino, la
-            propiedad y el canon.
+            Sobre una postulación aprobada salen solos el inquilino, la propiedad y el canon. Si el
+            arriendo se cerró por fuera, armalo a mano.
           </DialogDescription>
         </DialogHeader>
 
@@ -214,6 +220,24 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
             )}
           </div>
         )}
+
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-border bg-surface-muted/60 px-4 py-3">
+          <p className="text-sm text-fg-muted">
+            ¿Sin postulación? Elegís un inmueble consignado y el inquilino.
+          </p>
+          <Button
+            variant="secondary"
+            size="sm"
+            hideArrow
+            onClick={() => {
+              onOpenChange(false)
+              router.push('/panel/inmobiliaria/contratos/nuevo?modo=manual')
+            }}
+            data-testid="contrato-manual"
+          >
+            Armarlo a mano
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   )

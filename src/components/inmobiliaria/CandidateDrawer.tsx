@@ -388,7 +388,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
 
           {/* Contract CTA — shown FIRST when approved so the next step is obvious */}
           {candidate.status === 'APPROVED' && (
-            <section className="rounded-xl border border-success/30 bg-success-soft/60 dark:bg-success/20 p-5 space-y-3">
+            <section className="rounded-lg border border-success/30 bg-success-soft/60 dark:bg-success/20 p-5 space-y-3">
               <div className="flex items-start gap-3">
                 <div className="w-9 h-9 rounded-md bg-surface dark:bg-ink flex items-center justify-center flex-shrink-0">
                   <CheckCircle className="w-5 h-5 text-success" />
@@ -407,7 +407,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
               {existingContract ? (
                 <Link
                   href={`/panel/inmobiliaria/contratos/${existingContract.id}`}
-                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-surface dark:bg-ink border border-success/30 hover:bg-success-soft text-success text-sm font-semibold transition-colors"
+                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-surface dark:bg-ink border border-success/30 hover:bg-success-soft text-success text-sm font-semibold transition-colors"
                 >
                   Ver contrato
                   <ArrowUpRight className="w-4 h-4" />
@@ -415,7 +415,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
               ) : (
                 <Link
                   href={`/panel/inmobiliaria/contratos/nuevo?applicationId=${candidate.id}`}
-                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-success hover:bg-success text-white text-sm font-semibold transition-colors"
+                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-success hover:bg-success text-white text-sm font-semibold transition-colors"
                 >
                   Crear contrato
                   <ArrowUpRight className="w-4 h-4" />
@@ -426,7 +426,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
 
           {/* Terminal: contract flow collapsed (rechazo definitivo o cancelación). */}
           {candidate.status === 'CONTRACT_FAILED' && (
-            <section className="rounded-xl border border-danger/30 bg-danger-soft/60 p-5 space-y-3">
+            <section className="rounded-lg border border-danger/30 bg-danger-soft/60 p-5 space-y-3">
               <div className="flex items-start gap-3">
                 <div className="w-9 h-9 rounded-md bg-surface dark:bg-ink flex items-center justify-center flex-shrink-0">
                   <XCircle className="w-5 h-5 text-danger" />
@@ -441,7 +441,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
               {existingContract && (
                 <Link
                   href={`/panel/inmobiliaria/contratos/${existingContract.id}`}
-                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-surface dark:bg-ink border border-danger/30 hover:bg-danger-soft text-danger text-sm font-semibold transition-colors"
+                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-surface dark:bg-ink border border-danger/30 hover:bg-danger-soft text-danger text-sm font-semibold transition-colors"
                 >
                   Ver contrato cancelado
                   <ArrowUpRight className="w-4 h-4" />
@@ -457,7 +457,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
             order — that's a back-side invariant, see contract.md §3.2) and
             never triggers a new one. T-0024.
           */}
-          <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <section className="rounded-lg border border-border bg-card p-5 space-y-4">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-md bg-primary-soft flex items-center justify-center">
                 <ShieldCheck className="w-4 h-4 text-primary" />
@@ -472,7 +472,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
 
           {/* AI Scoring Block */}
           <section className={cn(
-            'rounded-xl border p-5 space-y-4',
+            'rounded-lg border p-5 space-y-4',
             levelColor ? `${levelColor.bg} ${levelColor.border}` : 'bg-muted border-border'
           )}>
             <div className="flex items-center gap-2">
@@ -490,7 +490,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
                 <DSSpinner size="sm" variant="muted" />
               </div>
             ) : noEvaluationYet ? (
-              <div className="rounded-xl bg-surface-muted p-3 border border-border">
+              <div className="rounded-lg bg-surface-muted p-3 border border-border">
                 <p className="text-xs text-fg-muted">
                   Este candidato aún no tiene un análisis de IA generado por el agente.
                 </p>
@@ -607,7 +607,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
 
                 {/* Recommendation */}
                 {recommendation && (
-                  <div className="rounded-xl bg-surface-muted p-3 flex items-start gap-2 border border-border">
+                  <div className="rounded-lg bg-surface-muted p-3 flex items-start gap-2 border border-border">
                     <recommendation.icon className={cn('w-5 h-5 flex-shrink-0 mt-0.5', recommendation.color)} />
                     <div>
                       <p className="text-xs text-fg-muted">Recomendación del agente</p>
@@ -623,7 +623,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
 
                 {/* Summary */}
                 {evaluation?.summary && (
-                  <div className="rounded-xl bg-surface-muted p-3 border border-border">
+                  <div className="rounded-lg bg-surface-muted p-3 border border-border">
                     <p className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1">
                       <Sparkle className="w-3.5 h-3.5" />
                       Resumen
@@ -662,7 +662,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
 
                 {/* Legacy flags fallback */}
                 {!evaluation?.integrity_flags && evaluation?.flags && evaluation.flags.length > 0 && (
-                  <div className="rounded-xl bg-warning-soft border border-warning/30 p-3">
+                  <div className="rounded-lg bg-warning-soft border border-warning/30 p-3">
                     <p className="text-xs font-semibold text-warning mb-2 flex items-center gap-1">
                       <WarningCircle className="w-3.5 h-3.5" />
                       Alertas detectadas
@@ -695,7 +695,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
           </section>
 
           {/* Smart Matching Block */}
-          <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <section className="rounded-lg border border-border bg-card p-5 space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
@@ -730,7 +730,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
             {matchingResults && (
               <>
                 {matchingResults.candidateProfile && (
-                  <div className="rounded-xl bg-muted p-3 text-xs space-y-1">
+                  <div className="rounded-lg bg-muted p-3 text-xs space-y-1">
                     <p className="font-semibold text-foreground">Perfil detectado del candidato:</p>
                     <p className="text-fg-muted">
                       Ingresos: <span className="text-foreground">{formatCurrency(matchingResults.candidateProfile.monthlyIncome)}</span> · Presupuesto máx: <span className="text-foreground">{formatCurrency(matchingResults.candidateProfile.maxBudget)}</span>
@@ -754,7 +754,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
                       <Link
                         key={r.propertyId}
                         href={`/panel/inmobiliaria/inmuebles/${r.propertyId}`}
-                        className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-border dark:border-border-strong dark:hover:border-border dark:border-border-strong hover:bg-muted/50 transition-all group"
+                        className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-border dark:border-border-strong dark:hover:border-border dark:border-border-strong hover:bg-muted/50 transition-all group"
                       >
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-foreground truncate group-hover:text-fg-muted dark:text-fg-subtle dark:group-hover:text-fg-muted dark:text-fg-subtle transition-colors">
@@ -786,7 +786,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
           </section>
 
           {/* Documents section */}
-          <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <section className="rounded-lg border border-border bg-card p-5 space-y-4">
             <div className="flex items-center gap-2">
               {/* `bg-surface-muted` es un token de TEXTO usado como fondo: pintaba
                   un disco gris claro, y encima el icono iba con ESE MISMO color
@@ -931,7 +931,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
 export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null | undefined }) {
   if (!study) {
     return (
-      <div className="rounded-xl bg-surface-muted p-3 border border-border" data-testid="prescoring-panel-empty">
+      <div className="rounded-lg bg-surface-muted p-3 border border-border" data-testid="prescoring-panel-empty">
         <p className="text-xs text-fg-muted">
           Este candidato no tiene un estudio de preescoring registrado para esta postulación.
         </p>
@@ -1370,7 +1370,7 @@ function DocumentRow({ doc, applicationId }: { doc: DocumentItem; applicationId:
   }, [applicationId, doc.id]);
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-surface-muted hover:border-primary/30 dark:hover:border-primary/30 transition-colors group">
+    <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-surface-muted hover:border-primary/30 dark:hover:border-primary/30 transition-colors group">
       <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center flex-shrink-0">
         <FileText className={cn('w-4 h-4', isPdf ? 'text-danger' : 'text-fg-muted')} />
       </div>

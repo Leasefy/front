@@ -124,3 +124,43 @@ describe('toImportarInmuebleDto — listingType branch (C13, no premature valida
     expect(dto.monthlyRent).toBe(1_200_000);
   });
 });
+
+/**
+ * Nico, 2026-09-02: «si la migración ya trae el propietario, ¿para qué lo
+ * volvés a pedir?». El propietario del archivo viaja al back para que el
+ * inmueble nazca consignado; en blanco no viaja (el back no debe ver '').
+ */
+describe('el propietario del archivo viaja al back', () => {
+  it('manda documento, nombre y comisión cuando vienen', () => {
+    const dto = toImportarInmuebleDto({
+      _rowIndex: 1,
+      ownerName: ' Jorge Restrepo ',
+      ownerDocument: ' 71.234.567 ',
+      commissionPercent: 9,
+      selected: true,
+      hasErrors: false,
+      errorMessages: [],
+      suggestions: [],
+    } as never);
+    expect(dto).toMatchObject({
+      propietarioNombre: 'Jorge Restrepo',
+      propietarioDocumento: '71.234.567',
+      comisionPorcentaje: 9,
+    });
+  });
+
+  it('en blanco no manda nada — nunca una cadena vacía', () => {
+    const dto = toImportarInmuebleDto({
+      _rowIndex: 1,
+      ownerName: '   ',
+      ownerDocument: '',
+      selected: true,
+      hasErrors: false,
+      errorMessages: [],
+      suggestions: [],
+    } as never);
+    expect(dto).not.toHaveProperty('propietarioNombre');
+    expect(dto).not.toHaveProperty('propietarioDocumento');
+    expect(dto).not.toHaveProperty('comisionPorcentaje');
+  });
+});

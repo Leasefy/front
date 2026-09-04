@@ -85,7 +85,7 @@ describe('leerInmuebleDeHtml', () => {
 
   // ── Las trampas ────────────────────────────────────────────────────────
 
-  it('NO toma un precio de venta como canon', () => {
+  it('NO toma un precio de venta como canon: lo lee como precio de venta', () => {
     // La ficha tiene un número grande con `$`, pero no dice arriendo por ningún
     // lado. Agarrar cualquier `$` es cómo se publica un arriendo de $450 millones.
     const html = `<html><head><meta property="og:title" content="Casa en venta">
@@ -93,7 +93,10 @@ describe('leerInmuebleDeHtml', () => {
     const r = leerInmuebleDeHtml(html, 'https://ejemplo.com/venta');
 
     expect(r.canon).toBeUndefined();
-    expect(loQueFalta(r)).toContain('canon');
+    expect(r.negocio?.valor).toBe('venta');
+    expect(r.precioVenta?.valor).toBe(450_000_000);
+    expect(loQueFalta(r)).not.toContain('canon');
+    expect(loQueFalta(r)).not.toContain('precio de venta');
   });
 
   it('lee «2.5 baños» como 2 y no como 5', () => {
@@ -467,5 +470,251 @@ describe('dirección — no perder el primer carácter y caer a referencia o mun
     expect(r.direccion).toBeUndefined();
     expect(r.direccionAproximada).toBeFalsy();
     expect(loQueFalta(r)).toContain('dirección');
+  });
+});
+
+// ── El negocio y el barrio, medidos contra Fincaraíz (2026-09-01) ──────────
+//
+// Tres enlaces reales pegados en la migración: dos «Apartamento en Venta»
+// entraron con un canon mensual de $420.000.000 y $220.000.000, y el barrio
+// —que Fincaraíz publica en las migas de pan y en el título, no en la
+// dirección estructurada— quedó vacío en los tres. Las fichas de abajo tienen
+// la MISMA forma que las reales (JSON-LD RealEstateListing + BreadcrumbList).
+
+/** Una ficha de Fincaraíz, con la forma exacta de la real 193740609. */
+function fichaFincaraiz(opciones: {
+  negocio: 'Venta' | 'Arriendo';
+  barrioEnMigas?: string;
+  nombre?: string;
+  precio?: number;
+  descripcion?: string;
+  addressRegion?: string;
+  sinMigas?: boolean;
+}): string {
+  const {
+    negocio,
+    barrioEnMigas,
+    nombre = `Apartamento en ${negocio} en Las villas, Zipaquirá`,
+    precio = 320_000_000,
+    descripcion = 'Hermoso apartamento con vista a las montañas.',
+    addressRegion = 'Cundinamarca',
+    sinMigas = false,
+  } = opciones;
+  const migas = [
+    'Fincaraíz',
+    negocio,
+    'Apartamentos',
+    'Zipaquirá',
+    ...(barrioEnMigas ? [barrioEnMigas] : []),
+    nombre,
+  ];
+  return `<!doctype html><html><head>
+    <title>${nombre}</title>
+    <meta property="og:title" content="${nombre}">
+    <meta property="og:description" content="Apartamento ubicado en Zipaquirá, ${barrioEnMigas ?? 'Zipaquirá'}. Cuenta con 3 habitaciones, 2 baños.">
+    <script type="application/ld+json">${JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': ['RealEstateListing', 'Product'],
+      name: nombre,
+      description: descripcion,
+      offers: { '@type': 'Offer', price: precio, priceCurrency: 'COP' },
+      mainEntity: {
+        '@type': 'Apartment',
+        numberOfBedrooms: 3,
+        numberOfBathroomsTotal: 2,
+        floorSize: { '@type': 'QuantitativeValue', value: 63, unitCode: 'MTK' },
+        address: {
+          '@type': 'PostalAddress',
+          streetAddress: 'Verde Alto apartments, Carrera 27, Zipaquirá, Cundinamarca, Colombia',
+          addressLocality: 'Zipaquirá',
+          addressRegion,
+          addressCountry: 'CO',
+        },
+      },
+    })}</script>
+    ${
+      sinMigas
+        ? ''
+        : `<script type="application/ld+json">${JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: migas.map((name, i) => ({ '@type': 'ListItem', position: i + 1, name })),
+          })}</script>`
+    }
+  </head><body><p>Administración $ 260.000</p></body></html>`;
+}
+
+describe('el negocio decide a qué campo va el precio declarado', () => {
+  it('una venta de Fincaraíz entra como precio de venta, no como canon de $320.000.000', () => {
+    const r = leerInmuebleDeHtml(
+      fichaFincaraiz({ negocio: 'Venta', barrioEnMigas: 'Las villas' }),
+      'https://www.fincaraiz.com.co/apartamento-en-venta-en-las-villas-zipaquira/193740609',
+    );
+
+    expect(r.negocio).toEqual({ valor: 'venta', fuente: 'json-ld', textoOriginal: 'BreadcrumbList: Venta' });
+    expect(r.precioVenta?.valor).toBe(320_000_000);
+    expect(r.precioVenta?.fuente).toBe('json-ld');
+    expect(r.canon).toBeUndefined();
+    expect(loQueFalta(r)).toEqual([]);
+  });
+
+  it('un arriendo de Fincaraíz sigue entrando como canon', () => {
+    const r = leerInmuebleDeHtml(
+      fichaFincaraiz({ negocio: 'Arriendo', barrioEnMigas: 'Alfaguara', precio: 2_500_000 }),
+      'https://www.fincaraiz.com.co/apartamento-en-arriendo-en-alfaguara-jamundi/194162926',
+    );
+
+    expect(r.negocio?.valor).toBe('arriendo');
+    expect(r.canon?.valor).toBe(2_500_000);
+    expect(r.precioVenta).toBeUndefined();
+  });
+
+  it('sin migas de pan, la URL dice el negocio (Metrocuadrado lo pone en la ruta)', () => {
+    const r = leerInmuebleDeHtml(
+      fichaFincaraiz({ negocio: 'Venta', sinMigas: true, nombre: 'Apartamento bonito' }),
+      'https://www.metrocuadrado.com/inmueble/venta-apartamento-bogota-bella-suiza-2-habitaciones/2162-M6953741',
+    );
+
+    expect(r.negocio?.valor).toBe('venta');
+    expect(r.negocio?.fuente).toBe('url');
+    expect(r.precioVenta?.valor).toBe(320_000_000);
+  });
+
+  it('sin migas ni URL, el título dice el negocio', () => {
+    const r = leerInmuebleDeHtml(
+      fichaFincaraiz({ negocio: 'Venta', sinMigas: true }),
+      'https://ejemplo.com/ficha/12345',
+    );
+
+    expect(r.negocio?.valor).toBe('venta');
+    expect(r.precioVenta?.valor).toBe(320_000_000);
+  });
+
+  it('un título que dice venta Y arriendo no decide: el precio va al canon, como antes', () => {
+    const r = leerInmuebleDeHtml(
+      fichaFincaraiz({ negocio: 'Venta', sinMigas: true, nombre: 'Casa en venta y arriendo en Chía', precio: 3_000_000 }),
+      'https://ejemplo.com/ficha/12345',
+    );
+
+    expect(r.negocio).toBeUndefined();
+    expect(r.canon?.valor).toBe(3_000_000);
+    expect(r.precioVenta).toBeUndefined();
+  });
+
+  it('en una venta, «arriendo $2.500.000» de la prosa NO se lee como canon', () => {
+    // Un aviso de venta cuenta lo que paga el inquilino actual todo el tiempo.
+    const r = leerInmuebleDeHtml(
+      fichaFincaraiz({
+        negocio: 'Venta',
+        descripcion: 'Actualmente en arriendo por $2.500.000 mensuales. Excelente inversión.',
+      }),
+      'https://ejemplo.com/ficha/12345',
+    );
+
+    expect(r.canon).toBeUndefined();
+    expect(r.precioVenta?.valor).toBe(320_000_000);
+  });
+
+  it('una venta sin precio declarado lo busca en la prosa con su etiqueta, con el piso del back', () => {
+    const html = `<html><head><title>Casa en Venta en Cajicá</title></head>
+      <body><p>Precio de venta: $ 480.000.000. Venta 3 alcobas.</p></body></html>`;
+    const r = leerInmuebleDeHtml(html, 'https://ejemplo.com/casa-en-venta-en-cajica/1');
+
+    expect(r.precioVenta?.valor).toBe(480_000_000);
+    expect(r.precioVenta?.fuente).toBe('texto');
+    expect(loQueFalta(r)).not.toContain('precio de venta');
+  });
+
+  it('una venta que no consigue precio reclama «precio de venta», no «canon»', () => {
+    const html = `<html><head><title>Casa en Venta en Cajicá</title></head><body></body></html>`;
+    const r = leerInmuebleDeHtml(html, 'https://ejemplo.com/x');
+
+    expect(loQueFalta(r)).toContain('precio de venta');
+    expect(loQueFalta(r)).not.toContain('canon');
+  });
+});
+
+describe('el barrio sale de las migas de pan o del título, nunca de la nada', () => {
+  it('de las migas de pan: lo que queda después de quitar negocio, tipo y ciudad', () => {
+    const r = leerInmuebleDeHtml(
+      fichaFincaraiz({ negocio: 'Venta', barrioEnMigas: 'Las villas' }),
+      'https://ejemplo.com/x',
+    );
+
+    expect(r.barrio).toEqual({ valor: 'Las villas', fuente: 'json-ld', textoOriginal: 'BreadcrumbList: Las villas' });
+    expect(r.ciudad?.valor).toBe('Zipaquirá');
+  });
+
+  it('del título, en el orden «Barrio, Ciudad» del `name`', () => {
+    const r = leerInmuebleDeHtml(
+      fichaFincaraiz({ negocio: 'Venta', sinMigas: true, nombre: 'Apartamento en Venta en San antonio, Zipaquirá' }),
+      'https://ejemplo.com/x',
+    );
+
+    expect(r.barrio?.valor).toBe('San antonio');
+    expect(r.barrio?.fuente).toBe('json-ld');
+  });
+
+  it('del título al revés, «Ciudad, Barrio», como lo arma el <title> de Fincaraíz', () => {
+    const r = leerInmuebleDeHtml(
+      fichaFincaraiz({ negocio: 'Arriendo', sinMigas: true, nombre: 'Apartamento en Arriendo en Zipaquirá, Alfaguara' }),
+      'https://ejemplo.com/x',
+    );
+
+    expect(r.barrio?.valor).toBe('Alfaguara');
+  });
+
+  it('un título sin barrio («Apartamento en Venta en Zipaquirá») no inventa uno', () => {
+    // La fila real de la migración: el portal no publicaba barrio. Ninguna de
+    // las fuentes lo trae, así que queda vacío y la revisión lo pide.
+    const r = leerInmuebleDeHtml(
+      fichaFincaraiz({ negocio: 'Venta', sinMigas: true, nombre: 'Apartamento en Venta en Zipaquirá' }),
+      'https://ejemplo.com/x',
+    );
+
+    expect(r.barrio).toBeUndefined();
+  });
+
+  it('«Bogotá, d.c.» en addressRegion es la ciudad, no un barrio', () => {
+    // Defecto real: una ficha con addressLocality «Bogotá» y addressRegion
+    // «Bogotá, d.c.» dejaba «Bogotá, d.c.» como barrio del inmueble.
+    const html = `<html><head><title>Apartaestudio en Venta en Gran america, Bogotá</title>
+      <script type="application/ld+json">${JSON.stringify({
+        '@type': 'Apartment',
+        name: 'Apartaestudio en Venta en Gran america, Bogotá',
+        address: { '@type': 'PostalAddress', streetAddress: 'Carrera 30a #25A-20', addressLocality: 'Bogotá', addressRegion: 'Bogotá, d.c.' },
+      })}</script></head><body></body></html>`;
+    const r = leerInmuebleDeHtml(html, 'https://ejemplo.com/x');
+
+    expect(r.ciudad?.valor).toBe('Bogotá');
+    expect(r.barrio?.valor).toBe('Gran america');
+  });
+
+  it('con Metrocuadrado («Venta de Apartamento en Bella suiza - Bogotá D.C. - 2162-M6953741») saca barrio y ciudad del título', () => {
+    const html = `<html><head>
+      <meta property="og:title" content="Venta de Apartamento en Bella suiza - Bogotá D.C. - 2162-M6953741">
+      </head><body></body></html>`;
+    const r = leerInmuebleDeHtml(html, 'https://www.metrocuadrado.com/inmueble/venta-apartamento-bogota-bella-suiza/2162-M6953741');
+
+    expect(r.barrio?.valor).toBe('Bella suiza');
+    expect(r.ciudad?.valor).toBe('Bogotá');
+    expect(r.negocio?.valor).toBe('venta');
+  });
+
+  it('el departamento sale de addressRegion con la grafía que el back acepta', () => {
+    const r = leerInmuebleDeHtml(
+      fichaFincaraiz({ negocio: 'Arriendo', addressRegion: 'Valle del cauca' }),
+      'https://ejemplo.com/x',
+    );
+
+    expect(r.departamento?.valor).toBe('Valle del Cauca');
+  });
+
+  it('la dirección pierde la cola «, Zipaquirá, Cundinamarca, Colombia»: esos ya tienen campo', () => {
+    const r = leerInmuebleDeHtml(fichaFincaraiz({ negocio: 'Venta' }), 'https://ejemplo.com/x');
+
+    expect(r.direccion?.valor).toBe('Verde Alto apartments, Carrera 27');
+    expect(r.ciudad?.valor).toBe('Zipaquirá');
+    expect(r.departamento?.valor).toBe('Cundinamarca');
   });
 });

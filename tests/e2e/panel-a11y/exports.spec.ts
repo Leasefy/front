@@ -34,7 +34,7 @@ import { seedAuthState } from './_helpers/auth-helpers'
 
 // ---------------- compliance/audit CSV ----------------
 
-const AUDIT_ROUTE = '/panel/inmobiliaria/ai/cobranza/compliance/audit'
+const AUDIT_ROUTE = '/panel/inmobiliaria/cobros/cobranza/compliance/audit'
 const AUDIT_LIST_MOCK = '**/compliance/audit-log?**'
 const AUDIT_CSV_MOCK = '**/compliance/audit-log.csv*'
 
@@ -103,7 +103,7 @@ test.describe('Exports — XR-07 (D-38-09/10/11)', () => {
     page,
   }) => {
     const QUOTE_ID = 'test-quote-id'
-    const QUOTE_ROUTE = `/panel/inmobiliaria/ai/cotizador/${QUOTE_ID}`
+    const QUOTE_ROUTE = `/panel/inmobiliaria/postulaciones/asegurabilidad/${QUOTE_ID}`
     const QUOTE_DETAIL_MOCK = `**/cotizador/quote/${QUOTE_ID}**`
     const VERDICT_PDF_MOCK = `**/cotizador/quote/${QUOTE_ID}/verdict.pdf*`
 
@@ -172,7 +172,7 @@ test.describe('Exports — XR-07 (D-38-09/10/11)', () => {
     page,
   }) => {
     const CALL_ID = 'test-call-id'
-    const CALL_ROUTE = `/panel/inmobiliaria/ai/cobranza/llamadas/${CALL_ID}`
+    const CALL_ROUTE = `/panel/inmobiliaria/cobros/cobranza/llamadas/${CALL_ID}`
     const CALL_MOCK = `**/cobranza/calls/${CALL_ID}**`
     // Capture only the redacted variant — the non-redacted transcript is fetched
     // on page load and is OUT of scope for this assertion.

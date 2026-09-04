@@ -28,6 +28,28 @@ export interface ResultadoActivacionCompleta {
  * flow can stage in one go. */
 const MAX_LLAMADAS = 100;
 
+/**
+ * Un corte a mitad del loop — red caída, sesión vencida, 5xx — con lo que
+ * SÍ alcanzó a pasar antes del corte. Sin esto, el error de la llamada 3
+ * tiraba a la basura el conteo de las dos primeras y la pantalla sólo podía
+ * decir «no pudimos activar», cuando la verdad era «activamos 1.000 y el
+ * resto espera: reintentá y sigue donde quedó» (el back no repite filas).
+ */
+export class ActivacionInterrumpida extends Error {
+  constructor(
+    message: string,
+    public readonly progreso: {
+      activados: number;
+      omitidas: FilaOmitida[];
+      llamadas: number;
+    },
+    public readonly causa: unknown,
+  ) {
+    super(message);
+    this.name = 'ActivacionInterrumpida';
+  }
+}
+
 export async function activarLoteCompleto(
   lote: string,
   activar: (lote: string) => Promise<ResumenActivacionInmuebles>,
@@ -37,7 +59,16 @@ export async function activarLoteCompleto(
   let llamadas = 0;
 
   for (;;) {
-    const r = await activar(lote);
+    let r: ResumenActivacionInmuebles;
+    try {
+      r = await activar(lote);
+    } catch (e) {
+      throw new ActivacionInterrumpida(
+        e instanceof Error && e.message ? e.message : 'No pudimos activar el lote.',
+        { activados, omitidas, llamadas },
+        e,
+      );
+    }
     llamadas += 1;
     activados += r.activados;
     omitidas.push(...r.omitidas);

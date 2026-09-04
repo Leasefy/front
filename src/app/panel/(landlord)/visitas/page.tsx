@@ -109,7 +109,7 @@ function CancelModal({
               onChange={(e) => setCustomReason(e.target.value)}
               placeholder={t('landlord.visits.cancelReasonPlaceholder')}
               rows={3}
-              className="rounded-xl resize-none"
+              className="rounded-lg resize-none"
             />
           )}
         </div>
@@ -174,7 +174,7 @@ function RescheduleModal({
 
         {/* Body */}
         <div className="px-6 py-5 space-y-5">
-          <div className="p-4 bg-surface-muted rounded-xl">
+          <div className="p-4 bg-surface-muted rounded-lg">
             <p className="text-sm text-fg-muted">
               {t('landlord.visits.rescheduleOriginal')} <span className="font-medium text-fg">{visit.candidateName}</span>
             </p>
@@ -197,7 +197,7 @@ function RescheduleModal({
                 value={newDate}
                 min={minDate}
                 onChange={(e) => setNewDate(e.target.value)}
-                className="rounded-xl"
+                className="rounded-lg"
               />
             </div>
             <div>
@@ -208,7 +208,7 @@ function RescheduleModal({
                 type="time"
                 value={newTime}
                 onChange={(e) => setNewTime(e.target.value)}
-                className="rounded-xl"
+                className="rounded-lg"
               />
             </div>
           </div>
@@ -305,13 +305,13 @@ function ScheduleModal({
                 value={fecha}
                 min={minDate}
                 onChange={(e) => setFecha(e.target.value)}
-                className="rounded-xl"
+                className="rounded-lg"
               />
             </div>
             <div>
               <label className="text-sm font-medium text-fg block mb-2">{t('landlord.visits.scheduleTimeLabel')}</label>
               <Select value={hora} onValueChange={setHora}>
-                <SelectTrigger className="h-11 rounded-xl">
+                <SelectTrigger className="h-11 rounded-lg">
                   <SelectValue placeholder={t('landlord.visits.scheduleTimeSelect')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -326,7 +326,7 @@ function ScheduleModal({
           <div>
             <label className="text-sm font-medium text-fg block mb-2">{t('landlord.visits.schedulePropertyLabel')}</label>
             <Select value={propiedad} onValueChange={setPropiedad}>
-              <SelectTrigger className="h-11 rounded-xl">
+              <SelectTrigger className="h-11 rounded-lg">
                 <SelectValue placeholder={t('landlord.visits.schedulePropertySelect')} />
               </SelectTrigger>
               <SelectContent>
@@ -344,7 +344,7 @@ function ScheduleModal({
               onChange={(e) => setNotas(e.target.value)}
               placeholder={t('landlord.visits.scheduleNotesPlaceholder')}
               rows={3}
-              className="rounded-xl resize-none"
+              className="rounded-lg resize-none"
             />
           </div>
         </div>
@@ -613,7 +613,7 @@ export default function VisitasPage() {
             <span className="text-sm text-fg">{visit.propertyTitle}</span>
           </div>
           {visit.rescheduledFrom && (
-            <div className="p-3 bg-primary-soft rounded-xl">
+            <div className="p-3 bg-primary-soft rounded-lg">
               <p className="text-xs text-primary">{t('landlord.visits.rescheduledNote')}</p>
             </div>
           )}
@@ -624,7 +624,7 @@ export default function VisitasPage() {
       id: 'candidate-message',
       title: t('landlord.visits.candidateMessageTitle'),
       content: (
-        <div className="p-4 bg-surface-muted rounded-xl">
+        <div className="p-4 bg-surface-muted rounded-lg">
           <div className="flex items-start gap-3">
             <Chat className="w-4 h-4 text-fg-subtle mt-0.5 flex-shrink-0" />
             <p className="text-sm text-fg-muted italic">
@@ -638,7 +638,7 @@ export default function VisitasPage() {
       id: 'cancel-reason',
       title: t('landlord.visits.cancelReasonTitle'),
       content: (
-        <div className="p-4 bg-danger-soft rounded-xl">
+        <div className="p-4 bg-danger-soft rounded-lg">
           <div className="flex items-start gap-3">
             <XCircle className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
             <p className="text-sm text-danger">{visit.cancellationReason}</p>
@@ -650,7 +650,7 @@ export default function VisitasPage() {
       id: 'landlord-notes',
       title: t('landlord.visits.notesTitle'),
       content: (
-        <div className="p-4 bg-warning-soft rounded-xl">
+        <div className="p-4 bg-warning-soft rounded-lg">
           <p className="text-sm text-warning">{visit.landlordNotes}</p>
         </div>
       ),
@@ -768,7 +768,7 @@ export default function VisitasPage() {
             action={{ label: t('landlord.visits.emptyAction'), href: '/panel/propiedades' }}
           />
         ) : (
-          <div className="bg-surface rounded-xl border border-border overflow-hidden">
+          <div className="bg-surface rounded-lg border border-border overflow-hidden">
             <PlanTable
               data={getFunneledVisits()}
               columns={columns}

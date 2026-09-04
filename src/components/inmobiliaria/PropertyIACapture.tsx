@@ -369,7 +369,7 @@ export function PropertyIACapture() {
   if (step === 'review' && form) {
     return (
       <form onSubmit={handleCreate} className="space-y-5">
-        <div className="rounded-xl bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5">
+        <div className="rounded-lg bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5">
           <Sparkle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="fill" />
           <div>
             <p className="text-xs font-semibold text-warning">{t(k('reviewBannerTitle'))}</p>
@@ -379,7 +379,7 @@ export function PropertyIACapture() {
           </div>
         </div>
 
-        <section className="bg-card rounded-xl border border-border p-5 space-y-4">
+        <section className="bg-card rounded-lg border border-border p-5 space-y-4">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-fg">{t(k('fTitle'))} *</label>
             <Input type="text" value={form.title} onChange={(e) => updateForm('title', e.target.value)} />
@@ -456,7 +456,7 @@ export function PropertyIACapture() {
         </section>
 
         {errorMsg && (
-          <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-danger text-sm">
+          <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-danger text-sm">
             {errorMsg}
           </div>
         )}
@@ -530,7 +530,7 @@ export function PropertyIACapture() {
       </div>
 
       {/* Audio recorder */}
-      <section className="bg-card rounded-xl border border-border p-5 space-y-4">
+      <section className="bg-card rounded-lg border border-border p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-fg">{t(k('recordTitle'))}</h2>
           {(isRecording || audioBlob) && (
@@ -548,7 +548,7 @@ export function PropertyIACapture() {
             type="button"
             onClick={isRecording ? stopRecording : startRecording}
             className={cn(
-              'w-full rounded-xl border-2 border-dashed transition-colors p-8 flex flex-col items-center justify-center gap-3 text-center',
+              'w-full rounded-lg border-2 border-dashed transition-colors p-8 flex flex-col items-center justify-center gap-3 text-center',
               isRecording
                 ? 'border-danger/30 bg-danger-soft/60'
                 : 'border-border bg-surface-muted/40 hover:bg-surface-muted/70 hover:border-fg/20',
@@ -590,7 +590,7 @@ export function PropertyIACapture() {
       </section>
 
       {/* Photos (optional) */}
-      <section className="bg-card rounded-xl border border-border p-5 space-y-4">
+      <section className="bg-card rounded-lg border border-border p-5 space-y-4">
         <div>
           <h2 className="text-base font-semibold text-fg">{t(k('photosTitle'))}</h2>
           <p className="text-xs text-fg-muted mt-0.5">{t(k('photosHint'))}</p>

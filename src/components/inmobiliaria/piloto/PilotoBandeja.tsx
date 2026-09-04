@@ -40,6 +40,7 @@ import {
   UserSound,
   HandPalm,
   type Icon,
+  Bank,
 } from '@phosphor-icons/react'
 import { Chip } from '@leasefy/cadence'
 
@@ -69,6 +70,8 @@ const FUENTE_META: Record<string, { icon: Icon; label: string }> = {
   factura_ap: { icon: Receipt, label: 'Cuentas por pagar' },
   // Lo que la autonomía retuvo (copiloto): el botón lo LIBERA de verdad.
   retenido: { icon: HandPalm, label: 'Retenidos' },
+  // El extracto del banco esperando recibo (vive en el ERP; el micro lee la foto).
+  conciliacion: { icon: Bank, label: 'Conciliación' },
 }
 
 function metaDe(fuente: string): { icon: Icon; label: string } {

@@ -7,9 +7,9 @@ import { test, expect } from '@playwright/test'
 import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
-const ROUTE = '/panel/inmobiliaria/ai/cobranza/compliance/ley-2300'
+const ROUTE = '/panel/inmobiliaria/cobros/cobranza/compliance/ley-2300'
 // Real endpoint pattern from
-// src/app/panel/inmobiliaria/ai/cobranza/compliance/ley-2300/page.tsx (line 60):
+// src/app/panel/inmobiliaria/cobros/cobranza/compliance/ley-2300/page.tsx (line 60):
 // GET `/api/agency/:agencyId/cobranza/compliance/ley-2300/attempts`
 // The mock glob must match `attempts`, not the spec's earlier `compliance/ley-2300**`.
 const LEY_MOCK = '**/cobranza/compliance/ley-2300/attempts**'

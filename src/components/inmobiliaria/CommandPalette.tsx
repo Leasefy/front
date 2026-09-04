@@ -1,54 +1,65 @@
 'use client';
 
 /**
- * CommandPalette — the ⌘K modal for the Leasefy operator backoffice.
+ * CommandPalette — el ⌘K del panel de inmobiliaria.
  *
- * Architecture:
- *  - Shell: Radix Dialog (focus trap, aria, portal)  via src/components/ui/dialog.tsx
- *  - Left  (52%): search input + grouped results list
- *  - Right (48%): preview panel for the highlighted result
- *  - Footer     : keyboard hint strip
- *  - Empty state (no query): Novedades (audit log feed) + Acciones rápidas
+ * ── Por qué se rehizo (Nico, 2026-09-03: «mira este buscador como quedó de feo»)
  *
- * Keyboard nav:
- *  ↑ / ↓   move highlight across the flat result list
- *  Enter   router.push(result.href) + close
- *  Esc     close (handled by Dialog + our shortcut hook)
+ * Lo que se veía: un modal de 720px con filas de 44px, cada una con un círculo
+ * gris de 36px alrededor del icono y un chevron «>» a la derecha que no era un
+ * control (no se podía enfocar ni hacía nada distinto de la fila), y un feed de
+ * «Novedades» que mostraba la clave cruda del audit log —
+ * `precall.held_for_approval` / `debtor · hace 6h`— tal como sale de la base.
  *
- * Accessibility:
- *  - role="listbox" on the results list, role="option" per item
- *  - aria-selected on highlighted item
- *  - aria-label on the search input
- *  - Focus returned to trigger on close (Radix handles this)
+ * Lo que hay ahora, con el lenguaje de cadence:
+ *  - 640px, una sola columna (Linear/Raycast). El panel de vista previa de
+ *    240px no cabía en 640 y duplicaba lo que ya dice la fila.
+ *  - Filas de 40px: icono de 16px sin círculo, título en `text-sm`, contexto y
+ *    estado a la derecha en `text-caption`. Sin chevrons.
+ *  - Encabezados de grupo en `text-label` (font-mono 11px), alineados con el
+ *    icono de la fila, con el contador de resultados cuando hay búsqueda.
+ *  - Novedades pasa por `@/lib/search/audit-event-labels`: diccionario →
+ *    familia por prefijo → humanizador. Nunca una clave cruda.
+ *
+ * ── Teclado
+ *  ↑ / ↓   mueven el foco sobre TODAS las filas navegables — también las
+ *          acciones rápidas del estado vacío, que antes se dibujaban con el pie
+ *          diciendo «↑↓ navegar» mientras las flechas no hacían nada.
+ *  ↵       router.push(href) + cerrar
+ *  esc     cerrar (lo maneja el Dialog)
+ *
+ * ── Accesibilidad
+ *  role="listbox" en la lista, role="option" por fila, aria-selected en la
+ *  activa, aria-label en el input. Radix devuelve el foco al disparador.
+ *
+ * ── La cáscara
+ *  `DialogContent` de `@/components/ui/dialog` reparte a sus hijos y mete el
+ *  cuerpo en un `div` con `p-6 gap-4` y scroll propio (marcado con
+ *  `data-lenis-prevent`). Para una paleta eso son 24px de aire alrededor del
+ *  input; se neutraliza por selector de descendiente sobre ese `div`, sin
+ *  perder lo que la primitiva sí aporta (freno de Lenis, overlay, foco).
  */
 
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import type { FC } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   MagnifyingGlass,
   ArrowUp,
   ArrowDown,
   ArrowElbowDownLeft,
-  User,
   Clock,
   ChatCircleText,
   FileText,
   ChartLineUp,
   House,
-  ArrowSquareOut,
-  Phone,
-  Envelope,
-  Warning,
-  CaretRight,
   Plus,
   X,
 } from '@phosphor-icons/react';
 
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Spinner as DSSpinner } from '@/components/ui/spinner';
-import { IconButton } from '@leasefy/cadence';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Spinner } from '@/components/ui/spinner';
+import { IconButton, Kbd } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { usePermissionsContext } from '@/lib/context/PermissionsContext';
@@ -63,141 +74,64 @@ import { propiedadesSource } from '@/lib/search/sources/propiedades-source';
 import { contratosSource } from '@/lib/search/sources/contratos-source';
 import { cotizacionesSource } from '@/lib/search/sources/cotizaciones-source';
 import { apBillsSource } from '@/lib/search/sources/ap-bills-source';
-import { useAuditLog } from '@/lib/hooks/cobranza/use-audit-log';
-import { STAGE_LABELS_ES } from '@/lib/cartera';
+import { useAuditLog, type AuditLogFilters } from '@/lib/hooks/cobranza/use-audit-log';
+import {
+  auditEntityLabel,
+  auditEventLabel,
+  relativeTimeLabel,
+} from '@/lib/search/audit-event-labels';
 import { cn } from '@/lib/utils';
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Relative time (America/Bogota) — no date-fns dependency
+// Piezas de una fila
 // ──────────────────────────────────────────────────────────────────────────────
 
-function relativeTime(isoString: string, locale: string): string {
-  const now = Date.now();
-  const then = new Date(isoString).getTime();
-  const diffMs = now - then;
-  const diffMins = Math.floor(diffMs / 60_000);
-  const diffHrs = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHrs / 24);
+type IconoDeFila = FC<{ className?: string }>;
 
-  if (locale === 'en') {
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHrs < 24) return `${diffHrs}h ago`;
-    return `${diffDays}d ago`;
-  }
-  if (diffMins < 1) return 'ahora';
-  if (diffMins < 60) return `hace ${diffMins}m`;
-  if (diffHrs < 24) return `hace ${diffHrs}h`;
-  return `hace ${diffDays}d`;
-}
+type ColorDeChip = NonNullable<SearchResult['badges']>[number]['color'];
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Audit action → human label
-// ──────────────────────────────────────────────────────────────────────────────
-
-const AUDIT_ACTION_LABELS_ES: Record<string, string> = {
-  stage_transition: 'Cambio de etapa',
-  call_completed: 'Llamada completada',
-  payment_plan_approved: 'Plan de pago aprobado',
-  pii_reveal: 'Cédula revelada',
-  carta_approved: 'Carta aprobada',
-  siniestro_approved: 'Siniestro aprobado',
-  memo_created: 'Nota creada',
-  debtor_paused: 'Deudor pausado',
-  debtor_unpaused: 'Deudor reanudado',
-  compromiso_created: 'Compromiso creado',
-};
-
-const AUDIT_ACTION_LABELS_EN: Record<string, string> = {
-  stage_transition: 'Stage transition',
-  call_completed: 'Call completed',
-  payment_plan_approved: 'Payment plan approved',
-  pii_reveal: 'ID revealed',
-  carta_approved: 'Letter approved',
-  siniestro_approved: 'Claim approved',
-  memo_created: 'Note created',
-  debtor_paused: 'Debtor paused',
-  debtor_unpaused: 'Debtor unpaused',
-  compromiso_created: 'Commitment created',
-};
-
-function auditActionLabel(action: string, locale: string): string {
-  const labels = locale === 'en' ? AUDIT_ACTION_LABELS_EN : AUDIT_ACTION_LABELS_ES;
-  return labels[action] ?? action;
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Quick actions — derived from the inmobiliaria nav (no runtime import needed)
-// ──────────────────────────────────────────────────────────────────────────────
-
-interface QuickAction {
+interface FilaNavegable {
   id: string;
-  labelKey: string;
-  icon: React.ComponentType<{ className?: string }>;
+  titulo: string;
+  icono: IconoDeFila;
   href: string;
-  permission?: { module: string; action: string };
+  /** Dirección, correo, sección… — a la derecha, en gris. */
+  contexto?: string;
+  /** Estado y cifras que ya trae la fuente (etapa, canon, rol…). */
+  chips?: NonNullable<SearchResult['badges']>;
 }
 
-const QUICK_ACTIONS: QuickAction[] = [
-  {
-    // Consignación, no "Crear propiedad": una inmobiliaria nunca administra un
-    // inmueble sin propietario, así que para ella entrar uno es siempre una
-    // consignación. Esto apuntaba a `/publicar` —el formulario del propietario,
-    // que no pide dueño, ni comisión, ni inventario— y dejaba una ficha a medias.
-    id: 'qa-nueva-consignacion',
-    labelKey: 'inmobiliaria.commandPalette.quickActions.nuevaConsignacion',
-    icon: Plus,
-    href: '/panel/inmobiliaria/inmuebles/nuevo',
-    permission: { module: 'portafolio', action: 'create' },
-  },
-  {
-    id: 'qa-cobranza',
-    labelKey: 'inmobiliaria.commandPalette.quickActions.cobranza',
-    icon: ChatCircleText,
-    href: '/panel/inmobiliaria/ai/cobranza',
-    permission: { module: 'cobranza', action: 'view' },
-  },
-  {
-    id: 'qa-cotizador',
-    labelKey: 'inmobiliaria.commandPalette.quickActions.cotizador',
-    icon: FileText,
-    href: '/panel/inmobiliaria/ai/asegurabilidad',
-    permission: { module: 'cotizador', action: 'view' },
-  },
-  {
-    id: 'qa-reportes',
-    labelKey: 'inmobiliaria.commandPalette.quickActions.reportes',
-    icon: ChartLineUp,
-    href: '/panel/inmobiliaria/reportes',
-    permission: { module: 'reportes', action: 'view' },
-  },
-  {
-    id: 'qa-portafolio',
-    labelKey: 'inmobiliaria.commandPalette.quickActions.portafolio',
-    icon: House,
-    href: '/panel/inmobiliaria/inmuebles',
-    permission: { module: 'portafolio', action: 'view' },
-  },
-];
+interface GrupoDeFilas {
+  id: string;
+  titulo: string;
+  /** Sólo con búsqueda: el contador al lado del encabezado. */
+  cantidad?: number;
+  filas: FilaNavegable[];
+}
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Badge chip
-// ──────────────────────────────────────────────────────────────────────────────
-
-const BADGE_COLORS = {
-  green: 'bg-success-soft text-success border-success/30',
-  amber: 'bg-warning-soft text-warning border-warning/30',
-  red: 'bg-danger-soft text-danger border-danger/30',
-  violet: 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle border-border dark:border-border-strong',
-  neutral: 'bg-muted text-muted-foreground border-border',
+/**
+ * Un chip de color sólo para lo que es un ESTADO (aprobado, en mora, vencido).
+ * Lo neutro —un canon, un rol, «3 prop»— es texto gris: pintarle una cápsula a
+ * cada dato convierte la fila en un semáforo y deja de leerse.
+ */
+const FONDO_DE_CHIP: Record<Exclude<ColorDeChip, 'neutral'>, string> = {
+  green: 'bg-success-soft text-success',
+  amber: 'bg-warning-soft text-warning',
+  red: 'bg-danger-soft text-danger',
+  violet: 'bg-primary-soft text-primary',
 };
 
-function Badge({ label, color }: { label: string; color: keyof typeof BADGE_COLORS }) {
+function ChipDeFila({ label, color }: { label: string; color: ColorDeChip }) {
+  if (color === 'neutral') {
+    return (
+      <span className="flex-shrink-0 whitespace-nowrap text-caption text-fg-subtle">{label}</span>
+    );
+  }
   return (
     <span
       className={cn(
-        'inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border',
-        BADGE_COLORS[color],
+        'inline-flex h-5 flex-shrink-0 items-center whitespace-nowrap rounded-sm px-1.5 text-[11px] font-medium',
+        FONDO_DE_CHIP[color],
       )}
     >
       {label}
@@ -205,605 +139,287 @@ function Badge({ label, color }: { label: string; color: keyof typeof BADGE_COLO
   );
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Preview panel for debtor results
-// ──────────────────────────────────────────────────────────────────────────────
-
-interface StageColors { text: string; bg: string; border: string }
-
-interface DebtorData {
-  fullName: string;
-  cedulaMasked: string;
-  phoneMasked: string | null;
-  emailMasked: string | null;
-  currentStage: string;
-  stageLabel: string;
-  daysInStage: number;
-  channel: string;
-  isPaused: boolean;
-  lastActivityAt: string | null;
-  stageColors: StageColors | null;
-}
-
-function toDebtorData(raw: Record<string, unknown>): DebtorData {
-  const sc = raw.stageColors as StageColors | null | undefined;
-  return {
-    fullName: String(raw.fullName ?? ''),
-    cedulaMasked: String(raw.cedulaMasked ?? ''),
-    phoneMasked: raw.phoneMasked != null ? String(raw.phoneMasked) : null,
-    emailMasked: raw.emailMasked != null ? String(raw.emailMasked) : null,
-    currentStage: String(raw.currentStage ?? ''),
-    stageLabel: String(raw.stageLabel ?? ''),
-    daysInStage: typeof raw.daysInStage === 'number' ? raw.daysInStage : 0,
-    channel: String(raw.channel ?? ''),
-    isPaused: raw.isPaused === true,
-    lastActivityAt: raw.lastActivityAt != null ? String(raw.lastActivityAt) : null,
-    stageColors: sc ?? null,
-  };
-}
-
-function DebtorPreview({ data: rawData }: { data: Record<string, unknown> }) {
-  const { locale } = useI18n();
-  const data = toDebtorData(rawData);
-  const colors = data.stageColors;
-
+function EncabezadoDeGrupo({ titulo, cantidad }: { titulo: string; cantidad?: number }) {
   return (
-    <div className="p-5 space-y-5">
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-9 h-9 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center flex-shrink-0">
-            <User className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[14px] font-semibold text-foreground truncate">
-              {data.fullName}
-            </p>
-            <p className="text-[11px] text-muted-foreground font-mono truncate">
-              {data.cedulaMasked}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Stage pill */}
-      <div
-        className={cn(
-          'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-[12px] font-medium',
-          colors?.text,
-          colors?.bg,
-          colors?.border,
-        )}
-      >
-        {data.stageLabel}
-        {data.daysInStage > 0 && (
-          <span className="opacity-70">· {data.daysInStage}d</span>
-        )}
-      </div>
-
-      {/* Contact info */}
-      <div className="space-y-2">
-        {data.phoneMasked != null && (
-          <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-            <Phone className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-            <span className="font-mono">{data.phoneMasked}</span>
-          </div>
-        )}
-        {data.emailMasked != null && (
-          <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-            <Envelope className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-            <span className="truncate">{data.emailMasked}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Last activity */}
-      {data.lastActivityAt != null && (
-        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <Clock className="w-3 h-3" />
-          <span>
-            {locale === 'es' ? 'Última actividad' : 'Last activity'}{' '}
-            {relativeTime(data.lastActivityAt, locale)}
-          </span>
-        </div>
-      )}
-
-      {/* Paused banner */}
-      {data.isPaused && (
-        <div className="flex items-start gap-2 p-2.5 rounded-md bg-warning-soft border border-warning/30">
-          <Warning className="w-3.5 h-3.5 text-warning mt-0.5 flex-shrink-0" />
-          <p className="text-[11px] text-warning leading-snug">
-            {locale === 'es' ? 'Cobranza pausada' : 'Collections paused'}
-          </p>
-        </div>
-      )}
-
-      {/* Open link hint */}
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-1 border-t border-border">
-        <ArrowElbowDownLeft className="w-3 h-3" />
-        <span>{locale === 'es' ? 'Enter para abrir en cobranza' : 'Enter to open in collections'}</span>
-        <ArrowSquareOut className="w-3 h-3 ml-auto" />
-      </div>
+    <div className="flex items-baseline gap-2 px-3 pb-1 pt-3">
+      <span className="text-label text-fg-muted">{titulo}</span>
+      {cantidad != null && <span className="text-label text-fg-subtle">{cantidad}</span>}
     </div>
   );
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Generic preview (no special template)
-// ──────────────────────────────────────────────────────────────────────────────
-
-function GenericPreview({ result }: { result: SearchResult }) {
-  const { locale } = useI18n();
+/**
+ * Filas fantasma mientras carga. Miden lo mismo que una fila real (40px) para
+ * que el resultado no empuje la lista cuando llega.
+ */
+function FilasFantasma({ cantidad }: { cantidad: number }) {
   return (
-    <div className="p-5 space-y-3">
-      <p className="text-[14px] font-semibold text-foreground">{result.title}</p>
-      {result.subtitle && (
-        <p className="text-[12px] text-muted-foreground">{result.subtitle}</p>
-      )}
-      {result.badges && result.badges.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {result.badges.map((b, i) => (
-            <Badge key={i} label={b.label} color={b.color} />
-          ))}
-        </div>
-      )}
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-2 border-t border-border">
-        <ArrowElbowDownLeft className="w-3 h-3" />
-        <span>{locale === 'es' ? 'Enter para abrir' : 'Enter to open'}</span>
-      </div>
-    </div>
-  );
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Preview: propietario
-// ──────────────────────────────────────────────────────────────────────────────
-
-function PropietarioPreview({ data }: { data: Record<string, unknown> }) {
-  const { locale } = useI18n();
-  const name = String(data.name ?? '');
-  const email = String(data.email ?? '');
-  const phone = String(data.phone ?? '');
-  const city = data.city != null ? String(data.city) : null;
-  const propertyCount = typeof data.propertyCount === 'number' ? data.propertyCount : 0;
-  const activeLeases = typeof data.activeLeases === 'number' ? data.activeLeases : 0;
-  const totalMonthlyRent = typeof data.totalMonthlyRent === 'number' ? data.totalMonthlyRent : 0;
-
-  return (
-    <div className="p-5 space-y-4">
-      <div className="flex items-center gap-2">
-        <div className="w-9 h-9 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center flex-shrink-0">
-          <User className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-[14px] font-semibold text-foreground truncate">{name}</p>
-          {city && <p className="text-[11px] text-muted-foreground truncate">{city}</p>}
-        </div>
-      </div>
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-          <Envelope className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-          <span className="truncate">{email}</span>
-        </div>
-        {phone && (
-          <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-            <Phone className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-            <span className="font-mono">{phone}</span>
-          </div>
-        )}
-      </div>
-      <div className="grid grid-cols-2 gap-2 pt-1">
-        <div className="bg-muted rounded-md p-2">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-            {locale === 'es' ? 'Propiedades' : 'Properties'}
-          </p>
-          <p className="text-[16px] font-semibold text-foreground">{propertyCount}</p>
-        </div>
-        <div className="bg-muted rounded-md p-2">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-            {locale === 'es' ? 'Arriendos' : 'Leases'}
-          </p>
-          <p className="text-[16px] font-semibold text-foreground">{activeLeases}</p>
-        </div>
-      </div>
-      {totalMonthlyRent > 0 && (
-        <div className="bg-success-soft border border-success/30 rounded-md p-2.5">
-          <p className="text-[10px] text-success font-medium">
-            {locale === 'es' ? 'Renta mensual total' : 'Total monthly rent'}
-          </p>
-          <p className="text-[14px] font-semibold text-success">
-            ${totalMonthlyRent.toLocaleString('es-CO')}
-          </p>
-        </div>
-      )}
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-1 border-t border-border">
-        <ArrowElbowDownLeft className="w-3 h-3" />
-        <span>{locale === 'es' ? 'Enter para abrir' : 'Enter to open'}</span>
-        <ArrowSquareOut className="w-3 h-3 ml-auto" />
-      </div>
-    </div>
-  );
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Preview: propiedad
-// ──────────────────────────────────────────────────────────────────────────────
-
-function PropiedadPreview({ data }: { data: Record<string, unknown> }) {
-  const { locale } = useI18n();
-  const title = String(data.title ?? '');
-  const address = String(data.address ?? '');
-  const city = String(data.city ?? '');
-  const monthlyRent = typeof data.monthlyRent === 'number' ? data.monthlyRent : 0;
-  const bedrooms = typeof data.bedrooms === 'number' ? data.bedrooms : null;
-  const bathrooms = typeof data.bathrooms === 'number' ? data.bathrooms : null;
-  const area = typeof data.area === 'number' ? data.area : null;
-  const status = String(data.status ?? '');
-
-  const STATUS_COLORS: Record<string, string> = {
-    available: 'bg-success-soft text-success border-success/30',
-    published: 'bg-success-soft text-success border-success/30',
-    rented: 'bg-primary-soft text-primary dark:text-[#7B95FF] border-primary/30',
-    pending: 'bg-warning-soft text-warning border-warning/30',
-    draft: 'bg-muted text-muted-foreground border-border',
-  };
-  const STATUS_LABELS_ES: Record<string, string> = {
-    available: 'Disponible',
-    published: 'Publicada',
-    rented: 'Arrendada',
-    pending: 'Pendiente',
-    draft: 'Borrador',
-  };
-
-  return (
-    <div className="p-5 space-y-4">
-      <div>
-        <p className="text-[14px] font-semibold text-foreground leading-snug">{title}</p>
-        <p className="text-[11px] text-muted-foreground truncate mt-0.5">{address}, {city}</p>
-      </div>
-      <span className={cn(
-        'inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium border',
-        STATUS_COLORS[status] ?? 'bg-muted text-muted-foreground border-border',
-      )}>
-        {STATUS_LABELS_ES[status] ?? status}
-      </span>
-      {monthlyRent > 0 && (
-        <div className="bg-surface-muted dark:bg-ink border border-border dark:border-border-strong rounded-md p-2.5">
-          <p className="text-[10px] text-fg-muted dark:text-fg-subtle font-medium">
-            {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
-          </p>
-          <p className="text-[14px] font-semibold text-foreground">
-            ${monthlyRent.toLocaleString('es-CO')}
-          </p>
-        </div>
-      )}
-      {(bedrooms != null || area != null) && (
-        <div className="grid grid-cols-3 gap-1.5">
-          {bedrooms != null && (
-            <div className="bg-muted rounded-md p-2 text-center">
-              <p className="text-[16px] font-semibold text-foreground">{bedrooms}</p>
-              <p className="text-[9px] text-muted-foreground uppercase">{locale === 'es' ? 'Hab' : 'Bed'}</p>
-            </div>
-          )}
-          {bathrooms != null && (
-            <div className="bg-muted rounded-md p-2 text-center">
-              <p className="text-[16px] font-semibold text-foreground">{bathrooms}</p>
-              <p className="text-[9px] text-muted-foreground uppercase">{locale === 'es' ? 'Baños' : 'Bath'}</p>
-            </div>
-          )}
-          {area != null && (
-            <div className="bg-muted rounded-md p-2 text-center">
-              <p className="text-[16px] font-semibold text-foreground">{area}</p>
-              <p className="text-[9px] text-muted-foreground uppercase">m²</p>
-            </div>
-          )}
-        </div>
-      )}
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-1 border-t border-border">
-        <ArrowElbowDownLeft className="w-3 h-3" />
-        <span>{locale === 'es' ? 'Enter para abrir' : 'Enter to open'}</span>
-        <ArrowSquareOut className="w-3 h-3 ml-auto" />
-      </div>
-    </div>
-  );
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Preview: contrato
-// ──────────────────────────────────────────────────────────────────────────────
-
-function ContratoPreview({ data }: { data: Record<string, unknown> }) {
-  const { locale } = useI18n();
-  const tenantName = data.tenantName != null ? String(data.tenantName) : null;
-  const tenantEmail = data.tenantEmail != null ? String(data.tenantEmail) : null;
-  const propertyAddress = data.propertyAddress != null ? String(data.propertyAddress) : null;
-  const monthlyRent = typeof data.monthlyRent === 'number' ? data.monthlyRent : 0;
-  const status = String(data.status ?? '');
-  const startDate = data.startDate != null ? String(data.startDate) : null;
-  const endDate = data.endDate != null ? String(data.endDate) : null;
-
-  const STATUS_COLORS_PILL: Record<string, string> = {
-    ACTIVE: 'bg-success-soft text-success border-success/30',
-    SIGNED: 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle border-border dark:border-border-strong',
-    PENDING_TENANT: 'bg-warning-soft text-warning border-warning/30',
-    PENDING_TENANT_SIGNATURE: 'bg-warning-soft text-warning border-warning/30',
-    PENDING_LANDLORD: 'bg-warning-soft text-warning border-warning/30',
-    PENDING_LANDLORD_SIGNATURE: 'bg-warning-soft text-warning border-warning/30',
-    DRAFT: 'bg-muted text-muted-foreground border-border',
-    EXPIRED: 'bg-danger-soft text-danger border-danger/30',
-    CANCELLED: 'bg-danger-soft text-danger border-danger/30',
-  };
-  const STATUS_LABELS_ES: Record<string, string> = {
-    ACTIVE: 'Activo',
-    SIGNED: 'Firmado',
-    PENDING_TENANT: 'Pdte. inquilino',
-    PENDING_TENANT_SIGNATURE: 'Pdte. inquilino',
-    PENDING_LANDLORD: 'Pdte. propietario',
-    PENDING_LANDLORD_SIGNATURE: 'Pdte. propietario',
-    DRAFT: 'Borrador',
-    EXPIRED: 'Expirado',
-    CANCELLED: 'Cancelado',
-  };
-
-  const formatDate = (iso: string) => {
-    try {
-      return new Date(iso).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      return iso;
-    }
-  };
-
-  return (
-    <div className="p-5 space-y-4">
-      {tenantName && (
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center flex-shrink-0">
-            <User className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[14px] font-semibold text-foreground truncate">{tenantName}</p>
-            {tenantEmail && (
-              <p className="text-[11px] text-muted-foreground truncate">{tenantEmail}</p>
+    <div aria-hidden="true">
+      {Array.from({ length: cantidad }, (_, i) => (
+        <div key={i} className="flex h-10 items-center gap-2.5 px-3">
+          <div className="h-4 w-4 flex-shrink-0 animate-pulse rounded-sm bg-surface-muted" />
+          <div
+            className={cn(
+              'h-3 animate-pulse rounded-sm bg-surface-muted',
+              i === 0 ? 'w-2/5' : i === 1 ? 'w-1/2' : 'w-1/3',
             )}
-          </div>
+          />
         </div>
-      )}
-      {propertyAddress && (
-        <p className="text-[12px] text-muted-foreground truncate">{propertyAddress}</p>
-      )}
-      <span className={cn(
-        'inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium border',
-        STATUS_COLORS_PILL[status] ?? 'bg-muted text-muted-foreground border-border',
-      )}>
-        {STATUS_LABELS_ES[status] ?? status}
-      </span>
-      {monthlyRent > 0 && (
-        <div className="bg-surface-muted dark:bg-ink border border-border dark:border-border-strong rounded-md p-2.5">
-          <p className="text-[10px] text-fg-muted dark:text-fg-subtle font-medium">
-            {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
-          </p>
-          <p className="text-[14px] font-semibold text-fg-muted dark:text-fg-subtle">
-            ${monthlyRent.toLocaleString('es-CO')}
-          </p>
-        </div>
-      )}
-      {(startDate ?? endDate) && (
-        <div className="space-y-1">
-          {startDate && (
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-              <Clock className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-              <span>{locale === 'es' ? 'Inicio' : 'Start'}: {formatDate(startDate)}</span>
-            </div>
-          )}
-          {endDate && (
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-              <Clock className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-              <span>{locale === 'es' ? 'Fin' : 'End'}: {formatDate(endDate)}</span>
-            </div>
-          )}
-        </div>
-      )}
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-1 border-t border-border">
-        <ArrowElbowDownLeft className="w-3 h-3" />
-        <span>{locale === 'es' ? 'Enter para abrir' : 'Enter to open'}</span>
-        <ArrowSquareOut className="w-3 h-3 ml-auto" />
-      </div>
+      ))}
     </div>
   );
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Preview router
-// ──────────────────────────────────────────────────────────────────────────────
-
-function ResultPreview({ result }: { result: SearchResult | null }) {
-  const { locale } = useI18n();
-
-  if (!result) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-center p-8 gap-3">
-        <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
-          <MagnifyingGlass className="w-5 h-5 text-muted-foreground" />
-        </div>
-        <p className="text-[13px] text-muted-foreground">
-          {locale === 'es'
-            ? 'Selecciona un resultado para ver el detalle'
-            : 'Select a result to see details'}
-        </p>
-      </div>
-    );
-  }
-
-  if (result.preview?.type === 'debtor') {
-    return <DebtorPreview data={result.preview} />;
-  }
-
-  if (result.preview?.type === 'propietario') {
-    return <PropietarioPreview data={result.preview} />;
-  }
-
-  if (result.preview?.type === 'propiedad') {
-    return <PropiedadPreview data={result.preview} />;
-  }
-
-  if (result.preview?.type === 'contrato') {
-    return <ContratoPreview data={result.preview} />;
-  }
-
-  return <GenericPreview result={result} />;
+function FilaDeComando({
+  fila,
+  activa,
+  onSelect,
+  onHover,
+  refDeFila,
+}: {
+  fila: FilaNavegable;
+  activa: boolean;
+  onSelect: () => void;
+  onHover: () => void;
+  refDeFila?: (el: HTMLButtonElement | null) => void;
+}) {
+  const Icono = fila.icono;
+  return (
+    // allowlist: fila de un listbox ARIA (role="option", ref de scroll, foco por
+    // teclado) dentro de un combobox propio — cadence no tiene primitiva de
+    // opción de listbox y un Button rompería el rol y la navegación.
+    <button
+      ref={refDeFila}
+      role="option"
+      aria-selected={activa}
+      onClick={onSelect}
+      // `mousemove` y no `mouseenter`: al bajar con el teclado la lista scrollea
+      // bajo un puntero quieto y `mouseenter` le robaba el foco a la flecha.
+      onMouseMove={onHover}
+      className={cn(
+        'flex h-10 w-full items-center gap-2.5 rounded-md px-3 text-left transition-colors',
+        activa ? 'bg-surface-muted' : 'bg-transparent',
+      )}
+    >
+      <Icono className="h-4 w-4 flex-shrink-0 text-fg-muted" />
+      <span className="min-w-0 flex-1 truncate text-sm text-fg">{fila.titulo}</span>
+      {fila.contexto && (
+        <span className="hidden min-w-0 max-w-[45%] truncate text-caption text-fg-muted sm:block">
+          {fila.contexto}
+        </span>
+      )}
+      {fila.chips?.slice(0, 2).map((chip, i) => (
+        <ChipDeFila key={`${chip.label}-${i}`} label={chip.label} color={chip.color} />
+      ))}
+    </button>
+  );
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Novedades empty state
+// Acciones rápidas — el estado vacío
 // ──────────────────────────────────────────────────────────────────────────────
 
-function NovadadesState({
-  onNavigate,
-}: {
-  onNavigate: (href: string) => void;
-}) {
+interface AccionRapida {
+  id: string;
+  labelKey: string;
+  icono: IconoDeFila;
+  href: string;
+  permission?: { module: string; action: string };
+}
+
+const ACCIONES_RAPIDAS: AccionRapida[] = [
+  {
+    // Consignación, no "Crear propiedad": una inmobiliaria nunca administra un
+    // inmueble sin propietario, así que para ella entrar uno es siempre una
+    // consignación. Esto apuntaba a `/publicar` —el formulario del propietario,
+    // que no pide dueño, ni comisión, ni inventario— y dejaba una ficha a medias.
+    id: 'qa-nueva-consignacion',
+    labelKey: 'inmobiliaria.commandPalette.quickActions.nuevaConsignacion',
+    icono: Plus,
+    href: '/panel/inmobiliaria/inmuebles/nuevo',
+    permission: { module: 'portafolio', action: 'create' },
+  },
+  {
+    id: 'qa-cobranza',
+    labelKey: 'inmobiliaria.commandPalette.quickActions.cobranza',
+    icono: ChatCircleText,
+    href: '/panel/inmobiliaria/cobros/cobranza',
+    permission: { module: 'cobranza', action: 'view' },
+  },
+  {
+    id: 'qa-cotizador',
+    labelKey: 'inmobiliaria.commandPalette.quickActions.cotizador',
+    icono: FileText,
+    href: '/panel/inmobiliaria/postulaciones/asegurabilidad',
+    permission: { module: 'cotizador', action: 'view' },
+  },
+  {
+    id: 'qa-reportes',
+    labelKey: 'inmobiliaria.commandPalette.quickActions.reportes',
+    icono: ChartLineUp,
+    href: '/panel/inmobiliaria/reportes',
+    permission: { module: 'reportes', action: 'view' },
+  },
+  {
+    id: 'qa-portafolio',
+    labelKey: 'inmobiliaria.commandPalette.quickActions.portafolio',
+    icono: House,
+    href: '/panel/inmobiliaria/inmuebles',
+    permission: { module: 'portafolio', action: 'view' },
+  },
+];
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Novedades — el audit log del agente, dicho en español
+// ──────────────────────────────────────────────────────────────────────────────
+
+/** Constante de módulo: un `{}` nuevo por render haría latir el hook. */
+const SIN_FILTROS: AuditLogFilters = {};
+
+const EVENTOS_VISIBLES = 6;
+
+function Novedades() {
   const { t, locale } = useI18n();
-  const { canAccess } = usePermissionsContext();
+  const { items, isLoading, error } = useAuditLog(SIN_FILTROS);
 
-  // Fetch last 8 audit events, no filters (default last 7d)
-  const { items, isLoading } = useAuditLog({});
-  const recentItems = items.slice(0, 8);
+  // El feed es informativo: si el endpoint falla, el buscador no es el lugar
+  // para contarlo (y una fila de error ahí es ruido en el gesto de escribir).
+  if (error) return null;
 
-  const visibleQuickActions = QUICK_ACTIONS.filter(
-    (qa) => !qa.permission || canAccess(qa.permission.module, qa.permission.action),
-  );
+  const eventos = items.slice(0, EVENTOS_VISIBLES);
 
   return (
-    <div className="flex-1 min-h-0 md:flex-none max-h-none md:max-h-[min(60vh,460px)] overflow-y-auto overscroll-contain p-2">
-      {/* Acciones rápidas — primary, full width */}
-      <p className="px-2.5 pt-1.5 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
-        {t('inmobiliaria.commandPalette.quickActions.title')}
-      </p>
-      <div className="space-y-0.5">
-        {visibleQuickActions.map((qa) => {
-          const Icon = qa.icon;
-          return (
-            // allowlist: command-list row (icon-tile + label + caret as one nav target) —
-            // rich list-row click target; Button can't host it (list-row precedent). Native.
-            <button
-              key={qa.id}
-              onClick={() => onNavigate(qa.href)}
-              className="group w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-left hover:bg-accent transition-colors"
-            >
-              <div className="grid place-items-center w-9 h-9 rounded-xl bg-muted group-hover:bg-primary/15 flex-shrink-0 transition-colors">
-                <Icon className="w-[18px] h-[18px] text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
-              <span className="flex-1 min-w-0 truncate text-[14px] font-medium text-foreground">
-                {t(qa.labelKey)}
-              </span>
-              <CaretRight className="w-4 h-4 flex-shrink-0 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Novedades — secondary, only as much room as it needs */}
-      <p className="px-2.5 pt-4 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
-        {t('inmobiliaria.commandPalette.novedades')}
-      </p>
+    <div>
+      <EncabezadoDeGrupo titulo={t('inmobiliaria.commandPalette.novedades')} />
       {isLoading ? (
-        <div className="space-y-0.5">
-          {[0, 1].map((i) => (
-            <div key={i} className="flex items-center gap-3 px-2.5 py-2">
-              <div className="w-7 h-7 rounded-full bg-muted animate-pulse flex-shrink-0" />
-              <div className="flex-1 space-y-1.5">
-                <div className="h-3 w-1/3 rounded bg-muted animate-pulse" />
-                <div className="h-2.5 w-1/4 rounded bg-muted animate-pulse" />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : recentItems.length === 0 ? (
-        <p className="px-2.5 py-2 text-[12px] text-muted-foreground">
-          {locale === 'es' ? 'Sin actividad reciente' : 'No recent activity'}
+        <FilasFantasma cantidad={2} />
+      ) : eventos.length === 0 ? (
+        <p className="px-3 py-2 text-caption text-fg-muted">
+          {t('inmobiliaria.commandPalette.novedadesEmpty')}
         </p>
       ) : (
-        <div className="space-y-0.5">
-          {recentItems.map((entry) => (
-            <div
-              key={entry.id}
-              className="flex items-start gap-3 px-2.5 py-2 rounded-md hover:bg-muted/50 transition-colors"
-            >
-              <div className="grid place-items-center w-7 h-7 rounded-full bg-muted flex-shrink-0 mt-0.5">
-                <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[12.5px] font-medium text-foreground leading-snug">
-                  {auditActionLabel(entry.action, locale)}
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {entry.entity_type} · {relativeTime(entry.occurred_at, locale)}
-                </p>
-              </div>
+        eventos.map((evento) => {
+          const entidad = auditEntityLabel(evento.entity_type, locale);
+          const cuando = relativeTimeLabel(evento.occurred_at, locale);
+          return (
+            // Fila de lectura, no un control: no lleva hover ni cursor de mano
+            // porque no hay adónde ir (el audit log completo vive en Cobranza).
+            <div key={evento.id} className="flex h-10 items-center gap-2.5 px-3">
+              <Clock className="h-4 w-4 flex-shrink-0 text-fg-muted" />
+              <span className="min-w-0 flex-1 truncate text-sm text-fg">
+                {auditEventLabel(evento.action, locale)}
+              </span>
+              <span className="flex-shrink-0 whitespace-nowrap text-caption text-fg-muted">
+                {entidad ? `${entidad} · ${cuando}` : cuando}
+              </span>
             </div>
-          ))}
-        </div>
+          );
+        })
       )}
     </div>
   );
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Main palette
+// La paleta
 // ──────────────────────────────────────────────────────────────────────────────
 
 export function CommandPalette() {
   const { isOpen, close } = useCommandPalette();
   const router = useRouter();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const { agency } = useAuth();
   const { canAccess } = usePermissionsContext();
 
   const [query, setQuery] = useState('');
-  const [highlightIdx, setHighlightIdx] = useState(0);
+  const [indiceActivo, setIndiceActivo] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
-  const highlightedItemRef = useRef<HTMLButtonElement | null>(null);
+  const filaActivaRef = useRef<HTMLButtonElement | null>(null);
 
   const agencyId = agency?.id ?? null;
 
-  // Build sources (filtered by permissions)
   const sources = useMemo((): SearchSource[] => {
-    const all: SearchSource[] = [
-      // Group: Navegación — panel pages + their in-page actions, always first
+    const todas: SearchSource[] = [
+      // Navegación primero: es lo que más se busca (una pantalla) y lo único
+      // que responde sin red.
       navigationSource,
-      // Group: Cobranza
       debtorsSource,
-      // Group: Inmobiliario
       propietariosSource,
       agentesSource,
       propiedadesSource,
       contratosSource,
-      // Group: Cotizador + AP
       cotizacionesSource,
       apBillsSource,
     ];
-    return all.filter(
-      (s) => !s.permission || canAccess(s.permission.module, s.permission.action),
-    );
+    return todas.filter((s) => !s.permission || canAccess(s.permission.module, s.permission.action));
   }, [canAccess]);
 
   const ctx = useMemo((): SearchSourceContext => ({ agencyId, canAccess }), [agencyId, canAccess]);
 
-  const { bySource, flat, isAnyLoading } = useFederatedSearch(query, sources, ctx);
+  const { bySource, isAnyLoading } = useFederatedSearch(query, sources, ctx);
 
-  // Reset highlight when results change
+  const hayBusqueda = query.trim().length > 0;
+
+  // El debounce del hook deja `bySource` vacío ~200ms después de la primera
+  // tecla: sin esto, «Sin resultados» parpadea antes de que salga la consulta.
+  const buscando = hayBusqueda && (isAnyLoading || Object.keys(bySource).length === 0);
+
+  const accionesVisibles = useMemo(
+    () => ACCIONES_RAPIDAS.filter((a) => !a.permission || canAccess(a.permission.module, a.permission.action)),
+    [canAccess],
+  );
+
+  const grupos = useMemo((): GrupoDeFilas[] => {
+    if (!hayBusqueda) {
+      if (accionesVisibles.length === 0) return [];
+      return [
+        {
+          id: 'acciones-rapidas',
+          titulo: t('inmobiliaria.commandPalette.quickActions.title'),
+          filas: accionesVisibles.map((accion) => ({
+            id: accion.id,
+            titulo: t(accion.labelKey),
+            icono: accion.icono,
+            href: accion.href,
+          })),
+        },
+      ];
+    }
+
+    const salida: GrupoDeFilas[] = [];
+    for (const source of sources) {
+      const estado = bySource[source.id];
+      if (!estado || estado.results.length === 0) continue;
+      salida.push({
+        id: source.id,
+        titulo: t(source.labelKey),
+        cantidad: estado.results.length,
+        filas: estado.results.map((r) => ({
+          id: r.id,
+          titulo: r.title,
+          icono: source.icon,
+          href: r.href,
+          contexto: r.subtitle,
+          chips: r.badges,
+        })),
+      });
+    }
+    return salida;
+  }, [hayBusqueda, accionesVisibles, sources, bySource, t]);
+
+  const filas = useMemo(() => grupos.flatMap((g) => g.filas), [grupos]);
+  const indicePorId = useMemo(
+    () => new Map(filas.map((fila, i) => [fila.id, i] as const)),
+    [filas],
+  );
+
+  /** Firma estable de la lista: reinicia el foco sólo cuando cambia de verdad. */
+  const firmaDeLista = useMemo(() => filas.map((f) => f.id).join(' '), [filas]);
   useEffect(() => {
-    setHighlightIdx(0);
-  }, [flat.length]);
+    setIndiceActivo(0);
+  }, [firmaDeLista]);
 
-  const highlightedResult = flat[highlightIdx] ?? null;
-
-  const handleNavigate = useCallback(
+  const navegar = useCallback(
     (href: string) => {
       close();
       setQuery('');
@@ -812,278 +428,198 @@ export function CommandPalette() {
     [close, router],
   );
 
-  // Keyboard navigation within the palette (input captures these)
-  const handleKeyDown = useCallback(
+  const alTeclear = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (flat.length === 0) return;
-
+      if (filas.length === 0) return;
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setHighlightIdx((prev) => Math.min(prev + 1, flat.length - 1));
+        setIndiceActivo((prev) => Math.min(prev + 1, filas.length - 1));
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setHighlightIdx((prev) => Math.max(prev - 1, 0));
+        setIndiceActivo((prev) => Math.max(prev - 1, 0));
       } else if (e.key === 'Enter') {
         e.preventDefault();
-        const result = flat[highlightIdx];
-        if (result) handleNavigate(result.href);
+        const fila = filas[indiceActivo];
+        if (fila) navegar(fila.href);
       }
     },
-    [flat, highlightIdx, handleNavigate],
+    [filas, indiceActivo, navegar],
   );
 
-  // Scroll highlighted item into view
   useEffect(() => {
-    highlightedItemRef.current?.scrollIntoView({ block: 'nearest' });
-  }, [highlightIdx]);
+    filaActivaRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [indiceActivo]);
 
-  // Focus input when palette opens; clear query when closed
   useEffect(() => {
     if (isOpen) {
-      // Small defer so Dialog animation doesn't steal focus
+      // Diferido un frame para que la animación del Dialog no le robe el foco.
       requestAnimationFrame(() => inputRef.current?.focus());
     } else {
       setQuery('');
-      setHighlightIdx(0);
+      setIndiceActivo(0);
     }
   }, [isOpen]);
 
-  // Group results by sourceId for display
-  const groups = useMemo(() => {
-    const result: Array<{ source: SearchSource; results: SearchResult[] }> = [];
-    for (const src of sources) {
-      const state = bySource[src.id];
-      if (!state) continue;
-      if (state.results.length > 0) {
-        result.push({ source: src, results: state.results });
-      }
-    }
-    return result;
-  }, [sources, bySource]);
-
-  const hasResults = flat.length > 0;
-  const isQuerying = query.trim().length > 0;
+  const puedeVerNovedades = canAccess('cobranza', 'view');
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
-      {/* We override DialogContent styling for the palette layout */}
       <DialogContent
         className={cn(
-          // Override default DialogContent styles.
-          // <md: full-screen takeover (dvh — la URL bar / teclado no dejan franja
-          // muerta) con el close X por defecto visible; md+: palette centrado clasico.
+          // <md: pantalla completa (dvh — la barra de URL y el teclado no dejan
+          // franja muerta) con la ✕ visible; md+: paleta centrada de 640px.
           'fixed inset-x-0 left-0 top-0 translate-x-0 translate-y-0',
           'h-[100dvh] max-h-[100dvh] w-full max-w-none rounded-none',
           'md:inset-x-auto md:left-1/2 md:top-[12%] md:-translate-x-1/2 md:translate-y-0',
-          'md:h-auto md:max-h-none md:w-[min(720px,94vw)] md:rounded-xl',
-          'flex flex-col p-0 gap-0',
-          'border border-border bg-popover text-popover-foreground',
+          'md:h-auto md:max-h-none md:w-[min(640px,94vw)] md:rounded-lg',
+          'flex flex-col gap-0 p-0',
+          'border border-border bg-surface text-fg',
           'overflow-hidden md:[&>button]:hidden',
-          // Disable the default slide-in animation — we use our own
+          // Sin la animación de entrada por defecto del diálogo.
           'data-[state=open]:animate-none data-[state=closed]:animate-none',
+          // El cuerpo de la primitiva trae `p-6 gap-4` y su propio scroll: para
+          // una paleta eso es aire alrededor del input y dos barras de scroll.
+          // Se aplana acá (el `div` marcado con data-lenis-prevent es suyo).
+          '[&>[data-lenis-prevent]]:flex [&>[data-lenis-prevent]]:flex-col',
+          '[&>[data-lenis-prevent]]:gap-0 [&>[data-lenis-prevent]]:overflow-hidden',
+          '[&>[data-lenis-prevent]]:p-0',
         )}
-        // Remove the close button from the Radix default
         aria-describedby={undefined}
       >
-        <DialogTitle className="sr-only">
-          {t('inmobiliaria.commandPalette.title')}
-        </DialogTitle>
+        <DialogTitle className="sr-only">{t('inmobiliaria.commandPalette.title')}</DialogTitle>
 
-        {/* ── Search input row ────────────────────────────────────────────── */}
-        <div className="flex items-center gap-3 px-4 h-[52px] border-b border-border">
-          {isAnyLoading ? (
-            <DSSpinner size="sm" variant="muted" className="flex-shrink-0" />
-          ) : (
-            <MagnifyingGlass className="w-[18px] h-[18px] text-muted-foreground flex-shrink-0" />
-          )}
-          {/* allowlist: bare ⌘K combobox input (borderless, transparent, seamless palette bar
-              with role=combobox + arrow-key nav). Cadence Input's bordered skin breaks the
-              seamless bar; Cadence CommandMenu would require rewriting the federated-search
-              palette. Kept native. */}
-          <input
-            ref={inputRef}
-            type="text"
-            role="combobox"
-            aria-expanded={hasResults}
-            aria-autocomplete="list"
-            aria-controls="cp-results-list"
-            aria-label={t('inmobiliaria.commandPalette.inputLabel')}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={t('inmobiliaria.commandPalette.placeholder')}
-            className="flex-1 text-[15px] text-foreground placeholder:text-muted-foreground bg-transparent border-0 outline-none"
-          />
-          {query && (
-            <IconButton
-              variant="ghost"
-              size="sm"
-              onClick={() => setQuery('')}
-              aria-label={locale === 'es' ? 'Limpiar búsqueda' : 'Clear search'}
-              className="text-muted-foreground"
-              icon={<X className="w-4 h-4" />}
+        <div className="flex min-h-0 w-full flex-1 flex-col">
+          {/* ── Buscador ─────────────────────────────────────────────────── */}
+          {/* `pr-14` en móvil: ahí la ✕ del diálogo flota sobre esta misma
+              franja (right-4 top-4) y se comía el final del texto escrito. */}
+          <div className="flex h-[52px] flex-shrink-0 items-center gap-2.5 border-b border-border pl-4 pr-14 md:pr-4">
+            <span className="grid h-[18px] w-[18px] flex-shrink-0 place-items-center">
+              {buscando ? (
+                <Spinner size="xs" variant="muted" />
+              ) : (
+                <MagnifyingGlass className="h-[18px] w-[18px] text-fg-muted" />
+              )}
+            </span>
+            {/* allowlist: input pelado de un combobox ⌘K (sin borde, transparente,
+                role=combobox + navegación por flechas). El Input de cadence trae
+                su marco y parte la barra; el CommandMenu de cadence obligaría a
+                reescribir la búsqueda federada. Queda nativo. */}
+            <input
+              ref={inputRef}
+              type="text"
+              role="combobox"
+              aria-expanded={filas.length > 0}
+              aria-autocomplete="list"
+              aria-controls="cp-results-list"
+              aria-label={t('inmobiliaria.commandPalette.inputLabel')}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={alTeclear}
+              placeholder={t('inmobiliaria.commandPalette.inputPlaceholder')}
+              className="min-w-0 flex-1 border-0 bg-transparent text-base text-fg outline-none placeholder:text-fg-subtle"
             />
-          )}
-        </div>
-
-        {/* ── Body — llena la pantalla en movil, height-capped en md+ ────── */}
-        <div className="flex flex-1 min-h-0 pb-[env(safe-area-inset-bottom)] md:pb-0 md:flex-none md:min-h-[320px] md:max-h-[calc(70vh-100px)]">
-          {!isQuerying ? (
-            /* Empty state — single-column command list */
-            <NovadadesState onNavigate={handleNavigate} />
-          ) : (
-            <>
-              {/* Results list */}
-              <div className="flex-1 min-w-0 md:border-r border-border overflow-hidden flex flex-col">
-                <ScrollArea className="flex-1 [&>[data-radix-scroll-area-viewport]]:overscroll-contain">
-                  {!hasResults && !isAnyLoading && (
-                    <div className="flex flex-col items-center justify-center py-12 gap-2">
-                      <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
-                        <MagnifyingGlass className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                      <p className="text-[13px] text-muted-foreground">
-                        {t('inmobiliaria.commandPalette.noResults', { query })}
-                      </p>
-                    </div>
-                  )}
-
-                  <div
-                    id="cp-results-list"
-                    role="listbox"
-                    aria-label={t('inmobiliaria.commandPalette.resultsLabel')}
-                    ref={listRef}
-                  >
-                    {groups.map(({ source, results }) => {
-                      const SrcIcon = source.icon;
-                      return (
-                        <div key={source.id} className="px-2">
-                          {/* Group header */}
-                          <div className="flex items-center gap-2 px-2 pt-3 pb-1.5 sticky top-0 z-10 bg-popover/95 backdrop-blur-sm">
-                            <SrcIcon className="w-3 h-3 text-muted-foreground/70" />
-                            <span className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-[0.12em]">
-                              {t(source.labelKey)}
-                            </span>
-                          </div>
-
-                          {/* Result rows */}
-                          {results.map((result) => {
-                            const flatIdx = flat.indexOf(result);
-                            const isHighlighted = flatIdx === highlightIdx;
-
-                            return (
-                              // allowlist: ARIA listbox option row (role="option", scroll-ref,
-                              // hover-highlight) in a custom combobox — Cadence has no listbox-option
-                              // primitive; Button would break the role/ref/keyboard-nav machinery.
-                              <button
-                                key={result.id}
-                                ref={isHighlighted ? (el) => { highlightedItemRef.current = el; } : undefined}
-                                role="option"
-                                aria-selected={isHighlighted}
-                                onClick={() => handleNavigate(result.href)}
-                                onMouseEnter={() => setHighlightIdx(flatIdx)}
-                                className={cn(
-                                  'w-full flex items-start gap-3 px-2 py-2 rounded-md text-left transition-colors',
-                                  isHighlighted ? 'bg-accent' : 'hover:bg-muted/60',
-                                )}
-                              >
-                                {/* Icon */}
-                                <div
-                                  className={cn(
-                                    'grid place-items-center w-7 h-7 rounded-md flex-shrink-0 mt-0.5 transition-colors',
-                                    isHighlighted ? 'bg-primary/15' : 'bg-muted',
-                                  )}
-                                >
-                                  <SrcIcon
-                                    className={cn(
-                                      'w-3.5 h-3.5 transition-colors',
-                                      isHighlighted ? 'text-primary' : 'text-muted-foreground',
-                                    )}
-                                  />
-                                </div>
-
-                                {/* Text */}
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-[13px] font-medium truncate text-foreground">
-                                    {result.title}
-                                  </p>
-                                  {result.subtitle && (
-                                    <p className="text-[11px] text-muted-foreground font-mono truncate mt-0.5">
-                                      {result.subtitle}
-                                    </p>
-                                  )}
-                                  {result.badges && result.badges.length > 0 && (
-                                    <div className="flex flex-wrap gap-1 mt-1">
-                                      {result.badges.map((b, i) => (
-                                        <Badge key={i} label={b.label} color={b.color} />
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      );
-                    })}
-
-                    {/* Loading spinners per source */}
-                    {isAnyLoading &&
-                      sources
-                        .filter((s) => bySource[s.id]?.isLoading)
-                        .map((s) => (
-                          <div key={`loading-${s.id}`} className="flex items-center gap-2 px-4 py-3">
-                            <DSSpinner size="xs" variant="muted" />
-                            <span className="text-[12px] text-muted-foreground">
-                              {t(s.labelKey)}…
-                            </span>
-                          </div>
-                        ))}
-                  </div>
-                </ScrollArea>
-              </div>
-
-              {/* Preview panel — mouse/hover-driven, hidden on mobile */}
-              <div className="hidden md:flex w-[240px] flex-shrink-0 overflow-hidden flex-col">
-                <ScrollArea className="flex-1 [&>[data-radix-scroll-area-viewport]]:overscroll-contain">
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={highlightedResult?.id ?? 'empty'}
-                      initial={{ opacity: 0, x: 6 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -6 }}
-                      transition={{ duration: 0.15 }}
-                    >
-                      <ResultPreview result={highlightedResult} />
-                    </motion.div>
-                  </AnimatePresence>
-                </ScrollArea>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* ── Footer / keyboard hints — desktop-only (no hay teclado en touch) ── */}
-        <div className="hidden md:flex items-center gap-4 px-4 h-10 border-t border-border bg-muted/30">
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <kbd className="grid place-items-center w-[18px] h-[18px] rounded border border-border bg-background">
-              <ArrowUp className="w-2.5 h-2.5" />
-            </kbd>
-            <kbd className="grid place-items-center w-[18px] h-[18px] rounded border border-border bg-background">
-              <ArrowDown className="w-2.5 h-2.5" />
-            </kbd>
-            <span>{t('inmobiliaria.commandPalette.hintNavigate')}</span>
+            {query && (
+              <IconButton
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setQuery('');
+                  inputRef.current?.focus();
+                }}
+                aria-label={t('inmobiliaria.commandPalette.clearLabel')}
+                className="text-fg-muted"
+                icon={<X className="h-4 w-4" />}
+              />
+            )}
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <kbd className="grid place-items-center w-[18px] h-[18px] rounded border border-border bg-background">
-              <ArrowElbowDownLeft className="w-2.5 h-2.5" />
-            </kbd>
-            <span>{t('inmobiliaria.commandPalette.hintOpen')}</span>
+
+          {/* ── Lista ────────────────────────────────────────────────────── */}
+          <div
+            className={cn(
+              'min-h-0 flex-1 overflow-y-auto overscroll-contain p-2',
+              // En móvil no hay pie: el último resultado no puede quedar
+              // debajo de la barra de gestos.
+              'pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:pb-2',
+              // Alto mínimo fijo: el estado vacío, el cargando y los resultados
+              // ocupan lo mismo, así la paleta no salta al escribir.
+              'md:min-h-[300px] md:max-h-[min(60vh,420px)]',
+            )}
+          >
+            <div
+              id="cp-results-list"
+              role="listbox"
+              aria-label={t('inmobiliaria.commandPalette.resultsLabel')}
+            >
+              {grupos.map((grupo) => (
+                // `role="group"`: dentro de un listbox las opciones tienen que
+                // colgar del listbox o de un grupo, no de un div sin rol.
+                <div key={grupo.id} role="group" aria-label={grupo.titulo}>
+                  <EncabezadoDeGrupo titulo={grupo.titulo} cantidad={grupo.cantidad} />
+                  {grupo.filas.map((fila) => {
+                    const indice = indicePorId.get(fila.id) ?? -1;
+                    const activa = indice === indiceActivo;
+                    return (
+                      <FilaDeComando
+                        key={fila.id}
+                        fila={fila}
+                        activa={activa}
+                        onSelect={() => navegar(fila.href)}
+                        onHover={() => setIndiceActivo(indice)}
+                        refDeFila={
+                          activa
+                            ? (el) => {
+                                filaActivaRef.current = el;
+                              }
+                            : undefined
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+
+            {hayBusqueda && filas.length === 0 && buscando && (
+              <div className="pt-3">
+                <FilasFantasma cantidad={3} />
+              </div>
+            )}
+
+            {hayBusqueda && filas.length === 0 && !buscando && (
+              <div className="px-3 py-12 text-center">
+                <p className="text-sm text-fg">
+                  {t('inmobiliaria.commandPalette.noResults', { query: query.trim() })}
+                </p>
+                <p className="mt-1 text-caption text-fg-muted">
+                  {t('inmobiliaria.commandPalette.noResultsHint')}
+                </p>
+              </div>
+            )}
+
+            {!hayBusqueda && puedeVerNovedades && <Novedades />}
           </div>
-          <div className="ml-auto flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <kbd className="inline-flex items-center h-[18px] px-1.5 rounded border border-border bg-background text-[10px] font-medium">
-              esc
-            </kbd>
-            <span>{t('inmobiliaria.commandPalette.hintClose')}</span>
+
+          {/* ── Pie ──────────────────────────────────────────────────────── */}
+          <div className="hidden h-9 flex-shrink-0 items-center gap-4 border-t border-border px-3 md:flex">
+            <span className="flex items-center gap-1.5 text-caption text-fg-subtle">
+              <Kbd size="sm">
+                <ArrowUp className="h-2.5 w-2.5" />
+              </Kbd>
+              <Kbd size="sm">
+                <ArrowDown className="h-2.5 w-2.5" />
+              </Kbd>
+              {t('inmobiliaria.commandPalette.hintNavigate')}
+            </span>
+            <span className="flex items-center gap-1.5 text-caption text-fg-subtle">
+              <Kbd size="sm">
+                <ArrowElbowDownLeft className="h-2.5 w-2.5" />
+              </Kbd>
+              {t('inmobiliaria.commandPalette.hintOpen')}
+            </span>
+            <span className="ml-auto flex items-center gap-1.5 text-caption text-fg-subtle">
+              <Kbd size="sm">esc</Kbd>
+              {t('inmobiliaria.commandPalette.hintClose')}
+            </span>
           </div>
         </div>
       </DialogContent>

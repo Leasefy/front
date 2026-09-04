@@ -92,6 +92,10 @@
       "description": "Cross-agent AI hub landing aggregates (Phase 37-02)"
     },
     {
+      "name": "piloto",
+      "description": "Piloto surfaces of the AI hub: inbox, activity, briefing, pulso, preparación, work-item detail, per-agent autonomy + governance editors, held-decision approve/discard, and the bank-reconciliation rail (PILOTO_CONCILIACION_ENABLED). Agency bearer JWT."
+    },
+    {
       "name": "costos",
       "description": "Cotizador cost dashboard: summary KPIs + time series (Phase 35-05, COTI-UI-09)"
     },
@@ -11955,6 +11959,491 @@
         ],
         "additionalProperties": false
       },
+      "AiHubFlotaAgente": {
+        "type": "object",
+        "properties": {
+          "agente": {
+            "type": "string"
+          },
+          "modo": {
+            "type": "string",
+            "enum": [
+              "sombra",
+              "copiloto",
+              "autonomo"
+            ]
+          },
+          "origen": {
+            "type": "string",
+            "enum": [
+              "piloto",
+              "politica",
+              "default"
+            ]
+          },
+          "corre": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "agente",
+          "modo",
+          "origen",
+          "corre"
+        ]
+      },
+      "AiHubFlotaResponse": {
+        "type": "object",
+        "properties": {
+          "activo": {
+            "type": "boolean"
+          },
+          "modo": {
+            "type": "string",
+            "enum": [
+              "sombra",
+              "copiloto",
+              "autonomo",
+              "mixto"
+            ]
+          },
+          "agentes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubFlotaAgente"
+            }
+          },
+          "resumen": {
+            "type": "object",
+            "properties": {
+              "sombra": {
+                "type": "number"
+              },
+              "copiloto": {
+                "type": "number"
+              },
+              "autonomo": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "sombra",
+              "copiloto",
+              "autonomo"
+            ]
+          },
+          "enVivo": {
+            "type": "object",
+            "properties": {
+              "llamadas": {
+                "type": "number"
+              },
+              "conciliando": {
+                "type": "number"
+              },
+              "esperando": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "llamadas",
+              "conciliando",
+              "esperando"
+            ]
+          },
+          "tomadoAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "activo",
+          "modo",
+          "agentes",
+          "resumen",
+          "enVivo",
+          "tomadoAt"
+        ]
+      },
+      "AiHubFlotaPutResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AiHubFlotaResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "cambiados": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "fallidos": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "agente": {
+                      "type": "string"
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "agente",
+                    "error"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "cambiados",
+              "fallidos"
+            ]
+          }
+        ]
+      },
+      "AiHubFlotaPutBody": {
+        "type": "object",
+        "properties": {
+          "modo": {
+            "type": "string",
+            "enum": [
+              "sombra",
+              "copiloto",
+              "autonomo"
+            ]
+          }
+        },
+        "required": [
+          "modo"
+        ],
+        "additionalProperties": false
+      },
+      "AiHubProcesoPaso": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "detalle": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "hecho",
+              "en_curso",
+              "pendiente",
+              "fallo"
+            ]
+          }
+        },
+        "required": [
+          "at",
+          "titulo",
+          "estado"
+        ]
+      },
+      "AiHubProceso": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "deposito",
+              "llamada",
+              "whatsapp"
+            ]
+          },
+          "agente": {
+            "type": "string",
+            "enum": [
+              "conciliacion",
+              "cobranza"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "en_curso",
+              "esperando",
+              "hecho",
+              "sin_resultado"
+            ]
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "resumen": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resultado": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quien": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "nombre": {
+                "type": "string"
+              },
+              "inmueble": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "nombre",
+              "inmueble"
+            ]
+          },
+          "montoCop": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "inicioAt": {
+            "type": "string"
+          },
+          "ultimoAt": {
+            "type": "string"
+          },
+          "pasos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubProcesoPaso"
+            }
+          },
+          "mensajes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string"
+                },
+                "de": {
+                  "type": "string",
+                  "enum": [
+                    "yo",
+                    "ellos"
+                  ]
+                },
+                "texto": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "at",
+                "de",
+                "texto"
+              ]
+            }
+          },
+          "enVivo": {
+            "type": "boolean"
+          },
+          "enlace": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "href": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "label",
+              "href"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "agente",
+          "estado",
+          "titulo",
+          "resumen",
+          "resultado",
+          "quien",
+          "montoCop",
+          "inicioAt",
+          "ultimoAt",
+          "pasos",
+          "enVivo",
+          "enlace"
+        ]
+      },
+      "AiHubProcesosResponse": {
+        "type": "object",
+        "properties": {
+          "procesos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubProceso"
+            }
+          },
+          "totales": {
+            "type": "object",
+            "properties": {
+              "deposito": {
+                "type": "number"
+              },
+              "llamada": {
+                "type": "number"
+              },
+              "whatsapp": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "deposito",
+              "llamada",
+              "whatsapp"
+            ]
+          },
+          "enVivo": {
+            "type": "number"
+          },
+          "fuentes": {
+            "type": "object",
+            "properties": {
+              "deposito": {
+                "type": "string",
+                "enum": [
+                  "ok",
+                  "sin_back",
+                  "error"
+                ]
+              },
+              "llamada": {
+                "type": "string",
+                "enum": [
+                  "ok",
+                  "sin_back",
+                  "error"
+                ]
+              },
+              "whatsapp": {
+                "type": "string",
+                "enum": [
+                  "ok",
+                  "sin_back",
+                  "error"
+                ]
+              }
+            },
+            "required": [
+              "deposito",
+              "llamada",
+              "whatsapp"
+            ]
+          },
+          "tomadoAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "procesos",
+          "totales",
+          "enVivo",
+          "fuentes",
+          "tomadoAt"
+        ]
+      },
+      "PilotoConciliacionSegurosResponse": {
+        "type": "object",
+        "properties": {
+          "conciliados": {
+            "type": "integer"
+          },
+          "sinCandidatoSeguro": {
+            "type": "integer"
+          },
+          "errores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "movimientoId": {
+                  "type": "string"
+                },
+                "mensaje": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "movimientoId",
+                "mensaje"
+              ]
+            }
+          }
+        },
+        "required": [
+          "conciliados",
+          "sinCandidatoSeguro",
+          "errores"
+        ]
+      },
+      "PilotoConciliacionConciliarResponse": {
+        "type": "object",
+        "properties": {
+          "movimientoId": {
+            "type": "string"
+          },
+          "reciboId": {
+            "type": "string"
+          },
+          "reciboNumero": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "movimientoId",
+          "reciboId",
+          "reciboNumero"
+        ]
+      },
+      "PilotoConciliacionConciliarBody": {
+        "type": "object",
+        "properties": {
+          "cobroId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "cobroId"
+        ],
+        "additionalProperties": false
+      },
       "PilotoPulsoEnCurso": {
         "type": "object",
         "properties": {
@@ -14261,6 +14750,18 @@
               "string",
               "null"
             ]
+          },
+          "adjuntoUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "concepto": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -14277,7 +14778,9 @@
           "status",
           "createdBy",
           "approvedBy",
-          "approvedAt"
+          "approvedAt",
+          "adjuntoUrl",
+          "concepto"
         ]
       },
       "ApBillsError": {
@@ -14329,6 +14832,16 @@
           "dueDate": {
             "type": "string",
             "format": "date-time"
+          },
+          "adjuntoUrl": {
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri"
+          },
+          "concepto": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
           }
         },
         "required": [
@@ -14340,6 +14853,444 @@
           "dueDate"
         ],
         "additionalProperties": false
+      },
+      "ApBillExtractFactura": {
+        "type": "object",
+        "properties": {
+          "proveedorNombre": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "proveedorNit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "proveedorDv": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "proveedorCorreo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "proveedorTelefono": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "numeroFactura": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cufe": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fechaEmision": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fechaVencimiento": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "moneda": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subtotalCop": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "ivaCop": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "retencionesCop": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "totalCop": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "concepto": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "inmuebleReferencia": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "formaDePago": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fieldConfidence": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "proveedorNombre",
+          "proveedorNit",
+          "proveedorDv",
+          "proveedorCorreo",
+          "proveedorTelefono",
+          "numeroFactura",
+          "cufe",
+          "fechaEmision",
+          "fechaVencimiento",
+          "moneda",
+          "subtotalCop",
+          "ivaCop",
+          "retencionesCop",
+          "totalCop",
+          "concepto",
+          "inmuebleReferencia",
+          "formaDePago",
+          "fieldConfidence"
+        ]
+      },
+      "ApBillExtractVendorCandidato": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "vendorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "documentNumber": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "vendorId",
+          "name",
+          "documentNumber"
+        ]
+      },
+      "ApBillExtractResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "factura": {
+            "$ref": "#/components/schemas/ApBillExtractFactura"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "descripcion": {
+                  "type": "string"
+                },
+                "cantidad": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "valorUnitarioCop": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "valorCop": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "descripcion",
+                "cantidad",
+                "valorUnitarioCop",
+                "valorCop"
+              ]
+            }
+          },
+          "conflictos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "campo": {
+                  "type": "string"
+                },
+                "valores": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "valor": {
+                        "type": "string"
+                      },
+                      "documento": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "valor",
+                      "documento"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "campo",
+                "valores"
+              ]
+            }
+          },
+          "documentos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nombre": {
+                  "type": "string"
+                },
+                "tipo": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "nombre",
+                "tipo"
+              ]
+            }
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "proveedor": {
+            "type": "object",
+            "properties": {
+              "match": {
+                "$ref": "#/components/schemas/ApBillExtractVendorCandidato"
+              },
+              "candidatos": {
+                "type": "array",
+                "items": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApBillExtractVendorCandidato"
+                    },
+                    {
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "required": [
+              "match",
+              "candidatos"
+            ]
+          },
+          "sugerencia": {
+            "type": "object",
+            "properties": {
+              "vendorId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "invoiceNumber": {
+                "type": "string"
+              },
+              "amountCop": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "baseGravableCop": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "ivaCop": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "issuedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "dueDate": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "costCenterCode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "vendorId",
+              "invoiceNumber",
+              "amountCop",
+              "baseGravableCop",
+              "ivaCop",
+              "issuedAt",
+              "dueDate",
+              "costCenterCode"
+            ]
+          },
+          "adjuntoUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tokensUsed": {
+            "type": "number"
+          },
+          "estimatedCostUsd": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "success",
+          "factura",
+          "items",
+          "conflictos",
+          "documentos",
+          "confidence",
+          "proveedor",
+          "sugerencia",
+          "adjuntoUrl",
+          "tokensUsed",
+          "estimatedCostUsd"
+        ]
+      },
+      "ApBillExtractError": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      },
+      "ApBillExtractDbError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "ApBillExtractDocumento": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "mediaType": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "base64": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "nombre",
+          "mediaType",
+          "base64"
+        ]
+      },
+      "ApBillExtractRequest": {
+        "type": "object",
+        "properties": {
+          "documentos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApBillExtractDocumento"
+            },
+            "minItems": 1,
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "documentos"
+        ]
       },
       "ApAgingResponse": {
         "type": "object",
@@ -38655,6 +39606,512 @@
         }
       }
     },
+    "/api/agency/{agencyId}/ai-hub/autonomia": {
+      "get": {
+        "operationId": "getAiHubFlota",
+        "summary": "Piloto automático — el modo de la flota (para el header)",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado de la flota",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubFlotaResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "putAiHubFlota",
+        "summary": "Piloto automático — mover la flota entera a un modo",
+        "description": "Escribe el modo (🌑 sombra / 🤝 copiloto / 🚀 autónomo) en TODOS los agentes con autonomía, uno por uno con el mismo escritor del PUT por agente, y deja un rastro de flota en audit_log. Solo OWNER/ADMIN.",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiHubFlotaPutBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Flota movida (ver `fallidos` si alguno no cambió)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubFlotaPutResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant / rol insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/procesos": {
+      "get": {
+        "operationId": "getAiHubProcesos",
+        "summary": "Piloto automático — lo que hizo, proceso por proceso (depósitos, llamadas, WhatsApp)",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "deposito",
+                "llamada",
+                "whatsapp",
+                "todos"
+              ],
+              "example": "todos"
+            },
+            "required": false,
+            "name": "tipo",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 150,
+              "example": 60
+            },
+            "required": false,
+            "name": "limite",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Los procesos, los vivos primero",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubProcesosResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/conciliacion/conciliar-seguros": {
+      "post": {
+        "operationId": "pilotoConciliarSeguros",
+        "summary": "Piloto — conciliar los movimientos del banco que tienen UN candidato seguro",
+        "tags": [
+          "agency",
+          "piloto",
+          "conciliacion"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lo que pasó",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoConciliacionSegurosResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El gobierno de la agencia no deja actuar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "El back no respondió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/conciliacion/movimientos/{id}/conciliar": {
+      "post": {
+        "operationId": "pilotoConciliarMovimiento",
+        "summary": "Piloto — conciliar un movimiento del banco contra el cobro elegido",
+        "tags": [
+          "agency",
+          "piloto",
+          "conciliacion"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PilotoConciliacionConciliarBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recibo emitido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoConciliacionConciliarResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El gobierno de la agencia no deja actuar, o el movimiento ya no está pendiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "El back no respondió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/agency/{agencyId}/ai-hub/pulso": {
       "get": {
         "operationId": "getAiHubPulso",
@@ -42404,6 +43861,106 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApBillsError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ap/bills/extract": {
+      "post": {
+        "operationId": "extractApBill",
+        "summary": "Leer una factura de proveedor (foto/PDF) con IA y sugerir el alta en AP",
+        "description": "Lee una o más fotos/PDFs de la misma factura con Claude, empareja el proveedor por NIT/nombre, sube el primer documento a Storage y devuelve una sugerencia para POST /ap/bills. No persiste la factura.",
+        "tags": [
+          "agency",
+          "ap",
+          "bills"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApBillExtractRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Factura leída + proveedor emparejado + sugerencia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApBillExtractResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada que la persona puede arreglar (formato, tamaño, PDF dañado)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApBillExtractError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ap:create-bill required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApBillExtractError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Demasiadas solicitudes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApBillExtractError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "No se pudo leer la factura",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApBillExtractError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApBillExtractDbError"
                 }
               }
             }

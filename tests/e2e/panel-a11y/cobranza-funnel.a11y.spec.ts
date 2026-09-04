@@ -2,7 +2,7 @@
  * Cobranza stage funnel — dedicated roving-tabindex spec (Phase 38-08, task 38-08-06).
  *
  * Verifies the WCAG 2.1 AA composite-widget contract added in 38-04c
- * (D-38-13): the 7 stage cards on /panel/inmobiliaria/ai/cobranza act as a
+ * (D-38-13): the 7 stage cards on /panel/inmobiliaria/cobros/cobranza act as a
  * single ARIA tablist with roving tabindex. Tab enters the tablist once,
  * ArrowLeft/Right moves focus between cards, Enter activates the focused
  * stage (drills into the stage filter via stage=<id> query param).
@@ -25,7 +25,7 @@
 import { test, expect } from '@playwright/test'
 import { seedAuthState } from './_helpers/auth-helpers'
 
-const ROUTE = '/panel/inmobiliaria/ai/cobranza'
+const ROUTE = '/panel/inmobiliaria/cobros/cobranza'
 const OVERVIEW_MOCK = '**/cartera/overview'
 
 const POPULATED_OVERVIEW = {

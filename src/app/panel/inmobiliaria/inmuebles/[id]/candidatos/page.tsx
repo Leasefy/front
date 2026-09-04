@@ -21,6 +21,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { type ActionType } from '@/components/inmobiliaria/AccionDePostulacion';
 import { useDecisionDeCandidato } from '@/components/inmobiliaria/use-decision-de-candidato';
 import { RecorridoHilo } from '@/components/inmobiliaria/recorrido/RecorridoHilo';
+import type { PasoKey } from '@/lib/recorrido/pasos';
 import { useContracts } from '@/lib/hooks/useContracts';
 import type { LandlordCandidate, LandlordApplicationStatus } from '@/lib/api/applications.types';
 import type { Property } from '@/lib/types/property';
@@ -315,6 +316,13 @@ function CandidatosContent() {
   ).length;
   const approvedCount = candidates.filter((c) => c.status === 'APPROVED').length;
 
+  // El paso del recorrido sale del estado REAL, no de la pantalla: sin
+  // postulaciones no se compara a nadie —la pelota la tiene el inquilino
+  // («Se postula»)—; con una aprobada ya se decidió. Antes decía «Paso 9 ·
+  // Comparas los candidatos · Te toca» con la lista vacía (Nico, 2026-09-03).
+  const pasoDelRecorrido: PasoKey =
+    candidates.length === 0 ? 'postulacion' : approvedCount > 0 ? 'decision' : 'comparacion';
+
   // Solo bloquea la vista en el primer load — los auto-refresh son silenciosos.
   const alternarComparar = useCallback((id: string) => {
     setParaComparar((prev) => {
@@ -357,9 +365,9 @@ function CandidatosContent() {
 
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-fg">Candidatos</h1>
+            <h1 className="text-h2 text-fg">Candidatos</h1>
             {property && (
-              <p className="text-sm text-fg-muted max-w-2xl">
+              <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
                 {property.title} · {property.neighborhood}, {property.city}
               </p>
             )}
@@ -371,7 +379,7 @@ function CandidatosContent() {
           Las dos rutas cuelgan de esta misma pantalla, así que se pasan por
           `hrefs` — `pasos.ts` no puede hardcodear una ruta con [id]. */}
       <RecorridoHilo
-        paso="comparacion"
+        paso={pasoDelRecorrido}
         hrefs={{
           // Comparar arranca acá: hay que marcar a quiénes antes de poder
           // compararlos, así que el paso apunta a esta misma lista.
@@ -389,7 +397,7 @@ function CandidatosContent() {
       )}
 
       {/* Table */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
         {candidates.length === 0 ? (
           <EmptyState
             icon={User}
@@ -605,7 +613,7 @@ function CandidateStatTile({
   tone: keyof typeof CANDIDATE_TILE_TONES;
 }) {
   return (
-    <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card">
+    <div className="flex items-center gap-3 p-4 rounded-lg border border-border bg-card">
       <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', CANDIDATE_TILE_TONES[tone])}>
         <User className="w-5 h-5" weight="duotone" />
       </div>

@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { MoneyInput } from '@/components/ui/money-input';
 import { Spinner } from '@/components/ui/spinner';
 import {
@@ -36,6 +37,12 @@ import {
 import type { InsuranceTier, UpdateContractDto } from '@/lib/api/contracts.types';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { isoToInputDate } from './iso-to-input-date';
+import {
+  MAX_DIAS_DE_PLAZO,
+  diasDePlazoComoTexto,
+  terminosDeCobro,
+  validarDiasDePlazo,
+} from '@/lib/contratos/terminos-de-cobro';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -46,6 +53,9 @@ interface FormState {
   monthlyRent: string;
   deposit: string;
   paymentDay: string;
+  prorratearPrimerMes: boolean;
+  /** Texto del input; vacío = hereda los días de plazo de la inmobiliaria. */
+  diasDePlazo: string;
   insuranceTier: InsuranceTier;
 }
 
@@ -66,6 +76,8 @@ function EditarContratoContent() {
     monthlyRent: '',
     deposit: '',
     paymentDay: '1',
+    prorratearPrimerMes: false,
+    diasDePlazo: '',
     insuranceTier: 'NONE',
   });
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -88,6 +100,8 @@ function EditarContratoContent() {
       monthlyRent: String(contract.monthlyRent ?? ''),
       deposit: '',
       paymentDay: String(contract.paymentDueDay ?? '1'),
+      prorratearPrimerMes: contract.prorratearPrimerMes ?? false,
+      diasDePlazo: diasDePlazoComoTexto(contract.diasDePlazo),
       insuranceTier: (contract.insuranceTier ?? 'NONE') as InsuranceTier,
     });
   }, [contract]);
@@ -131,6 +145,8 @@ function EditarContratoContent() {
     }
     const day = Number(form.paymentDay);
     if (!day || day < 1 || day > 28) errors.paymentDay = 'Entre 1 y 28';
+    const errorDePlazo = validarDiasDePlazo(form.diasDePlazo);
+    if (errorDePlazo) errors.diasDePlazo = errorDePlazo;
     if (replacePdf && !form.pdfFile) {
       errors.pdfFile = 'Subí el PDF nuevo o desactivá el reemplazo.';
     }
@@ -160,6 +176,8 @@ function EditarContratoContent() {
         endDate: form.endDate,
         monthlyRent: Number(form.monthlyRent),
         paymentDay: Number(form.paymentDay),
+        // `diasDePlazo: null` es un valor: vuelve a heredar los de la inmobiliaria.
+        ...terminosDeCobro(form),
         insuranceTier: form.insuranceTier,
       };
       if (form.deposit) dto.deposit = Number(form.deposit);
@@ -209,7 +227,7 @@ function EditarContratoContent() {
   if (!contract) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
           <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-danger">No se pudo cargar el contrato</p>
@@ -231,7 +249,7 @@ function EditarContratoContent() {
         >
           <CaretLeft className="w-4 h-4" /> Volver
         </Button>
-        <div className="rounded-xl border border-amber-600/30 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-900/15 p-5 flex items-start gap-3">
+        <div className="rounded-lg border border-amber-600/30 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-900/15 p-5 flex items-start gap-3">
           <WarningCircle className="w-5 h-5 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-amber-700 dark:text-amber-400">Este contrato no se puede editar</p>
@@ -257,8 +275,8 @@ function EditarContratoContent() {
         >
           <CaretLeft className="w-4 h-4" /> Volver
         </Button>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Editar contrato</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h1 className="text-h2 text-fg">Editar contrato</h1>
+        <p className="text-sm text-muted-foreground mt-1 line-clamp-2 max-w-2xl">
           Inquilino: <span className="font-medium text-foreground">{contract.tenantName}</span> ·
           Propiedad: <span className="font-medium text-foreground">{contract.propertyAddress}</span>
         </p>
@@ -271,7 +289,7 @@ function EditarContratoContent() {
 
       {/* Warning about signature invalidation */}
       {contract.landlordSignature && (
-        <div className="rounded-xl border border-amber-600/30 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-900/15 p-4 flex items-start gap-2">
+        <div className="rounded-lg border border-amber-600/30 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-900/15 p-4 flex items-start gap-2">
           <Info className="w-5 h-5 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-amber-700 dark:text-amber-400">
             Al guardar cambios, tu firma previa se invalida. Tendrás que volver a firmar el contrato.
@@ -282,7 +300,7 @@ function EditarContratoContent() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* PDF replacement — only for UPLOADED_PDF contracts */}
         {isUploadedPdf && (
-          <section className="rounded-xl border border-border bg-card p-5 space-y-3">
+          <section className="rounded-lg border border-border bg-card p-5 space-y-3">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-base font-semibold text-foreground">PDF del contrato</h2>
@@ -305,7 +323,7 @@ function EditarContratoContent() {
 
             {replacePdf && (
               form.pdfFile ? (
-                <div className="flex items-center gap-3 p-3 rounded-xl border border-emerald-600/30 bg-emerald-50/60 dark:bg-emerald-900/20">
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-emerald-600/30 bg-emerald-50/60 dark:bg-emerald-900/20">
                   <FileText className="w-5 h-5 text-primary flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>
@@ -328,7 +346,7 @@ function EditarContratoContent() {
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={onDrop}
                   className={cn(
-                    'flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed rounded-xl cursor-pointer transition-colors',
+                    'flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors',
                     isDragging
                       ? 'border-primary/40 bg-primary-soft/40'
                       : 'border-border hover:border-primary/40 hover:bg-muted/50'
@@ -357,7 +375,7 @@ function EditarContratoContent() {
         )}
 
         {/* Terms */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Fecha de inicio" error={validation.startDate}>
@@ -398,6 +416,24 @@ function EditarContratoContent() {
                 className="tabular-nums"
               />
             </Field>
+            <Field
+              label="Días de plazo antes de la mora"
+              error={validation.diasDePlazo}
+              hint="Vacío = los de la inmobiliaria. Días después de la fecha de pago en los que todavía no corre mora."
+            >
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={MAX_DIAS_DE_PLAZO}
+                step={1}
+                placeholder="Los de la inmobiliaria"
+                value={form.diasDePlazo}
+                onChange={(e) => updateForm('diasDePlazo', e.target.value)}
+                className="tabular-nums"
+                data-testid="dias-de-plazo"
+              />
+            </Field>
             <Field label="Seguro" hint="Opcional">
               <Select
                 value={form.insuranceTier}
@@ -414,10 +450,29 @@ function EditarContratoContent() {
               </Select>
             </Field>
           </div>
+
+          {/* Prorrateo del primer mes: fuera de la grilla porque es un switch con explicación, no un campo más. */}
+          <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-surface-muted p-4">
+            <div className="space-y-1">
+              <label htmlFor="prorratear-primer-mes" className="block text-sm font-medium text-foreground">
+                Prorratear el primer mes
+              </label>
+              <p className="text-xs text-muted-foreground">
+                El primer cobro se calcula por los días realmente ocupados del mes de inicio.
+                Un contrato que arranca el 19 paga sólo lo que queda del mes; el siguiente ya sale completo.
+              </p>
+            </div>
+            <Switch
+              id="prorratear-primer-mes"
+              data-testid="prorratear-primer-mes"
+              checked={form.prorratearPrimerMes}
+              onCheckedChange={(v) => updateForm('prorratearPrimerMes', v)}
+            />
+          </div>
         </section>
 
         {submitError && (
-          <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
+          <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
             <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
             <p className="text-sm text-danger">{submitError}</p>
           </div>

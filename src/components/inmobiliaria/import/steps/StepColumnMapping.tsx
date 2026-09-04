@@ -221,7 +221,7 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
 
       {/* Required Fields Warning */}
       {unmappedRequired.length > 0 && (
-        <div className="flex items-start gap-3 p-4 rounded-xl bg-warning-soft border border-warning/30">
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-warning-soft border border-warning/30">
           <Warning className="w-5 h-5 text-warning shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-medium text-warning mb-1">

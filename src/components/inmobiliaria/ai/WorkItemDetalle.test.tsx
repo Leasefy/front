@@ -109,7 +109,7 @@ function render(props: Partial<React.ComponentProps<typeof WorkItemDetalle>> = {
         null,
         React.createElement(WorkItemDetalle, {
           data: null,
-          colaHref: '/panel/inmobiliaria/ai/estudio/cola',
+          colaHref: '/panel/inmobiliaria/postulaciones/estudio/cola',
           colaLabel: 'Cola de estudio',
           onAction: vi.fn().mockResolvedValue({ ok: true }),
           ...props,
@@ -155,12 +155,12 @@ describe('WorkItemDetalle — states', () => {
     render({
       data: null,
       notAvailable: true,
-      notFoundAction: { label: 'Ver cotizaciones', href: '/panel/inmobiliaria/ai/asegurabilidad' },
+      notFoundAction: { label: 'Ver cotizaciones', href: '/panel/inmobiliaria/postulaciones/asegurabilidad' },
     })
     const cta = container.querySelector('[data-testid="caso-not-found-action"]')
     expect(cta).not.toBeNull()
     expect(cta!.textContent).toContain('Ver cotizaciones')
-    expect(cta!.getAttribute('href')).toBe('/panel/inmobiliaria/ai/asegurabilidad')
+    expect(cta!.getAttribute('href')).toBe('/panel/inmobiliaria/postulaciones/asegurabilidad')
   })
 
   it('renders header (with t323 flag) + AccionSugerida + contexto + traza on happy path', () => {
@@ -242,13 +242,13 @@ describe('WorkItemDetalle — states', () => {
       crossLink: {
         pregunta: '¿Qué propiedad le calza?',
         destino: 'Workspace de Matching',
-        href: '/panel/inmobiliaria/ai/matching',
+        href: '/panel/inmobiliaria/postulaciones/matching',
       },
     })
     const link = container.querySelector('[data-testid="caso-cross-link"]')
     expect(link).not.toBeNull()
     expect(link!.textContent).toContain('¿Qué propiedad le calza?')
-    expect(link!.getAttribute('href')).toBe('/panel/inmobiliaria/ai/matching')
+    expect(link!.getAttribute('href')).toBe('/panel/inmobiliaria/postulaciones/matching')
   })
 
   it('does not render the cross-link card when crossLink is omitted', () => {

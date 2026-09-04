@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Check, Clock, WarningCircle, X, Receipt } from '@phosphor-icons/react';
 import type { Payment } from '@/lib/types/lease';
@@ -70,6 +72,14 @@ export function PaymentHistory({
   showConcept = false,
   className,
 }: PaymentHistoryProps) {
+  /*
+   * Un contrato de tres años son treinta y seis cuotas, y con mora y
+   * reparaciones son más: la lista crece con el tiempo y no tiene techo.
+   * El hook va antes del retorno del vacío — no se llama condicionalmente.
+   */
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(payments);
+
   if (payments.length === 0) {
     return (
       <EmptyState
@@ -98,7 +108,7 @@ export function PaymentHistory({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {payments.map((payment) => {
+            {pageItems.map((payment) => {
               const status = statusConfig[payment.status];
               const StatusIcon = status.icon;
 
@@ -139,7 +149,7 @@ export function PaymentHistory({
 
       {/* Mobile cards */}
       <div className="sm:hidden space-y-3">
-        {payments.map((payment) => {
+        {pageItems.map((payment) => {
           const status = statusConfig[payment.status];
           const StatusIcon = status.icon;
 
@@ -183,6 +193,21 @@ export function PaymentHistory({
           );
         })}
       </div>
+
+      {/* Un pie solo: la tabla de escritorio y las tarjetas de móvil recorren
+          la misma página. */}
+      {shouldPaginate && (
+        <div className="border-t border-border px-4 py-3">
+          <TablePagination
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+        </div>
+      )}
     </div>
   );
 }

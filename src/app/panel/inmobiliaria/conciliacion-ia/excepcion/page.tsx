@@ -189,7 +189,7 @@ export default function ConciliacionExcepcionPage() {
                       type="button"
                       onClick={() => setSel(c.id)}
                       aria-pressed={isSel}
-                      className="w-full rounded-xl border bg-surface p-4 text-left transition-all"
+                      className="w-full rounded-lg border bg-surface p-4 text-left transition-all"
                       style={{ borderColor: isSel ? BLUE : 'rgba(0,0,0,0.10)', boxShadow: isSel ? `0 0 0 1px ${BLUE}` : 'none' }}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -268,7 +268,7 @@ export default function ConciliacionExcepcionPage() {
 
           {/* ── DERECHA: recomendación IA ────────────────────────────────── */}
           <aside className="lg:sticky lg:top-6">
-            <section className="rounded-2xl border-2 bg-surface overflow-hidden" style={{ borderColor: conciliado ? '#CBE3D5' : BLUE }}>
+            <section className="rounded-lg border-2 bg-surface overflow-hidden" style={{ borderColor: conciliado ? '#CBE3D5' : BLUE }}>
               {!conciliado ? (
                 <div className="p-5 space-y-4">
                   <div className="flex items-center gap-1.5">

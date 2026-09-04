@@ -11,6 +11,8 @@
  *  · sin pastillas ALTA repetidas (la columna ya dice la urgencia)
  *  · sin pendientes → estado vacío honesto (keys i18n); cargando → sin
  *    afirmaciones falsas
+ *  · el título «Te toca a ti» y la frase viven DENTRO del recuadro, como
+ *    primera fila (Nico, 2026-09-03: «debería estar dentro del tablero»)
  */
 
 import * as React from 'react'
@@ -67,7 +69,7 @@ function item(over: Partial<PendienteItem> & Pick<PendienteItem, 'key' | 'grupo'
     montoCop: null,
     dueDate: null,
     fecha: hace(1),
-    href: '/panel/inmobiliaria/ai/cobranza/pendientes',
+    href: '/panel/inmobiliaria/cobros/cobranza/pendientes',
     cta: 'revisar',
     ...over,
   }
@@ -135,6 +137,25 @@ describe('CobranzaTeTocaATi — tablero encerrado', () => {
     expect(container.textContent).toContain('7 decisiones esperan tu aprobación.')
   })
 
+  it('el título y la frase son la primera fila DEL tablero, no un encabezado suelto', () => {
+    conPendientes(CARTERA)
+    render()
+
+    const tablero = container.querySelector('[data-testid="te-toca-tablero"]') as HTMLElement
+    expect(tablero).not.toBeNull()
+    const h2 = tablero.querySelector('h2')
+    expect(h2?.textContent).toBe('Te toca a ti')
+    // Primera fila del recuadro: el título va antes que cualquier columna.
+    expect(tablero.firstElementChild?.contains(h2)).toBe(true)
+    expect(tablero.firstElementChild?.textContent).toContain('7 decisiones esperan tu aprobación.')
+    expect(tablero.firstElementChild?.textContent).toContain('El agente gestionó 2 de tus 38 casos en mora hoy.')
+    // Fuera del recuadro no queda ningún h2 huérfano.
+    expect(container.querySelectorAll('h2').length).toBe(1)
+    // Y la sección se nombra por ese título (a11y).
+    const section = container.querySelector('[data-testid="cobranza-te-toca"]')
+    expect(section?.getAttribute('aria-labelledby')).toBe(h2?.id)
+  })
+
   it('TODO visible a la vez: siniestros, cartas y promesas en el mismo render', () => {
     conPendientes(CARTERA)
     render()
@@ -179,21 +200,29 @@ describe('CobranzaTeTocaATi — tablero encerrado', () => {
     expect(container.textContent).toContain('Ver los 7 pendientes')
   })
 
-  it('sin pendientes → estado vacío honesto, sin tablero', () => {
+  it('sin pendientes → estado vacío honesto dentro del recuadro, sin columnas ni pie', () => {
     conPendientes([])
     render()
 
-    expect(container.textContent).toContain('Nada espera tu aprobación.')
-    expect(container.textContent).toContain('inmobiliaria.ai.cobranza.pendientes.vacio')
-    expect(container.querySelector('[data-testid="te-toca-tablero"]')).toBeNull()
+    const tablero = container.querySelector('[data-testid="te-toca-tablero"]') as HTMLElement
+    expect(tablero).not.toBeNull()
+    expect(tablero.querySelector('h2')?.textContent).toBe('Te toca a ti')
+    expect(tablero.textContent).toContain('Nada espera tu aprobación.')
+    expect(tablero.textContent).toContain('inmobiliaria.ai.cobranza.pendientes.vacio')
+    expect(tablero.querySelectorAll('[data-testid^="te-toca-col-"]').length).toBe(0)
+    expect(container.querySelector('[data-testid="boton-mas"]')).toBeNull()
   })
 
-  it('mientras carga no afirma nada y no pinta tablero', () => {
+  it('mientras carga no afirma nada y no pinta columnas', () => {
     conPendientes([], { isLoading: true })
     render()
 
-    expect(container.textContent).toContain('Contando lo que espera tu aprobación…')
-    expect(container.querySelector('[data-testid="te-toca-tablero"]')).toBeNull()
+    const tablero = container.querySelector('[data-testid="te-toca-tablero"]') as HTMLElement
+    expect(tablero).not.toBeNull()
+    expect(tablero.textContent).toContain('Contando lo que espera tu aprobación…')
+    expect(tablero.textContent).not.toContain('Nada espera tu aprobación.')
+    expect(tablero.querySelectorAll('[data-testid^="te-toca-col-"]').length).toBe(0)
+    expect(container.querySelector('[data-testid="boton-mas"]')).toBeNull()
   })
 
   it('las alertas de umbral van al pie del tablero, en una línea', () => {

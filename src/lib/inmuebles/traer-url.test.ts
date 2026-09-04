@@ -55,6 +55,27 @@ describe('separarEnlaces', () => {
     ]);
   });
 
+  it('corta dos enlaces pegados sin separador: «…/155https://…» son dos, no uno con 404', () => {
+    // Caso real de la migración: la lista pegada perdió el salto de línea
+    // entre el segundo y el tercero, y el «enlace» resultante respondió 404.
+    expect(
+      separarEnlaces(
+        'https://www.fincaraiz.com.co/apartamento-en-arriendo-en-la-pradera-jamundi/194195155https://www.fincaraiz.com.co/apartamento-en-venta-en-zipaquira/194195158',
+      ),
+    ).toEqual([
+      'https://www.fincaraiz.com.co/apartamento-en-arriendo-en-la-pradera-jamundi/194195155',
+      'https://www.fincaraiz.com.co/apartamento-en-venta-en-zipaquira/194195158',
+    ]);
+  });
+
+  it('un `?url=https://…` DENTRO de un enlace no se corta: el esquema va precedido por «=»', () => {
+    // El corte es sólo cuando el esquema aparece pegado a texto de URL; un
+    // parámetro con otra URL adentro es una sola URL.
+    expect(separarEnlaces('https://a.com/ver?url=https://b.com/x')).toEqual([
+      'https://a.com/ver?url=https://b.com/x',
+    ]);
+  });
+
   it('no repite el mismo enlace dos veces', () => {
     expect(separarEnlaces('https://a.com/1\nhttps://a.com/1')).toHaveLength(1);
   });

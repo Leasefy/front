@@ -278,17 +278,17 @@ export default function InmobiliariaPerfilPage() {
 
         {/* Header */}
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          <h1 className="text-h2 text-fg">
             {locale === 'es' ? 'Mi perfil' : 'My profile'}
           </h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             {locale === 'es' ? 'Gestiona tu información personal y preferencias' : 'Manage your personal information and preferences'}
           </p>
         </div>
 
         {/* Setup Progress Section — hidden once the profile is 100% complete */}
         {completionPercentage < 100 && (
-        <section className="rounded-xl bg-primary-soft border border-border p-6">
+        <section className="rounded-lg bg-primary-soft border border-border p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             {/* Progress Info */}
             <div className="flex-1">
@@ -410,7 +410,7 @@ export default function InmobiliariaPerfilPage() {
           {/* Profile Card */}
           <div className="lg:col-span-1 space-y-6">
             {/* Avatar Card */}
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="rounded-lg border border-border bg-card overflow-hidden">
               <div className="relative bg-primary-soft h-28">
                 {editingSection !== 'avatar' && (
                   <IconButton
@@ -591,7 +591,7 @@ export default function InmobiliariaPerfilPage() {
                 confirmation). There is no phone/identity/agency verification
                 system in the backend, so nothing else is shown as verified. */}
             {emailVerified && (
-              <div className="rounded-xl border border-border bg-card p-6">
+              <div className="rounded-lg border border-border bg-card p-6">
                 <h3 className="text-base font-semibold text-fg mb-4 flex items-center gap-2">
                   <Shield className="w-5 h-5 text-fg-muted" />
                   {locale === 'es' ? 'Estado de verificación' : 'Verification status'}
@@ -612,7 +612,7 @@ export default function InmobiliariaPerfilPage() {
           {/* Profile Form */}
           <div className="lg:col-span-2 space-y-6">
             {/* Personal Information */}
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div className="rounded-lg border border-border bg-card p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-base font-semibold text-fg">
                   {locale === 'es' ? 'Información personal' : 'Personal information'}
@@ -720,7 +720,7 @@ export default function InmobiliariaPerfilPage() {
             </div>
 
             {/* Emergency Contact */}
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div className="rounded-lg border border-border bg-card p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-base font-semibold text-fg">
                   {locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact'}
@@ -777,7 +777,7 @@ export default function InmobiliariaPerfilPage() {
             </div>
 
             {/* Danger Zone */}
-            <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-6">
+            <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-6">
               <h3 className="text-base font-semibold text-danger mb-2 flex items-center gap-2">
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
@@ -802,7 +802,7 @@ export default function InmobiliariaPerfilPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-card rounded-xl max-w-md w-full overflow-hidden"
+            className="bg-card rounded-lg max-w-md w-full overflow-hidden"
           >
             {/* Step 1: Warning */}
             {deleteStep === 1 && (

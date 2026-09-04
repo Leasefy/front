@@ -99,7 +99,7 @@ function CompactKPICard({ kpi }: { kpi: AdvancedKPI }) {
   return (
     <motion.div
       whileHover={{ y: -1 }}
-      className="p-4 rounded-xl border border-border bg-card transition-all hover:border-foreground/15"
+      className="p-4 rounded-lg border border-border bg-card transition-all hover:border-foreground/15"
     >
       <div className="flex items-start justify-between mb-2">
         <p className="text-sm text-fg-muted dark:text-fg-subtle">{kpi.label}</p>
@@ -373,7 +373,7 @@ function ChartCard({ chart }: { chart: AnalyticsChart }) {
   return (
     <motion.div
       whileHover={{ y: -2 }}
-      className="p-5 rounded-xl border border-border bg-card transition-all hover:border-foreground/15"
+      className="p-5 rounded-lg border border-border bg-card transition-all hover:border-foreground/15"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2">

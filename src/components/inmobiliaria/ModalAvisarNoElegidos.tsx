@@ -172,7 +172,7 @@ export function ModalAvisarNoElegidos({
         role="dialog"
         aria-modal="true"
         aria-labelledby="avisar-titulo"
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-border bg-card"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border border-border bg-card"
         data-lenis-prevent
       >
         <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">

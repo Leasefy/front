@@ -33,7 +33,14 @@ import { usePropietarios } from '@/lib/hooks/useInmobiliaria';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
 import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import {
+  RUTA_DE_LA_MIGRACION,
+  useCopyDeMigracionEnLista,
+} from '@/components/migracion/VeredictoDeMigracion';
+import { vacioPorMigracion } from '@/components/migracion/muro-reglas';
+import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
 import { TablePagination } from '@/components/ui/pagination';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
@@ -215,6 +222,19 @@ function PropietariosContent() {
   const [deletingPropietario, setDeletingPropietario] = useState<Propietario | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  /*
+   * Esta pantalla no tiene filtros, así que un vacío es siempre «no hay
+   * ninguno» — pero el PORQUÉ importa: si la migración dejó contratos sin
+   * propietario, no hay dueños registrados por eso, no porque nadie se haya
+   * sentado a cargarlos.
+   */
+  const deudaDeMigracion = useMigracionConDeuda();
+  const armarCopyDeMigracion = useCopyDeMigracionEnLista();
+  const copyDeMigracion =
+    deudaDeMigracion && vacioPorMigracion(deudaDeMigracion)
+      ? armarCopyDeMigracion(deudaDeMigracion)
+      : null;
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -345,10 +365,10 @@ function PropietariosContent() {
             <CaretRight className="w-3 h-3" />
             <span className="text-foreground">{t('inmobiliaria.propietarios.title')}</span>
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            {t('inmobiliaria.propietarios.crmTitle')}
+          <h1 className="text-h2 text-fg">
+            {t('inmobiliaria.propietarios.title')}
           </h1>
-          <p className="text-sm text-muted-foreground max-w-2xl">
+          <p className="text-body text-fg-muted max-w-2xl line-clamp-2">
             {t('inmobiliaria.propietarios.subtitle')}
           </p>
         </div>
@@ -399,7 +419,7 @@ function PropietariosContent() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-xl border border-border bg-card overflow-hidden"
+        className="rounded-lg border border-border bg-card overflow-hidden"
       >
         {/* View Toggle Header */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
@@ -446,10 +466,32 @@ function PropietariosContent() {
             {paginationData.totalItems === 0 ? (
               /* Sin filtros en esta pantalla: un vacío acá es siempre «todavía
                  no hay ninguno», y lo útil es crear el primero. */
+              /*
+                 Y si está vacío PORQUE la migración quedó a medias, se dice:
+                 84 contratos migrados sin propietario significan que nadie
+                 quedó registrado como dueño. Decirle «registrá al dueño» a
+                 quien acaba de subir su cartera entera esconde la causa.
+              */
               <SinDatos
                 queSon="propietarios"
                 icono={UserCircle}
-                descripcion="Registrá al dueño de un inmueble para poder consignarlo y liquidarle sus pagos."
+                titulo={copyDeMigracion?.titulo}
+                descripcion={
+                  copyDeMigracion?.detalle ??
+                  'Registrá al dueño de un inmueble para poder consignarlo y liquidarle sus pagos.'
+                }
+                accion={
+                  copyDeMigracion ? (
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      <Button asChild hideArrow>
+                        <Link href={RUTA_DE_LA_MIGRACION}>{copyDeMigracion.accion}</Link>
+                      </Button>
+                      <Button variant="outline" hideArrow onClick={() => setShowAddModal(true)}>
+                        Agregar propietario
+                      </Button>
+                    </div>
+                  ) : undefined
+                }
                 crear={{ label: 'Agregar propietario', onClick: () => setShowAddModal(true) }}
               />
             ) : viewMode === 'table' ? (
@@ -549,7 +591,7 @@ function PropietariosContent() {
               {t('inmobiliaria.propietarios.deleteConfirm', { name: deletingPropietario.name })}
             </p>
             {deletingPropietario.propertyCount > 0 && (
-              <div className="p-3 rounded-xl bg-warning-soft border border-warning/30">
+              <div className="p-3 rounded-lg bg-warning-soft border border-warning/30">
                 <div className="flex items-center gap-2 text-warning">
                   <Warning className="w-4 h-4" />
                   <p className="text-sm">

@@ -74,7 +74,7 @@ export function EstadoDeDatos({
     return (
       // Sin marco: esto NO es la pantalla, es el hueco de contenido que la
       // página ya envolvió —las tres pantallas que lo usan lo ponen dentro de
-      // `rounded-xl border bg-card`—. Enmarcado quedaba un borde redondeado
+      // `rounded-lg border bg-card`—. Enmarcado quedaba un borde redondeado
       // adentro de otro, y encima distinto de `cuandoVacio`, que ocupa
       // exactamente el mismo lugar sin marco.
       <FalloDeCarga

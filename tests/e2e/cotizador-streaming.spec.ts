@@ -48,7 +48,7 @@ for (const viewport of VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
     await setupMockSSE(page)
 
-    await page.goto('/panel/inmobiliaria/ai/cotizador/test-quote-id', {
+    await page.goto('/panel/inmobiliaria/postulaciones/asegurabilidad/test-quote-id', {
       waitUntil: 'networkidle',
     })
 
@@ -75,7 +75,7 @@ test('cotizador streaming — StreamCompleteBanner visible after all-final', asy
   await page.setViewportSize({ width: 1440, height: 900 })
   await setupMockSSE(page)
 
-  await page.goto('/panel/inmobiliaria/ai/cotizador/test-quote-id', {
+  await page.goto('/panel/inmobiliaria/postulaciones/asegurabilidad/test-quote-id', {
     waitUntil: 'networkidle',
   })
 
@@ -90,7 +90,7 @@ test('cotizador streaming — Re-cotizar button is aria-disabled', async ({ page
   await page.setViewportSize({ width: 1440, height: 900 })
   await setupMockSSE(page)
 
-  await page.goto('/panel/inmobiliaria/ai/cotizador/test-quote-id', {
+  await page.goto('/panel/inmobiliaria/postulaciones/asegurabilidad/test-quote-id', {
     waitUntil: 'networkidle',
   })
 
@@ -105,7 +105,7 @@ test('cotizador streaming — iPhone-14 cards stack 1-column', async ({ page }) 
   await page.setViewportSize({ width: 390, height: 844 })
   await setupMockSSE(page)
 
-  await page.goto('/panel/inmobiliaria/ai/cotizador/test-quote-id', {
+  await page.goto('/panel/inmobiliaria/postulaciones/asegurabilidad/test-quote-id', {
     waitUntil: 'networkidle',
   })
 
@@ -125,7 +125,7 @@ test('cotizador streaming — cheapest approved card rendered first in DOM', asy
   await page.setViewportSize({ width: 390, height: 844 })
   await setupMockSSE(page)
 
-  await page.goto('/panel/inmobiliaria/ai/cotizador/test-quote-id', {
+  await page.goto('/panel/inmobiliaria/postulaciones/asegurabilidad/test-quote-id', {
     waitUntil: 'networkidle',
   })
 

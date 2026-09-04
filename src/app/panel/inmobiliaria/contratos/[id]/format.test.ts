@@ -13,6 +13,10 @@ import { formatDate, formatCanon } from './format'
  * placeholder cualquiera.
  */
 describe('formatDate (detalle de contrato)', () => {
+  it('lee el DATE como día local: el 1 de marzo en UTC no es el 28 de febrero', () => {
+    expect(formatDate('2025-03-01T00:00:00.000Z')).toBe('1 de marzo de 2025')
+  })
+
   it('nunca cae al epoch UNIX para una fecha ausente', () => {
     expect(String(formatDate(null))).not.toContain('1970')
     expect(String(formatDate(undefined))).not.toContain('1970')

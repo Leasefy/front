@@ -1,0 +1,306 @@
+'use client'
+
+/**
+ * Compliance Overview — Phase 34 plan 34-07 (D-34-03, D-34-07, D-34-RES-A1).
+ *
+ * 4 sections + page-level red banner + 3 sub-page nav cards.
+ *
+ * Banner trigger (D-34-RES-A1 + D-34-07): visible when ANY open Habeas Data
+ * request has remaining_days <= 15. Since the server only ever returns OPEN
+ * requests under a 15-day SLA window, this condition is effectively
+ * "any open request exists" — but the explicit `<= 15` check stays for
+ * clarity and to defend against future server changes.
+ *
+ * Refs mvp:docs/DESIGN.md §1 (sobrio + warm), §4 (cards rounded-lg border
+ * bg-card), §11 (loading state spinner), mvp:docs/COLOR_SYSTEM.md
+ * (rose for warning/error, emerald for ok).
+ */
+
+import { useMemo } from 'react'
+import Link from 'next/link'
+import { motion } from 'framer-motion'
+import { Warning, ShieldCheck, ClipboardText, FileText } from '@phosphor-icons/react'
+
+import { PageGuard } from '@/components/auth/PageGuard'
+import { useI18n } from '@/lib/i18n'
+import { useComplianceOverview } from '@/lib/hooks/cobranza/use-compliance-overview'
+import { HabeasDataSlaCard } from '@/components/inmobiliaria/cobranza/HabeasDataSlaCard'
+import { ComplianceSparkline } from '@/components/inmobiliaria/cobranza/ComplianceSparkline'
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { EmptyState } from '@/components/data-display/EmptyState'
+import { MonoLabel } from '@leasefy/cadence'
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
+
+function ComplianceOverviewContent() {
+  const { t, locale } = useI18n()
+  const { data, isLoading, error, refetch } = useComplianceOverview()
+
+  useAutoRefresh(refetch)
+
+  // El disparador era `remaining_days <= 15`, que con un término de 15 días es
+  // cierto SIEMPRE que haya una solicitud abierta: la banda roja salía aunque
+  // faltaran dos semanas. Una alerta que está siempre encendida deja de leerse.
+  // Ahora avisa por lo que de verdad urge: vencidas o a punto de vencer.
+  const showBanner = useMemo(() => {
+    if (!data) return false
+    return data.habeas_data.open_requests.some((r) => r.remaining_days <= URGENT_DAYS)
+  }, [data])
+
+  const lastUpdated = useMemo(() => {
+    if (!data?.generated_at) return null
+    const sec = Math.max(
+      0,
+      Math.round((Date.now() - new Date(data.generated_at).getTime()) / 1000),
+    )
+    if (sec < 60) return locale.startsWith('es') ? `hace ${sec}s` : `${sec}s ago`
+    const min = Math.round(sec / 60)
+    return locale.startsWith('es') ? `hace ${min}m` : `${min}m ago`
+  }, [data?.generated_at, locale])
+
+  // Phase 38-05a: page-level skeleton during first load
+  if (isLoading && !data) return <PageSkeleton variant="dashboard" />
+
+  // Phase 38-05a: page-level EmptyState when no compliance issues at all
+  // ("truly empty" = no open Habeas Data + no outside-hours violations)
+  const hasAnyIssues =
+    !!data &&
+    (data.habeas_data.open_requests.length > 0 ||
+      data.ley_2300.weekly_outside_hours_count > 0)
+  if (!isLoading && data && !error && !hasAnyIssues) {
+    return (
+      <EmptyState
+        icon={ShieldCheck}
+        title={t('inmobiliaria.ai.cobranza.compliance.empty.title')}
+        description={t('inmobiliaria.ai.cobranza.compliance.empty.description')}
+      />
+    )
+  }
+
+  const subPages = [
+    {
+      href: '/panel/inmobiliaria/cobros/cobranza/compliance/ley-2300',
+      title: t('inmobiliaria.ai.cobranza.compliance.subPages.ley2300Title'),
+      Icon: ClipboardText,
+    },
+    {
+      href: '/panel/inmobiliaria/cobros/cobranza/compliance/opt-out',
+      title: t('inmobiliaria.ai.cobranza.compliance.subPages.optOutTitle'),
+      Icon: ShieldCheck,
+    },
+    {
+      href: '/panel/inmobiliaria/cobros/cobranza/compliance/audit',
+      title: t('inmobiliaria.ai.cobranza.compliance.subPages.auditTitle'),
+      Icon: FileText,
+    },
+  ]
+
+  return (
+    <div className="p-4 md:p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-h2 font-heading text-foreground">
+            {t('inmobiliaria.ai.cobranza.compliance.pageTitle')}
+          </h1>
+          {lastUpdated && (
+            <p className="mt-1 text-xs text-muted-foreground tabular-nums font-mono">
+              {lastUpdated}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Page-level red banner — D-34-RES-A1 trigger remaining_days <= 15 */}
+      {showBanner && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-lg border border-danger/30 bg-danger-soft p-4 flex items-start gap-3"
+          role="alert"
+        >
+          <Warning
+            className="w-5 h-5 text-danger flex-shrink-0 mt-0.5"
+            weight="fill"
+            aria-hidden="true"
+          />
+          <p className="text-sm text-danger">
+            {t('inmobiliaria.ai.cobranza.compliance.habeasData.banner')}
+          </p>
+        </motion.div>
+      )}
+
+      {/* Error state — color+icon+text (a11y: not color-only per XR-06) */}
+      {error && !data && (
+        <div
+          role="alert"
+          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
+        >
+          <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
+          <span>Error: {error}</span>
+        </div>
+      )}
+
+      {data && (
+        <>
+          {/* Section 1: Ley 2300 weekly counter */}
+          <section className="rounded-lg border border-border bg-card p-4">
+            <MonoLabel>
+              {t('inmobiliaria.ai.cobranza.compliance.overview.ley2300Heading')}
+            </MonoLabel>
+            <div className="mt-3 flex items-baseline gap-3">
+              <span
+                className={[
+                  'text-4xl font-mono tabular-nums',
+                  data.ley_2300.weekly_outside_hours_count === 0
+                    ? 'text-success'
+                    : 'text-danger font-bold',
+                ].join(' ')}
+              >
+                {data.ley_2300.weekly_outside_hours_count}
+              </span>
+              {/*
+                Decía «4 / 0», que se lee como una fracción rota — «cuatro de
+                cero». No es un progreso hacia una meta: es un CONTEO de
+                infracciones contra un objetivo que sólo puede ser cero. Se
+                escribe con palabras.
+              */}
+              <span className="text-sm text-muted-foreground">
+                {data.ley_2300.weekly_outside_hours_count === 1
+                  ? 'intento'
+                  : 'intentos'}{' '}
+                · el objetivo es {data.ley_2300.target}
+              </span>
+            </div>
+          </section>
+
+          {/* Section 2: Habeas Data SLA list */}
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <MonoLabel>
+                {t('inmobiliaria.ai.cobranza.compliance.overview.habeasDataHeading')}
+              </MonoLabel>
+              <Link
+                href="/panel/inmobiliaria/cobros/cobranza/compliance/opt-out"
+                className="text-xs text-primary hover:underline font-medium"
+              >
+                {locale.startsWith('es') ? 'Ver todos' : 'View all'}
+              </Link>
+            </div>
+            {data.habeas_data.open_requests.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                {locale.startsWith('es')
+                  ? 'Sin solicitudes Habeas Data abiertas'
+                  : 'No open Habeas Data requests'}
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {data.habeas_data.open_requests.map((req) => (
+                  <HabeasDataSlaCard key={req.id} request={req} />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Section 3: Retention gauge */}
+          <section className="rounded-lg border border-border bg-card p-4">
+            <MonoLabel>
+              {t('inmobiliaria.ai.cobranza.compliance.overview.retentionHeading')}
+            </MonoLabel>
+            {/* `compliance_pct: null` = no hay filas que medir. Antes el back
+                devolvía 100 fijo con un TODO y esto pintaba un 100% verde que
+                no medía nada — en la pantalla cuyo trabajo es avisar cuando
+                algo va mal. «No hay nada» y «está todo bien» no son lo mismo. */}
+            {data.retention.compliance_pct === null ? (
+              <p className="mt-3 text-body-sm text-fg-muted">
+                {t('inmobiliaria.ai.cobranza.compliance.overview.retentionUnmeasured')}
+              </p>
+            ) : (
+              <div className="mt-3 space-y-2">
+                <div className="flex items-baseline gap-2">
+                  <span
+                    className={[
+                      'text-3xl font-mono tabular-nums',
+                      data.retention.compliance_pct >= data.retention.target
+                        ? 'text-success'
+                        : 'text-warning',
+                    ].join(' ')}
+                  >
+                    {data.retention.compliance_pct}%
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    / {data.retention.target}%
+                  </span>
+                </div>
+                <div
+                  className="h-2 w-full rounded-full bg-muted overflow-hidden"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={data.retention.compliance_pct}
+                >
+                  <div
+                    className={[
+                      'h-full transition-all',
+                      data.retention.compliance_pct >= data.retention.target
+                        ? 'bg-success'
+                        : 'bg-warning',
+                    ].join(' ')}
+                    style={{
+                      width: `${Math.min(100, Math.max(0, data.retention.compliance_pct))}%`,
+                    }}
+                  />
+                </div>
+                <p className="text-caption text-fg-subtle">
+                  {t(
+                    `inmobiliaria.ai.cobranza.compliance.overview.retentionCaption${
+                      data.retention.measured_rows === 1 ? 'One' : ''
+                    }`,
+                  )
+                    .replace('{rows}', String(data.retention.measured_rows))
+                    .replace('{overdue}', String(data.retention.overdue_rows))}
+                </p>
+              </div>
+            )}
+          </section>
+
+          {/* Section 4: 30-day sparkline */}
+          <section className="rounded-lg border border-border bg-card p-4">
+            <MonoLabel className="mb-3">
+              {t('inmobiliaria.ai.cobranza.compliance.overview.sparklineHeading')}
+            </MonoLabel>
+            <ComplianceSparkline buckets={data.sparkline.daily_buckets_30d} />
+          </section>
+
+          {/* Section 5: Sub-page nav cards */}
+          <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {subPages.map(({ href, title, Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className="rounded-lg border border-border bg-card p-4 hover:border-primary hover:bg-accent/30 transition flex items-center gap-3"
+              >
+                <Icon className="w-5 h-5 text-primary" aria-hidden="true" />
+                <span className="text-sm font-medium text-foreground">{title}</span>
+              </Link>
+            ))}
+          </section>
+        </>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Umbral de la banda roja, en días hábiles. Mismo criterio que la bandeja de
+ * Habeas Data (`ARCO_URGENT_THRESHOLD_DAYS`): una alerta que está siempre
+ * encendida deja de leerse.
+ */
+const URGENT_DAYS = 3
+
+export default function CompliancePage() {
+  return (
+    <PageGuard module="cobranza" action="view">
+      <ComplianceOverviewContent />
+    </PageGuard>
+  )
+}

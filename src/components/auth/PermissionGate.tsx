@@ -43,7 +43,7 @@ export function PermissionGate({ module, action, children, fallback }: Permissio
 
   // Default "no access" message
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl px-6 py-14 text-center bg-surface-muted border border-border">
+    <div className="flex flex-col items-center justify-center rounded-lg px-6 py-14 text-center bg-surface-muted border border-border">
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-surface-hover">
         <Lock weight="duotone" className="h-5 w-5 text-fg-subtle" />
       </div>

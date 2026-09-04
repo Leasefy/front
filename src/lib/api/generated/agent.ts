@@ -4812,6 +4812,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/ai-hub/autonomia": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto automático — el modo de la flota (para el header) */
+        get: operations["getAiHubFlota"];
+        /**
+         * Piloto automático — mover la flota entera a un modo
+         * @description Escribe el modo (🌑 sombra / 🤝 copiloto / 🚀 autónomo) en TODOS los agentes con autonomía, uno por uno con el mismo escritor del PUT por agente, y deja un rastro de flota en audit_log. Solo OWNER/ADMIN.
+         */
+        put: operations["putAiHubFlota"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/procesos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto automático — lo que hizo, proceso por proceso (depósitos, llamadas, WhatsApp) */
+        get: operations["getAiHubProcesos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/conciliacion/conciliar-seguros": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto — conciliar los movimientos del banco que tienen UN candidato seguro */
+        post: operations["pilotoConciliarSeguros"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/conciliacion/movimientos/{id}/conciliar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto — conciliar un movimiento del banco contra el cobro elegido */
+        post: operations["pilotoConciliarMovimiento"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/ai-hub/pulso": {
         parameters: {
             query?: never;
@@ -5908,6 +5980,26 @@ export interface paths {
         get: operations["getApCostCenters"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ap/bills/extract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Leer una factura de proveedor (foto/PDF) con IA y sugerir el alta en AP
+         * @description Lee una o más fotos/PDFs de la misma factura con Claude, empareja el proveedor por NIT/nombre, sube el primer documento a Storage y devuelve una sugerencia para POST /ap/bills. No persiste la factura.
+         */
+        post: operations["extractApBill"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11097,6 +11189,115 @@ export interface components {
         AiHubGobiernoPutBody: {
             habilitado: boolean;
         };
+        AiHubFlotaAgente: {
+            agente: string;
+            /** @enum {string} */
+            modo: "sombra" | "copiloto" | "autonomo";
+            /** @enum {string} */
+            origen: "piloto" | "politica" | "default";
+            corre: boolean;
+        };
+        AiHubFlotaResponse: {
+            activo: boolean;
+            /** @enum {string} */
+            modo: "sombra" | "copiloto" | "autonomo" | "mixto";
+            agentes: components["schemas"]["AiHubFlotaAgente"][];
+            resumen: {
+                sombra: number;
+                copiloto: number;
+                autonomo: number;
+            };
+            enVivo: {
+                llamadas: number;
+                conciliando: number;
+                esperando: number;
+            };
+            tomadoAt: string;
+        };
+        AiHubFlotaPutResponse: components["schemas"]["AiHubFlotaResponse"] & {
+            cambiados: string[];
+            fallidos: {
+                agente: string;
+                error: string;
+            }[];
+        };
+        AiHubFlotaPutBody: {
+            /** @enum {string} */
+            modo: "sombra" | "copiloto" | "autonomo";
+        };
+        AiHubProcesoPaso: {
+            at: string | null;
+            titulo: string;
+            detalle?: string;
+            /** @enum {string} */
+            estado: "hecho" | "en_curso" | "pendiente" | "fallo";
+        };
+        AiHubProceso: {
+            id: string;
+            /** @enum {string} */
+            tipo: "deposito" | "llamada" | "whatsapp";
+            /** @enum {string} */
+            agente: "conciliacion" | "cobranza";
+            /** @enum {string} */
+            estado: "en_curso" | "esperando" | "hecho" | "sin_resultado";
+            titulo: string;
+            resumen: string | null;
+            resultado: string | null;
+            quien: {
+                nombre: string;
+                inmueble: string | null;
+            } | null;
+            montoCop: number | null;
+            inicioAt: string;
+            ultimoAt: string;
+            pasos: components["schemas"]["AiHubProcesoPaso"][];
+            mensajes?: {
+                at: string;
+                /** @enum {string} */
+                de: "yo" | "ellos";
+                texto: string;
+            }[];
+            enVivo: boolean;
+            enlace: {
+                label: string;
+                href: string;
+            } | null;
+        };
+        AiHubProcesosResponse: {
+            procesos: components["schemas"]["AiHubProceso"][];
+            totales: {
+                deposito: number;
+                llamada: number;
+                whatsapp: number;
+            };
+            enVivo: number;
+            fuentes: {
+                /** @enum {string} */
+                deposito: "ok" | "sin_back" | "error";
+                /** @enum {string} */
+                llamada: "ok" | "sin_back" | "error";
+                /** @enum {string} */
+                whatsapp: "ok" | "sin_back" | "error";
+            };
+            tomadoAt: string;
+        };
+        PilotoConciliacionSegurosResponse: {
+            conciliados: number;
+            sinCandidatoSeguro: number;
+            errores: {
+                movimientoId: string;
+                mensaje: string;
+            }[];
+        };
+        PilotoConciliacionConciliarResponse: {
+            movimientoId: string;
+            reciboId: string;
+            reciboNumero: number;
+        };
+        PilotoConciliacionConciliarBody: {
+            /** Format: uuid */
+            cobroId: string;
+        };
         PilotoPulsoEnCurso: {
             id: string;
             tipo: string;
@@ -11666,6 +11867,8 @@ export interface components {
             createdBy: string;
             approvedBy: string | null;
             approvedAt: string | null;
+            adjuntoUrl: string | null;
+            concepto: string | null;
         };
         ApBillsError: {
             error: string;
@@ -11685,6 +11888,94 @@ export interface components {
             issuedAt: string;
             /** Format: date-time */
             dueDate: string;
+            /** Format: uri */
+            adjuntoUrl?: string;
+            concepto?: string;
+        };
+        ApBillExtractFactura: {
+            proveedorNombre: string | null;
+            proveedorNit: string | null;
+            proveedorDv: string | null;
+            proveedorCorreo: string | null;
+            proveedorTelefono: string | null;
+            numeroFactura: string | null;
+            cufe: string | null;
+            fechaEmision: string | null;
+            fechaVencimiento: string | null;
+            moneda: string | null;
+            subtotalCop: number | null;
+            ivaCop: number | null;
+            retencionesCop: number | null;
+            totalCop: number | null;
+            concepto: string | null;
+            inmuebleReferencia: string | null;
+            formaDePago: string | null;
+            fieldConfidence: {
+                [key: string]: number;
+            };
+        };
+        ApBillExtractVendorCandidato: {
+            /** Format: uuid */
+            vendorId: string;
+            name: string;
+            documentNumber: string;
+        } | null;
+        ApBillExtractResponse: {
+            /** @enum {boolean} */
+            success: true;
+            factura: components["schemas"]["ApBillExtractFactura"];
+            items: {
+                descripcion: string;
+                cantidad: number | null;
+                valorUnitarioCop: number | null;
+                valorCop: number | null;
+            }[];
+            conflictos: {
+                campo: string;
+                valores: {
+                    valor: string;
+                    documento: string;
+                }[];
+            }[];
+            documentos: {
+                nombre: string;
+                tipo: string;
+            }[];
+            confidence: number;
+            proveedor: {
+                match: components["schemas"]["ApBillExtractVendorCandidato"];
+                candidatos: (components["schemas"]["ApBillExtractVendorCandidato"] & Record<string, never>)[];
+            };
+            sugerencia: {
+                /** Format: uuid */
+                vendorId: string | null;
+                invoiceNumber: string;
+                amountCop: number | null;
+                baseGravableCop: number | null;
+                ivaCop: number | null;
+                issuedAt: string | null;
+                dueDate: string | null;
+                costCenterCode: string | null;
+            };
+            adjuntoUrl: string | null;
+            tokensUsed: number;
+            estimatedCostUsd: number;
+        };
+        ApBillExtractError: {
+            /** @enum {boolean} */
+            success: false;
+            error: string;
+        };
+        ApBillExtractDbError: {
+            error: string;
+        };
+        ApBillExtractDocumento: {
+            nombre: string;
+            mediaType: string;
+            base64: string;
+        };
+        ApBillExtractRequest: {
+            documentos: components["schemas"]["ApBillExtractDocumento"][];
         };
         ApAgingResponse: {
             asOf: string;
@@ -21455,6 +21746,282 @@ export interface operations {
             };
         };
     };
+    getAiHubFlota: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Estado de la flota */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubFlotaResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    putAiHubFlota: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiHubFlotaPutBody"];
+            };
+        };
+        responses: {
+            /** @description Flota movida (ver `fallidos` si alguno no cambió) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubFlotaPutResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant / rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAiHubProcesos: {
+        parameters: {
+            query?: {
+                tipo?: "deposito" | "llamada" | "whatsapp" | "todos";
+                limite?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los procesos, los vivos primero */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubProcesosResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    pilotoConciliarSeguros: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lo que pasó */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoConciliacionSegurosResponse"];
+                };
+            };
+            /** @description Rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description El gobierno de la agencia no deja actuar */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description El back no respondió */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    pilotoConciliarMovimiento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PilotoConciliacionConciliarBody"];
+            };
+        };
+        responses: {
+            /** @description Recibo emitido */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoConciliacionConciliarResponse"];
+                };
+            };
+            /** @description Rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description El gobierno de la agencia no deja actuar, o el movimiento ya no está pendiente */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description El back no respondió */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
     getAiHubPulso: {
         parameters: {
             query?: never;
@@ -23296,6 +23863,77 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApBillsError"];
+                };
+            };
+        };
+    };
+    extractApBill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApBillExtractRequest"];
+            };
+        };
+        responses: {
+            /** @description Factura leída + proveedor emparejado + sugerencia */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillExtractResponse"];
+                };
+            };
+            /** @description Entrada que la persona puede arreglar (formato, tamaño, PDF dañado) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillExtractError"];
+                };
+            };
+            /** @description ap:create-bill required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillExtractError"];
+                };
+            };
+            /** @description Demasiadas solicitudes */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillExtractError"];
+                };
+            };
+            /** @description No se pudo leer la factura */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillExtractError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillExtractDbError"];
                 };
             };
         };

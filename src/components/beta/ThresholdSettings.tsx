@@ -242,7 +242,7 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
         {/* Mora tolerance */}
         <div
           className={cn(
-            'rounded-xl border border-neutral-200 dark:border-border',
+            'rounded-lg border border-neutral-200 dark:border-border',
             'bg-white dark:bg-card',
             'p-4'
           )}
@@ -272,7 +272,7 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
         {/* Maintenance budget */}
         <div
           className={cn(
-            'rounded-xl border border-neutral-200 dark:border-border',
+            'rounded-lg border border-neutral-200 dark:border-border',
             'bg-white dark:bg-card',
             'p-4'
           )}
@@ -301,7 +301,7 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
         {/* Candidate score */}
         <div
           className={cn(
-            'rounded-xl border border-neutral-200 dark:border-border',
+            'rounded-lg border border-neutral-200 dark:border-border',
             'bg-white dark:bg-card',
             'p-4'
           )}

@@ -189,15 +189,15 @@ Cuando un propietario invita miembros a su equipo, estos tienen acceso **dentro 
 | `/panel/inmobiliaria/inmuebles/nuevo` | Nueva propiedad | **C**: Crear listing, subir fotos, definir términos |
 | `/panel/inmobiliaria/inmuebles/[id]` | Detalle propiedad | **R/U**: Editar detalles, gestionar candidatos, ver historial |
 | `/panel/inmobiliaria/pipeline` | Pipeline (Kanban) | **R**: Ver aplicaciones por etapa. **U**: Mover entre etapas, asignar agente |
-| `/panel/inmobiliaria/agentes` | Agentes | **R**: Listar agentes. **C**: Agregar agente. **U**: Editar, asignar propiedades |
-| `/panel/inmobiliaria/agentes/[id]` | Detalle agente | **R**: Perfil, métricas, comisiones. **U**: Asignar propiedades |
+| `/panel/inmobiliaria/configuracion/equipo` | Agentes | **R**: Listar agentes. **C**: Agregar agente. **U**: Editar, asignar propiedades |
+| `/panel/inmobiliaria/configuracion/equipo/[id]` | Detalle agente | **R**: Perfil, métricas, comisiones. **U**: Asignar propiedades |
 | `/panel/inmobiliaria/cobros` | Cobros | **R**: Ver pagos cobrados. **C**: Registrar pago. **U**: Actualizar estado |
-| `/panel/inmobiliaria/dispersiones` | Dispersiones | **R**: Ver pendientes. **C**: Programar dispersión. **U**: Aprobar |
-| `/panel/inmobiliaria/dispersiones/generar` | Generar dispersión | **C**: Crear lote de dispersión, seleccionar pagos |
-| `/panel/inmobiliaria/operaciones` | Operaciones | **R**: Ver solicitudes mantenimiento. **C**: Crear solicitud. **U**: Actualizar estado, aprobar cotización |
+| `/panel/inmobiliaria/pagos/dispersiones` | Dispersiones | **R**: Ver pendientes. **C**: Programar dispersión. **U**: Aprobar |
+| `/panel/inmobiliaria/pagos/dispersiones/generar` | Generar dispersión | **C**: Crear lote de dispersión, seleccionar pagos |
+| `/panel/inmobiliaria/mantenimientos` | Operaciones | **R**: Ver solicitudes mantenimiento. **C**: Crear solicitud. **U**: Actualizar estado, aprobar cotización |
 | `/panel/inmobiliaria/documentos` | Documentos | **R**: Ver docs. **C**: Subir. **U**: Organizar. **D**: Eliminar |
 | `/panel/inmobiliaria/reportes` | Reportes | **R**: Generar reportes. Exportar datos |
-| `/panel/inmobiliaria/analytics` | Analytics | **R**: KPIs, tendencias, ocupación, revenue, rendimiento agentes |
+| `/panel/inmobiliaria/reportes/ia` | Analytics | **R**: KPIs, tendencias, ocupación, revenue, rendimiento agentes |
 | `/panel/inmobiliaria/mensajes` | Mensajes | **R/C**: Comunicación interna y externa |
 | `/panel/inmobiliaria/configuracion` | Configuración | **R/U**: Info agencia, cuentas bancarias, usuarios, permisos |
 | `/panel/inmobiliaria/perfil` | Perfil | **R/U**: Info agencia, logo, datos empresa |

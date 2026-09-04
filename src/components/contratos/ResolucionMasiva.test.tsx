@@ -216,8 +216,42 @@ describe('<ResolucionMasiva> — omitidas (§3.2.G3)', () => {
     })
 
     const resultado = container.querySelector('[data-testid="resultado-masivo"]')
-    expect(resultado?.textContent).toContain('1 filas sin inmueble: se les aplicó el resto.')
+    // La razón la dice el back (hoy hay dos: sin inmueble, o activada que ya
+    // tenía propietario); la pantalla la repite tal cual, con cuántas.
+    expect(resultado?.textContent).toContain('1 fila — Sin inmueble: la consignación es del inmueble.')
     expect(resultado?.textContent).not.toContain('no se pudieron')
+  })
+
+  it('agrupa las omitidas por razón: las activadas que ya tenían propietario no se mezclan con las sin inmueble', async () => {
+    vi.mocked(contractsApi.migracion.resolverMasivo).mockResolvedValue(
+      resultadoVacio({
+        pedidas: 4,
+        aplicadas: 1,
+        omitidas: [
+          { id: 'f-2', fila: 5, motivo: 'Sin inmueble: la consignación es del inmueble.' },
+          { id: 'f-3', fila: 6, motivo: 'Ya tiene propietario: en un contrato activado se corrige desde el inmueble.' },
+          { id: 'f-4', fila: 7, motivo: 'Ya tiene propietario: en un contrato activado se corrige desde el inmueble.' },
+        ],
+      }),
+    )
+
+    render({
+      ids: ['f-1', 'f-2', 'f-3', 'f-4'],
+      seleccionadas: [fila({ id: 'f-1' }), fila({ id: 'f-2', propertyId: null, fila: 5 })],
+      onListo: vi.fn(),
+    })
+    await elegirYCompletarPropietario()
+
+    await act(async () => {
+      boton('Aplicar a 4')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    const lineas = Array.from(container.querySelectorAll('[data-testid="omitidas-masivo"]')).map((e) => e.textContent)
+    expect(lineas).toEqual([
+      '1 fila — Sin inmueble: la consignación es del inmueble.',
+      '2 filas — Ya tiene propietario: en un contrato activado se corrige desde el inmueble.',
+    ])
   })
 
   it('sin omitidas en la respuesta, no renderiza esa línea', async () => {

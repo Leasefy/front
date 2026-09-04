@@ -27,7 +27,7 @@ export function IndicadoresTable({ indicadores, className }: IndicadoresTablePro
   return (
     <div
       className={cn(
-        'rounded-xl border border-border bg-card overflow-hidden',
+        'rounded-lg border border-border bg-card overflow-hidden',
         className,
       )}
       data-testid="indicadores-table"

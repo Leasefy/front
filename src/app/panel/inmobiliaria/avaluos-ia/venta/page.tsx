@@ -144,7 +144,7 @@ export default function AvaluoVentaPage() {
         </div>
 
         {/* ── Result card — three sale strategies ────────────────────────── */}
-        <Card className="rounded-2xl p-5 sm:p-6">
+        <Card className="rounded-lg p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3 mb-5">
             <Eyebrow accent>Precio de venta recomendado</Eyebrow>
             <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-warning">
@@ -165,7 +165,7 @@ export default function AvaluoVentaPage() {
                     type="button"
                     onClick={() => setSelected(s.key)}
                     aria-pressed={isSel}
-                    className="relative overflow-hidden rounded-xl p-5 text-left transition-transform active:scale-[0.99]"
+                    className="relative overflow-hidden rounded-lg p-5 text-left transition-transform active:scale-[0.99]"
                     style={{
                       background: INK_GRADIENT,
                       boxShadow: isSel ? `0 0 0 2px ${BLUE}, 0 20px 44px -22px rgba(20, 19, 15,0.5)` : '0 16px 40px -22px rgba(20, 19, 15,0.45)',
@@ -205,7 +205,7 @@ export default function AvaluoVentaPage() {
                   type="button"
                   onClick={() => setSelected(s.key)}
                   aria-pressed={isSel}
-                  className="relative rounded-xl border bg-surface p-5 text-left transition-all active:scale-[0.99]"
+                  className="relative rounded-lg border bg-surface p-5 text-left transition-all active:scale-[0.99]"
                   style={{ borderColor: isSel ? BLUE : 'rgba(0,0,0,0.10)', boxShadow: isSel ? `0 0 0 1px ${BLUE}` : 'none' }}
                 >
                   <div className="flex items-center justify-between">
@@ -245,7 +245,7 @@ export default function AvaluoVentaPage() {
           {/* LEFT */}
           <div className="space-y-6 min-w-0">
             {/* Por qué este número */}
-            <Card className="rounded-2xl p-5 sm:p-6">
+            <Card className="rounded-lg p-5 sm:p-6">
               <div className="mb-4">
                 <Eyebrow>Por qué {fmtShort(mercado.value)}</Eyebrow>
                 <p className="mt-1.5 text-[13px] text-fg-muted">
@@ -270,7 +270,7 @@ export default function AvaluoVentaPage() {
             </Card>
 
             {/* Comparables */}
-            <section className="rounded-2xl border border-border bg-surface overflow-hidden">
+            <section className="rounded-lg border border-border bg-surface overflow-hidden">
               <div className="px-5 sm:px-6 pt-5 pb-4">
                 <Eyebrow>Comparables de venta</Eyebrow>
                 <p className="mt-1.5 text-[13px] text-fg-muted">
@@ -315,7 +315,7 @@ export default function AvaluoVentaPage() {
           {/* RIGHT RAIL */}
           <aside className="space-y-6 lg:sticky lg:top-6">
             {/* Ficha */}
-            <section className="rounded-2xl border border-border bg-surface overflow-hidden">
+            <section className="rounded-lg border border-border bg-surface overflow-hidden">
               <div className="relative h-32 bg-gradient-to-br from-surface-muted to-border/70 flex items-center justify-center">
                 <Storefront className="w-8 h-8 text-fg-subtle" weight="duotone" />
                 <span className="absolute bottom-2 right-2 inline-flex items-center h-5 px-2 rounded-full bg-white/90 backdrop-blur font-mono text-[9.5px] font-medium uppercase tracking-[0.08em] text-fg-muted">
@@ -342,7 +342,7 @@ export default function AvaluoVentaPage() {
             </section>
 
             {/* Expectativa */}
-            <Card className="rounded-2xl p-5">
+            <Card className="rounded-lg p-5">
               <Eyebrow>Expectativa del propietario</Eyebrow>
               <div className="mt-3 space-y-3">
                 <div className="flex items-center justify-between text-[13px]">
@@ -371,7 +371,7 @@ export default function AvaluoVentaPage() {
             </Card>
 
             {/* Estrategia + acciones */}
-            <Card className="rounded-2xl p-5 space-y-4">
+            <Card className="rounded-lg p-5 space-y-4">
               <div>
                 <Eyebrow accent>Estrategia recomendada</Eyebrow>
                 <p className="mt-2 text-[13px] text-fg leading-relaxed">

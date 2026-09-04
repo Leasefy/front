@@ -11,7 +11,7 @@ import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
 const QUOTE_ID = 'test-quote-id'
-const ROUTE = `/panel/inmobiliaria/ai/cotizador/${QUOTE_ID}`
+const ROUTE = `/panel/inmobiliaria/postulaciones/asegurabilidad/${QUOTE_ID}`
 const METADATA_MOCK = `**/cotizador/quote/${QUOTE_ID}/metadata`
 const STREAM_MOCK = `**/cotizador/quote/${QUOTE_ID}/stream`
 const SKELETON_DELAY_MS = 2500

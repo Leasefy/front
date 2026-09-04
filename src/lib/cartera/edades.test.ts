@@ -10,7 +10,15 @@
 import { describe, expect, it } from 'vitest'
 
 import type { CarteraItem } from '@/lib/types/inmobiliaria'
-import { discriminar, edadDe, porPropietario } from './edades'
+import {
+  coincide,
+  discriminar,
+  edadDe,
+  filtrarCartera,
+  filtrarPropietarios,
+  hayFiltrosDeCartera,
+  porPropietario,
+} from './edades'
 
 function deuda(over: Partial<CarteraItem> = {}): CarteraItem {
   return {
@@ -125,5 +133,71 @@ describe('por propietario', () => {
     expect(r).toHaveLength(1)
     expect(r[0].propietarioName).toBe('Sin propietario registrado')
     expect(r[0].monto).toBe(700)
+  })
+})
+
+describe('inmuebles por propietario', () => {
+  it('cuenta inmuebles DISTINTOS: cuatro cobros de un mismo apto son un inmueble', () => {
+    const r = porPropietario([
+      deuda({ cobroId: '1', propietarioId: 'a', consignacionId: 'apto-1' }),
+      deuda({ cobroId: '2', propietarioId: 'a', consignacionId: 'apto-1' }),
+      deuda({ cobroId: '3', propietarioId: 'a', consignacionId: 'apto-2' }),
+    ])
+    expect(r[0].deudas).toBe(3)
+    expect(r[0].inmuebles).toBe(2)
+  })
+})
+
+describe('los filtros de la cartera', () => {
+  const marta = deuda({ cobroId: 'm1', propietarioId: 'p1', propietarioName: 'Marta', tenantName: 'Esteban', daysLate: 12 })
+  const marta2 = deuda({ cobroId: 'm2', propietarioId: 'p1', propietarioName: 'Marta', tenantName: 'Ana', daysLate: 95 })
+  const jorge = deuda({ cobroId: 'j1', propietarioId: 'p2', propietarioName: 'Jorge', tenantName: 'Luis', daysLate: 0 })
+  const nadie = deuda({ cobroId: 'n1', propietarioId: null, propietarioName: null, tenantName: 'Carla', daysLate: 40 })
+  const todas = [marta, marta2, jorge, nadie]
+
+  it('sin filtro devuelve todo', () => {
+    expect(filtrarCartera(todas, {})).toHaveLength(4)
+    expect(hayFiltrosDeCartera({})).toBe(false)
+    expect(hayFiltrosDeCartera({ busqueda: '   ' })).toBe(false)
+  })
+
+  it('el tramo filtra por edad', () => {
+    expect(filtrarCartera(todas, { edad: '90+' }).map((i) => i.cobroId)).toEqual(['m2'])
+    expect(filtrarCartera(todas, { edad: 'por_vencer' }).map((i) => i.cobroId)).toEqual(['j1'])
+    expect(hayFiltrosDeCartera({ edad: '1-30' })).toBe(true)
+  })
+
+  it('la búsqueda mira inquilino, inmueble y propietario, sin distinguir mayúsculas', () => {
+    expect(filtrarCartera(todas, { busqueda: 'MARTA' }).map((i) => i.cobroId)).toEqual(['m1', 'm2'])
+    expect(filtrarCartera(todas, { busqueda: 'carla' }).map((i) => i.cobroId)).toEqual(['n1'])
+    expect(filtrarCartera(todas, { busqueda: 'Cra 13' })).toHaveLength(4)
+    expect(coincide([null, undefined, 'Apto'], 'apto')).toBe(true)
+    expect(coincide([null], 'x')).toBe(false)
+  })
+
+  it('el propietario: un id abre SUS deudas; null abre las que no tienen propietario', () => {
+    expect(filtrarCartera(todas, { propietarioId: 'p1' }).map((i) => i.cobroId)).toEqual(['m1', 'm2'])
+    // `null` no es «sin filtro»: es la fila «Sin propietario registrado».
+    expect(filtrarCartera(todas, { propietarioId: null }).map((i) => i.cobroId)).toEqual(['n1'])
+    expect(hayFiltrosDeCartera({ propietarioId: null })).toBe(true)
+    expect(hayFiltrosDeCartera({ propietarioId: undefined })).toBe(false)
+  })
+
+  it('los filtros se combinan', () => {
+    expect(filtrarCartera(todas, { edad: '1-30', propietarioId: 'p1', busqueda: 'esteban' })).toHaveLength(1)
+    expect(filtrarCartera(todas, { edad: '90+', busqueda: 'esteban' })).toHaveLength(0)
+  })
+
+  it('no muta la lista que recibe', () => {
+    const copia = [...todas]
+    filtrarCartera(todas, { edad: '90+' })
+    expect(todas).toEqual(copia)
+  })
+
+  it('por propietario se busca por el nombre del propietario', () => {
+    const grupos = porPropietario(todas)
+    expect(filtrarPropietarios(grupos, 'mar').map((p) => p.propietarioName)).toEqual(['Marta'])
+    expect(filtrarPropietarios(grupos, 'sin propietario')).toHaveLength(1)
+    expect(filtrarPropietarios(grupos, '')).toHaveLength(3)
   })
 })

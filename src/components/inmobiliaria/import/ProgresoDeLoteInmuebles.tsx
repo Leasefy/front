@@ -21,7 +21,7 @@ export function ProgresoDeLoteInmuebles({
 }) {
   if (estado?.estado === 'FALLIDO') {
     return (
-      <div className="rounded-xl border border-border p-6 space-y-3" data-testid="lote-inmuebles-fallido">
+      <div className="rounded-lg border border-border p-6 space-y-3" data-testid="lote-inmuebles-fallido">
         <div className="flex items-center gap-2 text-danger">
           <XCircle className="h-5 w-5" />
           <p className="text-sm font-medium">No pudimos preparar la importación</p>
@@ -38,7 +38,7 @@ export function ProgresoDeLoteInmuebles({
   const porcentaje = total > 0 ? Math.round((procesadas / total) * 100) : 0;
 
   return (
-    <div className="rounded-xl border border-border p-6 space-y-4" data-testid="lote-inmuebles-progreso">
+    <div className="rounded-lg border border-border p-6 space-y-4" data-testid="lote-inmuebles-progreso">
       <div className="flex items-center gap-2">
         <Clock className="h-5 w-5 animate-pulse text-primary" />
         <p className="text-sm font-medium text-fg">Estamos preparando tu importación</p>

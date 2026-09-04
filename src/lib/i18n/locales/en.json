@@ -852,7 +852,8 @@
         "walletRequired": "Select a wallet",
         "phoneRequired": "Enter the phone number",
         "phoneInvalid": "Phone number must be 10 digits"
-      }
+      },
+      "addAccount": "Add a collection account"
     }
   },
   "inmobiliaria": {
@@ -866,8 +867,9 @@
       "propiedades": "Properties",
       "pipeline": "Prospecting",
       "agentes": "Agents",
-      "cobros": "Manual Collections",
+      "cobros": "Collections",
       "cartera": "Portfolio due",
+      "recaudo": "Cash received",
       "contratos": "Contracts",
       "dispersiones": "Disbursements",
       "renovaciones": "Renewals",
@@ -889,7 +891,7 @@
       "pronto": "Soon",
       "secInicio": "Home",
       "secAutopilot": "AI Agents",
-      "secCrm": "CRM · Sales",
+      "secCrm": "Sales",
       "secFinanciero": "Financial · ERP",
       "secOperacion": "Operations · Docs",
       "tesoreria": "Treasury",
@@ -918,7 +920,24 @@
       "recorrido": "Journey",
       "soportes": "Candidate documents",
       "piloto": "Home",
-      "chat": "Chat"
+      "chat": "Chat",
+      "secCaptacion": "Acquisition & leasing",
+      "secOperacionDelContrato": "Operations",
+      "secDinero": "Money",
+      "secDirectorio": "Directory",
+      "pipelineCorto": "Pipeline",
+      "mantenimientos": "Maintenance",
+      "soportesCorto": "Documents",
+      "contabilidadCorta": "Accounting",
+      "liquidaciones": "Settlements",
+      "retencion": "Retention",
+      "resumenDelNegocio": "Business overview",
+      "rentabilidad": "Profitability",
+      "desempenoIa": "AI performance",
+      "agentesIa": "AI agents",
+      "automatizacionIa": "AI automation",
+      "riesgo": "Risk",
+      "porAprobar": "To approve"
     },
     "piloto": {
       "titulo": "Autopilot",
@@ -958,6 +977,92 @@
         "verMas": "Show {{n}} more",
         "sinFuente": "We couldn't load the activity",
         "sinFuenteHint": "The source didn't respond; that doesn't mean nothing happened."
+      },
+      "flota": {
+        "piloto": "Pilot",
+        "apagado": "Off",
+        "apagadoHint": "The Pilot is switched off on the server (PILOTO_ENABLED). The tech team turns it on.",
+        "cargando": "Reading the fleet state…",
+        "corriendo": "{{n}} agents running in this mode.",
+        "mixtoHint": "Agents don't share a mode: {{autonomo}} autopilot · {{copiloto}} copilot · {{sombra}} shadow. Pick one for the whole fleet or adjust per agent.",
+        "aria": "Autopilot: {{modo}} mode. Open to change it",
+        "elegir": "Pilot mode",
+        "modo": {
+          "sombra": "Shadow",
+          "copiloto": "Copilot",
+          "autonomo": "Autopilot",
+          "mixto": "Mixed"
+        },
+        "que": {
+          "sombra": "Watches, records and proposes. Contacts nobody, signs nothing, and doesn't interrupt you.",
+          "copiloto": "Prepares every action and leaves it in your inbox: nothing goes out without your OK.",
+          "autonomo": "Calls, writes and issues receipts on its own, within the law and your limits. Tells you what it did."
+        },
+        "confirmarAutonomo": "On autopilot the Pilot calls, writes and issues receipts without asking. Switch it on?",
+        "confirmarSi": "Yes, autopilot",
+        "cancelar": "Cancel",
+        "toastOk": "Pilot in {{modo}} mode for the whole fleet",
+        "toastParcial": "Pilot in {{modo}} mode, except: {{agentes}}",
+        "toastFail": "Couldn't change the mode: {{error}}",
+        "ahora": "Right now",
+        "llamadas": "{{n}} call(s) in progress",
+        "conciliando": "{{n}} deposit(s) being reconciled",
+        "esperando": "{{n}} deposit(s) waiting for your OK",
+        "verProcesos": "See processes",
+        "porAgente": "Per agent"
+      },
+      "procesos": {
+        "titulo": "Processes",
+        "descripcion": "What the Pilot did, step by step: deposits it detected and reconciled, Laura's calls and messages with tenants.",
+        "volver": "Autopilot",
+        "enVivo": "Live",
+        "enVivoVacio": "Nothing in progress right now",
+        "tipo": {
+          "todos": "All",
+          "deposito": "Deposits",
+          "llamada": "Calls",
+          "whatsapp": "WhatsApp"
+        },
+        "estado": {
+          "todos": "All",
+          "en_curso": "In progress",
+          "esperando": "Waiting for you",
+          "hecho": "Done",
+          "sin_resultado": "No result"
+        },
+        "filtrarTipo": "Filter by process type",
+        "filtrarEstado": "Filter by state",
+        "vacio": "No processes yet",
+        "vacioHint": "When the Pilot detects a deposit, calls someone or writes on WhatsApp, it shows up here with its steps.",
+        "vacioFiltro": "Nothing with that filter",
+        "vacioFiltroHint": "There are {{n}} processes in total; try another type or state.",
+        "error": "Couldn't load the processes: {{error}}",
+        "sinFuente": "We couldn't query the processes",
+        "sinFuenteHint": "The source didn't answer; that doesn't mean nothing happened.",
+        "fuenteCaida": "{{fuente}} didn't answer: those processes aren't in this list.",
+        "sinBack": "The ERP isn't connected to the Pilot: deposits don't show here.",
+        "contador": "{{visibles}} of {{total}}",
+        "verPasos": "Show steps",
+        "ocultarPasos": "Hide steps",
+        "abrir": "Open",
+        "mensajes": "Messages",
+        "yo": "Pilot",
+        "ellos": "Tenant",
+        "actualizado": "Updated {{hace}}",
+        "fuente": {
+          "deposito": "The ERP",
+          "llamada": "Calls",
+          "whatsapp": "WhatsApp"
+        }
+      },
+      "dock": {
+        "boton": "Processes",
+        "aria": "Open the Pilot's process tray",
+        "cerrar": "Close",
+        "enVivo": "{{n}} live",
+        "vacio": "No processes yet. When the Pilot does something, it shows up here.",
+        "verTodos": "See all processes",
+        "tope": "latest {{n}}"
       },
       "autonomia": {
         "titulo": "Autonomy",
@@ -1124,7 +1229,9 @@
         "title": "Requires attention",
         "latePayments": "{{count}} overdue payments for {{amount}}",
         "viewPayments": "View payments",
-        "pendingMaintenance": "{{count}} pending maintenance requests",
+        "pendingMaintenance": "{{count}} maintenance requests still open",
+        "latePaymentsDetalle": "Overdue rent that has not come in yet. From Collections you record the payment or send the reminder.",
+        "pendingMaintenanceDetalle": "Open or in-progress requests. Assign who handles them and close them once resolved.",
         "viewRequests": "View requests"
       },
       "financial": {
@@ -1150,26 +1257,38 @@
     },
     "config": {
       "title": "Settings",
-      "subtitle": "Manage your agency settings",
+      "subtitle": "Your agency, your team, your money and the system, all in one place",
+      "navAria": "Settings sections",
+      "grupos": {
+        "inmobiliaria": "Your agency",
+        "equipo": "Team",
+        "dinero": "Money",
+        "sistema": "System"
+      },
       "tabs": {
         "perfil": "Profile",
-        "perfilDesc": "Agency information",
+        "perfilDesc": "Company details and the owner's monthly statement",
         "branding": "Branding",
         "brandingDesc": "Logo, colors, and visual style",
-        "usuarios": "Users",
-        "usuariosDesc": "Team and access",
+        "equipo": "Members and roles",
+        "equipoDesc": "Who can sign in, with which role, and which invitations are open",
+        "miembros": "Members",
         "permisos": "Permissions",
-        "permisosDesc": "Roles and permissions",
+        "permisosDesc": "What each role can do",
+        "mediosDePago": "Payment methods",
+        "mediosDePagoDesc": "How tenants pay you: accounts, links and cash",
         "integraciones": "Integrations",
         "integracionesDesc": "Service connections",
-        "facturacion": "Billing",
-        "facturacionDesc": "Plan and payments",
+        "facturacion": "Plan & billing",
+        "facturacionDesc": "Your Leasefy plan, usage and invoices",
         "notificaciones": "Notifications",
         "notificacionesDesc": "Alerts and emails",
         "preferencias": "Preferences",
-        "preferenciasDesc": "Language and theme",
+        "preferenciasDesc": "Language, theme and panel tips",
         "seguridad": "Security",
-        "seguridadDesc": "Password and access"
+        "seguridadDesc": "Password and access",
+        "automatizacionIa": "AI automation",
+        "automatizacionIaDesc": "Review and certify what the assistant learned before it can influence the chat"
       },
       "notifications": {
         "title": "Notifications",
@@ -1220,6 +1339,42 @@
         "changePasswordToast": "A link will be sent to your email",
         "activeSessions": "Active sessions",
         "activeSessionsDesc": "1 device connected"
+      },
+      "extractoMensual": {
+        "title": "Monthly statement to owners",
+        "switchLabel": "Send automatically every month",
+        "hintPrendido": "Every month, on day {{dia}}, each owner with activity in the previous month gets their statement as a PDF by email. Owners without an email are skipped and listed.",
+        "hintApagado": "Off: the statement only goes out when someone sends it from the owner's page or with “Send now”.",
+        "soloAdmin": "Only an administrator can change this.",
+        "diaLabel": "Day of the month",
+        "diaHint": "From 1 to 28, so it exists in every month.",
+        "diaError": "A day between 1 and 28",
+        "ultimoMes": "Last month",
+        "cargando": "Reading the summary…",
+        "errorResumen": "Could not read last month's summary",
+        "todaviaNo": "The {{mes}} statement has not been sent yet.",
+        "conActividad": "{{n}} owners with activity",
+        "enviados": "{{n}} sent",
+        "fallidos": "{{n}} failed",
+        "omitidos": "{{n}} skipped",
+        "omitidosHint": "Skipped: no email on file or already sent.",
+        "ultimoEnvio": "last sent {{fecha}}",
+        "enviarAhora": "Send {{mes}} now",
+        "enviando": "Sending…",
+        "confirmTitle": "Send the {{mes}} statements?",
+        "confirmDesc": "A real email goes to every owner with activity in {{mes}} who has not received it yet ({{n}} with activity). Owners without an email are skipped and listed.",
+        "confirmAction": "Yes, send",
+        "cancel": "Cancel",
+        "resultadoTitle": "{{mes}} statements",
+        "resultadoDesc": "{{enviados}} sent · {{fallidos}} failed · {{omitidos}} skipped",
+        "errorEnvio": "The statements could not be sent",
+        "verDetalle": "See the ones that did not go out ({{n}})",
+        "todosSalieron": "All of them went out.",
+        "estado": {
+          "ENVIADO": "Sent",
+          "FALLIDO": "Failed",
+          "OMITIDO": "Skipped"
+        }
       },
       "toasts": {
         "configSaved": "Settings saved",
@@ -1594,7 +1749,6 @@
     "propietarios": {
       "title": "Owners",
       "subtitle": "Manage the owners in your portfolio",
-      "crmTitle": "Owner CRM",
       "search": "Search owner...",
       "addOwner": "New owner",
       "addOwnerIA": "Create with AI",
@@ -1602,6 +1756,11 @@
       "deleteOwner": "Delete owner",
       "deleteConfirm": "Are you sure you want to delete {{name}}?",
       "deleteWarningProperties": "This owner has {{count}} consigned property(ies).",
+      "deleteBloqueado": {
+        "titulo": "Cannot delete: {{count}} consigned unit(s)",
+        "detalle": "Withdraw or reassign those mandates from the portfolio first; then the record can be deleted.",
+        "accion": "Go to the portfolio"
+      },
       "noOwners": "No owners registered",
       "noOwnersDesc": "Start by adding your first owner",
       "notFound": "Owner not found",
@@ -1676,6 +1835,52 @@
         "notesSaved": "Notes saved",
         "generateStatement": "Generate statement",
         "exportData": "Export data",
+        "exportDone": "Data exported",
+        "exportDoneDesc": "{{archivo}} was downloaded",
+        "exportError": "Could not export. Try again.",
+        "moreActions": "More actions",
+        "perfilTributario": "Tax profile",
+        "personaNatural": "Individual",
+        "personaJuridica": "Company",
+        "ivaSi": "VAT responsible",
+        "ivaNo": "Not VAT responsible",
+        "ivaSinDefinir": "VAT undefined",
+        "retieneRenta": "Withholds income tax",
+        "noRetieneRenta": "No income withholding",
+        "retefuenteSinDefinir": "Income withholding undefined",
+        "retieneIva": "Withholds VAT",
+        "noRetieneIva": "No VAT withholding",
+        "reteivaSinDefinir": "VAT withholding undefined",
+        "retieneIca": "Withholds ICA",
+        "noRetieneIca": "No ICA withholding",
+        "reteicaSinDefinir": "ICA withholding undefined",
+        "perfilTributarioAyuda": "Decides VAT on rent and the withholdings of each payout. Anything undefined is billed with the default profile for the person type.",
+        "completarPerfil": "Complete profile",
+        "desde": "With Leasefy since {{fecha}}",
+        "refExterna": "Ref. in previous system",
+        "sinDireccion": "No address",
+        "extractos": {
+          "title": "Statements sent",
+          "cargando": "Reading the deliveries…",
+          "vacio": "No statement has been sent to this owner yet",
+          "error": "Could not read the statement history",
+          "automatico": "automatic",
+          "manual": "manual",
+          "a": "to {{correo}}",
+          "estado": {
+            "ENVIADO": "Sent",
+            "FALLIDO": "Failed",
+            "OMITIDO": "Skipped"
+          }
+        },
+        "backTo": {
+          "lista": "Back to owners",
+          "contrato": "Back to the contract",
+          "inmueble": "Back to the property",
+          "cobro": "Back to collections",
+          "dispersiones": "Back to disbursements",
+          "otro": "Back"
+        },
         "createdAt": "Created",
         "updatedAt": "Updated",
         "statusInProcess": "In process",
@@ -1847,6 +2052,7 @@
         "preExpiry": "Pre-expiry",
         "overdue": "Overdue",
         "lastReminder": "Last reminder:",
+        "remindersCount": "{{count}} reminder(s) sent",
         "noReminders": "No reminders have been sent"
       },
       "registerModal": {
@@ -1917,17 +2123,6 @@
         "registerPayment": "Register payment",
         "paymentComplete": "Payment complete",
         "viewDetail": "View detail"
-      },
-      "mora": {
-        "daysCompact": "days",
-        "severeCritical": "Critical Overdue",
-        "severityHigh": "High Overdue",
-        "paymentOverdue": "Payment Overdue",
-        "daysOverdue": "days overdue",
-        "interestLabel": "Interest: ",
-        "totalLabel": "Total: ",
-        "sendReminder": "Send reminder",
-        "viewHistory": "View history"
       },
       "toasts": {
         "paymentRegistered": "Payment registered successfully",
@@ -2186,6 +2381,7 @@
         "kanbanView": "Kanban View",
         "listView": "List View",
         "activeRequests": "active requests",
+        "newRequestDesc": "Pick the property and describe the issue; the rest can come later.",
         "newRequest": "New maintenance request"
       },
       "renewals": {
@@ -2565,6 +2761,7 @@
       "closedPerMonth": "closed/mo",
       "noAgentsInZone": "No agents available in this zone",
       "noActiveAgentsAvailable": "No active agents available",
+      "sinAgentesTodavia": "There are no agents on your team yet, so no one is assigned. Once you invite your team, assign one from the property's detail.",
       "agentAssigned": "Agent assigned: {{name}}",
       "propsShort": "Props.",
       "viewDetail": "View detail",
@@ -2599,6 +2796,25 @@
         "candidatos": "Candidates",
         "verAviso": "View public listing",
         "eliminar": "Remove from portfolio"
+      },
+      "ubicacion": {
+        "titulo": "Location",
+        "abrirEnGoogleMaps": "Open in Google Maps",
+        "comoLlegar": "Get directions",
+        "sinUbicacion": "This property has no location on the map",
+        "sinUbicacionDesc": "Without coordinates the public listing shows no map and candidates can't tell where it is.",
+        "inmuebleNoCargo": "The property could not be loaded, so its location is unknown.",
+        "ubicarEnElMapa": "Place on the map",
+        "dialogo": {
+          "titulo": "Place on the map",
+          "descripcion": "Search the address or click the map to drop the pin where the property is.",
+          "placeholder": "Calle 93 # 11-30, Bogotá",
+          "busquedaNoConfigurada": "Address search is not configured. You can still place the pin by hand on the map.",
+          "sinPin": "No pin yet: pick an address or click the map.",
+          "guardar": "Save location",
+          "guardada": "Location saved",
+          "errorAlGuardar": "The location could not be saved"
+        }
       }
     },
     "portafolio": {
@@ -2677,7 +2893,7 @@
         "cards": "Cards"
       },
       "degradedNotice": {
-        "title": "We couldn't load imported properties without a mandate",
+        "title": "We couldn't load imported properties without an owner",
         "description": "Your portfolio is still showing what did load. A recent property may be missing.",
         "retry": "Retry"
       },
@@ -2722,6 +2938,7 @@
       },
       "new": {
         "title": "New Consignment",
+        "backToOwner": "Back to the owner",
         "subtitle": "Add a new property to the portfolio",
         "step1": "Owner",
         "step2": "Property",
@@ -2852,24 +3069,52 @@
           "successDesc": "{{count}} properties imported successfully"
         },
         "mandateBatch": {
-          "title": "Assign mandate",
-          "subtitle": "{{count}} properties are missing a mandate. Complete it now for all of them at once, or do it later from the portfolio.",
+          "title": "Who owns these properties?",
+          "subtitle": "Pick the owner and the agency commission for the {{count}} properties you just brought in. If they belong to different owners, switch to “One by one” and decide property by property.",
+          "subtitleUno": "Pick the owner and the agency commission for the property you just brought in.",
+          "modo": {
+            "ariaLabel": "How to assign the owner",
+            "todos": "Same owner for all",
+            "unoPorUno": "One by one"
+          },
+          "porInmueble": {
+            "comisionGeneralLabel": "Default commission",
+            "comisionGeneralHint": "Applies to every row that doesn't change it.",
+            "fechaLabel": "Managed since",
+            "fechaHint": "Applies to every row.",
+            "filtroPlaceholder": "Search by title or address…",
+            "resumen": "{{listas}} of {{total}} with an owner",
+            "colInmueble": "Property",
+            "colPropietario": "Owner",
+            "colComision": "Commission",
+            "elegirPropietario": "Pick an owner…",
+            "buscarPropietario": "Name, document or email…",
+            "agregarNuevo": "Add new…",
+            "nuevoSufijo": "new",
+            "copiarAnterior": "Copy the one above",
+            "sinPropietario": "No owner: left for later",
+            "sinResultados": "No property matches “{{q}}”.",
+            "nuevoPropietarioTitulo": "New owner for “{{title}}”",
+            "confirm": "Save {{count}} with an owner",
+            "paraDespues": "{{count}} left for later",
+            "ningunaLista": "Pick the owner of at least one property to save."
+          },
           "propertiesListLabel": "Properties",
           "propietarioLabel": "Owner",
           "commissionLabel": "Agency commission",
-          "contractDateLabel": "Contract date",
-          "agenteLabel": "Assigned agent (optional)",
+          "contractDateLabel": "Managed since",
+          "agenteLabel": "Responsible agent (optional)",
           "skip": "Do it later",
-          "confirm": "Assign mandate to all",
+          "confirm": "Save for all",
           "toasts": {
-            "allSucceededTitle": "Mandates completed",
-            "allSucceededDesc": "{{count}} properties now have a mandate and commission.",
-            "partialTitle": "Partial mandate",
-            "partialDesc": "{{succeeded}} properties got a mandate, {{failed}} did not. Complete them from the portfolio.",
-            "allFailedTitle": "Couldn't assign the mandate",
-            "allFailedDesc": "No property got a mandate. Complete them from the portfolio whenever you want.",
-            "publishPartialTitle": "Mandate saved; some are still unpublished",
-            "publishPartialDesc": "{{count}} properties got a mandate but couldn't be published. Open them from the portfolio and publish them whenever you want — don't upload them again.",
+            "allSucceededTitle": "Owner assigned",
+            "allSucceededDesc": "{{count}} properties now have an owner and a commission.",
+            "partialTitle": "Some are still without an owner",
+            "partialDesc": "{{succeeded}} properties got an owner, {{failed}} did not. Complete them from the portfolio.",
+            "allFailedTitle": "Couldn't assign the owner",
+            "allFailedDesc": "No property got an owner. Complete them from the portfolio whenever you want.",
+            "publishPartialTitle": "Owner saved; some are still unpublished",
+            "publishPartialDesc": "{{count}} properties got an owner but couldn't be published. Open them from the portfolio and publish them whenever you want — don't upload them again.",
             "errorDesc": "We couldn't save the owner. Try again in a moment."
           }
         }
@@ -2974,6 +3219,9 @@
         "commission": "commission",
         "saleCommission": "sale commission",
         "consignacion": "Consignment",
+        "verFotos": "See {{count}} photos",
+        "verFoto": "See the photo",
+        "abrirFotos": "See the property photos",
         "perMonth": "/mo",
         "admin": "admin",
         "from": "From:",
@@ -3030,7 +3278,7 @@
         "estimatedPerMonth": "≈ {{amount}}/mo",
         "contractTerms": "Contract terms",
         "assignedAgent": "Assigned agent",
-        "agentReassignSoon": "Agent reassignment will be available soon",
+        "agentReassignHelp": "Who handles this property. If you change it, the new agent sees it in their portfolio on save.",
         "selectAgent": "Select agent",
         "noZone": "No zone",
         "contractStartDate": "Contract start date",
@@ -3068,27 +3316,69 @@
         "emptyTitle": "No properties found",
         "emptyDescription": "Adjust the filters or add a new consignment",
         "adminFee": "+ {{amount}} admin",
-        "missingMandate": "Missing mandate"
+        "missingMandate": "No owner yet"
+      },
+      "origen": {
+        "titulo": "Which property are you consigning?",
+        "subtitulo": "If you already imported it, there is no need to enter it again.",
+        "nuevo": {
+          "titulo": "A new property",
+          "detalle": "We enter it from scratch: address, rent, photos and inventory.",
+          "pie": "The full flow"
+        },
+        "existente": {
+          "titulo": "One I already have",
+          "detalle": "Pick one from your portfolio that has no owner assigned yet.",
+          "pie": "{{count}} without an owner",
+          "contando": "Looking…",
+          "ninguno": "None without an owner"
+        }
+      },
+      "elegirInmueble": {
+        "titulo": "Which one is it?",
+        "subtitulo": "{{count}} properties in your portfolio have no owner assigned yet.",
+        "buscar": "Search by title, address, neighborhood or code…",
+        "cargando": "Loading your properties…",
+        "porMes": "/mo",
+        "enVenta": "{{precio}} for sale",
+        "sinPrecio": "No price",
+        "noEsta": "It is not on the list — enter it as new",
+        "vacio": {
+          "titulo": "All your properties already have an owner",
+          "detalle": "To consign a new one, enter the property from scratch."
+        },
+        "sinResultados": {
+          "titulo": "None matches «{{q}}»",
+          "detalle": "Try the address, the neighborhood or the property code."
+        }
       },
       "mandateDialog": {
-        "title": "Complete the mandate",
-        "subtitle": "Finish consigning \"{{title}}\": we already have the property's data, only the mandate is missing.",
+        "title": "Whose property is this?",
+        "titleConDueno": "Consign to {{nombre}}",
+        "subtitleConDueno": "\"{{title}}\" goes under {{nombre}}. We still need the commission you charge to manage it and since when.",
+        "cambiarPropietario": "It belongs to someone else",
+        "subtitle": "\"{{title}}\" is already in your portfolio, but we do not know who owns it or what commission you charge to manage it. Without that it can't be published or paid out to anyone.",
         "propietarioLabel": "Owner",
         "commissionLabel": "Agency commission",
         "saleCommissionLabel": "Sale commission",
-        "contractDateLabel": "Contract date",
+        "contractDateLabel": "Managed by you since",
         "agenteLabel": "Assigned agent (optional)",
-        "saleListingNotice": "This property is for sale: the mandate carries no monthly rent, only the sale commission.",
+        "saleListingNotice": "This property is for sale: no monthly rent, only the commission you charge for selling it.",
         "cancel": "Cancel",
-        "confirm": "Complete mandate",
+        "confirm": "Save owner",
+        "propietarioHint": "You can pick more than one if the property has several owners.",
+        "seleccionados": "{{n}} owners selected",
+        "repartoTitle": "Split between owners",
+        "repartoResto": "Gets the remainder: {{pct}}",
+        "repartoIguales": "Equal shares",
         "toasts": {
-          "successTitle": "Mandate completed",
-          "successDesc": "\"{{title}}\" now has a mandate and commission, and was published.",
-          "alreadyExistsTitle": "That mandate already existed — we refreshed your portfolio.",
-          "publishErrorTitle": "The mandate was saved; the property is still unpublished",
+          "successTitle": "Owner assigned",
+          "successDesc": "\"{{title}}\" now has an owner and commission, and was published.",
+          "alreadyExistsTitle": "That property already had an owner — we refreshed your portfolio.",
+          "publishErrorTitle": "The owner was saved; the property is still unpublished",
           "publishErrorDesc": "{{reason}} Open it from the portfolio and publish it whenever you want — don't upload it again.",
           "publishErrorFallbackReason": "We couldn't publish it.",
-          "errorDesc": "We couldn't complete the mandate. Try again in a moment."
+          "errorDesc": "We couldn't save the owner. Try again in a moment."
         }
       },
       "detail": {
@@ -3110,7 +3400,7 @@
         "agentTitle": "Assigned Agent",
         "noAgentAssigned": "No agent assigned",
         "commissionDistribution": "Commission distribution",
-        "commissionSplitNotAvailableForSale": "A sale mandate does not split commission between agent and agency at this time.",
+        "commissionSplitNotAvailableForSale": "A property for sale does not split commission between agent and agency at this time.",
         "agentShare": "Agent",
         "agencyShare": "Agency",
         "reassignAgent": "Reassign agent",
@@ -3126,9 +3416,19 @@
         "consignmentContractDesc": "PDF - Legal document",
         "handoverReport": "Handover report",
         "inventoryItemsCount": "{{count}} inventory items",
+        "consignmentContractView": "Open the PDF",
+        "consignmentContractMissing": "None uploaded yet",
+        "consignmentContractGenerate": "Generate from a template",
+        "handoverReportOpen": "Open the printable report",
         "gallery": "Gallery ({{count}} photos)",
         "photoAlt": "Photo {{number}}",
-        "viewMorePhotos": "View {{count}} more photos"
+        "viewMorePhotos": "View {{count}} more photos",
+        "consignmentContractAttach": "Attach the signed PDF",
+        "consignmentContractOnlyPdf": "It must be a PDF of up to 10 MB.",
+        "consignmentContractReplace": "Replace",
+        "consignmentContractUploadError": "The contract could not be attached",
+        "consignmentContractUploaded": "Contract attached",
+        "consignmentContractUploading": "Uploading the contract…"
       },
       "wizard": {
         "steps": {
@@ -3317,7 +3617,8 @@
         "commissions": "Commissions Report",
         "occupancy": "Occupancy Report",
         "cashFlow": "Cash Flow",
-        "expirations": "Expirations"
+        "expirations": "Expirations",
+        "rentabilidad": "Profitability by property"
       },
       "filters": {
         "period": "Period",
@@ -3338,6 +3639,70 @@
         "days60": "31-60 days",
         "days90": "61-90 days",
         "over90": "Over 90 days"
+      },
+      "rentabilidad": {
+        "eyebrow": "Finance",
+        "back": "Back to Reports",
+        "title": "Profitability by property",
+        "description": "For each property: expected versus collected in the period, the agency commission, withholdings and charges, maintenance expenses and the net left to the owner. Plus occupancy and the annual yield on the commercial value when it is on record.",
+        "loadingWhat": "profitability",
+        "period": {
+          "label": "Period",
+          "3m": "3 months",
+          "6m": "6 months",
+          "12m": "12 months",
+          "anio": "This year",
+          "libre": "Custom range",
+          "from": "From",
+          "to": "To",
+          "showing": "{{desde}} to {{hasta}} · {{meses}} months"
+        },
+        "stats": {
+          "expected": "Expected",
+          "collected": "Collected",
+          "collectionRate": "{{pct}}% collection rate",
+          "commission": "Agency commission",
+          "netToOwners": "Net to owners",
+          "occupancy": "Average occupancy",
+          "vacancyLoss": "Lost to vacancy",
+          "properties": "{{count}} properties",
+          "withValue": "{{count}} with commercial value"
+        },
+        "chart": {
+          "title": "Top {{n}} by net to owner",
+          "subtitle": "What each property leaves after commission, withholdings and expenses."
+        },
+        "table": {
+          "title": "Detail by property",
+          "subtitle": "Click a header to sort. Each row opens the property.",
+          "property": "Property",
+          "rent": "Rent",
+          "occupancy": "Occupancy",
+          "collected": "Collected / Expected",
+          "commission": "Commission",
+          "expenses": "Expenses",
+          "net": "Net",
+          "yield": "Annual net yield",
+          "totals": "Totals",
+          "noValue": "No commercial value on record",
+          "unknownRent": "Unknown rent",
+          "sourceLeases": "from leases",
+          "sourceCobros": "from collections",
+          "vacantDays": "{{dias}} days vacant",
+          "sortedAsc": "sorted ascending",
+          "sortedDesc": "sorted descending"
+        },
+        "download": "Download CSV",
+        "downloading": "Downloading…",
+        "downloaded": "Downloaded",
+        "downloadError": "We could not generate the CSV",
+        "downloadForbidden": "Your role does not include downloading reports.",
+        "tryAgain": "Try again in a moment.",
+        "empty": {
+          "title": "No properties with collections in this period",
+          "description": "When there are leases with collections in the chosen range, profitability shows up here. Try a wider period."
+        },
+        "notes": "Calculation notes"
       },
       "toasts": {
         "addedToFavorites": "Added to favorites",
@@ -3508,6 +3873,40 @@
       "newActaOf": "New {{type}} Record",
       "actaDetail": "Record Details",
       "searchActas": "Search records...",
+      "legales": {
+        "subtitle": "The agency's contracts, handover records, inventories and letters.",
+        "generar": "Generate document",
+        "buscar": "Search document, property or party",
+        "tipo": "Type",
+        "estado": "Status",
+        "todosLosTipos": "All types",
+        "todosLosEstados": "All statuses",
+        "colDocumento": "Document",
+        "colTipo": "Type",
+        "colInmueble": "Property / lease",
+        "colPartes": "Parties",
+        "colFecha": "Date",
+        "colEstado": "Status",
+        "colAcciones": "Actions",
+        "verPdf": "View PDF",
+        "descargar": "Download",
+        "vacioTitulo": "No documents generated yet",
+        "vacioDesc": "Generate the lease, the handover record or the letter from a lease or a property.",
+        "colPlantilla": "Template",
+        "colCategoria": "Category",
+        "colVersion": "Version",
+        "colVariables": "Variables",
+        "verPlantilla": "View",
+        "vacioPlantillas": "No templates yet",
+        "vacioPlantillasDesc": "The built-in legal templates are created automatically when this tab opens.",
+        "colInquilino": "Tenant",
+        "vacioActas": "No handover records yet",
+        "vacioActasDesc": "The handover record is taken when the tenant receives the property.",
+        "abriendoPdf": "Opening the PDF…",
+        "errorPdf": "We could not open the PDF",
+        "plantillaTitulo": "Template",
+        "plantillaAyuda": "This is how the document looks. The {{fields}} are replaced when generating it."
+      },
       "noDocuments": "No documents",
       "noDocumentsDesc": "Start by uploading or creating document templates",
       "noActas": "No handover records",
@@ -3742,6 +4141,8 @@
       }
     },
     "acta": {
+      "pageTitle": "Handover report and inventory",
+      "backToProperty": "Back to the property",
       "steps": {
         "info": "Information",
         "spaces": "Spaces",
@@ -3769,7 +4170,7 @@
       "inventoryDesc": "Record items and their condition in each space",
       "defectPlaceholder": "Describe defect or note...",
       "addPhotoSoon": "Add photo (coming soon)",
-      "deleteItem": "Delete item",
+      "deleteItem": "Remove item",
       "addItem": "Add item",
       "noSpacesSelected": "No spaces selected",
       "noSpacesSelectedDesc": "Select spaces in the previous step to add inventory",
@@ -3841,6 +4242,30 @@
       "noInventory": "No inventory items",
       "noInventoryDesc": "Add items to the property inventory",
       "addInventory": "Add inventory",
+      "thActions": "Actions",
+      "editItem": "Edit item",
+      "itemDialog": {
+        "titleNew": "Add to inventory",
+        "titleEdit": "Edit inventory item",
+        "subtitle": "What is in the property and its condition, as you received it from the owner.",
+        "name": "Item",
+        "namePlaceholder": "Fridge, curtains, water heater…",
+        "quantity": "Quantity",
+        "condition": "Condition",
+        "notes": "Notes",
+        "notesPlaceholder": "A scratch, a key that does not turn…",
+        "photoUrl": "Photo (link)",
+        "photoUrlPlaceholder": "https://…",
+        "photoUrlHelp": "A link to the photo. Uploading from here comes later.",
+        "nameRequired": "Tell us what it is.",
+        "quantityInvalid": "A quantity between 1 and 999.",
+        "save": "Save",
+        "saveNew": "Add",
+        "cancel": "Cancel",
+        "saved": "Inventory saved",
+        "removed": "Item removed from inventory",
+        "error": "We couldn't save the inventory. Try again in a moment."
+      },
       "expandedView": "Expanded view",
       "print": "Print",
       "downloadPdf": "Download PDF",
@@ -3860,7 +4285,8 @@
       "signedByAll": "Signed by all parties on",
       "created": "Created",
       "updated": "Updated",
-      "originalDeposit": "Original deposit"
+      "originalDeposit": "Original deposit",
+      "downloadError": "The record's PDF could not be downloaded"
     },
     "reporte": {
       "neverGenerated": "Never generated",
@@ -4040,6 +4466,7 @@
       "property": "Property",
       "change": "Change",
       "searchProperty": "Search property...",
+      "noRentedProperties": "No rented properties yet: maintenance is reported on a property with an active lease.",
       "noPropertiesFound": "No properties found",
       "maintenanceType": "Maintenance type",
       "priorityLabel": "Priority",
@@ -4067,8 +4494,8 @@
       "cancel": "Cancel",
       "creating": "Creating...",
       "createRequest": "Create request",
-      "emergencyWarning": "Emergency requests are handled immediately. An agent will contact you.",
-      "highPriorityWarning": "High priority requests are handled within 24 hours.",
+      "emergencyWarning": "Emergency: the request goes first in the maintenance list, marked in red. Whoever handles it has to see it today.",
+      "highPriorityWarning": "High priority: the request is ordered ahead of normal ones in the maintenance queue.",
       "statusReported": "Reported",
       "statusQuoted": "Quoted",
       "statusApproved": "Approved",
@@ -4177,7 +4604,12 @@
         "pdfError": "Error downloading PDF",
         "emailSent": "Statement sent",
         "emailSentTo": "Statement sent to",
-        "emailError": "Error sending email"
+        "emailError": "The statement could not be sent",
+        "sinCorreo": "The owner has no email on file",
+        "sinCuenta": "No bank account on file",
+        "elegirMes": "Statement month",
+        "cargando": "Building the statement…",
+        "sinDatos": "The statement for that month could not be loaded."
       },
       "form": {
         "personalInfo": "Personal information",
@@ -4239,11 +4671,31 @@
         "available": "available",
         "noProperties": "No properties",
         "vsPrevMonth": "vs prev. month",
-        "pendingBalance": "Pending balance",
-        "lastPayment": "Last payment",
-        "attentionRequired": "Attention required",
-        "pendingCollection": "{{amount}} pending collection",
-        "lowOccupancy": "Occupancy is below 70%"
+        "pendingBalance": "Pending payout",
+        "netToOwner": "Net to owner",
+        "netToOwnerHint": "per month, after commission",
+        "ofTotalRented": "{{rentados}} of {{total}} rented",
+        "sinPropiedades": "no properties",
+        "lastPayment": "Last payout"
+      },
+      "alertas": {
+        "sinCuenta": {
+          "titulo": "No bank account: payouts cannot be made",
+          "detalle": "{{n}} rented unit(s) and the collected rent has nowhere to go. Add bank, type, number and holder.",
+          "accion": "Add bank account"
+        },
+        "pendienteDeGiro": {
+          "titulo": "{{monto}} pending payout",
+          "detalle": "Rent already collected that has not been paid out yet. Pay it from Disbursements, with the month's statement.",
+          "accion": "Go to disbursements"
+        },
+        "sinArrendar": {
+          "tituloUno": "“{{inmueble}}” is not rented",
+          "titulo": "{{n}} of {{total}} units are not rented",
+          "detalle": "Every empty month is rent the owner does not receive. Check the listing, the price and the candidates.",
+          "accionUno": "View the unit",
+          "accion": "View the units"
+        }
       },
       "table": {
         "searchPlaceholder": "Search by name, email, document...",
@@ -4282,7 +4734,8 @@
         "hide": "Hide",
         "show": "Show",
         "copy": "Copy",
-        "verified": "Data verified"
+        "verified": "Data verified",
+        "sinCuenta": "No bank account yet: payouts cannot be sent without it. Add it with the pencil."
       },
       "selector": {
         "searchPlaceholder": "Search owner by name, email or document...",
@@ -4447,7 +4900,19 @@
         "rentIncrease": "Rent increase by CPI",
         "trend12m": "12-month trend",
         "useOfficial": "Use official",
-        "viewOfficialIPC": "View official CPI DANE"
+        "viewOfficialIPC": "View official CPI DANE",
+        "currentTitle": "Current CPI",
+        "currentDesc": "Annual change as of {{month}} · governs {{year}} rent increases",
+        "vsPrevMonth": "Versus previous month",
+        "trendTitle": "{{year}} trend",
+        "trendCaption": "Annual CPI change at the close of each month, per DANE.",
+        "increasing": "Increasing",
+        "chartAria": "Chart of the annual CPI change, month by month",
+        "emptyHint": "Enter the current rent to see the new value.",
+        "invalidRent": "The rent must be a number greater than zero.",
+        "invalidRate": "The rate must be a number (for example 5.10).",
+        "appliesFrom": "Applies from",
+        "aboveLegal": "Above the official CPI ({{rate}}): the law does not allow a larger increase."
       },
       "export": {
         "analysisFormat": "Analysis format",
@@ -4559,7 +5024,8 @@
         "cotizadorIntegraciones": "Integrations",
         "pagosHome": "Payments AI",
         "mantenimiento": "Maintenance",
-        "mantenimientoTickets": "Tickets"
+        "mantenimientoTickets": "Tickets",
+        "mantenimientoResumen": "Overview"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",
@@ -4574,7 +5040,8 @@
         "cartas": "Back to letters",
         "pagos": "Back to payments",
         "siniestros": "Back to claims",
-        "estudios": "Back to screenings"
+        "estudios": "Back to screenings",
+        "tickets": "Back to tickets"
       },
       "cotizador": {
         "placeholder": {
@@ -5555,7 +6022,6 @@
         "overview": {
           "title": "Collections",
           "subtitle": "The agent collects for you; you only decide the critical cases.",
-          "lastUpdated": "Updated",
           "kpis": {
             "deudoresActivos": "Active debtors",
             "pagadoHoy": "Paid today",
@@ -8119,6 +8585,59 @@
       "pagos_home": {
         "title": "Payments AI",
         "subtitle": "Charges, received payments and owner payouts, orchestrated by the agent.",
+        "resumen": {
+          "nuevaFactura": "New invoice",
+          "atencion": {
+            "aria": "Needs your attention",
+            "titulo": "Needs your attention",
+            "verCola": "See the full queue",
+            "fallo": "We couldn't load the inbox. Try again in a few minutes."
+          },
+          "cobros": {
+            "aria": "Charges for the month",
+            "titulo": "Charges for",
+            "mesAria": "Month of the charges",
+            "queEs": "the charges for the month",
+            "queSon": "charges",
+            "generarCta": "Generate the charges for {{mes}}",
+            "vacioTitulo": "No charges for {{mes}} yet",
+            "vacioDescripcion": "Generate the charges for {{mes}} for the active leases and they'll show up here."
+          },
+          "kpi": {
+            "cobrosDelMes": "Charges this month",
+            "recaudado": "Collected",
+            "pendiente": "Outstanding",
+            "enMora": "Overdue"
+          },
+          "generar": {
+            "titulo": "Generate the charges for {{mes}}",
+            "descripcion": "Creates the {{mes}} rent charge for your agency's active leases. Check the scope before confirming.",
+            "queEs": "the charge generation",
+            "mesLabel": "Month it runs on",
+            "yaGeneradosLabel": "Charges for that month that already exist",
+            "avisoYaHay": "There are already {{n}} charges for {{mes}}. Check the table before generating again.",
+            "avisoLimpio": "There are no charges for {{mes}} yet.",
+            "confirmar": "Generate the charges for {{mes}}",
+            "enviando": "Generating…"
+          },
+          "accesos": {
+            "aria": "Links to the detailed operations",
+            "titulo": "Detailed operations",
+            "cobros": "Tenant charges",
+            "cobrosDetalle": "Invoices, aging and reconciliation",
+            "propietarios": "Owner payouts",
+            "propietariosDetalle": "Owner payouts and bank batches",
+            "tesoreria": "Settlements",
+            "tesoreriaDetalle": "Balances, movements and approvals"
+          },
+          "actividad": {
+            "aria": "Recent activity",
+            "titulo": "Recent activity",
+            "queEs": "the recent activity",
+            "verTodo": "See all {{n}}",
+            "vacio": "No recent activity yet."
+          }
+        },
         "disabled": {
           "title": "Payments AI isn't active yet",
           "description": "This feature is in preview and not enabled for your agency yet. We'll let you know when it's ready."
@@ -8215,7 +8734,7 @@
       "insightsExample3": "$84M to disburse · 62% covered",
       "insightsPronto": "Arrives with the Reports & Insights phase.",
       "systemLabel": "Your system",
-      "crmTitle": "CRM · Sales",
+      "crmTitle": "Sales",
       "crmDesc": "Capture, manage and close.",
       "erpTitle": "Financial · ERP",
       "erpDesc": "Collect, invoice, reconcile and disburse.",
@@ -8227,7 +8746,7 @@
       "autopilotRunning": "{{count}} agents running"
     },
     "facturacion": {
-      "label": "Invoicing",
+      "label": "Finance",
       "title": "Invoicing",
       "subtitle": "Sales and purchase invoices, DIAN electronic invoicing, and credit/debit notes — all in one place.",
       "new": "New invoice",
@@ -8242,6 +8761,10 @@
       "desc_compras": "Operating costs and expenses: suppliers, repairs, contracted services.",
       "desc_electronica": "Electronic documents with CUFE and their DIAN status.",
       "desc_notas": "Credit and debit notes associated with an invoice.",
+      "queSon_ventas": "sales invoices",
+      "queSon_compras": "purchase invoices",
+      "queSon_electronica": "electronic documents",
+      "queSon_notas": "credit or debit notes",
       "estadosLabel": "Statuses",
       "estadoAceptada": "DIAN accepted",
       "estadoPendiente": "Pending",
@@ -8344,8 +8867,8 @@
       "uploadSoon": "Ingestion and matching connect to the engine (M2)."
     },
     "tesoreria": {
-      "label": "Treasury",
-      "title": "Owner payouts",
+      "label": "Settlements",
+      "title": "Settlements",
       "subtitle": "The net amount payable to each owner, with full breakdown and receipt. Payment processing lives in Disbursements.",
       "processCta": "Process in Disbursements",
       "m2BannerTitle": "Structure ready — the authoritative ledger arrives in M1",
@@ -8369,12 +8892,111 @@
       "colEstado": "Status",
       "colComprobante": "Receipt",
       "emptyTitle": "No payouts yet",
-      "emptyDesc": "Net payouts will be computed once the engine (M1) is active. Payment processing is done in Disbursements."
+      "emptyDesc": "Net payouts will be computed once the engine (M1) is active. Payment processing is done in Disbursements.",
+      "registrarFacturaCta": "Register invoice",
+      "facturasCardTitle": "Supplier invoices",
+      "facturasCardDesc": "Upload a photo or PDF of an invoice and the AI reads it: supplier, number, amounts and dates. You review it and register it in accounts payable.",
+      "facturasCardCta": "New from photo",
+      "facturas": {
+        "label": "Accounts payable",
+        "title": "Register supplier invoice",
+        "subtitle": "Upload the invoice and the AI drafts the record. Review every field before saving: it stays pending approval.",
+        "back": "Back to settlements",
+        "intro": "Upload the invoice (photo or PDF). An electronic invoice, a cuenta de cobro, a POS ticket or a technician's receipt all work.",
+        "uploadTitle": "Upload the invoice (photo or PDF)",
+        "uploadMore": "Upload another page",
+        "uploadHint": "Up to {{max}} files · 10 MB each · 20 MB total",
+        "agregarOtro": "Add another page",
+        "quitar": "Remove {{nombre}}",
+        "manual": "Enter manually",
+        "extract": "Read with AI",
+        "extractN": "Read {{n}} files with AI",
+        "extractingN": "Reading {{n}} file(s)…",
+        "cancel": "Cancel",
+        "errorTitle": "Couldn't read the invoice",
+        "errorGeneric": "Something unexpected happened. Try again.",
+        "errorUnavailable": "The AI engine is not available. You can enter the invoice manually.",
+        "errorSinArchivos": "Pick at least one file.",
+        "errorDemasiados": "Up to {{max}} files per invoice.",
+        "errorUnsupported": "Unsupported format. Upload a photo (JPG, PNG, WebP) or a PDF.",
+        "errorTooLarge": "Each file can be up to 10 MB.",
+        "errorTotalTooLarge": "All files together can't exceed 20 MB.",
+        "retry": "Retry",
+        "reviewBannerTitle": "Review before registering",
+        "reviewBannerDesc": "The AI read the invoice with {{confidence}}% confidence. Fix whatever is needed.",
+        "detectados": "Detected",
+        "manualNote": "Enter the invoice details manually.",
+        "conflictosTitle": "The pages don't match",
+        "conflictosDesc": "Tap the correct value to use it.",
+        "usarValorDe": "Use the value from {{documento}}",
+        "campos": {
+          "proveedorNombre": "Supplier",
+          "proveedorNit": "Tax ID",
+          "proveedorDv": "Check digit",
+          "proveedorCorreo": "Supplier e-mail",
+          "proveedorTelefono": "Supplier phone",
+          "numeroFactura": "Invoice number",
+          "cufe": "CUFE",
+          "fechaEmision": "Issue date",
+          "fechaVencimiento": "Due date",
+          "moneda": "Currency",
+          "subtotalCop": "Subtotal",
+          "ivaCop": "VAT",
+          "retencionesCop": "Withholdings",
+          "totalCop": "Total",
+          "concepto": "Description",
+          "inmuebleReferencia": "Property",
+          "formaDePago": "Payment terms"
+        },
+        "tipos": {
+          "factura_electronica": "Electronic invoice",
+          "cuenta_de_cobro": "Cuenta de cobro",
+          "factura_pos": "POS invoice",
+          "recibo": "Receipt",
+          "otro": "Other"
+        },
+        "proveedorLabel": "Supplier",
+        "proveedorPlaceholder": "Pick the supplier",
+        "proveedorBuscar": "Search by name or tax ID…",
+        "proveedorCargando": "Loading suppliers…",
+        "proveedorNuevo": "New supplier: {{nombre}} · Tax ID {{nit}}",
+        "proveedorNuevoSinNit": "New supplier: {{nombre}}",
+        "proveedorCrear": "Create it",
+        "proveedorCreado": "Supplier created and selected",
+        "proveedorCandidatos": "Is it one of these?",
+        "proveedorElegir": "Pick",
+        "numeroLabel": "Invoice number",
+        "emisionLabel": "Issue date",
+        "vencimientoLabel": "Due date",
+        "vencimientoHint": "The invoice has no due date: set it yourself.",
+        "subtotalLabel": "Subtotal (taxable base)",
+        "ivaLabel": "VAT",
+        "totalLabel": "Total to pay",
+        "conceptoLabel": "Description",
+        "conceptoPlaceholder": "What is being billed",
+        "centroLabel": "Cost center",
+        "centroPlaceholder": "Pick the cost center",
+        "adjuntoLabel": "Attached invoice",
+        "adjuntoVer": "View file",
+        "adjuntoNoGuardado": "The file wasn't stored on the server; the invoice is registered without an attachment.",
+        "itemsLabel": "Line items read",
+        "inmuebleLeido": "Property on the invoice: {{inmueble}}",
+        "submit": "Register invoice",
+        "submitting": "Registering…",
+        "errorProveedor": "Pick or create the supplier.",
+        "errorNumero": "Invoice number is missing.",
+        "errorTotal": "Total must be greater than zero.",
+        "errorEmision": "Issue date is missing.",
+        "errorVencimiento": "Due date is missing.",
+        "errorCentro": "Pick the cost center.",
+        "successTitle": "Invoice registered",
+        "successDesc": "It is pending approval."
+      }
     },
     "ap": {
       "bill": {
         "title": "AP Invoice",
-        "backToList": "Back to Treasury",
+        "backToList": "Back to settlements",
         "notFound": "Invoice not found",
         "notFoundDesc": "The requested invoice does not exist or you do not have access.",
         "labelInvoiceNumber": "Invoice number",
@@ -8387,6 +9009,9 @@
         "labelApprovedBy": "Approved by",
         "labelCreatedBy": "Created by",
         "noApprover": "Not yet approved",
+        "labelConcepto": "Description",
+        "labelAdjunto": "Attached invoice",
+        "verFactura": "View invoice",
         "statusPaid": "Paid",
         "statusApproved": "Approved",
         "statusPendingApproval": "Pending approval",
@@ -8401,11 +9026,8 @@
     "pqrs": {
       "label": "Requests",
       "title": "Requests & PQRS",
-      "subtitle": "Register, assign, follow up and close any request, complaint or claim from tenants, owners and third parties — all in one place.",
+      "subtitle": "Log, assign and close every request, complaint or claim from tenants, owners and third parties.",
       "new": "New request",
-      "newSoon": "Registration and assignment are enabled with the (AI) triage engine — M1.",
-      "m1BannerTitle": "Structure ready — AI triage arrives in M1",
-      "m1BannerDesc": "This section already has the full lifecycle. Automatic classification, assignment, SLA and notifications connect to the agent in a later phase (M1).",
       "resumenLabel": "By status",
       "estado_recibidas": "Received",
       "estado_asignadas": "Assigned",
@@ -8414,9 +9036,7 @@
       "estado_resueltas": "Resolved",
       "estado_cerradas": "Closed",
       "repairFlowTitle": "Repairs → vendor quoting",
-      "repairFlowDesc": "A repair request moves to the quoting and approval flow in Operations.",
-      "listTitle": "Requests",
-      "listDesc": "Each request is filed with its requester, type, property, assignee and status.",
+      "repairFlowDesc": "A repair request goes into the quoting and approval flow in Maintenance.",
       "colRadicado": "Ticket",
       "colSolicitante": "Requester",
       "colTipo": "Type",
@@ -8424,18 +9044,16 @@
       "colAsignado": "Assigned to",
       "colEstado": "Status",
       "colSla": "SLA",
-      "colAccion": "Action",
       "emptyTitle": "No requests yet",
-      "emptyDesc": "PQRS and requests will appear here. Registration and AI triage arrive in M1."
+      "emptyDesc": "Log the first one with “New request”.",
+      "sinInmueble": "No property",
+      "sinAsignar": "Unassigned"
     },
     "agenda": {
       "label": "Calendar",
       "title": "Internal calendar",
-      "subtitle": "The events the system already knows —visits, pending signatures, expiries, follow-ups and inspections— together with your tasks, linked to contracts, properties and parties.",
+      "subtitle": "Visits, signatures, expirations and inspections the system already knows, plus your own tasks.",
       "new": "New task",
-      "newSoon": "Task creation and event aggregation are enabled with the engine (M1).",
-      "m1BannerTitle": "Structure ready — the calendar fills up with the engine in M1",
-      "m1BannerDesc": "This view aggregates system events and your tasks. Authoritative aggregation (visits, signatures, expiries, inspections) and reminders connect in a later phase (M1).",
       "resumenLabel": "Upcoming",
       "tipo_visitas": "Visits",
       "tipo_firmas": "Pending signatures",
@@ -8443,8 +9061,6 @@
       "tipo_seguimientos": "Follow-ups",
       "tipo_inspecciones": "Inspections",
       "tipo_tareas": "Tasks",
-      "listTitle": "Events & tasks",
-      "listDesc": "Each event shows its date, type, source (system or yours) and its link to a contract, property or party.",
       "colFecha": "Date",
       "colEvento": "Event",
       "colTipo": "Type",
@@ -8453,10 +9069,9 @@
       "colResponsable": "Owner",
       "colEstado": "Status",
       "emptyTitle": "No events yet",
-      "emptyDesc": "Your visits, signatures, expiries and inspections will appear here as they happen.",
+      "emptyDesc": "Visits, signatures, expirations and inspections show up here on their own; tasks via “New task”.",
       "loadError": "We couldn't load the agenda. Try again.",
       "retry": "Retry",
-      "engineNote": "The agenda already aggregates the events the system knows (visits, signatures, expirations, inspections). Your own tasks and follow-ups arrive in the next phase.",
       "origen_sistema": "System",
       "origen_usuario": "You",
       "estado_pendiente": "Pending",
@@ -8501,24 +9116,51 @@
       "citaAccionError": "Could not update the visit"
     },
     "terceroIA": {
-      "errorTooLarge": "The image exceeds the maximum size (8 MB). Use a smaller photo.",
-      "docKindLabel": "Document type",
-      "intro": "Upload a photo of the ID or RUT and AI will prefill the third-party form. Review and correct before saving.",
-      "kindCedula": "ID card",
-      "kindRut": "RUT",
-      "uploadTitle": "Upload document photo",
-      "uploadHint": "Drag or click — ID (CC/CE) or RUT, as an image.",
-      "uploadChange": "Change photo",
+      "intro": "Upload the ID, the RUT, the bank certificate… as photos, PDF or Word. AI builds the owner from all of them and you review before saving.",
+      "uploadTitle": "Upload the documents",
+      "uploadMore": "Upload another document",
+      "uploadHint": "Drag or click — ID, RUT, bank certificate, chamber of commerce. Photos, PDF or Word; up to {{max}} files.",
+      "agregarOtro": "Add another file",
+      "quitar": "Remove {{nombre}}",
       "extract": "Extract data",
+      "extractN": "Extract data from {{n}} files",
       "cancel": "Cancel",
       "extracting": "Reading the document…",
+      "extractingN": "Reading {{n}} document(s)…",
       "reviewBannerTitle": "Review and correct",
       "reviewBannerDesc": "AI prefilled the data (confidence {{confidence}}%). Verify it and complete anything missing before saving.",
+      "detectados": "Read",
+      "bancoFueraDeLista": "The certificate says «{{banco}}», which is not in the form's bank list: pick the matching one or leave it empty.",
+      "conflictosTitle": "The documents disagree",
+      "conflictosDesc": "On these fields one document says one thing and another says something else. Pick the right value (or fix it below).",
+      "usarValorDe": "Use the value from {{documento}}",
+      "campos": {
+        "nombre": "Name",
+        "razonSocial": "Company name",
+        "tipoDocumento": "Document type",
+        "numeroDocumento": "Document number",
+        "fechaNacimiento": "Date of birth",
+        "lugarExpedicion": "Place of issue",
+        "correo": "Email",
+        "telefono": "Phone",
+        "direccion": "Address",
+        "ciudad": "City",
+        "banco": "Bank",
+        "bancoNombre": "Bank",
+        "tipoCuenta": "Account type",
+        "numeroCuenta": "Account number",
+        "titularCuenta": "Account holder",
+        "fieldConfidence": "Confidence"
+      },
       "manualNote": "Fill in the third-party details manually.",
-      "errorTitle": "We couldn't read the document",
+      "errorTitle": "We couldn't read the documents",
       "errorUnavailable": "The AI service is unavailable right now. You can fill the form manually.",
-      "errorGeneric": "Something went wrong processing the document. Try again or fill the form manually.",
-      "errorImageOnly": "Upload an image (a photo of the document).",
+      "errorGeneric": "Something went wrong processing the documents. Try again or fill the form manually.",
+      "errorUnsupported": "That format can't be read. Upload a photo (JPG, PNG), a PDF or a Word file (.doc, .docx).",
+      "errorTooLarge": "A file exceeds the maximum size (10 MB). Compress it or upload a lighter copy.",
+      "errorTotalTooLarge": "The files add up to more than 20 MB. Upload fewer or lighter files.",
+      "errorDemasiados": "Maximum {{max}} files per owner.",
+      "errorSinArchivos": "Upload at least one document.",
       "retry": "Retry",
       "fillManual": "Fill manually"
     },
@@ -8602,10 +9244,14 @@
       "title": "Search Leasefy",
       "inputLabel": "Search or type a command",
       "placeholder": "Search…",
+      "inputPlaceholder": "Search properties, contracts, owners… or type an action",
+      "clearLabel": "Clear search",
       "triggerAriaLabel": "Open search (⌘K)",
       "resultsLabel": "Search results",
-      "noResults": "No results for \"{{query}}\"",
+      "noResults": "No results for “{{query}}”",
+      "noResultsHint": "Try the code, the name or the ID number.",
       "novedades": "Recent activity",
+      "novedadesEmpty": "No recent activity",
       "sources": {
         "navegacion": "Navigation",
         "debtors": "Debtors",
@@ -10109,6 +10755,448 @@
       "vacio": "There are no properties within your cap right now",
       "vacioTexto": "New ones come up often. Meanwhile you can browse the full catalog.",
       "verTodo": "See all properties"
+    }
+  },
+  "recibos": {
+    "nombre": "Cash receipt",
+    "plural": "Cash receipts",
+    "hacer": "Create cash receipt",
+    "hacerCorto": "Create receipt",
+    "queEs": "A cash receipt records that the money came in. The invoice is a different document.",
+    "desglose": {
+      "titulo": "What is owed",
+      "ayuda": "Check what the debt is made of before taking the money: accepting a partial payment as if it settled the account leaves the balance running.",
+      "concepto": "Line item",
+      "resta": "subtracts",
+      "subtotal": "Line items total",
+      "descuentos": "Less discounts and withholdings",
+      "total": "Total owed",
+      "yaAbonado": "Already paid",
+      "saldo": "Outstanding balance",
+      "cargando": "Loading the breakdown…",
+      "fallo": "We could not load the breakdown. Below is what we already had on the collection.",
+      "reintentar": "Try again",
+      "sinDetalle": "The detailed breakdown is not available for this agency. Below is the only split we can make on this collection.",
+      "descuadre": "Heads up: the line items add up to {{conceptos}} and the collection says {{cobro}}. Check with whoever generated it before taking money against it.",
+      "tipos": {
+        "CANON": "Rent",
+        "ADMINISTRACION": "Building fees",
+        "CONCEPTO_DEL_CONTRATO": "Contract line item",
+        "PRORRATEO": "Proration",
+        "INTERES_DE_MORA": "Late interest",
+        "GASTO_ADMINISTRATIVO": "Administrative fee",
+        "IVA": "VAT",
+        "RETEFUENTE": "Income tax withholding",
+        "RETEICA": "ICA withholding",
+        "RETEIVA": "VAT withholding",
+        "AJUSTE_MANUAL": "Manual adjustment"
+      }
+    },
+    "form": {
+      "titulo": "Create cash receipt",
+      "descripcion": "You are recording that money came in against this collection. It issues a numbered receipt and lowers the balance.",
+      "elegirCobro": "Which collection?",
+      "elegirCobroAyuda": "Pick the property, then the charge the money came in for.",
+      "sinCobros": "This property has no charges with an outstanding balance.",
+      "montoLabel": "How much came in?",
+      "maximo": "Maximum you can apply: {{monto}}",
+      "abonarTodo": "Apply the whole balance",
+      "montoRequerido": "Enter how much came in",
+      "montoPositivo": "It has to be greater than zero",
+      "montoExcede": "That is over the balance. The maximum you can apply is {{monto}}.",
+      "quedaPendiente": "After this receipt, {{monto}} is still outstanding.",
+      "quedaEnCero": "This receipt brings the collection to zero.",
+      "fechaLabel": "What day did it come in?",
+      "fechaRequerida": "Pick the day",
+      "medioLabel": "How did it come in?",
+      "medioRequerido": "Pick how it came in",
+      "referenciaLabel": "Reference",
+      "referenciaPlaceholder": "Transaction or deposit number",
+      "notasLabel": "Notes",
+      "notasPlaceholder": "Anything the next person needs to know about this payment",
+      "opcional": "optional",
+      "cancelar": "Cancel",
+      "emitir": "Issue the receipt",
+      "emitiendo": "Issuing the receipt…",
+      "emitido": "Receipt {{numero}} issued",
+      "emitidoQuedaSaldo": "{{monto}} came in. {{saldo}} is still outstanding.",
+      "emitidoSinSaldo": "{{monto}} came in. The collection is now at zero.",
+      "fallo": "The receipt was not issued",
+      "medios": {
+        "transferencia": "Bank transfer",
+        "efectivo": "Cash",
+        "tarjeta": "Card",
+        "cheque": "Check",
+        "pse": "PSE",
+        "otro": "Other"
+      },
+      "elegir": {
+        "inmueble": "Which property is the money for?",
+        "inmueblePlaceholder": "Pick the property",
+        "buscar": "Code, name, address or tenant…",
+        "sinInmuebles": "There are no active mandates. Without a listed property there is no charge to receive money against.",
+        "cobro": "Against which charge?",
+        "opcionPendiente": "Against a pending charge",
+        "opcionNuevo": "For a month with no charge",
+        "cargandoCobros": "Looking for charges with a balance…",
+        "falloCobros": "We could not load the charges for this property.",
+        "reintentar": "Retry",
+        "sinCobros": "This property has no charges with an outstanding balance.",
+        "sinCobrosPasar": "If the money is for a month that has not been charged yet, or a month paid in advance, create that month's charge and continue with the receipt.",
+        "pasarANuevo": "Charge a month",
+        "nuevoAyuda": "Creates that month's charge for this property only, with the rent and line items of its contract, and you continue with the receipt. It does not run the agency-wide generation.",
+        "nuevoMes": "Which month is the money for?",
+        "nuevoMesPlaceholder": "Pick the month",
+        "nuevoBuscarMes": "Month…",
+        "nuevoSinMeses": "The nearby months already have a charge. If any has a balance, it is under “Against a pending charge”.",
+        "nuevoNoArrendado": "This property is not rented: there is no rent to charge.",
+        "crear": "Create the {{mes}} charge and continue",
+        "creando": "Creating the charge…",
+        "falloCrear": "The charge was not created.",
+        "yaExistePagado": "The {{mes}} charge already existed and is paid. Pick another month.",
+        "total": "Total",
+        "otro": "Pick another charge"
+      }
+    },
+    "historial": {
+      "titulo": "Cash receipts",
+      "vacio": "No cash receipts yet",
+      "vacioDesc": "The first payment you record shows up here with its number.",
+      "cargando": "Loading the receipts…",
+      "fallo": "We could not load the receipts for this collection.",
+      "reintentar": "Try again",
+      "numero": "Receipt {{numero}}",
+      "sinNumero": "No number",
+      "anulado": "Voided",
+      "anuladoEl": "Voided on {{fecha}}: that money went back to the balance.",
+      "recibidoConRecibo": "Received with a receipt",
+      "conteo": "{{count}} receipts",
+      "conteoUno": "1 receipt",
+      "anular": "Void"
+    },
+    "anular": {
+      "titulo": "Void receipt {{numero}}",
+      "queVaAPasar": "The receipt is marked as voided and {{monto}} goes back to the collection balance. It is not deleted: it stays visible in the history.",
+      "motivoLabel": "Why are you voiding it?",
+      "motivoPlaceholder": "The check bounced, it was applied to the wrong collection…",
+      "motivoRequerido": "The reason is required",
+      "cancelar": "Do not void",
+      "confirmar": "Void the receipt",
+      "anulando": "Voiding…",
+      "anulado": "Receipt {{numero}} voided",
+      "anuladoDesc": "{{monto}} went back to the collection balance.",
+      "fallo": "The receipt could not be voided"
+    },
+    "conciliar": {
+      "titulo": "An earlier payment has to be squared first",
+      "porQue": "This collection already has money on record that never went through a cash receipt: it was paid before receipts existed, or it came in through PSE. Until that is squared, no new payments can be applied.",
+      "queVaAPasar": "Reconciling issues a cash receipt for that difference, in your name and dated today. Then you can go on with the payment.",
+      "origenLabel": "Where did that money come from?",
+      "origenPlaceholder": "PSE payment from August 3rd, deposit at Bancolombia…",
+      "origenRequerido": "Say where the money came from: 5 characters minimum",
+      "cancelar": "Not now",
+      "confirmar": "Reconcile the earlier payment",
+      "conciliando": "Reconciling…",
+      "conciliado": "Earlier payment reconciled",
+      "conciliadoDesc": "Receipt {{numero}} was issued. You can make the payment now.",
+      "fallo": "It could not be reconciled"
+    }
+  },
+  "inquilinos": {
+    "eyebrow": "Third parties",
+    "titulo": "Tenants",
+    "subtitulo": "The people living in the properties you manage, with all their leases grouped together. Every tenant comes from their lease: add one by hand, or bring many over with the migration.",
+    "queEs": "the tenants",
+    "queSon": "tenants",
+    "buscarPlaceholder": "Search by name, email or phone",
+    "filtroEstado": "Filter by lease status",
+    "filtros": {
+      "activos": "Active",
+      "terminados": "Ended",
+      "todos": "All"
+    },
+    "kpi": {
+      "personas": "Tenants",
+      "arriendosVigentes": "Current leases",
+      "canonVigente": "Current monthly rent"
+    },
+    "vacioDescripcion": "There are no leases in your agency yet. Bring over the ones you already have in another system, or add one by hand and its tenant shows up here.",
+    "vacioContrato": "Migrate leases",
+    "crearContrato": "Create a lease",
+    "sinContacto": "No email or phone",
+    "sinInmueble": "No property assigned",
+    "conteoArriendoUno": "1 lease · {{vigentes}} current",
+    "conteoArriendos": "{{n}} leases · {{vigentes}} current",
+    "tabla": {
+      "inquilino": "Tenant",
+      "telefono": "Phone",
+      "inmueble": "Property",
+      "estado": "Status",
+      "canon": "Rent",
+      "vigencia": "Term",
+      "arriendos": "Leases",
+      "sinCorreo": "No email",
+      "variosInmuebles": "{{n}} properties",
+      "nVigentes": "{{n}} active",
+      "desplegar": "See {{nombre}}'s leases",
+      "contraer": "Hide {{nombre}}'s leases"
+    },
+    "cajon": {
+      "canonVigente": "Current rent",
+      "arriendosVigentes": "Current leases",
+      "deTotal": "of {{n}} in total",
+      "saldoPendiente": "Outstanding balance",
+      "diasDeMora": "{{n}} days overdue",
+      "arriendos": "Leases ({{n}})",
+      "arriendosIncluyeTerminados": "Every lease they have with you, ended ones included.",
+      "cargandoArriendos": "Looking for the ended ones…",
+      "arriendosIncompletos": "The full detail could not be loaded — an ended lease may be missing.",
+      "verContrato": "View the lease",
+      "pagos": "Payments",
+      "pagosDeSusContratos": "The charges on their leases, most recent first.",
+      "cargandoPagos": "Loading their payments…",
+      "errorPagos": "Payments could not be loaded.",
+      "pagosIncompletos": "One of their leases did not respond — what you see is incomplete.",
+      "sinPagos": "No charge has been generated for their leases yet.",
+      "sinContratos": "They have no lease to hang a charge on.",
+      "reintentar": "Retry",
+      "ultimoPago": "Last paid on {{fecha}}",
+      "recordatorios": "{{n}} reminders · last one on {{fecha}}",
+      "pagadoEl": "Paid on {{fecha}}",
+      "venceEl": "Due on {{fecha}}",
+      "debe": "Owes {{monto}}",
+      "yMasCobros": "and {{n}} more charges, on the lease.",
+      "verCobrosDelContrato": "See all their charges on the lease"
+    },
+    "estados": {
+      "activo": "Active",
+      "porVencer": "Ending soon",
+      "terminado": "Ended",
+      "cancelado": "Terminated"
+    }
+  },
+  "cartera": {
+    "tabla": {
+      "inquilino": "Tenant",
+      "inmueble": "Property",
+      "propietario": "Owner",
+      "mes": "Month",
+      "debe": "Owes",
+      "mora": "Overdue",
+      "verCobro": "View the charge",
+      "whatsapp": "Message on WhatsApp",
+      "vence": "due {{fecha}}",
+      "abonado": "paid {{monto}}",
+      "alDia": "Not due yet",
+      "unDiaDeMora": "1 day",
+      "diasDeMora": "{{n}} days",
+      "unRecordatorio": "1 reminder",
+      "recordatorios": "{{n}} reminders",
+      "sinRecordatorios": "No reminders sent",
+      "sinInquilino": "No tenant on file",
+      "sinTelefono": "No phone number",
+      "sinDireccion": "No address",
+      "sinPropietario": "Owner not on file"
+    }
+  },
+  "migracion": {
+    "nav": "Migration",
+    "enLaLista": {
+      "titulo": "{{n}} migrated contracts are still incomplete",
+      "detalle": "{{deuda}}. Until they are linked they do not bill and they do not show up here.",
+      "accion": "Complete the migration"
+    },
+    "puc": {
+      "titulo": "Chart of accounts",
+      "subtitulo": "Your chart of accounts: where entries land. Start from the Decree 2650 base plan and adjust it with your accountant."
+    },
+    "contables": {
+      "titulo": "Accounting entries",
+      "subtitulo": "The balances you start with, or the full history. It needs the chart of accounts in place."
+    },
+    "muro": {
+      "eyebrow": "Getting started",
+      "titulo": "Bring your operation over first",
+      "subtitulo": "Everything happens in here: load what you already have in your current system, in order — each step needs the previous one.",
+      "progreso": "Migration progress",
+      "hecho": "Done",
+      "falta": "Missing: {{detalle}}",
+      "enEspera": "Waiting",
+      "noDisponible": "Unavailable right now. Won't hold you back.",
+      "primero": "Finish {{paso}} first",
+      "yaTermine": "Enter the panel",
+      "arrancarDeCero": "I'm not coming from another system, starting from scratch",
+      "fallo": "We couldn't save that. Try again in a moment.",
+      "confirmar": {
+        "titulo": "Starting from scratch?",
+        "detalle": "You'll enter the panel with nothing loaded: every owner, tenant, property and contract will have to be created by hand. If you're coming from another system, migrating saves you that work. You can return to the migration any time from the menu.",
+        "aceptar": "Yes, start from scratch",
+        "cancelar": "Back to the steps"
+      },
+      "pasoDe": "Step {{n}} of {{total}}",
+      "ahora": "Now",
+      "progresoDe": "{{n}} of {{total}} done",
+      "todoListo": {
+        "eyebrow": "All set",
+        "titulo": "Your operation is in",
+        "detalle": "Every step is complete. You can keep loading from here or enter the panel; the migration stays in the menu in case something is missing."
+      },
+      "veredicto": {
+        "eyebrow": "How your migration ended up",
+        "titulo": "The contracts are in, but they are not billing yet",
+        "detalle": "A contract bills through its property: no property means no consignment, no consignment means no billing, and the tenant shows up in no list. This is what is still unlinked.",
+        "contratos": "{{n}} migrated contracts",
+        "sinInmueble": {
+          "linea": "{{n}} with no property",
+          "detalle": "They exist and earn nothing: nobody knows which property they rent.",
+          "accion": "Link the properties"
+        },
+        "sinPropietario": {
+          "linea": "{{n}} with no owner",
+          "detalle": "The property is not consigned to anyone, so there is nobody to settle with.",
+          "accion": "Pick an owner"
+        },
+        "sinInquilino": {
+          "linea": "{{n}} with no tenant",
+          "detalle": "The tenant's name, email or ID is missing from the file.",
+          "accion": "Complete the tenants"
+        },
+        "pendientes": {
+          "linea": "{{n}} rows not activated",
+          "detalle": "They came in with the file and are not contracts yet.",
+          "accion": "Review the rows"
+        },
+        "seguir": "Complete what is missing",
+        "entrarIgual": "Enter the panel as is",
+        "tabla": {
+          "eyebrow": "Row by row",
+          "queEs": "the migration rows",
+          "queSon": "rows",
+          "fila": "Row",
+          "direccion": "Address",
+          "inquilino": "Tenant",
+          "falta": "What is missing",
+          "resolver": "Resolve",
+          "sinDato": "No data",
+          "nada": "Nothing",
+          "vacio": "No row in this list has anything pending.",
+          "verPendientes": "Not activated ({{n}})",
+          "verActivadas": "Activated ({{n}})",
+          "queMirar": "Which rows to look at",
+          "faltas": {
+            "inmueble": "Property",
+            "propietario": "Owner",
+            "inquilino": "Tenant",
+            "datos": "Contract data"
+          }
+        }
+      },
+      "siguiente": "Continue with {{paso}}",
+      "ocupado": "This step is still creating records — wait for it to finish.",
+      "terminaEstePaso": "Once you finish this step you'll be able to continue.",
+      "irAlPaso": "Go to {{paso}}",
+      "pendiente": "Pending",
+      "noDisponibleDetalle": "This step couldn't be verified right now. It won't hold you back: continue with the others and come back later.",
+      "sinPermiso": "An administrator of your agency has to do this step: your user doesn't have permission to load this data."
+    },
+    "eyebrow": "Getting started",
+    "titulo": "Migrate your operation",
+    "subtitulo": "Bring over what you already have in another system, in the order each step needs the previous one. You can stop halfway and pick it up later — nothing gets lost.",
+    "retomar": "Resume",
+    "empezar": "Start",
+    "noDisponible": "Not available yet",
+    "retomarAviso": "You have an unfinished upload. Pick it up where you left off — uploading the file again duplicates the rows.",
+    "orden": {
+      "titulo": "The order matters",
+      "detalle": "Each step needs the one before it: a property needs an owner, and a lease attaches to a property (by code or address). You can skip a step if that data is already loaded, but nothing will wait for you afterwards."
+    },
+    "estados": {
+      "enConstruccion": "Under construction",
+      "noDisponible": "Unavailable",
+      "enCurso": "Unfinished",
+      "conDatos": "Data migrated",
+      "sinInmueble": "No property",
+      "sinPropietario": "No owner"
+    },
+    "avance": {
+      "hechas": "{{n}} already migrated",
+      "porRevisar": "{{n}} to review in “{{lote}}”",
+      "sinInmueble": "{{n}} active without a property: they will not bill until a property is linked.",
+      "resolverSinInmueble": "Create or link the properties",
+      "sinPropietario": "{{n}} active without an owner: the property is not consigned to anyone, so they will not bill.",
+      "resolverSinPropietario": "Pick each one's owner",
+      "sinMapeo": "{{n}} automatic entries have no account yet: receipts and payouts are not posted until you assign them.",
+      "sinMapeoUno": "1 automatic entry has no account yet: that movement is not posted until you assign it.",
+      "resolverSinMapeo": "Assign the accounts"
+    },
+    "pasos": {
+      "propietarios": {
+        "titulo": "Owners",
+        "descripcion": "The people you pay. An owner needs an ID number and a bank account so you can wire them.",
+        "corto": "Owners"
+      },
+      "inquilinos": {
+        "titulo": "Tenants",
+        "descripcion": "Who lives or works in your properties. Their email is how they get invited to the portal; each one's contract comes in step 4.",
+        "corto": "Tenants"
+      },
+      "propiedades": {
+        "titulo": "Properties",
+        "descripcion": "The properties you manage, with their address and their owner. Without this, leases arrive with nothing to attach to.",
+        "corto": "Properties"
+      },
+      "contratos": {
+        "titulo": "Leases",
+        "descripcion": "Your live portfolio. They come in active and signed — no need to sign them again. A lease attaches to a property by code or address; if it is not loaded yet, it is created from the file.",
+        "corto": "Leases"
+      },
+      "puc": {
+        "titulo": "Chart of accounts",
+        "descripcion": "Your chart of accounts, so entries land where your accountant expects them. You can start from the Decree 2650 base plan and adjust it.",
+        "corto": "Chart of accounts"
+      },
+      "contables": {
+        "titulo": "Accounting entries",
+        "descripcion": "Historical balances and movements. It goes last because it needs the chart of accounts in place: an opening entry with the balances, or the history from a file.",
+        "corto": "Accounting entries"
+      }
+    },
+    "terceros": {
+      "titulo": "Third parties: owners and tenants",
+      "subtitulo": "Upload the file you already have — it does not need to match our format. Nothing is created until you review it: whatever a row is missing gets filled in right here, without uploading anything again."
+    }
+  },
+  "reglasDeMora": {
+    "queEs": "the late-fee rules",
+    "queSon": "late-fee rules",
+    "conteo": {
+      "una": "rule, in the order it is applied",
+      "varias": "rules, in the order they are applied"
+    },
+    "tabla": {
+      "orden": "Order",
+      "regla": "Rule",
+      "disparo": "When it triggers",
+      "cobro": "What it charges",
+      "tope": "Cap",
+      "estado": "Status",
+      "acciones": "Actions",
+      "activa": "Active",
+      "apagada": "Off",
+      "editar": "Edit"
+    },
+    "vacio": {
+      "titulo": "No late-fee rules yet",
+      "descripcion": "With no rules, an overdue charge adds nothing: the tenant's balance stays the same no matter how much time goes by.",
+      "crear": "Create a rule"
+    },
+    "sugerencias": {
+      "etiqueta": "Suggestion",
+      "usar": "Use this rule",
+      "vacioTitulo": "Start with one of these",
+      "vacioDescripcion": "These are the two rules every property manager charges. They do not exist yet: they are created only when you tap “Use this rule”, and you can edit or turn them off from there.",
+      "conReglasTitulo": "Others you could add",
+      "conReglasDescripcion": "These are not created. They are suggestions on top of what you already have above; if one is useful, it is created with a single tap."
     }
   }
 }

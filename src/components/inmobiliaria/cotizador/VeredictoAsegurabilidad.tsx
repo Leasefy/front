@@ -142,7 +142,7 @@ export function VeredictoAsegurabilidad({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
       aria-label={t('inmobiliaria.ai.cotizador.detail.veredicto.regionLabel')}
-      className="rounded-2xl border border-border bg-card overflow-hidden"
+      className="rounded-lg border border-border bg-card overflow-hidden"
     >
       {/* ── CONCLUSIÓN ───────────────────────────────────────────────────── */}
       <div className="px-6 pt-6 pb-5">

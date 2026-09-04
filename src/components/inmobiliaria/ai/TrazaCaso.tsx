@@ -102,7 +102,7 @@ export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps)
     return (
       <div className="space-y-2" data-testid="traza-caso-loading">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="h-14 rounded-xl border border-border bg-muted/40 animate-pulse" />
+          <div key={i} className="h-14 rounded-lg border border-border bg-muted/40 animate-pulse" />
         ))}
       </div>
     )
@@ -111,7 +111,7 @@ export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps)
   if (error) {
     return (
       <div
-        className="rounded-xl border border-danger/30 bg-danger-soft text-danger"
+        className="rounded-lg border border-danger/30 bg-danger-soft text-danger"
         data-testid="traza-caso-error"
       >
         {t('inmobiliaria.ai.workspace.traza.error', { error })}
@@ -122,7 +122,7 @@ export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps)
   if (entries.length === 0) {
     return (
       <div
-        className="rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center"
+        className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center"
         data-testid="traza-caso-empty"
       >
         <ClockCounterClockwise

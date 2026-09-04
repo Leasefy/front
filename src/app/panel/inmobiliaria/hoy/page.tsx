@@ -6,8 +6,6 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { getActiveAgents } from '@/lib/types/ai-agents';
-import { InsightsPanel } from '@/components/inmobiliaria/InsightsPanel';
-import { deriveInsights } from '@/lib/insights/engine';
 
 /** A link/row inside a system block. `soon` renders muted + "Pronto" pill. */
 interface BlockItem {
@@ -42,7 +40,7 @@ const BLOCKS: SystemBlock[] = [
       { labelKey: 'inmobiliaria.nav.propiedades', href: '/panel/inmobiliaria/inmuebles' },
       { labelKey: 'inmobiliaria.nav.portafolio', href: '/panel/inmobiliaria/inmuebles' },
       { labelKey: 'inmobiliaria.nav.pipeline', href: '/panel/inmobiliaria/pipeline' },
-      { labelKey: 'inmobiliaria.nav.agentes', href: '/panel/inmobiliaria/agentes' },
+      { labelKey: 'inmobiliaria.nav.agentes', href: '/panel/inmobiliaria/configuracion/equipo' },
       { labelKey: 'inmobiliaria.nav.mensajes', href: '/panel/inmobiliaria/mensajes' },
     ],
   },
@@ -56,12 +54,12 @@ const BLOCKS: SystemBlock[] = [
     cta: '/panel/inmobiliaria/cobros',
     items: [
       { labelKey: 'inmobiliaria.nav.cobros', href: '/panel/inmobiliaria/cobros' },
-      { labelKey: 'inmobiliaria.nav.dispersiones', href: '/panel/inmobiliaria/dispersiones' },
-      { labelKey: 'inmobiliaria.nav.tesoreria', href: '/panel/inmobiliaria/tesoreria' },
+      { labelKey: 'inmobiliaria.nav.dispersiones', href: '/panel/inmobiliaria/pagos/dispersiones' },
+      { labelKey: 'inmobiliaria.nav.tesoreria', href: '/panel/inmobiliaria/pagos/liquidaciones' },
       { labelKey: 'inmobiliaria.nav.facturacion', href: '/panel/inmobiliaria/facturacion' },
       { labelKey: 'inmobiliaria.nav.conciliacion', href: '/panel/inmobiliaria/conciliacion' },
       { labelKey: 'inmobiliaria.nav.reportes', href: '/panel/inmobiliaria/reportes' },
-      { labelKey: 'inmobiliaria.nav.analitica', href: '/panel/inmobiliaria/analytics' },
+      { labelKey: 'inmobiliaria.nav.analitica', href: '/panel/inmobiliaria/reportes/ia' },
     ],
   },
   {
@@ -71,10 +69,10 @@ const BLOCKS: SystemBlock[] = [
     iconColor: 'text-fg-muted',
     titleKey: 'inmobiliaria.hoy.autopilotTitle',
     descKey: 'inmobiliaria.hoy.autopilotDesc',
-    cta: '/panel/inmobiliaria/ai',
+    cta: '/panel/inmobiliaria/configuracion/agentes',
     items: [
-      { labelKey: 'inmobiliaria.ai.nav.cobranza', href: '/panel/inmobiliaria/ai/cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cotizador', href: '/panel/inmobiliaria/ai/asegurabilidad' },
+      { labelKey: 'inmobiliaria.ai.nav.cobranza', href: '/panel/inmobiliaria/cobros/cobranza' },
+      { labelKey: 'inmobiliaria.ai.nav.cotizador', href: '/panel/inmobiliaria/postulaciones/asegurabilidad' },
     ],
   },
   {
@@ -84,10 +82,10 @@ const BLOCKS: SystemBlock[] = [
     iconColor: 'text-warning',
     titleKey: 'inmobiliaria.hoy.opsTitle',
     descKey: 'inmobiliaria.hoy.opsDesc',
-    cta: '/panel/inmobiliaria/operaciones',
+    cta: '/panel/inmobiliaria/mantenimientos',
     items: [
-      { labelKey: 'inmobiliaria.nav.operaciones', href: '/panel/inmobiliaria/operaciones' },
-      { labelKey: 'inmobiliaria.nav.pqrs', href: '/panel/inmobiliaria/pqrs' },
+      { labelKey: 'inmobiliaria.nav.operaciones', href: '/panel/inmobiliaria/mantenimientos' },
+      { labelKey: 'inmobiliaria.nav.pqrs', href: '/panel/inmobiliaria/solicitudes' },
       { labelKey: 'inmobiliaria.nav.documentos', href: '/panel/inmobiliaria/documentos' },
       { labelKey: 'inmobiliaria.nav.agenda', href: '/panel/inmobiliaria/agenda' },
     ],
@@ -97,17 +95,6 @@ const BLOCKS: SystemBlock[] = [
 export default function HoyPage() {
   const { t, locale } = useI18n();
   const agents = getActiveAgents();
-  // Vista previa de insights (en prod: deriveInsights() sobre los datos reales de la operación).
-  const previewInsights = deriveInsights({
-    contratosPorVencer30d: 18,
-    contratosSinGestion: 6,
-    inquilinosEnMora: 42,
-    moraPrioritaria: 11,
-    montoPorDispersar: 84_000_000,
-    coberturaDispersarPct: 62,
-    propiedadesEstancadas7d: 0,
-    firmasPendientes: 0,
-  });
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
@@ -118,12 +105,14 @@ export default function HoyPage() {
         <p className="text-body text-muted-foreground max-w-2xl">{t('inmobiliaria.hoy.subtitle')}</p>
       </header>
 
-      {/* Insights & Alertas — real engine (v6-05); preview data until backend hooks wire in */}
-      <InsightsPanel insights={previewInsights} preview />
+      {/* Acá había un panel de «Insights & Alertas» con números escritos a
+          mano («42 inquilinos en mora», «$84.000.000 por dispersar») cuyos
+          botones llevaban a pantallas reales que no tenían nada de eso. Las
+          alertas reales viven en el Piloto (/panel/inmobiliaria/piloto). */}
 
       {/* Autopilot activo */}
       {agents.length > 0 && (
-        <section className="rounded-xl border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <section className="rounded-lg border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 bg-success" />
@@ -138,7 +127,7 @@ export default function HoyPage() {
             </div>
           </div>
           <Link
-            href="/panel/inmobiliaria/ai"
+            href="/panel/inmobiliaria/configuracion/agentes"
             className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline transition-colors flex-shrink-0"
           >
             {t('inmobiliaria.common.viewAll')}
@@ -154,7 +143,7 @@ export default function HoyPage() {
           {BLOCKS.map((block) => {
             const Icon = block.icon;
             return (
-              <div key={block.key} className="rounded-xl border border-border bg-card p-5 space-y-4">
+              <div key={block.key} className="rounded-lg border border-border bg-card p-5 space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0', block.iconWrap)}>

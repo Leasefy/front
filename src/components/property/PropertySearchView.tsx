@@ -186,7 +186,11 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
 
   // Properties with valid coordinates for the map
   const mappableProperties = useMemo(
-    () => filteredProperties.filter(p => p.latitude !== 0 || p.longitude !== 0),
+    // `null` = sin geocodificar; (0,0) = el «sin ubicación» que dejaba el mapper viejo.
+    () =>
+      filteredProperties.filter(
+        (p) => p.latitude != null && p.longitude != null && (p.latitude !== 0 || p.longitude !== 0),
+      ),
     [filteredProperties]
   );
 

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 
 /**
- * /panel/inmobiliaria/avaluos — CONSOLIDATED into /panel/inmobiliaria/ai/avaluos.
+ * /panel/inmobiliaria/avaluos — CONSOLIDATED into /panel/inmobiliaria/inmuebles/avaluos.
  *
  * The agency avalúo UI lives in a single canonical page now (the ai/avaluos
  * workspace). This route is kept only so existing links/bookmarks don't 404 —
@@ -10,5 +10,5 @@ import { redirect } from 'next/navigation';
  * canonical page.
  */
 export default function AvaluosLegacyRedirectPage() {
-  redirect('/panel/inmobiliaria/ai/avaluos');
+  redirect('/panel/inmobiliaria/inmuebles/avaluos');
 }

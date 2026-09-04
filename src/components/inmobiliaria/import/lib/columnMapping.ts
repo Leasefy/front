@@ -38,6 +38,9 @@ export const COLUMN_KEYWORDS: Record<string, string[]> = {
   bedrooms:         ['numero de habitaciones', 'alcobas', 'habitaciones', 'cuartos', 'dormitorios', 'hab', 'recamaras', 'bedrooms'],
   bathrooms:        ['numero de banos', 'banos', 'bano', 'bathrooms', 'wc'],
   ownerName:        ['nombre del propietario', 'nombre propietario', 'propietario', 'arrendador', 'dueno', 'owner'],
+  // Más específico que ownerName ('propietario', 11) y que cualquier 'documento'
+  // suelto: la cédula del dueño resuelve la ficha sin adivinar por nombre.
+  ownerDocument:    ['cedula del propietario', 'documento del propietario', 'nit del propietario', 'cedula propietario', 'documento propietario', 'nit propietario', 'cc propietario', 'identificacion del propietario', 'identificacion propietario', 'cedula del arrendador', 'documento del arrendador'],
   // OJO: el nivel 1 gana por LONGITUD de la palabra clave, así que cualquier
   // variante «<algo> propietario» tiene que ser MÁS LARGA que 'propietario'
   // (11) o el teléfono termina en el campo del nombre. Pasó con
@@ -84,6 +87,16 @@ export const ENCABEZADOS_SIN_CAMPO = [
   // No hay campo de correo en la importación. Sin bloquearlo,
   // «Correo propietario» caía en ownerName por el mismo problema de longitud.
   'correo', 'email', 'e-mail',
+  // Medido en la auditoría 2026-09-01, con encabezados reales:
+  //   «Dirección de notificación del propietario» → ownerName ('propietario', 11)
+  //   «Garantía» → monthlyRent (Levenshtein 0.5+)
+  //   «Fecha de inicio» → consignedAt (0.59) — la fecha del CONTRATO entrando
+  //     como fecha de consignación del inmueble, en silencio.
+  // Nada de esto tiene campo acá: mejor sin mapear que mapeado a otra cosa.
+  'notificacion', 'deposito', 'garantia', 'fianza', 'poliza', 'aseguradora',
+  'fecha de inicio', 'fecha inicio', 'inicio del contrato', 'inicio contrato',
+  'fecha fin', 'fecha de fin', 'fin del contrato', 'fin contrato',
+  'vencimiento', 'duracion',
   // T-0038 §3.8: "tipo de negocio"/"tipo negocio" ya NO están bloqueados —
   // tienen destino en `listingType` (ver COLUMN_KEYWORDS). "codigo" queda
   // bloqueado a propósito: el código es asignado por el servidor

@@ -146,7 +146,7 @@ export function AutonomySettings({ className }: AutonomySettingsProps) {
             <div
               key={agentType}
               className={cn(
-                'rounded-xl border border-neutral-200 dark:border-border',
+                'rounded-lg border border-neutral-200 dark:border-border',
                 'bg-white dark:bg-card',
                 'border-l-[3px]',
                 borderColor,

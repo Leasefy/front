@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test'
 import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
-const ROUTE = '/panel/inmobiliaria/ai/cotizador/costos'
+const ROUTE = '/panel/inmobiliaria/postulaciones/asegurabilidad/costos'
 const COSTOS_MOCK = '**/cotizador/costos/**'
 const SKELETON_DELAY_MS = 2500
 

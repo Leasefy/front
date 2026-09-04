@@ -78,7 +78,7 @@ export default function ConciliacionExcepcionesPage() {
               <Link
                 key={t.nombre}
                 href="/panel/inmobiliaria/conciliacion-ia/excepcion"
-                className="group rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-border-strong"
+                className="group rounded-lg border border-border bg-surface p-5 transition-colors hover:border-border-strong"
               >
                 <div className="flex items-start gap-3">
                   <span className="inline-flex items-center justify-center w-10 h-10 rounded-lg shrink-0" style={{ background: tone.soft, color: tone.fg }}>

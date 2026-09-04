@@ -307,7 +307,7 @@ export function CarrierCardExpandible({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
       {/* Collapsible card-header disclosure toggle (rich icon+name+status-chip+price
           row with AnimatePresence-style reveal) — Cadence Accordion can't host this
           header; kept native with aria-expanded per playbook disclosure allowlist. */}

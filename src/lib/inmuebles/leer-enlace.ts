@@ -24,9 +24,23 @@
  * traer varios pesos —canon, administración, precio de VENTA— y agarrar
  * cualquier `$` es cómo se termina publicando un arriendo de $450.000.000. Por
  * eso el texto sólo se acepta **con su etiqueta al lado**.
+ *
+ * ── Y el precio declarado también tiene que saber DE QUÉ es ─────────────
+ * El JSON-LD dice «price: 320000000» sin decir si es un canon o un precio de
+ * venta. Medido en tres enlaces reales de Fincaraíz (2026-09-01): dos eran
+ * «Apartamento en Venta» y los dos entraron con `monthlyRent: 420.000.000` —
+ * exactamente el arriendo de $450.000.000 que el párrafo de arriba prometía
+ * evitar, sólo que por la puerta rotulada. Por eso antes de asignar el precio
+ * se lee el NEGOCIO (venta / arriendo) de lo que la página declara: las migas
+ * de pan, la URL y el título. Sin negocio conocido, el precio sigue yendo al
+ * canon —es lo que traen los CRM de arriendo— y la revisión lo muestra.
  */
 
-export type FuenteDelDato = 'json-ld' | 'open-graph' | 'texto' | 'titulo-html';
+import { COLOMBIAN_DEPARTMENTS } from '@/lib/types/inmobiliaria';
+
+export type FuenteDelDato = 'json-ld' | 'open-graph' | 'texto' | 'titulo-html' | 'url';
+
+export type Negocio = 'venta' | 'arriendo';
 
 export interface DatoLeido<T> {
   valor: T;
@@ -42,8 +56,17 @@ export interface InmuebleDesdeEnlace {
   direccion?: DatoLeido<string>;
   ciudad?: DatoLeido<string>;
   barrio?: DatoLeido<string>;
+  /** Con el nombre canónico de la lista congelada (`Valle del Cauca`, no «Valle del cauca»). */
+  departamento?: DatoLeido<string>;
   tipo?: DatoLeido<string>;
+  /**
+   * Qué se ofrece: vender o arrendar. Decide a qué campo va el precio
+   * declarado. Ausente = la página no lo dice en ningún lado rotulado.
+   */
+  negocio?: DatoLeido<Negocio>;
   canon?: DatoLeido<number>;
+  /** Sólo cuando `negocio` es venta: el mismo `price` del JSON-LD, en su campo. */
+  precioVenta?: DatoLeido<number>;
   administracion?: DatoLeido<number>;
   area?: DatoLeido<number>;
   habitaciones?: DatoLeido<number>;
@@ -144,9 +167,9 @@ function esBloqueDelInmueble(bloque: Record<string, unknown>): boolean {
   );
 }
 
-/** Todos los bloques `application/ld+json`, aplanando `@graph` y arreglos. */
-export function bloquesJsonLd(html: string): Record<string, unknown>[] {
-  const bloques: Record<string, unknown>[] = [];
+/** Cada `<script type="application/ld+json">` parseado, tal cual viene. */
+function raicesJsonLd(html: string): unknown[] {
+  const raices: unknown[] = [];
   const scripts =
     html.match(
       /<script\b[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
@@ -154,16 +177,63 @@ export function bloquesJsonLd(html: string): Record<string, unknown>[] {
 
   for (const script of scripts) {
     const cuerpo = script.replace(/^<script\b[^>]*>/i, '').replace(/<\/script>$/i, '');
-    let datos: unknown;
     try {
-      datos = JSON.parse(cuerpo.trim());
+      raices.push(JSON.parse(cuerpo.trim()));
     } catch {
       continue; // Un JSON-LD roto no invalida la página.
     }
-    aplanar(datos, bloques);
   }
 
+  return raices;
+}
+
+/** Todos los bloques `application/ld+json`, aplanando `@graph` y arreglos. */
+export function bloquesJsonLd(html: string): Record<string, unknown>[] {
+  const bloques: Record<string, unknown>[] = [];
+  for (const raiz of raicesJsonLd(html)) aplanar(raiz, bloques);
   return bloques;
+}
+
+/**
+ * Las migas de pan (`BreadcrumbList`), en orden y sin el sitio ni la ficha.
+ *
+ * `bloquesJsonLd` las descarta a propósito —su `name` no es el del inmueble—
+ * pero como CAMINO son el dato más rotulado que hay sobre dónde está y qué se
+ * ofrece: Fincaraíz publica `Fincaraíz > Venta > Apartamentos > Zipaquirá >
+ * Las villas > (la ficha)`. Se leen aparte, como lista de nombres.
+ */
+export function migasDePan(html: string): string[] {
+  const nombres: string[] = [];
+
+  const recorrer = (nodo: unknown): void => {
+    if (Array.isArray(nodo)) {
+      nodo.forEach(recorrer);
+      return;
+    }
+    if (!nodo || typeof nodo !== 'object') return;
+    const obj = nodo as Record<string, unknown>;
+    const tipos = Array.isArray(obj['@type']) ? obj['@type'] : [obj['@type']];
+    if (tipos.some((t) => typeof t === 'string' && t.toLowerCase() === 'breadcrumblist')) {
+      const items = Array.isArray(obj.itemListElement) ? obj.itemListElement : [];
+      const ordenados = [...items]
+        .filter((i): i is Record<string, unknown> => !!i && typeof i === 'object')
+        .sort((a, b) => Number(a.position ?? 0) - Number(b.position ?? 0));
+      for (const item of ordenados) {
+        const nombre =
+          comoTexto(item.name) ??
+          comoTexto((item.item as Record<string, unknown> | undefined)?.name);
+        if (nombre) nombres.push(nombre);
+      }
+      return;
+    }
+    if (obj['@graph']) recorrer(obj['@graph']);
+  };
+
+  raicesJsonLd(html).forEach(recorrer);
+
+  // El primero es el sitio y el último es la ficha misma: ninguno de los dos
+  // dice nada del lugar. Con menos de tres no queda camino que leer.
+  return nombres.length >= 3 ? nombres.slice(1, -1) : [];
 }
 
 function aplanar(datos: unknown, salida: Record<string, unknown>[]): void {
@@ -313,30 +383,40 @@ const CIUDADES = new Set(
 );
 
 /**
- * Los 32 departamentos de Colombia (+ Bogotá D.C., aunque esa ya está en
- * CIUDADES). Existe para el mismo motivo que CIUDADES pero al revés: un valor
- * que ES un departamento NUNCA es plausible como barrio, y antes de esto se
- * asignaba igual — T-0030 WU-3, defecto real: una ficha con
- * `addressRegion: "Antioquia"` + `addressLocality: "Itagüí"` dejaba
- * `neighborhood: "Antioquia"` en el inmueble creado.
+ * Los 32 departamentos de Colombia, con su nombre canónico. Existe para el
+ * mismo motivo que CIUDADES pero al revés: un valor que ES un departamento
+ * NUNCA es plausible como barrio, y antes de esto se asignaba igual — T-0030
+ * WU-3, defecto real: una ficha con `addressRegion: "Antioquia"` +
+ * `addressLocality: "Itagüí"` dejaba `neighborhood: "Antioquia"` en el
+ * inmueble creado.
+ *
+ * Es la MISMA lista congelada que valida el back (`@IsIn`), así que lo que se
+ * lee de acá («Valle del cauca» en Fincaraíz) sale ya con la grafía que el
+ * back acepta («Valle del Cauca») — no con la del portal.
  */
-const DEPARTAMENTOS = new Set(
-  [
-    'amazonas', 'antioquia', 'arauca', 'atlantico', 'bolivar', 'boyaca',
-    'caldas', 'caqueta', 'casanare', 'cauca', 'cesar', 'choco', 'cordoba',
-    'cundinamarca', 'guainia', 'guaviare', 'huila', 'la guajira', 'magdalena',
-    'meta', 'narino', 'norte de santander', 'putumayo', 'quindio',
-    'risaralda', 'san andres y providencia', 'santander', 'sucre', 'tolima',
-    'valle del cauca', 'vaupes', 'vichada',
-  ],
+const DEPARTAMENTOS = new Map<string, string>(
+  COLOMBIAN_DEPARTMENTS.map((d) => [normalizarNombre(d), d]),
 );
 
 function normalizarNombre(nombre: string): string {
-  return nombre
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim();
+  return (
+    nombre
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      // «Bogotá, D.C.» / «Bogotá D.C.» / «Bogota DC» son la misma ciudad. Sin
+      // esto, una ficha real con `addressRegion: "Bogotá, d.c."` dejaba ese
+      // texto como BARRIO del inmueble.
+      .replace(/[\s,]*\bd\.?\s*c\.?$/i, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+  );
+}
+
+/** El mismo lugar escrito de dos maneras («Bogotá D.C.» y «Bogotá», «Jamundi» y «Jamundí»). */
+function mismoNombre(a: string | undefined, b: string | undefined): boolean {
+  if (!a || !b) return false;
+  return normalizarNombre(a) === normalizarNombre(b);
 }
 
 /**
@@ -392,6 +472,169 @@ function esCiudad(nombre: string | undefined): boolean {
 function esDepartamento(nombre: string | undefined): boolean {
   if (!nombre) return false;
   return DEPARTAMENTOS.has(normalizarNombre(nombre));
+}
+
+/** «Valle del cauca» → «Valle del Cauca». `undefined` si no es un departamento. */
+function departamentoCanonico(nombre: string | undefined): string | undefined {
+  if (!nombre) return undefined;
+  return DEPARTAMENTOS.get(normalizarNombre(nombre));
+}
+
+// ── Negocio: venta o arriendo ─────────────────────────────────────────────
+
+const PALABRAS_DE_VENTA = /\b(?:ventas?|vender|se\s+vende)\b/i;
+const PALABRAS_DE_ARRIENDO = /\b(?:arriendos?|arrendar|arrendamiento|alquiler|alquilar|renta|se\s+arrienda)\b/i;
+
+/**
+ * Qué negocio dice UNA frase. `undefined` si no dice ninguno o dice los dos
+ * («venta y arriendo»): un precio solo no se puede repartir entre dos
+ * negocios, así que ahí no se decide.
+ */
+function negocioEnTexto(texto: string | undefined): Negocio | undefined {
+  if (!texto) return undefined;
+  const venta = PALABRAS_DE_VENTA.test(texto);
+  const arriendo = PALABRAS_DE_ARRIENDO.test(texto);
+  if (venta === arriendo) return undefined;
+  return venta ? 'venta' : 'arriendo';
+}
+
+/**
+ * El negocio, por orden de cuán rotulado viene:
+ *
+ *   1. Las migas de pan — `Fincaraíz > Venta > Apartamentos > …`: un nodo que
+ *      es exactamente la palabra.
+ *   2. La URL — `/apartamento-en-venta-en-las-villas-zipaquira/193740609`,
+ *      `/inmueble/venta-apartamento-bogota-…`: los portales lo ponen en la
+ *      ruta porque también es su SEO.
+ *   3. El título — «Apartamento en Venta en Las villas, Zipaquirá».
+ *
+ * La descripción NO cuenta: un aviso de arriendo dice «también se vende» y
+ * uno de venta dice «actualmente arrendado» todo el tiempo.
+ */
+function negocioDe(
+  migas: string[],
+  url: string,
+  titulos: (DatoLeido<string> | undefined)[],
+): DatoLeido<Negocio> | undefined {
+  for (const miga of migas) {
+    const n = normalizarNombre(miga);
+    if (/^(?:ventas?|vender)$/.test(n)) return { valor: 'venta', fuente: 'json-ld', textoOriginal: `BreadcrumbList: ${miga}` };
+    if (/^(?:arriendos?|arrendar|alquiler|renta)$/.test(n)) {
+      return { valor: 'arriendo', fuente: 'json-ld', textoOriginal: `BreadcrumbList: ${miga}` };
+    }
+  }
+
+  let ruta = '';
+  try {
+    ruta = decodeURIComponent(new URL(url).pathname);
+  } catch {
+    ruta = url;
+  }
+  // En la ruta las palabras van separadas por `/` o `-`, no por espacios.
+  const enRuta = negocioEnTexto(ruta.replace(/[/_-]+/g, ' '));
+  if (enRuta) return { valor: enRuta, fuente: 'url', textoOriginal: ruta };
+
+  for (const titulo of titulos) {
+    const n = negocioEnTexto(titulo?.valor);
+    if (n && titulo) return { valor: n, fuente: titulo.fuente, textoOriginal: titulo.valor };
+  }
+
+  return undefined;
+}
+
+// ── Barrio: de dónde sale cuando el JSON-LD no lo trae ────────────────────
+
+/** Palabras que en un título o una miga NO son un lugar. */
+const NO_ES_UN_LUGAR =
+  /^(?:ventas?|arriendos?|alquiler|renta|apartamentos?|apartaestudios?|casas?|locales?|oficinas?|bodegas?|lotes?|fincas?|inmuebles?|proyectos?|habitaciones?|colombia)$/i;
+
+/**
+ * Si este texto puede ser el nombre de un barrio: no es la ciudad ni un
+ * departamento ni una palabra del rubro, y tiene tamaño de nombre.
+ */
+function plausibleComoBarrio(candidato: string | undefined, ciudad: string | undefined): candidato is string {
+  if (!candidato) return false;
+  const limpio = candidato.trim();
+  if (limpio.length < 2 || limpio.length > 60) return false;
+  if (/\d{3,}/.test(limpio)) return false; // un código de aviso, no un barrio
+  if (NO_ES_UN_LUGAR.test(limpio)) return false;
+  if (esCiudad(limpio) || esDepartamento(limpio)) return false;
+  if (mismoNombre(limpio, ciudad)) return false;
+  return true;
+}
+
+/**
+ * El barrio según las migas de pan: lo que queda del camino después de sacar
+ * el negocio, el tipo, la ciudad y el departamento. Si queda exactamente UNA
+ * cosa, es el barrio; si quedan dos, no se adivina cuál.
+ */
+function barrioDeMigas(migas: string[], ciudad: string | undefined): string | undefined {
+  const restantes = migas.filter((m) => plausibleComoBarrio(m, ciudad));
+  return restantes.length === 1 ? restantes[0] : undefined;
+}
+
+/**
+ * El barrio según el título, que los portales arman con plantilla:
+ *
+ *   Fincaraíz     «Apartamento en Venta en Las villas, Zipaquirá»
+ *                 «Apartamento en Arriendo en Jamundí, Alfaguara»  (el <title>, al revés)
+ *   Metrocuadrado «Venta de Apartamento en Bella suiza - Bogotá D.C. - 2162-M6953741»
+ *   OG            «Apartamento ubicado en Jamundí, Alfaguara. Cuenta con…»
+ *
+ * Las dos partes después del último «en» son barrio y ciudad, en cualquier
+ * orden: la que coincide con la ciudad ya leída es la ciudad, la otra es el
+ * barrio. Si la ciudad no se conoce, manda el orden «Barrio, Ciudad», que es
+ * el de la ficha misma (`name`) en los dos portales.
+ */
+function lugarDeTitulo(
+  titulo: string | undefined,
+  ciudad: string | undefined,
+): { barrio?: string; ciudad?: string } {
+  if (!titulo) return {};
+  // Sin el negocio, el único «en» que queda es el del lugar: «Apartamento en
+  // Venta en Las villas, Zipaquirá» → «Apartamento en Las villas, Zipaquirá».
+  const sinNegocio = titulo
+    .replace(/\b(?:en\s+)?(?:ventas?|arriendos?|alquiler|renta)\s+(?:de\s+)?/gi, ' ')
+    .replace(/\s+/g, ' ');
+  const m = sinNegocio.match(/\ben\s+([^,\-–|]{2,60}?)\s*[,\-–]\s*([^,\-–|]{2,60})/i);
+  if (!m) return {};
+  // El segundo tramo termina en la primera frase: «Alfaguara. Cuenta con 3
+  // habitaciones» es «Alfaguara». El punto de «D.C.» no corta porque no le
+  // sigue un espacio.
+  const partes = [m[1].trim(), m[2].split(/\.(?=\s|$)/)[0].trim()];
+  if (ciudad) {
+    const i = partes.findIndex((p) => mismoNombre(p, ciudad));
+    if (i === -1) return {}; // ninguna es la ciudad: no es el patrón que se cree
+    const otra = partes[1 - i];
+    return plausibleComoBarrio(otra, ciudad) ? { barrio: otra } : {};
+  }
+  // Ciudad desconocida: sólo se cree el patrón si la segunda parte ES una
+  // ciudad conocida («Bella suiza - Bogotá D.C.»). Si no, podría ser
+  // cualquier «en X, Y» de una frase.
+  const [barrio, posibleCiudad] = partes;
+  if (!esCiudad(posibleCiudad)) return {};
+  return {
+    // «Bogotá D.C.» se guarda como «Bogotá»: el sufijo es del portal, no de la ciudad.
+    ciudad: posibleCiudad.replace(/[\s,]*\bd\.?\s*c\.?$/i, '').trim(),
+    barrio: plausibleComoBarrio(barrio, posibleCiudad) ? barrio : undefined,
+  };
+}
+
+/**
+ * `streetAddress` con la cola de lugar recortada: Fincaraíz publica
+ * «Verde Alto apartments, Carrera 27, Zipaquirá, Cundinamarca, Colombia», y
+ * la ciudad, el departamento y el país ya tienen su campo. Sólo se recorta
+ * desde el final y sólo lo que coincide: nada del medio se toca.
+ */
+function sinColaDeLugar(direccion: string, lugares: (string | undefined)[]): string {
+  const partes = direccion.split(',').map((p) => p.trim()).filter(Boolean);
+  const sobrantes = new Set(
+    ['colombia', ...lugares.filter((l): l is string => !!l).map(normalizarNombre)],
+  );
+  while (partes.length > 1 && sobrantes.has(normalizarNombre(partes[partes.length - 1]))) {
+    partes.pop();
+  }
+  return partes.join(', ');
 }
 
 /**
@@ -711,13 +954,18 @@ export function leerInmuebleDeHtml(html: string, url: string): InmuebleDesdeEnla
   };
 
   // ── 1. JSON-LD: lo que el sitio declara como dato ───────────────────────
+  // El precio se guarda aparte hasta saber el negocio: `price` no dice si es
+  // un canon o un precio de venta, y asignarlo a ciegas es el defecto de
+  // arriba (dos ventas de Fincaraíz entraron como arriendos de $420.000.000).
+  let precioDeclarado: DatoLeido<number> | undefined;
+
   for (const bloque of jsonLd) {
     const conFuente = <T>(valor: T | undefined, campo: string): DatoLeido<T> | undefined =>
       valor === undefined ? undefined : { valor, fuente: 'json-ld', textoOriginal: campo };
 
     leido.titulo ??= conFuente(comoTexto(bloque.name), 'name');
     leido.descripcion ??= conFuente(comoTexto(bloque.description), 'description');
-    leido.canon ??= conFuente(comoDinero(bloque.price), 'price');
+    precioDeclarado ??= conFuente(comoDinero(bloque.price), 'price');
     leido.area ??= conFuente(comoMedida(bloque.floorSize), 'floorSize');
     leido.habitaciones ??= conFuente(
       comoEntero(bloque.numberOfBedrooms ?? bloque.numberOfRooms),
@@ -750,6 +998,13 @@ export function leerInmuebleDeHtml(html: string, url: string): InmuebleDesdeEnla
           leido.barrio ??= conFuente(region, 'address.addressRegion');
         }
       }
+
+      // Cuando `addressRegion` es un departamento de verdad, es EL
+      // departamento — con la grafía que el back acepta, no la del portal.
+      leido.departamento ??= conFuente(
+        departamentoCanonico(region) ?? departamentoCanonico(localidad),
+        'address.addressRegion',
+      );
     } else if (typeof direccion === 'string') {
       leido.direccion ??= conFuente(direccion.trim(), 'address');
     }
@@ -786,6 +1041,21 @@ export function leerInmuebleDeHtml(html: string, url: string): InmuebleDesdeEnla
     };
   }
 
+  // ── El negocio, y con él a qué campo va el precio declarado ─────────────
+  const migas = migasDePan(html);
+  const tituloOg = ogTitulo
+    ? { valor: ogTitulo, fuente: 'open-graph' as const, textoOriginal: 'og:title' }
+    : undefined;
+  const tituloDePagina = tituloHtml?.trim()
+    ? { valor: decodificarEntidades(tituloHtml.trim()), fuente: 'titulo-html' as const, textoOriginal: '<title>' }
+    : undefined;
+  leido.negocio = negocioDe(migas, url, [leido.titulo, tituloOg, tituloDePagina]);
+
+  if (precioDeclarado) {
+    if (leido.negocio?.valor === 'venta') leido.precioVenta = precioDeclarado;
+    else leido.canon = precioDeclarado;
+  }
+
   // ── 3. Texto, siempre con la etiqueta al lado ───────────────────────────
   // El corpus es el texto visible más lo que ya se leyó: en muchas fichas los
   // metros y las alcobas viven en la descripción de Open Graph, no en el body.
@@ -793,7 +1063,21 @@ export function leerInmuebleDeHtml(html: string, url: string): InmuebleDesdeEnla
     .filter(Boolean)
     .join(' · ');
 
-  if (!leido.canon) {
+  const esVenta = leido.negocio?.valor === 'venta';
+
+  if (esVenta && !leido.precioVenta) {
+    const hallado = conEtiqueta(corpus, ['precio de venta', 'valor de venta', 'venta', 'precio']);
+    const valor = hallado ? dineroColombiano(hallado.numero) : undefined;
+    // El mismo piso que exige el back para una venta (≥ 1.000.000): «venta 3»
+    // de una frase suelta no es un precio.
+    if (valor && valor >= 1_000_000) {
+      leido.precioVenta = { valor, fuente: 'texto', textoOriginal: hallado!.fragmento };
+    }
+  }
+
+  // En una venta NO se busca canon en la prosa: «arriendo $2.500.000» en un
+  // aviso de venta es lo que paga el inquilino actual, no lo que se ofrece.
+  if (!esVenta && !leido.canon) {
     const hallado = conEtiqueta(corpus, [
       'canon de arrendamiento',
       'canon mensual',
@@ -851,6 +1135,38 @@ export function leerInmuebleDeHtml(html: string, url: string): InmuebleDesdeEnla
     if (clave) leido.tipo = { valor: clave, fuente: 'texto', textoOriginal: desde.slice(0, 80) };
   }
 
+  // ── Barrio: los portales lo ponen en el camino y en el título, no en la
+  // dirección estructurada. Medido en Fincaraíz: `addressLocality` es la
+  // ciudad y `addressRegion` el departamento; «Las villas» sólo está en las
+  // migas de pan, en el `name` y en la descripción de Open Graph.
+  if (!leido.barrio) {
+    const deMigas = barrioDeMigas(migas, leido.ciudad?.valor);
+    if (deMigas) {
+      leido.barrio = { valor: deMigas, fuente: 'json-ld', textoOriginal: `BreadcrumbList: ${deMigas}` };
+    } else {
+      for (const titulo of [leido.titulo, tituloOg, tituloDePagina, leido.descripcion]) {
+        if (!titulo) continue;
+        const lugar = lugarDeTitulo(titulo.valor, leido.ciudad?.valor);
+        const conFuente = (valor: string): DatoLeido<string> => ({
+          valor,
+          fuente: titulo.fuente,
+          textoOriginal: titulo.valor.slice(0, 80),
+        });
+        // La ciudad del título sólo cuando ningún dato rotulado la trajo.
+        if (lugar.ciudad && !leido.ciudad) leido.ciudad = conFuente(lugar.ciudad);
+        if (lugar.barrio) {
+          leido.barrio = conFuente(lugar.barrio);
+          break;
+        }
+      }
+    }
+  }
+
+  if (!leido.barrio) {
+    const m = corpus.match(/\bbarrio\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ.\-]*(?:\s+[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ.\-]*){0,2})/);
+    if (m) leido.barrio = { valor: m[1].trim(), fuente: 'texto', textoOriginal: m[0].trim() };
+  }
+
   // ⚠️ Sólo en la descripción y el título del inmueble, NUNCA en el texto
   // suelto de la página: el pie de página trae la dirección de la
   // inmobiliaria, y meterla acá sería ponerle al inmueble la casa de otro.
@@ -889,9 +1205,17 @@ export function leerInmuebleDeHtml(html: string, url: string): InmuebleDesdeEnla
     }
   }
 
-  if (!leido.barrio) {
-    const m = corpus.match(/\bbarrio\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ.\-]*(?:\s+[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ.\-]*){0,2})/);
-    if (m) leido.barrio = { valor: m[1].trim(), fuente: 'texto', textoOriginal: m[0].trim() };
+  // La ciudad, el departamento y el país ya tienen campo: en la dirección
+  // son cola. Sólo a la dirección declarada — una referencia («cerca al
+  // parque») o el municipio de resguardo no tienen cola que recortar.
+  if (leido.direccion && !leido.direccionAproximada) {
+    const recortada = sinColaDeLugar(leido.direccion.valor, [
+      leido.ciudad?.valor,
+      leido.departamento?.valor,
+    ]);
+    if (recortada && recortada !== leido.direccion.valor) {
+      leido.direccion = { ...leido.direccion, valor: recortada };
+    }
   }
 
   return leido;
@@ -906,7 +1230,11 @@ export function loQueFalta(leido: InmuebleDesdeEnlace): string[] {
   const faltan: string[] = [];
   if (!leido.direccion) faltan.push('dirección');
   if (!leido.ciudad) faltan.push('ciudad');
-  if (!leido.canon || leido.canon.valor < 100_000) faltan.push('canon');
+  if (leido.negocio?.valor === 'venta') {
+    if (!leido.precioVenta || leido.precioVenta.valor < 1_000_000) faltan.push('precio de venta');
+  } else if (!leido.canon || leido.canon.valor < 100_000) {
+    faltan.push('canon');
+  }
   if (!leido.area || leido.area.valor < 10) faltan.push('área');
   if (!leido.banos || leido.banos.valor < 1) faltan.push('baños');
   return faltan;

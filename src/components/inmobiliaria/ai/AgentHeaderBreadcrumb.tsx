@@ -4,16 +4,20 @@ import { usePathname } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { Breadcrumb, type BreadcrumbItem } from '@/components/ui/breadcrumb';
 import { findAgentWorkspace } from '@/lib/nav/agentWorkspaceNav';
+import { moduloDeLaRuta } from '@/lib/nav/arquitectura-del-panel';
 
 /**
- * AgentHeaderBreadcrumb — the single navigation breadcrumb for AI agent
- * workspaces, rendered in the PlanHeader's left slot (top bar). Replaces both
- * the per-agent-layout `<Breadcrumb>` and the per-page `MigaDePan`; all agent
- * navigation now lives at the top (breadcrumb here + WorkspaceNav tabs below).
+ * AgentHeaderBreadcrumb — el breadcrumb de los workspaces de agente, en el
+ * slot izquierdo del PlanHeader. Se esconde fuera de un agente.
  *
- * Self-hides on the AI hub and outside any known agent. Shows
- *   Agentes IA › <Agent> [› <Function>]
- * deriving the current function from the deepest matching workspace tab.
+ * Antes arrancaba en «Agentes IA › /ai»: la IA era un lugar. Ahora la IA es un
+ * modo dentro de cada módulo, así que arranca en el módulo dueño:
+ *
+ *   Cobros › Cobranza › Casos [› Detalle]
+ *
+ * El primer escalón sale de `arquitectura-del-panel.ts` (el módulo cuyo href
+ * es prefijo de la ruta). Cuando el agente ES la raíz del módulo (Pagos,
+ * Conciliación) no se repite el nombre: «Pagos › Por aprobar».
  */
 export function AgentHeaderBreadcrumb() {
   const pathname = usePathname() ?? '';
@@ -22,53 +26,37 @@ export function AgentHeaderBreadcrumb() {
   const ws = findAgentWorkspace(pathname);
   if (!ws) return null;
 
-  // Deepest workspace tab whose href is the current path (or a prefix of it).
+  // La pestaña más profunda cuyo href es la ruta actual (o un prefijo).
   const current = ws.items
-    .filter(
-      (it) =>
-        pathname === it.href ||
-        (!it.exact && pathname.startsWith(`${it.href}/`))
-    )
+    .filter((it) => pathname === it.href || (!it.exact && pathname.startsWith(`${it.href}/`)))
     .sort((a, b) => b.href.length - a.href.length)[0];
 
   const onSubpage = current != null && current.href !== ws.basePath;
 
-  // ¿Estamos MÁS ABAJO que la pestaña? (ficha de un caso, de una carta, etc.)
-  //
-  // `current` sale de un match por PREFIJO, así que en
-  // `…/cobranza/deudores/<id>` la pestaña que gana es «Casos». Pintarla como
-  // página actual —texto plano, sin enlace— dejaba la ficha sin salida: el
-  // breadcrumb decía «estás en Casos» estando en un caso, y el único control
-  // que devolvía a la tabla (la pestaña de arriba) se veía activo, o sea
-  // «ya estás acá». Nadie lo leía como salida.
+  // ¿Estamos MÁS ABAJO que la pestaña? (ficha de un caso, de una carta…)
+  // `current` sale de un match por PREFIJO: en `…/cobranza/deudores/<id>` gana
+  // «Casos». Si se pintara como página actual, la ficha quedaría sin salida:
+  // la pestaña vuelve a ser navegable y el último escalón es «Detalle».
   const enDetalle = current != null && pathname.startsWith(`${current.href}/`);
 
-  const items: BreadcrumbItem[] = [
-    { label: t('inmobiliaria.ai.breadcrumb.aiAgents'), href: '/panel/inmobiliaria/ai' },
-    onSubpage ? { label: t(ws.labelKey), href: ws.basePath } : { label: t(ws.labelKey) },
-  ];
-  if (onSubpage && current) {
-    // En una ficha, la pestaña VUELVE a ser navegable: es el camino de regreso
-    // a la tabla de la que se vino.
-    items.push(
-      enDetalle
-        ? { label: t(current.labelKey), href: current.href }
-        : { label: t(current.labelKey) },
-    );
+  // Ficha que no cuelga de ninguna pestaña (`/conciliacion/<id>`,
+  // `/mantenimientos/tickets/<id>` cuando la lista es la raíz exacta): el
+  // agente vuelve a ser enlace y el último escalón dice «Detalle» igual, para
+  // que la ficha tenga camino de vuelta desde el header.
+  const fichaSuelta = current == null && pathname.startsWith(`${ws.basePath}/`);
+
+  const items: BreadcrumbItem[] = [];
+  const modulo = moduloDeLaRuta(pathname);
+  if (modulo && modulo.href !== ws.basePath) {
+    items.push({ label: t(modulo.labelKey), href: modulo.href });
   }
-  if (enDetalle) {
-    // Sin este último escalón el breadcrumb terminaría en un enlace y seguiría
-    // sin decir dónde estás. El nombre concreto ya lo pone el H1 de la ficha.
+  items.push(onSubpage || fichaSuelta ? { label: t(ws.labelKey), href: ws.basePath } : { label: t(ws.labelKey) });
+  if (onSubpage && current) {
+    items.push(enDetalle ? { label: t(current.labelKey), href: current.href } : { label: t(current.labelKey) });
+  }
+  if (enDetalle || fichaSuelta) {
     items.push({ label: t('inmobiliaria.ai.breadcrumb.detalle') });
   }
 
-  return (
-    <Breadcrumb
-      items={items}
-      showHouseIcon
-      homeHref="/panel/inmobiliaria"
-      size="sm"
-      className="min-w-0"
-    />
-  );
+  return <Breadcrumb items={items} showHouseIcon homeHref="/panel/inmobiliaria" size="sm" className="min-w-0" />;
 }

@@ -1,7 +1,7 @@
 /**
  * Guardia de las claves de Avalúos.
  *
- * El Resumen (`/panel/inmobiliaria/ai/avaluos`) tenía su copy hardcodeado
+ * El Resumen (`/panel/inmobiliaria/inmuebles/avaluos`) tenía su copy hardcodeado
  * mientras las mismas claves existían en los dos diccionarios con textos MÁS
  * VIEJOS y distintos: era la única pantalla del workspace que se quedaba en
  * español al cambiar de idioma, y había dos versiones sueltas de una frase

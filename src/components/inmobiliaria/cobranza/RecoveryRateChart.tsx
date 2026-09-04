@@ -97,7 +97,7 @@ export function RecoveryRateChart({ data }: RecoveryRateChartProps) {
         phase={37}
         reason={t('inmobiliaria.ai.cobranza.analitica.agencyGate.reason')}
         cta={t('inmobiliaria.ai.cobranza.analitica.agencyGate.ctaLabel')}
-        ctaHref="/panel/inmobiliaria/ai/cobranza"
+        ctaHref="/panel/inmobiliaria/cobros/cobranza"
       />
     );
   }

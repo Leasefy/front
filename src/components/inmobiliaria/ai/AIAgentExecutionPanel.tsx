@@ -275,7 +275,7 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
 
               {step.stepType === 'notification' && (
                 <div className="max-w-sm mx-auto mt-8">
-                  <div className="bg-surface rounded-xl p-5 border">
+                  <div className="bg-surface rounded-lg p-5 border">
                     <div className="flex items-start gap-3">
                       <div className="h-10 w-10 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
                         <Bell weight="fill" className="h-5 w-5 text-fg-muted" />
@@ -543,7 +543,7 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
 
           {/* Conclusion */}
           {trace.status === 'completed' && trace.conclusion && (
-            <div className="mx-4 mb-4 rounded-xl border border-border bg-surface-muted p-4">
+            <div className="mx-4 mb-4 rounded-lg border border-border bg-surface-muted p-4">
               <h4 className="text-[11px] font-medium text-fg-subtle uppercase tracking-wider mb-1.5 flex items-center gap-1">
                 <ChatCircleDots weight="fill" className="h-3 w-3" />
                 {locale === 'es' ? 'Conclusión' : 'Conclusion'}
@@ -564,7 +564,7 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
 
         {/* Right panel — Computer View */}
         <div className="flex-1 bg-surface-muted p-4 overflow-hidden">
-          <div className="h-full rounded-xl border border-border overflow-hidden">
+          <div className="h-full rounded-lg border border-border overflow-hidden">
             <ComputerView step={selectedStep} trace={trace} locale={locale} />
           </div>
         </div>

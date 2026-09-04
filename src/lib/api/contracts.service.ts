@@ -19,10 +19,14 @@ import type {
   SendOtpResponse,
   VerifyOtpDto,
   VerifyOtpResponse,
+  CrearContratoManualDto,
+  ContratoManualCreadoBackend,
 } from './contracts.types';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 import type { Contract, ContractType, ContractStatus, SignatureStatus, ContractRejection } from '@/lib/types/contract';
+import type { CobroConDesglose } from './recibos-de-caja.types';
+import { normalizeCobro } from './inmobiliaria.service';
 import type { ContractAuditEvent, ContractAuditEventType, ContractAuditEventMetadata } from '@/lib/types/contract';
 
 // ============================================================================
@@ -115,15 +119,23 @@ export function mapBackendContract(bc: BackendContract): Contract {
     startDate: bc.startDate,
     endDate: bc.endDate,
     paymentDueDay: bc.paymentDay,                    // backend: paymentDay → front: paymentDueDay
+    // Un back anterior a esta rama no los manda: el default es el del esquema.
+    prorratearPrimerMes: bc.prorratearPrimerMes ?? false,
+    diasDePlazo: bc.diasDePlazo ?? null,
     usoInmueble: bc.usoInmueble ?? null,
     periodicidad: bc.periodicidad ?? null,
     // Decimal de Prisma: viaja como string ("10.00"). Sin esto, `12 > 10`
     // compara textos y un 9% saldría mayor que un 10%.
     comisionPorcentaje: aNumero(bc.comisionPorcentaje),
     comisionDeConsignacion: aNumero(bc.comisionDeConsignacion),
+    propietarioDeLaConsignacion: bc.propietarioDeLaConsignacion,
     // Quién retiene qué. Puede faltar en respuestas viejas: null significa
     // «no vino», y la pantalla cae a los perfiles por defecto diciéndolo.
     perfilesTributarios: bc.perfilesTributarios ?? null,
+    // Ya resuelto por el back, con el origen de cada valor. `null` = respuesta
+    // vieja, y la pantalla lo dice en vez de inventar el efectivo.
+    regimenTributario: bc.regimenTributario ?? null,
+    arrendadorResponsableIva: bc.arrendadorResponsableIva ?? null,
     inquilinoTipoPersona: bc.inquilinoTipoPersona ?? null,
     inquilinoResponsableIva: bc.inquilinoResponsableIva ?? null,
     inquilinoRetenedorRenta: bc.inquilinoRetenedorRenta ?? null,
@@ -385,6 +397,34 @@ export const contractsApi = {
       );
     },
 
+    /**
+     * Cuántos inmuebles faltan en el lote — el número que el botón muestra
+     * ANTES de confirmar. Mismo criterio que la acción: nunca promete un
+     * número distinto del que después se aplica.
+     */
+    async inmueblesFaltantes(lote: string): Promise<PrevisualizacionInmueblesFaltantes> {
+      const q = new URLSearchParams({ lote });
+      return apiClient.get<PrevisualizacionInmueblesFaltantes>(
+        `/contracts/migrar/inmuebles-faltantes?${q.toString()}`,
+      );
+    },
+
+    /**
+     * «Crear los N inmuebles que faltan»: con la dirección del archivo, a
+     * nombre de la inmobiliaria, consignados al propietario que dice el
+     * archivo — y vinculados al contrato si la fila ya se activó. Devuelve
+     * qué se creó, qué se omitió y qué falló, fila por fila.
+     */
+    async crearInmueblesFaltantes(
+      seleccion: { lote: string } | { ids: string[] },
+      ciudad?: string,
+    ): Promise<ResultadoInmueblesFaltantes> {
+      return apiClient.post<ResultadoInmueblesFaltantes>(
+        '/contracts/migrar/inmuebles-faltantes',
+        { ...seleccion, ciudad: ciudad?.trim() || undefined },
+      );
+    },
+
     /** Registrar al propietario y consignar. Sin esto no se genera un cobro. */
     async registrarPropietario(
       id: string,
@@ -399,6 +439,25 @@ export const contractsApi = {
       return apiClient.post<FilaDeMigracion>(
         `/contracts/migrar/filas/${id}/propietario`,
         datos,
+      );
+    },
+
+    /**
+     * Corregir a quién quedó consignada la fila, y con qué comisión.
+     *
+     * Distinto de `registrarPropietario`: aquél hace el PRIMER enlace desde
+     * el nombre y el documento del archivo; éste corrige uno que ya existe y
+     * quedó mal. Por eso el propietario viaja como **id de una ficha
+     * elegida** — escribir un nombre distinto encima de uno equivocado sólo
+     * crea una tercera ficha.
+     */
+    async corregirPropietario(
+      id: string,
+      cambios: { propietarioId?: string; comisionPorcentaje?: number },
+    ): Promise<FilaDeMigracion> {
+      return apiClient.patch<FilaDeMigracion>(
+        `/contracts/migrar/filas/${id}/propietario`,
+        cambios,
       );
     },
 
@@ -429,6 +488,16 @@ export const contractsApi = {
   async create(dto: CreateContractDto): Promise<Contract> {
     const raw = await apiClient.post<BackendContract>('/contracts', dto);
     return mapBackendContract(raw);
+  },
+
+  /**
+   * POST /contracts/manual — un contrato sin postulación: inmueble consignado +
+   * inquilino (existente por id, o nuevo por documento y correo) + términos.
+   * El borrador que devuelve es el mismo que el de `create`.
+   */
+  async createManual(dto: CrearContratoManualDto): Promise<{ contract: Contract; inquilino: ContratoManualCreadoBackend['inquilino'] }> {
+    const raw = await apiClient.post<ContratoManualCreadoBackend>('/contracts/manual', dto);
+    return { contract: mapBackendContract(raw.contract), inquilino: raw.inquilino };
   },
 
   /**
@@ -522,6 +591,22 @@ export const contractsApi = {
   },
 
   /**
+   * GET /contracts/:id/cobros — los cobros que este contrato ha generado, con
+   * su desglose (canon, administración, conceptos, impuestos, mora) y los
+   * recibos de caja vivos. Más reciente primero.
+   *
+   * Un cobro sabe su contrato por `Cobro.contractId`; los anteriores a esa
+   * columna se rellenaron por el arriendo o por el inmueble.
+   */
+  async cobros(id: string): Promise<CobroConDesglose[]> {
+    const rows = await apiClient.get<CobroConDesglose[] | { data: CobroConDesglose[] }>(
+      `/contracts/${id}/cobros`,
+    );
+    const lista = Array.isArray(rows) ? rows : rows.data;
+    return lista.map(normalizeCobro);
+  },
+
+  /**
    * PATCH /contracts/:id/administracion — uso, periodicidad y comisión.
    *
    * Ruta aparte de `update` a propósito: aquélla invalida las firmas y sólo
@@ -541,11 +626,22 @@ export const contractsApi = {
        * El perfil tributario del inquilino. `null` es una acción —«volvé a no
        * saberlo»— y no lo mismo que no mandar el campo, que lo deja como está.
        */
+      /**
+       * Quién GENERA el IVA es el arrendador (el propietario); quién RETIENE
+       * es el inquilino. `null` = volver a heredar de la ficha del propietario.
+       */
+      arrendadorResponsableIva?: boolean | null;
       inquilinoTipoPersona?: 'NATURAL' | 'JURIDICA' | null;
       inquilinoResponsableIva?: boolean | null;
       inquilinoRetenedorRenta?: boolean | null;
       inquilinoRetenedorIva?: boolean | null;
       inquilinoRetenedorIca?: boolean | null;
+      /**
+       * Términos de cobro. `diasDePlazo: null` = volver a heredar los de la
+       * inmobiliaria. La mora corre desde el día de pago + plazo.
+       */
+      diasDePlazo?: number | null;
+      prorratearPrimerMes?: boolean;
     },
   ): Promise<Contract> {
     const raw = await apiClient.patch<BackendContract>(
@@ -626,6 +722,14 @@ function mapBackendContractRejection(br: BackendContractRejection): ContractReje
  */
 export interface FilaAMigrar {
   direccion: string;
+  /**
+   * El «#144» de Inmuebles, cuando el archivo lo trae. El back resuelve por
+   * código ANTES que por dirección; un código inexistente deja la fila con
+   * `inmueble_codigo`, nunca se cae a la dirección en silencio.
+   */
+  codigoInmueble?: number;
+  /** Sólo para CREAR el inmueble cuando no está cargado. */
+  ciudad?: string;
   inquilino: { nombre: string; correo: string; telefono?: string; documento?: string };
   startDate?: string;
   endDate?: string;
@@ -636,6 +740,12 @@ export interface FilaAMigrar {
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL';
   periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
   comisionPorcentaje?: number;
+  /**
+   * El propietario que trae el archivo. Con documento, el back consigna el
+   * inmueble apenas lo resuelve — la fila no vuelve a pedir lo que el
+   * archivo ya dijo, ni siquiera si la persona recarga a mitad.
+   */
+  propietario?: { nombre?: string; documento?: string; correo?: string; telefono?: string };
 }
 
 export type EstadoMigracion = 'PENDIENTE' | 'LISTO' | 'ACTIVADO' | 'DESCARTADO';
@@ -648,11 +758,18 @@ export type EstadoMigracion = 'PENDIENTE' | 'LISTO' | 'ACTIVADO' | 'DESCARTADO';
  */
 export type Faltante =
   | 'inmueble'
+  | 'inmueble_codigo'
   | 'inmueble_ambiguo'
   | 'inmueble_ocupado'
   | 'propietario'
   | 'inquilino_correo'
   | 'inquilino_nombre'
+  /**
+   * El documento del inquilino es de una cuenta que NO es de inquilino (un
+   * agente, un propietario con cuenta). No se enlaza: alguien tiene que
+   * mirar ese documento — corregirlo, o vaciarlo para volver al correo.
+   */
+  | 'inquilino_documento_ajeno'
   | 'fechas'
   | 'canon'
   | 'uso'
@@ -679,6 +796,20 @@ export interface FilaDeMigracion {
   faltantes: Faltante[];
   contractId: string | null;
   /**
+   * A QUIÉN quedó consignado el inmueble de esta fila, con nombre.
+   *
+   * `propietarioId` solo no alcanza para revisar nada: un uuid no dice si el
+   * contrato de la señora del 802 quedó pegado a su propietario o al del
+   * 1003. Lo arma el back en la misma consulta de la página (nunca una
+   * petición por fila). `null` = todavía sin consignar.
+   */
+  propietario?: { id: string; nombre: string; documento: string } | null;
+  /**
+   * El % que se le cobra al propietario, **el de la consignación** — que es
+   * el que efectivamente va a facturar, no el que traía el archivo.
+   */
+  comisionPorcentaje?: number | null;
+  /**
    * Decisiones explícitas del usuario que anulan un chequeo automático.
    * Ausente/`undefined` se trata como `[]` — nunca indexar sin default
    * (contract.md §3.2.B6). Hoy el único valor posible es
@@ -691,6 +822,8 @@ export interface CambiosDeFila {
   propertyId?: string;
   inquilinoCorreo?: string;
   inquilinoNombre?: string;
+  /** Corregir el documento del inquilino; '' lo quita y la fila vuelve a resolverse por correo. */
+  inquilinoDocumento?: string;
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL';
   monthlyRent?: number;
   startDate?: string;
@@ -742,6 +875,13 @@ export interface LoteAbierto {
    * lote de 1.365 filas sin inmueble bajo el modo sparse.
    */
   activables: number;
+  /**
+   * 2026-09-02 — un lote TODO activado sigue abierto si le quedaron
+   * contratos sin inmueble o sin propietario: existen y no cobran, y lo que
+   * los arregla vive en la lista de trabajo. Un back viejo no los manda.
+   */
+  activadosSinInmueble?: number;
+  activadosSinPropietario?: number;
   estado?: EstadoLoteMigracion;
   total?: number;
   creadoEn?: string;
@@ -770,6 +910,30 @@ export interface IdsDeFilas {
 }
 
 /** Qué pasó con cada fila de una resolución masiva, una por una. */
+/** Lo que «Crear los N inmuebles que faltan» haría sobre un lote, contado sin hacerlo. */
+export interface PrevisualizacionInmueblesFaltantes {
+  /** Filas a las que se les crearía (o resolvería) el inmueble. */
+  candidatas: number;
+  /** De esas, cuántas ya son contratos activos (se vinculan además). */
+  activadas: number;
+  /** Con dos inmuebles de la misma dirección: se resuelven a mano. */
+  ambiguas: number;
+  /** Sin dirección en el archivo: no hay con qué crear. */
+  sinDireccion: number;
+}
+
+export interface ResultadoInmueblesFaltantes {
+  pedidas: number;
+  /** Inmuebles nuevos. */
+  creados: number;
+  /** Filas que quedaron con inmueble (creado o ya existente). */
+  vinculados: number;
+  /** De las vinculadas, cuántas quedaron consignadas al propietario del archivo. */
+  consignados: number;
+  omitidas: Array<{ id: string; fila: number; motivo: string }>;
+  fallidas: Array<{ id: string; fila: number; motivo: string }>;
+}
+
 export interface ResultadoMasivo {
   pedidas: number;
   aplicadas: number;
@@ -801,6 +965,21 @@ export interface ResumenLote {
    * acá ni inferirla del nombre del flag.
    */
   activables: number;
+  /**
+   * Contratos migrados ACTIVOS sin inmueble (2026-09-02): se activaron con
+   * el modo sparse del back prendido y no tienen consignación — no generan
+   * cobros. Sin `lote`, toda la agencia. Un back viejo no lo manda:
+   * `undefined` ⇒ no se afirma nada, nunca un `0`.
+   */
+  activadosSinInmueble?: number;
+  /**
+   * Contratos migrados ACTIVOS con inmueble y SIN propietario (2026-09-02):
+   * el inmueble no está consignado a nadie, así que no generan cobros. Se
+   * resuelve desde la misma fila (el selector de propietario se enciende en
+   * una fila activada sin propietario) o en masa con «Mismo propietario».
+   * Un back viejo no lo manda: `undefined` ⇒ no se afirma nada.
+   */
+  activadosSinPropietario?: number;
 }
 
 /**
@@ -859,6 +1038,17 @@ export interface ResultadoDeFila {
    */
   inquilinoPendienteDeInvitar?: boolean;
   motivo?: string;
+  /**
+   * El inquilino ya tenía cuenta en la agencia (paso 2 del muro) con OTRO
+   * correo, o el archivo no traía correo, y se lo reconoció por el
+   * documento: se enlazó esa cuenta y no se invitó a nadie. Ausente ⇒ false.
+   */
+  inquilinoResueltoPorDocumento?: boolean;
+  /**
+   * El documento del inquilino es de una cuenta que no es de inquilino: el
+   * contrato quedó sin inquilino a propósito (no cuenta como «por invitar»).
+   */
+  inquilinoDocumentoAjeno?: boolean;
 }
 
 export interface ResumenActivacion {
@@ -872,6 +1062,15 @@ export interface ResumenActivacion {
    * todavía no manda este campo no puede afirmar un conteo que no tiene.
    */
   porInvitar?: number;
+  /**
+   * 2026-09-02 — las filas sin inmueble de ESTA corrida. Con `sparse`
+   * prendido en el back: cuántas se ACTIVARON sin inmueble (contratos que no
+   * generan cobros). Apagado: cuántas PENDIENTE sin inmueble quedaron SIN
+   * activar. Ausente ⇒ no renderizar nada.
+   */
+  sinInmueble?: number;
+  /** El modo con el que corrió la activación — para leer `sinInmueble`. */
+  sparse?: boolean;
   resultados: ResultadoDeFila[];
 }
 

@@ -131,6 +131,11 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
           content,
           isMine: true,
           senderName: user?.name ?? 'Yo',
+          // El propio no lleva insignia en pantalla (es la burbuja de la
+          // derecha), así que el perfil acá no se muestra nunca; se completa
+          // igual porque el tipo lo exige y una mentira de rol es peor que un
+          // «sin rol».
+          perfil: 'DESCONOCIDO',
           readAt: null,
           createdAt: new Date().toISOString(),
         };

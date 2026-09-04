@@ -3441,6 +3441,10 @@
         "consignmentContractView": "Open the PDF",
         "consignmentContractMissing": "None uploaded yet",
         "consignmentContractGenerate": "Generate from a template",
+        "consignmentContractPreview": "Consignment contract preview",
+        "consignmentContractNoPreview": "Can't see the PDF? Your browser may be blocking the viewer.",
+        "consignmentContractOpenTab": "Open in a new tab",
+        "consignmentContractDownload": "Download",
         "handoverReportOpen": "Open the printable report",
         "gallery": "Gallery ({{count}} photos)",
         "photoAlt": "Photo {{number}}",
@@ -10552,9 +10556,22 @@
       "demo": "Demo"
     }
   },
+  "propiedad": {
+    "compartir": {
+      "copiado": "We copied the property link",
+      "falloAlCopiar": "We could not copy the link",
+      "falloAlCopiarDetalle": "Copy it manually from your browser's address bar."
+    }
+  },
   "wishlist": {
     "errors": {
       "saveFailed": "Could not update your saved properties. Please try again."
+    },
+    "toast": {
+      "guardado": "Saved to your favourites",
+      "guardadoLocal": "Saved in this browser",
+      "guardadoLocalDetalle": "Sign in as a tenant to keep it in your saved list.",
+      "quitado": "Removed from your favourites"
     }
   },
   "inquilino": {

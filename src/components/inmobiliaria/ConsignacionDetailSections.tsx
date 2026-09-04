@@ -31,6 +31,7 @@ import { ApiError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { IconButton } from '@leasefy/cadence';
+import { ContratoPdfModal } from './ContratoPdfModal';
 import type { Consignacion, Copropietario, Propietario, Agente, AgenteRole } from '@/lib/types/inmobiliaria';
 import { formatParticipacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
@@ -556,8 +557,10 @@ const MAX_PDF_BYTES = 10 * 1024 * 1024;
  * ya estaba a la vista. Ahora:
  *   · Contrato de consignación: es el PDF que la inmobiliaria firmó con el
  *     propietario. Se ADJUNTA (PDF, hasta 10 MB) y de ahí en más la fila lo
- *     abre; «Reemplazar» sube otro. No se genera desde una plantilla: el
- *     producto no tiene plantilla de contrato y un contrato no se inventa.
+ *     abre EN UN MODAL del panel (`ContratoPdfModal`), con descargar, abrir en
+ *     pestaña nueva y reemplazar; «Reemplazar» sube otro. No se genera desde
+ *     una plantilla: el producto no tiene plantilla de contrato y un contrato
+ *     no se inventa.
  *   · Acta de entrega: abre la hoja imprimible (`/inmuebles/[id]/acta`), que
  *     también se baja como PDF.
  */
@@ -571,6 +574,7 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [subiendo, setSubiendo] = useState(false);
+  const [contratoAbierto, setContratoAbierto] = useState(false);
 
   const elegirPdf = () => inputRef.current?.click();
 
@@ -603,10 +607,11 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
       <div className="space-y-3">
         {consignacion.consignmentContractUrl ? (
           <div className="flex items-center gap-2">
-            <a
-              href={consignacion.consignmentContractUrl}
-              target="_blank"
-              rel="noreferrer"
+            {/* Abre el modal, no una pestaña: el contrato se lee sin salir del
+                panel (Nico, 2026-09-04). */}
+            <button
+              type="button"
+              onClick={() => setContratoAbierto(true)}
               className={filaClase}
               data-testid="documento-contrato"
             >
@@ -618,7 +623,7 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
                 <p className="text-xs text-fg-muted">{t(k('consignmentContractView'))}</p>
               </div>
               <ArrowRight className="w-4 h-4 text-fg-subtle" />
-            </a>
+            </button>
             <button
               type="button"
               onClick={elegirPdf}
@@ -660,6 +665,16 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
           onChange={(e) => void alElegir(e)}
           data-testid="documento-contrato-input"
         />
+
+        {consignacion.consignmentContractUrl && (
+          <ContratoPdfModal
+            abierto={contratoAbierto}
+            onAbiertoChange={setContratoAbierto}
+            url={consignacion.consignmentContractUrl}
+            onReemplazar={elegirPdf}
+            subiendo={subiendo}
+          />
+        )}
 
         <Link
           href={`/panel/inmobiliaria/inmuebles/${consignacion.id}/acta`}

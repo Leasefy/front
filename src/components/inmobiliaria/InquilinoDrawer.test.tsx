@@ -27,6 +27,12 @@ vi.mock('@/lib/i18n', () => ({
     locale: 'es',
   }),
 }))
+// El botón «Enviar mensaje» de la cabecera navega con el router de Next, que
+// en un test sin App Router no existe.
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 vi.mock('next/link', () => ({
   default: ({ children, href, ...r }: { children?: React.ReactNode; href: string }) =>
     React.createElement('a', { href, ...r }, children),

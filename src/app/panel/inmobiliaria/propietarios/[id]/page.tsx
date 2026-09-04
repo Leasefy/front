@@ -33,6 +33,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
 import { SegmentedControl, IconButton } from '@leasefy/cadence';
@@ -598,6 +599,13 @@ function PropietarioDetailContent() {
 
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
+          {/* Sólo si tiene cuenta en el portal. `Propietario` es la ficha
+              comercial de la agencia y no es un usuario: sin cuenta no hay
+              dónde escribirle, y ofrecerlo igual sería un botón que falla. */}
+          {propietario.cuentaDePortalId && (
+            <BotonEnviarMensaje counterpartId={propietario.cuentaDePortalId} />
+          )}
+
           <Button variant="secondary" hideArrow onClick={() => setShowEditModal(true)}>
             <PencilSimple className="w-4 h-4" />
             {t('inmobiliaria.propietarios.edit')}

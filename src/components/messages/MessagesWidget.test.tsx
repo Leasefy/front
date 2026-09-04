@@ -92,6 +92,24 @@ vi.mock('@phosphor-icons/react', () => ({
   Archive: () => null,
   BellSlash: () => null,
   Flag: () => null,
+  // Los de la insignia de perfil y del cajón de «Nuevo mensaje». Este mock es
+  // TOTAL (no usa importOriginal), así que un ícono que falte no es un warning:
+  // el módulo devuelve undefined y React revienta al renderizarlo.
+  User: () => null,
+  Buildings: () => null,
+  IdentificationBadge: () => null,
+}));
+
+// El cajón de «Nuevo mensaje» monta un Sheet, que arrastra los primitivos de
+// diálogo de cadence — y el mock de cadence de este archivo es TOTAL. Se
+// sustituye por un doble: acá lo que se prueba es que la bandeja ofrezca el
+// botón y abra el cajón, no lo que el cajón hace adentro (eso tiene su propio
+// archivo, NuevoMensajeDrawer.test.tsx).
+vi.mock('@/components/messages/NuevoMensajeDrawer', () => ({
+  BotonNuevoMensaje: ({ onClick }: { onClick: () => void }) =>
+    React.createElement('button', { onClick, 'data-testid': 'abrir-nuevo-mensaje' }, 'Nuevo mensaje'),
+  NuevoMensajeDrawer: ({ abierto }: { abierto: boolean }) =>
+    abierto ? React.createElement('div', { 'data-testid': 'nuevo-mensaje-cajon' }) : null,
 }));
 
 // Memoized per-tag — an unmemoized Proxy `get` trap returns a brand-new
@@ -149,6 +167,7 @@ function makeConversation(overrides: Partial<ChatConversation> = {}): ChatConver
     applicationId: 'app-1',
     name: 'Ana',
     role: 'Propietario',
+    perfil: 'LANDLORD',
     email: 'ana@test.com',
     property: 'Depto Chicó',
     propertyId: 'prop-1',
@@ -193,6 +212,44 @@ function render() {
     root.render(React.createElement(MessagesWidget, { actor: 'tenant' }));
   });
 }
+
+describe('<MessagesWidget> — hilo directo: iniciar y distinguir perfiles', () => {
+  it('la bandeja ofrece iniciar una conversación, incluso vacía', () => {
+    conversationsState = [];
+    render();
+
+    // Antes el vacío decía «cuando te comuniques con…» y no había forma de
+    // comunicarse: sólo se llenaba si el otro escribía primero.
+    expect(container.querySelectorAll('[data-testid="abrir-nuevo-mensaje"]').length).toBeGreaterThan(0);
+    expect(container.querySelector('[data-testid="nuevo-mensaje-cajon"]')).toBeNull();
+  });
+
+  it('el botón abre el cajón', () => {
+    conversationsState = [makeConversation()];
+    render();
+
+    const boton = container.querySelector<HTMLButtonElement>('[data-testid="abrir-nuevo-mensaje"]');
+    expect(boton).toBeTruthy();
+    act(() => {
+      boton!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(container.querySelector('[data-testid="nuevo-mensaje-cajon"]')).toBeTruthy();
+  });
+
+  it('cada conversación lleva la insignia del perfil del interlocutor', () => {
+    conversationsState = [
+      makeConversation({ id: 'conv-1', name: 'Ana', perfil: 'LANDLORD' }),
+      makeConversation({ id: 'conv-2', name: 'Beto', perfil: 'TENANT' }),
+      makeConversation({ id: 'conv-3', name: 'Inmobiliaria Prueba', perfil: 'AGENCY', property: '' }),
+    ];
+    render();
+
+    expect(container.querySelectorAll('[data-testid="insignia-landlord"]').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('[data-testid="insignia-tenant"]').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('[data-testid="insignia-agency"]').length).toBeGreaterThan(0);
+  });
+});
 
 describe('<MessagesWidget> — selection keys on conversation.id, never applicationId (contract-addendum-2.md §B.3)', () => {
   it('auto-selects the first conversation by id when none is selected yet', () => {

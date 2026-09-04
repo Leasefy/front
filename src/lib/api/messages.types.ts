@@ -51,8 +51,15 @@ export interface BackendConversation {
    * `leaseId`; carried through only when the backend returns it.
    */
   caseId?: string;
-  property: { id: string; title: string };
-  otherParticipant: BackendParticipant;
+  /** BREAKING: era obligatorio. `null` en un hilo DIRECTO, que no cuelga de
+   * ningún aviso. La clave viaja siempre. */
+  property: { id: string; title: string } | null;
+  /** NUEVO. La inmobiliaria del hilo DIRECTO; `null` en los otros dos. */
+  agency?: { id: string; name: string; logoUrl: string | null } | null;
+  /** BREAKING: era obligatorio. `null` cuando el «otro» no es una persona —
+   * pasa cuando un inquilino o un propietario mira su hilo con la
+   * inmobiliaria, que es una organización y no un usuario. */
+  otherParticipant: BackendParticipant | null;
   lastMessage: BackendLastMessage | null;
   unreadCount: number;
   updatedAt: string;
@@ -143,7 +150,21 @@ export type ConversationActionResult = 'ok' | 'unavailable';
 // Frontend mapped types
 // ============================================================================
 
-export type ConversationKind = 'APPLICATION' | 'PROPERTY_INQUIRY';
+export type ConversationKind = 'APPLICATION' | 'PROPERTY_INQUIRY' | 'DIRECT';
+
+/**
+ * El distintivo de perfil que se pinta al lado del nombre en la conversación.
+ *
+ * Sale del rol REAL del interlocutor, no del hilo: en la misma bandeja de la
+ * inmobiliaria conviven inquilinos, propietarios y agentes, y sin la insignia
+ * no se sabe con quién se está hablando hasta leer el mensaje.
+ */
+export type PerfilEnLaConversacion =
+  | 'TENANT'
+  | 'LANDLORD'
+  | 'AGENT'
+  | 'AGENCY'
+  | 'DESCONOCIDO';
 
 export interface ChatConversation {
   /** contract-addendum-2.md §B.3 — the identity. Selection MUST key on this,
@@ -158,8 +179,12 @@ export interface ChatConversation {
   caseId?: string;
   name: string;
   role: string;
+  /** El rol crudo, para elegir el color de la insignia sin parsear la etiqueta. */
+  perfil: PerfilEnLaConversacion;
   email: string;
+  /** Cadena vacía cuando el hilo no cuelga de un inmueble (hilo directo). */
   property: string;
+  /** Cadena vacía en un hilo directo — nunca `'null'` ni `'undefined'`. */
   propertyId: string;
   lastMessage: string;
   lastMessageTime: string;
@@ -172,6 +197,12 @@ export interface ChatMessage {
   content: string;
   isMine: boolean;
   senderName: string;
+  /**
+   * El perfil de quien escribió. En un hilo directo del lado de la
+   * inmobiliaria pueden contestar varios agentes distintos, así que sin esto
+   * no se sabe quién dijo qué.
+   */
+  perfil: PerfilEnLaConversacion;
   readAt: string | null;
   createdAt: string;
 }
@@ -189,6 +220,7 @@ export function resolveConversationKind(raw: string | undefined): ConversationKi
   if (raw === undefined) return 'APPLICATION';
   if (raw === 'APPLICATION') return 'APPLICATION';
   if (raw === 'PROPERTY_INQUIRY') return 'PROPERTY_INQUIRY';
+  if (raw === 'DIRECT') return 'DIRECT';
   throw new Error(`Tipo de conversación desconocido: "${raw}".`);
 }
 
@@ -202,7 +234,20 @@ function formatRole(role: string): string {
     case 'LANDLORD': return 'Propietario';
     case 'TENANT': return 'Inquilino';
     case 'AGENT': return 'Agente';
+    case 'ADMIN': return 'Administrador';
+    case 'AGENCY': return 'Inmobiliaria';
     default: return role;
+  }
+}
+
+/** El rol crudo, normalizado. Lo desconocido se dice, no se disfraza. */
+function resolverPerfil(role: string | undefined): PerfilEnLaConversacion {
+  switch (role) {
+    case 'TENANT': return 'TENANT';
+    case 'LANDLORD': return 'LANDLORD';
+    case 'AGENT': return 'AGENT';
+    case 'AGENCY': return 'AGENCY';
+    default: return 'DESCONOCIDO';
   }
 }
 
@@ -223,7 +268,14 @@ function formatTime(dateStr: string): string {
 }
 
 export function mapToConversation(backend: BackendConversation): ChatConversation {
-  const { otherParticipant, lastMessage, property } = backend;
+  const { otherParticipant, lastMessage, property, agency } = backend;
+
+  // Cuando del otro lado NO hay una persona, el interlocutor es la
+  // inmobiliaria. No se la disfraza de usuario: se la nombra como lo que es y
+  // el perfil pasa a 'AGENCY', que es lo que pinta la insignia.
+  const esLaAgencia = !otherParticipant && !!agency;
+  const rolCrudo = esLaAgencia ? 'AGENCY' : otherParticipant?.role;
+
   return {
     id: backend.id,
     kind: resolveConversationKind(backend.kind),
@@ -234,12 +286,19 @@ export function mapToConversation(backend: BackendConversation): ChatConversatio
     // stays `undefined` today; never fabricated or derived from applicationId.
     leaseId: backend.leaseId,
     caseId: backend.caseId,
-    name: formatName(otherParticipant.firstName, otherParticipant.lastName),
-    role: formatRole(otherParticipant.role),
-    email: otherParticipant.email,
-    property: property.title,
+    name: esLaAgencia
+      ? agency!.name
+      : otherParticipant
+        ? formatName(otherParticipant.firstName, otherParticipant.lastName)
+        : 'Usuario',
+    role: formatRole(rolCrudo ?? ''),
+    perfil: resolverPerfil(rolCrudo),
+    email: otherParticipant?.email ?? '',
+    // Vacío, no `'null'`: la pantalla ya trata la cadena vacía como «sin
+    // inmueble» y la pinta omitiéndola.
+    property: property?.title ?? '',
     // NEW top-level field; older back build → fall back to `property.id`.
-    propertyId: backend.propertyId ?? property.id,
+    propertyId: backend.propertyId ?? property?.id ?? '',
     lastMessage: lastMessage?.content ?? '',
     lastMessageTime: lastMessage ? formatTime(lastMessage.createdAt) : '',
     unreadCount: backend.unreadCount,
@@ -253,7 +312,45 @@ export function mapToMessage(backend: BackendChatMessage, currentUserId: string)
     content: backend.content,
     isMine: backend.senderId === currentUserId,
     senderName: formatName(backend.sender.firstName, backend.sender.lastName),
+    perfil: resolverPerfil(backend.sender.role),
     readAt: backend.readAt,
     createdAt: backend.createdAt,
   };
+}
+
+// ============================================================================
+// Hilos directos — a quién puedo escribirle
+// ============================================================================
+
+/** Una persona a la que la inmobiliaria le puede escribir. */
+export interface DestinatarioPersona {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: string;
+  email: string;
+  avatarUrl: string | null;
+}
+
+/** Una inmobiliaria a la que un inquilino o un propietario le puede escribir. */
+export interface DestinatarioAgencia {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+}
+
+/**
+ * Las dos claves viajan SIEMPRE, una vacía. `tipo` dice cuál mirar, pero el
+ * front no necesita ramificar antes de leer: recorrer la vacía no rompe nada.
+ */
+export interface DestinatariosDirectos {
+  tipo: 'PERSONAS' | 'AGENCIAS';
+  personas: DestinatarioPersona[];
+  agencias: DestinatarioAgencia[];
+}
+
+/** Cómo nombrar a un destinatario en la lista. */
+export function nombreDelDestinatario(p: DestinatarioPersona): string {
+  const partes = [p.firstName, p.lastName].filter(Boolean);
+  return partes.length > 0 ? partes.join(' ') : p.email;
 }

@@ -3486,6 +3486,10 @@
         "consignmentContractUploaded": "Contrato adjuntado",
         "consignmentContractUploadError": "No se pudo adjuntar el contrato",
         "consignmentContractOnlyPdf": "Tiene que ser un PDF de hasta 10 MB.",
+        "consignmentContractPreview": "Vista previa del contrato de consignación",
+        "consignmentContractNoPreview": "¿No ves el PDF? Tu navegador puede estar bloqueando el visor.",
+        "consignmentContractOpenTab": "Abrir en pestaña nueva",
+        "consignmentContractDownload": "Descargar",
         "handoverReportOpen": "Abrir el acta para imprimir",
         "gallery": "Galería ({{count}} fotos)",
         "photoAlt": "Foto {{number}}",
@@ -10591,9 +10595,22 @@
       "demo": "Demo"
     }
   },
+  "propiedad": {
+    "compartir": {
+      "copiado": "Copiamos el enlace del inmueble",
+      "falloAlCopiar": "No pudimos copiar el enlace",
+      "falloAlCopiarDetalle": "Copialo a mano desde la barra de direcciones del navegador."
+    }
+  },
   "wishlist": {
     "errors": {
       "saveFailed": "No se pudo actualizar tus favoritos. Intenta de nuevo."
+    },
+    "toast": {
+      "guardado": "Lo guardamos en tus favoritos",
+      "guardadoLocal": "Lo guardamos en este navegador",
+      "guardadoLocalDetalle": "Iniciá sesión como inquilino para tenerlo en tus guardados.",
+      "quitado": "Lo quitamos de tus favoritos"
     }
   },
   "inquilino": {

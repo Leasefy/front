@@ -62,6 +62,14 @@ export interface Propietario {
   agenteRetenedorRenta?: boolean | null;
   agenteRetenedorIva?: boolean | null;
   agenteRetenedorIca?: boolean | null;
+  /**
+   * Su cuenta del portal (`User.id`), si tiene. La ficha del propietario es la
+   * ficha COMERCIAL de la agencia y NO está relacionada con un usuario: el back
+   * la resuelve por correo, que es único, así que o coincide exacto o esto es
+   * null. Con null no se le puede escribir todavía, y la pantalla no lo ofrece.
+   * Sólo viene en el detalle (`GET /:id`), no en la lista.
+   */
+  cuentaDePortalId?: string | null;
   /** El id que traía en el sistema del que se migró. Informativo, no es llave. */
   externalId?: string | null;
   notes?: string;

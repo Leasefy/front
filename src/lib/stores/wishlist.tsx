@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { toast } from 'sonner';
 import type { Property } from '@/lib/types/property';
 import { wishlistsApi } from '@/lib/api/wishlists.service';
@@ -33,6 +33,12 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Espejo de `wishlist` para leer el estado de HOY sin depender del render que
+  // creó el callback (y sin meter efectos dentro de un updater — ver
+  // `toggleWishlist`). Se actualiza en el mismo tick que el estado.
+  const wishlistActual = useRef<string[]>([]);
+  wishlistActual.current = wishlist;
+
   // WishlistProvider vive en el root layout, por encima de cualquier I18nProvider
   // de route-group, así que la variante non-throwing es obligatoria acá.
   const i18n = useOptionalI18n();
@@ -47,6 +53,40 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       'No se pudo actualizar tus favoritos. Intenta de nuevo.',
     [i18n],
   );
+
+  /*
+   * El corazón AVISA, y no miente sobre dónde quedó guardado.
+   *
+   * Nico (2026-09-04): «¿ese corazón de favorito sí se le ve reflejado en el
+   * panel de inquilinos cuando le dan clic? […] porque toast ninguno de los dos
+   * da». Los dos hechos:
+   *   · Antes sólo salía un toast cuando FALLABA. Al usuario no le llegaba
+   *     ninguna señal de que se había guardado.
+   *   · Sin ser inquilino autenticado el favorito vive SÓLO en el localStorage
+   *     de ese navegador y NUNCA aparece en `/inquilino/guardados`. Decir
+   *     «guardado» a secas ahí es prometer algo que no va a pasar.
+   *
+   * Va acá y no en cada corazón (`PropertyCard`, `PropertyDetailSheet`,
+   * `StickyCTA`, …) para que la señal sea la misma en toda la app.
+   */
+  const avisarGuardado = useCallback(() => {
+    if (isTenant) {
+      toast.success(i18n?.t('wishlist.toast.guardado') ?? 'Lo guardamos en tus favoritos');
+      return;
+    }
+    toast.success(
+      i18n?.t('wishlist.toast.guardadoLocal') ?? 'Lo guardamos en este navegador',
+      {
+        description:
+          i18n?.t('wishlist.toast.guardadoLocalDetalle') ??
+          'Iniciá sesión como inquilino para tenerlo en tus guardados.',
+      },
+    );
+  }, [i18n, isTenant]);
+
+  const avisarQuitado = useCallback(() => {
+    toast(i18n?.t('wishlist.toast.quitado') ?? 'Lo quitamos de tus favoritos');
+  }, [i18n]);
 
   // Cargar wishlist: API si es tenant autenticado, fallback a localStorage.
   // CRÍTICO: NO llamar a supabase.auth.getSession() acá — choca con el AuthProvider
@@ -105,53 +145,47 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     return wishlist.includes(propertyId);
   }, [wishlist]);
 
-  const toggleWishlist = useCallback((propertyId: string) => {
-    setWishlist((prev) => {
-      const removing = prev.includes(propertyId);
-      if (isTenant) {
-        if (removing) {
-          // Optimista: ya removido abajo. Si falla, re-agregar y avisar.
-          wishlistsApi.remove(propertyId).catch(() => {
-            setWishlist((cur) => (cur.includes(propertyId) ? cur : [...cur, propertyId]));
-            toast.error(wishlistErrorMessage());
-          });
-        } else {
-          // Optimista: ya agregado abajo. Si falla, remover y avisar.
-          wishlistsApi.add(propertyId).catch(() => {
-            setWishlist((cur) => cur.filter((id) => id !== propertyId));
-            toast.error(wishlistErrorMessage());
-          });
-        }
-      }
-      if (removing) {
-        return prev.filter((id) => id !== propertyId);
-      }
-      return [...prev, propertyId];
-    });
-  }, [isTenant, wishlistErrorMessage]);
-
   const addToWishlist = useCallback((propertyId: string) => {
-    setWishlist((prev) => {
-      if (prev.includes(propertyId)) return prev;
-      if (isTenant) {
-        wishlistsApi.add(propertyId).catch(() => {
-          setWishlist((cur) => cur.filter((id) => id !== propertyId));
-          toast.error(wishlistErrorMessage());
-        });
-      }
-      return [...prev, propertyId];
-    });
-  }, [isTenant, wishlistErrorMessage]);
+    if (wishlistActual.current.includes(propertyId)) return;
+    // El espejo se adelanta al re-render: dos clics seguidos en el mismo tick
+    // mandaban dos veces al back (y ahora sacarían dos toasts).
+    wishlistActual.current = [...wishlistActual.current, propertyId];
+    if (isTenant) {
+      // Optimista: se agrega abajo. Si falla, se saca y se avisa.
+      wishlistsApi.add(propertyId).catch(() => {
+        setWishlist((cur) => cur.filter((id) => id !== propertyId));
+        toast.error(wishlistErrorMessage());
+      });
+    }
+    setWishlist((prev) => (prev.includes(propertyId) ? prev : [...prev, propertyId]));
+    avisarGuardado();
+  }, [avisarGuardado, isTenant, wishlistErrorMessage]);
 
   const removeFromWishlist = useCallback((propertyId: string) => {
+    if (!wishlistActual.current.includes(propertyId)) return;
+    wishlistActual.current = wishlistActual.current.filter((id) => id !== propertyId);
     if (isTenant) {
+      // Optimista: se quita abajo. Si falla, se repone y se avisa.
       wishlistsApi.remove(propertyId).catch(() => {
         setWishlist((cur) => (cur.includes(propertyId) ? cur : [...cur, propertyId]));
         toast.error(wishlistErrorMessage());
       });
     }
     setWishlist((prev) => prev.filter((id) => id !== propertyId));
-  }, [isTenant, wishlistErrorMessage]);
+    avisarQuitado();
+  }, [avisarQuitado, isTenant, wishlistErrorMessage]);
+
+  /*
+   * Delega en agregar/quitar en vez de decidir dentro del updater de estado.
+   * Los efectos —el llamado al back y el toast— vivían DENTRO de
+   * `setWishlist(prev => …)`, y un updater es una función pura que React puede
+   * volver a ejecutar (StrictMode la corre dos veces): el mismo clic mandaba
+   * dos veces al back y, ahora que hay toast, saldría duplicado.
+   */
+  const toggleWishlist = useCallback((propertyId: string) => {
+    if (wishlistActual.current.includes(propertyId)) removeFromWishlist(propertyId);
+    else addToWishlist(propertyId);
+  }, [addToWishlist, removeFromWishlist]);
 
   const getWishlistedProperties = useCallback((properties: Property[]) => {
     return properties.filter((p) => wishlist.includes(p.id));

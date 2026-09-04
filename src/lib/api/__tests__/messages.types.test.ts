@@ -93,3 +93,85 @@ describe('mapToConversation — the breaking-change surface (contract-addendum-2
     expect(result.id).toBe('conv-xyz');
   });
 });
+
+// ============================================================================
+// Hilo DIRECTO — inmobiliaria ↔ persona, sin inmueble
+// ============================================================================
+
+describe('mapToConversation — hilo directo', () => {
+  it('reconoce el tipo nuevo', () => {
+    expect(resolveConversationKind('DIRECT')).toBe('DIRECT');
+  });
+
+  it('cuando del otro lado está la inmobiliaria, la nombra a ella y marca el perfil AGENCY', () => {
+    const conv = mapToConversation(
+      backendConversation({
+        kind: 'DIRECT',
+        applicationId: null,
+        property: null,
+        propertyId: undefined,
+        otherParticipant: null,
+        agency: { id: 'ag-1', name: 'Inmobiliaria Prueba', logoUrl: null },
+      }),
+    );
+
+    expect(conv.name).toBe('Inmobiliaria Prueba');
+    expect(conv.perfil).toBe('AGENCY');
+    expect(conv.role).toBe('Inmobiliaria');
+  });
+
+  it('sin inmueble, property y propertyId quedan vacíos — nunca la cadena "null"', () => {
+    const conv = mapToConversation(
+      backendConversation({
+        kind: 'DIRECT',
+        applicationId: null,
+        property: null,
+        propertyId: undefined,
+        otherParticipant: null,
+        agency: { id: 'ag-1', name: 'Inmobiliaria Prueba', logoUrl: null },
+      }),
+    );
+
+    expect(conv.property).toBe('');
+    expect(conv.propertyId).toBe('');
+  });
+
+  it('cuando del otro lado hay una persona, el perfil sale de SU rol', () => {
+    const conv = mapToConversation(
+      backendConversation({
+        kind: 'DIRECT',
+        applicationId: null,
+        property: null,
+        propertyId: undefined,
+        agency: { id: 'ag-1', name: 'Inmobiliaria Prueba', logoUrl: null },
+        otherParticipant: {
+          id: 'user-9',
+          firstName: 'Beto',
+          lastName: 'Gil',
+          role: 'TENANT',
+          email: 'beto@test.com',
+        },
+      }),
+    );
+
+    expect(conv.name).toBe('Beto Gil');
+    expect(conv.perfil).toBe('TENANT');
+    expect(conv.role).toBe('Inquilino');
+  });
+
+  it('un rol que no conocemos se dice, no se disfraza de otro', () => {
+    const conv = mapToConversation(
+      backendConversation({
+        otherParticipant: {
+          id: 'user-9',
+          firstName: 'Zoe',
+          lastName: null,
+          role: 'MARCIANO',
+          email: 'zoe@test.com',
+        },
+      }),
+    );
+
+    expect(conv.perfil).toBe('DESCONOCIDO');
+  });
+});

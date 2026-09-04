@@ -46,6 +46,11 @@ import { useConversations, useChat } from '@/lib/hooks/useMessages';
 import { messagesApi } from '@/lib/api/messages.service';
 import { agentContactApi } from '@/lib/api/agent-contact.service';
 import type { ChatConversation } from '@/lib/api/messages.types';
+import { InsigniaDePerfil } from '@/components/messages/InsigniaDePerfil';
+import {
+  BotonNuevoMensaje,
+  NuevoMensajeDrawer,
+} from '@/components/messages/NuevoMensajeDrawer';
 import { PQRS_SLA_BUSINESS_DAYS } from '@/lib/constants/response-sla';
 
 // ============================================================================
@@ -160,6 +165,9 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [showOptionsList, setShowOptionsList] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  // «Nuevo mensaje»: hasta acá la bandeja no podía iniciar ninguna
+  // conversación — sólo se llenaba si el otro escribía primero.
+  const [nuevoMensajeAbierto, setNuevoMensajeAbierto] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [isReporting, setIsReporting] = useState(false);
   // COMU-03: WhatsApp is a first-class channel but ROUTED BY THE AGENT — the
@@ -206,6 +214,20 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
 
   const selectedConversation: ChatConversation | undefined = conversations.find(
     (c) => c.id === selectedConversationId,
+  );
+
+  /**
+   * Un hilo recién abierto todavía no está en la lista: se selecciona primero
+   * —así el panel de la derecha ya puede cargar sus mensajes por id— y recién
+   * después se vuelve a pedir la bandeja para que aparezca la fila.
+   */
+  const alAbrirHiloNuevo = useCallback(
+    (conversationId: string) => {
+      setSelectedConversationId(conversationId);
+      setShowMobileChat(true);
+      void refetchConversations();
+    },
+    [refetchConversations],
   );
 
   const filteredConversations = conversations.filter(
@@ -429,7 +451,8 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
               )}
             >
               {/* Search Header */}
-              <div className="p-4 border-b border-border bg-card">
+              <div className="p-4 border-b border-border bg-card space-y-3">
+                <BotonNuevoMensaje onClick={() => setNuevoMensajeAbierto(true)} />
                 <div className="relative">
                   <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -470,9 +493,14 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                       {searchQuery
                         ? (locale === 'es' ? 'No se encontraron conversaciones' : 'No conversations found')
                         : (locale === 'es'
-                            ? `Cuando te comuniques con ${otherParty}, tus conversaciones aparecerán aquí.`
-                            : `When you communicate with ${otherParty}, your conversations will appear here.`)}
+                            ? `Escribile a ${otherParty} desde acá; las conversaciones te van a quedar en esta lista.`
+                            : `Message ${otherParty} from here; your conversations will stay in this list.`)}
                     </p>
+                    {!searchQuery && (
+                      <div className="mt-4">
+                        <BotonNuevoMensaje onClick={() => setNuevoMensajeAbierto(true)} />
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="divide-y divide-border">
@@ -510,11 +538,14 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               {conversation.lastMessageTime}
                             </span>
                           </div>
-                          <p className="text-xs text-muted-foreground truncate mb-1">
-                            {conversation.property
-                              ? `${conversation.role} · ${conversation.property}`
-                              : conversation.role}
-                          </p>
+                          <div className="mb-1 flex min-w-0 items-center gap-1.5">
+                            <InsigniaDePerfil perfil={conversation.perfil} conIcono={false} />
+                            {conversation.property && (
+                              <span className="truncate text-xs text-muted-foreground">
+                                {conversation.property}
+                              </span>
+                            )}
+                          </div>
                           <p
                             className={cn(
                               'text-sm truncate',
@@ -573,10 +604,14 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                         <p className="text-sm font-semibold text-foreground">
                           {selectedConversation.name}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {selectedConversation.role}
-                          {selectedConversation.property && ` · ${selectedConversation.property}`}
-                        </p>
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <InsigniaDePerfil perfil={selectedConversation.perfil} />
+                          {selectedConversation.property && (
+                            <span className="truncate text-xs text-muted-foreground">
+                              {selectedConversation.property}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -710,6 +745,19 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                         : 'bg-card text-foreground border border-border rounded-bl-sm',
                                     )}
                                   >
+                                    {/* Quién habla, sólo al empezar una tanda:
+                                        repetirlo en cada burbuja es ruido, y
+                                        omitirlo siempre deja sin saber cuál de
+                                        los agentes contestó. */}
+                                    {!message.isMine &&
+                                      messages[index - 1]?.senderName !== message.senderName && (
+                                        <div className="mb-1.5 flex items-center gap-1.5">
+                                          <span className="text-xs font-semibold text-foreground">
+                                            {message.senderName}
+                                          </span>
+                                          <InsigniaDePerfil perfil={message.perfil} conIcono={false} />
+                                        </div>
+                                      )}
                                     <p className="text-sm leading-relaxed">{message.content}</p>
                                     <div
                                       className={cn(
@@ -843,9 +891,9 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               <h4 className="text-base font-semibold text-foreground">
                                 {selectedConversation.name}
                               </h4>
-                              <p className="text-sm text-muted-foreground">
-                                {selectedConversation.role}
-                              </p>
+                              <div className="mt-1 flex justify-center">
+                                <InsigniaDePerfil perfil={selectedConversation.perfil} />
+                              </div>
                             </div>
 
                             <div className="space-y-4">
@@ -994,6 +1042,12 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <NuevoMensajeDrawer
+        abierto={nuevoMensajeAbierto}
+        onCerrar={() => setNuevoMensajeAbierto(false)}
+        onHiloAbierto={alAbrirHiloNuevo}
+      />
     </div>
   );
 }

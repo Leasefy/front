@@ -3,6 +3,7 @@ import type {
   BackendConversationsResponse,
   BackendConversationWithMessages,
   ConversationActionResult,
+  DestinatariosDirectos,
 } from './messages.types';
 
 // ---------------------------------------------------------------------------
@@ -46,6 +47,40 @@ export const messagesApi = {
   // has the real `id` from `getConversations()`, so it uses these
   // exclusively — "calling the new routes for both kinds is simpler and is
   // the recommended shape" (§B.3 item 2).
+
+  // ── Hilos DIRECTOS (inmobiliaria ↔ inquilino o propietario) ──────────────
+  // No cuelgan de ningún aviso. Se abren con estas dos rutas y de ahí en más
+  // se leen y se escriben con las de `/conversations/:id`, porque es el mismo
+  // hilo con la misma tabla de mensajes.
+
+  /**
+   * GET /conversations/directos/destinatarios — a quién puedo escribirle.
+   *
+   * Devuelve las dos claves siempre (una vacía): a un miembro de la
+   * inmobiliaria le llegan personas, y a un inquilino o propietario le llegan
+   * inmobiliarias. Sale del MISMO predicado que autoriza el POST, así que
+   * nada de lo que aparece en la lista puede terminar en un 403.
+   */
+  getDestinatariosDirectos(q?: string) {
+    const query = q?.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
+    return apiClient.get<DestinatariosDirectos>(
+      `/conversations/directos/destinatarios${query}`,
+    );
+  },
+
+  /**
+   * POST /conversations/directos — abrir (o reabrir) el hilo directo.
+   *
+   * Idempotente: dos toques al botón devuelven el mismo hilo. Se manda
+   * `counterpartId` desde el panel de la inmobiliaria y `agencyId` desde el de
+   * un inquilino o un propietario.
+   */
+  abrirHiloDirecto(destino: { agencyId?: string; counterpartId?: string }) {
+    return apiClient.post<{ conversationId: string }>(
+      '/conversations/directos',
+      destino,
+    );
+  },
 
   /** GET /conversations/:id */
   getConversationMessages(conversationId: string) {

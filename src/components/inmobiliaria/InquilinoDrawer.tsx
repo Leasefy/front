@@ -43,6 +43,7 @@ import {
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { RenglonDeArriendo } from '@/components/inmobiliaria/InquilinosTable';
@@ -200,6 +201,12 @@ export function CuerpoDelCajon({
               {t('inquilinos.sinContacto')}
             </span>
           ) : null}
+        </div>
+        {/* Escribirle sin salir de la ficha. `tenantId` es su `User.id` cuando
+            tiene cuenta del portal; cuando no —se cargó con documento y sin
+            correo— el back responde `SIN_CUENTA` y el botón lo dice. */}
+        <div className="mt-3">
+          <BotonEnviarMensaje counterpartId={persona.tenantId} />
         </div>
       </div>
 

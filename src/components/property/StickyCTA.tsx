@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Heart, ShareNetwork, VideoCamera, MapPin, TrendUp, Clock, Check, Calendar, Copy, ChatCircle } from '@phosphor-icons/react';
+import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { SegmentedControl } from '@leasefy/cadence';
+import { LeasefyLogo } from '@/components/brand';
+import { useOptionalI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
@@ -89,6 +92,95 @@ function addDays(n: number): string {
  * urgencia inventada, porque es exactamente donde la persona decide. Fuera
  * hasta que haya visitas de verdad que contar.
  */
+
+// ─── Compartir el inmueble ───────────────────────────────────────────────────
+
+/**
+ * Qué terminó pasando al compartir. Se separa `cancelado` de `error` a
+ * propósito: cerrar la hoja del sistema es una decisión del usuario, no una
+ * falla, y avisarla como error es mentirle.
+ */
+type ResultadoDeCompartir = 'nativo' | 'copiado' | 'cancelado' | 'error';
+
+/**
+ * Compartir con la hoja nativa cuando existe (es lo que la gente espera en el
+ * teléfono) y caer al portapapeles cuando no.
+ *
+ * Vive suelto en el módulo porque HAY DOS botones de compartir en esta
+ * pantalla —el de la tarjeta de escritorio y el del CTA fijo del móvil— y
+ * cuando cada uno tenía su propio `handleCopyShare` se desincronizaron: el del
+ * móvil ni siquiera reusaba la URL ya calculada.
+ */
+async function compartirEnlace(url: string): Promise<ResultadoDeCompartir> {
+  if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+    try {
+      await navigator.share({ url, title: 'Inmueble en Leasefy' });
+      return 'nativo';
+    } catch (err) {
+      // Cancelar la hoja no es un fallo: no hay nada que avisar.
+      if (err instanceof Error && err.name === 'AbortError') return 'cancelado';
+      // Cualquier otro fallo del share nativo todavía tiene el portapapeles.
+    }
+  }
+  try {
+    // En contexto inseguro `navigator.clipboard` ni existe: el acceso tira
+    // TypeError acá adentro y termina en 'error', que es lo que queremos.
+    await navigator.clipboard.writeText(url);
+    return 'copiado';
+  } catch {
+    return 'error';
+  }
+}
+
+/**
+ * El botón de compartir, con la señal que antes no daba.
+ *
+ * Antes sólo cambiaba el ícono a un tilde por 2 segundos dentro de un botón de
+ * 40px —imperceptible— y si el portapapeles fallaba (permiso denegado, http
+ * sin TLS) el `catch` se lo comía y el usuario se quedaba creyendo que copió.
+ */
+function useCompartirInmueble(propertyId: string) {
+  const i18n = useOptionalI18n();
+  const [shareUrl, setShareUrl] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  // Se calcula en el cliente para no romper la hidratación con el origen.
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setShareUrl(`${window.location.origin}/propiedades/${propertyId}`);
+    }
+  }, [propertyId]);
+
+  const compartir = useCallback(async () => {
+    const url =
+      shareUrl ||
+      (typeof window !== 'undefined' ? `${window.location.origin}/propiedades/${propertyId}` : '');
+    if (!url) return;
+
+    const resultado = await compartirEnlace(url);
+    if (resultado === 'copiado') {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast.success(
+        i18n?.t('propiedad.compartir.copiado') ?? 'Copiamos el enlace del inmueble',
+      );
+      return;
+    }
+    if (resultado === 'error') {
+      toast.error(
+        i18n?.t('propiedad.compartir.falloAlCopiar') ?? 'No pudimos copiar el enlace',
+        {
+          description:
+            i18n?.t('propiedad.compartir.falloAlCopiarDetalle') ??
+            'Copialo a mano desde la barra de direcciones del navegador.',
+        },
+      );
+    }
+    // 'nativo' y 'cancelado' no dicen nada: la hoja del sistema ya fue la señal.
+  }, [i18n, propertyId, shareUrl]);
+
+  return { shareUrl, copied, compartir };
+}
 
 // ─── Error messages ──────────────────────────────────────────────────────────
 
@@ -201,29 +293,10 @@ export function StickyCTA({
   const [slotsLoading, setSlotsLoading] = useState(false);
 
 
-  // Shareable public URL of this property (built client-side to avoid an SSR
-  // hydration mismatch). Used by the header share button and the agency panel.
-  const [shareUrl, setShareUrl] = useState('');
-  const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setShareUrl(`${window.location.origin}/propiedades/${propertyId}`);
-    }
-  }, [propertyId]);
-
-  const handleCopyShare = async () => {
-    const url = shareUrl || (typeof window !== 'undefined' ? `${window.location.origin}/propiedades/${propertyId}` : '');
-    if (!url) return;
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard can fail (permissions/insecure context) — the link stays
-      // visible in the input for the user to select and copy manually.
-    }
-  };
+  // Enlace público del inmueble + compartir. La URL se sigue mostrando en el
+  // panel de la inmobiliaria para copiarla a mano si todo lo demás falla.
+  const { shareUrl, copied, compartir } = useCompartirInmueble(propertyId);
+  const handleCopyShare = () => void compartir();
 
 
   // ─── Fetch slots when visit tab opens ─────────────────────────────────────
@@ -305,7 +378,10 @@ export function StickyCTA({
           <div className="flex items-start justify-between mb-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <p className="text-[15px] font-heading font-semibold text-foreground tracking-tight">Leasefy</p>
+                {/* La firma del DS, no el nombre tipeado a mano: acá vivía un
+                    `<p>Leasefy</p>` que no era el logo (Nico, 2026-09-04). Es
+                    el mismo arreglo que ya se hizo en los dos footers. */}
+                <LeasefyLogo size={20} tone="brand" />
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[hsl(var(--success-50))] dark:bg-[hsl(var(--success-500)/0.15)] text-[hsl(var(--success-500))] text-[10px] font-semibold uppercase tracking-wide rounded-full">
                   <Check className="w-3 h-3" />
                   Verificado
@@ -784,7 +860,9 @@ export function MobileStickyCTA({
     !!user && (user.role === 'agency' || user.backendRole === 'AGENT' || hasActiveAgencyMembership);
   const isSaleListing = listingType === 'sale';
 
-  const [copied, setCopied] = useState(false);
+  // El MISMO compartir que la tarjeta de escritorio: hoja nativa cuando existe,
+  // portapapeles cuando no, y toast en los dos desenlaces que importan.
+  const { copied, compartir } = useCompartirInmueble(propertyId);
   const [isStartingChat, setIsStartingChat] = useState(false);
 
   // contract-addendum-2.md §B.2/§B.9 — same action as the desktop
@@ -804,16 +882,7 @@ export function MobileStickyCTA({
     }
   };
 
-  const handleCopyShare = async () => {
-    if (typeof window === 'undefined') return;
-    try {
-      await navigator.clipboard.writeText(`${window.location.origin}/propiedades/${propertyId}`);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard can fail silently (permissions/insecure context).
-    }
-  };
+  const handleCopyShare = () => void compartir();
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur-xl border-t border-border lg:hidden z-30">

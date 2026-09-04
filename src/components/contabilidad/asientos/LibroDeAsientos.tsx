@@ -1,8 +1,25 @@
 'use client';
 
 /**
- * El libro de asientos: la lista paginada, los filtros, el detalle en un
+ * El libro de asientos: los filtros, la lista paginada, el detalle en un
  * cajón, el asiento manual y el cierre de período.
+ *
+ * ── Una fila = un asiento, en UNA línea (Nico, 2026-09-03) ─────────────────
+ *
+ * La versión anterior metía la descripción y «N líneas» en dos renglones
+ * dentro de la misma celda: cada fila medía ~85 px y cincuenta asientos eran
+ * una pantalla y media de scroll. El libro se lee de arriba abajo buscando un
+ * número o una fecha, no leyendo párrafos: la descripción va truncada con su
+ * texto completo en el `title`, y el conteo de líneas queda como sufijo en la
+ * MISMA línea. El detalle completo está a un clic.
+ *
+ * ── La paginación es del SERVIDOR ─────────────────────────────────────────
+ *
+ * `GET /asientos` ya pagina (`limite` ≤ 200 y `desplazamiento`) y devuelve
+ * `total`, así que el pie no recorta una lista que ya vino entera: page y
+ * pageSize se traducen a limite/desplazamiento y cada cambio es un pedido.
+ * Por eso NO se usa `useTablePagination` acá — ese hook es para cuando el
+ * endpoint devuelve todo.
  *
  * Tres vacíos distintos y se pintan distinto: «no hay asientos todavía»
  * (arrancar con uno), «ningún asiento con estos filtros» (aflojar el filtro)
@@ -11,11 +28,9 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpenText, FunnelSimple, LockSimple, Plus } from '@phosphor-icons/react';
+import { BookOpenText, Plus } from '@phosphor-icons/react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Label } from '@/components/ui/label';
 import { TablePagination } from '@/components/ui/pagination';
 import {
@@ -34,7 +49,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { SinDatos } from '@/components/estado/SinDatos';
 import {
   contabilidadApi,
   type AsientoContable,
@@ -42,8 +58,15 @@ import {
   type OrigenDelAsiento,
   type PaginaDeAsientos,
 } from '@/lib/api/contabilidad.service';
-import { NOMBRE_DE_ORIGEN, ORIGENES, totalesDeAsiento } from '@/lib/contabilidad/asientos';
+import {
+  CLASE_DE_ORIGEN,
+  NOMBRE_DE_ORIGEN,
+  ORIGENES,
+  textoDeLineas,
+  totalesDeAsiento,
+} from '@/lib/contabilidad/asientos';
 import { diaLegible, rangoInvertido } from '@/lib/contabilidad/fechas';
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { cn } from '@/lib/utils';
 import { Monto } from '../Monto';
 import { RangoDeFechas } from '../RangoDeFechas';
@@ -53,8 +76,8 @@ import { AsientoManual } from './AsientoManual';
 import { CierreDePeriodo } from './CierreDePeriodo';
 import { DetalleDeAsiento } from './DetalleDeAsiento';
 
-const POR_PAGINA = 50;
 const TODOS = '__todos__';
+const COLUMNAS = 7;
 
 interface Filtros {
   desde: string;
@@ -74,6 +97,7 @@ export function LibroDeAsientos() {
   const { cuentas, error: errorDeCuentas } = useCuentas();
   const [filtros, setFiltros] = useState<Filtros>(SIN_FILTROS);
   const [pagina, setPagina] = useState(1);
+  const [porPagina, setPorPagina] = useState(DEFAULT_PAGE_SIZE);
   const [datos, setDatos] = useState<PaginaDeAsientos | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<unknown>(null);
@@ -81,21 +105,28 @@ export function LibroDeAsientos() {
   const [manualAbierto, setManualAbierto] = useState(false);
   const [cierre, setCierre] = useState<Cierre | null>(null);
   const [cargandoCierre, setCargandoCierre] = useState(true);
+  const [falloDelCierre, setFalloDelCierre] = useState(false);
   const pedido = useRef(0);
 
   const cargarCierre = useCallback(async () => {
     setCargandoCierre(true);
     try {
       setCierre(await contabilidadApi.asientos.cierre());
+      setFalloDelCierre(false);
     } catch {
       // Sin la frontera la pantalla sigue sirviendo; el back valida igual.
+      // Pero se DICE que no se pudo: un `null` acá no es «nunca se cerró».
       setCierre(null);
+      setFalloDelCierre(true);
     } finally {
       setCargandoCierre(false);
     }
   }, []);
 
   const cargar = useCallback(async () => {
+    // Un rango al revés no devuelve nada útil: se avisa en el filtro y no se
+    // pide nada hasta que se corrija.
+    if (rangoInvertido(filtros.desde, filtros.hasta)) return;
     const n = ++pedido.current;
     setCargando(true);
     setError(null);
@@ -106,8 +137,8 @@ export function LibroDeAsientos() {
         cuentaId: filtros.cuentaId || undefined,
         origen: filtros.origen || undefined,
         cerrado: filtros.cerrado === '' ? undefined : filtros.cerrado === 'true',
-        limite: POR_PAGINA,
-        desplazamiento: (pagina - 1) * POR_PAGINA,
+        limite: porPagina,
+        desplazamiento: (pagina - 1) * porPagina,
       });
       if (n === pedido.current) setDatos(r);
     } catch (e) {
@@ -115,12 +146,11 @@ export function LibroDeAsientos() {
     } finally {
       if (n === pedido.current) setCargando(false);
     }
-  }, [filtros, pagina]);
+  }, [filtros, pagina, porPagina]);
 
   useEffect(() => {
-    if (rangoInvertido(filtros.desde, filtros.hasta)) return;
     void cargar();
-  }, [cargar, filtros.desde, filtros.hasta]);
+  }, [cargar]);
 
   useEffect(() => {
     void cargarCierre();
@@ -131,13 +161,18 @@ export function LibroDeAsientos() {
     setPagina(1);
   }, []);
 
+  const cambiarPorPagina = useCallback((tamano: number) => {
+    setPorPagina(tamano);
+    setPagina(1);
+  }, []);
+
   const refrescarTodo = useCallback(() => {
     void cargar();
     void cargarCierre();
   }, [cargar, cargarCierre]);
 
   const total = datos?.total ?? 0;
-  const sinNada = !cargando && !error && total === 0;
+  const conFiltros = hayFiltros(filtros);
 
   const filas = useMemo(
     () => (datos?.asientos ?? []).map((a) => ({ asiento: a, totales: totalesDeAsiento(a) })),
@@ -148,7 +183,7 @@ export function LibroDeAsientos() {
     <div className="space-y-6">
       {/* ── Filtros + acción ─────────────────────────────────────────────── */}
       <section
-        className="space-y-4 rounded-lg border border-border bg-surface p-4 shadow-sm"
+        className="space-y-4 rounded-lg border border-border bg-surface p-4"
         aria-label="Filtros del libro"
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -205,7 +240,7 @@ export function LibroDeAsientos() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {hayFiltros(filtros) ? (
+            {conFiltros ? (
               <Button variant="ghost" hideArrow onClick={() => cambiarFiltros(SIN_FILTROS)}>
                 Limpiar
               </Button>
@@ -224,51 +259,55 @@ export function LibroDeAsientos() {
         ) : null}
       </section>
 
-      {/* ── La lista ─────────────────────────────────────────────────────── */}
-      <section className="overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
-        {error ? (
-          <FalloDeCarga error={error} queEs="el libro de asientos" onReintentar={cargar} enmarcado={false} />
-        ) : cargando && !datos ? (
-          <div className="flex items-center justify-center py-16">
-            <Spinner />
-          </div>
-        ) : sinNada && !hayFiltros(filtros) ? (
-          <EmptyState
-            icon={BookOpenText}
-            title="El libro está en blanco"
-            description="Todavía no hay asientos. El primero puede ser manual, o entrar por la migración de registros históricos."
-            action={{ label: 'Asiento manual', onClick: () => setManualAbierto(true) }}
-          />
-        ) : sinNada ? (
-          <EmptyState
-            icon={FunnelSimple}
-            title="Ningún asiento con estos filtros"
-            description="Hay asientos en el libro, pero ninguno cae en el rango, la cuenta o el origen elegidos."
-            action={{ label: 'Limpiar filtros', onClick: () => cambiarFiltros(SIN_FILTROS) }}
-          />
-        ) : (
-          <>
-            <div className={cn('overflow-x-auto', cargando && 'opacity-60')} aria-busy={cargando}>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead numeric>N.º</TableHead>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead>Descripción</TableHead>
-                    <TableHead>Origen</TableHead>
-                    <TableHead numeric>Débitos</TableHead>
-                    <TableHead numeric>Créditos</TableHead>
-                    <TableHead>Estado</TableHead>
+      {/* ── La tabla, sola en su tarjeta y sin título encima ─────────────── */}
+      <section className="overflow-hidden rounded-lg border border-border bg-surface">
+        <EstadoDeDatos
+          cargando={cargando && datos === null}
+          error={error}
+          queEs="el libro de asientos"
+          onReintentar={cargar}
+          esqueleto={
+            <div className="flex items-center justify-center py-16">
+              <Spinner />
+            </div>
+          }
+        >
+          <div className={cn(cargando && 'opacity-60')} aria-busy={cargando || undefined}>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead numeric>N.º</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Descripción</TableHead>
+                  <TableHead>Origen</TableHead>
+                  <TableHead numeric>Débitos</TableHead>
+                  <TableHead numeric>Créditos</TableHead>
+                  <TableHead>Estado</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filas.length === 0 ? (
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={COLUMNAS} className="p-0">
+                      <SinDatos
+                        hayFiltros={conFiltros}
+                        queSon="asientos"
+                        icono={BookOpenText}
+                        titulo="El libro está en blanco"
+                        descripcion="Todavía no hay asientos. El primero puede ser manual, o entrar por la migración de registros históricos."
+                        crear={{ label: 'Asiento manual', onClick: () => setManualAbierto(true) }}
+                        onLimpiarFiltros={() => cambiarFiltros(SIN_FILTROS)}
+                      />
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filas.map(({ asiento, totales }) => (
+                ) : (
+                  filas.map(({ asiento, totales }) => (
                     <TableRow
                       key={asiento.id}
                       tabIndex={0}
                       role="button"
                       aria-label={`Abrir el asiento ${asiento.numero}`}
-                      className="cursor-pointer hover:bg-surface-hover focus-visible:bg-surface-hover"
+                      className="cursor-pointer focus-visible:bg-surface-muted"
                       onClick={() => setSeleccionado(asiento)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
@@ -278,63 +317,78 @@ export function LibroDeAsientos() {
                       }}
                       data-testid="fila-de-asiento"
                     >
-                      <TableCell numeric>
-                        <span className="font-mono tabular-nums">{asiento.numero}</span>
+                      <TableCell numeric className="whitespace-nowrap font-mono">
+                        {asiento.numero}
                       </TableCell>
-                      <TableCell>
-                        <span className="font-mono text-sm tabular-nums">{diaLegible(asiento.fecha)}</span>
+                      <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
+                        {diaLegible(asiento.fecha)}
                       </TableCell>
-                      <TableCell className="max-w-[360px]">
-                        <span className="block truncate" title={asiento.descripcion}>
-                          {asiento.descripcion}
+                      <TableCell className="max-w-[420px]">
+                        <span className="flex items-baseline gap-1.5">
+                          <span className="truncate text-fg" title={asiento.descripcion}>
+                            {asiento.descripcion}
+                          </span>
+                          <span className="shrink-0 whitespace-nowrap text-caption text-fg-muted">
+                            · {textoDeLineas(asiento.movimientos.length)}
+                          </span>
                         </span>
-                        <span className="font-mono text-xs text-fg-subtle">
-                          {asiento.movimientos.length} líneas
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <span
+                          className={cn(
+                            'inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium',
+                            CLASE_DE_ORIGEN[asiento.origen] ?? 'bg-surface-muted text-fg-muted',
+                          )}
+                        >
+                          {NOMBRE_DE_ORIGEN[asiento.origen] ?? asiento.origen}
                         </span>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{NOMBRE_DE_ORIGEN[asiento.origen] ?? asiento.origen}</Badge>
-                      </TableCell>
-                      <TableCell numeric>
+                      <TableCell numeric className="whitespace-nowrap">
                         <Monto valor={totales.debitos} />
                       </TableCell>
-                      <TableCell numeric>
+                      <TableCell numeric className="whitespace-nowrap">
                         <Monto valor={totales.creditos} />
                       </TableCell>
-                      <TableCell>
-                        {asiento.cerrado ? (
-                          <Badge variant="outline" className="gap-1">
-                            <LockSimple className="h-3 w-3" aria-hidden="true" />
-                            Cerrado
-                          </Badge>
-                        ) : (
-                          <span className="text-sm text-fg-muted">Abierto</span>
-                        )}
+                      <TableCell className="whitespace-nowrap">
+                        <span
+                          className={cn(
+                            'inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium',
+                            asiento.cerrado
+                              ? 'bg-surface-muted text-fg-muted'
+                              : 'bg-success-soft text-success',
+                          )}
+                        >
+                          {asiento.cerrado ? 'Cerrado' : 'Abierto'}
+                        </span>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {total > 0 ? (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={total}
+                page={pagina}
+                pageSize={porPagina}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPagina}
+                onPageSizeChange={cambiarPorPagina}
+              />
             </div>
-            {total > POR_PAGINA ? (
-              <div className="border-t border-border p-3">
-                <TablePagination
-                  total={total}
-                  page={pagina}
-                  pageSize={POR_PAGINA}
-                  onPageChange={setPagina}
-                />
-              </div>
-            ) : (
-              <p className="border-t border-border px-4 py-3 font-mono text-xs tabular-nums text-fg-muted">
-                {total === 1 ? '1 asiento' : `${total.toLocaleString('es-CO')} asientos`}
-              </p>
-            )}
-          </>
-        )}
+          ) : null}
+        </EstadoDeDatos>
       </section>
 
-      <CierreDePeriodo cierre={cierre} cargando={cargandoCierre} onCerrado={refrescarTodo} />
+      <CierreDePeriodo
+        cierre={cierre}
+        cargando={cargandoCierre}
+        fallo={falloDelCierre}
+        onCerrado={refrescarTodo}
+      />
 
       <DetalleDeAsiento
         asiento={seleccionado}

@@ -88,7 +88,7 @@ import { ResolucionMasiva } from "./ResolucionMasiva";
 import { CrearInmueblesFaltantes } from "./CrearInmueblesFaltantes";
 import { AlertaAccionable } from "@/components/ui/alerta-accionable";
 import { ProgresoDeLote } from "./ProgresoDeLote";
-import { Pagination } from "@/components/ui/pagination";
+import { TablePagination } from "@/components/ui/pagination";
 
 const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   direccionInmueble: "Dirección del inmueble",
@@ -1225,7 +1225,6 @@ function ListaDeTrabajo({
   onPaginaCambia: (p: number) => void;
   onSeleccionCambia: (s: Set<string>) => void;
 }) {
-  const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
   /**
    * Una activada con inmueble y sin propietario (2026-09-02): el contrato
    * existe y no cobra. Es la única activada que todavía tiene algo por
@@ -1727,12 +1726,20 @@ function ListaDeTrabajo({
         />
       ))}
 
-      {totalPaginas > 1 ? (
-        <Pagination
-          currentPage={pagina}
-          totalPages={totalPaginas}
-          onPageChange={onPaginaCambia}
-        />
+      {/* Pie del design system: dice cuántos contratos quedan por revisar y
+          en cuál página vas, no sólo «‹ 2 ›». Las páginas las sirve el back
+          (`filas(lote, { pagina, porPagina })`), así que el tamaño de página
+          no se ofrece: sin `pageSizeOptions` el selector no se monta y no
+          queda un control que no hace nada. */}
+      {total > 0 ? (
+        <div className="border-t border-border px-4 py-3">
+          <TablePagination
+            total={total}
+            page={pagina}
+            pageSize={POR_PAGINA}
+            onPageChange={onPaginaCambia}
+          />
+        </div>
       ) : null}
         </>
       ) : null}

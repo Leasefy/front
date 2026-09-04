@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MagnifyingGlass,
@@ -12,6 +12,7 @@ import {
   UserCheck,
   Trash,
   EnvelopeSimple,
+  IdentificationCard,
   Phone,
   Clock,
   Users,
@@ -45,6 +46,7 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import {
   DropdownList,
@@ -74,11 +76,16 @@ import { AgenteFormModal } from './AgenteFormModal';
 
 interface ConfigUsuariosProps {
   users: AgencyUser[];
+  /** Sin este handler no se dibuja el botón de invitar: no hay a dónde mandar la invitación. */
   onInvite?: (invite: UserInvite) => void | Promise<void>;
   onUpdateRole?: (userId: string, role: AgencyRole) => void;
   onToggleStatus?: (userId: string) => void;
   onResendInvite?: (userId: string) => void;
   onDelete?: (userId: string) => void;
+  /** Abrir la ficha de la persona. Sin esto, la fila no es clickeable. */
+  onVerFicha?: (user: AgencyUser) => void;
+  /** `?invitar=1`: abre el formulario apenas se puede. */
+  abrirInvitacion?: boolean;
   isLoading?: boolean;
 }
 
@@ -237,6 +244,8 @@ export function ConfigUsuarios({
   onToggleStatus,
   onResendInvite,
   onDelete,
+  onVerFicha,
+  abrirInvitacion = false,
   isLoading = false,
 }: ConfigUsuariosProps) {
   const { t } = useI18n();
@@ -254,6 +263,11 @@ export function ConfigUsuarios({
 
   // Action menu state
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  // `?invitar=1` llega después del primer render (el padre lo lee de la URL).
+  useEffect(() => {
+    if (abrirInvitacion) setInviteModalOpen(true);
+  }, [abrirInvitacion]);
 
   // Filter users
   const filteredUsers = useMemo(() => {
@@ -300,6 +314,9 @@ export function ConfigUsuarios({
     resetKey: `${search.trim()}|${filterRole}|${filterStatus}`,
   });
 
+  /** El vacío no dice lo mismo con un filtro puesto que sin ninguno. */
+  const hayFiltros = search.trim() !== '' || filterRole !== 'all' || filterStatus !== 'all';
+
   // Count users by status
   const userCounts = useMemo(() => {
     return {
@@ -345,20 +362,18 @@ export function ConfigUsuarios({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Cuántos son, y la única puerta para sumar a alguien. El título de la
+          sección lo pone el marco de Configuración: acá repetirlo sobraba. */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="space-y-1">
-          <h2 className="text-base font-semibold text-fg">
-            {t('inmobiliaria.config.users.title')}
-          </h2>
-          <p className="text-sm text-fg-muted">
-            {t('inmobiliaria.config.users.userCount', { total: userCounts.total, active: userCounts.active, invited: userCounts.invited })}
-          </p>
-        </div>
-        <Button hideArrow onClick={() => setInviteModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          {t('inmobiliaria.config.users.invite')}
-        </Button>
+        <p className="text-sm text-fg-muted">
+          {t('inmobiliaria.config.users.userCount', { total: userCounts.total, active: userCounts.active, invited: userCounts.invited })}
+        </p>
+        {onInvite && (
+          <Button hideArrow onClick={() => setInviteModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            {t('inmobiliaria.config.users.invite')}
+          </Button>
+        )}
       </div>
 
       {/* Filters */}
@@ -403,8 +418,11 @@ export function ConfigUsuarios({
         </Select>
       </div>
 
-      {/* Users Table */}
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
+      {/* La tabla sola dentro de la tarjeta, sin título encima (estándar del
+          panel). El vacío vive dentro del <TableBody> para que se sigan viendo
+          los encabezados. */}
+      <section className="rounded-lg border border-border bg-surface overflow-hidden">
+        <div className="overflow-x-auto">
         <Table className="w-full min-w-[800px]">
           <TableHeader>
             <TableRow className="border-b border-border-faint dark:border-border-strong">
@@ -432,6 +450,29 @@ export function ConfigUsuarios({
             </TableRow>
           </TableHeader>
           <TableBody>
+            {pageItems.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="p-0">
+                  <SinDatos
+                    hayFiltros={hayFiltros}
+                    queSon="miembros"
+                    icono={Users}
+                    titulo={t('inmobiliaria.config.users.noUsersFound')}
+                    descripcion={t('inmobiliaria.config.users.inviteFirst')}
+                    crear={
+                      onInvite
+                        ? { label: t('inmobiliaria.config.users.invite'), onClick: () => setInviteModalOpen(true) }
+                        : undefined
+                    }
+                    onLimpiarFiltros={() => {
+                      setSearch('');
+                      setFilterRole('all');
+                      setFilterStatus('all');
+                    }}
+                  />
+                </TableCell>
+              </TableRow>
+            )}
             <AnimatePresence mode="popLayout">
               {pageItems.map((user, index) => {
                 const initials = getInitials(user.name, user.email);
@@ -445,7 +486,22 @@ export function ConfigUsuarios({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ delay: index * 0.02 }}
-                    className="border-b border-border hover:bg-muted/40 transition-colors"
+                    className={cn(
+                      'border-b border-border hover:bg-muted/40 transition-colors',
+                      onVerFicha && 'cursor-pointer',
+                    )}
+                    tabIndex={onVerFicha ? 0 : undefined}
+                    onClick={onVerFicha ? () => onVerFicha(user) : undefined}
+                    onKeyDown={
+                      onVerFicha
+                        ? (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onVerFicha(user);
+                            }
+                          }
+                        : undefined
+                    }
                   >
                     {/* User Info */}
                     <TableCell className="p-4">
@@ -515,8 +571,8 @@ export function ConfigUsuarios({
                       )}
                     </TableCell>
 
-                    {/* Actions */}
-                    <TableCell className="p-4">
+                    {/* Actions — el menú no debe abrir además la ficha. */}
+                    <TableCell className="p-4" onClick={(e) => e.stopPropagation()}>
                       <DropdownList
                         open={openMenuId === user.id}
                         onOpenChange={(o) => setOpenMenuId(o ? user.id : null)}
@@ -530,6 +586,14 @@ export function ConfigUsuarios({
                           />
                         </DropdownListTrigger>
                         <DropdownListContent align="end" className="w-48">
+                          {/* Ver ficha */}
+                          {onVerFicha && (
+                            <DropdownListItem className="gap-3" onClick={() => onVerFicha(user)}>
+                              <IdentificationCard className="w-4 h-4" />
+                              <span className="text-sm">Ver ficha</span>
+                            </DropdownListItem>
+                          )}
+
                           {/* Edit Role */}
                           <DropdownListItem
                             className="gap-3"
@@ -593,6 +657,7 @@ export function ConfigUsuarios({
             </AnimatePresence>
           </TableBody>
         </Table>
+        </div>
 
         {/* Pie: sólo si hay más de una página. */}
         {shouldPaginate && (
@@ -607,32 +672,7 @@ export function ConfigUsuarios({
             />
           </div>
         )}
-
-        {/* Empty State */}
-        {filteredUsers.length === 0 && (
-          <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-surface-muted flex items-center justify-center">
-              <Users className="w-6 h-6 text-fg-muted" weight="duotone" />
-            </div>
-            <div className="space-y-1.5">
-              <h3 className="text-base font-semibold text-fg">
-                {t('inmobiliaria.config.users.noUsersFound')}
-              </h3>
-              <p className="max-w-sm text-sm text-fg-muted">
-                {search || filterRole !== 'all' || filterStatus !== 'all'
-                  ? t('inmobiliaria.config.users.adjustFilters')
-                  : t('inmobiliaria.config.users.inviteFirst')}
-              </p>
-            </div>
-            {!search && filterRole === 'all' && filterStatus === 'all' && (
-              <Button hideArrow className="mt-1" onClick={() => setInviteModalOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                {t('inmobiliaria.config.users.invite')}
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
+      </section>
 
       {/* Modals */}
       <AgenteFormModal

@@ -26,6 +26,8 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 
 type SortField = 'rank' | 'agenteName' | 'closedDeals' | 'totalCommission' | 'avgCommissionPerDeal';
 type SortDirection = 'asc' | 'desc';
@@ -151,6 +153,14 @@ export function ComisionesTable({
     return rankedAgentes;
   }, [data.agentes, sortField, sortDirection]);
 
+  // El ranking es tan largo como la nómina de agentes: se pagina en cliente.
+  // `maxCommission` sigue calculándose sobre TODOS los agentes, así la barra
+  // «vs líder» mide contra el líder real y no contra el mejor de la página.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(sortedAgentes, {
+      resetKey: `${sortField}|${sortDirection}`,
+    });
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -271,179 +281,197 @@ export function ComisionesTable({
       </div>
 
       {/* Data Table */}
-      <div className="overflow-x-auto rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-card">
-        <Table className="min-w-[800px]">
-          <TableHeader>
-            <TableRow className="border-b border-border-faint dark:border-border-strong">
-              <SortableHeader field="rank" align="center" className="w-16">
-                #
-              </SortableHeader>
-              <SortableHeader field="agenteName">{t('inmobiliaria.finance.commissionsTable.agent')}</SortableHeader>
-              <SortableHeader field="closedDeals" align="center">
-                {t('inmobiliaria.finance.commissionsTable.deals')}
-              </SortableHeader>
-              <SortableHeader field="totalCommission" align="right">
-                {t('inmobiliaria.finance.commissionsTable.totalCommission')}
-              </SortableHeader>
-              <SortableHeader field="avgCommissionPerDeal" align="right">
-                {t('inmobiliaria.finance.commissionsTable.avgPerDeal')}
-              </SortableHeader>
-              {showComparison && <TableHead className="p-4 text-center w-20">{t('inmobiliaria.finance.commissionsTable.trend')}</TableHead>}
-              <TableHead className="p-4 text-right w-40">{t('inmobiliaria.finance.commissionsTable.vsLeader')}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedAgentes.map((agente, index) => {
-              const percentOfLeader = maxCommission > 0 ? (agente.totalCommission / maxCommission) * 100 : 0;
-              const isTopThree = agente.rank <= 3;
-              const isFirst = agente.rank === 1;
-              const trendDisplay = getTrendDisplay(agente.trend);
+      {/* El scroll horizontal vive en un div interno: si envolviera también al
+          pie, el paginador se iría a los 800px de la tabla y habría que
+          arrastrar la barra para llegar a «Siguiente». */}
+      <div className="rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table className="min-w-[800px]">
+            <TableHeader>
+              <TableRow className="border-b border-border-faint dark:border-border-strong">
+                <SortableHeader field="rank" align="center" className="w-16">
+                  #
+                </SortableHeader>
+                <SortableHeader field="agenteName">{t('inmobiliaria.finance.commissionsTable.agent')}</SortableHeader>
+                <SortableHeader field="closedDeals" align="center">
+                  {t('inmobiliaria.finance.commissionsTable.deals')}
+                </SortableHeader>
+                <SortableHeader field="totalCommission" align="right">
+                  {t('inmobiliaria.finance.commissionsTable.totalCommission')}
+                </SortableHeader>
+                <SortableHeader field="avgCommissionPerDeal" align="right">
+                  {t('inmobiliaria.finance.commissionsTable.avgPerDeal')}
+                </SortableHeader>
+                {showComparison && <TableHead className="p-4 text-center w-20">{t('inmobiliaria.finance.commissionsTable.trend')}</TableHead>}
+                <TableHead className="p-4 text-right w-40">{t('inmobiliaria.finance.commissionsTable.vsLeader')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pageItems.map((agente, index) => {
+                const percentOfLeader = maxCommission > 0 ? (agente.totalCommission / maxCommission) * 100 : 0;
+                const isTopThree = agente.rank <= 3;
+                const isFirst = agente.rank === 1;
+                const trendDisplay = getTrendDisplay(agente.trend);
 
-              return (
-                <motion.tr
-                  key={agente.agenteId}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.03 }}
-                  onClick={() => onAgentClick?.(agente.agenteId)}
-                  className={cn(
-                    'border-b border-border-faint dark:border-border-strong transition-colors',
-                    onAgentClick && 'cursor-pointer hover:bg-surface-muted dark:hover:bg-muted/20',
-                    isFirst && 'bg-warning-soft/50 dark:bg-warning/10'
-                  )}
-                >
-                  {/* Rank */}
-                  <TableCell className="p-4 text-center">
-                    {isTopThree ? (
-                      <div
-                        className={cn(
-                          'w-8 h-8 mx-auto rounded-full flex items-center justify-center font-bold text-sm',
-                          agente.rank === 1 && 'bg-warning-soft dark:bg-warning/10 text-warning',
-                          agente.rank === 2 && 'bg-gradient-to-br from-[#D5D1CA] to-[#B3AEA5] text-fg',
-                          agente.rank === 3 && 'bg-warning-soft dark:bg-warning/10 text-warning'
-                        )}
-                      >
-                        {agente.rank}
-                      </div>
-                    ) : (
-                      <span className="text-sm font-medium text-fg-subtle dark:text-fg-muted">
-                        {agente.rank}
-                      </span>
+                return (
+                  <motion.tr
+                    key={agente.agenteId}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                    onClick={() => onAgentClick?.(agente.agenteId)}
+                    className={cn(
+                      'border-b border-border-faint dark:border-border-strong transition-colors',
+                      onAgentClick && 'cursor-pointer hover:bg-surface-muted dark:hover:bg-muted/20',
+                      isFirst && 'bg-warning-soft/50 dark:bg-warning/10'
                     )}
-                  </TableCell>
-
-                  {/* Agent */}
-                  <TableCell className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          'w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0',
-                          isFirst
-                            ? 'bg-warning-soft dark:bg-warning/10'
-                            : 'bg-gradient-to-br from-primary to-[#726E68]'
-                        )}
-                      >
-                        {agente.agenteAvatar ? (
-                          <img
-                            src={agente.agenteAvatar}
-                            alt={agente.agenteName}
-                            className="w-full h-full rounded-full object-cover"
-                          />
-                        ) : (
-                          getInitials(agente.agenteName)
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <p
+                  >
+                    {/* Rank */}
+                    <TableCell className="p-4 text-center">
+                      {isTopThree ? (
+                        <div
                           className={cn(
-                            'font-medium truncate text-sm',
-                            isFirst
-                              ? 'text-warning'
-                              : 'text-fg dark:text-white'
+                            'w-8 h-8 mx-auto rounded-full flex items-center justify-center font-bold text-sm',
+                            agente.rank === 1 && 'bg-warning-soft dark:bg-warning/10 text-warning',
+                            agente.rank === 2 && 'bg-gradient-to-br from-[#D5D1CA] to-[#B3AEA5] text-fg',
+                            agente.rank === 3 && 'bg-warning-soft dark:bg-warning/10 text-warning'
                           )}
                         >
-                          {agente.agenteName}
-                        </p>
-                        {agente.topPropertyTitle && (
-                          <p className="text-xs text-fg-muted dark:text-fg-subtle truncate max-w-[180px]">
-                            Top: {agente.topPropertyTitle}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-
-                  {/* Closed Deals */}
-                  <TableCell className="p-4 text-center">
-                    <span
-                      className={cn(
-                        'text-lg font-bold',
-                        agente.closedDeals > 0
-                          ? 'text-success'
-                          : 'text-fg-subtle dark:text-fg-muted'
+                          {agente.rank}
+                        </div>
+                      ) : (
+                        <span className="text-sm font-medium text-fg-subtle dark:text-fg-muted">
+                          {agente.rank}
+                        </span>
                       )}
-                    >
-                      {agente.closedDeals}
-                    </span>
-                  </TableCell>
-
-                  {/* Total Commission */}
-                  <TableCell className="p-4 text-right">
-                    <span className="font-semibold text-fg dark:text-white">
-                      {formatCurrency(agente.totalCommission)}
-                    </span>
-                  </TableCell>
-
-                  {/* Avg Per Deal */}
-                  <TableCell className="p-4 text-right">
-                    <span className="text-sm text-fg-muted dark:text-fg-subtle">
-                      {formatCurrency(agente.avgCommissionPerDeal)}
-                    </span>
-                  </TableCell>
-
-                  {/* Trend (comparison) */}
-                  {showComparison && (
-                    <TableCell className="p-4 text-center">
-                      <div
-                        className={cn(
-                          'w-7 h-7 mx-auto rounded-full flex items-center justify-center',
-                          trendDisplay.bg
-                        )}
-                      >
-                        <trendDisplay.Icon
-                          className={cn('w-4 h-4', trendDisplay.text)}
-                          weight="bold"
-                        />
-                      </div>
                     </TableCell>
-                  )}
 
-                  {/* Progress Bar vs Leader */}
-                  <TableCell className="p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 rounded-full bg-surface-muted dark:bg-ink overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${percentOfLeader}%` }}
-                          transition={{ duration: 0.5, ease: 'easeOut', delay: index * 0.05 }}
+                    {/* Agent */}
+                    <TableCell className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div
                           className={cn(
-                            'h-full rounded-full',
+                            'w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0',
                             isFirst
                               ? 'bg-warning-soft dark:bg-warning/10'
-                              : 'bg-primary-soft dark:bg-primary/10'
+                              : 'bg-gradient-to-br from-primary to-[#726E68]'
                           )}
-                        />
+                        >
+                          {agente.agenteAvatar ? (
+                            <img
+                              src={agente.agenteAvatar}
+                              alt={agente.agenteName}
+                              className="w-full h-full rounded-full object-cover"
+                            />
+                          ) : (
+                            getInitials(agente.agenteName)
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p
+                            className={cn(
+                              'font-medium truncate text-sm',
+                              isFirst
+                                ? 'text-warning'
+                                : 'text-fg dark:text-white'
+                            )}
+                          >
+                            {agente.agenteName}
+                          </p>
+                          {agente.topPropertyTitle && (
+                            <p className="text-xs text-fg-muted dark:text-fg-subtle truncate max-w-[180px]">
+                              Top: {agente.topPropertyTitle}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <span className="text-xs font-medium text-fg-muted dark:text-fg-subtle w-10 text-right">
-                        {Math.round(percentOfLeader)}%
+                    </TableCell>
+
+                    {/* Closed Deals */}
+                    <TableCell className="p-4 text-center">
+                      <span
+                        className={cn(
+                          'text-lg font-bold',
+                          agente.closedDeals > 0
+                            ? 'text-success'
+                            : 'text-fg-subtle dark:text-fg-muted'
+                        )}
+                      >
+                        {agente.closedDeals}
                       </span>
-                    </div>
-                  </TableCell>
-                </motion.tr>
-              );
-            })}
-          </TableBody>
-        </Table>
+                    </TableCell>
+
+                    {/* Total Commission */}
+                    <TableCell className="p-4 text-right">
+                      <span className="font-semibold text-fg dark:text-white">
+                        {formatCurrency(agente.totalCommission)}
+                      </span>
+                    </TableCell>
+
+                    {/* Avg Per Deal */}
+                    <TableCell className="p-4 text-right">
+                      <span className="text-sm text-fg-muted dark:text-fg-subtle">
+                        {formatCurrency(agente.avgCommissionPerDeal)}
+                      </span>
+                    </TableCell>
+
+                    {/* Trend (comparison) */}
+                    {showComparison && (
+                      <TableCell className="p-4 text-center">
+                        <div
+                          className={cn(
+                            'w-7 h-7 mx-auto rounded-full flex items-center justify-center',
+                            trendDisplay.bg
+                          )}
+                        >
+                          <trendDisplay.Icon
+                            className={cn('w-4 h-4', trendDisplay.text)}
+                            weight="bold"
+                          />
+                        </div>
+                      </TableCell>
+                    )}
+
+                    {/* Progress Bar vs Leader */}
+                    <TableCell className="p-4">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 rounded-full bg-surface-muted dark:bg-ink overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${percentOfLeader}%` }}
+                            transition={{ duration: 0.5, ease: 'easeOut', delay: index * 0.05 }}
+                            className={cn(
+                              'h-full rounded-full',
+                              isFirst
+                                ? 'bg-warning-soft dark:bg-warning/10'
+                                : 'bg-primary-soft dark:bg-primary/10'
+                            )}
+                          />
+                        </div>
+                        <span className="text-xs font-medium text-fg-muted dark:text-fg-subtle w-10 text-right">
+                          {Math.round(percentOfLeader)}%
+                        </span>
+                      </div>
+                    </TableCell>
+                  </motion.tr>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
 
         {/* Empty State */}
         {sortedAgentes.length === 0 && (

@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { MagnifyingGlass, Warning } from '@phosphor-icons/react'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useRetencionBandeja } from '@/lib/hooks/retencion/use-retencion'
 import { formatCop } from '@/lib/data/mock-retencion'
 import type { RetentionCase, RetentionState } from '@/lib/types/retencion'
@@ -105,6 +107,12 @@ export default function BandejaClient() {
       .sort((a, b) => b.expectedCommissionLoss - a.expectedCommissionLoss)
   }, [data, tab, search])
 
+  // Paginación — la bandeja lista casos de riesgo, uno por propietario, y
+  // crece con la cartera. `resetKey` lleva la pestaña y la búsqueda para
+  // volver a la primera página al filtrar.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(rows, { resetKey: `${tab}|${search}` })
+
   const goToCase = (caseId: string) =>
     router.push(`/panel/inmobiliaria/contratos/riesgo/${encodeURIComponent(caseId)}`)
 
@@ -185,7 +193,7 @@ export default function BandejaClient() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-              {rows.map((c) => (
+              {pageItems.map((c) => (
                 <tr
                   key={c.caseId}
                   role="link"
@@ -224,6 +232,21 @@ export default function BandejaClient() {
               ))}
             </tbody>
           </table>
+
+          {/* Pie de tabla del design system: cuántos casos hay, cuáles se
+              muestran y cuántas filas por página. */}
+          {shouldPaginate && (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          )}
         </div>
       )}
 

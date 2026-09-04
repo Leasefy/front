@@ -9,14 +9,20 @@
  * panel conoce); para cualquier otro tipo se pega el id a mano. El signo es
  * convención fija del informe: positivo = le debe a la inmobiliaria,
  * negativo = la inmobiliaria le debe.
+ *
+ * Una fila por movimiento y en una línea (Nico, 2026-09-03): la cuenta y la
+ * descripción iban en dos renglones cada una y una cuenta de un año era una
+ * pantalla por mes. El recorte lo hace la paginación —el back devuelve el
+ * estado entero en un pedido—, y el saldo inicial sólo se pinta en la primera
+ * página.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MagnifyingGlass, UserList } from '@phosphor-icons/react';
 
-import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { TablePagination } from '@/components/ui/pagination';
 import {
   Select,
   SelectContent,
@@ -34,11 +40,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { contabilidadApi, type EstadoDeCuenta as Estado } from '@/lib/api/contabilidad.service';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
 import { inquilinosApi } from '@/lib/api/inquilinos.service';
 import { diaLegible, rangoInvertido } from '@/lib/contabilidad/fechas';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { cn } from '@/lib/utils';
 import { Monto } from '../Monto';
 import { RangoDeFechas } from '../RangoDeFechas';
@@ -52,6 +60,8 @@ const NOMBRE_DE_TIPO: Record<Tipo, string> = {
   PROVEEDOR: 'Proveedor',
   OTRO: 'Otro',
 };
+
+const COLUMNAS = 7;
 
 interface Candidato {
   id: string;
@@ -79,6 +89,12 @@ export function EstadoDeCuenta() {
   const terceroId = conBuscador ? (elegido?.id ?? '') : idManual.trim();
   const invertido = rangoInvertido(rango.desde, rango.hasta);
   const listo = Boolean(terceroTipo) && UUID.test(terceroId) && !invertido;
+
+  const renglones = listo && estado ? estado.renglones : [];
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(renglones, {
+      resetKey: `${terceroTipo}|${terceroId}|${rango.desde}|${rango.hasta}`,
+    });
 
   // Cambiar de tipo descarta lo elegido: un id de propietario no es de inquilino.
   useEffect(() => {
@@ -156,9 +172,11 @@ export function EstadoDeCuenta() {
     return 'A paz y salvo.';
   }, [estado, saldoFinal]);
 
+  const vacio = listo && estado !== null && estado.renglones.length === 0;
+
   return (
     <div className="space-y-5">
-      <div className="grid gap-4 rounded-lg border border-border bg-surface p-4 shadow-sm lg:grid-cols-[200px_minmax(280px,1fr)_minmax(280px,420px)]">
+      <div className="grid gap-4 rounded-lg border border-border bg-surface p-4 lg:grid-cols-[200px_minmax(280px,1fr)_minmax(280px,420px)]">
         <div className="space-y-1.5">
           <Label id="tercero-tipo">Tipo de tercero</Label>
           <Select value={tipo} onValueChange={(v) => setTipo(v as Tipo)}>
@@ -232,7 +250,7 @@ export function EstadoDeCuenta() {
                         <li key={c.id} role="option" aria-selected={false}>
                           <button
                             type="button"
-                            className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-surface-hover"
+                            className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-surface-muted"
                             onClick={() => {
                               setElegido(c);
                               setBusqueda('');
@@ -271,114 +289,155 @@ export function EstadoDeCuenta() {
         <RangoDeFechas desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
       </div>
 
-      {!listo ? (
-        <EmptyState
-          icon={UserList}
-          title="Elegí un tercero"
-          description="El estado de cuenta junta todo lo que se asentó a su nombre, en todas las cuentas, con saldo corrido."
-        />
-      ) : error ? (
-        <FalloDeCarga error={error} queEs="el estado de cuenta" onReintentar={cargar} />
-      ) : cargando && !estado ? (
-        <div className="flex items-center justify-center py-16">
-          <Spinner />
-        </div>
-      ) : estado ? (
-        <div className={cn('space-y-4', cargando && 'opacity-60')} aria-busy={cargando}>
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4">
-            <div>
-              <p className="text-sm text-fg-muted">Saldo final</p>
-              <p className="text-2xl">
-                <Monto valor={estado.saldoFinalCop} className="font-medium" />
-              </p>
-            </div>
-            <p className="text-sm text-fg-muted">
-              {lectura} Convención: débitos − créditos; en negativo, la inmobiliaria debe.
+      {listo && estado ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4">
+          <div>
+            <p className="text-sm text-fg-muted">Saldo final</p>
+            <p className="text-2xl">
+              <Monto valor={estado.saldoFinalCop} className="font-medium" />
             </p>
           </div>
+          <p className="text-sm text-fg-muted">
+            {lectura} Convención: débitos − créditos; en negativo, la inmobiliaria debe.
+          </p>
+        </div>
+      ) : null}
 
-          {estado.renglones.length === 0 ? (
-            <EmptyState
-              icon={UserList}
-              title="Sin movimientos en este rango"
-              description="Nada se asentó a nombre de este tercero entre esas fechas."
-            />
-          ) : (
-            <div className="overflow-x-auto rounded-md border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead numeric>Asiento</TableHead>
-                    <TableHead>Cuenta</TableHead>
-                    <TableHead>Descripción</TableHead>
-                    <TableHead numeric>Débito</TableHead>
-                    <TableHead numeric>Crédito</TableHead>
-                    <TableHead numeric>Saldo</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell colSpan={6} muted className="text-sm">
-                      Saldo inicial
+      <section className="overflow-hidden rounded-lg border border-border bg-surface">
+        <EstadoDeDatos
+          cargando={cargando && estado === null}
+          error={error}
+          queEs="el estado de cuenta"
+          onReintentar={cargar}
+          esqueleto={
+            <div className="flex items-center justify-center py-16">
+              <Spinner />
+            </div>
+          }
+        >
+          <div className={cn(cargando && 'opacity-60')} aria-busy={cargando || undefined}>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead numeric>Asiento</TableHead>
+                  <TableHead>Cuenta</TableHead>
+                  <TableHead>Descripción</TableHead>
+                  <TableHead numeric>Débito</TableHead>
+                  <TableHead numeric>Crédito</TableHead>
+                  <TableHead numeric>Saldo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {!listo || vacio ? (
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={COLUMNAS} className="p-0">
+                      <SinDatos
+                        queSon="movimientos"
+                        icono={UserList}
+                        titulo={!listo ? 'Elegí un tercero' : 'Sin movimientos en este rango'}
+                        descripcion={
+                          !listo
+                            ? 'El estado de cuenta junta todo lo que se asentó a su nombre, en todas las cuentas, con saldo corrido.'
+                            : 'Nada se asentó a nombre de este tercero entre esas fechas.'
+                        }
+                      />
                     </TableCell>
-                    <TableCell numeric>
-                      <Monto valor={estado.saldoInicialCop} />
-                    </TableCell>
                   </TableRow>
-                  {estado.renglones.map((r, i) => (
-                    <TableRow key={`${r.asientoId}-${i}`}>
-                      <TableCell>
-                        <span className="font-mono text-sm tabular-nums">{diaLegible(r.fecha)}</span>
-                      </TableCell>
-                      <TableCell numeric>
-                        <span className="font-mono tabular-nums">{r.numero}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-mono text-xs tabular-nums text-fg-muted">{r.codigo}</span>
-                        <span className="block text-sm">{r.cuenta}</span>
-                      </TableCell>
-                      <TableCell className="max-w-[300px]">
-                        <span className="block truncate text-sm" title={r.descripcionAsiento}>
-                          {r.descripcionAsiento}
-                        </span>
-                        {r.descripcion ? (
-                          <span className="block truncate text-xs text-fg-muted">{r.descripcion}</span>
-                        ) : null}
-                      </TableCell>
-                      <TableCell numeric>
-                        <Monto valor={r.debitoCop} vacioSiCero />
-                      </TableCell>
-                      <TableCell numeric>
-                        <Monto valor={r.creditoCop} vacioSiCero />
-                      </TableCell>
-                      <TableCell numeric>
-                        <Monto valor={r.saldoCop} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
+                ) : (
+                  <>
+                    {page === 1 && estado ? (
+                      <TableRow className="hover:bg-transparent">
+                        <TableCell colSpan={6} muted className="whitespace-nowrap">
+                          Saldo inicial
+                        </TableCell>
+                        <TableCell numeric className="whitespace-nowrap">
+                          <Monto valor={estado.saldoInicialCop} />
+                        </TableCell>
+                      </TableRow>
+                    ) : null}
+                    {pageItems.map((r, i) => (
+                      <TableRow key={`${r.asientoId}-${i}`}>
+                        <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
+                          {diaLegible(r.fecha)}
+                        </TableCell>
+                        <TableCell numeric className="whitespace-nowrap font-mono">
+                          {r.numero}
+                        </TableCell>
+                        <TableCell className="max-w-[260px]">
+                          <span className="flex items-baseline gap-1.5">
+                            <span className="shrink-0 font-mono text-caption tabular-nums text-fg-muted">
+                              {r.codigo}
+                            </span>
+                            <span className="truncate text-fg" title={r.cuenta}>
+                              {r.cuenta}
+                            </span>
+                          </span>
+                        </TableCell>
+                        <TableCell className="max-w-[300px]">
+                          <span className="flex items-baseline gap-1.5">
+                            <span className="truncate text-fg" title={r.descripcionAsiento}>
+                              {r.descripcionAsiento}
+                            </span>
+                            {r.descripcion ? (
+                              <span
+                                className="max-w-[40%] shrink-0 truncate text-caption text-fg-muted"
+                                title={r.descripcion}
+                              >
+                                · {r.descripcion}
+                              </span>
+                            ) : null}
+                          </span>
+                        </TableCell>
+                        <TableCell numeric className="whitespace-nowrap">
+                          <Monto valor={r.debitoCop} vacioSiCero />
+                        </TableCell>
+                        <TableCell numeric className="whitespace-nowrap">
+                          <Monto valor={r.creditoCop} vacioSiCero />
+                        </TableCell>
+                        <TableCell numeric className="whitespace-nowrap">
+                          <Monto valor={r.saldoCop} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </>
+                )}
+              </TableBody>
+              {listo && estado && !vacio ? (
                 <TableFooter>
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-sm font-medium text-fg">
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={4} className="whitespace-nowrap text-sm font-medium text-fg">
                       Totales del período
                     </TableCell>
-                    <TableCell numeric>
+                    <TableCell numeric className="whitespace-nowrap">
                       <Monto valor={estado.debitosCop} className="font-medium" />
                     </TableCell>
-                    <TableCell numeric>
+                    <TableCell numeric className="whitespace-nowrap">
                       <Monto valor={estado.creditosCop} className="font-medium" />
                     </TableCell>
-                    <TableCell numeric>
+                    <TableCell numeric className="whitespace-nowrap">
                       <Monto valor={estado.saldoFinalCop} className="font-medium" />
                     </TableCell>
                   </TableRow>
                 </TableFooter>
-              </Table>
+              ) : null}
+            </Table>
+          </div>
+
+          {shouldPaginate ? (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
             </div>
-          )}
-        </div>
-      ) : null}
+          ) : null}
+        </EstadoDeDatos>
+      </section>
     </div>
   );
 }

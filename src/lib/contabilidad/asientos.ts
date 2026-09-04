@@ -30,3 +30,21 @@ export function totalesDeAsiento(a: Pick<AsientoContable, 'movimientos'>): {
   }
   return { debitos, creditos };
 }
+
+/**
+ * El color del origen en la tabla, sólo con tokens. Lo hecho a mano se
+ * distingue (es lo que alguien decidió); lo automático y lo migrado van en
+ * neutro: es el sistema haciendo lo suyo.
+ */
+export const CLASE_DE_ORIGEN: Record<OrigenDelAsiento, string> = {
+  MANUAL: 'bg-primary/10 text-primary',
+  COBRO: 'bg-surface-muted text-fg-muted',
+  RECIBO_DE_CAJA: 'bg-surface-muted text-fg-muted',
+  DISPERSION: 'bg-surface-muted text-fg-muted',
+  MIGRACION: 'bg-surface-muted text-fg-muted',
+};
+
+/** «2 líneas» / «1 línea», para el sufijo de la descripción. */
+export function textoDeLineas(cantidad: number): string {
+  return cantidad === 1 ? '1 línea' : `${cantidad} líneas`;
+}

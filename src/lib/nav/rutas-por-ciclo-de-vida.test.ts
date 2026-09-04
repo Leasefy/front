@@ -12,7 +12,7 @@ import { describe, it, expect } from 'vitest';
 import { RUTAS_POR_CICLO_DE_VIDA } from './rutas-por-ciclo-de-vida';
 import { RUTAS_UNIFICADAS_DEL_PANEL } from './rutas-unificadas-del-panel';
 import { CONCILIACION_EN_UN_SOLO_LUGAR } from './conciliacion-en-un-solo-lugar';
-import { modulosDelPanel, pestanasDelModulo, PANEL } from './arquitectura-del-panel';
+import { modulosDelPanel, pestanasDelModulo, PANEL, RUTAS_FUERA_DEL_SIDEBAR } from './arquitectura-del-panel';
 
 const P = PANEL;
 
@@ -61,7 +61,12 @@ describe('rutas por ciclo de vida — la tabla', () => {
   });
 
   it('todo destino es una pantalla declarada en la arquitectura o cuelga de una', () => {
-    const declaradas = modulosDelPanel().flatMap((m) => pestanasDelModulo(m)).map((p) => p.href);
+    // `RUTAS_FUERA_DEL_SIDEBAR` = Configuración, que salió del sidebar (se
+    // entra por el menú del perfil) pero sigue siendo destino de tres reglas.
+    const declaradas = [
+      ...modulosDelPanel().flatMap((m) => pestanasDelModulo(m)).map((p) => p.href),
+      ...RUTAS_FUERA_DEL_SIDEBAR,
+    ];
     for (const r of RUTAS_POR_CICLO_DE_VIDA) {
       const d = r.destination.replace('/:path*', '');
       const ok = declaradas.some((h) => d === h || d.startsWith(`${h}/`));

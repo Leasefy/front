@@ -1,31 +1,43 @@
 'use client'
 
 /**
- * /ai/conciliacion — F6: the Conciliación Sala (first COMPLETE workspace).
+ * Conciliación bancaria — la Sala del agente (resumen del módulo).
  *
- * Restructured from the F1 page (which mixed Sala + Cola): this page is now
- * the generic <SalaAgente> fed by the per-agent overview endpoint; the queue
- * moved to ./cola, the case detail lives at ./[id] and the autonomy posture
- * at ./configuracion (AGENT-WORKSPACE-SPEC §1.4).
+ * ── Qué cambió y por qué (Nico, 2026-09-03) ─────────────────────────────────
  *
- * F10 (SPEC §4): the movimientos + extractos surface now lives INSIDE the
- * workspace at ./movimientos (the legacy /conciliacion URL redirects here).
+ * La pantalla apilaba seis cosas sin jerarquía: un botón primario
+ * «Por revisar (0) →» en el encabezado, una tarjeta de carga, cuatro KPIs, una
+ * tarjeta sola a todo el ancho con el monto, otra de «Excepciones por tipo»,
+ * la de «¿Cómo funciona?» y, más abajo, tres KPIs más «(30 días)» que repetían
+ * los de arriba con otra ventana de tiempo. El botón primario era el peor:
+ * decía UN número sin nombre — no decía qué encontró el agente.
  *
- * Jerarquía invertida (patrón avalúos): el domain slot abre con la acción
- * principal — "Subir extracto del banco" → ./movimientos#upload — seguida de
- * la sección "¿Cómo funciona?" de 3 pasos.
+ * Ahora el orden es el del trabajo real:
+ *   1. subir el extracto (la acción que desbloquea todo lo demás),
+ *   2. «Lo que encontró el agente» — la conclusión en palabras, el desglose por
+ *      tipo y UNA acción: ir a revisarlo,
+ *   3. una sola franja de KPIs (movimientos · conciliados · en cola · tasa ·
+ *      monto), en la misma familia de tarjeta que el resto del panel,
+ *   4. qué pasó con la última corrida, si se pidió una,
+ *   5. la actividad reciente del agente,
+ *   6. «¿Cómo funciona?», plegado, que es ayuda y no dato.
  *
- * Build C: el slot también muestra el RESUMEN real del backend
- * (GET …/conciliacion/summary: taxonomía + totales + tasa) y un botón principal
- * "Conciliar ahora" (POST …/conciliacion/run, acción HUMANA con confirmación,
- * T-323). Fail-soft: 404/error → el resumen no se renderiza y la pantalla
- * conserva su estado actual (Sala overview / vacíos).
+ * ── Por qué esta Sala no usa <SalaAgente> ───────────────────────────────────
+ * `<SalaAgente>` monta SIEMPRE el CTA primario de la cola en su encabezado y
+ * su propia franja de KPIs «(30 días)» — las dos cosas que Nico pidió sacar de
+ * acá. Es un componente compartido por los demás agentes, así que en vez de
+ * cambiárselo a todos, esta Sala se compone directo. De lo que traía
+ * `<SalaAgente>` se conserva lo que NO se repetía: la actividad reciente.
+ *
+ * Fail-soft: el resumen (GET …/conciliacion/summary) puede no estar desplegado
+ * (404) o la base en modo stub → sus dos bloques no se pintan y la pantalla
+ * conserva el hero, la corrida y la ayuda. Nunca un muro de error.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { ArrowsClockwise, Bank, CheckCircle, UploadSimple } from '@phosphor-icons/react'
+import { ArrowsClockwise, CaretRight, CheckCircle, UploadSimple } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
 import {
@@ -44,16 +56,23 @@ import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { useConciliacionSummary } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
 import { useConciliacionRun } from '@/lib/hooks/conciliacion/use-conciliacion-run'
-import { SalaAgente } from '@/components/inmobiliaria/ai/SalaAgente'
-import { ConciliacionResumen } from '@/components/inmobiliaria/ai/ConciliacionResumen'
+import {
+  ConciliacionResumen,
+  HallazgosDelAgente,
+} from '@/components/inmobiliaria/ai/ConciliacionResumen'
+import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
+import { actorLabel, actorMeta } from '@/components/inmobiliaria/ai/TrazaCaso'
 import { useI18n } from '@/lib/i18n'
 
 const PAGES_NS = 'inmobiliaria.ai.workspace.pages.conciliacion'
+const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
 
-/** Anchor into the movimientos page — the dropzone carries id="upload". */
+const COLA_HREF = '/panel/inmobiliaria/conciliacion/cola'
+
+/** Ancla en la página de movimientos — el cargador lleva id="upload". */
 const SUBIR_EXTRACTO_HREF = '/panel/inmobiliaria/conciliacion/movimientos#upload'
 
-/** "Cómo funciona" — el viaje de la conciliación en 3 pasos. */
+/** «Cómo funciona» — el viaje de la conciliación en 3 pasos. */
 const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] = [
   { icon: UploadSimple, titleKey: `${PAGES_NS}.comoFunciona.step1.title`, descKey: `${PAGES_NS}.comoFunciona.step1.desc` },
   { icon: ArrowsClockwise, titleKey: `${PAGES_NS}.comoFunciona.step2.title`, descKey: `${PAGES_NS}.comoFunciona.step2.desc` },
@@ -93,40 +112,43 @@ function ResultadoDeLaCorrida({ corrida }: { corrida: Corrida | null }) {
             .join(' · ')
 
   return (
-    <div
-      className="max-w-3xl rounded-lg border border-border bg-card p-4"
+    <section
+      className="rounded-lg border border-border bg-surface p-4"
       role="status"
       data-testid="conciliacion-resultado-corrida"
       data-estado={corrida.estado}
     >
       <div className="flex items-start gap-3">
         <ArrowsClockwise
-          className={`mt-0.5 h-4 w-4 shrink-0 text-muted-foreground ${corrida.estado === 'corriendo' ? 'motion-safe:animate-spin' : ''}`}
+          className={`mt-0.5 h-4 w-4 shrink-0 text-fg-muted ${corrida.estado === 'corriendo' ? 'motion-safe:animate-spin' : ''}`}
           aria-hidden="true"
         />
         <div className="min-w-0 space-y-1">
-          <p className="text-sm font-medium text-foreground">Última corrida</p>
-          <p className="text-sm text-muted-foreground">{texto}</p>
+          <p className="text-body-sm font-medium text-fg">Última corrida</p>
+          <p className="text-body-sm text-fg-muted">{texto}</p>
           {corrida.estado === 'lista' && corrida.enCola > 0 && (
             <Link
-              href="/panel/inmobiliaria/conciliacion/cola"
-              className="inline-block text-sm text-primary underline-offset-2 hover:underline"
+              href={COLA_HREF}
+              className="inline-block text-body-sm text-primary underline-offset-2 hover:underline"
             >
               Ver la cola
             </Link>
           )}
         </div>
       </div>
-    </div>
+    </section>
   )
 }
 
 function ConciliacionSala() {
   const { t } = useI18n()
-  const { data, isLoading, error } = useAgentOverview('conciliacion')
+  // Del overview sólo se conserva la actividad reciente: sus KPIs «(30 días)»
+  // repetían los del resumen con otra ventana y confundían más de lo que decían.
+  const { data: overview } = useAgentOverview('conciliacion')
 
   // Resumen real del backend (taxonomía + totales + tasa). Fail-soft: null → no se muestra.
-  const { data: summary, refetch: refetchSummary } = useConciliacionSummary()
+  const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } =
+    useConciliacionSummary()
   // Disparo de conciliación on-demand (acción humana, T-323).
   const { isRunning, requestRun } = useConciliacionRun()
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -185,10 +207,6 @@ function ConciliacionSala() {
     [refetchSummary],
   )
 
-  // CTA count: prefer the backend's "en_cola" KPI; absent → fall back to summary; else CTA without count.
-  const colaCount =
-    data?.kpis.find((kpi) => kpi.id === 'en_cola')?.value ?? summary?.totals.en_cola
-
   // T-323: la conciliación se dispara SOLO tras confirmación humana explícita.
   async function handleConciliarAhora() {
     setConfirmOpen(false)
@@ -211,106 +229,151 @@ function ConciliacionSala() {
     }
   }
 
+  const feed = overview?.feed ?? []
+
   return (
-    <SalaAgente
-      agente="conciliacion"
-      titulo={t(`${PAGES_NS}.salaTitulo`)}
-      descripcion={t(`${PAGES_NS}.salaDesc`)}
-      icon={Bank}
-      overview={data}
-      isLoading={isLoading}
-      error={error}
-      colaHref="/panel/inmobiliaria/conciliacion/cola"
-      colaCount={colaCount}
-      colaLabel={t(`${PAGES_NS}.colaLabel`)}
-    >
-      {/* Domain slot: acción principal + cómo funciona (patrón avalúos) */}
-      <section className="space-y-4" data-testid="conciliacion-subir-extracto">
-        {/* Acción principal — subir el extracto del banco + conciliar ahora */}
-        <div className="rounded-lg border border-border bg-card p-5 max-w-3xl">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="w-10 h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
-              <UploadSimple className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="duotone" aria-hidden="true" />
-            </div>
-            <div className="flex-1 min-w-0 space-y-0.5">
-              <h2 className="text-base font-semibold text-foreground">
-                {t(`${PAGES_NS}.accionTitle`)}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {t(`${PAGES_NS}.accionDesc`)}
+    <div className="p-6 lg:p-8 space-y-6" data-testid="sala-agente-conciliacion">
+      {/* Encabezado — sin CTA: la acción vive en la tarjeta que la explica. */}
+      <header className="space-y-2">
+        <h1 className="text-h2 text-fg">{t(`${PAGES_NS}.salaTitulo`)}</h1>
+        <p className="text-body text-fg-muted max-w-2xl">{t(`${PAGES_NS}.salaDesc`)}</p>
+      </header>
+
+      {/* 1. La acción que desbloquea todo lo demás: subir el extracto. */}
+      <section
+        className="rounded-lg border border-border bg-surface p-5"
+        data-testid="conciliacion-subir-extracto"
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-muted">
+              <UploadSimple
+                className="h-[18px] w-[18px] text-fg-muted"
+                weight="duotone"
+                aria-hidden="true"
+              />
+            </span>
+            <div className="min-w-0 space-y-0.5">
+              <h2 className="text-base font-semibold text-fg">{t(`${PAGES_NS}.accionTitle`)}</h2>
+              {/* El aviso de «todavía no cargaste nada» ocupa esta línea cuando
+                  aplica, en vez de flotar suelto debajo de la tarjeta. */}
+              <p className="text-body-sm text-fg-muted" data-testid="conciliacion-hero-linea">
+                {sinMovimientos
+                  ? 'Todavía no cargaste ningún extracto, así que no hay movimientos que cruzar.'
+                  : t(`${PAGES_NS}.accionDesc`)}
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-              <Button asChild hideArrow variant="secondary" data-testid="conciliacion-subir-cta">
-                <Link href={SUBIR_EXTRACTO_HREF}>
-                  {t(`${PAGES_NS}.accionTitle`)}
-                  <UploadSimple className="w-4 h-4" aria-hidden="true" />
-                </Link>
-              </Button>
-              {/* Acción PRINCIPAL del slot: conciliar ahora (T-323, confirmación humana) */}
-              {/* Sin movimientos cargados el botón no promete nada: dice por
-                  qué no se puede y deja el extracto como el paso que sigue. */}
-              <Button
-                hideArrow
-                disabled={isRunning || sinMovimientos}
-                onClick={() => setConfirmOpen(true)}
-                data-testid="conciliacion-run-cta"
-                title={
-                  sinMovimientos
-                    ? 'Todavía no hay movimientos cargados: subí el extracto del banco primero.'
-                    : undefined
-                }
-              >
-                <ArrowsClockwise className="w-4 h-4" aria-hidden="true" />
-                {isRunning
-                  ? 'Conciliando…'
-                  : movimientos != null && conciliados != null && movimientos > conciliados
-                    ? `Conciliar ${movimientos - conciliados} movimientos`
-                    : 'Conciliar ahora'}
-              </Button>
-            </div>
+          </div>
+
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+            <Button asChild hideArrow variant="secondary" data-testid="conciliacion-subir-cta">
+              <Link href={SUBIR_EXTRACTO_HREF}>
+                {t(`${PAGES_NS}.accionTitle`)}
+                <UploadSimple className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </Button>
+            {/* Acción PRINCIPAL: conciliar ahora (T-323, confirmación humana).
+                Sin movimientos cargados el botón no promete nada: dice por qué
+                no se puede y deja el extracto como el paso que sigue. */}
+            <Button
+              hideArrow
+              disabled={isRunning || sinMovimientos}
+              onClick={() => setConfirmOpen(true)}
+              data-testid="conciliacion-run-cta"
+              title={
+                sinMovimientos
+                  ? 'Todavía no hay movimientos cargados: subí el extracto del banco primero.'
+                  : undefined
+              }
+            >
+              <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
+              {isRunning
+                ? 'Conciliando…'
+                : movimientos != null && conciliados != null && movimientos > conciliados
+                  ? `Conciliar ${movimientos - conciliados} movimientos`
+                  : 'Conciliar ahora'}
+            </Button>
           </div>
         </div>
+      </section>
 
-        {sinMovimientos && (
-          <p className="max-w-3xl text-sm text-muted-foreground" data-testid="conciliacion-sin-movimientos">
-            Todavía no cargaste ningún extracto, así que no hay movimientos que cruzar. Subí el del
-            banco y el agente los compara contra tus cobros.
-          </p>
-        )}
+      {/* 2. Lo que encontró el agente — la tarjeta protagonista. */}
+      <HallazgosDelAgente data={summary} colaHref={COLA_HREF} />
 
-        {/* Qué pasó con la última corrida. */}
-        <ResultadoDeLaCorrida corrida={corrida} />
+      {/* 3. Una sola franja de KPIs. */}
+      <ConciliacionResumen data={summary} isLoading={summaryLoading} showSkeleton />
 
-        {/* Resumen real del backend: taxonomía + totales + tasa (fail-soft: null → nada) */}
-        <ConciliacionResumen data={summary} />
+      {/* 4. Qué pasó con la última corrida. */}
+      <ResultadoDeLaCorrida corrida={corrida} />
 
-        {/* Cómo funciona — el viaje de la conciliación en 3 pasos */}
-        <div className="rounded-lg border border-border bg-card p-5 max-w-3xl space-y-4" data-testid="conciliacion-como-funciona">
-          <h2 className="text-base font-semibold text-foreground">
-            {t(`${PAGES_NS}.comoFunciona.title`)}
+      {/* 5. Actividad reciente — lo único del overview que no se repetía.
+             Sin entradas no se pinta la tarjeta: un marco vacío no dice nada. */}
+      {feed.length > 0 && (
+        <section
+          className="rounded-lg border border-border bg-surface p-5"
+          data-testid="conciliacion-actividad"
+        >
+          <h2 className="text-base font-semibold text-fg">
+            {t(`${WORKSPACE_NS}.sala.feedTitle`)}
           </h2>
-          <ol className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {COMO_FUNCIONA_STEPS.map((step, i) => {
-              const StepIcon = step.icon
+          <ul className="mt-3 divide-y divide-border">
+            {feed.map((entrada) => {
+              const meta = actorMeta(entrada.actorType)
               return (
-                <li key={step.titleKey} className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                      <StepIcon className="w-4 h-4 text-foreground" weight="duotone" aria-hidden="true" />
-                    </span>
-                    <span className="text-xs tabular-nums text-muted-foreground">{i + 1}</span>
+                <li key={entrada.id} className="flex items-start gap-2 py-2.5 first:pt-0 last:pb-0">
+                  <span
+                    className={`mt-0.5 inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-caption ring-1 ${meta.cls}`}
+                  >
+                    {actorLabel(t, entrada.actorType)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-body-sm font-medium text-fg">{entrada.titulo}</p>
+                    <p className="truncate text-caption text-fg-muted">{entrada.detalle}</p>
                   </div>
-                  <p className="text-sm font-semibold text-foreground leading-tight">
-                    {t(step.titleKey)}
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-snug">{t(step.descKey)}</p>
+                  <span className="mt-0.5 shrink-0 text-caption tabular-nums text-fg-muted">
+                    {relativeTime(entrada.occurredAt, t)}
+                  </span>
                 </li>
               )
             })}
-          </ol>
-        </div>
-      </section>
+          </ul>
+        </section>
+      )}
+
+      {/* 6. ¿Cómo funciona? — ayuda, no dato: plegada y al final. */}
+      <details
+        className="group rounded-lg border border-border bg-surface"
+        data-testid="conciliacion-como-funciona"
+      >
+        <summary className="flex cursor-pointer list-none items-center gap-2 p-4 [&::-webkit-details-marker]:hidden">
+          <CaretRight
+            className="h-4 w-4 shrink-0 text-fg-muted transition-transform group-open:rotate-90"
+            aria-hidden="true"
+          />
+          <span className="text-body-sm font-medium text-fg">
+            {t(`${PAGES_NS}.comoFunciona.title`)}
+          </span>
+        </summary>
+        <ol className="grid grid-cols-1 gap-4 border-t border-border p-4 sm:grid-cols-3">
+          {COMO_FUNCIONA_STEPS.map((step, i) => {
+            const StepIcon = step.icon
+            return (
+              <li key={step.titleKey} className="flex items-start gap-2.5">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-muted">
+                  <StepIcon className="h-4 w-4 text-fg-muted" weight="duotone" aria-hidden="true" />
+                </span>
+                <div className="min-w-0 space-y-0.5">
+                  <p className="text-body-sm font-medium leading-tight text-fg">
+                    <span className="tabular-nums text-fg-subtle">{i + 1}. </span>
+                    {t(step.titleKey)}
+                  </p>
+                  <p className="text-caption leading-snug text-fg-muted">{t(step.descKey)}</p>
+                </div>
+              </li>
+            )
+          })}
+        </ol>
+      </details>
 
       {/* Confirmación humana de "Conciliar ahora" (T-323) */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
@@ -329,7 +392,7 @@ function ConciliacionSala() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SalaAgente>
+    </div>
   )
 }
 

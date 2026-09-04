@@ -8,9 +8,18 @@
  * conciliar (es emitir un recibo), `cobros`/edit para ignorar y reabrir.
  *
  * Desde que la conciliación quedó en UN solo lugar, esto vive DENTRO del
- * workspace del agente, en `/ai/conciliacion/movimientos`, arriba del bloque
+ * workspace del agente, en `/conciliacion/movimientos`, arriba del bloque
  * «Lo que vio el agente» (`<ConciliacionDelAgente />`). La página vieja
  * `/cobros/extracto-bancario` ya no existe: redirige acá.
+ *
+ * ── Qué cambió y por qué (Nico, 2026-09-03) ─────────────────────────────────
+ * Los cuatro números de arriba estaban en mono MAYÚSCULA, un estilo que no
+ * existe en ninguna otra pantalla del panel, y los movimientos eran una lista
+ * de tarjetas apiladas con un «Anterior / Siguiente» propio. Ahora los KPIs son
+ * los del panel y los movimientos son la tabla estándar: las pestañas y el lote
+ * de seguros viven DENTRO de la tarjeta, arriba de la tabla, el vacío va dentro
+ * del cuerpo —para que los encabezados se sigan viendo— y el pie es el
+ * paginador del design system. La carga del archivo no se tocó.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -34,13 +43,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
-import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { conciliacionBancariaApi } from '@/lib/api/conciliacion-bancaria.service';
 import type {
@@ -53,12 +72,42 @@ import { CargarExtracto } from './CargarExtracto';
 import { MovimientoFila } from './MovimientoFila';
 import { diaLegible, mensajeDe } from './formato';
 
-const POR_PAGINA = 50;
+/**
+ * Cuántas líneas se traen por página.
+ *
+ * El recorte es del SERVIDOR (`limite`/`desplazamiento`), no de presentación:
+ * cada línea trae sus cobros candidatos calculados, así que traer todo para
+ * recortar en el cliente saldría caro. Por eso acá no va `useTablePagination`
+ * —que asume la lista completa en memoria— y sí su pie, `TablePagination`.
+ *
+ * Arranca en 50 a propósito: «Conciliar los seguros (n)» cuenta los seguros de
+ * la página, y bajarlo a 10 haría que ese número describiera cada vez menos de
+ * lo que el lote realmente hace.
+ */
+const POR_PAGINA_INICIAL = 50;
 
 const TITULO_DE_LA_PESTANA: Record<EstadoDelMovimientoBancario, string> = {
   PENDIENTE: 'Pendientes',
   CONCILIADO: 'Conciliados',
   IGNORADO: 'Ignorados',
+};
+
+const COLUMNAS = ['Fecha', 'Movimiento', 'Valor', 'Cruce sugerido', 'Acciones'] as const;
+
+const VACIO_POR_PESTANA: Record<EstadoDelMovimientoBancario, { titulo: string; descripcion: string }> = {
+  PENDIENTE: {
+    titulo: 'Nada pendiente de conciliar',
+    descripcion:
+      'Cargá el extracto del banco y acá aparecen las líneas con los cobros que se les parecen.',
+  },
+  CONCILIADO: {
+    titulo: 'Todavía no hay movimientos conciliados',
+    descripcion: 'Cuando concilies una línea del extracto, queda acá con su recibo.',
+  },
+  IGNORADO: {
+    titulo: 'No hay movimientos ignorados',
+    descripcion: 'Cuando ignores una línea del extracto, queda acá con su motivo.',
+  },
 };
 
 interface Props {
@@ -80,7 +129,9 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
   const [resumen, setResumen] = useState<ResumenDeConciliacion | null>(null);
   const [movimientos, setMovimientos] = useState<MovimientoBancario[] | null>(null);
   const [total, setTotal] = useState(0);
-  const [pagina, setPagina] = useState(0);
+  /** 1-based, como lo cuenta el pie del design system. */
+  const [pagina, setPagina] = useState(1);
+  const [porPagina, setPorPagina] = useState(POR_PAGINA_INICIAL);
   const [cargando, setCargando] = useState(true);
   const [errorDeCarga, setErrorDeCarga] = useState<unknown>(null);
   const [ocupados, setOcupados] = useState<ReadonlySet<string>>(new Set());
@@ -95,7 +146,11 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
     try {
       const [r, pag] = await Promise.all([
         conciliacionBancariaApi.resumen(),
-        conciliacionBancariaApi.listar({ estado: pestana, limite: POR_PAGINA, desplazamiento: pagina * POR_PAGINA }),
+        conciliacionBancariaApi.listar({
+          estado: pestana,
+          limite: porPagina,
+          desplazamiento: (pagina - 1) * porPagina,
+        }),
       ]);
       setResumen(r);
       setMovimientos(pag.data);
@@ -105,7 +160,7 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
     } finally {
       setCargando(false);
     }
-  }, [pestana, pagina]);
+  }, [pestana, pagina, porPagina]);
 
   useEffect(() => {
     void cargar();
@@ -189,13 +244,15 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
 
   const cambiarPestana = (v: string) => {
     setPestana(v as EstadoDelMovimientoBancario);
-    setPagina(0);
+    setPagina(1);
   };
 
-  const paginas = Math.max(1, Math.ceil(total / POR_PAGINA));
+  const sinFilas = !movimientos || movimientos.length === 0;
+  const vacioDeLaPestana = VACIO_POR_PESTANA[pestana];
 
   return (
     <div className="space-y-6">
+      {/* Los cuatro números, en la tarjeta KPI del panel. */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-testid="resumen">
         <Cifra etiqueta="Pendientes de conciliar" valor={resumen ? String(resumen.pendientes) : '—'} />
         <Cifra etiqueta="Conciliados este mes" valor={resumen ? String(resumen.conciliadosEsteMes) : '—'} />
@@ -213,8 +270,9 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
         </div>
       )}
 
-      <section className="space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <section className="rounded-lg border border-border bg-surface overflow-hidden">
+        {/* Pestañas y lote, dentro de la tarjeta y encima de la tabla. */}
+        <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={pestana} onValueChange={cambiarPestana}>
             <TabsList variant="underline" className="justify-start">
               {(Object.keys(TITULO_DE_LA_PESTANA) as EstadoDelMovimientoBancario[]).map((e) => (
@@ -232,6 +290,7 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
               disabled={segurosEnPantalla === 0 || corriendoSeguros}
               onClick={() => setConfirmandoSeguros(true)}
               data-testid="conciliar-seguros"
+              className="shrink-0"
             >
               <ShieldCheck className="h-4 w-4" aria-hidden="true" />
               Conciliar los seguros ({segurosEnPantalla})
@@ -239,74 +298,78 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
           )}
         </div>
 
-        {cargando && movimientos === null ? (
-          <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <Spinner size="lg" />
-            <p className="text-sm text-fg-muted">Cargando movimientos...</p>
-          </div>
-        ) : errorDeCarga ? (
-          <FalloDeCarga error={errorDeCarga} queEs="los movimientos del extracto" onReintentar={cargar} />
-        ) : !movimientos || movimientos.length === 0 ? (
-          <EmptyState
-            icon={Bank}
-            title={
-              pestana === 'PENDIENTE'
-                ? 'Nada pendiente de conciliar'
-                : pestana === 'CONCILIADO'
-                  ? 'Todavía no hay movimientos conciliados'
-                  : 'No hay movimientos ignorados'
-            }
-            description={
-              pestana === 'PENDIENTE'
-                ? 'Cargá el extracto del banco y acá aparecen las líneas con los cobros que se les parecen.'
-                : 'Cuando concilies o ignores una línea del extracto, queda acá con su rastro.'
-            }
-          />
-        ) : (
-          <>
-            <ul
-              className="divide-y divide-border rounded-lg border border-border bg-surface"
-              data-testid="movimientos"
-            >
-              {movimientos.map((m) => (
-                <MovimientoFila
-                  key={m.id}
-                  movimiento={m}
-                  ocupado={ocupados.has(m.id)}
-                  puedeConciliar={puedeConciliar}
-                  puedeEditar={puedeEditar}
-                  onConciliar={(mov, c) => void conciliar(mov, c)}
-                  onIgnorar={(mov) => {
-                    setIgnorando(mov);
-                    setMotivo('');
-                  }}
-                  onReabrir={(mov) => void reabrir(mov)}
-                />
-              ))}
-            </ul>
-            {paginas > 1 && (
-              <div className="flex items-center justify-between text-xs text-fg-muted">
-                <span className="font-mono tabular-nums">
-                  Página {pagina + 1} de {paginas} · {total} movimientos
-                </span>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="secondary" hideArrow disabled={pagina === 0} onClick={() => setPagina((p) => p - 1)}>
-                    Anterior
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    hideArrow
-                    disabled={pagina + 1 >= paginas}
-                    onClick={() => setPagina((p) => p + 1)}
-                  >
-                    Siguiente
-                  </Button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
+        {/* Carga y fallo, por fuera del cuerpo; el vacío va DENTRO, para que
+            los encabezados de la tabla se sigan viendo. */}
+        <EstadoDeDatos
+          cargando={cargando && movimientos === null}
+          error={errorDeCarga}
+          queEs="los movimientos del extracto"
+          onReintentar={cargar}
+          esqueleto={
+            <div className="flex flex-col items-center gap-3 py-16 text-center">
+              <Spinner size="lg" />
+              <p className="text-body-sm text-fg-muted">Cargando movimientos...</p>
+            </div>
+          }
+        >
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {COLUMNAS.map((c) => (
+                  <TableHead key={c} className="whitespace-nowrap">
+                    {c}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody data-testid="movimientos">
+              {sinFilas ? (
+                <TableRow>
+                  <TableCell colSpan={COLUMNAS.length} className="p-0">
+                    <SinDatos
+                      queSon="movimientos"
+                      icono={Bank}
+                      titulo={vacioDeLaPestana.titulo}
+                      descripcion={vacioDeLaPestana.descripcion}
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                movimientos.map((m) => (
+                  <MovimientoFila
+                    key={m.id}
+                    movimiento={m}
+                    ocupado={ocupados.has(m.id)}
+                    puedeConciliar={puedeConciliar}
+                    puedeEditar={puedeEditar}
+                    onConciliar={(mov, c) => void conciliar(mov, c)}
+                    onIgnorar={(mov) => {
+                      setIgnorando(mov);
+                      setMotivo('');
+                    }}
+                    onReabrir={(mov) => void reabrir(mov)}
+                  />
+                ))
+              )}
+            </TableBody>
+          </Table>
+
+          {total > 0 && (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={total}
+                page={pagina}
+                pageSize={porPagina}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPagina}
+                onPageSizeChange={(size) => {
+                  setPorPagina(size);
+                  setPagina(1);
+                }}
+              />
+            </div>
+          )}
+        </EstadoDeDatos>
       </section>
 
       <Dialog open={ignorando !== null} onOpenChange={(abierto) => !abierto && setIgnorando(null)}>
@@ -328,7 +391,7 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
               rows={3}
               maxLength={300}
             />
-            <p className="text-xs text-fg-muted">Entre 5 y 300 caracteres.</p>
+            <p className="text-caption text-fg-muted">Entre 5 y 300 caracteres.</p>
           </div>
           <DialogFooter>
             <Button variant="outline" hideArrow onClick={() => setIgnorando(null)}>
@@ -353,7 +416,8 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
             <AlertDialogDescription>
               Se emite un recibo de caja por cada línea que tiene un solo cobro con el valor exacto y el
               nombre o la dirección en la descripción. Lo que tenga dudas queda pendiente para que lo
-              mires vos.
+              mires vos. El lote corre sobre TODOS los movimientos pendientes, no sólo sobre los de
+              esta página.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -375,13 +439,14 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
   );
 }
 
+/** La tarjeta KPI del panel: etiqueta chica arriba, número grande abajo. */
 function Cifra({ etiqueta, valor, detalle }: { etiqueta: string; valor: string; detalle?: string }) {
   return (
-    <div className="rounded-lg border border-border bg-surface p-4 shadow-sm">
-      <p className="font-mono text-[11px] uppercase tracking-wide text-fg-muted">{etiqueta}</p>
-      <p className="mt-1 font-mono text-2xl tabular-nums text-fg">{valor}</p>
+    <div className="rounded-lg border border-border bg-surface p-4">
+      <p className="text-caption text-fg-muted">{etiqueta}</p>
+      <p className="mt-1.5 text-2xl font-semibold tabular-nums text-fg">{valor}</p>
       {detalle && (
-        <p className="mt-0.5 truncate text-xs text-fg-muted" title={detalle}>
+        <p className="mt-0.5 truncate text-caption text-fg-muted" title={detalle}>
           {detalle}
         </p>
       )}

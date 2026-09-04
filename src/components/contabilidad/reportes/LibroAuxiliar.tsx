@@ -4,13 +4,25 @@
  * El libro auxiliar: todo lo que pasó en UNA cuenta, con el saldo corrido en
  * la naturaleza de la cuenta (en una de débito, los débitos suman; en una de
  * crédito, restan).
+ *
+ * ── Los números viven en la tabla, no arriba (Nico, 2026-09-03) ────────────
+ *
+ * Antes había una franja con «Saldo inicial» y «Saldo final» encima de una
+ * tabla que ya traía las dos cosas (primera fila y pie). Repetido dos veces,
+ * el lector no sabe cuál mirar. Ahora la cuenta y su naturaleza se leen en el
+ * filtro —que es donde se eligen— y los montos, una sola vez, en la tabla:
+ * saldo inicial como primera fila y saldo final en el pie de totales.
+ *
+ * El back devuelve el auxiliar entero en un pedido (no pagina), así que el
+ * recorte es de presentación: `useTablePagination`. El saldo inicial sólo se
+ * pinta en la primera página — en la tercera no sería «inicial» de nada.
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { ListMagnifyingGlass } from '@phosphor-icons/react';
 
-import { EmptyState } from '@/components/ui/empty-state';
 import { Label } from '@/components/ui/label';
+import { TablePagination } from '@/components/ui/pagination';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
@@ -21,14 +33,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { contabilidadApi, type LibroAuxiliar as Libro } from '@/lib/api/contabilidad.service';
 import { diaLegible, hoy, primerDiaDelMes, rangoInvertido } from '@/lib/contabilidad/fechas';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { cn } from '@/lib/utils';
 import { Monto } from '../Monto';
 import { RangoDeFechas } from '../RangoDeFechas';
 import { SelectorDeCuenta } from '../SelectorDeCuenta';
-import { etiquetaDeCuenta, useCuentas } from '../use-cuentas';
+import { useCuentas } from '../use-cuentas';
+
+const COLUMNAS = 7;
 
 export function LibroAuxiliar() {
   const { cuentas, cargando: cargandoCuentas, error: errorDeCuentas, recargar } = useCuentas();
@@ -39,6 +55,10 @@ export function LibroAuxiliar() {
   const [error, setError] = useState<unknown>(null);
 
   const invertido = rangoInvertido(rango.desde, rango.hasta);
+
+  const renglones = cuentaId && libro ? libro.renglones : [];
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(renglones, { resetKey: `${cuentaId}|${rango.desde}|${rango.hasta}` });
 
   const cargar = useCallback(async () => {
     if (!cuentaId || invertido) return;
@@ -62,9 +82,12 @@ export function LibroAuxiliar() {
     void cargar();
   }, [cargar]);
 
+  const sinCuenta = !cuentaId;
+  const vacio = !sinCuenta && libro !== null && libro.renglones.length === 0;
+
   return (
     <div className="space-y-5">
-      <div className="grid gap-4 rounded-lg border border-border bg-surface p-4 shadow-sm lg:grid-cols-[minmax(280px,1fr)_minmax(280px,420px)]">
+      <div className="grid gap-4 rounded-lg border border-border bg-surface p-4 lg:grid-cols-[minmax(280px,1fr)_minmax(280px,420px)]">
         <div className="space-y-1.5">
           <Label>Cuenta</Label>
           <SelectorDeCuenta
@@ -83,137 +106,155 @@ export function LibroAuxiliar() {
               </button>
             </p>
           ) : null}
+          {libro && cuentaId ? (
+            <p className="text-caption text-fg-subtle">
+              Naturaleza {libro.cuenta.naturaleza === 'DEBITO' ? 'débito' : 'crédito'}: el saldo
+              corre en ese sentido.
+            </p>
+          ) : null}
         </div>
         <RangoDeFechas desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
       </div>
 
-      {!cuentaId ? (
-        <EmptyState
-          icon={ListMagnifyingGlass}
-          title="Elegí una cuenta"
-          description="El auxiliar muestra cada movimiento de una cuenta con su saldo corrido."
-        />
-      ) : error ? (
-        <FalloDeCarga error={error} queEs="el libro auxiliar" onReintentar={cargar} />
-      ) : cargando && !libro ? (
-        <div className="flex items-center justify-center py-16">
-          <Spinner />
-        </div>
-      ) : libro ? (
-        <div className={cn('space-y-4', cargando && 'opacity-60')} aria-busy={cargando}>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-fg">{etiquetaDeCuenta(libro.cuenta)}</p>
-              <p className="font-mono text-[11px] uppercase tracking-wide text-fg-subtle">
-                naturaleza {libro.cuenta.naturaleza === 'DEBITO' ? 'débito' : 'crédito'}
-              </p>
+      <section className="overflow-hidden rounded-lg border border-border bg-surface">
+        <EstadoDeDatos
+          cargando={cargando && libro === null}
+          error={error}
+          queEs="el libro auxiliar"
+          onReintentar={cargar}
+          esqueleto={
+            <div className="flex items-center justify-center py-16">
+              <Spinner />
             </div>
-            <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-              <div className="flex items-baseline gap-2">
-                <dt className="text-fg-muted">Saldo inicial</dt>
-                <dd>
-                  <Monto valor={libro.saldoInicialCop} />
-                </dd>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <dt className="text-fg-muted">Saldo final</dt>
-                <dd>
-                  <Monto valor={libro.saldoFinalCop} className="font-medium" />
-                </dd>
-              </div>
-            </dl>
-          </div>
-
-          {libro.renglones.length === 0 ? (
-            <EmptyState
-              icon={ListMagnifyingGlass}
-              title="Sin movimientos en este rango"
-              description="La cuenta no se movió entre esas fechas. El saldo inicial es el que arrastra."
-            />
-          ) : (
-            <div className="overflow-x-auto rounded-md border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead numeric>Asiento</TableHead>
-                    <TableHead>Descripción</TableHead>
-                    <TableHead>Tercero</TableHead>
-                    <TableHead numeric>Débito</TableHead>
-                    <TableHead numeric>Crédito</TableHead>
-                    <TableHead numeric>Saldo</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell colSpan={6} muted className="text-sm">
-                      Saldo inicial
-                    </TableCell>
-                    <TableCell numeric>
-                      <Monto valor={libro.saldoInicialCop} />
+          }
+        >
+          <div className={cn(cargando && 'opacity-60')} aria-busy={cargando || undefined}>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead numeric>Asiento</TableHead>
+                  <TableHead>Descripción</TableHead>
+                  <TableHead>Tercero</TableHead>
+                  <TableHead numeric>Débito</TableHead>
+                  <TableHead numeric>Crédito</TableHead>
+                  <TableHead numeric>Saldo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sinCuenta || vacio ? (
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={COLUMNAS} className="p-0">
+                      <SinDatos
+                        queSon="movimientos"
+                        icono={ListMagnifyingGlass}
+                        titulo={sinCuenta ? 'Elegí una cuenta' : 'Sin movimientos en este rango'}
+                        descripcion={
+                          sinCuenta
+                            ? 'El auxiliar muestra cada movimiento de una cuenta con su saldo corrido.'
+                            : 'La cuenta no se movió entre esas fechas: el saldo que arrastra es el que ya traía.'
+                        }
+                      />
                     </TableCell>
                   </TableRow>
-                  {libro.renglones.map((r, i) => (
-                    <TableRow key={`${r.asientoId}-${i}`}>
-                      <TableCell>
-                        <span className="font-mono text-sm tabular-nums">{diaLegible(r.fecha)}</span>
-                      </TableCell>
-                      <TableCell numeric>
-                        <span className="font-mono tabular-nums">{r.numero}</span>
-                      </TableCell>
-                      <TableCell className="max-w-[320px]">
-                        <span className="block truncate text-sm" title={r.descripcionAsiento}>
-                          {r.descripcionAsiento}
-                        </span>
-                        {r.descripcion ? (
-                          <span className="block truncate text-xs text-fg-muted" title={r.descripcion}>
-                            {r.descripcion}
+                ) : (
+                  <>
+                    {/* Sólo en la primera página: en la tercera no sería el
+                        saldo «inicial» de nada. */}
+                    {page === 1 && libro ? (
+                      <TableRow className="hover:bg-transparent">
+                        <TableCell colSpan={6} muted className="whitespace-nowrap">
+                          Saldo inicial
+                        </TableCell>
+                        <TableCell numeric className="whitespace-nowrap">
+                          <Monto valor={libro.saldoInicialCop} />
+                        </TableCell>
+                      </TableRow>
+                    ) : null}
+                    {pageItems.map((r, i) => (
+                      <TableRow key={`${r.asientoId}-${i}`}>
+                        <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
+                          {diaLegible(r.fecha)}
+                        </TableCell>
+                        <TableCell numeric className="whitespace-nowrap font-mono">
+                          {r.numero}
+                        </TableCell>
+                        <TableCell className="max-w-[340px]">
+                          <span className="flex items-baseline gap-1.5">
+                            <span className="truncate text-fg" title={r.descripcionAsiento}>
+                              {r.descripcionAsiento}
+                            </span>
+                            {r.descripcion ? (
+                              <span
+                                className="max-w-[40%] shrink-0 truncate text-caption text-fg-muted"
+                                title={r.descripcion}
+                              >
+                                · {r.descripcion}
+                              </span>
+                            ) : null}
                           </span>
-                        ) : null}
-                      </TableCell>
-                      <TableCell muted>
-                        {r.terceroTipo ? (
-                          <span className="font-mono text-xs">
-                            {r.terceroTipo}
-                            <span className="block text-fg-subtle">{r.terceroId}</span>
-                          </span>
-                        ) : (
-                          <span className="text-fg-subtle">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell numeric>
-                        <Monto valor={r.debitoCop} vacioSiCero />
-                      </TableCell>
-                      <TableCell numeric>
-                        <Monto valor={r.creditoCop} vacioSiCero />
-                      </TableCell>
-                      <TableCell numeric>
-                        <Monto valor={r.saldoCop} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
+                        </TableCell>
+                        <TableCell muted className="whitespace-nowrap">
+                          {r.terceroTipo ? (
+                            <span
+                              className="font-mono text-caption"
+                              title={`${r.terceroTipo} ${r.terceroId ?? ''}`.trim()}
+                            >
+                              {r.terceroTipo}
+                            </span>
+                          ) : (
+                            <span className="text-fg-subtle">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell numeric className="whitespace-nowrap">
+                          <Monto valor={r.debitoCop} vacioSiCero />
+                        </TableCell>
+                        <TableCell numeric className="whitespace-nowrap">
+                          <Monto valor={r.creditoCop} vacioSiCero />
+                        </TableCell>
+                        <TableCell numeric className="whitespace-nowrap">
+                          <Monto valor={r.saldoCop} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </>
+                )}
+              </TableBody>
+              {libro && !sinCuenta && !vacio ? (
                 <TableFooter>
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-sm font-medium text-fg">
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={4} className="whitespace-nowrap text-sm font-medium text-fg">
                       Totales del período
                     </TableCell>
-                    <TableCell numeric>
+                    <TableCell numeric className="whitespace-nowrap">
                       <Monto valor={libro.debitosCop} className="font-medium" />
                     </TableCell>
-                    <TableCell numeric>
+                    <TableCell numeric className="whitespace-nowrap">
                       <Monto valor={libro.creditosCop} className="font-medium" />
                     </TableCell>
-                    <TableCell numeric>
+                    <TableCell numeric className="whitespace-nowrap">
                       <Monto valor={libro.saldoFinalCop} className="font-medium" />
                     </TableCell>
                   </TableRow>
                 </TableFooter>
-              </Table>
+              ) : null}
+            </Table>
+          </div>
+
+          {shouldPaginate ? (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
             </div>
-          )}
-        </div>
-      ) : null}
+          ) : null}
+        </EstadoDeDatos>
+      </section>
     </div>
   );
 }

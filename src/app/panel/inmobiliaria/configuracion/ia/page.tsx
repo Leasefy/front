@@ -1,52 +1,20 @@
 'use client'
 
 /**
- * /panel/inmobiliaria/configuracion/ia — AI chat "self-learning lessons"
- * certification fence (F3).
+ * `/panel/inmobiliaria/configuracion/ia` — Automatización IA, dentro del marco
+ * de Configuración.
  *
- * The assistant proposes heuristics it has learned from usage (routing /
- * approval). A human with OPERATOR+ role certifies them through a fail-closed
- * fence before they influence the chat. This page hosts that review.
+ * El asistente propone reglas que aprendió del uso; una persona con rol
+ * OPERATOR+ las certifica antes de que puedan influir en el chat. Los datos, el
+ * rol y la compuerta (que falla cerrada) viven en `ChatLessonsPanel` /
+ * `useChatLessons`: acá sólo se elige la sección.
  *
- * Data + role + fence handling live in ChatLessonsPanel / useChatLessons; this
- * file is just the route shell (breadcrumb + header + panel).
+ * Antes esta ruta traía su propia miga de pan y su propio encabezado; ahora el
+ * marco de Configuración pone el título y la nav, así que no se repiten.
  */
 
-import { Brain } from '@phosphor-icons/react'
+import { SeccionCompleta } from '../contenido'
 
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
-import { ChatLessonsPanel } from '@/components/inmobiliaria/ai/lessons/ChatLessonsPanel'
-
-export default function ChatLessonsPage() {
-  return (
-    <div className="p-6 lg:p-8 space-y-6">
-      <MigaDePan
-        backHref="/panel/inmobiliaria/configuracion"
-        icon={Brain}
-        crumbs={[
-          { label: 'Configuración', href: '/panel/inmobiliaria/configuracion' },
-          { label: 'Automatización IA' },
-        ]}
-      />
-
-      <header className="space-y-1">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800">
-            <Brain weight="duotone" className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
-          </div>
-          <div>
-            <h1 className="text-h2 text-fg">
-              Aprendizaje del asistente
-            </h1>
-            <p className="text-neutral-500 dark:text-neutral-400">
-              Revisa y certifica lo que el asistente aprendió. Solo las lecciones
-              certificadas pueden influir en el chat.
-            </p>
-          </div>
-        </div>
-      </header>
-
-      <ChatLessonsPanel />
-    </div>
-  )
+export default function AutomatizacionIaPage() {
+  return <SeccionCompleta id="ia" />
 }

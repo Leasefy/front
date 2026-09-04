@@ -39,7 +39,7 @@ import { SegmentedControl } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Pagination } from '@/components/ui/pagination';
+import { TablePagination } from '@/components/ui/pagination';
 import {
   Select,
   SelectContent,
@@ -1119,7 +1119,6 @@ function ListaDeTrabajo({
   onAplicar: () => void;
   onOtroArchivo: () => void;
 }) {
-  const totalPaginas = Math.max(1, Math.ceil(totalPendientes / POR_PAGINA));
   const todasMarcadas = pendientes.length > 0 && pendientes.every((f) => seleccion.has(f.id));
 
   return (
@@ -1405,12 +1404,20 @@ function ListaDeTrabajo({
         </p>
       ) : null}
 
-      {totalPaginas > 1 ? (
-        <Pagination
-          currentPage={pagina}
-          totalPages={totalPaginas}
-          onPageChange={onPaginaCambia}
-        />
+      {/* Pie del design system: dice cuántas filas quedan por decidir y en
+          cuál página vas, no sólo «‹ 2 ›». Las páginas las sirve el back
+          (`filas(lote, { pagina, porPagina })`), así que el tamaño de página
+          no se ofrece: sin `pageSizeOptions` el selector no se monta y no
+          queda un control que no hace nada. */}
+      {totalPendientes > 0 ? (
+        <div className="border-t border-border px-4 py-3">
+          <TablePagination
+            total={totalPendientes}
+            page={pagina}
+            pageSize={POR_PAGINA}
+            onPageChange={onPaginaCambia}
+          />
+        </div>
       ) : null}
 
       <Button variant="outline" hideArrow onClick={onOtroArchivo}>

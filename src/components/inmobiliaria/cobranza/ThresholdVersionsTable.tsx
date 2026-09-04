@@ -41,6 +41,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { TablePagination } from '@/components/ui/pagination'
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 
 export interface ThresholdVersionsTableProps {
   versions: ThresholdRow[]
@@ -59,11 +61,18 @@ export function ThresholdVersionsTable({
   const [isRollingBack, setIsRollingBack] = useState<boolean>(false)
   const [toast, setToast] = useState<string | null>(null)
 
-  // currentMax = highest version in the list; new rollback row will be max+1
+  // currentMax = highest version in the list; new rollback row will be max+1.
+  // Se calcula sobre TODAS las versiones, no sobre la página: si mirara sólo la
+  // página, la fila «vigente» y el número de la versión nueva del diálogo de
+  // rollback cambiarían al pasar de página.
   const currentMax = versions.reduce<number>(
     (acc, v) => (v.version != null && v.version > acc ? v.version : acc),
     0,
   )
+
+  // El historial es append-only: cada edición y cada rollback suman una fila.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(versions)
 
   const confirmRollback = async () => {
     if (rollbackConfirmVersion == null) return
@@ -100,80 +109,95 @@ export function ThresholdVersionsTable({
       {versions.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-6">—</p>
       ) : (
-        <div className="overflow-x-auto overscroll-contain">
-        <Table>
-          <TableHeader className="bg-muted/10 border-b border-border">
-            <TableRow>
-              <TableHead className="text-left px-3 py-2">
-                {locale.startsWith('es') ? 'Versión' : 'Version'}
-              </TableHead>
-              <TableHead className="text-left px-3 py-2">
-                {locale.startsWith('es') ? 'Creada' : 'Created'}
-              </TableHead>
-              <TableHead className="text-left px-3 py-2">
-                {locale.startsWith('es') ? 'Por' : 'By'}
-              </TableHead>
-              <TableHead className="text-left px-3 py-2">
-                {locale.startsWith('es') ? 'Tipo' : 'Type'}
-              </TableHead>
-              <TableHead className="text-right px-3 py-2" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {versions.map((v) => {
-              const isCurrent = v.version === currentMax
-              return (
-                <TableRow
-                  key={`v-${v.version ?? 'null'}-${v.created_at ?? ''}`}
-                  className="border-b border-border last:border-0"
-                >
-                  <TableCell className="px-3 py-2 font-mono tabular-nums text-foreground">
-                    {v.version != null ? `v${v.version}` : '—'}
-                    {isCurrent && (
-                      <MonoLabel className="ml-2 text-[10px] text-success">
-                        {locale.startsWith('es') ? 'vigente' : 'active'}
-                      </MonoLabel>
-                    )}
-                  </TableCell>
-                  <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-muted-foreground">
-                    {v.created_at ? new Date(v.created_at).toLocaleString(locale) : '—'}
-                  </TableCell>
-                  <TableCell className="px-3 py-2 text-xs text-foreground">
-                    {v.created_by_email ?? v.created_by_user_id ?? '—'}
-                  </TableCell>
-                  <TableCell className="px-3 py-2">
-                    {v.is_rollback_of_version != null ? (
-                      <Badge variant="warning">
-                        {locale.startsWith('es')
-                          ? `Rollback de v${v.is_rollback_of_version}`
-                          : `Rollback of v${v.is_rollback_of_version}`}
-                      </Badge>
-                    ) : (
-                      <MonoLabel className="text-[10px] text-muted-foreground">
-                        edit
-                      </MonoLabel>
-                    )}
-                  </TableCell>
-                  <TableCell className="px-3 py-2 text-right">
-                    {!isCurrent && v.version != null && supported && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        hideArrow
-                        onClick={() => setRollbackConfirmVersion(v.version)}
-                        aria-label={`rollback v${v.version}`}
-                      >
-                        <ArrowCounterClockwise className="w-3 h-3" aria-hidden="true" />
-                        {locale.startsWith('es') ? 'Restaurar' : 'Restore'}
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-        </div>
+        <>
+          <div className="overflow-x-auto overscroll-contain">
+          <Table>
+            <TableHeader className="bg-muted/10 border-b border-border">
+              <TableRow>
+                <TableHead className="text-left px-3 py-2">
+                  {locale.startsWith('es') ? 'Versión' : 'Version'}
+                </TableHead>
+                <TableHead className="text-left px-3 py-2">
+                  {locale.startsWith('es') ? 'Creada' : 'Created'}
+                </TableHead>
+                <TableHead className="text-left px-3 py-2">
+                  {locale.startsWith('es') ? 'Por' : 'By'}
+                </TableHead>
+                <TableHead className="text-left px-3 py-2">
+                  {locale.startsWith('es') ? 'Tipo' : 'Type'}
+                </TableHead>
+                <TableHead className="text-right px-3 py-2" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pageItems.map((v) => {
+                const isCurrent = v.version === currentMax
+                return (
+                  <TableRow
+                    key={`v-${v.version ?? 'null'}-${v.created_at ?? ''}`}
+                    className="border-b border-border last:border-0"
+                  >
+                    <TableCell className="px-3 py-2 font-mono tabular-nums text-foreground">
+                      {v.version != null ? `v${v.version}` : '—'}
+                      {isCurrent && (
+                        <MonoLabel className="ml-2 text-[10px] text-success">
+                          {locale.startsWith('es') ? 'vigente' : 'active'}
+                        </MonoLabel>
+                      )}
+                    </TableCell>
+                    <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-muted-foreground">
+                      {v.created_at ? new Date(v.created_at).toLocaleString(locale) : '—'}
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-xs text-foreground">
+                      {v.created_by_email ?? v.created_by_user_id ?? '—'}
+                    </TableCell>
+                    <TableCell className="px-3 py-2">
+                      {v.is_rollback_of_version != null ? (
+                        <Badge variant="warning">
+                          {locale.startsWith('es')
+                            ? `Rollback de v${v.is_rollback_of_version}`
+                            : `Rollback of v${v.is_rollback_of_version}`}
+                        </Badge>
+                      ) : (
+                        <MonoLabel className="text-[10px] text-muted-foreground">
+                          edit
+                        </MonoLabel>
+                      )}
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-right">
+                      {!isCurrent && v.version != null && supported && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          hideArrow
+                          onClick={() => setRollbackConfirmVersion(v.version)}
+                          aria-label={`rollback v${v.version}`}
+                        >
+                          <ArrowCounterClockwise className="w-3 h-3" aria-hidden="true" />
+                          {locale.startsWith('es') ? 'Restaurar' : 'Restore'}
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+          </div>
+
+          {shouldPaginate && (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          )}
+        </>
       )}
 
       {/* Toast */}

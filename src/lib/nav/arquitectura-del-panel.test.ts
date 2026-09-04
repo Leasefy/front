@@ -36,6 +36,7 @@ import { AGENT_WORKSPACES } from './agentWorkspaceNav';
 import {
   ARQUITECTURA_DEL_PANEL,
   PANEL,
+  RUTAS_FUERA_DEL_SIDEBAR,
   modulosDelPanel,
   pestanasDelModulo,
   moduloDeLaRuta,
@@ -172,11 +173,24 @@ describe('arquitectura del panel — sidebar', () => {
     }
   });
 
-  it('el sidebar tiene 18 módulos en 4 grupos con nombre (+ Inicio y Chat = 20 filas)', () => {
-    // La propuesta contaba 21 porque incluía «Ayuda», que en el panel no existe
-    // como fila (ni existía antes): no se inventa.
+  it('el sidebar tiene 17 módulos en 4 grupos con nombre (+ Inicio y Chat = 19 filas)', () => {
+    // Eran 18 hasta que Configuración salió del sidebar (Nico, 2026-09-03): se
+    // entra por el menú del perfil. La propuesta original contaba 21 porque
+    // incluía «Ayuda», que en el panel no existe como fila: no se inventa.
     expect(ARQUITECTURA_DEL_PANEL.filter((g) => g.labelKey !== null)).toHaveLength(4);
-    expect(modulos).toHaveLength(18);
+    expect(modulos).toHaveLength(17);
+  });
+
+  it('Configuración NO es una fila del sidebar: se entra por el menú del perfil', () => {
+    // Había dos puertas a lo mismo (la fila y el ítem del menú del perfil).
+    // Quedó una. Las rutas siguen vivas —y son destino de redirecciones—, por
+    // eso están declaradas en `RUTAS_FUERA_DEL_SIDEBAR`.
+    expect(modulos.map((m) => m.key)).not.toContain('configuracion');
+    expect(pantallas.map((p) => p.href).filter((h) => h.startsWith(`${PANEL}/configuracion`))).toEqual([]);
+    expect(RUTAS_FUERA_DEL_SIDEBAR).toContain(`${PANEL}/configuracion`);
+    // Y sin dueño en el árbol, el riel de secciones se calla solo.
+    expect(moduloDeLaRuta(`${PANEL}/configuracion`)).toBeNull();
+    expect(moduloDeLaRuta(`${PANEL}/configuracion/equipo`)).toBeNull();
   });
 
   it('el menú tiene UNA entrada de inmuebles, no dos', () => {
@@ -195,10 +209,8 @@ describe('arquitectura del panel — sidebar', () => {
     const excepciones: Record<string, string> = {
       '/postulaciones/estudio': 'evaluacion-de-candidatos', // vocabulario: «Estudio» murió
       '/postulaciones/asegurabilidad': 'asegurabilidad',
-      '/configuracion/ia': 'automatizacion-ia',
       '/reportes/ia': 'desempeno-ia',
       '/reportes/resumen': 'resumen-del-negocio',
-      '/configuracion/agentes': 'agentes-ia',
       '/mantenimientos/tickets': 'tickets',
       '/contratos/aprobar': 'por-aprobar',
     };

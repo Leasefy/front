@@ -51,3 +51,15 @@ export function diaLegible(valor: string | null | undefined): string {
 export function rangoInvertido(a: string, b: string): boolean {
   return Boolean(diaDe(a) && diaDe(b) && a > b);
 }
+
+/** El mes anterior al de `ahora`, entero: `desde` el 1.º, `hasta` el último día, y su etiqueta `AAAA-MM`. */
+export function rangoDelMesAnterior(ahora: Date = new Date()): { mes: string; desde: string; hasta: string } {
+  const primero = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
+  // Día 0 del mes actual = último día del mes anterior.
+  const ultimo = new Date(ahora.getFullYear(), ahora.getMonth(), 0);
+  return {
+    mes: aTextoDeDia(primero).slice(0, 7),
+    desde: aTextoDeDia(primero),
+    hasta: aTextoDeDia(ultimo),
+  };
+}

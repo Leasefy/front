@@ -22,6 +22,8 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table'
+import { TablePagination } from '@/components/ui/pagination'
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import type { RecentQuote } from '@/lib/hooks/cotizador/use-carrier-recent-quotes'
 
 // =============================================================================
@@ -55,12 +57,25 @@ interface CarrierRecentQuotesTableProps {
   isLoading?: boolean
 }
 
+/**
+ * Identidad estable para el caso `quotes === null`: el hook de paginado guarda
+ * `pageItems` con `useMemo` sobre la lista, y un `[]` nuevo en cada render lo
+ * invalidaría siempre.
+ */
+const SIN_COTIZACIONES: RecentQuote[] = []
+
 // =============================================================================
 // Component
 // =============================================================================
 
 export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierRecentQuotesTableProps) {
   const { t } = useI18n()
+
+  // Son las últimas 50 cotizaciones de la aseguradora: 50 filas de un tirón no
+  // se leen. El hook va antes de los early returns — es un hook, no puede
+  // quedar detrás de un `if`.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(quotes ?? SIN_COTIZACIONES)
 
   if (isLoading) {
     return (
@@ -140,7 +155,7 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y divide-border">
-            {quotes.map((quote) => (
+            {pageItems.map((quote) => (
               <TableRow
                 key={quote.id}
                 className="hover:bg-surface-muted/50 transition-colors"
@@ -195,6 +210,19 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
           </TableBody>
         </Table>
       </div>
+
+      {shouldPaginate && (
+        <div className="border-t border-border px-4 py-3">
+          <TablePagination
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+        </div>
+      )}
     </div>
   )
 }

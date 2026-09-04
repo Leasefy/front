@@ -47,14 +47,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Pagination } from '@/components/ui/pagination';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { SegmentedControl } from '@leasefy/cadence';
 
 // View modes
 type ViewMode = 'table' | 'cards';
-
-// Pagination
-const ITEMS_PER_PAGE = 6;
 
 /**
  * Get current month in YYYY-MM format
@@ -127,9 +125,6 @@ function DispersionesContent() {
   // State for view mode
   const [viewMode, setViewMode] = useState<ViewMode>('table');
 
-  // State for pagination
-  const [currentPage, setCurrentPage] = useState(1);
-
   // State for modals
   const [selectedDispersion, setSelectedDispersion] = useState<Dispersion | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -146,13 +141,22 @@ function DispersionesContent() {
     );
   }, [dispersiones, filters.search]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredDispersiones.length / ITEMS_PER_PAGE);
-  const paginatedDispersiones = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    const end = start + ITEMS_PER_PAGE;
-    return filteredDispersiones.slice(start, end);
-  }, [filteredDispersiones, currentPage]);
+  // Paginación — el pie canónico del panel (`useTablePagination` +
+  // `TablePagination`). Antes era un slice a mano de 6 por página con el
+  // paginador de ventana: no decía cuántas dispersiones había en total ni
+  // dejaba elegir cuántas filas ver. `resetKey` lleva los cuatro filtros:
+  // mes, estado y propietario los resuelve la API, la búsqueda es de acá.
+  const {
+    pageItems: paginatedDispersiones,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(filteredDispersiones, {
+    resetKey: `${filters.month}|${filters.status}|${filters.propietarioId}|${filters.search}`,
+  });
 
   // Fetch summary for selected month
   const [summary, setSummary] = useState<DispersionSummary>({
@@ -352,16 +356,14 @@ function DispersionesContent() {
     }
   }, [t]);
 
-  // Handle filter change
+  // La vuelta a la página 1 la hace `useTablePagination` por `resetKey`, no acá.
   const handleFilterChange = useCallback((newFilters: DispersionFiltersState) => {
     setFilters(newFilters);
-    setCurrentPage(1); // Reset page when filters change
   }, []);
 
   // Handle view pending filter
   const handleViewPending = useCallback(() => {
     setFilters((prev) => ({ ...prev, status: 'pending' }));
-    setCurrentPage(1);
   }, []);
 
   // Handle detail modal close
@@ -568,13 +570,17 @@ function DispersionesContent() {
           )}
         </div>
 
-        {/* Pagination Footer */}
-        {totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-border flex items-center justify-center bg-muted/10">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
+        {/* Pie de tabla del design system: «X dispersiones · Filas por
+            página · n/m». Se monta también con una sola fila. */}
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
             />
           </div>
         )}

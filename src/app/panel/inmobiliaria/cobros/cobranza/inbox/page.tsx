@@ -54,6 +54,8 @@ import {
 } from '@/lib/hooks/cobranza/use-inbox'
 import { ManualWAModal } from '@/components/inmobiliaria/cobranza/intervention/ManualWAModal'
 import { PauseModal } from '@/components/inmobiliaria/cobranza/intervention/PauseModal'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 
 const BASE = '/panel/inmobiliaria/cobros/cobranza'
 const LLAMADAS_HREF = `${BASE}/llamadas`
@@ -145,6 +147,22 @@ function InboxContent() {
     () => (filtro === 'todos' ? items : items.filter((it) => it.grupo === filtro)),
     [items, filtro],
   )
+
+  // Los hilos del inbox no tienen techo: se pintaban todos. Mismo pie que las
+  // tablas del panel; cambiar de grupo vuelve a la página 1.
+  //
+  // `total` ya está tomado en esta pantalla: es el total de hilos del backend,
+  // el que narra el resumen del agente. Lo que cuenta el pie es OTRA cosa —las
+  // filas del filtro activo— así que va con su propio nombre.
+  const {
+    pageItems,
+    total: totalVisibles,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(visibles, { resetKey: filtro })
 
   const handleMarkRead = async () => {
     if (!openThreadId) return
@@ -250,49 +268,66 @@ function InboxContent() {
       {/* Lista de conversaciones (datos reales del endpoint). FAIL-SOFT: si el
           backend no está desplegado, `visibles` queda vacío → <EmptyState>. */}
       {visibles.length > 0 ? (
-        <div
-          className="space-y-3 max-w-3xl"
-          role="list"
-          aria-label="Inbox de conversaciones"
-        >
-          {visibles.map((it) => {
-            const open = openThreadId === it.key
-            return (
-              <div key={it.key} className="space-y-3" role="listitem">
-                <ul>
-                  <InboxItemCard
-                    item={it}
-                    deudorHref={`${DEUDORES_HREF}/${it.debtorId}`}
-                    unread={unreadByThread.get(it.key) ?? false}
-                    recibidoTexto={recibido(it.recibidoEn)}
-                    isOpen={open}
-                    onOpenThread={() =>
-                      setOpenThreadId(open ? null : it.key)
-                    }
-                    onTomarControl={
-                      it.debtorId ? () => setTomarControlDe(it.debtorId) : undefined
-                    }
-                  />
-                </ul>
-                {/* Panel de conversación con los mensajes REALES del hilo. */}
-                {open && (
-                  <div className="pl-1">
-                    <InboxThreadPanel
-                      messages={threadDetail?.messages ?? []}
-                      isLoading={threadLoading}
-                      onMarkRead={handleMarkRead}
-                      marcandoLeido={marcandoLeido}
+        <div className="max-w-3xl">
+          <div
+            className="space-y-3"
+            role="list"
+            aria-label="Inbox de conversaciones"
+          >
+            {pageItems.map((it) => {
+              const open = openThreadId === it.key
+              return (
+                <div key={it.key} className="space-y-3" role="listitem">
+                  <ul>
+                    <InboxItemCard
+                      item={it}
+                      deudorHref={`${DEUDORES_HREF}/${it.debtorId}`}
                       unread={unreadByThread.get(it.key) ?? false}
-                      formatRecibido={(iso) => formatRelativeTime(iso, locale)}
-                      onResponder={
-                        it.debtorId ? () => setResponderA(it.debtorId) : undefined
+                      recibidoTexto={recibido(it.recibidoEn)}
+                      isOpen={open}
+                      onOpenThread={() =>
+                        setOpenThreadId(open ? null : it.key)
+                      }
+                      onTomarControl={
+                        it.debtorId ? () => setTomarControlDe(it.debtorId) : undefined
                       }
                     />
-                  </div>
-                )}
-              </div>
-            )
-          })}
+                  </ul>
+                  {/* Panel de conversación con los mensajes REALES del hilo. */}
+                  {open && (
+                    <div className="pl-1">
+                      <InboxThreadPanel
+                        messages={threadDetail?.messages ?? []}
+                        isLoading={threadLoading}
+                        onMarkRead={handleMarkRead}
+                        marcandoLeido={marcandoLeido}
+                        unread={unreadByThread.get(it.key) ?? false}
+                        formatRecibido={(iso) => formatRelativeTime(iso, locale)}
+                        onResponder={
+                          it.debtorId ? () => setResponderA(it.debtorId) : undefined
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+        {/* El pie va fuera del contenedor `role="list"`: un hijo que no es
+            `listitem` rompe la lista para el lector de pantalla. */}
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3 mt-3">
+            <TablePagination
+              total={totalVisibles}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
         </div>
       ) : (
         <EmptyState

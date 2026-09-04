@@ -18,8 +18,8 @@
  *    postulación o armado a mano, donde se lo carga por documento y correo)
  *    o de la migración; el back no expone un POST suelto. Un botón que abre
  *    un formulario acá crearía gente sin arriendo y la lista dejaría de
- *    significar «a quién le administro un inmueble». El vacío ofrece las dos
- *    salidas reales: migrar o crear el contrato.
+ *    significar «a quién le administro un inmueble». El vacío ofrece UNA
+ *    salida: migrar los contratos (ver el comentario sobre `accion`).
  * 3. **La búsqueda viaja al back.** Ver `use-inquilinos.ts`.
  *
  * ── Y una cuarta, del 2026-09-02 ────────────────────────────────────────────
@@ -102,10 +102,11 @@ function ContenidoDeInquilinos() {
    * la manda a la página 1 cuando cambia el filtro — si no, filtrar desde la
    * página 3 deja la tabla en blanco.
    */
-  const { pageItems, total, page, pageSize, setPage, setPageSize } = useTablePagination(
-    inquilinos,
-    { initialPageSize: 10, resetKey: `${buscar}|${estado}` },
-  );
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(inquilinos, {
+      initialPageSize: 10,
+      resetKey: `${buscar}|${estado}`,
+    });
 
   const totales = useMemo(() => {
     const vigentes = inquilinos.flatMap(arriendosVigentes);
@@ -125,7 +126,7 @@ function ContenidoDeInquilinos() {
         <h1 className="text-h2 text-fg">
           {t('inquilinos.titulo')}
         </h1>
-        <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">{t('inquilinos.subtitulo')}</p>
+        <p className="max-w-2xl text-body text-fg-muted line-clamp-2">{t('inquilinos.subtitulo')}</p>
       </header>
 
       {/* Los tres números miden lo VIGENTE, no lo histórico: un canon que suma
@@ -157,7 +158,7 @@ function ContenidoDeInquilinos() {
         {/* UNA tarjeta: barra, tabla (o vacío) y paginador. `rounded-lg` son
             los 22px de la tarjeta del panel — `rounded-xl` en cadence son 32
             y no es el radio de una tabla. */}
-        <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="overflow-hidden rounded-lg border border-border bg-surface">
           {/*
             La barra se pinta aunque no haya filas, PERO no cuando la
             inmobiliaria todavía no tiene un solo inquilino: un buscador sobre
@@ -192,36 +193,41 @@ function ContenidoDeInquilinos() {
                * migración, y el back ni siquiera expone un POST. Ofrecer un
                * formulario acá crearía gente sin arriendo.
                *
-               * 🔴 Y el segundo botón NO puede ser `/contratos/nuevo`: esa ruta
-               * sin `?applicationId=` responde «Falta el parámetro
-               * applicationId» —un contrato nace de una postulación aprobada—.
-               * Sería un botón que lleva a un error. Las dos salidas reales para
-               * quien todavía no tiene inquilinos son las dos migraciones.
+               * UN solo botón, y es «Migrar contratos» (Nico, 2026-09-03: «¿por
+               * qué tengo migrar contrato como CTA secundario?»). Es el único
+               * camino que llena ESTA lista: el back la arma con
+               * `lease.findMany` agrupado por `tenantId`, así que un inquilino
+               * cargado en el paso «Terceros» de la migración (usuario +
+               * invitación al portal) no aparece acá hasta que exista su
+               * contrato — por eso ese camino no merece un botón acá: llevaría
+               * a una pantalla que deja esta lista igual de vacía. El texto del
+               * vacío ya dice de dónde salen («no hay ningún arriendo… los
+               * inquilinos aparecen solos»).
+               *
+               * 🔴 Y no puede ser `/contratos/nuevo`: esa ruta sin
+               * `?applicationId=` responde «Falta el parámetro applicationId»
+               * —un contrato nace de una postulación aprobada—. Sería un botón
+               * que lleva a un error.
                */
               accion={
                 hayFiltros ? undefined : (
-                  <div className="flex flex-wrap items-center justify-center gap-2">
-                    <Button asChild hideArrow>
-                      <Link href="/panel/inmobiliaria/migracion/terceros?tipo=inquilinos">
-                        <UploadSimple className="mr-1.5 h-4 w-4" />
-                        {t('inquilinos.vacioMigrar')}
-                      </Link>
-                    </Button>
-                    <Button asChild variant="outline" hideArrow>
-                      <Link href="/panel/inmobiliaria/contratos/migrar">
-                        {t('inquilinos.vacioContrato')}
-                      </Link>
-                    </Button>
-                  </div>
+                  <Button asChild hideArrow>
+                    <Link href="/panel/inmobiliaria/contratos/migrar">
+                      <UploadSimple className="mr-1.5 h-4 w-4" />
+                      {t('inquilinos.vacioContrato')}
+                    </Link>
+                  </Button>
                 )
               }
             />
           ) : (
             <>
               <InquilinosTable inquilinos={pageItems} onAbrir={setAbierto} />
-              {/* El pie sólo aparece cuando hay más de una página: un
-                  paginador sobre 3 filas es ruido. */}
-              {total > pageSize && (
+              {/* El pie se monta SIEMPRE que haya filas, aunque sean menos
+                  que una página: con una sola dice «Mostrando 1–3 de 3» y deja
+                  elegir cuántas ver, que es lo que hace que una tabla se lea
+                  como tabla (Nico, 2026-09-02). Esconderlo era lo que él marcó. */}
+              {shouldPaginate && (
                 <div className="border-t border-border bg-muted/10 px-4 py-3">
                   <TablePagination
                     total={total}

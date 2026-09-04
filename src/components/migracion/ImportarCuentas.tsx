@@ -41,6 +41,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TablePagination } from "@/components/ui/pagination";
+import {
+  PAGE_SIZE_OPTIONS,
+  useTablePagination,
+} from "@/lib/hooks/use-table-pagination";
 import { parseSpreadsheetFile } from "@/components/inmobiliaria/import/lib/parseFile";
 import {
   contabilidadApi,
@@ -65,7 +70,6 @@ import { mensajeDeContabilidad } from "./contabilidad-errores";
 
 /** Sentinel: Radix `Select` no admite `value=""`. */
 const IGNORAR = "__ignorar__";
-const MAX_FILAS_EN_PANTALLA = 60;
 
 export function ImportarCuentas({
   onImportado,
@@ -499,52 +503,71 @@ function TablaDeRevision({
   const ordenadas = [...filas].sort(
     (a, b) => orden[a.veredicto] - orden[b.veredicto] || a.indice - b.indice,
   );
-  const visibles = ordenadas.slice(0, MAX_FILAS_EN_PANTALLA);
+  /*
+   * Un plan de cuentas importado trae cientos de filas: antes se recortaba a
+   * las primeras 60 con un «se muestran 60 de N» y el resto no había forma de
+   * mirarlo. Con el pie de tabla de la casa se llega a todas.
+   */
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(ordenadas, { resetKey: `${titulo ?? ""}|${filas.length}` });
 
   return (
     <div className="mt-4">
       {titulo ? <h3 className="text-sm font-medium text-fg">{titulo}</h3> : null}
-      <div className="mt-2 overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-16">Fila</TableHead>
-              <TableHead>Código</TableHead>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Naturaleza</TableHead>
-              <TableHead>Qué pasa</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {visibles.map((f) => (
-              <TableRow key={f.indice} data-testid={`revision-cuenta-${f.indice}`}>
-                {/* +2: en el archivo la primera fila de datos es la 2. */}
-                <TableCell className="font-mono text-xs tabular-nums text-fg-subtle">
-                  {f.indice + 2}
-                </TableCell>
-                <TableCell className="font-mono text-xs tabular-nums">
-                  {f.codigo || f.codigoOriginal}
-                </TableCell>
-                <TableCell className="text-sm">{f.nombre}</TableCell>
-                <TableCell className="text-xs text-fg-muted">
-                  {f.naturaleza === "DEBITO"
-                    ? "Débito"
-                    : f.naturaleza === "CREDITO"
-                      ? "Crédito"
-                      : "—"}
-                </TableCell>
-                <TableCell className="text-xs">
-                  <Veredicto fila={f} />
-                </TableCell>
+      <div className="mt-2 overflow-hidden rounded-lg border border-border">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-16">Fila</TableHead>
+                <TableHead>Código</TableHead>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Naturaleza</TableHead>
+                <TableHead>Qué pasa</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {pageItems.map((f) => (
+                <TableRow key={f.indice} data-testid={`revision-cuenta-${f.indice}`}>
+                  {/* +2: en el archivo la primera fila de datos es la 2. */}
+                  <TableCell className="font-mono text-xs tabular-nums text-fg-subtle">
+                    {f.indice + 2}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs tabular-nums">
+                    {f.codigo || f.codigoOriginal}
+                  </TableCell>
+                  <TableCell className="text-sm">{f.nombre}</TableCell>
+                  <TableCell className="text-xs text-fg-muted">
+                    {f.naturaleza === "DEBITO"
+                      ? "Débito"
+                      : f.naturaleza === "CREDITO"
+                        ? "Crédito"
+                        : "—"}
+                  </TableCell>
+                  <TableCell className="text-xs">
+                    <Veredicto fila={f} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        {shouldPaginate ? (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        ) : null}
       </div>
-      {ordenadas.length > MAX_FILAS_EN_PANTALLA ? (
+      {ordenadas.length > 1 ? (
         <p className="mt-2 text-xs text-fg-subtle">
-          Se muestran {MAX_FILAS_EN_PANTALLA} de {ordenadas.length}, primero
-          las que necesitan atención.
+          Primero las que necesitan atención.
         </p>
       ) : null}
     </div>

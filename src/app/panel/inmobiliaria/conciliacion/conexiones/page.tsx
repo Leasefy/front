@@ -39,7 +39,19 @@ import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { EmptyState } from '@/components/ui/empty-state'
+import { Spinner } from '@/components/ui/spinner'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { SinDatos } from '@/components/estado/SinDatos'
 import {
   Select,
   SelectContent,
@@ -156,7 +168,7 @@ function RegistrarConexion({
 
   return (
     <section
-      className="rounded-lg border border-border bg-card p-5 space-y-5"
+      className="rounded-lg border border-border bg-surface p-5 space-y-5"
       aria-labelledby="seccion-registrar"
       data-testid="conexiones-registrar"
     >
@@ -249,7 +261,7 @@ function RegistrarConexion({
   )
 }
 
-// ── Connection row ─────────────────────────────────────────────────────────
+// ── Fila de conexión ────────────────────────────────────────────────────────
 
 function ConexionRow({
   item,
@@ -270,29 +282,30 @@ function ConexionRow({
   }
 
   return (
-    <div
-      className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
-      data-testid={`conexion-row-${item.id}`}
-    >
-      {/* Identidad */}
-      <div className="min-w-0 flex-1 space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-sm font-semibold text-fg truncate">{item.displayName}</p>
-          <span className="inline-flex items-center rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-fg-muted">
-            {SOURCE_TYPE_LABEL[item.sourceType as ConnectionSourceType] ?? item.sourceType}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-fg-muted">
-          <span>{item.provider}</span>
-          <span>
-            Última sincronización: <span className="tabular-nums">{fmtDateTime(item.lastSyncAt)}</span>
-          </span>
-        </div>
-      </div>
+    <TableRow data-testid={`conexion-row-${item.id}`}>
+      <TableCell className="max-w-[260px]">
+        <p className="truncate font-medium text-fg" title={item.displayName}>
+          {item.displayName}
+        </p>
+        <p className="truncate text-caption text-fg-muted">{item.provider}</p>
+      </TableCell>
 
-      {/* Estado + cambio de estado (acción humana explícita) */}
-      <div className="flex items-center gap-3 shrink-0">
+      <TableCell className="whitespace-nowrap">
+        <span className="inline-flex items-center rounded-full bg-surface-muted px-2 py-0.5 text-caption font-medium text-fg-muted">
+          {SOURCE_TYPE_LABEL[item.sourceType as ConnectionSourceType] ?? item.sourceType}
+        </span>
+      </TableCell>
+
+      <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
+        {fmtDateTime(item.lastSyncAt)}
+      </TableCell>
+
+      <TableCell className="whitespace-nowrap">
         <StatusBadge tone={statusTone(item.status)}>{statusLabel(item.status)}</StatusBadge>
+      </TableCell>
+
+      {/* Cambiar el estado es una acción humana explícita (T-323). */}
+      <TableCell className="whitespace-nowrap">
         <Select
           value={item.status}
           onValueChange={(v) => void handleStatusChange(v)}
@@ -313,10 +326,12 @@ function ConexionRow({
             ))}
           </SelectContent>
         </Select>
-      </div>
-    </div>
+      </TableCell>
+    </TableRow>
   )
 }
+
+const COLUMNAS = ['Conexión', 'Tipo', 'Última sincronización', 'Estado', 'Cambiar estado'] as const
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
@@ -356,6 +371,9 @@ function ConciliacionConexiones() {
     () => items.filter((i) => i.status === 'conectado').length,
     [items],
   )
+  // Esta lista no tiene filtros ⇒ sin `resetKey`.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(items)
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -363,18 +381,19 @@ function ConciliacionConexiones() {
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
           <h1 className="text-h2 text-fg">Conexiones</h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
+          <p className="text-body text-fg-muted max-w-2xl">
             Registrá y administrá las fuentes de movimientos (bancos, pasarelas y extractos) que
             alimentan la conciliación. Nunca guardamos credenciales, solo una referencia segura.
           </p>
         </div>
 
-        {/* KPI: conectadas */}
-        <div className="shrink-0 rounded-lg border border-border bg-card px-4 py-3 text-center">
-          <p className="text-2xl font-semibold text-fg tabular-nums">
+        {/* KPI: cuántas fuentes están vivas (no es el total — ese lo dice el
+            pie de la tabla). */}
+        <div className="shrink-0 rounded-lg border border-border bg-surface p-4">
+          <p className="text-caption text-fg-muted">Conectadas</p>
+          <p className="mt-1.5 text-2xl font-semibold tabular-nums text-fg">
             {isLoading && items.length === 0 ? '—' : connectedCount}
           </p>
-          <p className="text-xs text-fg-muted">conectadas</p>
         </div>
       </header>
 
@@ -393,43 +412,71 @@ function ConciliacionConexiones() {
       {/* Registrar conexión */}
       <RegistrarConexion onCreate={createConnection} disabled={backendUnavailable} />
 
-      {/* Lista de conexiones */}
-      <section className="space-y-3" aria-labelledby="seccion-lista" data-testid="conexiones-lista">
-        <div className="flex items-center justify-between gap-3">
-          <h2 id="seccion-lista" className="text-base font-semibold text-fg">
-            Conexiones registradas
-          </h2>
-        </div>
+      {/* Conexiones registradas — la tabla sola dentro de la tarjeta, sin
+          título encima (así se leen todas las listas del panel). */}
+      <section
+        className="rounded-lg border border-border bg-surface overflow-hidden"
+        data-testid="conexiones-lista"
+      >
+        <EstadoDeDatos
+          cargando={isLoading && items.length === 0}
+          error={error}
+          queEs="las conexiones"
+          onReintentar={() => void refetch()}
+          esqueleto={
+            <div className="flex items-center justify-center py-16" data-testid="conexiones-loading">
+              <Spinner />
+            </div>
+          }
+        >
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {COLUMNAS.map((c) => (
+                  <TableHead key={c} className="whitespace-nowrap">
+                    {c}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isEmpty ? (
+                <TableRow>
+                  <TableCell colSpan={COLUMNAS.length} className="p-0">
+                    <SinDatos
+                      queSon="conexiones"
+                      icono={PlugsConnected}
+                      titulo="Aún no hay conexiones"
+                      descripcion="Registrá tu primera fuente de movimientos en el formulario de arriba para empezar a conciliar."
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                pageItems.map((item) => (
+                  <ConexionRow
+                    key={item.id}
+                    item={item}
+                    onPatchStatus={handlePatchStatus}
+                    disabled={backendUnavailable}
+                  />
+                ))
+              )}
+            </TableBody>
+          </Table>
 
-        {isLoading && items.length === 0 ? (
-          <div className="space-y-2" data-testid="conexiones-loading">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="h-20 rounded-lg border border-border bg-surface-muted animate-pulse"
+          {shouldPaginate && (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
               />
-            ))}
-          </div>
-        ) : isEmpty ? (
-          // Fail-soft / vacío: misma superficie EmptyState (sin acción href — el
-          // formulario de arriba es el dueño de la acción de registrar).
-          <EmptyState
-            icon={PlugsConnected}
-            title="Aún no hay conexiones"
-            description="Registrá tu primera fuente de movimientos en el formulario de arriba para empezar a conciliar."
-          />
-        ) : (
-          <div className="space-y-2">
-            {items.map((item) => (
-              <ConexionRow
-                key={item.id}
-                item={item}
-                onPatchStatus={handlePatchStatus}
-                disabled={backendUnavailable}
-              />
-            ))}
-          </div>
-        )}
+            </div>
+          )}
+        </EstadoDeDatos>
       </section>
     </div>
   )

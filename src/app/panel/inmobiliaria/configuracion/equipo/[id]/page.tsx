@@ -82,13 +82,14 @@ function AgenteDetailContent() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Breadcrumb */}
+      {/* Miga de pan: la ficha cuelga de Configuración → Equipo (el marco de
+          Configuración se aparta acá, así que la ubicación la dice esta línea). */}
       <nav className="flex items-center gap-2 text-sm">
         <Link
-          href="/panel/inmobiliaria"
+          href="/panel/inmobiliaria/configuracion"
           className="text-fg-muted hover:text-primary transition-colors"
         >
-          {t('inmobiliaria.common.title')}
+          {t('inmobiliaria.config.title')}
         </Link>
         <span className="text-border">/</span>
         <Link
@@ -96,7 +97,7 @@ function AgenteDetailContent() {
           className="flex items-center gap-1.5 text-fg-muted hover:text-primary transition-colors"
         >
           <CaretLeft className="w-4 h-4" />
-          {t('inmobiliaria.agentes.title')}
+          {t('inmobiliaria.config.tabs.equipo')}
         </Link>
         <span className="text-border">/</span>
         <span className="text-fg font-medium truncate max-w-[200px]">

@@ -1,13 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { ArrowLeft } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SectionLabel } from '@/components/ui/section-label';
-import { ReportesContables } from '@/components/contabilidad/reportes/ReportesContables';
+import { ReportesContables, informeDe } from '@/components/contabilidad/reportes/ReportesContables';
 
 export default function ReportesContablesPage() {
+  const informe = informeDe(useSearchParams().get('informe'));
+
   return (
     <PageGuard module="reportes">
       <div className="space-y-6 p-6 lg:p-8">
@@ -26,7 +29,9 @@ export default function ReportesContablesPage() {
             el libro.
           </p>
         </header>
-        <ReportesContables />
+        {/* `key`: si se llega de nuevo a esta ruta con otro `informe`, Next no
+            remonta la página y la pestaña se quedaría en la anterior. */}
+        <ReportesContables key={informe} inicial={informe} />
       </div>
     </PageGuard>
   );

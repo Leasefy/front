@@ -26,6 +26,7 @@ import {
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { TablePagination } from '@/components/ui/pagination'
 import { Spinner } from '@/components/ui/spinner'
 import { DesgloseAdeudado } from '@/components/inmobiliaria/DesgloseAdeudado'
 import { RecibosDeCajaHistorial } from '@/components/inmobiliaria/RecibosDeCajaHistorial'
@@ -33,6 +34,7 @@ import { contractsApi } from '@/lib/api/contracts.service'
 import type { CobroConDesglose } from '@/lib/api/recibos-de-caja.types'
 import type { CobroStatus } from '@/lib/types/inmobiliaria'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { nombreDelMes } from '@/lib/utils/mes'
 import { cn } from '@/lib/utils'
 import type { Contract } from '@/lib/types/contract'
@@ -91,6 +93,19 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
   useEffect(() => {
     if (cobros !== null) onResumen?.(resumen)
   }, [cobros, resumen, onResumen])
+
+  // Paginación — un período por mes: a los dos años de contrato son 24 filas,
+  // y cada una se despliega. El resumen del encabezado sigue contando TODOS
+  // los períodos (`resumen.total`), no los de la página.
+  const {
+    pageItems,
+    total: totalDeCobros,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(cobros ?? [])
 
   const volverA = `/panel/inmobiliaria/contratos/${contract.id}`
 
@@ -151,7 +166,7 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
               </tr>
             </thead>
             <tbody>
-              {cobros.map((c) => {
+              {pageItems.map((c) => {
                 const estaAbierto = abierto === c.id
                 const estado = ESTADO[c.status] ?? { etiqueta: c.status, variante: 'default' as const }
                 return (
@@ -167,6 +182,21 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
               })}
             </tbody>
           </table>
+
+          {/* Pie de tabla del design system: cuántos períodos hay en total y
+              cuántos se ven. */}
+          {shouldPaginate && (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={totalDeCobros}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          )}
         </div>
       )}
     </section>

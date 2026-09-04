@@ -51,8 +51,21 @@ import {
 } from '@/components/ui'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
-import { EmptyState } from '@/components/ui/empty-state'
+import { Spinner } from '@/components/ui/spinner'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { SinDatos } from '@/components/estado/SinDatos'
 import { Chip } from '@leasefy/cadence'
+import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
 import {
   useConciliacionSettlements,
@@ -102,9 +115,20 @@ function isApprovable(s: SettlementStatus): boolean {
   return s === 'borrador' || s === 'pendiente_aprobacion'
 }
 
-// ── Tarjeta de liquidación ───────────────────────────────────────────────────
+// ── Fila de liquidación ──────────────────────────────────────────────────────
 
-function SettlementCard({
+const COLUMNAS = [
+  'Propietario',
+  'Periodo',
+  'Canon',
+  'Comisión',
+  'Otros',
+  'Neto',
+  'Estado',
+  'Acciones',
+] as const
+
+function SettlementRow({
   item,
   onApprove,
   busy,
@@ -116,45 +140,43 @@ function SettlementCard({
   const approvable = isApprovable(item.status)
 
   return (
-    <div
-      className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
-      data-testid={`liquidacion-row-${item.id}`}
-    >
-      {/* Identidad: propietario + periodo + estado */}
-      <div className="min-w-0 flex-1 space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-sm font-semibold text-fg truncate">
-            {item.ownerName?.trim() || 'Propietario sin nombre'}
-          </p>
-          <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_PILL[item.status]}`}
-          >
-            {STATUS_LABEL[item.status]}
-          </span>
-        </div>
-        <p className="text-xs text-fg-muted">Periodo: {item.period}</p>
-      </div>
+    <TableRow data-testid={`liquidacion-row-${item.id}`}>
+      <TableCell className="max-w-[240px]">
+        <p className="truncate font-medium text-fg">
+          {item.ownerName?.trim() || 'Propietario sin nombre'}
+        </p>
+      </TableCell>
 
-      {/* Cifras: canon − comisión (− otros) = neto */}
-      <div className="shrink-0 text-right tabular-nums">
-        <div className="flex flex-wrap items-baseline justify-end gap-x-2 text-xs text-fg-muted">
-          <span>{fmtCop(item.grossCop)}</span>
-          <span aria-hidden="true">−</span>
-          <span>{fmtCop(item.commissionCop)} comisión</span>
-          {item.otherDeductionsCop > 0 && (
-            <>
-              <span aria-hidden="true">−</span>
-              <span>{fmtCop(item.otherDeductionsCop)} otros</span>
-            </>
+      <TableCell className="whitespace-nowrap text-fg-muted">{item.period}</TableCell>
+
+      <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
+        {fmtCop(item.grossCop)}
+      </TableCell>
+      <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
+        −{fmtCop(item.commissionCop)}
+      </TableCell>
+      <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
+        {item.otherDeductionsCop > 0 ? `−${fmtCop(item.otherDeductionsCop)}` : '—'}
+      </TableCell>
+
+      {/* El neto es la cifra de la fila: canon − comisión − otros. */}
+      <TableCell className="whitespace-nowrap font-semibold tabular-nums text-fg">
+        {fmtCop(item.netCop)}
+      </TableCell>
+
+      <TableCell className="whitespace-nowrap">
+        <span
+          className={cn(
+            'inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium',
+            STATUS_PILL[item.status],
           )}
-          <span aria-hidden="true">=</span>
-        </div>
-        <p className="text-base font-semibold text-fg">{fmtCop(item.netCop)}</p>
-        <p className="text-[11px] text-fg-muted">neto al propietario</p>
-      </div>
+        >
+          {STATUS_LABEL[item.status]}
+        </span>
+      </TableCell>
 
-      {/* Acción: aprobar (T-323). El PAGO real no se hace aquí. */}
-      <div className="shrink-0">
+      {/* Aprobar autoriza el monto (T-323). El PAGO real no se hace acá. */}
+      <TableCell className="whitespace-nowrap">
         {approvable ? (
           <Button
             size="sm"
@@ -168,12 +190,12 @@ function SettlementCard({
             Aprobar
           </Button>
         ) : (
-          <span className="text-xs text-fg-muted">
+          <span className="text-caption text-fg-muted">
             {item.status === 'aprobado' ? 'Aprobada' : 'Pagada'}
           </span>
         )}
-      </div>
-    </div>
+      </TableCell>
+    </TableRow>
   )
 }
 
@@ -223,8 +245,13 @@ function ConciliacionLiquidaciones() {
     [statusFilter],
   )
 
-  const { items, total, isLoading, error, refetch, generateSettlement, approveSettlement } =
+  const { items, isLoading, error, refetch, generateSettlement, approveSettlement } =
     useConciliacionSettlements(filters)
+
+  // El recorte es de presentación: el filtro por estado ya viajó al backend,
+  // así que el `resetKey` es el propio filtro — cambiarlo vuelve a la página 1.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(items, { resetKey: statusFilter })
 
   const previewNet = useMemo(
     () => toIntCop(form.grossCop) - toIntCop(form.commissionCop) - toIntCop(form.otherDeductionsCop),
@@ -296,98 +323,117 @@ function ConciliacionLiquidaciones() {
           <h1 className="text-h2 text-fg">
             Liquidaciones a propietario
           </h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
+          <p className="text-body text-fg-muted max-w-2xl">
             Lo que la inmobiliaria debe a cada propietario por periodo: canon recaudado menos
             comisión y otros descuentos. Aquí solo se registra y aprueba — el pago real lo hace
             pagos.
           </p>
         </div>
 
-        {/* Acción principal: generar + KPI total */}
-        <div className="flex shrink-0 items-center gap-3">
-          <div className="rounded-lg border border-border bg-card px-4 py-3 text-center">
-            <p className="text-2xl font-semibold text-fg tabular-nums">
-              {isLoading ? '—' : total}
-            </p>
-            <p className="text-xs text-fg-muted">en bandeja</p>
-          </div>
-          <Button
-            hideArrow
-            onClick={() => {
-              resetForm()
-              setGenOpen(true)
-            }}
-            data-testid="liquidacion-generar-cta"
-          >
-            <Receipt className="size-4" aria-hidden="true" />
-            Generar liquidación
-          </Button>
-        </div>
+        {/* Acción principal. El «en bandeja» que vivía acá se fue: lo dice el
+            pie de la tabla, y el mismo número dos veces no informa dos veces. */}
+        <Button
+          hideArrow
+          className="shrink-0"
+          onClick={() => {
+            resetForm()
+            setGenOpen(true)
+          }}
+          data-testid="liquidacion-generar-cta"
+        >
+          <Receipt className="size-4" aria-hidden="true" />
+          Generar liquidación
+        </Button>
       </header>
 
-      {/* Filtro por estado — Chip row (un estado a la vez) */}
-      <div
-        className="flex flex-wrap items-center gap-2"
-        role="group"
-        aria-label="Filtrar por estado"
-      >
-        {STATUS_FILTERS.map((f) => (
-          <Chip
-            key={f.value}
-            selected={statusFilter === f.value}
-            onClick={() => setStatusFilter(f.value)}
-          >
-            {f.label}
-          </Chip>
-        ))}
-      </div>
-
-      {/* Lista / estados */}
-      {isLoading ? (
-        <div className="space-y-2" data-testid="liquidaciones-loading">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="h-24 rounded-lg border border-border bg-surface-muted animate-pulse"
-            />
+      <section className="rounded-lg border border-border bg-surface overflow-hidden">
+        {/* Filtros — dentro de la tarjeta, encima de la tabla. */}
+        <div
+          className="flex flex-wrap items-center gap-2 border-b border-border p-4"
+          role="group"
+          aria-label="Filtrar por estado"
+        >
+          {STATUS_FILTERS.map((f) => (
+            <Chip
+              key={f.value}
+              selected={statusFilter === f.value}
+              onClick={() => setStatusFilter(f.value)}
+            >
+              {f.label}
+            </Chip>
           ))}
         </div>
-      ) : error ? (
-        /*
-          Acá el error se pintaba como «no hay nada», con un comentario que lo
-          defendía: «fail-soft, nunca un muro de error que bloquee al operador».
-          La intención es correcta —no se bloquea— pero el texto afirmaba algo
-          falso: no es que no haya, es que no pudimos preguntar. En un módulo
-          que mueve plata, eso hace cerrar el día creyendo que no quedaba nada.
 
-          Se conserva el no-bloqueo y se cambia lo que dice, con reintento.
-        */
-        <EmptyState
-          icon={Receipt}
-          title="No pudimos consultar las liquidaciones"
-          description="No es que no haya: no pudimos preguntarle al servicio. Vuelve a intentarlo."
-        />
-      ) : isEmpty ? (
-        statusFilter === 'todos' ? (
-          <EmptyState
-            icon={Receipt}
-            title="Sin liquidaciones"
-            description="Aún no hay liquidaciones a propietario. Genera la primera con las cifras del periodo."
-          />
-        ) : (
-          <EmptyState
-            icon={Receipt}
-            title="Sin liquidaciones en este estado"
-            description="No hay liquidaciones con este estado. Prueba otro filtro."
-          />
-        )
-      ) : (
-        <div className="space-y-2" data-testid="liquidaciones-list">
-          {items.map((item) => (
-            <SettlementCard key={item.id} item={item} onApprove={setToApprove} busy={busy} />
-          ))}
-        </div>
-      )}
+        {/* Carga y fallo por fuera del cuerpo; el vacío va DENTRO, para que los
+            encabezados de la tabla se sigan viendo. */}
+        <EstadoDeDatos
+          cargando={isLoading}
+          error={error}
+          queEs="las liquidaciones"
+          onReintentar={() => void refetch()}
+          esqueleto={
+            <div className="flex items-center justify-center py-16" data-testid="liquidaciones-loading">
+              <Spinner />
+            </div>
+          }
+        >
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {COLUMNAS.map((c) => (
+                  <TableHead key={c} className="whitespace-nowrap">
+                    {c}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody data-testid="liquidaciones-list">
+              {isEmpty ? (
+                <TableRow>
+                  <TableCell colSpan={COLUMNAS.length} className="p-0">
+                    <SinDatos
+                      hayFiltros={statusFilter !== 'todos'}
+                      // `queSon` sólo se usa en el vacío CON filtros, donde
+                      // `SinDatos` arma «Ningún <singular>…»: con «liquidaciones»
+                      // saldría «Ningún liquidacion». El vacío sin filtros trae
+                      // su propio título y descripción.
+                      queSon="registros"
+                      icono={Receipt}
+                      titulo="Sin liquidaciones"
+                      descripcion="Aún no hay liquidaciones a propietario. Generá la primera con las cifras del periodo."
+                      crear={{
+                        label: 'Generar liquidación',
+                        onClick: () => {
+                          resetForm()
+                          setGenOpen(true)
+                        },
+                      }}
+                      onLimpiarFiltros={() => setStatusFilter('todos')}
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                pageItems.map((item) => (
+                  <SettlementRow key={item.id} item={item} onApprove={setToApprove} busy={busy} />
+                ))
+              )}
+            </TableBody>
+          </Table>
+
+          {shouldPaginate && (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          )}
+        </EstadoDeDatos>
+      </section>
 
       {/* Diálogo: generar liquidación (borrador) */}
       <Dialog open={genOpen} onOpenChange={(o) => { if (!busy) setGenOpen(o) }}>

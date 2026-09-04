@@ -29,6 +29,8 @@ import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Spinner } from '@/components/ui'
 import { Chip } from '@leasefy/cadence'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import {
   usePendientes,
   type PendienteCta,
@@ -230,6 +232,12 @@ function PendientesContent() {
     [items, effectiveFilter],
   )
 
+  // La lista compone CINCO fuentes (escalaciones, cartas, siniestros, planes y
+  // promesas) sin tope: se pintaba entera. El pie es el mismo de las tablas del
+  // panel; el chip de grupo manda a la página 1.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(visibleItems, { resetKey: effectiveFilter ?? 'todos' })
+
   // ── Primer load ────────────────────────────────────────────────────────────
   if (isLoading && items.length === 0 && !error) {
     return (
@@ -311,11 +319,26 @@ function PendientesContent() {
 
       {/* Lista priorizada — Alta → Media → Baja, fecha DESC dentro */}
       {visibleItems.length > 0 && (
-        <ul className="space-y-3 max-w-3xl" aria-label={t(`${NS}.pageTitle`)}>
-          {visibleItems.map((item) => (
-            <PendienteCard key={item.key} item={item} />
-          ))}
-        </ul>
+        <div className="max-w-3xl">
+          <ul className="space-y-3" aria-label={t(`${NS}.pageTitle`)}>
+            {pageItems.map((item) => (
+              <PendienteCard key={item.key} item={item} />
+            ))}
+          </ul>
+
+          {shouldPaginate && (
+            <div className="border-t border-border px-4 py-3 mt-3">
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          )}
+        </div>
       )}
     </main>
   )

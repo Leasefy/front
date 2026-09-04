@@ -18,7 +18,8 @@ import {
 } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Pagination } from '@/components/ui/pagination';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { Button, Spinner } from '@/components/ui';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { IconButton, SegmentedControl } from '@leasefy/cadence';
@@ -51,9 +52,6 @@ import { type RecordatorioConfigData } from '@/components/inmobiliaria/Recordato
 
 // View modes
 type ViewMode = 'table' | 'cards';
-
-// Pagination
-const ITEMS_PER_PAGE = 6;
 
 // Get current month in YYYY-MM format
 function getCurrentMonth(): string {
@@ -117,9 +115,6 @@ function CobrosContent() {
   const viewMode: ViewMode = viewModeOverride ?? (isMobile ? 'cards' : 'table');
   const setViewMode = setViewModeOverride;
 
-  // State for pagination
-  const [currentPage, setCurrentPage] = useState(1);
-
   // State for modals
   const [selectedCobro, setSelectedCobro] = useState<Cobro | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -176,13 +171,23 @@ function CobrosContent() {
     return result;
   }, [apiCobros, filters.consignacionId, filters.search]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredCobros.length / ITEMS_PER_PAGE);
-  const paginatedCobros = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    const end = start + ITEMS_PER_PAGE;
-    return filteredCobros.slice(start, end);
-  }, [filteredCobros, currentPage]);
+  // Paginación — el pie canónico del panel (`useTablePagination` +
+  // `TablePagination`, el mismo de Solicitudes e Inmuebles). Antes era un
+  // slice a mano de 6 por página con el paginador de ventana: no dejaba
+  // elegir cuántas filas ver ni decía cuántas había en total.
+  // `resetKey` lleva todo lo que cambia el conjunto de filas: el mes y el
+  // estado los resuelve el backend, la consignación y la búsqueda acá.
+  const {
+    pageItems: paginatedCobros,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(filteredCobros, {
+    resetKey: `${filters.month}|${filters.status}|${filters.consignacionId ?? ''}|${filters.search}`,
+  });
 
   // Use summary from API (fallback to default if loading)
   const summary: CobroSummary = useMemo(() => {
@@ -310,9 +315,9 @@ function CobrosContent() {
   );
 
   // Handle filter change
+  // La vuelta a la página 1 la hace `useTablePagination` por `resetKey`, no acá.
   const handleFilterChange = useCallback((newFilters: CobroFiltersState) => {
     setFilters(newFilters);
-    setCurrentPage(1); // Reset page when filters change
   }, []);
 
   // Handle reminder config save
@@ -557,14 +562,19 @@ function CobrosContent() {
           )}
         </div>
 
-        {/* Pagination Footer — windowed (1 … 4 5 6 … 12) via ui/pagination */}
-        {totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-border flex items-center justify-center bg-muted/10">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              siblingCount={1}
+        {/* Pie de tabla del design system: «X cobros · Filas por página · n/m».
+            Se monta con una sola fila también — decirle a alguien que tiene 3
+            cobros cuántos hay y dejarlo elegir el tamaño es parte de que la
+            tabla se lea como tabla. */}
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
             />
           </div>
         )}

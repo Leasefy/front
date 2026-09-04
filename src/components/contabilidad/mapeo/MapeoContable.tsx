@@ -15,6 +15,7 @@ import { CheckCircle, Sparkle } from '@phosphor-icons/react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { TablePagination } from '@/components/ui/pagination';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
@@ -33,6 +34,7 @@ import {
   type EventoContable,
   type MapeoContable as Mapeo,
 } from '@/lib/api/contabilidad.service';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { SelectorDeCuenta } from '../SelectorDeCuenta';
 import { useCuentas } from '../use-cuentas';
 import { NOMBRE_DEL_LADO, eventosSembrables, loQueNoSeAsienta } from './mapeo';
@@ -101,6 +103,14 @@ export function MapeoContable() {
 
   const sembrables = useMemo(() => (mapeo ? eventosSembrables(mapeo) : []), [mapeo]);
   const apagados = useMemo(() => (mapeo ? loQueNoSeAsienta(mapeo.faltantes) : []), [mapeo]);
+
+  // Los eventos son pocos y fijos, pero el pie va igual: dice cuántos son y
+  // deja elegir cuántos ver, que es lo que hace que una tabla se lea como
+  // tabla. El hook se llama SIEMPRE —antes de los returns tempranos de carga
+  // y de fallo— porque un hook condicional rompe el orden entre renders.
+  const eventos = useMemo(() => mapeo?.eventos ?? [], [mapeo]);
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(eventos);
 
   const marcar = (evento: EventoContable, activo: boolean) =>
     setGuardando((prev) => {
@@ -215,7 +225,7 @@ export function MapeoContable() {
         </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+      <section className="overflow-hidden rounded-lg border border-border bg-surface">
         <Table>
           <TableHeader>
             <TableRow>
@@ -226,15 +236,18 @@ export function MapeoContable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mapeo.eventos.map((e) => (
+            {pageItems.map((e) => (
               <TableRow key={e.evento} data-testid={`evento-${e.evento}`}>
-                <TableCell>
-                  <div className="space-y-0.5">
-                    <p className="font-medium text-fg">{e.nombre}</p>
-                    <p className="max-w-md text-xs text-fg-muted">{e.explicacion}</p>
-                  </div>
+                <TableCell className="max-w-[320px]">
+                  {/* La explicación en UNA línea, con el texto entero en el
+                      `title`: nueve filas de tres renglones eran media
+                      pantalla de párrafos (Nico, 2026-09-03). */}
+                  <p className="font-medium text-fg">{e.nombre}</p>
+                  <p className="truncate text-caption text-fg-muted" title={e.explicacion}>
+                    {e.explicacion}
+                  </p>
                 </TableCell>
-                <TableCell>
+                <TableCell className="whitespace-nowrap">
                   <Badge variant={e.lado === 'DEBE' ? 'secondary' : 'outline'}>{NOMBRE_DEL_LADO[e.lado]}</Badge>
                 </TableCell>
                 <TableCell>
@@ -281,7 +294,20 @@ export function MapeoContable() {
             ))}
           </TableBody>
         </Table>
-      </div>
+
+        {shouldPaginate ? (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        ) : null}
+      </section>
     </div>
   );
 }

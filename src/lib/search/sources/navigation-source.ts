@@ -98,10 +98,9 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'page', title: 'Rentabilidad', context: 'Reportes', href: `${P}/reportes/rentabilidad`, keywords: 'rentabilidad margen ingresos egresos', permission: { module: 'reportes', action: 'view' } },
   { kind: 'page', title: 'Desempeño IA', context: 'Reportes', href: `${P}/reportes/ia`, keywords: 'analytics analitica metricas ia agentes desempeño', permission: { module: 'analytics', action: 'view' } },
   { kind: 'page', title: 'Configuración', context: 'Configuración', href: `${P}/configuracion`, keywords: 'ajustes settings plan cuenta' },
-  { kind: 'page', title: 'Medios de pago', context: 'Configuración', href: `${P}/configuracion?tab=medios-de-pago`, keywords: 'medios de pago transferencia efectivo pse nequi enlace cobre', permission: { module: 'configuracion', action: 'view' } },
+  { kind: 'page', title: 'Medios de pago', context: 'Configuración', href: `${P}/configuracion/medios-de-pago`, keywords: 'medios de pago transferencia efectivo pse nequi enlace cobre', permission: { module: 'configuracion', action: 'view' } },
   { kind: 'page', title: 'Equipo', context: 'Configuración', href: `${P}/configuracion/equipo`, keywords: 'agentes usuarios miembros equipo humano', permission: { module: 'agentes', action: 'view' } },
   { kind: 'action', title: 'Nuevo agente', context: 'Equipo', href: `${P}/configuracion/equipo`, keywords: 'invitar crear agente miembro equipo', permission: { module: 'agentes', action: 'create' } },
-  { kind: 'page', title: 'Agentes IA', context: 'Configuración', href: `${P}/configuracion/agentes`, keywords: 'agentes ia hub flota equipo de agentes actividad' },
   { kind: 'page', title: 'Automatización IA', context: 'Configuración', href: `${P}/configuracion/ia`, keywords: 'aprendizaje del asistente entrenamiento memoria ia lecciones' },
 ];
 
@@ -136,11 +135,11 @@ export const navigationSource: SearchSource = {
         type: entry.kind === 'action' ? 'accion' : 'pagina',
         title: entry.title,
         subtitle: entry.context,
-        badges: [
-          entry.kind === 'action'
-            ? { label: 'Acción', color: 'violet' as const }
-            : { label: 'Página', color: 'neutral' as const },
-        ],
+        // Sólo las acciones llevan chip. El «Página» que llevaban las páginas
+        // no decía nada que el grupo «Navegación» y el contexto de la derecha
+        // no dijeran ya, y le ponía una cápsula a cada fila de la lista.
+        badges:
+          entry.kind === 'action' ? [{ label: 'Acción', color: 'violet' as const }] : [],
         href: entry.href,
         preview: { type: entry.kind === 'action' ? 'accion' : 'pagina' },
       }));

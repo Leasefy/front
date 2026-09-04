@@ -25,6 +25,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useDecisiones, useReviewDecision } from '@/lib/hooks/retencion/use-decisiones'
 import type {
   AutonomousDecision,
@@ -192,6 +194,13 @@ export default function RevisionesClient() {
       )
   }, [data, chip, search])
 
+  // Paginación — la cola de revisión es una lista de registros que crece con
+  // cada decisión autónoma de Laura, no un detalle fijo. `resetKey` lleva los
+  // tres filtros (pestaña, chip de tipo y búsqueda) para no dejar al usuario
+  // mirando una página vacía después de filtrar.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(rows, { resetKey: `${tab}|${chip}|${search}` })
+
   const onConfirm = async () => {
     if (!pending) return
     const { decision, action } = pending
@@ -311,7 +320,7 @@ export default function RevisionesClient() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-              {rows.map((d) => {
+              {pageItems.map((d) => {
                 const meta = decisionMeta(d.decisionType)
                 const DecisionIcon = meta.icon
                 const reviewed = d.reviewedBy !== null
@@ -397,6 +406,21 @@ export default function RevisionesClient() {
               })}
             </tbody>
           </table>
+
+          {/* Pie de tabla del design system: cuántas decisiones hay, cuántas
+              se muestran y cuántas filas por página. */}
+          {shouldPaginate && (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          )}
         </div>
       )}
 

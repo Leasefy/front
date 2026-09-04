@@ -58,6 +58,7 @@ import { Button } from '@/components/ui/button'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { PageGuard } from '@/components/auth/PageGuard'
+import { TablePagination } from '@/components/ui/pagination'
 import { useAgencyAvaluos } from '@/lib/hooks/useInmobiliaria'
 import { avaluosApi } from '@/lib/api/inmobiliaria.service'
 import { ApiError } from '@/lib/api/client'
@@ -270,8 +271,6 @@ function AvaluosSala() {
     }
   }
 
-  const hasPrev = page > 0
-  const hasNext = (page + 1) * pageSize < total
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -554,35 +553,25 @@ function AvaluosSala() {
               })}
             </ul>
 
-            {/* Pagination */}
-            {(hasPrev || hasNext) && (
-              <div className="flex items-center justify-between gap-4 px-4 py-3 border-t border-border">
-                {/* Singular y plural son DOS claves, no una con `{{n}} avalúo(s)`:
-                    el inglés pluraliza distinto y el paréntesis se lee mal en
-                    los dos idiomas. */}
-                <span className="text-xs text-muted-foreground">
-                  {total === 1 ? t(`${NS}.conteoUno`) : t(`${NS}.conteo`, { n: total })}
-                </span>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    hideArrow
-                    disabled={!hasPrev}
-                    onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  >
-                    {t('common.previous')}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    hideArrow
-                    disabled={!hasNext}
-                    onClick={() => setPage((p) => p + 1)}
-                  >
-                    {t('common.next')}
-                  </Button>
-                </div>
+            {/* Pie de tabla del design system, el mismo del resto del panel:
+                «Mostrando 1–100 de N». Antes eran dos botones Anterior/
+                Siguiente que sólo aparecían con más de una página — con 3
+                avalúos no se veía ni cuántos había.
+
+                Las páginas las sirve el back (`useAgencyAvaluos({ page })`,
+                `pageSize` fijo del servidor), así que no se ofrece el tamaño
+                de página: sin `pageSizeOptions` el selector no se monta y no
+                queda un control que no hace nada.
+
+                `page` acá es 0-indexado y el del design system 1-indexado. */}
+            {total > 0 && (
+              <div className="border-t border-border px-4 py-3">
+                <TablePagination
+                  total={total}
+                  page={page + 1}
+                  pageSize={pageSize}
+                  onPageChange={(p) => setPage(Math.max(0, p - 1))}
+                />
               </div>
             )}
           </EstadoDeDatos>

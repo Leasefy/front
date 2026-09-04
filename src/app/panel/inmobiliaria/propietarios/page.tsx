@@ -346,9 +346,9 @@ function PropietariosContent() {
             <span className="text-foreground">{t('inmobiliaria.propietarios.title')}</span>
           </div>
           <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.propietarios.crmTitle')}
+            {t('inmobiliaria.propietarios.title')}
           </h1>
-          <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">
+          <p className="text-body text-fg-muted max-w-2xl line-clamp-2">
             {t('inmobiliaria.propietarios.subtitle')}
           </p>
         </div>

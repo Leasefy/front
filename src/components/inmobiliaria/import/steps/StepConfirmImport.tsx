@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Pagination } from "@/components/ui/pagination";
+import { TablePagination } from "@/components/ui/pagination";
 import { MonoLabel } from "@leasefy/cadence";
 import { toast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api/client";
@@ -778,7 +778,6 @@ export function StepConfirmImport({
   // ── Batch LISTO — review + activate ─────────────────────────────────
   if (lote) {
     const puedeActivar = (resumenLote?.listos ?? 0) > 0;
-    const totalPaginas = Math.max(1, Math.ceil(totalPendientes / POR_PAGINA));
 
     return (
       <div className="space-y-6">
@@ -838,13 +837,19 @@ export function StepConfirmImport({
                 isBusy={filaBusy === fila.id}
               />
             ))}
-            {totalPaginas > 1 && (
-              <Pagination
-                currentPage={pagina}
-                totalPages={totalPaginas}
-                onPageChange={(p) => refrescarRevision(lote, p)}
+            {/* Pie del design system: dice cuántas filas quedan por revisar
+                y en cuál vas, no sólo «‹ 2 ›». Las páginas las sirve el back
+                (`filas(lote, { pagina, porPagina })`), así que el tamaño de
+                página no se ofrece: sin `pageSizeOptions` el selector no se
+                monta y no queda un control que no hace nada. */}
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={totalPendientes}
+                page={pagina}
+                pageSize={POR_PAGINA}
+                onPageChange={(p) => void refrescarRevision(lote, p)}
               />
-            )}
+            </div>
           </div>
         )}
 

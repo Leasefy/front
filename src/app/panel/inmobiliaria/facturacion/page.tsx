@@ -1,117 +1,80 @@
 'use client';
 
+/**
+ * Facturación — la estructura del módulo, con el motor DIAN todavía por
+ * llegar (M2).
+ *
+ * Nico (2026-09-03): «esas tabs ¿por qué están fuera de la tabla? sabés que
+ * deben quedar dentro». Las pestañas son la primera fila de la tarjeta de la
+ * tabla, como el buscador y el filtro de Inquilinos. Lo que había además y se
+ * fue:
+ *   - una leyenda de estados (Aceptada DIAN · Pendiente · …) que no filtraba
+ *     nada: ningún control dibujado sin comportamiento;
+ *   - una franja con icono y descripción por pestaña: la descripción vive en
+ *     el vacío de cada pestaña, que es donde hace falta leerla;
+ *   - «Nueva factura», que sólo mostraba un toast «llega con M2»: oculto
+ *     hasta que emita de verdad. El banner ya dice que el motor no está.
+ *
+ * Todavía no hay servicio de facturación (`facturacion.types.ts` es el
+ * contrato que M2 implementará), así que la tabla no tiene de dónde sacar
+ * filas: encabezados reales y vacío honesto en el cuerpo, sin datos
+ * inventados. La paginación entra con el servicio (`useTablePagination` +
+ * `TablePagination`, como en Solicitudes): sin filas nunca se pintaría.
+ */
+
 import { useState } from 'react';
-import { toast } from 'sonner';
-import {
-  Receipt,
-  Plus,
-  Info,
-  ArrowDownRight,
-  ArrowUpRight,
-  Lightning,
-  ArrowsClockwise,
-} from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
+import { Info, Receipt } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { SinDatos } from '@/components/estado/SinDatos';
 import type { FacturacionTab } from '@/lib/api/facturacion.types';
-
-type BadgeVariant = 'default' | 'secondary' | 'success' | 'warning' | 'destructive' | 'outline';
 
 interface TabDef {
   key: FacturacionTab;
-  icon: React.ElementType;
-  iconWrap: string;
-  iconColor: string;
-  /** i18n key suffixes under inmobiliaria.facturacion */
-  columns: string[];
-  estados: { labelKey: string; variant: BadgeVariant }[];
+  /** Sufijos de clave bajo `inmobiliaria.facturacion`. */
+  columns: readonly string[];
 }
 
-const TABS: TabDef[] = [
+/** Las columnas salen del contrato de `facturacion.types.ts`, no de un boceto. */
+const TABS: readonly TabDef[] = [
   {
     key: 'ventas',
-    icon: ArrowUpRight,
-    iconWrap: 'bg-success-soft',
-    iconColor: 'text-success',
     columns: ['colNumero', 'colTercero', 'colConcepto', 'colFecha', 'colSubtotal', 'colIva', 'colTotal', 'colPago', 'colDian'],
-    estados: [
-      { labelKey: 'estadoAceptada', variant: 'success' },
-      { labelKey: 'estadoPendiente', variant: 'warning' },
-      { labelKey: 'estadoVencida', variant: 'destructive' },
-      { labelKey: 'estadoBorrador', variant: 'secondary' },
-    ],
   },
   {
     key: 'compras',
-    icon: ArrowDownRight,
-    iconWrap: 'bg-warning-soft',
-    iconColor: 'text-warning',
     columns: ['colNumero', 'colProveedor', 'colConcepto', 'colFecha', 'colTotal', 'colVence', 'colPago'],
-    estados: [
-      { labelKey: 'estadoPagada', variant: 'success' },
-      { labelKey: 'estadoPendiente', variant: 'warning' },
-      { labelKey: 'estadoVencida', variant: 'destructive' },
-      { labelKey: 'estadoCredito', variant: 'outline' },
-    ],
   },
   {
     key: 'electronica',
-    icon: Lightning,
-    iconWrap: 'bg-primary-soft',
-    iconColor: 'text-primary',
     columns: ['colTipo', 'colNumero', 'colCufe', 'colTercero', 'colFecha', 'colTotal', 'colDian'],
-    estados: [
-      { labelKey: 'estadoAceptada', variant: 'success' },
-      { labelKey: 'estadoEmitida', variant: 'secondary' },
-      { labelKey: 'estadoRechazada', variant: 'destructive' },
-      { labelKey: 'estadoAnulada', variant: 'outline' },
-    ],
   },
   {
     key: 'notas',
-    icon: ArrowsClockwise,
-    iconWrap: 'bg-neutral-100 dark:bg-neutral-800',
-    iconColor: 'text-neutral-600 dark:text-neutral-300',
     columns: ['colTipo', 'colNumero', 'colFacturaRef', 'colMotivo', 'colValor', 'colFecha', 'colDian'],
-    estados: [
-      { labelKey: 'estadoNotaCredito', variant: 'default' },
-      { labelKey: 'estadoNotaDebito', variant: 'secondary' },
-      { labelKey: 'estadoAceptada', variant: 'success' },
-    ],
   },
 ];
+
+const esTab = (v: string): v is FacturacionTab => TABS.some((x) => x.key === v);
 
 function FacturacionContent() {
   const { t } = useI18n();
   const [active, setActive] = useState<FacturacionTab>('ventas');
-  const tab = TABS.find((x) => x.key === active)!;
-  const TabIcon = tab.icon;
-
   const k = (suffix: string) => `inmobiliaria.facturacion.${suffix}`;
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-1.5">
-          <SectionLabel>{t(k('label'))}</SectionLabel>
-          <h1 className="text-h2 text-fg">{t(k('title'))}</h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">{t(k('subtitle'))}</p>
-        </div>
-        <Button hideArrow onClick={() => toast.info(t(k('newSoon')))} className="flex-shrink-0">
-          <Plus className="w-4 h-4" weight="bold" />
-          {t(k('new'))}
-        </Button>
+      <header className="space-y-2">
+        <SectionLabel>{t(k('label'))}</SectionLabel>
+        <h1 className="text-h2 text-fg">{t(k('title'))}</h1>
+        <p className="text-body text-fg-muted max-w-2xl line-clamp-2">{t(k('subtitle'))}</p>
       </header>
 
-      {/* Honest "engine arrives in M2" banner */}
+      {/* Banner del M2, tal cual estaba: no es de esta pantalla decidir cuándo
+          llega el motor. */}
       <div className="rounded-lg bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
         <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
         <div>
@@ -120,64 +83,56 @@ function FacturacionContent() {
         </div>
       </div>
 
-      {/* Tabs (segmented) */}
-      <Tabs value={active} onValueChange={(v) => setActive(v as FacturacionTab)}>
-      <TabsList variant="segmented" aria-label={t(k('label'))}>
-        {TABS.map((x) => (
-          <TabsTrigger key={x.key} value={x.key} className="whitespace-nowrap">
-            {t(k(`tab_${x.key}`))}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-
-      {/* Active tab panel */}
-      <TabsContent value={active} className="mt-4">
-      <section
-        className="rounded-lg border border-border bg-card overflow-hidden"
+      {/* UNA tarjeta: pestañas arriba, tabla debajo. Sin título encima. */}
+      <Tabs
+        value={active}
+        onValueChange={(v) => {
+          if (esTab(v)) setActive(v);
+        }}
       >
-        {/* Panel header: descriptor + estados legend */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 p-5 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className={cn('w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0', tab.iconWrap)}>
-              <TabIcon className={cn('w-[18px] h-[18px]', tab.iconColor)} />
-            </div>
-            <p className="text-body-sm text-muted-foreground">{t(k(`desc_${tab.key}`))}</p>
-          </div>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-label text-muted-foreground mr-1">{t(k('estadosLabel'))}</span>
-            {tab.estados.map((e) => (
-              <Badge key={e.labelKey} variant={e.variant}>
-                {t(k(e.labelKey))}
-              </Badge>
-            ))}
-          </div>
-        </div>
-
-        {/* Column schema + empty state */}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {tab.columns.map((c) => (
-                <TableHead key={c} className="whitespace-nowrap">
-                  {t(k(c))}
-                </TableHead>
+        <section
+          className="rounded-lg border border-border bg-surface overflow-hidden"
+          data-testid="facturacion-tarjeta"
+        >
+          <div className="border-b border-border p-4">
+            <TabsList variant="segmented" aria-label={t(k('title'))} className="justify-start">
+              {TABS.map((x) => (
+                <TabsTrigger key={x.key} value={x.key} className="whitespace-nowrap">
+                  {t(k(`tab_${x.key}`))}
+                </TabsTrigger>
               ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow>
-              <TableCell colSpan={tab.columns.length} className="p-0">
-                <EmptyState
-                  icon={Receipt}
-                  title={t(k(`empty_${tab.key}_title`))}
-                  description={t(k('emptyDesc'))}
-                />
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </section>
-      </TabsContent>
+            </TabsList>
+          </div>
+
+          {TABS.map((tab) => (
+            <TabsContent key={tab.key} value={tab.key} className="mt-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {tab.columns.map((c) => (
+                      <TableHead key={c} className="whitespace-nowrap">
+                        {t(k(c))}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {/* El vacío vive dentro del cuerpo para que los encabezados
+                      se sigan viendo. */}
+                  <TableRow>
+                    <TableCell colSpan={tab.columns.length} className="p-0">
+                      <SinDatos
+                        queSon={t(k(`queSon_${tab.key}`))}
+                        icono={Receipt}
+                        descripcion={t(k(`desc_${tab.key}`))}
+                      />
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TabsContent>
+          ))}
+        </section>
       </Tabs>
     </div>
   );

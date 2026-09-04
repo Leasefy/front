@@ -39,6 +39,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TablePagination } from "@/components/ui/pagination";
+import {
+  PAGE_SIZE_OPTIONS,
+  useTablePagination,
+} from "@/lib/hooks/use-table-pagination";
 import { parseSpreadsheetFile } from "@/components/inmobiliaria/import/lib/parseFile";
 import {
   contabilidadApi,
@@ -447,6 +452,14 @@ function Revision({
 }) {
   const rechazadas = revision.filas.filter((f) => f.estado === "RECHAZADA");
   const puedeAplicar = revision.listas > 0 && !cargando;
+  /*
+   * Un archivo del libro diario trae cientos de filas y las rechazadas pueden
+   * ser todas. Antes se cortaba en 50 con un «…y N más» y esas N no había cómo
+   * verlas: con el pie de tabla de la casa se llega a todas.
+   */
+  const pag = useTablePagination(rechazadas, {
+    resetKey: `${revision.lote}|${rechazadas.length}`,
+  });
 
   return (
     <div className="space-y-6" data-testid="revision-asientos">
@@ -548,36 +561,44 @@ function Revision({
             ))}
           </ul>
           {rechazadas.length > 0 ? (
-            <div className="mt-4 overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-16">Fila</TableHead>
-                    <TableHead className="w-32">Comprobante</TableHead>
-                    <TableHead>Qué pasa</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rechazadas.slice(0, MAX_FILAS_EN_PANTALLA).map((f) => (
-                    <TableRow key={f.clave}>
-                      <TableCell className="font-mono text-xs tabular-nums">
-                        {f.fila}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {f.numeroOriginal ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {f.errores.join(" · ")}
-                      </TableCell>
+            <div className="mt-4 overflow-hidden rounded-lg border border-border">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-16">Fila</TableHead>
+                      <TableHead className="w-32">Comprobante</TableHead>
+                      <TableHead>Qué pasa</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {rechazadas.length > MAX_FILAS_EN_PANTALLA ? (
-                <p className="mt-2 text-xs text-fg-subtle">
-                  …y {rechazadas.length - MAX_FILAS_EN_PANTALLA} más con los
-                  mismos motivos.
-                </p>
+                  </TableHeader>
+                  <TableBody>
+                    {pag.pageItems.map((f) => (
+                      <TableRow key={f.clave}>
+                        <TableCell className="font-mono text-xs tabular-nums">
+                          {f.fila}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {f.numeroOriginal ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {f.errores.join(" · ")}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {pag.shouldPaginate ? (
+                <div className="border-t border-border px-4 py-3">
+                  <TablePagination
+                    total={pag.total}
+                    page={pag.page}
+                    pageSize={pag.pageSize}
+                    pageSizeOptions={PAGE_SIZE_OPTIONS}
+                    onPageChange={pag.setPage}
+                    onPageSizeChange={pag.setPageSize}
+                  />
+                </div>
               ) : null}
             </div>
           ) : null}

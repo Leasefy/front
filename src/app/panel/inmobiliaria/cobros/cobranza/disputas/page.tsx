@@ -48,6 +48,8 @@ import {
 } from '@/lib/hooks/cobranza/use-disputes'
 import { DisputasList } from '@/components/inmobiliaria/cobranza/DisputasList'
 import { DisputaDetailPanel } from '@/components/inmobiliaria/cobranza/DisputaDetailPanel'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import {
   DebtorPicker,
   type PickedDebtor,
@@ -277,6 +279,14 @@ function DisputasContent() {
     }
   }, [disputes, seleccionadaId])
 
+  // Paginación de la columna izquierda. El paginado vive acá y no dentro de
+  // <DisputasList> porque `filtro` vive acá: al cambiar de estado hay que
+  // volver a la página 1, y la lista es un componente de presentación que no
+  // conoce el filtro. La selección y los conteos siguen mirando la lista
+  // COMPLETA — sólo se recorta lo que se pinta.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(disputes, { resetKey: filtro })
+
   const counts = useMemo(() => {
     const c = { open: 0, in_review: 0, resolved: 0 }
     for (const d of disputes) {
@@ -450,11 +460,26 @@ function DisputasContent() {
               className="lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto"
             >
               <DisputasList
-                disputes={disputes}
+                disputes={pageItems}
                 selectedId={seleccionadaId}
                 onSelect={elegir}
               />
             </div>
+
+            {/* El pie va FUERA de la caja con scroll: se queda a la vista
+                mientras se recorre la lista. */}
+            {shouldPaginate && (
+              <div className="border-t border-border px-4 py-3">
+                <TablePagination
+                  total={total}
+                  page={page}
+                  pageSize={pageSize}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </div>
+            )}
           </Card>
 
           {/* Detalle — en móvil reemplaza a la lista */}

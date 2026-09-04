@@ -15,6 +15,21 @@ import { LibroAuxiliar } from './LibroAuxiliar';
 
 export type Informe = 'balance' | 'auxiliar' | 'tercero';
 
+export const INFORMES: readonly Informe[] = ['balance', 'auxiliar', 'tercero'];
+
+/**
+ * `?informe=auxiliar` abre esa pestaña. Lo usan los accesos de la portada
+ * («Para el contador») y la alerta de balance que no cuadra: mandar a
+ * «Reportes» a secas obligaría a buscar la pestaña a mano.
+ *
+ * Un valor que no está en la lista NO es un error de pantalla: queda el
+ * balance, que es el default. Vive acá y no en la página porque el que sabe
+ * qué pestañas hay es este componente.
+ */
+export function informeDe(valor: string | null | undefined): Informe {
+  return INFORMES.find((i) => i === valor) ?? 'balance';
+}
+
 export function ReportesContables({ inicial = 'balance' }: { inicial?: Informe }) {
   const [informe, setInforme] = useState<Informe>(inicial);
 

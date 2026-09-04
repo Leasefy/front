@@ -308,9 +308,10 @@ function RequestsTable({
       </Table>
       </div>
 
-      {/* Pie: sólo si hay más de una página. Con todo a la vista, un paginador
-          que no pagina es ruido. */}
-      {total > pageSize && (
+      {/* El pie se monta siempre que haya filas —acá arriba ya se devolvió el
+          vacío—, aunque entren todas en una página: dice «Mostrando 1–3 de 3» y
+          deja elegir cuántas ver (Nico, 2026-09-02). */}
+      {total > 0 && (
         <div className="border-t border-border px-4 py-3">
           <TablePagination
             total={total}

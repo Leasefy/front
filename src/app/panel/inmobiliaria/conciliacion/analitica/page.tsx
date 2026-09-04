@@ -12,7 +12,10 @@ import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentAnalitica } from '@/lib/hooks/ai/use-agent-analitica'
 import { useConciliacionSummary } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
 import { AnaliticaAgente } from '@/components/inmobiliaria/ai/AnaliticaAgente'
-import { ConciliacionResumen } from '@/components/inmobiliaria/ai/ConciliacionResumen'
+import {
+  ConciliacionResumen,
+  HallazgosDelAgente,
+} from '@/components/inmobiliaria/ai/ConciliacionResumen'
 import { useI18n } from '@/lib/i18n'
 
 function ConciliacionAnalitica() {
@@ -25,13 +28,15 @@ function ConciliacionAnalitica() {
     <div className="p-6 lg:p-8 space-y-6">
       <header className="space-y-2">
         <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle')}</h1>
-        <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">
+        <p className="text-body text-fg-muted max-w-2xl">
           {t('inmobiliaria.ai.workspace.pages.conciliacion.analiticaDesc')}
         </p>
       </header>
 
-      {/* Resumen real del backend: taxonomía + totales + tasa (fail-soft: null → nada) */}
+      {/* Resumen real del backend: totales + tasa, y el desglose por tipo de
+          excepción con su acción (fail-soft: null → no se pinta nada). */}
       <ConciliacionResumen data={summary} />
+      <HallazgosDelAgente data={summary} colaHref="/panel/inmobiliaria/conciliacion/cola" />
 
       <AnaliticaAgente data={data} isLoading={isLoading} error={error} notAvailable={notAvailable} />
     </div>

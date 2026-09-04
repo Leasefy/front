@@ -167,7 +167,7 @@ function PoliticaAutoMatch() {
 
   return (
     <section
-      className="rounded-lg border border-border bg-card p-5 space-y-5"
+      className="rounded-lg border border-border bg-surface p-5 space-y-5"
       aria-labelledby="seccion-automatch"
       data-testid="conciliacion-automatch"
     >
@@ -389,7 +389,7 @@ function ConciliacionConfiguracion() {
       {/* Header */}
       <header className="space-y-2">
         <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.workspace.pages.comun.configTitle')}</h1>
-        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
+        <p className="text-body text-fg-muted max-w-2xl">
           {t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
         </p>
       </header>

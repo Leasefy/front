@@ -42,7 +42,7 @@ function ConciliacionMovimientos() {
       <header className="space-y-1.5">
         <SectionLabel>Conciliación</SectionLabel>
         <h1 className="text-h2 text-fg">Movimientos</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground line-clamp-2">
+        <p className="max-w-2xl text-body text-fg-muted">
           Cada línea del extracto se cruza con los cobros que tienen saldo, y conciliarla emite el
           recibo de caja. Nada entra sin que alguien lo confirme.
         </p>

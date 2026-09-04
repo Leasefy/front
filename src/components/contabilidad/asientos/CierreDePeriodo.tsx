@@ -36,6 +36,16 @@ import { aTextoDeDia, diaDe, diaLegible } from '@/lib/contabilidad/fechas';
 export interface CierreDePeriodoProps {
   cierre: Cierre | null;
   cargando?: boolean;
+  /**
+   * ¿La consulta de la frontera falló?
+   *
+   * 🔴 Sin esto, `cierre: null` significaba dos cosas opuestas: «nunca se
+   * cerró nada» y «no pudimos preguntar». La pantalla afirmaba la primera
+   * («cualquier fecha admite asientos») sobre un 500, que es una mentira
+   * peligrosa: quien la lee cree que puede asentar en un mes cerrado. Un
+   * `catch` que devuelve `null` no es evidencia de nada.
+   */
+  fallo?: boolean;
   onCerrado?: (r: ResultadoDeCierre) => void;
 }
 
@@ -51,7 +61,12 @@ function finDelMesSiguiente(dia: string): string {
   return aTextoDeDia(new Date(y, m + 1, 0));
 }
 
-export function CierreDePeriodo({ cierre, cargando = false, onCerrado }: CierreDePeriodoProps) {
+export function CierreDePeriodo({
+  cierre,
+  cargando = false,
+  fallo = false,
+  onCerrado,
+}: CierreDePeriodoProps) {
   const id = useId();
   const cerradaHasta = cierre?.cerradaHasta ?? null;
   const [hasta, setHasta] = useState(ultimoDiaDelMesAnterior);
@@ -120,7 +135,9 @@ export function CierreDePeriodo({ cierre, cargando = false, onCerrado }: CierreD
           <p className="max-w-xl text-sm text-fg-muted">
             {cargando
               ? 'Consultando hasta dónde está cerrada…'
-              : cerradaHasta
+              : fallo
+                ? 'No se pudo consultar hasta dónde está cerrada. Cerrar sigue disponible: el back valida la frontera al recibir la fecha.'
+                : cerradaHasta
                 ? (
                     <>
                       Cerrada hasta el{' '}

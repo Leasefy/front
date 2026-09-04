@@ -377,7 +377,7 @@ describe('<MigrarContratos> — selección across pages (§3.2.G)', () => {
 
     await act(async () => {
       const siguiente = container.querySelector(
-        '[aria-label="Go to next page"]',
+        '[aria-label="Página siguiente"]',
       ) as HTMLButtonElement | null
       siguiente?.click()
       await new Promise((r) => setTimeout(r, 0))
@@ -1255,11 +1255,11 @@ describe('<MigrarContratos> — activados sin propietario (2026-09-02)', () => {
     await conActivadosSinPropietario(90, 3)
     // Forzar el refresco: la lista se vuelve a pedir al cambiar de página y volver.
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('[aria-label="Go to next page"]')?.click()
+      container.querySelector<HTMLButtonElement>('[aria-label="Página siguiente"]')?.click()
       await new Promise((r) => setTimeout(r, 0))
     })
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('[aria-label="Go to previous page"]')?.click()
+      container.querySelector<HTMLButtonElement>('[aria-label="Página anterior"]')?.click()
       for (let i = 0; i < 3; i++) await new Promise((r) => setTimeout(r, 0))
     })
 

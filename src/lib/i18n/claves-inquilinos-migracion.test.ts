@@ -40,7 +40,7 @@ const CLAVES_DE_INQUILINOS = [
   'kpi.arriendosVigentes',
   'kpi.canonVigente',
   'vacioDescripcion',
-  'vacioMigrar',
+  // Un solo botón desde el 2026-09-03: `vacioMigrar` se fue con él.
   'vacioContrato',
   'sinContacto',
   'sinInmueble',

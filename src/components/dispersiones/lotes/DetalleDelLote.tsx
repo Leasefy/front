@@ -58,6 +58,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { SectionLabel } from '@/components/ui/section-label';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -116,6 +118,9 @@ function horaDe(iso: string | null): string {
   return d.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
+/** Referencia estable mientras el lote no llegó: el hook de paginado corre igual. */
+const SIN_PAGOS: LoteDeDispersion['items'] = [];
+
 export interface DetalleDelLoteProps {
   id: string;
   /** Reemplazable en tests: `URL.createObjectURL` no existe en el DOM de prueba. */
@@ -154,6 +159,13 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
     },
     [setVista, vista],
   );
+
+  /*
+   * Los pagos del lote son uno por propietario: un mes de una inmobiliaria
+   * mediana ya son cientos. El hook va acá arriba —antes de los retornos
+   * tempranos— porque no se puede llamar condicionalmente.
+   */
+  const pagos = useTablePagination(vista?.lote.items ?? SIN_PAGOS, { resetKey: id });
 
   if (cargando && !vista) {
     return (
@@ -388,48 +400,62 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
             Datos bancarios congelados al armar el lote: la plata va adonde se aprobó.
           </p>
         </div>
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Titular</TableHead>
-                <TableHead>Documento</TableHead>
-                <TableHead>Banco</TableHead>
-                <TableHead>Cuenta</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead>Entra</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {lote.items.map((item) => (
-                <TableRow key={item.id} data-excluido={item.motivoDeExclusion !== null}>
-                  <TableCell className="font-medium text-fg">{item.nombreTitular}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {item.tipoDocumento} {item.documento || '—'}
-                  </TableCell>
-                  <TableCell>{item.banco || '—'}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {item.tipoDeCuenta ? `${item.tipoDeCuenta} ` : ''}
-                    {ultimos4(item.numeroDeCuenta)}
-                  </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
-                    {formatCurrency(item.valorCop)}
-                  </TableCell>
-                  <TableCell>
-                    {item.motivoDeExclusion === null ? (
-                      <span className="inline-flex items-center gap-1 text-success">
-                        <Check className="h-3.5 w-3.5" /> Sí
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-warning">
-                        <X className="h-3.5 w-3.5" /> No
-                      </span>
-                    )}
-                  </TableCell>
+        <div className="overflow-hidden rounded-lg border border-border">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Titular</TableHead>
+                  <TableHead>Documento</TableHead>
+                  <TableHead>Banco</TableHead>
+                  <TableHead>Cuenta</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead>Entra</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {pagos.pageItems.map((item) => (
+                  <TableRow key={item.id} data-excluido={item.motivoDeExclusion !== null}>
+                    <TableCell className="font-medium text-fg">{item.nombreTitular}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {item.tipoDocumento} {item.documento || '—'}
+                    </TableCell>
+                    <TableCell>{item.banco || '—'}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {item.tipoDeCuenta ? `${item.tipoDeCuenta} ` : ''}
+                      {ultimos4(item.numeroDeCuenta)}
+                    </TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">
+                      {formatCurrency(item.valorCop)}
+                    </TableCell>
+                    <TableCell>
+                      {item.motivoDeExclusion === null ? (
+                        <span className="inline-flex items-center gap-1 text-success">
+                          <Check className="h-3.5 w-3.5" /> Sí
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-warning">
+                          <X className="h-3.5 w-3.5" /> No
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          {pagos.shouldPaginate && (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={pagos.total}
+                page={pagos.page}
+                pageSize={pagos.pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={pagos.setPage}
+                onPageSizeChange={pagos.setPageSize}
+              />
+            </div>
+          )}
         </div>
         <p className="text-xs text-fg-muted">
           Armado por {nombreDe(lote.creadoPorUserId)} · {lote.items.length}{' '}

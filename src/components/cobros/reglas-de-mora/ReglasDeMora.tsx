@@ -140,12 +140,11 @@ export function ReglasDeMora() {
   /*
    * Paginación en el cliente: el back devuelve las reglas de la agencia
    * enteras, sin `page`. Suelen ser dos o tres, así que el pie casi nunca
-   * aparece —sólo cuando `total > pageSize`—; existe igual porque nada impide
+   * aparece —siempre que haya filas—; existe igual porque nada impide
    * que una inmobiliaria arme quince y entonces la tabla sí necesita cortarse.
    */
-  const { pageItems, total, page, pageSize, setPage, setPageSize } = useTablePagination(lista, {
-    initialPageSize: 10,
-  });
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(lista, { initialPageSize: 10 });
 
   const ponerRegla = useCallback((regla: ReglaDeMora) => {
     setReglas((previas) => {
@@ -316,9 +315,11 @@ export function ReglasDeMora() {
                   </Table>
                 </div>
 
-                {/* El pie sólo aparece cuando hay más de una página: un
-                    paginador sobre tres reglas es ruido. */}
-                {total > pageSize && (
+                {/* El pie se monta siempre que haya filas, aunque entren todas
+                    en una página: dice «Mostrando 1–3 de 3» y deja elegir
+                    cuántas ver. Es lo que hace que una tabla se lea como tabla
+                    (Nico, 2026-09-02). */}
+                {shouldPaginate && (
                   <div className="border-t border-border bg-muted/10 px-4 py-3">
                     <TablePagination
                       total={total}

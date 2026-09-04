@@ -76,11 +76,11 @@ import {
 // ── Summary card config ─────────────────────────────────────────────────────
 
 const RESUMEN_ITEMS = [
-  { key: 'conciliados',       dot: 'bg-success-500', field: 'conciliados'       },
-  { key: 'parciales',         dot: 'bg-warning-500', field: 'parciales'         },
+  { key: 'conciliados',       dot: 'bg-success',     field: 'conciliados'       },
+  { key: 'parciales',         dot: 'bg-warning',     field: 'parciales'         },
   { key: 'duplicados',        dot: 'bg-fg-subtle',   field: 'duplicados'        },
   { key: 'noIdentificados',   dot: 'bg-fg-subtle',   field: 'noIdentificados'   },
-  { key: 'diferencias',       dot: 'bg-error-500',   field: 'diferencias'       },
+  { key: 'diferencias',       dot: 'bg-danger',      field: 'diferencias'       },
   { key: 'fueraFecha',        dot: 'bg-fg-subtle',   field: 'fueraDeFecha'      },
 ] as const;
 
@@ -199,7 +199,7 @@ function RowActions({ item, onConfirm, onReject, onReverse, busy, t }: RowAction
 
   if (!isInQueue && !isConfirmed) {
     // rejected / reversed — no actions
-    return <span className="text-caption text-muted-foreground">—</span>;
+    return <span className="text-caption text-fg-muted">—</span>;
   }
 
   return (
@@ -214,7 +214,7 @@ function RowActions({ item, onConfirm, onReject, onReverse, busy, t }: RowAction
             title={t(k('actionConfirm'))}
             aria-label={t(k('actionConfirm'))}
             hideArrow
-            className="gap-1 text-success-700 hover:bg-success-50 hover:text-success-700 dark:text-success-500 dark:hover:bg-success-500/15"
+            className="gap-1 text-success hover:bg-success-soft hover:text-success"
           >
             {busy ? <Spinner size="xs" variant="current" /> : <CheckCircle className="w-3.5 h-3.5" weight="fill" />}
             {t(k('actionConfirm'))}
@@ -227,7 +227,7 @@ function RowActions({ item, onConfirm, onReject, onReverse, busy, t }: RowAction
             title={t(k('actionReject'))}
             aria-label={t(k('actionReject'))}
             hideArrow
-            className="gap-1 text-error-700 hover:bg-error-50 hover:text-error-700 dark:text-error-500 dark:hover:bg-error-500/15"
+            className="gap-1 text-danger hover:bg-danger-soft hover:text-danger"
           >
             {busy ? <Spinner size="xs" variant="current" /> : <XCircle className="w-3.5 h-3.5" weight="fill" />}
             {t(k('actionReject'))}
@@ -243,7 +243,7 @@ function RowActions({ item, onConfirm, onReject, onReverse, busy, t }: RowAction
           title={t(k('actionReverse'))}
           aria-label={t(k('actionReverse'))}
           hideArrow
-          className="gap-1 text-muted-foreground"
+          className="gap-1 text-fg-muted"
         >
           {busy ? <Spinner size="xs" variant="current" /> : <ArrowCounterClockwise className="w-3.5 h-3.5" />}
           {t(k('actionReverse'))}
@@ -371,7 +371,7 @@ export function ConciliacionDelAgente() {
 
   return (
     <details
-      className="group rounded-lg border border-border bg-card"
+      className="group rounded-lg border border-border bg-surface"
       open={tieneDatos}
       data-testid="conciliacion-agente"
       data-con-datos={tieneDatos ? 'si' : 'no'}
@@ -385,8 +385,8 @@ export function ConciliacionDelAgente() {
           <Robot className="h-[18px] w-[18px] text-fg-muted" weight="duotone" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="text-base font-semibold text-foreground">Lo que vio el agente</h2>
-          <p className="mt-0.5 text-caption text-muted-foreground">
+          <h2 className="text-base font-semibold text-fg">Lo que vio el agente</h2>
+          <p className="mt-0.5 text-caption text-fg-muted">
             {tieneDatos
               ? `${total} ${total === 1 ? 'movimiento' : 'movimientos'} propios del agente, con su clasificación por caso. Confirmar acá no emite recibo de caja.`
               : 'El agente todavía no tiene movimientos propios. Podés cargarle un CSV de Bancolombia o Davivienda para que los clasifique.'}
@@ -400,7 +400,7 @@ export function ConciliacionDelAgente() {
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
-              <span className="text-caption text-muted-foreground">
+              <span className="text-caption text-fg-muted">
                 {total} {t(k('totalMovimientos'))}
               </span>
             </div>
@@ -409,11 +409,11 @@ export function ConciliacionDelAgente() {
                 <div key={item.key} className="rounded-lg border border-border bg-surface p-4">
                   <div className="flex items-center gap-2">
                     <span className={cn('h-2 w-2 shrink-0 rounded-full', item.dot)} />
-                    <span className="truncate text-caption text-muted-foreground">
+                    <span className="truncate text-caption text-fg-muted">
                       {t(k(`caso_${item.key}`))}
                     </span>
                   </div>
-                  <p className="mt-1.5 text-2xl font-medium tabular-nums text-foreground">
+                  <p className="mt-1.5 text-2xl font-medium tabular-nums text-fg">
                     {summary[item.field as keyof typeof summary]}
                   </p>
                 </div>
@@ -427,8 +427,8 @@ export function ConciliacionDelAgente() {
           <section className="overflow-hidden rounded-lg border border-border bg-surface">
             <div className="flex items-center justify-between border-b border-border p-4">
               <div>
-                <h3 className="text-sm font-semibold text-foreground">{t(k('movimientosTitle'))}</h3>
-                <p className="mt-0.5 text-caption text-muted-foreground">{t(k('movimientosDesc'))}</p>
+                <h3 className="text-sm font-semibold text-fg">{t(k('movimientosTitle'))}</h3>
+                <p className="mt-0.5 text-caption text-fg-muted">{t(k('movimientosDesc'))}</p>
               </div>
               <Button
                 variant="ghost"
@@ -437,14 +437,13 @@ export function ConciliacionDelAgente() {
                 title={t(k('refresh'))}
                 aria-label={t(k('refresh'))}
                 hideArrow
-                className="text-muted-foreground"
+                className="text-fg-muted"
               >
                 <ArrowsClockwise className="h-4 w-4" />
               </Button>
             </div>
 
-            <div className="overflow-x-auto">
-              <Table className="w-full text-sm">
+              <Table>
                 <TableHeader>
                   <TableRow>
                     {COLUMNS.map((col) => (
@@ -467,32 +466,32 @@ export function ConciliacionDelAgente() {
                     return (
                       <TableRow
                         key={item.id}
-                        className={cn('transition-colors', isBusy ? 'opacity-60' : 'hover:bg-muted/30')}
+                        className={cn(isBusy && 'opacity-60')}
                       >
-                        <TableCell className="whitespace-nowrap px-5 py-3.5 tabular-nums text-muted-foreground">
+                        <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
                           {dateStr}
                         </TableCell>
-                        <TableCell className="max-w-[140px] truncate px-5 py-3.5 font-mono text-xs" title={ref}>
+                        <TableCell className="max-w-[140px] truncate font-mono text-caption" title={ref}>
                           {ref}
                         </TableCell>
-                        <TableCell className="max-w-[200px] truncate px-5 py-3.5 text-xs" title={tercero}>
+                        <TableCell className="max-w-[200px] truncate" title={tercero}>
                           {tercero}
                         </TableCell>
-                        <TableCell className="max-w-[160px] truncate px-5 py-3.5 text-muted-foreground" title={item.domain}>
+                        <TableCell className="max-w-[160px] truncate text-fg-muted" title={item.domain}>
                           {item.domain}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap px-5 py-3.5 tabular-nums">
+                        <TableCell className="whitespace-nowrap tabular-nums">
                           {valorBanco}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap px-5 py-3.5 tabular-nums text-muted-foreground">
+                        <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
                           {valorEsperado}
                         </TableCell>
-                        <TableCell className="px-5 py-3.5">
+                        <TableCell>
                           <Badge variant={CASO_VARIANT[caso] ?? 'neutral'}>
                             {t(k(`caso_badge_${caso}`))}
                           </Badge>
                         </TableCell>
-                        <TableCell className="px-5 py-3.5">
+                        <TableCell>
                           <RowActions
                             item={item}
                             onConfirm={() => void handleConfirm(item.id)}
@@ -507,7 +506,6 @@ export function ConciliacionDelAgente() {
                   })}
                 </TableBody>
               </Table>
-            </div>
 
             {/* Pie: sólo si hay más de una página. */}
             {shouldPaginate && (
@@ -553,7 +551,7 @@ export function ConciliacionDelAgente() {
             arriba.
           </p>
           <div className="flex items-center gap-2">
-            <span className="text-caption text-muted-foreground">{t(k('uploadBankLabel'))}</span>
+            <span className="text-caption text-fg-muted">{t(k('uploadBankLabel'))}</span>
             <SegmentedControl<IngestBank>
               aria-label={t(k('uploadBankLabel'))}
               value={bank}
@@ -572,19 +570,19 @@ export function ConciliacionDelAgente() {
             disabled={uploading}
             aria-label={t(k('uploadTitle'))}
             data-testid="conciliacion-agente-cargar"
-            className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-background/40 p-6 text-center transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait disabled:opacity-60"
+            className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-surface-muted/50 p-6 text-center transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait disabled:opacity-60"
           >
-            <div className="mb-1 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+            <div className="mb-1 flex h-10 w-10 items-center justify-center rounded-md bg-primary-soft">
               {uploading ? (
                 <Spinner size="md" variant="default" />
               ) : (
                 <UploadSimple className="h-5 w-5 text-primary" weight="duotone" aria-hidden="true" />
               )}
             </div>
-            <p className="text-body-sm font-medium text-foreground">
+            <p className="text-body-sm font-medium text-fg">
               {uploading ? t(k('uploadProcessing')) : t(k('uploadTitle'))}
             </p>
-            <p className="text-caption text-muted-foreground">{t(k('uploadHint'))}</p>
+            <p className="text-caption text-fg-muted">{t(k('uploadHint'))}</p>
           </button>
 
           <input

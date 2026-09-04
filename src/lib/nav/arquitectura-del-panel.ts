@@ -17,7 +17,6 @@ import {
   UsersThree,
   FileText,
   ChartLine,
-  Gear,
   Scales,
   GitMerge,
   ShieldCheck,
@@ -32,9 +31,6 @@ import {
   SquaresFour,
   ChartLineUp,
   TrendUp,
-  Users,
-  Robot,
-  Brain,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import type { BusinessModule } from './agency-module-scope';
@@ -264,23 +260,26 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           { labelKey: 'inmobiliaria.nav.desempenoIa', href: r('/reportes/ia'), icon: ChartLineUp, module: 'analytics' },
         ],
       },
-      {
-        // Sólo ADMIN tiene `configuracion` en la matriz. Equipo (humanos) y los
-        // agentes IA se configuran una vez y no se tocan a diario: viven acá.
-        // Las dos pantallas de IA eran visibles a todo miembro (module null) y
-        // lo siguen siendo: la fila aparece aunque la raíz esté cerrada.
-        key: 'configuracion', labelKey: 'inmobiliaria.nav.configuracion', href: r('/configuracion'), icon: Gear, module: 'configuracion', scope: 'general', dataTourTarget: 'sidebar-configuraciones',
-        pantallas: [
-          { labelKey: 'inmobiliaria.nav.equipo', href: r('/configuracion/equipo'), icon: Users, module: 'agentes' },
-          // Sin `ia: true`: son pantallas SOBRE la IA (no asistidas por un agente) y
-          // su nombre ya dice «IA»; la píldora al lado repetía «IA IA».
-          { labelKey: 'inmobiliaria.nav.agentesIa', href: r('/configuracion/agentes'), icon: Robot, module: null },
-          { labelKey: 'inmobiliaria.nav.automatizacionIa', href: r('/configuracion/ia'), icon: Brain, module: null },
-        ],
-      },
+      // Configuración NO es una fila del sidebar (Nico, 2026-09-03: «tenemos
+      // dos configuraciones, la de la sidebar y la del perfil; de la sidebar
+      // deberíamos quitar eso de Configuración y setear todo en el perfil»).
+      // Se entra por el menú del perfil —que ya tenía el ítem «Configuración»—
+      // y por el buscador. Las rutas siguen vivas, con su propia navegación
+      // interna: ver `app/panel/inmobiliaria/configuracion/secciones.ts`.
+      // Por eso tampoco aparece el riel de secciones ahí: `moduloDeLaRuta` no
+      // encuentra dueño para `/configuracion` y `SeccionesDelModulo` se calla.
     ],
   },
 ];
+
+/**
+ * Rutas del panel que existen pero NO cuelgan de ninguna fila del sidebar.
+ *
+ * Hoy es una sola: Configuración, que se abre desde el menú del perfil. Está
+ * acá —y no suelta en un test— porque las tablas de redirecciones necesitan
+ * saber que su destino es legítimo aunque no esté en el árbol de arriba.
+ */
+export const RUTAS_FUERA_DEL_SIDEBAR: readonly string[] = [`${PANEL}/configuracion`];
 
 /** Todos los módulos, en orden de sidebar. */
 export function modulosDelPanel(): ModuloDelPanel[] {

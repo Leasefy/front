@@ -42,6 +42,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useLotesDeDispersion } from '@/lib/hooks/use-lotes-de-dispersion';
@@ -90,6 +92,9 @@ export function ListaDeLotes() {
 
   const puedeArmar = canAccess('dispersiones', 'create');
   const visibles = useMemo(() => lotes.filter((l) => pasaElFiltro(l, filtro)), [lotes, filtro]);
+  // Un lote por mes y por corrida: la lista crece sola y no tiene techo.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(visibles, { resetKey: filtro });
 
   const irAlLote = useCallback(
     (id: string) => router.push(`/panel/inmobiliaria/pagos/dispersiones/lotes/${id}`),
@@ -196,7 +201,7 @@ export function ListaDeLotes() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {visibles.map((lote) => {
+                {pageItems.map((lote) => {
                   const enTotal = lote._count?.items ?? lote.cantidad;
                   return (
                     <TableRow
@@ -238,6 +243,19 @@ export function ListaDeLotes() {
                 })}
               </TableBody>
             </Table>
+          </div>
+        )}
+
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
           </div>
         )}
       </div>

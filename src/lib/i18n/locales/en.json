@@ -852,7 +852,8 @@
         "walletRequired": "Select a wallet",
         "phoneRequired": "Enter the phone number",
         "phoneInvalid": "Phone number must be 10 digits"
-      }
+      },
+      "addAccount": "Add a collection account"
     }
   },
   "inmobiliaria": {
@@ -890,7 +891,7 @@
       "pronto": "Soon",
       "secInicio": "Home",
       "secAutopilot": "AI Agents",
-      "secCrm": "CRM · Sales",
+      "secCrm": "Sales",
       "secFinanciero": "Financial · ERP",
       "secOperacion": "Operations · Docs",
       "tesoreria": "Treasury",
@@ -1255,26 +1256,38 @@
     },
     "config": {
       "title": "Settings",
-      "subtitle": "Manage your agency settings",
+      "subtitle": "Your agency, your team, your money and the system, all in one place",
+      "navAria": "Settings sections",
+      "grupos": {
+        "inmobiliaria": "Your agency",
+        "equipo": "Team",
+        "dinero": "Money",
+        "sistema": "System"
+      },
       "tabs": {
         "perfil": "Profile",
-        "perfilDesc": "Agency information",
+        "perfilDesc": "Company details and the owner's monthly statement",
         "branding": "Branding",
         "brandingDesc": "Logo, colors, and visual style",
-        "usuarios": "Users",
-        "usuariosDesc": "Team and access",
+        "equipo": "Members and roles",
+        "equipoDesc": "Who can sign in, with which role, and which invitations are open",
+        "miembros": "Members",
         "permisos": "Permissions",
-        "permisosDesc": "Roles and permissions",
+        "permisosDesc": "What each role can do",
+        "mediosDePago": "Payment methods",
+        "mediosDePagoDesc": "How tenants pay you: accounts, links and cash",
         "integraciones": "Integrations",
         "integracionesDesc": "Service connections",
-        "facturacion": "Billing",
-        "facturacionDesc": "Plan and payments",
+        "facturacion": "Plan & billing",
+        "facturacionDesc": "Your Leasefy plan, usage and invoices",
         "notificaciones": "Notifications",
         "notificacionesDesc": "Alerts and emails",
         "preferencias": "Preferences",
-        "preferenciasDesc": "Language and theme",
+        "preferenciasDesc": "Language, theme and panel tips",
         "seguridad": "Security",
-        "seguridadDesc": "Password and access"
+        "seguridadDesc": "Password and access",
+        "automatizacionIa": "AI automation",
+        "automatizacionIaDesc": "Review and certify what the assistant learned before it can influence the chat"
       },
       "notifications": {
         "title": "Notifications",
@@ -1735,7 +1748,6 @@
     "propietarios": {
       "title": "Owners",
       "subtitle": "Manage the owners in your portfolio",
-      "crmTitle": "Owner CRM",
       "search": "Search owner...",
       "addOwner": "New owner",
       "addOwnerIA": "Create with AI",
@@ -3409,7 +3421,13 @@
         "handoverReportOpen": "Open the printable report",
         "gallery": "Gallery ({{count}} photos)",
         "photoAlt": "Photo {{number}}",
-        "viewMorePhotos": "View {{count}} more photos"
+        "viewMorePhotos": "View {{count}} more photos",
+        "consignmentContractAttach": "Attach the signed PDF",
+        "consignmentContractOnlyPdf": "It must be a PDF of up to 10 MB.",
+        "consignmentContractReplace": "Replace",
+        "consignmentContractUploadError": "The contract could not be attached",
+        "consignmentContractUploaded": "Contract attached",
+        "consignmentContractUploading": "Uploading the contract…"
       },
       "wizard": {
         "steps": {
@@ -3854,6 +3872,40 @@
       "newActaOf": "New {{type}} Record",
       "actaDetail": "Record Details",
       "searchActas": "Search records...",
+      "legales": {
+        "subtitle": "The agency's contracts, handover records, inventories and letters.",
+        "generar": "Generate document",
+        "buscar": "Search document, property or party",
+        "tipo": "Type",
+        "estado": "Status",
+        "todosLosTipos": "All types",
+        "todosLosEstados": "All statuses",
+        "colDocumento": "Document",
+        "colTipo": "Type",
+        "colInmueble": "Property / lease",
+        "colPartes": "Parties",
+        "colFecha": "Date",
+        "colEstado": "Status",
+        "colAcciones": "Actions",
+        "verPdf": "View PDF",
+        "descargar": "Download",
+        "vacioTitulo": "No documents generated yet",
+        "vacioDesc": "Generate the lease, the handover record or the letter from a lease or a property.",
+        "colPlantilla": "Template",
+        "colCategoria": "Category",
+        "colVersion": "Version",
+        "colVariables": "Variables",
+        "verPlantilla": "View",
+        "vacioPlantillas": "No templates yet",
+        "vacioPlantillasDesc": "The built-in legal templates are created automatically when this tab opens.",
+        "colInquilino": "Tenant",
+        "vacioActas": "No handover records yet",
+        "vacioActasDesc": "The handover record is taken when the tenant receives the property.",
+        "abriendoPdf": "Opening the PDF…",
+        "errorPdf": "We could not open the PDF",
+        "plantillaTitulo": "Template",
+        "plantillaAyuda": "This is how the document looks. The {{fields}} are replaced when generating it."
+      },
       "noDocuments": "No documents",
       "noDocumentsDesc": "Start by uploading or creating document templates",
       "noActas": "No handover records",
@@ -4232,7 +4284,8 @@
       "signedByAll": "Signed by all parties on",
       "created": "Created",
       "updated": "Updated",
-      "originalDeposit": "Original deposit"
+      "originalDeposit": "Original deposit",
+      "downloadError": "The record's PDF could not be downloaded"
     },
     "reporte": {
       "neverGenerated": "Never generated",
@@ -8680,7 +8733,7 @@
       "insightsExample3": "$84M to disburse · 62% covered",
       "insightsPronto": "Arrives with the Reports & Insights phase.",
       "systemLabel": "Your system",
-      "crmTitle": "CRM · Sales",
+      "crmTitle": "Sales",
       "crmDesc": "Capture, manage and close.",
       "erpTitle": "Financial · ERP",
       "erpDesc": "Collect, invoice, reconcile and disburse.",
@@ -8692,7 +8745,7 @@
       "autopilotRunning": "{{count}} agents running"
     },
     "facturacion": {
-      "label": "Invoicing",
+      "label": "Finance",
       "title": "Invoicing",
       "subtitle": "Sales and purchase invoices, DIAN electronic invoicing, and credit/debit notes — all in one place.",
       "new": "New invoice",
@@ -8707,6 +8760,10 @@
       "desc_compras": "Operating costs and expenses: suppliers, repairs, contracted services.",
       "desc_electronica": "Electronic documents with CUFE and their DIAN status.",
       "desc_notas": "Credit and debit notes associated with an invoice.",
+      "queSon_ventas": "sales invoices",
+      "queSon_compras": "purchase invoices",
+      "queSon_electronica": "electronic documents",
+      "queSon_notas": "credit or debit notes",
       "estadosLabel": "Statuses",
       "estadoAceptada": "DIAN accepted",
       "estadoPendiente": "Pending",
@@ -9186,10 +9243,14 @@
       "title": "Search Leasefy",
       "inputLabel": "Search or type a command",
       "placeholder": "Search…",
+      "inputPlaceholder": "Search properties, contracts, owners… or type an action",
+      "clearLabel": "Clear search",
       "triggerAriaLabel": "Open search (⌘K)",
       "resultsLabel": "Search results",
-      "noResults": "No results for \"{{query}}\"",
+      "noResults": "No results for “{{query}}”",
+      "noResultsHint": "Try the code, the name or the ID number.",
       "novedades": "Recent activity",
+      "novedadesEmpty": "No recent activity",
       "sources": {
         "navegacion": "Navigation",
         "debtors": "Debtors",
@@ -10859,7 +10920,6 @@
       "canonVigente": "Current monthly rent"
     },
     "vacioDescripcion": "There are no leases in your agency yet. Bring over the ones you already have in another system and the tenants will show up on their own.",
-    "vacioMigrar": "Migrate my tenants",
     "vacioContrato": "Migrate leases",
     "sinContacto": "No email or phone",
     "sinInmueble": "No property assigned",

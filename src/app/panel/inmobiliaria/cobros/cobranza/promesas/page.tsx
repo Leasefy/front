@@ -38,6 +38,8 @@ import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Spinner } from '@/components/ui'
 import { SegmentedControl } from '@leasefy/cadence'
 import { usePromises } from '@/lib/hooks/cobranza/use-promises'
+import { TablePagination } from '@/components/ui/pagination'
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { ManualWAModal } from '@/components/inmobiliaria/cobranza/intervention/ManualWAModal'
 import {
   PromesaCard,
@@ -125,6 +127,11 @@ function PromesasContent() {
     () => (filtro === 'todas' ? promesas : promesas.filter((p) => p.estado === filtro)),
     [promesas, filtro],
   )
+
+  // El histórico agency-wide llega de a 200 y se pintaba entero. Mismo pie que
+  // las tablas del panel: cuántas hay, cuáles se ven y cuántas por página.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(visibles, { resetKey: filtro })
 
   // ── Header (compartido) ────────────────────────────────────────────────────
   const header = (
@@ -240,7 +247,7 @@ function PromesasContent() {
                 </div>
 
                 <ul className="space-y-3" aria-label="Promesas de pago">
-                  {visibles.map((p) => (
+                  {pageItems.map((p) => (
                     <li key={p.key} className="space-y-2">
                       <PromesaCard promesa={p} />
                       {/* Acción sugerida por estado — placeholder honesto T-323 */}
@@ -266,6 +273,19 @@ function PromesasContent() {
                     </li>
                   ))}
                 </ul>
+
+                {shouldPaginate && (
+                  <div className="border-t border-border px-4 py-3">
+                    <TablePagination
+                      total={total}
+                      page={page}
+                      pageSize={pageSize}
+                      pageSizeOptions={PAGE_SIZE_OPTIONS}
+                      onPageChange={setPage}
+                      onPageSizeChange={setPageSize}
+                    />
+                  </div>
+                )}
               </div>
             ) : (
               <EmptyState

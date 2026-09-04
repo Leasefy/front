@@ -122,4 +122,36 @@ describe('TablaDeBalance', () => {
     expect(celdas[4]).toBe('—');
     expect(celdas[5]).toBe('$1700000');
   });
+
+  it('la naturaleza va en la misma línea que el nombre, no en un segundo renglón', () => {
+    const el = montar(BALANCE_QUE_CUADRA);
+    const celdaDeCuenta = el.querySelectorAll('[data-testid="fila-de-balance"] td')[1];
+    // Un solo renglón: el nombre y el sufijo son hermanos dentro del mismo
+    // contenedor en línea (la versión vieja usaba dos <span> block).
+    expect(celdaDeCuenta.textContent).toContain('Cartera de arrendamientos');
+    expect(celdaDeCuenta.textContent).toContain('débito');
+    expect(celdaDeCuenta.querySelectorAll('.block')).toHaveLength(0);
+  });
+
+  it('con 99 cuentas la tabla no se va tres pantallas: pagina y los totales siguen siendo los del informe', () => {
+    const muchas = Array.from({ length: 99 }, (_, i) => ({
+      cuentaId: `c-${i}`,
+      codigo: String(100000 + i),
+      nombre: `Cuenta ${i}`,
+      naturaleza: 'DEBITO' as const,
+      saldoAnteriorCop: 0,
+      debitosCop: 1000,
+      creditosCop: 0,
+      saldoFinalCop: 1000,
+    }));
+    const el = montar({ ...BALANCE_QUE_CUADRA, filas: muchas });
+
+    // 10 es el tamaño de página por defecto del panel.
+    expect(el.querySelectorAll('[data-testid="fila-de-balance"]')).toHaveLength(10);
+    // El pie de totales NO es una suma que la tabla rehace sobre la página:
+    // sale del informe y no cambia con la paginación.
+    expect(el.querySelector('[data-testid="total-debitos"]')?.textContent).toBe('$1500000');
+    // Y el pie de paginación existe y dice el total real.
+    expect(el.textContent).toContain('99');
+  });
 });

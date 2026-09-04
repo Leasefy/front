@@ -3,11 +3,20 @@
  * non-interactive row — no `<a href>` (reachable by keyboard/middle-click),
  * no focusable element, and the `tag` pill (e.g. "Próximamente") visible.
  *
- * This is the mechanism `panel/inmobiliaria/layout.tsx` relies on to disable
- * the "Asegurabilidad" nav entry (see `NAV_ITEMS_NO_DISPONIBLES` there) — the
- * layout itself can't be mounted in a unit test (behind `useI18n` /
+ * Originally exercised the exact scenario `panel/inmobiliaria/layout.tsx`
+ * used to disable the "Asegurabilidad" nav entry (`NAV_ITEMS_NO_DISPONIBLES`)
+ * — the layout itself can't be mounted in a unit test (behind `useI18n` /
  * `usePermissionsContext`, see `nav-sidebar.test.ts`), so this test exercises
- * the shared primitive directly with the same `disabled`/`tag` shape.
+ * the shared `PlanSidebar` primitive directly with the same `disabled`/`tag`
+ * shape, using a fixture item — it never imports from the layout.
+ *
+ * T-0061 (mvp-v2.0.0 integration): the sidebar rewrite (`arquitectura-del-panel.ts`
+ * / `sidebar-del-panel.ts`) folded "Asegurabilidad" into the Postulaciones
+ * module's internal screens — there is no longer a standalone sidebar row for
+ * it, so `NAV_ITEMS_NO_DISPONIBLES` has no current caller and the T-0052
+ * disable is NOT reproduced in the new architecture (reported to the
+ * Orchestrator as a gap). The fixture href below was updated off the dead
+ * `/ai/` namespace only to keep this generic-primitive test honest.
  */
 import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -53,7 +62,13 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Inmuebles', href: '/panel/inmobiliaria/inmuebles', icon: Buildings },
   {
     label: 'Asegurabilidad',
-    href: '/panel/inmobiliaria/ai/asegurabilidad',
+    // T-0061: el namespace `/ai/*` murió con la arquitectura nueva del panel
+    // (`arquitectura-del-panel.ts`); la ruta real de hoy es
+    // `/panel/inmobiliaria/postulaciones/asegurabilidad`. El href acá es un
+    // fixture sintético para el primitivo `PlanSidebar` — no depende de la
+    // ruta real — pero se actualiza igual para no dejar viva una referencia
+    // al namespace muerto (lo cazaría `arquitectura-del-panel.test.ts`).
+    href: '/panel/inmobiliaria/postulaciones/asegurabilidad',
     icon: Umbrella,
     disabled: true,
     tag: 'Próximamente',
@@ -71,7 +86,7 @@ describe('<PlanSidebar> — fila con disabled: true', () => {
     render()
     const enlaces = Array.from(container.querySelectorAll('a'))
     const enlaceAsegurabilidad = enlaces.find((a) =>
-      a.getAttribute('href') === '/panel/inmobiliaria/ai/asegurabilidad',
+      a.getAttribute('href') === '/panel/inmobiliaria/postulaciones/asegurabilidad',
     )
     expect(enlaceAsegurabilidad).toBeUndefined()
   })

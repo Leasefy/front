@@ -63,25 +63,24 @@ export function AvailabilityScheduleEditor({
   const enabledDays = DAYS_OF_WEEK.filter(day => schedule[day.key].enabled).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <Clock className="w-5 h-5 text-muted-foreground" />
-            Horarios disponibles para visitas
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Define los días y horas en que puedes recibir visitas de candidatos.
-          </p>
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
+            <Clock className="h-4 w-4 text-fg-muted" aria-hidden />
+            Días y horas
+          </h3>
         </div>
-        <div className="text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">{enabledDays}</span> de 7 días habilitados
+        <div className="text-body-sm text-fg-muted">
+          <span className="font-medium text-fg">{enabledDays}</span> de 7 días
         </div>
       </div>
 
-      {/* Days list */}
-      <div className="space-y-2">
+      {/* Una sola tarjeta con filas separadas por una línea, no siete
+          tarjetas: con siete, la lista ocupaba la pantalla entera y había que
+          hacer scroll para ver el sábado. */}
+      <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
         {DAYS_OF_WEEK.map((day) => (
           <DayAvailabilityRow
             key={day.key}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Heart, ShareNetwork, VideoCamera, MapPin, TrendUp, Clock, Check, Calendar, Copy, ChatCircle } from '@phosphor-icons/react';
@@ -21,6 +21,12 @@ import { seLePuedePrometerSinCodeudor } from '@/lib/api/aprobacion.service';
 
 interface StickyCTAProps {
   propertyId: string;
+  /**
+   * Modalidades que acepta el inmueble. `undefined` = un back que todavía no
+   * las manda ⇒ se ofrecen las dos, como venía siendo. Un arreglo VACÍO sí
+   * significa «ninguna» y apaga el agendamiento.
+   */
+  visitTypes?: Array<'IN_PERSON' | 'VIRTUAL'>;
   /** Monthly rent (COP). Ignored for display when `listingType === 'sale'` — see `salePrice`. */
   price: number;
   adminFee?: number;
@@ -105,6 +111,7 @@ function getScheduleErrorMessage(err: unknown): string {
  */
 export function StickyCTA({
   propertyId,
+  visitTypes,
   price,
   adminFee = 0,
   isWishlisted = false,
@@ -138,6 +145,26 @@ export function StickyCTA({
 
   const [ctaMode, setCtaMode] = useState<'apply' | 'visit' | 'contact'>(isSaleListing ? 'contact' : 'apply');
   const [visitTextT, setVisitType] = useState<'presencial' | 'virtual'>('presencial');
+
+  /**
+   * Las modalidades ofrecidas, en el vocabulario de esta pantalla.
+   * `undefined` del back = las dos (compatibilidad); vacío = ninguna.
+   */
+  const modalidades = useMemo<Array<'presencial' | 'virtual'>>(() => {
+    if (!visitTypes) return ['presencial', 'virtual'];
+    const salida: Array<'presencial' | 'virtual'> = [];
+    if (visitTypes.includes('IN_PERSON')) salida.push('presencial');
+    if (visitTypes.includes('VIRTUAL')) salida.push('virtual');
+    return salida;
+  }, [visitTypes]);
+
+  // Si la seleccionada dejó de ofrecerse, se cae a la que sí está: sin esto se
+  // mandaría una reserva de un tipo que el inmueble no acepta.
+  useEffect(() => {
+    if (modalidades.length > 0 && !modalidades.includes(visitTextT)) {
+      setVisitType(modalidades[0]);
+    }
+  }, [modalidades, visitTextT]);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [visitConfirmed, setVisitConfirmed] = useState(false);
@@ -558,35 +585,48 @@ export function StickyCTA({
           ) : (
             /* ── Visit tab ── */
             <div className="space-y-5">
-              {/* Visit type */}
-              <SegmentedControl<'presencial' | 'virtual'>
-                fullWidth
-                value={visitTextT}
-                onChange={setVisitType}
-                aria-label="Tipo de visita"
-                options={[
-                  {
-                    value: 'presencial',
-                    ariaLabel: 'Presencial',
-                    label: (
-                      <span className="inline-flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        Presencial
-                      </span>
-                    ),
-                  },
-                  {
-                    value: 'virtual',
-                    ariaLabel: 'Virtual',
-                    label: (
-                      <span className="inline-flex items-center gap-2">
-                        <VideoCamera className="w-4 h-4" />
-                        Virtual
-                      </span>
-                    ),
-                  },
-                ]}
-              />
+              {/* Sólo las modalidades que el inmueble acepta. Con una sola no
+                  hay nada que elegir: se dice cuál es y ya. Ofrecer una que la
+                  inmobiliaria apagó termina en una visita que nadie atiende. */}
+              {modalidades.length > 1 ? (
+                <SegmentedControl<'presencial' | 'virtual'>
+                  fullWidth
+                  value={visitTextT}
+                  onChange={setVisitType}
+                  aria-label="Tipo de visita"
+                  options={[
+                    {
+                      value: 'presencial',
+                      ariaLabel: 'Presencial',
+                      label: (
+                        <span className="inline-flex items-center gap-2">
+                          <MapPin className="w-4 h-4" />
+                          Presencial
+                        </span>
+                      ),
+                    },
+                    {
+                      value: 'virtual',
+                      ariaLabel: 'Virtual',
+                      label: (
+                        <span className="inline-flex items-center gap-2">
+                          <VideoCamera className="w-4 h-4" />
+                          Virtual
+                        </span>
+                      ),
+                    },
+                  ]}
+                />
+              ) : (
+                <p className="flex items-center justify-center gap-2 rounded-full bg-surface-muted px-3 py-2 text-body-sm text-fg-muted">
+                  {modalidades[0] === 'virtual' ? (
+                    <VideoCamera className="h-4 w-4" aria-hidden />
+                  ) : (
+                    <MapPin className="h-4 w-4" aria-hidden />
+                  )}
+                  Visita {modalidades[0] === 'virtual' ? 'virtual' : 'presencial'}
+                </p>
+              )}
 
               {/* Slots loading */}
               {slotsLoading ? (

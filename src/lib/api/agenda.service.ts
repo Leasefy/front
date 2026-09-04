@@ -23,6 +23,15 @@ export interface CreateCitaInput {
  * Agenda API — reads the aggregated system events for the current agency and
  * schedules agency visits.
  */
+/** Presencial o por video. Son los dos que entiende el back. */
+export type TipoDeVisita = 'IN_PERSON' | 'VIRTUAL';
+
+export interface DisponibilidadDeVisitas {
+  windows: AvailabilityWindow[];
+  /** Vacío = no se acepta ninguna, aunque haya horarios cargados. */
+  visitTypes: TipoDeVisita[];
+}
+
 export const agendaApi = {
   async getAgenda(): Promise<AgendaListResponse> {
     try {
@@ -51,21 +60,33 @@ export const agendaApi = {
     await apiClient.patch(`/inmobiliaria/agenda/tareas/${id}`, input);
   },
 
-  /** GET visit availability windows for one of the agency's properties. */
-  async getDisponibilidad(propertyId: string): Promise<AvailabilityWindow[]> {
-    return apiClient.get<AvailabilityWindow[]>(
+  /**
+   * GET cómo se visita este inmueble: sus ventanas y qué modalidades acepta.
+   *
+   * Antes devolvía el arreglo de ventanas suelto; ahora es un objeto, porque
+   * la pantalla que edita esto es una sola y pedir las modalidades aparte era
+   * un viaje de más.
+   */
+  async getDisponibilidad(propertyId: string): Promise<DisponibilidadDeVisitas> {
+    return apiClient.get<DisponibilidadDeVisitas>(
       `/inmobiliaria/agenda/propiedades/${propertyId}/disponibilidad`,
     );
   },
 
-  /** PUT — replace the full weekly availability for a property. */
+  /**
+   * PUT — reemplaza la semana entera del inmueble.
+   *
+   * `visitTypes` ausente = no se tocan las modalidades que ya tenía. La lista
+   * VACÍA sí se aplica y significa «ninguna».
+   */
   async setDisponibilidad(
     propertyId: string,
     windows: AvailabilityWindow[],
-  ): Promise<AvailabilityWindow[]> {
-    return apiClient.put<AvailabilityWindow[]>(
+    visitTypes?: TipoDeVisita[],
+  ): Promise<DisponibilidadDeVisitas> {
+    return apiClient.put<DisponibilidadDeVisitas>(
       `/inmobiliaria/agenda/propiedades/${propertyId}/disponibilidad`,
-      { windows },
+      { windows, ...(visitTypes ? { visitTypes } : {}) },
     );
   },
 

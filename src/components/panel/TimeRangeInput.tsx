@@ -20,13 +20,18 @@ interface TimeRangeInputProps {
 }
 
 /**
- * Format time for display (e.g., "09:00" -> "9:00 AM")
+ * "09:00" → "9:00 a. m."… no. Se muestra en 24 horas: "09:00".
+ *
+ * Con AM/PM la etiqueta más larga («10:00 AM») no entraba en la caja y se
+ * partía en DOS renglones — seis selectores seguidos así hacían que la lista
+ * pareciera rota. Las 24 horas caben siempre, tienen el mismo ancho en todas
+ * las horas (por eso alinean en columna), y son las que ya guarda la base y
+ * las que se escriben en cualquier formulario en Colombia.
  */
-function formatTime(time: string): string {
+export function formatTime(time: string): string {
   const [hours, minutes] = time.split(':').map(Number);
-  const period = hours >= 12 ? 'PM' : 'AM';
-  const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
-  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return time;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
 /**
@@ -72,21 +77,23 @@ export function TimeRangeInput({
         disabled={disabled}
       >
         <SelectTrigger className={cn(
-          "w-[110px] h-9 text-sm",
+          // `whitespace-nowrap` es el cinturón: aunque un día la etiqueta
+          // crezca, se recorta, nunca parte el renglón.
+          "h-9 w-[92px] whitespace-nowrap px-3 text-sm tabular-nums",
           disabled && "opacity-50"
         )}>
           <SelectValue placeholder="Inicio" />
         </SelectTrigger>
         <SelectContent>
           {TIME_OPTIONS.slice(0, -1).map((time) => (
-            <SelectItem key={time} value={time}>
+            <SelectItem key={time} value={time} className="tabular-nums">
               {formatTime(time)}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
 
-      <span className="text-muted-foreground text-sm">-</span>
+      <span className="select-none text-sm text-fg-subtle">a</span>
 
       <Select
         value={range.end}
@@ -94,14 +101,14 @@ export function TimeRangeInput({
         disabled={disabled}
       >
         <SelectTrigger className={cn(
-          "w-[110px] h-9 text-sm",
+          "h-9 w-[92px] whitespace-nowrap px-3 text-sm tabular-nums",
           disabled && "opacity-50"
         )}>
           <SelectValue placeholder="Fin" />
         </SelectTrigger>
         <SelectContent>
           {endTimeOptions.map((time) => (
-            <SelectItem key={time} value={time}>
+            <SelectItem key={time} value={time} className="tabular-nums">
               {formatTime(time)}
             </SelectItem>
           ))}

@@ -50,7 +50,7 @@ function ContenidoDeTerceros() {
           className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
         >
           <ArrowLeft className="h-4 w-4" />
-          {tipoInicial === 'INQUILINO' ? t('inmobiliaria.nav.inquilinos') : t('inmobiliaria.nav.propietarios')}
+          {tipoInicial === 'INQUILINO' ? t('inquilinos.titulo') : t('inmobiliaria.nav.propietarios')}
         </Link>
         <Eyebrow>{t('migracion.eyebrow')}</Eyebrow>
         <h1 className="text-h2 text-fg">

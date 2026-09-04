@@ -159,9 +159,12 @@ interface RejectDialogProps {
 function RejectDialog({ matchId, onConfirm, onCancel, t, busy }: RejectDialogProps) {
   return (
     <Dialog open={Boolean(matchId)} onOpenChange={(o) => { if (!o && !busy) onCancel(); }}>
-      <DialogContent className="max-w-sm">
-        <CuerpoDelRechazo onConfirm={onConfirm} onCancel={onCancel} t={t} busy={busy} />
-      </DialogContent>
+      {/* 🔴 `DialogContent` reparte a sus hijos DIRECTOS en cabecera / cuerpo /
+          pie (`repartirHijos` en `ui/dialog.tsx`). Un componente interpuesto
+          hace que el `DialogHeader` deje de verse como cabecera —título chico,
+          con el padding del cuerpo— y que el Content pinte SU aspa además de la
+          de la cabecera: dos ✕. Por eso el `DialogContent` vive adentro. */}
+      <CuerpoDelRechazo onConfirm={onConfirm} onCancel={onCancel} t={t} busy={busy} />
     </Dialog>
   );
 }
@@ -176,7 +179,7 @@ function CuerpoDelRechazo({
   const k = (s: string) => `inmobiliaria.conciliacion.${s}`;
 
   return (
-    <>
+    <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>{t(k('rejectDialogTitle'))}</DialogTitle>
           <DialogDescription>{t(k('rejectDialogDesc'))}</DialogDescription>
@@ -203,7 +206,7 @@ function CuerpoDelRechazo({
             {t(k('rejectConfirm'))}
           </Button>
         </DialogFooter>
-    </>
+    </DialogContent>
   );
 }
 

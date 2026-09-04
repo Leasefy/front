@@ -108,9 +108,12 @@ export function CompletarMandatosLoteDialog({
       {/* Ancho: la lista de propietarios a 3 columnas y la tabla «uno por
           uno» necesitan sitio. Alto: el cuerpo scrollea y el pie queda fijo
           (lo reparte el shim de `DialogContent`). */}
-      <DialogContent className="max-w-4xl max-h-[80vh]">
-        {ultimos && <CuerpoDelLote inmuebles={ultimos} {...resto} />}
-      </DialogContent>
+      {/* 🔴 `DialogContent` reparte a sus hijos DIRECTOS en cabecera / cuerpo /
+          pie (`repartirHijos` en `ui/dialog.tsx`). Un componente interpuesto
+          hace que el `DialogHeader` deje de verse como cabecera —título chico,
+          con el padding del cuerpo— y que el Content pinte SU aspa además de la
+          de la cabecera: dos ✕. Por eso el `DialogContent` vive adentro. */}
+      {ultimos && <CuerpoDelLote inmuebles={ultimos} {...resto} />}
     </Dialog>
   );
 }
@@ -337,7 +340,7 @@ function CuerpoDelLote({
   );
 
   return (
-    <>
+    <DialogContent className="max-w-4xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>{t('inmobiliaria.import.confirm.mandateBatch.title')}</DialogTitle>
           <DialogDescription>
@@ -462,7 +465,7 @@ function CuerpoDelLote({
                 })}
           </Button>
         </DialogFooter>
-    </>
+    </DialogContent>
   );
 }
 

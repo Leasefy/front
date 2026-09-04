@@ -337,6 +337,19 @@ describe('<CompletarMandatoDialog> — varios dueños (Nico, 2026-09-03)', () =>
     updatePropertyMock.mockReset().mockResolvedValue({});
   });
 
+  it('🔴 una sola ✕, y el título va en la cabecera del modal', () => {
+    montar();
+
+    // Con el cuerpo envuelto en un componente, `DialogContent` deja de ver el
+    // `DialogHeader` entre sus hijos directos: lo trata como cuerpo —título
+    // chico, con el padding del cuerpo— y encima pinta SU aspa creyendo que la
+    // cabecera no trae ninguna. Salían dos.
+    expect(document.body.querySelectorAll('[data-testid="dialog-close"]')).toHaveLength(1);
+
+    const titulo = document.body.querySelector('h2, [id$="-title"], [data-slot="dialog-title"]');
+    expect(titulo?.textContent).toContain('inmobiliaria.consignaciones.mandateDialog.title');
+  });
+
   it('las cards se marcan y desmarcan: se pueden elegir dos dueños y pide el reparto', () => {
     montar();
     expect(document.body.querySelector('[data-testid="mandato-reparto"]')).toBeNull();

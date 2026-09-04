@@ -304,9 +304,13 @@ export function CompletarMandatoDialog({ inmueble, ...resto }: CompletarMandatoD
       {/* Ancho para tres columnas de propietarios y alto para que la grilla
           respire: en `max-w-lg` elegir un dueño era «súper dificultoso»
           (Nico, 2026-09-03). */}
-      <DialogContent className="max-w-3xl max-h-[min(860px,92dvh)]">
-        {ultimo && <CuerpoDelMandato inmueble={ultimo} {...resto} />}
-      </DialogContent>
+  {/* 🔴 `DialogContent` reparte a sus hijos DIRECTOS en cabecera / cuerpo / pie
+      (`repartirHijos` en `ui/dialog.tsx`). Si acá se interpone un componente,
+      el `DialogHeader` deja de verse como cabecera: cae al cuerpo —título
+      chico, con el padding del cuerpo— y encima el Content pinta SU aspa
+      creyendo que la cabecera no trae ninguna, así que salen DOS. Por eso el
+      `DialogContent` vive adentro del cuerpo y no acá. */}
+      {ultimo && <CuerpoDelMandato inmueble={ultimo} {...resto} />}
     </Dialog>
   );
 }
@@ -464,7 +468,7 @@ function CuerpoDelMandato({
   };
 
   return (
-    <>
+    <DialogContent className="max-w-3xl max-h-[min(860px,92dvh)]">
         <DialogHeader>
           <DialogTitle>
             {duenoConocido
@@ -640,7 +644,7 @@ function CuerpoDelMandato({
             {t('inmobiliaria.consignaciones.mandateDialog.confirm')}
           </Button>
         </DialogFooter>
-    </>
+    </DialogContent>
   );
 }
 

@@ -303,11 +303,14 @@ function IntroDelFlujo({
 
   return (
     <Dialog open={Boolean(flujo)} onOpenChange={(abierto) => !abierto && onCancelar()}>
-      <DialogContent className="sm:max-w-lg">
-        {ultimo && (
-          <CuerpoDeLaIntro flujo={ultimo} onCancelar={onCancelar} onEmpezar={onEmpezar} />
-        )}
-      </DialogContent>
+      {/* 🔴 `DialogContent` reparte a sus hijos DIRECTOS en cabecera / cuerpo /
+          pie (`repartirHijos` en `ui/dialog.tsx`). Un componente interpuesto
+          hace que el `DialogHeader` deje de verse como cabecera —título chico,
+          con el padding del cuerpo— y que el Content pinte SU aspa además de la
+          de la cabecera: dos ✕. Por eso el `DialogContent` vive adentro. */}
+      {ultimo && (
+        <CuerpoDeLaIntro flujo={ultimo} onCancelar={onCancelar} onEmpezar={onEmpezar} />
+      )}
     </Dialog>
   )
 }
@@ -326,7 +329,7 @@ function CuerpoDeLaIntro({
   const Icono = flujo.icon
 
   return (
-    <>
+    <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary-soft">
             <Icono className="h-5 w-5 text-primary" />
@@ -375,6 +378,6 @@ function CuerpoDeLaIntro({
             </Button>
           </div>
         </DialogFooter>
-    </>
+    </DialogContent>
   )
 }

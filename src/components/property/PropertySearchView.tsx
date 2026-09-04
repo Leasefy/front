@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/layout/Navbar';
 import { PropertyGrid } from '@/components/property/PropertyGrid';
 import { AISearchInput } from '@/components/property/AISearchInput';
+import { LoQueEntendimos } from '@/components/property/LoQueEntendimos';
 import dynamic from 'next/dynamic';
 import { MapToggle } from '@/components/map';
 import { TopeAprobadoBanner } from '@/components/tenant/TopeAprobadoBanner';
@@ -126,7 +127,7 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
   }, [appliedQuery, selectedCity, selectedBedrooms, selectedType, selectedPrice]);
 
   // Fetch properties from API
-  const { properties: apiProperties, isLoading: isInitialLoading } = useProperties(apiFilters);
+  const { properties: apiProperties, meta, isLoading: isInitialLoading } = useProperties(apiFilters);
 
   // Use wishlist hook
   const { isWishlisted, toggleWishlist } = useWishlist();
@@ -326,6 +327,9 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
                 }}
                 isMagnifyingGlassing={isInitialLoading}
               />
+              {/* Lo que el buscador sacó del texto. Va acá, pegado al campo,
+                  porque es la respuesta a «¿me entendiste?». */}
+              <LoQueEntendimos interpretacion={meta?.interpretacion} className="mt-2" />
             </div>
           </div>
 

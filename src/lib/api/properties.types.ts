@@ -130,6 +130,14 @@ export interface BackendProperty {
 }
 
 export interface PaginationMeta {
+  /**
+   * Qué entendió el back del texto libre: `{ ciudad: 'Medellín',
+   * 'área': '50-90 m²' }`. Ausente cuando la búsqueda no traía texto.
+   *
+   * Se muestra en pantalla a propósito: escribir «de 70 m2» y ver una lista
+   * no dice si el metraje se tuvo en cuenta o se ignoró.
+   */
+  interpretacion?: Record<string, string>;
   total: number;
   page: number;
   limit: number;

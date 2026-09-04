@@ -583,3 +583,69 @@ export function fetchPilotoProcesos(
     signal,
   )
 }
+
+// ── Catálogo: TODOS los procesos de la plataforma (2026-09-04) ─────────────
+
+/**
+ * El complemento de `Proceso`: aquél es una INSTANCIA (este depósito, esta
+ * llamada), éste es el PROCESO — qué existe, quién lo corre, en qué modo está
+ * y cuándo dejó su última huella. Lo pidió Nico mirando la píldora del
+ * header: «que muestre todos los procesos de todo lo que pasa en la
+ * plataforma».
+ */
+export type AreaDeProceso = 'dinero' | 'operacion' | 'captacion' | 'plataforma'
+
+export interface QuienCorre {
+  tipo: 'agente' | 'sistema'
+  /** Clave del agente en la flota; `null` cuando lo corre el sistema. */
+  agente: string | null
+  etiqueta: string
+}
+
+export interface UltimaSenal {
+  at: string
+  /** «38 cobros generados» — lo que se contó, no una promesa de corrida. */
+  que: string
+}
+
+export interface ProcesoDelCatalogo {
+  clave: string
+  /** El nombre técnico: id de la función, clase del cron o evento. */
+  id: string
+  nombre: string
+  queHace: string
+  area: AreaDeProceso
+  quien: QuienCorre
+  /** Autonomía efectiva del agente dueño; `null` si lo corre el sistema. */
+  modo: AutonomiaModo | null
+  /**
+   * ¿Ese modo cambia de verdad lo que el proceso hace? Hoy, en casi toda la
+   * flota, NO: queda registrado como la decisión de la inmobiliaria pero la
+   * ejecución no lo consulta. La tabla lo dice en vez de fingir un control.
+   */
+  modoGobierna: boolean
+  corre: boolean
+  porQueNoCorre: string | null
+  disparador: string
+  /** Tabla o acción de auditoría de donde sale `ultima`. */
+  fuente: string | null
+  ultima: UltimaSenal | null
+  /** Por qué `ultima` es `null`: nunca se inventa una fecha. */
+  sinDato: string | null
+  enlace: { label: string; href: string } | null
+}
+
+export interface PilotoCatalogoResponse {
+  procesos: ProcesoDelCatalogo[]
+  totales: { total: number; corriendo: number; conSenal: number; sinDato: number }
+  porArea: Record<AreaDeProceso, number>
+  activo: boolean
+  tomadoAt: string
+}
+
+export function fetchPilotoCatalogo(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<PilotoFetchResult<PilotoCatalogoResponse>> {
+  return getJson<PilotoCatalogoResponse>(`/api/agency/${agencyId}/ai-hub/catalogo`, signal)
+}

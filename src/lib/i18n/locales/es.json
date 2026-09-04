@@ -1014,6 +1014,7 @@
       "procesos": {
         "titulo": "Procesos",
         "descripcion": "Lo que el Piloto hizo, paso a paso: depósitos que detectó y concilió, llamadas de Laura y mensajes con los inquilinos.",
+        "loQuePaso": "Lo que pasó",
         "volver": "Piloto automático",
         "enVivo": "En vivo",
         "enVivoVacio": "Nada en curso ahora mismo",
@@ -1136,6 +1137,44 @@
         "switchAria": "Encender o apagar {agente} para tu inmobiliaria",
         "toastOn": "{agente} encendida para tu inmobiliaria",
         "toastOff": "{agente} apagada para tu inmobiliaria"
+      },
+      "catalogo": {
+        "titulo": "Todos los procesos",
+        "descripcion": "Toda la maquinaria de la plataforma, proceso por proceso: qué hace cada uno, quién lo corre, en qué modo está y cuándo se lo vio por última vez.",
+        "queEs": "procesos",
+        "buscar": "Buscar un proceso",
+        "resumen": "{{total}} procesos · {{corriendo}} encendidos · {{conSenal}} con señal reciente",
+        "filtrarArea": "Filtrar por área",
+        "filtrarModo": "Filtrar por modo",
+        "area": {
+          "todas": "Todo",
+          "dinero": "Dinero",
+          "operacion": "Operación",
+          "captacion": "Captación",
+          "plataforma": "Plataforma"
+        },
+        "modo": {
+          "todos": "Todos",
+          "sombra": "Sombra",
+          "copiloto": "Copiloto",
+          "autonomo": "Automático",
+          "sistema": "Sin modo"
+        },
+        "col": {
+          "proceso": "Proceso",
+          "quien": "Quién lo corre",
+          "cuando": "Cuándo corre",
+          "ultima": "Última señal",
+          "abrir": "Abrir"
+        },
+        "sinModo": "Lo corre el sistema",
+        "modoNoManda": "El modo queda registrado, pero todavía no cambia lo que este proceso hace.",
+        "apagado": "Apagado",
+        "noDisponible": "No disponible",
+        "vacio": "Nada con ese filtro",
+        "vacioHint": "Probá con otra área, otro modo o borrando la búsqueda.",
+        "sinFuente": "No pudimos consultar los procesos",
+        "sinFuenteHint": "La fuente no respondió; esto no significa que no haya procesos corriendo."
       }
     },
     "mobileNav": {
@@ -4269,7 +4308,6 @@
       "print": "Imprimir",
       "downloadPdf": "Descargar PDF",
       "downloadError": "No se pudo bajar el PDF del acta",
-      "downloadPdf": "Descargar PDF",
       "partiesInvolved": "Partes involucradas",
       "inventorySection": "Inventario",
       "itemsLabel": "ítems",

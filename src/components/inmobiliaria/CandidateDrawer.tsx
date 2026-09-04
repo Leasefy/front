@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useLenis } from '@/components/providers/SmoothScroll';
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import {
   X,
   Robot,
@@ -155,7 +156,47 @@ const DOC_TYPE_LABELS: Record<string, string> = {
 // Drawer component
 // ============================================================================
 
+/**
+ * El envoltorio: es dueño del `Sheet` y de nada más.
+ *
+ * Antes el componente entero hacía `if (!candidate) return null` con
+ * `<Sheet open>` fijo, y cerrar era desmontarlo de un tirón. Radix anima la
+ * salida sólo si el contenido sigue montado con `data-state="closed"` mientras
+ * dura la animación, así que el cajón se cortaba en seco (Nico, 2026-09-04).
+ *
+ * `useUltimoPresente` conserva al candidato durante la salida: en el render
+ * del cierre `candidate` ya es null y el cajón se iría deslizando en blanco.
+ * Y el cuerpo va DENTRO del `SheetContent` para que Radix lo desmonte al
+ * cerrar: así el polling de la evaluación no queda vivo con el cajón cerrado,
+ * y abrir a otro candidato lo vuelve a montar limpio.
+ */
 export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawerProps) {
+  const ultimo = useUltimoPresente(candidate);
+
+  return (
+    <Sheet open={Boolean(candidate)} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <SheetContent
+        side="right"
+        hideCloseButton
+        aria-describedby={undefined}
+        className="w-full sm:max-w-2xl !p-0 flex flex-col gap-0 bg-background"
+      >
+        {ultimo && (
+          <CuerpoDelCandidato candidate={ultimo} onClose={onClose} onAction={onAction} />
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+interface CuerpoDelCandidatoProps {
+  /** Nunca null: el envoltorio no monta el cuerpo sin candidato. */
+  candidate: LandlordCandidate;
+  onClose: () => void;
+  onAction: (type: CandidateAction, candidate: LandlordCandidate) => void;
+}
+
+function CuerpoDelCandidato({ candidate, onClose, onAction }: CuerpoDelCandidatoProps) {
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -177,17 +218,15 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
 
   // Pause Lenis smooth scroll while the drawer is open so native scrolling
   // inside the panel works. Without this, wheel events get hijacked by Lenis.
+  // El cuerpo sólo existe con el cajón abierto, así que el freno es montar y
+  // el suelte es desmontar — ya no hace falta mirar si hay candidato.
   const lenis = useLenis();
   useEffect(() => {
-    if (candidate) {
-      lenis.stop();
-    } else {
-      lenis.start();
-    }
+    lenis.stop();
     return () => {
       lenis.start();
     };
-  }, [candidate, lenis]);
+  }, [lenis]);
 
   // Escape / overlay close + portal + scroll-lock are owned by the Cadence Sheet
   // (Radix Dialog) shell below — no manual handlers needed.
@@ -295,8 +334,6 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
     }
   }, [candidate]);
 
-  if (!candidate) return null;
-
   // During polling, suppress the candidate.riskScore fallback to avoid showing the stale value
   const level = evaluation?.level ?? (isPolling ? undefined : candidate.riskScore?.level);
   const totalScore = evaluation?.totalScore ?? (isPolling ? undefined : candidate.riskScore?.totalScore);
@@ -334,13 +371,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
   const hayAcciones = canApprove || canReject || canRequestInfo;
 
   return (
-    <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <SheetContent
-        side="right"
-        hideCloseButton
-        aria-describedby={undefined}
-        className="w-full sm:max-w-2xl !p-0 flex flex-col gap-0 bg-background"
-      >
+    <>
         {/* sr-only title satisfies Dialog a11y; the visual header lives below */}
         <SheetTitle className="sr-only">{candidate.tenantName || 'Candidato'}</SheetTitle>
         {/* Header — flex-none keeps it pinned to the top of the panel */}
@@ -905,8 +936,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
             </div>
           </div>
         )}
-      </SheetContent>
-    </Sheet>
+    </>
   );
 }
 

@@ -12,7 +12,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowSquareOut } from '@phosphor-icons/react';
+import { ArrowSquareOut, Envelope, Phone, VideoCamera, MapPin } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,8 @@ import {
 import { agendaApi } from '@/lib/api/agenda.service';
 import { tareaIdOf, type EventoAgenda, type EventoEstado } from '@/lib/api/agenda.types';
 import { fechaLocal } from '@/lib/fechas-locales';
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
+import { MotivoDialog } from '@/components/inmobiliaria/agenda/MotivoDialog';
 
 const ESTADO_BADGE: Record<EventoEstado, string> = {
   pendiente: 'bg-primary/10 text-primary',
@@ -54,10 +56,21 @@ interface Props {
   onAccionVisita: (visitId: string, accion: () => Promise<void>) => Promise<void>;
 }
 
-export function EventoAgendaDrawer({ evento, onOpenChange, onCambio, onAccionVisita }: Props) {
+export function EventoAgendaDrawer({ evento: entrante, onOpenChange, onCambio, onAccionVisita }: Props) {
+  // El cajón se cierra ANIMADO (`open={…}`, no desmontando), así que durante
+  // los 500 ms de la salida el prop ya es `null` y el cuerpo se pintaría en
+  // blanco mientras se va. Conservar el último evento es lo que hace que salga
+  // mostrando lo que mostraba.
+  const evento = useUltimoPresente(entrante);
   const { t, formatDate } = useI18n();
   const k = (s: string) => `inmobiliaria.agenda.${s}`;
   const [actuando, setActuando] = useState(false);
+  /**
+   * Cuál de las dos acciones con motivo está preguntando. `null` = ninguna.
+   * Cancelar y rechazar comparten diálogo porque piden lo mismo; lo que cambia
+   * es el texto y a qué endpoint va.
+   */
+  const [pidiendoMotivo, setPidiendoMotivo] = useState<'cancelar' | 'rechazar' | null>(null);
 
   const accionTarea = async (estado: 'COMPLETADA' | 'CANCELADA' | 'PENDIENTE') => {
     if (!evento) return;
@@ -87,11 +100,25 @@ export function EventoAgendaDrawer({ evento, onOpenChange, onCambio, onAccionVis
     }
   };
 
+  /** Cancelar y rechazar: las dos escriben el motivo que se acaba de tipear. */
+  const conMotivo = async (motivo: string) => {
+    if (!evento || !pidiendoMotivo) return;
+    const visitId = evento.id.replace(/^visit-/, '');
+    const cual = pidiendoMotivo;
+    await visita(() =>
+      cual === 'cancelar'
+        ? agendaApi.cancelarCita(visitId, motivo)
+        : agendaApi.rechazarCita(visitId, motivo),
+    );
+    setPidiendoMotivo(null);
+  };
+
   const dia = evento ? fechaLocal(evento.fecha) : null;
   const href = evento ? hrefDelVinculo(evento) : null;
+  const esVisita = evento?.tipo === 'visita';
 
   return (
-    <Sheet open={evento !== null} onOpenChange={onOpenChange}>
+    <Sheet open={entrante !== null} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto" data-lenis-prevent>
         {evento && (
           <>
@@ -130,15 +157,69 @@ export function EventoAgendaDrawer({ evento, onOpenChange, onCambio, onAccionVis
                   '—'
                 )}
               </Fila>
-              <Fila etiqueta={t(k('colResponsable'))}>{evento.responsableNombre ?? '—'}</Fila>
+              {/* 🔴 En una visita este campo NO es el responsable de la
+                  agencia: es quien va a visitar. Rotularlo «Responsable» hacía
+                  leer la fila al revés. */}
+              <Fila etiqueta={esVisita ? 'Quién visita' : t(k('colResponsable'))}>
+                {evento.responsableNombre ?? '—'}
+              </Fila>
+
+              {esVisita && evento.modalidad && (
+                <Fila etiqueta="Modalidad">
+                  <span className="inline-flex items-center gap-1.5">
+                    {evento.modalidad === 'VIRTUAL' ? (
+                      <VideoCamera className="h-4 w-4 text-fg-muted" aria-hidden="true" />
+                    ) : (
+                      <MapPin className="h-4 w-4 text-fg-muted" aria-hidden="true" />
+                    )}
+                    {evento.modalidad === 'VIRTUAL' ? 'Virtual' : 'Presencial'}
+                  </span>
+                </Fila>
+              )}
+
+              {/* Cómo ubicar a quien visita. Sin esto, para avisarle que se
+                  cancela había que salir a buscarla a otra pantalla. */}
+              {esVisita && (evento.contactoTelefono || evento.contactoEmail) && (
+                <Fila etiqueta="Contacto">
+                  <span className="flex flex-col gap-1">
+                    {evento.contactoTelefono && (
+                      <a
+                        href={`tel:${evento.contactoTelefono}`}
+                        className="inline-flex items-center gap-1.5 text-primary hover:underline"
+                      >
+                        <Phone className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span className="font-mono tabular-nums">{evento.contactoTelefono}</span>
+                      </a>
+                    )}
+                    {evento.contactoEmail && (
+                      <a
+                        href={`mailto:${evento.contactoEmail}`}
+                        className="inline-flex min-w-0 items-center gap-1.5 text-primary hover:underline"
+                      >
+                        <Envelope className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                        <span className="truncate">{evento.contactoEmail}</span>
+                      </a>
+                    )}
+                  </span>
+                </Fila>
+              )}
+
               {evento.descripcion && (
-                <Fila etiqueta={evento.tipo === 'tarea' ? 'Nota' : 'Detalle'}>
+                <Fila etiqueta={evento.tipo === 'tarea' ? 'Nota' : 'Franja'}>
                   <span className="whitespace-pre-wrap">{evento.descripcion}</span>
                 </Fila>
               )}
             </dl>
 
-            <div className="mt-6 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4" data-testid="evento-acciones">
+            {/* Las acciones, con su nombre arriba: antes eran dos botones
+                sueltos al pie y no se entendía a qué se aplicaban ni qué iba a
+                pasar (Nico, 2026-09-04: «deberían mostrar bien las acciones de
+                esas agendas»). */}
+            <div className="mt-6 border-t border-border pt-4">
+              <p className="mb-2 text-caption font-medium uppercase tracking-[0.08em] text-fg-subtle">
+                {esVisita ? 'Qué hacés con esta visita' : 'Qué hacés con esta tarea'}
+              </p>
+              <div className="flex flex-wrap items-center justify-end gap-2" data-testid="evento-acciones">
               {evento.tipo === 'tarea' && evento.estadoRaw === 'PENDIENTE' && (
                 <>
                   <Button variant="outline" size="sm" hideArrow disabled={actuando} onClick={() => void accionTarea('CANCELADA')}>
@@ -156,23 +237,60 @@ export function EventoAgendaDrawer({ evento, onOpenChange, onCambio, onAccionVis
               )}
               {evento.tipo === 'visita' && evento.estadoRaw === 'PENDING' && (
                 <>
-                  <Button variant="outline" size="sm" hideArrow disabled={actuando} onClick={() => void visita(() => agendaApi.rechazarCita(evento.id.replace(/^visit-/, '')))}>
+                  {/* Rechazar y cancelar YA NO disparan solas: preguntan el
+                      motivo, que es lo único que el otro lado va a leer. */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    hideArrow
+                    disabled={actuando}
+                    onClick={() => setPidiendoMotivo('rechazar')}
+                    data-testid="cita-rechazar"
+                  >
                     {t(k('citaRechazar'))}
                   </Button>
-                  <Button size="sm" hideArrow disabled={actuando} onClick={() => void visita(() => agendaApi.aceptarCita(evento.id.replace(/^visit-/, '')))}>
+                  <Button
+                    size="sm"
+                    hideArrow
+                    disabled={actuando}
+                    onClick={() => void visita(() => agendaApi.aceptarCita(evento.id.replace(/^visit-/, '')))}
+                    data-testid="cita-confirmar"
+                  >
                     {t(k('citaConfirmar'))}
                   </Button>
                 </>
               )}
               {evento.tipo === 'visita' && evento.estadoRaw === 'ACCEPTED' && (
-                <Button variant="outline" size="sm" hideArrow disabled={actuando} onClick={() => void visita(() => agendaApi.cancelarCita(evento.id.replace(/^visit-/, '')))}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  hideArrow
+                  disabled={actuando}
+                  onClick={() => setPidiendoMotivo('cancelar')}
+                  data-testid="cita-cancelar"
+                >
                   {t(k('citaCancelar'))}
                 </Button>
               )}
+              </div>
             </div>
           </>
         )}
       </SheetContent>
+
+      <MotivoDialog
+        abierto={pidiendoMotivo !== null}
+        enviando={actuando}
+        titulo={pidiendoMotivo === 'rechazar' ? '¿Rechazar esta visita?' : '¿Cancelar esta visita?'}
+        descripcion={
+          pidiendoMotivo === 'rechazar'
+            ? 'La visita no se agenda y le avisamos a quien la pidió.'
+            : 'La visita se cancela y le avisamos a quien la tenía agendada.'
+        }
+        etiquetaConfirmar={pidiendoMotivo === 'rechazar' ? 'Rechazar la visita' : 'Cancelar la visita'}
+        onCerrar={() => setPidiendoMotivo(null)}
+        onConfirmar={(motivo) => void conMotivo(motivo)}
+      />
     </Sheet>
   );
 }

@@ -26,6 +26,7 @@ import { TourDelPanel } from '@/components/tour/TourDelPanel';
 import { PilotoDock } from '@/components/inmobiliaria/piloto/PilotoDock';
 import { PilotoDockProvider } from '@/lib/hooks/piloto/piloto-dock-context'
 import { PilotoFlotaProvider } from '@/lib/hooks/piloto/piloto-flota-context';
+import { AGENCY_HOME_ROUTE } from '@/lib/auth/role-routes';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { usePostulacionesPendientes } from '@/lib/hooks/use-postulaciones-pendientes';
 import { MuroDeMigracion } from '@/components/migracion/MuroDeMigracion';
@@ -239,13 +240,15 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           loading={permissionsLoading}
           logo={{
             title: agencyName,
-            // El lockup de Leasefy es la firma del PRODUCTO, no un atajo al
-            // panel: el panel ya tiene su "Inicio" en el nav (misma ruta), así
-            // que apuntar acá al panel duplicaba un destino y dejaba sin salida
-            // al sitio público. El logo sale a la landing, como en cualquier
-            // producto con web pública. Ruta relativa a propósito: el host
-            // cambia entre dev (:3001) y producción.
-            href: '/',
+            // 🔴 Adentro de la plataforma el logo lleva al INICIO DE LA
+            // PLATAFORMA, no a la landing (Nico, 2026-09-04: «el dar clic en el
+            // logo cuando ya ingresé debe llevarme al inicio de la plataforma,
+            // el del piloto»). Revierte el criterio anterior —«el logo es la
+            // firma del producto y sale al sitio público»—, que en la práctica
+            // sacaba de la app a quien sólo quería volver al principio.
+            // El destino sale de la ÚNICA fuente de verdad de «dónde vive el
+            // inicio de cada rol»; escribir la ruta a mano acá la duplicaría.
+            href: AGENCY_HOME_ROUTE,
           }}
           // cadence §Navigation: static brand row + search-opens-⌘K + footer cards
           workspaceName={agencyName}

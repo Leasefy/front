@@ -38,6 +38,18 @@ vi.mock('@/lib/i18n', () => ({
   }),
 }));
 
+/*
+ * `?persona=<User.id>` — con quién viene la pantalla desde otro lado (hoy,
+ * «Ver ficha del inquilino» en la bandeja de mensajes).
+ */
+const { paramsState } = vi.hoisted(() => ({ paramsState: { persona: null as string | null } }));
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => ({
+    get: (k: string) => (k === 'persona' ? paramsState.persona : null),
+  }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+}));
+
 vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children?: React.ReactNode }) => children,
 }));
@@ -82,8 +94,13 @@ vi.mock('@/components/inmobiliaria/InquilinosTable', () => ({
   RUTA_DEL_CONTRATO_MANUAL: '/panel/inmobiliaria/contratos/nuevo?modo=manual',
 }));
 
+/*
+ * El cajón se prueba aparte; acá lo único que importa es A QUIÉN le abrieron,
+ * así que el doble publica el `tenantId` que recibió.
+ */
 vi.mock('@/components/inmobiliaria/InquilinoDrawer', () => ({
-  InquilinoDrawer: () => null,
+  InquilinoDrawer: ({ persona }: { persona: { tenantId: string } | null }) =>
+    persona ? <div data-testid="cajon-inquilino" data-persona={persona.tenantId} /> : null,
 }));
 
 /*
@@ -148,6 +165,7 @@ beforeEach(() => {
   listaMock.mockReset();
   listaMock.mockReturnValue([]);
   llavesPedidas.length = 0;
+  paramsState.persona = null;
 });
 
 afterEach(() => {
@@ -308,5 +326,40 @@ describe('/panel/inmobiliaria/inquilinos — «Nuevo inquilino»', () => {
     // Un botón que abre un cajón cuyo guardar devuelve 403 es peor que no
     // tener botón.
     expect(new Set(llavesPedidas)).toEqual(new Set(['contratos:create']));
+  });
+});
+
+describe('/panel/inmobiliaria/inquilinos — ?persona= (desde la bandeja de mensajes)', () => {
+  it('abre el cajón de esa persona', () => {
+    deudaMock.mockReturnValue(null);
+    listaMock.mockReturnValue(UNA_PERSONA);
+    paramsState.persona = 't-1';
+    montar();
+
+    const cajon = host.querySelector('[data-testid="cajon-inquilino"]');
+    expect(cajon).not.toBeNull();
+    expect(cajon!.getAttribute('data-persona')).toBe('t-1');
+    expect(host.querySelector('[data-testid="persona-no-encontrada"]')).toBeNull();
+  });
+
+  it('🔴 si no está, lo DICE — no deja la pantalla igual sin explicar por qué', () => {
+    deudaMock.mockReturnValue(null);
+    listaMock.mockReturnValue(UNA_PERSONA);
+    paramsState.persona = 't-que-no-existe';
+    montar();
+
+    expect(host.querySelector('[data-testid="cajon-inquilino"]')).toBeNull();
+    const aviso = host.querySelector('[data-testid="persona-no-encontrada"]');
+    expect(aviso).not.toBeNull();
+    expect(aviso!.textContent).toContain('No encontramos a esa persona en el directorio');
+  });
+
+  it('sin el parámetro no pasa nada: ni cajón ni aviso', () => {
+    deudaMock.mockReturnValue(null);
+    listaMock.mockReturnValue(UNA_PERSONA);
+    montar();
+
+    expect(host.querySelector('[data-testid="cajon-inquilino"]')).toBeNull();
+    expect(host.querySelector('[data-testid="persona-no-encontrada"]')).toBeNull();
   });
 });

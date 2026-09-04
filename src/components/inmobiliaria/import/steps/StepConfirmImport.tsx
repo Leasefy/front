@@ -638,19 +638,21 @@ export function StepConfirmImport({
           )}
         </div>
 
-        {ofrecerMandatos && sinMandato.length > 0 && (
-          <CompletarMandatosLoteDialog
-            inmuebles={sinMandato}
-            propietarios={propietarios}
-            agentes={agentes}
-            onClose={() => setOfrecerMandatos(false)}
-            onDone={() => {
-              setOfrecerMandatos(false);
-              // Relee: los que quedaron sin propietario siguen avisando.
-              if (lote) void buscarSinMandato(lote);
-            }}
-          />
-        )}
+        {/* Montado siempre y gobernado por `abierto`: sacarlo del árbol para
+            cerrarlo dejaba a Radix sin nada que animar y el diálogo
+            desaparecía de golpe. */}
+        <CompletarMandatosLoteDialog
+          abierto={ofrecerMandatos}
+          inmuebles={sinMandato}
+          propietarios={propietarios}
+          agentes={agentes}
+          onClose={() => setOfrecerMandatos(false)}
+          onDone={() => {
+            setOfrecerMandatos(false);
+            // Relee: los que quedaron sin propietario siguen avisando.
+            if (lote) void buscarSinMandato(lote);
+          }}
+        />
 
         <div className="flex items-center gap-3 animate-fade-in-up">
           {/* Adentro del muro de migración no hay portafolio que ver todavía

@@ -81,9 +81,13 @@ vi.mock('@/lib/api/inmobiliaria.service', () => ({
 // El diálogo real necesita AuthProvider; acá sólo importa SI se abre.
 const { dialogoPropsMock } = vi.hoisted(() => ({ dialogoPropsMock: vi.fn() }));
 vi.mock('../CompletarMandatosLoteDialog', () => ({
-  CompletarMandatosLoteDialog: (props: { inmuebles: unknown[] }) => {
+  CompletarMandatosLoteDialog: (props: { abierto?: boolean; inmuebles: unknown[] }) => {
     dialogoPropsMock(props);
-    return React.createElement('div', { 'data-testid': 'dialogo-propietario' });
+    // El diálogo real ya no se saca del árbol para cerrarlo —así no había qué
+    // animar al salir—: vive montado y `abierto` decide, con la lista vacía
+    // como cerrado. El mock respeta lo mismo; si no, el test mediría el mock.
+    const abierto = props.abierto !== false && props.inmuebles.length > 0;
+    return abierto ? React.createElement('div', { 'data-testid': 'dialogo-propietario' }) : null;
   },
 }));
 

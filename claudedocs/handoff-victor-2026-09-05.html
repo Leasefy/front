@@ -1,0 +1,560 @@
+<title>Despliegue: mensajería directa</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  :root {
+    --papel:        #faf9f7;
+    --papel-hondo:  #f2f0ec;
+    --tinta:        #171512;
+    --tinta-suave:  #6d6a63;
+    --tinta-tenue:  #94918a;
+    --linea:        #e0ddd6;
+    --linea-fuerte: #c9c5bc;
+    --senal:        #1a40ff;
+    --alerta:       #a8321e;
+    --alerta-piso:  #fbf1ee;
+    --musgo:        #3d6b4a;
+    --musgo-piso:   #eef4ef;
+    --ambar:        #8a6314;
+    --ambar-piso:   #fbf5e6;
+
+    --display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+    --texto:   'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --papel:        #131211;
+      --papel-hondo:  #1c1a18;
+      --tinta:        #eeebe5;
+      --tinta-suave:  #a39f97;
+      --tinta-tenue:  #7a766e;
+      --linea:        #2e2b27;
+      --linea-fuerte: #423e38;
+      --senal:        #8fa2ff;
+      --alerta:       #e88b76;
+      --alerta-piso:  #2a1a16;
+      --musgo:        #86bd97;
+      --musgo-piso:   #182219;
+      --ambar:        #d6ad5c;
+      --ambar-piso:   #241d0f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --papel:        #131211;
+    --papel-hondo:  #1c1a18;
+    --tinta:        #eeebe5;
+    --tinta-suave:  #a39f97;
+    --tinta-tenue:  #7a766e;
+    --linea:        #2e2b27;
+    --linea-fuerte: #423e38;
+    --senal:        #8fa2ff;
+    --alerta:       #e88b76;
+    --alerta-piso:  #2a1a16;
+    --musgo:        #86bd97;
+    --musgo-piso:   #182219;
+    --ambar:        #d6ad5c;
+    --ambar-piso:   #241d0f;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--papel);
+    color: var(--tinta);
+    font-family: var(--texto);
+    font-size: 16.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .hoja {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 4rem 1.5rem 7rem;
+  }
+
+  /* ── Encabezado ─────────────────────────────────────────────── */
+  .cabeza { border-bottom: 2px solid var(--tinta); padding-bottom: 1.75rem; margin-bottom: 2.5rem; }
+  .sello {
+    font-family: var(--mono);
+    font-size: .7rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--tinta-tenue);
+    margin: 0 0 1rem;
+  }
+  h1 {
+    font-family: var(--display);
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-size: clamp(2.1rem, 6vw, 3.1rem);
+    line-height: 1.06;
+    letter-spacing: -.022em;
+    margin: 0 0 .7rem;
+    text-wrap: balance;
+  }
+  .bajada { font-size: 1.08rem; color: var(--tinta-suave); margin: 0; max-width: 34rem; }
+
+  .fichas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 0;
+    margin-top: 1.75rem;
+    border-top: 1px solid var(--linea);
+  }
+  .ficha { padding: .85rem 1rem .85rem 0; border-right: 1px solid var(--linea); }
+  .ficha:last-child { border-right: 0; }
+  .ficha dt {
+    font-family: var(--mono);
+    font-size: .66rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--tinta-tenue);
+    margin-bottom: .25rem;
+  }
+  .ficha dd { margin: 0; font-family: var(--mono); font-size: .92rem; font-weight: 500; }
+
+  /* ── Secciones ──────────────────────────────────────────────── */
+  h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.65rem;
+    letter-spacing: -.015em;
+    line-height: 1.15;
+    margin: 3.5rem 0 .4rem;
+    text-wrap: balance;
+  }
+  h2 + .nota-seccion { color: var(--tinta-suave); margin: 0 0 1.5rem; font-size: .98rem; }
+  h3 {
+    font-family: var(--texto);
+    font-weight: 600;
+    font-size: 1.03rem;
+    margin: 2rem 0 .4rem;
+  }
+  p { margin: 0 0 1rem; }
+  strong { font-weight: 600; }
+
+  code {
+    font-family: var(--mono);
+    font-size: .855em;
+    background: var(--papel-hondo);
+    padding: .1em .38em;
+    border-radius: 3px;
+    border: 1px solid var(--linea);
+    white-space: nowrap;
+  }
+
+  /* ── La secuencia: el orden ES la información ───────────────── */
+  .pasos { list-style: none; margin: 0; padding: 0; counter-reset: paso; }
+  .paso {
+    counter-increment: paso;
+    display: grid;
+    grid-template-columns: 2.6rem 1fr;
+    gap: 1.1rem;
+    padding: 1.35rem 0;
+    border-top: 1px solid var(--linea);
+  }
+  .paso:last-child { border-bottom: 1px solid var(--linea); }
+  .paso::before {
+    content: counter(paso);
+    font-family: var(--mono);
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--tinta-tenue);
+    font-variant-numeric: tabular-nums;
+  }
+  .paso h3 { margin: 0 0 .3rem; font-size: 1.06rem; }
+  .paso p { margin: 0 0 .5rem; }
+  .paso p:last-child { margin-bottom: 0; }
+
+  /* ── Avisos ─────────────────────────────────────────────────── */
+  .aviso {
+    border-left: 3px solid var(--alerta);
+    background: var(--alerta-piso);
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .aviso .rotulo {
+    font-family: var(--mono);
+    font-size: .68rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--alerta);
+    font-weight: 700;
+    display: block;
+    margin-bottom: .35rem;
+  }
+  .aviso p:last-child { margin-bottom: 0; }
+  .aviso.ok { border-left-color: var(--musgo); background: var(--musgo-piso); }
+  .aviso.ok .rotulo { color: var(--musgo); }
+  .aviso.duda { border-left-color: var(--ambar); background: var(--ambar-piso); }
+  .aviso.duda .rotulo { color: var(--ambar); }
+
+  /* ── Tablas ─────────────────────────────────────────────────── */
+  .marco { overflow-x: auto; margin: 1.25rem 0 1.75rem; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; min-width: 30rem; }
+  th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: .66rem;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--tinta-tenue);
+    font-weight: 500;
+    padding: 0 .9rem .55rem 0;
+    border-bottom: 1px solid var(--linea-fuerte);
+    white-space: nowrap;
+  }
+  td {
+    padding: .7rem .9rem .7rem 0;
+    border-bottom: 1px solid var(--linea);
+    vertical-align: top;
+  }
+  td:first-child { font-family: var(--mono); font-size: .84rem; }
+  tr:last-child td { border-bottom: 0; }
+
+  .etq {
+    font-family: var(--mono);
+    font-size: .66rem;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: .16em .5em;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .etq.rompe { color: var(--alerta); background: var(--alerta-piso); }
+  .etq.suma  { color: var(--musgo);  background: var(--musgo-piso); }
+
+  /* ── Listas ─────────────────────────────────────────────────── */
+  ul.puntos { margin: 0 0 1.25rem; padding-left: 1.1rem; }
+  ul.puntos li { margin-bottom: .5rem; }
+  ul.puntos li::marker { color: var(--tinta-tenue); }
+
+  .comando {
+    font-family: var(--mono);
+    font-size: .86rem;
+    background: var(--papel-hondo);
+    border: 1px solid var(--linea);
+    border-radius: 5px;
+    padding: .85rem 1rem;
+    overflow-x: auto;
+    margin: 1rem 0 1.5rem;
+    line-height: 1.7;
+  }
+  .comando .prompt { color: var(--tinta-tenue); user-select: none; }
+
+  .pie {
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--linea);
+    font-size: .9rem;
+    color: var(--tinta-suave);
+  }
+
+  a { color: var(--senal); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+</style>
+
+<div class="hoja">
+
+  <header class="cabeza">
+    <p class="sello">Handoff · 5 de septiembre de 2026</p>
+    <h1>Despliegue: mensajería directa</h1>
+    <p class="bajada">
+      Lo que hay que subir, en qué orden, y qué se rompe si el orden se invierte.
+      Todo está en <code>cambios-nico-1</code> de los dos repos.
+    </p>
+
+    <dl class="fichas">
+      <div class="ficha">
+        <dt>Back</dt>
+        <dd>f387bb2</dd>
+      </div>
+      <div class="ficha">
+        <dt>Front</dt>
+        <dd>1e169eb9 →</dd>
+      </div>
+      <div class="ficha">
+        <dt>Migraciones</dt>
+        <dd>2 nuevas</dd>
+      </div>
+    </dl>
+  </header>
+
+  <div class="aviso">
+    <span class="rotulo">Lo único que no se puede equivocar</span>
+    <p>
+      <strong>El back va primero, y el front sale el mismo día.</strong> No es una
+      preferencia de orden: el front nuevo llama a rutas que el back viejo no tiene,
+      y el front viejo <em>revienta</em> con la respuesta del back nuevo. La ventana
+      entre los dos despliegues es la única en la que la bandeja de mensajes queda rota.
+    </p>
+  </div>
+
+  <h2>Por qué el front viejo se rompe</h2>
+  <p class="nota-seccion">Es un caso concreto, no una precaución genérica.</p>
+
+  <p>
+    La bandeja de mensajes trae ahora un tercer tipo de conversación,
+    <code>DIRECT</code>. El mapeador del front viejo hace
+    <em>throw</em> ante un tipo que no conoce —a propósito, para no pintar un hilo
+    como si fuera otro— así que la primera conversación directa que exista tumba la
+    pantalla entera de mensajes de esa inmobiliaria.
+  </p>
+  <p>
+    Además, en un hilo directo el «otro» puede no ser una persona: cuando un inquilino
+    mira su conversación con la inmobiliaria, del otro lado hay una <em>organización</em>.
+    Por eso <code>otherParticipant</code> y <code>property</code> ahora pueden venir en
+    <code>null</code>, y el front viejo los lee sin guardia.
+  </p>
+
+  <h2>La secuencia</h2>
+  <p class="nota-seccion">Cinco pasos. Los dos primeros son los que importan.</p>
+
+  <ol class="pasos">
+    <li class="paso">
+      <div>
+        <h3>Aplicar las dos migraciones</h3>
+        <p>
+          Las dos son aditivas y seguras contra datos vivos: aflojan un
+          <code>NOT NULL</code>, suman columnas nulables, un valor de enum y una tabla nueva.
+          Ninguna borra ni reescribe nada.
+        </p>
+        <div class="comando"><span class="prompt">$</span> npx prisma migrate deploy</div>
+      </div>
+    </li>
+
+    <li class="paso">
+      <div>
+        <h3>Desplegar el back</h3>
+        <p>
+          Sin variables de entorno nuevas y sin llaves nuevas. Todo lo que se agregó
+          usa la base y los guards que ya existen.
+        </p>
+      </div>
+    </li>
+
+    <li class="paso">
+      <div>
+        <h3>Desplegar el front</h3>
+        <p>El mismo día. Ver el aviso de arriba.</p>
+      </div>
+    </li>
+
+    <li class="paso">
+      <div>
+        <h3>Revisar el permiso de plantillas</h3>
+        <p>
+          Las plantillas de mensaje quedaron bajo el permiso <code>documentos</code>
+          —<code>view</code> para leer, <code>create</code> para crear e instalar las
+          sugeridas, <code>edit</code> para editar y borrar—. Es una decisión que
+          conviene que mires: no hay un permiso propio para esto.
+        </p>
+        <div class="aviso duda" style="margin-top:.9rem">
+          <span class="rotulo">Por qué <code>edit</code> y no <code>delete</code></span>
+          <p>
+            Porque <strong>ningún rol de agencia tiene <code>documentos:delete</code></strong>.
+            Pedirlo dejaba el botón de borrar muerto para todos menos el admin. Ya nos pasó
+            antes con <code>portafolio:delete</code>.
+          </p>
+        </div>
+      </div>
+    </li>
+
+    <li class="paso">
+      <div>
+        <h3>Verificar en producción</h3>
+        <p>Con una inmobiliaria real: abrir Mensajes, tocar el <code>+</code>, elegir a alguien y mandarle un mensaje.</p>
+        <p>
+          Si la lista de destinatarios sale vacía <strong>no es un error</strong>: significa que
+          esa agencia no tiene todavía ningún propietario con inmueble ni inquilino con
+          contrato. La regla de a-quién-le-puedo-escribir es la relación real.
+        </p>
+      </div>
+    </li>
+  </ol>
+
+  <h2>Las dos migraciones</h2>
+
+  <div class="marco">
+    <table>
+      <thead>
+        <tr><th>Migración</th><th>Qué hace</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>20260905120000_<wbr>hilo_directo_inmobiliaria</td>
+          <td>
+            <code>ConversationKind</code> suma <code>DIRECT</code>;
+            <code>application_conversations.property_id</code> deja de ser obligatorio;
+            entran <code>agency_id</code> y <code>counterpart_id</code> con su índice único.
+          </td>
+        </tr>
+        <tr>
+          <td>20260906130000_<wbr>plantillas_de_mensaje</td>
+          <td>Tabla nueva <code>plantillas_de_mensaje</code>, con unicidad por <code>(agencia, título)</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="aviso duda">
+    <span class="rotulo">El detalle de Postgres</span>
+    <p>
+      <code>ALTER TYPE … ADD VALUE</code> no corre dentro de un bloque de transacción, y no
+      se puede <em>usar</em> el valor nuevo en el mismo archivo. Por eso va suelto y la
+      migración no lo referencia. Ya está aplicada y verificada en dev; en producción
+      corre igual.
+    </p>
+  </div>
+
+  <h2>Cambios de contrato</h2>
+  <p class="nota-seccion">Lo que rompe, primero.</p>
+
+  <div class="marco">
+    <table>
+      <thead>
+        <tr><th>Ruta</th><th></th><th>Qué cambió</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>GET /messages/<wbr>conversations</td>
+          <td><span class="etq rompe">rompe</span></td>
+          <td>
+            <code>property</code> pasa a <code>{id,title} | null</code>.
+            <code>otherParticipant</code> pasa a nulable. Suma
+            <code>agency: {id,name,logoUrl} | null</code>. Aparece
+            <code>kind: 'DIRECT'</code>.
+          </td>
+        </tr>
+        <tr>
+          <td>ChatMessageSentEvent</td>
+          <td><span class="etq rompe">rompe</span></td>
+          <td>
+            <code>propertyTitle</code> se llama ahora <code>threadTitle</code> y
+            <code>propertyId</code> es nulable. Es interno del back; ningún cliente lo consume.
+          </td>
+        </tr>
+        <tr>
+          <td>GET /conversations/:id</td>
+          <td><span class="etq suma">suma</span></td>
+          <td><code>agencyId</code>, <code>counterpartId</code>, <code>agency</code>.</td>
+        </tr>
+        <tr>
+          <td>GET /conversations/<wbr>directos/destinatarios</td>
+          <td><span class="etq suma">suma</span></td>
+          <td>Nueva. A quién puede escribirle quien pregunta.</td>
+        </tr>
+        <tr>
+          <td>POST /conversations/<wbr>directos</td>
+          <td><span class="etq suma">suma</span></td>
+          <td>
+            Nueva. Abre el hilo. <strong>201</strong> si nace, <strong>200</strong> si ya
+            existía, mismo cuerpo en los dos casos.
+          </td>
+        </tr>
+        <tr>
+          <td>GET /conversations/:id/<wbr>pendientes</td>
+          <td><span class="etq suma">suma</span></td>
+          <td>Nueva. Cobros sin pagar, dispersiones debidas y documentos de esa persona.</td>
+        </tr>
+        <tr>
+          <td>/inmobiliaria/<wbr>plantillas-de-mensaje</td>
+          <td><span class="etq suma">suma</span></td>
+          <td>Nueva. CRUD + <code>POST /sugeridas</code> para instalar el catálogo.</td>
+        </tr>
+        <tr>
+          <td>GET /inmobiliaria/<wbr>propietarios</td>
+          <td><span class="etq suma">suma</span></td>
+          <td><code>cuentaDePortalId: string | null</code> en la lista y en el detalle.</td>
+        </tr>
+        <tr>
+          <td>GET /inmobiliaria/agenda</td>
+          <td><span class="etq suma">suma</span></td>
+          <td>El evento de una visita trae <code>modalidad</code> y el contacto de quien visita.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Tres decisiones que conviene que sepas</h2>
+
+  <h3>La inmobiliaria entra como organización, no como agente</h3>
+  <p>
+    El hilo directo cuelga de la agencia, no de la persona que escribió primero. Así
+    cualquier miembro con acceso contesta, y la conversación no se muere cuando esa
+    persona se va del equipo. El aviso de un mensaje entrante le llega a
+    <strong>todos los miembros activos</strong>; el filtro anti-spam que ya existía
+    —sólo el primer no leído avisa— es lo que impide que sea ruido.
+  </p>
+
+  <h3>La regla de quién puede escribirle a quién es una sola función</h3>
+  <p>
+    La misma que arma la lista de destinatarios es la que autoriza el <code>POST</code>.
+    Con dos predicados se llega a «lo elegí y me dio 403», que es la peor forma de
+    enterarse. Hay hilo si hay relación real: propietario de un inmueble de la agencia,
+    o inquilino con contrato o arriendo de ella.
+  </p>
+
+  <h3>La ficha del propietario no es un usuario</h3>
+  <p>
+    <code>Propietario</code> es el registro comercial de la agencia y no tiene relación con
+    <code>User</code>. El puente es el correo, que es único: o coincide exacto o
+    <code>cuentaDePortalId</code> viene en <code>null</code>, y entonces la pantalla no
+    ofrece escribirle en vez de ofrecerlo y fallar al tocar.
+  </p>
+
+  <h2>Lo que no está</h2>
+  <p class="nota-seccion">Para que no lo busques.</p>
+
+  <ul class="puntos">
+    <li>
+      <strong>El contrato de arrendamiento no aparece en los documentos del hilo.</strong>
+      El único firmador del bucket vive en <code>ContractsModule</code>, y
+      <code>ChatModule</code> no lo puede importar sin cerrar un ciclo. Copiar la firma
+      adentro de chat es la duplicación que después deja enlaces muertos. Queda como
+      trabajo aparte: mover el firmador a un módulo compartido.
+    </li>
+    <li>
+      <strong>El tipo <code>ACTA</code> no lo puede producir nadie hoy.</strong>
+      <code>ActaEntrega</code> no tiene ninguna columna de URL. Está declarado en el tipo
+      porque el front ya lo contempla, pero ninguna respuesta lo va a devolver.
+    </li>
+    <li>
+      <strong>Adjuntos dentro del hilo</strong> siguen siendo «Próximamente». Es un hueco
+      viejo, no de este cambio: no hay endpoint de adjuntos ni campo en el mensaje.
+    </li>
+    <li>
+      <strong>QA de navegador de la pantalla de mensajes.</strong> El circuito está
+      probado por HTTP real en las dos direcciones y por tests, pero conviene que alguien
+      la mire en producción después de desplegar.
+    </li>
+  </ul>
+
+  <h2>Si algo sale mal</h2>
+
+  <div class="aviso ok">
+    <span class="rotulo">Volver atrás es barato</span>
+    <p>
+      Las migraciones son aditivas: el back <em>anterior</em> funciona contra la base
+      nueva sin tocar nada. Si hay que revertir, se revierten los dos servicios y la base
+      se queda como está — las columnas nuevas quedan sin usar y no molestan.
+    </p>
+  </div>
+  <p>
+    Lo único que no se revierte solo es <code>ALTER TYPE … ADD VALUE</code>: un valor de
+    enum en Postgres no se puede quitar. No hace daño —ninguna fila lo usa si el back
+    viejo vuelve— pero conviene saberlo antes de intentarlo.
+  </p>
+
+  <p class="pie">
+    Los detalles finos de cada decisión están en <code>back-erp/CLAUDE.md</code>, sección
+    de contratos, en las entradas del hilo directo y de plantillas. Los mensajes de los
+    dos commits también explican el porqué, no sólo el qué.
+  </p>
+
+</div>

@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n';
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import { toast } from '@/components/ui/toast';
 import { useAuth } from '@/lib/auth/use-auth';
 import { ApiError } from '@/lib/api/client';
@@ -283,14 +284,46 @@ interface CompletarMandatoDialogProps {
 
 const todayISO = () => new Date().toISOString().split('T')[0];
 
-export function CompletarMandatoDialog({
+/**
+ * El envoltorio: sólo es dueño del `Dialog`.
+ *
+ * Antes el componente entero hacía `if (!inmueble) return null` con
+ * `<Dialog open>` fijo, y cerrar era desmontarlo de un tirón: Radix anima la
+ * salida sólo si el contenido sigue montado con `data-state="closed"` mientras
+ * dura la animación, así que el diálogo desaparecía en seco (Nico,
+ * 2026-09-04). `useUltimoPresente` conserva el inmueble mientras se va —en el
+ * render del cierre ya es null y el diálogo se vaciaría de golpe— y el cuerpo
+ * va DENTRO del `DialogContent` para que Radix lo desmonte al cerrar: así el
+ * formulario nace limpio en cada apertura, sin depender del efecto de reseteo.
+ */
+export function CompletarMandatoDialog({ inmueble, ...resto }: CompletarMandatoDialogProps) {
+  const ultimo = useUltimoPresente(inmueble);
+
+  return (
+    <Dialog open={Boolean(inmueble)} onOpenChange={(o) => !o && resto.onClose()}>
+      {/* Ancho para tres columnas de propietarios y alto para que la grilla
+          respire: en `max-w-lg` elegir un dueño era «súper dificultoso»
+          (Nico, 2026-09-03). */}
+      <DialogContent className="max-w-3xl max-h-[min(860px,92dvh)]">
+        {ultimo && <CuerpoDelMandato inmueble={ultimo} {...resto} />}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Nunca se monta sin inmueble: por eso acá no es nullable. */
+type CuerpoDelMandatoProps = Omit<CompletarMandatoDialogProps, 'inmueble'> & {
+  inmueble: InmuebleSinConsignacion;
+};
+
+function CuerpoDelMandato({
   inmueble,
   onClose,
   propietarios,
   agentes,
   propietarioInicial,
   onCompleted,
-}: CompletarMandatoDialogProps) {
+}: CuerpoDelMandatoProps) {
   const { t } = useI18n();
   const { user } = useAuth();
 
@@ -329,8 +362,6 @@ export function CompletarMandatoDialog({
     setCambiandoDueno(false);
     setCopropietarios([]);
   }, [inmueble, propietarioInicial]);
-
-  if (!inmueble) return null;
 
   // contract-addendum-2.md §A.1/§A.2 — a SALE listing (`monthlyRent === null`)
   // now carries a REDUCED mandate: propietario + consignedAt + sale
@@ -433,11 +464,7 @@ export function CompletarMandatoDialog({
   };
 
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      {/* Ancho para tres columnas de propietarios y alto para que la grilla
-          respire: en `max-w-lg` elegir un dueño era «súper dificultoso»
-          (Nico, 2026-09-03). */}
-      <DialogContent className="max-w-3xl max-h-[min(860px,92dvh)]">
+    <>
         <DialogHeader>
           <DialogTitle>
             {duenoConocido
@@ -613,8 +640,7 @@ export function CompletarMandatoDialog({
             {t('inmobiliaria.consignaciones.mandateDialog.confirm')}
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </>
   );
 }
 

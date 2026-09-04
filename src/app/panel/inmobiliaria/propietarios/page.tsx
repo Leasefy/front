@@ -248,6 +248,47 @@ function PropietariosContent() {
     }
   }, [searchParams, router]);
 
+  /**
+   * `?persona=<User.id>` — entrar acá con un propietario ya elegido.
+   *
+   * Lo usa «Ver ficha del propietario» en el menú de la conversación
+   * (`/panel/inmobiliaria/mensajes`), donde de la persona sólo se tiene su
+   * `User.id`.
+   *
+   * 🔴 La fila NO se busca por `id`: el `id` es el de la ficha comercial de la
+   * agencia, que no es un usuario. La llave es `cuentaDePortalId`, que el back
+   * resuelve por correo y manda también en la lista justamente para esto. Es
+   * `null` en quien no tiene cuenta del portal, así que los nulos se saltean —
+   * si no, un `persona` vacío haría match con el primer propietario sin cuenta.
+   */
+  const personaBuscada = searchParams.get('persona');
+  const personaYaResuelta = useRef<string | null>(null);
+  const [personaNoEncontrada, setPersonaNoEncontrada] = useState(false);
+
+  useEffect(() => {
+    if (!personaBuscada || cargandoPropietarios || errorPropietarios) return;
+    if (personaYaResuelta.current === personaBuscada) return;
+    personaYaResuelta.current = personaBuscada;
+
+    const encontrado = propietarios.find(
+      (p) => p.cuentaDePortalId != null && p.cuentaDePortalId === personaBuscada,
+    );
+    if (encontrado) {
+      // El detalle del propietario es una PÁGINA (no un cajón), la misma a la
+      // que lleva un clic en la fila. Se usa `replace` para que el «atrás» del
+      // navegador vuelva a la conversación y no a esta lista intermedia.
+      router.replace(`/panel/inmobiliaria/propietarios/${encontrado.id}`);
+    } else {
+      setPersonaNoEncontrada(true);
+    }
+  }, [
+    personaBuscada,
+    propietarios,
+    cargandoPropietarios,
+    errorPropietarios,
+    router,
+  ]);
+
   // Calculate summary stats
   const stats = useMemo(() => {
     const totalProperties = propietarios.reduce((sum, p) => sum + p.propertyCount, 0);
@@ -384,6 +425,27 @@ function PropietariosContent() {
           </Button>
         </div>
       </div>
+
+      {/* El clic que vino de otra pantalla y no llegó a ningún lado. Se dice:
+          una lista que se queda igual parece un botón roto. */}
+      {personaNoEncontrada && (
+        <div
+          data-testid="persona-no-encontrada"
+          className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4"
+        >
+          <Warning className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" aria-hidden="true" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-fg">
+              No encontramos a esa persona en el directorio
+            </p>
+            <p className="mt-0.5 text-sm text-fg-muted">
+              La ficha del propietario se cruza con su cuenta del portal por
+              correo: si el de la ficha no es el mismo con el que entra a
+              Leasefy, no hay forma de enlazarlos. Abajo está la lista completa.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

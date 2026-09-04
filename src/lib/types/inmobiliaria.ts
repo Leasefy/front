@@ -67,7 +67,9 @@ export interface Propietario {
    * ficha COMERCIAL de la agencia y NO está relacionada con un usuario: el back
    * la resuelve por correo, que es único, así que o coincide exacto o esto es
    * null. Con null no se le puede escribir todavía, y la pantalla no lo ofrece.
-   * Sólo viene en el detalle (`GET /:id`), no en la lista.
+   * Viene en el detalle (`GET /:id`) y también en la lista (`GET /`), porque es
+   * la única forma de llegar a esta ficha desde una conversación, donde lo
+   * único que se tiene de la persona es su `User.id`.
    */
   cuentaDePortalId?: string | null;
   /** El id que traía en el sistema del que se migró. Informativo, no es llave. */

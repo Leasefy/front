@@ -4,6 +4,11 @@
  * Lo que importa acá es que la lista salga del back (no de una heurística del
  * front) y que un «no tenés relación» se cuente como lo que es —una regla— y no
  * como un error genérico.
+ *
+ * Y desde las pestañas (Nico, 2026-09-04): que separar inquilinos de
+ * propietarios no ESCONDA a nadie —un `AGENT` no tiene pestaña propia y sigue
+ * estando en «Todos»— y que «hay gente pero ninguna acá» no se confunda con
+ * «no hay a quién escribirle», que son dos vacíos con salidas distintas.
  */
 import React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -41,6 +46,8 @@ vi.mock('@phosphor-icons/react', () => ({
   User: () => null,
   House: () => null,
   IdentificationBadge: () => null,
+  // El vacío de «hay gente, pero ninguna en esta pestaña».
+  Users: () => null,
 }));
 
 vi.mock('@/components/ui/spinner', () => ({ Spinner: () => React.createElement('div', null, 'cargando') }));
@@ -66,6 +73,26 @@ const PERSONA = {
   lastName: 'Ruiz',
   role: 'LANDLORD',
   email: 'ana@test.co',
+  avatarUrl: null,
+};
+
+const INQUILINA = {
+  id: 'user-2',
+  firstName: 'Beatriz',
+  lastName: 'Cano',
+  role: 'TENANT',
+  email: 'bea@test.co',
+  avatarUrl: null,
+};
+
+// Un agente de otra inmobiliaria: ni inquilino ni propietario. No tiene
+// pestaña propia y por eso mismo el test vigila que siga estando en «Todos».
+const AGENTE = {
+  id: 'user-3',
+  firstName: 'Carlos',
+  lastName: 'Díaz',
+  role: 'AGENT',
+  email: 'carlos@test.co',
   avatarUrl: null,
 };
 
@@ -109,6 +136,17 @@ async function render() {
   });
 }
 
+/** Las tres pestañas del lado de la inmobiliaria, en orden. */
+function pestanas(): HTMLElement[] {
+  return Array.from(container.querySelectorAll('[role="radio"]'));
+}
+
+function pestana(nombre: string): HTMLElement {
+  const encontrada = pestanas().find((b) => (b.textContent ?? '').startsWith(nombre));
+  expect(encontrada, `no está la pestaña ${nombre}`).toBeTruthy();
+  return encontrada!;
+}
+
 function clic(el: Element | null) {
   expect(el).toBeTruthy();
   act(() => {
@@ -140,8 +178,10 @@ describe('<NuevoMensajeDrawer>', () => {
 
     expect(container.textContent).toContain('Inmobiliaria Prueba');
     expect(container.querySelector('[data-testid="insignia-agency"]')).toBeTruthy();
-    // Una persona tiene una o dos inmobiliarias: no hay nada que filtrar.
+    // Una persona tiene una o dos inmobiliarias: no hay nada que filtrar ni
+    // que separar en pestañas.
     expect(container.querySelector('[data-testid="nuevo-mensaje-buscar"]')).toBeNull();
+    expect(container.querySelector('[data-testid="pestanas-destinatarios"]')).toBeNull();
   });
 
   it('elegir a una persona manda counterpartId y devuelve el hilo', async () => {
@@ -198,5 +238,105 @@ describe('<NuevoMensajeDrawer>', () => {
     await render();
 
     expect(container.querySelector('[data-testid="fallo"]')).toBeTruthy();
+    // Sin lista no hay conteo que sea cierto: tampoco se pintan las pestañas.
+    expect(container.querySelector('[data-testid="pestanas-destinatarios"]')).toBeNull();
+  });
+
+  it('las tres pestañas traen el conteo de su grupo', async () => {
+    getDestinatarios.mockResolvedValue({
+      tipo: 'PERSONAS',
+      personas: [PERSONA, INQUILINA, AGENTE],
+      agencias: [],
+    });
+    await render();
+
+    expect(pestanas().map((b) => b.textContent)).toEqual([
+      'Todos · 3',
+      'Inquilinos · 1',
+      'Propietarios · 1',
+    ]);
+  });
+
+  it('«Inquilinos» deja sólo a los TENANT, y «Propietarios» sólo a los LANDLORD', async () => {
+    getDestinatarios.mockResolvedValue({
+      tipo: 'PERSONAS',
+      personas: [PERSONA, INQUILINA, AGENTE],
+      agencias: [],
+    });
+    await render();
+
+    clic(pestana('Inquilinos'));
+    expect(container.querySelector('[data-testid="destinatario-user-2"]')).toBeTruthy();
+    expect(container.querySelector('[data-testid="destinatario-user-1"]')).toBeNull();
+    expect(container.querySelector('[data-testid="destinatario-user-3"]')).toBeNull();
+
+    clic(pestana('Propietarios'));
+    expect(container.querySelector('[data-testid="destinatario-user-1"]')).toBeTruthy();
+    expect(container.querySelector('[data-testid="destinatario-user-2"]')).toBeNull();
+  });
+
+  it('🔴 un AGENT no tiene pestaña, pero tampoco desaparece: se ve en «Todos»', async () => {
+    getDestinatarios.mockResolvedValue({
+      tipo: 'PERSONAS',
+      personas: [PERSONA, INQUILINA, AGENTE],
+      agencias: [],
+    });
+    await render();
+
+    // «Todos» abre por defecto, así que a quien no encaja en ninguna de las
+    // otras dos se lo ve apenas se abre el cajón.
+    expect(container.querySelector('[data-testid="destinatario-user-3"]')).toBeTruthy();
+    expect(container.querySelector('[data-testid="insignia-agent"]')).toBeTruthy();
+
+    clic(pestana('Inquilinos'));
+    expect(container.querySelector('[data-testid="destinatario-user-3"]')).toBeNull();
+    clic(pestana('Todos'));
+    expect(container.querySelector('[data-testid="destinatario-user-3"]')).toBeTruthy();
+  });
+
+  it('🔴 «hay gente pero ninguna acá» NO es «no hay a quién escribirle», y ofrece volver', async () => {
+    getDestinatarios.mockResolvedValue({ tipo: 'PERSONAS', personas: [PERSONA], agencias: [] });
+    await render();
+
+    clic(pestana('Inquilinos'));
+
+    const vacio = container.querySelector('[data-testid="pestana-vacia"]');
+    expect(vacio).toBeTruthy();
+    // El otro vacío —el de verdad— no se pinta: sí hay a quién escribirle.
+    expect(container.textContent).not.toContain('Todavía no hay a quién escribirle');
+    expect(container.textContent).toContain('1 persona');
+    expect(container.querySelector('[data-testid="fallo"]')).toBeNull();
+
+    // Y la salida está puesta: volver a «Todos» devuelve la lista.
+    clic(container.querySelector('[data-testid="ver-todos-los-destinatarios"]'));
+    expect(container.querySelector('[data-testid="destinatario-user-1"]')).toBeTruthy();
+  });
+
+  it('con búsqueda puesta, el vacío de la pestaña habla de la búsqueda', async () => {
+    getDestinatarios.mockResolvedValue({ tipo: 'PERSONAS', personas: [PERSONA], agencias: [] });
+    await render();
+
+    const input = container.querySelector('[data-testid="nuevo-mensaje-buscar"]') as HTMLInputElement;
+    // Un `input.value = …` no lo ve un input controlado por React: hay que
+    // pasar por el setter nativo para que el evento traiga el valor nuevo.
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setter.call(input, 'ana');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 350));
+    });
+
+    clic(pestana('Inquilinos'));
+    expect(container.textContent).toContain('Tu búsqueda trajo 1 persona');
+  });
+
+  it('sin nadie en absoluto no hay pestañas: el vacío es el otro', async () => {
+    await render();
+
+    expect(container.querySelector('[data-testid="pestanas-destinatarios"]')).toBeNull();
+    expect(container.querySelector('[data-testid="pestana-vacia"]')).toBeNull();
+    expect(container.textContent).toContain('Todavía no hay a quién escribirle');
   });
 });

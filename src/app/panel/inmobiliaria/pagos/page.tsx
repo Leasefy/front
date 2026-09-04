@@ -136,7 +136,13 @@ function PagosHome() {
   const { t } = useI18n()
   const { data, isLoading: ovLoading, errorCrudo: ovError, refetch: ovRefetch } =
     useAgentOverview('pagos')
-  const { items, isLoading: wiLoading, error: wiError, runAction } = useAgentWorkItems('pagos')
+  const {
+    items,
+    isLoading: wiLoading,
+    errorCrudo: wiError,
+    refetch: reintentarAtencion,
+    runAction,
+  } = useAgentWorkItems('pagos')
 
   const feed = data?.feed ?? []
   const feedVisible = feed.slice(0, MAX_ACTIVIDAD)
@@ -179,9 +185,19 @@ function PagosHome() {
           <h2 className="text-base font-semibold text-fg">
             {t('inmobiliaria.ai.pagos_home.resumen.atencion.titulo')}
           </h2>
-          <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
-            {t('inmobiliaria.ai.pagos_home.resumen.atencion.fallo')}
-          </div>
+          {/* 🔴 Antes esto era un cartel rojo fijo, sin salida (Nico,
+              2026-09-04: «¿por qué dice que no puede cargar y no da opción de
+              reintentar?»). El hook YA exponía `refetch` y `errorCrudo` y la
+              pantalla los ignoraba: se pintaba un callejón sobre un fallo que
+              la mayoría de las veces es el agente que no contestó.
+              `FalloDeCarga` además distingue los cuatro tipos de fallo y sólo
+              ofrece reintentar cuando reintentar puede cambiar algo — sobre un
+              404 el botón sería una promesa falsa. */}
+          <FalloDeCarga
+            error={wiError}
+            queEs="lo que necesita tu atención"
+            onReintentar={reintentarAtencion}
+          />
         </section>
       ) : hayAtencion || wiLoading ? (
         <section className="space-y-3" aria-label={t('inmobiliaria.ai.pagos_home.resumen.atencion.aria')}>

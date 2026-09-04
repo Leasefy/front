@@ -179,6 +179,20 @@ export interface ChatConversation {
   caseId?: string;
   name: string;
   role: string;
+  /**
+   * El `User.id` del interlocutor — con qué llegar a su ficha desde el hilo.
+   *
+   * 🔴 Sale de `otherParticipant.id`, que la bandeja ya trae en TODOS los
+   * hilos; NO de `counterpartId`, que sólo existe en `GET /conversations/:id`
+   * y sólo en un hilo directo. Lo que se necesita acá es «con quién estoy
+   * hablando», y eso es `otherParticipant` — el mismo campo del que ya salen
+   * el nombre, el rol y el correo que la fila pinta.
+   *
+   * `null` cuando del otro lado NO hay una persona: es la inmobiliaria, que es
+   * una organización y no tiene ficha de inquilino ni de propietario. Con null
+   * la pantalla no ofrece «Ver ficha» — no la ofrece rota.
+   */
+  contraparteId: string | null;
   /** El rol crudo, para elegir el color de la insignia sin parsear la etiqueta. */
   perfil: PerfilEnLaConversacion;
   email: string;
@@ -292,6 +306,8 @@ export function mapToConversation(backend: BackendConversation): ChatConversatio
         ? formatName(otherParticipant.firstName, otherParticipant.lastName)
         : 'Usuario',
     role: formatRole(rolCrudo ?? ''),
+    // `null` cuando el «otro» es la inmobiliaria: no hay persona a la que ir.
+    contraparteId: otherParticipant?.id ?? null,
     perfil: resolverPerfil(rolCrudo),
     email: otherParticipant?.email ?? '',
     // Vacío, no `'null'`: la pantalla ya trata la cadena vacía como «sin
@@ -353,4 +369,51 @@ export interface DestinatariosDirectos {
 export function nombreDelDestinatario(p: DestinatarioPersona): string {
   const partes = [p.firstName, p.lastName].filter(Boolean);
   return partes.length > 0 ? partes.join(' ') : p.email;
+}
+
+// ============================================================================
+// Pendientes de la conversación — qué le puedo mandar a esta persona
+// ============================================================================
+
+/** Un cobro sin pagar del inquilino. Los importes son enteros en pesos. */
+export interface CobroPendienteDelHilo {
+  id: string;
+  /** 'YYYY-MM'. */
+  mes: string;
+  totalCop: number;
+  pendienteCop: number;
+  /** 'YYYY-MM-DD'. Fecha calendario: NUNCA un timestamp (en UTC-5 se corre un día). */
+  vencimiento: string;
+  diasDeMora: number;
+  estado: string;
+  contractId: string | null;
+  inmueble: string | null;
+}
+
+/** Plata que la inmobiliaria le debe al propietario. */
+export interface DispersionPendienteDelHilo {
+  id: string;
+  mes: string;
+  netoCop: number;
+  estado: string;
+  inmueble: string | null;
+}
+
+/** Un archivo que ya existe y se puede compartir en el hilo. */
+export interface DocumentoDelHilo {
+  id: string;
+  tipo: 'CONTRATO' | 'ACTA' | 'DOCUMENTO';
+  nombre: string;
+  url: string;
+}
+
+/**
+ * Las tres claves viajan siempre, aunque vengan vacías. En un hilo que no es
+ * directo las tres son `[]`: preguntar «qué le debe esta persona» no tiene
+ * sentido sobre la consulta de un aviso.
+ */
+export interface PendientesDeLaConversacion {
+  cobros: CobroPendienteDelHilo[];
+  dispersiones: DispersionPendienteDelHilo[];
+  documentos: DocumentoDelHilo[];
 }

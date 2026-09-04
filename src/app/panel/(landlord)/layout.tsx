@@ -12,6 +12,7 @@ import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { useMySubscription } from '@/lib/hooks/useSubscription';
 import { cn } from '@/lib/utils';
+import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 
 // Define the setup steps - same as LandlordDashboardEmpty
 const LANDLORD_SETUP_STEPS: ProfileCompletionStep[] = [
@@ -182,10 +183,11 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         navItems={LANDLORD_NAV_ITEMS}
         logo={{
           title: 'PLan',
-          // Mismo criterio que en los otros dos paneles: el logo es la firma
-          // del producto y sale a la landing. El home del panel ya vive en el
-          // nav ("Panel"), no hace falta un segundo enlace al mismo lugar.
-          href: '/',
+          // 🔴 Adentro de la plataforma el logo vuelve al inicio del panel, no
+          // a la landing (Nico, 2026-09-04). Mismo criterio en los tres
+          // paneles, y el destino sale de la única fuente de verdad de «dónde
+          // vive el inicio de cada rol».
+          href: getRoleHomeRoute('landlord'),
         }}
         showUpgrade={showUpgrade}
         upgradeHref="/panel/upgrade"

@@ -198,10 +198,10 @@ export function SesionesActivasDrawer({ abierto, onCerrar }: SesionesActivasDraw
   const { t } = useI18n();
   const { signOut } = useAuth();
 
-  if (!abierto) return null;
-
+  // No se desmonta al cerrar: sin contenido montado con `data-state="closed"`
+  // Radix no tiene qué animar y el cajón desaparece de un tirón.
   return (
-    <Sheet open onOpenChange={(a) => !a && onCerrar()}>
+    <Sheet open={abierto} onOpenChange={(a) => !a && onCerrar()}>
       <SheetContent
         side="right"
         className="flex w-full flex-col gap-0 !p-0 sm:max-w-lg"

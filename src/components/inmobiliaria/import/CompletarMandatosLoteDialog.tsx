@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SegmentedControl } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import { toast } from '@/components/ui/toast';
 import { useAuth } from '@/lib/auth/use-auth';
 import { ApiError } from '@/lib/api/client';
@@ -64,6 +65,12 @@ import {
  * la fila abre el diálogo individual.
  */
 export interface CompletarMandatosLoteDialogProps {
+  /**
+   * Con `false` el diálogo se va con su animación en vez de desaparecer de
+   * golpe — quien lo monta ya no puede sacarlo del árbol para cerrarlo. Por
+   * omisión manda la lista: vacía = cerrado, el contrato de siempre.
+   */
+  abierto?: boolean;
   inmuebles: InmuebleSinConsignacion[];
   propietarios: Propietario[];
   agentes: Agente[];
@@ -77,13 +84,47 @@ type Modo = 'todos' | 'unoPorUno';
 
 const todayISO = () => new Date().toISOString().split('T')[0];
 
+/**
+ * El envoltorio: sólo es dueño del `Dialog`.
+ *
+ * Antes el cuerpo entero hacía `if (inmuebles.length === 0) return null` con
+ * `<Dialog open>` fijo, y el padre encima lo montaba con `{ofrecerMandatos &&
+ * …}`. Los dos hacían lo mismo: cerrar era borrarlo del árbol, y Radix anima
+ * la salida sólo si el contenido sigue montado con `data-state="closed"`
+ * mientras dura la animación — por eso se cortaba en seco (Nico, 2026-09-04).
+ *
+ * `useUltimoPresente` conserva la lista mientras el diálogo se va: en el
+ * render del cierre puede llegar vacía y se cerraría en blanco.
+ */
 export function CompletarMandatosLoteDialog({
+  abierto = true,
+  inmuebles,
+  ...resto
+}: CompletarMandatosLoteDialogProps) {
+  const ultimos = useUltimoPresente(inmuebles.length > 0 ? inmuebles : null);
+
+  return (
+    <Dialog open={abierto && inmuebles.length > 0} onOpenChange={(o) => !o && resto.onClose()}>
+      {/* Ancho: la lista de propietarios a 3 columnas y la tabla «uno por
+          uno» necesitan sitio. Alto: el cuerpo scrollea y el pie queda fijo
+          (lo reparte el shim de `DialogContent`). */}
+      <DialogContent className="max-w-4xl max-h-[80vh]">
+        {ultimos && <CuerpoDelLote inmuebles={ultimos} {...resto} />}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Nunca se monta con la lista vacía: por eso acá no hay caso «cerrado». */
+type CuerpoDelLoteProps = Omit<CompletarMandatosLoteDialogProps, 'abierto'>;
+
+function CuerpoDelLote({
   inmuebles,
   propietarios,
   agentes,
   onClose,
   onDone,
-}: CompletarMandatosLoteDialogProps) {
+}: CuerpoDelLoteProps) {
   const { t } = useI18n();
   const { user } = useAuth();
 
@@ -103,8 +144,6 @@ export function CompletarMandatosLoteDialog({
   // Modo «uno por uno».
   const [asignaciones, setAsignaciones] = useState<Record<string, AsignacionFila>>({});
   const [nuevos, setNuevos] = useState<PropietarioNuevo[]>([]);
-
-  if (inmuebles.length === 0) return null;
 
   const filasListas = inmuebles.filter((i) => asignaciones[i.propertyId]?.propietarioId);
   const filasParaDespues = inmuebles.length - filasListas.length;
@@ -298,11 +337,7 @@ export function CompletarMandatosLoteDialog({
   );
 
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      {/* Ancho: la lista de propietarios a 3 columnas y la tabla «uno por
-          uno» necesitan sitio. Alto: el cuerpo scrollea y el pie queda fijo
-          (lo reparte el shim de `DialogContent`). */}
-      <DialogContent className="max-w-4xl max-h-[80vh]">
+    <>
         <DialogHeader>
           <DialogTitle>{t('inmobiliaria.import.confirm.mandateBatch.title')}</DialogTitle>
           <DialogDescription>
@@ -427,8 +462,7 @@ export function CompletarMandatosLoteDialog({
                 })}
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </>
   );
 }
 

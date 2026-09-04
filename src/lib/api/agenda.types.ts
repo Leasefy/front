@@ -40,6 +40,15 @@ export interface EventoAgenda {
   vinculoLabel?: string;
   responsableId?: string;
   responsableNombre?: string;
+  /**
+   * Modalidad de la visita (`IN_PERSON` | `VIRTUAL`). Sólo en `tipo: 'visita'`.
+   * Es lo primero que necesita saber quien la atiende: si hay que ir a abrir el
+   * inmueble o conectarse.
+   */
+  modalidad?: string;
+  /** Cómo ubicar a quien visita. Sólo en `tipo: 'visita'`. */
+  contactoTelefono?: string;
+  contactoEmail?: string;
 }
 
 /** Conteos por tipo de evento para el resumen de la agenda. */

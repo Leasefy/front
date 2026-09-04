@@ -4,6 +4,7 @@ import type {
   BackendConversationWithMessages,
   ConversationActionResult,
   DestinatariosDirectos,
+  PendientesDeLaConversacion,
 } from './messages.types';
 
 // ---------------------------------------------------------------------------
@@ -79,6 +80,23 @@ export const messagesApi = {
     return apiClient.post<{ conversationId: string }>(
       '/conversations/directos',
       destino,
+    );
+  },
+
+  /**
+   * GET /conversations/:id/pendientes — qué le puedo mandar a esta persona.
+   *
+   * Sale de la relación real que ya tiene con la inmobiliaria: sus cobros sin
+   * pagar, las dispersiones que se le deben y los documentos de sus contratos.
+   * Las tres claves viajan SIEMPRE, aunque vengan vacías: ausente y vacío son
+   * contratos distintos, y el compositor recorre las tres sin ramificar.
+   *
+   * En un hilo que no es directo devuelve las tres vacías: la pregunta «qué le
+   * debe esta persona» no tiene sentido sobre una consulta de un aviso.
+   */
+  getPendientes(conversationId: string) {
+    return apiClient.get<PendientesDeLaConversacion>(
+      `/conversations/${conversationId}/pendientes`,
     );
   },
 

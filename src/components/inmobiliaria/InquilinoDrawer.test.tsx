@@ -7,6 +7,12 @@
  *   - la mora y los recordatorios salen del cobro, no de una cuenta propia;
  *   - cuando falta el detalle de un contrato se dice, en vez de sumar a medias;
  *   - los arriendos terminados también aparecen.
+ *
+ * Y desde el glow-up del 2026-09-04, que el VACÍO valga tanto como el lleno:
+ *   - quien no tiene arriendos ve UN vacío que dice qué falta y cómo salir de
+ *     ahí, no tres ceros y dos carteles grises;
+ *   - mientras se buscan sus arriendos terminados NO se declara que no tiene;
+ *   - el correo y el teléfono se accionan y se copian, no son texto muerto.
  */
 import * as React from 'react'
 import { describe, it, expect, vi, afterEach } from 'vitest'
@@ -18,6 +24,9 @@ import type { DetalleDeInquilino } from '@/lib/hooks/use-inquilino-detalle'
 
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+
+const toastExito = vi.fn()
+const toastFallo = vi.fn()
 
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({
@@ -33,12 +42,35 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
+// Copiar un dato de contacto avisa con un toast; el cajón no lo pinta él mismo.
+vi.mock('sonner', () => ({
+  toast: {
+    success: (m: string) => toastExito(m),
+    error: (m: string) => toastFallo(m),
+  },
+}))
+
 vi.mock('next/link', () => ({
   default: ({ children, href, ...r }: { children?: React.ReactNode; href: string }) =>
     React.createElement('a', { href, ...r }, children),
 }))
 
-import { CuerpoDelCajon, resumirPagos } from './InquilinoDrawer'
+import { CuerpoDelCajon, inicialesDe, resumirPagos } from './InquilinoDrawer'
+
+/** La única variante de `/contratos/nuevo` que carga sin postulación. */
+const RUTA_MANUAL = '/panel/inmobiliaria/contratos/nuevo?modo=manual'
+
+/** happy-dom no trae portapapeles: se le pone uno para poder mirar qué se copió. */
+const copiado: string[] = []
+Object.defineProperty(globalThis.navigator, 'clipboard', {
+  configurable: true,
+  value: {
+    writeText: (texto: string) => {
+      copiado.push(texto)
+      return Promise.resolve()
+    },
+  },
+})
 
 function arriendo(p: Partial<ArriendoDeInquilino> = {}): ArriendoDeInquilino {
   return {
@@ -119,8 +151,11 @@ afterEach(() => {
   const r = root
   if (r) act(() => r.unmount())
   container?.remove()
-  root = undefined
   container = undefined
+  root = undefined
+  copiado.length = 0
+  toastExito.mockClear()
+  toastFallo.mockClear()
 })
 
 function montar(d: DetalleDeInquilino) {
@@ -135,6 +170,10 @@ function montar(d: DetalleDeInquilino) {
 }
 
 const texto = () => container!.textContent ?? ''
+
+/** El `href` de todos los enlaces pintados. */
+const enlaces = () =>
+  Array.from(container!.querySelectorAll('a')).map((a) => a.getAttribute('href'))
 
 describe('resumirPagos', () => {
   it('suma el saldo, cuenta la mora y se queda con el atraso MAYOR', () => {
@@ -172,12 +211,40 @@ describe('resumirPagos', () => {
   })
 })
 
+describe('inicialesDe', () => {
+  it('son dos letras, nunca el nombre entero', () => {
+    expect(inicialesDe('Esteban López Quintero')).toBe('EL')
+    expect(inicialesDe('Ana')).toBe('A')
+  })
+})
+
 describe('<CuerpoDelCajon>', () => {
   it('la cabecera trae nombre, correo y teléfono', () => {
     montar(detalle())
     expect(texto()).toContain('Esteban López Quintero')
     expect(texto()).toContain('esteban.lopez@example.com')
     expect(texto()).toContain('3010082450')
+  })
+
+  it('el correo y el teléfono se accionan: mailto y tel, no texto muerto', () => {
+    montar(detalle())
+    expect(enlaces()).toContain('mailto:esteban.lopez@example.com')
+    expect(enlaces()).toContain('tel:3010082450')
+  })
+
+  it('cada dato de contacto se copia — también el documento, que no tiene a dónde ir', () => {
+    montar(detalle())
+    const copiadores = Array.from(container!.querySelectorAll('button')).filter((b) =>
+      (b.getAttribute('aria-label') ?? '').startsWith('inquilinos.cajon.copiar'),
+    )
+    // Correo, teléfono y documento.
+    expect(copiadores).toHaveLength(3)
+
+    act(() => copiadores[0].click())
+    expect(copiado).toEqual(['esteban.lopez@example.com'])
+
+    // El documento sólo se copia: no hay `mailto:` ni `tel:` que abrirle.
+    expect(texto()).toContain('1020304050')
   })
 
   it('sin correo ni teléfono lo dice en la cabecera: es a quién no se le puede cobrar', () => {
@@ -201,13 +268,13 @@ describe('<CuerpoDelCajon>', () => {
         }),
       }),
     )
-    expect(texto()).toContain('inquilinos.cajon.arriendos:2')
+    // El encabezado de la sección lleva su conteo al lado del título.
+    expect(texto()).toContain('inquilinos.cajon.arriendos')
     expect(texto()).toContain('Carrera 30a #25A-20')
     expect(texto()).toContain('Calle 80 #10-20')
     expect(texto()).toContain('inquilinos.estados.terminado')
-    const enlaces = Array.from(container!.querySelectorAll('a')).map((a) => a.getAttribute('href'))
-    expect(enlaces).toContain('/panel/inmobiliaria/contratos/c-vivo')
-    expect(enlaces).toContain('/panel/inmobiliaria/contratos/c-viejo')
+    expect(enlaces()).toContain('/panel/inmobiliaria/contratos/c-vivo')
+    expect(enlaces()).toContain('/panel/inmobiliaria/contratos/c-viejo')
   })
 
   it('pinta los cobros con su estado, su mora y lo que se debe', () => {
@@ -233,11 +300,19 @@ describe('<CuerpoDelCajon>', () => {
     expect(texto()).toContain('inquilinos.cajon.saldoPendiente')
     expect(texto()).toContain('—')
     expect(texto()).not.toContain('inquilinos.cajon.saldoPendiente$0')
+    // Y sin saber el saldo tampoco se declara que está al día.
+    expect(texto()).not.toContain('inquilinos.cajon.alDia')
 
     // Y con el pedido caído, tampoco.
     act(() => root!.render(<CuerpoDelCajon detalle={detalle({ errorPagos: true })} />))
     expect(texto()).toContain('inquilinos.cajon.errorPagos')
     expect(texto()).toContain('—')
+    expect(texto()).not.toContain('inquilinos.cajon.alDia')
+  })
+
+  it('con los cobros al día el saldo lo dice, en vez de dejar un $0 mudo', () => {
+    montar(detalle({ cobros: [cobro()] }))
+    expect(texto()).toContain('inquilinos.cajon.alDia')
   })
 
   it('el error de pagos ofrece reintentar, y reintentar llama al hook', () => {
@@ -261,16 +336,43 @@ describe('<CuerpoDelCajon>', () => {
     expect(texto()).toContain('inquilinos.cajon.arriendosIncompletos')
   })
 
-  it('sin cobros distingue «no tiene contratos» de «no hay cobros todavía»', () => {
+  it('con contratos pero sin cobros, el vacío de pagos dice qué esperar y enlaza al contrato', () => {
     montar(detalle())
-    expect(texto()).toContain('inquilinos.cajon.sinPagos')
+    const pagos = container!.querySelector('[data-testid="inquilino-cajon-pagos"]')!
+    expect(pagos.textContent).toContain('inquilinos.cajon.sinPagosTitulo')
+    expect(pagos.textContent).toContain('inquilinos.cajon.sinPagos')
+    expect(
+      Array.from(pagos.querySelectorAll('a')).map((a) => a.getAttribute('href')),
+    ).toContain('/panel/inmobiliaria/contratos/c1')
+    // El vacío es el de la casa: círculo gris, no un cartel improvisado.
+    expect(pagos.querySelector('[data-testid="empty-state"]')).toBeTruthy()
+  })
 
-    act(() =>
-      root!.render(
-        <CuerpoDelCajon detalle={detalle({ persona: persona({ arriendos: [] }) })} />,
-      ),
-    )
+  it('🔴 sin arriendos el cuerpo es UN vacío que dice qué falta y ofrece crear el contrato', () => {
+    montar(detalle({ persona: persona({ arriendos: [] }) }))
+
+    expect(texto()).toContain('inquilinos.cajon.sinArriendosTitulo')
     expect(texto()).toContain('inquilinos.cajon.sinContratos')
+    expect(texto()).toContain('inquilinos.crearSuContrato')
+    expect(enlaces()).toContain(RUTA_MANUAL)
+
+    // Nada de resumir en cero lo que no existe: sin contrato no hay canon, ni
+    // arriendos vigentes, ni saldo. Y una segunda sección de pagos vacía sería
+    // decir dos veces lo mismo.
+    expect(texto()).not.toContain('inquilinos.cajon.canonVigente')
+    expect(texto()).not.toContain('inquilinos.cajon.saldoPendiente')
+    expect(container!.querySelector('[data-testid="inquilino-cajon-pagos"]')).toBeNull()
+  })
+
+  it('🔴 mientras busca sus arriendos terminados NO declara que no tiene ninguno', () => {
+    montar(detalle({ persona: persona({ arriendos: [] }), cargandoArriendos: true }))
+    expect(texto()).toContain('inquilinos.cajon.cargandoArriendos')
+    expect(texto()).not.toContain('inquilinos.cajon.sinArriendosTitulo')
+  })
+
+  it('sin arriendos y con el detalle caído, avisa antes de afirmar que no tiene', () => {
+    montar(detalle({ persona: persona({ arriendos: [] }), arriendosIncompletos: true }))
+    expect(texto()).toContain('inquilinos.cajon.arriendosIncompletos')
   })
 
   it('con más cobros de los que caben, dice cuántos quedaron y enlaza al contrato', () => {

@@ -29,6 +29,7 @@ import { Badge } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { useCallDetail } from '@/lib/hooks/cobranza/use-call-detail'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import CallAudioPlayer from '@/components/inmobiliaria/cobranza/call/CallAudioPlayer'
 import CallTranscript from '@/components/inmobiliaria/cobranza/call/CallTranscript'
 import CallQAPanel from '@/components/inmobiliaria/cobranza/call/CallQAPanel'
@@ -62,8 +63,36 @@ function qaVariant(score: number | null): 'success' | 'warning' | 'danger' | 'ne
 }
 
 export function LlamadaDetalleSheet({ callId, onClose }: LlamadaDetalleSheetProps) {
-  if (!callId) return null
-  return <CajonAbierto callId={callId} onClose={onClose} />
+  /*
+   * El `Sheet` vive acá y el `open` manda de verdad. Antes esto era
+   * `if (!callId) return null` con `<Sheet open>` fijo adentro, y cerrar era
+   * desmontarlo de un tirón: Radix anima la salida sólo si el contenido sigue
+   * montado con `data-state="closed"` mientras dura la animación, así que el
+   * cajón se cortaba en seco (Nico, 2026-09-04).
+   *
+   * `useUltimoPresente` conserva el id mientras el cajón se va —en el render
+   * del cierre ya es null y saldría deslizándose en blanco—, y el cuerpo va
+   * DENTRO del `SheetContent` para que Radix lo desmonte al terminar: así
+   * `useCallDetail` no queda vivo con el cajón cerrado y vuelve a pedir al
+   * abrir otra llamada.
+   */
+  const ultimo = useUltimoPresente(callId)
+
+  return (
+    <Sheet
+      open={Boolean(callId)}
+      onOpenChange={(abierto) => {
+        if (!abierto) onClose()
+      }}
+    >
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-2xl !p-0 flex flex-col gap-0"
+      >
+        {ultimo && <CajonAbierto callId={ultimo} />}
+      </SheetContent>
+    </Sheet>
+  )
 }
 
 /**
@@ -71,7 +100,7 @@ export function LlamadaDetalleSheet({ callId, onClose }: LlamadaDetalleSheetProp
  * el hook con null y esconder el resultado rompería el orden de hooks al
  * abrir y cerrar.
  */
-function CajonAbierto({ callId, onClose }: { callId: string; onClose: () => void }) {
+function CajonAbierto({ callId }: { callId: string }) {
   const { t, locale } = useI18n()
   const { agency } = useAuth()
   const agencyId = agency?.id ?? ''
@@ -96,16 +125,7 @@ function CajonAbierto({ callId, onClose }: { callId: string; onClose: () => void
   const overallPct = data?.qa.overall == null ? null : Math.round(data.qa.overall)
 
   return (
-    <Sheet
-      open
-      onOpenChange={(abierto) => {
-        if (!abierto) onClose()
-      }}
-    >
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-2xl !p-0 flex flex-col gap-0"
-      >
+    <>
         <SheetTitle className="sr-only">
           Llamada de cobranza{data ? ` a ${data.debtorNameMasked}` : ''}
         </SheetTitle>
@@ -207,7 +227,6 @@ function CajonAbierto({ callId, onClose }: { callId: string; onClose: () => void
             </Link>
           </Button>
         </div>
-      </SheetContent>
-    </Sheet>
+    </>
   )
 }

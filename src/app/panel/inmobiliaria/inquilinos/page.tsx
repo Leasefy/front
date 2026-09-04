@@ -61,12 +61,14 @@
  *        persona sin arriendo — que es donde de verdad hace falta.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   Buildings,
   CurrencyDollar,
   FileText,
+  Info,
   Plus,
   UploadSimple,
   UserCircle,
@@ -176,12 +178,55 @@ export default function InquilinosPage() {
 function ContenidoDeInquilinos() {
   const { t, formatCurrency } = useI18n();
 
+  /**
+   * `?persona=<User.id>` — llegar acá desde otro lado con alguien ya elegido.
+   *
+   * Hoy lo usa el menú de la conversación en `/panel/inmobiliaria/mensajes`
+   * («Ver ficha del inquilino»): ahí lo único que se tiene de la persona es su
+   * `User.id`, que es exactamente el `tenantId` con el que el back arma esta
+   * lista.
+   *
+   * 🔴 Arranca en `todos`, no en `activos`: alguien con el contrato terminado
+   * NO está en el filtro por defecto, y la pantalla habría dicho «no la
+   * encontramos» sobre una persona que sí existe. El filtro queda visible en
+   * «todos» para que se vea por qué la lista es más larga que de costumbre.
+   */
+  const searchParams = useSearchParams();
+  const personaBuscada = searchParams.get('persona');
+
   const [buscar, setBuscar] = useState('');
-  const [estado, setEstado] = useState<FiltroDeEstado>('activos');
+  const [estado, setEstado] = useState<FiltroDeEstado>(
+    personaBuscada ? 'todos' : 'activos',
+  );
   const [abierto, setAbierto] = useState<Inquilino | null>(null);
   const [creando, setCreando] = useState(false);
 
   const { inquilinos, cargando, error, refrescar } = useInquilinos({ buscar, estado });
+
+  /*
+   * Se abre UNA vez por id. Sin esta marca, cada refresco de la lista —el que
+   * dispara crear un inquilino, por ejemplo— volvería a abrir el cajón que la
+   * persona acaba de cerrar.
+   */
+  const personaYaAbierta = useRef<string | null>(null);
+  const [personaNoEncontrada, setPersonaNoEncontrada] = useState(false);
+
+  useEffect(() => {
+    if (!personaBuscada || cargando || error) return;
+    if (personaYaAbierta.current === personaBuscada) return;
+    personaYaAbierta.current = personaBuscada;
+
+    const encontrada = inquilinos.find((i) => i.tenantId === personaBuscada);
+    if (encontrada) {
+      setAbierto(encontrada);
+      setPersonaNoEncontrada(false);
+    } else {
+      /* 🔴 Se DICE. Una pantalla que se queda igual deja pensando que el clic
+         no funcionó; el motivo real es que esa persona no está en esta lista
+         (no es inquilino de esta inmobiliaria, o su cuenta es otra). */
+      setPersonaNoEncontrada(true);
+    }
+  }, [personaBuscada, inquilinos, cargando, error]);
 
   /*
    * Se vuelve a pedir la lista en vez de empujar la fila a mano: la persona
@@ -250,6 +295,27 @@ function ContenidoDeInquilinos() {
           <NuevoInquilinoBoton onAbrir={() => setCreando(true)} />
         </div>
       </header>
+
+      {/* El clic que llegó de otra pantalla y no encontró a nadie. Se cuenta,
+          no se traga: es la diferencia entre «la app no anda» y «esa persona no
+          está acá». */}
+      {personaNoEncontrada && (
+        <div
+          data-testid="persona-no-encontrada"
+          className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4"
+        >
+          <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" aria-hidden="true" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-fg">
+              No encontramos a esa persona en el directorio
+            </p>
+            <p className="mt-0.5 text-sm text-fg-muted">
+              Puede que no sea inquilino de tu inmobiliaria o que su cuenta esté
+              registrada con otro correo. Abajo está la lista completa.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Los tres números miden lo VIGENTE, no lo histórico: un canon que suma
           contratos terminados no es plata que entra este mes. */}

@@ -39,7 +39,7 @@ export function ContextSwitcher({
         type="button"
         data-testid="switch-personal"
         onClick={() => onSwitch('personal')}
-        className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-xl cursor-pointer"
+        className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-lg cursor-pointer"
       >
         <User className="w-4 h-4 stroke-[1.5px] text-fg-muted" />
         <span className="flex-1 text-left">{es ? 'Mi cuenta' : 'My account'}</span>
@@ -49,7 +49,7 @@ export function ContextSwitcher({
         type="button"
         data-testid="switch-agency"
         onClick={() => onSwitch('agency')}
-        className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-xl cursor-pointer"
+        className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-lg cursor-pointer"
       >
         <Buildings className="w-4 h-4 stroke-[1.5px] text-fg-muted" />
         <span className="flex-1 text-left truncate">

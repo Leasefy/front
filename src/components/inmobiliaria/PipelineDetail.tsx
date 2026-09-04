@@ -234,7 +234,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
           <SheetHeader>
             <div className="flex items-start justify-between gap-4 pr-8">
               <div className="min-w-0 flex-1">
-                <SheetTitle className="text-xl font-semibold text-foreground truncate">
+                <SheetTitle className="text-lg font-semibold text-fg truncate">
                   {item.propertyTitle}
                 </SheetTitle>
                 <div className="flex items-center gap-1.5 mt-1.5 text-sm text-muted-foreground">
@@ -255,7 +255,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
           onWheel={(e) => e.stopPropagation()}
         >
           {/* Property Card */}
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="flex gap-4 p-4">
               {item.propertyThumbnail ? (
                 <img
@@ -299,7 +299,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
               <User className="w-3.5 h-3.5" />
               {t('inmobiliaria.pipeline.candidate')}
             </h4>
-            <div className="rounded-xl border border-border bg-card p-4">
+            <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-3 mb-4">
                 {item.candidateAvatar ? (
                   <img
@@ -366,7 +366,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
               <TrendUp className="w-3.5 h-3.5" />
               {t('inmobiliaria.pipeline.progress')}
             </h4>
-            <div className="rounded-xl border border-border bg-card divide-y divide-border">
+            <div className="rounded-lg border border-border bg-card divide-y divide-border">
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-sm text-muted-foreground">{t('inmobiliaria.pipeline.currentStage')}</span>
                 <span className={cn('px-2.5 py-1 rounded-sm text-xs font-medium', stageInfo?.color)}>
@@ -410,7 +410,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
               <Timer className="w-3.5 h-3.5" />
               {t('inmobiliaria.pipeline.history')}
             </h4>
-            <div className="rounded-xl border border-border bg-card p-4">
+            <div className="rounded-lg border border-border bg-card p-4">
               <div className="relative pl-5">
                 {/* Vertical line */}
                 <div className="absolute left-[5px] top-1.5 bottom-1.5 w-px bg-border" />
@@ -476,7 +476,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
 
           {/* Lost Reason */}
           {item.stage === 'lost' && item.lostReason && (
-            <div className="p-4 rounded-xl border border-danger/30 bg-danger-soft">
+            <div className="p-4 rounded-lg border border-danger/30 bg-danger-soft">
               <h4 className="font-medium text-danger text-sm mb-2 flex items-center gap-2">
                 <XCircle className="w-4 h-4" weight="fill" />
                 {t('inmobiliaria.pipeline.lostReason')}

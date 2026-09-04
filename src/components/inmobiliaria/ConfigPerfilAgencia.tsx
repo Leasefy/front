@@ -1,9 +1,13 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
+  ArrowRight,
+  Bank,
   Buildings,
+  Receipt,
   Envelope,
   Phone,
   MapPin,
@@ -30,9 +34,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui';
-import { Chip } from '@leasefy/cadence';
+import { Chip, CurrencyInput } from '@leasefy/cadence';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
+import { formatCurrency } from '@/lib/format';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_DEPARTMENTS } from '@/lib/types/inmobiliaria';
 
@@ -73,7 +79,40 @@ interface PerfilFormState {
   disbursementDay: number;
   reminderDaysBefore: number[];
   reminderDaysAfter: number[];
+  // Cobros y mora (Agency.motorDeCobrosV2 / Agency.diasDePlazo)
+  motorDeCobrosV2: boolean;
+  diasDePlazo: number;
+  /** Días de mora con saldo a partir de los cuales un cobro pasa a siniestro. */
+  diasParaSiniestro: number;
+  /** Días de mora a partir de los cuales hay que reportar el caso a la aseguradora (antes del siniestro). */
+  diasParaAvisoAseguradora: number;
+  // Controles de la dispersión (Agency.dispersionExigePin / dispersionMontoDobleAprobacion)
+  dispersionExigePin: boolean;
+  /** COP entero; `null` = nunca por monto. */
+  dispersionMontoDobleAprobacion: number | null;
+  // Tarifas tributarias (Agency.ivaPorcentaje … baseMinimaRetefuenteCop)
+  ivaPorcentaje: number;
+  retefuenteArrendamientoPorcentaje: number;
+  retefuenteComisionPorcentaje: number;
+  reteicaPorMil: number | null;
+  reteivaPorcentaje: number;
+  baseMinimaRetefuenteCop: number | null;
+  /**
+   * Techo legal del interés de mora, como tasa EFECTIVA ANUAL. `null` = sin
+   * validar. Lo mantiene al día la inmobiliaria: la usura la certifica la
+   * Superfinanciera mes a mes.
+   */
+  topeInteresMoraEaPorcentaje: number | null;
 }
+
+/** Techo de días de plazo — el mismo `@Max(60)` del DTO del back. */
+const MAX_DIAS_DE_PLAZO = 60;
+/** Rango del siniestro — `@Min(1) @Max(365)` en el DTO del back; 30 es el default del esquema. */
+const MIN_DIAS_PARA_SINIESTRO = 1;
+const MAX_DIAS_PARA_SINIESTRO = 365;
+const DIAS_PARA_SINIESTRO_POR_DEFECTO = 30;
+/** Portofino reporta a la aseguradora al día 8 de mora. */
+const DIAS_PARA_AVISO_ASEGURADORA_POR_DEFECTO = 8;
 
 // Day offsets offered as reminder chips (backend accepts 0..30)
 const REMINDER_DAYS_OPTIONS = [1, 2, 3, 5, 7, 10, 15, 30];
@@ -130,6 +169,18 @@ const SectionHeader = ({
   </div>
 );
 
+/**
+ * Las tarifas son `Decimal` en Prisma y viajan como TEXTO (`"3.5"`). Sin esta
+ * conversión el formulario las rechazaba («Un porcentaje entre 0 y 100») y
+ * nadie podía guardar la configuración — visto en QA. `null`/vacío = sin
+ * configurar; un texto que no es número se trata como ausente.
+ */
+function decimalANumero(v: number | string | null | undefined): number | null {
+  if (v === null || v === undefined || v === '') return null;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 function buildFormState(agency: AgencyProfile): PerfilFormState {
   return {
     name: agency.name ?? '',
@@ -154,8 +205,46 @@ function buildFormState(agency: AgencyProfile): PerfilFormState {
     disbursementDay: agency.disbursementDay ?? 15,
     reminderDaysBefore: [...(agency.reminderDaysBefore ?? [])].sort((a, b) => a - b),
     reminderDaysAfter: [...(agency.reminderDaysAfter ?? [])].sort((a, b) => a - b),
+    motorDeCobrosV2: agency.motorDeCobrosV2 ?? false,
+    diasDePlazo: agency.diasDePlazo ?? 0,
+    diasParaSiniestro: agency.diasParaSiniestro ?? DIAS_PARA_SINIESTRO_POR_DEFECTO,
+    diasParaAvisoAseguradora:
+      agency.diasParaAvisoAseguradora ?? DIAS_PARA_AVISO_ASEGURADORA_POR_DEFECTO,
+    dispersionExigePin: agency.dispersionExigePin ?? false,
+    dispersionMontoDobleAprobacion: agency.dispersionMontoDobleAprobacion ?? null,
+    ivaPorcentaje: decimalANumero(agency.ivaPorcentaje) ?? TARIFAS_POR_DEFECTO.ivaPorcentaje,
+    retefuenteArrendamientoPorcentaje:
+      decimalANumero(agency.retefuenteArrendamientoPorcentaje) ??
+      TARIFAS_POR_DEFECTO.retefuenteArrendamientoPorcentaje,
+    retefuenteComisionPorcentaje:
+      decimalANumero(agency.retefuenteComisionPorcentaje) ?? TARIFAS_POR_DEFECTO.retefuenteComisionPorcentaje,
+    reteicaPorMil: decimalANumero(agency.reteicaPorMil),
+    reteivaPorcentaje: decimalANumero(agency.reteivaPorcentaje) ?? TARIFAS_POR_DEFECTO.reteivaPorcentaje,
+    baseMinimaRetefuenteCop: agency.baseMinimaRetefuenteCop ?? null,
+    // 🔴 `decimalANumero`: un Decimal de Prisma viaja como TEXTO en el JSON, y
+    // un `"28.5"` acá rompe la validación numérica sin decir por qué.
+    topeInteresMoraEaPorcentaje: decimalANumero(agency.topeInteresMoraEaPorcentaje) ?? null,
   };
 }
+
+/**
+ * Los defaults del esquema del back (`Agency.iva_porcentaje`, …). Son las
+ * tarifas generales de Colombia al escribir esto, NO una decisión del
+ * sistema: la pantalla las muestra como «a confirmar con el contador».
+ */
+const TARIFAS_POR_DEFECTO = {
+  ivaPorcentaje: 19,
+  retefuenteArrendamientoPorcentaje: 3.5,
+  retefuenteComisionPorcentaje: 11,
+  reteivaPorcentaje: 15,
+} as const;
+
+const CAMPOS_DE_PORCENTAJE = [
+  'ivaPorcentaje',
+  'retefuenteArrendamientoPorcentaje',
+  'retefuenteComisionPorcentaje',
+  'reteivaPorcentaje',
+] as const;
 
 /**
  * ConfigPerfilAgencia — agency profile form wired to the real backend contract.
@@ -190,7 +279,7 @@ export function ConfigPerfilAgencia({
   const nitLocked = Boolean(agency.nit?.trim());
 
   const updateField = useCallback(
-    (field: keyof PerfilFormState, value: string | number | number[]) => {
+    (field: keyof PerfilFormState, value: string | number | number[] | boolean | null) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
       setTouched((prev) => ({ ...prev, [field]: true }));
       setErrors((prev) => {
@@ -218,9 +307,12 @@ export function ConfigPerfilAgencia({
   // digits: companies use 9, but natural-person agencies use their cédula, which
   // can be 8-11 digits (e.g. 1090525663-1). Normalize separators (dots/spaces)
   // first, then accept 8-11 base digits + a single verification digit.
+  // El dígito de verificación es OPCIONAL: una cédula no lo tiene y muchas
+  // inmobiliarias escriben el NIT sin él. Exigirlo bloqueaba guardar TODA la
+  // configuración de una agencia con NIT «1004997858» (visto en QA).
   const validateNIT = (nit: string): boolean => {
     const normalized = nit.replace(/[.\s]/g, '');
-    return /^\d{8,11}-\d$/.test(normalized);
+    return /^\d{8,11}(-\d)?$/.test(normalized);
   };
 
   const validate = (): boolean => {
@@ -256,6 +348,52 @@ export function ConfigPerfilAgencia({
     }
     if (formData.disbursementDay < 1 || formData.disbursementDay > 28) {
       newErrors.disbursementDay = t('inmobiliaria.config.profile.validation.dayRange');
+    }
+    if (
+      !Number.isInteger(formData.diasDePlazo) ||
+      formData.diasDePlazo < 0 ||
+      formData.diasDePlazo > MAX_DIAS_DE_PLAZO
+    ) {
+      newErrors.diasDePlazo = `Entre 0 y ${MAX_DIAS_DE_PLAZO} días`;
+    }
+    if (
+      !Number.isInteger(formData.diasParaSiniestro) ||
+      formData.diasParaSiniestro < MIN_DIAS_PARA_SINIESTRO ||
+      formData.diasParaSiniestro > MAX_DIAS_PARA_SINIESTRO
+    ) {
+      newErrors.diasParaSiniestro = `Entre ${MIN_DIAS_PARA_SINIESTRO} y ${MAX_DIAS_PARA_SINIESTRO} días`;
+    }
+    if (
+      !Number.isInteger(formData.diasParaAvisoAseguradora) ||
+      formData.diasParaAvisoAseguradora < MIN_DIAS_PARA_SINIESTRO ||
+      formData.diasParaAvisoAseguradora > MAX_DIAS_PARA_SINIESTRO
+    ) {
+      newErrors.diasParaAvisoAseguradora = `Entre ${MIN_DIAS_PARA_SINIESTRO} y ${MAX_DIAS_PARA_SINIESTRO} días`;
+    } else if (formData.diasParaAvisoAseguradora >= formData.diasParaSiniestro) {
+      // El aviso es ANTES del siniestro; después no avisa nada.
+      newErrors.diasParaAvisoAseguradora = 'Tiene que ser antes del siniestro';
+    }
+    const umbral = formData.dispersionMontoDobleAprobacion;
+    if (umbral !== null && (!Number.isInteger(umbral) || umbral < 0)) {
+      newErrors.dispersionMontoDobleAprobacion = 'Un monto entero en pesos, o vacío';
+    }
+    for (const campo of CAMPOS_DE_PORCENTAJE) {
+      const v = formData[campo];
+      if (!Number.isFinite(v) || v < 0 || v > 100) {
+        newErrors[campo] = 'Un porcentaje entre 0 y 100';
+      }
+    }
+    const porMil = formData.reteicaPorMil;
+    if (porMil !== null && (!Number.isFinite(porMil) || porMil < 0 || porMil > 100)) {
+      newErrors.reteicaPorMil = 'Por mil entre 0 y 100, o vacío';
+    }
+    const baseMinima = formData.baseMinimaRetefuenteCop;
+    if (baseMinima !== null && (!Number.isInteger(baseMinima) || baseMinima < 0)) {
+      newErrors.baseMinimaRetefuenteCop = 'Un monto entero en pesos, o vacío';
+    }
+    const tope = formData.topeInteresMoraEaPorcentaje;
+    if (tope !== null && (!Number.isFinite(tope) || tope <= 0 || tope > 200)) {
+      newErrors.topeInteresMoraEaPorcentaje = 'Un porcentaje anual mayor que 0, o vacío';
     }
 
     setErrors(newErrors);
@@ -300,11 +438,38 @@ export function ConfigPerfilAgencia({
       'defaultLateFeePercent',
       'paymentDueDay',
       'disbursementDay',
+      'diasDePlazo',
+      'diasParaSiniestro',
+      'diasParaAvisoAseguradora',
     ] as const;
     for (const field of numberFields) {
       if (formData[field] !== original[field]) {
         payload[field] = formData[field];
       }
+    }
+
+    // Switches: apagar (`false`) también es un cambio que hay que mandar.
+    const booleanFields = ['motorDeCobrosV2', 'dispersionExigePin'] as const;
+    for (const field of booleanFields) {
+      if (formData[field] !== original[field]) {
+        payload[field] = formData[field];
+      }
+    }
+
+    // `null` es un valor («nunca por monto»), no una ausencia: viaja tal cual.
+    if (formData.dispersionMontoDobleAprobacion !== original.dispersionMontoDobleAprobacion) {
+      payload.dispersionMontoDobleAprobacion = formData.dispersionMontoDobleAprobacion;
+    }
+
+    // Tarifas: decimales tal cual (3.5 es 3.5, no 35); null = no configurada.
+    for (const campo of CAMPOS_DE_PORCENTAJE) {
+      if (formData[campo] !== original[campo]) payload[campo] = formData[campo];
+    }
+    if (formData.reteicaPorMil !== original.reteicaPorMil) {
+      payload.reteicaPorMil = formData.reteicaPorMil;
+    }
+    if (formData.baseMinimaRetefuenteCop !== original.baseMinimaRetefuenteCop) {
+      payload.baseMinimaRetefuenteCop = formData.baseMinimaRetefuenteCop;
     }
 
     // Reminder arrays: send the FULL array only when its content changed
@@ -398,7 +563,7 @@ export function ConfigPerfilAgencia({
 
       {/* Agency Name */}
       {isEditing && (
-        <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
+        <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
           <SectionHeader icon={Buildings} title={t('inmobiliaria.config.profile.agencyName')} />
           <InputWrapper
             label={t('inmobiliaria.config.profile.agencyName')}
@@ -419,7 +584,7 @@ export function ConfigPerfilAgencia({
       )}
 
       {/* Contact Information */}
-      <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
+      <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <SectionHeader
           icon={Phone}
           title={t('inmobiliaria.config.profile.contactInfo')}
@@ -588,7 +753,7 @@ export function ConfigPerfilAgencia({
       </div>
 
       {/* Legal Information */}
-      <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
+      <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <SectionHeader
           icon={Certificate}
           title={t('inmobiliaria.config.profile.legalInfo')}
@@ -712,7 +877,7 @@ export function ConfigPerfilAgencia({
       </div>
 
       {/* Default Settings */}
-      <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
+      <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <SectionHeader
           icon={Percent}
           title={t('inmobiliaria.config.profile.defaultSettings')}
@@ -754,6 +919,7 @@ export function ConfigPerfilAgencia({
               <InputWrapper
                 label={t('inmobiliaria.config.profile.lateFeePercent')}
                 error={errors.defaultLateFeePercent}
+                hint="% mensual fijo (sólo si el motor de cobros con reglas de mora está apagado)"
               >
                 <div className="relative">
                   <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -823,6 +989,7 @@ export function ConfigPerfilAgencia({
               <div className="text-foreground font-semibold">
                 {agency.defaultLateFeePercent ?? '—'}%
               </div>
+              <div className="text-[11px] text-muted-foreground">% mensual fijo · sólo con el motor apagado</div>
             </div>
             <div className="p-3 rounded-md bg-muted/50">
               <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.paymentDay')}</div>
@@ -903,6 +1070,390 @@ export function ConfigPerfilAgencia({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Cobros y mora — Agency.motorDeCobrosV2 / Agency.diasDePlazo.
+          Prender el motor cambia lo que se le cobra a un inquilino real: por
+          eso es un switch explícito acá y no un default. */}
+      <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
+        <SectionHeader icon={Receipt} title="Cobros y mora" />
+
+        {isEditing ? (
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-surface-muted p-4">
+              <div className="space-y-1">
+                <label htmlFor="motor-de-cobros" className="block text-sm font-medium text-foreground">
+                  Motor de cobros con reglas de mora
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Apagado: se cobra el % mensual fijo de «{t('inmobiliaria.config.profile.defaultSettings')}».
+                  Prendido: mandan las reglas de mora (interés diario, gasto administrativo, topes) y los días de plazo.
+                </p>
+                <Link
+                  href="/panel/inmobiliaria/cobros/reglas-de-mora"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                >
+                  Ver reglas de mora
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+              <Switch
+                id="motor-de-cobros"
+                data-testid="motor-de-cobros"
+                checked={formData.motorDeCobrosV2}
+                onCheckedChange={(v) => updateField('motorDeCobrosV2', v)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <InputWrapper
+                label="Días de plazo antes de la mora"
+                error={errors.diasDePlazo}
+                hint="Días después de la fecha de cobro en los que todavía no corre mora. Un contrato puede tener los suyos."
+              >
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={MAX_DIAS_DE_PLAZO}
+                    step={1}
+                    value={formData.diasDePlazo}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      updateField('diasDePlazo', Number.isNaN(n) ? 0 : n);
+                    }}
+                    data-testid="dias-de-plazo"
+                    className={cn('w-full pl-10 tabular-nums', errors.diasDePlazo && 'border-danger/30')}
+                  />
+                </div>
+              </InputWrapper>
+
+              <InputWrapper
+                label="Días de mora para siniestro"
+                error={errors.diasParaSiniestro}
+                hint="Días de mora con saldo a partir de los cuales un cobro pasa a siniestro. Sólo aplica con el motor de cobros prendido."
+              >
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={MIN_DIAS_PARA_SINIESTRO}
+                    max={MAX_DIAS_PARA_SINIESTRO}
+                    step={1}
+                    value={formData.diasParaSiniestro}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      updateField('diasParaSiniestro', Number.isNaN(n) ? 0 : n);
+                    }}
+                    data-testid="dias-para-siniestro"
+                    className={cn('w-full pl-10 tabular-nums', errors.diasParaSiniestro && 'border-danger/30')}
+                  />
+                </div>
+              </InputWrapper>
+
+              <InputWrapper
+                label="Días de mora para avisar a la aseguradora"
+                error={errors.diasParaAvisoAseguradora}
+                hint="Antes del siniestro: a estos días de mora se avisa al equipo que hay que reportar el caso a la aseguradora del contrato."
+              >
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={MIN_DIAS_PARA_SINIESTRO}
+                    max={MAX_DIAS_PARA_SINIESTRO}
+                    step={1}
+                    value={formData.diasParaAvisoAseguradora}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      updateField('diasParaAvisoAseguradora', Number.isNaN(n) ? 0 : n);
+                    }}
+                    data-testid="dias-para-aviso-aseguradora"
+                    className={cn('w-full pl-10 tabular-nums', errors.diasParaAvisoAseguradora && 'border-danger/30')}
+                  />
+                </div>
+              </InputWrapper>
+
+              {/*
+               * El techo legal de la tasa de mora. La tasa la pone la
+               * inmobiliaria, pero la ley le pone un máximo —la usura— que la
+               * Superfinanciera certifica MES A MES: por eso se escribe acá y
+               * no viene quemado en el sistema. Vacío = no se valida ninguna
+               * tasa, que es como venía funcionando.
+               */}
+              <InputWrapper
+                label="Techo legal del interés de mora (% efectivo anual)"
+                error={errors.topeInteresMoraEaPorcentaje}
+                hint="La usura vigente, que certifica la Superfinanciera cada mes. Ninguna regla de interés va a poder pasarse de acá. Vacío = sin validar."
+              >
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min={0}
+                  max={200}
+                  placeholder="Sin validar"
+                  value={formData.topeInteresMoraEaPorcentaje ?? ''}
+                  onChange={(e) =>
+                    updateField(
+                      'topeInteresMoraEaPorcentaje',
+                      e.target.value === '' ? null : Number(e.target.value),
+                    )
+                  }
+                  data-testid="tope-interes-mora"
+                  className={cn(
+                    'tabular-nums',
+                    errors.topeInteresMoraEaPorcentaje && 'border-danger/30',
+                  )}
+                />
+              </InputWrapper>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-4 text-sm">
+            <div className="p-3 rounded-md bg-muted/50">
+              <div className="text-muted-foreground text-xs">Motor de cobros</div>
+              <div className="text-foreground font-semibold">
+                {agency.motorDeCobrosV2
+                  ? 'Reglas de mora'
+                  : `% mensual fijo (${agency.defaultLateFeePercent ?? '—'}%)`}
+              </div>
+            </div>
+            <div className="p-3 rounded-md bg-muted/50">
+              <div className="text-muted-foreground text-xs">Días de plazo antes de la mora</div>
+              <div className="text-foreground font-semibold tabular-nums">{agency.diasDePlazo ?? 0}</div>
+            </div>
+            <div className="p-3 rounded-md bg-muted/50">
+              <div className="text-muted-foreground text-xs">Siniestro a los</div>
+              <div className="text-foreground font-semibold tabular-nums">
+                {agency.diasParaSiniestro ?? DIAS_PARA_SINIESTRO_POR_DEFECTO} días de mora
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                aviso a la aseguradora a los{' '}
+                {agency.diasParaAvisoAseguradora ?? DIAS_PARA_AVISO_ASEGURADORA_POR_DEFECTO} · sólo con el motor prendido
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Dispersiones — Agency.dispersionExigePin / dispersionMontoDobleAprobacion.
+          El código lo recibe por correo OTRA persona con permiso sobre
+          dispersiones (lotes.service.ts): acá sólo se decide cuándo se pide. */}
+      <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
+        <SectionHeader icon={Bank} title="Dispersiones" />
+
+        {isEditing ? (
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-surface-muted p-4">
+              <div className="space-y-1">
+                <label htmlFor="dispersion-exige-pin" className="block text-sm font-medium text-foreground">
+                  Pedir código de aprobación en todos los lotes
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Cada lote de pagos a propietarios necesita el código que le llega por correo a otra persona
+                  con permiso sobre dispersiones, sin importar el monto.
+                </p>
+              </div>
+              <Switch
+                id="dispersion-exige-pin"
+                data-testid="dispersion-exige-pin"
+                checked={formData.dispersionExigePin}
+                onCheckedChange={(v) => updateField('dispersionExigePin', v)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <InputWrapper
+                label="Segundo aprobador desde (COP)"
+                error={errors.dispersionMontoDobleAprobacion}
+                hint="Un lote que sume este monto o más exige el código de otra persona. Vacío = nunca por monto."
+              >
+                <CurrencyInput
+                  id="dispersion-monto-doble-aprobacion"
+                  data-testid="dispersion-monto-doble-aprobacion"
+                  value={formData.dispersionMontoDobleAprobacion ?? undefined}
+                  onChange={(v) =>
+                    updateField('dispersionMontoDobleAprobacion', Number.isNaN(v) ? null : v)
+                  }
+                  invalid={Boolean(errors.dispersionMontoDobleAprobacion)}
+                />
+              </InputWrapper>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="p-3 rounded-md bg-muted/50">
+              <div className="text-muted-foreground text-xs">Código en todos los lotes</div>
+              <div className="text-foreground font-semibold">{agency.dispersionExigePin ? 'Sí' : 'No'}</div>
+            </div>
+            <div className="p-3 rounded-md bg-muted/50">
+              <div className="text-muted-foreground text-xs">Segundo aprobador desde</div>
+              <div className="text-foreground font-semibold tabular-nums">
+                {agency.dispersionMontoDobleAprobacion != null
+                  ? formatCurrency(agency.dispersionMontoDobleAprobacion)
+                  : 'Nunca por monto'}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Impuestos y retenciones — Agency.ivaPorcentaje … baseMinimaRetefuenteCop.
+          El sistema no decide impuestos: aplica estas tarifas cuando el perfil
+          tributario de las partes dice que corresponde. */}
+      <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
+        <SectionHeader icon={Percent} title="Impuestos y retenciones" />
+        <p className="text-xs text-muted-foreground">
+          Tarifas por defecto de Colombia: confirmalas con tu contador. La reteICA depende del municipio
+          y hasta que no la configures no se practica. Se aplican sólo cuando el contrato dice quién
+          retiene y si el inmueble es comercial.
+        </p>
+
+        {isEditing ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <InputWrapper label="IVA (%)" error={errors.ivaPorcentaje} hint="Canon comercial, comisiones y servicios gravados.">
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min={0}
+                max={100}
+                value={formData.ivaPorcentaje}
+                onChange={(e) => updateField('ivaPorcentaje', e.target.value === '' ? NaN : Number(e.target.value))}
+                data-testid="iva-porcentaje"
+                className={cn('tabular-nums', errors.ivaPorcentaje && 'border-danger/30')}
+              />
+            </InputWrapper>
+            <InputWrapper
+              label="Retefuente arrendamiento (%)"
+              error={errors.retefuenteArrendamientoPorcentaje}
+              hint="La practica el inquilino agente retenedor sobre el canon."
+            >
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min={0}
+                max={100}
+                value={formData.retefuenteArrendamientoPorcentaje}
+                onChange={(e) =>
+                  updateField('retefuenteArrendamientoPorcentaje', e.target.value === '' ? NaN : Number(e.target.value))
+                }
+                data-testid="retefuente-arrendamiento"
+                className={cn('tabular-nums', errors.retefuenteArrendamientoPorcentaje && 'border-danger/30')}
+              />
+            </InputWrapper>
+            <InputWrapper
+              label="Retefuente comisiones (%)"
+              error={errors.retefuenteComisionPorcentaje}
+              hint="La practica el propietario agente retenedor sobre tu comisión."
+            >
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min={0}
+                max={100}
+                value={formData.retefuenteComisionPorcentaje}
+                onChange={(e) =>
+                  updateField('retefuenteComisionPorcentaje', e.target.value === '' ? NaN : Number(e.target.value))
+                }
+                data-testid="retefuente-comision"
+                className={cn('tabular-nums', errors.retefuenteComisionPorcentaje && 'border-danger/30')}
+              />
+            </InputWrapper>
+            <InputWrapper
+              label="ReteICA (por mil)"
+              error={errors.reteicaPorMil}
+              hint="Según el municipio (Bogotá, demás actividades comerciales: 9,66). Vacío = no se practica."
+            >
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.001"
+                min={0}
+                max={100}
+                placeholder="Sin configurar"
+                value={formData.reteicaPorMil ?? ''}
+                onChange={(e) => updateField('reteicaPorMil', e.target.value === '' ? null : Number(e.target.value))}
+                data-testid="reteica-por-mil"
+                className={cn('tabular-nums', errors.reteicaPorMil && 'border-danger/30')}
+              />
+            </InputWrapper>
+            <InputWrapper label="ReteIVA (%)" error={errors.reteivaPorcentaje} hint="Sobre el valor del IVA, no sobre la base.">
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min={0}
+                max={100}
+                value={formData.reteivaPorcentaje}
+                onChange={(e) => updateField('reteivaPorcentaje', e.target.value === '' ? NaN : Number(e.target.value))}
+                data-testid="reteiva-porcentaje"
+                className={cn('tabular-nums', errors.reteivaPorcentaje && 'border-danger/30')}
+              />
+            </InputWrapper>
+            <InputWrapper
+              label="Base mínima de retefuente (COP)"
+              error={errors.baseMinimaRetefuenteCop}
+              hint="Por debajo de este canon no se practica retefuente (27 UVT). Vacío = sin mínimo."
+            >
+              <CurrencyInput
+                id="base-minima-retefuente"
+                data-testid="base-minima-retefuente"
+                value={formData.baseMinimaRetefuenteCop ?? undefined}
+                onChange={(v) => updateField('baseMinimaRetefuenteCop', Number.isNaN(v) ? null : v)}
+                invalid={Boolean(errors.baseMinimaRetefuenteCop)}
+              />
+            </InputWrapper>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+            <div className="p-3 rounded-md bg-muted/50">
+              <div className="text-muted-foreground text-xs">IVA</div>
+              <div className="text-foreground font-semibold tabular-nums">
+                {agency.ivaPorcentaje ?? TARIFAS_POR_DEFECTO.ivaPorcentaje} %
+              </div>
+            </div>
+            <div className="p-3 rounded-md bg-muted/50">
+              <div className="text-muted-foreground text-xs">Retefuente arrendamiento</div>
+              <div className="text-foreground font-semibold tabular-nums">
+                {agency.retefuenteArrendamientoPorcentaje ?? TARIFAS_POR_DEFECTO.retefuenteArrendamientoPorcentaje} %
+              </div>
+            </div>
+            <div className="p-3 rounded-md bg-muted/50">
+              <div className="text-muted-foreground text-xs">Retefuente comisiones</div>
+              <div className="text-foreground font-semibold tabular-nums">
+                {agency.retefuenteComisionPorcentaje ?? TARIFAS_POR_DEFECTO.retefuenteComisionPorcentaje} %
+              </div>
+            </div>
+            <div className="p-3 rounded-md bg-muted/50">
+              <div className="text-muted-foreground text-xs">ReteICA</div>
+              <div className="text-foreground font-semibold tabular-nums">
+                {agency.reteicaPorMil != null ? `${agency.reteicaPorMil} por mil` : 'Sin configurar — no se practica'}
+              </div>
+            </div>
+            <div className="p-3 rounded-md bg-muted/50">
+              <div className="text-muted-foreground text-xs">ReteIVA</div>
+              <div className="text-foreground font-semibold tabular-nums">
+                {agency.reteivaPorcentaje ?? TARIFAS_POR_DEFECTO.reteivaPorcentaje} % del IVA
+              </div>
+            </div>
+            <div className="p-3 rounded-md bg-muted/50">
+              <div className="text-muted-foreground text-xs">Base mínima de retefuente</div>
+              <div className="text-foreground font-semibold tabular-nums">
+                {agency.baseMinimaRetefuenteCop != null
+                  ? formatCurrency(agency.baseMinimaRetefuenteCop)
+                  : 'Sin mínimo'}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Actions */}

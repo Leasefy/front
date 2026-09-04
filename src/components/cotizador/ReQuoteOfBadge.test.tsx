@@ -86,7 +86,7 @@ describe('ReQuoteOfBadge', () => {
     mount(id)
     const a = container.querySelector('a')
     expect(a).not.toBeNull()
-    expect(a?.getAttribute('href')).toBe(`/panel/inmobiliaria/ai/asegurabilidad/${id}`)
+    expect(a?.getAttribute('href')).toBe(`/panel/inmobiliaria/postulaciones/asegurabilidad/${id}`)
   })
 
   it('renders the short id (first 8 chars) in the badge label text', () => {

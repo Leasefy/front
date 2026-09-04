@@ -54,7 +54,7 @@ export function UpgradePrompt({
     <>
       <div
         className={cn(
-          'flex flex-col items-center justify-center rounded-xl px-6 py-10 text-center',
+          'flex flex-col items-center justify-center rounded-lg px-6 py-10 text-center',
           'bg-surface-muted',
           className,
         )}

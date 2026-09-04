@@ -190,7 +190,7 @@ export function EscalationResolveModal({
 
         {/* Escalated-to-legal warning (rose banner per DESIGN.md §4) */}
         {requiresLegalAck && (
-          <div className="rounded-xl bg-danger-soft border border-danger/30 p-3 flex items-start gap-2">
+          <div className="rounded-lg bg-danger-soft border border-danger/30 p-3 flex items-start gap-2">
             <WarningCircle
               className="w-5 h-5 text-danger flex-shrink-0 mt-0.5"
               aria-hidden="true"

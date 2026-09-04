@@ -258,7 +258,7 @@ export default function PropietarioPerfilPage() {
           transition={{ delay: 0.1 }}
           className="mb-8"
         >
-          <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 p-6">
+          <div className="rounded-lg bg-[#EEF1FF] dark:bg-[#1A40FF]/12 p-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
@@ -319,7 +319,7 @@ export default function PropietarioPerfilPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 + index * 0.05 }}
                     className={cn(
-                      'rounded-xl p-4 transition-all',
+                      'rounded-lg p-4 transition-all',
                       step.completed
                         ? 'bg-white/80 dark:bg-white/10'
                         : 'bg-surface border-2 border-dashed border-[#1A40FF]/30 dark:border-[#B7791F]/30'
@@ -362,7 +362,7 @@ export default function PropietarioPerfilPage() {
             transition={{ delay: 0.2 }}
             className="lg:col-span-1 space-y-6"
           >
-            <div className="rounded-xl border border-border bg-surface overflow-hidden">
+            <div className="rounded-lg border border-border bg-surface overflow-hidden">
               <div className="relative bg-[#EEF1FF] dark:bg-[#1A40FF]/12 h-28">
                 {editingSection !== 'avatar' && (
                   <IconButton
@@ -407,7 +407,7 @@ export default function PropietarioPerfilPage() {
                   <div
                     onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={handleAvatarClick}
                     className={cn(
-                      "mb-4 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all",
+                      "mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all",
                       isDragging ? "border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15" : "border-border hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 hover:bg-surface-muted"
                     )}
                   >
@@ -499,7 +499,7 @@ export default function PropietarioPerfilPage() {
             </div>
 
             {/* Verification Status Card */}
-            <div className="rounded-xl border border-border bg-surface p-6">
+            <div className="rounded-lg border border-border bg-surface p-6">
               <h3 className="font-semibold text-fg mb-4 flex items-center gap-2">
                 <Shield className="w-5 h-5 text-fg-subtle" />
                 {locale === 'es' ? 'Estado de verificación' : 'Verification status'}
@@ -511,7 +511,7 @@ export default function PropietarioPerfilPage() {
                   { key: 'identity', label: locale === 'es' ? 'Identidad' : 'Identity', verified: true },
                   { key: 'property', label: locale === 'es' ? 'Propiedad' : 'Property', verified: true },
                 ].map(item => (
-                  <div key={item.key} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-surface-muted border border-border-faint">
+                  <div key={item.key} className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-surface-muted border border-border-faint">
                     <span className="text-sm font-medium text-fg-muted">{item.label}</span>
                     <span className="flex items-center gap-1.5 text-xs font-medium text-[#2C7A53] dark:text-[#3EAE70] bg-[#E8F3EC] dark:bg-[#2C7A53]/15 px-2.5 py-1 rounded-full">
                       <CheckCircle className="w-3.5 h-3.5" />
@@ -531,7 +531,7 @@ export default function PropietarioPerfilPage() {
             className="lg:col-span-2 space-y-6"
           >
             {/* Personal Information */}
-            <div className="rounded-xl border border-border bg-surface p-6">
+            <div className="rounded-lg border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-fg">
                   {locale === 'es' ? 'Información personal' : 'Personal information'}
@@ -559,7 +559,7 @@ export default function PropietarioPerfilPage() {
                   {editingSection === 'personal' ? (
                     <Input type="text" value={fullName} onChange={(e) => handleNameChange(e.target.value)} />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <User className="w-4 h-4 text-fg-subtle" />
                       <span className="text-sm text-fg">{fullName}</span>
                     </div>
@@ -568,7 +568,7 @@ export default function PropietarioPerfilPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">{t('landlordProfile.fields.cedula')}</label>
-                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                     <Shield className="w-4 h-4 text-fg-subtle" />
                     <span className="text-sm text-fg">{formData.rut}</span>
                   </div>
@@ -579,7 +579,7 @@ export default function PropietarioPerfilPage() {
                   {editingSection === 'personal' ? (
                     <Input type="email" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <Envelope className="w-4 h-4 text-fg-subtle" />
                       <span className="text-sm text-fg">{formData.email}</span>
                     </div>
@@ -591,7 +591,7 @@ export default function PropietarioPerfilPage() {
                   {editingSection === 'personal' ? (
                     <Input type="tel" value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <Phone className="w-4 h-4 text-fg-subtle" />
                       <span className="text-sm text-fg">{formData.phone}</span>
                     </div>
@@ -603,7 +603,7 @@ export default function PropietarioPerfilPage() {
                   {editingSection === 'personal' ? (
                     <Input type="date" value={formData.birthDate} onChange={(e) => handleInputChange('birthDate', e.target.value)} />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <Calendar className="w-4 h-4 text-fg-subtle" />
                       <span className="text-sm text-fg">
                         {new Date(formData.birthDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -617,7 +617,7 @@ export default function PropietarioPerfilPage() {
                   {editingSection === 'personal' ? (
                     <Input type="text" value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                       <MapPin className="w-4 h-4 text-fg-subtle" />
                       <span className="text-sm text-fg">{formData.address}</span>
                     </div>
@@ -627,7 +627,7 @@ export default function PropietarioPerfilPage() {
             </div>
 
             {/* Emergency Contact */}
-            <div className="rounded-xl border border-border bg-surface p-6">
+            <div className="rounded-lg border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-fg">{locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact'}</h3>
                 {editingSection !== 'emergency' ? (
@@ -653,7 +653,7 @@ export default function PropietarioPerfilPage() {
                   <Input type="text" value={emergencyContactDisplay} onChange={(e) => handleEmergencyContactChange(e.target.value)}
                     placeholder={locale === 'es' ? 'Nombre - Teléfono' : 'Name - Phone'} />
                 ) : (
-                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-lg">
                     <UserPlus className="w-4 h-4 text-fg-subtle" />
                     <span className="text-sm text-fg">{emergencyContactDisplay}</span>
                   </div>
@@ -662,7 +662,7 @@ export default function PropietarioPerfilPage() {
             </div>
 
             {/* Danger Zone */}
-            <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7]/30 dark:bg-[#C4503B]/20 p-6">
+            <div className="rounded-lg border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7]/30 dark:bg-[#C4503B]/20 p-6">
               <h3 className="font-semibold text-[#C4503B] dark:text-[#E0664D] mb-2 flex items-center gap-2">
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
@@ -681,7 +681,7 @@ export default function PropietarioPerfilPage() {
       {/* Delete Account Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-surface rounded-xl max-w-md w-full overflow-hidden">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-surface rounded-lg max-w-md w-full overflow-hidden">
             {deleteStep === 1 && (
               <>
                 <div className="bg-[#F8EAE7] dark:bg-[#C4503B]/15 px-6 py-8 text-center border-b border-[#C4503B]/30 dark:border-[#C4503B]/40">

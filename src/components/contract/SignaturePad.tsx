@@ -86,7 +86,7 @@ export function SignaturePad({ onChange, signerName, disabled = false, className
       <div
         ref={containerRef}
         className={cn(
-          'relative rounded-xl border-2 border-dashed bg-surface overflow-hidden transition-colors',
+          'relative rounded-lg border-2 border-dashed bg-surface overflow-hidden transition-colors',
           isEmpty
             ? 'border-border dark:border-border-strong'
             : 'border-primary/30',

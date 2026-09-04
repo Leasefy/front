@@ -295,6 +295,100 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe('<CompletarMandatoDialog> — varios dueños (Nico, 2026-09-03)', () => {
+  const dueno = (id: string, name: string) =>
+    ({
+      id,
+      name,
+      email: null,
+      phone: null,
+      documentType: 'CC',
+      documentNumber: id,
+      bankAccount: {},
+      propertyCount: 1,
+      activeLeases: 0,
+      totalMonthlyRent: 0,
+    }) as unknown as import('@/lib/types/inmobiliaria').Propietario;
+
+  const propietarios = [dueno('p1', 'Ana Dueña'), dueno('p2', 'Beto Dueño'), dueno('p3', 'Cata Dueña')];
+
+  function montar() {
+    act(() => {
+      root.render(
+        <CompletarMandatoDialog
+          inmueble={makeInmueble()}
+          onClose={vi.fn()}
+          propietarios={propietarios}
+          agentes={[]}
+          onCompleted={vi.fn()}
+        />,
+      );
+    });
+  }
+  const cardDe = (nombre: string) =>
+    Array.from(document.body.querySelectorAll('button')).find((b) => b.textContent?.includes(nombre)) as HTMLElement;
+  const guardar = () =>
+    Array.from(document.body.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('inmobiliaria.consignaciones.mandateDialog.confirm'),
+    ) as HTMLButtonElement;
+
+  beforeEach(() => {
+    createMock.mockReset().mockResolvedValue({ id: 'c-1' });
+    updatePropertyMock.mockReset().mockResolvedValue({});
+  });
+
+  it('las cards se marcan y desmarcan: se pueden elegir dos dueños y pide el reparto', () => {
+    montar();
+    expect(document.body.querySelector('[data-testid="mandato-reparto"]')).toBeNull();
+    act(() => cardDe('Ana Dueña').click());
+    act(() => cardDe('Beto Dueño').click());
+    expect(document.body.querySelector('[data-testid="mandato-reparto"]')).not.toBeNull();
+    // Partes iguales de entrada: Beto tiene su casilla en 50 y a Ana (la
+    // primera) le queda el resto. (El `t` de este test devuelve la clave, así
+    // que el resto se mira por la casilla editable, no por el texto.)
+    const casillas = document.body.querySelectorAll<HTMLInputElement>('[data-testid="mandato-reparto"] input[type="number"]');
+    expect(casillas).toHaveLength(1);
+    expect(casillas[0].value).toBe('50');
+    expect(document.body.querySelector('[data-testid="mandato-reparto-resto"]')).not.toBeNull();
+    act(() => cardDe('Beto Dueño').click());
+    expect(document.body.querySelector('[data-testid="mandato-reparto"]')).toBeNull();
+  });
+
+  it('con dos dueños el cable lleva `copropietarios` que suman 10000 y ningún `propietarioId` suelto', async () => {
+    montar();
+    act(() => cardDe('Ana Dueña').click());
+    act(() => cardDe('Cata Dueña').click());
+    expect(guardar().disabled).toBe(false);
+    await act(async () => {
+      guardar().click();
+    });
+    expect(createMock).toHaveBeenCalledTimes(1);
+    const payload = createMock.mock.calls[0][0] as { propietarioId?: string; copropietarios?: { propietarioId: string; participacionBps: number }[] };
+    expect(payload.propietarioId).toBeUndefined();
+    expect(payload.copropietarios).toHaveLength(2);
+    expect(payload.copropietarios!.reduce((acc, f) => acc + f.participacionBps, 0)).toBe(10000);
+    expect(payload.copropietarios!.map((f) => f.propietarioId).sort()).toEqual(['p1', 'p3']);
+  });
+
+  it('con un solo dueño se manda la forma de siempre', async () => {
+    montar();
+    act(() => cardDe('Beto Dueño').click());
+    await act(async () => {
+      guardar().click();
+    });
+    const payload = createMock.mock.calls[0][0] as { propietarioId?: string; copropietarios?: unknown };
+    expect(payload.propietarioId).toBe('p2');
+    expect(payload.copropietarios).toBeUndefined();
+  });
+
+  it('el diálogo es ancho: tres columnas de dueños con su propio scroll', () => {
+    montar();
+    const grid = document.body.querySelector('[data-testid="mandato-propietarios-grid"]');
+    expect(grid?.className).toContain('overflow-y-auto');
+    expect(grid?.querySelector('ul')?.className).toContain('lg:grid-cols-3');
+  });
+});
+
 describe('<CompletarMandatoDialog> — smoke render', () => {
   it('renders without crashing for a ROOM / empty-zone row (same shape as the table traps)', () => {
     expect(() => {

@@ -1,12 +1,15 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { mesEnTitulo } from '@/lib/utils/mes';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   CurrencyCircleDollar,
-  Gear,
+  GearSix,
+  Scales,
   Table,
   SquaresFour,
   Plus,
@@ -15,10 +18,11 @@ import {
 } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Pagination } from '@/components/ui/pagination';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { Button, Spinner } from '@/components/ui';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { SegmentedControl } from '@leasefy/cadence';
+import { IconButton, SegmentedControl } from '@leasefy/cadence';
 import {
   useCobros,
   useCobroSummary,
@@ -28,6 +32,12 @@ import {
   cobrosApi,
 } from '@/lib/hooks/useInmobiliaria';
 import type { Cobro, CobroStatus, CobroSummary } from '@/lib/types/inmobiliaria';
+import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
+import type {
+  CobroConDesglose,
+  ConciliacionDePagoAnterior,
+  NuevoReciboDeCaja,
+} from '@/lib/api/recibos-de-caja.types';
 import {
   CobroResumen,
   CobroFilters,
@@ -42,9 +52,6 @@ import { type RecordatorioConfigData } from '@/components/inmobiliaria/Recordato
 
 // View modes
 type ViewMode = 'table' | 'cards';
-
-// Pagination
-const ITEMS_PER_PAGE = 6;
 
 // Get current month in YYYY-MM format
 function getCurrentMonth(): string {
@@ -108,9 +115,6 @@ function CobrosContent() {
   const viewMode: ViewMode = viewModeOverride ?? (isMobile ? 'cards' : 'table');
   const setViewMode = setViewModeOverride;
 
-  // State for pagination
-  const [currentPage, setCurrentPage] = useState(1);
-
   // State for modals
   const [selectedCobro, setSelectedCobro] = useState<Cobro | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -167,13 +171,23 @@ function CobrosContent() {
     return result;
   }, [apiCobros, filters.consignacionId, filters.search]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredCobros.length / ITEMS_PER_PAGE);
-  const paginatedCobros = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    const end = start + ITEMS_PER_PAGE;
-    return filteredCobros.slice(start, end);
-  }, [filteredCobros, currentPage]);
+  // Paginación — el pie canónico del panel (`useTablePagination` +
+  // `TablePagination`, el mismo de Solicitudes e Inmuebles). Antes era un
+  // slice a mano de 6 por página con el paginador de ventana: no dejaba
+  // elegir cuántas filas ver ni decía cuántas había en total.
+  // `resetKey` lleva todo lo que cambia el conjunto de filas: el mes y el
+  // estado los resuelve el backend, la consignación y la búsqueda acá.
+  const {
+    pageItems: paginatedCobros,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(filteredCobros, {
+    resetKey: `${filters.month}|${filters.status}|${filters.consignacionId ?? ''}|${filters.search}`,
+  });
 
   // Use summary from API (fallback to default if loading)
   const summary: CobroSummary = useMemo(() => {
@@ -218,56 +232,57 @@ function CobrosContent() {
     setIsPaymentModalOpen(true);
   }, []);
 
-  // Handle payment submission
-  const handlePaymentSubmit = useCallback(
-    async (data: {
-      amount: number;
-      method: string;
-      date: string;
-      reference?: string;
-      notes?: string;
-    }, cobroId: string) => {
-      try {
-        // Call API to register payment
-        await cobrosApi.registerPayment(cobroId, {
-          paidAmount: data.amount,
-          paymentMethod: data.method,
-          paymentDate: data.date,
-          paymentReference: data.reference,
-        });
-
-        // Optimistically update local state
-        setCobrosData((prev) => {
-          if (!prev) return prev;
-          return prev.map((c) => {
-            if (c.id !== cobroId) return c;
-            const newPaidAmount = c.paidAmount + data.amount;
-            const newPendingAmount = c.totalWithFees - newPaidAmount;
-            const isFullyPaid = newPendingAmount <= 0;
-            return {
-              ...c,
-              paidAmount: newPaidAmount,
-              pendingAmount: Math.max(0, newPendingAmount),
-              status: isFullyPaid ? ('paid' as const) : ('partial' as const),
-              paidDate: isFullyPaid ? data.date : c.paidDate,
-              paymentMethod: data.method,
-              paymentReference: data.reference,
-              updatedAt: new Date().toISOString(),
-            };
-          });
-        });
-
-        // Refetch summary to update totals
-        refetchSummary();
-
-        setIsPaymentModalOpen(false);
-        setPaymentCobro(null);
-      } catch (error) {
-        console.error('Error registering payment:', error);
-        // In a production app, show error toast here
-      }
+  /**
+   * Pone en la tabla el cobro que devolvió el back.
+   *
+   * 🔴 Antes esto se calculaba a mano (`paidAmount + monto`, y si daba <= 0
+   * entonces «pagado»). Esa cuenta se equivocaba con cualquier cosa que el back
+   * recomponga y nosotros no sepamos: mora que dejó de correr, un descuento,
+   * un recibo anulado. El endpoint de recibo de caja devuelve el cobro YA
+   * recompuesto justamente para no tener que adivinarlo.
+   */
+  const aplicarCobro = useCallback(
+    (actualizado: Cobro) => {
+      setCobrosData((prev) => {
+        if (!prev) return prev;
+        return prev.map((c) => (c.id === actualizado.id ? { ...c, ...actualizado } : c));
+      });
+      refetchSummary();
     },
-    [setCobrosData, refetchSummary]
+    [setCobrosData, refetchSummary],
+  );
+
+  /**
+   * Emitir el recibo de caja.
+   *
+   * 🔴 RELANZA el error a propósito: el 400 del sobrepago trae el máximo
+   * abonable y el 409 dice que hay plata vieja sin conciliar. Los dos se
+   * resuelven DENTRO del formulario; tragarlos acá con un `console.error`
+   * —como estaba— dejaba al usuario apretando un botón que no hacía nada.
+   */
+  const emitirRecibo = useCallback(
+    async (datos: NuevoReciboDeCaja) => {
+      const res = await recibosDeCajaApi.crear(datos);
+      aplicarCobro(res.cobro);
+      return res;
+    },
+    [aplicarCobro],
+  );
+
+  /** Cuadrar la plata que el cobro ya registraba sin recibo (cartera vieja y PSE). */
+  const conciliarPagoAnterior = useCallback(
+    async (cobroId: string, datos: ConciliacionDePagoAnterior) => {
+      const res = await recibosDeCajaApi.conciliar(cobroId, datos);
+      aplicarCobro(res.cobro);
+      return res;
+    },
+    [aplicarCobro],
+  );
+
+  /** Anular un recibo devuelve plata al saldo: la fila tiene que enterarse. */
+  const handleCobroActualizado = useCallback(
+    (actualizado: CobroConDesglose) => aplicarCobro(actualizado),
+    [aplicarCobro],
   );
 
   // Handle send reminder
@@ -300,9 +315,9 @@ function CobrosContent() {
   );
 
   // Handle filter change
+  // La vuelta a la página 1 la hace `useTablePagination` por `resetKey`, no acá.
   const handleFilterChange = useCallback((newFilters: CobroFiltersState) => {
     setFilters(newFilters);
-    setCurrentPage(1); // Reset page when filters change
   }, []);
 
   // Handle reminder config save
@@ -349,9 +364,9 @@ function CobrosContent() {
   // `'YYYY-MM-01'` as a string is treated as UTC and shifts to the previous month
   // in negative-offset timezones (e.g. Colombia UTC-5 rendered July as "junio").
   const [monthDisplayYear, monthDisplayMonth] = filters.month.split('-').map(Number);
-  const monthDisplay = new Date(monthDisplayYear, monthDisplayMonth - 1, 1).toLocaleDateString(
-    locale === 'es' ? 'es-CL' : 'en-US',
-    { month: 'long', year: 'numeric' },
+  const monthDisplay = mesEnTitulo(
+    `${monthDisplayYear}-${String(monthDisplayMonth).padStart(2, '0')}`,
+    locale === 'en' ? 'en' : 'es',
   );
 
   return (
@@ -359,15 +374,29 @@ function CobrosContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">{t('inmobiliaria.cobros.title')}</h1>
-          <p className="text-sm text-fg-muted max-w-2xl">
+          <h1 className="text-h2 text-fg">{t('inmobiliaria.cobros.title')}</h1>
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             {t('inmobiliaria.cobros.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="secondary" hideArrow onClick={() => setIsConfigOpen(true)}>
-            <Gear className="w-4 h-4" />
-            <span className="hidden sm:inline">{t('inmobiliaria.config.title')}</span>
+          {/* El engranaje va PRIMERO y sin texto: es la acción que menos se
+              usa y la que menos tiene que pesar (Nico, 2026-09-03). El
+              extracto bancario ya no se enlaza desde acá — vive en
+              Conciliación, que es otra sección. */}
+          <IconButton
+            variant="outline"
+            icon={<GearSix className="w-4 h-4" />}
+            aria-label="Configuración de cobros"
+            title="Configuración de cobros"
+            data-testid="configuracion-de-cobros"
+            onClick={() => setIsConfigOpen(true)}
+          />
+          <Button asChild variant="secondary" hideArrow>
+            <Link href="/panel/inmobiliaria/cobros/reglas-de-mora">
+              <Scales className="w-4 h-4" />
+              <span className="hidden sm:inline">Reglas de mora</span>
+            </Link>
           </Button>
           <Button
             hideArrow
@@ -377,7 +406,7 @@ function CobrosContent() {
             }}
           >
             <Plus className="w-4 h-4" />
-            {t('inmobiliaria.cobros.registerPayment')}
+            {t('recibos.hacer')}
           </Button>
         </div>
       </div>
@@ -400,7 +429,7 @@ function CobrosContent() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="rounded-xl border border-border bg-card"
+        className="rounded-lg border border-border bg-card"
       >
         {/* View Toggle Header - FIRST (Primary hierarchy) */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
@@ -441,7 +470,7 @@ function CobrosContent() {
               >
                 <CaretLeft className="w-4 h-4" />
               </button>
-              <span className="text-sm font-medium text-fg capitalize text-center tabular-nums min-w-[7rem]">
+              <span className="text-sm font-medium text-fg text-center tabular-nums min-w-[7rem]">
                 {monthDisplay}
               </span>
               <button
@@ -533,14 +562,19 @@ function CobrosContent() {
           )}
         </div>
 
-        {/* Pagination Footer — windowed (1 … 4 5 6 … 12) via ui/pagination */}
-        {totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-border flex items-center justify-center bg-muted/10">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              siblingCount={1}
+        {/* Pie de tabla del design system: «X cobros · Filas por página · n/m».
+            Se monta con una sola fila también — decirle a alguien que tiene 3
+            cobros cuántos hay y dejarlo elegir el tamaño es parte de que la
+            tabla se lea como tabla. */}
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
             />
           </div>
         )}
@@ -553,15 +587,22 @@ function CobrosContent() {
         cobro={selectedCobro}
         onRegisterPayment={handleRegisterPaymentClick}
         onSendReminder={handleSendReminder}
+        onCobroActualizado={handleCobroActualizado}
       />
 
-      {/* Register Payment Modal */}
+      {/* Recibo de caja */}
       <RegistrarPagoModal
         isOpen={isPaymentModalOpen}
         onClose={handlePaymentModalClose}
         cobro={paymentCobro}
-        cobrosList={filteredCobros}
-        onSubmit={handlePaymentSubmit}
+        consignaciones={consignaciones}
+        mesActual={getCurrentMonth()}
+        onCobrosGenerados={() => {
+          refetchCobros();
+          refetchSummary();
+        }}
+        onSubmit={emitirRecibo}
+        onConciliar={conciliarPagoAnterior}
       />
 
       {/* Reminder Configuration Sheet */}

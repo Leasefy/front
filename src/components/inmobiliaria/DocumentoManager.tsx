@@ -490,7 +490,7 @@ export function DocumentoManager({
         </div>
       ) : viewMode === 'list' ? (
         // Table View
-        <div className="rounded-xl border border-border overflow-hidden">
+        <div className="rounded-lg border border-border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -809,7 +809,7 @@ export function DocumentoManager({
 
       {/* Pie único para lista y grilla: sólo si hay más de una página. */}
       {shouldPaginate && (
-        <div className="rounded-xl border border-border px-4 py-3">
+        <div className="rounded-lg border border-border px-4 py-3">
           <TablePagination
             total={total}
             page={page}

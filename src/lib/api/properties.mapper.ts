@@ -101,8 +101,9 @@ export function mapBackendProperty(bp: BackendProperty): Property {
     city: bp.city,
     neighborhood: bp.neighborhood,
     address: bp.address,
-    latitude: bp.latitude ?? 0,
-    longitude: bp.longitude ?? 0,
+    // `null` se queda `null`: convertirlo en 0 inventaba una ubicación en (0,0).
+    latitude: bp.latitude ?? null,
+    longitude: bp.longitude ?? null,
     department: bp.department,
 
     // Sale vs rent (contract.md T-0038 §3.2.2-§3.2.4)

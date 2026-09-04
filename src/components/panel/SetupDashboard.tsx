@@ -185,7 +185,7 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
                       transition={{ delay: 0.4 + index * 0.1 }}
                     >
                       {task.completed ? (
-                        <div className="p-4 rounded-xl bg-success-soft border border-success/20">
+                        <div className="p-4 rounded-lg bg-success-soft border border-success/20">
                           <div className="w-10 h-10 rounded-md bg-success flex items-center justify-center mb-3">
                             <Check className="w-5 h-5 text-white" strokeWidth={3} />
                           </div>
@@ -195,7 +195,7 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
                       ) : isNext ? (
                         <Link
                           href={task.href}
-                          className="block p-4 rounded-xl bg-primary-soft border-2 border-primary/30 hover:border-primary/30 hover: transition-all group"
+                          className="block p-4 rounded-lg bg-primary-soft border-2 border-primary/30 hover:border-primary/30 hover: transition-all group"
                         >
                           <div className="w-10 h-10 rounded-md bg-primary flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                             <Icon className="w-5 h-5 text-white" />
@@ -207,7 +207,7 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
                           </p>
                         </Link>
                       ) : (
-                        <div className="p-4 rounded-xl bg-surface-muted border border-border opacity-60">
+                        <div className="p-4 rounded-lg bg-surface-muted border border-border opacity-60">
                           <div className="w-10 h-10 rounded-md bg-surface-muted flex items-center justify-center mb-3">
                             <Circle className="w-5 h-5 text-fg-subtle" />
                           </div>

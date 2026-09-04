@@ -199,3 +199,119 @@ describe('periodicidad', () => {
     expect(comoPeriodicidad('cada dos meses')).toBeUndefined()
   })
 })
+
+// ═══ Batería adversarial P4 (2026-09-01) — nada se adivina, nada se pierde ═══
+
+import { comoPorcentaje, documentoComoLlave, MAX_COP_POR_MOVIMIENTO } from './leer-celdas'
+
+describe('fechas: sólo el calendario real', () => {
+  it('«2026-13-01» tiene forma de ISO y no es una fecha: ausente, no pasada de largo', () => {
+    expect(comoFecha('2026-13-01')).toBeUndefined()
+  })
+  it('«31/02/2026» no existe: ausente, jamás «2026-02-31» fabricado', () => {
+    expect(comoFecha('31/02/2026')).toBeUndefined()
+  })
+  it('29 de febrero sólo en bisiesto', () => {
+    expect(comoFecha('29/02/2024')).toBe('2024-02-29')
+    expect(comoFecha('29/02/2026')).toBeUndefined()
+  })
+  it('«2026/06/01» (año primero con barras) se lee', () => {
+    expect(comoFecha('2026/06/01')).toBe('2026-06-01')
+  })
+  it('«01.06.2026» (puntos) se lee como día/mes/año', () => {
+    expect(comoFecha('01.06.2026')).toBe('2026-06-01')
+  })
+  it('un export gringo mm/dd se delata solo: «06/13/2026» no existe como d/m → ausente', () => {
+    expect(comoFecha('06/13/2026')).toBeUndefined()
+  })
+  it('año de 2 dígitos: adivinar el siglo es inventar → ausente', () => {
+    expect(comoFecha('1/6/26')).toBeUndefined()
+  })
+  it('un serial de Excel escapado como texto no se traduce a ninguna fecha', () => {
+    expect(comoFecha('44713')).toBeUndefined()
+    expect(comoFecha(44713)).toBeUndefined()
+  })
+  it('texto con nombre de mes no se adivina', () => {
+    expect(comoFecha('Jun 1, 2026')).toBeUndefined()
+    expect(comoFecha('15 de marzo de 2025')).toBeUndefined()
+  })
+  it('un Date inválido (instanceof Date con NaN) no tumba el armado: ausente', () => {
+    expect(comoFecha(new Date('basura'))).toBeUndefined()
+  })
+  it('un Date válido conserva su día', () => {
+    expect(comoFecha(new Date('2026-06-01T00:00:00Z'))).toBe('2026-06-01')
+  })
+})
+
+describe('plata: signos y basura con forma de número', () => {
+  it('el «menos» tipográfico U+2212 es signo: «−1.800.000» NO se vuelve positivo', () => {
+    expect(comoEntero('−1.800.000')).toBe(-1800000)
+  })
+  it('🔴 seis cifras con un solo punto son miles: «500.000» es 500000, no 500', () => {
+    expect(comoEntero('500.000')).toBe(500000)
+  })
+  it('«12.34.56» no agrupa de a tres: es basura, no 1234.56', () => {
+    expect(comoEntero('12.34.56')).toBeUndefined()
+  })
+  it('«1.23.456» tampoco: el primer grupo interno no tiene 3 dígitos', () => {
+    expect(comoEntero('1.23.456')).toBeUndefined()
+  })
+  it("«1'800.000» (apóstrofe de miles) se lee", () => {
+    expect(comoEntero("1'800.000")).toBe(1800000)
+  })
+  it('«1,800,000» y «1.800.000,00» y «1800000.50» siguen bien', () => {
+    expect(comoEntero('1,800,000')).toBe(1800000)
+    expect(comoEntero('1.800.000,00')).toBe(1800000)
+    expect(comoEntero('1800000.50')).toBe(1800001)
+  })
+})
+
+describe('comoPorcentaje: el 0 es un valor, el 110 no es un porcentaje', () => {
+  it('«0» viaja como 0 — una comisión del 0% existe', () => {
+    expect(comoPorcentaje('0')).toBe(0)
+    expect(comoPorcentaje(0)).toBe(0)
+  })
+  it('«10%», «10,5 %» y «10» se leen', () => {
+    expect(comoPorcentaje('10%')).toBe(10)
+    expect(comoPorcentaje('10,5 %')).toBe(10.5)
+    expect(comoPorcentaje('10')).toBe(10)
+    expect(comoPorcentaje(9)).toBe(9)
+  })
+  it('fuera de [0,100] o ilegible → ausente, nunca recortado', () => {
+    expect(comoPorcentaje('110')).toBeUndefined()
+    expect(comoPorcentaje('-5')).toBeUndefined()
+    expect(comoPorcentaje('diez')).toBeUndefined()
+    expect(comoPorcentaje('')).toBeUndefined()
+    expect(comoPorcentaje(undefined)).toBeUndefined()
+  })
+})
+
+describe('placeholders de vacío: «-», «N/A», «null» no son datos', () => {
+  it.each(['-', '--', 'N/A', 'n/a', 'null', 'Sin dato', 'S/D', 'No aplica', '.'])(
+    '«%s» vuelve undefined',
+    (v) => {
+      expect(textoOpcional(v)).toBeUndefined()
+    },
+  )
+  it('un valor real con guiones adentro NO se pierde', () => {
+    expect(textoOpcional('310-555-1234')).toBe('310-555-1234')
+  })
+})
+
+describe('el tope del back', () => {
+  it('exporta el mismo INT4 que el back', () => {
+    expect(MAX_COP_POR_MOVIMIENTO).toBe(2_147_483_647)
+  })
+})
+
+describe('documentoComoLlave: la misma llave que terceros', () => {
+  it('con puntos, espacios y guiones cae en la misma llave', () => {
+    expect(documentoComoLlave('1.004.997.858')).toBe('1004997858')
+    expect(documentoComoLlave(' 1004997858 ')).toBe('1004997858')
+    expect(documentoComoLlave('ce-123.456')).toBe('CE123456')
+  })
+  it('vacío y placeholders quedan vacíos', () => {
+    expect(documentoComoLlave('')).toBe('')
+    expect(documentoComoLlave(null)).toBe('')
+  })
+})

@@ -1,0 +1,61 @@
+﻿Tipo de documento,Número de documento,Nombre completo,Correo,Teléfono,Dirección,Ciudad,Banco,Tipo de cuenta,Número de cuenta,Titular de la cuenta,Responsable de IVA,Agente retenedor de renta,Agente retenedor de IVA,Agente retenedor de ICA,Notas
+NIT,890501723,Inversiones Los Cerezos S.A.S.,pagos@inversionescerezos4.example.com,6012484155,Circular 90 # 91-67,Sabaneta,BBVA,CORRIENTE,253612949430,Inversiones Los Cerezos S.A.S.,Sí,Sí,Sí,No,
+NIT,900748163,Constructora Altavista S.A.,pagos@constructoraaltavista.example.com,6059485880,Diagonal 100 # 5-8,Bogotá,DAVIVIENDA,CORRIENTE,533431584942,Constructora Altavista S.A.,Sí,Sí,No,Sí,
+NIT,901905858,Fiduciaria del Valle S.A.,pagos@fiduciariavalle.example.com,6050030432,Diagonal 82 # 87-36,Barranquilla,BANCOLOMBIA,CORRIENTE,28958747776,Fiduciaria del Valle S.A.,Sí,No,No,No,
+NIT,890527164,Inmobiliaria Santa Ana Ltda.,pagos@inmobiliariasanta.example.com,6058653849,Carrera 94 # 46-67,Medellín,BANCO_BOGOTA,CORRIENTE,263767795,Inmobiliaria Santa Ana Ltda.,Sí,Sí,Sí,No,Prefiere que le escriban por WhatsApp
+NIT,901197238,Rentas Urbanas del Norte S.A.S.,pagos@rentasurbanas.example.com,6012864896,Calle 19 # 22-73,Cali,BANCO_CAJA_SOCIAL,CORRIENTE,36500386693,Rentas Urbanas del Norte S.A.S.,Sí,No,No,No,
+NIT,800013137,Patrimonio Familiar Restrepo & Cía. S. en C.,pagos@patrimoniofamiliar5.example.com,6022082115,Calle 73 # 43-59,Medellín,NEQUI,AHORROS,6022082115,Patrimonio Familiar Restrepo & Cía. S. en C.,Sí,Sí,Sí,No,
+CE,303682,Gloria Inés Gallego Marín,gloria.gallego76@example.com,3169914670,Calle 57 # 83-63,Bogotá,BANCOLOMBIA,AHORROS,65198980359,Gloria Inés Gallego Marín,No,No,No,No,Vive en el exterior; contacto sólo por correo
+CE,963898,Catalina Quintero Moreno,catalina.quintero96@example.com,3023144392,Calle 121 # 15-31,Medellín,BANCOLOMBIA,CORRIENTE,18485298187,Catalina Quintero Moreno,No,No,No,No,
+CE,435025,Mariana Pérez Hernández,mariana.perez@example.com,3003612884,Diagonal 79 # 8-13,Bogotá,BANCOLOMBIA,AHORROS,25607323142,Mariana Pérez Hernández,No,No,No,No,Girar después del 5 de cada mes
+CC,1001098833,Luisa Fernanda Duque Martínez,luisa.duque@example.com,3140408399,Carrera 112 # 45-35,Bogotá,BANCO_OCCIDENTE,AHORROS,123595442,Luisa Fernanda Duque Martínez,No,No,No,No,
+CC,80384078,Esteban Jaramillo Restrepo,esteban.jaramillo@example.com,3188788937,Calle 54 # 93-37,Medellín,BANCOLOMBIA,AHORROS,65123721481,Esteban Jaramillo Restrepo,No,No,No,No,Pide el certificado de retención cada enero
+CC,41614582,Santiago Betancur Castro,santiago.betancur@example.com,3028706856,Calle 55 # 17-75,Bogotá,BANCOLOMBIA,AHORROS,65151578843,Santiago Betancur Castro,No,No,No,No,
+CC,1086269299,Héctor Fabio Bedoya Uribe,hector.bedoya71@example.com,3122790796,Circular 127 # 41-67,Medellín,BANCOLOMBIA,AHORROS,40722527731,Héctor Fabio Bedoya Uribe,No,No,No,No,
+CC,41997305,Felipe Castro Bedoya,felipe.castro@example.com,3118260159,Carrera 25 # 25-61,Cali,NEQUI,AHORROS,3118260159,Felipe Castro Bedoya,No,No,No,No,
+CC,1071161259,Iván Darío Mejía Agudelo,ivan.mejia93@example.com,3104057703,Carrera 67 # 97-78,Bogotá,BANCO_BOGOTA,AHORROS,445110702,Iván Darío Mejía Agudelo,No,No,No,No,
+CC,32263501,Gloria Inés Gómez Ospina,gloria.gomez92@example.com,3174540743,Carrera 107 # 99-72,Pereira,BANCOLOMBIA,AHORROS,91239299590,Gloria Inés Gómez Ospina,No,No,No,No,
+CC,19082134,Andrés Felipe Escobar Castro,andres.escobar@example.com,3119089474,Calle 38 # 13-28,Medellín,BANCOLOMBIA,AHORROS,91279550917,Andrés Felipe Escobar Castro,No,No,No,No,Pide el certificado de retención cada enero
+CC,32017049,Nataly Ramírez Valencia,nataly.ramirez91@example.com,3006650985,Calle 8 # 92-15,Bogotá,BANCOLOMBIA,AHORROS,65163145182,Daniela Martínez Restrepo,No,No,No,No,"La cuenta es de la esposa, ver titular"
+CC,1052462103,Juan Camilo Correa Henao,juan.correa@example.com,3053007721,Calle 136 # 39-64,Bogotá,BANCO_OCCIDENTE,AHORROS,900355674,Juan Camilo Correa Henao,No,No,No,No,
+CC,52292383,Gloria Inés Betancur Ospina,gloria.betancur@example.com,3220757882,Calle 88 # 5-27,Envigado,BANCO_OCCIDENTE,AHORROS,021462637,Gloria Inés Betancur Ospina,No,No,No,No,"La cuenta es de la esposa, ver titular"
+CC,1045265284,Daniela Quintero Muñoz,daniela.quintero@example.com,3216818878,Calle 96 # 46-47,Sabaneta,DAVIVIENDA,CORRIENTE,382333651123,Daniela Quintero Muñoz,No,No,No,No,
+CC,1019126067,Luisa Fernanda Cardona Torres,luisa.cardona78@example.com,3045933710,Calle 37 # 24-51,Barranquilla,BANCO_CAJA_SOCIAL,AHORROS,67867534509,Luisa Fernanda Cardona Torres,No,No,No,No,Vive en el exterior; contacto sólo por correo
+CC,1070448134,Laura Castro Hoyos,laura.castro@example.com,3121625400,Carrera 150 # 84-17,Medellín,DAVIVIENDA,CORRIENTE,391597666463,Claudia Patricia Quintero Ramírez,Sí,No,No,No,"La cuenta es de la esposa, ver titular"
+CC,1061339665,Leonardo Cardona Restrepo,leonardo.cardona93@example.com,3026520690,Calle 133 # 34-15,Bogotá,DAVIVIENDA,AHORROS,156591521232,Leonardo Cardona Restrepo,No,No,No,No,
+CC,32821863,Gloria Inés Torres Henao,gloria.torres96@example.com,3170964476,Carrera 79 # 5-5,Bogotá,DAVIVIENDA,AHORROS,233260227330,Gloria Inés Torres Henao,No,No,No,No,
+CC,1092008255,Nicolás Rojas Cardona,nicolas.rojas75@example.com,3109470879,Carrera 19 # 88-21,Bogotá,BANCOLOMBIA,CORRIENTE,75549987822,Nicolás Rojas Cardona,No,No,No,No,"La cuenta es de la esposa, ver titular"
+CC,43840977,Iván Darío Franco Hoyos,ivan.franco@example.com,3502116832,Carrera 24 # 91-12,Pereira,ITAU,AHORROS,546764206488,Iván Darío Franco Hoyos,Sí,No,No,No,
+CC,1082053607,Felipe Mejía Hernández,felipe.mejia73@example.com,3182805133,Calle 80 # 31-66,Bogotá,BANCOLOMBIA,AHORROS,40781103092,Felipe Mejía Hernández,No,No,No,No,
+CC,19395162,Juliana Mejía García,juliana.mejia96@example.com,3210927375,Transversal 29 # 70-58,Bogotá,NEQUI,AHORROS,3210927375,Juliana Mejía García,No,No,No,No,
+CC,1087508433,Luis Alberto García Moreno,luis.garcia@example.com,3104599353,Carrera 66 # 74-17,Bogotá,BANCO_CAJA_SOCIAL,AHORROS,23148712718,Ana María Castaño Giraldo,Sí,No,No,No,"La cuenta es de la esposa, ver titular"
+CC,1037572235,Marcela Arango Sánchez,marcela.arango@example.com,3003561061,Carrera 124 # 22-7,Medellín,BANCOLOMBIA,AHORROS,65157785862,Marcela Arango Sánchez,Sí,No,No,No,"La cuenta es de la esposa, ver titular"
+CC,1043233293,Carolina García Duque,carolina.garcia@example.com,3009343852,Transversal 79 # 13-64,Barranquilla,BANCOLOMBIA,AHORROS,91277847676,Carolina García Duque,No,No,No,No,
+CC,79049567,Nataly Rojas Ochoa,nataly.rojas@example.com,3012879489,Carrera 121 # 66-2,Medellín,BANCO_BOGOTA,AHORROS,041562547,Nataly Rojas Ochoa,No,No,No,No,Pide el certificado de retención cada enero
+CC,80178907,Isabella Toro Salazar,isabella.toro@example.com,3041691707,Diagonal 125 # 8-15,Cali,BANCOLOMBIA,AHORROS,25680114194,Isabella Toro Salazar,Sí,No,No,No,
+CC,1030914340,Jorge Iván Arango García,jorge.arango81@example.com,3138022225,Carrera 60 # 30-56,Medellín,BANCO_OCCIDENTE,AHORROS,377996525,Jorge Iván Arango García,No,No,No,No,
+CC,1041827852,Luis Alberto Torres Sánchez,luis.torres@example.com,3056993679,Calle 120 # 49-67,Envigado,NEQUI,AHORROS,3056993679,Luis Alberto Torres Sánchez,No,No,No,No,Prefiere que le escriban por WhatsApp
+CC,32900064,Mauricio Echeverri Quintero,mauricio.echeverri91@example.com,3026288149,Calle 132 # 25-24,Bogotá,BANCOLOMBIA,CORRIENTE,75564386176,Mauricio Echeverri Quintero,No,No,No,No,
+CC,32294918,Yolanda Uribe Ochoa,yolanda.uribe@example.com,3163757277,Carrera 133 # 72-25,Medellín,BANCOLOMBIA,AHORROS,65163803614,Yolanda Uribe Ochoa,No,No,No,No,
+CC,79594652,Camilo Arango Bedoya,camilo.arango@example.com,3500194047,Calle 19 # 99-26,Bogotá,NEQUI,AHORROS,3500194047,Camilo Arango Bedoya,No,No,No,No,
+CC,1094455983,Marta Cecilia Torres Correa,marta.torres@example.com,3211916654,Transversal 136 # 60-77,Medellín,BANCOLOMBIA,AHORROS,40777195918,Marta Cecilia Torres Correa,No,No,No,No,
+CC,51617302,Jaime Ramírez Echeverri,jaime.ramirez@example.com,3120849801,Transversal 4 # 91-44,Cali,DAVIPLATA,AHORROS,3120849801,Jaime Ramírez Echeverri,No,No,No,No,
+CC,52365464,Gloria Inés Agudelo Botero,gloria.agudelo@example.com,3147699392,Carrera 41 # 41-70,Medellín,BANCOLOMBIA,AHORROS,40731493335,Gloria Inés Agudelo Botero,No,No,No,No,
+CC,66495936,Juan Camilo Rojas Agudelo,juan.rojas@example.com,3202752924,Calle 70 # 63-5,Bogotá,BANCO_AV_VILLAS,AHORROS,936461055658,Juan Camilo Rojas Agudelo,No,No,No,No,Vive en el exterior; contacto sólo por correo
+CC,1076067324,Édgar Cardona Vélez,edgar.cardona95@example.com,3146746092,Calle 6 # 66-49,Medellín,BANCO_POPULAR,AHORROS,170824366,Édgar Cardona Vélez,No,No,No,No,
+CC,1097788350,Luisa Fernanda Echeverri Uribe,luisa.echeverri@example.com,3212757064,Calle 99 # 34-45,Bogotá,BBVA,AHORROS,087117494485,Hernán Botero Ochoa,No,No,No,No,"La cuenta es de la esposa, ver titular"
+CC,1089571656,Álvaro Muñoz Gallego,alvaro.munoz@example.com,3187121835,Carrera 147 # 53-42,Medellín,NEQUI,AHORROS,3187121835,Iván Darío Ochoa Valencia,No,No,No,No,"La cuenta es de la esposa, ver titular"
+CC,70052644,Yolanda Cardona Salazar,yolanda.cardona@example.com,3106864403,Carrera 77 # 28-4,Bogotá,BANCOLOMBIA,AHORROS,65188059711,Yolanda Cardona Salazar,No,No,No,No,
+CC,1007772380,Paula Andrea Uribe Castaño,paula.uribe94@example.com,3116928984,Carrera 9 # 21-50,Medellín,NEQUI,AHORROS,3116928984,Paula Andrea Uribe Castaño,No,No,No,No,Representante legal: ver correo
+CC,16668716,Mónica Liliana Martínez Franco,monica.martinez@example.com,3208632503,Carrera 143 # 48-70,Envigado,BANCOLOMBIA,AHORROS,65144590925,Mónica Liliana Martínez Franco,No,No,No,No,
+CC,1068666105,Felipe Ospina Vélez,felipe.ospina@example.com,3002469026,Calle 66 # 91-13,Bogotá,DAVIVIENDA,AHORROS,490654387374,Felipe Ospina Vélez,No,No,No,No,No llamar después de las 6 p. m.
+CC,1043857358,Hernán Hoyos Londoño,hernan.hoyos@example.com,3027813611,Calle 84 # 66-58,Cali,BANCOLOMBIA,AHORROS,25633012385,Hernán Hoyos Londoño,No,No,No,No,
+CC,1091653739,Héctor Fabio Ramírez Zapata,hector.ramirez73@example.com,3146065017,Calle 10 # 73-66,Bogotá,BBVA,AHORROS,427688673449,Héctor Fabio Ramírez Zapata,No,No,No,No,
+CC,70404179,Camila Arango Londoño,camila.arango93@example.com,3201033807,Carrera 103 # 32-42,Medellín,BANCO_OCCIDENTE,AHORROS,446967661,Camila Arango Londoño,No,No,No,No,
+CC,71880644,Angélica Agudelo Giraldo,angelica.agudelo93@example.com,3128907668,Calle 62 # 10-60,Medellín,BANCOLOMBIA,AHORROS,40722395515,Angélica Agudelo Giraldo,No,No,No,No,
+CC,1022531659,Esteban Ramírez Franco,esteban.ramirez@example.com,3130696226,Carrera 88 # 34-6,Bogotá,NEQUI,AHORROS,3130696226,Esteban Ramírez Franco,No,No,No,No,
+CC,31671656,Camila Echeverri Uribe,camila.echeverri86@example.com,3133845912,Carrera 104 # 28-24,Sabaneta,BANCOLOMBIA,AHORROS,65160484045,Camila Echeverri Uribe,No,No,No,No,
+CC,1095898901,Fabián Agudelo Gómez,fabian.agudelo@example.com,3204287339,Calle 6 # 8-30,Bogotá,BANCO_CAJA_SOCIAL,AHORROS,19842360000,Fabián Agudelo Gómez,No,No,No,No,
+CC,79848253,Juan Camilo Ramírez Muñoz,juan.ramirez87@example.com,3182564700,Calle 145 # 20-3,Medellín,BANCOLOMBIA,AHORROS,91287841411,Juan Camilo Ramírez Muñoz,No,No,No,No,Pide el certificado de retención cada enero
+CC,1073813760,Yesica López López,yesica.lopez89@example.com,3158424730,Calle 35 # 73-66,Medellín,BBVA,AHORROS,069500323493,Yesica López López,No,No,No,No,No llamar después de las 6 p. m.
+CC,51696863,Yolanda Cardona Valencia,yolanda.cardona71@example.com,3019336939,Carrera 124 # 43-34,Bogotá,BANCOLOMBIA,AHORROS,40796943881,Yolanda Cardona Valencia,No,No,No,No,Representante legal: ver correo

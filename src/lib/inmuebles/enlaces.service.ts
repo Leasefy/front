@@ -30,9 +30,19 @@ export type ResultadoDeEnlace = EnlaceLeido | EnlaceFallido;
  * Separa lo pegado en enlaces. Acepta uno por línea, separados por coma o por
  * espacios: la gente pega desde WhatsApp, desde un correo o desde una columna
  * de Excel, y las tres cosas se ven distinto.
+ *
+ * También corta donde empieza otro `http(s)://` SIN separador en el medio.
+ * Caso real (2026-09-01): tres enlaces de Fincaraíz pegados desde una lista
+ * llegaron con dos en la misma línea, pegados —`…/194195155https://www…`—,
+ * y ese «enlace» de dos enlaces se pidió tal cual y respondió 404. Un
+ * esquema en el medio de una URL nunca es parte de la URL.
  */
 export function separarEnlaces(pegado: string): string[] {
   const candidatos = pegado
+    // Sólo cuando el esquema viene pegado al FINAL de otra URL (una letra, un
+    // número, `-`, `_`, `.`): un `?url=https://…` o `&next=https://…` es un
+    // parámetro con otra URL adentro y sigue siendo un solo enlace.
+    .replace(/(?<=[A-Za-z0-9_\-.~%])(?=https?:\/\/)/gi, ' ')
     .split(/[\s,;]+/)
     .map((s) => s.trim().replace(/[.,;]+$/, ''))
     .filter(Boolean);
@@ -112,7 +122,7 @@ export async function leerEnlaces(
 }
 
 /** Cuántas fotos acepta el back por inmueble. */
-export const MAX_FOTOS_POR_INMUEBLE = 10;
+export const MAX_FOTOS_POR_INMUEBLE = 40;
 
 /**
  * Baja una foto por el proxy y la deja como `File`, que es lo que espera
@@ -149,12 +159,22 @@ export function aImportProperty(leido: InmuebleDesdeEnlace, indice: number): Imp
   anotar('propertyAddress', leido.direccion);
   anotar('propertyCity', leido.ciudad);
   anotar('propertyZone', leido.barrio);
+  anotar('propertyDepartment', leido.departamento);
   anotar('propertyType', leido.tipo);
+  anotar('listingType', leido.negocio);
   anotar('monthlyRent', leido.canon);
+  anotar('salePrice', leido.precioVenta);
   anotar('adminFee', leido.administracion);
   anotar('propertyArea', leido.area);
   anotar('bedrooms', leido.habitaciones);
   anotar('bathrooms', leido.banos);
+
+  // `listingType` es texto libre en el asistente («Venta» / «Arriendo», lo
+  // que traería una celda de Excel); `resolveImportListingType` lo entiende.
+  // Sin negocio leído se deja vacío: la revisión asume arriendo, que es lo
+  // que asumía antes, pero ahora sin fingir que la ficha lo dijo.
+  const listingType =
+    leido.negocio?.valor === 'venta' ? 'Venta' : leido.negocio?.valor === 'arriendo' ? 'Arriendo' : undefined;
 
   return {
     _rowIndex: indice,
@@ -162,8 +182,11 @@ export function aImportProperty(leido: InmuebleDesdeEnlace, indice: number): Imp
     propertyAddress: leido.direccion?.valor,
     propertyCity: leido.ciudad?.valor,
     propertyZone: leido.barrio?.valor,
+    propertyDepartment: leido.departamento?.valor,
     propertyType: leido.tipo?.valor,
+    listingType,
     monthlyRent: leido.canon?.valor,
+    salePrice: leido.precioVenta?.valor,
     adminFee: leido.administracion?.valor,
     propertyArea: leido.area?.valor,
     bedrooms: leido.habitaciones?.valor,

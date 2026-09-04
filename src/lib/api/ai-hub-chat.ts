@@ -16,6 +16,7 @@
  */
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
+import { AGENT_WORKSPACES } from '@/lib/nav/agentWorkspaceNav';
 import type {
   AgentType,
   AgentExecution,
@@ -129,27 +130,31 @@ export function backendAgentToFrontType(agent: BackendDispatchAgent): AgentType 
 }
 
 /**
- * Front route for a suggested-action target. Only some `/ai/*` routes exist
- * today; unknown targets fall back to the AI hub landing (never a dead/404 link).
+ * Wire target → slug del workspace en `agentWorkspaceNav.ts`. Los agentes ya
+ * no viven en `/ai/*`: cada uno está dentro del módulo que automatiza, y su
+ * ruta la sabe UNA sola tabla. `cartera` sigue apuntando al agente de cobranza
+ * (el back habla de la cartera del agente, no de la pantalla Cartera de Cobros).
+ */
+const TARGET_SLUG: Record<BackendActionTarget, string> = {
+  cobranza: 'cobranza',
+  cotizador: 'asegurabilidad', // wire target stays 'cotizador'; the route is /asegurabilidad
+  estudio: 'estudio',
+  matching: 'matching',
+  pagos: 'pagos',
+  conciliacion: 'conciliacion',
+  avaluo: 'avaluos',
+  cartera: 'cobranza',
+};
+
+/**
+ * Front route for a suggested-action target. Unknown or unregistered targets
+ * fall back to Inicio (el Piloto, la torre de control de los agentes) — never
+ * a dead/404 link.
  */
 export function targetToHref(target: BackendActionTarget): string {
-  const base = '/panel/inmobiliaria/ai';
-  switch (target) {
-    case 'cobranza':
-      return `${base}/cobranza`;
-    case 'cotizador':
-      // Wire target stays 'cotizador'; user-facing route is /asegurabilidad.
-      return `${base}/asegurabilidad`;
-    case 'pagos':
-      return `${base}/pagos`;
-    case 'cartera':
-      return `${base}/cobranza`; // cartera overview lives under cobranza
-    case 'avaluo':
-    case 'estudio':
-    case 'conciliacion':
-    default:
-      return base; // route not present yet → AI hub landing
-  }
+  const slug = TARGET_SLUG[target];
+  const ws = slug ? AGENT_WORKSPACES.find((w) => w.slug === slug) : undefined;
+  return ws?.basePath ?? '/panel/inmobiliaria/piloto';
 }
 
 const TARGET_ICON: Record<BackendActionTarget, string> = {

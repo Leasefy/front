@@ -235,7 +235,7 @@ Esto es lo que ustedes conocen mejor que el front. La lógica de `buildAgentOver
 ### Verificación end-to-end contra el front
 
 1. Levantá el agent en `:4000` con el endpoint montado.
-2. En el front, entrá como inmobiliaria a `http://localhost:3001/panel/inmobiliaria/ai/avaluos`.
+2. En el front, entrá como inmobiliaria a `http://localhost:3001/panel/inmobiliaria/inmuebles/avaluos`.
 3. La Sala debe mostrar KPIs/pipeline/feed reales (ya no el estado "aún no reporta").
 4. En DevTools Network, `overview` debe dar `200` (antes daba `404`).
 
@@ -364,7 +364,7 @@ Los tipos completos están en `front/src/lib/api/agent-workspace.ts` (líneas 59
 - [ ] **T7** — Poblar `WorkItem.actions[].path` con endpoints REALES ya existentes del agent.
 - [ ] **T8** — Agente válido sin casos → `200 { items: [], total: 0 }`.
 - [ ] **T9** — Tests (200 con items, 200 vacío, filtro por status, 404 agente inválido, 401, 403 cross-tenant).
-- [ ] **T10** — Verificación e2e en `/panel/inmobiliaria/ai/avaluos/cola`.
+- [ ] **T10** — Verificación e2e en `/panel/inmobiliaria/inmuebles/avaluos/cola`.
 
 **Resto (§8) — cuando haya prioridad:**
 - [ ] **T11** — `work-items/{id}` (detalle), `autonomia`, `analitica`, `resumen`.

@@ -44,7 +44,7 @@ function KpiCard({
 }) {
   const { label, value, Icon, iconColor } = card
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
+    <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
       <div className="flex items-center gap-2 mb-2">
         <Icon size={18} className={iconColor} weight="duotone" />
         <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-tight">{label}</p>

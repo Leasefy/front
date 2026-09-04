@@ -6,7 +6,7 @@ import { RowSkeleton } from '@/components/skeleton/panel/RowSkeleton'
 /**
  * EstudiosListSkeleton — Tier-B estudio UX (build-kit §5).
  *
- * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/ai/estudio/estudios`.
+ * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/postulaciones/estudio/estudios`.
  * Mirrors EstudiosListClient: header → filter aside (chip rows + search) →
  * table header → 5 RowSkeleton rows. Mirrors CobranzaDeudoresListSkeleton.
  *

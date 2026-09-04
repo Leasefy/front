@@ -72,7 +72,7 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
 
   return (
     <div
-      className="rounded-xl border border-border bg-card p-4 space-y-3"
+      className="rounded-lg border border-border bg-card p-4 space-y-3"
       data-testid="accion-sugerida"
     >
       {/* Eyebrow */}

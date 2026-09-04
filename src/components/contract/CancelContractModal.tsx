@@ -58,7 +58,7 @@ export function CancelContractModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-surface rounded-xl w-full max-w-lg border border-border"
+            className="bg-surface rounded-lg w-full max-w-lg border border-border"
           >
             <div className="flex items-start justify-between gap-4 p-5 border-b border-border">
               <div className="flex items-center gap-3">
@@ -86,7 +86,7 @@ export function CancelContractModal({
             </div>
 
             <div className="p-5 space-y-4">
-              <div className="rounded-xl border border-danger/30 bg-danger-soft p-3">
+              <div className="rounded-lg border border-danger/30 bg-danger-soft p-3">
                 <p className="text-sm text-danger">
                   Al cancelar, el contrato termina y la aplicación asociada queda cerrada.
                   Si querés volver a intentar con el mismo {otherParty}, vas a tener que crear una aplicación nueva.

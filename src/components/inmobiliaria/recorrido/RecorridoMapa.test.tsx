@@ -61,9 +61,12 @@ describe('RecorridoMapa', () => {
   it('el corte cae entre el paso del inquilino y el primero de la inmobiliaria', () => {
     const el = montar(<RecorridoMapa />)
     const items = [...el.querySelectorAll('li')]
-    // El corte se dibuja dentro del <li> del paso 7 (índice 6).
-    expect(items[6].textContent).toContain('Acá cambia de manos')
-    expect(items[5].textContent).not.toContain('Acá cambia de manos')
+    // El corte es un separador propio entre los dos tramos: va DESPUÉS del
+    // paso 6 y ANTES del 7 en el documento (ya no vive dentro de un <li>).
+    const corte = el.querySelector('[data-corte]')!
+    expect(corte.textContent).toContain('Acá cambia de manos')
+    expect(items[5].compareDocumentPosition(corte) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(corte.compareDocumentPosition(items[6]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it('marca de quién es cada paso', () => {
@@ -118,7 +121,7 @@ describe('RecorridoMapa', () => {
     const el = montar(<RecorridoMapa />)
     const hrefs = [...el.querySelectorAll('a')].map((a) => a.getAttribute('href'))
     expect(hrefs).toContain('/panel/inmobiliaria/postulaciones')
-    expect(hrefs).toContain('/panel/inmobiliaria/ai/estudio/cola')
+    expect(hrefs).toContain('/panel/inmobiliaria/postulaciones/estudio/cola')
     expect(hrefs).toContain('/panel/inmobiliaria/contratos')
   })
 

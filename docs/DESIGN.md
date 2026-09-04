@@ -548,7 +548,7 @@ accent unchanged.
 />
 ```
 - Container: `rounded-lg bg-surface-muted`, vertical padding `py-14 px-6 text-center`
-- Icon: in a `surface-brand` circle, centered above the title
+- Icon: in a **grey circle** (`rounded-full bg-surface-muted text-fg-muted`), centered above the title. Never a gradient tile and never a square (Nico, 2026-09-03: «todo en grises y siempre encerrado en círculos»)
 - Title `text-fg` (h2/title), description `text-fg-muted`
 - Optional CTA = primary pill button (sentence case)
 

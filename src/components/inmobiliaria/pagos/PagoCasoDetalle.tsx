@@ -168,7 +168,7 @@ export function PagoCasoDetalle({ data, onAction, crossLink }: PagoCasoDetallePr
         {crossLink && (
           <Link
             href={crossLink.href}
-            className="group flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 transition hover:bg-surface-muted"
+            className="group flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-4 transition hover:bg-surface-muted"
             data-testid="pago-cross-link"
           >
             <div className="min-w-0">
@@ -285,7 +285,7 @@ export function PagoCasoDetalle({ data, onAction, crossLink }: PagoCasoDetallePr
               ejecutarse. La configuración de autonomía vive en la superficie del agente.
             </p>
             <Link
-              href="/panel/inmobiliaria/ai/pagos/configuracion"
+              href="/panel/inmobiliaria/pagos/configuracion"
               className="text-primary text-sm font-medium underline-offset-4 hover:underline"
             >
               Ver configuración del agente

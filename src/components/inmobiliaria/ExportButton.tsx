@@ -53,12 +53,12 @@ const SIZE_CONFIG = {
     dropdown: 'min-w-[160px]',
   },
   md: {
-    button: 'px-4 py-2.5 text-sm gap-2 rounded-xl',
+    button: 'px-4 py-2.5 text-sm gap-2 rounded-lg',
     icon: 'w-4 h-4',
     dropdown: 'min-w-[180px]',
   },
   lg: {
-    button: 'px-5 py-3 text-base gap-2.5 rounded-xl',
+    button: 'px-5 py-3 text-base gap-2.5 rounded-lg',
     icon: 'w-5 h-5',
     dropdown: 'min-w-[200px]',
   },
@@ -216,7 +216,7 @@ export function ExportButton({
       <DropdownListContent
         align="end"
         className={cn(
-          'p-1.5 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]',
+          'p-1.5 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg',
           sizeConfig.dropdown
         )}
       >

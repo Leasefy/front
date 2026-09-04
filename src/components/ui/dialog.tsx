@@ -15,6 +15,7 @@ import {
 } from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
+import { ASPA_DE_CIERRE } from "./aspa-de-cierre"
 
 /**
  * ADAPTER sobre el Dialog de @leasefy/cadence.
@@ -120,19 +121,16 @@ function useFrenarLenisMientrasAbierto() {
  *
  * La del DS va `absolute` y sin fondo, y queda apagada SIEMPRE (ver
  * `DialogContent`), así que ésta es la única que un modal puede mostrar.
- * Vive en un solo lugar para que no vuelva a haber dos dibujos distintos.
+ *
+ * El DIBUJO vive en `aspa-de-cierre.ts`, no acá: las pantallas que cierran sin
+ * ser un modal —la de acceso, por ejemplo— lo necesitan sin arrastrar Radix, y
+ * mientras estuvo escrito adentro de esta primitiva cada una se inventó el suyo.
  */
 export const AspaDeCierre = ({ className }: { className?: string }) => (
   <DialogClose
     aria-label="Cerrar"
     data-testid="dialog-close"
-    className={cn(
-      "inline-flex size-8 shrink-0 items-center justify-center rounded-full",
-      "bg-surface-muted text-fg-muted transition-colors",
-      "hover:bg-border hover:text-fg",
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-      className
-    )}
+    className={cn(ASPA_DE_CIERRE, className)}
   >
     <X size={16} weight="bold" aria-hidden="true" />
   </DialogClose>
@@ -235,9 +233,13 @@ const DialogContent = React.forwardRef<
       {cabecera}
       {/* El cuerpo es lo ÚNICO que scrollea. `min-h-0` es obligatorio: sin él
           un hijo flex no baja de su altura de contenido y el scroll se lo come
-          el contenedor, que es justo lo que estábamos arreglando. */}
+          el contenedor, que es justo lo que estábamos arreglando.
+          `grid-cols-[minmax(0,1fr)]` también: la columna `1fr` a secas es
+          `minmax(auto,1fr)`, y un hijo ancho (una tabla con etiquetas largas
+          sin corte) la estira más allá del diálogo y lo de la derecha queda
+          cortado (el modo «uno por uno» de los mandatos, Nico 2026-09-02). */}
       <div
-        className="grid min-h-0 flex-1 gap-4 overflow-y-auto overscroll-contain p-6"
+        className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-4 overflow-y-auto overscroll-contain p-6"
         data-lenis-prevent
       >
         {cuerpo}

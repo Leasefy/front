@@ -13,6 +13,7 @@
 import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { leerRespaldo, etiquetaDeTipo } from '@/lib/inmobiliaria/respaldo';
+import { conRegreso } from '@/lib/nav/ruta-de-regreso';
 import Link from 'next/link';
 import {
   CaretLeft,
@@ -46,10 +47,15 @@ import { CancelContractModal } from '@/components/contract/CancelContractModal';
 import { DownloadContractPdfButton } from '@/components/contract/DownloadContractPdfButton';
 import { useContract, useContractPreview, useContractActions, useContractRejections, useSignedPdfUrl, isPermissionError } from '@/lib/hooks/useContracts';
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
-import type { ContractStatus } from '@/lib/types/contract';
+import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { AdministracionDelContrato } from '@/components/contratos/AdministracionDelContrato';
 import { ConceptosDelContrato } from '@/components/contratos/ConceptosDelContrato';
+import { CobrosDelContrato, type ResumenDeCobros } from '@/components/contratos/CobrosDelContrato';
+import { ReglasDeMoraDelContrato } from '@/components/contratos/ReglasDeMoraDelContrato';
+import { Stat, StatStrip } from '@leasefy/cadence';
+import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { VincularInmueble } from '@/components/contratos/VincularInmueble';
 import { InvitarInquilino } from '@/components/contratos/InvitarInquilino';
 
 const PRE_SIGNED_STATES: ContractStatus[] = ['draft', 'pending_landlord', 'pending_tenant', 'rejected_pending_modifications'];
@@ -100,6 +106,7 @@ function ContratoDetalleContent() {
   const canInviteTenant = canAccess('contratos', 'create');
 
   const [actionError, setActionError] = useState<string | null>(null);
+  const [resumenDeCobros, setResumenDeCobros] = useState<ResumenDeCobros | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -198,7 +205,7 @@ function ContratoDetalleContent() {
   if (!contract) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
           <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-danger">No se pudo cargar el contrato</p>
@@ -214,41 +221,52 @@ function ContratoDetalleContent() {
   // Gate por permisos: contratos usa canAccess ('contratos' ya es módulo del backend).
   // Chat todavía usa el fallback por rol porque 'mensajes' no existe como módulo aún.
   const canCancel = canEditContracts && PRE_SIGNED_STATES.includes(contract.status as ContractStatus);
+  const esPreFirma = PRE_SIGNED_STATES.includes(contract.status as ContractStatus);
   const chatHref = isManager && contract.applicationId
     ? `/panel/inmobiliaria/mensajes?applicationId=${contract.applicationId}`
     : null;
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <Button
-            onClick={() => router.back()}
+            asChild
             variant="link"
             hideArrow
             className="mb-3 h-auto gap-1 px-0 text-muted-foreground hover:text-foreground hover:no-underline"
           >
-            <CaretLeft className="w-4 h-4" /> Volver
+            <Link href="/panel/inmobiliaria/contratos">
+              <CaretLeft className="w-4 h-4" /> Contratos
+            </Link>
           </Button>
+          {/*
+            T-0040 — el consecutivo es el nombre del contrato: va en el título,
+            no en una línea debajo de un título genérico. El UUID vuelve tal
+            cual cuando no hay código —sólo un `back` anterior a T-0040 lo
+            produce—. Sin `#0` ni `#undefined`: o el número, o el id.
+          */}
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Contrato de arrendamiento</h1>
+            <h1 className="text-h2 text-fg">
+              {contract.code != null ? `Contrato #${contract.code}` : 'Contrato de arrendamiento'}
+            </h1>
             <Badge variant={statusVariant}>
               {statusLabel}
             </Badge>
           </div>
-          {/*
-            T-0040 — el consecutivo reemplaza al UUID crudo en el lugar más
-            visible del detalle. El UUID no se borra del producto: sale del
-            slot primario, y vuelve tal cual cuando no hay código —lo único que
-            produce esa ausencia es un `back` anterior a T-0040—. Sin `#0` ni
-            `#undefined` de por medio: o el número, o la línea de antes.
-          */}
-          {contract.code != null ? (
-            <p className="text-sm text-muted-foreground mt-1">Contrato #{contract.code}</p>
-          ) : (
+          {contract.code == null ? (
             <p className="text-sm text-muted-foreground mt-1">ID: {contract.id}</p>
-          )}
+          ) : null}
+          {/* De qué contrato se trata, sin bajar a las tarjetas: inmueble e inquilino. */}
+          <p className="text-sm text-muted-foreground mt-1">
+            {[
+              [contract.propertyAddress, contract.propertyCity].filter(Boolean).join(', ') || null,
+              contract.tenantName || null,
+            ]
+              .filter(Boolean)
+              .join(' · ') || 'Arrendamiento'}
+          </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
           <DownloadContractPdfButton
@@ -266,6 +284,13 @@ function ContratoDetalleContent() {
           )}
         </div>
       </div>
+
+      {/*
+        Los cuatro números del contrato, de un vistazo. Antes había que
+        bajar a Términos para el canon y no había cómo saber si el
+        inquilino debía plata sin ir a Cobros.
+      */}
+      <ResumenDelContrato contract={contract} cobros={resumenDeCobros} />
 
       {/* Action panel — only shown for users with contratos:edit */}
       {canEditContracts && (
@@ -300,7 +325,7 @@ function ContratoDetalleContent() {
       )}
 
       {actionError && (
-        <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
           <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <p className="text-sm text-danger">{actionError}</p>
         </div>
@@ -311,7 +336,7 @@ function ContratoDetalleContent() {
         {/* Left — info cards */}
         <div className="lg:col-span-1 space-y-4">
           <InfoCard title="Partes" icon={User}>
-            <InfoRow label="Propietario" value={contract.landlordName} />
+            <FilaDelPropietario contract={contract} />
             <InfoRow label="Inquilino" value={contract.tenantName} />
             {/* T-0036 §3.2.B6 — la salida de un contrato migrado sin
                 inquilino: se muestra sólo mientras tenantId siga null. */}
@@ -327,21 +352,44 @@ function ContratoDetalleContent() {
             )}
           </InfoCard>
 
-          <InfoCard title="Propiedad" icon={Buildings}>
+          <InfoCard title="Inmueble" icon={Buildings}>
             {contract.propertyId === null && (
-              <p className="text-sm text-muted-foreground">
-                Sin inmueble vinculado.
-              </p>
+              /* Sin inmueble no hay consignación, y sin consignación no hay
+                 cobros: todo lo demás de esta pantalla se queda escrito. El
+                 mismo permiso que exige el back (`contratos:create`). */
+              <div className="space-y-2 pb-1">
+                <p className="text-sm text-muted-foreground">
+                  Sin inmueble vinculado: este contrato no genera cobros.
+                </p>
+                <VincularInmueble
+                  contract={contract}
+                  puedeVincular={canInviteTenant}
+                  onActualizado={(c) => {
+                    setContract(c);
+                    toast.success('Inmueble vinculado. Los próximos cobros salen sobre su consignación.');
+                  }}
+                />
+              </div>
             )}
             <InfoRow label="Dirección" value={contract.propertyAddress} />
             <InfoRow label="Ciudad" value={contract.propertyCity} />
+            {contract.propertyId ? (
+              /* La dirección de arriba es la que dice el contrato (no se pisa
+                 al vincular); la ficha del inmueble es donde se ve cuál quedó. */
+              <Link
+                href={`/panel/inmobiliaria/inmuebles/${contract.propertyId}`}
+                className="inline-block text-sm font-medium text-primary hover:underline"
+                data-testid="ver-inmueble"
+              >
+                Ver la ficha del inmueble →
+              </Link>
+            ) : null}
           </InfoCard>
 
-          <InfoCard title="Términos" icon={Calendar}>
+          <InfoCard title="Vigencia" icon={Calendar}>
             <InfoRow label="Inicio" value={formatDate(contract.startDate)} />
             <InfoRow label="Fin" value={formatDate(contract.endDate)} />
-            <InfoRow label="Canon" value={formatCanon(contract.monthlyRent)} />
-            <InfoRow label="Día de pago" value={contract.paymentDueDay ? `Día ${contract.paymentDueDay}` : null} />
+            <Vigencia inicio={contract.startDate} fin={contract.endDate} />
           </InfoCard>
 
           {/* Uso, periodicidad y comisión. Se guardaban desde la migración y no
@@ -351,10 +399,6 @@ function ContratoDetalleContent() {
             puedeEditar={canEditContracts}
             onActualizado={(c) => setContract(c)}
           />
-
-          {/* Los conceptos que este contrato cobra además del canon. Los
-              recurrentes entran en el cobro de cada mes. */}
-          <ConceptosDelContrato contract={contract} puedeEditar={canEditContracts} />
 
           {/* Paso 11: quién respalda este arriendo. Si no está, se dice — un
               contrato sin respaldo registrado no es un contrato sin respaldo,
@@ -389,9 +433,28 @@ function ContratoDetalleContent() {
           )}
         </div>
 
-        {/* Right — preview */}
-        <div className="lg:col-span-2">
-          <section className="rounded-xl border border-border bg-card overflow-hidden">
+        {/*
+          Derecha — la cuenta del contrato. Antes esta columna era sólo el
+          documento, y para un contrato activo eso es un iframe vacío ocupando
+          dos tercios de la pantalla mientras lo que se cobra y lo que se
+          cobró vivían abajo del pliegue en la columna angosta. El documento
+          manda mientras se firma; una vez activo, manda la plata.
+        */}
+        <div className="lg:col-span-2 space-y-6">
+          {!esPreFirma && (
+            <>
+              <ConceptosDelContrato contract={contract} puedeEditar={canEditContracts} />
+              {/* Las reglas de mora de la inmobiliaria, y cuáles pisa este contrato. */}
+              <ReglasDeMoraDelContrato contract={contract} puedeEditar={canEditContracts} />
+              <CobrosDelContrato
+                key={contract.propertyId ?? 'sin-inmueble'}
+                contract={contract}
+                onResumen={setResumenDeCobros}
+              />
+            </>
+          )}
+
+          <section className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
               <FileText className="w-4 h-4 text-muted-foreground" />
               <h3 className="text-base font-semibold text-foreground">Documento</h3>
@@ -402,7 +465,7 @@ function ContratoDetalleContent() {
               {hasAnySignature && (isLoadingSignedPdf || signedPdfUrl) ? (
                 <div className="space-y-3">
                   {contract.tenantSignature && !contract.landlordSignature && (
-                    <div className="rounded-xl border border-amber-600/30 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-900/15 px-4 py-2.5 flex items-start gap-2">
+                    <div className="rounded-lg border border-amber-600/30 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-900/15 px-4 py-2.5 flex items-start gap-2">
                       <Info className="w-4 h-4 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                       <p className="text-xs text-amber-700 dark:text-amber-400">
                         Este PDF ya incluye la <strong>firma del inquilino</strong> y un certificado parcial.
@@ -411,7 +474,7 @@ function ContratoDetalleContent() {
                     </div>
                   )}
                   {contract.tenantSignature && contract.landlordSignature && (
-                    <div className="rounded-xl border border-emerald-600/30 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-900/15 px-4 py-2.5 flex items-start gap-2">
+                    <div className="rounded-lg border border-emerald-600/30 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-900/15 px-4 py-2.5 flex items-start gap-2">
                       <Info className="w-4 h-4 text-emerald-700 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                       <p className="text-xs text-emerald-700 dark:text-emerald-400">
                         PDF final con <strong>ambas firmas</strong>, certificado completo y hash SHA-256.
@@ -456,12 +519,27 @@ function ContratoDetalleContent() {
                   {...sanitizeContractHtml(preview.html)}
                 />
               ) : (
-                <p className="text-sm text-muted-foreground text-center py-10">
-                  No hay vista previa disponible.
+                <p className="text-sm text-muted-foreground py-2">
+                  {contract.contractOrigin === 'MIGRATED'
+                    ? 'Sin documento: este contrato entró por migración sin el PDF firmado.'
+                    : 'No hay vista previa disponible.'}
                 </p>
               )}
             </div>
           </section>
+
+          {esPreFirma && (
+            <>
+              <ConceptosDelContrato contract={contract} puedeEditar={canEditContracts} />
+              {/* Las reglas de mora de la inmobiliaria, y cuáles pisa este contrato. */}
+              <ReglasDeMoraDelContrato contract={contract} puedeEditar={canEditContracts} />
+              <CobrosDelContrato
+                key={contract.propertyId ?? 'sin-inmueble'}
+                contract={contract}
+                onResumen={setResumenDeCobros}
+              />
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -609,16 +687,8 @@ function ActionPanel({
     );
   }
 
-  if (status === 'active') {
-    return (
-      <ActionBar
-        title="Contrato activo"
-        subtitle="El arrendamiento está en curso. Los pagos se registran automáticamente."
-        tone="emerald"
-      />
-    );
-  }
-
+  // Activo: no hay nada que hacer, y el chip del título ya lo dice. Una
+  // banda verde que repite «contrato activo» es una pantalla más larga.
   return null;
 }
 
@@ -645,7 +715,7 @@ function ActionBar({
   };
 
   return (
-    <section className={cn('rounded-xl border p-5 space-y-3', toneClasses[tone])}>
+    <section className={cn('rounded-lg border p-5 space-y-3', toneClasses[tone])}>
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-base font-semibold text-foreground">{title}</p>
@@ -675,6 +745,112 @@ function ActionBar({
   );
 }
 
+/**
+ * Los cuatro números del contrato: canon, vencimiento, día de pago y lo que
+ * debe el inquilino. El saldo viene de los cobros (los carga la tarjeta de
+ * abajo y los reporta acá); mientras no llegan, la celda lo dice.
+ */
+function ResumenDelContrato({
+  contract,
+  cobros,
+}: {
+  contract: { monthlyRent?: number | null; endDate?: string | null; paymentDueDay?: number | null; diasDePlazo?: number | null; propertyId: string | null };
+  cobros: ResumenDeCobros | null;
+}) {
+  const dias = diasHasta(contract.endDate);
+  const vence =
+    dias === null
+      ? { delta: undefined, dir: 'neutral' as const }
+      : dias < 0
+        ? { delta: `vencido hace ${-dias} ${-dias === 1 ? 'día' : 'días'}`, dir: 'down' as const }
+        : dias <= 90
+          ? { delta: `en ${dias} ${dias === 1 ? 'día' : 'días'}`, dir: 'down' as const }
+          : { delta: `en ${dias} días`, dir: 'neutral' as const };
+
+  const saldo =
+    cobros === null
+      ? { value: '…', delta: undefined, dir: 'neutral' as const }
+      : cobros.total === 0
+        ? { value: '—', delta: contract.propertyId === null ? 'sin inmueble no hay cobros' : 'sin cobros todavía', dir: 'neutral' as const }
+        : cobros.saldo > 0
+          ? {
+              value: formatCurrency(cobros.saldo),
+              delta: cobros.enMora > 0 ? `${cobros.enMora} en mora` : `${cobros.pendientes} por cobrar`,
+              dir: cobros.enMora > 0 ? ('down' as const) : ('neutral' as const),
+            }
+          : { value: formatCurrency(0), delta: 'al día', dir: 'up' as const };
+
+  return (
+    <StatStrip className="rounded-lg border border-border bg-card px-4" data-testid="resumen-del-contrato">
+      <Stat label="Canon" value={contract.monthlyRent ? formatCurrency(contract.monthlyRent) : '—'} compact />
+      <Stat
+        label="Vence"
+        value={fechaCorta(contract.endDate)}
+        delta={vence.delta}
+        deltaDirection={vence.dir}
+        compact
+      />
+      <Stat
+        label="Día de pago"
+        value={contract.paymentDueDay ? `Día ${contract.paymentDueDay}` : '—'}
+        delta={contract.diasDePlazo != null ? `+${contract.diasDePlazo} de plazo` : undefined}
+        compact
+      />
+      <Stat label="Saldo del inquilino" value={saldo.value} delta={saldo.delta} deltaDirection={saldo.dir} compact />
+    </StatStrip>
+  );
+}
+
+/** Cuánto del contrato ya pasó: una barra con «mes N de M». */
+function Vigencia({ inicio, fin }: { inicio?: string | null; fin?: string | null }) {
+  const a = fechaLocal(inicio);
+  const b = fechaLocal(fin);
+  if (!a || !b || b <= a) return null;
+  const hoy = new Date();
+  const total = b.getTime() - a.getTime();
+  const avance = Math.min(1, Math.max(0, (hoy.getTime() - a.getTime()) / total));
+  const meses = Math.max(1, Math.round(total / (30.44 * 86_400_000)));
+  const mesActual = Math.min(meses, Math.max(1, Math.ceil(avance * meses)));
+  const terminado = hoy > b;
+  return (
+    <div className="space-y-1.5 pt-1" data-testid="vigencia">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className={cn('h-full rounded-full', terminado ? 'bg-muted-foreground/60' : 'bg-primary')}
+          style={{ width: `${Math.round(avance * 100)}%` }}
+        />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {terminado ? `Terminó: ${meses} ${meses === 1 ? 'mes' : 'meses'}` : `Mes ${mesActual} de ${meses}`}
+      </p>
+    </div>
+  );
+}
+
+/** Lee la parte YYYY-MM-DD como fecha LOCAL: un DATE en UTC es el día anterior en Bogotá. */
+function fechaLocal(iso?: string | null): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+
+function diasHasta(iso?: string | null): number | null {
+  const d = fechaLocal(iso);
+  if (!d) return null;
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  return Math.round((d.getTime() - hoy.getTime()) / 86_400_000);
+}
+
+function fechaCorta(iso?: string | null): string {
+  const d = fechaLocal(iso);
+  if (!d) return '—';
+  return d
+    .toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
+    .replace(/ de /g, ' ')
+    .replace(/\.$/, '');
+}
+
 function InfoCard({
   title,
   icon: Icon,
@@ -685,7 +861,7 @@ function InfoCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-border bg-card p-5 space-y-3">
+    <section className="rounded-lg border border-border bg-card p-5 space-y-3">
       <div className="flex items-center gap-2">
         <Icon className="w-4 h-4 text-muted-foreground" />
         <h3 className="text-base font-semibold text-foreground">{title}</h3>
@@ -693,6 +869,47 @@ function InfoCard({
       <div className="space-y-2">{children}</div>
     </section>
   );
+}
+
+/**
+ * El propietario es el de la consignación del inmueble — la ficha que la
+ * inmobiliaria administra y a la que le dispersa. `landlordName` es otra
+ * cosa: en un contrato migrado es el usuario que corrió la migración, y en
+ * QA los 99 contratos decían «Propietario: victor ortiz». Sin consignación
+ * no hay a quién mostrar: se dice, en vez de caer al nombre equivocado.
+ */
+function FilaDelPropietario({ contract }: { contract: Contract }) {
+  const p = contract.propietarioDeLaConsignacion;
+  if (p) {
+    return (
+      <div className="flex items-start justify-between gap-3 text-sm">
+        <span className="text-muted-foreground">Propietario</span>
+        <span className="text-right">
+          <Link
+            href={conRegreso(`/panel/inmobiliaria/propietarios/${p.id}`, `/panel/inmobiliaria/contratos/${contract.id}`)}
+            className="font-medium text-foreground hover:underline"
+            data-testid="propietario-ficha"
+          >
+            {p.name}
+          </Link>
+          <span className="block text-xs text-muted-foreground">{p.documentNumber}</span>
+        </span>
+      </div>
+    );
+  }
+  if (contract.contractOrigin === 'MIGRATED') {
+    return (
+      <div className="flex items-start justify-between gap-3 text-sm">
+        <span className="text-muted-foreground">Propietario</span>
+        <span className="text-right text-xs text-muted-foreground" data-testid="propietario-sin-consignacion">
+          {contract.propertyId
+            ? 'El inmueble no está consignado: registrá al propietario en Inmuebles.'
+            : 'Se vincula con el inmueble.'}
+        </span>
+      </div>
+    );
+  }
+  return <InfoRow label="Propietario" value={contract.landlordName} />;
 }
 
 function InfoRow({ label, value }: { label: string; value: string | number | null | undefined }) {

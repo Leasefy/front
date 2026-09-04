@@ -79,6 +79,8 @@ function makeConsignacion(overrides: Partial<Consignacion> = {}): Consignacion {
     id: 'consig-1',
     propertyId: 'prop-consig-1',
     propietarioId: 'prop-owner-1',
+    // Un solo dueño al 100 % — la forma que dejó el backfill de la migración.
+    copropietarios: [{ propietarioId: 'prop-owner-1', participacionBps: 10000 }],
     agenteId: 'agente-1',
     propertyTitle: 'Depto con mandato',
     propertyAddress: 'Cra 1 #1-1',

@@ -20,9 +20,19 @@ export interface RevokeSessionResponse {
   revoked: boolean
 }
 
+export interface ClaimSessionBody {
+  /**
+   * Id estable de ESTE navegador (`getDeviceId`). Con él, el back responde
+   * `superseded: true` sólo cuando la sesión anterior era de OTRO navegador —
+   * sin él, la sesión anterior del mismo navegador (cerrada o vencida) contaba
+   * como «otro dispositivo» y el cartel salía en cada login.
+   */
+  deviceId?: string
+}
+
 export const sessionApi = {
-  claim(token?: string): Promise<ClaimSessionResponse> {
-    return apiClient.post<ClaimSessionResponse>('/auth/session/claim', undefined, token)
+  claim(token?: string, body?: ClaimSessionBody): Promise<ClaimSessionResponse> {
+    return apiClient.post<ClaimSessionResponse>('/auth/session/claim', body ?? {}, token)
   },
   revoke(token?: string): Promise<RevokeSessionResponse> {
     return apiClient.post<RevokeSessionResponse>('/auth/session/revoke', undefined, token)
@@ -30,8 +40,8 @@ export const sessionApi = {
 }
 
 /** Convenience wrapper — POST /auth/session/claim. */
-export function claimSession(token?: string): Promise<ClaimSessionResponse> {
-  return sessionApi.claim(token)
+export function claimSession(token?: string, body?: ClaimSessionBody): Promise<ClaimSessionResponse> {
+  return sessionApi.claim(token, body)
 }
 
 /**

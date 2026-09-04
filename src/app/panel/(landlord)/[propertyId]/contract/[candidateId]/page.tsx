@@ -98,7 +98,7 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
                   aria-pressed={isSelected}
                   onClick={() => { onSelect(template.type); onFileChange(null); }}
                   className={cn(
-                    'w-full rounded-xl border p-4 text-left transition-all group',
+                    'w-full rounded-lg border p-4 text-left transition-all group',
                     isSelected
                       ? 'border-primary bg-primary-soft ring-2 ring-primary'
                       : 'border-border hover:border-border-strong hover:bg-surface-hover'
@@ -160,7 +160,7 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
             {!uploadedFile ? (
               <label
                 className={cn(
-                  'flex flex-col items-center justify-center gap-3 w-full rounded-xl border-2 border-dashed p-8 cursor-pointer transition-all',
+                  'flex flex-col items-center justify-center gap-3 w-full rounded-lg border-2 border-dashed p-8 cursor-pointer transition-all',
                   selectedType === 'custom'
                     ? 'border-primary bg-primary-soft'
                     : 'border-border-strong hover:border-border-strong bg-surface-muted'
@@ -186,7 +186,7 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
               </label>
             ) : (
               <div className={cn(
-                'flex items-center gap-3 w-full rounded-xl border p-4 transition-all',
+                'flex items-center gap-3 w-full rounded-lg border p-4 transition-all',
                 'border-primary bg-primary-soft'
               )}>
                 <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center flex-shrink-0">
@@ -371,7 +371,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
       <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <BackButton href={`/panel/${propertyId}`} label="Volver a candidatos" />
-          <div className="mt-8 rounded-xl border border-border bg-surface p-8 text-center">
+          <div className="mt-8 rounded-lg border border-border bg-surface p-8 text-center">
             <div className="w-16 h-16 rounded-xl bg-surface-muted flex items-center justify-center mx-auto">
               <WarningCircle className="h-8 w-8 text-fg-subtle" />
             </div>
@@ -639,7 +639,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                     <div className="sticky top-6 space-y-4">
                       {/* Insurance Selection (before signing) */}
                       {isLandlordTurn && (
-                        <div className="rounded-xl border border-border bg-surface p-4">
+                        <div className="rounded-lg border border-border bg-surface p-4">
                           <InsuranceSelector
                             selected={selectedInsurance}
                             onSelect={setSelectedInsurance}
@@ -675,7 +675,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                           </div>
                           <Link
                             href={`/panel/${propertyId}`}
-                            className="mt-4 w-full flex items-center justify-center px-4 py-2.5 bg-primary hover:bg-primary-hover text-primary-fg rounded-xl text-sm font-medium transition-colors"
+                            className="mt-4 w-full flex items-center justify-center px-4 py-2.5 bg-primary hover:bg-primary-hover text-primary-fg rounded-lg text-sm font-medium transition-colors"
                           >
                             Entendido, volver a la propiedad
                           </Link>

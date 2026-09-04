@@ -24,12 +24,17 @@ function isEndpointUnavailable(err: unknown): boolean {
 }
 
 export const messagesApi = {
-  /** GET /messages/conversations - List all conversations for current user */
+  /** GET /messages/conversations - List all conversations for current user.
+   * contract-addendum-2.md §B.3 — item shape breaks (kind/propertyId new,
+   * applicationId nullable); the envelope itself is unchanged (E-3). */
   getConversations() {
     return apiClient.get<BackendConversationsResponse>('/messages/conversations');
   },
 
-  /** GET /messages/unread-count - Total unread messages across all conversations */
+  /** GET /messages/unread-count - Total unread messages across all
+   * conversations. Shape unchanged; scope re-rooted server-side (§B.3) so
+   * an inquiry thread's unread messages are now counted too — no front
+   * change needed for that half of the fix. */
   getUnreadCount() {
     return apiClient.get<{ count: number }>('/messages/unread-count');
   },
@@ -98,6 +103,20 @@ export const messagesApi = {
     return apiClient.patch<{ message: string }>(
       `/applications/${applicationId}/chat/read`,
     );
+  },
+
+  // ── Alias de los nombres viejos ──────────────────────────────────────────
+  // `feature/cambios-nico` (el piloto, el portal del inquilino) llama a estos
+  // por el nombre anterior. Mismo endpoint, misma forma: se conservan para no
+  // perseguir a los callers en el merge; los nombres nuevos son los canónicos.
+  getMessages(applicationId: string) {
+    return messagesApi.getApplicationMessages(applicationId);
+  },
+  sendMessage(applicationId: string, content: string) {
+    return messagesApi.sendApplicationMessage(applicationId, content);
+  },
+  markAsRead(applicationId: string) {
+    return messagesApi.markApplicationAsRead(applicationId);
   },
 
   // --------------------------------------------------------------------------

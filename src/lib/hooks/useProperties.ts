@@ -77,6 +77,9 @@ export function useProperty(id: string | null | undefined) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
+  // Cambia para volver a pedir el inmueble (p. ej. tras subir fotos).
+  const [version, setVersion] = useState(0);
+  const refetch = useCallback(() => setVersion((v) => v + 1), []);
 
   useEffect(() => {
     if (!id) {
@@ -110,9 +113,9 @@ export function useProperty(id: string | null | undefined) {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, version]);
 
-  return { property, isLoading, error, errorCrudo };
+  return { property, isLoading, error, errorCrudo, refetch };
 }
 
 // ============================================================================

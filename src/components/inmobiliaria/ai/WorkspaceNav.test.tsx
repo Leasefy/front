@@ -32,7 +32,7 @@ import { act } from 'react'
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const RUTA = '/panel/inmobiliaria/ai/cobranza'
+const RUTA = '/panel/inmobiliaria/cobros/cobranza'
 
 vi.mock('next/navigation', () => ({
   usePathname: () => RUTA,

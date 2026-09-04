@@ -73,7 +73,7 @@ export function AgenteHorarioVisitas({
   }, [schedule, slotDuration, agenteId, self, t]);
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

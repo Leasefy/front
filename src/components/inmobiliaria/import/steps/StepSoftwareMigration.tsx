@@ -199,10 +199,10 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
             <div
               key={software.id}
               className={cn(
-                'animate-stagger-in rounded-xl border transition-all cursor-pointer',
+                'animate-stagger-in rounded-lg border transition-all cursor-pointer',
                 isExpanded
                   ? 'border-primary/30 bg-primary-soft/50 dark:bg-primary/10'
-                  : 'border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong bg-surface dark:bg-[#14130F]'
+                  : 'border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong bg-surface dark:bg-bg'
               )}
               style={{ animationDelay: `${index * 80}ms` }}
               onClick={() => handleCardClick(software.id)}
@@ -295,7 +295,7 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
       <button
         type="button"
         onClick={handleHaveFile}
-        className="w-full text-left flex items-start gap-4 p-5 rounded-xl border border-warning/30 bg-warning-soft hover:bg-warning-soft transition-colors group"
+        className="w-full text-left flex items-start gap-4 p-5 rounded-lg border border-warning/30 bg-warning-soft hover:bg-warning-soft transition-colors group"
         data-testid="software-no-listado"
       >
         <div className="w-10 h-10 rounded-xl bg-warning-soft flex items-center justify-center shrink-0">

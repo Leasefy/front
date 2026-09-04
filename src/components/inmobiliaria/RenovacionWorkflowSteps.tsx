@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,7 @@ import {
   getRenovacionStatusLabel,
   formatCurrency,
 } from '@/lib/types/inmobiliaria';
-import { getCurrentIPC, calculateNewRent } from '@/lib/constants/inmobiliaria-data';
+import { calculateNewRent } from '@/lib/constants/inmobiliaria-data';
 
 // ============================================================================
 // Types
@@ -141,11 +141,9 @@ export function StepRevision({
   onContinue: () => void;
 }) {
   const { t, locale } = useI18n();
-  const ipc = getCurrentIPC();
-  const suggestedRent = calculateNewRent(renovacion.currentRent, ipc.rate);
   const parseMoney = (v: string) => parseInt(v.replace(/[^\d]/g, '')) || 0;
   const fmtInput = (n: number) =>
-    n > 0 ? n.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : '';
+    n > 0 ? n.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US') : '';
 
   return (
     <div className="space-y-4">
@@ -222,12 +220,12 @@ export function StepRevision({
                   id="revNewRent"
                   value={fmtInput(newRent)}
                   onChange={(e) => onNewRentChange(parseMoney(e.target.value))}
-                  placeholder={formatCurrency(suggestedRent)}
+                  placeholder={formatCurrency(renovacion.currentRent)}
                   className="pl-8 text-lg font-semibold"
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Actual: {formatCurrency(renovacion.currentRent)} · Sugerido (IPC {ipc.rate}%): {formatCurrency(suggestedRent)}
+                Actual: {formatCurrency(renovacion.currentRent)}
               </p>
             </div>
 
@@ -261,40 +259,74 @@ export function StepRevision({
   );
 }
 
+/** «31 de diciembre de 2026» leyendo la parte YYYY-MM-DD (DATE = medianoche UTC). */
+function fechaLarga(iso: string, locale: string): string {
+  const partes = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  const d = partes
+    ? new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]))
+    : new Date(iso);
+  return d.toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
 export function StepNotification({
   renovacion,
   newRent,
   newAdminFee,
+  ipcRate,
+  agencyName,
   onNewRentChange,
   onNewAdminFeeChange,
+  onIpcRateChange,
   onNotify,
 }: {
   renovacion: Renovacion;
   newRent: number;
   newAdminFee: number;
+  /** El IPC lo ingresa la inmobiliaria (DANE, año anterior). null = no lo puso. */
+  ipcRate: number | null;
+  /** Con qué se firma el mensaje. Vacío mientras carga. */
+  agencyName: string;
   onNewRentChange: (value: number) => void;
   onNewAdminFeeChange: (value: number) => void;
+  onIpcRateChange: (value: number | null) => void;
   onNotify: (channel: 'email' | 'whatsapp', message: string) => void;
 }) {
   const { t, locale } = useI18n();
-  const ipc = getCurrentIPC();
-  const suggestedRent = calculateNewRent(renovacion.currentRent, ipc.rate);
+  /*
+   * El IPC NO viene de una tabla escrita en el código (había una que
+   * terminaba en diciembre de 2024 y se mostraba como «sugerido» dos años
+   * después). El tope legal de aumento en vivienda es el IPC del año
+   * calendario anterior (Ley 820, art. 20); lo publica el DANE y lo escribe
+   * la inmobiliaria. Sin IPC no hay sugerencia: se dice, no se inventa.
+   */
+  const suggestedRent =
+    ipcRate != null && ipcRate > 0 ? calculateNewRent(renovacion.currentRent, ipcRate) : null;
   const parseMoney = (v: string) => parseInt(v.replace(/[^\d]/g, '')) || 0;
   const fmtInput = (n: number) =>
-    n > 0 ? n.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : '';
+    n > 0 ? n.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US') : '';
 
   const defaultMessage = `Estimado/a ${renovacion.tenantName},
 
-Le informamos que su contrato de arrendamiento del inmueble ubicado en ${renovacion.propertyAddress} vence el ${new Date(renovacion.leaseEndDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US')}.
+Le informamos que su contrato de arrendamiento del inmueble ubicado en ${renovacion.propertyAddress} vence el ${fechaLarga(renovacion.leaseEndDate, locale)}.
 
 El nuevo canon propuesto para la renovación es de ${formatCurrency(newRent)}.
 
 Por favor confirme si desea renovar el contrato.
 
 Atentamente,
-Arriendos Premium`;
+${agencyName || ''}`.trimEnd();
 
   const [message, setMessage] = useState(defaultMessage);
+  const [editado, setEditado] = useState(false);
+  // El nombre de la inmobiliaria llega después y el canon se cambia arriba:
+  // mientras la persona no haya tocado el texto, el mensaje sigue al dato.
+  useEffect(() => {
+    if (!editado) setMessage(defaultMessage);
+  }, [defaultMessage, editado]);
 
   return (
     <div className="space-y-4">
@@ -305,6 +337,43 @@ Arriendos Premium`;
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-1.5">
+            <Label htmlFor="propIpc">IPC del año anterior (%)</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="propIpc"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                max="100"
+                value={ipcRate ?? ''}
+                onChange={(e) => {
+                  const n = parseFloat(e.target.value);
+                  onIpcRateChange(Number.isFinite(n) && n >= 0 ? n : null);
+                }}
+                placeholder="Según el DANE"
+                className="w-32"
+                data-testid="renovacion-ipc"
+              />
+              {suggestedRent ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  hideArrow
+                  onClick={() => onNewRentChange(suggestedRent)}
+                  data-testid="renovacion-aplicar-ipc"
+                >
+                  Aplicar al canon: {formatCurrency(suggestedRent)}
+                </Button>
+              ) : null}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              El tope legal de aumento en vivienda es el IPC del año calendario
+              anterior. El sistema no lo trae solo: escribí el que publicó el DANE.
+            </p>
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="propNewRent">Nuevo canon</Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
@@ -312,12 +381,13 @@ Arriendos Premium`;
                 id="propNewRent"
                 value={fmtInput(newRent)}
                 onChange={(e) => onNewRentChange(parseMoney(e.target.value))}
-                placeholder={formatCurrency(suggestedRent)}
+                placeholder={formatCurrency(renovacion.currentRent)}
                 className="pl-8 text-lg font-semibold"
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Actual: {formatCurrency(renovacion.currentRent)} · Sugerido (IPC {ipc.rate}%): {formatCurrency(suggestedRent)}
+              Actual: {formatCurrency(renovacion.currentRent)}
+              {suggestedRent ? ` · Con IPC ${ipcRate}%: ${formatCurrency(suggestedRent)}` : ''}
             </p>
           </div>
           <div className="space-y-1.5">
@@ -362,13 +432,19 @@ Arriendos Premium`;
         <CardContent className="space-y-2">
           <Textarea
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={(e) => {
+              setEditado(true);
+              setMessage(e.target.value);
+            }}
             rows={10}
             className="text-sm"
           />
           <button
             type="button"
-            onClick={() => setMessage(defaultMessage)}
+            onClick={() => {
+              setEditado(false);
+              setMessage(defaultMessage);
+            }}
             className="text-xs text-muted-foreground hover:text-fg underline-offset-2 hover:underline"
           >
             Restaurar mensaje sugerido
@@ -473,12 +549,10 @@ export function StepNegotiation({
 }) {
   const { t, locale } = useI18n();
   const [note, setNote] = useState<string>('');
-  const ipc = getCurrentIPC();
-  const suggestedRent = calculateNewRent(renovacion.currentRent, ipc.rate);
   const currentAdminFee = renovacion.currentAdminFee ?? 0;
   const parseMoney = (v: string) => parseInt(v.replace(/[^\d]/g, '')) || 0;
   const fmtInput = (n: number) =>
-    n > 0 ? n.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : '';
+    n > 0 ? n.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US') : '';
 
   return (
     <div className="space-y-4">
@@ -491,12 +565,12 @@ export function StepNegotiation({
             id="negNewRent"
             value={fmtInput(newRent)}
             onChange={(e) => onNewRentChange(parseMoney(e.target.value))}
-            placeholder={formatCurrency(suggestedRent)}
+            placeholder={formatCurrency(renovacion.currentRent)}
             className="pl-8 text-lg font-semibold"
           />
         </div>
         <p className="text-xs text-muted-foreground">
-          Actual: {formatCurrency(renovacion.currentRent)} · Sugerido (IPC {ipc.rate}%): {formatCurrency(suggestedRent)}
+          Actual: {formatCurrency(renovacion.currentRent)}
         </p>
       </div>
 

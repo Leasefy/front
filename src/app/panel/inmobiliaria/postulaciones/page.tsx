@@ -101,7 +101,7 @@ function StatTile({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'flex items-center gap-3 p-4 rounded-xl border bg-card text-left transition-colors',
+        'flex items-center gap-3 p-4 rounded-lg border bg-card text-left transition-colors',
         active
           ? 'border-primary ring-1 ring-primary'
           : 'border-border hover:bg-surface-muted',
@@ -242,8 +242,8 @@ export default function PostulacionesPage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-semibold text-fg">Postulaciones</h1>
-        <p className="text-sm text-fg-muted mt-0.5">
+        <h1 className="text-h2 text-fg">Postulaciones</h1>
+        <p className="text-sm text-fg-muted mt-0.5 line-clamp-2 max-w-2xl">
           Postulaciones de inquilinos a tus propiedades. Haz clic en una para revisarla y decidir.
         </p>
       </div>
@@ -268,7 +268,7 @@ export default function PostulacionesPage() {
            Va DENTRO de la misma tarjeta que hospeda la tabla: el contenedor de
            la lista es el que dice que la lista está vacía. Suelto sobre la
            página el mensaje flota y el mapa parece otra sección. */
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
           {/* Sin envoltorio con padding: `EmptyState` ya trae el suyo (py-16) y
               sumarle otro abría un hueco de media pantalla antes del mapa. */}
           <EmptyState
@@ -298,7 +298,7 @@ export default function PostulacionesPage() {
           </div>
 
           {/* Search + table (same container language as Propiedades) */}
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b border-border flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="relative flex-1 max-w-sm">
                 <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-muted z-10 pointer-events-none" />

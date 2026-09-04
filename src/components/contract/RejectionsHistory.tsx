@@ -23,7 +23,7 @@ export function RejectionsHistory({ rejections, collapsible = true, className }:
   const visibleHistory = showCollapseToggle && !expanded ? [] : rest;
 
   return (
-    <section className={cn('rounded-xl border border-warning/30 bg-warning-soft/60 dark:bg-warning/20 p-5 space-y-3', className)}>
+    <section className={cn('rounded-lg border border-warning/30 bg-warning-soft/60 dark:bg-warning/20 p-5 space-y-3', className)}>
       <header className="flex items-center justify-between gap-3">
         <div>
           <h3 className="font-semibold text-sm text-fg">
@@ -76,7 +76,7 @@ function RejectionCard({ rejection, highlight = false }: { rejection: ContractRe
   return (
     <div
       className={cn(
-        'rounded-xl border p-3 flex items-start gap-3',
+        'rounded-lg border p-3 flex items-start gap-3',
         highlight
           ? 'bg-surface dark:bg-ink border-warning/30'
           : 'bg-surface border-border'

@@ -42,7 +42,21 @@ import {
 interface ConsignacionWizardProps {
   propietarios: Propietario[];
   agentes: Agente[];
+  /**
+   * El propietario ya elegido cuando se entra desde su ficha («Nueva
+   * consignación» ahí sabe para quién es): el paso 1 arranca con él marcado y
+   * «Siguiente» habilitado, en vez de pedir que se lo busque entre todos.
+   */
+  propietarioInicial?: string;
+  /**
+   * A dónde volver al terminar o cancelar. Sin esto, al portafolio. Quien
+   * entró desde la ficha del propietario vuelve a la ficha, con el inmueble
+   * nuevo ya en su lista.
+   */
+  volverA?: string;
 }
+
+const PORTAFOLIO = '/panel/inmobiliaria/inmuebles';
 
 const STEPS = [
   { id: 1, labelKey: 'inmobiliaria.consignaciones.wizard.steps.owner', icon: User },
@@ -58,8 +72,14 @@ const STEPS = [
  * Used at /panel/inmobiliaria/inmuebles/nuevo
  */
 
-export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizardProps) {
+export function ConsignacionWizard({
+  propietarios,
+  agentes,
+  propietarioInicial,
+  volverA,
+}: ConsignacionWizardProps) {
   const router = useRouter();
+  const destinoAlSalir = volverA ?? PORTAFOLIO;
   const { t } = useI18n();
   const { user } = useAuth();
   const { isAdmin } = usePermissions();
@@ -87,6 +107,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     // property-level column, contractStartDate stays the mandate's date.
     listingType: 'rent',
     consignedAt: new Date().toISOString().split('T')[0],
+    ...(propietarioInicial ? { propietarioId: propietarioInicial } : {}),
   });
 
   // Update form data helper
@@ -418,7 +439,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         toast.error(t('inmobiliaria.consignaciones.wizard.toasts.mandateErrorTitle'), {
           description: t('inmobiliaria.consignaciones.wizard.toasts.mandateErrorDesc'),
         });
-        router.push('/panel/inmobiliaria/inmuebles');
+        router.push(destinoAlSalir);
         return;
       }
 
@@ -449,7 +470,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         toast.error(t('inmobiliaria.consignaciones.wizard.toasts.publishErrorTitle'), {
           description: t('inmobiliaria.consignaciones.wizard.toasts.publishErrorDesc', { reason }),
         });
-        router.push('/panel/inmobiliaria/inmuebles');
+        router.push(destinoAlSalir);
         return;
       }
 
@@ -459,7 +480,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         }),
       });
 
-      router.push('/panel/inmobiliaria/inmuebles');
+      router.push(destinoAlSalir);
     } catch (error) {
       console.error('Error creating property:', error);
       /**
@@ -481,7 +502,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     } finally {
       setIsSubmitting(false);
     }
-  }, [formData, isStepValid, isAgentRole, user, agentes, router, t]);
+  }, [formData, isStepValid, isAgentRole, user, agentes, router, destinoAlSalir, t]);
 
   // Cancel handler
   const handleCancel = useCallback(() => {
@@ -489,8 +510,8 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
   }, []);
 
   const confirmCancel = useCallback(() => {
-    router.push('/panel/inmobiliaria/inmuebles');
-  }, [router]);
+    router.push(destinoAlSalir);
+  }, [router, destinoAlSalir]);
 
   // Render step content
   const renderStepContent = () => {
@@ -630,7 +651,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
       </div>
 
       {/* Step Content */}
-      <div className="bg-surface dark:bg-[#14130F] rounded-xl border border-border dark:border-border-strong overflow-hidden">
+      <div className="bg-surface dark:bg-bg rounded-lg border border-border dark:border-border-strong overflow-hidden">
         <div className="p-6">
           <AnimatePresence mode="wait">
             <motion.div
@@ -646,7 +667,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         </div>
 
         {/* Footer Navigation */}
-        <div className="px-6 py-4 border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-[#14130F] flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-bg flex items-center justify-between">
           {/* Cancel Button */}
           <Button
             type="button"
@@ -723,7 +744,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-xl bg-surface dark:bg-[#14130F] border border-border dark:border-border-strong"
+              className="w-full max-w-md p-6 rounded-lg bg-surface dark:bg-bg border border-border dark:border-border-strong"
             >
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center">

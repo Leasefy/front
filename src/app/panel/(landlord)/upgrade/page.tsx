@@ -68,7 +68,7 @@ export default function UpgradePage() {
         </div>
 
         {/* Premium Header */}
-        <div className="relative rounded-xl overflow-hidden mb-8">
+        <div className="relative rounded-lg overflow-hidden mb-8">
           {/* Gradient Background */}
           <div className="absolute inset-0 bg-gradient-to-br from-[#1A40FF] via-[#1A40FF] to-[#6B6B6B]" />
           <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
@@ -95,7 +95,7 @@ export default function UpgradePage() {
 
             {/* Current Plan Badge */}
             {subscriptionError ? (
-              <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
+              <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
                 <WarningCircle className="w-4 h-4 text-white/70" />
                 <span className="text-sm text-white/70">{t('landlord.upgrade.subscriptionLoadError')}</span>
                 <button
@@ -107,7 +107,7 @@ export default function UpgradePage() {
                 </button>
               </div>
             ) : (
-              <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
+              <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
                 <Crown className="w-4 h-4 text-[#B7791F]" />
                 <span className="text-sm text-white/90">{t('landlord.upgrade.currentPlan')}</span>
                 <span className="text-sm font-semibold text-white">{currentPlan?.name}</span>
@@ -232,7 +232,7 @@ export default function UpgradePage() {
 
         {/* Selected plan confirmation */}
         {canUpgrade && newPlan && (
-          <div className="mt-8 bg-primary-soft border border-primary/30 rounded-xl p-6">
+          <div className="mt-8 bg-primary-soft border border-primary/30 rounded-lg p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
@@ -273,7 +273,7 @@ export default function UpgradePage() {
 
             {/* Downgrade warning — only shown when we know the current plan price */}
             {currentPlan && newPlan.price.monthly < currentPlan.price.monthly && (
-              <div className="mt-4 flex items-start gap-3 p-4 bg-warning-soft border border-warning/30 rounded-xl">
+              <div className="mt-4 flex items-start gap-3 p-4 bg-warning-soft border border-warning/30 rounded-lg">
                 <WarningCircle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
                 <p className="text-sm text-warning">
                   {t('landlord.upgrade.downgradeWarning')}
@@ -285,7 +285,7 @@ export default function UpgradePage() {
 
         {/* Trust indicators */}
         <div className="mt-12 text-center">
-          <div className="inline-flex items-center gap-6 px-6 py-4 bg-surface rounded-xl border border-border">
+          <div className="inline-flex items-center gap-6 px-6 py-4 bg-surface rounded-lg border border-border">
             <div className="flex items-center gap-2">
               <Lock className="w-4 h-4 text-success" />
               <span className="text-sm text-fg-muted">{t('landlord.upgrade.securePayment')}</span>

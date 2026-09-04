@@ -5,7 +5,7 @@
  * ----------------------------
  * Every spec under `tests/e2e/panel-a11y/` mocks the backend at the network
  * layer via `page.route(..., route.fulfill(...))`. Until Phase 38 plan 38-09
- * we believed that calling `page.goto('/panel/inmobiliaria/ai/*')` was being
+ * we believed that calling `page.goto(<workspace de un agente>)` was being
  * intercepted by a Next.js auth middleware — which is why the previous
  * helper convention (`runAxeOrFixme` in `axe-helpers.ts`) bailed out with
  * `test.fixme(true, 'auth-debt: ...')` whenever no AI-panel surface mounted.
@@ -127,7 +127,7 @@ const FULL_AGENT_PERMISSIONS = {
 /**
  * Seed Playwright's localStorage AND register route handlers for the two
  * permissions endpoints, so the next `page.goto(...)` lands inside the
- * protected `/panel/inmobiliaria/ai/*` surface AND the per-module
+ * protected agent-workspace surface AND the per-module
  * `PermissionsContext.canAccess(...)` gate returns true.
  *
  * Without the permissions mocks, the `cobranza/layout.tsx` (and the
@@ -152,7 +152,7 @@ const FULL_AGENT_PERMISSIONS = {
  *
  *   test('cobranza overview — populated', async ({ page }) => {
  *     await page.route(OVERVIEW_MOCK, ...)
- *     await page.goto('/panel/inmobiliaria/ai/cobranza')
+ *     await page.goto('/panel/inmobiliaria/cobros/cobranza')
  *     await expect(page.locator('main')).toBeVisible()
  *   })
  */

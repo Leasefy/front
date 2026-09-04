@@ -33,7 +33,7 @@ Activar cuando la tarea toque: wizard de nueva cotización, streaming de resulta
 | Hooks | `src/lib/hooks/cotizador/` (12 hooks) |
 | Componentes shared | `src/components/cotizador/` (`CounterfactualModal`, `ReQuoteOfBadge`) |
 | Componentes panel | `src/components/inmobiliaria/cotizador/` (~30 archivos) |
-| Rutas panel | `src/app/panel/inmobiliaria/ai/cotizador/` |
+| Rutas panel | `src/app/panel/inmobiliaria/postulaciones/asegurabilidad/` |
 | Tipos generados (placeholder) | `src/lib/api/generated/cotizador.ts` |
 
 **Rutas del panel:**

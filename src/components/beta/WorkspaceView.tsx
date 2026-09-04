@@ -221,14 +221,14 @@ function ActionButton({ action }: { action: ResponseAction }) {
 
   if (action.href) {
     return (
-      <Button asChild variant={variant} hideArrow className="gap-2 rounded-xl">
+      <Button asChild variant={variant} hideArrow className="gap-2 rounded-lg">
         <a href={action.href}>{content}</a>
       </Button>
     );
   }
 
   return (
-    <Button type="button" variant={variant} hideArrow className="gap-2 rounded-xl">
+    <Button type="button" variant={variant} hideArrow className="gap-2 rounded-lg">
       {content}
     </Button>
   );
@@ -666,7 +666,7 @@ export function WorkspaceView({
               >
                 <div
                   className={cn(
-                    'max-w-[85%] px-3 py-2 rounded-xl text-[13px] leading-relaxed',
+                    'max-w-[85%] px-3 py-2 rounded-lg text-[13px] leading-relaxed',
                     msg.role === 'user'
                       ? [
                           'bg-primary text-primary-fg',

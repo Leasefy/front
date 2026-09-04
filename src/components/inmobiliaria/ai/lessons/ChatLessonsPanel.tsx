@@ -106,7 +106,7 @@ export function ChatLessonsPanel() {
   // ── No backend wired (dev posture / fail-soft) ──────────────────────────────
   if (!isAgentConfigured()) {
     return (
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-white/[0.02] px-5 py-6">
+      <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-white/[0.02] px-5 py-6">
         <div className="flex items-start gap-3">
           <Info weight="duotone" className="h-5 w-5 text-neutral-500 dark:text-neutral-400 mt-0.5 flex-shrink-0" />
           <div>
@@ -165,7 +165,7 @@ export function ChatLessonsPanel() {
       {!enabled && grouped.certified.length > 0 && (
         <div
           role="status"
-          className="flex items-start gap-3 rounded-xl border border-[#B7791F]/30 bg-[#F8F0E0]/60 dark:border-[#B7791F]/40 dark:bg-[#B7791F]/10 px-4 py-3"
+          className="flex items-start gap-3 rounded-lg border border-[#B7791F]/30 bg-[#F8F0E0]/60 dark:border-[#B7791F]/40 dark:bg-[#B7791F]/10 px-4 py-3"
         >
           <Warning weight="duotone" className="h-5 w-5 text-[#B7791F] dark:text-[#D2992F] mt-0.5 flex-shrink-0" />
           <p className="text-sm text-[#7A5410] dark:text-[#D2992F]">
@@ -178,7 +178,7 @@ export function ChatLessonsPanel() {
 
       {/* Read-only notice for VIEWER / CONTADOR with candidates waiting. */}
       {!canCertify && candidateCount > 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-white/[0.02] px-4 py-3">
+        <div className="flex items-start gap-3 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-white/[0.02] px-4 py-3">
           <Lightning weight="duotone" className="h-5 w-5 text-neutral-500 dark:text-neutral-400 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-neutral-600 dark:text-neutral-300">
             Estás viendo las lecciones en modo lectura. Solo administradores y

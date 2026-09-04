@@ -33,6 +33,8 @@ vi.mock('@/lib/api/contracts.service', () => ({
       activar: vi.fn(),
       estadoDeLote: vi.fn(),
       idsDeFilas: vi.fn(),
+      inmueblesFaltantes: vi.fn(),
+      crearInmueblesFaltantes: vi.fn(),
     },
   },
 }))
@@ -105,6 +107,25 @@ function labelConTexto(texto: string) {
 
 function checkboxDentroDe(el: Element | undefined) {
   return el?.querySelector('button[role="checkbox"]') as HTMLButtonElement | undefined
+}
+
+/**
+ * Tilda «Revisé estos contratos».
+ *
+ * El bloque de activación entero (invitar, avisos, botón) vive detrás de este
+ * check desde que la revisión existe: activar crea los contratos y las
+ * consignaciones de verdad, y antes bastaba un click sin haber mirado una
+ * sola fila. Los tests de activación tienen que pasar por acá, igual que una
+ * persona.
+ */
+async function confirmarRevision() {
+  const check = container.querySelector(
+    '[data-testid="confirmar-revision"]',
+  ) as HTMLButtonElement | null
+  await act(async () => {
+    check?.click()
+    await new Promise((r) => setTimeout(r, 0))
+  })
 }
 
 /** Una `FilaDeMigracion` mínima, para las pruebas de selección (§3.2.G). */
@@ -356,7 +377,7 @@ describe('<MigrarContratos> — selección across pages (§3.2.G)', () => {
 
     await act(async () => {
       const siguiente = container.querySelector(
-        '[aria-label="Go to next page"]',
+        '[aria-label="Página siguiente"]',
       ) as HTMLButtonElement | null
       siguiente?.click()
       await new Promise((r) => setTimeout(r, 0))
@@ -389,7 +410,9 @@ describe('<MigrarContratos> — selección across pages (§3.2.G)', () => {
       await new Promise((r) => setTimeout(r, 0))
     })
 
-    expect(contractsApi.migracion.idsDeFilas).toHaveBeenCalledWith('lote-1', 'PENDIENTE')
+    // Sin filtro de estado: la lista visible es TODO el lote (la revisión),
+    // así que «seleccionar todo» tiene que traer lo mismo que se está viendo.
+    expect(contractsApi.migracion.idsDeFilas).toHaveBeenCalledWith('lote-1')
     expect(
       container.querySelector('[data-testid="resolucion-masiva"]')?.textContent,
     ).toContain('30 filas seleccionadas')
@@ -442,6 +465,7 @@ describe('<MigrarContratos> — activables, el botón de activar (T-0035)', () =
     render()
     await esperar()
     await avanzarAListaDeTrabajo(30)
+    await confirmarRevision()
 
     const btn = boton('Activar 30 contratos')
     expect(btn).toBeTruthy()
@@ -454,6 +478,7 @@ describe('<MigrarContratos> — activables, el botón de activar (T-0035)', () =
     render()
     await esperar()
     await avanzarAListaDeTrabajo(30)
+    await confirmarRevision()
 
     const aviso = container.querySelector('[data-testid="aviso-incompletos"]')
     expect(aviso).toBeTruthy()
@@ -508,6 +533,8 @@ describe('<MigrarContratos> — activables, el botón de activar (T-0035)', () =
       b?.click()
       for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0))
     })
+
+    await confirmarRevision()
 
     expect(boton('Activar 5 contratos')).toBeTruthy()
     expect(container.querySelector('[data-testid="aviso-incompletos"]')).toBeNull()
@@ -941,6 +968,7 @@ describe('<MigrarContratos> — invitar:false ya no crea nada, y el resumen lo d
     render()
     await esperar()
     await avanzarAListaDeTrabajo(30)
+    await confirmarRevision()
 
     const label = labelConTexto('Invitar a los inquilinos al portal')
     const checkbox = checkboxDentroDe(label)
@@ -970,6 +998,7 @@ describe('<MigrarContratos> — invitar:false ya no crea nada, y el resumen lo d
     render()
     await esperar()
     await avanzarAListaDeTrabajo(1)
+    await confirmarRevision()
     vi.mocked(contractsApi.migracion.activar).mockResolvedValue({
       intentadas: 1,
       activadas: 1,
@@ -1048,5 +1077,451 @@ describe('<MigrarContratos> — invitar:false ya no crea nada, y el resumen lo d
     expect((tarjeta?.textContent ?? '').toLowerCase()).not.toMatch(
       /pendient.*invitar|invitar.*pendient/,
     )
+  })
+
+  it('con el modo sparse apagado, el resumen dice cuántas quedaron sin activar por no tener inmueble', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(1)
+    await confirmarRevision()
+    vi.mocked(contractsApi.migracion.activar).mockResolvedValue({
+      intentadas: 1,
+      activadas: 1,
+      fallidas: 0,
+      invitados: 1,
+      sinInmueble: 89,
+      sparse: false,
+      resultados: [
+        { fila: 0, estado: 'creado', contratoId: 'c-1', inquilinoInvitado: true },
+      ],
+    })
+
+    await act(async () => {
+      boton('Activar 1 contratos')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    const aviso = container.querySelector('[data-testid="aviso-sin-inmueble"]')
+    const texto = (aviso?.textContent ?? '').toLowerCase()
+    expect(texto).toContain('89')
+    expect(texto).toMatch(/sin activar/)
+    expect(texto).not.toMatch(/se activaron/)
+  })
+
+  it('con el modo sparse prendido, el resumen dice cuántas se activaron sin inmueble y que no cobran', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(1)
+    await confirmarRevision()
+    vi.mocked(contractsApi.migracion.activar).mockResolvedValue({
+      intentadas: 1,
+      activadas: 1,
+      fallidas: 0,
+      invitados: 0,
+      sinInmueble: 1,
+      sparse: true,
+      resultados: [
+        { fila: 0, estado: 'creado', contratoId: 'c-1', inquilinoInvitado: false },
+      ],
+    })
+
+    await act(async () => {
+      boton('Activar 1 contratos')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    const texto = (
+      container.querySelector('[data-testid="aviso-sin-inmueble"]')?.textContent ?? ''
+    ).toLowerCase()
+    expect(texto).toMatch(/se activó sin inmueble/)
+    expect(texto).toMatch(/cobros/)
+  })
+
+  it('sin `sinInmueble` (back viejo) o en 0, el resumen no dice nada de inmuebles', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(1)
+    await confirmarRevision()
+    vi.mocked(contractsApi.migracion.activar).mockResolvedValue({
+      intentadas: 1,
+      activadas: 1,
+      fallidas: 0,
+      invitados: 1,
+      sinInmueble: 0,
+      sparse: false,
+      resultados: [
+        { fila: 0, estado: 'creado', contratoId: 'c-1', inquilinoInvitado: true },
+      ],
+    })
+
+    await act(async () => {
+      boton('Activar 1 contratos')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(container.querySelector('[data-testid="resultado-activacion"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="aviso-sin-inmueble"]')).toBeNull()
+  })
+})
+
+/**
+ * Los casos de error del flujo — cada fallo tiene que verse y tener salida
+ * EN EL LUGAR, sin recargar la página ni pedir soporte.
+ */
+/**
+ * Después de activar, la lista de revisión no tiene nada más que hacer.
+ *
+ * Nico, mirando la pantalla recién activada: «si el usuario le da activar
+ * contratos, ¿ya para qué la lista?». Quedaban noventa filas con sus casillas
+ * de selección —algunas marcadas, otras no— sobre contratos que ya existían y
+ * que desde ahí no se podían tocar.
+ */
+describe('<MigrarContratos> — «Crear los N inmuebles que faltan» vive en el resumen del lote', () => {
+  it('con filas sin inmueble aparece el botón con el número del back; sin ellas, no', async () => {
+    render()
+    await esperar()
+    vi.mocked(contractsApi.migracion.inmueblesFaltantes).mockResolvedValue({
+      candidatas: 90,
+      activadas: 90,
+      ambiguas: 0,
+      sinDireccion: 0,
+    })
+    await avanzarAListaDeTrabajo()
+    await act(async () => {})
+
+    expect(contractsApi.migracion.inmueblesFaltantes).toHaveBeenCalledWith('lote-1')
+    const abrir = container.querySelector(
+      '[data-testid="crear-inmuebles-faltantes-abrir"]',
+    )
+    expect(abrir?.textContent).toContain('90')
+    // Vive en la tarjeta del resumen, no abajo con la selección.
+    expect(container.querySelector('[data-testid="lista-de-trabajo"]')?.contains(abrir)).toBe(true)
+  })
+
+  it('sin inmuebles faltantes no hay botón', async () => {
+    render()
+    await esperar()
+    vi.mocked(contractsApi.migracion.inmueblesFaltantes).mockResolvedValue({
+      candidatas: 0,
+      activadas: 0,
+      ambiguas: 0,
+      sinDireccion: 0,
+    })
+    await avanzarAListaDeTrabajo()
+    await act(async () => {})
+
+    expect(container.querySelector('[data-testid="crear-inmuebles-faltantes"]')).toBeNull()
+  })
+})
+
+describe('<MigrarContratos> — activados sin propietario (2026-09-02)', () => {
+  /**
+   * El hueco que deja «Crear los N inmuebles que faltan» sobre un archivo sin
+   * propietario: contratos activos, con inmueble e inquilino, que no cobran.
+   * El número lo trae el back en el resumen; la lista lo dice con la acción.
+   */
+  async function conActivadosSinPropietario(n: number, enPagina: number) {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo()
+    vi.mocked(contractsApi.migracion.resumen).mockResolvedValue({
+      lote: 'lote-1',
+      total: 30,
+      pendientes: 0,
+      listos: 0,
+      activados: 30,
+      descartados: 0,
+      activables: 0,
+      activadosSinPropietario: n,
+    })
+    vi.mocked(contractsApi.migracion.filas).mockResolvedValue({
+      filas: Array.from({ length: 25 }, (_, i) =>
+        filaDeMigracion({
+          fila: i,
+          estado: 'ACTIVADO',
+          faltantes: [],
+          contractId: `ct-${i}`,
+          propietario:
+            i < enPagina ? null : { id: 'po-1', nombre: 'Jorge', documento: '712' },
+        }),
+      ),
+      total: 30,
+      pagina: 1,
+      porPagina: 25,
+    })
+  }
+
+  it('el aviso dice cuántos, por qué no cobran, y selecciona los de la página', async () => {
+    await conActivadosSinPropietario(90, 3)
+    // Forzar el refresco: la lista se vuelve a pedir al cambiar de página y volver.
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Página siguiente"]')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Página anterior"]')?.click()
+      for (let i = 0; i < 3; i++) await new Promise((r) => setTimeout(r, 0))
+    })
+
+    const aviso = container.querySelector('[data-testid="aviso-activados-sin-propietario"]')
+    expect(aviso?.textContent).toContain('90 contratos ya activados no tienen propietario')
+    expect(aviso?.textContent).toMatch(/no generan cobros/i)
+
+    await act(async () => {
+      boton('Seleccionar los 3 de esta página')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    // La masiva aparece con exactamente esas tres.
+    expect(container.textContent).toContain('3 filas seleccionadas')
+    // Las activadas que YA tienen propietario no entran en «seleccionar la página».
+    const label = labelConTexto('de esta página')
+    expect(label?.textContent).toContain('Seleccionar las 3 de esta página')
+  })
+})
+
+describe('<MigrarContratos> — activar apaga la lista', () => {
+  const activarTodo = async (activables: number) => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(activables)
+    await confirmarRevision()
+    vi.mocked(contractsApi.migracion.activar).mockResolvedValue({
+      intentadas: activables,
+      activadas: activables,
+      fallidas: 0,
+      invitados: activables,
+      resultados: [],
+    })
+    await act(async () => {
+      boton(`Activar ${activables} contratos`)?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+  }
+
+  it('con todo activado la lista desaparece y sólo queda el resultado', async () => {
+    // `resumen` sigue mockeado con activables=30, así que la rama honesta es
+    // la de "quedaron 30 sin activar" — lo que importa acá es que las FILAS
+    // ya no están.
+    await activarTodo(30)
+
+    expect(container.querySelector('[data-testid="resultado-activacion"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="fila-revision-0"]')).toBeNull()
+    expect(container.textContent).not.toContain('Seleccionar las')
+  })
+
+  it('si quedó algo sin activar lo dice, y deja volver a la lista', async () => {
+    await activarTodo(30)
+
+    const volver = container.querySelector(
+      '[data-testid="ver-lista-igual"]',
+    ) as HTMLButtonElement | null
+    expect(volver).toBeTruthy()
+    expect(container.textContent).toMatch(/quedaron 30 sin activar/i)
+
+    await act(async () => {
+      volver?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(container.querySelector('[data-testid="fila-revision-0"]')).toBeTruthy()
+  })
+})
+
+describe('<MigrarContratos> — errores visibles y recuperables', () => {
+  it('un job FALLIDO ofrece volver al cargador, y el botón funciona', async () => {
+    render()
+    await esperar()
+    await subirArchivo(['Columna A'], [{ 'Columna A': 'x' }])
+    vi.mocked(contractsApi.migracion.preparar).mockResolvedValue({
+      lote: 'lote-f',
+      estado: 'ENCOLADO',
+      total: 1,
+      procesadas: 0,
+      pendientes: 0,
+      listos: 0,
+      activados: 0,
+      descartados: 0,
+    })
+    vi.mocked(contractsApi.migracion.estadoDeLote).mockResolvedValue({
+      lote: 'lote-f',
+      estado: 'FALLIDO',
+      total: 1,
+      procesadas: 0,
+      pendientes: 0,
+      listos: 0,
+      activados: 0,
+      descartados: 0,
+      error: 'El archivo trae una fila imposible.',
+    })
+
+    await act(async () => {
+      botonRevisar()?.click()
+      for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(container.querySelector('[data-testid="lote-fallido"]')).not.toBeNull()
+    expect(container.textContent).toContain('El archivo trae una fila imposible.')
+
+    const volver = container.querySelector(
+      '[data-testid="lote-fallido-volver"]',
+    ) as HTMLButtonElement
+    expect(volver).not.toBeNull()
+    await act(async () => {
+      volver.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    // De vuelta en el cargador: se puede subir el archivo corregido.
+    expect(container.querySelector('[data-testid="archivo-contratos"]')).not.toBeNull()
+  })
+
+  it('avisa ocupado al muro mientras el job procesa, y suelta al llegar la lista', async () => {
+    const onOcupado = vi.fn()
+    act(() => {
+      root.render(<MigrarContratos onOcupado={onOcupado} />)
+    })
+    await esperar()
+    // Sin nada en vuelo, el muro quedó libre.
+    expect(onOcupado).toHaveBeenLastCalledWith(false)
+
+    await subirArchivo(['Columna A'], [{ 'Columna A': 'x' }])
+    vi.mocked(contractsApi.migracion.preparar).mockResolvedValue({
+      lote: 'lote-1',
+      estado: 'ENCOLADO',
+      total: 1,
+      procesadas: 0,
+      pendientes: 0,
+      listos: 0,
+      activados: 0,
+      descartados: 0,
+    })
+    // El sondeo nunca contesta: la pantalla queda esperando el job.
+    vi.mocked(contractsApi.migracion.estadoDeLote).mockReturnValue(
+      new Promise(() => {}),
+    )
+
+    await act(async () => {
+      botonRevisar()?.click()
+      for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(container.querySelector('[data-testid="lote-progreso"]')).not.toBeNull()
+    expect(onOcupado).toHaveBeenLastCalledWith(true)
+  })
+
+  it('con la lista de trabajo cargada, el muro queda libre', async () => {
+    const onOcupado = vi.fn()
+    act(() => {
+      root.render(<MigrarContratos onOcupado={onOcupado} />)
+    })
+    await esperar()
+    await avanzarAListaDeTrabajo()
+    expect(container.querySelector('[data-testid="lista-de-trabajo"]')).not.toBeNull()
+    expect(onOcupado).toHaveBeenLastCalledWith(false)
+  })
+
+  it('un cambio de página que falla se DICE — antes era un fallo mudo', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo()
+    vi.mocked(contractsApi.migracion.resumen).mockRejectedValue(
+      new Error('No pudimos conectarnos al servidor.'),
+    )
+
+    const pagina2 = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === '2',
+    )
+    expect(pagina2).toBeTruthy()
+    await act(async () => {
+      pagina2?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(container.textContent).toContain('No pudimos conectarnos al servidor.')
+  })
+})
+
+describe('<MigrarContratos> — la lista de migraciones a medias que falla se dice', () => {
+  it('el fallo no bloquea subir, pero avisa del riesgo de duplicar', async () => {
+    vi.mocked(contractsApi.migracion.lotesAbiertos).mockRejectedValue(
+      new Error('red caída'),
+    )
+    render()
+    await esperar()
+
+    expect(container.querySelector('[data-testid="lotes-abiertos-fallo"]')).not.toBeNull()
+    // El cargador sigue disponible: avisar no es frenar.
+    expect(container.querySelector('[data-testid="archivo-contratos"]')).not.toBeNull()
+  })
+
+  it('cuando la lista responde, el aviso no aparece', async () => {
+    render()
+    await esperar()
+    expect(container.querySelector('[data-testid="lotes-abiertos-fallo"]')).toBeNull()
+  })
+})
+
+describe('<MigrarContratos> — el archivo se puede ARRASTRAR', () => {
+  /*
+   * Este paso era el único de los seis sin zona de arrastre: un `<label>` con
+   * un input escondido, que sólo respondía al clic. Arrastrar encima no hacía
+   * nada, y soltar el archivo fuera de un dropzone hace que el navegador lo
+   * ABRA y se lleve la pestaña con la migración a medias. Nico lo probó y
+   * creyó que se había roto.
+   */
+  function soltar(nombre = 'contratos.csv') {
+    const zona = container.querySelector(
+      '[data-testid="dropzone-contratos"]',
+    ) as HTMLElement
+    const file = new File(['contenido'], nombre, { type: 'text/csv' })
+    const dataTransfer = {
+      files: [file],
+      items: [{ kind: 'file', type: 'text/csv', getAsFile: () => file }],
+      types: ['Files'],
+    }
+    return act(async () => {
+      const evento = new Event('drop', { bubbles: true, cancelable: true })
+      Object.defineProperty(evento, 'dataTransfer', { value: dataTransfer })
+      zona.dispatchEvent(evento)
+      await new Promise((r) => setTimeout(r, 0))
+    })
+  }
+
+  it('la zona de arrastre existe y el input sigue adentro para el clic', async () => {
+    render()
+    await esperar()
+
+    expect(container.querySelector('[data-testid="dropzone-contratos"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="archivo-contratos"]')).not.toBeNull()
+  })
+
+  it('soltar un archivo encima lo lee, igual que elegirlo con el clic', async () => {
+    render()
+    await esperar()
+
+    // `mockClear` acá: el contador del mock del módulo se acumula entre los
+    // tests del archivo, así que sólo el delta de ESTE drop significa algo.
+    vi.mocked(parseSpreadsheetFile).mockClear()
+    vi.mocked(parseSpreadsheetFile).mockResolvedValue({
+      rows: [{ _rowIndex: 0, Inquilino: 'Ana', Canon: '1000000' }],
+      headers: ['Inquilino', 'Canon'],
+      sheetNames: ['Sheet1'],
+    })
+    await soltar()
+
+    expect(parseSpreadsheetFile).toHaveBeenCalledTimes(1)
+    // Y llegó a la pantalla de mapeo: la lectura no se quedó en el aire.
+    expect(container.textContent).toContain('Así entendimos tus columnas')
+  })
+
+  it('un archivo ilegible soltado se explica igual que uno elegido', async () => {
+    render()
+    await esperar()
+
+    vi.mocked(parseSpreadsheetFile).mockRejectedValue(
+      new Error('El archivo está dañado o no es una planilla.'),
+    )
+    await soltar('roto.xlsx')
+
+    expect(container.textContent).toContain('El archivo está dañado')
   })
 })

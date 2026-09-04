@@ -42,7 +42,7 @@ function UrgentActionsBanner({ actions }: { actions: DashboardUrgentAction[] }) 
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-8 rounded-xl bg-surface border border-border overflow-hidden"
+      className="mb-8 rounded-lg bg-surface border border-border overflow-hidden"
     >
       <button
         type="button"
@@ -80,7 +80,7 @@ function UrgentActionsBanner({ actions }: { actions: DashboardUrgentAction[] }) 
               <Link
                 key={action.id}
                 href={action.href}
-                className="flex items-center gap-3 p-3 rounded-xl border border-border-faint hover:bg-[rgba(0,0,0,0.03)] dark:hover:bg-white/[0.04] transition-colors"
+                className="flex items-center gap-3 p-3 rounded-lg border border-border-faint hover:bg-[rgba(0,0,0,0.03)] dark:hover:bg-white/[0.04] transition-colors"
               >
                 <span className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: c.soft }}>
                   <Icon className="w-4 h-4" style={{ color: c.fg }} />
@@ -248,7 +248,7 @@ export default function PanelPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
           {/* Monthly Income - Featured Card (ink brand hero) */}
           <div
-            className="sm:col-span-2 lg:col-span-1 relative overflow-hidden rounded-xl p-6"
+            className="sm:col-span-2 lg:col-span-1 relative overflow-hidden rounded-lg p-6"
             style={{ background: 'linear-gradient(150deg, #14130f 58%, #2a2824 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
           >
             {/* Brand contour — single hairline tracing the roof profile (badge grammar) */}
@@ -284,7 +284,7 @@ export default function PanelPage() {
           </div>
 
           {/* Properties */}
-          <div className="rounded-xl bg-surface-muted p-6">
+          <div className="rounded-lg bg-surface-muted p-6">
             <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
               <Buildings className="w-5 h-5 text-fg-muted" />
             </div>
@@ -306,7 +306,7 @@ export default function PanelPage() {
           </div>
 
           {/* Candidates */}
-          <div className="rounded-xl bg-surface-muted p-6">
+          <div className="rounded-lg bg-surface-muted p-6">
             <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
               <Users className="w-5 h-5 text-fg-muted" />
             </div>
@@ -331,7 +331,7 @@ export default function PanelPage() {
           </div>
 
           {/* Collection Rate */}
-          <div className="rounded-xl bg-surface-muted p-6">
+          <div className="rounded-lg bg-surface-muted p-6">
             <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
               <ChartBar className="w-5 h-5 text-fg-muted" />
             </div>
@@ -388,7 +388,7 @@ export default function PanelPage() {
               {propertiesLoading ? (
                 <div className="space-y-4">
                   {[0, 1, 2].map((i) => (
-                    <div key={i} className="rounded-xl bg-surface-muted overflow-hidden">
+                    <div key={i} className="rounded-lg bg-surface-muted overflow-hidden">
                       <div className="flex flex-col sm:flex-row">
                         <Skeleton className="w-full sm:w-48 h-36 rounded-none" />
                         <div className="flex-1 p-5 space-y-3">
@@ -400,8 +400,8 @@ export default function PanelPage() {
                             <Skeleton className="h-6 w-24 rounded" />
                           </div>
                           <div className="pt-4 border-t border-border flex gap-3">
-                            <Skeleton className="h-8 w-16 rounded-xl" />
-                            <Skeleton className="h-8 w-24 rounded-xl" />
+                            <Skeleton className="h-8 w-16 rounded-lg" />
+                            <Skeleton className="h-8 w-24 rounded-lg" />
                           </div>
                         </div>
                       </div>
@@ -425,7 +425,7 @@ export default function PanelPage() {
                         transition={{ delay: 0.1 + index * 0.05 }}
                       >
                         <Link href={`/panel/${property.id}`}>
-                          <div className="group relative overflow-hidden rounded-xl bg-surface-muted hover: transition-all duration-300">
+                          <div className="group relative overflow-hidden rounded-lg bg-surface-muted hover: transition-all duration-300">
                             <div className="flex flex-col sm:flex-row">
                               {/* Image */}
                               <div className="relative w-full sm:w-48 h-36 sm:h-auto flex-shrink-0">
@@ -479,7 +479,7 @@ export default function PanelPage() {
 
                                 {/* Stats Row */}
                                 <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-border">
-                                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-surface rounded-xl">
+                                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-surface rounded-lg">
                                     <Users className="w-4 h-4 text-fg-muted" />
                                     <span className="text-sm text-fg-muted font-medium">
                                       {property.candidateCount}
@@ -525,7 +525,7 @@ export default function PanelPage() {
                   })}
                 </div>
               ) : (
-                <div className="rounded-xl bg-surface-muted py-14 px-6 text-center">
+                <div className="rounded-lg bg-surface-muted py-14 px-6 text-center">
                   <div className="w-14 h-14 rounded-xl bg-surface flex items-center justify-center mx-auto mb-5">
                     <Buildings className="w-6 h-6 text-fg-subtle" />
                   </div>
@@ -549,7 +549,7 @@ export default function PanelPage() {
               {properties.length > 3 && (
                 <Link
                   href="/panel/propiedades"
-                  className="flex items-center justify-center gap-2 mt-4 px-5 py-3 rounded-xl border border-border text-sm font-medium text-fg-muted hover:bg-surface-hover hover:text-fg transition-colors"
+                  className="flex items-center justify-center gap-2 mt-4 px-5 py-3 rounded-lg border border-border text-sm font-medium text-fg-muted hover:bg-surface-hover hover:text-fg transition-colors"
                 >
                   {t('landlord.dashboard.viewAllProperties')}
                   <span className="px-2 py-0.5 bg-surface-muted rounded-full text-xs">
@@ -569,7 +569,7 @@ export default function PanelPage() {
                 <h2 className="text-xl font-semibold text-fg">{t('landlord.dashboard.recentActivity')}</h2>
               </div>
 
-              <div className="bg-surface-muted rounded-xl overflow-hidden divide-y divide-border-faint">
+              <div className="bg-surface-muted rounded-lg overflow-hidden divide-y divide-border-faint">
                 {dashboardLoading ? (
                   [0, 1, 2, 3].map((i) => (
                     <div key={i} className="flex items-center gap-4 p-4">
@@ -623,7 +623,7 @@ export default function PanelPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="rounded-xl bg-surface border border-border p-6"
+              className="rounded-lg bg-surface border border-border p-6"
             >
               <div className="flex items-center gap-2 mb-3">
                 <BrandDot />
@@ -687,7 +687,7 @@ export default function PanelPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="rounded-xl bg-surface-muted p-5"
+              className="rounded-lg bg-surface-muted p-5"
             >
               <h3 className="font-semibold text-fg mb-4">{t('landlord.dashboard.quickActions')}</h3>
               <div className="space-y-2">
@@ -698,7 +698,7 @@ export default function PanelPage() {
                   { href: '/panel/contratos', icon: FileText, label: t('landlord.dashboard.contracts'), desc: t('landlord.dashboard.manageLeases') },
                 ].map((action, i) => (
                   <Link key={i} href={action.href}>
-                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-hover transition-colors group">
+                    <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-hover transition-colors group">
                       <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center transition-shadow">
                         <action.icon className="w-5 h-5 text-fg-muted" />
                       </div>
@@ -808,7 +808,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="rounded-xl bg-surface-muted p-5"
+        className="rounded-lg bg-surface-muted p-5"
       >
         <h3 className="font-semibold text-fg mb-4 flex items-center gap-2">
           <CalendarBlank className="w-4 h-4 text-fg-muted" />
@@ -819,7 +819,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
             <button
               key={visit.id}
               onClick={() => setSelected(visit)}
-              className="group w-full flex items-center gap-3 p-3 rounded-xl text-left hover:bg-surface-hover transition-colors"
+              className="group w-full flex items-center gap-3 p-3 rounded-lg text-left hover:bg-surface-hover transition-colors"
             >
               <div className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', VISIT_STATUS_COLORS[visit.status] || 'bg-primary')} />
               <div className="flex-1 min-w-0">
@@ -859,13 +859,13 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
           <div className="flex gap-2">
             <Link
               href={`/panel/${selected.propertyId}`}
-              className="flex-1 text-center text-sm font-medium px-4 py-2.5 bg-surface border border-border text-fg rounded-xl hover:bg-surface-muted transition-colors"
+              className="flex-1 text-center text-sm font-medium px-4 py-2.5 bg-surface border border-border text-fg rounded-lg hover:bg-surface-muted transition-colors"
             >
               {t('landlord.dashboard.viewProperty')}
             </Link>
             <Link
               href="/panel/visitas"
-              className="flex-1 text-center text-sm font-medium px-4 py-2.5 bg-primary text-primary-fg rounded-xl hover:opacity-90 transition-colors"
+              className="flex-1 text-center text-sm font-medium px-4 py-2.5 bg-primary text-primary-fg rounded-lg hover:opacity-90 transition-colors"
             >
               {t('landlord.dashboard.manageVisit')}
             </Link>
@@ -955,7 +955,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="rounded-xl bg-surface-muted p-5"
+        className="rounded-lg bg-surface-muted p-5"
       >
         <h3 className="font-semibold text-fg mb-4 flex items-center gap-2">
           <Calendar className="w-4 h-4 text-fg-muted" />
@@ -968,7 +968,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
               <button
                 key={event.id}
                 onClick={() => setSelected(event)}
-                className="group w-full flex items-center gap-3 p-3 rounded-xl text-left hover:bg-surface-hover transition-colors"
+                className="group w-full flex items-center gap-3 p-3 rounded-lg text-left hover:bg-surface-hover transition-colors"
               >
                 <div className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', dotColor)} />
                 <div className="flex-1 min-w-0">
@@ -1000,7 +1000,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
         footerActions={selected?.href ? (
           <Link
             href={selected.href}
-            className="block w-full text-center text-sm font-medium px-4 py-2.5 bg-primary text-primary-fg rounded-xl hover:opacity-90 transition-colors"
+            className="block w-full text-center text-sm font-medium px-4 py-2.5 bg-primary text-primary-fg rounded-lg hover:opacity-90 transition-colors"
           >
             {actionLabel}
           </Link>

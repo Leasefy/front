@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -336,7 +337,7 @@ export function DispersionDetail({
               <User className="w-4 h-4 text-primary" />
               {t('inmobiliaria.dispersiones.detailView.propietario')}
             </h3>
-            <div className="p-4 rounded-xl border border-border bg-muted/30 space-y-4">
+            <div className="p-4 rounded-lg border border-border bg-muted/30 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center">
                   <User className="w-6 h-6 text-primary" />
@@ -396,15 +397,23 @@ export function DispersionDetail({
               <Bank className="w-4 h-4 text-primary" />
               {t('inmobiliaria.dispersiones.detailView.bankAccount')}
             </h3>
-            <div className="p-4 rounded-xl border border-border bg-muted/30">
+            <div className="p-4 rounded-lg border border-border bg-muted/30">
               {!dispersion.propietarioBankAccount ? (
                 /* Un propietario sin cuenta es normal y hay que decirlo: sin
                    esto no se le puede girar, y en blanco parece un error de
                    carga en vez de un dato que falta pedirle. */
-                <p className="text-sm text-muted-foreground">
-                  Este propietario no tiene cuenta bancaria registrada. Hay que
-                  pedírsela antes de girarle.
-                </p>
+                <AlertaAccionable
+                  severidad="danger"
+                  titulo="Sin cuenta bancaria: no se le puede girar"
+                  accion={{
+                    label: 'Cargar cuenta bancaria',
+                    href: `/panel/inmobiliaria/propietarios/${dispersion.propietarioId}?volver=${encodeURIComponent('/panel/inmobiliaria/pagos/dispersiones')}`,
+                  }}
+                  data-testid="dispersion-sin-cuenta"
+                >
+                  Pedile al propietario banco, tipo, número y titular, y cargalos en su ficha. Hasta entonces
+                  este giro queda esperando.
+                </AlertaAccionable>
               ) : (
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -451,19 +460,19 @@ export function DispersionDetail({
               {t('inmobiliaria.dispersiones.detailView.summaryTitle')}
             </h3>
             <div className="grid grid-cols-3 gap-3">
-              <div className="p-4 rounded-xl bg-muted/50 text-center">
+              <div className="p-4 rounded-lg bg-muted/50 text-center">
                 <p className="text-xs text-muted-foreground mb-1">{t('inmobiliaria.dispersiones.detailView.collected')}</p>
                 <p className="text-lg font-bold text-foreground">
                   {formatCurrency(dispersion.totalCollected)}
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-primary-soft text-center">
+              <div className="p-4 rounded-lg bg-primary-soft text-center">
                 <p className="text-xs text-primary mb-1">{t('inmobiliaria.dispersiones.detailView.commission')}</p>
                 <p className="text-lg font-bold text-primary">
                   {formatCurrency(dispersion.totalCommission)}
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-success-soft text-center">
+              <div className="p-4 rounded-lg bg-success-soft text-center">
                 <p className="text-xs text-success mb-1">{t('inmobiliaria.dispersiones.detailView.net')}</p>
                 <p className="text-lg font-bold text-success">
                   {formatCurrency(dispersion.netToPropietario)}
@@ -501,7 +510,7 @@ export function DispersionDetail({
               <Clock className="w-4 h-4 text-primary" />
               {t('inmobiliaria.dispersiones.detailView.history')}
             </h3>
-            <div className="p-4 rounded-xl border border-border bg-muted/30">
+            <div className="p-4 rounded-lg border border-border bg-muted/30">
               <TimelineEvent
                 icon={Calendar}
                 title={t('inmobiliaria.dispersiones.detailView.created')}
@@ -564,7 +573,7 @@ export function DispersionDetail({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              className="p-4 rounded-xl bg-success-soft border border-success/30 dark:border-success/40"
+              className="p-4 rounded-lg bg-success-soft border border-success/30 dark:border-success/40"
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -586,7 +595,7 @@ export function DispersionDetail({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              className="p-4 rounded-xl bg-danger-soft border border-danger/30 dark:border-danger/40"
+              className="p-4 rounded-lg bg-danger-soft border border-danger/30 dark:border-danger/40"
             >
               <div className="flex items-start gap-3">
                 <Warning className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" weight="fill" />

@@ -28,6 +28,11 @@ import { StepPortalImport } from './steps/StepPortalImport';
 import { StepPasteLinks } from './steps/StepPasteLinks';
 import { TARGET_FIELDS } from './lib/importTypes';
 import type { ImportWizardState } from './lib/importTypes';
+import { lotesParaRetomar } from './lib/lotesParaRetomar';
+import {
+  inmueblesImportacionApi,
+  type EstadoDeLoteInmuebles,
+} from '@/lib/api/inmuebles-importacion.service';
 
 const STEPS = [
   { id: 1, labelKey: 'inmobiliaria.import.steps.method', icon: FileArrowUp },
@@ -52,11 +57,20 @@ const INITIAL_STATE: ImportWizardState = {
   aiAnalyzed: false,
   importProgress: 0,
   importedCount: 0,
+  loteRetomado: null,
 };
 
 export interface ImportStepProps {
   state: ImportWizardState;
   updateState: (partial: Partial<ImportWizardState>) => void;
+  /** Adentro del muro de migración: qué hacer en vez de navegar al portafolio. */
+  onSalir?: () => void;
+  /**
+   * Aviso hacia el muro: `true` mientras corre una operación larga
+   * (geocodificar, preparar, activar). Sin esto, el pie del muro ofrecía
+   * «Seguir con Contratos» con el «Activando…» todavía girando.
+   */
+  onOcupado?: (ocupado: boolean) => void;
 }
 
 /**
@@ -67,7 +81,15 @@ export interface ImportStepProps {
  */
 export const RanuraDelPie = createContext<HTMLElement | null>(null);
 
-export function ImportWizard() {
+/**
+ * `onSalir`: adentro del muro de migración no hay portafolio al que volver —
+ * el muro tapa todo hasta que la migración termine. El muro pasa un callback
+ * que reinicia el asistente; sin él (la ruta suelta) se navega como siempre.
+ */
+export function ImportWizard({
+  onSalir,
+  onOcupado,
+}: { onSalir?: () => void; onOcupado?: (ocupado: boolean) => void } = {}) {
   const router = useRouter();
   const { t } = useI18n();
   const [currentStep, setCurrentStep] = useState(1);
@@ -78,6 +100,43 @@ export function ImportWizard() {
   const updateState = useCallback((partial: Partial<ImportWizardState>) => {
     setWizardState((prev) => ({ ...prev, ...partial }));
   }, []);
+
+  /*
+   * La tarjeta de «tenés una importación sin terminar» — mismo patrón que
+   * MigrarTerceros. El lote vive en el servidor desde `preparar()`: una
+   * recarga o un «cancelar» a mitad no pierde nada, pero sin esta tarjeta la
+   * persona no tenía cómo VOLVER a él — re-subía el archivo y duplicaba el
+   * lote. No poder listarlos jamás frena empezar de cero: el catch es mudo.
+   */
+  const [lotesAbiertos, setLotesAbiertos] = useState<EstadoDeLoteInmuebles[]>([]);
+  useEffect(() => {
+    let vigente = true;
+    inmueblesImportacionApi
+      .lotesAbiertos()
+      .then((lotes) => vigente && setLotesAbiertos(lotesParaRetomar(lotes)))
+      .catch(() => {
+        // Sin lista no hay tarjeta, y empezar de nuevo sigue abierto.
+      });
+    return () => {
+      vigente = false;
+    };
+  }, []);
+
+  const retomarLote = useCallback(
+    (l: EstadoDeLoteInmuebles) => {
+      updateState({ loteRetomado: l.lote });
+      // Directo al último paso (posición 5: con method null se ven los 5
+      // pasos). StepConfirmImport lee `loteRetomado` al montar.
+      setCurrentStep(5);
+    },
+    [updateState],
+  );
+
+  const mostrarRetomar =
+    lotesAbiertos.length > 0 &&
+    currentStep === 1 &&
+    wizardState.method === null &&
+    wizardState.rawRows.length === 0;
 
   // Cambiar de método vuelve al paso 1 — salvo cuando el cambio ES el atajo.
   //
@@ -206,8 +265,13 @@ export function ImportWizard() {
   }, []);
 
   const confirmCancel = useCallback(() => {
+    if (onSalir) {
+      setShowCancelDialog(false);
+      onSalir();
+      return;
+    }
     router.push('/panel/inmobiliaria/inmuebles');
-  }, [router]);
+  }, [router, onSalir]);
 
   // Step status helper — recibe la POSICIÓN, no el id (ver `visibleSteps`).
   const getStepStatus = (posicion: number) => {
@@ -221,6 +285,8 @@ export function ImportWizard() {
     const stepProps: ImportStepProps = {
       state: wizardState,
       updateState,
+      onSalir,
+      onOcupado,
     };
 
     switch (pasoActual) {
@@ -244,6 +310,46 @@ export function ImportWizard() {
 
   return (
     <div className="max-w-4xl mx-auto">
+      {mostrarRetomar && (
+        <section
+          className="mb-6 space-y-3 rounded-lg border border-primary/30 bg-surface p-5 shadow-sm"
+          data-testid="lotes-inmuebles-abiertos"
+        >
+          <p className="text-sm font-medium text-fg">
+            Tenés una importación sin terminar
+          </p>
+          {lotesAbiertos.map((l) => (
+            <div
+              key={l.lote}
+              className="flex flex-wrap items-center justify-between gap-2"
+            >
+              <p className="text-sm text-fg-muted">
+                <span className="font-mono tabular-nums">{l.total}</span>{' '}
+                {l.total === 1 ? 'inmueble' : 'inmuebles'}
+                {l.estado === 'LISTO' ? (
+                  <>
+                    {' · '}
+                    <span className="font-mono tabular-nums">{l.pendientes}</span> por
+                    revisar
+                    {' · '}
+                    <span className="font-mono tabular-nums">{l.listos}</span> listos para
+                    activar
+                  </>
+                ) : (
+                  <> · todavía procesándose</>
+                )}
+              </p>
+              <Button size="sm" hideArrow onClick={() => retomarLote(l)}>
+                Retomar
+              </Button>
+            </div>
+          ))}
+          <p className="text-xs text-fg-subtle">
+            Si en cambio subís el mismo archivo de nuevo, los inmuebles se duplican.
+          </p>
+        </section>
+      )}
+
       {/* Step Indicator */}
       <div className="mb-8">
         {/* Desktop Steps */}
@@ -335,7 +441,7 @@ export function ImportWizard() {
       </div>
 
       {/* Step Content */}
-      <div className="bg-surface dark:bg-[#14130F] rounded-xl border border-border dark:border-border-strong">
+      <div className="bg-surface dark:bg-bg rounded-lg border border-border dark:border-border-strong">
         <div className="p-6">
           <AnimatePresence mode="wait">
             <motion.div
@@ -356,7 +462,7 @@ export function ImportWizard() {
         {!(pasoActual === 5 && wizardState.importedCount > 0) && (
           // El pie tiene fondo propio: sin `rounded-b-xl` pinta por encima de
           // las esquinas del card y las dos de abajo quedan cuadradas.
-          <div className="px-6 py-4 rounded-b-xl border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-[#14130F] flex items-center justify-between">
+          <div className="px-6 py-4 rounded-b-xl border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-bg flex items-center justify-between">
             {/* Cancel Button */}
             <Button
               type="button"
@@ -430,7 +536,7 @@ export function ImportWizard() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-xl bg-surface dark:bg-[#14130F] border border-border dark:border-border-strong"
+              className="w-full max-w-md p-6 rounded-lg bg-surface dark:bg-bg border border-border dark:border-border-strong"
             >
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center">

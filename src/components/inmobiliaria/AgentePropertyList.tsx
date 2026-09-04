@@ -85,7 +85,7 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
   return (
     <div
       className={cn(
-        'rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] overflow-hidden',
+        'rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden',
         className
       )}
     >
@@ -136,7 +136,7 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
                       <Link
                         key={consignacion.id}
                         href={`/panel/inmobiliaria/inmuebles/${consignacion.id}`}
-                        className="flex items-center gap-3 p-3 rounded-xl bg-surface-muted dark:bg-[#14130F] hover:bg-surface-muted dark:hover:bg-ink transition-colors group"
+                        className="flex items-center gap-3 p-3 rounded-lg bg-surface-muted dark:bg-bg hover:bg-surface-muted dark:hover:bg-ink transition-colors group"
                       >
                         {/* Thumbnail */}
                         <div className="w-14 h-14 rounded-xl bg-surface-muted dark:bg-ink overflow-hidden shrink-0">

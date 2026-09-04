@@ -9,14 +9,14 @@
  * 6 analytics endpoints mocked at once via mockAllAnalyticsEndpoints helper
  * (inlined here).
  *
- * D-38-04 EmptyState CTA: "Ir a deudores" → /panel/inmobiliaria/ai/cobranza/deudores
+ * D-38-04 EmptyState CTA: "Ir a deudores" → /panel/inmobiliaria/cobros/cobranza/deudores
  */
 
 import { test, expect } from '@playwright/test'
 import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
-const ROUTE = '/panel/inmobiliaria/ai/cobranza/analitica'
+const ROUTE = '/panel/inmobiliaria/cobros/cobranza/analitica'
 const SKELETON_DELAY_MS = 2500
 
 const GATE_POPULATED = { populated: true, calls_30d: 50 }

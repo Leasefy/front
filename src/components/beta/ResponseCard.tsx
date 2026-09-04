@@ -187,7 +187,7 @@ export function ResponseCard({
   return (
     <div
       className={cn(
-        'w-full rounded-xl overflow-hidden',
+        'w-full rounded-lg overflow-hidden',
         'bg-white dark:bg-neutral-900',
         'border border-neutral-200 dark:border-neutral-800',
         'animate-fade-in-up',
@@ -222,7 +222,7 @@ export function ResponseCard({
       <div className="px-5 pb-4">
         <div
           className={cn(
-            'rounded-xl',
+            'rounded-lg',
             'bg-neutral-50 dark:bg-neutral-800/40',
             'border border-neutral-100 dark:border-neutral-800',
             'px-4 py-3',

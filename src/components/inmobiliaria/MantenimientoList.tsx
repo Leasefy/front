@@ -45,6 +45,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui';
+import { TablePagination } from '@/components/ui/pagination';
+import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import {
   DropdownList,
   DropdownListContent,
@@ -157,7 +159,7 @@ function SummaryCards({ data, t }: { data: SolicitudMantenimiento[]; t: (key: st
       {cards.map((card) => (
         <div
           key={card.labelKey}
-          className="p-4 rounded-xl bg-surface dark:bg-[#14130F] border border-border dark:border-border-strong"
+          className="p-4 rounded-lg bg-surface dark:bg-bg border border-border dark:border-border-strong"
         >
           <div className="flex items-center gap-2 mb-1">
             <div className={cn('w-2 h-2 rounded-full', card.color)} />
@@ -332,7 +334,7 @@ function MantenimientoCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="p-5 rounded-xl bg-card border border-border hover:border-foreground/20 transition-all"
+      className="p-5 rounded-lg bg-card border border-border hover:border-foreground/20 transition-all"
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-4">
@@ -564,6 +566,15 @@ export function MantenimientoList({
 
   const hasFilters = typeFilter !== 'all' || priorityFilter !== 'all' || statusFilter !== 'all' || searchQuery.trim() !== '';
 
+  // Paginación — la vista de lista es una grilla de tarjetas, pero sigue
+  // siendo una lista de registros: una agencia con doscientas solicitudes las
+  // pintaba todas de una. Mismo pie que las tablas del panel, para que el
+  // conteo y el «filas por página» se lean igual en toda la pantalla.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(filteredData, {
+      resetKey: `${typeFilter}|${priorityFilter}|${statusFilter}|${searchQuery}|${sortField}|${sortDirection}`,
+    });
+
   return (
     <div className={minimal ? 'p-5' : 'space-y-6'}>
       {/* Summary Cards - only show in full mode */}
@@ -619,7 +630,7 @@ export function MantenimientoList({
       {filteredData.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           <AnimatePresence mode="popLayout">
-            {filteredData.map((solicitud) => (
+            {pageItems.map((solicitud) => (
               <MantenimientoCard
                 key={solicitud.id}
                 solicitud={solicitud}
@@ -645,6 +656,21 @@ export function MantenimientoList({
           <p className="text-muted-foreground">
             {hasFilters ? t('inmobiliaria.mantenimiento.adjustFilters') : t('inmobiliaria.mantenimiento.noRequestsRegistered')}
           </p>
+        </div>
+      )}
+
+      {/* Pie del listado: cuántas solicitudes hay, cuáles se ven y cuántas por
+          página. El mismo control que las tablas del panel. */}
+      {shouldPaginate && (
+        <div className="border-t border-border px-4 py-3">
+          <TablePagination
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
         </div>
       )}
     </div>

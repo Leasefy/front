@@ -260,7 +260,7 @@ for (const viewport of VIEWPORTS) {
     await seedAuth(page)
     await mockRegistryEndpoint(page)
     await mockPermissions(page)
-    await page.goto('/panel/inmobiliaria/ai/cotizador/aseguradoras')
+    await page.goto('/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras')
     await page.waitForLoadState('domcontentloaded')
     // Soft wait — carrier data requires a real Supabase session; capture whatever renders
     await page.locator('text=/sura/i').first().waitFor({ timeout: 8_000 }).catch(() => {})
@@ -286,7 +286,7 @@ test.skip('no horizontal scroll at iPhone-14 — D-35-09 XR-03', async ({ page }
   await seedAuth(page)
   await mockRegistryEndpoint(page)
   await mockPermissions(page)
-  await page.goto('/panel/inmobiliaria/ai/cotizador/aseguradoras')
+  await page.goto('/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras')
   await page.waitForLoadState('domcontentloaded')
   // Soft wait — carrier data requires a real Supabase session
   await page.locator('text=/sura/i').first().waitFor({ timeout: 8_000 }).catch(() => {})
@@ -309,7 +309,7 @@ test('override row has border-l-4 accent — D-35-02', async ({ page }) => {
   await seedAuth(page)
   await mockRegistryEndpoint(page)
   await mockPermissions(page)
-  await page.goto('/panel/inmobiliaria/ai/cotizador/aseguradoras')
+  await page.goto('/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras')
   await page.waitForLoadState('domcontentloaded')
   // Soft wait — carrier data requires a real Supabase session
   await page.locator('text=/sura/i').first().waitFor({ timeout: 8_000 }).catch(() => {})
@@ -344,7 +344,7 @@ test('override pill visible for sura (has override) — D-35-02', async ({ page 
   await seedAuth(page)
   await mockRegistryEndpoint(page)
   await mockPermissions(page)
-  await page.goto('/panel/inmobiliaria/ai/cotizador/aseguradoras')
+  await page.goto('/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras')
   await page.waitForLoadState('domcontentloaded')
   // Soft wait — carrier data requires a real Supabase session
   await page.locator('text=/sura/i').first().waitFor({ timeout: 8_000 }).catch(() => {})

@@ -93,7 +93,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay }}
-        className="rounded-xl bg-surface-muted overflow-hidden"
+        className="rounded-lg bg-surface-muted overflow-hidden"
       >
         <div className="px-6 py-5 border-b border-border-faint">
           <div className="flex items-center justify-between">
@@ -109,7 +109,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
             <Button
               hideArrow
               onClick={() => setShowInviteModal(true)}
-              className="rounded-xl"
+              className="rounded-lg"
             >
               <UserPlus className="w-4 h-4" />
               {t('landlordSettings.team.invite')}
@@ -188,7 +188,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
               type="email"
               value={inviteForm.email}
               onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
-              className="h-12 rounded-xl"
+              className="h-12 rounded-lg"
               placeholder="email@ejemplo.com"
             />
           </div>
@@ -206,7 +206,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                   type="button"
                   onClick={() => setInviteForm(prev => ({ ...prev, role: role.value }))}
                   className={cn(
-                    'w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left',
+                    'w-full flex items-center gap-3 p-4 rounded-lg border transition-all text-left',
                     inviteForm.role === role.value
                       ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20'
                       : 'border-border hover:border-border-strong bg-surface'
@@ -235,7 +235,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
               variant="outline"
               hideArrow
               onClick={() => setShowInviteModal(false)}
-              className="flex-1 rounded-xl"
+              className="flex-1 rounded-lg"
             >
               {t('landlordSettings.modals.cancel')}
             </Button>
@@ -243,7 +243,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
               hideArrow
               onClick={handleInviteMember}
               disabled={isLoading || !inviteForm.email}
-              className="flex-1 rounded-xl"
+              className="flex-1 rounded-lg"
             >
               {isLoading ? <Spinner size="xs" variant="current" /> : <UserPlus className="w-4 h-4" />}
               {isLoading ? t('landlordSettings.modals.inviteMember.sending') : t('landlordSettings.modals.inviteMember.sendInvite')}
@@ -261,7 +261,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
               type="text"
               value={editMemberForm.name}
               onChange={(e) => setEditMemberForm(prev => ({ ...prev, name: e.target.value }))}
-              className="h-12 rounded-xl"
+              className="h-12 rounded-lg"
               placeholder={t('landlordSettings.modals.editMember.namePlaceholder')}
             />
           </div>
@@ -279,7 +279,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                   type="button"
                   onClick={() => setEditMemberForm(prev => ({ ...prev, role: role.value }))}
                   className={cn(
-                    'w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left',
+                    'w-full flex items-center gap-3 p-4 rounded-lg border transition-all text-left',
                     editMemberForm.role === role.value
                       ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20'
                       : 'border-border hover:border-border-strong bg-surface'
@@ -311,7 +311,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                 setShowEditMemberModal(false);
                 setEditingMember(null);
               }}
-              className="flex-1 rounded-xl"
+              className="flex-1 rounded-lg"
             >
               {t('landlordSettings.modals.cancel')}
             </Button>
@@ -319,7 +319,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
               hideArrow
               onClick={handleEditMember}
               disabled={isLoading}
-              className="flex-1 rounded-xl"
+              className="flex-1 rounded-lg"
             >
               {isLoading ? <Spinner size="xs" variant="current" /> : <PencilSimple className="w-4 h-4" />}
               {isLoading ? t('landlordSettings.modals.editMember.saving') : t('landlordSettings.modals.editMember.saveChanges')}

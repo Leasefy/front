@@ -3,7 +3,8 @@
  *
  * Client-side validation mirrors the backend contract of
  * POST /properties/:id/images (properties.controller.ts): field `file`,
- * jpg/png/webp only, max 5MB per file, max 10 images per property.
+ * jpg/png/webp only, max 5MB per file, max 40 images per property
+ * (`MAX_FOTOS_POR_INMUEBLE` in the back's `property-images.constants.ts`).
  *
  * Uploads are sequential so the backend `order` field follows the order the
  * user picked the photos in. Per-file failures are collected instead of
@@ -15,7 +16,7 @@ import { propertiesApi } from './properties.service';
 
 export const PROPERTY_PHOTO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 export const PROPERTY_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
-export const PROPERTY_PHOTO_MAX_COUNT = 10;
+export const PROPERTY_PHOTO_MAX_COUNT = 40;
 
 /** Spanish user-facing validation error, or null when the file is valid. */
 export function validatePropertyPhoto(file: File): string | null {

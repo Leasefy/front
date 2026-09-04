@@ -33,6 +33,7 @@ export interface EventoAgenda {
   titulo: string;
   descripcion?: string;
   fecha: string;               // ISO — fecha/hora del evento
+  hora?: string;               // «HH:mm» cuando el evento la tiene (visitas, tareas con hora)
   estadoRaw?: string;          // estado subyacente (ej. visita PENDING/ACCEPTED) para acciones
   vinculoTipo?: EventoVinculoTipo;  // tarea ligada a contrato/propiedad/tercero (AGEN-02)
   vinculoId?: string;
@@ -68,3 +69,28 @@ export const RESUMEN_AGENDA_VACIO: ResumenAgenda = {
   inspecciones: 0,
   tareas: 0,
 };
+
+// ── Tareas propias (AGEN-02) ─────────────────────────────────────────────────
+
+export type TareaVinculoTipo = 'CONTRATO' | 'PROPIEDAD' | 'TERCERO';
+export type TareaEstado = 'PENDIENTE' | 'COMPLETADA' | 'CANCELADA';
+
+export interface CrearTareaInput {
+  titulo: string;
+  /** YYYY-MM-DD */
+  fecha: string;
+  /** HH:mm, opcional */
+  hora?: string;
+  nota?: string;
+  vinculoTipo?: TareaVinculoTipo;
+  vinculoId?: string;
+  vinculoLabel?: string;
+  responsableUserId?: string;
+}
+
+export interface ActualizarTareaInput extends Partial<CrearTareaInput> {
+  estado?: TareaEstado;
+}
+
+/** El id de la fila detrás de un evento `tarea-<uuid>`. */
+export const tareaIdOf = (eventId: string) => eventId.replace(/^tarea-/, '');

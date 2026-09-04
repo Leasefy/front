@@ -130,7 +130,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
       {/* Category toggles */}
       <div
         className={cn(
-          'rounded-xl border border-border',
+          'rounded-lg border border-border',
           'bg-surface',
           'divide-y divide-border-faint'
         )}

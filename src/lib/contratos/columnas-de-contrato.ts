@@ -23,19 +23,25 @@
 
 /** Los campos de un contrato migrado que se pueden llenar desde un archivo. */
 export type CampoDeContrato =
-  | 'direccionInmueble'
-  | 'inquilinoNombre'
-  | 'inquilinoCorreo'
-  | 'inquilinoTelefono'
-  | 'inquilinoDocumento'
-  | 'fechaInicio'
-  | 'fechaFin'
-  | 'canon'
-  | 'deposito'
-  | 'diaDePago'
-  | 'uso'
-  | 'periodicidad'
-  | 'comision'
+  | "direccionInmueble"
+  | "codigoInmueble"
+  | "ciudadInmueble"
+  | "inquilinoNombre"
+  | "inquilinoCorreo"
+  | "inquilinoTelefono"
+  | "inquilinoDocumento"
+  | "fechaInicio"
+  | "fechaFin"
+  | "canon"
+  | "deposito"
+  | "diaDePago"
+  | "uso"
+  | "periodicidad"
+  | "comision"
+  | "propietarioNombre"
+  | "propietarioDocumento"
+  | "propietarioCorreo"
+  | "propietarioTelefono";
 
 /**
  * Sinónimos por campo, del más específico al más genérico.
@@ -44,101 +50,260 @@ export type CampoDeContrato =
  * va antes que cualquier cosa con `arrendador` para que «Teléfono del
  * arrendatario» no caiga en un campo del propietario.
  */
-export const SINONIMOS: Array<{ campo: CampoDeContrato; terminos: string[] }> = [
-  {
-    campo: 'inquilinoCorreo',
-    terminos: [
-      'correo del arrendatario', 'correo arrendatario', 'email arrendatario',
-      'correo del inquilino', 'correo inquilino', 'email inquilino',
-      'mail inquilino', 'e-mail inquilino',
-    ],
-  },
-  {
-    campo: 'inquilinoTelefono',
-    terminos: [
-      'telefono del arrendatario', 'celular del arrendatario', 'telefono arrendatario',
-      'celular arrendatario', 'whatsapp arrendatario', 'movil arrendatario',
-      'telefono del inquilino', 'celular del inquilino', 'telefono inquilino',
-      'celular inquilino', 'whatsapp inquilino',
-    ],
-  },
-  {
-    campo: 'inquilinoDocumento',
-    terminos: [
-      'cedula del arrendatario', 'documento del arrendatario', 'cedula arrendatario',
-      'documento arrendatario', 'nit arrendatario', 'identificacion arrendatario',
-      'cedula del inquilino', 'documento del inquilino', 'cedula inquilino',
-      'documento inquilino', 'identificacion inquilino',
-    ],
-  },
-  {
-    campo: 'inquilinoNombre',
-    terminos: [
-      'nombre del arrendatario', 'nombre arrendatario', 'arrendatario',
-      'nombre del inquilino', 'nombre inquilino', 'inquilino', 'tenant',
-    ],
-  },
-  {
-    campo: 'fechaInicio',
-    terminos: [
-      'fecha de inicio', 'fecha inicio', 'inicio del contrato', 'inicio contrato',
-      'desde', 'vigencia desde', 'start date',
-    ],
-  },
-  {
-    campo: 'fechaFin',
-    terminos: [
-      'fecha de terminacion', 'fecha de fin', 'fecha fin', 'fin del contrato',
-      'fin contrato', 'hasta', 'vigencia hasta', 'vencimiento', 'end date',
-    ],
-  },
-  {
-    campo: 'deposito',
-    terminos: ['deposito', 'garantia', 'deposito de garantia'],
-  },
-  {
-    campo: 'canon',
-    terminos: [
-      'canon de arrendamiento', 'canon mensual', 'valor del canon', 'valor canon',
-      'canon', 'arriendo', 'valor arriendo', 'renta mensual', 'rent',
-    ],
-  },
-  {
-    campo: 'diaDePago',
-    terminos: [
-      'dia de pago', 'dia pago', 'dia de plazo', 'plazo de pago', 'dia limite',
-      'fecha de pago',
-    ],
-  },
-  {
-    campo: 'uso',
-    terminos: ['uso del inmueble', 'uso', 'destinacion', 'destino'],
-  },
-  {
-    campo: 'periodicidad',
-    terminos: ['periodicidad', 'frecuencia de pago', 'frecuencia'],
-  },
-  {
-    campo: 'comision',
-    terminos: [
-      'comision de administracion', 'porcentaje de comision', 'comision',
-      '% administracion', 'honorarios',
-    ],
-  },
-  {
+export const SINONIMOS: Array<{ campo: CampoDeContrato; terminos: string[] }> =
+  [
+    {
+      campo: "inquilinoCorreo",
+      terminos: [
+        "correo del arrendatario",
+        "correo arrendatario",
+        "email arrendatario",
+        "correo del inquilino",
+        "correo inquilino",
+        "email inquilino",
+        "mail inquilino",
+        "e-mail inquilino",
+      ],
+    },
+    {
+      campo: "inquilinoTelefono",
+      terminos: [
+        "telefono del arrendatario",
+        "celular del arrendatario",
+        "telefono arrendatario",
+        "celular arrendatario",
+        "whatsapp arrendatario",
+        "movil arrendatario",
+        "telefono del inquilino",
+        "celular del inquilino",
+        "telefono inquilino",
+        "celular inquilino",
+        "whatsapp inquilino",
+      ],
+    },
+    {
+      campo: "inquilinoDocumento",
+      terminos: [
+        "cedula del arrendatario",
+        "documento del arrendatario",
+        "cedula arrendatario",
+        "documento arrendatario",
+        "nit arrendatario",
+        "identificacion arrendatario",
+        "cedula del inquilino",
+        "documento del inquilino",
+        "cedula inquilino",
+        "documento inquilino",
+        "identificacion inquilino",
+      ],
+    },
+    {
+      campo: "inquilinoNombre",
+      terminos: [
+        "nombre del arrendatario",
+        "nombre arrendatario",
+        "arrendatario",
+        "nombre del inquilino",
+        "nombre inquilino",
+        "inquilino",
+        "tenant",
+      ],
+    },
+    {
+      campo: "fechaInicio",
+      terminos: [
+        "fecha de inicio",
+        "fecha inicio",
+        "inicio del contrato",
+        "inicio contrato",
+        "desde",
+        "vigencia desde",
+        "start date",
+      ],
+    },
+    {
+      campo: "fechaFin",
+      terminos: [
+        "fecha de terminacion",
+        "fecha de fin",
+        "fecha fin",
+        "fin del contrato",
+        "fin contrato",
+        "hasta",
+        "vigencia hasta",
+        "vencimiento",
+        "end date",
+      ],
+    },
+    {
+      campo: "deposito",
+      terminos: ["deposito", "garantia", "deposito de garantia"],
+    },
+    {
+      campo: "canon",
+      terminos: [
+        "canon de arrendamiento",
+        "canon mensual",
+        "valor del canon",
+        "valor canon",
+        "canon",
+        "arriendo",
+        "valor arriendo",
+        "renta mensual",
+        "rent",
+      ],
+    },
+    {
+      campo: "diaDePago",
+      terminos: [
+        "dia de pago",
+        "dia pago",
+        "dia de plazo",
+        "plazo de pago",
+        "dia limite",
+        "fecha de pago",
+      ],
+    },
+    {
+      campo: "uso",
+      terminos: ["uso del inmueble", "uso", "destinacion", "destino"],
+    },
+    {
+      campo: "periodicidad",
+      terminos: ["periodicidad", "frecuencia de pago", "frecuencia"],
+    },
+    {
+      campo: "comision",
+      terminos: [
+        "comision de administracion",
+        "porcentaje de comision",
+        "comision",
+        "% administracion",
+        "honorarios",
+      ],
+    },
     /*
-     * Va de última y SIN `inmueble` ni `predio` a secas. Con esos términos,
-     * «Uso del inmueble» se mapeaba a la dirección: una palabra genérica
-     * empata con encabezados que hablan de otra cosa, y el auto-mapeo no
-     * duda — asigna y sigue. Lo agarró el test, no la lectura del código.
+     * El propietario, cuando el archivo lo trae. NO viaja al back (el DTO del
+     * contrato no lo admite): `MigrarContratos` lo guarda y, con el lote listo,
+     * consigna solo cada inmueble que no tenía consignación — el trabajo que
+     * antes le tocaba a la persona, fila por fila.
+     *
+     * Los términos del inquilino van ANTES en esta lista, así que «correo del
+     * arrendatario» nunca cae acá; «arrendador» y «dueno» sí, y de últimos.
      */
-    campo: 'direccionInmueble',
-    terminos: [
-      'direccion del inmueble', 'direccion inmueble', 'direccion del predio',
-      'direccion', 'address',
-    ],
-  },
-]
+    {
+      campo: "propietarioCorreo",
+      terminos: [
+        "correo del propietario",
+        "correo propietario",
+        "email propietario",
+        "email del propietario",
+        "correo del arrendador",
+        "email arrendador",
+      ],
+    },
+    {
+      campo: "propietarioTelefono",
+      terminos: [
+        "telefono del propietario",
+        "celular del propietario",
+        "telefono propietario",
+        "celular propietario",
+        "whatsapp propietario",
+        "telefono del arrendador",
+        "celular arrendador",
+      ],
+    },
+    {
+      campo: "propietarioDocumento",
+      terminos: [
+        "documento del propietario",
+        "cedula del propietario",
+        "nit del propietario",
+        "documento propietario",
+        "cedula propietario",
+        "nit propietario",
+        "identificacion del propietario",
+        "documento del arrendador",
+        "cedula del arrendador",
+        "nit del arrendador",
+      ],
+    },
+    {
+      campo: "propietarioNombre",
+      terminos: [
+        "nombre del propietario",
+        "nombre propietario",
+        "propietario",
+        "nombre del arrendador",
+        "arrendador",
+        "dueno",
+        "owner",
+      ],
+    },
+    /*
+     * El código del inmueble — el «#144» que la inmobiliaria ve en Inmuebles.
+     * Cuando el archivo lo trae, el back resuelve por código ANTES que por
+     * dirección (Nico, 2026-09-02: 90 contratos sin inmueble porque ninguna
+     * dirección coincidía letra a letra). Sin «codigo» ni «id» a secas: eso
+     * empataría con el número del contrato o con «código postal».
+     */
+    {
+      campo: "codigoInmueble",
+      terminos: [
+        "codigo del inmueble",
+        "codigo de inmueble",
+        "codigo inmueble",
+        "id del inmueble",
+        "id de inmueble",
+        "id inmueble",
+        "codigo del predio",
+        "codigo predio",
+        "codigo de la propiedad",
+        "codigo propiedad",
+        "numero de inmueble",
+        "numero del inmueble",
+        "no. inmueble",
+        "# inmueble",
+        "property code",
+        "property id",
+      ],
+    },
+    /*
+     * La ciudad del inmueble: sólo sirve para CREAR el inmueble cuando no
+     * está cargado (`Property.city` es obligatoria). «ciudad» a secas va de
+     * último y después de bloquear la del propietario/inquilino en
+     * `SIN_CAMPO_EN_CONTRATO`.
+     */
+    {
+      campo: "ciudadInmueble",
+      terminos: [
+        "ciudad del inmueble",
+        "ciudad inmueble",
+        "municipio del inmueble",
+        "municipio inmueble",
+        "ciudad",
+        "municipio",
+        "city",
+      ],
+    },
+    {
+      /*
+       * Va de última y SIN `inmueble` ni `predio` a secas. Con esos términos,
+       * «Uso del inmueble» se mapeaba a la dirección: una palabra genérica
+       * empata con encabezados que hablan de otra cosa, y el auto-mapeo no
+       * duda — asigna y sigue. Lo agarró el test, no la lectura del código.
+       */
+      campo: "direccionInmueble",
+      terminos: [
+        "direccion del inmueble",
+        "direccion inmueble",
+        "direccion del predio",
+        "direccion",
+        "address",
+      ],
+    },
+  ];
 
 /**
  * Encabezados para los que NO tenemos campo en un contrato.
@@ -148,27 +313,58 @@ export const SINONIMOS: Array<{ campo: CampoDeContrato; terminos: string[] }> = 
  * ese error se comete UNA vez y sale en la factura.
  */
 export const SIN_CAMPO_EN_CONTRATO = [
-  'matricula inmobiliaria', 'chip catastral', 'estrato',
-  'consecutivo', 'referencia interna',
-  'observaciones', 'notas',
-]
+  /*
+   * Direcciones que NO son la del inmueble. Sin esto, «Dirección del
+   * propietario» empataba con el término suelto «propietario» y terminaba de
+   * NOMBRE del propietario; y «Dirección de notificación» se robaba el campo
+   * de la dirección del inmueble si venía antes en el archivo.
+   */
+  "direccion del propietario",
+  "direccion propietario",
+  "direccion del arrendador",
+  "direccion arrendador",
+  "direccion del arrendatario",
+  "direccion arrendatario",
+  "direccion del inquilino",
+  "direccion inquilino",
+  "direccion de notificacion",
+  "direccion de correspondencia",
+  "direccion de cobro",
+  // Ciudades que NO son la del inmueble — sin esto «Ciudad del propietario»
+  // caía en `ciudadInmueble` por el término suelto «ciudad».
+  "ciudad del propietario",
+  "ciudad propietario",
+  "ciudad del arrendador",
+  "ciudad del arrendatario",
+  "ciudad del inquilino",
+  "ciudad inquilino",
+  "ciudad de notificacion",
+  "codigo postal",
+  "matricula inmobiliaria",
+  "chip catastral",
+  "estrato",
+  "consecutivo",
+  "referencia interna",
+  "observaciones",
+  "notas",
+];
 
 function normalizar(s: string): string {
   return s
     .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export interface MapeoDeColumna {
-  columna: string
-  campo: CampoDeContrato | null
+  columna: string;
+  campo: CampoDeContrato | null;
   /** Qué término del diccionario empató. Vacío si no empató nada. */
-  porque: string
+  porque: string;
   /** La persona lo corrigió a mano — no es el resultado del auto-mapeo. */
-  isManual?: boolean
+  isManual?: boolean;
 }
 
 /**
@@ -180,28 +376,28 @@ export interface MapeoDeColumna {
  * sólo puede confiar o no confiar.
  */
 export function mapearColumnas(encabezados: string[]): MapeoDeColumna[] {
-  const usados = new Set<CampoDeContrato>()
+  const usados = new Set<CampoDeContrato>();
 
   return encabezados.map((columna) => {
-    const n = normalizar(columna)
+    const n = normalizar(columna);
 
     if (SIN_CAMPO_EN_CONTRATO.some((t) => n.includes(t))) {
-      return { columna, campo: null, porque: '' }
+      return { columna, campo: null, porque: "" };
     }
 
     for (const { campo, terminos } of SINONIMOS) {
       // Un campo se llena una vez: si el archivo trae dos columnas parecidas,
       // la segunda queda sin mapear en vez de pisar a la primera en silencio.
-      if (usados.has(campo)) continue
-      const termino = terminos.find((t) => n.includes(t))
+      if (usados.has(campo)) continue;
+      const termino = terminos.find((t) => n.includes(t));
       if (termino) {
-        usados.add(campo)
-        return { columna, campo, porque: termino }
+        usados.add(campo);
+        return { columna, campo, porque: termino };
       }
     }
 
-    return { columna, campo: null, porque: '' }
-  })
+    return { columna, campo: null, porque: "" };
+  });
 }
 
 /**
@@ -214,15 +410,15 @@ export function mapearColumnas(encabezados: string[]): MapeoDeColumna[] {
  * ve idéntica a una a la que se le olvidó el IVA.
  */
 export const CAMPOS_CLAVE: CampoDeContrato[] = [
-  'direccionInmueble',
-  'inquilinoNombre',
-  'inquilinoCorreo',
-  'fechaInicio',
-  'fechaFin',
-  'canon',
-  'diaDePago',
-  'uso',
-]
+  "direccionInmueble",
+  "inquilinoNombre",
+  "inquilinoCorreo",
+  "fechaInicio",
+  "fechaFin",
+  "canon",
+  "diaDePago",
+  "uso",
+];
 
 /**
  * Qué campos clave no se mapearon a ninguna columna. Informativo, no bloquea:
@@ -230,8 +426,8 @@ export const CAMPOS_CLAVE: CampoDeContrato[] = [
  * fila después.
  */
 export function sinMapear(mapeo: MapeoDeColumna[]): CampoDeContrato[] {
-  const mapeados = new Set(mapeo.map((m) => m.campo).filter(Boolean))
-  return CAMPOS_CLAVE.filter((c) => !mapeados.has(c))
+  const mapeados = new Set(mapeo.map((m) => m.campo).filter(Boolean));
+  return CAMPOS_CLAVE.filter((c) => !mapeados.has(c));
 }
 
 /**
@@ -253,11 +449,11 @@ export function remapear(
 ): MapeoDeColumna[] {
   return mapeo.map((m) => {
     if (m.columna === columna) {
-      return { columna, campo, porque: '', isManual: true }
+      return { columna, campo, porque: "", isManual: true };
     }
     if (campo && m.campo === campo && m.columna !== columna) {
-      return { ...m, campo: null, porque: '', isManual: true }
+      return { ...m, campo: null, porque: "", isManual: true };
     }
-    return m
-  })
+    return m;
+  });
 }

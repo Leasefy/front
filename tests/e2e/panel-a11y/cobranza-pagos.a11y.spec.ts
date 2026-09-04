@@ -2,7 +2,7 @@
  * Cobranza pagos list — axe a11y gate (Phase 38-08, task 38-08-04).
  *
  * D-38-04 EmptyState: "Aún no hay pagos procesados" — CTA "Ver deudores"
- *                      → /panel/inmobiliaria/ai/cobranza/deudores.
+ *                      → /panel/inmobiliaria/cobros/cobranza/deudores.
  *
  * The pagos list page (PagosFunnelClient, Phase 38-05a) has a hasActiveFilters
  * discriminator: page-level EmptyState fires when zero rows AND no filters.
@@ -12,7 +12,7 @@ import { test, expect } from '@playwright/test'
 import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
-const ROUTE = '/panel/inmobiliaria/ai/cobranza/pagos'
+const ROUTE = '/panel/inmobiliaria/cobros/cobranza/pagos'
 const PAGOS_MOCK = '**/cobranza/payments**'
 const SKELETON_DELAY_MS = 2500
 

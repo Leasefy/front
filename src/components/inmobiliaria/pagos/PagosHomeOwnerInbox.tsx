@@ -62,7 +62,7 @@ export function PagosHomeOwnerInbox({
     useTablePagination(rows)
 
   return (
-    <Card className="rounded-xl">
+    <Card className="rounded-lg">
       <CardHeader>
         <CardTitle className="text-base">
           {t('inmobiliaria.ai.pagos_home.ownerInbox.title')}
@@ -77,7 +77,7 @@ export function PagosHomeOwnerInbox({
         ) : error && !isLoading ? (
           <div
             role="alert"
-            className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 flex items-center justify-between gap-4"
+            className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 flex items-center justify-between gap-4"
           >
             <span className="inline-flex items-center gap-2 text-sm text-rose-600 dark:text-rose-400">
               <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />

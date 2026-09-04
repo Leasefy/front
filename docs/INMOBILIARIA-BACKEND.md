@@ -47,13 +47,13 @@ All routes are protected with `allowedRoles={['agency']}`:
 /panel/inmobiliaria/propietarios → Property Owners
 /panel/inmobiliaria/inmuebles   → Consignaciones
 /panel/inmobiliaria/pipeline     → Candidate Pipeline
-/panel/inmobiliaria/agentes      → Agents
+/panel/inmobiliaria/configuracion/equipo      → Agents
 /panel/inmobiliaria/cobros       → Collections
-/panel/inmobiliaria/dispersiones → Disbursements
-/panel/inmobiliaria/operaciones  → Maintenance & Renewals
+/panel/inmobiliaria/pagos/dispersiones → Disbursements
+/panel/inmobiliaria/mantenimientos  → Maintenance & Renewals
 /panel/inmobiliaria/documentos   → Documents
 /panel/inmobiliaria/reportes     → Reports
-/panel/inmobiliaria/analytics    → Analytics
+/panel/inmobiliaria/reportes/ia    → Analytics
 /panel/inmobiliaria/configuracion → Settings
 /panel/inmobiliaria/mensajes     → Messages
 ```

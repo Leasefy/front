@@ -89,7 +89,7 @@ export function AccionDePostulacion({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-card rounded-xl border border-border">
+      <div className="w-full max-w-md bg-card rounded-lg border border-border">
         <div className="px-6 py-4 border-b border-border">
           <h2 className="text-base font-semibold text-fg">{cfg.title}</h2>
           <p className="text-sm text-fg-muted mt-0.5">{candidateName}</p>

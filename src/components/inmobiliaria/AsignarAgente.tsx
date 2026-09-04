@@ -13,6 +13,7 @@
  */
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { Briefcase, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -115,12 +116,23 @@ export function AsignarAgente({
             </div>
           }
           cuandoVacio={
-            <div className="rounded-lg border border-border bg-surface-muted px-4 py-6 text-center">
-              <Briefcase className="mx-auto mb-2 h-6 w-6 text-fg-subtle" />
-              <p className="text-sm text-fg">No tenés agentes activos</p>
+            // Un vacío con salida: de acá se va a invitar (la página de Equipo
+            // abre el formulario con `?invitar=1`). Nico, 2026-09-03: «cuando no
+            // hay agentes deberíamos dar la posibilidad de ir a crear uno».
+            <div
+              className="rounded-lg border border-border bg-surface-muted px-4 py-6 text-center"
+              data-testid="asignar-agente-vacio"
+            >
+              <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface text-fg-muted">
+                <Briefcase className="h-6 w-6" weight="duotone" aria-hidden="true" />
+              </span>
+              <p className="text-sm font-medium text-fg">No tenés agentes activos</p>
               <p className="mt-1 text-xs text-fg-muted">
                 Invitá a alguien a tu equipo y después volvé a asignarlo acá.
               </p>
+              <Button asChild size="sm" className="mt-4" data-testid="asignar-agente-invitar">
+                <Link href="/panel/inmobiliaria/configuracion/equipo?invitar=1">Invitar a alguien</Link>
+              </Button>
             </div>
           }
         >

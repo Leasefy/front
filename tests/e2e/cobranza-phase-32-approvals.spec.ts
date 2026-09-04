@@ -2,11 +2,11 @@ import { test, expect, type Page } from '@playwright/test'
 
 // Phase 32 plan 32-10 (COBR-UI-05 / COBR-UI-06 / COBR-UI-07 / COBR-UI-08) —
 // visual regression spec for the 5 new Phase 32 cobranza surfaces:
-//   - /panel/inmobiliaria/ai/cobranza/pagos                       (funnel)
-//   - /panel/inmobiliaria/ai/cobranza/pagos/planes/[planId]       (plan approval)
-//   - /panel/inmobiliaria/ai/cobranza/siniestros/[id]             (siniestro approval)
-//   - /panel/inmobiliaria/ai/cobranza/cartas/[id]                 (carta approval)
-//   - /panel/inmobiliaria/ai/cobranza/pagos/[paymentId]           (read-only detail)
+//   - /panel/inmobiliaria/cobros/cobranza/pagos                       (funnel)
+//   - /panel/inmobiliaria/cobros/cobranza/pagos/planes/[planId]       (plan approval)
+//   - /panel/inmobiliaria/cobros/cobranza/siniestros/[id]             (siniestro approval)
+//   - /panel/inmobiliaria/cobros/cobranza/cartas/[id]                 (carta approval)
+//   - /panel/inmobiliaria/cobros/cobranza/pagos/[paymentId]           (read-only detail)
 //
 // Fan-out across the 3 target viewport projects (iPhone 14 / iPad Mini /
 // Desktop Chrome 1440) = 18 baseline PNGs from 6 screenshot tests
@@ -457,7 +457,7 @@ test.describe('phase 32 cobranza approvals visual regression', () => {
   test('pagos funnel — KPI strip + table + ⚠ pill', async ({ page }) => {
     await installMocks(page)
 
-    await page.goto('/panel/inmobiliaria/ai/cobranza/pagos')
+    await page.goto('/panel/inmobiliaria/cobros/cobranza/pagos')
     await page.waitForLoadState('networkidle')
     await page
       .getByTestId('pagos-th-monto')
@@ -477,7 +477,7 @@ test.describe('phase 32 cobranza approvals visual regression', () => {
   test('payment plan approval — within limit, Aprobar enabled', async ({ page }) => {
     await installMocks(page)
 
-    await page.goto(`/panel/inmobiliaria/ai/cobranza/pagos/planes/${PLAN_ID}`)
+    await page.goto(`/panel/inmobiliaria/cobros/cobranza/pagos/planes/${PLAN_ID}`)
     await page.waitForLoadState('networkidle')
     await page
       .getByTestId('approval-aprobar-plan')
@@ -528,7 +528,7 @@ test.describe('phase 32 cobranza approvals visual regression', () => {
   }) => {
     await installMocks(page, { planPayload: PAYMENT_PLAN_OVER_LIMIT })
 
-    await page.goto(`/panel/inmobiliaria/ai/cobranza/pagos/planes/${PLAN_ID}`)
+    await page.goto(`/panel/inmobiliaria/cobros/cobranza/pagos/planes/${PLAN_ID}`)
     await page.waitForLoadState('networkidle')
     await page
       .getByTestId('max-discount-banner')
@@ -556,7 +556,7 @@ test.describe('phase 32 cobranza approvals visual regression', () => {
   test('siniestro approval page', async ({ page }) => {
     await installMocks(page)
 
-    await page.goto(`/panel/inmobiliaria/ai/cobranza/siniestros/${CLAIM_ID}`)
+    await page.goto(`/panel/inmobiliaria/cobros/cobranza/siniestros/${CLAIM_ID}`)
     await page.waitForLoadState('networkidle')
     await page
       .getByTestId('approval-aprobar-siniestro')
@@ -570,7 +570,7 @@ test.describe('phase 32 cobranza approvals visual regression', () => {
   test('carta approval page', async ({ page }) => {
     await installMocks(page)
 
-    await page.goto(`/panel/inmobiliaria/ai/cobranza/cartas/${CARTA_ID}`)
+    await page.goto(`/panel/inmobiliaria/cobros/cobranza/cartas/${CARTA_ID}`)
     await page.waitForLoadState('networkidle')
     await page
       .getByTestId('approval-aprobar-carta')
@@ -584,7 +584,7 @@ test.describe('phase 32 cobranza approvals visual regression', () => {
   test('payment read-only detail page', async ({ page }) => {
     await installMocks(page)
 
-    await page.goto(`/panel/inmobiliaria/ai/cobranza/pagos/${PAYMENT_ID}`)
+    await page.goto(`/panel/inmobiliaria/cobros/cobranza/pagos/${PAYMENT_ID}`)
     await page.waitForLoadState('networkidle')
     await page
       .getByTestId('pagos-detail-back')
@@ -600,7 +600,7 @@ test.describe('phase 32 cobranza approvals visual regression', () => {
   test('PageGuard blocks cobranza:view=false (behavioral)', async ({ page }) => {
     await installMocks(page, { permissions: PERMISSIONS_NO_VIEW })
 
-    await page.goto('/panel/inmobiliaria/ai/cobranza/pagos')
+    await page.goto('/panel/inmobiliaria/cobros/cobranza/pagos')
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(500)
 
@@ -616,7 +616,7 @@ test.describe('phase 32 cobranza approvals visual regression', () => {
   }) => {
     await installMocks(page, { permissions: PERMISSIONS_NO_APPROVE })
 
-    await page.goto(`/panel/inmobiliaria/ai/cobranza/pagos/planes/${PLAN_ID}`)
+    await page.goto(`/panel/inmobiliaria/cobros/cobranza/pagos/planes/${PLAN_ID}`)
     await page.waitForLoadState('networkidle')
     await page
       .getByTestId('approval-aprobar-plan')

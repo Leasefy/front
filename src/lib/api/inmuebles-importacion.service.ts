@@ -116,6 +116,16 @@ export interface ImportarInmuebleDto {
    */
   latitude?: number;
   longitude?: number;
+  /**
+   * El propietario, cuando el archivo lo trae. El back lo resuelve contra
+   * las fichas de la agencia al ACTIVAR (por documento, o por nombre exacto)
+   * y consigna el inmueble solo: no vuelve a preguntar «¿de quién es?».
+   * Nunca es un `faltante`.
+   */
+  propietarioDocumento?: string;
+  propietarioNombre?: string;
+  /** % de comisión (administración en arriendo, venta en venta). */
+  comisionPorcentaje?: number;
 }
 
 export interface FilaDeImportacion {

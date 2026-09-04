@@ -111,11 +111,11 @@ function OverviewBody({
       <div className="space-y-4" data-testid="sala-agente-loading">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-20 rounded-xl border border-border bg-muted/40 animate-pulse" />
+            <div key={i} className="h-20 rounded-lg border border-border bg-muted/40 animate-pulse" />
           ))}
         </div>
-        <div className="h-24 rounded-xl border border-border bg-muted/40 animate-pulse" />
-        <div className="h-40 rounded-xl border border-border bg-muted/40 animate-pulse" />
+        <div className="h-24 rounded-lg border border-border bg-muted/40 animate-pulse" />
+        <div className="h-40 rounded-lg border border-border bg-muted/40 animate-pulse" />
       </div>
     )
   }
@@ -123,7 +123,7 @@ function OverviewBody({
   if (error) {
     return (
       <div
-        className="rounded-xl border border-danger/30 bg-danger-soft text-danger"
+        className="rounded-lg border border-danger/30 bg-danger-soft text-danger"
         data-testid="sala-agente-error"
       >
         {t(`${WORKSPACE_NS}.sala.error`, { error })}
@@ -169,7 +169,7 @@ function OverviewBody({
           {overview.kpis.map((kpi) => (
             <div
               key={kpi.id}
-              className="rounded-xl border border-border bg-card p-4"
+              className="rounded-lg border border-border bg-card p-4"
               data-testid={`sala-kpi-${kpi.id}`}
             >
               <p className="text-xs text-muted-foreground leading-tight">{kpi.label}</p>
@@ -182,7 +182,7 @@ function OverviewBody({
       )}
 
       {/* Pipeline por estado */}
-      <section className="rounded-xl border border-border bg-card p-4 space-y-3" data-testid="sala-pipeline">
+      <section className="rounded-lg border border-border bg-card p-4 space-y-3" data-testid="sala-pipeline">
         <h2 className="text-sm font-semibold text-foreground">
           {pipelineTitle ?? t(`${WORKSPACE_NS}.sala.pipelineTitle`)}
         </h2>
@@ -225,7 +225,7 @@ function OverviewBody({
       </section>
 
       {/* Actividad reciente */}
-      <section className="rounded-xl border border-border bg-card p-4 space-y-3" data-testid="sala-feed">
+      <section className="rounded-lg border border-border bg-card p-4 space-y-3" data-testid="sala-feed">
         <h2 className="text-sm font-semibold text-foreground">{t(`${WORKSPACE_NS}.sala.feedTitle`)}</h2>
         {overview.feed.length === 0 ? (
           <p className="text-xs text-muted-foreground">{t(`${WORKSPACE_NS}.sala.feedEmpty`)}</p>

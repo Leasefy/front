@@ -8,7 +8,7 @@ import { test, expect, type Page } from '@playwright/test'
 // must be visible in simulator result card (D-36-08).
 //
 // Auth: localStorage seed (pruebasarrendador1902@gmail.com / role:agency).
-// Routes: /panel/inmobiliaria/ai/cobranza/configuracion
+// Routes: /panel/inmobiliaria/cobros/cobranza/configuracion
 //
 // v2.1 env workaround (NEVER commit these source tweaks):
 //   1. src/app/panel/inmobiliaria/layout.tsx — add 'tenant' to allowedRoles
@@ -286,7 +286,7 @@ for (const viewport of VIEWPORTS) {
     await seedAuth(page)
     await mockPoliciesEndpoints(page)
     await mockPermissions(page)
-    await page.goto('/panel/inmobiliaria/ai/cobranza/configuracion')
+    await page.goto('/panel/inmobiliaria/cobros/cobranza/configuracion')
     await page.waitForLoadState('domcontentloaded')
     await expect(
       page
@@ -308,7 +308,7 @@ test('locked RNE toggle is disabled — D-36-09 XR-03', async ({ page }) => {
   await seedAuth(page)
   await mockPoliciesEndpoints(page)
   await mockPermissions(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/configuracion')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/configuracion')
   await page.waitForLoadState('domcontentloaded')
   // Wait for Compliance section to be visible
   await expect(
@@ -342,7 +342,7 @@ test('impact simulator BarChart has non-zero bounding box on Desktop — XR-03',
   await seedAuth(page)
   await mockPoliciesEndpoints(page)
   await mockPermissions(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/configuracion')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/configuracion')
   await page.waitForLoadState('domcontentloaded')
   // Wait for page to load
   await expect(
@@ -380,7 +380,7 @@ test('simulator disclaimer caption visible — D-36-08', async ({ page }) => {
   await seedAuth(page)
   await mockPoliciesEndpoints(page)
   await mockPermissions(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/configuracion')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/configuracion')
   await page.waitForLoadState('domcontentloaded')
   await expect(
     page.locator('text=/Cadencia de contacto/i').first(),
@@ -408,7 +408,7 @@ test('version history table — v3 marked active — D-36-09', async ({ page }) 
   await seedAuth(page)
   await mockPoliciesEndpoints(page)
   await mockPermissions(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/configuracion')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/configuracion')
   await page.waitForLoadState('domcontentloaded')
   await expect(
     page.locator('text=/v3|versión 3/i').first(),
@@ -430,7 +430,7 @@ test('Restaurar button on v1 opens AlertDialog — D-36-09', async ({ page }) =>
   await seedAuth(page)
   await mockPoliciesEndpoints(page)
   await mockPermissions(page)
-  await page.goto('/panel/inmobiliaria/ai/cobranza/configuracion')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza/configuracion')
   await page.waitForLoadState('domcontentloaded')
   await expect(
     page.locator('text=/v1/i').first(),

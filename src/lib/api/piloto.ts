@@ -460,3 +460,126 @@ export async function runInboxAccion(
     return { ok: false, error: err instanceof Error ? err.message : 'accion_failed' }
   }
 }
+
+// ── La flota como UNA perilla (píldora del header, 2026-09-02) ──────────────
+
+export type ModoDeLaFlota = AutonomiaModo | 'mixto'
+
+export interface AgenteDeLaFlota {
+  agente: string
+  modo: AutonomiaModo
+  origen: 'piloto' | 'politica' | 'default'
+  corre: boolean
+}
+
+export interface PilotoFlotaResponse {
+  /** `PILOTO_ENABLED` del micro: apagado, la flota no corre aunque tenga modo. */
+  activo: boolean
+  /** El modo que comparten los agentes que corren, o `mixto`. */
+  modo: ModoDeLaFlota
+  agentes: AgenteDeLaFlota[]
+  resumen: Record<AutonomiaModo, number>
+  enVivo: { llamadas: number; conciliando: number; esperando: number }
+  tomadoAt: string
+}
+
+export function fetchPilotoFlota(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<PilotoFetchResult<PilotoFlotaResponse>> {
+  return getJson<PilotoFlotaResponse>(`/api/agency/${agencyId}/ai-hub/autonomia`, signal)
+}
+
+export interface PilotoFlotaPutResponse extends PilotoFlotaResponse {
+  cambiados: string[]
+  fallidos: Array<{ agente: string; error: string }>
+}
+
+/** Mueve la flota ENTERA a un modo. Solo OWNER/ADMIN (el micro devuelve 403 al resto). */
+export async function putPilotoFlota(
+  agencyId: string,
+  modo: AutonomiaModo,
+): Promise<{ ok: boolean; data?: PilotoFlotaPutResponse; error?: string }> {
+  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+  if (!agentUrl) return { ok: false, error: 'not_configured' }
+  try {
+    const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/ai-hub/autonomia`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ modo }),
+    })
+    if (!res.ok) {
+      const errBody = (await res.json().catch(() => ({}))) as { error?: string }
+      return { ok: false, error: errBody.error ?? `${res.status}` }
+    }
+    return { ok: true, data: (await res.json()) as PilotoFlotaPutResponse }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'put_failed' }
+  }
+}
+
+// ── Procesos: lo que el Piloto hizo, contado (process view, 2026-09-02) ─────
+
+export type TipoDeProceso = 'deposito' | 'llamada' | 'whatsapp'
+export type EstadoDeProceso = 'en_curso' | 'esperando' | 'hecho' | 'sin_resultado'
+export type EstadoDelPaso = 'hecho' | 'en_curso' | 'pendiente' | 'fallo'
+
+export interface PasoDeProceso {
+  /** ISO Bogotá; `null` cuando el paso todavía no ocurrió. */
+  at: string | null
+  titulo: string
+  detalle?: string
+  estado: EstadoDelPaso
+}
+
+export interface MensajeDeProceso {
+  at: string
+  de: 'yo' | 'ellos'
+  texto: string
+}
+
+export interface Proceso {
+  /** Id del cajón (`mov:` · `call:` · `wa:`). */
+  id: string
+  tipo: TipoDeProceso
+  agente: 'conciliacion' | 'cobranza'
+  estado: EstadoDeProceso
+  /** En primera persona: «Detecté un depósito de $2.400.000». */
+  titulo: string
+  resumen: string | null
+  resultado: string | null
+  quien: { nombre: string; inmueble: string | null } | null
+  montoCop: number | null
+  inicioAt: string
+  ultimoAt: string
+  pasos: PasoDeProceso[]
+  mensajes?: MensajeDeProceso[]
+  enVivo: boolean
+  enlace: { label: string; href: string } | null
+}
+
+export type SaludDeFuente = 'ok' | 'sin_back' | 'error'
+
+export interface PilotoProcesosResponse {
+  procesos: Proceso[]
+  /** Cuántos hay EN TOTAL por tipo (no solo los de esta respuesta). */
+  totales: Record<TipoDeProceso, number>
+  enVivo: number
+  fuentes: Record<TipoDeProceso, SaludDeFuente>
+  tomadoAt: string
+}
+
+export function fetchPilotoProcesos(
+  agencyId: string,
+  opciones: { tipo?: TipoDeProceso | 'todos'; limite?: number } = {},
+  signal?: AbortSignal,
+): Promise<PilotoFetchResult<PilotoProcesosResponse>> {
+  const q = new URLSearchParams()
+  if (opciones.tipo && opciones.tipo !== 'todos') q.set('tipo', opciones.tipo)
+  if (opciones.limite) q.set('limite', String(opciones.limite))
+  const qs = q.toString()
+  return getJson<PilotoProcesosResponse>(
+    `/api/agency/${agencyId}/ai-hub/procesos${qs ? `?${qs}` : ''}`,
+    signal,
+  )
+}

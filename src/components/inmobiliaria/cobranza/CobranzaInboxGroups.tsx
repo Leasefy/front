@@ -21,7 +21,7 @@
  * respuesta sugerida" no tiene endpoint → placeholder honesto "Próximamente"
  * deshabilitado. Nunca se auto-responde, escala ni presiona.
  *
- * Estilo: contrato DS 2026-06-16 — rounded-xl border-border bg-card, tonos por
+ * Estilo: contrato DS 2026-06-16 — rounded-lg border-border bg-card, tonos por
  * token (primary/success/warning/danger + *-soft), badges de estado en pill,
  * sin hex inline.
  */
@@ -224,7 +224,7 @@ export function InboxItemCard({
 
   return (
     <li
-      className={`rounded-xl border bg-surface p-4 space-y-2.5 transition-colors ${
+      className={`rounded-lg border bg-surface p-4 space-y-2.5 transition-colors ${
         isOpen ? 'border-primary ring-1 ring-primary/30' : 'border-border'
       }`}
       data-testid={`inbox-item-${item.key}`}
@@ -363,7 +363,7 @@ export function InboxThreadPanel({
   if (isLoading) {
     return (
       <div
-        className="rounded-xl border border-border bg-surface-muted p-4 text-sm text-fg-muted"
+        className="rounded-lg border border-border bg-surface-muted p-4 text-sm text-fg-muted"
         role="status"
       >
         Cargando conversación…
@@ -373,14 +373,14 @@ export function InboxThreadPanel({
 
   if (messages.length === 0) {
     return (
-      <div className="rounded-xl border border-border bg-surface-muted p-4 text-sm text-fg-muted">
+      <div className="rounded-lg border border-border bg-surface-muted p-4 text-sm text-fg-muted">
         Esta conversación todavía no tiene mensajes para mostrar.
       </div>
     )
   }
 
   return (
-    <div className="rounded-xl border border-border bg-surface-muted p-4 space-y-3">
+    <div className="rounded-lg border border-border bg-surface-muted p-4 space-y-3">
       <ul className="space-y-2.5" aria-label="Mensajes de la conversación">
         {messages.map((m) => {
           const inbound = m.direction === 'inbound'
@@ -390,7 +390,7 @@ export function InboxThreadPanel({
               className={`flex ${inbound ? 'justify-start' : 'justify-end'}`}
             >
               <div
-                className={`max-w-[80%] rounded-xl px-3 py-2 ${
+                className={`max-w-[80%] rounded-lg px-3 py-2 ${
                   inbound
                     ? 'bg-surface border border-border'
                     : 'bg-primary-soft'

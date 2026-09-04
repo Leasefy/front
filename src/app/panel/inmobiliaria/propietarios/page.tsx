@@ -345,10 +345,10 @@ function PropietariosContent() {
             <CaretRight className="w-3 h-3" />
             <span className="text-foreground">{t('inmobiliaria.propietarios.title')}</span>
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            {t('inmobiliaria.propietarios.crmTitle')}
+          <h1 className="text-h2 text-fg">
+            {t('inmobiliaria.propietarios.title')}
           </h1>
-          <p className="text-sm text-muted-foreground max-w-2xl">
+          <p className="text-body text-fg-muted max-w-2xl line-clamp-2">
             {t('inmobiliaria.propietarios.subtitle')}
           </p>
         </div>
@@ -399,7 +399,7 @@ function PropietariosContent() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-xl border border-border bg-card overflow-hidden"
+        className="rounded-lg border border-border bg-card overflow-hidden"
       >
         {/* View Toggle Header */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
@@ -549,7 +549,7 @@ function PropietariosContent() {
               {t('inmobiliaria.propietarios.deleteConfirm', { name: deletingPropietario.name })}
             </p>
             {deletingPropietario.propertyCount > 0 && (
-              <div className="p-3 rounded-xl bg-warning-soft border border-warning/30">
+              <div className="p-3 rounded-lg bg-warning-soft border border-warning/30">
                 <div className="flex items-center gap-2 text-warning">
                   <Warning className="w-4 h-4" />
                   <p className="text-sm">

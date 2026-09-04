@@ -714,3 +714,49 @@ describe('<ConsignacionWizard> — step 5 reachable on the sale path (T-0042)', 
     expect(uploadPropertyPhotosMock).toHaveBeenCalledWith('property-1', photos)
   })
 })
+
+describe('<ConsignacionWizard> — desde la ficha del propietario (propietarioInicial + volverA)', () => {
+  const FICHA = '/panel/inmobiliaria/propietarios/prop-1'
+
+  async function renderDesdeLaFicha() {
+    await act(async () => {
+      root.render(
+        React.createElement(ConsignacionWizard, {
+          propietarios: PROPIETARIOS,
+          agentes: AGENTE_LIST,
+          propietarioInicial: 'prop-1',
+          volverA: FICHA,
+        }),
+      )
+    })
+  }
+
+  it('al terminar vuelve a la ficha del propietario, no al portafolio', async () => {
+    await renderDesdeLaFicha()
+    for (let paso = 1; paso < 6; paso++) {
+      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
+    }
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment'))
+    expect(pushMock).toHaveBeenCalledWith(FICHA)
+    expect(pushMock).not.toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
+  })
+
+  it('si el mandato falla también vuelve a donde se entró', async () => {
+    consignacionesApiMock.create.mockRejectedValueOnce(new Error('boom'))
+    await renderDesdeLaFicha()
+    for (let paso = 1; paso < 6; paso++) {
+      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
+    }
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment'))
+    expect(pushMock).toHaveBeenCalledWith(FICHA)
+  })
+
+  it('sin volverA sigue yendo al portafolio', async () => {
+    await renderWizard(AGENTE_LIST)
+    for (let paso = 1; paso < 6; paso++) {
+      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
+    }
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment'))
+    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
+  })
+})

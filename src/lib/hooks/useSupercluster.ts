@@ -7,6 +7,7 @@ import { useMemo, useRef } from 'react';
 import Supercluster from 'supercluster';
 import type { Property } from '@/lib/types/property';
 import { CLUSTER_CONFIG } from '@/lib/constants/map';
+import { tieneCoordenadas } from '@/components/map/coordenadas';
 
 export interface ClusterPoint {
   type: 'cluster';
@@ -50,15 +51,18 @@ export function useSupercluster(
   const points: MapPoint[] = useMemo(() => {
     if (!bounds || !properties.length) return [];
 
-    // Create GeoJSON points from properties
-    const geoPoints = properties.map((property) => ({
-      type: 'Feature' as const,
-      properties: { ...property },
-      geometry: {
-        type: 'Point' as const,
-        coordinates: [property.longitude, property.latitude] as [number, number],
-      },
-    }));
+    // Create GeoJSON points from properties. `latitude`/`longitude` pueden
+    // ser null (inmueble sin geocodificar): esos no entran al índice.
+    const geoPoints = properties
+      .filter((property) => tieneCoordenadas(property.latitude, property.longitude))
+      .map((property) => ({
+        type: 'Feature' as const,
+        properties: { ...property },
+        geometry: {
+          type: 'Point' as const,
+          coordinates: [property.longitude as number, property.latitude as number] as [number, number],
+        },
+      }));
 
     // Initialize supercluster
     const index = new Supercluster({

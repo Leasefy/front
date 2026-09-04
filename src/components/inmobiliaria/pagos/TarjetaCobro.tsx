@@ -5,7 +5,7 @@
  * (visión §2A/§4): el ciclo de vida de UN cobro a un inquilino. Muestra
  * Contrato/inquilino · conceptos · total · fecha límite · estado · canal ·
  * última actividad · siguiente acción, y la barra de acciones del punto 4
- * (Reenviar link / Copiar link / Cambiar fecha / Registrar pago manual /
+ * (Reenviar link / Copiar link / Cambiar fecha / Hacer recibo de caja /
  * Dividir pago / Enviar a cobranza / Ver historial).
  *
  * T-323: NO existe aún el endpoint dedicado de listado-de-cobros-del-agente ni
@@ -79,7 +79,7 @@ const ACCIONES_COBRO: AccionCobro[] = [
   { id: 'reenviar', label: 'Reenviar link', icon: PaperPlaneTilt },
   { id: 'copiar', label: 'Copiar link', icon: LinkSimple },
   { id: 'cambiar_fecha', label: 'Cambiar fecha', icon: CalendarBlank },
-  { id: 'pago_manual', label: 'Registrar pago manual', icon: HandCoins },
+  { id: 'pago_manual', label: 'Hacer recibo de caja', icon: HandCoins },
   { id: 'dividir', label: 'Dividir pago', icon: ArrowsSplit },
   { id: 'cobranza', label: 'Enviar a cobranza', icon: ArrowBendUpRight },
   { id: 'historial', label: 'Ver historial', icon: ClockCounterClockwise },

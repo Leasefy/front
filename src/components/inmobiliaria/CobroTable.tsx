@@ -359,7 +359,7 @@ export function CobroTable({
                       {cobro.status !== 'paid' && onRegisterPayment && (
                         <DropdownListItem onSelect={() => onRegisterPayment(cobro)} className="text-primary">
                           <CurrencyCircleDollar className="w-4 h-4" />
-                          <span className="text-sm">{t('inmobiliaria.cobros.table.registerPayment')}</span>
+                          <span className="text-sm">{t('recibos.hacerCorto')}</span>
                         </DropdownListItem>
                       )}
                     </DropdownListContent>

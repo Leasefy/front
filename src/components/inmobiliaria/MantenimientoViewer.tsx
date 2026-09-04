@@ -243,7 +243,7 @@ function PhotoGallery({
 
   if (!photos || photos.length === 0) {
     return (
-      <div className="p-4 rounded-xl border border-dashed border-border text-center space-y-2">
+      <div className="p-4 rounded-lg border border-dashed border-border text-center space-y-2">
         <Camera className="w-8 h-8 mx-auto text-muted-foreground" />
         <p className="text-sm text-muted-foreground">{emptyLabel}</p>
         {onUpload && (
@@ -472,7 +472,7 @@ export function MantenimientoViewer({
                   <TypeIcon className={cn('w-5 h-5', priorityStyle.text)} />
                 </div>
                 <div>
-                  <SheetTitle className="text-left">{solicitud.title}</SheetTitle>
+                  <SheetTitle className="text-left text-lg font-semibold text-fg">{solicitud.title}</SheetTitle>
                   <p className="text-sm text-muted-foreground mt-0.5">
                     {typeInfo?.labelEs} · {fmtDate(solicitud.createdAt)}
                   </p>
@@ -513,7 +513,7 @@ export function MantenimientoViewer({
                 <Buildings className="w-4 h-4" />
                 {t('inmobiliaria.mantenimiento.propertyAndPeople')}
               </h4>
-              <div className="p-4 rounded-xl border border-border bg-card space-y-3">
+              <div className="p-4 rounded-lg border border-border bg-card space-y-3">
                 <div>
                   <p className="font-medium text-foreground">{solicitud.propertyTitle}</p>
                   <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
@@ -626,7 +626,7 @@ export function MantenimientoViewer({
             </div>
 
             {/* Who Pays */}
-            <div className="p-4 rounded-xl border border-border bg-muted/50">
+            <div className="p-4 rounded-lg border border-border bg-muted/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CurrencyDollar className="w-5 h-5 text-muted-foreground" />

@@ -86,7 +86,7 @@ export function LocationPicker({ value, onChange, city, className }: LocationPic
 
   return (
     <div className={cn('space-y-1.5', className)}>
-      <div className="relative w-full h-64 rounded-xl overflow-hidden border border-border">
+      <div className="relative w-full h-64 rounded-lg overflow-hidden border border-border">
         <Map
           ref={mapRef}
           initialViewState={{

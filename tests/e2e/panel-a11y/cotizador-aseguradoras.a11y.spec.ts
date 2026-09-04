@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test'
 import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
-const ROUTE = '/panel/inmobiliaria/ai/cotizador/aseguradoras'
+const ROUTE = '/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras'
 const ASEGURADORAS_MOCK = '**/aseguradoras/registry**'
 const SKELETON_DELAY_MS = 2500
 

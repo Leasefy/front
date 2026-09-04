@@ -141,7 +141,7 @@ export function FalloDeCarga({
     <div
       className={cn(
         'px-6 py-16 text-center',
-        enmarcado && 'rounded-xl border border-border bg-card',
+        enmarcado && 'rounded-lg border border-border bg-card',
         className,
       )}
       role="alert"

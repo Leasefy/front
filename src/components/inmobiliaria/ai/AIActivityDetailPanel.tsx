@@ -212,7 +212,7 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
 
         {/* Result summary */}
         {activity.metadata?.score !== undefined && (
-          <div className="mx-6 mt-5 rounded-xl border border-border bg-surface-muted p-4 animate-content-reveal" style={{ animationDelay: '0.15s' }}>
+          <div className="mx-6 mt-5 rounded-lg border border-border bg-surface-muted p-4 animate-content-reveal" style={{ animationDelay: '0.15s' }}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-fg-subtle">Resultado</p>
@@ -316,7 +316,7 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
         {errorContext && (
           <div className="px-6 pb-6 animate-content-reveal" style={{ animationDelay: '0.35s' }}>
             <div className={cn(
-              'rounded-xl border p-5 space-y-4',
+              'rounded-lg border p-5 space-y-4',
               errorContext.severity === 'critical'
                 ? 'border-danger/30 bg-danger-soft/50'
                 : 'border-warning/30 bg-warning-soft/50',

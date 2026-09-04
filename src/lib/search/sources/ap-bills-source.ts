@@ -16,7 +16,7 @@
  * subtitle = costCenterCode.
  *
  * Permission: ap:view
- * href: /panel/inmobiliaria/tesoreria/ap/:id
+ * href: /panel/inmobiliaria/pagos/cxp/:id
  */
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
@@ -113,7 +113,7 @@ export const apBillsSource: SearchSource = {
           title: item.title,
           subtitle: item.subtitle ?? item.ref ?? undefined,
           badges,
-          href: `/panel/inmobiliaria/tesoreria/ap/${item.id}`,
+          href: `/panel/inmobiliaria/pagos/cxp/${item.id}`,
           // Preview degrades gracefully — panel already null-guards all fields.
           preview: {
             type: 'ap-bill',
@@ -154,7 +154,7 @@ export const apBillsSource: SearchSource = {
           },
           { label: formatCOP(item.amountCop), color: 'neutral' as const },
         ],
-        href: `/panel/inmobiliaria/tesoreria/ap/${item.id}`,
+        href: `/panel/inmobiliaria/pagos/cxp/${item.id}`,
         preview: {
           type: 'ap-bill',
           id: item.id,

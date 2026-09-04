@@ -9,7 +9,6 @@ import {
   EyeSlash,
   Copy,
   Check,
-  ShieldCheck,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { IconButton } from '@leasefy/cadence';
@@ -38,7 +37,46 @@ export function PropietarioBankInfo({
   const [showAccount, setShowAccount] = useState(showFullDetails);
   const [copied, setCopied] = useState(false);
 
-  const bank = COLOMBIAN_BANKS.find((b) => b.code === bankAccount.bank);
+  const bank = COLOMBIAN_BANKS.find((b) => b.code === bankAccount?.bank);
+  // Sin cuenta (propietario migrado o creado sin datos bancarios) no hay qué
+  // enmascarar: se dice y se ofrece cargarla. Antes reventaba con
+  // «reading 'bank'» de undefined (Nico, 2026-09-02 12:47).
+  if (!bankAccount || !bankAccount.accountNumber) {
+    return (
+      <div
+        className={cn(
+          'p-4 rounded-lg border border-dashed border-border bg-surface dark:bg-bg',
+          className
+        )}
+        data-testid="bank-info-vacio"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+              <Bank className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-fg dark:text-white">
+                {t('inmobiliaria.propietario.bankInfo.bankAccount')}
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                {t('inmobiliaria.propietario.bankInfo.sinCuenta')}
+              </p>
+            </div>
+          </div>
+          {onEdit ? (
+            <IconButton
+              variant="ghost"
+              size="md"
+              onClick={onEdit}
+              aria-label="Editar datos bancarios"
+              icon={<PencilSimple className="w-4 h-4" />}
+            />
+          ) : null}
+        </div>
+      </div>
+    );
+  }
   const accountTypeLabel = bankAccount.accountType === 'savings' ? t('inmobiliaria.propietario.bankInfo.savings') : t('inmobiliaria.propietario.bankInfo.checking');
 
   const maskAccount = (account: string) => {
@@ -66,7 +104,7 @@ export function PropietarioBankInfo({
   return (
     <div
       className={cn(
-        'p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]',
+        'p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg',
         className
       )}
     >
@@ -102,7 +140,7 @@ export function PropietarioBankInfo({
         <div className="flex items-center justify-between py-2 border-b border-border-faint dark:border-border-strong">
           <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.propietario.bankInfo.bank')}</span>
           <span className="font-medium text-fg dark:text-white">
-            {bank?.name || bankAccount.bank}
+            {bank?.name || bankAccount.bankName || bankAccount.bank}
           </span>
         </div>
 
@@ -153,13 +191,9 @@ export function PropietarioBankInfo({
         </div>
       </div>
 
-      {/* Verification Badge */}
-      <div className="mt-4 pt-3 border-t border-border-faint dark:border-border-strong">
-        <div className="flex items-center gap-2 text-success">
-          <ShieldCheck className="w-4 h-4" />
-          <span className="text-xs font-medium">{t('inmobiliaria.propietario.bankInfo.verified')}</span>
-        </div>
-      </div>
+      {/* Acá había un sello «Datos verificados» permanente. Nadie verifica
+          nada: la cuenta es lo que alguien tipeó. Un sello que siempre está
+          no informa, y el día que haya verificación real se agrega con ella. */}
     </div>
   );
 }
@@ -175,7 +209,8 @@ export function PropietarioBankInfoCompact({
   className?: string;
 }) {
   const { t } = useI18n();
-  const bank = COLOMBIAN_BANKS.find((b) => b.code === bankAccount.bank);
+  const bank = COLOMBIAN_BANKS.find((b) => b.code === bankAccount?.bank);
+  if (!bankAccount || !bankAccount.accountNumber) return null;
   const accountTypeLabel = bankAccount.accountType === 'savings' ? t('inmobiliaria.propietario.bankInfo.savings') : t('inmobiliaria.propietario.bankInfo.checking');
 
   const maskAccount = (account: string) => {
@@ -190,7 +225,7 @@ export function PropietarioBankInfoCompact({
       </div>
       <div className="min-w-0">
         <p className="text-sm font-medium text-fg dark:text-white truncate">
-          {bank?.name || bankAccount.bank} {maskAccount(bankAccount.accountNumber)}
+          {bank?.name || bankAccount.bankName || bankAccount.bank} {maskAccount(bankAccount.accountNumber)}
         </p>
         <p className="text-xs text-fg-muted dark:text-fg-subtle">
           {accountTypeLabel} • {bankAccount.accountHolder}

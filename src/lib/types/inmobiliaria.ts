@@ -13,6 +13,13 @@ export type DocumentType = 'CC' | 'CE' | 'NIT' | 'PASSPORT';
 
 export interface PropietarioBankAccount {
   bank: BankCode;
+  /**
+   * El nombre del banco tal como llegó del back («Nequi», «Banco de Bogota»).
+   * `bank` es el código del catálogo del front y queda vacío cuando el nombre
+   * no está ahí (las billeteras no están); sin esto la ficha decía «Banco: »
+   * en blanco para 8 de cada 60 propietarios.
+   */
+  bankName?: string;
   accountType: AccountType;
   accountNumber: string;
   accountHolder: string;
@@ -33,8 +40,30 @@ export interface Propietario {
   propertyCount: number;
   activeLeases: number;
   totalMonthlyRent: number;
+  /**
+   * Comisión mensual REAL de la agencia sobre los arrendados (Σ canon ×
+   * porcentaje de cada mandato), calculada en el back. Opcional porque un
+   * back viejo no la manda; sin ella no se estima nada (el «~10 %» que
+   * salía antes era inventado).
+   */
+  totalCommission?: number;
+  /** Lo que la inmobiliaria le debe: Σ neto de las dispersiones pendientes o en proceso. */
   pendingBalance: number;
-  lastPaymentDate?: string;
+  /** Última dispersión completada. */
+  lastPaymentDate?: string | null;
+  /** Canon de los arrendados menos la comisión: lo que recibe al mes. Del back. */
+  netToOwner?: number;
+  /**
+   * Perfil tributario (2026-09-02). `null` = «no lo sabemos», que NO es «no»:
+   * con null se cobra con el perfil por defecto del tipo de persona, y la
+   * ficha lo dice. El tipo de persona sale de `documentType` (NIT = empresa).
+   */
+  responsableIva?: boolean | null;
+  agenteRetenedorRenta?: boolean | null;
+  agenteRetenedorIva?: boolean | null;
+  agenteRetenedorIca?: boolean | null;
+  /** El id que traía en el sistema del que se migró. Informativo, no es llave. */
+  externalId?: string | null;
   notes?: string;
   tags?: string[];
   createdAt: string;
@@ -54,6 +83,11 @@ export interface PropietarioFormData {
   accountNumber: string;
   accountHolder: string;
   notes?: string;
+  /** Perfil tributario; `null` = sin definir. Van al back tal cual. */
+  responsableIva?: boolean | null;
+  agenteRetenedorRenta?: boolean | null;
+  agenteRetenedorIva?: boolean | null;
+  agenteRetenedorIca?: boolean | null;
 }
 
 // ============================================================================
@@ -122,10 +156,55 @@ export interface AgenteFormData {
 export type ConsignacionStatus = 'active' | 'terminated' | 'expired' | 'pending';
 export type PropertyAvailability = 'available' | 'rented' | 'in_process' | 'maintenance';
 
+/**
+ * Un dueño del inmueble, con su tajada del mandato.
+ *
+ * `participacionBps` va en puntos básicos: 100 % = 10000, un tercio = 3333.
+ * Entero y no decimal porque la invariante que importa es «suman 100», y sobre
+ * enteros eso se verifica exacto (33.33 × 3 nunca da 100).
+ */
+export interface Copropietario {
+  propietarioId: string;
+  participacionBps: number;
+  /** Lo que hace falta para mostrarlo sin ir a buscarlo. Viene del back. */
+  propietario?: {
+    id: string;
+    name: string;
+    email?: string | null;
+    phone?: string | null;
+    documentNumber?: string | null;
+  };
+}
+
+/** 100 % en puntos básicos — el mismo `BPS_TOTAL` del back. */
+export const BPS_TOTAL = 10000;
+
+/** `3333` → `"33,33 %"`. Sin decimales cuando son redondos: `5000` → `"50 %"`. */
+export function formatParticipacion(bps: number): string {
+  const pct = bps / 100;
+  return `${pct.toLocaleString('es-CO', { maximumFractionDigits: 2 })} %`;
+}
+
 export interface Consignacion {
   id: string;
   propertyId: string;
+  /**
+   * El propietario PRINCIPAL — el de mayor participación.
+   *
+   * Un inmueble puede tener más de un dueño (2026-09-03): la lista completa es
+   * `copropietarios`. Este campo es DERIVADO del de mayor participación y se
+   * mantiene porque es el que sigue leyendo todo el circuito de plata del back.
+   * Para mostrar «de quién es el inmueble», usá `copropietarios` cuando tenga
+   * más de uno.
+   */
   propietarioId: string;
+  /**
+   * Todos los dueños con su participación, de mayor a menor.
+   *
+   * Vacío sólo contra un back viejo que todavía no manda el campo — en ese caso
+   * hay que caer a `propietarioId`, nunca fabricar una participación.
+   */
+  copropietarios: Copropietario[];
   agenteId: string;
 
   // Property info (denormalized for convenience)
@@ -204,6 +283,12 @@ export interface InventoryItem {
 
 export interface ConsignacionFormData {
   propietarioId: string;
+  /**
+   * Varios dueños con su participación. Excluyente con `propietarioId`: el back
+   * 400ea si llegan los dos, así que `toConsignacionPayload` quita el suelto
+   * cuando esta lista viene cargada. Ausente = un solo dueño, la forma vieja.
+   */
+  copropietarios?: { propietarioId: string; participacionBps: number }[];
   propertyTitle: string;
   propertyAddress: string;
   propertyCity: string;
@@ -660,6 +745,53 @@ export interface RenglonDeLiquidacion {
  * abrirlo. Es el mismo defecto que ya había tenido CarteraItem, en el tipo de
  * al lado.
  */
+/**
+ * Huella de un envío del extracto mensual a un propietario
+ * (GET /inmobiliaria/propietarios/:id/extractos, las últimas 12).
+ */
+export type EstadoDelExtractoEnviado = 'ENVIADO' | 'FALLIDO' | 'OMITIDO';
+export type OrigenDelExtractoEnviado = 'automatico' | 'manual';
+
+export interface ExtractoEnviado {
+  id: string;
+  /** 'YYYY-MM' */
+  month: string;
+  origen: OrigenDelExtractoEnviado;
+  estado: EstadoDelExtractoEnviado;
+  destinatario: string | null;
+  /** Por qué falló o se omitió; null cuando salió. */
+  motivo: string | null;
+  enviadoAt: string | null;
+  createdAt: string;
+}
+
+/** GET /inmobiliaria/propietarios/extractos/resumen?month=YYYY-MM */
+export interface ResumenDeExtractos {
+  month: string;
+  enviados: number;
+  fallidos: number;
+  omitidos: number;
+  ultimoEnvioAt: string | null;
+  /** Propietarios con al menos un cobro en ese mes: los que recibirían extracto. */
+  propietariosConActividad: number;
+}
+
+export interface DetalleDeEnvioDeExtracto {
+  propietarioId: string;
+  nombre: string;
+  estado: EstadoDelExtractoEnviado;
+  motivo?: string;
+}
+
+/** POST /inmobiliaria/propietarios/extractos/enviar-mes */
+export interface ResultadoDeEnvioMasivo {
+  month: string;
+  enviados: number;
+  fallidos: number;
+  omitidos: number;
+  detalle: DetalleDeEnvioDeExtracto[];
+}
+
 export interface ExtractoPropietario {
   propietarioId: string;
   propietarioName: string;
@@ -756,6 +888,26 @@ export interface CarteraReport {
   };
   /** Optional monthly breakdown (backend may not return this yet) */
   byMonth?: CarteraMonthItem[];
+  /**
+   * Los casos en siniestro: `diasParaSiniestro` días de mora con saldo. Van
+   * aparte de `items` — ya no son cobranza, son reclamación a la aseguradora.
+   * Opcional porque un back anterior no lo manda.
+   */
+  siniestros?: CarteraSiniestros;
+}
+
+/** Un caso en siniestro, con cuándo pasó y cuántos días lleva ahí. */
+export interface CarteraSiniestro extends CarteraItem {
+  siniestroAt: string | null;
+  diasEnSiniestro: number;
+}
+
+export interface CarteraSiniestros {
+  cantidad: number;
+  totalCop: number;
+  /** A los cuántos días de mora pasa un cobro a siniestro en esta agencia. */
+  diasParaSiniestro: number;
+  items: CarteraSiniestro[];
 }
 
 // ============================================================================
@@ -890,6 +1042,82 @@ export interface FlujoCajaReport {
   };
 }
 
+// ── Rentabilidad por inmueble ────────────────────────────────────────────────
+//
+// `GET /inmobiliaria/reports/rentabilidad?desde=YYYY-MM&hasta=YYYY-MM`. Los
+// porcentajes vienen en 0-100 con dos decimales. `rentabilidadNetaAnualPct`
+// en `null` significa «sin valor comercial registrado»: no se inventa.
+
+/** De dónde salió la ocupación: del historial de contratos o de los cobros. */
+export type RentabilidadOcupacionFuente = 'leases' | 'cobros';
+
+export interface RentabilidadFila {
+  consignacionId: string;
+  propertyId: string | null;
+  codigo: number | null;
+  propertyTitle: string;
+  propertyAddress: string;
+  propertyCity: string;
+  propertyZone: string | null;
+  propietarioId: string;
+  propietarioNombre: string;
+  canonCop: number;
+  canonDesconocido: boolean;
+  mesesEnRango: number;
+  mesesConCobro: number;
+  esperadoCop: number;
+  recaudadoCop: number;
+  pendienteCop: number;
+  enMoraCop: number;
+  tasaDeRecaudoPct: number;
+  comisionCop: number;
+  retencionesYCargosCop: number;
+  gastosMantenimientoCop: number;
+  netoPropietarioCop: number;
+  margenNetoPct: number;
+  ocupacionPct: number;
+  ocupacionFuente: RentabilidadOcupacionFuente;
+  diasEnRango: number;
+  diasVacantes: number;
+  ingresoPerdidoPorVacanciaCop: number;
+  valorInmuebleCop: number | null;
+  rentabilidadBrutaAnualPct: number | null;
+  rentabilidadNetaAnualPct: number | null;
+  estado: 'ACTIVE' | 'TERMINATED' | 'EXPIRED' | 'PENDING';
+  availability: 'AVAILABLE' | 'RENTED' | 'IN_PROCESS' | 'MAINTENANCE';
+}
+
+export interface RentabilidadTotales {
+  inmuebles: number;
+  esperadoCop: number;
+  recaudadoCop: number;
+  pendienteCop: number;
+  enMoraCop: number;
+  tasaDeRecaudoPct: number;
+  comisionCop: number;
+  retencionesYCargosCop: number;
+  gastosMantenimientoCop: number;
+  netoPropietarioCop: number;
+  ocupacionPromedioPct: number;
+  ingresoPerdidoPorVacanciaCop: number;
+  /** Cuántos inmuebles tienen valor comercial registrado. */
+  conValor: number;
+  gastosDescontadosEnElReporte: true;
+}
+
+export interface RentabilidadReport {
+  /** `YYYY-MM` */
+  desde: string;
+  /** `YYYY-MM` */
+  hasta: string;
+  meses: number;
+  generatedAt: string;
+  /** Ordenadas por `netoPropietarioCop` descendente. */
+  filas: RentabilidadFila[];
+  totales: RentabilidadTotales;
+  notas: string[];
+}
+
 // ============================================================================
 // Dashboard KPIs
 // ============================================================================
@@ -1021,7 +1249,8 @@ export type ReportId =
   | 'ocupacion-portafolio'
   | 'vencimientos'
   | 'rendimiento-agentes'
-  | 'flujo-caja';
+  | 'flujo-caja'
+  | 'rentabilidad-inmueble';
 
 export type ReportFormat = 'pdf' | 'excel';
 export type ReportCategory = 'financiero' | 'operativo' | 'agentes';
@@ -1121,14 +1350,21 @@ export interface Renovacion {
   propertyTitle: string;
   propertyAddress: string;
   tenantName: string;
-  tenantPhone: string;
-  tenantEmail: string;
+  /**
+   * El contacto NO está en la fila de la renovación: el back lo saca del
+   * contrato vivo del inmueble al leer, y puede no haberlo.
+   */
+  tenantPhone: string | null;
+  tenantEmail: string | null;
   propietarioName: string;
+  /** El contrato vivo del inmueble, resuelto por el back al leer. */
+  contractId?: string | null;
 
   // Current lease
   currentRent: number;
   leaseStartDate: string;
   leaseEndDate: string;
+  /** Recalculado por el back en cada lectura desde `leaseEndDate`. */
   daysUntilExpiry: number;
   urgencyBucket: '0-30' | '31-60' | '61-90' | '90+';
 
@@ -1190,12 +1426,14 @@ export function getRenovacionStatusLabel(status: RenovacionStatus): string {
 }
 
 export function getUrgencyColor(bucket: '0-30' | '31-60' | '61-90' | '90+'): string {
-  // Ascending severity by days overdue: warning → critical.
+  // Son días HASTA vencer, no de mora: menos días = más crítico. Los mismos
+  // tonos que los cajones de la tabla (Críticas / Urgentes / Próximas); antes
+  // el pill iba al revés que los chips.
   const colors = {
-    '0-30': 'bg-warning-soft text-warning',
-    '31-60': 'bg-danger-soft text-danger',
-    '61-90': 'bg-danger-soft text-danger',
-    '90+': 'bg-danger-soft text-danger',
+    '0-30': 'bg-danger-soft text-danger',
+    '31-60': 'bg-warning-soft text-warning',
+    '61-90': 'bg-primary-soft text-primary',
+    '90+': 'bg-muted text-muted-foreground',
   };
   return colors[bucket];
 }
@@ -1386,6 +1624,29 @@ export interface AgencyProfile {
   /** Stored as Json in the backend — arrays of day offsets */
   reminderDaysBefore?: number[];
   reminderDaysAfter?: number[];
+  /** Cobros y mora: motor con reglas de mora (off = % fijo) y días de plazo. */
+  motorDeCobrosV2?: boolean;
+  diasDePlazo?: number;
+  /** Días de mora con saldo a partir de los cuales un cobro pasa a siniestro (sólo con el motor prendido). */
+  diasParaSiniestro?: number;
+  /** Días de mora a partir de los cuales se avisa que hay que reportar el caso a la aseguradora (antes del siniestro). */
+  diasParaAvisoAseguradora?: number;
+  /** Dispersión: código en todos los lotes, y umbral COP para segundo aprobador (null = nunca). */
+  dispersionExigePin?: boolean;
+  dispersionMontoDobleAprobacion?: number | null;
+  /** Extracto mensual al propietario: se manda solo cada mes (`extractoMensualDia`, 1..28). */
+  extractoMensualAutomatico?: boolean;
+  extractoMensualDia?: number;
+  /** Tarifas tributarias (Decimal en el back: viaja como TEXTO; el formulario lo convierte). `reteicaPorMil` y la base mínima: null = no configurada. */
+  ivaPorcentaje?: number | string;
+  retefuenteArrendamientoPorcentaje?: number | string;
+  retefuenteComisionPorcentaje?: number | string;
+  reteicaPorMil?: number | string | null;
+  reteivaPorcentaje?: number | string;
+  baseMinimaRetefuenteCop?: number | null;
+  /** Techo legal del interés de mora (% efectivo anual). `null` = sin validar.
+   *  Decimal de Prisma: puede llegar como texto — pasar por `decimalANumero`. */
+  topeInteresMoraEaPorcentaje?: number | string | null;
   legalRepresentative?: string | null;
   legalDocumentNumber?: string | null;
   /** Caller's membership in this agency */
@@ -1437,6 +1698,30 @@ export interface UpdateAgencyPayload {
   /** Arrays of day offsets, 0..30 each; empty array allowed (= disabled) */
   reminderDaysBefore?: number[];
   reminderDaysAfter?: number[];
+  motorDeCobrosV2?: boolean;
+  /** 0..60 */
+  diasDePlazo?: number;
+  /** 1..365 */
+  diasParaSiniestro?: number;
+  /** 1..365 */
+  diasParaAvisoAseguradora?: number;
+  dispersionExigePin?: boolean;
+  /** COP entero ≥ 0; `null` = nunca por monto */
+  dispersionMontoDobleAprobacion?: number | null;
+  extractoMensualAutomatico?: boolean;
+  /** 1..28 */
+  extractoMensualDia?: number;
+  /** Tarifas tributarias, 0..100 (la reteICA es por mil). `null` = no configurada. */
+  ivaPorcentaje?: number;
+  retefuenteArrendamientoPorcentaje?: number;
+  retefuenteComisionPorcentaje?: number;
+  reteicaPorMil?: number | null;
+  reteivaPorcentaje?: number;
+  /** COP entero ≥ 0; `null` = sin mínimo */
+  baseMinimaRetefuenteCop?: number | null;
+  /** Techo legal del interés de mora (% efectivo anual). `null` = sin validar.
+   *  Decimal de Prisma: puede llegar como texto — pasar por `decimalANumero`. */
+  topeInteresMoraEaPorcentaje?: number | string | null;
   legalRepresentative?: string;
   legalDocumentNumber?: string;
 }

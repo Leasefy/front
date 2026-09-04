@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test'
 
 // Phase 31 plan 31-12 (XR-03) visual regression for the 3 new cobranza surfaces:
-//   - /panel/inmobiliaria/ai/cobranza/deudores              (list, default sort days_in_stage DESC)
-//   - /panel/inmobiliaria/ai/cobranza/deudores/[id]         (debtor detail, Timeline tab active)
-//   - /panel/inmobiliaria/ai/cobranza/llamadas/[callId]     (call detail, audio + transcript)
+//   - /panel/inmobiliaria/cobros/cobranza/deudores              (list, default sort days_in_stage DESC)
+//   - /panel/inmobiliaria/cobros/cobranza/deudores/[id]         (debtor detail, Timeline tab active)
+//   - /panel/inmobiliaria/cobros/cobranza/llamadas/[callId]     (call detail, audio + transcript)
 //
 // Fan-out: 3 tests × 3 viewport projects (iPhone 14 / iPad Mini / Desktop Chrome 1440)
 // = 9 baseline PNGs under tests/e2e/phase-31-cobranza-detail.spec.ts-snapshots/.
@@ -370,7 +370,7 @@ test.describe('phase 31 cobranza visual regression', () => {
   })
 
   test('debtors list — default sort days_in_stage DESC', async ({ page }) => {
-    await page.goto('/panel/inmobiliaria/ai/cobranza/deudores')
+    await page.goto('/panel/inmobiliaria/cobros/cobranza/deudores')
 
     // Wait for actual row content to appear (masked cédulas from MOCK fixture)
     // so the snapshot captures real masked PII, not loading skeletons.
@@ -384,7 +384,7 @@ test.describe('phase 31 cobranza visual regression', () => {
   })
 
   test('debtor detail — Timeline tab active, bottom-drawer at sm', async ({ page }) => {
-    await page.goto(`/panel/inmobiliaria/ai/cobranza/deudores/${DEBTOR_ID}`)
+    await page.goto(`/panel/inmobiliaria/cobros/cobranza/deudores/${DEBTOR_ID}`)
 
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(200)
@@ -398,7 +398,7 @@ test.describe('phase 31 cobranza visual regression', () => {
   })
 
   test('call detail — audio + transcript, sticky-top audio at sm', async ({ page }) => {
-    await page.goto(`/panel/inmobiliaria/ai/cobranza/llamadas/${CALL_ID}`)
+    await page.goto(`/panel/inmobiliaria/cobros/cobranza/llamadas/${CALL_ID}`)
 
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(200)

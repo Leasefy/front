@@ -208,7 +208,7 @@ export function DocumentoTemplates({
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="h-48 rounded-xl bg-muted animate-pulse"
+                  className="h-48 rounded-lg bg-muted animate-pulse"
                 />
               ))}
             </div>

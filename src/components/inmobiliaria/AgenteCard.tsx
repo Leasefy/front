@@ -103,7 +103,7 @@ export function AgenteCard({
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.99 }}
         className={cn(
-          'w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left',
+          'w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 text-left',
           selected
             ? 'border-primary/30 bg-primary-soft'
             : 'border-border bg-card hover:border-fg/20'
@@ -171,7 +171,7 @@ export function AgenteCard({
     <motion.div
       whileHover={{ y: -2 }}
       className={cn(
-        'w-full rounded-xl border bg-card overflow-hidden transition-all duration-200 group',
+        'w-full rounded-lg border bg-card overflow-hidden transition-all duration-200 group',
         selected
           ? 'border-primary/30 ring-2 ring-primary/20'
           : 'border-border hover:border-fg/20',

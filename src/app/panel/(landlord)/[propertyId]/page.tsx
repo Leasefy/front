@@ -826,7 +826,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
         </div>
 
         {/* Property Header - Premium Glass Style */}
-        <header className="relative rounded-xl overflow-hidden mb-8">
+        <header className="relative rounded-lg overflow-hidden mb-8">
           {/* Background Image with Overlay */}
           <div className="absolute inset-0">
             <Image
@@ -860,7 +860,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                   <MapPin className="w-4 h-4" />
                   {property.neighborhood}, {property.city}
                 </p>
-                <div className="mt-4 inline-flex items-baseline gap-1.5 bg-white/10 backdrop-blur-sm px-5 py-2.5 rounded-xl border border-white/10">
+                <div className="mt-4 inline-flex items-baseline gap-1.5 bg-white/10 backdrop-blur-sm px-5 py-2.5 rounded-lg border border-white/10">
                   <span className="text-3xl font-bold text-white">
                     {formatCanon(property.monthlyRent)}
                   </span>
@@ -870,15 +870,15 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
 
               {/* Quick Stats */}
               <div className="flex gap-3 lg:gap-4">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10 text-center min-w-[80px]">
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/10 text-center min-w-[80px]">
                   <p className="text-2xl font-bold text-white">{counts.all}</p>
                   <p className="text-xs text-white/60">Candidatos</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10 text-center min-w-[80px]">
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/10 text-center min-w-[80px]">
                   <p className="text-2xl font-bold text-warning">{counts.pending}</p>
                   <p className="text-xs text-white/60">Pendientes</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10 text-center min-w-[80px]">
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/10 text-center min-w-[80px]">
                   <p className="text-2xl font-bold text-success">{counts.approved}</p>
                   <p className="text-xs text-white/60">Aprobados</p>
                 </div>
@@ -891,7 +891,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
         {activeContract ? (
           <div className="space-y-6">
             {/* Active lease banner */}
-            <div className="rounded-xl border border-success/30 dark:border-success/40 bg-success-soft dark:bg-[#2C7A53]/15 px-5 py-4 flex items-center gap-3">
+            <div className="rounded-lg border border-success/30 dark:border-success/40 bg-success-soft dark:bg-[#2C7A53]/15 px-5 py-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-success-soft dark:bg-[#2C7A53]/15 flex items-center justify-center">
                 <CheckCircle className="h-5 w-5 text-success dark:text-[#3EAE70]" />
               </div>
@@ -929,7 +929,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 </PlanStatsGrid>
 
                 {/* Contract details card */}
-                <div className="rounded-xl border border-border bg-surface p-6 space-y-5">
+                <div className="rounded-lg border border-border bg-surface p-6 space-y-5">
                   <div>
                     <MonoLabel className="block text-xs tracking-wider text-fg-muted">Contrato</MonoLabel>
                     <p className="text-lg font-semibold text-fg mt-0.5">{getContractTypeLabel(activeContract)}</p>
@@ -987,7 +987,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
 
               {/* Sidebar actions */}
               <div className="space-y-4">
-                <div className="rounded-xl border border-border bg-surface p-5 space-y-3">
+                <div className="rounded-lg border border-border bg-surface p-5 space-y-3">
                   <h3 className="text-sm font-semibold text-fg">Acciones rápidas</h3>
                   {/*
                     F3 — un contrato MIGRADO sin correo de inquilino (T-0031)
@@ -999,7 +999,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                     <>
                       <Link
                         href={`/panel/${propertyId}/contract/${activeContract.tenantId}`}
-                        className="flex items-center gap-3 w-full rounded-xl border border-border p-3 text-left hover:bg-surface-muted transition-colors"
+                        className="flex items-center gap-3 w-full rounded-lg border border-border p-3 text-left hover:bg-surface-muted transition-colors"
                       >
                         <div className="w-9 h-9 rounded-md bg-primary-soft dark:bg-[#1A40FF]/15 flex items-center justify-center">
                           <FileText className="w-4 h-4 text-primary dark:text-[#5570FF]" />
@@ -1011,7 +1011,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                       </Link>
                       <Link
                         href={`/panel/mensajes?to=${activeContract.tenantId}`}
-                        className="flex items-center gap-3 w-full rounded-xl border border-border p-3 text-left hover:bg-surface-muted transition-colors"
+                        className="flex items-center gap-3 w-full rounded-lg border border-border p-3 text-left hover:bg-surface-muted transition-colors"
                       >
                         <div className="w-9 h-9 rounded-md bg-primary-soft dark:bg-[#1A40FF]/15 flex items-center justify-center">
                           <Chat className="w-4 h-4 text-primary dark:text-[#5570FF]" />
@@ -1026,7 +1026,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 </div>
 
                 {/* Tenant summary card */}
-                <div className="rounded-xl border border-border bg-surface p-5">
+                <div className="rounded-lg border border-border bg-surface p-5">
                   <MonoLabel className="block text-xs tracking-wider text-fg-muted mb-3">Arrendatario</MonoLabel>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-primary-soft dark:bg-[#1A40FF]/15 flex items-center justify-center text-sm font-semibold text-primary dark:text-[#5570FF]">
@@ -1107,7 +1107,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 onSave={handleSaveSchedule}
               />
             ) : activeTab !== 'visits' ? (
-              <div className="bg-surface rounded-xl border border-border overflow-hidden">
+              <div className="bg-surface rounded-lg border border-border overflow-hidden">
                 {/* Sin esto, una consulta caída llegaba como `[]` y la tabla
                     afirmaba «Aún no hay candidatos para esta propiedad». A un
                     propietario esperando postulaciones eso no es un detalle:
@@ -1137,7 +1137,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 )}
               </div>
             ) : (
-              <div className="bg-surface rounded-xl border border-border overflow-hidden">
+              <div className="bg-surface rounded-lg border border-border overflow-hidden">
                 <PlanTable<Visit>
                   data={propertyVisits}
                   pagination
@@ -1221,7 +1221,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       {previewDoc && selectedCandidate && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setPreviewDoc(null)} />
-          <div className="relative bg-surface border border-border rounded-xl w-full max-w-lg mx-4 max-h-[85vh] overflow-hidden flex flex-col">
+          <div className="relative bg-surface border border-border rounded-lg w-full max-w-lg mx-4 max-h-[85vh] overflow-hidden flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <div>
@@ -1242,7 +1242,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 <div className="space-y-5">
                   {/* Status */}
                   {previewDoc.verified && (
-                    <div className="flex items-center gap-2.5 p-3 bg-success-soft dark:bg-[#2C7A53]/15 rounded-xl border border-success/30 dark:border-success/40">
+                    <div className="flex items-center gap-2.5 p-3 bg-success-soft dark:bg-[#2C7A53]/15 rounded-lg border border-success/30 dark:border-success/40">
                       <Shield className="w-5 h-5 text-success dark:text-[#3EAE70] flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-success dark:text-[#3EAE70]">Documento verificado</p>
@@ -1252,7 +1252,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                   )}
 
                   {/* Document preview - show image or file icon */}
-                  <div className="border border-border rounded-xl bg-surface-muted p-8 flex flex-col items-center justify-center min-h-[280px]">
+                  <div className="border border-border rounded-lg bg-surface-muted p-8 flex flex-col items-center justify-center min-h-[280px]">
                     {previewDoc.mimeType?.startsWith('image/') ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={previewDoc.url} alt={previewDoc.name} className="max-w-full max-h-[400px] rounded-md object-contain" />

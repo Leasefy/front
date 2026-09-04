@@ -193,7 +193,7 @@ describe('PilotoCajon — modo alerta', () => {
     severidad: 'alta' as const,
     titulo: '3 promesas de pago vencidas',
     detalle: 'El deudor se comprometió y la fecha pasó.',
-    href: '/panel/inmobiliaria/ai/cobranza/pagos',
+    href: '/panel/inmobiliaria/cobros/cobranza/pagos',
     items: [
       { id: 'prom:p-1', titulo: '$250.000 — Ana R.', desde: '2026-08-25T10:00:00-05:00' },
       { id: 'prom:p-2', titulo: '$800.000 — Luis M.' },

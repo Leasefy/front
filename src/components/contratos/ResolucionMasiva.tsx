@@ -257,11 +257,18 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
               NO es un fallo: registrarPropietario la rechaza siempre, y en un
               lote real son la mayoría de las filas. Reportarla junto con
               `fallidas` entrenaría a ignorar el reporte. */}
-          {resultado.omitidas && resultado.omitidas.length > 0 ? (
-            <p className="text-xs text-muted-foreground">
-              {resultado.omitidas.length} filas sin inmueble: se les aplicó el resto.
-            </p>
-          ) : null}
+          {resultado.omitidas && resultado.omitidas.length > 0
+            ? Object.entries(
+                resultado.omitidas.reduce<Record<string, number>>((acc, o) => {
+                  acc[o.motivo] = (acc[o.motivo] ?? 0) + 1
+                  return acc
+                }, {}),
+              ).map(([motivo, n]) => (
+                <p key={motivo} className="text-xs text-muted-foreground" data-testid="omitidas-masivo">
+                  {n} {n === 1 ? 'fila' : 'filas'} — {motivo}
+                </p>
+              ))
+            : null}
           {resultado.fallidas.length > 0 ? (
             <>
               <p className="text-xs font-medium text-destructive">

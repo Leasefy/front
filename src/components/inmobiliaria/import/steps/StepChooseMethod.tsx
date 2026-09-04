@@ -112,7 +112,7 @@ export function StepChooseMethod({ state, updateState }: ImportStepProps) {
               aria-pressed={isSelected}
               onClick={() => handleSelect(card.method, card.disabled)}
               className={cn(
-                'animate-stagger-in text-left rounded-xl border-2 p-6 transition-all duration-200',
+                'animate-stagger-in text-left rounded-lg border-2 p-6 transition-all duration-200',
                 card.disabled
                   ? 'opacity-60 cursor-not-allowed border-border dark:border-border-strong'
                   : isSelected

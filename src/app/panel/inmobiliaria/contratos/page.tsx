@@ -22,6 +22,9 @@ import {
   CaretRight,
   House,
   User,
+  GearSix,
+  UploadSimple,
+  ListPlus,
 } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
@@ -36,6 +39,14 @@ import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { useContracts } from '@/lib/hooks/useContracts';
 import { NuevoContratoBoton } from '@/components/inmobiliaria/SelectorPostulacion';
+import { AlertaAccionable } from '@/components/ui/alerta-accionable';
+import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   CONTRACT_STATUS_LABELS,
   CONTRACT_STATUS_COLORS,
@@ -61,7 +72,7 @@ function fmtDate(iso: string | null | undefined, locale: string): string {
 
 function StatCard({ label, value, dot }: { label: string; value: number | string; dot: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-center gap-2">
         <span className={cn('w-2 h-2 rounded-full flex-shrink-0', dot)} />
         <span className="text-caption text-muted-foreground truncate">{label}</span>
@@ -105,6 +116,10 @@ function ContratosContent() {
   const tx = (es: string, en: string) => (locale === 'en' ? en : es);
 
   const { contracts, stats, isLoading, error, refetch } = useContracts();
+  // Contratos migrados que existen y no cobran (sin inmueble o sin
+  // propietario). Vivía en la página de migración, que ya no existe: se dice
+  // acá, que es donde la persona está mirando sus contratos.
+  const deuda = useMigracionConDeuda();
 
   useAutoRefresh(refetch);
 
@@ -143,28 +158,55 @@ function ContratosContent() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      {/* Responsive (Nico, 2026-09-02): a anchos medios el título y las
+          acciones iban lado a lado desde `sm` y las acciones se partían en
+          dos filas contra el subtítulo. Ahora van apiladas hasta `lg`, y la
+          fila de acciones no se envuelve nunca: son dos controles. */}
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-1">
           <Eyebrow>{tx('Portafolio', 'Portfolio')}</Eyebrow>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">{tx('Contratos', 'Contracts')}</h1>
-          <p className="text-sm text-muted-foreground max-w-2xl">
+          <h1 className="text-h2 text-fg">{tx('Contratos', 'Contracts')}</h1>
+          <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">
             {tx(
               'Gestiona los contratos de arrendamiento de tu inmobiliaria: firma, vigencia y estado.',
               'Manage your agency rental contracts: signing, term and status.',
             )}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" asChild hideArrow>
-            <Link href="/panel/inmobiliaria/contratos/migrar">
-              {tx('Migrar', 'Migrate')}
-            </Link>
-          </Button>
-          <Button variant="outline" asChild hideArrow>
-            <Link href="/panel/inmobiliaria/contratos/conceptos">
-              {tx('Conceptos', 'Concepts')}
-            </Link>
-          </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          {/*
+           * Nico (2026-09-02): «Migrar» y «Conceptos» no son acciones del
+           * día a día — son configuración. Un engranaje con la jerarquía del
+           * botón secundario, y adentro las dos: migrar contratos y agregar
+           * conceptos. El botón primario queda solo con «Nuevo contrato».
+           */}
+          <DropdownList>
+            <DropdownListTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                hideArrow
+                aria-label={tx('Configuración de contratos', 'Contract settings')}
+                data-testid="contratos-configuracion"
+              >
+                <GearSix className="w-5 h-5" />
+              </Button>
+            </DropdownListTrigger>
+            <DropdownListContent align="end" className="w-56">
+              <DropdownListItem asChild data-testid="accion-migrar-contratos">
+                <Link href="/panel/inmobiliaria/contratos/migrar">
+                  <UploadSimple className="w-4 h-4" />
+                  <span className="text-sm">{tx('Migrar contratos', 'Migrate contracts')}</span>
+                </Link>
+              </DropdownListItem>
+              <DropdownListItem asChild data-testid="accion-agregar-conceptos">
+                <Link href="/panel/inmobiliaria/contratos/conceptos">
+                  <ListPlus className="w-4 h-4" />
+                  <span className="text-sm">{tx('Agregar conceptos', 'Add concepts')}</span>
+                </Link>
+              </DropdownListItem>
+            </DropdownListContent>
+          </DropdownList>
           {/* Antes navegaba a /contratos/nuevo a secas, y esa pantalla exige
               `?applicationId=`: el botón principal de Contratos mostraba
               "Falta el parámetro applicationId" en vez de crear nada. Ahora
@@ -173,8 +215,42 @@ function ContratosContent() {
         </div>
       </header>
 
+      {deuda ? (
+        <AlertaAccionable
+          severidad="danger"
+          titulo={
+            deuda.sinInmueble > 0 && deuda.sinPropietario > 0
+              ? tx(
+                  `${deuda.sinInmueble} contratos migrados sin inmueble y ${deuda.sinPropietario} sin propietario: no generan cobros.`,
+                  `${deuda.sinInmueble} migrated contracts without a property and ${deuda.sinPropietario} without an owner: they will not bill.`,
+                )
+              : deuda.sinInmueble > 0
+                ? tx(
+                    `${deuda.sinInmueble} ${deuda.sinInmueble === 1 ? 'contrato migrado' : 'contratos migrados'} sin inmueble: no ${deuda.sinInmueble === 1 ? 'genera' : 'generan'} cobros.`,
+                    `${deuda.sinInmueble} migrated ${deuda.sinInmueble === 1 ? 'contract' : 'contracts'} without a property: will not bill.`,
+                  )
+                : tx(
+                    `${deuda.sinPropietario} ${deuda.sinPropietario === 1 ? 'contrato migrado' : 'contratos migrados'} sin propietario: no ${deuda.sinPropietario === 1 ? 'genera' : 'generan'} cobros.`,
+                    `${deuda.sinPropietario} migrated ${deuda.sinPropietario === 1 ? 'contract' : 'contracts'} without an owner: will not bill.`,
+                  )
+          }
+          accion={{
+            label: tx('Completarlos en la migración', 'Complete them in the migration'),
+            href: '/panel/inmobiliaria/contratos/migrar',
+          }}
+          data-testid="alerta-migrados-sin-cobrar"
+        >
+          {tx(
+            'El cobro sale de la consignación del inmueble. Desde la migración se les crea el inmueble que falta y se elige el propietario, de a uno o en masa.',
+            'Billing comes from the property consignment. From the migration you can create the missing property and pick the owner, one by one or in bulk.',
+          )}
+        </AlertaAccionable>
+      ) : null}
+
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Cuatro en fila desde tablet: a 900 px, con el menú escondido, sobra
+          ancho y las tarjetas en 2×2 salían enormes para un solo número. */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label={tx('Total', 'Total')} value={isLoading ? '—' : stats.total} dot="bg-fg-subtle" />
         <StatCard label={tx('Activos', 'Active')} value={isLoading ? '—' : stats.active} dot="bg-success" />
         <StatCard
@@ -187,7 +263,7 @@ function ContratosContent() {
 
       {/* Error */}
       {error && (
-        <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2.5">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2.5">
           <Warning className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" weight="fill" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium text-danger">
@@ -208,7 +284,7 @@ function ContratosContent() {
       )}
 
       {/* Table */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-surface-muted flex items-center justify-center flex-shrink-0">
@@ -255,8 +331,8 @@ function ContratosContent() {
                        «Falta el parámetro applicationId» en vez de crear nada.
                        Es el mismo defecto que ya estaba resuelto arriba con
                        `NuevoContratoBoton`, que pregunta sobre qué postulación
-                       aprobada se arma el contrato. Un contrato no se crea de
-                       cero: nace de una postulación. */
+                       aprobada se arma el contrato. O lo arma a mano, con un inmueble
+                       consignado y el inquilino (`?modo=manual`). */
                     accion={<NuevoContratoBoton />}
                   />
                 </TableCell>

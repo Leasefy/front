@@ -101,7 +101,13 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
       });
     } catch (err) {
       console.error('Error parsing file:', err);
-      setParseError('No se pudo leer el archivo. Verifica que sea una planilla válida (.xlsx, .xls, .csv, .tsv, .txt, .ods).');
+      // El parser lanza mensajes escritos para la persona — con el nombre del
+      // archivo y qué hacer. Taparlos con uno genérico tiraba esa información.
+      setParseError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'No se pudo leer el archivo. Verifica que sea una planilla válida (.xlsx, .xls, .csv, .tsv, .txt, .ods).',
+      );
     } finally {
       setIsParsing(false);
     }
@@ -182,7 +188,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
       <div
         {...getRootProps()}
         className={cn(
-          'border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all duration-200',
+          'border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-all duration-200',
           isParsing
             ? 'border-border dark:border-border-strong cursor-not-allowed'
             : isDragActive
@@ -236,7 +242,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
 
       {/* Parse Error */}
       {parseError && (
-        <div className="flex items-start gap-3 p-4 rounded-xl bg-danger-soft border border-danger/30">
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-danger-soft border border-danger/30">
           <WarningCircle className="w-5 h-5 text-danger shrink-0 mt-0.5" />
           <p className="text-sm text-danger">{parseError}</p>
         </div>
@@ -244,7 +250,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
 
       {/* Row Count Warning */}
       {rowWarning && (
-        <div className="flex items-start gap-3 p-4 rounded-xl bg-warning-soft border border-warning/30">
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-warning-soft border border-warning/30">
           <WarningCircle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
           <p className="text-sm text-warning">{rowWarning}</p>
         </div>
@@ -261,7 +267,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
               {t('inmobiliaria.import.upload.rowsDetected', { count: state.rawRows.length })}
             </MonoLabel>
           </div>
-          <div className="overflow-x-auto rounded-xl border border-border dark:border-border-strong">
+          <div className="overflow-x-auto rounded-lg border border-border dark:border-border-strong">
             <Table className="text-sm">
               <TableHeader>
                 <TableRow className="bg-surface-muted dark:bg-ink">

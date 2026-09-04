@@ -180,7 +180,7 @@ export default function AvaluoResultPage() {
                     type="button"
                     onClick={() => setSelected(s.key)}
                     aria-pressed={isSel}
-                    className="relative overflow-hidden rounded-xl p-5 text-left transition-transform active:scale-[0.99]"
+                    className="relative overflow-hidden rounded-lg p-5 text-left transition-transform active:scale-[0.99]"
                     style={{
                       background: INK_GRADIENT,
                       boxShadow: isSel ? `0 0 0 2px ${BLUE}, 0 20px 44px -22px rgba(20, 19, 15,0.5)` : '0 16px 40px -22px rgba(20, 19, 15,0.45)',
@@ -220,7 +220,7 @@ export default function AvaluoResultPage() {
                   type="button"
                   onClick={() => setSelected(s.key)}
                   aria-pressed={isSel}
-                  className="relative rounded-xl border bg-surface p-5 text-left transition-all active:scale-[0.99]"
+                  className="relative rounded-lg border bg-surface p-5 text-left transition-all active:scale-[0.99]"
                   style={{
                     borderColor: isSel ? BLUE : 'rgba(0,0,0,0.10)',
                     boxShadow: isSel ? `0 0 0 1px ${BLUE}` : 'none',

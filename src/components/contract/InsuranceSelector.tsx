@@ -121,7 +121,7 @@ export function InsuranceSelector({
                 })
               }
               className={cn(
-                'relative w-full rounded-xl border text-left transition-all overflow-hidden',
+                'relative w-full rounded-lg border text-left transition-all overflow-hidden',
                 isSelected
                   ? `${config.selectedBorder} ${config.selectedBg} ring-2 ring-offset-2 ring-offset-bg`
                   : 'border-border hover:border-border-strong bg-surface',
@@ -299,7 +299,7 @@ export function InsuranceSelector({
       {/* Selected Benefits Detail */}
       {selected.tier !== 'none' && (
         <div className={cn(
-          'rounded-xl border p-4',
+          'rounded-lg border p-4',
           selected.tier === 'basic'
             ? 'border-primary/30 bg-primary-soft'
             : 'border-success/30 bg-success-soft'

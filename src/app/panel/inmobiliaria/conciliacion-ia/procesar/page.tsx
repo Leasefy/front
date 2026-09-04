@@ -102,7 +102,7 @@ export default function ConciliacionProcesarPage() {
 
         {/* ── 1. HERO (ink anchor) ──────────────────────────────────────── */}
         <section
-          className="relative overflow-hidden rounded-2xl px-7 py-8 text-center"
+          className="relative overflow-hidden rounded-lg px-7 py-8 text-center"
           style={{ background: INK_GRADIENT, boxShadow: '0 26px 64px -28px rgba(20, 19, 15,0.55)' }}
         >
           <div className="pointer-events-none absolute -inset-x-2 top-[52%] h-[42%] text-white/[0.10]">
@@ -113,11 +113,11 @@ export default function ConciliacionProcesarPage() {
             {/* Gabriela avatar with ping */}
             <span className="relative inline-flex items-center justify-center">
               <span
-                className="absolute inline-flex h-[72px] w-[72px] rounded-2xl opacity-30 animate-ping"
+                className="absolute inline-flex h-[72px] w-[72px] rounded-lg opacity-30 animate-ping"
                 style={{ background: BLUE }}
               />
               <span
-                className="relative inline-flex items-center justify-center rounded-2xl text-2xl font-semibold text-white"
+                className="relative inline-flex items-center justify-center rounded-lg text-2xl font-semibold text-white"
                 style={{ width: 72, height: 72, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)' }}
               >
                 G

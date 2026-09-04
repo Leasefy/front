@@ -2,7 +2,7 @@
  * Cotizador overview — axe a11y gate (Phase 38-08, task 38-08-05).
  *
  * D-38-04 EmptyState: "Aún no hay cotizaciones" — CTA "Nueva cotización"
- *                      → /panel/inmobiliaria/ai/cotizador/nueva.
+ *                      → /panel/inmobiliaria/postulaciones/asegurabilidad/nueva.
  *
  * Reuses the Phase 38-04b mock contract from cotizador-skeletons.spec.ts.
  */
@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test'
 import { seedAuthState } from './_helpers/auth-helpers'
 import { runAndAssertAxe, waitForPageReady } from './_helpers/axe-helpers'
 
-const ROUTE = '/panel/inmobiliaria/ai/cotizador'
+const ROUTE = '/panel/inmobiliaria/postulaciones/asegurabilidad'
 const OVERVIEW_MOCK = '**/cotizador/overview'
 const SKELETON_DELAY_MS = 2500
 

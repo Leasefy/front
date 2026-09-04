@@ -37,7 +37,7 @@ export function PropietarioCard({
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.99 }}
         className={cn(
-          'w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left',
+          'w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 text-left',
           selected
             ? 'border-primary/30 bg-primary-soft'
             : 'border-border bg-card hover:border-primary/30'
@@ -82,7 +82,7 @@ export function PropietarioCard({
       onClick={onClick}
       whileHover={{ y: -2 }}
       className={cn(
-        'w-full p-5 rounded-xl border bg-card text-left transition-all duration-200 group',
+        'w-full p-5 rounded-lg border bg-card text-left transition-all duration-200 group',
         selected
           ? 'border-primary/30 ring-2 ring-primary/20'
           : 'border-border hover:border-primary/30'
@@ -118,7 +118,7 @@ export function PropietarioCard({
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="p-3 rounded-xl bg-muted/50">
+        <div className="p-3 rounded-lg bg-muted/50">
           <div className="flex items-center gap-2 mb-1">
             <Buildings className="w-4 h-4 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">{t('inmobiliaria.propietarios.card.propertiesLabel')}</span>
@@ -130,7 +130,7 @@ export function PropietarioCard({
             {propietario.activeLeases} {t('inmobiliaria.propietarios.card.rented')}
           </p>
         </div>
-        <div className="p-3 rounded-xl bg-muted/50">
+        <div className="p-3 rounded-lg bg-muted/50">
           <div className="flex items-center gap-2 mb-1">
             <CurrencyDollar className="w-4 h-4 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">{t('inmobiliaria.propietarios.card.monthlyRent')}</span>

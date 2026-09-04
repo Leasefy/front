@@ -53,7 +53,7 @@ vi.mock('@/components/ui/toast', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }));
 
-import { submitMandatosLote } from './submitMandatosLote';
+import { submitMandatosLote, submitMandatosPorInmueble } from './submitMandatosLote';
 
 function makeInmueble(overrides: Partial<InmuebleSinConsignacion> = {}): InmuebleSinConsignacion {
   return {
@@ -234,5 +234,85 @@ describe('submitMandatosLote', () => {
     expect(result.failedCount).toBe(0);
     expect(result.publishedCount).toBe(0);
     expect(result.publishFailedCount).toBe(1);
+  });
+});
+
+// --- «Uno por uno» (2026-09-02): each property carries its own terms ------
+
+describe('submitMandatosPorInmueble', () => {
+  it('sends each property with ITS OWN propietario and commission, in order, and reports the same shape', async () => {
+    const payloads: { propertyId: string; propietarioId: string; commissionPercent: number }[] = [];
+    createMock.mockImplementation(async (payload: typeof payloads[number]) => {
+      payloads.push(payload);
+      return {};
+    });
+
+    const result = await submitMandatosPorInmueble([
+      {
+        inmueble: makeInmueble({ propertyId: 'a' }),
+        values: { propietarioId: 'owner-1', commissionPercent: 10, contractDate: '2026-09-02' },
+      },
+      {
+        inmueble: makeInmueble({ propertyId: 'b' }),
+        values: { propietarioId: 'owner-2', commissionPercent: 7.5, contractDate: '2026-09-02' },
+      },
+    ]);
+
+    expect(payloads).toEqual([
+      expect.objectContaining({ propertyId: 'a', propietarioId: 'owner-1', commissionPercent: 10 }),
+      expect.objectContaining({ propertyId: 'b', propietarioId: 'owner-2', commissionPercent: 7.5 }),
+    ]);
+    expect(updatePropertyMock).toHaveBeenCalledWith('a', { status: 'AVAILABLE' });
+    expect(updatePropertyMock).toHaveBeenCalledWith('b', { status: 'AVAILABLE' });
+    expect(result).toEqual({
+      outcomes: [
+        { propertyId: 'a', propertyTitle: 'Depto 1', status: 'created', published: true },
+        { propertyId: 'b', propertyTitle: 'Depto 1', status: 'created', published: true },
+      ],
+      succeededCount: 2,
+      failedCount: 0,
+      publishedCount: 2,
+      publishFailedCount: 0,
+    });
+  });
+
+  it('keeps the per-property rules of the shared path: 409 is success, a failed mandate is never published', async () => {
+    createMock
+      .mockRejectedValueOnce(new ApiError(409, 'A mandate already exists for property a'))
+      .mockRejectedValueOnce(new ApiError(402, 'Plan cap reached'));
+
+    const result = await submitMandatosPorInmueble([
+      { inmueble: makeInmueble({ propertyId: 'a' }), values: { ...VALUES, propietarioId: 'owner-1' } },
+      { inmueble: makeInmueble({ propertyId: 'b' }), values: { ...VALUES, propietarioId: 'owner-2' } },
+    ]);
+
+    expect(result.outcomes.map((o) => o.status)).toEqual(['alreadyExists', 'failed']);
+    expect(updatePropertyMock).toHaveBeenCalledTimes(1);
+    expect(updatePropertyMock).toHaveBeenCalledWith('a', { status: 'AVAILABLE' });
+    expect(result.succeededCount).toBe(1);
+    expect(result.failedCount).toBe(1);
+  });
+
+  it('an empty list is a no-op with zeroed counts', async () => {
+    const result = await submitMandatosPorInmueble([]);
+    expect(createMock).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      outcomes: [],
+      succeededCount: 0,
+      failedCount: 0,
+      publishedCount: 0,
+      publishFailedCount: 0,
+    });
+  });
+
+  it('submitMandatosLote is the shared-terms case of the same loop', async () => {
+    createMock.mockResolvedValue({});
+    const result = await submitMandatosLote(
+      [makeInmueble({ propertyId: 'a' }), makeInmueble({ propertyId: 'b' })],
+      VALUES,
+    );
+    expect(createMock).toHaveBeenNthCalledWith(1, expect.objectContaining({ propertyId: 'a', propietarioId: 'propietario-1' }));
+    expect(createMock).toHaveBeenNthCalledWith(2, expect.objectContaining({ propertyId: 'b', propietarioId: 'propietario-1' }));
+    expect(result.succeededCount).toBe(2);
   });
 });

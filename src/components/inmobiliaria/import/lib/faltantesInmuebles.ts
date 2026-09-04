@@ -52,3 +52,40 @@ export function etiquetaDeFaltante(faltante: string): string {
 export function esPosibleDuplicado(faltantes: string[]): boolean {
   return faltantes.includes('posible_duplicado');
 }
+
+/**
+ * Qué decía la celda del archivo para este faltante.
+ *
+ * «Falta el tipo de inmueble» sobre una celda que dice `APTO` manda a buscar
+ * un dato que SÍ está escrito, sólo que con una palabra que el catálogo no
+ * conoce. El valor sigue en `datos` —la validación del importador es holgada
+ * a propósito y no descarta la celda— así que mostrarlo no cuesta una
+ * consulta ni un campo nuevo.
+ *
+ * Sólo para los faltantes donde el valor original ES la explicación: un
+ * `titulo` vacío no tiene nada que mostrar.
+ */
+export function celdaDelFaltanteInmueble(
+  datos: Record<string, unknown> | null | undefined,
+  faltante: string,
+): string | null {
+  const texto = (v: unknown) => {
+    const t = String(v ?? '').trim();
+    if (!t) return null;
+    return t.length > 60 ? `${t.slice(0, 60)}…` : t;
+  };
+  switch (faltante) {
+    case 'tipo':
+      return texto(datos?.type);
+    case 'tipo_de_negocio':
+      return texto(datos?.listingType);
+    case 'departamento':
+      return texto(datos?.department);
+    case 'fecha_consignacion':
+      return texto(datos?.consignedAt);
+    case 'area':
+      return texto(datos?.area);
+    default:
+      return null;
+  }
+}

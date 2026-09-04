@@ -384,7 +384,7 @@ export function PlanHeader({
               <div
                 id="plan-search-listbox"
                 role="listbox"
-                className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border shadow-lg rounded-xl max-h-[min(400px,60dvh)] overflow-y-auto overscroll-contain z-50 overflow-hidden">
+                className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border shadow-lg rounded-lg max-h-[min(400px,60dvh)] overflow-y-auto overscroll-contain z-50 overflow-hidden">
                 {searchQuery.length >= 2 ? (
                   // Show search results
                   searchResults.length > 0 ? (
@@ -526,7 +526,6 @@ export function PlanHeader({
               <MagnifyingGlass className="w-5 h-5" />
             </button>
           )}
-          {actions}
 
           {/*
             Los tres portales, no solo los de `/panel`. Va fuera del bloque de
@@ -547,6 +546,10 @@ export function PlanHeader({
               ruta: pathname ?? '',
             }}
           />
+          {/* Lo contextual (la píldora del Piloto) va DESPUÉS del CTA de
+              feedback y pegado a los íconos: el CTA queda al borde izquierdo
+              del bloque (Nico, 2026-09-02). */}
+          {actions}
 
           {/* Quick Action Icons - Only for Landlords */}
           {isLandlord && (
@@ -567,7 +570,7 @@ export function PlanHeader({
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[calc(100vw-2rem)] sm:w-[340px] p-0 bg-surface border border-border shadow-lg rounded-xl overflow-hidden"
+                  className="w-[calc(100vw-2rem)] sm:w-[340px] p-0 bg-surface border border-border shadow-lg rounded-lg overflow-hidden"
                   align="end"
                   sideOffset={8}
                 >
@@ -653,7 +656,7 @@ export function PlanHeader({
                           <Link
                             href={upgradePlanHref}
                             onClick={() => setSubscriptionOpen(false)}
-                            className="block w-full py-2.5 bg-[#1A40FF] hover:opacity-90 text-white text-[12px] font-semibold text-center rounded-xl transition-colors"
+                            className="block w-full py-2.5 bg-[#1A40FF] hover:opacity-90 text-white text-[12px] font-semibold text-center rounded-lg transition-colors"
                           >
                             {isBaseTier ? 'Mejorar Plan' : 'Ver Planes'}
                           </Link>
@@ -697,7 +700,7 @@ export function PlanHeader({
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[calc(100vw-2rem)] sm:w-[380px] p-0 bg-surface border border-border shadow-lg rounded-xl overflow-hidden"
+                  className="w-[calc(100vw-2rem)] sm:w-[380px] p-0 bg-surface border border-border shadow-lg rounded-lg overflow-hidden"
                   align="end"
                   sideOffset={8}
                 >
@@ -772,7 +775,7 @@ export function PlanHeader({
                               onChange={(e) => setInviteName(e.target.value)}
                               placeholder="Nombre del colaborador"
                               aria-label="Nombre del colaborador"
-                              className="w-full h-10 pl-9 pr-4 bg-muted border border-plan-border rounded-xl text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
+                              className="w-full h-10 pl-9 pr-4 bg-muted border border-plan-border rounded-lg text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
                             />
                           </div>
                         </div>
@@ -792,7 +795,7 @@ export function PlanHeader({
                               placeholder="correo@ejemplo.com"
                               aria-label="Correo electrónico para invitación"
                               className={cn(
-                                "w-full h-10 pl-9 pr-4 bg-muted border rounded-xl text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1",
+                                "w-full h-10 pl-9 pr-4 bg-muted border rounded-lg text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1",
                                 inviteEmailError ? 'border-[#C4503B]/30 focus:ring-[#C4503B]' : 'border-plan-border focus:ring-plan-primary'
                               )}
                             />
@@ -813,7 +816,7 @@ export function PlanHeader({
                                 key={role.id}
                                 onClick={() => setInviteRole(role.id)}
                                 className={cn(
-                                  'w-full flex items-start gap-3 p-3 text-left border rounded-xl transition-all',
+                                  'w-full flex items-start gap-3 p-3 text-left border rounded-lg transition-all',
                                   inviteRole === role.id
                                     ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
                                     : 'border-border hover:border-border-strong'
@@ -834,13 +837,13 @@ export function PlanHeader({
                               </button>
                             ))}
 
-                            {/* Agente — redirige a /panel/inmobiliaria/agentes */}
+                            {/* Agente — redirige a /panel/inmobiliaria/configuracion/equipo */}
                             <button
                               onClick={() => {
                                 setTeamInviteOpen(false);
                                 router.push(AGENTE_TEAM_ENTRY.redirectTo);
                               }}
-                              className="w-full flex items-start gap-3 p-3 text-left border rounded-xl transition-all border-border hover:border-border-strong"
+                              className="w-full flex items-start gap-3 p-3 text-left border rounded-lg transition-all border-border hover:border-border-strong"
                             >
                               <div className="w-4 h-4 rounded-full border-2 border-border-strong flex items-center justify-center mt-0.5" />
                               <div className="flex-1">
@@ -873,7 +876,7 @@ export function PlanHeader({
                           }}
                           disabled={!inviteEmail || !isValidEmail(inviteEmail) || inviteLoading}
                           className={cn(
-                            'w-full py-2.5 text-[12px] font-semibold text-center rounded-xl transition-colors flex items-center justify-center gap-2',
+                            'w-full py-2.5 text-[12px] font-semibold text-center rounded-lg transition-colors flex items-center justify-center gap-2',
                             inviteEmail && isValidEmail(inviteEmail) && !inviteLoading
                               ? 'bg-[#1A40FF] hover:opacity-90 text-white'
                               : 'bg-muted text-plan-muted cursor-not-allowed'
@@ -958,7 +961,7 @@ export function PlanHeader({
               </button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-[calc(100vw-2rem)] sm:w-[420px] p-0 bg-surface border border-border shadow-lg rounded-xl overflow-hidden"
+              className="w-[calc(100vw-2rem)] sm:w-[420px] p-0 bg-surface border border-border shadow-lg rounded-lg overflow-hidden"
               align="end"
               sideOffset={8}
             >
@@ -1127,7 +1130,7 @@ export function PlanHeader({
           {/* User Account Container */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="flex items-center gap-2 py-1.5 pl-1.5 pr-2.5 rounded-xl bg-surface-muted hover:bg-border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+              <button className="flex items-center gap-2 py-1.5 pl-1.5 pr-2.5 rounded-lg bg-surface-muted hover:bg-border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
                 {/* Avatar */}
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-ink flex items-center justify-center">
                   <span className="text-ink-fg font-medium text-sm">
@@ -1150,7 +1153,7 @@ export function PlanHeader({
               </button>
             </DropdownListTrigger>
             <DropdownListContent
-              className="w-56 bg-surface border border-border shadow-lg rounded-xl p-1.5"
+              className="w-56 bg-surface border border-border shadow-lg rounded-lg p-1.5"
               align="end"
               sideOffset={8}
             >
@@ -1173,7 +1176,7 @@ export function PlanHeader({
               <DropdownListItem asChild>
                 <Link
                   href={user?.role === 'agency' ? "/panel/inmobiliaria/perfil" : isLandlord ? "/panel/perfil" : "/inquilino/perfil"}
-                  className="flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-xl cursor-pointer"
+                  className="flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-lg cursor-pointer"
                 >
                   <User className="w-4 h-4 stroke-[1.5px] text-fg-muted" />
                   {t('header.profile')}
@@ -1182,7 +1185,7 @@ export function PlanHeader({
               <DropdownListItem asChild>
                 <Link
                   href={user?.role === 'agency' ? "/panel/inmobiliaria/configuracion" : isLandlord ? "/panel/configuracion" : "/inquilino/configuracion"}
-                  className="flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-xl cursor-pointer"
+                  className="flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-lg cursor-pointer"
                 >
                   <Gear className="w-4 h-4 stroke-[1.5px] text-fg-muted" />
                   {t('header.settings')}
@@ -1193,7 +1196,7 @@ export function PlanHeader({
                   <DropdownListItem asChild>
                     <Link
                       href="/inquilino/pagos"
-                      className="flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-xl cursor-pointer"
+                      className="flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-lg cursor-pointer"
                     >
                       <CreditCard className="w-4 h-4 stroke-[1.5px] text-fg-muted" />
                       {t('nav.payments')}
@@ -1202,7 +1205,7 @@ export function PlanHeader({
                   <DropdownListItem asChild>
                     <Link
                       href="/inquilino/guardados"
-                      className="flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-xl cursor-pointer"
+                      className="flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-lg cursor-pointer"
                     >
                       <Heart className="w-4 h-4 stroke-[1.5px] text-fg-muted" />
                       {locale === 'es' ? 'Ver guardados' : 'Saved'}
@@ -1214,7 +1217,7 @@ export function PlanHeader({
                 <DropdownListItem asChild>
                   <Link
                     href={upgradePlanHref}
-                    className="flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-xl cursor-pointer"
+                    className="flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-lg cursor-pointer"
                   >
                     <Crown className="w-4 h-4 stroke-[1.5px] text-fg-muted" />
                     {locale === 'es' ? 'Mi Plan' : 'My Plan'}
@@ -1230,7 +1233,7 @@ export function PlanHeader({
                   <DropdownListSeparator className="bg-surface-muted my-1" />
                   <DropdownListItem
                     onClick={() => panelPrefs.relaunchTour()}
-                    className="flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-xl cursor-pointer"
+                    className="flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-lg cursor-pointer"
                   >
                     <Compass className="w-4 h-4 stroke-[1.5px] text-fg-muted" aria-hidden="true" />
                     {t('inmobiliaria.ai.tour.relaunch')}
@@ -1241,7 +1244,7 @@ export function PlanHeader({
               <DropdownListItem asChild>
                 <Link
                   href="/ayuda"
-                  className="flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-xl cursor-pointer"
+                  className="flex items-center gap-3 px-3 py-2 text-[13px] text-fg hover:bg-surface-muted rounded-lg cursor-pointer"
                 >
                   <Question className="w-4 h-4 stroke-[1.5px] text-fg-muted" />
                   {t('nav.help')}
@@ -1250,7 +1253,7 @@ export function PlanHeader({
               <DropdownListSeparator className="bg-surface-muted my-1" />
               <DropdownListItem
                 onClick={handleLogout}
-                className="flex items-center gap-3 px-3 py-2 text-[13px] text-danger hover:bg-danger-soft rounded-xl cursor-pointer"
+                className="flex items-center gap-3 px-3 py-2 text-[13px] text-danger hover:bg-danger-soft rounded-lg cursor-pointer"
               >
                 <SignOut className="w-4 h-4 stroke-[1.5px]" />
                 {t('nav.logout')}

@@ -65,7 +65,7 @@ export function EquipoCobranzaPersona({ persona, className }: EquipoCobranzaPers
   return (
     <article
       className={cn(
-        'rounded-xl border border-border bg-card p-5 h-full flex flex-col gap-4',
+        'rounded-lg border border-border bg-card p-5 h-full flex flex-col gap-4',
         className,
       )}
     >

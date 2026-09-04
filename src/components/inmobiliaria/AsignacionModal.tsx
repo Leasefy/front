@@ -111,7 +111,7 @@ export function AsignacionModal({
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader className="pb-4 border-b border-border dark:border-border-strong">
-          <SheetTitle className="flex items-center gap-2 text-fg dark:text-white">
+          <SheetTitle className="flex items-center gap-2 text-lg font-semibold text-fg">
             <User className="w-5 h-5 text-primary" />
             {t('inmobiliaria.agente.reassignProperty')}
           </SheetTitle>
@@ -119,7 +119,7 @@ export function AsignacionModal({
 
         <div className="py-6 space-y-6">
           {/* Property Info */}
-          <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface-muted">
+          <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface-muted">
             <div className="flex gap-4">
               {/* Thumbnail */}
               {consignacion.propertyThumbnail ? (
@@ -159,7 +159,7 @@ export function AsignacionModal({
               {t('inmobiliaria.agente.currentAgent')}
             </label>
             {currentAgente ? (
-              <div className="flex items-center gap-3 p-3 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-fg-muted flex items-center justify-center text-white text-sm font-semibold shrink-0">
                   {currentAgente.avatar ? (
                     <img
@@ -181,7 +181,7 @@ export function AsignacionModal({
                 </div>
               </div>
             ) : (
-              <div className="p-3 rounded-xl border border-border dark:border-border-strong bg-surface-muted text-sm text-fg-muted dark:text-fg-subtle">
+              <div className="p-3 rounded-lg border border-border dark:border-border-strong bg-surface-muted text-sm text-fg-muted dark:text-fg-subtle">
                 {t('inmobiliaria.agente.noAgentAssigned')}
               </div>
             )}
@@ -223,7 +223,7 @@ export function AsignacionModal({
 
           {/* Preview Summary */}
           {selectedAgente && currentAgente && (
-            <div className="p-4 rounded-xl border border-primary/30 bg-primary-soft">
+            <div className="p-4 rounded-lg border border-primary/30 bg-primary-soft">
               <h4 className="font-medium text-primary text-sm mb-3 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4" weight="fill" />
                 {t('inmobiliaria.agente.reassignmentSummary')}
@@ -253,7 +253,7 @@ export function AsignacionModal({
 
           {/* Warning for same agent */}
           {selectedAgenteId === consignacion.agenteId && (
-            <div className="flex items-start gap-3 p-4 rounded-xl border border-warning/30 bg-warning-soft">
+            <div className="flex items-start gap-3 p-4 rounded-lg border border-warning/30 bg-warning-soft">
               <Warning className="w-5 h-5 text-warning shrink-0 mt-0.5" />
               <p className="text-sm text-warning">
                 {t('inmobiliaria.agente.sameAgentWarning')}
@@ -263,7 +263,7 @@ export function AsignacionModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="sticky bottom-0 -mx-6 px-6 py-4 border-t border-border dark:border-border-strong bg-surface dark:bg-[#14130F] flex items-center gap-3">
+        <div className="sticky bottom-0 -mx-6 px-6 py-4 border-t border-border dark:border-border-strong bg-surface dark:bg-bg flex items-center gap-3">
           <Button
             variant="secondary"
             hideArrow

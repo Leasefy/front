@@ -43,7 +43,11 @@ import type {
   RendimientoAgentesReport,
   VencimientosReport,
   FlujoCajaReport,
+  RentabilidadReport,
   ExtractoPropietario,
+  ExtractoEnviado,
+  ResumenDeExtractos,
+  ResultadoDeEnvioMasivo,
   AnalyticsData,
   TrendAnalysis,
   ForecastData,
@@ -53,9 +57,10 @@ import type {
   AgencyInviteResult,
   AgencyOnboardingStatus,
 } from '@/lib/types/inmobiliaria';
+import type { CobroConDesglose } from './recibos-de-caja.types';
 import { adaptarDispersion, type DispersionDelBack } from './dispersion-adapter';
-import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
-import type { BankCode, AccountType } from '@/lib/types/payment-accounts';
+import type { InventoryItem, VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
+import { COLOMBIAN_BANKS, type BankCode, type AccountType } from '@/lib/types/payment-accounts';
 
 const BASE = '/inmobiliaria';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
@@ -155,6 +160,62 @@ function mapBankCodeToWire(code: BankCode): string {
 }
 
 /** Translates a front account type to the backend's `AHORROS`/`CORRIENTE` enum. */
+/**
+ * La ficha del propietario tal como la manda el back: banco en cuatro campos
+ * planos (`bankName`, `bankAccountType` «Ahorros|Corriente», número, titular)
+ * y, desde 2026-09-02, los mismos totales que la lista. La pantalla espera
+ * `bankAccount` armado y los totales presentes: antes `getById` devolvía la
+ * fila cruda y la ficha reventaba con «Cannot read properties of undefined
+ * (reading 'bank')» — Nico buscó un propietario recién creado y vio «no
+ * encontrado» y después «esta sección se rompió».
+ */
+type PropietarioDelBack = Omit<Propietario, 'bankAccount' | 'propertyCount' | 'activeLeases' | 'totalMonthlyRent' | 'pendingBalance'> & {
+  bankName?: string | null;
+  bankAccountType?: string | null;
+  bankAccountNumber?: string | null;
+  bankAccountHolder?: string | null;
+  propertyCount?: number;
+  activeLeases?: number;
+  totalMonthlyRent?: number;
+  totalCommission?: number;
+  pendingBalance?: number;
+  lastPaymentDate?: string | null;
+};
+
+/** Minúsculas y sin tildes: «Banco de Bogota» e «Itau» (así llegan de una migración) tienen que dar con «Bogotá» e «Itaú». */
+function llano(texto: string): string {
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+}
+
+/** «Bancolombia S.A.» → `bancolombia`; sin coincidencia queda vacío (nunca se inventa un banco). */
+export function codigoDeBanco(nombre: string | null | undefined): BankCode | '' {
+  const n = llano(nombre ?? '');
+  if (!n) return '';
+  const exacto = COLOMBIAN_BANKS.find((b) => llano(b.name) === n || llano(b.shortName) === n);
+  if (exacto) return exacto.code;
+  const parcial = COLOMBIAN_BANKS.find((b) => n.includes(llano(b.shortName)) || n.includes(b.code));
+  return parcial?.code ?? '';
+}
+
+export function normalizePropietario(raw: PropietarioDelBack): Propietario {
+  const { bankName, bankAccountType, bankAccountNumber, bankAccountHolder, ...rest } = raw;
+  return {
+    ...(rest as Omit<Propietario, 'bankAccount'>),
+    propertyCount: raw.propertyCount ?? 0,
+    activeLeases: raw.activeLeases ?? 0,
+    totalMonthlyRent: raw.totalMonthlyRent ?? 0,
+    pendingBalance: raw.pendingBalance ?? 0,
+    lastPaymentDate: raw.lastPaymentDate ?? null,
+    bankAccount: {
+      bank: codigoDeBanco(bankName) as BankCode,
+      ...(bankName ? { bankName } : {}),
+      accountType: (bankAccountType ?? '').toLowerCase().startsWith('corr') ? 'checking' : 'savings',
+      accountNumber: bankAccountNumber ?? '',
+      accountHolder: bankAccountHolder ?? '',
+    },
+  };
+}
+
 function mapAccountTypeToWire(type: AccountType): string {
   const wire = ACCOUNT_TYPE_TO_WIRE[type];
   if (!wire) {
@@ -207,12 +268,17 @@ export const propietariosApi = {
     if (params?.city) query.set('city', params.city);
     if (params?.tags) query.set('tags', params.tags);
     const qs = query.toString();
-    const res = await apiClient.get<{ data: Propietario[] } | Propietario[]>(`${BASE}/propietarios${qs ? `?${qs}` : ''}`);
-    return lista(res);
+    // La lista viene con el banco plano igual que la ficha: se normaliza fila
+    // por fila, o cualquier pantalla que lea `bankAccount` de un propietario
+    // de la lista (el extracto, el selector) revienta con «reading 'bank'».
+    const res = await apiClient.get<{ data: PropietarioDelBack[] } | PropietarioDelBack[]>(`${BASE}/propietarios${qs ? `?${qs}` : ''}`);
+    return lista(res).map(normalizePropietario);
   },
 
   async getById(id: string): Promise<Propietario> {
-    return apiClient.get<Propietario>(`${BASE}/propietarios/${id}`);
+    return normalizePropietario(
+      await apiClient.get<PropietarioDelBack>(`${BASE}/propietarios/${id}`),
+    );
   },
 
   async create(data: PropietarioFormData): Promise<Propietario> {
@@ -220,7 +286,12 @@ export const propietariosApi = {
   },
 
   async update(id: string, data: Partial<PropietarioFormData>): Promise<Propietario> {
-    return apiClient.patch<Propietario>(`${BASE}/propietarios/${id}`, mapPropietarioBankFields(data));
+    // El back expone `PUT /propietarios/:id` (no PATCH): con PATCH respondía
+    // 404 y «Editar» nunca guardó nada. La respuesta viene en la forma del
+    // cable (banco plano), por eso se normaliza igual que `getById`.
+    return normalizePropietario(
+      await apiClient.put<PropietarioDelBack>(`${BASE}/propietarios/${id}`, mapPropietarioBankFields(data)),
+    );
   },
 
   async delete(id: string): Promise<void> {
@@ -245,6 +316,49 @@ export const propietariosApi = {
   async getExtracto(id: string, month?: string): Promise<ExtractoPropietario> {
     const qs = month ? `?month=${month}` : '';
     return apiClient.get<ExtractoPropietario>(`${BASE}/propietarios/${id}/extracto${qs}`);
+  },
+
+  /** El mismo extracto del mes, como PDF. */
+  async getExtractoPdf(id: string, month: string): Promise<Blob> {
+    return apiClient.getBlob(`${BASE}/propietarios/${id}/extracto.pdf?month=${encodeURIComponent(month)}`);
+  },
+
+  /** Manda el PDF del mes al correo del propietario. Devuelve a quién se mandó. */
+  async enviarExtracto(id: string, month: string): Promise<{ enviadoA: string; month: string }> {
+    return apiClient.post<{ enviadoA: string; month: string }>(
+      `${BASE}/propietarios/${id}/extracto/enviar`,
+      { month },
+    );
+  },
+
+  /**
+   * GET /inmobiliaria/propietarios/extractos/resumen?month=YYYY-MM
+   * Cuántos extractos del mes salieron, fallaron o se omitieron y cuándo fue
+   * el último. Sin `month`, el back responde por el mes anterior.
+   */
+  async extractosResumen(month?: string): Promise<ResumenDeExtractos> {
+    const qs = month ? `?month=${encodeURIComponent(month)}` : '';
+    return apiClient.get<ResumenDeExtractos>(`${BASE}/propietarios/extractos/resumen${qs}`);
+  },
+
+  /**
+   * POST /inmobiliaria/propietarios/extractos/enviar-mes
+   * Manda correos REALES a todos los propietarios con movimientos del mes.
+   * Con `soloSinEnviar` se saltan los que ya lo recibieron (salen como omitidos).
+   */
+  async enviarExtractosDelMes(month: string, soloSinEnviar = true): Promise<ResultadoDeEnvioMasivo> {
+    return apiClient.post<ResultadoDeEnvioMasivo>(`${BASE}/propietarios/extractos/enviar-mes`, {
+      month,
+      soloSinEnviar,
+    });
+  },
+
+  /** GET /inmobiliaria/propietarios/:id/extractos — las últimas huellas de envío, de la más reciente. */
+  async extractosDe(id: string): Promise<ExtractoEnviado[]> {
+    const res = await apiClient.get<{ data: ExtractoEnviado[] } | ExtractoEnviado[]>(
+      `${BASE}/propietarios/${id}/extractos`,
+    );
+    return lista(res);
   },
 };
 
@@ -314,6 +428,8 @@ type RawConsignacion = Omit<
   propertyType?: string | null;
   agenteUserId?: string | null;
   agenteId?: string | null;
+  /** Ausente en un back anterior a copropietarios (2026-09-03). */
+  copropietarios?: Consignacion['copropietarios'];
   /**
    * contract-addendum-2.md §A.1/§A.9.1 — UPPER_SNAKE on the wire, absent on
    * an older back build (degrades to RENT). Same wire field name and shape
@@ -339,6 +455,11 @@ export function normalizeConsignacion(raw: RawConsignacion): Consignacion {
     // §A.9.1 — NEW, closes W3-c. `null` when the mandate has no linked
     // property (a migrated cartera row).
     propertyCode: raw.propertyCode ?? null,
+    // Los dueños con su participación. `[]` sólo contra un back viejo que
+    // todavía no manda el campo: la ficha cae a `propietarioId` en ese caso.
+    // NO se fabrica `[{ propietarioId, 10000 }]` acá — sería inventar un dato
+    // que el servidor no dijo, y taparía el día que el back deje de mandarlo.
+    copropietarios: raw.copropietarios ?? [],
   };
 }
 
@@ -380,6 +501,14 @@ function toConsignacionPayload(data: ConsignacionUpdateInput): Record<string, un
   const { agenteId: _agenteId, propertyType, status, availability, ...rest } = data;
   void _agenteId;
   const payload: Record<string, unknown> = { ...rest };
+  // El back 400ea si llegan `propietarioId` Y `copropietarios` (es ambiguo cuál
+  // manda). Con la lista cargada, ella es la verdad y el suelto sobra: el
+  // servidor deriva el principal del de mayor participación.
+  if (Array.isArray(payload.copropietarios) && payload.copropietarios.length > 0) {
+    delete payload.propietarioId;
+  } else {
+    delete payload.copropietarios;
+  }
   if (propertyType !== undefined) payload.propertyType = propertyType.toUpperCase();
   if (status !== undefined) payload.status = status.toUpperCase();
   if (availability !== undefined) payload.availability = availability.toUpperCase();
@@ -416,12 +545,52 @@ export const consignacionesApi = {
     );
     // Backend returns a plain array; tolerate a { data } envelope too.
     const rows = Array.isArray(res) ? res : res.data;
-    return rows.map(normalizeConsignacion);
+    const todas = rows.map(normalizeConsignacion);
+    // El back no filtra por `propietarioId` (sólo por inmueble/estado/agente):
+    // la ficha del propietario decía «2 consignadas» y listaba las 12 de la
+    // agencia (2026-09-02). Se filtra acá hasta que el endpoint lo acepte.
+    return params?.propietarioId
+      ? todas.filter((c) => c.propietarioId === params.propietarioId)
+      : todas;
   },
 
   async getById(id: string): Promise<Consignacion> {
     const raw = await apiClient.get<RawConsignacion>(`${BASE}/consignaciones/${id}`);
     return normalizeConsignacion(raw);
+  },
+
+  /** El acta de entrega e inventario del inmueble, como PDF para bajar. */
+  async getActaPdf(id: string): Promise<Blob> {
+    return apiClient.getBlob(`${BASE}/consignaciones/${id}/acta.pdf`);
+  },
+
+  /**
+   * Adjunta el PDF firmado del contrato de consignación (multipart `file`).
+   * Devuelve la URL firmada con la que se abre. El contrato no se genera:
+   * no hay plantilla en el producto y un contrato no se inventa.
+   */
+  async subirContrato(id: string, file: File): Promise<{ consignmentContractUrl: string }> {
+    const token = getAccessToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    let res: Response;
+    try {
+      res = await fetch(`${BACKEND_URL}${BASE}/consignaciones/${id}/contrato`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+    } catch (err) {
+      throw new ApiError(0, `No pudimos conectarnos al servidor. ${err instanceof Error ? err.message : String(err)}`);
+    }
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { message?: unknown };
+      throw new ApiError(
+        res.status,
+        typeof body.message === 'string' ? body.message : 'No se pudo adjuntar el contrato',
+      );
+    }
+    return res.json();
   },
 
   /**
@@ -487,6 +656,19 @@ export const consignacionesApi = {
    * `Agente.id`, que es un `AgencyMember.id`. Mandar el equivocado devuelve 400
    * por `IsUUID` sólo si no es UUID; si lo es, asigna a nadie en silencio.
    */
+  /**
+   * PUT /inmobiliaria/consignaciones/:id/inventario — el inventario del
+   * inmueble como lista completa (agregar, editar y quitar son «mandar la
+   * lista nueva»). Devuelve la consignación con el inventario guardado.
+   */
+  async actualizarInventario(id: string, items: InventoryItem[]): Promise<Consignacion> {
+    const raw = await apiClient.put<RawConsignacion>(
+      `${BASE}/consignaciones/${id}/inventario`,
+      { items },
+    );
+    return normalizeConsignacion(raw);
+  },
+
   async assignAgent(id: string, agenteUserId: string): Promise<Consignacion> {
     const raw = await apiClient.put<RawConsignacion>(
       `${BASE}/consignaciones/${id}/assign-agent`,
@@ -494,7 +676,32 @@ export const consignacionesApi = {
     );
     return normalizeConsignacion(raw);
   },
+
+  /**
+   * El historial del inmueble: lo que le pasó a la consignación, escrito
+   * cuando pasó y por quién (GET /inmobiliaria/consignaciones/:id/historial).
+   */
+  async getHistorial(id: string): Promise<EventoDelInmueble[]> {
+    const r = await apiClient.get<{ eventos: EventoDelInmueble[] }>(
+      `${BASE}/consignaciones/${id}/historial`,
+    );
+    return r.eventos ?? [];
+  },
 };
+
+/** Un evento del historial del inmueble, tal como lo entrega el back. */
+export interface EventoDelInmueble {
+  id: string;
+  tipo: string;
+  titulo: string;
+  detalle: string | null;
+  /** Nombre de quien lo hizo, o «Sistema». */
+  actor: string;
+  esSistema: boolean;
+  /** ISO. */
+  fecha: string;
+  metadata: Record<string, unknown>;
+}
 
 // ============================================================================
 // Inmuebles sin consignación (T-0030) — read-only, second source of the
@@ -693,7 +900,7 @@ export const pipelineApi = {
  * and, depending on the endpoint, either a bare array or `{ data: [...] }`. The
  * front `Cobro` type uses lowercase status, so normalize both here.
  */
-function normalizeCobro(raw: Cobro): Cobro {
+export function normalizeCobro<T extends Cobro>(raw: T): T {
   const s = String((raw as { status?: string }).status ?? '').toLowerCase();
   return {
     ...raw,
@@ -702,11 +909,23 @@ function normalizeCobro(raw: Cobro): Cobro {
 }
 
 export const cobrosApi = {
-  async getAll(params?: { month?: string; status?: string; propietarioId?: string }): Promise<Cobro[]> {
+  /**
+   * Sin `month` trae TODOS los meses. `consignacionId` (el mandato del
+   * inmueble) es el filtro con que el recibo de caja busca los cobros con
+   * saldo de UN inmueble, sea del mes que sea — el back ya lo aceptaba y
+   * ninguna pantalla lo mandaba.
+   */
+  async getAll(params?: {
+    month?: string;
+    status?: string;
+    propietarioId?: string;
+    consignacionId?: string;
+  }): Promise<Cobro[]> {
     const query = new URLSearchParams();
     if (params?.month) query.set('month', params.month);
     if (params?.status) query.set('status', params.status);
     if (params?.propietarioId) query.set('propietarioId', params.propietarioId);
+    if (params?.consignacionId) query.set('consignacionId', params.consignacionId);
     const qs = query.toString();
     const res = await apiClient.get<Cobro[] | { data: Cobro[] }>(
       `${BASE}/cobros${qs ? `?${qs}` : ''}`,
@@ -715,13 +934,39 @@ export const cobrosApi = {
     return rows.map(normalizeCobro);
   },
 
-  async getById(id: string): Promise<Cobro> {
-    return apiClient.get<Cobro>(`${BASE}/cobros/${id}`);
+  /**
+   * El detalle de UN cobro.
+   *
+   * Trae dos cosas que la lista no trae: `conceptos` (el desglose línea por
+   * línea del total adeudado) y `recibosDeCaja` (los recibos vivos). Por eso
+   * devuelve `CobroConDesglose` y no `Cobro`: la pantalla de detalle necesita
+   * los dos y la lista nunca los tuvo.
+   *
+   * 🔴 Normaliza igual que la lista. Antes no lo hacía —el único consumidor era
+   * la lista— y el día que alguien pintara el detalle con esta respuesta iba a
+   * recibir `status: 'PAID'` en mayúscula contra un tipo que dice `'paid'`: el
+   * badge se cae al default y el estado se ve mal sin que nada falle.
+   */
+  async getById(id: string): Promise<CobroConDesglose> {
+    const res = await apiClient.get<CobroConDesglose>(`${BASE}/cobros/${id}`);
+    return normalizeCobro(res);
   },
 
+  /**
+   * Registrar un pago contra un cobro.
+   *
+   * 🔴 `paidDate`, NO `paymentDate`. El back valida con
+   * `forbidNonWhitelisted: true` (back: src/main.ts), así que una clave que el
+   * DTO no declara no se ignora — devuelve 400. Esto es lo que quedaba de
+   * «registrar pago no funciona»: una auditoría anterior arregló el verbo y la
+   * ruta y dejó el nombre del campo, y el test lo fijó comparando el cuerpo
+   * contra sí mismo en vez de contra el contrato del back.
+   *
+   * Contrato real: back/src/inmobiliaria/cobros/dto/register-payment.dto.ts
+   */
   async registerPayment(id: string, payment: {
     paidAmount: number;
-    paymentDate: string;
+    paidDate: string;
     paymentMethod: string;
     paymentReference?: string;
   }): Promise<Cobro> {
@@ -764,6 +1009,23 @@ export const cobrosApi = {
 
   async generate(month: string): Promise<void> {
     await apiClient.post(`${BASE}/cobros/generate`, { month });
+  },
+
+  /**
+   * El cobro de UN inmueble para UN mes. Es lo que pide el recibo de caja
+   * cuando el mes de ese inmueble todavía no se cobró: antes la única salida
+   * era `generate`, la corrida masiva (cien cobros para emitir uno).
+   * `creado: false` = ya existía; el cobro vuelve igual, con su saldo.
+   */
+  async generateOne(
+    consignacionId: string,
+    month: string,
+  ): Promise<{ cobro: Cobro; creado: boolean }> {
+    const res = await apiClient.post<{ cobro: Cobro; creado: boolean }>(
+      `${BASE}/cobros/generate-one`,
+      { consignacionId, month },
+    );
+    return { cobro: normalizeCobro(res.cobro), creado: Boolean(res.creado) };
   },
 
   async sendReminder(id: string): Promise<void> {
@@ -1202,6 +1464,18 @@ export const reportesApi = {
   async getRendimientoAgentes(month?: string): Promise<RendimientoAgentesReport> {
     const qs = month ? `?month=${month}` : '';
     return apiClient.get<RendimientoAgentesReport>(`${BASE}/reports/rendimiento-agentes${qs}`);
+  },
+
+  /**
+   * Rentabilidad por inmueble en un rango de meses (`YYYY-MM`). Sin rango el
+   * back toma los últimos 12 meses hasta el actual; el máximo son 24.
+   */
+  async getRentabilidad(desde?: string, hasta?: string): Promise<RentabilidadReport> {
+    const query = new URLSearchParams();
+    if (desde) query.set('desde', desde);
+    if (hasta) query.set('hasta', hasta);
+    const qs = query.toString();
+    return apiClient.get<RentabilidadReport>(`${BASE}/reports/rentabilidad${qs ? `?${qs}` : ''}`);
   },
 
   async getExtracto(propietarioId: string, month?: string): Promise<unknown> {

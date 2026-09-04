@@ -80,7 +80,7 @@ const DEFINICIONES: readonly DefinicionPaso[] = [
   // lado. Hubo una pantalla «Recorrido» que mostraba la misma lista con otro
   // nombre; el mapa se mudó adentro de esta y la ruta redirige.
   { key: 'alerta',         actor: 'inmobiliaria',  href: '/panel/inmobiliaria/postulaciones' },
-  { key: 'evaluacion',     actor: 'inmobiliaria',  href: '/panel/inmobiliaria/ai/estudio/cola' },
+  { key: 'evaluacion',     actor: 'inmobiliaria',  href: '/panel/inmobiliaria/postulaciones/estudio/cola' },
   // Comparar y decidir necesitan un inmueble, y un mapa no tiene ninguno: la
   // comparación vive en `/propiedades/:id/candidatos/comparar?ids=…`. Desde
   // acá se lleva a la lista de postulaciones, que es de donde se elige a

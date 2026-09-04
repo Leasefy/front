@@ -9,11 +9,13 @@ import type { Locale } from '@/lib/i18n';
  * Route name mapping for screen reader announcements.
  *
  * Each pathname prefix maps to an `a11y.routes.*` translation key. Prefixes are
- * matched longest-first so nested routes (e.g. `/panel/inmobiliaria/ai`) win over
+ * matched longest-first so nested routes (e.g. `/panel/inmobiliaria/configuracion/agentes`) win over
  * their parents (`/panel/inmobiliaria`, `/panel`).
  */
 const ROUTE_NAME_KEYS: Record<string, string> = {
-  '/panel/inmobiliaria/ai': 'a11y.routes.agencyAi',
+  // La vitrina de agentes vive en Configuración; los workspaces de cada agente
+  // viven dentro de su módulo y se anuncian como el panel (ya no son sección).
+  '/panel/inmobiliaria/configuracion/agentes': 'a11y.routes.agencyAi',
   '/panel/inmobiliaria': 'a11y.routes.agencyPanel',
   '/panel/beta': 'a11y.routes.assistant',
   '/panel': 'a11y.routes.landlordPanel',

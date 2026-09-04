@@ -170,7 +170,7 @@ export function ComisionDesglose({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className={cn(
-        variant === 'full' && 'rounded-xl border border-border bg-card overflow-hidden',
+        variant === 'full' && 'rounded-lg border border-border bg-card overflow-hidden',
         className
       )}
     >

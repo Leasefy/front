@@ -102,7 +102,7 @@ export default function ConciliacionResultadoPage() {
 
         {/* ── 1. HERO (ink anchor) ──────────────────────────────────────── */}
         <section
-          className="relative overflow-hidden rounded-2xl px-7 py-7 sm:px-9 sm:py-8"
+          className="relative overflow-hidden rounded-lg px-7 py-7 sm:px-9 sm:py-8"
           style={{ background: INK_GRADIENT, boxShadow: '0 26px 64px -28px rgba(20, 19, 15,0.55)' }}
         >
           <div className="pointer-events-none absolute -inset-x-2 top-[50%] h-[42%] text-white/[0.10]">
@@ -147,7 +147,7 @@ export default function ConciliacionResultadoPage() {
         </section>
 
         {/* ── 2. RESULTADO DEL DÍA ──────────────────────────────────────── */}
-        <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <section className="rounded-lg border border-border bg-surface p-5 sm:p-6">
           <div className="space-y-1.5 mb-5">
             <Eyebrow>Resultado del día</Eyebrow>
             <p className="text-[13px] text-fg-muted">
@@ -191,7 +191,7 @@ export default function ConciliacionResultadoPage() {
             {IMPACTO.map((c) => {
               const CIcon = c.icon
               return (
-                <div key={c.label} className="rounded-xl border border-border bg-surface p-4">
+                <div key={c.label} className="rounded-lg border border-border bg-surface p-4">
                   <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-surface-muted text-fg-muted">
                     <CIcon className="w-[18px] h-[18px]" weight="bold" />
                   </span>

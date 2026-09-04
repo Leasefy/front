@@ -80,7 +80,7 @@ for (const viewport of VIEWPORTS) {
       })
     })
 
-    await page.goto('/panel/inmobiliaria/ai/cobranza')
+    await page.goto('/panel/inmobiliaria/cobros/cobranza')
 
     // Wait for the KPI strip to render
     await page.waitForSelector('[data-testid="kpi-strip"], .grid-cols-2', {
@@ -117,7 +117,7 @@ test('cobranza overview — stage card click updates URL', async ({ page }) => {
     })
   })
 
-  await page.goto('/panel/inmobiliaria/ai/cobranza')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza')
   await page.waitForSelector('button[aria-label*="S0"]', { timeout: 10_000 })
   await page.click('button[aria-label*="S0"]')
   await expect(page).toHaveURL(/\?stage=S0/)
@@ -138,7 +138,7 @@ test('cobranza overview — aria-live region present', async ({ page }) => {
     })
   })
 
-  await page.goto('/panel/inmobiliaria/ai/cobranza')
+  await page.goto('/panel/inmobiliaria/cobros/cobranza')
   const liveRegion = page.locator('[aria-live="polite"]')
   await expect(liveRegion).toBeAttached()
 })

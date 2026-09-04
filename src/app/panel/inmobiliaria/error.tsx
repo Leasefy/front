@@ -28,7 +28,7 @@ export default function ErrorDelPanel({
 
   return (
     <div className="p-4 md:p-6" data-testid="panel-error">
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-card px-6 py-12 sm:px-10">
+      <div className="relative overflow-hidden rounded-lg border border-border bg-card px-6 py-12 sm:px-10">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute left-1/2 top-0 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-surface-muted/70 blur-2xl"
@@ -61,7 +61,7 @@ export default function ErrorDelPanel({
               Volver a cargar
             </button>
             <Link
-              href="/panel/inmobiliaria/dashboard"
+              href="/panel/inmobiliaria/piloto"
               className="inline-flex h-10 items-center rounded-full px-5 text-sm font-medium text-fg-muted transition-colors hover:text-fg"
             >
               Ir al panel

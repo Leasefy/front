@@ -1,0 +1,121 @@
+﻿Título,Dirección,Ciudad,Barrio,Departamento,Tipo Inmueble,Tipo de Negocio,Canon Mensual,Precio de Venta,Administración,Comisión %,Área m2,Habitaciones,Baños,Propietario,Tel Propietario,Estado,Observaciones,Fecha de Consignación
+Apartamento en Provenza,Calle 75 # 57-31 Apto 802,Medellín,Provenza,Antioquia,Apartamento,Arriendo,2400000,,550000,9,108,3,2,Luisa Fernanda Cardona Torres,3045933710,Arrendado,,2023-12-10
+Apartamento en Estadio,Carrera 39D # 12-92 Apto 1003,Medellín,Estadio,Antioquia,Apartamento,Arriendo,1600000,,620000,10,111,2,2,Isabella Toro Salazar,3041691707,Arrendado,,2023-06-19
+Oficina en Loma de los Bernal,Calle 7 # 91-82 Of. 1301,Medellín,Loma de los Bernal,Antioquia,Oficina,Arriendo,6050000,,190000,8,72,0,2,Inversiones Los Cerezos S.A.S.,6012484155,Arrendado,Se aceptan mascotas,2025-11-29
+Apartamento en La América,Carrera 44 # 94-6 Apto 1703,Medellín,La América,Antioquia,Apartamento,Arriendo,4050000,,620000,10,80,4,1,Gloria Inés Agudelo Botero,3147699392,Arrendado,,2025-12-11
+Casa en Nicolás de Federmán,Calle 51 # 27-72 Casa 1,Bogotá,Nicolás de Federmán,Cundinamarca,Casa,Arriendo,3550000,,,10,105,5,2,Nataly Ramírez Valencia,3006650985,Arrendado,Gas natural,2026-05-21
+Apartamento en El Golf,Carrera 6 # 81-14 Apto 901,Barranquilla,El Golf,Atlántico,Apartamento,Arriendo,3700000,,420000,8,49,3,3,Fabián Agudelo Gómez,3204287339,Arrendado,,2023-04-26
+Casa en Riomar,Carrera 29 # 35-73,Barranquilla,Riomar,Atlántico,Casa,Arriendo,2100000,,,8,248,3,4,Gloria Inés Gallego Marín,3169914670,Arrendado,,2024-01-11
+Casa en Las Lomitas,Carrera 38C # 93-71,Sabaneta,Las Lomitas,Antioquia,Casa,Arriendo,3850000,,,8,234,4,4,Esteban Ramírez Franco,3130696226,Arrendado,,2024-02-08
+Apartamento en El Poblado,Circular 15 # 99-34 Apto 1801,Medellín,El Poblado,Antioquia,Apartamento,Arriendo,1300000,,570000,10,126,4,2,Fiduciaria del Valle S.A.,6050030432,Arrendado,Piso 12 con balcón,2024-02-14
+Oficina en Granada,Carrera 4 # 70-54 Of. 1505,Cali,Granada,Valle del Cauca,Oficina,Arriendo,4600000,,580000,10,39,0,1,Camila Echeverri Uribe,3133845912,Arrendado,,2022-08-16
+Apartamento en Modelia,Calle 135 # 58-45 Apto 1103,Bogotá,Modelia,Cundinamarca,Apartamento,Arriendo,4100000,,530000,10,74,1,2,Luis Alberto García Moreno,3104599353,Arrendado,,2022-03-17
+Apartamento en Zúñiga,Diagonal 38 # 84-69 Apto 1004,Envigado,Zúñiga,Antioquia,Apartamento,Arriendo,1850000,,630000,8,115,3,3,Camila Arango Londoño,3201033807,Arrendado,Recién remodelado,2025-01-14
+Apartamento en Usaquén,Carrera 84 # 25-96 Apto 701,Bogotá,Usaquén,Cundinamarca,Apartamento,Arriendo,3300000,,410000,8,119,2,3,Iván Darío Mejía Agudelo,3104057703,Arrendado,,2025-01-12
+Local comercial en Colina Campestre,Carrera 143 Sur # 44-68 Local 14,Bogotá,Colina Campestre,Cundinamarca,Local comercial,Arriendo,5700000,,80000,10,138,0,2,Mariana Pérez Hernández,3003612884,Arrendado,,2023-04-19
+Local comercial en Conquistadores,Avenida 10 # 59-90 Local 7,Medellín,Conquistadores,Antioquia,Local comercial,Arriendo,8950000,,340000,10,156,0,2,Luis Alberto García Moreno,3104599353,Arrendado,,2025-07-03
+Apartamento en Zúñiga,Carrera 55 # 24-3 Apto 202,Envigado,Zúñiga,Antioquia,Apartamento,Arriendo,3550000,,460000,10,109,2,2,Carolina García Duque,3009343852,Arrendado,Con terraza,2022-07-29
+Apartamento en La Floresta,Calle 59 # 91-2 Apto 1404,Bucaramanga,La Floresta,Santander,Apartamento,Arriendo,1500000,,260000,10,114,3,2,Marta Cecilia Torres Correa,3211916654,Arrendado,Con terraza,2026-04-13
+Apartamento en Zúñiga,Calle 40 # 15-19 Apto 1602,Envigado,Zúñiga,Antioquia,Apartamento,Arriendo,2050000,,480000,10,83,1,1,Camila Echeverri Uribe,3133845912,Arrendado,,2024-06-01
+Estudio en Las Lomitas,Carrera 31 # 74-29 Apto 903,Sabaneta,Las Lomitas,Antioquia,Estudio,Arriendo,1000000,,260000,10,31,1,1,Paula Andrea Uribe Castaño,3116928984,Arrendado,,2023-06-24
+Estudio en Estadio,Carrera 53 # 18-70 Apto 802,Medellín,Estadio,Antioquia,Estudio,Arriendo,1400000,,220000,9,30,1,1,Esteban Ramírez Franco,3130696226,Arrendado,,2022-07-20
+Local comercial en Conquistadores,Transversal 43 # 30-93 Local 6,Medellín,Conquistadores,Antioquia,Local comercial,Arriendo,7100000,,190000,10,88,0,1,Mónica Liliana Martínez Franco,3208632503,Arrendado,,2025-01-31
+Estudio en Aves María,Carrera 17 # 28-49 Apto 801,Sabaneta,Aves María,Antioquia,Estudio,Arriendo,1400000,,150000,8,44,1,1,Luisa Fernanda Echeverri Uribe,3212757064,Arrendado,,2024-08-19
+Apartamento en Sotomayor,Calle 72 # 74-77 Apto 504,Bucaramanga,Sotomayor,Santander,Apartamento,Arriendo,1100000,,310000,10,62,3,2,Fiduciaria del Valle S.A.,6050030432,Arrendado,Incluye cuarto útil,2024-03-25
+Casa en Nicolás de Federmán,Calle 45B # 81-25,Bogotá,Nicolás de Federmán,Cundinamarca,Casa,Arriendo,5700000,,,8,233,3,4,Camila Arango Londoño,3201033807,Arrendado,Parqueadero cubierto,2024-03-23
+Oficina en Loma de los Bernal,Diagonal 43 Bis # 37-8 Of. 202,Medellín,Loma de los Bernal,Antioquia,Oficina,Arriendo,3800000,,630000,10,106,0,2,Mariana Pérez Hernández,3003612884,Arrendado,,2022-10-11
+Estudio en Rosales,Carrera 9 # 26-93 Apto 901,Bogotá,Rosales,Cundinamarca,Estudio,Arriendo,1550000,,210000,10,28,1,1,Nataly Rojas Ochoa,3012879489,Arrendado,Piso 12 con balcón,2024-12-01
+Apartamento en Rosales,Circular 169 # 86-61 Apto 201,Bogotá,Rosales,Cundinamarca,Apartamento,Arriendo,1600000,,520000,9,60,1,3,Camilo Arango Bedoya,3500194047,Arrendado,,2024-08-03
+Casa en Teusaquillo,Calle 155 # 72-12 Casa 3,Bogotá,Teusaquillo,Cundinamarca,Casa,Arriendo,3650000,,,9,185,3,3,Yesica López López,3158424730,Arrendado,Piso 12 con balcón,2024-12-07
+Casa en Cedritos,Carrera 136 # 7-36 Casa 17,Bogotá,Cedritos,Cundinamarca,Casa,Arriendo,5050000,,,8,177,3,2,Constructora Altavista S.A.,6059485880,Arrendado,Incluye cuarto útil,2023-06-13
+Oficina en Usaquén,Calle 63 # 66-38 Of. 503,Bogotá,Usaquén,Cundinamarca,Oficina,Arriendo,4050000,,500000,9,115,0,2,Felipe Ospina Vélez,3002469026,Arrendado,Parqueadero cubierto,2022-02-10
+Apartamento en El Golf,Carrera 17 # 83-96 Apto 1502,Barranquilla,El Golf,Atlántico,Apartamento,Arriendo,1550000,,240000,8,52,3,1,Juliana Mejía García,3210927375,Arrendado,,2022-03-16
+Apartamento en Loma de los Bernal,Avenida 84 # 3-48 Apto 1004,Medellín,Loma de los Bernal,Antioquia,Apartamento,Arriendo,3700000,,400000,10,125,4,2,Fiduciaria del Valle S.A.,6050030432,Arrendado,,2022-04-17
+Apartamento en La Soledad,Carrera 23 # 10-81 Apto 1603,Bogotá,La Soledad,Cundinamarca,Apartamento,Arriendo,5200000,,450000,10,104,4,2,Mariana Pérez Hernández,3003612884,Arrendado,,2023-11-04
+Casa en Santa Bárbara,Calle 150 # 65-70 Casa 31,Bogotá,Santa Bárbara,Cundinamarca,Casa,Arriendo,6300000,,,10,212,3,4,Constructora Altavista S.A.,6059485880,Arrendado,Con terraza,2022-09-18
+Oficina en Estadio,Diagonal 6 # 64-85 Of. 1205,Medellín,Estadio,Antioquia,Oficina,Arriendo,2100000,,500000,10,67,0,1,Jaime Ramírez Echeverri,3120849801,Arrendado,,2025-09-13
+Casa en Aves María,Calle 84C # 41-35 Casa 29,Sabaneta,Aves María,Antioquia,Casa,Arriendo,4100000,,,9,148,5,3,Nataly Ramírez Valencia,3006650985,Arrendado,Gas natural,2025-05-30
+Oficina en Rosales,Calle 23 # 70-72 Of. 401,Bogotá,Rosales,Cundinamarca,Oficina,Arriendo,2650000,,280000,10,59,0,1,Iván Darío Franco Hoyos,3502116832,Arrendado,Cuarto piso sin ascensor,2024-09-21
+Apartamento en Laureles,Diagonal 28 # 24-85 Apto 1402,Medellín,Laureles,Antioquia,Apartamento,Arriendo,3700000,,260000,10,133,1,2,Gloria Inés Betancur Ospina,3220757882,Arrendado,,2025-06-03
+Apartamento en Chicó Norte,Carrera 10 # 27-27 Apto 803,Bogotá,Chicó Norte,Cundinamarca,Apartamento,Arriendo,4800000,,530000,10,48,3,1,Camilo Arango Bedoya,3500194047,Arrendado,Recién remodelado,2024-10-12
+Apartamento en Teusaquillo,Calle 166 Sur # 77-28 Apto 202,Bogotá,Teusaquillo,Cundinamarca,Apartamento,Arriendo,5250000,,180000,9,86,2,3,Marcela Arango Sánchez,3003561061,Arrendado,,2022-04-03
+Bodega en Teusaquillo,Diagonal 17 # 26-8 Bodega 28,Bogotá,Teusaquillo,Cundinamarca,Bodega,Arriendo,15000000,,260000,10,391,0,1,Laura Castro Hoyos,3121625400,Arrendado,Parqueadero cubierto,2025-11-19
+Apartamento en Chapinero Alto,Calle 157 # 26-24 Apto 1101,Bogotá,Chapinero Alto,Cundinamarca,Apartamento,Arriendo,2800000,,330000,10,92,4,3,Felipe Ospina Vélez,3002469026,Arrendado,Amoblado,2022-12-30
+Apartamento en Estadio,Calle 17 # 58-43 Apto 401,Medellín,Estadio,Antioquia,Apartamento,Arriendo,4450000,,370000,9,109,4,2,Yolanda Cardona Valencia,3019336939,Arrendado,,2026-05-15
+Casa en Modelia,Carrera 161 # 4-10 Casa 27,Bogotá,Modelia,Cundinamarca,Casa,Arriendo,7200000,,,8,246,3,4,Camilo Arango Bedoya,3500194047,Arrendado,,2023-10-19
+Apartamento en La Floresta,Calle 75 # 10-91 Apto 1002,Bucaramanga,La Floresta,Santander,Apartamento,Arriendo,1100000,,360000,10,50,4,3,Camila Arango Londoño,3201033807,Arrendado,,2023-10-28
+Casa en Calle Larga,Diagonal 18D # 80-32 Casa 20,Sabaneta,Calle Larga,Antioquia,Casa,Arriendo,2950000,,,8,148,5,2,Iván Darío Mejía Agudelo,3104057703,Arrendado,Cuarto piso sin ascensor,2024-08-01
+Apartamento en Chapinero Alto,Calle 53 # 60-72 Apto 1103,Bogotá,Chapinero Alto,Cundinamarca,Apartamento,Arriendo,1950000,,480000,8,129,1,3,Édgar Cardona Vélez,3146746092,Arrendado,,2022-05-29
+Apartamento en El Poblado,Calle 48 # 53-65 Apto 1104,Medellín,El Poblado,Antioquia,Apartamento,Arriendo,3650000,,270000,8,48,4,2,Álvaro Muñoz Gallego,3187121835,Arrendado,,2023-04-20
+Casa en Ciudad Salitre,Carrera 26 # 33-94,Bogotá,Ciudad Salitre,Cundinamarca,Casa,Arriendo,5400000,,,10,261,5,3,Mariana Pérez Hernández,3003612884,Arrendado,Dos parqueaderos,2025-03-30
+Estudio en El Golf,Carrera 56 # 50-62 Apto 906,Barranquilla,El Golf,Atlántico,Estudio,Arriendo,900000,,170000,10,32,1,1,Inmobiliaria Santa Ana Ltda.,6058653849,Arrendado,Gas natural,2025-06-24
+Oficina en Ciudad Jardín,Carrera 75 # 86-74 Of. 1104,Cali,Ciudad Jardín,Valle del Cauca,Oficina,Arriendo,5250000,,680000,10,41,0,2,Iván Darío Franco Hoyos,3502116832,Arrendado,,2022-03-25
+Oficina en Álamos,Carrera 35 Bis # 56-82 Of. 1508,Pereira,Álamos,Risaralda,Oficina,Arriendo,1550000,,450000,10,123,0,1,Yolanda Uribe Ochoa,3163757277,Arrendado,,2023-07-22
+Apartamento en Loma de los Bernal,Carrera 16 Bis # 97-91 Apto 203,Medellín,Loma de los Bernal,Antioquia,Apartamento,Arriendo,4550000,,260000,10,77,4,3,Inversiones Los Cerezos S.A.S.,6012484155,Arrendado,,2022-05-20
+Local comercial en Laureles,Carrera 77 # 16-47 Local 14,Medellín,Laureles,Antioquia,Local comercial,Arriendo,2200000,,370000,10,47,0,1,Patrimonio Familiar Restrepo & Cía. S. en C.,6022082115,Arrendado,,2025-08-02
+Casa en La Floresta,Calle 4 # 45-16,Bucaramanga,La Floresta,Santander,Casa,Arriendo,3000000,,,8,262,4,3,Felipe Castro Bedoya,3118260159,Arrendado,,2022-07-27
+Apartamento en Cedritos,Calle 85 # 78-24 Apto 1102,Bogotá,Cedritos,Cundinamarca,Apartamento,Arriendo,4100000,,290000,8,131,3,1,Álvaro Muñoz Gallego,3187121835,Arrendado,,2023-04-30
+Bodega en Calle Larga,Carrera 67 # 27-60 Bodega 5,Sabaneta,Calle Larga,Antioquia,Bodega,Arriendo,3650000,,300000,10,295,0,2,Patrimonio Familiar Restrepo & Cía. S. en C.,6022082115,Arrendado,,2022-11-05
+Apartamento en El Dorado,Carrera 28 # 5-19 Apto 1003,Envigado,El Dorado,Antioquia,Apartamento,Arriendo,1450000,,580000,8,84,4,3,Felipe Castro Bedoya,3118260159,Arrendado,,2022-03-05
+Local comercial en Colina Campestre,Calle 6 Bis # 10-96 Local 18,Bogotá,Colina Campestre,Cundinamarca,Local comercial,Arriendo,9450000,,460000,10,87,0,1,Marta Cecilia Torres Correa,3211916654,Arrendado,Parqueadero cubierto,2023-07-27
+Apartamento en Santa Bárbara,Calle 28 # 42-20 Apto 1403,Bogotá,Santa Bárbara,Cundinamarca,Apartamento,Arriendo,3550000,,500000,9,57,4,3,Daniela Quintero Muñoz,3216818878,Arrendado,,2025-12-02
+Estudio en Santa Mónica,Diagonal 39 # 39-66 Apto 1201,Cali,Santa Mónica,Valle del Cauca,Estudio,Arriendo,750000,,220000,10,37,1,1,Catalina Quintero Moreno,3023144392,Arrendado,Con terraza,2026-02-15
+Apartamento en Modelia,Calle 22 # 77-35 Apto 1804,Bogotá,Modelia,Cundinamarca,Apartamento,Arriendo,1700000,,550000,9,124,2,3,Gloria Inés Torres Henao,3170964476,Arrendado,Vista exterior,2022-07-21
+Local comercial en Riomar,Carrera 21 # 3-38 Local 18,Barranquilla,Riomar,Atlántico,Local comercial,Arriendo,6750000,,10000,9,149,0,1,Inversiones Los Cerezos S.A.S.,6012484155,Arrendado,,2023-09-13
+Local comercial en Villa Country,Calle 39 # 85-82 Local 17,Barranquilla,Villa Country,Atlántico,Local comercial,Arriendo,5200000,,250000,8,187,0,1,Luis Alberto García Moreno,3104599353,Arrendado,,2023-04-10
+Apartamento en Estadio,Diagonal 64B # 16-66 Apto 604,Medellín,Estadio,Antioquia,Apartamento,Arriendo,3500000,,260000,8,68,4,3,Juan Camilo Correa Henao,3053007721,Arrendado,,2022-10-28
+Bodega en Provenza,Calle 19 # 46-25 Bodega 19,Medellín,Provenza,Antioquia,Bodega,Arriendo,10950000,,50000,9,568,0,2,Inmobiliaria Santa Ana Ltda.,6058653849,Arrendado,Dos parqueaderos,2023-09-22
+Apartamento en Nicolás de Federmán,Transversal 135 # 75-66 Apto 404,Bogotá,Nicolás de Federmán,Cundinamarca,Apartamento,Arriendo,1750000,,310000,8,78,4,3,Hernán Hoyos Londoño,3027813611,Arrendado,,2023-08-08
+Apartamento en Aves María,Avenida 77 # 25-43 Apto 203,Sabaneta,Aves María,Antioquia,Apartamento,Arriendo,2950000,,600000,10,128,4,1,Rentas Urbanas del Norte S.A.S.,6012864896,Arrendado,Cuarto piso sin ascensor,2023-04-24
+Apartamento en Teusaquillo,Carrera 92 # 78-26 Apto 702,Bogotá,Teusaquillo,Cundinamarca,Apartamento,Arriendo,3150000,,460000,9,112,4,1,Nicolás Rojas Cardona,3109470879,Arrendado,,2022-05-10
+Local comercial en Cedritos,Calle 6 # 82-49 Local 16,Bogotá,Cedritos,Cundinamarca,Local comercial,Arriendo,4150000,,240000,10,126,0,2,Iván Darío Mejía Agudelo,3104057703,Arrendado,,2024-06-01
+Estudio en Ciudad Jardín,Avenida 89 # 61-20 Apto 601,Cali,Ciudad Jardín,Valle del Cauca,Estudio,Arriendo,1300000,,240000,8,44,1,1,Felipe Ospina Vélez,3002469026,Arrendado,Incluye cuarto útil,2023-02-09
+Casa en Laureles,Calle 59 # 48-40,Medellín,Laureles,Antioquia,Casa,Arriendo,5800000,,,9,236,5,4,Luisa Fernanda Cardona Torres,3045933710,Arrendado,,2022-06-29
+Apartamento en Provenza,Avenida 41B # 65-56 Apto 1704,Medellín,Provenza,Antioquia,Apartamento,Arriendo,4400000,,570000,10,139,4,3,Constructora Altavista S.A.,6059485880,Arrendado,Incluye cuarto útil,2024-08-29
+Apartamento en Chicó Norte,Calle 40A # 55-12 Apto 1501,Bogotá,Chicó Norte,Cundinamarca,Apartamento,Arriendo,1750000,,520000,9,52,4,1,Angélica Agudelo Giraldo,3128907668,Arrendado,,2024-04-01
+Apartamento en El Peñón,Avenida 41 # 29-72 Apto 102,Cali,El Peñón,Valle del Cauca,Apartamento,Arriendo,2400000,,450000,10,94,1,1,Nataly Ramírez Valencia,3006650985,Arrendado,,2024-08-15
+Apartamento en Cedritos,Calle 159 # 86-84 Apto 1004,Bogotá,Cedritos,Cundinamarca,Apartamento,Arriendo,2300000,,250000,10,112,4,3,Héctor Fabio Ramírez Zapata,3146065017,Arrendado,,2025-05-19
+Casa en Provenza,Calle 51 # 75-6,Medellín,Provenza,Antioquia,Casa,Arriendo,4700000,,,10,176,3,4,Yolanda Cardona Salazar,3106864403,Arrendado,,2023-08-16
+Apartamento en La Soledad,Transversal 45 # 41-2 Apto 1503,Bogotá,La Soledad,Cundinamarca,Apartamento,Arriendo,2600000,,270000,10,57,4,3,Patrimonio Familiar Restrepo & Cía. S. en C.,6022082115,Arrendado,,2023-01-28
+Local comercial en La América,Calle 14 # 55-49 Local 13,Medellín,La América,Antioquia,Local comercial,Arriendo,6350000,,310000,10,88,0,1,Felipe Castro Bedoya,3118260159,Arrendado,,2024-02-07
+Apartamento en Colina Campestre,Carrera 81C # 93-26 Apto 202,Bogotá,Colina Campestre,Cundinamarca,Apartamento,Arriendo,2100000,,230000,10,135,4,2,Nataly Rojas Ochoa,3012879489,Arrendado,,2025-06-07
+Estudio en Las Lomitas,Calle 36D # 24-67 Apto 1001,Sabaneta,Las Lomitas,Antioquia,Estudio,Arriendo,750000,,240000,8,36,1,1,Iván Darío Mejía Agudelo,3104057703,Arrendado,,2023-03-27
+Apartamento en La Soledad,Transversal 11 # 41-72 Apto 502,Bogotá,La Soledad,Cundinamarca,Apartamento,Arriendo,3500000,,330000,9,84,4,2,Constructora Altavista S.A.,6059485880,Arrendado,Gas natural,2022-12-18
+Local comercial en Zúñiga,Carrera 61A # 98-95 Local 18,Envigado,Zúñiga,Antioquia,Local comercial,Arriendo,6200000,,30000,8,130,0,1,Felipe Ospina Vélez,3002469026,Arrendado,,2023-10-11
+Apartamento en Chicó Norte,Avenida 44 # 29-91 Apto 102,Bogotá,Chicó Norte,Cundinamarca,Apartamento,Arriendo,2150000,,430000,9,98,3,2,Constructora Altavista S.A.,6059485880,Arrendado,Piso 12 con balcón,2022-04-27
+Apartamento en Estadio,Carrera 52 # 95-89 Apto 104,Medellín,Estadio,Antioquia,Apartamento,Arriendo,2300000,,300000,8,101,4,2,Luis Alberto García Moreno,3104599353,Arrendado,Piso 12 con balcón,2026-03-11
+Local comercial en Provenza,Carrera 63 # 90-29 Local 2,Medellín,Provenza,Antioquia,Local comercial,Arriendo,3750000,,60000,8,189,0,1,Santiago Betancur Castro,3028706856,Arrendado,,2022-10-26
+Oficina en Provenza,Circular 84 # 82-74 Of. 504,Medellín,Provenza,Antioquia,Oficina,Arriendo,4650000,,200000,8,52,0,1,Leonardo Cardona Restrepo,3026520690,Arrendado,,2024-01-31
+Apartamento en El Dorado,Avenida 56 # 58-80 Apto 801,Envigado,El Dorado,Antioquia,Apartamento,Arriendo,2550000,,400000,10,102,1,1,Marta Cecilia Torres Correa,3211916654,Arrendado,Gas natural,2025-03-09
+Casa en La Soledad,Carrera 153A # 14-56 Casa 20,Bogotá,La Soledad,Cundinamarca,Casa,Arriendo,2950000,,,10,178,4,3,Juan Camilo Rojas Agudelo,3202752924,Arrendado,Incluye cuarto útil,2023-07-08
+Apartamento en Loma de los Bernal,Carrera 55 # 72-14 Apto 1101,Medellín,Loma de los Bernal,Antioquia,Apartamento,Arriendo,2700000,,450000,9,84,2,2,Nicolás Rojas Cardona,3109470879,Arrendado,,2022-07-25
+Casa en Colina Campestre,Carrera 73 # 50-77 Casa 35,Bogotá,Colina Campestre,Cundinamarca,Casa,Arriendo,6300000,,,9,278,3,3,Luis Alberto Torres Sánchez,3056993679,Disponible,,2024-06-09
+Apartamento en Laureles,Calle 63 # 39-28 Apto 1504,Medellín,Laureles,Antioquia,Apartamento,Arriendo,2200000,,430000,10,128,3,1,Jorge Iván Arango García,3138022225,Disponible,,2022-10-22
+Apartamento en Santa Bárbara,Carrera 153C # 65-22 Apto 301,Bogotá,Santa Bárbara,Cundinamarca,Apartamento,Arriendo,2850000,,190000,8,112,4,3,Andrés Felipe Escobar Castro,3119089474,Disponible,,2025-01-02
+Apartamento en La Floresta,Carrera 42 # 84-22 Apto 402,Bucaramanga,La Floresta,Santander,Apartamento,Venta,,670000000,600000,10,70,4,2,Rentas Urbanas del Norte S.A.S.,6012864896,Disponible,,2026-04-01
+Oficina en Sotomayor,Avenida 24B # 61-56 Of. 701,Bucaramanga,Sotomayor,Santander,Oficina,Arriendo,3350000,,460000,8,33,0,2,Iván Darío Franco Hoyos,3502116832,Disponible,,2023-08-22
+Local comercial en El Poblado,Carrera 89 # 51-69 Local 20,Medellín,El Poblado,Antioquia,Local comercial,Arriendo,6400000,,430000,10,119,0,2,Patrimonio Familiar Restrepo & Cía. S. en C.,6022082115,Disponible,,2023-12-05
+Oficina en Sotomayor,Calle 32 # 27-54 Of. 306,Bucaramanga,Sotomayor,Santander,Oficina,Arriendo,3400000,,640000,9,62,0,2,Patrimonio Familiar Restrepo & Cía. S. en C.,6022082115,Disponible,,2026-04-17
+Apartamento en Jardines,Calle 12 # 20-71 Apto 1504,Envigado,Jardines,Antioquia,Apartamento,Arriendo,4150000,,580000,9,124,2,2,Patrimonio Familiar Restrepo & Cía. S. en C.,6022082115,Disponible,,2025-07-16
+Apartamento en La América,Calle 38B # 88-84 Apto 902,Medellín,La América,Antioquia,Apartamento,Arriendo,2000000,,430000,10,140,4,3,Inversiones Los Cerezos S.A.S.,6012484155,Disponible,Vista exterior,2024-05-13
+Apartamento en Pance,Carrera 69 # 28-67 Apto 1204,Cali,Pance,Valle del Cauca,Apartamento,Arriendo,3300000,,610000,10,94,2,3,Álvaro Muñoz Gallego,3187121835,Disponible,,2026-01-18
+Apartamento en Conquistadores,Calle 44 # 88-89 Apto 1204,Medellín,Conquistadores,Antioquia,Apartamento,Arriendo,2050000,,390000,8,68,4,3,Camilo Arango Bedoya,3500194047,Disponible,,2023-09-03
+Apartamento en El Peñón,Carrera 78 # 81-18 Apto 1802,Cali,El Peñón,Valle del Cauca,Apartamento,Arriendo,3600000,,190000,10,83,3,1,Fiduciaria del Valle S.A.,6050030432,Disponible,,2022-05-18
+Local comercial en Rosales,Calle 31 # 71-16 Local 20,Bogotá,Rosales,Cundinamarca,Local comercial,Arriendo,9800000,,150000,9,116,0,2,Fiduciaria del Valle S.A.,6050030432,Disponible,Recién remodelado,2023-08-13
+Apartamento en La América,Avenida 48B # 23-60 Apto 1803,Medellín,La América,Antioquia,Apartamento,Arriendo,4200000,,540000,8,119,2,1,Gloria Inés Betancur Ospina,3220757882,Disponible,,2022-06-13
+Apartamento en Belén,Diagonal 14 Sur # 41-35 Apto 1804,Medellín,Belén,Antioquia,Apartamento,Arriendo,2150000,,360000,10,57,4,1,Felipe Mejía Hernández,3182805133,Disponible,Zona de lavandería,2024-06-18
+Apartamento en Usaquén,Carrera 150D # 94-44 Apto 1103,Bogotá,Usaquén,Cundinamarca,Apartamento,Arriendo,2700000,,450000,8,101,3,2,Juan Camilo Ramírez Muñoz,3182564700,Disponible,,2022-10-02
+Apartamento en Pance,Circular 88 # 7-85 Apto 1303,Cali,Pance,Valle del Cauca,Apartamento,Arriendo,1150000,,620000,8,59,3,3,Camila Arango Londoño,3201033807,Disponible,Zona de lavandería,2025-12-28
+Oficina en Ciudad Salitre,Calle 28 # 80-5 Of. 202,Bogotá,Ciudad Salitre,Cundinamarca,Oficina,Arriendo,2450000,,280000,8,34,0,1,Inversiones Los Cerezos S.A.S.,6012484155,Disponible,Con terraza,2022-12-26
+Local comercial en Belén,Carrera 45 # 38-57 Local 10,Medellín,Belén,Antioquia,Local comercial,Arriendo,8500000,,310000,10,220,0,1,Fiduciaria del Valle S.A.,6050030432,Disponible,,2025-11-05
+Estudio en Estadio,Carrera 44C # 19-42 Apto 306,Medellín,Estadio,Antioquia,Estudio,Venta,,270000000,120000,9,36,1,1,Rentas Urbanas del Norte S.A.S.,6012864896,Disponible,,2023-03-09
+Apartamento en El Peñón,Carrera 9 # 56-28 Apto 1102,Cali,El Peñón,Valle del Cauca,Apartamento,Arriendo,2150000,,310000,8,77,4,3,Esteban Jaramillo Restrepo,3188788937,Disponible,,2025-08-12
+Apartamento en Colina Campestre,Carrera 46 # 42-30 Apto 1704,Bogotá,Colina Campestre,Cundinamarca,Apartamento,Arriendo,3100000,,600000,9,86,4,2,Gloria Inés Gómez Ospina,3174540743,Disponible,,2024-01-02
+Apartamento en Provenza,Carrera 67 # 37-44 Apto 1002,Medellín,Provenza,Antioquia,Apartamento,Arriendo,2050000,,200000,8,55,2,2,Héctor Fabio Bedoya Uribe,3122790796,Disponible,,2023-03-21
+Casa en Pance,Diagonal 41 # 4-39,Cali,Pance,Valle del Cauca,Casa,Arriendo,4300000,,,8,234,4,4,Mauricio Echeverri Quintero,3026288149,Disponible,,2024-06-05
+Apartamento en Aves María,Diagonal 88 # 33-90 Apto 703,Sabaneta,Aves María,Antioquia,Apartamento,Arriendo,3000000,,230000,10,51,3,2,Álvaro Muñoz Gallego,3187121835,Disponible,Dos parqueaderos,2022-12-03
+Apartamento en Ciudad Salitre,Calle 26 # 72-43 Apto 1304,Bogotá,Ciudad Salitre,Cundinamarca,Apartamento,Arriendo,2300000,,330000,9,79,4,3,Inmobiliaria Santa Ana Ltda.,6058653849,Disponible,,2024-01-25
+Apartamento en La Soledad,Calle 167 # 25-56 Apto 701,Bogotá,La Soledad,Cundinamarca,Apartamento,Arriendo,1750000,,260000,10,80,4,1,Gloria Inés Gómez Ospina,3174540743,Disponible,Recién remodelado,2024-01-31
+Apartamento en Chapinero Alto,Carrera 57 # 12-80 Apto 1001,Bogotá,Chapinero Alto,Cundinamarca,Apartamento,Arriendo,5050000,,190000,8,109,4,2,Luisa Fernanda Duque Martínez,3140408399,Disponible,,2023-10-24
+Apartamento en Colina Campestre,Calle 59 # 16-58 Apto 1501,Bogotá,Colina Campestre,Cundinamarca,Apartamento,Arriendo,4450000,,600000,8,71,2,3,Fiduciaria del Valle S.A.,6050030432,Disponible,,2024-09-07
+Apartamento en Provenza,Calle 66C # 4-84 Apto 301,Medellín,Provenza,Antioquia,Apartamento,Arriendo,2350000,,300000,10,140,2,3,Inmobiliaria Santa Ana Ltda.,6058653849,Disponible,Zona de lavandería,2024-12-11

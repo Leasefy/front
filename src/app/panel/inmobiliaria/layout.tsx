@@ -2,52 +2,14 @@
 
 import { useMemo, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import {
-  SquaresFour,
-  Buildings,
-  Users,
-  Chat,
-  Gear,
-  FileText,
-  CurrencyDollar,
-  Kanban,
-  ChartLine,
-  Calculator,
-  ChartLineUp,
-  Wrench,
-  Toolbox,
-  Ticket,
-  Queue,
-  ArrowsClockwise,
-  UserCircle,
-  PaperPlaneTilt,
-  ChatCircleText,
-  ChatsCircle,
-  ShieldCheck,
-  Receipt,
-  Bank,
-  Lifebuoy,
-  CalendarBlank,
-  Sparkle,
-  Wallet,
-  FilePlus,
-  ClipboardText,
-  GitMerge,
-  Scales,
-  ListChecks,
-  Brain,
-  Path,
-  HandCoins,
-  CurrencyCircleDollar,
-  Umbrella,
-  Warning,
-  AirTrafficControl,
-} from '@phosphor-icons/react';
+import { ChatsCircle, AirTrafficControl } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AgencySubscriptionGuard } from '@/components/auth/AgencySubscriptionGuard';
-import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
 import { filterAgencyNav, type NavItemWithModule } from '@/lib/nav/agency-nav-filter';
+import { filasDelSidebar } from '@/lib/nav/sidebar-del-panel';
+import { SeccionesDelModulo } from '@/components/inmobiliaria/SeccionesDelModulo';
+import { CabeceraDelAgente } from '@/components/inmobiliaria/ai/CabeceraDelAgente';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
 import { PermissionsProvider, usePermissionsContext } from '@/lib/context/PermissionsContext';
@@ -59,8 +21,13 @@ import { CommandPaletteProvider, useCommandPalette } from '@/lib/context/Command
 import { CommandPalette } from '@/components/inmobiliaria/CommandPalette';
 import { BotonNuevo } from '@/components/inmobiliaria/BotonNuevo';
 import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
+import { PilotoModoHeader } from '@/components/inmobiliaria/piloto/PilotoModoHeader';
+import { PilotoDock } from '@/components/inmobiliaria/piloto/PilotoDock';
+import { PilotoDockProvider } from '@/lib/hooks/piloto/piloto-dock-context'
+import { PilotoFlotaProvider } from '@/lib/hooks/piloto/piloto-flota-context';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { usePostulacionesPendientes } from '@/lib/hooks/use-postulaciones-pendientes';
+import { MuroDeMigracion } from '@/components/migracion/MuroDeMigracion';
 import { useMigracionesPendientes } from '@/lib/hooks/use-migraciones-pendientes';
 import { usePilotoBadge } from '@/lib/hooks/piloto/use-piloto-badge';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
@@ -95,20 +62,6 @@ function CommandPaletteShortcuts() {
 
   return null;
 }
-
-/**
- * Rutas de nav DESHABILITADAS TEMPORALMENTE — decisión de producto (T-0052,
- * 2026-09-03), no un estado que publique el back/agente. La fila se sigue
- * viendo en el menú (nunca desaparece), pero muda, sin ir a ningún lado y
- * fuera del tab order — sólo la entrada de nav se apaga, la ruta sigue viva.
- * Reactivar una fila es sacar su href de este set, nada más. Mirror del
- * patrón `AGENTES_NO_DISPONIBLES` (T-0051, PilotoAutonomia.tsx) — un solo
- * lugar nombrado en vez de un `disabled: true` repetido y disperso.
- */
-const ASEGURABILIDAD_HREF = '/panel/inmobiliaria/ai/asegurabilidad';
-const NAV_ITEMS_NO_DISPONIBLES: ReadonlySet<string> = new Set([
-  ASEGURABILIDAD_HREF,
-]);
 
 interface InmobiliariaLayoutProps {
   children: React.ReactNode;
@@ -153,12 +106,25 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // permission gate, an optional `roles` role gate, and `adminOnly`.
   // Paso 7: cuánta gente está esperando gestión, con dato real.
   const { pendientes: postulacionesPendientes } = usePostulacionesPendientes();
-  // Migración de contratos: lotes abiertos con pendientes (poll 5min;
-  // fail-soft a undefined ⇒ sin badge, ver use-migraciones-pendientes.ts).
+  // T-0031 WU-4: el "Retomar" del importador era page-local (N10) — sólo se
+  // veía si ya se había entrado a /contratos/migrar. Este badge lo hace
+  // visible siempre, en la nav.
   const { pendientes: migracionesPendientes } = useMigracionesPendientes();
   // Piloto automático: total de la bandeja (poll 60s; fail-soft a undefined ⇒
   // sin badge — un cero afirmaría que no hay nada, que es lo que no sabemos).
   const { total: pilotoPendientes } = usePilotoBadge();
+
+  // El mismo contexto de gates para el sidebar, para resolver a qué pantalla
+  // entra cada módulo y para filterAgencyNav.
+  const ctxNav = useMemo(() => ({
+    canAccess,
+    isAdmin,
+    agencyRole,
+    // Sin respuesta del agente, sus módulos NO se borran del menú: se llega a
+    // la pantalla, que dice «No pudimos verificar tu acceso» y ofrece
+    // reintentar. Borrarlos se lee como «esto no existe».
+    agentUnverified: agentAccessStatus === 'sin-verificar',
+  }), [canAccess, isAdmin, agencyRole, agentAccessStatus]);
 
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
     // ═══════════════════════════════════════════════════════════════════════
@@ -216,245 +182,30 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // `exact` para que no quede resaltado en cada subruta.
     { label: t('inmobiliaria.nav.chat'),         href: '/panel/inmobiliaria',              icon: ChatsCircle,   exact: true, module: null },
 
-    // ── COMERCIAL ──  Conseguir inmuebles, estudiar clientes y cerrar renta.
-    { kind: 'section', label: t('inmobiliaria.nav.secComercial'), href: '#sec-comercial', scope: 'comercial', icon: Kanban, module: null },
-    { label: t('inmobiliaria.nav.pipeline'),     href: '/panel/inmobiliaria/pipeline', scope: 'comercial',     icon: Kanban,        module: 'pipeline', hint: t('inmobiliaria.nav.hintPipeline') },
-    // Una sola entrada. Eran dos —«Consignaciones» e «Inmuebles · catálogo»—
-    // sobre la MISMA lista: medido, 10 consignaciones y 10 inmuebles con
-    // correspondencia 1:1, ningún huérfano de ningún lado y el mismo permiso
-    // (`portafolio`) protegiendo las dos. La consignación no desaparece: es el
-    // mandato, y vive dentro del inmueble.
-    { label: t('inmobiliaria.nav.inmuebles'),    href: '/panel/inmobiliaria/inmuebles', scope: 'comercial',   icon: Buildings,     module: 'portafolio', hint: t('inmobiliaria.nav.hintInmuebles') },
-    {
-      // Avalúos (7º agente): standalone service proxied by the agent backend;
-      // read-only tracking workspace (la inmobiliaria solicita y consulta —
-      // la firma del certificado la gestiona el avaluador Portofino/Leasefy).
-      // Gated by the agent module 'avaluos' with the ABSENT-module = ALLOWED
-      // fallback (see agent-module-access.ts) so either repo merges first.
-      label: t('inmobiliaria.ai.nav.avaluos'),
-      href: '/panel/inmobiliaria/ai/avaluos', scope: 'comercial',
-      icon: Scales,
-      module: 'avaluos',
-      ai: true,
-      // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
-    } as NavItemWithModule,
-    {
-      // F7: Estudio del inquilino complete workspace. Gated by the agent
-      // module 'estudio' (my-permissions payload, agent-repo pair PR) with
-      // an ABSENT-module = ALLOWED fallback (see agent-module-access.ts) so
-      // either repo can merge first; backend still scopes by membership and
-      // decisions are audit-first per T-323.
-      label: t('inmobiliaria.ai.nav.estudio'),
-      href: '/panel/inmobiliaria/ai/estudio', scope: 'comercial',
-      icon: ShieldCheck,
-      module: 'estudio',
-      ai: true,
-      // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
-    } as NavItemWithModule,
-    {
-      // Asegurabilidad va en COMERCIAL: es el paso previo a rentar — manda el
-      // candidato a las aseguradoras y devuelve el máximo afianzable, que es
-      // lo que define qué catálogo se le puede ofrecer.
-      //
-      // Deshabilitada temporalmente (ver NAV_ITEMS_NO_DISPONIBLES arriba):
-      // greyed out, «Próximamente», sin ir a ningún lado. La ruta sigue viva
-      // — sólo se apaga la entrada del menú.
-      label: t('inmobiliaria.ai.nav.cotizador'),
-      // href literal (no la constante): nav-sidebar.test.ts extrae `href` con
-      // una regex de string literal — una referencia rompería la detección de
-      // choques de icono/nombre para esta fila sin avisar.
-      href: '/panel/inmobiliaria/ai/asegurabilidad', scope: 'comercial',
-      icon: Umbrella,
-      module: 'cotizador',
-      ai: true,
-      dataTourTarget: 'sidebar-cotizador',
-      disabled: NAV_ITEMS_NO_DISPONIBLES.has(ASEGURABILIDAD_HREF),
-      tag: NAV_ITEMS_NO_DISPONIBLES.has(ASEGURABILIDAD_HREF)
-        ? t('inmobiliaria.nav.proximamente')
-        : undefined,
-      // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
-    } as NavItemWithModule,
-    // Acá hubo un rato una fila «Recorrido» encima de esta, y era la misma
-    // lista con otro nombre: las postulaciones de la gente con su estado. Dos
-    // filas para una cosa es el mismo defecto que tenían los dos «Documentos»
-    // (`docs/VOCABULARIO.md`, regla madre). El recorrido **no es un destino**:
-    // es el contexto de esta lista, y por eso vive dentro de ella —abierto
-    // cuando no hay nada, plegado cuando hay trabajo—.
-    {
-      label: t('inmobiliaria.nav.postulaciones'),
-      href: '/panel/inmobiliaria/postulaciones',
-      scope: 'comercial',
-      icon: ClipboardText,
-      module: null,
-      ai: true,
+    // ── LOS MÓDULOS ── por ciclo de vida del contrato.
+    //
+    // Captación y arriendo → Operación → Dinero → Directorio → (pie) Reportes y
+    // Configuración. La estructura vive como DATOS en
+    // src/lib/nav/arquitectura-del-panel.ts (grupos → módulos → pantallas) y
+    // sidebar-del-panel.ts la vuelve filas: una por módulo, con la cabecera de
+    // su grupo. Las pantallas de cada módulo (Cobranza, Cartera, Renovaciones,
+    // Avalúos…) ya no son filas del sidebar: son las cards de SeccionesDelModulo,
+    // y si son un agente traen adentro su propio WorkspaceNav. 38 filas → 21.
+    //
+    // Los gates NO cambian: cada fila conserva el module/roles/scope que tenía,
+    // y si la raíz de un módulo no pasa pero una de sus pantallas sí, la fila
+    // apunta a esa pantalla (nadie pierde una puerta que tenía). El detalle y
+    // los guardianes están en arquitectura-del-panel.test.ts.
+    ...filasDelSidebar(t, ctxNav, {
       // Paso 7 del recorrido: que se vea que hay alguien esperando SIN tener
-      // que entrar. Sale de `stats.pending`, el mismo dato que después se ve
-      // en la lista. Si no se pudo traer queda `undefined` y no se dibuja
-      // nada — un cero afirmaría que no hay nadie, que es lo que no sabemos.
-      badge: postulacionesPendientes,
-    } as NavItemWithModule,
-    {
-      // F8: Matching complete workspace. Gated by the agent module 'matching'
-      // with the same ABSENT-module = ALLOWED fallback as estudio (see
-      // agent-module-access.ts); backend scopes by agency membership and
-      // outreach happens only with approval.
-      label: t('inmobiliaria.ai.nav.matching'),
-      href: '/panel/inmobiliaria/ai/matching', scope: 'comercial',
-      icon: GitMerge,
-      module: 'matching',
-      ai: true,
-      // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
-    } as NavItemWithModule,
-
-    // ── ADMINISTRACIÓN ──  Sostener el contrato vivo y atender al cliente.
-    { kind: 'section', label: t('inmobiliaria.nav.secAdministracion'), href: '#sec-administracion', scope: 'administracion', icon: FilePlus, module: null },
-    // 'contratos' is its own AGENCY_MODULES key (all roles have contratos:['view']);
-    // gating it on 'portafolio' wrongly hid it from CONTADOR (portafolio: []).
-    {
-      label: t('inmobiliaria.nav.contratos'),
-      href: '/panel/inmobiliaria/contratos',
-      scope: 'administracion',
-      icon: FilePlus,
-      module: 'contratos',
+      // que entrar. Sale de `stats.pending`; si no se pudo traer queda
+      // `undefined` y no se dibuja nada — un cero afirmaría que no hay nadie.
+      postulaciones: postulacionesPendientes,
       // T-0031 WU-4: contratos migrados con filas por completar. Sale de
-      // `GET /contracts/migrar/lotes` (mismo dato que la tarjeta "Retomar"
-      // del importador) — `undefined` si falla, nunca un cero inventado.
-      badge: migracionesPendientes,
-    } as NavItemWithModule,
-    { label: t('inmobiliaria.nav.renovaciones'), href: '/panel/inmobiliaria/renovaciones', scope: 'administracion', icon: ArrowsClockwise, module: 'operaciones' },
-    { label: t('inmobiliaria.nav.propietarios'), href: '/panel/inmobiliaria/propietarios', scope: 'administracion', icon: UserCircle,    module: 'propietarios' },
-    { label: t('inmobiliaria.nav.operaciones'),  href: '/panel/inmobiliaria/operaciones', scope: 'administracion',  icon: Wrench,        module: 'operaciones', ai: true },
-    { label: t('inmobiliaria.nav.solicitudes'),  href: '/panel/inmobiliaria/pqrs', scope: 'administracion',         icon: Lifebuoy,      module: null, hint: t('inmobiliaria.nav.pqrs'), ai: true },
-    // Sin `badge`: el 5 estaba escrito a mano, no contaba nada.
-    { label: t('inmobiliaria.nav.mensajes'),     href: '/panel/inmobiliaria/mensajes', scope: 'administracion',     icon: Chat,          module: null },
-    { label: t('inmobiliaria.nav.agenda'),       href: '/panel/inmobiliaria/agenda', scope: 'administracion',       icon: CalendarBlank, module: null },
-    // "Soportes de candidatos", no "Documentos · revisión": había DOS filas
-    // llamadas Documentos —esta y la del archivo en General—, distinguidas solo
-    // por la nota al pie. Son dominios distintos y la regla madre de
-    // docs/VOCABULARIO.md pide renombrar uno. Se renombra esta, que es la que
-    // tiene identidad propia: la cola de papeles de una persona.
-    { label: t('inmobiliaria.nav.soportes'),     href: '/panel/inmobiliaria/documentos/revision', scope: 'administracion', icon: ListChecks, module: 'documentos', ai: true },
-
-    // ── FINANZAS ──  Cobrar, conciliar, dispersar y facturar.
-    { kind: 'section', label: t('inmobiliaria.nav.secFinanzas'), href: '#sec-finanzas', scope: 'finanzas', icon: Wallet, module: null },
-    {
-      label: t('inmobiliaria.ai.nav.cobranza'),
-      href: '/panel/inmobiliaria/ai/cobranza', scope: 'finanzas',
-      icon: ChatCircleText,
-      module: 'cobranza',
-      ai: true,
-      // SIN «Próximamente»: el módulo está entero y conectado — 12 pestañas
-      // contra 33 endpoints del agente que responden con datos reales
-      // (QA 2026-08-10). El cartel estaba escrito a mano y sobrevivió al
-      // cableado; decía que no existe algo que la inmobiliaria ya paga.
-      dataTourTarget: 'sidebar-cobranza',
-      // Las funciones del agente (Casos/Pendientes/Inbox/Pagos/Cartas/…) ya NO
-      // viven aquí: se renderizan como tabs DENTRO del workspace (WorkspaceNav),
-      // alimentadas por src/lib/nav/agentWorkspaceNav.ts. El sidebar muestra el
-      // agente como un único ítem para no abrumar.
-    } as NavItemWithModule,
-    { label: t('inmobiliaria.nav.cobros'),       href: '/panel/inmobiliaria/cobros', scope: 'finanzas',       icon: HandCoins,     module: 'cobros' },
-    // Toda la cartera por edad de la deuda. `cobros` muestra el mes corriente;
-    // esto es lo acumulado, que es lo que trae una inmobiliaria que se pasa.
-    { label: t('inmobiliaria.nav.cartera'),      href: '/panel/inmobiliaria/cartera', scope: 'finanzas',      icon: CurrencyCircleDollar, module: 'cobros' },
-    {
-      // F6: Conciliación is the first complete agent workspace — the parent
-      // now points at the Sala (/ai/conciliacion); the legacy /conciliacion
-      // movimientos page stays reachable from the Sala's domain slot.
-      label: t('inmobiliaria.nav.conciliacion'),
-      href: '/panel/inmobiliaria/ai/conciliacion', scope: 'finanzas',
-      icon: Bank,
-      module: null,
-      roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
-      ai: true,
-      // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
-    } as NavItemWithModule,
-    {
-      // F9: Pagos (AP) complete workspace — the parent now points at the Sala
-      // (/ai/pagos); the deep AP/dispersiones ops stay in Tesorería and are
-      // cross-linked from the Sala's domain slot. The ADMIN|CONTADOR role gate
-      // from F4 is PRESERVED on the parent and both children.
-      label: t('inmobiliaria.ai.nav.pagos'),
-      href: '/panel/inmobiliaria/ai/pagos', scope: 'finanzas',
-      icon: CurrencyDollar,
-      module: null,
-      roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
-      ai: true,
-      // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
-    } as NavItemWithModule,
-    { label: t('inmobiliaria.nav.dispersiones'), href: '/panel/inmobiliaria/dispersiones', scope: 'finanzas', icon: PaperPlaneTilt, module: 'dispersiones', hint: t('inmobiliaria.nav.hintEgresos') },
-    { label: t('inmobiliaria.nav.tesoreria'),    href: '/panel/inmobiliaria/tesoreria', scope: 'finanzas',    icon: Wallet,         module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
-    { label: t('inmobiliaria.nav.facturacion'),  href: '/panel/inmobiliaria/facturacion', scope: 'finanzas',  icon: Receipt,        module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
-    // Contabilidad general: pedida en la definición del módulo financiero, sin
-    // pantalla todavía. Se lista deshabilitada para que el módulo se lea
-    // completo y nadie la dé por perdida — `disabled` la vuelve no navegable.
-    { label: t('inmobiliaria.nav.contabilidad'), href: '#', scope: 'finanzas', icon: Calculator, module: null, disabled: true, tag: t('inmobiliaria.nav.proximamente'), roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
-
-    // ── GENERAL ──  Transversal a los tres módulos.
-    { kind: 'section', label: t('inmobiliaria.nav.secGeneral'), href: '#sec-general', scope: 'general', icon: ChartLine, module: null },
-    // Resumen del negocio: el antiguo "Dashboard" (sin su parte de agentes IA).
-    // Gated por el módulo 'dashboard' que lo gobierna (todos los roles lo tienen
-    // ⇒ visible tras cargar permisos; oculto durante la carga — fail-closed).
-    { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria/dashboard', scope: 'general',    icon: SquaresFour,   exact: true, module: 'dashboard' },
-    { label: t('inmobiliaria.nav.reportes'),     href: '/panel/inmobiliaria/reportes', scope: 'general',     icon: ChartLine,     module: 'reportes' },
-    { label: t('inmobiliaria.nav.analitica'),    href: '/panel/inmobiliaria/analytics', scope: 'general',    icon: ChartLineUp,   module: 'analytics' },
-    { label: t('inmobiliaria.nav.equipo'),       href: '/panel/inmobiliaria/agentes', scope: 'general',      icon: Users,         module: 'agentes' },
-    { label: t('inmobiliaria.nav.documentos'),   href: '/panel/inmobiliaria/documentos', scope: 'general',   icon: FileText,      module: 'documentos', exact: true },
-    {
-      // F3: Aprendizaje del asistente — certification fence for the AI chat's
-      // self-learning lessons. Visible to every agency member (read-only for
-      // VIEWER/CONTADOR; certify/discard actions inside the page are gated to
-      // OPERATOR+).
-      label: t('inmobiliaria.nav.aprendizaje'),
-      href: '/panel/inmobiliaria/ai/aprendizaje', scope: 'general',
-      icon: Brain,
-      module: null,
-      ai: true,
-    } as NavItemWithModule,
-    // ── MANTENIMIENTO ── agente de tickets de mantenimiento.
-    {
-      label: t('inmobiliaria.ai.nav.mantenimiento'),
-      href: '/panel/inmobiliaria/ai/mantenimiento', scope: 'general',
-      icon: Toolbox,
-      module: 'mantenimiento',
-      ai: true,
-      dataTourTarget: 'sidebar-mantenimiento',
-      children: [
-        {
-          label: t('inmobiliaria.ai.nav.mantenimientoTickets'),
-          href: '/panel/inmobiliaria/ai/mantenimiento/tickets',
-          icon: Ticket,
-          module: 'mantenimiento',
-        } as NavItemWithModule,
-      ],
-    } as NavItemWithModule,
-    // ── RETENCIÓN (Laura) ── agente de retención de inquilinos.
-    {
-      label: 'Retención',
-      href: '/panel/inmobiliaria/ai/retencion', scope: 'general',
-      icon: Users,
-      module: 'retencion',
-      ai: true,
-      dataTourTarget: 'sidebar-retencion',
-      children: [
-        {
-          label: 'Bandeja de riesgos',
-          href: '/panel/inmobiliaria/ai/retencion/bandeja',
-          icon: Warning,
-          module: 'retencion',
-        } as NavItemWithModule,
-        {
-          label: 'Cola de revisión',
-          href: '/panel/inmobiliaria/ai/retencion/revisiones',
-          icon: Queue,
-          module: 'retencion',
-        } as NavItemWithModule,
-      ],
-    } as NavItemWithModule,
-    // Configuración → gated on 'configuracion': only ADMIN has it in the matrix
-    // (AGENTE/CONTADOR/VIEWER all have configuracion:[]) ⇒ effectively admin-only.
-    { label: t('inmobiliaria.nav.configuracion'), href: '/panel/inmobiliaria/configuracion', scope: 'general', icon: Gear,         module: 'configuracion', dataTourTarget: 'sidebar-configuraciones' },
-  ], [t, postulacionesPendientes, migracionesPendientes, pilotoPendientes]);
+      // `GET /contracts/migrar/lotes` — `undefined` si falla, nunca un cero.
+      contratos: migracionesPendientes,
+    }),
+  ], [t, ctxNav, postulacionesPendientes, migracionesPendientes, pilotoPendientes]);
 
   const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => {
     // Filter by permission/role via the shared, unit-tested helper. While
@@ -462,70 +213,95 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // isAdmin/agencyRole are null), so only ungated items survive — gated tabs
     // never flash in then disappear. The desktop sidebar shows a skeleton during
     // this window instead (PlanSidebar `loading` prop below).
-    return filterAgencyNav(ALL_NAV_ITEMS, {
-      canAccess,
-      isAdmin,
-      agencyRole,
-      // Sin respuesta del agente, sus módulos NO se borran del menú: se llega a
-      // la pantalla, que dice «No pudimos verificar tu acceso» y ofrece
-      // reintentar. Borrarlos se lee como «esto no existe».
-      agentUnverified: agentAccessStatus === 'sin-verificar',
-    });
-  }, [ALL_NAV_ITEMS, agencyRole, canAccess, isAdmin, agentAccessStatus]);
+    return filterAgencyNav(ALL_NAV_ITEMS, ctxNav);
+  }, [ALL_NAV_ITEMS, ctxNav]);
 
   return (
     <div className="min-h-screen bg-plan-page">
-      {/* Global ⌘K shortcut listener — context-aware (skips beta subtree) */}
-      <CommandPaletteShortcuts />
-      {/* Command palette modal — portal renders above everything */}
-      <CommandPalette />
+      {/*
+        El muro de la puesta en marcha. Va acá adentro, envolviendo TODO el
+        panel —sidebar, header, contenido y nav móvil—, para que cubra las
+        156 rutas de una sola vez y ninguna quede por fuera por olvido.
 
-      {/* Inmobiliaria Sidebar */}
-      <PlanSidebar
-        navItems={INMOBILIARIA_NAV_ITEMS}
-        loading={permissionsLoading}
-        logo={{
-          title: agencyName,
-          // El lockup de Leasefy es la firma del PRODUCTO, no un atajo al
-          // panel: el panel ya tiene su "Inicio" en el nav (misma ruta), así
-          // que apuntar acá al panel duplicaba un destino y dejaba sin salida
-          // al sitio público. El logo sale a la landing, como en cualquier
-          // producto con web pública. Ruta relativa a propósito: el host
-          // cambia entre dev (:3001) y producción.
-          href: '/',
-        }}
-        // cadence §Navigation: static brand row + search-opens-⌘K + footer cards
-        workspaceName={agencyName}
-        workspaceLogoUrl={agencyLogoUrl}
-        onSearchClick={openCommandPalette}
-        searchPlaceholder="Buscar"
-        // Punto de partida del panel: con 156 rutas agrupadas por módulo de
-        // negocio, quien entra por primera vez no tiene dónde empezar.
-        belowSearch={<BotonNuevo />}
-        showInvite
-        onInvite={() => router.push('/panel/inmobiliaria/agentes')}
-        showUpgrade={showUpgradeCta}
-        upgradeHref="/panel/inmobiliaria/configuracion"
-      />
+        Cuando no bloquea (que es el caso normal, y también el caso de error)
+        no dibuja nada y no le agrega una sola clase a lo de adentro.
+      */}
+      <MuroDeMigracion>
+        {/* Global ⌘K shortcut listener — context-aware (skips beta subtree) */}
+        <CommandPaletteShortcuts />
+        {/* Command palette modal — portal renders above everything */}
+        <CommandPalette />
 
-      {/* Main content area */}
-      <div
-        className={cn(
-          // pb-20 reserves space for the mobile bottom nav, which is visible
-          // below lg (same breakpoint where the desktop sidebar appears).
-          'transition-all duration-200 pb-20 lg:pb-0',
-          isCollapsed ? 'lg:pl-16' : 'lg:pl-[240px]'
-        )}
-      >
-        {/* Search lives only in the sidebar (aboveNav). Top bar keeps notifications + avatar.
-            leftSlot carries the AI agent breadcrumb — all agent nav lives at the top now
-            (breadcrumb here + WorkspaceNav tabs below), so pages drop their MigaDePan. */}
-        <PlanHeader showMagnifyingGlass={false} leftSlot={<AgentHeaderBreadcrumb />} />
-        <main id="main-content" tabIndex={-1}>{children}</main>
-      </div>
+        {/* Inmobiliaria Sidebar */}
+        <PlanSidebar
+          navItems={INMOBILIARIA_NAV_ITEMS}
+          loading={permissionsLoading}
+          logo={{
+            title: agencyName,
+            // El lockup de Leasefy es la firma del PRODUCTO, no un atajo al
+            // panel: el panel ya tiene su "Inicio" en el nav (misma ruta), así
+            // que apuntar acá al panel duplicaba un destino y dejaba sin salida
+            // al sitio público. El logo sale a la landing, como en cualquier
+            // producto con web pública. Ruta relativa a propósito: el host
+            // cambia entre dev (:3001) y producción.
+            href: '/',
+          }}
+          // cadence §Navigation: static brand row + search-opens-⌘K + footer cards
+          workspaceName={agencyName}
+          workspaceLogoUrl={agencyLogoUrl}
+          onSearchClick={openCommandPalette}
+          searchPlaceholder="Buscar"
+          // Punto de partida del panel: con 156 rutas agrupadas por módulo de
+          // negocio, quien entra por primera vez no tiene dónde empezar.
+          belowSearch={<BotonNuevo />}
+          showInvite
+          onInvite={() => router.push('/panel/inmobiliaria/configuracion/equipo')}
+          showUpgrade={showUpgradeCta}
+          upgradeHref="/panel/inmobiliaria/configuracion"
+        />
 
-      {/* Mobile bottom navigation — hidden at lg+ (where the sidebar appears) */}
-      <MobileNavBar navItems={INMOBILIARIA_NAV_ITEMS} />
+        {/* Main content area */}
+        <div
+          className={cn(
+            // pb-20 reserves space for the mobile bottom nav, which is visible
+            // below lg (same breakpoint where the desktop sidebar appears).
+            'transition-all duration-200 pb-20 lg:pb-0',
+            isCollapsed ? 'lg:pl-16' : 'lg:pl-[240px]'
+          )}
+        >
+          {/* Search lives only in the sidebar (aboveNav). Top bar keeps notifications + avatar.
+              leftSlot carries the AI agent breadcrumb — all agent nav lives at the top now
+              (breadcrumb here + WorkspaceNav tabs below), so pages drop their MigaDePan. */}
+          {/* La píldora del Piloto («Piloto · Copiloto») va en `actions`, a la
+              izquierda de la campana: en cada pantalla se ve en qué modo está
+              la flota y se cambia con un clic (Nico, 2026-09-02). */}
+          <PlanHeader
+            showMagnifyingGlass={false}
+            leftSlot={<AgentHeaderBreadcrumb />}
+            actions={<PilotoModoHeader />}
+          />
+          {/* Las dos capas de navegación debajo del header, montadas UNA vez y
+              auto-ocultas fuera de su contexto, cada una con su cara:
+              SeccionesDelModulo (las secciones del módulo como cards:
+              [Cobros] [Recaudo] [Cartera] [Cobranza]) y, DEBAJO, dentro de un
+              agente, su WorkspaceNav (pestañas) + la novedad de primera visita.
+              Las secciones no se esconden al entrar en el agente: la card
+              sigue marcada y sus pestañas cuelgan de ella. */}
+          <main id="main-content" tabIndex={-1}>
+            <SeccionesDelModulo />
+            <CabeceraDelAgente />
+            {children}
+          </main>
+        </div>
+
+        {/* Mobile bottom navigation — hidden at lg+ (where the sidebar appears) */}
+        <MobileNavBar navItems={INMOBILIARIA_NAV_ITEMS} />
+
+        {/* El tray de procesos del Piloto, abajo a la derecha, en cualquier
+            pantalla (Nico, 2026-09-02). Comparte la lectura de la flota con
+            la píldora del header vía el provider de arriba. */}
+        <PilotoDock />
+      </MuroDeMigracion>
 
       {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
           <ProtectedRoute>/<AgencySubscriptionGuard>: acá adentro se perdía todo toast
@@ -552,7 +328,11 @@ export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps
                 {/* CommandPaletteProvider wraps the inner layout so both the
                     shortcut hook and the modal can read/write palette state. */}
                 <CommandPaletteProvider>
-                  <InmobiliariaLayoutInner>{children}</InmobiliariaLayoutInner>
+                  <PilotoDockProvider>
+      <PilotoFlotaProvider>
+                    <InmobiliariaLayoutInner>{children}</InmobiliariaLayoutInner>
+                  </PilotoFlotaProvider>
+    </PilotoDockProvider>
                 </CommandPaletteProvider>
               </SidebarProvider>
             </PanelPrefsProvider>

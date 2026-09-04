@@ -55,7 +55,7 @@ export function PagosHomeAttentionList({
   const { t } = useI18n()
 
   return (
-    <Card className="rounded-xl">
+    <Card className="rounded-lg">
       <CardHeader>
         <CardTitle className="text-base">
           {t('inmobiliaria.ai.pagos_home.attention.title')}
@@ -70,7 +70,7 @@ export function PagosHomeAttentionList({
         ) : error && !isLoading ? (
           <div
             role="alert"
-            className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 flex items-center justify-between gap-4"
+            className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 flex items-center justify-between gap-4"
           >
             <p className="text-sm text-rose-600 dark:text-rose-400">
               {t('inmobiliaria.ai.pagos_home.errors.loading')}: {error}
@@ -129,7 +129,7 @@ function AttentionRow({
         data-priority={item.priority}
         aria-label={`${item.title} — ${t('inmobiliaria.ai.pagos_home.attention.openDetail')}`}
         className={[
-          'w-full text-left flex items-start gap-3 rounded-xl border p-3 transition-colors',
+          'w-full text-left flex items-start gap-3 rounded-lg border p-3 transition-colors',
           'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
           active
             ? 'border-primary/40 bg-primary/5'
@@ -169,7 +169,7 @@ function AttentionSkeleton() {
         <li
           key={i}
           data-testid="attention-skeleton"
-          className="rounded-xl border border-border p-3 flex items-start justify-between gap-3"
+          className="rounded-lg border border-border p-3 flex items-start justify-between gap-3"
         >
           <div className="space-y-2 flex-1">
             <div className="h-4 w-16 rounded-full bg-muted" />

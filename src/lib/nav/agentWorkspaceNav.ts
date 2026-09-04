@@ -39,9 +39,17 @@ import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
  *
  * Historically these lived as `children:[]` arrays on the agent items in the
  * global sidebar (`app/panel/inmobiliaria/layout.tsx`), which made the sidebar
- * overwhelming. They now live here: the sidebar renders each agent as a SINGLE
- * item, and `WorkspaceNav` reads this config to render the agent's functions as
- * horizontal tabs INSIDE the workspace (mounted once in `ai/layout.tsx`).
+ * overwhelming. They now live here: the sidebar renders each MODULE as a single
+ * item, the module's screens are section cards (`SeccionesDelModulo`), and
+ * when one of those sections is an agent, `WorkspaceNav` reads this config to
+ * render the agent's functions as a row of tabs UNDER the cards (both mounted
+ * once in the panel layout; the cards stay put while you are inside the agent).
+ *
+ * ── Dónde vive cada agente (septiembre 2026) ───────────────────────────────
+ * La IA es un modo, no un lugar: el namespace `/ai/*` desapareció y cada
+ * workspace vive dentro del módulo dueño del proceso que automatiza —
+ * `arquitectura-del-panel.ts` es quien lo declara (`agente: '<slug>'`) y un
+ * test cuida que el `basePath` de acá y la ruta de allá coincidan.
  *
  * `labelKey` is an i18n key resolved by the consumer via `t()`. `module`/`roles`
  * gating mirrors the sidebar's filter so a user never sees a tab they can't open.
@@ -63,10 +71,17 @@ export interface WorkspaceNavItem {
 }
 
 export interface AgentWorkspace {
-  /** Stable key (the first path segment after /ai/). */
+  /** Stable key — coincide con `agente` en `arquitectura-del-panel.ts`. */
   slug: string;
   /** Workspace root — also the "Resumen" destination. */
   basePath: string;
+  /**
+   * Prefijos que cuelgan de `basePath` pero NO son del agente. Pagos es la
+   * Sala del agente Y la raíz del módulo: `/pagos/dispersiones`,
+   * `/pagos/liquidaciones` y `/pagos/cxp` son pantallas hermanas, no
+   * funciones del agente. Lo respeta `findAgentWorkspace`.
+   */
+  excluir?: string[];
   /** i18n key for the agent's display name. */
   labelKey: string;
   icon: Icon;
@@ -75,158 +90,187 @@ export interface AgentWorkspace {
   items: WorkspaceNavItem[];
 }
 
-const AI = '/panel/inmobiliaria/ai';
+const PANEL = '/panel/inmobiliaria';
+const COBRANZA = `${PANEL}/cobros/cobranza`;
+const ASEGURABILIDAD = `${PANEL}/postulaciones/asegurabilidad`;
+const AVALUOS = `${PANEL}/inmuebles/avaluos`;
+const CONCILIACION = `${PANEL}/conciliacion`;
+const ESTUDIO = `${PANEL}/postulaciones/estudio`;
+const MATCHING = `${PANEL}/postulaciones/matching`;
+const PAGOS = `${PANEL}/pagos`;
 const CONTADOR_ROLES: AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR];
 
 export const AGENT_WORKSPACES: AgentWorkspace[] = [
   // ── Cobranza ──────────────────────────────────────────────────────────────
   {
     slug: 'cobranza',
-    basePath: `${AI}/cobranza`,
+    basePath: COBRANZA,
     labelKey: 'inmobiliaria.ai.nav.cobranza',
     icon: ChatCircleText,
     module: 'cobranza',
     items: [
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaResumen', href: `${AI}/cobranza`, icon: SquaresFour, exact: true, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaCasos', href: `${AI}/cobranza/deudores`, icon: Users, module: 'cobranza' },
+      { labelKey: 'inmobiliaria.ai.nav.cobranzaResumen', href: COBRANZA, icon: SquaresFour, exact: true, module: 'cobranza' },
+      { labelKey: 'inmobiliaria.ai.nav.cobranzaCasos', href: `${COBRANZA}/deudores`, icon: Users, module: 'cobranza' },
       // FUSIONADO en el Resumen — «Pendientes» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.cobranzaPendientes', href: `${AI}/cobranza/pendientes`, icon: ListChecks, module: 'cobranza' },
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaPendientes', href: `${COBRANZA}/pendientes`, icon: ListChecks, module: 'cobranza' },
       // OCULTO — «Inbox de conversaciones» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.cobranzaInbox', href: `${AI}/cobranza/inbox`, icon: ChatCircleText, module: 'cobranza' },
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaInbox', href: `${COBRANZA}/inbox`, icon: ChatCircleText, module: 'cobranza' },
       // FUSIONADO en «Acuerdos de pago» — «Promesas de pago» (ver nota al pie).
-      // { labelKey: 'inmobiliaria.ai.nav.cobranzaPromesas', href: `${AI}/cobranza/promesas`, icon: BellRinging, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaAcuerdos', href: `${AI}/cobranza/acuerdos`, icon: Handshake, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaDisputas', href: `${AI}/cobranza/disputas`, icon: Scales, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.pagos', href: `${AI}/cobranza/pagos`, icon: CreditCard, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.llamadas', href: `${AI}/cobranza/llamadas`, icon: PhoneCall, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cartas', href: `${AI}/cobranza/cartas`, icon: Envelope, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.siniestros', href: `${AI}/cobranza/siniestros`, icon: Siren, module: 'cobranza' },
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaPromesas', href: `${COBRANZA}/promesas`, icon: BellRinging, module: 'cobranza' },
+      { labelKey: 'inmobiliaria.ai.nav.cobranzaAcuerdos', href: `${COBRANZA}/acuerdos`, icon: Handshake, module: 'cobranza' },
+      { labelKey: 'inmobiliaria.ai.nav.cobranzaDisputas', href: `${COBRANZA}/disputas`, icon: Scales, module: 'cobranza' },
+      { labelKey: 'inmobiliaria.ai.nav.pagos', href: `${COBRANZA}/pagos`, icon: CreditCard, module: 'cobranza' },
+      { labelKey: 'inmobiliaria.ai.nav.llamadas', href: `${COBRANZA}/llamadas`, icon: PhoneCall, module: 'cobranza' },
+      { labelKey: 'inmobiliaria.ai.nav.cartas', href: `${COBRANZA}/cartas`, icon: Envelope, module: 'cobranza' },
+      { labelKey: 'inmobiliaria.ai.nav.siniestros', href: `${COBRANZA}/siniestros`, icon: Siren, module: 'cobranza' },
       // FUSIONADO en el Resumen — «Reporte diario» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.cobranzaReporte', href: `${AI}/cobranza/reporte`, icon: ChartLine, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaReportesPropietarios', href: `${AI}/cobranza/reportes-propietarios`, icon: Files, module: 'cobranza' },
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaReporte', href: `${COBRANZA}/reporte`, icon: ChartLine, module: 'cobranza' },
+      { labelKey: 'inmobiliaria.ai.nav.cobranzaReportesPropietarios', href: `${COBRANZA}/reportes-propietarios`, icon: Files, module: 'cobranza' },
       // FUSIONADO en el Resumen — «Analítica» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.analitica', href: `${AI}/cobranza/analitica`, icon: ChartLineUp, module: 'cobranza' },
+      // { labelKey: 'inmobiliaria.ai.nav.analitica', href: `${COBRANZA}/analitica`, icon: ChartLineUp, module: 'cobranza' },
       // FUSIONADO en el Resumen — «Resultados» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.cobranzaResultados', href: `${AI}/cobranza/resultados`, icon: Trophy, module: 'cobranza' },
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaResultados', href: `${COBRANZA}/resultados`, icon: Trophy, module: 'cobranza' },
       // OCULTO — «Playbooks» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.cobranzaPlaybooks', href: `${AI}/cobranza/plantillas`, icon: FileText, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.compliance', href: `${AI}/cobranza/compliance`, icon: ClipboardText, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.arco', href: `${AI}/cobranza/arco`, icon: ShieldCheck, module: 'cobranza' },
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaPlaybooks', href: `${COBRANZA}/plantillas`, icon: FileText, module: 'cobranza' },
+      { labelKey: 'inmobiliaria.ai.nav.compliance', href: `${COBRANZA}/compliance`, icon: ClipboardText, module: 'cobranza' },
+      { labelKey: 'inmobiliaria.ai.nav.arco', href: `${COBRANZA}/arco`, icon: ShieldCheck, module: 'cobranza' },
       // OCULTO — «Equipo IA» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.cobranzaEquipo', href: `${AI}/cobranza/equipo`, icon: UsersThree, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.configuracion', href: `${AI}/cobranza/configuracion`, icon: SlidersHorizontal, module: 'cobranza' },
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaEquipo', href: `${COBRANZA}/equipo`, icon: UsersThree, module: 'cobranza' },
+      { labelKey: 'inmobiliaria.ai.nav.configuracion', href: `${COBRANZA}/configuracion`, icon: SlidersHorizontal, module: 'cobranza' },
     ],
   },
   // ── Cotizador / Asegurabilidad ────────────────────────────────────────────
   {
     slug: 'asegurabilidad',
-    basePath: `${AI}/asegurabilidad`,
+    basePath: ASEGURABILIDAD,
     labelKey: 'inmobiliaria.ai.nav.cotizador',
     icon: FileText,
     module: 'cotizador',
     items: [
-      { labelKey: 'inmobiliaria.ai.nav.cotizadorResumen', href: `${AI}/asegurabilidad`, icon: SquaresFour, exact: true, module: 'cotizador' },
-      { labelKey: 'inmobiliaria.ai.nav.cotizadorCola', href: `${AI}/asegurabilidad/cola`, icon: ClipboardText, module: 'cotizador' },
-      { labelKey: 'inmobiliaria.ai.nav.cotizadorNueva', href: `${AI}/asegurabilidad/nueva`, icon: Plus, module: 'cotizador' },
-      { labelKey: 'inmobiliaria.ai.nav.cotizadorComparar', href: `${AI}/asegurabilidad/comparar`, icon: Table, module: 'cotizador' },
-      { labelKey: 'inmobiliaria.ai.nav.cotizadorEjecucion', href: `${AI}/asegurabilidad/ejecucion`, icon: Lightning, module: 'cotizador' },
-      { labelKey: 'inmobiliaria.ai.cotizador.nav.aseguradoras', href: `${AI}/asegurabilidad/aseguradoras`, icon: ShieldCheck, module: 'cotizador' },
+      { labelKey: 'inmobiliaria.ai.nav.cotizadorResumen', href: ASEGURABILIDAD, icon: SquaresFour, exact: true, module: 'cotizador' },
+      { labelKey: 'inmobiliaria.ai.nav.cotizadorCola', href: `${ASEGURABILIDAD}/cola`, icon: ClipboardText, module: 'cotizador' },
+      { labelKey: 'inmobiliaria.ai.nav.cotizadorNueva', href: `${ASEGURABILIDAD}/nueva`, icon: Plus, module: 'cotizador' },
+      { labelKey: 'inmobiliaria.ai.nav.cotizadorComparar', href: `${ASEGURABILIDAD}/comparar`, icon: Table, module: 'cotizador' },
+      { labelKey: 'inmobiliaria.ai.nav.cotizadorEjecucion', href: `${ASEGURABILIDAD}/ejecucion`, icon: Lightning, module: 'cotizador' },
+      { labelKey: 'inmobiliaria.ai.cotizador.nav.aseguradoras', href: `${ASEGURABILIDAD}/aseguradoras`, icon: ShieldCheck, module: 'cotizador' },
       // OCULTO — «Equipo IA» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.cotizadorEquipo', href: `${AI}/asegurabilidad/equipo`, icon: UsersThree, module: 'cotizador' },
-      { labelKey: 'inmobiliaria.ai.cotizador.nav.insights', href: `${AI}/asegurabilidad/insights`, icon: ChartLineUp, module: 'cotizador' },
-      { labelKey: 'inmobiliaria.ai.cotizador.nav.costos', href: `${AI}/asegurabilidad/costos`, icon: CurrencyDollar, module: 'cotizador' },
-      { labelKey: 'inmobiliaria.ai.nav.cotizadorIntegraciones', href: `${AI}/asegurabilidad/integraciones`, icon: GitMerge, module: 'cotizador' },
-      { labelKey: 'inmobiliaria.ai.cotizador.nav.configuracion', href: `${AI}/asegurabilidad/configuracion`, icon: SlidersHorizontal, module: 'cotizador' },
+      // { labelKey: 'inmobiliaria.ai.nav.cotizadorEquipo', href: `${ASEGURABILIDAD}/equipo`, icon: UsersThree, module: 'cotizador' },
+      { labelKey: 'inmobiliaria.ai.cotizador.nav.insights', href: `${ASEGURABILIDAD}/insights`, icon: ChartLineUp, module: 'cotizador' },
+      { labelKey: 'inmobiliaria.ai.cotizador.nav.costos', href: `${ASEGURABILIDAD}/costos`, icon: CurrencyDollar, module: 'cotizador' },
+      { labelKey: 'inmobiliaria.ai.nav.cotizadorIntegraciones', href: `${ASEGURABILIDAD}/integraciones`, icon: GitMerge, module: 'cotizador' },
+      { labelKey: 'inmobiliaria.ai.cotizador.nav.configuracion', href: `${ASEGURABILIDAD}/configuracion`, icon: SlidersHorizontal, module: 'cotizador' },
     ],
   },
   // ── Avalúos ───────────────────────────────────────────────────────────────
   {
     slug: 'avaluos',
-    basePath: `${AI}/avaluos`,
+    basePath: AVALUOS,
     labelKey: 'inmobiliaria.ai.nav.avaluos',
     icon: Scales,
     module: 'avaluos',
     items: [
-      { labelKey: 'inmobiliaria.ai.nav.resumen', href: `${AI}/avaluos`, icon: SquaresFour, exact: true, module: 'avaluos' },
-      { labelKey: 'inmobiliaria.ai.nav.avaluosCola', href: `${AI}/avaluos/cola`, icon: ClipboardText, module: 'avaluos' },
-      { labelKey: 'inmobiliaria.ai.nav.avaluosConfiguracion', href: `${AI}/avaluos/configuracion`, icon: SlidersHorizontal, module: 'avaluos' },
+      { labelKey: 'inmobiliaria.ai.nav.resumen', href: AVALUOS, icon: SquaresFour, exact: true, module: 'avaluos' },
+      { labelKey: 'inmobiliaria.ai.nav.avaluosCola', href: `${AVALUOS}/cola`, icon: ClipboardText, module: 'avaluos' },
+      { labelKey: 'inmobiliaria.ai.nav.avaluosConfiguracion', href: `${AVALUOS}/configuracion`, icon: SlidersHorizontal, module: 'avaluos' },
     ],
   },
   // ── Conciliación ──────────────────────────────────────────────────────────
   {
     slug: 'conciliacion',
-    basePath: `${AI}/conciliacion`,
+    basePath: CONCILIACION,
     labelKey: 'inmobiliaria.nav.conciliacion',
     icon: Bank,
     module: null,
     roles: CONTADOR_ROLES,
     items: [
-      { labelKey: 'inmobiliaria.ai.nav.resumen', href: `${AI}/conciliacion`, icon: SquaresFour, exact: true, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.conciliacionCola', href: `${AI}/conciliacion/cola`, icon: ClipboardText, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.conciliacionMovimientos', href: `${AI}/conciliacion/movimientos`, icon: ArrowsClockwise, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.conciliacionConexiones', href: `${AI}/conciliacion/conexiones`, icon: GitMerge, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.conciliacionLiquidaciones', href: `${AI}/conciliacion/liquidaciones`, icon: Wallet, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.conciliacionAnalitica', href: `${AI}/conciliacion/analitica`, icon: ChartLineUp, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.conciliacionConfiguracion', href: `${AI}/conciliacion/configuracion`, icon: SlidersHorizontal, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.resumen', href: CONCILIACION, icon: SquaresFour, exact: true, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.conciliacionCola', href: `${CONCILIACION}/cola`, icon: ClipboardText, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.conciliacionMovimientos', href: `${CONCILIACION}/movimientos`, icon: ArrowsClockwise, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.conciliacionConexiones', href: `${CONCILIACION}/conexiones`, icon: GitMerge, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.conciliacionLiquidaciones', href: `${CONCILIACION}/liquidaciones`, icon: Wallet, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.conciliacionAnalitica', href: `${CONCILIACION}/analitica`, icon: ChartLineUp, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.conciliacionConfiguracion', href: `${CONCILIACION}/configuracion`, icon: SlidersHorizontal, module: null, roles: CONTADOR_ROLES },
     ],
   },
   // ── Estudio del inquilino ─────────────────────────────────────────────────
   {
     slug: 'estudio',
-    basePath: `${AI}/estudio`,
+    basePath: ESTUDIO,
     labelKey: 'inmobiliaria.ai.nav.estudio',
     icon: ShieldCheck,
     module: 'estudio',
     items: [
-      { labelKey: 'inmobiliaria.ai.nav.estudioResumen', href: `${AI}/estudio`, icon: SquaresFour, exact: true, module: 'estudio' },
-      { labelKey: 'inmobiliaria.ai.nav.estudioCasos', href: `${AI}/estudio/estudios`, icon: Users, module: 'estudio' },
-      { labelKey: 'inmobiliaria.ai.nav.estudioCrear', href: `${AI}/estudio/nuevo`, icon: Plus, module: 'estudio' },
-      { labelKey: 'inmobiliaria.ai.nav.estudioSolicitud', href: `${AI}/estudio/solicitud`, icon: PaperPlaneTilt, module: 'estudio' },
-      { labelKey: 'inmobiliaria.ai.nav.estudioCola', href: `${AI}/estudio/cola`, icon: ClipboardText, module: 'estudio' },
+      { labelKey: 'inmobiliaria.ai.nav.estudioResumen', href: ESTUDIO, icon: SquaresFour, exact: true, module: 'estudio' },
+      { labelKey: 'inmobiliaria.ai.nav.estudioCasos', href: `${ESTUDIO}/estudios`, icon: Users, module: 'estudio' },
+      { labelKey: 'inmobiliaria.ai.nav.estudioCrear', href: `${ESTUDIO}/nuevo`, icon: Plus, module: 'estudio' },
+      { labelKey: 'inmobiliaria.ai.nav.estudioSolicitud', href: `${ESTUDIO}/solicitud`, icon: PaperPlaneTilt, module: 'estudio' },
+      { labelKey: 'inmobiliaria.ai.nav.estudioCola', href: `${ESTUDIO}/cola`, icon: ClipboardText, module: 'estudio' },
       // OCULTO — «Equipo IA» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.estudioEquipo', href: `${AI}/estudio/equipo`, icon: UsersThree, module: 'estudio' },
-      { labelKey: 'inmobiliaria.ai.nav.estudioAnalitica', href: `${AI}/estudio/analitica`, icon: ChartLineUp, module: 'estudio' },
-      { labelKey: 'inmobiliaria.ai.nav.estudioReglas', href: `${AI}/estudio/reglas`, icon: Scales, module: 'estudio' },
-      { labelKey: 'inmobiliaria.ai.nav.estudioConfiguracion', href: `${AI}/estudio/configuracion`, icon: SlidersHorizontal, module: 'estudio' },
+      // { labelKey: 'inmobiliaria.ai.nav.estudioEquipo', href: `${ESTUDIO}/equipo`, icon: UsersThree, module: 'estudio' },
+      { labelKey: 'inmobiliaria.ai.nav.estudioAnalitica', href: `${ESTUDIO}/analitica`, icon: ChartLineUp, module: 'estudio' },
+      { labelKey: 'inmobiliaria.ai.nav.estudioReglas', href: `${ESTUDIO}/reglas`, icon: Scales, module: 'estudio' },
+      { labelKey: 'inmobiliaria.ai.nav.estudioConfiguracion', href: `${ESTUDIO}/configuracion`, icon: SlidersHorizontal, module: 'estudio' },
     ],
   },
   // ── Matching ──────────────────────────────────────────────────────────────
   {
     slug: 'matching',
-    basePath: `${AI}/matching`,
+    basePath: MATCHING,
     labelKey: 'inmobiliaria.ai.nav.matching',
     icon: GitMerge,
     module: 'matching',
     items: [
-      { labelKey: 'inmobiliaria.ai.nav.resumen', href: `${AI}/matching`, icon: SquaresFour, exact: true, module: 'matching' },
-      { labelKey: 'inmobiliaria.ai.nav.matchingCola', href: `${AI}/matching/cola`, icon: ClipboardText, module: 'matching' },
-      { labelKey: 'inmobiliaria.ai.nav.matchingAnalitica', href: `${AI}/matching/analitica`, icon: ChartLineUp, module: 'matching' },
-      { labelKey: 'inmobiliaria.ai.nav.matchingConfiguracion', href: `${AI}/matching/configuracion`, icon: SlidersHorizontal, module: 'matching' },
+      { labelKey: 'inmobiliaria.ai.nav.resumen', href: MATCHING, icon: SquaresFour, exact: true, module: 'matching' },
+      { labelKey: 'inmobiliaria.ai.nav.matchingCola', href: `${MATCHING}/cola`, icon: ClipboardText, module: 'matching' },
+      { labelKey: 'inmobiliaria.ai.nav.matchingAnalitica', href: `${MATCHING}/analitica`, icon: ChartLineUp, module: 'matching' },
+      { labelKey: 'inmobiliaria.ai.nav.matchingConfiguracion', href: `${MATCHING}/configuracion`, icon: SlidersHorizontal, module: 'matching' },
     ],
   },
   // ── Pagos (AP) ────────────────────────────────────────────────────────────
   {
     slug: 'pagos',
-    basePath: `${AI}/pagos`,
+    basePath: PAGOS,
+    excluir: [`${PAGOS}/dispersiones`, `${PAGOS}/liquidaciones`, `${PAGOS}/cxp`],
     labelKey: 'inmobiliaria.ai.nav.pagos',
     icon: CurrencyDollar,
     module: null,
     roles: CONTADOR_ROLES,
     items: [
-      { labelKey: 'inmobiliaria.ai.nav.resumen', href: `${AI}/pagos`, icon: SquaresFour, exact: true, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosCobros', href: `${AI}/pagos/cobros`, icon: Receipt, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosGenerar', href: `${AI}/pagos/generar`, icon: PaperPlaneTilt, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosFallidos', href: `${AI}/pagos/fallidos`, icon: WarningCircle, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosRecordatorios', href: `${AI}/pagos/recordatorios`, icon: BellRinging, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosPropietarios', href: `${AI}/pagos/propietarios`, icon: Wallet, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosCola', href: `${AI}/pagos/cola`, icon: ClipboardText, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.resumen', href: PAGOS, icon: SquaresFour, exact: true, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.pagosCobros', href: `${PAGOS}/cobros`, icon: Receipt, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.pagosGenerar', href: `${PAGOS}/generar`, icon: PaperPlaneTilt, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.pagosFallidos', href: `${PAGOS}/fallidos`, icon: WarningCircle, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.pagosRecordatorios', href: `${PAGOS}/recordatorios`, icon: BellRinging, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.pagosPropietarios', href: `${PAGOS}/propietarios`, icon: Wallet, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.pagosCola', href: `${PAGOS}/cola`, icon: ClipboardText, module: null, roles: CONTADOR_ROLES },
       // OCULTO — «Equipo IA» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.pagosEquipo', href: `${AI}/pagos/equipo`, icon: UsersThree, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosAnalitica', href: `${AI}/pagos/analitica`, icon: ChartLineUp, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosReglas', href: `${AI}/pagos/reglas`, icon: Lightning, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosConfiguracion', href: `${AI}/pagos/configuracion`, icon: SlidersHorizontal, module: null, roles: CONTADOR_ROLES },
+      // { labelKey: 'inmobiliaria.ai.nav.pagosEquipo', href: `${PAGOS}/equipo`, icon: UsersThree, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.pagosAnalitica', href: `${PAGOS}/analitica`, icon: ChartLineUp, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.pagosReglas', href: `${PAGOS}/reglas`, icon: Lightning, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.pagosConfiguracion', href: `${PAGOS}/configuracion`, icon: SlidersHorizontal, module: null, roles: CONTADOR_ROLES },
     ],
   },
+  // ── Mantenimiento (tickets) — APAGADO ─────────────────────────────────────
+  // El agente es mock-first y el micro no sirve `/api/agency/:id/mantenimiento/inbox`:
+  // con `NEXT_PUBLIC_USE_MOCK_API=false` la bandeja quedaba vacía o en error.
+  // No va a producción todavía (Nico, 2026-09-03). Las páginas siguen en
+  // `mantenimientos/tickets/*`; para reactivarlo, descomentar este bloque y la
+  // pantalla en `arquitectura-del-panel.ts` (el test exige las dos puertas).
+  //   // Estaba en dos grupos del sidebar (/operaciones y /ai/mantenimiento/tickets).
+  //   // La raíz es la bandeja de tickets —lo que la gente abre—; el Resumen (KPIs,
+  //   // mock-first) queda una pestaña al lado. Gate 'mantenimiento' en el layout
+  //   // del segmento (mantenimientos/tickets/layout.tsx).
+  //   {
+  //     slug: 'mantenimiento',
+  //     basePath: MANTENIMIENTO,
+  //     labelKey: 'inmobiliaria.ai.nav.mantenimientoTickets',
+  //     icon: Ticket,
+  //     module: 'mantenimiento',
+  //     items: [
+  //       { labelKey: 'inmobiliaria.ai.nav.mantenimientoTickets', href: MANTENIMIENTO, icon: Ticket, exact: true, module: 'mantenimiento', dataTourTarget: 'sidebar-mantenimiento' },
+  //       { labelKey: 'inmobiliaria.ai.nav.mantenimientoResumen', href: `${MANTENIMIENTO}/resumen`, icon: SquaresFour, module: 'mantenimiento' },
+  //     ],
+  //   },
 ];
 
 /**
@@ -237,7 +281,7 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
  * ficticias del equipo— sin backend que las alimente, así que no aportan nada
  * operativo dentro del workspace.
  *
- * Las páginas siguen existiendo en `app/panel/inmobiliaria/ai/*​/equipo/` y sus
+ * Las páginas siguen existiendo en la carpeta `equipo/` de cada workspace y sus
  * claves i18n intactas: para reactivarlas basta descomentar las 4 líneas y el
  * import de `UsersThree`. No quedan otros enlaces a esas rutas en la app, así
  * que sólo se alcanzan escribiendo la URL a mano.
@@ -406,9 +450,12 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
 
 /** Find the agent workspace whose basePath contains `pathname` (or null). */
 export function findAgentWorkspace(pathname: string): AgentWorkspace | null {
-  return (
-    AGENT_WORKSPACES.find(
-      (w) => pathname === w.basePath || pathname.startsWith(`${w.basePath}/`)
-    ) ?? null
-  );
+  const ruta = pathname.split('?')[0] ?? pathname;
+  const candidatos = AGENT_WORKSPACES.filter((w) => {
+    const dentro = ruta === w.basePath || ruta.startsWith(`${w.basePath}/`);
+    if (!dentro) return false;
+    return !(w.excluir ?? []).some((e) => ruta === e || ruta.startsWith(`${e}/`));
+  });
+  // El más específico gana (por si un workspace colgara de otro).
+  return candidatos.sort((a, b) => b.basePath.length - a.basePath.length)[0] ?? null;
 }

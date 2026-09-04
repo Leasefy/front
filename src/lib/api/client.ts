@@ -145,6 +145,39 @@ export function esCodigoDeSesionMuerta(code: string | undefined): boolean {
 type UnauthorizedHandler = (code: string) => void
 let _onUnauthorized: UnauthorizedHandler | null = null
 
+/**
+ * Quien sabe renovar el token (el AuthProvider, con `supabase.auth.refreshSession`).
+ * Devuelve el access token nuevo o `null` si el refresh token también murió.
+ */
+export type TokenRefresher = () => Promise<string | null>
+let _refrescarToken: TokenRefresher | null = null
+
+export function setTokenRefresher(fn: TokenRefresher | null) {
+  _refrescarToken = fn
+}
+
+/**
+ * `AUTH_TOKEN_EXPIRED` no es una sesión muerta: es un ACCESS token vencido, y
+ * el refresh token suele estar vivo. Pasa cuando la pestaña estuvo dormida y
+ * la primera petición al volver sale con el token viejo antes de que
+ * supabase-js lo renueve. Antes esto cerraba la sesión de una —«Redirigiendo…»
+ * a pantalla completa con el formulario a medio llenar (Nico, pedir cita,
+ * 2026-09-03)—. Ahora: si ya hay un token distinto se usa; si no, se le pide
+ * uno al AuthProvider; y como última carta se espera la carrera de siempre.
+ * Sólo si nada de eso trae un token nuevo, la sesión se da por muerta.
+ */
+async function renovarTokenVencido(usado: string | null): Promise<string | null> {
+  if (_accessToken && usado && _accessToken !== usado) return _accessToken
+  if (_refrescarToken) {
+    const nuevo = await _refrescarToken().catch(() => null)
+    if (nuevo && nuevo !== usado) {
+      setAccessToken(nuevo)
+      return nuevo
+    }
+  }
+  return esperarUnTokenDistinto(usado)
+}
+
 export function setUnauthorizedHandler(handler: UnauthorizedHandler | null) {
   _onUnauthorized = handler
 }
@@ -239,7 +272,16 @@ async function request<T>(
     // `esperarUnTokenDistinto` existe para la carrera de la renovación, y con
     // el refresh token muerto no hay token nuevo que esperar: ese segundo de
     // espera sólo retrasa la salida, una vez por cada petición en vuelo.
+    //
+    // La excepción es el token VENCIDO: primero se intenta renovar y repetir
+    // UNA vez (ver `renovarTokenVencido`); sólo si no hay token nuevo se sale.
     if (esCodigoDeSesionMuerta(code)) {
+      if (code === 'AUTH_TOKEN_EXPIRED' && !yaSeReintento) {
+        const tokenNuevo = await renovarTokenVencido(tokenUsado)
+        if (tokenNuevo) {
+          return request<T>(method, path, body, tokenNuevo, true)
+        }
+      }
       _onUnauthorized?.(code as string)
       throw new ApiError(401, errorBody.message || 'No autorizado', code)
     }

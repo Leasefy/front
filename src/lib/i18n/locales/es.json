@@ -3530,7 +3530,7 @@
         },
         "step1": {
           "title": "Seleccionar Propietario",
-          "subtitle": "Elige un propietario existente o crea uno nuevo"
+          "subtitle": "Elige uno o varios propietarios, o crea uno nuevo"
         },
         "step2": {
           "title": "Datos de la Propiedad",

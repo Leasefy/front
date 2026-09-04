@@ -33,7 +33,9 @@ import { IconButton, RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type { Propietario, Agente, PropietarioFormData, ConsignacionFormData, InventoryItem, Consignacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency, COLOMBIAN_DEPARTMENTS } from '@/lib/types/inmobiliaria';
-import { PropietarioSelector } from './PropietarioSelector';
+import { SelectorDePropietarios } from './SelectorDePropietarios';
+import { RepartoEntreDuenos, repartoEnPartesIguales } from './RepartoEntreDuenos';
+import type { FilaCopropietario } from './CopropietariosField';
 import { AgenteSelector } from './AgenteSelector';
 import { PropertyLocationField, type PropertyLocationValue } from '@/components/publicar/PropertyLocationField';
 import { PropertyPhotoPicker } from './PropertyPhotoPicker';
@@ -130,6 +132,19 @@ const INVENTORY_CONDITIONS: { value: InventoryItem['condition']; labelKey: strin
 // Step 1: Select Propietario
 // ============================================================================
 
+/**
+ * Los dueños elegidos, en orden, leídos del formulario.
+ *
+ * No hay un campo aparte con la selección a propósito: es exactamente el
+ * principal seguido de los copropietarios, así que derivarla evita que las dos
+ * cosas se puedan desincronizar al ir y volver entre pasos.
+ */
+export function seleccionDeDuenos(formData: Partial<ConsignacionFormData>): string[] {
+  const principal = formData.propietarioId;
+  if (!principal) return [];
+  return [principal, ...(formData.copropietarios ?? []).map((c) => c.propietarioId)];
+}
+
 export function StepSelectPropietario({
   formData,
   updateFormData,
@@ -140,6 +155,26 @@ export function StepSelectPropietario({
   ownerServerError?: { field: keyof PropietarioFormData; message: string } | null;
 }) {
   const { t } = useI18n();
+
+  const seleccion = seleccionDeDuenos(formData);
+  const filas: FilaCopropietario[] = (formData.copropietarios ?? []).map((c) => ({
+    propietarioId: c.propietarioId,
+    participacionBps: c.participacionBps,
+  }));
+
+  const nombreDe = (id: string) =>
+    propietarios.find((p) => p.id === id)?.name ??
+    (formData.duenoPendienteId === id ? (formData.newPropietarioData?.name ?? id) : id);
+
+  /** Guarda una selección nueva: el primero es el principal, el resto reparte. */
+  const guardarSeleccion = (ids: string[], reparto: FilaCopropietario[]) => {
+    updateFormData({
+      propietarioId: ids[0] ?? '',
+      copropietarios: reparto
+        .filter((f): f is FilaCopropietario & { propietarioId: string } => Boolean(f.propietarioId))
+        .map((f) => ({ propietarioId: f.propietarioId, participacionBps: f.participacionBps })),
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -152,18 +187,48 @@ export function StepSelectPropietario({
         </p>
       </div>
 
-      <PropietarioSelector
+      {/* Selección MÚLTIPLE: un inmueble puede tener más de un dueño. Antes
+          acá vivía `PropietarioSelector`, que era de uno solo —tocar otro
+          reemplazaba— aunque el resto del circuito (tipos, payload y back) ya
+          soportaba copropietarios desde el 2026-09-03. */}
+      <SelectorDePropietarios
         propietarios={propietarios}
-        value={formData.propietarioId || null}
-        onChange={(id, data) => {
-          updateFormData({
-            propietarioId: id,
-            newPropietarioData: data,
-          });
+        seleccion={seleccion}
+        onCambiarSeleccion={(ids) => {
+          // Cambiar QUIÉNES son vuelve a repartir en partes iguales; los
+          // porcentajes se afinan abajo.
+          guardarSeleccion(ids, repartoEnPartesIguales(ids));
         }}
-        newPropietarioData={formData.newPropietarioData}
-        serverError={ownerServerError}
+        pendiente={
+          formData.duenoPendienteId && formData.newPropietarioData
+            ? { id: formData.duenoPendienteId, data: formData.newPropietarioData }
+            : undefined
+        }
+        onPendiente={(pendiente) => {
+          if (!pendiente) {
+            // Se quitó el dueño nuevo: sale de la selección y del reparto.
+            const quedan = seleccion.filter((id) => id !== formData.duenoPendienteId);
+            updateFormData({ duenoPendienteId: undefined, newPropietarioData: undefined });
+            guardarSeleccion(quedan, repartoEnPartesIguales(quedan));
+            return;
+          }
+          updateFormData({ duenoPendienteId: pendiente.id, newPropietarioData: pendiente.data });
+        }}
       />
+
+      {/* El reparto sólo aparece con dos o más: con uno, se lleva el 100 %. */}
+      <RepartoEntreDuenos
+        seleccion={seleccion}
+        nombreDe={nombreDe}
+        filas={filas}
+        onChange={(nuevas) => guardarSeleccion(seleccion, nuevas)}
+      />
+
+      {ownerServerError && (
+        <p className="text-sm text-danger" role="alert" data-testid="wizard-owner-error">
+          {ownerServerError.message}
+        </p>
+      )}
     </div>
   );
 }

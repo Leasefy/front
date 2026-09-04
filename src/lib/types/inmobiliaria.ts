@@ -289,6 +289,15 @@ export interface ConsignacionFormData {
    * cuando esta lista viene cargada. Ausente = un solo dueño, la forma vieja.
    */
   copropietarios?: { propietarioId: string; participacionBps: number }[];
+  /**
+   * El id temporal (`new-…`) del dueño que todavía no existe en el back.
+   *
+   * Con un solo dueño bastaba mirar `propietarioId`, pero desde que se pueden
+   * elegir varios el pendiente puede ser un COPROPIETARIO y no el principal —
+   * y sin este campo `persistOwnerIfNeeded` no sabría cuál de los ids de la
+   * lista hay que crear. Se borra en cuanto el dueño se persiste.
+   */
+  duenoPendienteId?: string;
   propertyTitle: string;
   propertyAddress: string;
   propertyCity: string;

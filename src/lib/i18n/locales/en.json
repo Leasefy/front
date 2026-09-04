@@ -3491,7 +3491,7 @@
         },
         "step1": {
           "title": "Select Owner",
-          "subtitle": "Choose an existing owner or create a new one"
+          "subtitle": "Pick one or more owners, or create a new one"
         },
         "step2": {
           "title": "Property Data",

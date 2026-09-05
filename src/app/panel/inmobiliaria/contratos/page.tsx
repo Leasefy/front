@@ -14,6 +14,7 @@
  */
 
 import Link from 'next/link';
+import { formatearVigencia } from '@/lib/contratos/fecha-de-vigencia';
 import { useRouter } from 'next/navigation';
 import { fmtCop } from './format';
 import {
@@ -56,16 +57,7 @@ import {
 // ── Format helpers ───────────────────────────────────────────────────────────
 
 function fmtDate(iso: string | null | undefined, locale: string): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleDateString(locale === 'en' ? 'en-US' : 'es-CO', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
-  } catch {
-    return iso;
-  }
+  return formatearVigencia(iso, locale);
 }
 
 // ── Stat card ────────────────────────────────────────────────────────────────

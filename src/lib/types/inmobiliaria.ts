@@ -949,7 +949,13 @@ export interface OcupacionPropertyItem {
 
 export interface OcupacionTrendItem {
   month: string;
-  rate: number;
+  /**
+   * `null` cuando la serie no midió nada: la ocupación mensual se deriva de los
+   * cobros, y una agencia recién migrada (o con el motor de cobros apagado) no
+   * tiene ninguno. Doce ceros al lado de un encabezado que dice 83 % son la
+   * misma pantalla afirmando dos cosas incompatibles.
+   */
+  rate: number | null;
 }
 
 export interface CarteraMonthItem {

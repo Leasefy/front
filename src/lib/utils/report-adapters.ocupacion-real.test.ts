@@ -107,4 +107,31 @@ describe('adaptOccupancy contra la respuesta real del back', () => {
     })!
     expect(vacia.summary.vacancyRate).toBeNull()
   })
+  it('doce meses sin un solo cobro NO son doce meses con 0 % de ocupación', () => {
+    // La serie mensual se deriva de los cobros. Una agencia recién migrada no
+    // tiene ninguno, y el back manda `rate: null` en los doce. Antes mandaba
+    // 0 y la pantalla dibujaba doce barras en el piso justo al lado del
+    // encabezado que decía «83 %»: la misma pantalla, dos afirmaciones
+    // incompatibles, y la falsa parecía la medición.
+    const sinHistorial = adaptOccupancy({
+      ...RESPUESTA_DEL_BACK,
+      monthlyTrend: [
+        { month: '2026-08', rate: null },
+        { month: '2026-09', rate: null },
+      ],
+    })!
+    expect(sinHistorial.monthlyTrend.map((m) => m.occupancyRate)).toEqual([null, null])
+  })
+
+  it('un mes en cero CON historial sigue siendo un cero medido', () => {
+    // El contra-caso, sin el cual «nunca mostrar el cero» pasaría igual.
+    const conHistorial = adaptOccupancy({
+      ...RESPUESTA_DEL_BACK,
+      monthlyTrend: [
+        { month: '2026-08', rate: 0 },
+        { month: '2026-09', rate: 83.33 },
+      ],
+    })!
+    expect(conHistorial.monthlyTrend.map((m) => m.occupancyRate)).toEqual([0, 83.3])
+  })
 })

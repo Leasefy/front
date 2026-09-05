@@ -47,7 +47,8 @@ export interface OccupancyByZone {
 
 export interface OccupancyMonthlyTrend {
   month: string;
-  occupancyRate: number;
+  /** `null` cuando el mes no se pudo medir. Ver `OcupacionTrendItem`. */
+  occupancyRate: number | null;
 }
 
 export interface OccupancyData {

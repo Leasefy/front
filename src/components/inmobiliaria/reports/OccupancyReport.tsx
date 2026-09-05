@@ -57,9 +57,14 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
     shouldPaginate,
   } = useTablePagination(byProperty);
 
-  // Find max occupancy for trend scaling
-  const maxOccupancy = Math.max(...monthlyTrend.map((m) => m.occupancyRate));
-  const minOccupancy = Math.min(...monthlyTrend.map((m) => m.occupancyRate));
+  // La escala sale SÓLO de los meses que se midieron. Un `null` colado acá se
+  // convertiría en 0 al comparar y aplastaría toda la serie contra el piso.
+  const mesesMedidos = monthlyTrend
+    .map((m) => m.occupancyRate)
+    .filter((r): r is number => r !== null);
+  const hayAlgoQueGraficar = mesesMedidos.length > 0;
+  const maxOccupancy = hayAlgoQueGraficar ? Math.max(...mesesMedidos) : 0;
+  const minOccupancy = hayAlgoQueGraficar ? Math.min(...mesesMedidos) : 0;
   const range = maxOccupancy - minOccupancy || 1;
 
   return (
@@ -145,26 +150,39 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
           <TrendUp className="w-4 h-4 text-fg-muted" />
           Tendencia de ocupacion (12 meses)
         </h3>
+        {/* Doce ceros al lado de un encabezado que dice 83 % son la misma
+            pantalla afirmando dos cosas incompatibles. La serie se deriva de
+            los cobros: sin cobros no se midió nada, y lo honesto es decirlo en
+            vez de dibujar doce barras en el piso. */}
+        {!hayAlgoQueGraficar && (
+          <p className="text-sm text-fg-muted">
+            Todavía no hay historial de cobros para reconstruir la ocupación mes a mes.
+          </p>
+        )}
         <div className="flex items-end gap-1.5 h-36">
-          {monthlyTrend.map((m) => {
-            const height = ((m.occupancyRate - minOccupancy + 5) / (range + 10)) * 100;
+          {hayAlgoQueGraficar && monthlyTrend.map((m) => {
+            const medido = m.occupancyRate;
+            const height =
+              medido === null ? 0 : ((medido - minOccupancy + 5) / (range + 10)) * 100;
             return (
               <div
                 key={m.month}
                 className="flex-1 flex flex-col items-center gap-1 group"
               >
                 <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity font-medium">
-                  {m.occupancyRate}%
+                  {medido === null ? SIN_MEDIR : `${medido}%`}
                 </span>
                 <div className="w-full flex-1 flex items-end">
                   <div
                     className={cn(
                       'w-full rounded-t transition-all duration-300 group-hover:opacity-80',
-                      m.occupancyRate >= 90
-                        ? 'bg-success dark:bg-success'
-                        : m.occupancyRate >= 85
-                          ? 'bg-primary dark:bg-primary'
-                          : 'bg-warning dark:bg-warning'
+                      medido === null
+                        ? 'bg-border dark:bg-border-strong'
+                        : medido >= 90
+                          ? 'bg-success dark:bg-success'
+                          : medido >= 85
+                            ? 'bg-primary dark:bg-primary'
+                            : 'bg-warning dark:bg-warning'
                     )}
                     style={{ height: `${height}%` }}
                   />

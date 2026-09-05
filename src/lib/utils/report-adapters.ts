@@ -84,7 +84,7 @@ export function adaptOccupancy(report: OcupacionReport | null | undefined): Occu
     })),
     monthlyTrend: (report.monthlyTrend ?? []).map((t: OcupacionTrendItem) => ({
       month: formatMonthLabel(t.month),
-      occupancyRate: Math.round(t.rate * 10) / 10,
+      occupancyRate: t.rate === null ? null : Math.round(t.rate * 10) / 10,
     })),
   };
 }

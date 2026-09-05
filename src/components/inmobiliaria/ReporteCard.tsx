@@ -14,8 +14,7 @@ import {
   Eye,
   DownloadSimple,
   Info,
-  FilePdf,
-  FileXls,
+  FileCsv,
   Lock,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -28,9 +27,9 @@ import type { ReportDefinition } from '@/lib/types/inmobiliaria';
 import {
   getReportCategoryColor,
   getReportCategoryLabel,
-  getReportFormatColor,
   getReportFrequencyLabel,
 } from '@/lib/types/inmobiliaria';
+import { formatoDelArchivo } from '@/lib/reportes/exportables';
 
 interface ReporteCardProps {
   report: ReportDefinition;
@@ -131,7 +130,14 @@ export function ReporteCard({
   const bgColor = CATEGORY_BG_COLORS[report.category] || 'bg-surface-muted';
   const iconColor = CATEGORY_ICON_COLORS[report.category] || 'text-fg-muted';
   const status = getGenerationStatus(report.lastGenerated, t);
-  const FormatIcon = report.format === 'pdf' ? FilePdf : FileXls;
+  /**
+   * El formato del archivo que de verdad baja. Acá se leía `report.format`
+   * —«EXCEL»/«PDF», literales del catálogo— justo al lado del botón
+   * «Descargar CSV», que es lo que el back entrega. Dos afirmaciones opuestas
+   * a diez píxeles. Cuando no hay archivo, no hay insignia: ver
+   * `formatoDelArchivo` en `lib/reportes/exportables.ts`.
+   */
+  const formatoDelArchivoQueBaja = formatoDelArchivo(report.id);
 
   // Compact variant - single row for grid views
   if (variant === 'compact') {
@@ -184,15 +190,12 @@ export function ReporteCard({
               {report.description}
             </p>
             <div className="flex items-center gap-2 mt-2">
-              <span
-                className={cn(
-                  'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium',
-                  getReportFormatColor(report.format)
-                )}
-              >
-                <FormatIcon className="w-3 h-3" />
-                {report.format.toUpperCase()}
-              </span>
+              {formatoDelArchivoQueBaja && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-success-soft text-success">
+                  <FileCsv className="w-3 h-3" />
+                  {formatoDelArchivoQueBaja}
+                </span>
+              )}
               <span className="text-xs text-fg-subtle">
                 {getReportFrequencyLabel(report.frequency)}
               </span>
@@ -278,16 +281,13 @@ export function ReporteCard({
             {getReportCategoryLabel(report.category)}
           </span>
 
-          {/* Format Badge */}
-          <span
-            className={cn(
-              'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-              getReportFormatColor(report.format)
-            )}
-          >
-            <FormatIcon className="w-3.5 h-3.5" />
-            {report.format.toUpperCase()}
-          </span>
+          {/* Formato del archivo — sólo cuando hay archivo */}
+          {formatoDelArchivoQueBaja && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-success-soft text-success">
+              <FileCsv className="w-3.5 h-3.5" />
+              {formatoDelArchivoQueBaja}
+            </span>
+          )}
 
           {/* Frequency Badge */}
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle">

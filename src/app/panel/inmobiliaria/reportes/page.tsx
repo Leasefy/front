@@ -117,6 +117,34 @@ function saveFavorites(favorites: Set<ReportId>): void {
 }
 
 /**
+ * El vacío de una pestaña avanzada: la respuesta llegó y no trae nada que
+ * dibujar (agencia recién creada, mes sin movimiento). Dice qué pasó, no sólo
+ * «no hay datos».
+ *
+ * ⚠️ Vive acá arriba, en el módulo, y NO dentro de `ReportesContent`. Un
+ * componente declarado dentro de otro es un TIPO nuevo en cada render del
+ * padre: React no lo reconcilia, lo DESMONTA y lo vuelve a montar entero cada
+ * vez que cambia un filtro, una pestaña o llega una respuesta. Es el mismo
+ * mecanismo que hacía cerrar de golpe a los cajones del panel.
+ */
+function SinDatosDelReporte() {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface px-6 py-14 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted">
+        <ChartBar className="h-5 w-5 text-fg-muted" weight="duotone" />
+      </div>
+      <div className="space-y-1">
+        <p className="text-base font-semibold text-fg">Todavía no hay nada que mostrar</p>
+        <p className="mx-auto max-w-sm text-sm text-fg-muted">
+          Este reporte se arma con la actividad del portafolio. Cuando haya inmuebles con contrato y
+          cobros del período, aparece acá.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
  * ReportesPage - Reports center for the inmobiliaria module
  * Route: /panel/inmobiliaria/reportes
  */
@@ -136,29 +164,7 @@ function ReportesContent() {
     { key: 'ejecutivo', label: locale === 'es' ? 'Ejecutivo' : 'Executive', icon: ChartLineUp },
   ];
 
-  /**
- * El vacío de una pestaña avanzada: la respuesta llegó y no trae nada que
- * dibujar (agencia recién creada, mes sin movimiento). Dice qué pasó, no sólo
- * «no hay datos».
- */
-function SinDatosDelReporte() {
-  return (
-    <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface px-6 py-14 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted">
-        <ChartBar className="h-5 w-5 text-fg-muted" weight="duotone" />
-      </div>
-      <div className="space-y-1">
-        <p className="text-base font-semibold text-fg">Todavía no hay nada que mostrar</p>
-        <p className="mx-auto max-w-sm text-sm text-fg-muted">
-          Este reporte se arma con la actividad del portafolio. Cuando haya inmuebles con contrato y
-          cobros del período, aparece acá.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// API Hooks for report data
+  // API Hooks for report data
   const carteraReport = useCarteraReport();
   const ocupacionReport = useOcupacionReport();
   const currentMonth = new Date().toISOString().slice(0, 7);
@@ -313,7 +319,9 @@ function SinDatosDelReporte() {
       totalReports: reports.length,
       favoritesCount: favorites.size,
       lastGeneratedTime: lastGenerated?.lastGenerated
-        ? new Date(lastGenerated.lastGenerated).toLocaleString(locale === 'es' ? 'es-CL' : 'en-US', {
+        // `es-CO`, no `es-CL`: esto es un ERP colombiano y el resto de la
+        // pantalla ya formatea en pesos y fechas de Colombia.
+        ? new Date(lastGenerated.lastGenerated).toLocaleString(locale === 'es' ? 'es-CO' : 'en-US', {
             day: 'numeric',
             month: 'short',
             hour: 'numeric',

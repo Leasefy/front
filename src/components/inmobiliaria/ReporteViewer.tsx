@@ -11,8 +11,7 @@ import {
   ChartBar,
   ChartLineUp,
   CurrencyDollar,
-  FilePdf,
-  FileXls,
+  FileCsv,
   DownloadSimple,
   CalendarBlank,
   MapPin,
@@ -30,14 +29,15 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import type { ReportDefinition, ReportCategory } from '@/lib/types/inmobiliaria';
 import {
   getReportCategoryColor,
-  getReportFormatColor,
   formatCurrency,
 } from '@/lib/types/inmobiliaria';
+import { formatoDelArchivo } from '@/lib/reportes/exportables';
 import type { ReporteFiltersState } from './ReporteFilters';
 import {
   useComisionesReport,
@@ -564,7 +564,9 @@ export function ReporteViewer({
   const Icon = ICON_MAP[report.icon] || FileText;
   const bgColor = CATEGORY_BG_COLORS[report.category];
   const iconColor = CATEGORY_ICON_COLORS[report.category];
-  const FormatIcon = report.format === 'pdf' ? FilePdf : FileXls;
+  // Ver `formatoDelArchivo`: acá se pintaba `report.format` («EXCEL»/«PDF»)
+  // arriba del botón que dice «Descargar CSV» y baja un `.csv`.
+  const formatoDelArchivoQueBaja = formatoDelArchivo(report.id);
 
   // Get preview component based on report type
   const PreviewContent = () => {
@@ -605,9 +607,17 @@ export function ReporteViewer({
               <SheetTitle className="text-lg font-semibold text-foreground">
                 {report.title}
               </SheetTitle>
-              <p className="text-sm text-muted-foreground mt-0.5">
+              {/*
+                `SheetDescription`, no un `<p>` suelto: `SheetContent` es un
+                Radix Dialog, y un diálogo sin descripción registrada avisa en
+                consola («Missing `Description` … for {DialogContent}») y se
+                abre sin `aria-describedby`, así que el lector de pantalla
+                anuncia el título y nada más. El texto ya estaba acá; lo único
+                que faltaba era que el diálogo supiera que es SU descripción.
+              */}
+              <SheetDescription className="text-sm text-muted-foreground mt-0.5">
                 {report.description}
-              </p>
+              </SheetDescription>
               <div className="flex items-center gap-2 mt-3">
                 <span
                   className={cn(
@@ -617,15 +627,12 @@ export function ReporteViewer({
                 >
                   {report.category}
                 </span>
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
-                    getReportFormatColor(report.format)
-                  )}
-                >
-                  <FormatIcon className="w-3 h-3" />
-                  {report.format.toUpperCase()}
-                </span>
+                {formatoDelArchivoQueBaja && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-success-soft text-success">
+                    <FileCsv className="w-3 h-3" />
+                    {formatoDelArchivoQueBaja}
+                  </span>
+                )}
               </div>
             </div>
           </div>

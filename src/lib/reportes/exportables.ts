@@ -102,6 +102,25 @@ export function sePuedeBajar(id: ReportId): boolean {
   return comoSeBaja(id).disponible
 }
 
+/**
+ * Qué formato tiene el archivo que se va a bajar. `null` = no hay archivo.
+ *
+ * La tarjeta y el cajón mostraban una insignia con `report.format`, que es un
+ * literal de `inmobiliaria-data.ts` («EXCEL» en seis de los ocho, «PDF» en dos)
+ * escrito antes de que existiera el export. El botón de al lado dice
+ * «Descargar CSV» y lo que baja ES un CSV: `/inmobiliaria/reports/export`
+ * responde `text/csv` y `nombreDelArchivo` termina en `.csv`. O sea: la
+ * insignia y el botón, pegados, se contradecían — y la que mentía era la
+ * insignia.
+ *
+ * Para los que NO se pueden bajar no hay archivo del cual declarar formato:
+ * ahí devuelve `null` y quien lo pinte omite la insignia, en vez de prometer
+ * un XLSX que nadie produce.
+ */
+export function formatoDelArchivo(id: ReportId): 'CSV' | null {
+  return comoSeBaja(id).disponible ? 'CSV' : null
+}
+
 /** `cartera-edades-2026-08-12.csv` */
 export function nombreDelArchivo(tipo: TipoDeExport, hoy: string): string {
   return `${tipo}-${hoy}.csv`

@@ -19,6 +19,7 @@ import type {
   RendimientoAgentesReport,
   FlujoCajaReport,
 } from '@/lib/types/inmobiliaria';
+import { promedioMedido, tasaMedida } from '@/lib/tasas';
 import type {
   OccupancyData,
   CollectionsData,
@@ -41,17 +42,23 @@ function formatMonthLabel(iso: string): string {
 export function adaptOccupancy(report: OcupacionReport | null | undefined): OccupancyData | null {
   if (!report) return null;
 
-  const vacant = report.totalAvailable + report.totalInProcess;
-  const vacancyRate = report.totalProperties > 0
-    ? ((vacant / report.totalProperties) * 100)
-    : 0;
+  // 🔴 Acá salía «NaN Vacantes» en la pantalla del cliente.
+  //
+  // Esto sumaba `report.totalAvailable + report.totalInProcess` y el back no
+  // manda ninguno de los dos: manda `totalVacant`. Dos `undefined` sumados dan
+  // NaN, el tipo los declaraba obligatorios, y `tsc` pasó sin decir palabra.
+  // Ver el comentario de `OcupacionReport` en lib/types/inmobiliaria.ts.
+  const vacant = report.totalVacant;
+  // Sin un inmueble cargado no hay vacancia que medir: `null`, no 0. El 0 se
+  // pintaba en rojo con flecha arriba, afirmando una vacancia inmejorable.
+  const vacancyRate = tasaMedida(vacant, report.totalProperties);
 
   return {
     summary: {
       totalProperties: report.totalProperties,
       rented: report.totalOccupied,
       vacant,
-      vacancyRate: Math.round(vacancyRate * 10) / 10,
+      vacancyRate: vacancyRate === null ? null : Math.round(vacancyRate * 10) / 10,
       // El back no guarda desde cuándo está vacío un inmueble: `null` (dato
       // que falta), no `0` (medición perfecta).
       avgDaysVacant: null,
@@ -64,12 +71,16 @@ export function adaptOccupancy(report: OcupacionReport | null | undefined): Occu
       tenant: p.tenantName,
       rentAmount: p.monthlyRent,
     })),
+    // El mismo desajuste, por zona: `totalProperties`, `available`, `inProcess`
+    // y `occupancyRate` tampoco existen — por eso salía «Medellín 5/ (NaN%)»,
+    // con el denominador en blanco. El back manda `total`, `vacant` y
+    // `vacancyRate` ya en 0–100 y ya guardada contra el denominador cero.
     byZone: report.zones.map((z) => ({
       zone: z.zone,
-      total: z.totalProperties,
+      total: z.total,
       rented: z.occupied,
-      vacant: z.available + z.inProcess,
-      vacancyRate: Math.round((1 - z.occupancyRate) * 1000) / 10,
+      vacant: z.vacant,
+      vacancyRate: z.total > 0 ? Math.round(z.vacancyRate * 10) / 10 : null,
     })),
     monthlyTrend: (report.monthlyTrend ?? []).map((t: OcupacionTrendItem) => ({
       month: formatMonthLabel(t.month),
@@ -87,33 +98,39 @@ export function adaptCollections(report: CarteraReport | null | undefined): Coll
 
   const totalLate = report.summary.totalPending;
   const lateItems = report.items.filter((i: CarteraItem) => i.daysLate > 0);
-  const avgDaysLate = lateItems.length > 0
-    ? lateItems.reduce((sum: number, i: CarteraItem) => sum + i.daysLate, 0) / lateItems.length
-    : 0;
+  // Sin un solo contrato atrasado no hay atraso que promediar. El 0 decía
+  // «Prom. 0 días de atraso», que se lee como una cartera medida y sana.
+  const avgDaysLate = promedioMedido(lateItems.map((i: CarteraItem) => i.daysLate));
 
   // Derive summary totals from byMonth[] (current period is last month in the series)
   const byMonth: CarteraMonthItem[] = report.byMonth ?? [];
   const currentMonth = byMonth[byMonth.length - 1];
   const totalExpected = currentMonth?.total ?? 0;
   const totalCollected = currentMonth?.collected ?? 0;
-  const moraRate = totalExpected > 0 ? (totalLate / totalExpected) * 100 : 0;
-  const recoveryRate = currentMonth?.collectionRate ?? 0;
+  const moraRate = tasaMedida(totalLate, totalExpected);
+  /*
+   * `collectionRate` del mes ya viene del back en 0 cuando no hubo cobros, y
+   * un 0 acá caía en la banda verde «óptima» del gráfico: afirmaba una
+   * cartera sana sobre una cartera inexistente. Sin mes, no hay recuperación.
+   */
+  const recoveryRate =
+    currentMonth === undefined ? null : tasaMedida(currentMonth.collected, currentMonth.total);
 
   return {
     summary: {
       totalExpected,
       totalCollected,
       totalLate,
-      moraRate: Math.round(moraRate * 10) / 10,
-      avgDaysLate: Math.round(avgDaysLate),
-      recoveryRate: Math.round(recoveryRate * 10) / 10,
+      moraRate: moraRate === null ? null : Math.round(moraRate * 10) / 10,
+      avgDaysLate: avgDaysLate === null ? null : Math.round(avgDaysLate),
+      recoveryRate: recoveryRate === null ? null : Math.round(recoveryRate * 10) / 10,
     },
     byMonth: byMonth.map((m: CarteraMonthItem) => ({
       month: formatMonthLabel(m.month),
       expected: m.total,
       collected: m.collected,
       late: m.overdue,
-      moraRate: m.total > 0 ? Math.round((m.overdue / m.total) * 1000) / 10 : 0,
+      moraRate: m.total > 0 ? Math.round((m.overdue / m.total) * 1000) / 10 : null,
     })),
     topDelinquents: lateItems
       .sort((a, b) => b.pendingAmount - a.pendingAmount)
@@ -162,20 +179,18 @@ export function adaptAgentPerformance(
 
   const totalClosings = agents.reduce((sum: number, a) => sum + a.closings, 0);
   const totalRevenue = agents.reduce((sum: number, a) => sum + a.totalRevenue, 0);
-  const avgConversion = agents.length > 0
-    ? agents.reduce((sum: number, a) => sum + a.conversionRate, 0) / agents.length
-    : 0;
-  const avgDaysToClose = agents.length > 0
-    ? agents.reduce((sum: number, a) => sum + a.avgDaysToClose, 0) / agents.length
-    : 0;
+  // Sin agentes no hay a quién promediarle nada: «0% de conversión» y «0d al
+  // cierre» acusaban a un equipo que todavía no existe.
+  const avgConversion = promedioMedido(agents.map((a) => a.conversionRate));
+  const avgDaysToClose = promedioMedido(agents.map((a) => a.avgDaysToClose));
 
   return {
     agents,
     teamSummary: {
       totalClosings,
-      avgConversion: Math.round(avgConversion * 10) / 10,
+      avgConversion: avgConversion === null ? null : Math.round(avgConversion * 10) / 10,
       totalRevenue,
-      avgDaysToClose: Math.round(avgDaysToClose),
+      avgDaysToClose: avgDaysToClose === null ? null : Math.round(avgDaysToClose),
     },
   };
 }
@@ -190,10 +205,16 @@ export function adaptExecutive(
 ): ExecutiveData | null {
   if (!flujo && !ocupacion) return null;
 
-  const occupancyPct = ocupacion ? ocupacion.overallOccupancyRate * 100 : 0;
-  const prevOccupancyPct = ocupacion?.previousMonthOccupancyRate
-    ? ocupacion.previousMonthOccupancyRate * 100
-    : occupancyPct;
+  // 🔴 Dos errores en dos líneas, los dos por el mismo tipo inventado.
+  //
+  // `overallOccupancyRate` ya viene en 0–100 desde el back; multiplicarlo por
+  // 100 lo llevaba a 8.300 para una ocupación del 83 %, y el «health score»
+  // salía en miles. Y `previousMonthOccupancyRate` nunca existió, así que el
+  // «mes anterior» siempre era igual al actual: la comparación era una copia.
+  const occupancyPct = ocupacion?.overallOccupancyRate ?? 0;
+  // Sin el dato del mes pasado no hay variación que mostrar; igualarlo al mes
+  // actual es lo único honesto hasta que el back lo mande.
+  const prevOccupancyPct = occupancyPct;
 
   // Simple health score: weighted avg of occupancy + positive cash balance
   const cashHealthy = (flujo?.totals.netBalance ?? 0) > 0 ? 100 : 50;

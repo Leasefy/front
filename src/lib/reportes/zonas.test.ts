@@ -17,12 +17,11 @@ const LAS_INVENTADAS = ['Zona Norte', 'Chapinero', 'Usaquen', 'El Poblado', 'Zon
 
 function reporte(zones: Partial<OcupacionReport['zones'][number]>[]): OcupacionReport {
   return {
-    generatedAt: '2026-09-03T00:00:00.000Z',
     totalProperties: 0,
     totalOccupied: 0,
-    totalInProcess: 0,
-    totalAvailable: 0,
+    totalVacant: 0,
     overallOccupancyRate: 0,
+    overallVacancyRate: 0,
     zones: zones as OcupacionReport['zones'],
   }
 }

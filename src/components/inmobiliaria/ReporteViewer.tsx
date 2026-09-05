@@ -195,24 +195,12 @@ function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, stri
               {data.overallOccupancyRate}%
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.vsPrevMonth')}</p>
-            <div className="flex items-center justify-end gap-1">
-              {data.previousMonthOccupancyRate &&
-              data.overallOccupancyRate > data.previousMonthOccupancyRate ? (
-                <ArrowUp className="w-4 h-4 text-success" />
-              ) : (
-                <ArrowDown className="w-4 h-4 text-danger" />
-              )}
-              <span className="text-sm font-medium">
-                {Math.abs(
-                  data.overallOccupancyRate -
-                    (data.previousMonthOccupancyRate || 0)
-                )}
-                %
-              </span>
-            </div>
-          </div>
+          {/* 🔴 Acá había un «vs mes anterior» que inventaba la comparación.
+              Leía `previousMonthOccupancyRate`, que el back no manda, así que
+              el ternario caía SIEMPRE al else: flecha roja hacia abajo, y como
+              diferencia `|ocupación - 0|`, o sea la ocupación entera. Una
+              inmobiliaria con 83 % de ocupación leía «↓ 83 %» en rojo, una
+              caída que nunca ocurrió. Vuelve cuando el back mande el dato. */}
         </div>
       </div>
 
@@ -229,15 +217,9 @@ function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, stri
           </p>
           <p className="text-xs text-success">{t('inmobiliaria.reporte.rented')}</p>
         </div>
-        <div className="p-3 rounded-md bg-primary-soft text-center">
-          <p className="text-lg font-bold text-primary">
-            {data.totalInProcess}
-          </p>
-          <p className="text-xs text-primary">{t('inmobiliaria.reporte.inProcess')}</p>
-        </div>
         <div className="p-3 rounded-md bg-warning-soft text-center">
           <p className="text-lg font-bold text-warning">
-            {data.totalAvailable}
+            {data.totalVacant}
           </p>
           <p className="text-xs text-warning">{t('inmobiliaria.reporte.available')}</p>
         </div>
@@ -260,16 +242,16 @@ function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, stri
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-xs text-muted-foreground">
-                  {zone.occupied}/{zone.totalProperties}
+                  {zone.occupied}/{zone.total}
                 </span>
                 <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full bg-success rounded-full"
-                    style={{ width: `${zone.occupancyRate}%` }}
+                    style={{ width: `${zone.rate}%` }}
                   />
                 </div>
                 <span className="text-sm font-medium text-foreground w-12 text-right">
-                  {zone.occupancyRate}%
+                  {zone.rate}%
                 </span>
               </div>
             </div>

@@ -559,7 +559,12 @@ export interface CobroSummary {
   totalCollected: number;
   totalPending: number;
   totalLate: number;
-  collectionRate: number;
+  /**
+   * 0–100, o `null` cuando el mes no tiene un solo cobro: sin nada esperado
+   * no hay tasa que medir, y un 0 acá se pintaba como «0.0% · Bajo ↘».
+   * Mismo contrato que `tasa_conciliacion` en Conciliación.
+   */
+  collectionRate: number | null;
   cobrosPaid: number;
   cobrosPending: number;
   cobrosLate: number;
@@ -955,27 +960,48 @@ export interface CarteraMonthItem {
   collectionRate: number;
 }
 
+/**
+ * 🔴 Este tipo describía un endpoint que no existe.
+ *
+ * Declaraba `totalAvailable`, `totalInProcess`, y por zona `totalProperties`,
+ * `inProcess`, `available` y `occupancyRate`. El back no manda ninguno de
+ * esos seis campos, y como el tipo los daba por presentes y obligatorios,
+ * `tsc` no tenía nada que objetar: `undefined + undefined` compila.
+ *
+ * En pantalla eso salió como «NaN Vacantes», «NaN% Tasa vacancia» y, por
+ * zona, «Medellín 5/ (NaN%)» — el denominador directamente en blanco. Tres
+ * componentes lo consumían (`OccupancyReport`, `OcupacionChart`,
+ * `ReporteViewer`) y los tres mostraban la palabra NaN a un cliente que paga.
+ *
+ * Lo que sigue es lo que `ReportsService.getOcupacionReport()` devuelve de
+ * verdad, campo por campo. Ojo con dos cosas al tocarlo:
+ *
+ *   · No hay `generatedAt`: el controller devuelve el objeto del servicio sin
+ *     envolverlo.
+ *   · No hay estado «en proceso». El back sólo distingue RENTED de todo lo
+ *     demás, así que la partición honesta es de a dos: ocupado o vacante.
+ */
 export interface OcupacionZone {
   zone: string;
-  totalProperties: number;
+  total: number;
   occupied: number;
-  inProcess: number;
-  available: number;
-  occupancyRate: number;
+  vacant: number;
+  /** Porcentaje de ocupación de la zona, 0–100. */
+  rate: number;
+  /** Porcentaje de vacancia de la zona, 0–100. */
+  vacancyRate: number;
 }
 
 export interface OcupacionReport {
-  generatedAt: string;
   totalProperties: number;
   totalOccupied: number;
-  totalInProcess: number;
-  totalAvailable: number;
+  totalVacant: number;
+  /** 0–100. El back ya lo devuelve en 0 cuando no hay inmuebles. */
   overallOccupancyRate: number;
-  previousMonthOccupancyRate?: number;
+  /** 0–100. */
+  overallVacancyRate: number;
   zones: OcupacionZone[];
-  /** Optional per-property breakdown (backend may not return this yet) */
   byProperty?: OcupacionPropertyItem[];
-  /** Optional monthly occupancy trend (backend may not return this yet) */
   monthlyTrend?: OcupacionTrendItem[];
 }
 

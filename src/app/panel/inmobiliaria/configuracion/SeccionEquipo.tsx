@@ -20,7 +20,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { ChartBar, Trophy, UsersThree } from '@phosphor-icons/react';
 import { SegmentedControl } from '@leasefy/cadence';
 

@@ -28,7 +28,7 @@
 
 import { useMemo, useState } from 'react'
 import { AlertaAccionable } from '@/components/ui/alerta-accionable'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 import { PlugsConnected, Plus } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'

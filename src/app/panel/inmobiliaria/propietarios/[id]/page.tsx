@@ -30,7 +30,7 @@ import {
   Check,
   Note,
 } from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
@@ -39,6 +39,8 @@ import { Spinner } from '@/components/ui/spinner';
 import { SegmentedControl, IconButton } from '@leasefy/cadence';
 import { BackButton } from '@/components/ui/back-button';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PerfilTributarioDelPropietario } from '@/components/inmobiliaria/PerfilTributarioDelPropietario';
 import { ExtractosEnviadosDelPropietario } from '@/components/inmobiliaria/ExtractosEnviadosDelPropietario';
 import {
@@ -407,7 +409,16 @@ function PropietarioDetailContent() {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
 
   // Fetch propietario and keep local state for updates
-  const { propietario: fetchedPropietario, isLoading, refetch } = usePropietario(id);
+  const {
+    propietario: fetchedPropietario,
+    isLoading,
+    // El error entero, no su mensaje: `FalloDeCarga` lo clasifica para saber si
+    // reintentar sirve. Sin esto, un 500 o la red caída llegaban acá como
+    // `propietario === undefined` y la ficha decía «este propietario no
+    // existe» — afirmando una baja que nadie hizo.
+    errorCrudo: errorPropietario,
+    refetch,
+  } = usePropietario(id);
   const [propietario, setPropietario] = useState(fetchedPropietario);
 
   // Update local state when fetched data changes
@@ -417,9 +428,27 @@ function PropietarioDetailContent() {
     }
   }, [fetchedPropietario]);
 
-  // Fetch related data
-  const { consignaciones } = useConsignaciones({ propietarioId: id });
-  const { dispersiones } = useDispersiones({ propietarioId: id });
+  /*
+   * Los inmuebles y los giros de este propietario.
+   *
+   * Se toman también `isLoading` y `errorCrudo`: estas dos listas alimentan
+   * las pestañas, sus contadores Y el Excel de «Exportar datos». Ignorar el
+   * fallo dejaba las tres mintiendo con la misma cara —«0 inmuebles», «este
+   * propietario no tiene inmuebles consignados» y un archivo con la hoja
+   * Inmuebles vacía— sobre alguien que puede tener doce.
+   */
+  const {
+    consignaciones,
+    isLoading: cargandoConsignaciones,
+    errorCrudo: errorConsignaciones,
+    refetch: recargarConsignaciones,
+  } = useConsignaciones({ propietarioId: id });
+  const {
+    dispersiones,
+    isLoading: cargandoDispersiones,
+    errorCrudo: errorDispersiones,
+    refetch: recargarDispersiones,
+  } = useDispersiones({ propietarioId: id });
 
   // Mientras carga no es «no encontrado»: ese cartel salía un instante en
   // cada ficha y después llegaba el dato (Nico, 2026-09-02 12:47).
@@ -430,6 +459,30 @@ function PropietarioDetailContent() {
           <Spinner size="sm" />
           {t('common.loading')}
         </div>
+      </div>
+    );
+  }
+
+  /*
+   * 🔴 Falló la carga ≠ el propietario no existe.
+   *
+   * Hasta acá cualquier fallo —500, red caída, sesión vencida, 403— pintaba
+   * «Propietario no encontrado», que es una afirmación sobre la base de datos
+   * que nadie verificó: quien la lee piensa que lo borraron. `FalloDeCarga`
+   * clasifica el error y dice lo que de verdad pasó, y sólo ofrece reintentar
+   * cuando reintentar puede cambiar algo (un 404 sí es «no existe», y ahí
+   * muestra exactamente eso, con el camino de vuelta).
+   */
+  if (!propietario && errorPropietario) {
+    return (
+      <div className="p-6 lg:p-8 space-y-6" data-testid="propietario-fallo">
+        <BackButton href={rutaDeVuelta} label={etiquetaDeVuelta} />
+        <FalloDeCarga
+          error={errorPropietario}
+          queEs="el propietario"
+          onReintentar={refetch}
+          volverA={{ label: etiquetaDeVuelta, href: rutaDeVuelta }}
+        />
       </div>
     );
   }
@@ -524,6 +577,22 @@ function PropietarioDetailContent() {
   };
 
   const handleExport = async () => {
+    /*
+     * 🔴 No se exporta lo que no se pudo leer.
+     *
+     * El Excel tiene tres hojas —ficha, inmuebles, giros— y las dos últimas
+     * salen de estas listas. Con una de ellas caída el archivo se bajaba
+     * igual, con la hoja vacía y sin una sola marca de que faltaba algo: un
+     * documento que se guarda, se manda por correo y se lee meses después
+     * como si el propietario no tuviera inmuebles. Un archivo incompleto es
+     * peor que ningún archivo, porque sobrevive al error que lo causó.
+     */
+    if (errorConsignaciones || errorDispersiones) {
+      toast.error(t('inmobiliaria.propietarios.detail.exportError'), {
+        description: t('inmobiliaria.propietarios.detail.exportIncompleto'),
+      });
+      return;
+    }
     setIsExporting(true);
     try {
       const archivo = await descargarDatosDelPropietario(propietario, consignaciones, dispersiones);
@@ -727,10 +796,14 @@ function PropietarioDetailContent() {
               {
                 value: 'properties',
                 ariaLabel: t('inmobiliaria.propietarios.detail.properties'),
+                /* El contador sale sólo cuando la lista se leyó: un «0» sobre
+                   una petición que falló es un número inventado. */
                 label: (
                   <span className="flex items-center gap-2">
                     {t('inmobiliaria.propietarios.detail.properties')}
-                    <span className="tabular-nums text-fg-muted">{consignaciones.length}</span>
+                    {!cargandoConsignaciones && !errorConsignaciones && (
+                      <span className="tabular-nums text-fg-muted">{consignaciones.length}</span>
+                    )}
                   </span>
                 ),
               },
@@ -740,7 +813,9 @@ function PropietarioDetailContent() {
                 label: (
                   <span className="flex items-center gap-2">
                     {t('inmobiliaria.propietarios.detail.payments')}
-                    <span className="tabular-nums text-fg-muted">{dispersiones.length}</span>
+                    {!cargandoDispersiones && !errorDispersiones && (
+                      <span className="tabular-nums text-fg-muted">{dispersiones.length}</span>
+                    )}
                   </span>
                 ),
               },
@@ -761,24 +836,35 @@ function PropietarioDetailContent() {
                 exit={{ opacity: 0, y: -10 }}
                 className="space-y-4"
               >
-                {consignaciones.length > 0 ? (
-                  consignaciones.map((consignacion) => (
-                    <PropertyCard key={consignacion.id} consignacion={consignacion} />
-                  ))
-                ) : (
-                  <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
-                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
-                      <House className="w-6 h-6 text-muted-foreground" weight="duotone" />
+                {/* Carga → fallo → vacío → datos, en ese orden y en un solo
+                    lugar. Antes el vacío se evaluaba primero y «este
+                    propietario no tiene inmuebles consignados» salía tanto
+                    mientras cargaba como cuando la petición se caía. */}
+                <EstadoDeDatos
+                  cargando={cargandoConsignaciones}
+                  error={errorConsignaciones}
+                  queEs="los inmuebles de este propietario"
+                  onReintentar={recargarConsignaciones}
+                  vacio={consignaciones.length === 0}
+                  cuandoVacio={
+                    <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
+                      <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
+                        <House className="w-6 h-6 text-muted-foreground" weight="duotone" />
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-4 max-w-sm">
+                        {t('inmobiliaria.propietarios.detail.noProperties')}
+                      </p>
+                      <Button hideArrow onClick={nuevaConsignacion} data-testid="nueva-consignacion">
+                        <Plus className="w-4 h-4" />
+                        {t('inmobiliaria.propietarios.detail.newConsignment')}
+                      </Button>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-                      {t('inmobiliaria.propietarios.detail.noProperties')}
-                    </p>
-                    <Button hideArrow onClick={nuevaConsignacion} data-testid="nueva-consignacion">
-                      <Plus className="w-4 h-4" />
-                      {t('inmobiliaria.propietarios.detail.newConsignment')}
-                    </Button>
-                  </div>
-                )}
+                  }
+                >
+                  {consignaciones.map((consignacion) => (
+                    <PropertyCard key={consignacion.id} consignacion={consignacion} />
+                  ))}
+                </EstadoDeDatos>
               </motion.div>
             )}
 
@@ -790,20 +876,29 @@ function PropietarioDetailContent() {
                 exit={{ opacity: 0, y: -10 }}
                 className="space-y-4"
               >
-                {dispersiones.length > 0 ? (
-                  dispersiones.map((dispersion) => (
-                    <PaymentHistoryItem key={dispersion.id} dispersion={dispersion} />
-                  ))
-                ) : (
-                  <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
-                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
-                      <CurrencyDollar className="w-6 h-6 text-muted-foreground" weight="duotone" />
+                {/* Lo mismo del otro lado, y acá pesa más: «no hay giros»
+                    sobre una lectura caída se lee como «no le hemos pagado». */}
+                <EstadoDeDatos
+                  cargando={cargandoDispersiones}
+                  error={errorDispersiones}
+                  queEs="los giros a este propietario"
+                  onReintentar={recargarDispersiones}
+                  vacio={dispersiones.length === 0}
+                  cuandoVacio={
+                    <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
+                      <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
+                        <CurrencyDollar className="w-6 h-6 text-muted-foreground" weight="duotone" />
+                      </div>
+                      <p className="text-sm text-muted-foreground max-w-sm">
+                        {t('inmobiliaria.propietarios.detail.noPayments')}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground max-w-sm">
-                      {t('inmobiliaria.propietarios.detail.noPayments')}
-                    </p>
-                  </div>
-                )}
+                  }
+                >
+                  {dispersiones.map((dispersion) => (
+                    <PaymentHistoryItem key={dispersion.id} dispersion={dispersion} />
+                  ))}
+                </EstadoDeDatos>
               </motion.div>
             )}
 

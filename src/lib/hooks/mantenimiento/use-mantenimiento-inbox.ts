@@ -1,12 +1,15 @@
 'use client'
 
 /**
- * use-mantenimiento-inbox.ts — Phase 7 plan 07-01 (DASH-02)
+ * use-mantenimiento-inbox.ts — bandeja priorizada de mantenimiento (Fixi).
  *
- * Prioritized-inbox hook. Mock-first (CONTEXT §MOCK-FIRST):
- *   - mock mode (default): resolve getMockInbox(now) after mockDelayMs.
- *   - real mode: GET `${NEXT_PUBLIC_AGENT_URL}/api/agency/:id/mantenimiento/inbox`
- *     (active filters serialized into a querystring; endpoint not-yet-existing).
+ *   - datos reales (lo normal): GET
+ *     `${NEXT_PUBLIC_AGENT_URL}/api/agency/{agencyId}/mantenimiento/inbox`.
+ *     La ruta EXISTE en el micro; responde 404 `feature_not_enabled` mientras
+ *     `MANTENIMIENTO_ENABLED` no esté prendido — ver `traer-del-agente.ts`.
+ *   - simulado: sólo con `NEXT_PUBLIC_USE_MOCK_API=true` (opt-in explícito,
+ *     nunca en producción). El comentario viejo decía «mock mode (default)» y
+ *     eso dejó de ser cierto cuando `getApiConfig` invirtió el default.
  *
  * Keeps the RAW cards in state and derives `data` via a memo that applies the passed
  * InboxFilters then sorts by `score` DESC (without mutating the source). Returns the
@@ -17,6 +20,12 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useAuth } from '@/lib/auth'
 import { getApiConfig } from '@/lib/api/config'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import {
+  SIN_AGENTE_CONFIGURADO,
+  SIN_AGENCIA,
+  mensajeDeRespuestaFallida,
+  mensajeDeErrorDeRed,
+} from './traer-del-agente'
 import { getMockInbox } from '@/lib/data/mock-mantenimiento'
 import type { InboxFilters, MaintenanceTicketCard } from '@/lib/types/mantenimiento'
 
@@ -81,11 +90,30 @@ export function useMantenimientoInbox(filters?: InboxFilters): UseMantenimientoI
   const [error, setError] = useState<string | null>(null)
   const nowRef = useRef<Date>(new Date())
 
+  /**
+   * Sólo la consulta MÁS NUEVA puede escribir el estado.
+   *
+   * `fetchData` no cancelaba nada: al pasar de un ticket a otro (o al tocar
+   * «reintentar» dos veces) quedaban dos consultas en vuelo y ganaba la que
+   * llegara última, que no es la misma que la que se pidió última. Resultado
+   * posible: la pantalla del ticket B mostrando los datos del A, sin ningún
+   * indicio. Además, una respuesta que aterriza después de desmontar el
+   * componente escribe estado sobre algo que ya no está.
+   *
+   * Un contador por instancia alcanza: cada llamada se queda con su número y
+   * descarta lo que trajo si mientras tanto salió otra.
+   */
+  const consulta = useRef(0)
+
+
   const fetchData = useCallback(async () => {
     const cfg = getApiConfig()
+    const miTurno = ++consulta.current
+    const vigente = () => consulta.current === miTurno
     setIsLoading(true)
     if (cfg.useMockApi) {
       await delay(cfg.mockDelayMs)
+      if (!vigente()) return
       setRawCards(getMockInbox(nowRef.current))
       setError(null)
       setIsLoading(false)
@@ -97,30 +125,35 @@ export function useMantenimientoInbox(filters?: InboxFilters): UseMantenimientoI
     // console.warn y `setIsLoading(false)`: la pantalla quedaba vacía sin decir
     // por qué, y un vacío mudo se lee como «no tenés mantenimientos». Un error
     // explícito manda a <FalloDeCarga>, que sí lo cuenta.
-      setError(
-        'No hay agente configurado (falta NEXT_PUBLIC_AGENT_URL), así que no se pudo traer nada. Esta pantalla está vacía porque no pudimos consultar, no porque no haya datos.',
-      )
+      setError(SIN_AGENTE_CONFIGURADO)
       setIsLoading(false)
       return
     }
+    // Sin inmobiliaria tampoco se preguntó nada, y hasta acá esa rama salía
+    // muda: `error` quedaba en null y la pantalla mostraba «No hay tickets».
+    // Un vacío sin explicación afirma que no hay nada; esto no lo sabemos.
     if (!agencyId) {
+      setError(SIN_AGENCIA)
       setIsLoading(false)
       return
     }
     try {
-      // Filters MAY be serialized into a querystring once the endpoint exists.
+      // Los filtros se aplican en el cliente (`applyFilters`); la ruta del micro
+      // no recibe querystring todavía.
       const res = await globalThis.fetch(
         `${agentUrl}/api/agency/${agencyId}/mantenimiento/inbox`,
         { headers: agentAuthHeaders() },
       )
-      if (!res.ok) throw new Error(`${res.status}`)
+      if (!vigente()) return
+      if (!res.ok) throw new Error(mensajeDeRespuestaFallida(res, 'la bandeja de mantenimiento'))
       const json: MaintenanceTicketCard[] = await res.json()
       setRawCards(json)
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch mantenimiento inbox')
+      if (!vigente()) return
+      setError(mensajeDeErrorDeRed(err, 'la bandeja de mantenimiento'))
     } finally {
-      setIsLoading(false)
+      if (vigente()) setIsLoading(false)
     }
   }, [agencyId])
 

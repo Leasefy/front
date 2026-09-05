@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Consignacion, Dispersion, Propietario } from '@/lib/types/inmobiliaria';
-import { armarHojasDelPropietario, nombreDelArchivoDelPropietario } from './exportar-datos';
+import {
+  armarHojaDeLaLista,
+  armarHojasDelPropietario,
+  nombreDelArchivoDeLaLista,
+  nombreDelArchivoDelPropietario,
+} from './exportar-datos';
 
 const propietario: Propietario = {
   id: 'p1',
@@ -114,6 +119,45 @@ describe('nombreDelArchivoDelPropietario', () => {
   it('quita tildes y caracteres raros y fecha el archivo', () => {
     expect(nombreDelArchivoDelPropietario('Nicolás García Ardila', new Date('2026-09-02T12:00:00Z'))).toBe(
       'propietario-nicolas-garcia-ardila-2026-09-02.xlsx',
+    );
+  });
+});
+
+/**
+ * La LISTA del directorio. Antes «Exportar» era un `toast.info` y un `// TODO`:
+ * decía que estaba exportando y no bajaba nada.
+ */
+describe('armarHojaDeLaLista', () => {
+  it('una fila por propietario, con la cuenta de giro resuelta', () => {
+    const hoja = armarHojaDeLaLista([propietario]);
+
+    expect(hoja.nombre).toBe('Propietarios');
+    expect(hoja.filas).toHaveLength(2); // encabezado + 1
+    const [encabezado, fila] = hoja.filas;
+    expect(encabezado[0]).toBe('Nombre');
+    expect(fila[0]).toBe('Nicolás García');
+    // El banco sale con su nombre, no con el slug interno.
+    expect(fila[encabezado.indexOf('Banco')]).not.toBe('falabella');
+    expect(fila[encabezado.indexOf('Tipo de cuenta')]).toBe('Ahorros');
+    // Los números van como números, para que Excel pueda sumarlos.
+    expect(fila[encabezado.indexOf('Canon mensual total')]).toBe(2_000_000);
+  });
+
+  it('sin cuenta bancaria deja las columnas del banco vacías, no «undefined»', () => {
+    const sinCuenta = { ...propietario, bankAccount: undefined } as unknown as Propietario;
+    const [encabezado, fila] = armarHojaDeLaLista([sinCuenta]).filas;
+    for (const col of ['Banco', 'Tipo de cuenta', 'Número de cuenta', 'Titular']) {
+      expect(fila[encabezado.indexOf(col)]).toBe('');
+    }
+  });
+
+  it('con la lista vacía deja igual el encabezado (una hoja sin filas, no un archivo roto)', () => {
+    expect(armarHojaDeLaLista([]).filas).toHaveLength(1);
+  });
+
+  it('el archivo lleva la fecha', () => {
+    expect(nombreDelArchivoDeLaLista(new Date('2026-09-05T15:00:00.000Z'))).toBe(
+      'propietarios-2026-09-05.xlsx',
     );
   });
 });

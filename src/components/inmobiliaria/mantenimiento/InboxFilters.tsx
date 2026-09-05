@@ -18,6 +18,8 @@
  */
 
 import { useI18n } from '@/lib/i18n'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   SEVERITIES,
   CATEGORIES,
@@ -49,8 +51,8 @@ interface InboxFiltersProps {
 
 function chipClasses(active: boolean): string {
   return active
-    ? 'bg-violet-600 text-white border-violet-600'
-    : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-300 dark:border-neutral-700 hover:border-violet-400'
+    ? 'bg-primary text-primary-fg border-primary'
+    : 'bg-surface text-fg-muted border-border hover:border-primary'
 }
 
 function toggleInArray<T>(arr: T[] | undefined, item: T): T[] {
@@ -58,8 +60,10 @@ function toggleInArray<T>(arr: T[] | undefined, item: T): T[] {
   return current.includes(item) ? current.filter((x) => x !== item) : [...current, item]
 }
 
-const INPUT_CLASSES =
-  'w-full px-2.5 py-1.5 text-xs rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-violet-500'
+/** El rail de filtros es denso: se conserva la altura compacta sobre el skin del DS. */
+// `md:text-xs` es necesario: el adapter trae `text-base md:text-sm` y sin el breakpoint
+// propio tailwind-merge deja ganar al `md:` del adapter de 768px para arriba.
+const INPUT_CLASSES = 'h-9 px-3 text-xs md:text-xs'
 
 export function InboxFilters({ value, onChange }: InboxFiltersProps) {
   const { t } = useI18n()
@@ -67,13 +71,13 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
 
   return (
     <div className="space-y-5" data-testid="inbox-filters">
-      <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
+      <h2 className="text-sm font-semibold text-fg">
         {t('inmobiliaria.ai.mantenimiento.filters.title')}
       </h2>
 
       {/* Severidad */}
       <fieldset>
-        <legend className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+        <legend className="text-xs font-medium text-fg-muted mb-2">
           {t('inmobiliaria.ai.mantenimiento.filters.severidad')}
         </legend>
         <div className="flex flex-wrap gap-2">
@@ -96,7 +100,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
 
       {/* Categoría */}
       <fieldset>
-        <legend className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+        <legend className="text-xs font-medium text-fg-muted mb-2">
           {t('inmobiliaria.ai.mantenimiento.filters.categoria')}
         </legend>
         <div className="flex flex-wrap gap-2">
@@ -119,7 +123,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
 
       {/* Estado */}
       <fieldset>
-        <legend className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+        <legend className="text-xs font-medium text-fg-muted mb-2">
           {t('inmobiliaria.ai.mantenimiento.filters.estado')}
         </legend>
         <div className="flex flex-wrap gap-2">
@@ -142,7 +146,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
 
       {/* Responsable */}
       <fieldset>
-        <legend className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+        <legend className="text-xs font-medium text-fg-muted mb-2">
           {t('inmobiliaria.ai.mantenimiento.filters.responsable')}
         </legend>
         <div className="flex flex-wrap gap-2">
@@ -166,7 +170,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
       {/* SLA + Aprobación — toggle chips (C7-03 declares no per-option labels;
           modeled as boolean toggles over the boolean InboxFilters fields). */}
       <fieldset>
-        <legend className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+        <legend className="text-xs font-medium text-fg-muted mb-2">
           {t('inmobiliaria.ai.mantenimiento.filters.sla')} ·{' '}
           {t('inmobiliaria.ai.mantenimiento.filters.aprobacion')}
         </legend>
@@ -244,10 +248,10 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
 
       {/* Text filters: proveedor · propietario · inmueble · zona */}
       <fieldset className="space-y-2">
-        <legend className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+        <legend className="text-xs font-medium text-fg-muted mb-1">
           {t('inmobiliaria.ai.mantenimiento.filters.proveedor')}
         </legend>
-        <input
+        <Input
           type="text"
           aria-label={t('inmobiliaria.ai.mantenimiento.filters.proveedor')}
           placeholder={t('inmobiliaria.ai.mantenimiento.filters.proveedor')}
@@ -255,7 +259,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
           value={value.proveedor ?? ''}
           onChange={(e) => set({ proveedor: e.target.value || undefined })}
         />
-        <input
+        <Input
           type="text"
           aria-label={t('inmobiliaria.ai.mantenimiento.filters.propietario')}
           placeholder={t('inmobiliaria.ai.mantenimiento.filters.propietario')}
@@ -263,7 +267,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
           value={value.propietario ?? ''}
           onChange={(e) => set({ propietario: e.target.value || undefined })}
         />
-        <input
+        <Input
           type="text"
           aria-label={t('inmobiliaria.ai.mantenimiento.filters.inmueble')}
           placeholder={t('inmobiliaria.ai.mantenimiento.filters.inmueble')}
@@ -271,7 +275,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
           value={value.inmueble ?? ''}
           onChange={(e) => set({ inmueble: e.target.value || undefined })}
         />
-        <input
+        <Input
           type="text"
           aria-label={t('inmobiliaria.ai.mantenimiento.filters.zona')}
           placeholder={t('inmobiliaria.ai.mantenimiento.filters.zona')}
@@ -283,11 +287,11 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
 
       {/* Costo range: min / max */}
       <fieldset>
-        <legend className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+        <legend className="text-xs font-medium text-fg-muted mb-2">
           {t('inmobiliaria.ai.mantenimiento.filters.costo')}
         </legend>
         <div className="flex gap-2">
-          <input
+          <Input
             type="number"
             min={0}
             aria-label={`${t('inmobiliaria.ai.mantenimiento.filters.costo')} min`}
@@ -298,7 +302,7 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
               set({ costoMinCop: e.target.value === '' ? undefined : Number(e.target.value) })
             }
           />
-          <input
+          <Input
             type="number"
             min={0}
             aria-label={`${t('inmobiliaria.ai.mantenimiento.filters.costo')} max`}
@@ -313,13 +317,14 @@ export function InboxFilters({ value, onChange }: InboxFiltersProps) {
       </fieldset>
 
       {/* Clear */}
-      <button
+      <Button
         type="button"
+        variant="link"
         onClick={() => onChange(EMPTY_FILTERS)}
-        className="text-xs font-medium text-violet-600 dark:text-violet-400 hover:underline"
+        className="h-auto p-0 text-xs font-medium text-primary"
       >
         {t('inmobiliaria.ai.mantenimiento.filters.limpiar')}
-      </button>
+      </Button>
     </div>
   )
 }

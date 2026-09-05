@@ -22,6 +22,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Spinner as DSSpinner } from '@/components/ui/spinner';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { IconButton } from '@leasefy/cadence';
@@ -860,9 +861,15 @@ function CuerpoDelCandidato({ candidate, onClose, onAction }: CuerpoDelCandidato
                 <span>No se pudieron cargar los documentos.</span>
               </div>
             ) : documents.length === 0 ? (
-              <p className="text-xs text-fg-muted text-center py-3">
-                Este candidato no tiene documentos adjuntos aún.
-              </p>
+              /* El vacío canónico del panel (círculo gris + título + frase),
+                 no un <p> centrado a mano. `py-6` porque vive dentro de una
+                 sección del cajón y el `py-12` de fábrica la estiraba. */
+              <EmptyState
+                icon={FileText}
+                title="Sin documentos"
+                description="Este candidato no tiene documentos adjuntos aún."
+                className="py-6"
+              />
             ) : (
               <div className="space-y-2">
                 {documents.map((doc) => (

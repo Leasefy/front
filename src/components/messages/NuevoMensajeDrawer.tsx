@@ -27,7 +27,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Buildings, MagnifyingGlass, PaperPlaneTilt, Users } from '@phosphor-icons/react';
 import { SegmentedControl, type SegmentedOption } from '@leasefy/cadence';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';

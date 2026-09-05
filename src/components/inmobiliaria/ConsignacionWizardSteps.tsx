@@ -179,7 +179,7 @@ export function StepSelectPropietario({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-fg dark:text-white mb-1">
+        <h2 className="text-xl font-bold text-fg mb-1">
           {t('inmobiliaria.consignaciones.wizard.step1.title')}
         </h2>
         <p className="text-fg-muted dark:text-fg-subtle">
@@ -271,7 +271,7 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-fg dark:text-white mb-1">
+        <h2 className="text-xl font-bold text-fg mb-1">
           {t('inmobiliaria.consignaciones.wizard.step2.title')}
         </h2>
         <p className="text-fg-muted dark:text-fg-subtle">
@@ -660,7 +660,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-fg dark:text-white mb-1">
+        <h2 className="text-xl font-bold text-fg mb-1">
           {t('inmobiliaria.consignaciones.wizard.step3.title')}
         </h2>
         <p className="text-fg-muted dark:text-fg-subtle">
@@ -738,7 +738,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.wizard.step3.monthlyRent')}</span>
-                  <span className="font-medium text-fg dark:text-white">
+                  <span className="font-medium text-fg">
                     {formatCurrency(monthlyRent)}
                   </span>
                 </div>
@@ -751,7 +751,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
                   </span>
                 </div>
                 <div className="pt-2 border-t border-border dark:border-border-strong flex justify-between text-sm">
-                  <span className="font-medium text-fg dark:text-white">{t('inmobiliaria.consignaciones.wizard.step3.ownerNet')}</span>
+                  <span className="font-medium text-fg">{t('inmobiliaria.consignaciones.wizard.step3.ownerNet')}</span>
                   <span className="font-bold text-success">
                     {formatCurrency(ownerNet)}
                   </span>
@@ -863,7 +863,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-fg dark:text-white mb-1">
+        <h2 className="text-xl font-bold text-fg mb-1">
           {t(isSaleListing ? 'inmobiliaria.consignaciones.wizard.step5.titleSale' : 'inmobiliaria.consignaciones.wizard.step5.title')}
         </h2>
         <p className="text-fg-muted dark:text-fg-subtle">
@@ -1054,7 +1054,7 @@ export function StepConfirmation({
 
   const SectionHeader = ({ title, step }: { title: string; step: number }) => (
     <div className="flex items-center justify-between mb-3">
-      <h3 className="font-semibold text-fg dark:text-white">{title}</h3>
+      <h3 className="font-semibold text-fg">{title}</h3>
       <Button
         type="button"
         variant="ghost"
@@ -1072,7 +1072,7 @@ export function StepConfirmation({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-fg dark:text-white mb-1">
+        <h2 className="text-xl font-bold text-fg mb-1">
           {t('inmobiliaria.consignaciones.wizard.step6.title')}
         </h2>
         <p className="text-fg-muted dark:text-fg-subtle">
@@ -1103,7 +1103,7 @@ export function StepConfirmation({
                   {t('inmobiliaria.consignaciones.wizard.step6.new')}
                 </span>
               )}
-              <p className="font-medium text-fg dark:text-white">
+              <p className="font-medium text-fg">
                 {newPropietario?.name || propietario?.name || t('inmobiliaria.consignaciones.wizard.step6.notSelected')}
               </p>
               <p className="text-sm text-fg-muted dark:text-fg-subtle">
@@ -1121,7 +1121,7 @@ export function StepConfirmation({
               {propertyType?.icon || '🏠'}
             </div>
             <div className="flex-1">
-              <p className="font-medium text-fg dark:text-white">
+              <p className="font-medium text-fg">
                 {formData.propertyTitle || t('inmobiliaria.consignaciones.wizard.step6.noTitle')}
               </p>
               <p className="text-sm text-fg-muted dark:text-fg-subtle">
@@ -1132,12 +1132,12 @@ export function StepConfirmation({
               </p>
               <div className="flex items-center gap-4 mt-2">
                 {isSaleListing ? (
-                  <span className="text-lg font-bold text-fg dark:text-white">
+                  <span className="text-lg font-bold text-fg">
                     {formData.salePrice ? formatCurrency(formData.salePrice) : t('inmobiliaria.consignaciones.wizard.step6.noSalePrice')}
                   </span>
                 ) : (
                   <>
-                    <span className="text-lg font-bold text-fg dark:text-white">
+                    <span className="text-lg font-bold text-fg">
                       {formatCurrency(monthlyRent)}
                       <span className="text-sm font-normal text-fg-muted">{t('inmobiliaria.consignaciones.wizard.step6.perMonth')}</span>
                     </span>
@@ -1161,7 +1161,7 @@ export function StepConfirmation({
             <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.termsSection')} step={3} />
             <div>
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.wizard.step6.saleCommission')}</p>
-              <p className="font-medium text-fg dark:text-white">{formData.saleCommissionPercent ?? 0}%</p>
+              <p className="font-medium text-fg">{formData.saleCommissionPercent ?? 0}%</p>
             </div>
           </div>
         ) : (
@@ -1170,11 +1170,11 @@ export function StepConfirmation({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.wizard.step6.commission')}</p>
-              <p className="font-medium text-fg dark:text-white">{commissionPercent}%</p>
+              <p className="font-medium text-fg">{commissionPercent}%</p>
             </div>
             <div>
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.wizard.step6.minimumTerm')}</p>
-              <p className="font-medium text-fg dark:text-white">
+              <p className="font-medium text-fg">
                 {formData.minimumTerm || 12} {t('inmobiliaria.consignaciones.wizard.step6.months')}
               </p>
             </div>
@@ -1199,11 +1199,11 @@ export function StepConfirmation({
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.agentSection')} step={4} />
           {agente ? (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-fg-muted flex items-center justify-center text-white font-semibold text-sm">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-fg-muted flex items-center justify-center text-primary-fg font-semibold text-sm">
                 {agente.name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()}
               </div>
               <div>
-                <p className="font-medium text-fg dark:text-white">{agente.name}</p>
+                <p className="font-medium text-fg">{agente.name}</p>
                 <p className="text-sm text-fg-muted dark:text-fg-subtle">
                   {agente.zone} - {agente.commissionSplit}% {t('inmobiliaria.consignaciones.wizard.step6.agentCommission')}
                 </p>

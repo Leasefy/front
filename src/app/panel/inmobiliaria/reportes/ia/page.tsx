@@ -3,7 +3,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import {
@@ -12,15 +11,9 @@ import {
   TrendUp,
   TrendDown,
   Minus,
-  Export,
-  CalendarBlank,
-  CaretDown,
-  CaretRight,
   Percent,
   Lightning,
   Target,
-  WarningCircle,
-  CheckCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -32,23 +25,15 @@ import {
 } from '@/components/inmobiliaria';
 import {
   useAiMetrics,
-  useAiActivity,
 } from '@/lib/hooks/useInmobiliaria';
 import type { AiMetricsResponse } from '@/lib/api/inmobiliaria.service';
 import type { AnalyticsData } from '@/lib/types/inmobiliaria';
-import {
-  DropdownList,
-  DropdownListContent,
-  DropdownListItem,
-  DropdownListTrigger,
-} from '@/components/ui/dropdown-menu';
 
 // ============================================================================
 // Types
 // ============================================================================
 
 type AnalyticsView = 'dashboard';
-type DateRange = '7d' | '30d' | '90d' | '1y';
 
 interface ViewConfig {
   id: AnalyticsView;
@@ -143,11 +128,17 @@ function HeroKPICard({
   const trendIsPositive = trend?.direction === 'up';
   const trendIsNegative = trend?.direction === 'down';
 
+  // Un `<button>` sin `onClick` es una trampa: tiene cursor de mano, se eleva
+  // al pasar por encima, se hunde al hacer clic, entra en el recorrido del
+  // teclado y un lector de pantalla lo anuncia como botón. Las cuatro tarjetas
+  // de arriba nunca recibieron `onClick`. Si no hay a dónde ir, es un bloque.
+  const Contenedor = onClick ? motion.button : motion.div;
+
   return (
-    <motion.button
-      onClick={onClick}
-      whileHover={{ y: -2 }}
-      whileTap={{ scale: 0.98 }}
+    <Contenedor
+      {...(onClick
+        ? { onClick, whileHover: { y: -2 }, whileTap: { scale: 0.98 } }
+        : {})}
       className={cn(
         'w-full p-5 rounded-lg border bg-card text-left transition-all',
         colors.border
@@ -206,7 +197,7 @@ function HeroKPICard({
           />
         </div>
       )}
-    </motion.button>
+    </Contenedor>
   );
 }
 
@@ -226,10 +217,20 @@ function parseNumber(s: string): number {
   return parseFloat(s.replace(/[^0-9.]/g, '')) || 0;
 }
 
+/**
+ * Las métricas del agente, tal como llegan.
+ *
+ * 🔴 Sin `trend`. Antes cada tarjeta llevaba uno inventado —cinco `stable` con
+ * 0 % y, en «Horas ahorradas», un `up` con 0 %— y la tarjeta lo pintaba como
+ * insignia: una flecha verde de crecimiento sobre un delta que nadie midió.
+ * `GET /inmobiliaria/ai/metrics` no devuelve el período anterior, así que no
+ * hay tendencia que mostrar. `trend` es opcional y la tarjeta se calla.
+ *
+ * 🔴 Sin `target`. Las metas («< 3 min», «< 10 %», «95 %») eran constantes
+ * escritas acá y se leían como objetivos de LA AGENCIA. Ninguna agencia las
+ * configuró y no hay dónde configurarlas.
+ */
 function metricsToAnalyticsData(metrics: AiMetricsResponse): AnalyticsData {
-  const stable = { direction: 'stable' as const, percentage: 0, previousValue: 0, currentValue: 0 };
-  const up = { direction: 'up' as const, percentage: 0, previousValue: 0, currentValue: 0 };
-
   return {
     lastUpdated: new Date().toISOString(),
     charts: [],
@@ -239,7 +240,6 @@ function metricsToAnalyticsData(metrics: AiMetricsResponse): AnalyticsData {
         label: 'Evaluaciones este mes',
         value: metrics.scoring.evaluationsThisMonth,
         formattedValue: String(metrics.scoring.evaluationsThisMonth),
-        trend: stable,
         sparkline: [],
         category: 'operational',
       },
@@ -248,49 +248,38 @@ function metricsToAnalyticsData(metrics: AiMetricsResponse): AnalyticsData {
         label: 'Tiempo promedio',
         value: parseNumber(metrics.scoring.avgTimeMin),
         formattedValue: metrics.scoring.avgTimeMin,
-        trend: stable,
         sparkline: [],
         category: 'operational',
-        target: 3,
-        targetLabel: 'Meta: < 3 min',
       },
       {
         id: 'ai-escalation',
-        label: 'Tasa de escalación',
+        label: 'Evaluaciones que fallaron',
         value: parsePercentage(metrics.scoring.escalationRate),
         formattedValue: metrics.scoring.escalationRate,
-        trend: stable,
         sparkline: [],
         category: 'performance',
-        target: 10,
-        targetLabel: 'Meta: < 10%',
       },
       {
         id: 'ai-accuracy',
-        label: 'Tasa de precisión',
+        label: 'Evaluaciones completadas',
         value: parsePercentage(metrics.scoring.accuracyRate),
         formattedValue: metrics.scoring.accuracyRate,
-        trend: stable,
         sparkline: [],
         category: 'performance',
-        target: 95,
-        targetLabel: 'Meta: 95%',
       },
       {
         id: 'ai-actions-week',
         label: 'Acciones esta semana',
         value: metrics.summary.actionsThisWeek,
         formattedValue: String(metrics.summary.actionsThisWeek),
-        trend: stable,
         sparkline: [],
         category: 'operational',
       },
       {
         id: 'ai-hours-saved',
-        label: 'Horas ahorradas',
+        label: 'Horas ahorradas (estimadas)',
         value: parseNumber(metrics.summary.hoursSavedThisMonth),
         formattedValue: metrics.summary.hoursSavedThisMonth,
-        trend: up,
         sparkline: [],
         category: 'performance',
       },
@@ -304,7 +293,6 @@ function metricsToAnalyticsData(metrics: AiMetricsResponse): AnalyticsData {
 function AnalyticsContent() {
   const { t } = useI18n();
   const [activeView, setActiveView] = useState<AnalyticsView>('dashboard');
-  const [dateRange, setDateRange] = useState<DateRange>('30d');
 
   // API hooks — PageGuard guarantees this only mounts when analytics:view is granted
   // `errorCrudo`, no el mensaje: `FalloDeCarga` clasifica por status.
@@ -314,9 +302,10 @@ function AnalyticsContent() {
     errorCrudo: metricsError,
     refetch: recargarMetricas,
   } = useAiMetrics();
-  const { isLoading: loadingActivity } = useAiActivity(20);
-
-  const isLoading = loadingMetrics || loadingActivity;
+  // Acá había un `useAiActivity(20)` del que sólo se leía `isLoading`: una
+  // petición por montaje cuyo resultado no se pintaba nunca, cuyo error se
+  // tragaba, y que además dejaba la pantalla en «Cargando…» esperándola.
+  const isLoading = loadingMetrics;
   const analyticsError = metricsError;
 
   // Map AI metrics → AnalyticsData for AnalyticsDashboard
@@ -329,36 +318,30 @@ function AnalyticsContent() {
     { id: 'dashboard' as const, label: t('inmobiliaria.analytics.tabs.dashboard'), icon: ChartBar },
   ], [t]);
 
-  const DATE_RANGES = useMemo(() => [
-    { id: '7d' as const, label: t('inmobiliaria.analytics.dateRanges.7d') },
-    { id: '30d' as const, label: t('inmobiliaria.analytics.dateRanges.30d') },
-    { id: '90d' as const, label: t('inmobiliaria.analytics.dateRanges.90d') },
-    { id: '1y' as const, label: t('inmobiliaria.analytics.dateRanges.1y') },
-  ], [t]);
-
   // Hero KPI data from AI metrics
+  /**
+   * Los cuatro números de arriba. Sin `target`: las metas («95 %», «< 10 %»)
+   * eran constantes escritas acá, y la barra encima las medía al revés —para
+   * una tasa que conviene BAJA, `current / value` daba «500 % meta» y una
+   * barra llena cuando la cosa iba mal—. Ninguna agencia configuró esas metas
+   * y no hay dónde configurarlas.
+   */
   const heroKPIs = useMemo(() => {
     if (!metrics) {
       return {
         evaluations: { value: '—' },
-        accuracy: { value: '—', target: undefined },
-        escalation: { value: '—', target: undefined },
+        accuracy: { value: '—' },
+        escalation: { value: '—' },
         hoursSaved: { value: '—' },
       };
     }
     return {
       evaluations: { value: String(metrics.scoring.evaluationsThisMonth) },
-      accuracy: {
-        value: metrics.scoring.accuracyRate,
-        target: { value: 95, current: parsePercentage(metrics.scoring.accuracyRate), label: t('inmobiliaria.analytics.kpi.target') },
-      },
-      escalation: {
-        value: metrics.scoring.escalationRate,
-        target: { value: 10, current: parsePercentage(metrics.scoring.escalationRate), label: t('inmobiliaria.analytics.kpi.target') },
-      },
+      accuracy: { value: metrics.scoring.accuracyRate },
+      escalation: { value: metrics.scoring.escalationRate },
       hoursSaved: { value: metrics.summary.hoursSavedThisMonth },
     };
-  }, [metrics, t]);
+  }, [metrics]);
 
   /*
    * ── Los «insights» salieron ────────────────────────────────────────────
@@ -380,78 +363,37 @@ function AnalyticsContent() {
    * mercado y meta de recaudo, esto vuelve — calculado.
    */
 
-  // Handlers
-  const handleExport = useCallback(async (format: 'pdf' | 'excel') => {
-    toast.success(t('inmobiliaria.analytics.toasts.exporting', { format: format.toUpperCase() }));
-  }, [t]);
-
-  const handleDateRangeChange = useCallback((range: DateRange) => {
-    setDateRange(range);
-    toast.info(t('inmobiliaria.analytics.toasts.periodUpdated'), {
-      description: DATE_RANGES.find((r) => r.id === range)?.label,
-    });
-  }, [DATE_RANGES, t]);
+  /*
+   * ── Los dos botones del encabezado salieron ───────────────────────────
+   *
+   * «Exportar PDF / Excel»: el handler entero era
+   *     toast.success('Exportando a PDF')
+   * Ni una petición. Nunca hubo archivo. `GET /inmobiliaria/ai/metrics` no
+   * tiene export, y `/reports/export` no sirve estas métricas (su catálogo son
+   * cartera, comisiones, vencimientos, flujo de caja, ocupación y
+   * rentabilidad).
+   *
+   * Selector de período (7d/30d/90d/1a): guardaba el estado, tiraba un
+   * «Período actualizado» y no cambiaba un solo número. `useAiMetrics()` no
+   * recibe parámetros, `aiApi.getMetrics()` tampoco, y la ruta del back menos:
+   * las métricas son siempre «este mes» y «esta semana».
+   *
+   * Los dos vuelven cuando exista con qué cumplirlos.
+   */
 
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-              <ChartLineUp className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="duotone" />
-            </div>
-            {t('inmobiliaria.analytics.title')}
-          </h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-            {t('inmobiliaria.analytics.subtitle')}
-          </p>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Date Range */}
-          <DropdownList>
-            <DropdownListTrigger asChild>
-              <Button variant="secondary" size="sm" hideArrow className="gap-2">
-                <CalendarBlank className="w-4 h-4 text-muted-foreground" />
-                <span className="hidden sm:inline">
-                  {DATE_RANGES.find((r) => r.id === dateRange)?.label}
-                </span>
-                <CaretDown className="w-3.5 h-3.5 text-muted-foreground" />
-              </Button>
-            </DropdownListTrigger>
-            <DropdownListContent align="end" className="w-44">
-              {DATE_RANGES.map((range) => (
-                <DropdownListItem
-                  key={range.id}
-                  onSelect={() => handleDateRangeChange(range.id)}
-                  className={cn(dateRange === range.id && 'bg-muted')}
-                >
-                  {range.label}
-                </DropdownListItem>
-              ))}
-            </DropdownListContent>
-          </DropdownList>
-
-          {/* Export */}
-          <DropdownList>
-            <DropdownListTrigger asChild>
-              <Button size="sm" hideArrow className="gap-2">
-                <Export className="w-4 h-4" />
-                <span className="hidden sm:inline">{t('inmobiliaria.common.export')}</span>
-              </Button>
-            </DropdownListTrigger>
-            <DropdownListContent align="end" className="w-44">
-              <DropdownListItem onSelect={() => handleExport('pdf')}>
-                {t('inmobiliaria.analytics.exportPdf')}
-              </DropdownListItem>
-              <DropdownListItem onSelect={() => handleExport('excel')}>
-                {t('inmobiliaria.analytics.exportExcel')}
-              </DropdownListItem>
-            </DropdownListContent>
-          </DropdownList>
-        </div>
+      <div className="space-y-1">
+        <h1 className="text-h2 text-fg flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-muted">
+            <ChartLineUp className="h-5 w-5 text-fg-muted" weight="duotone" />
+          </div>
+          {t('inmobiliaria.analytics.title')}
+        </h1>
+        <p className="text-sm text-fg-muted max-w-2xl">
+          {t('inmobiliaria.analytics.subtitle')}
+        </p>
       </div>
 
       {/* Hero KPIs - Executive Summary */}
@@ -466,23 +408,29 @@ function AnalyticsContent() {
           value={heroKPIs.evaluations.value}
           accentColor="indigo"
         />
+        {/* 🔴 «Tasa de precisión» no era precisión: el back calcula
+            `completadas / total` (`ai-insights.service.ts`), que es cuántas
+            evaluaciones terminaron, no cuántas acertaron —para eso haría falta
+            un resultado real contra el cual comparar, y no se guarda—. Igual
+            «Tasa de escalación», que es `fallidas / total`. Se llaman por lo
+            que miden. */}
         <HeroKPICard
           icon={Target}
-          label="Tasa de precisión"
+          label="Evaluaciones completadas"
           value={heroKPIs.accuracy.value}
-          target={heroKPIs.accuracy.target}
           accentColor="emerald"
         />
         <HeroKPICard
           icon={Percent}
-          label="Tasa de escalación"
+          label="Evaluaciones que fallaron"
           value={heroKPIs.escalation.value}
-          target={heroKPIs.escalation.target}
           accentColor="amber"
         />
+        {/* Estimación, no medición: el back multiplica las evaluaciones
+            completadas por media hora. El rótulo lo dice. */}
         <HeroKPICard
           icon={ChartLineUp}
-          label="Horas ahorradas este mes"
+          label="Horas ahorradas este mes (estimadas)"
           value={heroKPIs.hoursSaved.value}
           accentColor="violet"
         />

@@ -4,7 +4,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { Suspense, useState, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import {
   Wrench,
   ArrowsClockwise,
@@ -330,9 +330,12 @@ function OperacionesContent() {
     setIsRenovacionWorkflowOpen(true);
   }, []);
 
-  const handleCalculateIPC = useCallback((renovacion: Renovacion) => {
+  // `setTab` en las dependencias: sin él, este callback congela el `setTab` del
+  // primer render. Hoy `setTab` sólo depende de `router` (estable), así que no
+  // se ve; con el arreglo no hay que acordarse de que «no se ve».
+  const handleCalculateIPC = useCallback(() => {
     setTab('ipc');
-  }, []);
+  }, [setTab]);
 
   const handleViewRenovacionHistory = useCallback((renovacion: Renovacion) => {
     setSelectedRenovacion(renovacion);

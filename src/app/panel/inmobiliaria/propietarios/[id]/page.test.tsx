@@ -92,6 +92,53 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownListSeparator: () => React.createElement('hr'),
 }));
 
+/*
+ * Los dos componentes de estado, aplanados. No se mockean por comodidad: el
+ * de verdad importa `Spinner` desde el barril `@/components/ui`, que arrastra
+ * el `Accordion` de cadence —mockeado acá al mínimo— y el archivo entero no
+ * carga. El ORDEN de los cuatro estados (carga → fallo → vacío → datos) tiene
+ * su propio test en `components/estado/EstadoDeDatos.test.tsx`; lo que estos
+ * dobles conservan es lo único que esta pantalla decide: QUÉ le pasa a cada
+ * uno.
+ */
+vi.mock('@/components/estado/EstadoDeDatos', () => ({
+  EstadoDeDatos: ({
+    cargando,
+    error,
+    vacio,
+    cuandoVacio,
+    queEs,
+    onReintentar,
+    children,
+  }: {
+    cargando?: boolean;
+    error?: unknown;
+    vacio?: boolean;
+    cuandoVacio?: React.ReactNode;
+    queEs?: string;
+    onReintentar?: () => void;
+    children?: React.ReactNode;
+  }) => {
+    if (cargando) return React.createElement('div', { 'data-testid': `cargando:${queEs}` });
+    if (error)
+      return React.createElement(
+        'button',
+        { 'data-testid': `fallo:${queEs}`, onClick: () => onReintentar?.() },
+        String((error as Error)?.message ?? error),
+      );
+    if (vacio) return React.createElement(React.Fragment, null, cuandoVacio);
+    return React.createElement(React.Fragment, null, children);
+  },
+}));
+vi.mock('@/components/estado/FalloDeCarga', () => ({
+  FalloDeCarga: ({ error, queEs }: { error: unknown; queEs?: string }) =>
+    React.createElement(
+      'div',
+      { 'data-testid': `fallo:${queEs}` },
+      String((error as Error)?.message ?? error),
+    ),
+}));
+
 vi.mock('@/components/inmobiliaria', () => ({
   PropietarioStats: () => React.createElement('div', { 'data-testid': 'stats' }),
   PropietarioBankInfo: ({ onEdit }: { onEdit?: () => void }) => React.createElement('button', { 'data-testid': 'editar-banco', onClick: onEdit }),
@@ -105,13 +152,31 @@ vi.mock('@/components/inmobiliaria/ExtractoDelPropietarioDialog', () => ({
 
 const datos = vi.hoisted(() => ({
   propietario: null as Propietario | null,
+  errorPropietario: null as unknown,
   consignaciones: [] as unknown[],
+  errorConsignaciones: null as unknown,
   dispersiones: [] as unknown[],
+  errorDispersiones: null as unknown,
 }));
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
-  usePropietario: () => ({ propietario: datos.propietario, isLoading: false, refetch }),
-  useConsignaciones: () => ({ consignaciones: datos.consignaciones }),
-  useDispersiones: () => ({ dispersiones: datos.dispersiones }),
+  usePropietario: () => ({
+    propietario: datos.propietario,
+    isLoading: false,
+    errorCrudo: datos.errorPropietario,
+    refetch,
+  }),
+  useConsignaciones: () => ({
+    consignaciones: datos.consignaciones,
+    isLoading: false,
+    errorCrudo: datos.errorConsignaciones,
+    refetch: vi.fn(),
+  }),
+  useDispersiones: () => ({
+    dispersiones: datos.dispersiones,
+    isLoading: false,
+    errorCrudo: datos.errorDispersiones,
+    refetch: vi.fn(),
+  }),
 }));
 vi.mock('@/lib/api/inmobiliaria.service', () => ({ propietariosApi: api }));
 vi.mock('@/lib/propietarios/exportar-datos', () => ({ descargarDatosDelPropietario: exportar }));
@@ -142,8 +207,11 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
   datos.propietario = PROPIETARIO;
+  datos.errorPropietario = null;
   datos.consignaciones = [];
+  datos.errorConsignaciones = null;
   datos.dispersiones = [];
+  datos.errorDispersiones = null;
   nav.volver = null;
   api.update.mockResolvedValue({ ...PROPIETARIO, name: 'Nuevo nombre' });
   api.delete.mockResolvedValue(undefined);
@@ -274,5 +342,75 @@ describe('Editar, notas y eliminar — contra el back, no contra un setTimeout',
     });
     expect(push).not.toHaveBeenCalled();
     expect(toast.error).toHaveBeenCalledWith('inmobiliaria.propietarios.toasts.deleteError', { description: 'tiene inmuebles consignados' });
+  });
+});
+
+/**
+ * 🔴 Fallar al leer no es lo mismo que no existir, ni que no tener nada.
+ *
+ * Los tres casos de abajo se veían EXACTAMENTE iguales a la verdad: la ficha
+ * decía «este propietario no existe», la pestaña decía «no tiene inmuebles
+ * consignados» y el Excel bajaba con la hoja Inmuebles vacía. Ninguno se caía,
+ * ninguno avisaba, y los tres son afirmaciones que nadie verificó.
+ */
+describe('Un fallo de carga se dice, no se disfraza', () => {
+  it('si la ficha no se pudo leer, NO dice «propietario no encontrado»', async () => {
+    datos.propietario = null;
+    datos.errorPropietario = new Error('502 Bad Gateway');
+    await render();
+
+    expect(container.querySelector('[data-testid="fallo:el propietario"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('inmobiliaria.propietarios.notFound');
+    // El camino de vuelta sigue estando: quedarse encerrado tampoco sirve.
+    expect(container.querySelector('[data-testid="volver"]')).not.toBeNull();
+  });
+
+  it('un 404 sí es «no existe», y ahí el cartel lo dice sin ofrecer reintentar', async () => {
+    // `FalloDeCarga` clasifica: acá lo que se fija es que la ficha le entrega
+    // el error entero en vez de tragárselo.
+    datos.propietario = null;
+    datos.errorPropietario = Object.assign(new Error('Not Found'), { status: 404 });
+    await render();
+    expect(container.querySelector('[data-testid="fallo:el propietario"]')).not.toBeNull();
+  });
+
+  it('si los inmuebles no se pudieron leer, la pestaña no dice «no tiene ninguno»', async () => {
+    datos.errorConsignaciones = new Error('timeout');
+    await render();
+
+    expect(container.querySelector('[data-testid="fallo:los inmuebles de este propietario"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('inmobiliaria.propietarios.detail.noProperties');
+  });
+
+  it('el contador de la pestaña no muestra 0 sobre una lectura que falló', async () => {
+    datos.errorConsignaciones = new Error('timeout');
+    datos.errorDispersiones = new Error('timeout');
+    await render();
+
+    const inmuebles = container.querySelector('[data-testid="tab-properties"]')!;
+    const giros = container.querySelector('[data-testid="tab-payments"]')!;
+    expect(inmuebles.textContent).toBe('inmobiliaria.propietarios.detail.properties');
+    expect(giros.textContent).toBe('inmobiliaria.propietarios.detail.payments');
+  });
+
+  it('si los giros no se pudieron leer, la pestaña de pagos lo dice', async () => {
+    datos.errorDispersiones = new Error('500');
+    await render();
+    await click('tab-payments');
+    expect(container.querySelector('[data-testid="fallo:los giros a este propietario"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('inmobiliaria.propietarios.detail.noPayments');
+  });
+
+  it('no exporta un Excel al que le falta una hoja entera', async () => {
+    datos.consignaciones = [{ id: 'c1' }];
+    datos.errorDispersiones = new Error('500');
+    await render();
+    await click('accion-exportar');
+
+    expect(exportar).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith('inmobiliaria.propietarios.detail.exportError', {
+      description: 'inmobiliaria.propietarios.detail.exportIncompleto',
+    });
+    expect(toast.success).not.toHaveBeenCalled();
   });
 });

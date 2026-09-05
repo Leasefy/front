@@ -21,7 +21,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { MagnifyingGlass, User, X } from '@phosphor-icons/react'
 
-import { Input } from '@/components/ui'
+import { Button, Input } from '@/components/ui'
 import { Spinner } from '@/components/ui/spinner'
 import { hashCedulaPrefix } from '@/lib/cobranza/hash-cedula-prefix'
 import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
@@ -105,17 +105,19 @@ export function DebtorPicker({ value, onChange, inputId }: DebtorPickerProps) {
             </p>
           </div>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
           onClick={() => {
             onChange(null)
             setQuery('')
           }}
-          className="shrink-0 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-fg-muted hover:text-fg hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="shrink-0 gap-1 h-auto px-2 py-1 text-xs text-fg-muted hover:text-fg [&_svg]:size-3.5"
         >
           <X className="w-3.5 h-3.5" aria-hidden="true" />
           Cambiar
-        </button>
+        </Button>
       </div>
     )
   }

@@ -1,55 +1,60 @@
 'use client'
 
 /**
- * use-mantenimiento-ticket.ts — Phase 7 plan 07-01 (DASH-03)
+ * use-mantenimiento-ticket.ts — detalle de un ticket de mantenimiento (Fixi).
  *
- * Ticket-detail hook + mock CTA mutators. Mock-first (CONTEXT §MOCK-FIRST):
- *   - mock mode (default): resolve getMockTicketDetail(id, now) after mockDelayMs.
- *   - real mode: GET `${NEXT_PUBLIC_AGENT_URL}/api/agency/:id/mantenimiento/tickets/:ticketId`.
+ * Trae `GET {NEXT_PUBLIC_AGENT_URL}/api/agency/{agencyId}/mantenimiento/tickets/{ticketId}`
+ * del microservicio, o el mock cuando `NEXT_PUBLIC_USE_MOCK_API=true` (opt-in
+ * explícito; nunca en producción — ver `lib/api/config.ts`).
  *
- * Returns `{ data, isLoading, error, refetch }` PLUS mock mutators for the 5+1 CTAs.
- * Mutators mutate LOCAL detail state and only transition to members of MAINTENANCE_STATES
- * (CONTEXT §compliance — never invent an arc). `close()` honors the FENCE-04 evidence gate:
- * it is a no-op returning `false` without an evidence/confirmation arg.
+ * 🔴 POR QUÉ ESTE HOOK YA NO TIENE MUTADORES (y por qué no hay que reponerlos).
  *
- * Mutators are mock-only (the real CTA wire is a follow-up agent-side). On the real
- * branch they are harmless no-ops.
+ * Exportaba `assign` / `requestInfo` / `requestApproval` / `escalate` /
+ * `reopen` / `close`. Ninguno hablaba con nadie: cambiaban `estado` en el
+ * estado LOCAL de React y le agregaban al historial del ticket un evento con
+ * `actor: 'human'` que decía, en primera persona, cosas como
+ *
+ *     «Proveedor asignado al ticket.»
+ *     «Se solicitó información adicional al inquilino.»
+ *     «Se solicitó aprobación del propietario.»
+ *
+ * Nada de eso ocurría. No salía ningún aviso, no se asignaba ningún proveedor,
+ * y al recargar la página el ticket volvía a su estado real como si nadie
+ * hubiera tocado nada. La pantalla afirmaba un hecho que no pasó — y encima lo
+ * dejaba escrito en la línea de tiempo, que es justo el lugar donde alguien
+ * después va a buscar «¿avisamos o no avisamos?».
+ *
+ * No es un cableado que falta: **no hay a dónde cablearlo desde el navegador**.
+ * El micro expone estas tres rutas de mantenimiento SÓLO como GET; el estado
+ * del ticket es del back (`/internal/mantenimiento`, rail S2S con
+ * `AGENT_API_KEY`, que el navegador no tiene ni debe tener). Mientras eso siga
+ * así, esta pantalla se MIRA. Los botones quedan apagados diciendo por qué
+ * (`TicketCTAs` → `motivoDeshabilitado`), que es la versión honesta de «todavía
+ * no se puede».
+ *
+ * Devuelve la forma de todo el repo: `{ data, isLoading, error, refetch }`.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/lib/auth'
 import { getApiConfig } from '@/lib/api/config'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import {
+  SIN_AGENTE_CONFIGURADO,
+  SIN_AGENCIA,
+  mensajeDeRespuestaFallida,
+  mensajeDeErrorDeRed,
+} from './traer-del-agente'
 import { getMockTicketDetail } from '@/lib/data/mock-mantenimiento'
-import type {
-  MaintenanceTicketDetail,
-  MaintenanceTicketState,
-  TicketEvent,
-} from '@/lib/types/mantenimiento'
+import type { MaintenanceTicketDetail } from '@/lib/types/mantenimiento'
 
 const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
-
-export interface CloseEvidence {
-  note: string
-}
 
 export interface UseMantenimientoTicketResult {
   data: MaintenanceTicketDetail | null
   isLoading: boolean
   error: string | null
   refetch: () => Promise<void>
-  /** → proveedor_asignado */
-  assign: () => MaintenanceTicketState | null
-  /** → informacion_incompleta */
-  requestInfo: () => MaintenanceTicketState | null
-  /** → requiere_aprobacion */
-  requestApproval: () => MaintenanceTicketState | null
-  /** → escalado */
-  escalate: () => MaintenanceTicketState | null
-  /** → reabierto */
-  reopen: () => MaintenanceTicketState | null
-  /** → cerrado, ONLY with evidence (FENCE-04). Returns true on close, false if gated. */
-  close: (evidence?: CloseEvidence) => boolean
 }
 
 export function useMantenimientoTicket(ticketId: string): UseMantenimientoTicketResult {
@@ -60,11 +65,30 @@ export function useMantenimientoTicket(ticketId: string): UseMantenimientoTicket
   const [error, setError] = useState<string | null>(null)
   const nowRef = useRef<Date>(new Date())
 
+  /**
+   * Sólo la consulta MÁS NUEVA puede escribir el estado.
+   *
+   * `fetchData` no cancelaba nada: al pasar de un ticket a otro (o al tocar
+   * «reintentar» dos veces) quedaban dos consultas en vuelo y ganaba la que
+   * llegara última, que no es la misma que la que se pidió última. Resultado
+   * posible: la pantalla del ticket B mostrando los datos del A, sin ningún
+   * indicio. Además, una respuesta que aterriza después de desmontar el
+   * componente escribe estado sobre algo que ya no está.
+   *
+   * Un contador por instancia alcanza: cada llamada se queda con su número y
+   * descarta lo que trajo si mientras tanto salió otra.
+   */
+  const consulta = useRef(0)
+
+
   const fetchData = useCallback(async () => {
     const cfg = getApiConfig()
+    const miTurno = ++consulta.current
+    const vigente = () => consulta.current === miTurno
     setIsLoading(true)
     if (cfg.useMockApi) {
       await delay(cfg.mockDelayMs)
+      if (!vigente()) return
       setData(getMockTicketDetail(ticketId, nowRef.current))
       setError(null)
       setIsLoading(false)
@@ -76,13 +100,15 @@ export function useMantenimientoTicket(ticketId: string): UseMantenimientoTicket
     // console.warn y `setIsLoading(false)`: la pantalla quedaba vacía sin decir
     // por qué, y un vacío mudo se lee como «no tenés mantenimientos». Un error
     // explícito manda a <FalloDeCarga>, que sí lo cuenta.
-      setError(
-        'No hay agente configurado (falta NEXT_PUBLIC_AGENT_URL), así que no se pudo traer nada. Esta pantalla está vacía porque no pudimos consultar, no porque no haya datos.',
-      )
+      setError(SIN_AGENTE_CONFIGURADO)
       setIsLoading(false)
       return
     }
+    // Sin inmobiliaria tampoco se preguntó nada, y hasta acá esa rama salía
+    // muda: `error` quedaba en null y la pantalla mostraba «No hay tickets».
+    // Un vacío sin explicación afirma que no hay nada; esto no lo sabemos.
     if (!agencyId) {
+      setError(SIN_AGENCIA)
       setIsLoading(false)
       return
     }
@@ -91,14 +117,16 @@ export function useMantenimientoTicket(ticketId: string): UseMantenimientoTicket
         `${agentUrl}/api/agency/${agencyId}/mantenimiento/tickets/${ticketId}`,
         { headers: agentAuthHeaders() },
       )
-      if (!res.ok) throw new Error(`${res.status}`)
+      if (!vigente()) return
+      if (!res.ok) throw new Error(mensajeDeRespuestaFallida(res, 'el ticket'))
       const json: MaintenanceTicketDetail = await res.json()
       setData(json)
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch mantenimiento ticket')
+      if (!vigente()) return
+      setError(mensajeDeErrorDeRed(err, 'el ticket'))
     } finally {
-      setIsLoading(false)
+      if (vigente()) setIsLoading(false)
     }
   }, [agencyId, ticketId])
 
@@ -106,71 +134,5 @@ export function useMantenimientoTicket(ticketId: string): UseMantenimientoTicket
     void fetchData()
   }, [fetchData])
 
-  /** Local-only transition: set estado + append a human evento (mock-first). */
-  const transition = useCallback(
-    (next: MaintenanceTicketState, tipo: string, descripcion: string): MaintenanceTicketState | null => {
-      let applied: MaintenanceTicketState | null = null
-      setData((prev) => {
-        if (!prev) return prev
-        const evento: TicketEvent = {
-          id: `${prev.id}-ev-${prev.eventos.length + 1}`,
-          at: new Date().toISOString(),
-          tipo,
-          descripcion,
-          actor: 'human',
-        }
-        applied = next
-        return { ...prev, estado: next, eventos: [...prev.eventos, evento] }
-      })
-      return applied
-    },
-    [],
-  )
-
-  const assign = useCallback(
-    () => transition('proveedor_asignado', 'asignar', 'Proveedor asignado al ticket.'),
-    [transition],
-  )
-  const requestInfo = useCallback(
-    () => transition('informacion_incompleta', 'pedirInfo', 'Se solicitó información adicional al inquilino.'),
-    [transition],
-  )
-  const requestApproval = useCallback(
-    () => transition('requiere_aprobacion', 'solicitarAprobacion', 'Se solicitó aprobación del propietario.'),
-    [transition],
-  )
-  const escalate = useCallback(
-    () => transition('escalado', 'escalarEmergencia', 'Ticket escalado como emergencia.'),
-    [transition],
-  )
-  const reopen = useCallback(
-    () => transition('reabierto', 'reabrir', 'Ticket reabierto: el problema persiste.'),
-    [transition],
-  )
-
-  /**
-   * FENCE-04: cerrar exige evidencia+confirmación. Without an evidence arg this is a
-   * no-op returning false (mock reflects the backend close gate — CONTEXT §compliance).
-   */
-  const close = useCallback(
-    (evidence?: CloseEvidence): boolean => {
-      if (!evidence || !evidence.note || evidence.note.trim().length === 0) return false
-      transition('cerrado', 'cerrar', `Ticket cerrado con evidencia: ${evidence.note}`)
-      return true
-    },
-    [transition],
-  )
-
-  return {
-    data,
-    isLoading,
-    error,
-    refetch: fetchData,
-    assign,
-    requestInfo,
-    requestApproval,
-    escalate,
-    reopen,
-    close,
-  }
+  return { data, isLoading, error, refetch: fetchData }
 }

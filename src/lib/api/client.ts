@@ -377,10 +377,55 @@ async function request<T>(
   return JSON.parse(text)
 }
 
-async function requestBlob(path: string): Promise<Blob> {
+/**
+ * Un GET que devuelve un archivo (los CSV de Reportes).
+ *
+ * 🔴 Renueva el token igual que `request`. No lo hacía: cualquier descarga que
+ * saliera con el token recién vencido moría en un 401, y la pantalla —que no
+ * distingue— culpaba al reporte («Probá de nuevo en un momento») cuando el
+ * problema era la sesión. Un GET normal en el mismo instante se recuperaba
+ * solo; la descarga, no.
+ *
+ * Se repite UNA vez, igual que allá: `yaSeReintento` corta la cadena.
+ */
+async function requestBlob(path: string, token?: string, yaSeReintento = false): Promise<Blob> {
   const url = `${BACKEND_URL}${path}`
+  const tokenUsado = token ?? _accessToken
   const headers = getAuthHeaders()
-  const res = await fetch(url, { method: 'GET', headers })
+  if (token) headers['Authorization'] = `Bearer ${token}`
+
+  let res: Response
+  try {
+    res = await fetch(url, { method: 'GET', headers })
+  } catch (err) {
+    const raw = err instanceof Error ? err.message : String(err)
+    const message = typeof navigator !== 'undefined' && !navigator.onLine
+      ? 'Sin conexión a internet. Verificá tu red e intentá de nuevo.'
+      : 'No pudimos conectarnos al servidor. Verificá tu conexión o intentá más tarde.'
+    throw new ApiError(0, `${message}${raw ? ` (${raw})` : ''}`)
+  }
+
+  if (res.status === 401) {
+    const errorBody = await res.json().catch(() => ({}))
+    const code = typeof errorBody.code === 'string' ? errorBody.code : undefined
+
+    if (esCodigoDeSesionMuerta(code)) {
+      if (code === 'AUTH_TOKEN_EXPIRED' && !yaSeReintento) {
+        const tokenNuevo = await renovarTokenVencido(tokenUsado)
+        if (tokenNuevo) return requestBlob(path, tokenNuevo, true)
+      }
+      _onUnauthorized?.(code as string)
+      throw new ApiError(401, errorBody.message || 'No autorizado', code)
+    }
+
+    if (!yaSeReintento) {
+      const tokenNuevo = await esperarUnTokenDistinto(tokenUsado)
+      if (tokenNuevo) return requestBlob(path, tokenNuevo, true)
+    }
+
+    throw new ApiError(401, errorBody.message || 'No autorizado', code)
+  }
+
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}))
     throw new ApiError(res.status, errorBody.message || `Error ${res.status}`)

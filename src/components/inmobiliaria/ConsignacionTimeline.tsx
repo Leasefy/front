@@ -361,7 +361,7 @@ export function ConsignacionTimeline({
           <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
             <Clock className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
           </div>
-          <h3 className="font-semibold text-fg dark:text-white">{t('inmobiliaria.consignaciones.timeline.title')}</h3>
+          <h3 className="font-semibold text-fg">{t('inmobiliaria.consignaciones.timeline.title')}</h3>
           <span className="ml-auto text-sm text-fg-muted dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.timeline.eventsCount', { count: events.length })}
           </span>
@@ -378,7 +378,7 @@ export function ConsignacionTimeline({
           </p>
         ) : events.length === 0 ? (
           <div className="py-8 text-center" data-testid="timeline-sin-actividad">
-            <p className="text-sm font-medium text-fg dark:text-white">
+            <p className="text-sm font-medium text-fg">
               {t('inmobiliaria.consignaciones.timeline.noEvents')}
             </p>
             <p className="mx-auto mt-1 max-w-sm text-sm text-fg-muted dark:text-fg-subtle">
@@ -419,7 +419,7 @@ export function ConsignacionTimeline({
                     {/* Content */}
                     <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <h4 className="font-medium text-fg dark:text-white text-sm">
+                        <h4 className="font-medium text-fg text-sm">
                           {event.title}
                         </h4>
                         <span className="text-xs text-fg-muted dark:text-fg-subtle shrink-0">

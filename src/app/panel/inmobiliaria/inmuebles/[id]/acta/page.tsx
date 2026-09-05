@@ -18,8 +18,8 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { toast } from 'sonner';
-import { ArrowLeft, DownloadSimple, Printer, SpinnerGap } from '@phosphor-icons/react';
+import { toast } from '@/components/ui/toast';
+import { ArrowLeft, DownloadSimple, Package, Printer, SpinnerGap } from '@phosphor-icons/react';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import { ApiError } from '@/lib/api/client';
 import { descargar } from '@/lib/propietarios/exportar-datos';
@@ -28,6 +28,15 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { useConsignacion, usePropietario } from '@/lib/hooks/useInmobiliaria';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { formatParticipacion } from '@/lib/types/inmobiliaria';
 import type { InventoryItem } from '@/lib/types/inmobiliaria';
 
@@ -38,6 +47,10 @@ const ESTILO_DE_IMPRESION = `
   main { padding: 0 !important; }
   body { background: #fff !important; }
   .acta-hoja { border: 0 !important; box-shadow: none !important; max-width: none !important; }
+  /* El Table del DS envuelve la tabla en un contenedor con scroll. Al paginar,
+     un bloque con overflow se trata como indivisible y un inventario largo se
+     corta al final de la primera hoja. En papel no hay scroll. */
+  .acta-hoja .overflow-auto { overflow: visible !important; }
 }
 `;
 
@@ -174,30 +187,47 @@ export default function ActaDeEntregaPage() {
                 {t('inmobiliaria.acta.inventorySection')} · {items.length} {t('inmobiliaria.acta.itemsLabel')}
               </h2>
               {items.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-fg-muted">
-                  {t('inmobiliaria.acta.noInventory')}
-                </p>
+                <EmptyState
+                  icon={Package}
+                  title={t('inmobiliaria.acta.noInventory')}
+                  description={t('inmobiliaria.acta.noInventoryDesc')}
+                />
               ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left font-mono text-[11px] uppercase tracking-[0.1em] text-fg-muted">
-                      <th className="py-2 pr-3 font-medium">{t('inmobiliaria.acta.thItem')}</th>
-                      <th className="py-2 pr-3 text-right font-medium">{t('inmobiliaria.acta.thQty')}</th>
-                      <th className="py-2 pr-3 font-medium">{t('inmobiliaria.acta.thCondition')}</th>
-                      <th className="py-2 font-medium">{t('inmobiliaria.acta.thNotes')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table>
+                  <TableHeader>
+                    {/* El encabezado no es una fila sobre la que se pueda actuar: sin hover. */}
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead scope="col" className="px-0 pr-3">
+                        {t('inmobiliaria.acta.thItem')}
+                      </TableHead>
+                      <TableHead scope="col" numeric className="px-0 pr-3">
+                        {t('inmobiliaria.acta.thQty')}
+                      </TableHead>
+                      <TableHead scope="col" className="px-0 pr-3">
+                        {t('inmobiliaria.acta.thCondition')}
+                      </TableHead>
+                      <TableHead scope="col" className="px-0">
+                        {t('inmobiliaria.acta.thNotes')}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {items.map((item) => (
-                      <tr key={item.id} className="border-b border-border/60 align-top">
-                        <td className="py-2 pr-3">{item.name}</td>
-                        <td className="py-2 pr-3 text-right font-mono tabular-nums">{item.quantity}</td>
-                        <td className="py-2 pr-3">{condicion[item.condition]}</td>
-                        <td className="py-2 text-fg-muted">{item.notes ?? '—'}</td>
-                      </tr>
+                      <TableRow key={item.id}>
+                        <TableCell className="px-0 py-2 pr-3 align-top">{item.name}</TableCell>
+                        <TableCell numeric className="px-0 py-2 pr-3 align-top font-mono">
+                          {item.quantity}
+                        </TableCell>
+                        <TableCell className="px-0 py-2 pr-3 align-top">
+                          {condicion[item.condition]}
+                        </TableCell>
+                        <TableCell className="px-0 py-2 align-top text-fg-muted">
+                          {item.notes ?? '—'}
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               )}
             </section>
 

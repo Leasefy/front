@@ -6,7 +6,7 @@
  * config para que el resto de las secciones vea lo nuevo.
  */
 
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { Palette } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';

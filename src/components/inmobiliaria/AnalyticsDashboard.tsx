@@ -81,14 +81,19 @@ const CHART_TYPE_ICONS: Record<AnalyticsChart['type'], React.ElementType> = {
 // ============================================================================
 
 function CompactKPICard({ kpi }: { kpi: AdvancedKPI }) {
-  const TrendIcon = TREND_ICONS[kpi.trend.direction];
+  // Sin tendencia no se dibuja insignia. Antes `trend` era obligatorio y quien
+  // no tenía con qué comparar mandaba un `{ direction: 'stable', percentage: 0 }`
+  // —o peor, un `'up'` con 0 %—: la tarjeta pintaba una flecha verde de
+  // crecimiento sobre un delta que nadie midió.
+  const tendencia = kpi.trend;
+  const TrendIcon = tendencia ? TREND_ICONS[tendencia.direction] : null;
   const isInverseMetric = kpi.id.includes('days') || kpi.id.includes('late');
   const isPositiveTrend = isInverseMetric
-    ? kpi.trend.direction === 'down'
-    : kpi.trend.direction === 'up';
+    ? tendencia?.direction === 'down'
+    : tendencia?.direction === 'up';
   const isNegativeTrend = isInverseMetric
-    ? kpi.trend.direction === 'up'
-    : kpi.trend.direction === 'down';
+    ? tendencia?.direction === 'up'
+    : tendencia?.direction === 'down';
 
   const progress = kpi.target
     ? isInverseMetric
@@ -103,17 +108,19 @@ function CompactKPICard({ kpi }: { kpi: AdvancedKPI }) {
     >
       <div className="flex items-start justify-between mb-2">
         <p className="text-sm text-fg-muted dark:text-fg-subtle">{kpi.label}</p>
-        <div
-          className={cn(
-            'flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium',
-            isPositiveTrend && 'bg-success-soft text-success',
-            isNegativeTrend && 'bg-danger-soft text-danger',
-            !isPositiveTrend && !isNegativeTrend && 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle'
-          )}
-        >
-          <TrendIcon className="w-3 h-3" weight="bold" />
-          <span>{kpi.trend.percentage > 0 ? '+' : ''}{kpi.trend.percentage.toFixed(1)}%</span>
-        </div>
+        {tendencia && TrendIcon && (
+          <div
+            className={cn(
+              'flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium',
+              isPositiveTrend && 'bg-success-soft text-success',
+              isNegativeTrend && 'bg-danger-soft text-danger',
+              !isPositiveTrend && !isNegativeTrend && 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle'
+            )}
+          >
+            <TrendIcon className="w-3 h-3" weight="bold" />
+            <span>{tendencia.percentage > 0 ? '+' : ''}{tendencia.percentage.toFixed(1)}%</span>
+          </div>
+        )}
       </div>
       <p className="text-xl font-bold text-fg dark:text-white mb-2">
         {kpi.formattedValue}
@@ -439,23 +446,29 @@ export function AnalyticsDashboard({
       {/* Section 3: Performance KPIs */}
       <KPISection category="performance" kpis={groupedKPIs.performance} />
 
-      {/* Section 4: Visualizations */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-warning-soft flex items-center justify-center">
-            <ChartBar className="w-5 h-5 text-warning" weight="duotone" />
+      {/* Section 4: Visualizations.
+          Sólo si hay gráficos. El encabezado se dibujaba SIEMPRE y, con
+          `charts: []` —que es lo que manda hoy la pantalla de Desempeño IA—
+          quedaba un título «Visualizaciones · Gráficos detallados de
+          rendimiento» con nada debajo: una promesa vacía en cada carga. */}
+      {data.charts && data.charts.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-warning-soft flex items-center justify-center">
+              <ChartBar className="w-5 h-5 text-warning" weight="duotone" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-fg dark:text-white">{t('inmobiliaria.analytics.dashboard.visualizations')}</h3>
+              <p className="text-xs text-fg-muted">{t('inmobiliaria.analytics.dashboard.visualizationsDesc')}</p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold text-fg dark:text-white">{t('inmobiliaria.analytics.dashboard.visualizations')}</h3>
-            <p className="text-xs text-fg-muted">{t('inmobiliaria.analytics.dashboard.visualizationsDesc')}</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {data.charts.map((chart) => (
+              <ChartCard key={chart.id} chart={chart} />
+            ))}
           </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {data.charts?.map((chart) => (
-            <ChartCard key={chart.id} chart={chart} />
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

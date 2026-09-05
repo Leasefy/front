@@ -25,7 +25,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import {
   CalendarCheck,
   Check,

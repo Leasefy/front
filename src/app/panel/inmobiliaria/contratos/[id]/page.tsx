@@ -32,7 +32,7 @@ import {
   XCircle,
   ShieldCheck,
 } from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { formatDate, formatCanon } from './format';
@@ -465,18 +465,18 @@ function ContratoDetalleContent() {
               {hasAnySignature && (isLoadingSignedPdf || signedPdfUrl) ? (
                 <div className="space-y-3">
                   {contract.tenantSignature && !contract.landlordSignature && (
-                    <div className="rounded-lg border border-amber-600/30 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-900/15 px-4 py-2.5 flex items-start gap-2">
-                      <Info className="w-4 h-4 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                      <p className="text-xs text-amber-700 dark:text-amber-400">
+                    <div className="rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 flex items-start gap-2">
+                      <Info className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-warning">
                         Este PDF ya incluye la <strong>firma del inquilino</strong> y un certificado parcial.
                         Firmá abajo para completar el contrato.
                       </p>
                     </div>
                   )}
                   {contract.tenantSignature && contract.landlordSignature && (
-                    <div className="rounded-lg border border-emerald-600/30 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-900/15 px-4 py-2.5 flex items-start gap-2">
-                      <Info className="w-4 h-4 text-emerald-700 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-                      <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                    <div className="rounded-lg border border-success/30 bg-success-soft px-4 py-2.5 flex items-start gap-2">
+                      <Info className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-success">
                         PDF final con <strong>ambas firmas</strong>, certificado completo y hash SHA-256.
                       </p>
                     </div>
@@ -488,7 +488,7 @@ function ContratoDetalleContent() {
                   ) : (
                     <iframe
                       src={signedPdfUrl!}
-                      className="w-full h-[720px] rounded-md border border-border bg-white"
+                      className="w-full h-[720px] rounded-md border border-border bg-surface"
                       title="Contrato"
                     />
                   )}
@@ -505,7 +505,7 @@ function ContratoDetalleContent() {
                 <div className="space-y-3">
                   <iframe
                     src={preview.pdfUrl}
-                    className="w-full h-[720px] rounded-md border border-border bg-white"
+                    className="w-full h-[720px] rounded-md border border-border bg-surface"
                     title="Contrato"
                   />
                   <p className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -603,7 +603,7 @@ function ActionPanel({
           icon: PencilSimpleLine,
           onClick: onEdit,
         }}
-        tone="indigo"
+        tone="primary"
         footer={cancelButton}
       />
     );
@@ -625,7 +625,7 @@ function ActionPanel({
           icon: PencilSimpleLine,
           onClick: onEdit,
         }}
-        tone="blue"
+        tone="info"
         footer={cancelButton}
       />
     );
@@ -646,7 +646,7 @@ function ActionPanel({
           icon: PencilSimpleLine,
           onClick: onEdit,
         }}
-        tone="amber"
+        tone="warning"
         footer={cancelButton}
       />
     );
@@ -665,7 +665,7 @@ function ActionPanel({
           icon: PencilSimpleLine,
           onClick: onEdit,
         }}
-        tone="amber"
+        tone="warning"
         footer={cancelButton}
       />
     );
@@ -682,7 +682,7 @@ function ActionPanel({
           onClick: onActivate,
           loading: isSubmitting && pendingAction === 'activate',
         }}
-        tone="emerald"
+        tone="success"
       />
     );
   }
@@ -704,14 +704,14 @@ function ActionBar({
   subtitle: string;
   cta?: { label: string; icon: React.ElementType; onClick: () => void; loading?: boolean };
   secondaryCta?: { label: string; icon: React.ElementType; onClick: () => void };
-  tone: 'indigo' | 'amber' | 'blue' | 'emerald';
+  tone: 'primary' | 'warning' | 'info' | 'success';
   footer?: React.ReactNode;
 }) {
   const toneClasses: Record<typeof tone, string> = {
-    indigo: 'bg-primary-soft/40 border-primary/30',
-    blue: 'bg-primary-soft/40 border-primary/30',
-    amber: 'bg-amber-50/60 border-amber-600/30 dark:bg-amber-900/20 dark:border-amber-500/40',
-    emerald: 'bg-emerald-50/60 border-emerald-600/30 dark:bg-emerald-900/20 dark:border-emerald-500/40',
+    primary: 'bg-primary-soft/40 border-primary/30',
+    info: 'bg-primary-soft/40 border-primary/30',
+    warning: 'bg-warning-soft border-warning/30',
+    success: 'bg-success-soft border-success/30',
   };
 
   return (

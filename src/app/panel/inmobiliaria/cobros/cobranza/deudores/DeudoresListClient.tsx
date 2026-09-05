@@ -391,13 +391,15 @@ export default function DeudoresListClient() {
             <span>
               {t('inmobiliaria.ai.cobranza.deudores.error')}: {error}
             </span>
-            <button
-              type="button"
+            <Button
+              variant="link"
+              size="sm"
+              hideArrow
               onClick={() => void refetch()}
-              className="shrink-0 underline underline-offset-2 hover:no-underline"
+              className="shrink-0 px-0 h-auto text-danger underline hover:no-underline"
             >
               {t('inmobiliaria.ai.cobranza.deudores.errorRetry')}
-            </button>
+            </Button>
           </div>
         )}
 

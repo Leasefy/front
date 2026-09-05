@@ -198,17 +198,19 @@ export function ConsignacionHeader({
 
           {/* Cuántas fotos hay y que se pueden ver todas */}
           {portadaAbre && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
+              hideArrow
               onClick={onVerFotos}
-              className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-black/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              className="absolute bottom-3 right-3 h-auto gap-1.5 bg-black/60 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm hover:bg-black/75 focus-visible:ring-2 focus-visible:ring-white/70"
               data-testid="portada-ver-fotos"
             >
               <Images className="w-4 h-4" />
               {cantidadDeFotos === 1
                 ? t('inmobiliaria.consignaciones.header.verFoto')
                 : t('inmobiliaria.consignaciones.header.verFotos', { count: cantidadDeFotos })}
-            </button>
+            </Button>
           )}
 
           {/* Commission pill — a SALE mandate's commissionPercent is always
@@ -240,7 +242,7 @@ export function ConsignacionHeader({
           </div>
 
           {/* Title */}
-          <h1 className="text-2xl lg:text-3xl font-bold text-fg dark:text-white mb-2">
+          <h1 className="text-2xl lg:text-3xl font-bold text-fg mb-2">
             {consignacion.propertyTitle}
           </h1>
 
@@ -256,14 +258,14 @@ export function ConsignacionHeader({
               the sale commission instead, never "$0" or "$0/mes". */}
           {consignacion.listingType === 'sale' ? (
             <div className="flex flex-wrap items-baseline gap-3 mb-5">
-              <span className="text-3xl lg:text-4xl font-bold text-fg dark:text-white">
+              <span className="text-3xl lg:text-4xl font-bold text-fg">
                 {consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—'}
               </span>
               <span className="text-lg text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.header.saleCommission')}</span>
             </div>
           ) : (
             <div className="flex flex-wrap items-baseline gap-3 mb-5">
-              <span className="text-3xl lg:text-4xl font-bold text-fg dark:text-white">
+              <span className="text-3xl lg:text-4xl font-bold text-fg">
                 {consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
               </span>
               <span className="text-lg text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.header.perMonth')}</span>

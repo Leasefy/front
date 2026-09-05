@@ -4,6 +4,17 @@ import { AvisoDatosDeEjemplo } from '@/components/estado/AvisoDatosDeEjemplo'
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { MagnifyingGlass, Warning } from '@phosphor-icons/react'
+import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Input } from '@/components/ui/input'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useRetencionBandeja } from '@/lib/hooks/retencion/use-retencion'
@@ -50,17 +61,22 @@ const STATE_LABEL: Record<RetentionState, string> = {
 function stateBadgeClasses(state: RetentionState): string {
   switch (state) {
     case 'critico':
-      return 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
+      return 'bg-danger-soft text-danger'
     case 'alto_riesgo':
-      return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+      return 'bg-warning-soft text-warning'
+    // Un escalón por debajo de «Alto riesgo»: mismo ámbar, sobre el tinte
+    // neutro en vez del tinte de atención. Cadence no tiene un quinto matiz
+    // (RiskBadge del DS resuelve su propia escala igual: gris → warning →
+    // danger), y dos píldoras idénticas para dos estados distintos se leen
+    // como un error.
     case 'riesgo_medio':
-      return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-300'
+      return 'bg-surface-muted text-warning'
     case 'recuperado':
-      return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+      return 'bg-success-soft text-success'
     case 'perdido':
-      return 'bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400'
+      return 'bg-neutral-200 text-fg-subtle'
     default:
-      return 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
+      return 'bg-surface-muted text-fg-muted'
   }
 }
 
@@ -120,8 +136,8 @@ export default function BandejaClient() {
   return (
     <main className="p-6 lg:p-8 space-y-5">
       <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-neutral-900 dark:text-white">Bandeja de riesgos</h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        <h1 className="text-xl font-semibold text-fg">Bandeja de riesgos</h1>
+        <p className="text-sm text-fg-muted">
           Propietarios e inmuebles priorizados por comisión en riesgo.
         </p>
         {usingMock ? (
@@ -138,34 +154,31 @@ export default function BandejaClient() {
         {TABS.map((t) => {
           const active = tab === t.key
           return (
-            <button
+            <Button
               key={t.key}
               type="button"
               role="tab"
               aria-selected={active}
+              size="sm"
+              hideArrow
+              variant={active ? 'default' : 'secondary'}
               onClick={() => setTab(t.key)}
-              className={
-                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
-                (active
-                  ? 'bg-rose-600 text-white border-rose-600'
-                  : 'bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700 hover:border-rose-400')
-              }
             >
               {t.label}
-            </button>
+            </Button>
           )
         })}
       </div>
 
       {/* Search */}
       <div className="relative max-w-sm">
-        <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-        <input
+        <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 z-10 text-fg-subtle" />
+        <Input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar propietario o ciudad…"
-          className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 pl-9 pr-3 py-2 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-rose-500"
+          className="pl-9"
         />
       </div>
 
@@ -173,31 +186,32 @@ export default function BandejaClient() {
       {isLoading && !data ? (
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-12 rounded-lg bg-neutral-100 dark:bg-neutral-800/50 animate-pulse" />
+            <div key={i} className="h-12 rounded-lg bg-surface-muted animate-pulse" />
           ))}
         </div>
       ) : rows.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-2 text-center rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700">
-          <Warning size={26} weight="duotone" className="text-neutral-400" />
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">No hay casos en este filtro.</p>
-        </div>
+        <EmptyState
+          icon={Warning}
+          title="No hay casos en este filtro."
+          description="Probá con otra pestaña o cambiá lo que escribiste en la búsqueda."
+        />
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
-          <table className="w-full text-sm">
-            <thead className="bg-neutral-50 dark:bg-neutral-900/60 text-left text-xs text-neutral-500 dark:text-neutral-400">
-              <tr>
-                <th className="px-3 py-2 font-medium">Score</th>
-                <th className="px-3 py-2 font-medium">Propietario</th>
-                <th className="px-3 py-2 font-medium">Estado</th>
-                <th className="px-3 py-2 font-medium">Causa raíz</th>
-                <th className="px-3 py-2 font-medium hidden md:table-cell">Inmuebles</th>
-                <th className="px-3 py-2 font-medium hidden lg:table-cell">Responsable</th>
-                <th className="px-3 py-2 font-medium text-right">Comisión en riesgo</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+        <div className="overflow-x-auto rounded-lg border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Score</TableHead>
+                <TableHead>Propietario</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Causa raíz</TableHead>
+                <TableHead className="hidden md:table-cell">Inmuebles</TableHead>
+                <TableHead className="hidden lg:table-cell">Responsable</TableHead>
+                <TableHead numeric>Comisión en riesgo</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {pageItems.map((c) => (
-                <tr
+                <TableRow
                   key={c.caseId}
                   role="link"
                   tabIndex={0}
@@ -205,36 +219,36 @@ export default function BandejaClient() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') goToCase(c.caseId)
                   }}
-                  className="cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800/50 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  className="cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
                 >
-                  <td className="px-3 py-2">
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-rose-50 dark:bg-rose-950/30 text-xs font-semibold text-rose-700 dark:text-rose-300">
+                  <TableCell>
+                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-danger-soft text-xs font-semibold text-danger">
                       {c.score}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">
-                    <p className="font-medium text-neutral-900 dark:text-white whitespace-nowrap">{c.ownerName}</p>
-                    <p className="text-xs text-neutral-400">{c.city ?? '—'} · {c.ownerType}</p>
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell>
+                    <p className="font-medium text-fg whitespace-nowrap">{c.ownerName}</p>
+                    <p className="text-xs text-fg-subtle">{c.city ?? '—'} · {c.ownerType}</p>
+                  </TableCell>
+                  <TableCell>
                     <span className={'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' + stateBadgeClasses(c.state)}>
                       {STATE_LABEL[c.state]}
                     </span>
-                  </td>
-                  <td className="px-3 py-2 text-neutral-600 dark:text-neutral-300">
-                    {c.rootCause.label} <span className="text-neutral-400">({c.rootCause.pct}%)</span>
-                  </td>
-                  <td className="px-3 py-2 hidden md:table-cell text-neutral-600 dark:text-neutral-300">{c.propertyCount}</td>
-                  <td className="px-3 py-2 hidden lg:table-cell text-neutral-500 dark:text-neutral-400">
+                  </TableCell>
+                  <TableCell className="text-fg-muted">
+                    {c.rootCause.label} <span className="text-fg-subtle">({c.rootCause.pct}%)</span>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell text-fg-muted">{c.propertyCount}</TableCell>
+                  <TableCell muted className="hidden lg:table-cell">
                     {c.responsible.name ?? c.responsible.role}
-                  </td>
-                  <td className="px-3 py-2 text-right font-semibold text-neutral-900 dark:text-white whitespace-nowrap">
+                  </TableCell>
+                  <TableCell numeric className="font-semibold text-fg whitespace-nowrap">
                     {formatCop(c.expectedCommissionLoss)}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
 
           {/* Pie de tabla del design system: cuántos casos hay, cuáles se
               muestran y cuántas filas por página. */}
@@ -254,7 +268,7 @@ export default function BandejaClient() {
       )}
 
       {error && !isLoading ? (
-        <div className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-600 dark:text-rose-400">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
           No pude cargar la bandeja: {error}
         </div>
       ) : null}

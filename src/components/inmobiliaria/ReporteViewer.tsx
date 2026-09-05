@@ -14,7 +14,6 @@ import {
   FilePdf,
   FileXls,
   DownloadSimple,
-  Printer,
   CalendarBlank,
   MapPin,
   ArrowUp,
@@ -53,7 +52,11 @@ interface ReporteViewerProps {
   onClose: () => void;
   report: ReportDefinition | null;
   filters: ReporteFiltersState;
-  onExport?: (format: 'pdf' | 'excel') => void;
+  /**
+   * Baja el reporte. Devuelve la promesa del pedido: el botón se queda
+   * deshabilitado hasta que el archivo llegó (o falló), no 1,5 segundos.
+   */
+  onExport?: (format: 'pdf' | 'excel') => void | Promise<void>;
 }
 
 // Map icon names to Phosphor components
@@ -536,14 +539,24 @@ export function ReporteViewer({
   const { t, formatDate: fmtDate } = useI18n();
   const [isExporting, setIsExporting] = React.useState(false);
 
-  // Handle export
+  /**
+   * Bajar el reporte.
+   *
+   * Tenía un `await new Promise(r => setTimeout(r, 1500))` antes de llamar a
+   * `onExport`: segundo y medio de rueda girando fingiendo trabajo, que es
+   * exactamente la mentira que `lib/reportes/exportables.ts` documenta haber
+   * sacado del resto del módulo. Y peor: `setIsExporting(false)` corría al
+   * toque, sin esperar la descarga real, así que el botón volvía a estar vivo
+   * con el pedido todavía en vuelo — dos clics, dos descargas.
+   */
   const handleExport = async (format: 'pdf' | 'excel') => {
-    if (!onExport) return;
-
+    if (!onExport || isExporting) return;
     setIsExporting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    onExport(format);
-    setIsExporting(false);
+    try {
+      await onExport(format);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   if (!report) return null;
@@ -680,28 +693,21 @@ export function ReporteViewer({
               ) : (
                 <>
                   <DownloadSimple className="w-4 h-4 mr-2" />
-                  {t('inmobiliaria.reporte.downloadFormat', { format: report.format.toUpperCase() })}
+                  {/* CSV, no `report.format`. El catálogo marca estos reportes
+                      como «excel» o «pdf», pero `/reports/export` responde
+                      `text/csv` y el archivo baja `.csv`: el botón prometía un
+                      formato que nunca llegó. */}
+                  {t('inmobiliaria.reporte.downloadFormat', { format: 'CSV' })}
                 </>
               )}
             </Button>
 
-            {/* Print for PDF */}
-            {report.format === 'pdf' && (
-              <Button
-                variant="secondary"
-                size="icon"
-                hideArrow
-                onClick={() => window.print()}
-              >
-                <Printer className="w-4 h-4" />
-              </Button>
-            )}
+            {/* Acá había un botón de imprimir (`window.print()`) sin una sola
+                regla `@media print` en este componente: imprimía el panel
+                entero con el cajón encima, no el reporte. Y debajo, un rótulo
+                suelto «Exportación programada» sin producto detrás: ni botón,
+                ni frecuencia, ni a dónde llega. Los dos salieron. */}
           </div>
-
-          {/* Scheduled Export - Future Feature */}
-          <p className="text-center text-xs text-muted-foreground mt-4">
-            {t('inmobiliaria.reporte.scheduledExport')}
-          </p>
         </motion.div>
       </SheetContent>
     </Sheet>

@@ -243,7 +243,10 @@ function PqrsContent() {
 
 export default function PqrsPage() {
   return (
-    <PageGuard adminOnly>
+    // El sidebar (`arquitectura-del-panel.ts`) ofrece esta pantalla a TODOS
+    // los roles de agencia y el back la sirve con `operaciones:view`. Con
+    // `adminOnly` el enlace existía y al tocarlo te sacaba, sin decir nada.
+    <PageGuard module="operaciones">
       <PqrsContent />
     </PageGuard>
   );

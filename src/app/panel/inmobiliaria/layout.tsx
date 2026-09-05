@@ -85,7 +85,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // errored the CTA stays hidden (indeterminate) so paying users never see a
   // flash of "Upgrade".
   const { isPaidPlan, indeterminate: subIndeterminate } = useAgencySubscription();
-  const showUpgradeCta = !subIndeterminate && !isPaidPlan;
+  // …y sólo al ADMIN: `/upgrade` es `PageGuard adminOnly`, así que a un
+  // AGENTE/CONTADOR/VIEWER el botón lo mandaba a una pantalla que lo devuelve
+  // a la portada sin decirle nada. Un CTA que rebota es peor que no tenerlo.
+  const showUpgradeCta = !subIndeterminate && !isPaidPlan && isAdmin;
 
   // Real agency identity for the sidebar brand row. PRIMARY source is the auth
   // membership probe (`useAuth().agency`), which is available to EVERY active
@@ -97,6 +100,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // never flashes empty. `logoUrl` empty → PlanSidebar shows the LeasefyMark.
   const { agency } = useAuth();
   const { config } = useInmobiliariaConfig();
+  // El mismo gate que usa la propia pantalla de Equipo (`SeccionEquipo`) para
+  // decidir si muestra el formulario de invitación.
+  const puedeInvitarAlEquipo = isAdmin || canAccess('agentes', 'create');
   const agencyName =
     agency?.name?.trim() ||
     config?.agency?.name?.trim() ||
@@ -259,10 +265,17 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           // Punto de partida del panel: con 156 rutas agrupadas por módulo de
           // negocio, quien entra por primera vez no tiene dónde empezar.
           belowSearch={<BotonNuevo />}
-          showInvite
+          // La tarjeta de invitar sólo a quien puede invitar: el destino
+          // (`/configuracion/equipo`) está detrás de `module: 'agentes'`, y a
+          // quien no lo tiene lo expulsaba el `PageGuard` sin explicación.
+          showInvite={puedeInvitarAlEquipo}
           onInvite={() => router.push('/panel/inmobiliaria/configuracion/equipo')}
           showUpgrade={showUpgradeCta}
-          upgradeHref="/panel/inmobiliaria/configuracion"
+          // 🔴 A la pasarela de verdad, no a Configuración. Apuntaba a la raíz
+          // de `/configuracion`, que es el PERFIL de la inmobiliaria: quien
+          // tocaba «Upgrade» aterrizaba en el formulario de NIT y dirección.
+          // `/upgrade` es la pantalla de planes con el cobro real (Wompi).
+          upgradeHref="/panel/inmobiliaria/upgrade"
         />
 
         {/* Main content area */}

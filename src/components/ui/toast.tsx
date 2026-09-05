@@ -1,7 +1,16 @@
 'use client';
 
 import * as React from 'react';
-import { Toaster as DSToaster, toast, type ToasterProps } from '@leasefy/cadence';
+import { Toaster as DSToaster, type ToasterProps } from '@leasefy/cadence';
+// `toast` se toma de sonner DIRECTO, no de `@leasefy/cadence`.
+//
+// Es el mismo objeto por los dos caminos —cadence hace `export { toast } from
+// 'sonner'`— pero sólo por éste lo alcanzan los tests. `vi.mock('sonner', …)`
+// intercepta a los importadores que Vite procesa: el código de la app sí,
+// `node_modules/@leasefy/cadence` no (sale pre-bundleado). Con el import
+// pasando por cadence, los ~46 tests que espían el toast dejaban de ver la
+// llamada y pasaban en verde sin probar nada, o fallaban sin motivo aparente.
+import { toast } from 'sonner';
 
 /**
  * SHIM sobre el Toast del DS (@leasefy/cadence): sonner re-skineado con la piel ink

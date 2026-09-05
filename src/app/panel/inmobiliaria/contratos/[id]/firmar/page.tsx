@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { CaretLeft, WarningCircle, SealCheck, ArrowRight, Info } from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import { CaretLeft, WarningCircle, SealCheck, ArrowRight, Info, FileText } from '@phosphor-icons/react';
+import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
@@ -13,6 +13,7 @@ import { SignatureForm } from '@/components/contract/SignatureForm';
 import { useContract, useContractPreview, useContractActions, useSignedPdfUrl, isPermissionError } from '@/lib/hooks/useContracts';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { EmptyState } from '@/components/ui/empty-state';
 
 // ─── Content ─────────────────────────────────────────────────────────────────
 
@@ -131,12 +132,12 @@ function FirmarContratoContent() {
   if (signed) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-lg border border-emerald-600/30 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-900/15 p-8 text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center mx-auto">
-            <SealCheck className="w-8 h-8 text-emerald-700 dark:text-emerald-400" />
+        <div className="rounded-lg border border-success/30 bg-success-soft p-8 text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mx-auto">
+            <SealCheck className="w-8 h-8 text-success" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-400">Contrato firmado</h2>
+            <h2 className="text-xl font-semibold tracking-tight text-success">Contrato firmado</h2>
             {/*
               🔴 Acá decía «El inquilino ya fue notificado para que firme
               digitalmente». Es imposible: en este flujo la inmobiliaria firma
@@ -147,7 +148,7 @@ function FirmarContratoContent() {
               la pantalla anunciaba un paso que ya había ocurrido y dejaba a
               quien firmó esperando una respuesta que no iba a llegar.
             */}
-            <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1" data-testid="firmado-cierre">
+            <p className="text-sm text-success mt-1" data-testid="firmado-cierre">
               Firmaron las dos partes. El contrato queda cerrado y el PDF final ya incluye
               las dos firmas con su certificado.
             </p>
@@ -191,9 +192,9 @@ function FirmarContratoContent() {
         </div>
         <div className="p-5 space-y-3">
           {hasTenantSignature && (
-            <div className="rounded-lg border border-amber-600/30 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-900/15 px-4 py-2.5 flex items-start gap-2">
-              <Info className="w-4 h-4 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700 dark:text-amber-400">
+            <div className="rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 flex items-start gap-2">
+              <Info className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-warning">
                 Este PDF ya incluye la <strong>firma del inquilino</strong> y un certificado parcial.
                 Revisalo antes de firmar.
               </p>
@@ -208,7 +209,7 @@ function FirmarContratoContent() {
             ) : (
               <iframe
                 src={signedPdfUrl!}
-                className="w-full h-[600px] rounded-md border border-border bg-white"
+                className="w-full h-[600px] rounded-md border border-border bg-surface"
                 title="Contrato"
               />
             )
@@ -219,7 +220,7 @@ function FirmarContratoContent() {
           ) : preview?.origin === 'UPLOADED_PDF' ? (
             <iframe
               src={preview.pdfUrl}
-              className="w-full h-[600px] rounded-md border border-border bg-white"
+              className="w-full h-[600px] rounded-md border border-border bg-surface"
               title="Contrato"
             />
           ) : preview?.origin === 'GENERATED' ? (
@@ -228,9 +229,11 @@ function FirmarContratoContent() {
               {...sanitizeContractHtml(preview.html)}
             />
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-10">
-              No hay vista previa disponible.
-            </p>
+            <EmptyState
+              icon={FileText}
+              title="No hay vista previa disponible"
+              description="Todavía no se puede mostrar el documento de este contrato."
+            />
           )}
         </div>
       </section>

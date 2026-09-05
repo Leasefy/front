@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Spinner } from '@/components/ui';
 import { usePermissionsContext } from '@/lib/context/PermissionsContext';
 import { useI18n } from '@/lib/i18n';
 
@@ -11,7 +12,9 @@ export default function MantenimientoLayout({ children }: { children: React.Reac
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
+        {/* El <Spinner> del repo, no un div con `border-violet-600` a mano:
+            el violeta crudo no tiene par en oscuro y se sale del sistema. */}
+        <Spinner size="md" variant="muted" />
       </div>
     );
   }

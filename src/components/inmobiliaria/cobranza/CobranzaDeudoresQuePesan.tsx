@@ -10,6 +10,10 @@
  *
  * Sin datos no se monta: una tabla con encabezados y cero filas se lee como
  * «no hay deudores», que no es lo mismo que «el reporte todavía no corrió».
+ *
+ * La tabla es la del DS (`@/components/ui/table`): antes copiaba a mano el
+ * tratamiento de los `<th>` (mono 11px en mayúsculas, fg-subtle) sobre una
+ * `<table>` suelta, así que cada retoque del DS había que replicarlo acá.
  */
 
 import Link from 'next/link'
@@ -17,6 +21,14 @@ import Link from 'next/link'
 import { useI18n } from '@/lib/i18n'
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { toDebtorRef } from '@/lib/hooks/cobranza/compliance-entries'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 const CASOS_HREF = '/panel/inmobiliaria/cobros/cobranza/deudores'
 const TOP_N = 5
@@ -39,53 +51,53 @@ export function CobranzaDeudoresQuePesan() {
           Ver todos los casos
         </Link>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            {/*
-              Tabla suelta: los `<th>` copian a mano el encabezado del DS
-              (`TableHead`) — mono 11px en mayúsculas, fg-subtle — para que se
-              lea igual que las demás tablas del panel.
-            */}
-            <tr className="text-left border-b border-border">
-              <th scope="col" className="px-4 py-2 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">Deudor</th>
-              <th scope="col" className="px-4 py-2 text-right font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">Días de mora</th>
-              <th scope="col" className="px-4 py-2 text-right font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">Saldo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {deudores.map((d) => (
-              <tr key={d.debtor_id} className="border-b border-border last:border-0">
-                {/*
-                  El nombre, y sólo si no viene, la referencia. Esta columna
-                  mostraba `A9820375` —los primeros ocho caracteres del UUID—
-                  bajo el encabezado «Deudor»: un código que no identifica a
-                  nadie y sobre el que no se puede actuar. El nombre lo trae el
-                  reporte desde que `top_debtors` hace el JOIN.
-                */}
-                {d.debtor_name ? (
-                  <td className="px-4 py-2 text-fg">
-                    <Link
-                      href={`${CASOS_HREF}/${d.debtor_id}`}
-                      className="hover:underline underline-offset-2"
-                    >
-                      {d.debtor_name}
-                    </Link>
-                  </td>
-                ) : (
-                  <td className="px-4 py-2 font-mono text-xs text-fg-muted">
-                    {toDebtorRef(d.debtor_id_masked ?? d.debtor_id)}
-                  </td>
-                )}
-                <td className="px-4 py-2 text-right font-mono tabular-nums text-fg">{d.dpd}</td>
-                <td className="px-4 py-2 text-right font-mono tabular-nums text-fg">
-                  {formatCurrency(d.balance_cop)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Table>
+        <TableHeader>
+          {/* El encabezado no es una fila sobre la que se pueda actuar: sin hover. */}
+          <TableRow className="hover:bg-transparent">
+            <TableHead scope="col">Deudor</TableHead>
+            <TableHead scope="col" numeric>
+              Días de mora
+            </TableHead>
+            <TableHead scope="col" numeric>
+              Saldo
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {deudores.map((d) => (
+            <TableRow key={d.debtor_id}>
+              {/*
+                El nombre, y sólo si no viene, la referencia. Esta columna
+                mostraba `A9820375` —los primeros ocho caracteres del UUID—
+                bajo el encabezado «Deudor»: un código que no identifica a
+                nadie y sobre el que no se puede actuar. El nombre lo trae el
+                reporte desde que `top_debtors` hace el JOIN.
+              */}
+              {d.debtor_name ? (
+                <TableCell>
+                  <Link
+                    href={`${CASOS_HREF}/${d.debtor_id}`}
+                    className="hover:underline underline-offset-2"
+                  >
+                    {d.debtor_name}
+                  </Link>
+                </TableCell>
+              ) : (
+                <TableCell className="font-mono text-xs text-fg-muted">
+                  {toDebtorRef(d.debtor_id_masked ?? d.debtor_id)}
+                </TableCell>
+              )}
+              <TableCell numeric className="font-mono">
+                {d.dpd}
+              </TableCell>
+              <TableCell numeric className="font-mono">
+                {formatCurrency(d.balance_cop)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   )
 }

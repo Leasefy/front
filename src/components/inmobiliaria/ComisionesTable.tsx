@@ -199,6 +199,7 @@ export function ComisionesTable({
         DispersionTable.
       */}
       <button
+        type="button"
         onClick={() => handleSort(field)}
         className={cn(
           'flex items-center gap-2 font-[inherit] text-[inherit] uppercase tracking-[inherit] text-fg-subtle transition-colors hover:text-fg',
@@ -222,7 +223,7 @@ export function ComisionesTable({
             <CurrencyDollar className="w-5 h-5 text-success" />
             <span className="text-sm font-medium text-success">{t('inmobiliaria.finance.commissionsTable.totalCommissions')}</span>
           </div>
-          <p className="text-2xl font-bold">{formatCurrency(data.totalCommissions)}</p>
+          <p className="text-2xl font-mono font-bold tabular-nums">{formatCurrency(data.totalCommissions)}</p>
         </div>
 
         {/* Promedio por Agente */}
@@ -233,7 +234,7 @@ export function ComisionesTable({
               {t('inmobiliaria.finance.commissionsTable.avgPerAgent')}
             </span>
           </div>
-          <p className="text-xl font-bold text-fg dark:text-white">
+          <p className="text-xl font-mono font-bold tabular-nums text-fg">
             {formatCurrency(data.avgCommissionPerAgent)}
           </p>
         </div>
@@ -259,7 +260,7 @@ export function ComisionesTable({
               {t('inmobiliaria.finance.commissionsTable.totalDeals')}
             </span>
           </div>
-          <p className="text-2xl font-bold text-fg dark:text-white">
+          <p className="text-2xl font-mono font-bold tabular-nums text-fg">
             {data.totalClosedDeals}
           </p>
         </div>
@@ -267,11 +268,11 @@ export function ComisionesTable({
 
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-ink flex items-center justify-center">
+        <div className="w-10 h-10 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
           <Trophy className="w-5 h-5 text-fg-muted dark:text-fg-subtle" weight="fill" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-fg dark:text-white">
+          <h2 className="text-lg font-semibold text-fg">
             {t('inmobiliaria.finance.commissionsTable.commissionsByAgent')}
           </h2>
           <p className="text-sm text-fg-muted dark:text-fg-subtle">
@@ -322,7 +323,7 @@ export function ComisionesTable({
                     onClick={() => onAgentClick?.(agente.agenteId)}
                     className={cn(
                       'border-b border-border-faint dark:border-border-strong transition-colors',
-                      onAgentClick && 'cursor-pointer hover:bg-surface-muted dark:hover:bg-muted/20',
+                      onAgentClick && 'cursor-pointer hover:bg-surface-muted',
                       isFirst && 'bg-warning-soft/50 dark:bg-warning/10'
                     )}
                   >
@@ -333,7 +334,7 @@ export function ComisionesTable({
                           className={cn(
                             'w-8 h-8 mx-auto rounded-full flex items-center justify-center font-bold text-sm',
                             agente.rank === 1 && 'bg-warning-soft dark:bg-warning/10 text-warning',
-                            agente.rank === 2 && 'bg-gradient-to-br from-[#D5D1CA] to-[#B3AEA5] text-fg',
+                            agente.rank === 2 && 'bg-border-strong text-fg',
                             agente.rank === 3 && 'bg-warning-soft dark:bg-warning/10 text-warning'
                           )}
                         >
@@ -351,10 +352,10 @@ export function ComisionesTable({
                       <div className="flex items-center gap-3">
                         <div
                           className={cn(
-                            'w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0',
+                            'w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold shrink-0',
                             isFirst
-                              ? 'bg-warning-soft dark:bg-warning/10'
-                              : 'bg-gradient-to-br from-primary to-[#726E68]'
+                              ? 'bg-warning-soft dark:bg-warning/10 text-warning'
+                              : 'bg-primary text-primary-fg'
                           )}
                         >
                           {agente.agenteAvatar ? (
@@ -373,7 +374,7 @@ export function ComisionesTable({
                               'font-medium truncate text-sm',
                               isFirst
                                 ? 'text-warning'
-                                : 'text-fg dark:text-white'
+                                : 'text-fg'
                             )}
                           >
                             {agente.agenteName}
@@ -391,7 +392,7 @@ export function ComisionesTable({
                     <TableCell className="p-4 text-center">
                       <span
                         className={cn(
-                          'text-lg font-bold',
+                          'text-lg font-mono font-bold tabular-nums',
                           agente.closedDeals > 0
                             ? 'text-success'
                             : 'text-fg-subtle dark:text-fg-muted'
@@ -403,14 +404,14 @@ export function ComisionesTable({
 
                     {/* Total Commission */}
                     <TableCell className="p-4 text-right">
-                      <span className="font-semibold text-fg dark:text-white">
+                      <span className="font-mono font-semibold tabular-nums text-fg">
                         {formatCurrency(agente.totalCommission)}
                       </span>
                     </TableCell>
 
                     {/* Avg Per Deal */}
                     <TableCell className="p-4 text-right">
-                      <span className="text-sm text-fg-muted dark:text-fg-subtle">
+                      <span className="text-sm font-mono tabular-nums text-fg-muted dark:text-fg-subtle">
                         {formatCurrency(agente.avgCommissionPerDeal)}
                       </span>
                     </TableCell>
@@ -448,7 +449,7 @@ export function ComisionesTable({
                             )}
                           />
                         </div>
-                        <span className="text-xs font-medium text-fg-muted dark:text-fg-subtle w-10 text-right">
+                        <span className="text-xs font-mono font-medium tabular-nums text-fg-muted dark:text-fg-subtle w-10 text-right">
                           {Math.round(percentOfLeader)}%
                         </span>
                       </div>
@@ -479,7 +480,7 @@ export function ComisionesTable({
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center">
               <Trophy className="w-8 h-8 text-fg-subtle" />
             </div>
-            <h3 className="text-lg font-semibold text-fg dark:text-white mb-1">
+            <h3 className="text-lg font-semibold text-fg mb-1">
               {t('inmobiliaria.finance.commissionsTable.noData')}
             </h3>
             <p className="text-fg-muted dark:text-fg-subtle">

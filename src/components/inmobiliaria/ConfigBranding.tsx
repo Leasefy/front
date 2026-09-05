@@ -16,7 +16,7 @@ import {
   ShareNetwork,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { Button, Input } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';

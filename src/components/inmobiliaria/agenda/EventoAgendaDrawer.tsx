@@ -11,7 +11,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { ArrowSquareOut, Envelope, Phone, VideoCamera, MapPin } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -31,6 +31,7 @@ import { MotivoDialog } from '@/components/inmobiliaria/agenda/MotivoDialog';
 
 const ESTADO_BADGE: Record<EventoEstado, string> = {
   pendiente: 'bg-primary/10 text-primary',
+  confirmado: 'bg-success-soft text-success',
   completado: 'bg-success-soft text-success',
   vencido: 'bg-danger-soft text-danger',
   cancelado: 'bg-surface-muted text-fg-muted',

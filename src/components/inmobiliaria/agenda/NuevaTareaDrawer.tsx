@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { DatePicker, TimePicker } from '@leasefy/cadence';
 import { Button, Textarea } from '@/components/ui';
 import { Input } from '@/components/ui/input';

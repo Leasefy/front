@@ -10,14 +10,16 @@
  */
 
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { useI18n } from '@/lib/i18n';
 import { ConfigPermisos } from '@/components/inmobiliaria';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { rolePermissionsApi } from '@/lib/api/inmobiliaria.service';
 import type { PermMap, RoleMatrices, UpdateRolePermissionsBody } from '@/lib/api/inmobiliaria.service';
 import { DEFAULT_ROLE_PERMISSIONS } from '@/lib/types/inmobiliaria';
+import { EsqueletoDeSeccion } from './piezas';
 import type {
   AgencyRole,
   PermissionAction,
@@ -63,23 +65,41 @@ export function SeccionPermisos() {
   // cambios sin guardar» vuelven a cero).
   const [version, setVersion] = useState(0);
   const [guardando, setGuardando] = useState(false);
+  const [cargando, setCargando] = useState(true);
+  /**
+   * El fallo de la LECTURA, entero.
+   *
+   * Antes se tragaba («quedan los valores por defecto») y la pantalla dibujaba
+   * la matriz de fábrica como si fuera la de la agencia. Eso no era sólo una
+   * mentira visual: si el admin tocaba una casilla y guardaba, el `PUT` mandaba
+   * los valores POR DEFECTO y borraba lo que la agencia hubiera personalizado.
+   * Ahora, si la lectura falla, no hay matriz que editar: hay un error con
+   * reintentar.
+   */
+  const [errorDeCarga, setErrorDeCarga] = useState<unknown>(null);
+  const [intento, setIntento] = useState(0);
 
   useEffect(() => {
     let cancelado = false;
+    setCargando(true);
     (async () => {
       try {
         const matrices = await rolePermissionsApi.getRolePermissions();
         if (cancelado) return;
         setPermissions(matricesToUiMatrix(matrices));
+        setErrorDeCarga(null);
         setVersion((v) => v + 1);
-      } catch {
-        // 403 (no es admin) o red: quedan los valores por defecto.
+      } catch (error) {
+        if (cancelado) return;
+        setErrorDeCarga(error);
+      } finally {
+        if (!cancelado) setCargando(false);
       }
     })();
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [intento]);
 
   const guardar = async (nuevos: Record<AgencyRole, RolePermissions>) => {
     setGuardando(true);
@@ -127,12 +147,20 @@ export function SeccionPermisos() {
   };
 
   return (
-    <ConfigPermisos
-      key={`permisos-${version}`}
-      permissions={permissions}
-      onSave={guardar}
-      onReset={restablecer}
-      isLoading={guardando}
-    />
+    <EstadoDeDatos
+      cargando={cargando}
+      error={errorDeCarga}
+      queEs="los permisos por rol"
+      onReintentar={() => setIntento((n) => n + 1)}
+      esqueleto={<EsqueletoDeSeccion filas={5} />}
+    >
+      <ConfigPermisos
+        key={`permisos-${version}`}
+        permissions={permissions}
+        onSave={guardar}
+        onReset={restablecer}
+        isLoading={guardando}
+      />
+    </EstadoDeDatos>
   );
 }

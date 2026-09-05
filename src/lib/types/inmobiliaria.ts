@@ -2810,7 +2810,13 @@ export interface AdvancedKPI {
   value: number;
   formattedValue: string;
   unit?: string;
-  trend: TrendData;
+  /**
+   * La variación contra el período anterior. OPCIONAL a propósito: si no hay
+   * un período anterior con qué comparar, no hay tendencia — y una tarjeta que
+   * pinta «+0,0 %» con una flecha está afirmando una medición que nadie hizo.
+   * Sin `trend`, la tarjeta no dibuja la insignia.
+   */
+  trend?: TrendData;
   sparkline: SparklinePoint[];
   target?: number;
   targetLabel?: string;

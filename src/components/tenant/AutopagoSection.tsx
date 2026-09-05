@@ -16,7 +16,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { ArrowsClockwise, CreditCard, CalendarDots } from '@phosphor-icons/react';
 
 import { useI18n } from '@/lib/i18n';

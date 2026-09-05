@@ -5,7 +5,7 @@
  * propietario. Los dos guardan por el MISMO endpoint (`PUT /inmobiliaria/agency`).
  */
 
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { Buildings, Info } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';

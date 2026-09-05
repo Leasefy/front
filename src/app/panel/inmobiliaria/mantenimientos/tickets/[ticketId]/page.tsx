@@ -1,24 +1,34 @@
 'use client'
 
 /**
- * [ticketId]/page.tsx — Phase 7 plan 07-04 (DASH-03)
+ * Ficha de un ticket de mantenimiento (agente Fixi).
  *
- * Maintenance ticket DETAIL route. Mock-first: consumes `useMantenimientoTicket`
- * (07-01), which resolves mock data (no backend dashboard-read endpoints exist
- * yet — follow-up agent-side). Renders TicketDetail with loading / empty / error
- * guards mirroring cobranza/page.tsx. The breadcrumb + access gate are provided by
- * the `ai/mantenimiento/layout.tsx` (07-02) — not recreated here.
+ * Trae el detalle del micro por `useMantenimientoTicket` y lo pinta con
+ * `TicketDetail`. Guardas de carga / vacío / error espejadas de cobranza. El
+ * gate de acceso lo pone `mantenimientos/tickets/layout.tsx`.
  *
- * CTA wiring: the hook's mock mutators are forwarded to TicketDetail. `onCerrar`
- * calls the hook's `close({ note })` — the hook enforces the FENCE-04 evidence gate
- * (a close with no evidence is a no-op), and the TicketCTAs Dialog already gated the
- * user's confirmation, so passing a confirmation note here is the wired evidence.
+ * 🔴 LAS 5 ACCIONES ESTÁN APAGADAS, Y ES A PROPÓSITO.
  *
- * i18n: `…detalle.errorLoading` (exists). The empty-state reuses `…inbox.empty`
- * (a dedicated `detalle.empty.*` key is NOT in the C7-03 tree — reported follow-up).
+ * Hasta acá esta página cableaba los botones a mutadores del hook que sólo
+ * cambiaban el estado LOCAL y escribían en la línea de tiempo del ticket frases
+ * como «Proveedor asignado al ticket.» o «Se solicitó aprobación del
+ * propietario.» — con `actor: 'human'`, como si alguien lo hubiera hecho.
+ * Ninguna de esas cosas ocurría: no salía un aviso, no se asignaba a nadie, y
+ * al recargar volvía todo atrás. `onCerrar` era el peor: mandaba la nota fija
+ * «Cierre confirmado por el asesor: el caso no procede.», una frase que nadie
+ * escribió, a un cierre que nunca se guardó.
+ *
+ * No es cableado que falta: el micro sirve estas rutas de mantenimiento SÓLO
+ * por GET y el estado del ticket es del back, detrás del rail S2S
+ * `/internal/mantenimiento` (`AGENT_API_KEY`), que el navegador no tiene. Hasta
+ * que exista una ruta de escritura, los botones dicen que todavía no se puede.
+ * Mientras tanto sí hay dónde operar de verdad: la pestaña «Mantenimiento» de
+ * `/panel/inmobiliaria/mantenimientos`, que habla con el back y sí guarda.
+ *
+ * i18n: `…detalle.errorLoading` (existe). El vacío reusa `…inbox.empty` (no hay
+ * clave `detalle.empty.*` en el árbol C7-03 — pendiente reportado).
  */
 
-import { useCallback } from 'react'
 import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { useParams } from 'next/navigation'
 import { Wrench } from '@phosphor-icons/react'
@@ -31,18 +41,23 @@ import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
 
 const ROOT = 'inmobiliaria.ai.mantenimiento'
 
+export const MOTIVO_SOLO_LECTURA =
+  'Desde acá el ticket sólo se mira: el agente todavía no expone una ruta para asignar, ' +
+  'pedir información, escalar ni cerrar. Para operar de verdad usá la pestaña Mantenimiento.'
+
+/**
+ * Los cinco `on*` de `TicketDetail` son obligatorios y los botones están
+ * apagados, así que nunca se llaman. No hacen nada A PROPÓSITO: la alternativa
+ * que había —cambiar el estado local y escribirlo en el historial— era la que
+ * mentía.
+ */
+const NO_SE_PUEDE_TODAVIA = () => {}
+
 export default function MantenimientoTicketDetailPage() {
   const { t } = useI18n()
   const { ticketId } = useParams<{ ticketId: string }>()
 
-  const { data, isLoading, error, assign, requestInfo, requestApproval, escalate, close } =
-    useMantenimientoTicket(ticketId)
-
-  // FENCE-04: the hook's close() requires evidence; the TicketCTAs Dialog already
-  // gated the operator's confirmation, so we pass a confirmation note here.
-  const handleCerrar = useCallback(() => {
-    close({ note: 'Cierre confirmado por el asesor: el caso no procede.' })
-  }, [close])
+  const { data, isLoading, error } = useMantenimientoTicket(ticketId)
 
   if (isLoading && !data) {
     return (
@@ -97,11 +112,12 @@ export default function MantenimientoTicketDetailPage() {
       <TicketDetail
         detail={data}
         isBusy={isLoading}
-        onAsignar={assign}
-        onPedirInfo={requestInfo}
-        onSolicitarAprobacion={requestApproval}
-        onEscalar={escalate}
-        onCerrar={handleCerrar}
+        onAsignar={NO_SE_PUEDE_TODAVIA}
+        onPedirInfo={NO_SE_PUEDE_TODAVIA}
+        onSolicitarAprobacion={NO_SE_PUEDE_TODAVIA}
+        onEscalar={NO_SE_PUEDE_TODAVIA}
+        onCerrar={NO_SE_PUEDE_TODAVIA}
+        motivoDeshabilitado={MOTIVO_SOLO_LECTURA}
       />
     </main>
   )

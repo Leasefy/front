@@ -77,6 +77,7 @@ export default function MantenimientoTicketsPage() {
           <InboxList
             tickets={data}
             isLoading={isLoading}
+            error={error}
             hasActiveFilters={activeFilters}
             onSelect={(id) => router.push(`/panel/inmobiliaria/mantenimientos/tickets/${id}`)}
             onClearFilters={() => setFilters(EMPTY_FILTERS)}

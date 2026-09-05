@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { mesEnTitulo } from '@/lib/utils/mes';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import Link from 'next/link';
 import { conRegreso } from '@/lib/nav/ruta-de-regreso';
 import { motion, AnimatePresence } from 'framer-motion';

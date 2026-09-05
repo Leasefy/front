@@ -11,7 +11,7 @@ import {
   CheckCircle,
   Info,
 } from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { Button } from '@/components/ui/button';
@@ -267,11 +267,11 @@ function EditarContratoContent() {
         >
           <CaretLeft className="w-4 h-4" /> Volver
         </Button>
-        <div className="rounded-lg border border-amber-600/30 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-900/15 p-5 flex items-start gap-3">
-          <WarningCircle className="w-5 h-5 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+        <div className="rounded-lg border border-warning/30 bg-warning-soft p-5 flex items-start gap-3">
+          <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-amber-700 dark:text-amber-400">Este contrato no se puede editar</p>
-            <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+            <p className="font-semibold text-warning">Este contrato no se puede editar</p>
+            <p className="text-sm text-warning mt-1">
               Solo se permite editar contratos en borrador, pendientes de firma del propietario,
               o cuando el inquilino solicitó modificaciones.
             </p>
@@ -307,9 +307,9 @@ function EditarContratoContent() {
 
       {/* Warning about signature invalidation */}
       {contract.landlordSignature && (
-        <div className="rounded-lg border border-amber-600/30 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-900/15 p-4 flex items-start gap-2">
-          <Info className="w-5 h-5 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-amber-700 dark:text-amber-400">
+        <div className="rounded-lg border border-warning/30 bg-warning-soft p-4 flex items-start gap-2">
+          <Info className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-warning">
             Al guardar cambios, tu firma previa se invalida. Tendrás que volver a firmar el contrato.
           </p>
         </div>
@@ -341,7 +341,7 @@ function EditarContratoContent() {
 
             {replacePdf && (
               form.pdfFile ? (
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-emerald-600/30 bg-emerald-50/60 dark:bg-emerald-900/20">
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-success/30 bg-success-soft">
                   <FileText className="w-5 h-5 text-primary flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>

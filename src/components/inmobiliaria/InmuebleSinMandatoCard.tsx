@@ -21,6 +21,7 @@ import { motion } from 'framer-motion';
 import { MapPin, WarningCircle, CaretRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
 import { getPropertyIcon } from './ConsignacionTable';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import type { InmuebleSinConsignacion } from '@/lib/types/inmobiliaria';
@@ -68,23 +69,25 @@ export function InmuebleSinMandatoCard({
             "availability trap" — same reasoning as ConsignacionTable's
             missing-mandate cell) — the missing-mandate CTA IS the status. */}
         <div className="absolute top-3 left-3">
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
+            hideArrow
             onClick={(e) => {
               e.stopPropagation();
               onCompletarMandato?.(inmueble);
             }}
-            className="inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-2.5 py-1 text-xs font-medium text-warning hover:opacity-80 transition-opacity"
+            className="h-auto gap-1.5 bg-warning-soft px-2.5 py-1 text-xs font-medium text-warning hover:bg-warning-soft hover:opacity-80"
           >
             <WarningCircle className="w-3.5 h-3.5" weight="fill" />
             {t('inmobiliaria.consignaciones.table.missingMandate')}
-          </button>
+          </Button>
         </div>
       </div>
 
       <div className="p-5">
         <div className="mb-3">
-          <h3 className="font-semibold text-fg dark:text-white line-clamp-1 mb-1">
+          <h3 className="font-semibold text-fg line-clamp-1 mb-1">
             {inmueble.propertyTitle}
           </h3>
           <div className="flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle">
@@ -96,7 +99,7 @@ export function InmuebleSinMandatoCard({
         </div>
 
         <div className="flex items-baseline gap-2 mb-4">
-          <span className="text-xl font-bold text-fg dark:text-white">
+          <span className="text-xl font-bold text-fg">
             {isSale
               ? (inmueble.salePrice != null ? formatCurrency(inmueble.salePrice) : '—')
               : (inmueble.monthlyRent != null ? formatCurrency(inmueble.monthlyRent) : '—')}
@@ -108,17 +111,19 @@ export function InmuebleSinMandatoCard({
           )}
         </div>
 
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
           onClick={(e) => {
             e.stopPropagation();
             onCompletarMandato?.(inmueble);
           }}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-full bg-surface-muted dark:bg-ink text-sm font-medium text-fg dark:text-fg-subtle hover:bg-primary-soft hover:text-primary transition-colors"
+          className="h-auto w-full gap-1.5 bg-surface-muted py-2.5 text-sm font-medium dark:bg-ink dark:text-fg-subtle hover:bg-primary-soft hover:text-primary"
         >
           {t('inmobiliaria.consignaciones.table.missingMandate')}
           <CaretRight className="w-4 h-4" />
-        </button>
+        </Button>
       </div>
     </motion.div>
   );

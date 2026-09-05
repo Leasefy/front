@@ -3,13 +3,18 @@
 /**
  * Integraciones con servicios externos.
  *
- * El interruptor SÍ pega al back (`PATCH /inmobiliaria/agency/integrations/:id`).
- * La configuración por integración (llaves, webhooks) todavía no tiene endpoint:
- * el componente las muestra deshabilitadas (`INTEGRATIONS_DISABLED`) y acá sólo
- * se avisa qué falta, sin prometer que se guardó algo.
+ * El interruptor SÍ pega al back (`PUT /inmobiliaria/agency/integrations/:id`)
+ * y el aviso sale DESPUÉS de que el back contesta — se da acá, que es donde se
+ * sabe si salió bien.
+ *
+ * La configuración por integración (llaves, webhooks) NO tiene endpoint. Acá
+ * había un `onConfigure` que tiraba un `toast.info` diciendo «Abriendo
+ * configuración de X» sin abrir nada, y del otro lado un formulario de API Key
+ * que contestaba «guardada» tras un `setTimeout`. Los dos se fueron: el detalle
+ * de la integración dice qué falta en vez de fingir que lo guardó.
  */
 
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { Plugs } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -38,15 +43,6 @@ export function SeccionIntegraciones() {
     }
   };
 
-  const configurar = async (integrationId: string) => {
-    const integration = integrations.find((i) => i.id === integrationId);
-    toast.info(t('inmobiliaria.config.toasts.configureIntegration'), {
-      description: t('inmobiliaria.config.toasts.configureIntegrationDesc', {
-        name: integration?.name || integrationId,
-      }),
-    });
-  };
-
   return (
     <EstadoDeDatos
       cargando={isLoading}
@@ -63,7 +59,7 @@ export function SeccionIntegraciones() {
         />
       }
     >
-      <ConfigIntegraciones integrations={integrations} onToggle={alternar} onConfigure={configurar} />
+      <ConfigIntegraciones integrations={integrations} onToggle={alternar} />
     </EstadoDeDatos>
   );
 }

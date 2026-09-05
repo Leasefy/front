@@ -25,7 +25,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import { ApiError } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
@@ -78,7 +78,7 @@ function SectionCard({ title, icon, children, className }: SectionCardProps) {
         <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center text-fg-muted dark:text-fg-subtle">
           {icon}
         </div>
-        <h3 className="font-semibold text-fg dark:text-white">{title}</h3>
+        <h3 className="font-semibold text-fg">{title}</h3>
       </div>
       <div className="p-5">{children}</div>
     </motion.div>
@@ -102,14 +102,14 @@ export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.fullAddress')}</p>
-            <p className="text-sm font-medium text-fg dark:text-white flex items-start gap-1.5">
+            <p className="text-sm font-medium text-fg flex items-start gap-1.5">
               <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-fg-subtle" />
               {consignacion.propertyAddress}
             </p>
           </div>
           <div>
             <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.zoneCity')}</p>
-            <p className="text-sm font-medium text-fg dark:text-white">
+            <p className="text-sm font-medium text-fg">
               {consignacion.propertyZone}, {consignacion.propertyCity}
             </p>
           </div>
@@ -118,7 +118,7 @@ export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) 
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-3 border-t border-border-faint dark:border-border-strong">
           <div>
             <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.contractStartDate')}</p>
-            <p className="text-sm font-medium text-fg dark:text-white flex items-center gap-1.5">
+            <p className="text-sm font-medium text-fg flex items-center gap-1.5">
               <CalendarBlank className="w-4 h-4 text-fg-subtle" />
               {formatDate(consignacion.contractDate)}
             </p>
@@ -126,7 +126,7 @@ export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) 
           {consignacion.contractEndDate && (
             <div>
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.contractEndDate')}</p>
-              <p className="text-sm font-medium text-fg dark:text-white flex items-center gap-1.5">
+              <p className="text-sm font-medium text-fg flex items-center gap-1.5">
                 <CalendarBlank className="w-4 h-4 text-fg-subtle" />
                 {formatDate(consignacion.contractEndDate)}
               </p>
@@ -135,7 +135,7 @@ export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) 
           {consignacion.minimumTerm && (
             <div>
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.minimumTerm')}</p>
-              <p className="text-sm font-medium text-fg dark:text-white">
+              <p className="text-sm font-medium text-fg">
                 {consignacion.minimumTerm} {t('inmobiliaria.consignaciones.detail.months')}
               </p>
             </div>
@@ -208,7 +208,7 @@ export function PropietarioSection({
               {isCompany ? <Buildings className="w-6 h-6" /> : <User className="w-6 h-6" />}
             </div>
             <div>
-              <h4 className="font-semibold text-fg dark:text-white">{propietario.name}</h4>
+              <h4 className="font-semibold text-fg">{propietario.name}</h4>
               <p className="text-sm text-fg-muted dark:text-fg-subtle">
                 {propietario.documentType}: {propietario.documentNumber}
               </p>
@@ -216,14 +216,16 @@ export function PropietarioSection({
           </div>
           <div className="flex items-center gap-3">
             {onCambiar && (
-              <button
-                type="button"
+              <Button
+                variant="link"
+                size="sm"
+                hideArrow
                 onClick={onCambiar}
-                className="text-sm text-fg-muted hover:text-fg"
+                className="h-auto px-0 text-sm text-fg-muted hover:text-fg"
                 data-testid="cambiar-propietario"
               >
                 Cambiar
-              </button>
+              </Button>
             )}
             <Link
               href={
@@ -260,7 +262,7 @@ export function PropietarioSection({
                 className="flex items-center justify-between gap-3"
                 data-testid="copropietario-item"
               >
-                <span className="min-w-0 truncate text-sm text-fg dark:text-white">
+                <span className="min-w-0 truncate text-sm text-fg">
                   {c.propietario?.name ?? c.propietarioId}
                   {i === 0 && (
                     <span className="ml-1.5 text-xs text-fg-muted dark:text-fg-subtle">
@@ -268,7 +270,7 @@ export function PropietarioSection({
                     </span>
                   )}
                 </span>
-                <span className="shrink-0 font-mono text-sm tabular-nums text-fg dark:text-white">
+                <span className="shrink-0 font-mono text-sm tabular-nums text-fg">
                   {formatParticipacion(c.participacionBps)}
                 </span>
               </div>
@@ -283,7 +285,7 @@ export function PropietarioSection({
               <Bank className="w-4 h-4 text-fg-subtle" />
               <span className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.detail.paymentAccount')}</span>
             </div>
-            <p className="text-sm font-medium text-fg dark:text-white">
+            <p className="text-sm font-medium text-fg">
               {BANK_NAMES[propietario.bankAccount.bank] || propietario.bankAccount.bank} - {propietario.bankAccount.accountType === 'savings' ? t('inmobiliaria.consignaciones.detail.accountTypeSavings') : t('inmobiliaria.consignaciones.detail.accountTypeChecking')}
             </p>
             {maskedAccount && <p className="text-sm text-fg-muted dark:text-fg-subtle">{maskedAccount}</p>}
@@ -383,7 +385,7 @@ export function AgenteSection({ agente, commissionPercent, isSaleListing, onReas
             </div>
           )}
           <div className="flex-1">
-            <h4 className="font-semibold text-fg dark:text-white">{agente.name}</h4>
+            <h4 className="font-semibold text-fg">{agente.name}</h4>
             <p className="text-sm text-fg-muted dark:text-fg-subtle">
               {t(ROLE_LABEL_KEYS[agente.role])} {agente.zone && `· ${agente.zone}`}
             </p>
@@ -411,11 +413,11 @@ export function AgenteSection({ agente, commissionPercent, isSaleListing, onReas
             </div>
             <div className="flex items-center justify-between text-sm">
               <div>
-                <span className="font-medium text-fg dark:text-white">{agentCommissionPercent.toFixed(1)}%</span>
+                <span className="font-medium text-fg">{agentCommissionPercent.toFixed(1)}%</span>
                 <span className="text-fg-muted dark:text-fg-subtle ml-1">{t('inmobiliaria.consignaciones.detail.agentShare')}</span>
               </div>
               <div>
-                <span className="font-medium text-fg dark:text-white">{agencyCommissionPercent.toFixed(1)}%</span>
+                <span className="font-medium text-fg">{agencyCommissionPercent.toFixed(1)}%</span>
                 <span className="text-fg-muted dark:text-fg-subtle ml-1">{t('inmobiliaria.consignaciones.detail.agencyShare')}</span>
               </div>
             </div>
@@ -483,7 +485,7 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
               <UserCircle className="w-6 h-6 text-success" />
             </div>
             <div className="flex-1">
-              <h4 className="font-semibold text-fg dark:text-white">{consignacion.currentTenantName}</h4>
+              <h4 className="font-semibold text-fg">{consignacion.currentTenantName}</h4>
               <p className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.detail.currentTenant')}</p>
             </div>
           </div>
@@ -493,14 +495,14 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
             {consignacion.leaseEndDate && (
               <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
                 <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.leaseEnd')}</p>
-                <p className="text-sm font-medium text-fg dark:text-white">
+                <p className="text-sm font-medium text-fg">
                   {formatDate(consignacion.leaseEndDate)}
                 </p>
               </div>
             )}
             <div className="p-3 rounded-lg bg-surface-muted dark:bg-bg">
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.monthlyRentLabel')}</p>
-              <p className="text-sm font-medium text-fg dark:text-white">
+              <p className="text-sm font-medium text-fg">
                 {/* A SALE mandate can never have `availability: 'RENTED'`
                     (contract-addendum-2.md §A.7 rule R4), so `monthlyRent`
                     is unreachable-null here — narrow the type, never coalesce. */}
@@ -624,15 +626,17 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
               </div>
               <ArrowRight className="w-4 h-4 text-fg-subtle" />
             </button>
-            <button
-              type="button"
+            <Button
+              variant="link"
+              size="sm"
+              hideArrow
               onClick={elegirPdf}
               disabled={subiendo}
-              className="shrink-0 px-2 text-xs text-fg-muted underline-offset-2 hover:text-fg hover:underline disabled:opacity-50"
+              className="h-auto shrink-0 px-2 text-xs text-fg-muted hover:text-fg"
               data-testid="documento-contrato-reemplazar"
             >
               {subiendo ? t(k('consignmentContractUploading')) : t(k('consignmentContractReplace'))}
-            </button>
+            </Button>
           </div>
         ) : (
           <button

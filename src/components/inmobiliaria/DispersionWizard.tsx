@@ -24,7 +24,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { RadioCardGroup, RadioCard } from '@leasefy/cadence';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import type { Dispersion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { useDispersiones } from '@/lib/hooks/useInmobiliaria';

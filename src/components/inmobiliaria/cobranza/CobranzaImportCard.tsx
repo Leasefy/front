@@ -23,7 +23,7 @@
 import * as React from 'react'
 import { useRef, useState } from 'react'
 import { FileArrowUp, WarningCircle } from '@phosphor-icons/react'
-import { Button } from '@/components/ui'
+import { Button, Input } from '@/components/ui'
 import {
   useCarteraImport,
   type CarteraImportSummary,
@@ -105,14 +105,14 @@ export function CobranzaImportCard({
 
       {/* Control de subida: input file + acción principal */}
       <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
-        <input
+        <Input
           ref={inputRef}
           type="file"
           accept={ACCEPT}
           onChange={handlePick}
           disabled={isUploading}
           aria-label="Elegir archivo CSV de cartera"
-          className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-surface-muted file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-fg hover:file:bg-surface disabled:opacity-60"
+          className="py-2 text-fg-muted file:mr-3 file:rounded-md file:border file:border-border file:bg-surface-muted file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-fg hover:file:bg-surface"
         />
         <Button
           hideArrow

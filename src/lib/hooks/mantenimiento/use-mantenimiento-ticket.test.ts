@@ -73,10 +73,7 @@ describe('useMantenimientoTicket', () => {
     await settle(result)
     expect(result.current!.data!.id).toBe('mant-001')
     expect(result.current).toHaveProperty('refetch')
-    const api = result.current as unknown as Record<string, unknown>
-    for (const m of ['assign', 'requestInfo', 'requestApproval', 'escalate', 'reopen', 'close']) {
-      expect(typeof api[m]).toBe('function')
-    }
+    expect(typeof result.current!.refetch).toBe('function')
   })
 
   it('returns null data for an unknown id', async () => {
@@ -86,39 +83,38 @@ describe('useMantenimientoTicket', () => {
     expect(result.current!.data).toBeNull()
   })
 
-  it('assign() → estado proveedor_asignado and appends an evento', async () => {
+  /**
+   * 🔴 El hook NO puede volver a exponer mutadores locales.
+   *
+   * Tenía `assign`/`requestInfo`/`requestApproval`/`escalate`/`reopen`/`close`,
+   * que cambiaban `estado` en memoria y le agregaban al historial un evento con
+   * `actor: 'human'` diciendo «Proveedor asignado al ticket.» — sin que saliera
+   * nada, sin que se guardara nada y volviendo atrás al recargar. El micro sirve
+   * estos tickets sólo por GET; el estado es del back detrás de un rail S2S que
+   * el navegador no puede usar. Si alguien los repone, esto se pone rojo.
+   */
+  it('no expone mutadores: la ficha se mira, no se acciona', async () => {
     const result = renderHook('mant-001')
     await settle(result)
-    const before = result.current!.data!.eventos.length
-    act(() => { result.current!.assign() })
-    expect(result.current!.data!.estado).toBe('proveedor_asignado')
-    expect(result.current!.data!.eventos.length).toBe(before + 1)
-    expect(result.current!.data!.eventos.at(-1)!.actor).toBe('human')
+    expect(Object.keys(result.current!).sort()).toEqual([
+      'data',
+      'error',
+      'isLoading',
+      'refetch',
+    ])
   })
 
-  it('requestInfo/requestApproval/escalate/reopen map to valid states', async () => {
+  it('el estado del ticket no cambia desde el cliente', async () => {
     const result = renderHook('mant-001')
     await settle(result)
-    act(() => { result.current!.requestInfo() })
-    expect(result.current!.data!.estado).toBe('informacion_incompleta')
-    act(() => { result.current!.requestApproval() })
-    expect(result.current!.data!.estado).toBe('requiere_aprobacion')
-    act(() => { result.current!.escalate() })
-    expect(result.current!.data!.estado).toBe('escalado')
-    act(() => { result.current!.reopen() })
-    expect(result.current!.data!.estado).toBe('reabierto')
-  })
-
-  it('close() is FENCE-04 gated: no-op + false without evidence; cierra con evidencia', async () => {
-    const result = renderHook('mant-001')
-    await settle(result)
-    let ret: boolean | undefined
-    act(() => { ret = result.current!.close() })
-    expect(ret).toBe(false)
-    expect(result.current!.data!.estado).not.toBe('cerrado')
-
-    act(() => { ret = result.current!.close({ note: 'reparado, foto adjunta' }) })
-    expect(ret).toBe(true)
-    expect(result.current!.data!.estado).toBe('cerrado')
+    const antes = result.current!.data!.estado
+    const eventos = result.current!.data!.eventos.length
+    // Cualquier mutador que reaparezca sería llamable acá; hoy no hay ninguno.
+    const conMutadores = result.current as unknown as Record<string, unknown>
+    for (const nombre of ['assign', 'requestInfo', 'requestApproval', 'escalate', 'reopen', 'close']) {
+      expect(conMutadores[nombre]).toBeUndefined()
+    }
+    expect(result.current!.data!.estado).toBe(antes)
+    expect(result.current!.data!.eventos.length).toBe(eventos)
   })
 })

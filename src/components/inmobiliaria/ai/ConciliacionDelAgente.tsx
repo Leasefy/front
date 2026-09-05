@@ -29,7 +29,7 @@
  */
 
 import { useRef, useState, type ChangeEvent } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import {
   Bank,
   Info,

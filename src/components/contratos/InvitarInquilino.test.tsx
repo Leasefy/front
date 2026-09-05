@@ -23,7 +23,7 @@ vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
 
 import { contractsApi } from '@/lib/api/contracts.service'
 import { ApiError } from '@/lib/api/client'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 import { InvitarInquilino } from './InvitarInquilino'
 import type { Contract } from '@/lib/types/contract'
 

@@ -5,7 +5,7 @@
  * de una en el back (`useNotificationSettings.updateSetting`).
  */
 
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { Bell, CreditCard, Envelope, FileText, Tag } from '@phosphor-icons/react';
 
 import { Switch } from '@/components/ui';

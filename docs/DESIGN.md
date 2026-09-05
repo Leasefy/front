@@ -355,6 +355,16 @@ Color thresholds: ≥75 `bg-success`, ≥50 `bg-warning`, <50 `bg-danger`.
 guard** — `position="top-right"`, `borderRadius: 22px` (`rounded-lg`),
 `boxShadow: 0 4px 16px rgba(20,19,15,.08)` (`shadow-md`). Don't override per-toast.
 
+**`toast` se importa SIEMPRE de `@/components/ui/toast`, nunca de `'sonner'`.** Es el
+mismo objeto por los dos caminos, así que la diferencia no se ve corriendo la app —
+se ve en los tests. `vi.mock('sonner', …)` sólo intercepta a los importadores que Vite
+procesa: el código de la app sí, `node_modules` no. Un componente que importa `sonner`
+directo queda del lado equivocado del seam el día que el envoltorio cambie, y el
+envoltorio mismo tomaba `toast` de `@leasefy/cadence` (que lo re-exporta de sonner):
+por ese camino los ~46 tests que espían el toast no veían la llamada. Hoy el envoltorio
+lo toma de `sonner` directo y el seam es uno solo. Barrido el 2026-09-05 en
+`src/app/panel/inmobiliaria/**` y `src/components/**` (105 archivos).
+
 ⚠️ **No montes un `<Toaster>` en un layout de sección.** Dos reglas, las dos medidas:
 - Sonner pinta cada toast en **todos** los `<Toaster>` montados ⇒ un segundo Toaster
   **duplica** cada toast en pantalla.
@@ -551,6 +561,14 @@ accent unchanged.
 - Icon: in a **grey circle** (`rounded-full bg-surface-muted text-fg-muted`), centered above the title. Never a gradient tile and never a square (Nico, 2026-09-03: «todo en grises y siempre encerrado en círculos»)
 - Title `text-fg` (h2/title), description `text-fg-muted`
 - Optional CTA = primary pill button (sentence case)
+
+> **Hay UN solo estado vacío.** `@/components/data-display/EmptyState` existía como un
+> segundo componente con la misma cara nominal y distinta ejecución (ícono en un
+> `rounded-2xl` —loseta, no círculo— y CTAs con `<a>`/`<button>` crudos, fuera del pill,
+> del foco cobalto y del `active:scale`). Desde el 2026-09-05 es un **adaptador** sobre
+> éste: conserva su API vieja (`primaryCta` / `secondaryCta`) para no tocar sus ~47 call
+> sites, pero no dibuja nada propio. Para código nuevo importá siempre
+> `@/components/ui/empty-state`.
 
 ### Error State (component: `src/components/ui/error-state.tsx`)
 Centered card with an **error-tinted** icon circle:

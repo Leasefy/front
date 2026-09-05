@@ -27,6 +27,18 @@ function formatCOP(value: number): string {
   return String(value)
 }
 
+/**
+ * Lo que no se pudo traer va con raya, no con cero.
+ *
+ * Con `kpis === null` (la consulta falló o el endpoint del agente todavía no
+ * existe) esta franja imprimía «0 tickets abiertos», «0 emergencias activas»
+ * y «0 % de SLA cumplido» — y el cartel de error quedaba DEBAJO, así que la
+ * pantalla tranquilizaba y avisaba del fallo al mismo tiempo. Un cero es una
+ * afirmación sobre la operación; «no lo pudimos traer» no lo es. Mismo criterio
+ * que los StatCard de `/panel/inmobiliaria/mantenimientos` (que ya usan «—»).
+ */
+const SIN_DATO = '—'
+
 interface KpiCardModel {
   key: string
   label: string
@@ -44,15 +56,15 @@ function KpiCard({
 }) {
   const { label, value, Icon, iconColor } = card
   return (
-    <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
+    <div className="rounded-lg border border-border bg-surface p-4">
       <div className="flex items-center gap-2 mb-2">
         <Icon size={18} className={iconColor} weight="duotone" />
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-tight">{label}</p>
+        <p className="text-xs text-fg-muted leading-tight">{label}</p>
       </div>
       {isLoading ? (
-        <div className="h-6 w-16 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+        <div className="h-6 w-16 rounded bg-surface-muted animate-pulse" />
       ) : (
-        <p className="text-xl font-semibold text-neutral-900 dark:text-white mt-1">{value}</p>
+        <p className="text-xl font-semibold text-fg mt-1">{value}</p>
       )}
     </div>
   )
@@ -73,51 +85,51 @@ export function MantenimientoKpiStrip({
     {
       key: 'ticketsAbiertos',
       label: k('ticketsAbiertos'),
-      value: String(kpis?.ticketsAbiertos ?? 0),
+      value: kpis ? String(kpis.ticketsAbiertos) : SIN_DATO,
       Icon: Wrench,
-      iconColor: 'text-orange-500',
+      iconColor: 'text-primary',
     },
     {
       key: 'emergenciasActivas',
       label: k('emergenciasActivas'),
-      value: String(kpis?.emergenciasActivas ?? 0),
+      value: kpis ? String(kpis.emergenciasActivas) : SIN_DATO,
       Icon: Siren,
-      iconColor: 'text-red-500',
+      iconColor: 'text-danger',
     },
     {
       key: 'vencidos',
       label: k('vencidos'),
-      value: String(kpis?.vencidos ?? 0),
+      value: kpis ? String(kpis.vencidos) : SIN_DATO,
       Icon: WarningCircle,
-      iconColor: 'text-amber-500',
+      iconColor: 'text-warning',
     },
     {
       key: 'tiempoPrimeraRespuesta',
       label: k('tiempoPrimeraRespuesta'),
-      value: `${kpis?.tiempoPrimeraRespuestaMin ?? 0} ${unitMin}`,
+      value: kpis ? `${kpis.tiempoPrimeraRespuestaMin} ${unitMin}` : SIN_DATO,
       Icon: Clock,
-      iconColor: 'text-indigo-500',
+      iconColor: 'text-info',
     },
     {
       key: 'slaCumplido',
       label: k('slaCumplido'),
-      value: `${kpis?.slaCumplidoPct ?? 0}%`,
+      value: kpis ? `${kpis.slaCumplidoPct}%` : SIN_DATO,
       Icon: CheckCircle,
-      iconColor: 'text-emerald-500',
+      iconColor: 'text-success',
     },
     {
       key: 'costoEstimado',
       label: k('costoEstimado'),
-      value: formatCOP(kpis?.costoEstimadoAbiertoCop ?? 0),
+      value: kpis ? formatCOP(kpis.costoEstimadoAbiertoCop) : SIN_DATO,
       Icon: CurrencyDollar,
-      iconColor: 'text-green-500',
+      iconColor: 'text-success',
     },
     {
       key: 'propietariosEnRiesgo',
       label: k('propietariosEnRiesgo'),
-      value: String(kpis?.propietariosEnRiesgo ?? 0),
+      value: kpis ? String(kpis.propietariosEnRiesgo) : SIN_DATO,
       Icon: UserCircle,
-      iconColor: 'text-violet-500',
+      iconColor: 'text-warning',
     },
   ]
 
@@ -126,16 +138,16 @@ export function MantenimientoKpiStrip({
     {
       key: 'reaperturas30d',
       label: k('reaperturas30d'),
-      value: `${kpis?.reaperturas30dPct ?? 0}%`,
+      value: kpis ? `${kpis.reaperturas30dPct}%` : SIN_DATO,
       Icon: ArrowsClockwise,
-      iconColor: 'text-rose-500',
+      iconColor: 'text-danger',
     },
     {
       key: 'tiempoResolucionReal',
       label: k('tiempoResolucionReal'),
-      value: `${kpis?.tiempoResolucionRealDias ?? 0} ${unitDias}`,
+      value: kpis ? `${kpis.tiempoResolucionRealDias} ${unitDias}` : SIN_DATO,
       Icon: Hourglass,
-      iconColor: 'text-fuchsia-500',
+      iconColor: 'text-info',
     },
   ]
 
@@ -150,7 +162,7 @@ export function MantenimientoKpiStrip({
 
       {/* Anti-gaming KPIs — separated block (CONTEXT §compliance, non-negotiable) */}
       <div data-testid="anti-gaming">
-        <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-3">
+        <h2 className="text-sm font-medium text-fg-muted mb-3">
           {t('inmobiliaria.ai.mantenimiento.overview.antiGamingLabel')}
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

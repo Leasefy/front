@@ -133,7 +133,7 @@ export function DebtorSidebar({
             <p className="text-xs font-medium text-fg-muted">
               {t(`${NS}.detalle.saldoPendiente`)}
             </p>
-            <p className="mt-0.5 text-xl font-semibold tracking-[-0.02em] text-fg dark:text-white tabular-nums">
+            <p className="mt-0.5 text-xl font-semibold tracking-[-0.02em] text-fg tabular-nums">
               {formatCurrency(kpis.totalOwed)}
             </p>
           </div>

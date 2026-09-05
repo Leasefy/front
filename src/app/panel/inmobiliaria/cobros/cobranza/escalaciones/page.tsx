@@ -36,7 +36,7 @@ import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service'
 import type { AgencyUser } from '@/lib/types/inmobiliaria'
 import { CobranzaEscalacionesSkeleton } from '@/components/skeleton/panel/CobranzaEscalacionesSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Spinner } from '@/components/ui'
+import { Button, Spinner } from '@/components/ui'
 
 function EscalacionesContent() {
   const { t, locale } = useI18n()
@@ -203,17 +203,19 @@ function EscalacionesContent() {
               del Resumen, y no había forma de devolverse. `router.back()`
               regresa a donde estabas; sin historial (pestaña nueva) cae al
               Resumen de Cobranza. */}
-          <button
-            type="button"
+          <Button
+            variant="link"
+            size="sm"
+            hideArrow
             onClick={() => {
               if (window.history.length > 1) router.back()
               else router.push('/panel/inmobiliaria/cobros/cobranza')
             }}
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground hover:underline"
+            className="gap-1 px-0 h-auto text-sm text-muted-foreground hover:text-foreground"
             data-testid="escalaciones-volver"
           >
             ← Volver
-          </button>
+          </Button>
           <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
           </h1>

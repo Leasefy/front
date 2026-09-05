@@ -25,6 +25,16 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Input } from '@/components/ui/input'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { toast } from '@/components/ui/toast'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
@@ -35,7 +45,7 @@ import type {
   ReviewOutcome,
 } from '@/lib/types/retencion'
 
-// ── Tabs (pill rose): controlan el filtro de servidor reviewableOnly ──
+// ── Tabs: controlan el filtro de servidor reviewableOnly ──
 type Tab = 'pendientes' | 'todas'
 
 const TABS: { key: Tab; label: string }[] = [
@@ -66,29 +76,35 @@ const DECISION_META: Record<DecisionType, DecisionMeta> = {
   plan_created: {
     label: 'Plan creado',
     icon: ClipboardText,
-    badge: 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300',
+    // El curso normal de la decisión: el rose original era el acento del
+    // módulo de retención, no un estado → tinte de marca.
+    badge: 'bg-primary-soft text-primary',
   },
   escalated_legal: {
     label: 'Escalado a legal',
     icon: Scales,
-    badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
+    badge: 'bg-warning-soft text-warning',
   },
   parked_review: {
+    // Un escalón por debajo de «Escalado a legal»: mismo ámbar, sobre el
+    // tinte neutro en vez del tinte de atención. Cadence no tiene un quinto
+    // matiz, y dos píldoras idénticas para dos decisiones distintas se leen
+    // como un error (mismo criterio que stateBadgeClasses en BandejaClient).
     label: 'Pausado para revisión',
     icon: PauseCircle,
-    badge: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-300',
+    badge: 'bg-surface-muted text-warning',
   },
   notified: {
     label: 'Notificación',
     icon: BellRinging,
-    badge: 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',
+    badge: 'bg-info-soft text-info',
   },
 }
 
 const DECISION_FALLBACK: DecisionMeta = {
   label: 'Decisión',
   icon: ClipboardText,
-  badge: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
+  badge: 'bg-surface-muted text-fg-muted',
 }
 
 function decisionMeta(type: DecisionType): DecisionMeta {
@@ -103,21 +119,22 @@ interface OutcomeMeta {
 const OUTCOME_META: Record<ReviewOutcome, OutcomeMeta> = {
   upheld: {
     label: 'Confirmada',
-    badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
+    badge: 'bg-success-soft text-success',
   },
   overridden: {
+    // Acá el rose SÍ era estado: la decisión del agente estuvo mal.
     label: 'Revertida',
-    badge: 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300',
+    badge: 'bg-danger-soft text-danger',
   },
   escalated: {
     label: 'Escalada',
-    badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
+    badge: 'bg-warning-soft text-warning',
   },
 }
 
 const OUTCOME_FALLBACK: OutcomeMeta = {
   label: 'Revisada',
-  badge: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
+  badge: 'bg-surface-muted text-fg-muted',
 }
 
 function outcomeMeta(outcome: ReviewOutcome): OutcomeMeta {
@@ -222,10 +239,10 @@ export default function RevisionesClient() {
   return (
     <main className="p-6 lg:p-8 space-y-5">
       <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-neutral-900 dark:text-white">
+        <h1 className="text-xl font-semibold text-fg">
           Cola de revisión de decisiones
         </h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="text-sm text-fg-muted">
           Decisiones autónomas tomadas por Laura, listas para confirmar, revertir o escalar.
         </p>
         {usingMock ? (
@@ -237,61 +254,58 @@ export default function RevisionesClient() {
         ) : null}
       </header>
 
-      {/* Tabs (pill rose) */}
+      {/* Tabs — mismo patrón que la bandeja de riesgos: pill sólida cuando
+          está activa, pill blanca con hairline cuando no. */}
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filtros de revisión">
         {TABS.map((t) => {
           const active = tab === t.key
           return (
-            <button
+            <Button
               key={t.key}
               type="button"
               role="tab"
               aria-selected={active}
+              size="sm"
+              hideArrow
+              variant={active ? 'default' : 'secondary'}
               onClick={() => setTab(t.key)}
-              className={
-                'px-3 py-1 text-xs font-medium rounded-full border transition-colors ' +
-                (active
-                  ? 'bg-rose-600 text-white border-rose-600'
-                  : 'bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700 hover:border-rose-400')
-              }
             >
               {t.label}
-            </button>
+            </Button>
           )
         })}
       </div>
 
-      {/* Chips por tipo de decisión (filtro de cliente) */}
+      {/* Chips por tipo de decisión (filtro de cliente) — un peso menos que
+          las pestañas de arriba: la activa se levanta (pill con borde) y la
+          inactiva queda plana, para que las dos filas no se confundan. */}
       <div className="flex flex-wrap gap-2" aria-label="Filtrar por tipo de decisión">
         {CHIPS.map((c) => {
           const active = chip === c.key
           return (
-            <button
+            <Button
               key={c.key}
               type="button"
+              size="sm"
+              hideArrow
+              variant={active ? 'secondary' : 'ghost'}
               onClick={() => setChip(c.key)}
-              className={
-                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
-                (active
-                  ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700'
-                  : 'bg-white dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700 hover:border-rose-300')
-              }
             >
               {c.label}
-            </button>
+            </Button>
           )
         })}
       </div>
 
       {/* Search */}
       <div className="relative max-w-sm">
-        <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-        <input
+        <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 z-10 text-fg-subtle" />
+        <Input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por propietario o caso…"
-          className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 pl-9 pr-3 py-2 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-rose-500"
+          className="pl-9"
         />
       </div>
 
@@ -299,38 +313,37 @@ export default function RevisionesClient() {
       {isLoading && !data ? (
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-14 rounded-lg bg-neutral-100 dark:bg-neutral-800/50 animate-pulse" />
+            <div key={i} className="h-14 rounded-lg bg-surface-muted animate-pulse" />
           ))}
         </div>
       ) : rows.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-2 text-center rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700">
-          <Gavel size={26} weight="duotone" className="text-neutral-400" />
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            No hay decisiones en este filtro.
-          </p>
-        </div>
+        <EmptyState
+          icon={Gavel}
+          title="No hay decisiones en este filtro."
+          description="Probá con otra pestaña, con otro tipo de decisión o cambiá lo que escribiste en la búsqueda."
+        />
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
-          <table className="w-full text-sm">
-            <thead className="bg-neutral-50 dark:bg-neutral-900/60 text-left text-xs text-neutral-500 dark:text-neutral-400">
-              <tr>
-                <th className="px-3 py-2 font-medium">Tipo</th>
-                <th className="px-3 py-2 font-medium">Caso</th>
-                <th className="px-3 py-2 font-medium">Tier</th>
-                <th className="px-3 py-2 font-medium hidden md:table-cell">Creada</th>
-                <th className="px-3 py-2 font-medium">Revisión</th>
-                <th className="px-3 py-2 font-medium text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+        <div className="overflow-x-auto rounded-lg border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Caso</TableHead>
+                <TableHead>Tier</TableHead>
+                <TableHead className="hidden md:table-cell">Creada</TableHead>
+                <TableHead>Revisión</TableHead>
+                <TableHead numeric>Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {pageItems.map((d) => {
                 const meta = decisionMeta(d.decisionType)
                 const DecisionIcon = meta.icon
                 const reviewed = d.reviewedBy !== null
                 const canReview = d.reviewable && !reviewed
                 return (
-                  <tr key={d.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
-                    <td className="px-3 py-3">
+                  <TableRow key={d.id}>
+                    <TableCell>
                       <span
                         className={
                           'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ' +
@@ -340,24 +353,24 @@ export default function RevisionesClient() {
                         <DecisionIcon size={14} weight="duotone" />
                         {meta.label}
                       </span>
-                    </td>
-                    <td className="px-3 py-3">
+                    </TableCell>
+                    <TableCell>
                       <Link
                         href={`/panel/inmobiliaria/contratos/riesgo/${encodeURIComponent(d.caseId)}`}
-                        className="font-medium text-rose-700 dark:text-rose-300 hover:underline whitespace-nowrap"
+                        className="font-medium text-primary hover:underline whitespace-nowrap"
                       >
                         {d.ownerId}
                       </Link>
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className="inline-flex h-6 min-w-[2rem] items-center justify-center rounded-md bg-neutral-100 dark:bg-neutral-800 px-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-flex h-6 min-w-[2rem] items-center justify-center rounded-md bg-surface-muted px-2 text-xs font-semibold text-fg-muted">
                         T{d.tier}
                       </span>
-                    </td>
-                    <td className="px-3 py-3 hidden md:table-cell text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
+                    </TableCell>
+                    <TableCell muted className="hidden md:table-cell whitespace-nowrap">
                       {formatDate(d.createdAt)}
-                    </td>
-                    <td className="px-3 py-3">
+                    </TableCell>
+                    <TableCell>
                       {reviewed ? (
                         <div className="flex flex-col gap-0.5">
                           <span
@@ -368,18 +381,18 @@ export default function RevisionesClient() {
                           >
                             {outcomeMeta(d.reviewOutcome ?? 'upheld').label}
                           </span>
-                          <span className="text-xs text-neutral-400">
+                          <span className="text-xs text-fg-subtle">
                             por {d.reviewedBy}
                             {d.reviewedAt ? ` · ${formatDate(d.reviewedAt)}` : ''}
                           </span>
                         </div>
                       ) : canReview ? (
-                        <span className="text-xs text-neutral-400">Pendiente</span>
+                        <span className="text-xs text-fg-subtle">Pendiente</span>
                       ) : (
-                        <span className="text-xs text-neutral-400">No revisable</span>
+                        <span className="text-xs text-fg-subtle">No revisable</span>
                       )}
-                    </td>
-                    <td className="px-3 py-3">
+                    </TableCell>
+                    <TableCell>
                       {canReview ? (
                         <div className="flex flex-wrap justify-end gap-2">
                           {ACTIONS.map((a) => {
@@ -401,14 +414,14 @@ export default function RevisionesClient() {
                           })}
                         </div>
                       ) : (
-                        <span className="flex justify-end text-xs text-neutral-300 dark:text-neutral-600">—</span>
+                        <span className="flex justify-end text-xs text-fg-subtle">—</span>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
 
           {/* Pie de tabla del design system: cuántas decisiones hay, cuántas
               se muestran y cuántas filas por página. */}
@@ -428,7 +441,7 @@ export default function RevisionesClient() {
       )}
 
       {error && !isLoading ? (
-        <div className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-600 dark:text-rose-400">
+        <div className="rounded-lg border border-danger bg-danger-soft p-4 text-sm text-danger">
           No pude cargar la cola de revisión: {error}
         </div>
       ) : null}

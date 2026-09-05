@@ -53,6 +53,7 @@ import {
 } from '@phosphor-icons/react';
 import { IconButton, SearchInput, SegmentedControl } from '@leasefy/cadence';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableHeader,
@@ -358,16 +359,18 @@ function FilaDeInquilino({
                inmueble en blanco: no hay arriendo del cual colgar uno. */
             <span className="text-sm text-fg-subtle">—</span>
           ) : varios ? (
-            <button
+            <Button
               type="button"
+              variant="link"
+              size="sm"
               onClick={(e) => {
                 e.stopPropagation();
                 onAlternar();
               }}
-              className="text-sm text-primary underline-offset-2 hover:underline"
+              className="h-auto px-0 text-sm text-primary"
             >
               {t('inquilinos.tabla.variosInmuebles', { n: persona.arriendos.length })}
-            </button>
+            </Button>
           ) : principal?.inmueble ? (
             <Link
               href={`/panel/inmobiliaria/inmuebles/${principal.inmueble.id}`}

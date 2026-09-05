@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Download } from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { contractsApi } from '@/lib/api/contracts.service';
 import type { ContractStatus } from '@/lib/types/contract';
 import { Button } from '@/components/ui/button';

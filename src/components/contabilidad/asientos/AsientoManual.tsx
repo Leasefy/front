@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { generarIdempotencyKey } from '@/lib/contratos/idempotencia';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { Plus, Trash } from '@phosphor-icons/react';
 import { Banner, CurrencyInput } from '@leasefy/cadence';
 

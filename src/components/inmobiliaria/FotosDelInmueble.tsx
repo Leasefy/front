@@ -25,6 +25,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Images, Star, Trash, UploadSimple } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { Spinner } from '@/components/ui/spinner';
+import { Button } from '@/components/ui/button';
+import { IconButton } from '@leasefy/cadence';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -239,7 +241,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
           <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center text-fg-muted dark:text-fg-subtle">
             <Images className="w-4 h-4" />
           </div>
-          <h3 className="font-semibold text-fg dark:text-white">Fotos</h3>
+          <h3 className="font-semibold text-fg">Fotos</h3>
         </div>
         <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-fg-subtle tabular-nums" data-testid="fotos-contador">
           {subiendo
@@ -284,25 +286,25 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
                 )}
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 [&>*]:pointer-events-auto">
                   {i !== 0 && (
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      hideArrow
                       onClick={() => void hacerPortada(img)}
                       disabled={ocupada !== null}
-                      className="rounded-md bg-white/90 px-2 py-1 text-xs font-medium text-fg hover:bg-white disabled:opacity-50"
+                      className="h-auto rounded-md bg-surface/90 px-2 py-1 text-xs font-medium hover:bg-surface disabled:bg-surface/90 disabled:opacity-50"
                       aria-label={`Hacer portada la foto ${i + 1}`}
                     >
                       Portada
-                    </button>
+                    </Button>
                   )}
-                  <button
-                    type="button"
+                  <IconButton
                     onClick={() => setPorQuitar(img)}
                     disabled={ocupada !== null}
-                    className="rounded-md bg-white/90 p-1 text-danger hover:bg-white disabled:opacity-50"
+                    className="size-auto rounded-md bg-surface/90 p-1 text-danger hover:bg-surface hover:text-danger disabled:bg-surface/90 disabled:opacity-50 [&_svg]:size-4"
                     aria-label={`Quitar la foto ${i + 1}`}
-                  >
-                    <Trash className="h-4 w-4" />
-                  </button>
+                    icon={<Trash />}
+                  />
                 </div>
               </li>
             ))}

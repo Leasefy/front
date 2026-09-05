@@ -73,7 +73,8 @@ import {
   Receipt,
   Warning,
 } from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import { IconButton } from '@leasefy/cadence';
+import { toast } from '@/components/ui/toast';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -710,15 +711,18 @@ function BotonCopiar({ texto }: { texto: string }) {
   };
 
   return (
-    <button
-      type="button"
+    /* IconButton del DS: mismo tamaño (24 px) e ícono (14 px) que el <button>
+       a mano que había acá, pero con el anillo de foco y el `active:scale`
+       de Cadence — el hecho a mano no tenía NINGÚN estilo de :focus-visible. */
+    <IconButton
+      variant="ghost"
+      size="sm"
+      className="size-6"
       onClick={() => void copiar()}
       title={t(`${NS}.copiar`)}
       aria-label={`${t(`${NS}.copiar`)}: ${texto}`}
-      className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-fg-subtle transition-colors hover:bg-surface-muted hover:text-fg"
-    >
-      <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-    </button>
+      icon={<Copy className="h-3.5 w-3.5" aria-hidden="true" />}
+    />
   );
 }
 

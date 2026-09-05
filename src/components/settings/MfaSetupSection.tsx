@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ShieldCheck, Shield, Check, Copy, Warning } from '@phosphor-icons/react';
 import { getAccessToken } from '@/lib/api/client';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { IconButton } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -200,53 +200,30 @@ export function MfaSetupSection() {
     const currentEnroll = enrollDataRef.current;
     const currentCode = codeRef.current;
 
-    if (!currentEnroll || currentCode.length !== 6) {
-      console.warn('[MFA] Verify skipped — enrollData:', !!currentEnroll, 'code length:', currentCode.length);
-      return;
-    }
+    if (!currentEnroll || currentCode.length !== 6) return;
 
     setIsLoading(true);
     try {
-      // Bypass Supabase SDK entirely — internal session lock hangs after enroll().
-      // Use token saved before enroll() and call REST API with fetch.
+      // Fuera del SDK, como todo lo demás de esta pantalla: el candado interno
+      // de auth cuelga después de `enroll()`. Y por `apiDeAuth`, no por un
+      // `fetch` suelto: éstos eran los dos ÚNICOS pedidos de la pantalla sin el
+      // tope de 15 s, así que una red colgada dejaba «Verificando...» para
+      // siempre — exactamente el síntoma que el tope existe para evitar.
       const token = getAccessToken() ?? accessTokenRef.current;
       if (!token) throw new Error('No hay sesión activa');
 
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-      const headers = {
-        'Content-Type': 'application/json',
-        'apikey': anonKey,
-        'Authorization': `Bearer ${token}`,
-      };
-
-      // Step 1: Create challenge
-      const challengeRes = await fetch(
-        `${supabaseUrl}/auth/v1/factors/${currentEnroll.factorId}/challenge`,
-        { method: 'POST', headers }
+      // Paso 1: el desafío.
+      const desafio = await apiDeAuth<{ id: string }>(
+        `/factors/${currentEnroll.factorId}/challenge`,
+        token,
+        { method: 'POST' },
       );
-      if (!challengeRes.ok) {
-        const err = await challengeRes.json();
-        throw new Error(err.message || 'Error al crear challenge');
-      }
-      const challengeData = await challengeRes.json();
 
-      // Step 2: Verify with code
-      const verifyRes = await fetch(
-        `${supabaseUrl}/auth/v1/factors/${currentEnroll.factorId}/verify`,
-        {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            challenge_id: challengeData.id,
-            code: currentCode,
-          }),
-        }
-      );
-      if (!verifyRes.ok) {
-        const err = await verifyRes.json();
-        throw new Error(err.message || 'Error al verificar código');
-      }
+      // Paso 2: verificar con el código.
+      await apiDeAuth(`/factors/${currentEnroll.factorId}/verify`, token, {
+        method: 'POST',
+        body: { challenge_id: desafio.id, code: currentCode },
+      });
 
       setState('enrolled');
       setFactorId(currentEnroll.factorId);
@@ -254,7 +231,6 @@ export function MfaSetupSection() {
       setCode('');
       toast.success('Autenticación de dos factores activada');
     } catch (err) {
-      console.error('[MFA] Verify error:', err);
       const msg = (err as Error).message || '';
       if (msg.includes('invalid') || msg.includes('expired')) {
         toast.error('Código incorrecto. Intenta de nuevo.');
@@ -316,10 +292,10 @@ export function MfaSetupSection() {
 
   if (initializing) {
     return (
-      <div className="flex items-center justify-between px-6 py-4">
+      <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-5">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
-            <ShieldCheck className="w-5 h-5 text-fg-muted" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-muted">
+            <ShieldCheck className="h-[18px] w-[18px] text-fg-muted" />
           </div>
           <div>
             <p className="text-sm font-medium text-fg">Autenticación de dos factores</p>
@@ -335,10 +311,10 @@ export function MfaSetupSection() {
   if (state === 'enrolled') {
     return (
       <>
-        <div className="flex items-center justify-between px-6 py-4">
+        <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-5">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5 text-success" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-success-soft">
+              <ShieldCheck className="h-[18px] w-[18px] text-success" />
             </div>
             <div>
               <p className="text-sm font-medium text-fg">Autenticación de dos factores</p>
@@ -404,10 +380,10 @@ export function MfaSetupSection() {
   // Enrolling state - show QR + code input
   if (state === 'enrolling' && enrollData) {
     return (
-      <div className="px-6 py-4 space-y-4">
+      <div className="space-y-4 px-4 py-4 sm:px-5">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
-            <Shield className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-muted">
+            <Shield className="h-[18px] w-[18px] text-primary" />
           </div>
           <div>
             <p className="text-sm font-medium text-fg">Configurar 2FA</p>
@@ -479,10 +455,7 @@ export function MfaSetupSection() {
           <Button
             variant="secondary"
             hideArrow
-            onClick={() => {
-              console.log('[MFA] Button clicked! code:', code, 'enrollData:', !!enrollData);
-              handleVerifyCode();
-            }}
+            onClick={handleVerifyCode}
             disabled={isLoading || code.length !== 6}
             className="flex-1 rounded-lg bg-success text-white hover:bg-success"
           >
@@ -496,10 +469,10 @@ export function MfaSetupSection() {
 
   // Idle state - not enrolled
   return (
-    <div className="flex items-center justify-between px-6 py-4 hover:bg-surface-hover transition-colors">
+    <div className="flex items-center justify-between gap-4 px-4 py-4 hover:bg-surface-hover transition-colors sm:px-5">
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
-          <ShieldCheck className="w-5 h-5 text-fg-muted" />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-muted">
+          <ShieldCheck className="h-[18px] w-[18px] text-fg-muted" />
         </div>
         <div>
           <p className="text-sm font-medium text-fg">Autenticación de dos factores</p>

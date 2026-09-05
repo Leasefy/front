@@ -16,7 +16,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PaperPlaneTilt } from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { Button } from '@/components/ui/button';
 import { messagesApi } from '@/lib/api/messages.service';

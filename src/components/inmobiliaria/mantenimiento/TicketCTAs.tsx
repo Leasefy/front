@@ -60,6 +60,17 @@ export interface TicketCTAsProps {
   onEscalar: () => void
   onCerrar: () => void
   isBusy?: boolean
+  /**
+   * Por qué NINGUNA de las cinco acciones se puede ejecutar todavía.
+   *
+   * Cuando viene, los cinco botones quedan apagados y se muestra el motivo
+   * arriba. Es la única forma honesta de tener acá botones que no tienen a
+   * dónde escribir: el micro sirve estos tickets sólo por GET y el estado vive
+   * en el back detrás de un rail S2S que el navegador no puede usar. Un botón
+   * que sólo cambia el estado local afirma un hecho que no pasó — que es
+   * exactamente lo que hacían.
+   */
+  motivoDeshabilitado?: string
 }
 
 const ROOT = 'inmobiliaria.ai.mantenimiento.cta'
@@ -78,14 +89,25 @@ export function TicketCTAs({
   onEscalar,
   onCerrar,
   isBusy = false,
+  motivoDeshabilitado,
 }: TicketCTAsProps) {
   const { t } = useI18n()
   const [confirmOpen, setConfirmOpen] = useState(false)
 
-  const disabled = (action: CtaAction) => isBusy || !canDo(action, estado)
+  const bloqueado = Boolean(motivoDeshabilitado)
+  const disabled = (action: CtaAction) =>
+    bloqueado || isBusy || !canDo(action, estado)
 
   return (
     <div className="flex flex-col gap-2">
+      {motivoDeshabilitado && (
+        <p
+          data-testid="cta-motivo-deshabilitado"
+          className="rounded-lg border border-border bg-surface-muted px-3 py-2 text-xs text-fg-muted"
+        >
+          {motivoDeshabilitado}
+        </p>
+      )}
       <Button
         data-testid="cta-asignar"
         variant="default"
@@ -142,7 +164,10 @@ export function TicketCTAs({
         size="sm"
         disabled={disabled('cerrar')}
         aria-disabled={disabled('cerrar')}
-        onClick={() => setConfirmOpen(true)}
+        onClick={() => {
+          if (disabled('cerrar')) return
+          setConfirmOpen(true)
+        }}
       >
         <XCircle size={16} weight="duotone" aria-hidden="true" />
         {t(`${ROOT}.cerrar.label`)}

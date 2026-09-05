@@ -164,7 +164,7 @@ export function ReporteCard({
             <div className="flex items-center gap-2 mb-1">
               <h3 className={cn(
                 'font-semibold text-sm truncate',
-                isLocked ? 'text-fg-subtle dark:text-fg-muted' : 'text-fg dark:text-white'
+                isLocked ? 'text-fg-subtle dark:text-fg-muted' : 'text-fg'
               )}>
                 {report.title}
               </h3>
@@ -226,7 +226,7 @@ export function ReporteCard({
               <div className="flex items-center gap-2 mb-1">
                 <h3 className={cn(
                   'font-semibold',
-                  isLocked ? 'text-fg-subtle dark:text-fg-muted' : 'text-fg dark:text-white'
+                  isLocked ? 'text-fg-subtle dark:text-fg-muted' : 'text-fg'
                 )}>
                   {report.title}
                 </h3>

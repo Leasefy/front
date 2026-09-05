@@ -88,7 +88,11 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
           value={`${summary.vacancyRate}%`}
           icon={TrendUp}
           color="red"
-          subtitle={`Prom. ${summary.avgDaysVacant} dias vacante`}
+          subtitle={
+            summary.avgDaysVacant === null
+              ? undefined
+              : `Prom. ${summary.avgDaysVacant} días vacante`
+          }
         />
       </div>
 

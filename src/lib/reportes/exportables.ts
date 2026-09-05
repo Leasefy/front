@@ -135,5 +135,7 @@ export function descargarBlob(blob: Blob, nombre: string): void {
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  // Revocar en el mismo tick puede cancelar la descarga en Safari/Firefox: el
+  // navegador todavía no leyó el blob cuando la URL deja de existir.
+  setTimeout(() => URL.revokeObjectURL(url), 0)
 }

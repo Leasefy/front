@@ -3,6 +3,7 @@
 import { AvisoDatosDeEjemplo } from '@/components/estado/AvisoDatosDeEjemplo'
 import { useState } from 'react'
 import { AlertaAccionable } from '@/components/ui/alerta-accionable'
+import { Button } from '@/components/ui/button'
 import { ChatText, ClipboardText, Buildings, Copy, Check } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { useRetencionCaso } from '@/lib/hooks/retencion/use-retencion'
@@ -35,8 +36,8 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
   if (isLoading && !data) {
     return (
       <main className="p-6 lg:p-8">
-        <div className="h-6 w-48 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse mb-4" />
-        <div className="h-40 rounded-lg bg-neutral-100 dark:bg-neutral-800/50 animate-pulse" />
+        <div className="h-6 w-48 rounded bg-surface-muted animate-pulse mb-4" />
+        <div className="h-40 rounded-lg bg-surface-muted animate-pulse" />
       </main>
     )
   }
@@ -44,7 +45,7 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
   if (error && !data) {
     return (
       <main className="p-6 lg:p-8">
-        <div className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-600 dark:text-rose-400">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
           No pude cargar el caso: {error}
         </div>
       </main>
@@ -63,12 +64,12 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
 
       {/* Header */}
       <header className="flex flex-wrap items-center gap-3">
-        <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-rose-50 dark:bg-rose-950/30 text-base font-semibold text-rose-700 dark:text-rose-300">
+        <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-danger-soft text-base font-semibold text-danger">
           {c.score}
         </span>
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-neutral-900 dark:text-white">{c.ownerName}</h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          <h1 className="text-xl font-semibold text-fg">{c.ownerName}</h1>
+          <p className="text-sm text-fg-muted">
             {STATE_LABEL[c.state]} · {c.city ?? '—'} · {c.propertyCount} inmueble{c.propertyCount === 1 ? '' : 's'} · {c.ownerType}
           </p>
         </div>
@@ -85,18 +86,21 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
       <div className="flex flex-col md:flex-row gap-6">
         {/* Main */}
         <section className="flex-1 min-w-0">
-          <nav role="tablist" aria-label="Detalle del caso" className="flex items-center gap-1 border-b border-neutral-200 dark:border-neutral-800 mb-4">
+          <nav role="tablist" aria-label="Detalle del caso" className="flex items-center gap-1 border-b border-border mb-4">
             {TABS.map(({ key, label, icon: Icon }) => (
+              // Pestaña subrayada, no botón: no lleva superficie ni pill, así
+              // que se queda como <button type="button"> (excepción del DS).
               <button
                 key={key}
+                type="button"
                 role="tab"
                 aria-selected={tab === key}
                 onClick={() => setTab(key)}
                 className={
                   'inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ' +
                   (tab === key
-                    ? 'border-rose-600 text-rose-700 dark:text-rose-300'
-                    : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200')
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-fg-muted hover:text-fg')
                 }
               >
                 <Icon size={15} weight="duotone" /> {label}
@@ -122,8 +126,8 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
-      <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-2">{title}</h3>
+    <div className="rounded-lg border border-border bg-surface p-4">
+      <h3 className="text-sm font-semibold text-fg mb-2">{title}</h3>
       {children}
     </div>
   )
@@ -131,10 +135,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function NoSourceBlock<T>({ src, render }: { src: NoSource<T>; render: (item: T, i: number) => React.ReactNode }) {
   if (!src.available) {
-    return <p className="text-xs text-neutral-400 italic">No disponible{src.reason ? ` — ${src.reason}` : ''}.</p>
+    return <p className="text-xs text-fg-subtle italic">No disponible{src.reason ? ` — ${src.reason}` : ''}.</p>
   }
   if (src.items.length === 0) {
-    return <p className="text-xs text-neutral-400">Sin registros.</p>
+    return <p className="text-xs text-fg-subtle">Sin registros.</p>
   }
   return <ul className="space-y-1.5">{src.items.map((it, i) => render(it, i))}</ul>
 }
@@ -144,8 +148,8 @@ function PerfilTab({ bundle }: { bundle: CaseBundle }) {
   return (
     <div className="space-y-4">
       <Section title="Resumen de salud">
-        <p className="text-sm text-neutral-700 dark:text-neutral-300">{p.resumenSalud.diagnosis}</p>
-        <p className="mt-2 text-xs text-neutral-400">
+        <p className="text-sm text-fg-muted">{p.resumenSalud.diagnosis}</p>
+        <p className="mt-2 text-xs text-fg-subtle">
           Causa raíz: {p.resumenSalud.rootCause.label} ({p.resumenSalud.rootCause.pct}%) · Confianza: {p.resumenSalud.confidence}
         </p>
       </Section>
@@ -155,8 +159,8 @@ function PerfilTab({ bundle }: { bundle: CaseBundle }) {
           src={p.inmuebles}
           render={(it, i) => (
             <li key={i} className="flex items-center justify-between gap-3 text-sm">
-              <span className="text-neutral-700 dark:text-neutral-300">{it.address ?? 'Sin dirección'}</span>
-              <span className="text-xs text-neutral-400">
+              <span className="text-fg-muted">{it.address ?? 'Sin dirección'}</span>
+              <span className="text-xs text-fg-subtle">
                 {it.estado}
                 {it.canon != null ? ` · ${formatCop(it.canon)}` : ''}
                 {it.diasVacio ? ` · ${it.diasVacio}d vacío` : ''}
@@ -172,8 +176,8 @@ function PerfilTab({ bundle }: { bundle: CaseBundle }) {
             src={p.financiero}
             render={(it, i) => (
               <li key={i} className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-neutral-500 dark:text-neutral-400">{it.label}</span>
-                <span className="text-neutral-900 dark:text-white">{it.value}</span>
+                <span className="text-fg-muted">{it.label}</span>
+                <span className="text-fg">{it.value}</span>
               </li>
             )}
           />
@@ -182,8 +186,8 @@ function PerfilTab({ bundle }: { bundle: CaseBundle }) {
           <NoSourceBlock
             src={p.interacciones}
             render={(it, i) => (
-              <li key={i} className="text-sm text-neutral-700 dark:text-neutral-300">
-                {it.summary} <span className="text-xs text-neutral-400">· {it.at.slice(0, 10)}</span>
+              <li key={i} className="text-sm text-fg-muted">
+                {it.summary} <span className="text-xs text-fg-subtle">· {it.at.slice(0, 10)}</span>
               </li>
             )}
           />
@@ -193,8 +197,8 @@ function PerfilTab({ bundle }: { bundle: CaseBundle }) {
             src={p.contratos}
             render={(it, i) => (
               <li key={i} className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-neutral-700 dark:text-neutral-300">{it.label}</span>
-                {it.vence ? <span className="text-xs text-neutral-400">vence {it.vence}</span> : null}
+                <span className="text-fg-muted">{it.label}</span>
+                {it.vence ? <span className="text-xs text-fg-subtle">vence {it.vence}</span> : null}
               </li>
             )}
           />
@@ -204,8 +208,8 @@ function PerfilTab({ bundle }: { bundle: CaseBundle }) {
             src={p.mantenimientos}
             render={(it, i) => (
               <li key={i} className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-neutral-700 dark:text-neutral-300">{it.label}</span>
-                <span className="text-xs text-neutral-400">{it.status} · {it.at}</span>
+                <span className="text-fg-muted">{it.label}</span>
+                <span className="text-xs text-fg-subtle">{it.status} · {it.at}</span>
               </li>
             )}
           />
@@ -231,25 +235,28 @@ const TASK_STATUS_LABEL: Record<TaskStatus, string> = {
 function PlanTab({ bundle }: { bundle: CaseBundle }) {
   const plan = bundle.plan
   if (!plan) {
-    return <Section title="Plan de retención"><p className="text-sm text-neutral-500">Este caso es saludable — no requiere plan.</p></Section>
+    return <Section title="Plan de retención"><p className="text-sm text-fg-muted">Este caso es saludable — no requiere plan.</p></Section>
   }
   return (
     <div className="space-y-4">
       <Section title="Objetivo del plan">
-        <p className="text-sm text-neutral-700 dark:text-neutral-300">{plan.objective}</p>
+        <p className="text-sm text-fg-muted">{plan.objective}</p>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-          <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-neutral-600 dark:text-neutral-300">
+          <span className="rounded-full bg-surface-muted px-2 py-0.5 text-fg-muted">
             Playbook: {plan.playbookId}
           </span>
-          <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-neutral-600 dark:text-neutral-300">
+          <span className="rounded-full bg-surface-muted px-2 py-0.5 text-fg-muted">
             Responsable: {plan.responsibleRole}
           </span>
           {plan.proposed ? (
-            <span className="rounded-full bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 text-rose-700 dark:text-rose-300">
+            // «Propuesto» no es un error: es un plan que todavía no existe como
+            // tareas reales. Es el estado de atención del par (el otro ramal es
+            // el plan ya materializado), así que va en warning, no en danger.
+            <span className="rounded-full bg-warning-soft px-2 py-0.5 text-warning">
               Propuesto (sin materializar)
             </span>
           ) : (
-            <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 text-emerald-700 dark:text-emerald-300">
+            <span className="rounded-full bg-success-soft px-2 py-0.5 text-success">
               {plan.status}
             </span>
           )}
@@ -260,10 +267,12 @@ function PlanTab({ bundle }: { bundle: CaseBundle }) {
         <ul className="space-y-2">
           {plan.tasks.map((t, i) => (
             <li key={t.id ?? t.code ?? i} className="flex items-start gap-3 text-sm">
-              <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-rose-400" />
+              {/* Viñeta decorativa: el rose original era el acento del módulo,
+                  no un estado (el estado de la tarea va escrito abajo). */}
+              <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
               <div className="min-w-0 flex-1">
-                <p className="text-neutral-800 dark:text-neutral-200">{t.title}</p>
-                <p className="text-xs text-neutral-400">
+                <p className="text-fg">{t.title}</p>
+                <p className="text-xs text-fg-subtle">
                   {t.responsibleRole}
                   {t.dueDate ? ` · vence ${t.dueDate}` : ''} · {TASK_STATUS_LABEL[t.status]}
                 </p>
@@ -272,7 +281,7 @@ function PlanTab({ bundle }: { bundle: CaseBundle }) {
           ))}
         </ul>
         {plan.proposed ? (
-          <p className="mt-3 text-xs text-neutral-400">
+          <p className="mt-3 text-xs text-fg-subtle">
             Plan generado por Laura. Al confirmarlo se crean las tareas internas asignadas a cada responsable.
           </p>
         ) : null}
@@ -318,30 +327,28 @@ function MensajeTab({ bundle }: { bundle: CaseBundle }) {
 
       <Section title="Borrador de mensaje">
         <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
-          <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 capitalize text-neutral-600 dark:text-neutral-300">
+          <span className="rounded-full bg-surface-muted px-2 py-0.5 capitalize text-fg-muted">
             {m.channel}
           </span>
-          <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 capitalize text-neutral-600 dark:text-neutral-300">
+          <span className="rounded-full bg-surface-muted px-2 py-0.5 capitalize text-fg-muted">
             tono {m.tone}
           </span>
-          <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-neutral-600 dark:text-neutral-300">
+          <span className="rounded-full bg-surface-muted px-2 py-0.5 text-fg-muted">
             {m.source === 'llm' ? 'redactado por IA' : 'plantilla'}
           </span>
           {m.barrierApplied ? (
-            <span className="rounded-full bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 text-rose-700 dark:text-rose-300">
+            // La barrera recortó el borrador: es un aviso para que lo revises
+            // antes de mandarlo, no un fallo → atención, no error.
+            <span className="rounded-full bg-warning-soft px-2 py-0.5 text-warning">
               barrera de compliance aplicada
             </span>
           ) : null}
         </div>
-        {m.subject ? <p className="mb-1 text-sm font-medium text-neutral-900 dark:text-white">{m.subject}</p> : null}
-        <p className="whitespace-pre-wrap text-sm text-neutral-700 dark:text-neutral-300">{m.body}</p>
-        <button
-          type="button"
-          onClick={copy}
-          className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 px-3 py-1.5 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800"
-        >
+        {m.subject ? <p className="mb-1 text-sm font-medium text-fg">{m.subject}</p> : null}
+        <p className="whitespace-pre-wrap text-sm text-fg-muted">{m.body}</p>
+        <Button type="button" variant="outline" size="sm" hideArrow onClick={copy} className="mt-3">
           {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'Copiado' : 'Copiar'}
-        </button>
+        </Button>
       </Section>
     </div>
   )

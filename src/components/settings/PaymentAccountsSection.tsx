@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { CreditCard, Bank, Wallet, House, Star, Warning, CaretRight, TrashSimple, Plus, X, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { IconButton } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

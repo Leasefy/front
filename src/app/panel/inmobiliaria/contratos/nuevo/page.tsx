@@ -13,7 +13,7 @@ import {
   Scales,
   Sparkle,
 } from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { Button } from '@/components/ui/button';
@@ -619,7 +619,7 @@ function NuevoContratoContent() {
           <section className="rounded-lg border border-border bg-card p-5 space-y-3">
             <h2 className="text-base font-semibold text-foreground">PDF del contrato</h2>
             {form.pdfFile ? (
-              <div className="flex items-center gap-3 p-3 rounded-lg border border-emerald-600/30 bg-emerald-50/60 dark:bg-emerald-900/20">
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-success/30 bg-success-soft">
                 <FileText className="w-5 h-5 text-primary flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>

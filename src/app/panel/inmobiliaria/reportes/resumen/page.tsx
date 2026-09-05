@@ -23,6 +23,7 @@ import {
 import { cn } from '@/lib/utils';
 import { EmptyState, Spinner } from '@/components/ui';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { PageGuard } from '@/components/auth/PageGuard';
 import { MonoLabel, BrandDot, BrandContour } from '@/components/brand';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -64,31 +65,31 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
         style={{ background: 'linear-gradient(150deg, #14130f 58%, #2a2824 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
       >
         {/* Brand contour — single hairline tracing the roof profile (badge grammar) */}
-        <div className="absolute -inset-x-1 top-[34%] h-[44%] text-white/[0.14] pointer-events-none">
+        <div className="absolute -inset-x-1 top-[34%] h-[44%] text-ink-fg/[0.14] pointer-events-none">
           <BrandContour />
         </div>
         <div className="flex items-start justify-between">
-          <MonoLabel className="text-[11px] font-medium text-white/55">{title}</MonoLabel>
+          <MonoLabel className="text-[11px] font-medium text-ink-fg/55">{title}</MonoLabel>
           <div className="rounded-lg p-2.5" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}>
-            <Icon weight="duotone" className="h-4 w-4 text-white/90" />
+            <Icon weight="duotone" className="h-4 w-4 text-ink-fg/90" />
           </div>
         </div>
-        <p className="font-heading text-[28px] font-semibold text-white tracking-tight tabular-nums leading-none mt-3">
+        <p className="font-heading text-[28px] font-semibold text-ink-fg tracking-tight tabular-nums leading-none mt-3">
           {value}
         </p>
-        {subtitle && <p className="font-sans text-[12px] text-white/70 mt-1">{subtitle}</p>}
+        {subtitle && <p className="font-sans text-[12px] text-ink-fg/70 mt-1">{subtitle}</p>}
         <div className="flex-1 min-h-[8px]" />
         {trend && (
           <div className="mt-2.5 flex items-center gap-1">
             {trend.isPositive ? (
-              <TrendUp weight="bold" className="h-3 w-3 text-white/80" />
+              <TrendUp weight="bold" className="h-3 w-3 text-ink-fg/80" />
             ) : (
-              <TrendDown weight="bold" className="h-3 w-3 text-white/80" />
+              <TrendDown weight="bold" className="h-3 w-3 text-ink-fg/80" />
             )}
-            <span className="font-sans text-[11.5px] font-medium tabular-nums text-white/90">
+            <span className="font-sans text-[11.5px] font-medium tabular-nums text-ink-fg/90">
               {trend.isPositive ? '+' : ''}{trend.value}%
             </span>
-            <span className="font-sans text-[11.5px] text-white/60">{t('inmobiliaria.common.vsLastMonth')}</span>
+            <span className="font-sans text-[11.5px] text-ink-fg/60">{t('inmobiliaria.common.vsLastMonth')}</span>
           </div>
         )}
       </Link>
@@ -249,7 +250,41 @@ function AgentMiniCard({ agent, t }: { agent: Agente; t: (key: string, params?: 
  * Inmobiliaria Dashboard Page
  * Main overview for real estate agency operations
  */
+/**
+ * `/reportes/resumen` — el resumen del negocio.
+ *
+ * 🔴 Sin `PageGuard`, esta era la ÚNICA de las cuatro pantallas de Reportes que
+ * no comprobaba el módulo que su fila del sidebar declara (`dashboard`, en
+ * `arquitectura-del-panel.ts`). Entrando por URL se montaba igual y cada hook
+ * decidía por su cuenta: quien no tenía permiso veía la pantalla completa con
+ * todo en cero. El guard alinea pantalla y sidebar (`gates-del-panel.test.ts`
+ * §2); los ceros silenciosos por FALTA DE PERMISO los resuelve `SinAcceso`,
+ * abajo.
+ */
 export default function InmobiliariaDashboardPage() {
+  return (
+    <PageGuard module="dashboard">
+      <ResumenDelNegocio />
+    </PageGuard>
+  );
+}
+
+/**
+ * Un bloque que no se puede mostrar porque el rol no lo alcanza. Dice eso,
+ * en vez de dibujar un cero: «0 agentes activos» y «no tenés acceso a
+ * agentes» se ven igual y significan cosas opuestas.
+ */
+function SinAcceso({ que }: { que: string }) {
+  return (
+    <div className="rounded-lg border border-border bg-surface px-4 py-6 text-center">
+      <p className="text-sm text-fg-muted">
+        Tu rol no incluye {que}. Pedile a un administrador de la inmobiliaria que te lo habilite.
+      </p>
+    </div>
+  );
+}
+
+function ResumenDelNegocio() {
   const { t } = useI18n();
   const { canAccess, isLoading: permLoading } = usePermissions();
 
@@ -278,6 +313,10 @@ export default function InmobiliariaDashboardPage() {
     year: 'numeric',
   }).format(new Date());
   const currentMonthLabel = mesCrudo.charAt(0).toUpperCase() + mesCrudo.slice(1);
+  // Cada bloque sabe si el rol lo alcanza: sin esto, «sin permiso» y «no hay
+  // nada» se dibujan igual (un cero) y significan cosas opuestas.
+  const veAgentes = !permLoading && canAccess('agentes', 'view');
+  const vePipeline = !permLoading && canAccess('pipeline', 'view');
   const { agentes } = useAgentes({ skip: permLoading || !canAccess('agentes', 'view') });
   const { pipelineItems } = usePipelineItems({ skip: permLoading || !canAccess('pipeline', 'view') });
   const { cobros } = useCobros(undefined, { skip: permLoading || !canAccess('cobros', 'view') });
@@ -369,7 +408,7 @@ export default function InmobiliariaDashboardPage() {
         />
         <KPICard
           title={t('inmobiliaria.dashboard.kpi.occupancy')}
-          value={`${kpis.occupancyRate}%`}
+          value={`${kpis.occupancyRate.toFixed(1)}%`}
           subtitle={t('inmobiliaria.dashboard.kpi.occupancyOf', { rented: kpis.propertiesRented, total: kpis.totalProperties })}
           icon={House}
         />
@@ -407,12 +446,14 @@ export default function InmobiliariaDashboardPage() {
                 <PipelineMiniCard key={item.id} item={item} />
               ))}
             </div>
-          ) : (
+          ) : vePipeline ? (
             <EmptyState
               icon={Kanban}
               title={t('inmobiliaria.dashboard.pipeline.empty')}
               description="Los candidatos en proceso aparecerán aquí a medida que avancen en el pipeline."
             />
+          ) : (
+            <SinAcceso que="el pipeline" />
           )}
         </div>
 
@@ -432,11 +473,24 @@ export default function InmobiliariaDashboardPage() {
             </Link>
           </div>
 
-          <div className="space-y-4">
-            {activeAgents.slice(0, 4).map((agent) => (
-              <AgentMiniCard key={agent.id} agent={agent} t={t} />
-            ))}
-          </div>
+          {/* El bloque no tenía vacío: con 0 agentes quedaba un hueco mudo
+              entre el encabezado y el separador. Y sin permiso decía «0
+              agentes activos», que no es lo mismo que no poder verlos. */}
+          {!veAgentes ? (
+            <SinAcceso que="el equipo" />
+          ) : activeAgents.length === 0 ? (
+            <EmptyState
+              icon={UserCircle}
+              title="Todavía no hay agentes activos"
+              description="Invitá a alguien del equipo desde Configuración › Equipo y acá vas a ver su carga y sus cierres."
+            />
+          ) : (
+            <div className="space-y-4">
+              {activeAgents.slice(0, 4).map((agent) => (
+                <AgentMiniCard key={agent.id} agent={agent} t={t} />
+              ))}
+            </div>
+          )}
 
           <div className="mt-5 pt-4 border-t border-border">
             <div className="flex items-center justify-between text-sm">
@@ -560,12 +614,13 @@ export default function InmobiliariaDashboardPage() {
         <div className="mt-6 pt-5 border-t border-neutral-100 dark:border-neutral-700">
           <div className="flex items-center justify-between text-sm mb-2">
             <MonoLabel>{t('inmobiliaria.dashboard.financial.collectionRate')}</MonoLabel>
-            <span className="font-heading font-semibold text-neutral-900 dark:text-white tabular-nums">{kpis.collectionRate.toFixed(1)}%</span>
+            <span className="font-heading font-semibold text-fg tabular-nums">{kpis.collectionRate.toFixed(1)}%</span>
           </div>
           <div className="h-2 rounded-full bg-surface-muted overflow-hidden">
             <div
               className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${kpis.collectionRate}%` }}
+              // Topada al 100: con sobre-recaudo la barra se salía del riel.
+              style={{ width: `${Math.min(100, Math.max(0, kpis.collectionRate))}%` }}
             />
           </div>
         </div>

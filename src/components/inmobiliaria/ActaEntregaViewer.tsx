@@ -83,13 +83,13 @@ function Section({ title, icon, children, defaultOpen = true }: SectionProps) {
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
-        className="w-full flex items-center justify-between p-4 bg-surface-muted hover:bg-muted transition-colors"
+        className="w-full flex items-center justify-between p-4 bg-surface-muted hover:bg-border-faint transition-colors"
       >
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-md bg-primary-soft flex items-center justify-center text-primary">
             {icon}
           </div>
-          <span className="font-medium text-foreground">{title}</span>
+          <span className="font-medium text-fg">{title}</span>
         </div>
         {isOpen ? (
           <CaretUp className="w-4 h-4 text-fg-muted" />
@@ -126,17 +126,17 @@ function PartyCard({ label, name, cedula, phone, email, icon }: PartyCardProps) 
   return (
     <div className="p-4 rounded-lg bg-surface-muted border border-border">
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center">
           {icon}
         </div>
         <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wide">
+          <p className="text-xs text-fg-muted uppercase tracking-wide">
             {label}
           </p>
-          <p className="font-medium text-foreground">{name}</p>
+          <p className="font-medium text-fg">{name}</p>
         </div>
       </div>
-      <div className="space-y-1 text-sm text-muted-foreground">
+      <div className="space-y-1 text-sm text-fg-muted">
         <div className="flex items-center gap-2">
           <IdentificationCard className="w-4 h-4 text-fg-subtle" />
           <span>{cedula}</span>
@@ -236,11 +236,11 @@ export function ActaEntregaViewer({
                 {getActaStatusLabel(acta.status)}
               </span>
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground mb-1">
+            <h1 className="text-2xl font-semibold tracking-tight text-fg mb-1">
               {acta.propertyTitle}
             </h1>
-            <p className="text-sm text-muted-foreground">{acta.propertyAddress}</p>
-            <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
+            <p className="text-sm text-fg-muted">{acta.propertyAddress}</p>
+            <div className="flex items-center gap-4 mt-3 text-sm text-fg-muted">
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4" />
                 {formatDateFull(acta.deliveryDate)}
@@ -321,10 +321,10 @@ export function ActaEntregaViewer({
                 className="border border-border rounded-lg overflow-hidden"
               >
                 <div className="px-4 py-3 bg-surface-muted border-b border-border">
-                  <h4 className="font-medium text-foreground">
+                  <h4 className="font-medium text-fg">
                     {getRoomLabel(room)}
                   </h4>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-fg-muted">
                     {roomItems.length} {t('inmobiliaria.acta.itemsLabel')}
                   </p>
                 </div>
@@ -355,12 +355,12 @@ export function ActaEntregaViewer({
                           className="border-b border-border-faint dark:border-border-strong/50 last:border-0"
                         >
                           <TableCell className="py-3 px-4">
-                            <span className="font-medium text-foreground text-sm">
+                            <span className="font-medium text-fg text-sm">
                               {item.name}
                             </span>
                           </TableCell>
                           <TableCell className="py-3 px-4 text-center">
-                            <span className="text-muted-foreground text-sm">
+                            <span className="text-fg-muted text-sm">
                               {item.quantity}
                             </span>
                           </TableCell>
@@ -404,7 +404,7 @@ export function ActaEntregaViewer({
                       className="p-3 rounded-md bg-surface-muted"
                     >
                       <div className="flex items-start justify-between">
-                        <p className="font-medium text-foreground text-sm">
+                        <p className="font-medium text-fg text-sm">
                           {item.name}
                         </p>
                         <span
@@ -463,20 +463,20 @@ export function ActaEntregaViewer({
                       icons[meter.type]
                     )}
                   </div>
-                  <span className="font-medium text-foreground">
+                  <span className="font-medium text-fg">
                     {labels[meter.type]}
                   </span>
                 </div>
-                <p className="text-2xl font-bold text-foreground font-mono">
+                <p className="text-2xl font-bold text-fg font-mono">
                   {meter.reading}
                 </p>
-                <p className="text-xs text-muted-foreground">{meter.unit}</p>
+                <p className="text-xs text-fg-muted">{meter.unit}</p>
               </div>
             );
           })}
 
           {acta.meterReadings.length === 0 && (
-            <div className="col-span-3 p-6 text-center text-muted-foreground">
+            <div className="col-span-3 p-6 text-center text-fg-muted">
               {t('inmobiliaria.acta.noReadings')}
             </div>
           )}
@@ -495,10 +495,10 @@ export function ActaEntregaViewer({
                 <Key className="w-5 h-5 text-fg-muted" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground text-sm truncate">
+                <p className="font-medium text-fg text-sm truncate">
                   {key.type}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-fg-muted">
                   {t('inmobiliaria.acta.quantity')}: {key.quantity}
                 </p>
               </div>
@@ -506,7 +506,7 @@ export function ActaEntregaViewer({
           ))}
 
           {acta.keysDelivered.length === 0 && (
-            <div className="col-span-3 p-6 text-center text-muted-foreground">
+            <div className="col-span-3 p-6 text-center text-fg-muted">
               {t('inmobiliaria.acta.noKeysRegistered')}
             </div>
           )}
@@ -517,7 +517,7 @@ export function ActaEntregaViewer({
       <Section title={t('inmobiliaria.acta.observationsTitle')} icon={<ClipboardText className="w-4 h-4" />}>
         <div className="space-y-4">
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
+            <p className="text-xs text-fg-muted uppercase tracking-wide mb-2">
               {t('inmobiliaria.acta.generalCondition')}
             </p>
             <span className={cn('px-4 py-2 rounded-lg text-sm font-medium', getConditionColor(acta.generalCondition))}>
@@ -527,10 +527,10 @@ export function ActaEntregaViewer({
 
           {acta.generalObservations && (
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
+              <p className="text-xs text-fg-muted uppercase tracking-wide mb-2">
                 {t('inmobiliaria.acta.observations')}
               </p>
-              <p className="text-muted-foreground whitespace-pre-wrap">
+              <p className="text-fg-muted whitespace-pre-wrap">
                 {acta.generalObservations}
               </p>
             </div>
@@ -544,8 +544,8 @@ export function ActaEntregaViewer({
           <div className="space-y-4">
             {/* Deposit Amount */}
             <div className="flex items-center justify-between p-4 rounded-lg bg-surface-muted border border-border">
-              <span className="text-muted-foreground">{t('inmobiliaria.acta.originalDeposit')}</span>
-              <span className="font-bold text-foreground">
+              <span className="text-fg-muted">{t('inmobiliaria.acta.originalDeposit')}</span>
+              <span className="font-mono font-bold tabular-nums text-fg">
                 ${acta.depositAmount.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}
               </span>
             </div>
@@ -553,7 +553,7 @@ export function ActaEntregaViewer({
             {/* Deductions */}
             {acta.deductions && acta.deductions.length > 0 && (
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                <p className="text-xs text-fg-muted uppercase tracking-wide">
                   {t('inmobiliaria.acta.deductions')}
                 </p>
                 {acta.deductions.map((deduction, index) => (
@@ -569,7 +569,7 @@ export function ActaEntregaViewer({
                         <p className="text-xs text-danger">{deduction.notes}</p>
                       )}
                     </div>
-                    <span className="font-medium text-danger">
+                    <span className="font-mono font-medium tabular-nums text-danger">
                       -${deduction.amount.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}
                     </span>
                   </div>
@@ -583,7 +583,7 @@ export function ActaEntregaViewer({
                 <span className="font-medium text-success">
                   {t('inmobiliaria.acta.amountToReturn')}
                 </span>
-                <span className="text-xl font-bold text-success">
+                <span className="text-xl font-mono font-bold tabular-nums text-success">
                   ${acta.depositToReturn.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}
                 </span>
               </div>
@@ -654,10 +654,10 @@ export function ActaEntregaViewer({
                 ) : (
                   <>
                     <Signature className="w-10 h-10 text-fg-subtle mx-auto mb-2" />
-                    <p className="font-medium text-muted-foreground">
+                    <p className="font-medium text-fg-muted">
                       {partyLabels[party]}
                     </p>
-                    <p className="text-sm text-muted-foreground">{t('inmobiliaria.acta.pending')}</p>
+                    <p className="text-sm text-fg-muted">{t('inmobiliaria.acta.pending')}</p>
                     <Button
                       variant="secondary"
                       size="sm"
@@ -686,7 +686,7 @@ export function ActaEntregaViewer({
       </Section>
 
       {/* Metadata */}
-      <div className="text-xs text-muted-foreground text-center space-y-1">
+      <div className="text-xs text-fg-muted text-center space-y-1">
         <p>ID: {acta.id}</p>
         <p>
           {t('inmobiliaria.acta.created')}: {formatDateTime(acta.createdAt)} | {t('inmobiliaria.acta.updated')}: {formatDateTime(acta.updatedAt)}

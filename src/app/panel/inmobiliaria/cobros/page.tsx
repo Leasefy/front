@@ -499,25 +499,21 @@ function CobrosContent() {
           />
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => shiftMonth(-1)}
+              <IconButton
+                variant="ghost"
+                icon={<CaretLeft className="w-4 h-4" />}
                 aria-label="Mes anterior"
-                className="p-1 rounded-md text-fg-muted hover:text-fg hover:bg-muted transition-colors"
-              >
-                <CaretLeft className="w-4 h-4" />
-              </button>
+                onClick={() => shiftMonth(-1)}
+              />
               <span className="text-sm font-medium text-fg text-center tabular-nums min-w-[7rem]">
                 {monthDisplay}
               </span>
-              <button
-                type="button"
-                onClick={() => shiftMonth(1)}
+              <IconButton
+                variant="ghost"
+                icon={<CaretRight className="w-4 h-4" />}
                 aria-label="Mes siguiente"
-                className="p-1 rounded-md text-fg-muted hover:text-fg hover:bg-muted transition-colors"
-              >
-                <CaretRight className="w-4 h-4" />
-              </button>
+                onClick={() => shiftMonth(1)}
+              />
             </div>
             <span className="text-xs text-fg-muted tabular-nums">
               {filteredCobros.length} {t('inmobiliaria.nav.cobros').toLowerCase()}

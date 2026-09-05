@@ -19,7 +19,17 @@ export type EventoTipo =
 /** De dónde nace el evento: derivado por el sistema o creado por el usuario. */
 export type EventoOrigen = 'sistema' | 'usuario';
 
-export type EventoEstado = 'pendiente' | 'completado' | 'vencido' | 'cancelado';
+/**
+ * `confirmado` es una visita ACEPTADA. Sin él, confirmar una cita desde la
+ * tabla dejaba la fila diciendo «Pendiente»: la pantalla no reflejaba lo que
+ * el usuario acababa de hacer.
+ */
+export type EventoEstado =
+  | 'pendiente'
+  | 'confirmado'
+  | 'completado'
+  | 'vencido'
+  | 'cancelado';
 
 /** A qué entidad del CRM/ERP se ata el evento o la tarea (AGEN-02). */
 export type EventoVinculoTipo = 'contrato' | 'propiedad' | 'tercero' | 'pqrs';

@@ -44,8 +44,14 @@ export const agendaApi = {
     try {
       return await apiClient.get<AgendaListResponse>('/inmobiliaria/agenda');
     } catch (err) {
-      // No agency context / not permitted → honest empty agenda, not a crash.
-      if (err instanceof ApiError && (err.status === 403 || err.status === 404)) {
+      // Sin contexto de agencia (404) la agenda vacía ES la verdad.
+      //
+      // 🔴 El 403 NO se traga. «No tenés acceso» y «no hay nada agendado» son
+      // hechos distintos, y `FalloDeCarga` ya sabe decir el primero sin ofrecer
+      // un "Reintentar" que no arregla nada. Devolver un feed vacío ahí hacía
+      // que la pantalla afirmara que la agencia no tiene nada agendado —
+      // pudiendo estar llena.
+      if (err instanceof ApiError && err.status === 404) {
         return { resumen: RESUMEN_AGENDA_VACIO, eventos: [], total: 0 };
       }
       throw err;

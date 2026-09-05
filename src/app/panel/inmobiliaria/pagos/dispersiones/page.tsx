@@ -5,7 +5,7 @@ import { useState, useMemo, useCallback, useEffect, useRef, Suspense } from 'rea
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import {
   Bank,
   PaperPlaneTilt,

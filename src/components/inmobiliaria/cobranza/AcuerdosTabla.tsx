@@ -18,7 +18,7 @@
 import { useMemo } from 'react'
 import { CaretRight, Handshake } from '@phosphor-icons/react'
 import { Card, SegmentedControl } from '@leasefy/cadence'
-import { Badge } from '@/components/ui'
+import { Badge, Button } from '@/components/ui'
 
 import { useI18n } from '@/lib/i18n'
 import {
@@ -112,13 +112,15 @@ export function AcuerdosTabla({
         >
           <span>No pudimos cargar los acuerdos. {error}</span>
           {onReintentar && (
-            <button
-              type="button"
+            <Button
+              variant="link"
+              size="sm"
+              hideArrow
               onClick={onReintentar}
-              className="shrink-0 underline underline-offset-2 hover:no-underline"
+              className="shrink-0 px-0 h-auto text-sm text-danger underline hover:no-underline"
             >
               Reintentar
-            </button>
+            </Button>
           )}
         </div>
       )}

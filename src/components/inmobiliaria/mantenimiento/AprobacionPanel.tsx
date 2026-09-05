@@ -40,21 +40,21 @@ export function AprobacionPanel({ aprobacion }: AprobacionPanelProps) {
     <Card data-testid="aprobacion-panel">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <SealCheck size={18} className="text-amber-500" weight="duotone" aria-hidden="true" />
+          <SealCheck size={18} className="text-warning" weight="duotone" aria-hidden="true" />
           {t(`${ROOT}.detalle.aprobacion`)}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 pt-0">
         <dl className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
-            <dt className="text-neutral-500 dark:text-neutral-400">{t(`${ROOT}.inbox.card.estCost`)}</dt>
-            <dd className="font-mono font-semibold text-neutral-900 dark:text-white">
+            <dt className="text-fg-muted">{t(`${ROOT}.inbox.card.estCost`)}</dt>
+            <dd className="font-mono font-semibold text-fg">
               {formatCOP(estimatedMaxCop)}
             </dd>
           </div>
           <div className="flex items-center justify-between">
-            <dt className="text-neutral-500 dark:text-neutral-400">{t(`${ROOT}.filters.aprobacion`)}</dt>
-            <dd className="font-mono text-neutral-600 dark:text-neutral-300">{formatCOP(capCop)}</dd>
+            <dt className="text-fg-muted">{t(`${ROOT}.filters.aprobacion`)}</dt>
+            <dd className="font-mono text-fg-muted">{formatCOP(capCop)}</dd>
           </div>
         </dl>
 

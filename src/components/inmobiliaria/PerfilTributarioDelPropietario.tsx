@@ -14,7 +14,7 @@
  */
 
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { Scales } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';

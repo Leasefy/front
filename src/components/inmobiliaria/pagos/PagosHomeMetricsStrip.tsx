@@ -27,6 +27,7 @@ import {
 } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
+import { Button } from '@/components/ui/button'
 import { KPICard } from '@/components/landlord/KPICard'
 import type { PagosHomeMetrics } from '@/lib/api/pagos-home.types'
 
@@ -69,9 +70,9 @@ export function PagosHomeMetricsStrip({
               data-testid="metric-skeleton"
               className="rounded-sm border border-border p-5 space-y-3 animate-pulse"
             >
-              <div className="h-10 w-10 rounded-sm bg-muted" />
-              <div className="h-8 w-24 rounded bg-muted" />
-              <div className="h-3 w-20 rounded bg-muted" />
+              <div className="h-10 w-10 rounded-sm bg-surface-muted" />
+              <div className="h-8 w-24 rounded bg-surface-muted" />
+              <div className="h-3 w-20 rounded bg-surface-muted" />
             </div>
           ))}
         </div>
@@ -89,7 +90,7 @@ export function PagosHomeMetricsStrip({
   // ── Empty ──────────────────────────────────────────────────────────────────
   if (!data) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-fg-muted">
         {t('inmobiliaria.ai.pagos_home.metrics.empty')}
       </p>
     )
@@ -140,21 +141,21 @@ function CurrencyTile({
 }) {
   const iconClasses =
     accent === 'success'
-      ? 'bg-emerald-50 text-emerald-600'
-      : 'bg-muted text-muted-foreground'
-  const valueClasses = accent === 'success' ? 'text-emerald-600' : 'text-foreground'
+      ? 'bg-success-soft text-success'
+      : 'bg-surface-muted text-fg-muted'
+  const valueClasses = accent === 'success' ? 'text-success' : 'text-fg'
 
   return (
-    <div className="relative p-5 rounded-sm border border-border shadow-sm bg-card">
+    <div className="relative p-5 rounded-sm border border-border shadow-sm bg-surface">
       <div
         className={`w-10 h-10 rounded-sm flex items-center justify-center mb-4 ${iconClasses}`}
       >
         <TileIcon className="w-5 h-5" />
       </div>
-      <p className={`text-2xl font-bold tabular-nums tracking-tight ${valueClasses}`}>
+      <p className={`text-2xl font-mono font-bold tabular-nums tracking-tight ${valueClasses}`}>
         {value}
       </p>
-      <p className="text-sm text-muted-foreground mt-1">{title}</p>
+      <p className="text-sm text-fg-muted mt-1">{title}</p>
     </div>
   )
 }
@@ -166,18 +167,20 @@ function MetricsError({ message, onRetry }: { message: string; onRetry: () => vo
   return (
     <div
       role="alert"
-      className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 flex items-center justify-between gap-4"
+      className="rounded-lg border border-danger bg-danger-soft p-4 flex items-center justify-between gap-4"
     >
-      <p className="text-sm text-rose-600 dark:text-rose-400">
+      <p className="text-sm text-danger">
         {t('inmobiliaria.ai.pagos_home.errors.loading')}: {message}
       </p>
-      <button
+      <Button
         type="button"
+        variant="link"
+        size="sm"
         onClick={onRetry}
-        className="shrink-0 text-xs font-medium text-rose-600 dark:text-rose-400 underline hover:no-underline"
+        className="shrink-0 h-auto px-0 text-xs font-medium text-danger underline hover:no-underline"
       >
         {t('inmobiliaria.ai.pagos_home.errors.retry')}
-      </button>
+      </Button>
     </div>
   )
 }

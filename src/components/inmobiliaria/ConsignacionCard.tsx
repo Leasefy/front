@@ -154,7 +154,7 @@ export function ConsignacionCard({
 
         {/* Property info */}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-fg dark:text-white truncate text-sm">
+          <p className="font-medium text-fg truncate text-sm">
             {consignacion.propertyTitle}
           </p>
           <p className="text-xs text-fg-muted dark:text-fg-subtle truncate">
@@ -178,7 +178,7 @@ export function ConsignacionCard({
             <motion.svg
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="w-3 h-3 text-white"
+              className="w-3 h-3 text-primary-fg"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -250,7 +250,7 @@ export function ConsignacionCard({
       <div className="p-5">
         {/* Title and Address */}
         <div className="mb-3">
-          <h3 className="font-semibold text-fg dark:text-white line-clamp-1 mb-1">
+          <h3 className="font-semibold text-fg line-clamp-1 mb-1">
             {consignacion.propertyTitle}
           </h3>
           <div className="flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle">
@@ -263,14 +263,14 @@ export function ConsignacionCard({
             commission instead, never "$0" or "$0/mes". */}
         {consignacion.listingType === 'sale' ? (
           <div className="flex items-baseline gap-2 mb-4">
-            <span className="text-xl font-bold text-fg dark:text-white">
+            <span className="text-xl font-bold text-fg">
               {consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—'}
             </span>
             <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.saleCommission')}</span>
           </div>
         ) : (
           <div className="flex items-baseline gap-2 mb-4">
-            <span className="text-xl font-bold text-fg dark:text-white">
+            <span className="text-xl font-bold text-fg">
               {consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
             </span>
             <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.perMonth')}</span>
@@ -292,7 +292,7 @@ export function ConsignacionCard({
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.owner')}</p>
-                <p className="text-sm font-medium text-fg dark:text-white truncate">
+                <p className="text-sm font-medium text-fg truncate">
                   {propietarioName}
                 </p>
               </div>
@@ -317,7 +317,7 @@ export function ConsignacionCard({
               )}
               <div className="min-w-0">
                 <p className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.agent')}</p>
-                <p className="text-sm font-medium text-fg dark:text-white truncate">
+                <p className="text-sm font-medium text-fg truncate">
                   {agenteName}
                 </p>
               </div>

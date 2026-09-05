@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,

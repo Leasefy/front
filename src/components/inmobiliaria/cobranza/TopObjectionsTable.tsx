@@ -20,6 +20,14 @@
 import { ChatTeardropDots } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { EmptyState } from '@/components/data-display/EmptyState';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
@@ -71,52 +79,47 @@ export function TopObjectionsTable({ data }: TopObjectionsTableProps) {
   const rows = data.objections.slice(0, 10);
 
   return (
-    <div className="relative overflow-x-auto">
+    // Sin `overflow-x-auto` acá: el `Table` del DS ya trae su propio contenedor
+    // de scroll horizontal, y dos anidados dejan uno inerte.
+    <div className="relative">
       <p className="text-xs font-medium text-fg-muted mb-3">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.title')}
       </p>
-      <table className="w-full text-sm text-left">
-        <thead>
-          <tr className="border-b border-border">
-            {/*
-              Tabla suelta: ya iba en mayúsculas pero en sans 12px. Se alinea al
-              encabezado del DS (`TableHead`): mono 11px, tracking 0.04em,
-              fg-subtle.
-            */}
-            <th className="pb-2 w-8 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
+      <Table>
+        <TableHeader>
+          {/* El encabezado no es una fila sobre la que se pueda actuar: sin hover. */}
+          <TableRow className="hover:bg-transparent">
+            <TableHead scope="col" className="w-8">
               #
-            </th>
-            <th className="pb-2 pr-4 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
+            </TableHead>
+            <TableHead scope="col">
               {t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.column.literal')}
-            </th>
-            <th className="pb-2 pr-4 text-right font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
+            </TableHead>
+            <TableHead scope="col" numeric>
               {t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.column.count')}
-            </th>
-            <th className="pb-2 text-right font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
+            </TableHead>
+            <TableHead scope="col" numeric>
               {t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.column.pct')}
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border-faint">
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.map((row) => (
-            <tr
-              key={row.rank}
-              className="hover:bg-surface-muted transition-colors"
-            >
-              <td className="py-2.5 pr-2 text-xs text-fg-subtle tabular-nums">{row.rank}</td>
-              <td className="py-2.5 pr-4 text-fg max-w-[220px] truncate">
-                {row.literal}
-              </td>
-              <td className="py-2.5 pr-4 text-right tabular-nums text-fg-muted">
+            <TableRow key={row.rank}>
+              <TableCell className="font-mono text-xs tabular-nums text-fg-subtle">
+                {row.rank}
+              </TableCell>
+              <TableCell className="max-w-[220px] truncate">{row.literal}</TableCell>
+              <TableCell numeric className="font-mono text-fg-muted">
                 {row.count.toLocaleString()}
-              </td>
-              <td className="py-2.5 text-right tabular-nums text-fg-muted">
+              </TableCell>
+              <TableCell numeric className="font-mono text-fg-muted">
                 {(row.pct * 100).toFixed(1)}%
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

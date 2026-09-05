@@ -13,7 +13,13 @@ export interface OccupancySummary {
   rented: number;
   vacant: number;
   vacancyRate: number;
-  avgDaysVacant: number;
+  /**
+   * Días promedio vacante. `null` cuando no se puede calcular: el back no
+   * guarda desde cuándo está vacío un inmueble. Antes el adaptador ponía un
+   * `0` fijo y la tarjeta decía «Prom. 0 días vacante», que se lee como una
+   * medición perfecta en vez de como un dato que falta.
+   */
+  avgDaysVacant: number | null;
 }
 
 export interface OccupancyProperty {
@@ -116,7 +122,13 @@ export interface ExecutiveMetric {
   labelEs: string;
   labelEn: string;
   currentValue: number;
-  previousValue: number;
+  /**
+   * El valor del período anterior. OPCIONAL: sin él no hay variación que
+   * mostrar. `GET /reports/flujo-caja` no devuelve el mes previo, y el
+   * adaptador ponía `previousValue: 0` — un «0,0 %» de variación que nadie
+   * midió, sobre un mes anterior inventado.
+   */
+  previousValue?: number;
   format: 'percent' | 'currency' | 'number' | 'days';
   higherIsBetter: boolean;
 }

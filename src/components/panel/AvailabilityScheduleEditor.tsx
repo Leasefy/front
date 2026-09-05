@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { Clock, FloppyDisk, ArrowCounterClockwise } from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { DayAvailabilityRow } from './DayAvailabilityRow';
 import {

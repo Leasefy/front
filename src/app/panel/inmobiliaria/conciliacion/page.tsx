@@ -36,7 +36,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 import { ArrowsClockwise, CaretRight, CheckCircle, UploadSimple } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 

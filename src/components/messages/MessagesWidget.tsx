@@ -107,22 +107,22 @@ function BotonDeNuevoMensaje({
   conEtiqueta?: boolean;
 }) {
   const etiqueta = locale === 'es' ? 'Nuevo mensaje' : 'New message';
+  // `hideArrow`: el variant primary del DS agrega una ↗ automática, y acá el
+  // único ícono que corresponde es el `+`.
   return (
-    <button
+    <Button
       type="button"
+      size="sm"
+      hideArrow
       onClick={onClick}
       aria-label={etiqueta}
       title={etiqueta}
       data-testid="abrir-nuevo-mensaje"
-      className={cn(
-        'flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-md bg-primary text-sm font-medium text-primary-fg transition-opacity hover:opacity-90',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
-        conEtiqueta ? 'px-3' : 'w-9',
-      )}
+      className={cn('shrink-0 gap-1.5', conEtiqueta ? 'px-3' : 'w-9 px-0')}
     >
       <Plus className="h-4 w-4" weight="bold" aria-hidden="true" />
       {conEtiqueta && <span>{etiqueta}</span>}
-    </button>
+    </Button>
   );
 }
 
@@ -822,6 +822,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                 dónde ir; ver `fichaDeLaContraparte`.
                               */}
                               <button
+                                type="button"
                                 onClick={verFicha}
                                 data-testid="ver-ficha"
                                 className="flex w-full items-center gap-3 whitespace-nowrap px-4 py-2.5 text-sm text-fg transition-colors hover:bg-surface-muted"

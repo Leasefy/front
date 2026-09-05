@@ -9,7 +9,7 @@
  */
 
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { ArrowClockwise, CheckCircle, Prohibit, Receipt } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';

@@ -23,6 +23,7 @@ import {
   WarningCircle,
 } from '@phosphor-icons/react';
 import { IconButton } from '@leasefy/cadence';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Badge } from '@/components/ui/badge';
@@ -246,6 +247,7 @@ export function ConsignacionTable({
            explícito de acá es lo que devuelve la consistencia.
       */}
       <button
+        type="button"
         onClick={() => handleSort(field)}
         className="flex items-center gap-2 font-[inherit] text-[inherit] uppercase tracking-[inherit] text-fg-subtle transition-colors hover:text-fg"
       >
@@ -510,17 +512,19 @@ export function ConsignacionTable({
                       {t(availability.labelKey)}
                     </Badge>
                   ) : (
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      hideArrow
                       onClick={(e) => {
                         e.stopPropagation();
                         handleCompletarMandato();
                       }}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1 text-xs font-medium text-warning hover:opacity-80 transition-opacity"
+                      className="h-auto gap-1.5 bg-warning-soft px-3 py-1 text-xs font-medium text-warning hover:bg-warning-soft hover:opacity-80"
                     >
                       <WarningCircle className="w-3.5 h-3.5" weight="fill" />
                       {t('inmobiliaria.consignaciones.table.missingMandate')}
-                    </button>
+                    </Button>
                   )}
                 </TableCell>
 

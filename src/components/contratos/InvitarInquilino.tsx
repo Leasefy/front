@@ -16,7 +16,7 @@
 
 import { useState } from 'react'
 import { PaperPlaneTilt } from '@phosphor-icons/react'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 
 import { Button } from '@/components/ui/button'
 import { contractsApi, mapBackendContract } from '@/lib/api/contracts.service'

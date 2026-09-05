@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { documentReviewApi } from '@/lib/api/document-review.service';
 import type {
   ReviewQueueResponse,

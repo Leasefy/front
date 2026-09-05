@@ -431,13 +431,15 @@ function LlamadasContent() {
           <span>
             No pudimos actualizar la lista ({error}). Estás viendo la última carga que sí funcionó.
           </span>
-          <button
-            type="button"
+          <Button
+            variant="link"
+            size="sm"
+            hideArrow
             onClick={() => void refetch()}
-            className="ml-auto underline underline-offset-2 hover:opacity-80"
+            className="ml-auto px-0 h-auto text-sm text-warning underline hover:opacity-80"
           >
             Reintentar
-          </button>
+          </Button>
         </div>
       )}
 
@@ -461,13 +463,15 @@ function LlamadasContent() {
                   <p className="text-sm text-fg-muted">
                     Ninguna llamada coincide con los filtros seleccionados.
                   </p>
-                  <button
-                    type="button"
+                  <Button
+                    variant="link"
+                    size="sm"
+                    hideArrow
                     onClick={clearFilters}
-                    className="mt-2 text-sm text-primary underline underline-offset-2"
+                    className="mt-2 px-0 h-auto text-sm text-primary underline"
                   >
                     Limpiar filtros
-                  </button>
+                  </Button>
                 </TableCell>
               </TableRow>
             )}

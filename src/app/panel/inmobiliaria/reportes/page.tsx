@@ -5,8 +5,9 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import {
+  ChartBar,
   ChartLine,
   ChartLineUp,
   Lightning,
@@ -24,6 +25,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui';
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SegmentedControl } from '@leasefy/cadence';
 import type { ReportDefinition, ReportId, ReportCategory } from '@/lib/types/inmobiliaria';
 import { REPORT_DEFINITIONS } from '@/lib/constants/inmobiliaria-data';
@@ -33,10 +35,8 @@ import {
   useCarteraReport,
   useOcupacionReport,
   useComisionesReport,
-  useVencimientosReport,
   useFlujoCajaReport,
   useRendimientoAgentesReport,
-  reportesApi,
 } from '@/lib/hooks/useInmobiliaria';
 import {
   ReporteCard,
@@ -136,12 +136,36 @@ function ReportesContent() {
     { key: 'ejecutivo', label: locale === 'es' ? 'Ejecutivo' : 'Executive', icon: ChartLineUp },
   ];
 
-  // API Hooks for report data
+  /**
+ * El vacío de una pestaña avanzada: la respuesta llegó y no trae nada que
+ * dibujar (agencia recién creada, mes sin movimiento). Dice qué pasó, no sólo
+ * «no hay datos».
+ */
+function SinDatosDelReporte() {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface px-6 py-14 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted">
+        <ChartBar className="h-5 w-5 text-fg-muted" weight="duotone" />
+      </div>
+      <div className="space-y-1">
+        <p className="text-base font-semibold text-fg">Todavía no hay nada que mostrar</p>
+        <p className="mx-auto max-w-sm text-sm text-fg-muted">
+          Este reporte se arma con la actividad del portafolio. Cuando haya inmuebles con contrato y
+          cobros del período, aparece acá.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// API Hooks for report data
   const carteraReport = useCarteraReport();
   const ocupacionReport = useOcupacionReport();
   const currentMonth = new Date().toISOString().slice(0, 7);
   const comisionesReport = useComisionesReport(currentMonth);
-  const vencimientosReport = useVencimientosReport();
+  // Acá había un `useVencimientosReport()` cuyo resultado no se leía en
+  // ninguna línea del archivo: un `GET /reports/vencimientos` por montaje que
+  // no pintaba nada. El CSV de vencimientos se baja por `/reports/export`.
   const flujoCajaReport = useFlujoCajaReport('semester');
   const rendimientoReport = useRendimientoAgentesReport(currentMonth);
 
@@ -406,11 +430,11 @@ function ReportesContent() {
   );
 
   // Handle viewer export
+  // Devuelve la promesa: el botón del cajón espera a la descarga de verdad
+  // en vez de fingir 1,5 s y volver a habilitarse con el pedido en vuelo.
   const handleViewerExport = useCallback(
-    () => {
-      if (selectedReport) {
-        void handleExportReport(selectedReport);
-      }
+    async () => {
+      if (selectedReport) await handleExportReport(selectedReport);
     },
     [selectedReport, handleExportReport]
   );
@@ -781,22 +805,72 @@ function ReportesContent() {
           />
         </div>
 
-        {/* Tab Content — Gated */}
+        {/*
+          Tab Content.
+
+          Cada pestaña envuelta en `EstadoDeDatos`: antes se pintaba
+          `{datos && <Componente/>}` a secas, así que un 403 o un 500 dejaban
+          la tarjeta con su encabezado, su barra de pestañas y NADA debajo —
+          sin decir que había fallado ni ofrecer reintentar. Los hooks ya traían
+          `isLoading` y `errorCrudo`; la página sólo leía `.report`.
+        */}
         <div className="p-4">
           {activeAdvancedTab === 'ejecutivo' ? (
             <FeatureGate feature="executive-reports">
-              {executiveData && <ExecutiveSummary data={executiveData} />}
+              <EstadoDeDatos
+                cargando={flujoCajaReport.isLoading || ocupacionReport.isLoading}
+                error={flujoCajaReport.errorCrudo ?? ocupacionReport.errorCrudo}
+                vacio={!executiveData}
+                queEs="el resumen ejecutivo"
+                onReintentar={() => {
+                  void flujoCajaReport.refetch();
+                  void ocupacionReport.refetch();
+                }}
+                cuandoVacio={<SinDatosDelReporte />}
+              >
+                {executiveData && <ExecutiveSummary data={executiveData} />}
+              </EstadoDeDatos>
             </FeatureGate>
           ) : (
             <FeatureGate feature="advanced-reports">
-              {activeAdvancedTab === 'ocupacion' && occupancyData && (
-                <OccupancyReport data={occupancyData} />
+              {activeAdvancedTab === 'ocupacion' && (
+                <EstadoDeDatos
+                  cargando={ocupacionReport.isLoading}
+                  error={ocupacionReport.errorCrudo}
+                  vacio={!occupancyData}
+                  queEs="el reporte de ocupación"
+                  onReintentar={() => void ocupacionReport.refetch()}
+                  cuandoVacio={<SinDatosDelReporte />}
+                >
+                  {occupancyData && <OccupancyReport data={occupancyData} />}
+                </EstadoDeDatos>
               )}
-              {activeAdvancedTab === 'cobros' && collectionsData && (
-                <CollectionsReport data={collectionsData} />
+              {activeAdvancedTab === 'cobros' && (
+                <EstadoDeDatos
+                  cargando={carteraReport.isLoading}
+                  error={carteraReport.errorCrudo}
+                  vacio={!collectionsData}
+                  queEs="el reporte de cobros"
+                  onReintentar={() => void carteraReport.refetch()}
+                  cuandoVacio={<SinDatosDelReporte />}
+                >
+                  {collectionsData && <CollectionsReport data={collectionsData} />}
+                </EstadoDeDatos>
               )}
-              {activeAdvancedTab === 'agentes' && agentPerformanceData && (
-                <AgentPerformanceReport data={agentPerformanceData} />
+              {activeAdvancedTab === 'agentes' && (
+                <EstadoDeDatos
+                  cargando={rendimientoReport.isLoading || comisionesReport.isLoading}
+                  error={rendimientoReport.errorCrudo ?? comisionesReport.errorCrudo}
+                  vacio={!agentPerformanceData}
+                  queEs="el desempeño de los agentes"
+                  onReintentar={() => {
+                    void rendimientoReport.refetch();
+                    void comisionesReport.refetch();
+                  }}
+                  cuandoVacio={<SinDatosDelReporte />}
+                >
+                  {agentPerformanceData && <AgentPerformanceReport data={agentPerformanceData} />}
+                </EstadoDeDatos>
               )}
             </FeatureGate>
           )}

@@ -20,7 +20,7 @@
 
 import { useEffect, useState } from 'react'
 import { CheckCircle, WarningCircle, X } from '@phosphor-icons/react'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'

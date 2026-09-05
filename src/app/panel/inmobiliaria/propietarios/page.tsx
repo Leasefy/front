@@ -20,7 +20,7 @@ import {
   Users,
   UserCircle,
 } from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import {
@@ -44,6 +44,12 @@ import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
 import { TablePagination } from '@/components/ui/pagination';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
+import {
+  FILTROS_INICIALES,
+  filtrarPropietarios,
+  type FiltrosDePropietarios,
+} from '@/lib/propietarios/filtrar-propietarios';
+import { descargarListaDePropietarios } from '@/lib/propietarios/exportar-datos';
 import { SegmentedControl, KpiCard, IconButton } from '@leasefy/cadence';
 
 type ViewMode = 'table' | 'grid';
@@ -80,30 +86,46 @@ function Modal({
     setMounted(true);
   }, []);
 
-  // Block body scroll and stop Lenis when modal is open
+  /*
+   * Bloquear el scroll del fondo mientras el modal está abierto.
+   *
+   * 🔴 La limpieza tiene que estar DENTRO del `if (open)`.
+   *
+   * Estaba afuera, y eso hacía que la página saltara al tope cada vez que se
+   * abría un modal: React corre la limpieza del render anterior ANTES del
+   * efecto nuevo, así que al pasar de cerrado a abierto primero se ejecutaba
+   * un `window.scrollTo(0, -parseInt(''))` —o sea, `scrollTo(0, 0)`— y recién
+   * después se leía `window.scrollY`… que para entonces ya era 0. Resultado:
+   * abrir «Agregar propietario» desde la mitad de la lista te mandaba arriba,
+   * y al cerrar te dejaba ahí. Se veía como un salto sin causa.
+   *
+   * De paso, la posición se recuerda en la clausura en vez de releerse del
+   * `style.top`: el número que se guardó es el que se restaura, sin depender
+   * de que nadie más haya tocado ese estilo.
+   */
   useEffect(() => {
-    if (open) {
-      // Stop Lenis smooth scroll to allow native scroll in modal
-      lenis.stop();
+    if (!open) return;
 
-      const scrollY = window.scrollY;
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.left = '0';
-      document.body.style.right = '0';
-      document.body.style.overflow = 'hidden';
-    }
+    // Stop Lenis smooth scroll to allow native scroll in modal
+    lenis.stop();
+
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.overflow = 'hidden';
+
     return () => {
       // Restart Lenis when modal closes
       lenis.start();
 
-      const scrollY = document.body.style.top;
       document.body.style.position = '';
       document.body.style.top = '';
       document.body.style.left = '';
       document.body.style.right = '';
       document.body.style.overflow = '';
-      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      window.scrollTo(0, scrollY);
     };
   }, [open, lenis]);
 
@@ -215,6 +237,26 @@ function PropietariosContent() {
    * agencia**. Leer siempre del hook no tiene ninguno de los dos problemas.
    */
   const propietarios = apiPropietarios;
+
+  /*
+   * 🔴 Los filtros de la tabla viven ACÁ, no adentro de `PropietarioTable`.
+   *
+   * La tabla los tenía en estado propio y filtraba lo que recibía… que era el
+   * `slice` de la página actual. O sea: buscar «Martínez» desde la página 1
+   * decía «No se encontraron propietarios» con Martínez en la página 3, y
+   * «Con saldo pendiente» mostraba los morosos *de esas 10 filas*. Un
+   * buscador que sólo mira una página es un buscador que miente, y no hay
+   * nada en la pantalla que lo delate.
+   *
+   * El orden correcto —filtrar → ordenar → paginar— sólo se puede hacer donde
+   * está la lista completa. Ver `lib/propietarios/filtrar-propietarios.ts`.
+   */
+  const [filtros, setFiltros] = useState<FiltrosDePropietarios>(FILTROS_INICIALES);
+  const propietariosFiltrados = useMemo(
+    () => filtrarPropietarios(propietarios, filtros),
+    [propietarios, filtros],
+  );
+
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showIACapture, setShowIACapture] = useState(false);
@@ -305,13 +347,13 @@ function PropietariosContent() {
     };
   }, [propietarios]);
 
-  // Pagination calculations
+  // Pagination calculations — sobre lo FILTRADO, que es lo que se ve.
   const paginationData = useMemo(() => {
-    const totalItems = propietarios.length;
+    const totalItems = propietariosFiltrados.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const paginatedItems = propietarios.slice(startIndex, endIndex);
+    const paginatedItems = propietariosFiltrados.slice(startIndex, endIndex);
 
     return {
       totalItems,
@@ -320,7 +362,7 @@ function PropietariosContent() {
       endIndex: Math.min(endIndex, totalItems),
       paginatedItems,
     };
-  }, [propietarios, currentPage, itemsPerPage]);
+  }, [propietariosFiltrados, currentPage, itemsPerPage]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, paginationData.totalPages)));
@@ -391,9 +433,32 @@ function PropietariosContent() {
     }
   };
 
-  const handleExport = () => {
-    toast.info(t('inmobiliaria.propietarios.toasts.exporting'));
-    // TODO: Implement export functionality
+  /**
+   * Exportar el directorio a Excel.
+   *
+   * 🔴 Esto era `toast.info('Exportando…')` y un `// TODO`: el cartel afirmaba
+   * que estaba pasando algo, no bajaba ningún archivo y no había manera de
+   * darse cuenta salvo esperar. Ahora baja de verdad, y **lo que se ve**: si
+   * hay un filtro puesto, el archivo trae lo filtrado, no toda la base.
+   */
+  const [exportando, setExportando] = useState(false);
+  const handleExport = async () => {
+    if (exportando) return; // dos clics seguidos = dos libros armados
+    setExportando(true);
+    try {
+      const archivo = await descargarListaDePropietarios(propietariosFiltrados);
+      toast.success(t('inmobiliaria.propietarios.toasts.exported'), {
+        description: t('inmobiliaria.propietarios.toasts.exportedDesc', {
+          archivo,
+          count: propietariosFiltrados.length,
+        }),
+      });
+    } catch (err) {
+      console.error('Export propietarios error:', err);
+      toast.error(t('inmobiliaria.propietarios.toasts.exportError'));
+    } finally {
+      setExportando(false);
+    }
   };
 
   return (
@@ -525,9 +590,11 @@ function PropietariosContent() {
             queEs="los propietarios"
             onReintentar={recargarPropietarios}
           >
-            {paginationData.totalItems === 0 ? (
-              /* Sin filtros en esta pantalla: un vacío acá es siempre «todavía
-                 no hay ninguno», y lo útil es crear el primero. */
+            {propietarios.length === 0 ? (
+              /* «Todavía no hay ninguno» es esto y sólo esto: la lista del
+                 back llegó VACÍA. Antes se miraba el total ya filtrado, así
+                 que buscar algo que no está decía «Registrá al dueño de un
+                 inmueble» a quien tiene cuarenta. */
               /*
                  Y si está vacío PORQUE la migración quedó a medias, se dice:
                  84 contratos migrados sin propietario significan que nadie
@@ -559,10 +626,32 @@ function PropietariosContent() {
             ) : viewMode === 'table' ? (
               <PropietarioTable
                 propietarios={paginationData.paginatedItems}
+                totalFiltrado={paginationData.totalItems}
+                total={propietarios.length}
+                filtros={filtros}
+                onFiltros={(nuevos) => {
+                  setFiltros(nuevos);
+                  // Filtrar desde la página 3 dejaba la tabla en blanco.
+                  setCurrentPage(1);
+                }}
                 onView={handleView}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onExport={handleExport}
+              />
+            ) : paginationData.totalItems === 0 ? (
+              /* En tarjetas no hay barra de filtros —vive dentro de la tabla—,
+                 así que acá el vacío filtrado tiene que traer su propia salida:
+                 si no, la única forma de volver es adivinar que hay que cambiar
+                 de vista. */
+              <SinDatos
+                hayFiltros
+                queSon="propietarios"
+                icono={UserCircle}
+                onLimpiarFiltros={() => {
+                  setFiltros(FILTROS_INICIALES);
+                  setCurrentPage(1);
+                }}
               />
             ) : (
               <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

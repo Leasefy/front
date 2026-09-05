@@ -203,3 +203,98 @@ export function descargar(blob: Blob, nombre: string): void {
   // algunos navegadores.
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * La LISTA entera del directorio.
+ *
+ * «Exportar» en la tabla de Propietarios era `toast.info('Exportando…')` y un
+ * `// TODO`: el cartel decía que estaba pasando algo, no bajaba nada, y no
+ * había forma de darse cuenta salvo esperar un archivo que nunca llegaba. Es
+ * exactamente lo que ya se había arreglado en la ficha de UN propietario.
+ *
+ * Se exporta lo que la tabla muestra —incluidos los filtros y el orden que
+ * tenga puestos quien la exporta—, no «todos los propietarios»: si alguien
+ * filtró por empresa y exporta, el archivo tiene que traer empresas.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** Una fila por propietario, con las columnas de la tabla más la cuenta de giro. */
+export function armarHojaDeLaLista(
+  propietarios: readonly Propietario[],
+): HojaDelPropietario {
+  const filas: Celda[][] = [
+    [
+      'Nombre',
+      'Tipo de documento',
+      'Número de documento',
+      'Correo',
+      'Teléfono',
+      'Ciudad',
+      'Inmuebles',
+      'Arrendados',
+      'Canon mensual total',
+      'Saldo pendiente',
+      'Banco',
+      'Tipo de cuenta',
+      'Número de cuenta',
+      'Titular',
+      'Creado',
+    ],
+    ...propietarios.map((p) => {
+      const cuenta = p.bankAccount;
+      const tieneCuenta = Boolean(cuenta?.accountNumber);
+      return [
+        p.name,
+        p.documentType,
+        p.documentNumber,
+        p.email ?? '',
+        p.phone ?? '',
+        p.city ?? '',
+        p.propertyCount,
+        p.activeLeases,
+        p.totalMonthlyRent,
+        p.pendingBalance,
+        tieneCuenta ? nombreDelBanco(cuenta) : '',
+        tieneCuenta ? (cuenta.accountType === 'savings' ? 'Ahorros' : 'Corriente') : '',
+        tieneCuenta ? cuenta.accountNumber : '',
+        tieneCuenta ? cuenta.accountHolder : '',
+        p.createdAt.slice(0, 10),
+      ];
+    }),
+  ];
+
+  return { nombre: 'Propietarios', filas };
+}
+
+/** `propietarios-<fecha>.xlsx`. */
+export function nombreDelArchivoDeLaLista(hoy: Date = new Date()): string {
+  return `propietarios-${hoy.toISOString().slice(0, 10)}.xlsx`;
+}
+
+/**
+ * Arma el libro de la lista y dispara la descarga. Devuelve el nombre del
+ * archivo para poder decir QUÉ se bajó (un «Listo» a secas no se distingue de
+ * un «Listo» que no bajó nada).
+ */
+export async function descargarListaDePropietarios(
+  propietarios: readonly Propietario[],
+): Promise<string> {
+  // Dinámico por lo mismo que en la ficha: `xlsx` pesa y esto sólo corre
+  // cuando alguien aprieta el botón.
+  const XLSX = await import('xlsx');
+  const libro = XLSX.utils.book_new();
+  const hoja = armarHojaDeLaLista(propietarios);
+  const ws = XLSX.utils.aoa_to_sheet(hoja.filas);
+  ws['!cols'] = (hoja.filas[0] ?? []).map((titulo) => ({
+    wch: Math.max(14, String(titulo).length + 4),
+  }));
+  XLSX.utils.book_append_sheet(libro, ws, hoja.nombre);
+  const bytes = XLSX.write(libro, { bookType: 'xlsx', type: 'array' }) as ArrayBuffer;
+  const nombre = nombreDelArchivoDeLaLista();
+  descargar(
+    new Blob([bytes], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    }),
+    nombre,
+  );
+  return nombre;
+}

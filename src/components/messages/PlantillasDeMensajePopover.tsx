@@ -24,6 +24,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ArrowClockwise, Notepad, Plus } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { usePanelFlotante } from '@/components/messages/usePanelFlotante';
 import { endpointNoDisponible } from '@/components/messages/endpoint-no-disponible';
 import {
@@ -171,14 +172,19 @@ export function PlantillasDeMensajePopover({ locale, datos, onElegir, className 
                   ? 'Todavía no tenés plantillas guardadas.'
                   : 'You have no saved templates yet.'}
               </p>
-              <button
+              {/* `hideArrow`: el primary del DS agrega una ↗ automática y acá el
+                  ícono que corresponde es el `+`. */}
+              <Button
                 type="button"
+                size="sm"
+                hideArrow
                 onClick={() => void instalarSugeridas()}
+                isLoading={instalando}
                 disabled={instalando}
                 data-testid="instalar-plantillas-sugeridas"
-                className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-fg transition-opacity hover:opacity-90 disabled:opacity-60"
+                className="mt-3 gap-1.5"
               >
-                <Plus className="h-4 w-4" weight="bold" aria-hidden="true" />
+                {!instalando && <Plus className="h-4 w-4" weight="bold" aria-hidden="true" />}
                 {instalando
                   ? es
                     ? 'Instalando…'
@@ -186,7 +192,7 @@ export function PlantillasDeMensajePopover({ locale, datos, onElegir, className 
                   : es
                     ? 'Instalar las sugeridas'
                     : 'Install the suggested ones'}
-              </button>
+              </Button>
             </div>
           )}
 

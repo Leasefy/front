@@ -10,7 +10,7 @@ import {
   CheckCircle,
   ChartLineUp,
 } from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import {

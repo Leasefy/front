@@ -52,7 +52,9 @@ export function adaptOccupancy(report: OcupacionReport | null | undefined): Occu
       rented: report.totalOccupied,
       vacant,
       vacancyRate: Math.round(vacancyRate * 10) / 10,
-      avgDaysVacant: 0, // backend doesn't track this yet
+      // El back no guarda desde cuándo está vacío un inmueble: `null` (dato
+      // que falta), no `0` (medición perfecta).
+      avgDaysVacant: null,
     },
     byProperty: (report.byProperty ?? []).map((p: OcupacionPropertyItem) => ({
       id: p.consignacionId,
@@ -217,7 +219,8 @@ export function adaptExecutive(
         labelEs: 'Ingresos totales',
         labelEn: 'Total revenue',
         currentValue: flujo?.totals.totalIngresos ?? 0,
-        previousValue: 0,
+        // Sin `previousValue`: `/reports/flujo-caja` no trae el mes anterior.
+        // Ponía `0` y la tarjeta pintaba una variación de «0,0 %».
         format: 'currency',
         higherIsBetter: true,
       },
@@ -226,7 +229,6 @@ export function adaptExecutive(
         labelEs: 'Balance neto',
         labelEn: 'Net balance',
         currentValue: flujo?.totals.netBalance ?? 0,
-        previousValue: 0,
         format: 'currency',
         higherIsBetter: true,
       },

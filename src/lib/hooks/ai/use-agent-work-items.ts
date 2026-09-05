@@ -119,8 +119,15 @@ export function useAgentWorkItems(
       setTotal(json.total ?? 0)
       setError(null)
     } catch (err) {
-      setErrorCrudo(err)
+      // El guard va PRIMERO. Cancelar un pedido propio no es un fallo: React en
+      // modo estricto monta dos veces, así que los dos primeros intentos se
+      // abortan y sólo el tercero trae datos. Con `setErrorCrudo` antes de esta
+      // línea, la cancelación quedaba guardada y la Sala de Pagos mostraba
+      // «No pudimos cargar esto» con su referencia, aunque los datos hubieran
+      // llegado bien un instante después. `use-agent-overview.ts` ya tenía el
+      // orden correcto; esta copia no.
       if (controller.signal.aborted && !timedOut) return
+      setErrorCrudo(err)
       setError(
         timedOut
           ? 'timeout'

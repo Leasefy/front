@@ -5,6 +5,7 @@ import type { Locale, I18nContextValue, TranslationParams, Translations } from '
 import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '@/lib/format';
 import es from './locales/es.json';
 import en from './locales/en.json';
+import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
 
 const translations: Record<Locale, Translations> = { es, en };
 
@@ -96,9 +97,23 @@ export function I18nProvider({ children, defaultLocale = DEFAULT_LOCALE }: I18nP
   );
 
   // Format date based on locale
+  /**
+   * 🔴 Un `2026-03-01` que viene del back es un DÍA, no un instante.
+   *
+   * `new Date('2026-03-01')` lo lee como medianoche UTC, que en Bogotá (UTC-5)
+   * es el 28 de febrero a las 19:00 — y la pantalla muestra el día anterior.
+   * Como este formateador lo comparten 76 pantallas, el corrimiento salía en
+   * todas a la vez: se vio en la vigencia de los contratos y en la de los
+   * inquilinos, con los diez registros corridos un día.
+   *
+   * `fechaDeVigencia` arma el día con los tres números en el calendario local.
+   * Un ISO con hora (`…T15:00:00Z`) sí es un instante y se convierte como
+   * siempre, que es lo que corresponde para un «creado el» o un «última
+   * actividad».
+   */
   const formatDate = useCallback(
     (date: Date | string, options?: Intl.DateTimeFormatOptions): string => {
-      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      const dateObj = typeof date === 'string' ? (fechaDeVigencia(date) ?? new Date(date)) : date;
       const defaultOptions: Intl.DateTimeFormatOptions = {
         day: 'numeric',
         month: 'short',

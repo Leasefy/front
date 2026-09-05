@@ -455,7 +455,7 @@ function ContratosContent() {
 
 export default function ContratosPage() {
   return (
-    <PageGuard module="portafolio">
+    <PageGuard module="contratos">
       <ContratosContent />
     </PageGuard>
   );

@@ -164,7 +164,7 @@ export function StepConfirmImport({
       setEstadoManual(r);
       if (r.estado === "ENCOLADO" || r.estado === "PROCESANDO") {
         toast.info("Sigue en proceso", {
-          description: `${r.procesadas} de ${r.total} filas procesadas. Podés cerrar esta pestaña — te avisamos al terminar.`,
+          description: `${r.procesadas} de ${r.total} filas procesadas. Puedes cerrar esta pestaña — te avisamos al terminar.`,
         });
       }
     } catch (e) {
@@ -231,7 +231,7 @@ export function StepConfirmImport({
           });
         } else if (r.fallidas > 0) {
           toast.warning("Las fotos no se pudieron traer", {
-            description: `Ninguna de las ${r.fallidas} fotos de la ficha se pudo bajar. Podés subirlas desde cada inmueble.`,
+            description: `Ninguna de las ${r.fallidas} fotos de la ficha se pudo bajar. Puedes subirlas desde cada inmueble.`,
           });
         }
       } finally {
@@ -404,7 +404,7 @@ export function StepConfirmImport({
       updateState({ loteRetomado: r.lote });
       if (sinUbicar > 0) {
         toast.info("Direcciones sin ubicar", {
-          description: `${sinUbicar} de ${dtos.length} direcciones no se encontraron en el mapa: esos inmuebles quedan en el centro de su ciudad y podés ajustar el pin después, en cada ficha.`,
+          description: `${sinUbicar} de ${dtos.length} direcciones no se encontraron en el mapa: esos inmuebles quedan en el centro de su ciudad y puedes ajustar el pin después, en cada ficha.`,
         });
       }
     } catch (e) {
@@ -512,7 +512,7 @@ export function StepConfirmImport({
         await refrescarRevision(lote, pagina);
         setError(
           `Se activaron ${resultado.activados} inmuebles y quedaron más por activar. ` +
-            `Nada se repite ni se duplica: tocá «Activar» de nuevo para seguir donde quedó.`,
+            `Nada se repite ni se duplica: toca «Activar» de nuevo para seguir donde quedó.`,
         );
         return;
       }
@@ -520,8 +520,8 @@ export function StepConfirmImport({
       updateState({ importedCount: resultado.activados, importProgress: 100 });
       setIsComplete(true);
       // Adentro del muro NO se ofrece el diálogo de «mandato»: el dueño y la
-      // comisión de cada inmueble se asocian en el paso Contratos, contrato
-      // por contrato (y con un selector por fila). El diálogo pone UN
+      // comisión salen del propio archivo, fila por fila, y lo que quede sin
+      // dueño se resuelve con el selector por fila. El diálogo pone UN
       // propietario a todos los inmuebles del lote — para una migración de
       // dueños distintos es la asociación equivocada, y «mandato» es una
       // palabra que la inmobiliaria no usa (Nico, 2026-09-01).
@@ -549,8 +549,8 @@ export function StepConfirmImport({
         setError(
           e.progreso.activados > 0
             ? `Se activaron ${e.progreso.activados} inmuebles antes del corte (${e.message}). ` +
-              `Nada se pierde ni se duplica: tocá «Activar» de nuevo y sigue donde quedó.`
-            : `${e.message} No se activó ninguno todavía — tocá «Activar» de nuevo para reintentar.`,
+              `Nada se pierde ni se duplica: toca «Activar» de nuevo y sigue donde quedó.`
+            : `${e.message} No se activó ninguno todavía — toca «Activar» de nuevo para reintentar.`,
         );
       } else {
         setError(e instanceof Error ? e.message : "No pudimos activar el lote.");
@@ -605,7 +605,7 @@ export function StepConfirmImport({
           {resultadoActivacion && resultadoActivacion.omitidas.length > 0 && (
             <p className="text-sm text-warning">
               {resultadoActivacion.omitidas.length} filas quedaron pendientes de
-              datos — volvé a «Revisión» para completarlas.
+              datos — vuelve a «Revisión» para completarlas.
             </p>
           )}
           {/*
@@ -627,13 +627,19 @@ export function StepConfirmImport({
               </button>
             </p>
           )}
-          {/* Adentro del muro, qué sigue con el dueño de cada inmueble — en
-              las palabras del muro, no en las del back. */}
+          {/*
+            🔴 Este texto decía lo contrario de lo que acababa de pasar
+            (auditoría 2026-09-05): «el propietario y la comisión los asocias
+            en el paso Contratos» sobre una importación que YA los asoció
+            —`propietarioId` resuelto por la cédula del archivo y
+            `commissionPercent` leído de la columna— y mandaba a la persona a
+            repetir un trabajo hecho. Los que quedaron sin dueño los nombra el
+            aviso de arriba (`aviso-sin-mandato`), uno por uno.
+          */}
           {onSalir && (state.importedCount ?? 0) > 0 && (
             <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="aviso-propietario-en-contratos">
-              El propietario y la comisión de cada inmueble los asociás en el paso
-              Contratos, contrato por contrato. Los inmuebles que no tengan contrato
-              los asociás después desde el portafolio.
+              El propietario y la comisión salieron del archivo, inmueble por inmueble.
+              Los puedes cambiar cuando quieras desde la ficha de cada inmueble.
             </p>
           )}
         </div>
@@ -785,7 +791,7 @@ export function StepConfirmImport({
       <div className="space-y-6">
         <div>
           <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
-            Revisá lo que falta antes de activar
+            Revisa lo que falta antes de activar
           </h2>
           <p className="text-sm text-fg-muted dark:text-fg-subtle">
             Las filas listas se activan cuando quieras — cerrar esta pestaña no
@@ -1028,7 +1034,7 @@ export function StepConfirmImport({
                 : `${bloqueadas.length} inmuebles no se pueden importar`}
             </p>
             <p className="text-body-sm text-fg-muted mt-0.5">
-              Les falta {motivosBloqueo.join(", ")}. Volvé a{" "}
+              Les falta {motivosBloqueo.join(", ")}. Vuelve a{" "}
               <span className="font-medium text-fg">Revisión</span> con
               «Anterior» y completalos ahí en cada inmueble; el resto se importa
               igual.

@@ -1,5 +1,6 @@
 'use client'
 
+import { AvisoDatosDeEjemplo } from '@/components/estado/AvisoDatosDeEjemplo'
 import Link from 'next/link'
 import { Users, House, CurrencyDollar, HeartStraight, ArrowsClockwise, Warning, CaretRight, FolderOpen } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
@@ -64,9 +65,11 @@ export default function RetencionDashboardPage() {
           Detecto propietarios e inmuebles en riesgo de salir del portafolio, explico la causa raíz y propongo qué hacer.
         </p>
         {usingMock ? (
-          <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
-            Datos de demostración — el agente aún no está desplegado en vivo
-          </span>
+          <AvisoDatosDeEjemplo
+            className="mt-3"
+            queEsInventado="Los indicadores, los propietarios en riesgo y la comisión en pesos"
+            queFalta="El agente de Retención no está desplegado: el microservicio sólo monta el webhook de WhatsApp, no las rutas /api/agency/:id/retencion/*. Sin ellas, el cliente cae al mock de src/lib/data/mock-retencion.ts."
+          />
         ) : null}
       </header>
 

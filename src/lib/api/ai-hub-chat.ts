@@ -110,6 +110,16 @@ export interface BackendChatResponse {
   responseText: string;
   suggestedActions: BackendSuggestedAction[];
   dispatches: BackendDispatch[];
+  /**
+   * 🔴 Acciones VINCULANTES propuestas este turno (no ejecutadas).
+   *
+   * El contrato del agente siempre las trajo (`AiHubChatResponse.pendingApprovals`)
+   * y este espejo las omitía: por el camino de respaldo POST —el que corre
+   * cuando el stream se cae— una aprobación propuesta no llegaba nunca a
+   * `<DecisionCard>` y el operador no se enteraba de que había algo que decidir.
+   * Opcional porque un backend viejo puede no mandarlas.
+   */
+  pendingApprovals?: BackendPendingApproval[];
   snapshot: BackendSnapshot | null;
   generatedAt: string;
 }
@@ -157,6 +167,20 @@ export function targetToHref(target: BackendActionTarget): string {
   return ws?.basePath ?? '/panel/inmobiliaria/piloto';
 }
 
+/**
+ * 🔴 ¿Este target tiene una PANTALLA de verdad en el panel?
+ *
+ * Medido en vivo: «Ver inmuebles disponibles» no llevaba a la lista —mandaba
+ * el texto como un mensaje nuevo y dejaba al operador otros ~25 s esperando
+ * por algo que el panel ya tiene a un clic—. Cuando la acción existe como
+ * pantalla, el botón navega; cuando no (y `targetToHref` cae al Piloto),
+ * sigue preguntándole al asistente, que es lo único que puede responderla.
+ */
+export function targetTienePantalla(target: BackendActionTarget): boolean {
+  const slug = TARGET_SLUG[target];
+  return Boolean(slug && AGENT_WORKSPACES.some((w) => w.slug === slug));
+}
+
 const TARGET_ICON: Record<BackendActionTarget, string> = {
   cobranza: 'CurrencyDollar',
   cotizador: 'ShieldCheck',
@@ -172,13 +196,14 @@ export function suggestedActionToResponseAction(
   action: BackendSuggestedAction,
   index: number,
 ): ResponseAction {
+  const tienePantalla = targetTienePantalla(action.target);
   return {
     id: `act_${index}_${action.target}`,
     label: action.label,
-    // El label del back ya viene redactado como petición, así que sirve tal
-    // cual de prompt: tocar la acción le PREGUNTA al asistente en vez de
-    // sacarte de la conversación.
-    prompt: action.label,
+    // Sin `prompt` = el botón NAVEGA a la pantalla (`href`). Con `prompt` = le
+    // pregunta al asistente, que es lo correcto cuando no hay pantalla que
+    // abrir: el label del back ya viene redactado como petición.
+    ...(tienePantalla ? {} : { prompt: action.label }),
     href: targetToHref(action.target),
     icon: TARGET_ICON[action.target] ?? 'ArrowRight',
     variant: index === 0 ? 'primary' : 'secondary',

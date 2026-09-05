@@ -41,7 +41,16 @@ import { PipelineCard } from './PipelineCard';
 interface PipelineBoardProps {
   items: PipelineItem[];
   onItemClick: (item: PipelineItem) => void;
-  onStageChange: (itemId: string, newStage: PipelineStage) => void;
+  /**
+   * Devuelve una promesa que se RESUELVE cuando el back confirmó, y se
+   * RECHAZA cuando no. El tablero espera esa promesa antes de decir nada:
+   * ver `handleDragEnd`.
+   */
+  onStageChange: (
+    itemId: string,
+    newStage: PipelineStage,
+    lostReason?: string,
+  ) => void | Promise<void>;
 }
 
 // ============================================================================
@@ -464,9 +473,19 @@ export function PipelineBoard({
     setOverId(over?.id as string | null);
   }, []);
 
-  // Handle drag end
+  /**
+   * Soltar la tarjeta en otra columna.
+   *
+   * 🔴 «Etapa actualizada» se dice DESPUÉS de que el back lo confirma, no
+   * antes. El código anterior llamaba a `onStageChange` sin esperarla y
+   * cantaba éxito en la línea siguiente: con el PUT caído, el cartel verde
+   * salía igual y la tarjeta volvía sola a su columna un rato después.
+   *
+   * El error lo avisa quien persiste (la página, que además revierte la
+   * tarjeta): acá sólo hay que NO festejar.
+   */
   const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
+    async (event: DragEndEvent) => {
       const { active, over } = event;
 
       setActiveId(null);
@@ -488,15 +507,18 @@ export function PipelineBoard({
       const oldStageInfo = getPipelineStageInfo(item.stage);
       const newStageInfo = getPipelineStageInfo(newStage);
 
-      // Call the stage change handler
-      onStageChange(itemId, newStage);
+      try {
+        await onStageChange(itemId, newStage);
+      } catch {
+        // Ya lo dijo quien intentó guardarlo, con el motivo real.
+        return;
+      }
 
-      // Show success toast
       toast.success(t('inmobiliaria.pipeline.stageUpdated'), {
         description: `${item.candidateName}: ${oldStageInfo?.labelEs || item.stage} → ${newStageInfo?.labelEs || newStage}`,
       });
     },
-    [items, onStageChange]
+    [items, onStageChange, t]
   );
 
   // Get stages to display (all except lost at the end).

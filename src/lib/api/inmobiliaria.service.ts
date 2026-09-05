@@ -1202,12 +1202,34 @@ export const dispersionesApi = {
     });
   },
 
-  /** El back expone PUT, no PATCH. Con PATCH la llamada moría en 404. */
-  async process(id: string): Promise<Dispersion> {
+  /**
+   * Primer par de ojos: deja la dispersión lista para girar (`PROCESSING`).
+   *
+   * El front NUNCA la llamaba —ni existía acá— así que todo «Procesar» moría:
+   * el back exige estado `PROCESSING` y sólo `approve` lo pone.
+   */
+  async approve(id: string): Promise<Dispersion> {
+    return adaptarDispersion(
+      await apiClient.put<DispersionDelBack>(
+        `${BASE}/dispersiones/${id}/approve`,
+        {},
+      ),
+    );
+  },
+
+  /**
+   * Segundo par de ojos: anota la referencia del giro que YA se hizo.
+   *
+   * El back expone PUT, no PATCH (con PATCH la llamada moría en 404) y exige
+   * `transferReference` no vacío: mandarle `{}` era un 400 garantizado, que es
+   * exactamente lo que pasaba antes mientras la pantalla festejaba «Transferencia
+   * enviada».
+   */
+  async process(id: string, transferReference: string): Promise<Dispersion> {
     return adaptarDispersion(
       await apiClient.put<DispersionDelBack>(
         `${BASE}/dispersiones/${id}/process`,
-        {},
+        { transferReference },
       ),
     );
   },

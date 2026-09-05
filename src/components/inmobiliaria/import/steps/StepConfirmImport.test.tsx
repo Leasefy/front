@@ -248,7 +248,7 @@ describe('<StepConfirmImport> — preparar() replaces the client-side POST /prop
     render(baseState());
     await clickImportar();
 
-    expect(container.textContent).toContain('Podés cerrar esta pestaña');
+    expect(container.textContent).toContain('Puedes cerrar esta pestaña');
     expect(container.textContent).not.toContain('¡Importación completada!');
   });
 
@@ -638,16 +638,19 @@ describe('<StepConfirmImport> — el dueño de cada inmueble después de activar
     });
   }
 
-  it('ADENTRO del muro no abre el diálogo de «mandato»: dice que el propietario va en Contratos', async () => {
+  it('ADENTRO del muro no abre el diálogo de «mandato», y NO manda a rehacer lo que la importación ya hizo', async () => {
     // Ese diálogo pone UN propietario a todos los inmuebles del lote y habla
     // de «mandato», una palabra que la inmobiliaria no usa (Nico, 2026-09-01).
-    // En la migración el dueño y la comisión se asocian contrato por contrato.
+    // 🔴 Y el texto que quedaba decía «el propietario y la comisión los asociás
+    // en el paso Contratos» sobre una importación que ACABA de asociarlos desde
+    // el archivo (auditoría 2026-09-05): mandaba a repetir trabajo hecho.
     await activar({ onSalir: () => {} });
 
     expect(inmobiliariaApiMock.getSinConsignacion).not.toHaveBeenCalled();
-    expect(container.querySelector('[data-testid="aviso-propietario-en-contratos"]')?.textContent).toContain(
-      'paso Contratos',
-    );
+    const aviso = container.querySelector('[data-testid="aviso-propietario-en-contratos"]');
+    expect(aviso?.textContent).toContain('salieron del archivo');
+    expect(aviso?.textContent).not.toContain('paso Contratos');
+    expect(aviso?.textContent).not.toContain('contrato por contrato');
     expect(container.querySelector('[data-testid="aviso-sin-mandato"]')).toBeNull();
     expect(container.querySelector('[data-testid="dialogo-propietario"]')).toBeNull();
     expect(document.body.textContent).not.toContain('mandato');

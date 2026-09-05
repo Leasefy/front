@@ -265,17 +265,37 @@ function resolverPerfil(role: string | undefined): PerfilEnLaConversacion {
   }
 }
 
-function formatTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+/**
+ * Cuándo fue el último mensaje, para la fila de la bandeja.
+ *
+ * 🔴 «Ayer» es un DÍA DEL CALENDARIO, no 24 horas.
+ *
+ * Lo que había dividía la diferencia en milisegundos por 86.400.000: un
+ * mensaje de anoche a las 23:00 visto hoy a las 09:00 daba `diffDays === 0` y
+ * salía como una hora suelta —«11:00 p. m.»— como si fuera de hoy; y uno de
+ * hoy a las 00:30 visto a las 23:00 seguía diciendo la hora, bien, pero uno de
+ * ayer a las 08:00 visto hoy a las 09:00 (25 h) decía «Ayer», mientras que uno
+ * de ayer a las 22:00 visto hoy a las 09:00 (11 h) decía la hora. Dos mensajes
+ * del mismo día se etiquetaban distinto según la hora en que mirabas.
+ *
+ * Se comparan días de calendario locales, que es lo que significa la palabra.
+ */
+function diaCalendario(d: Date): number {
+  return Math.floor(
+    (Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86_400_000),
+  );
+}
 
-  if (diffDays === 0) {
+export function formatTime(dateStr: string, ahora: Date = new Date()): string {
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return '';
+  const dias = diaCalendario(ahora) - diaCalendario(date);
+
+  if (dias <= 0) {
     return date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
   }
-  if (diffDays === 1) return 'Ayer';
-  if (diffDays < 7) {
+  if (dias === 1) return 'Ayer';
+  if (dias < 7) {
     return date.toLocaleDateString('es-CO', { weekday: 'short' });
   }
   return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });

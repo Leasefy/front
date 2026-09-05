@@ -155,6 +155,29 @@ describe('sin plan de cuentas', () => {
     expect(q('puc-pendientes')).toBeNull();
     expect(q('puc-continuar')).toBeNull();
   });
+
+  it('🔴 al elegir «Subir mi plan de cuentas», el vacío se va: no conviven «todavía no hay plan» y la revisión', async () => {
+    // Auditoría 2026-09-05: mientras se revisaba el archivo, el bloque
+    // «Todavía no hay plan de cuentas» con sus tres botones seguía pintado
+    // ARRIBA de «Así va a quedar». Dos estados contradictorios a la vez.
+    pucMock.arbol.mockResolvedValue([]);
+
+    await pintar();
+    expect(q('puc-vacio')).not.toBeNull();
+
+    await click('puc-vacio-subir-archivo');
+    expect(q('puc-vacio')).toBeNull();
+  });
+
+  it('lo mismo al elegir «Crear las cuentas a mano»', async () => {
+    pucMock.arbol.mockResolvedValue([]);
+
+    await pintar();
+    await click('puc-vacio-a-mano');
+
+    expect(q('puc-vacio')).toBeNull();
+    expect(q('puc-formulario')).not.toBeNull();
+  });
 });
 
 describe('la semilla', () => {

@@ -212,7 +212,7 @@ un tope de $2.400.000 que nadie le dio, y sin marca de demo.
 cd ~/rent/mvp-inmobiliaria && pnpm dev -p 3002
 
 # Cuenta de inquilina ya confirmada
-maria.inquilina@leasefy-dev.co / PRueba123#
+maria.inquilina@leasefy-dev.co / <contraseña en 1Password>
 ```
 
 Para ver el panel **con** aprobación (mientras el agente no publique la ruta), sembrar en

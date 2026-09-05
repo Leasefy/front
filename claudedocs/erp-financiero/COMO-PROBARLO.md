@@ -7,7 +7,7 @@ Todo esto quedó **andando en tu máquina** al cierre del 2026-08-31.
 | panel | **http://localhost:3011** |
 | back | `:3007` (reemplacé el que estaba corriendo, que era el de la rama vieja) |
 | micro de agentes | `:4300`, sin tocar |
-| cuenta | `hola+inmobiliaria3@leasefy.co` / `PRueba123#` — la de QA, **nunca la tuya** |
+| cuenta | `hola+inmobiliaria3@leasefy.co` / `<contraseña en 1Password>` — la de QA, **nunca la tuya** |
 
 Si se cae algo:
 

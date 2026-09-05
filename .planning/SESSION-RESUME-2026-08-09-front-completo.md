@@ -117,8 +117,8 @@ Y dos veces **mi propio conteo estaba mal**: dije «~120 rutas» (eran 63) y
 
 ## Operativo
 
-- **Inquilina**: `maria.inquilina@leasefy-dev.co` / `PRueba123#`
-- **Agencia**: `agencia.demo.1786238152@leasefy-dev.co` / `PRueba123#`
+- **Inquilina**: `maria.inquilina@leasefy-dev.co` / `<contraseña en 1Password>`
+- **Agencia**: `agencia.demo.1786238152@leasefy-dev.co` / `<contraseña en 1Password>`
 - **Build sin matar el dev**: `NEXT_DIST_DIR=.next-build pnpm build`, después
   `git checkout -- tsconfig.json` (el build lo reescribe).
 - **Ver un defecto de estados**: `page.route('**/x', r => r.abort('failed'))`.

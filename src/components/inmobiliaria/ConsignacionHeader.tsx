@@ -14,7 +14,6 @@ import {
   DotsThree,
   CaretDown,
   ArrowSquareOut,
-  ArrowCounterClockwise,
   XCircle,
   Wrench,
   CheckCircle,
@@ -58,7 +57,13 @@ interface ConsignacionHeaderProps {
   onViewPortal?: () => void;
   onChangeStatus?: (status: PropertyAvailability) => void;
   onTerminate?: () => void;
-  onRenew?: () => void;
+  /*
+   * 🔴 `onRenew` se retiró junto con su renglón del menú: «Renovar
+   * consignación» sólo mostraba «próximamente». No hay endpoint de renovación
+   * de consignación (el `RenovacionesService` del back renueva CONTRATOS, que
+   * es otra cosa). Un ítem que sólo se disculpa es peor que ninguno: ocupa el
+   * lugar de la acción real. Vuelve cuando exista la ruta.
+   */
 }
 
 // Property type icons
@@ -136,7 +141,6 @@ export function ConsignacionHeader({
   onViewPortal,
   onChangeStatus,
   onTerminate,
-  onRenew,
 }: ConsignacionHeaderProps) {
   const { t, formatDate } = useI18n();
 
@@ -351,10 +355,6 @@ export function ConsignacionHeader({
                 />
               </DropdownListTrigger>
               <DropdownListContent align="end" className="w-48">
-                <DropdownListItem onSelect={() => onRenew?.()}>
-                  <ArrowCounterClockwise className="w-4 h-4" />
-                  {t('inmobiliaria.consignaciones.header.renewConsignment')}
-                </DropdownListItem>
                 <DropdownListItem
                   onSelect={() => onTerminate?.()}
                   className="text-danger focus:text-danger"

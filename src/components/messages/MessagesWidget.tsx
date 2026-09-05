@@ -8,19 +8,14 @@ import {
   ChatCircle,
   MagnifyingGlass,
   PaperPlaneTilt,
-  Paperclip,
   DotsThreeVertical,
   Check,
   Checks,
   Info,
-  Image,
   ArrowLeft,
   X,
   House,
   Envelope,
-  Archive,
-  BellSlash,
-  Flag,
   Plus,
   IdentificationCard,
   Warning,
@@ -30,22 +25,10 @@ import { useI18n } from '@/lib/i18n';
 import { IconButton, MonoLabel } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from '@/components/ui/alert-dialog';
-import { toast } from 'sonner';
+import { useAuth } from '@/lib/auth';
 import { useConversations, useChat } from '@/lib/hooks/useMessages';
-import { messagesApi } from '@/lib/api/messages.service';
 import { agentContactApi } from '@/lib/api/agent-contact.service';
 import type { ChatConversation } from '@/lib/api/messages.types';
 import { InsigniaDePerfil } from '@/components/messages/InsigniaDePerfil';
@@ -152,14 +135,14 @@ function ConversationsSkeleton() {
     <div className="divide-y divide-border">
       {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="flex items-start gap-3 px-4 py-4 animate-pulse">
-          <div className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-neutral-700 flex-shrink-0" />
+          <div className="w-12 h-12 rounded-full bg-surface-muted flex-shrink-0" />
           <div className="flex-1 space-y-2">
             <div className="flex items-center justify-between">
-              <div className="h-4 w-28 bg-neutral-200 dark:bg-neutral-700 rounded" />
-              <div className="h-3 w-10 bg-neutral-200 dark:bg-neutral-700 rounded" />
+              <div className="h-4 w-28 bg-surface-muted rounded" />
+              <div className="h-3 w-10 bg-surface-muted rounded" />
             </div>
-            <div className="h-3 w-36 bg-neutral-200 dark:bg-neutral-700 rounded" />
-            <div className="h-3 w-48 bg-neutral-200 dark:bg-neutral-700 rounded" />
+            <div className="h-3 w-36 bg-surface-muted rounded" />
+            <div className="h-3 w-48 bg-surface-muted rounded" />
           </div>
         </div>
       ))}
@@ -175,7 +158,7 @@ function MessagesSkeleton() {
           <div className={cn(
             'h-12 rounded-lg',
             i % 2 === 0
-              ? 'w-3/5 bg-neutral-200 dark:bg-neutral-700 rounded-bl-sm'
+              ? 'w-3/5 bg-surface-muted rounded-bl-sm'
               : 'w-2/5 bg-primary-soft rounded-br-sm'
           )} />
         </div>
@@ -190,6 +173,9 @@ function MessagesSkeleton() {
 
 export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidgetProps) {
   const { t, locale } = useI18n();
+  /* Para `{{inmobiliaria}}` de las plantillas: el nombre real de la agencia
+     del usuario, no uno inventado. Ver `datosDePlantilla`. */
+  const { agency } = useAuth();
   const {
     conversations,
     totalUnread,
@@ -226,12 +212,9 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [showOptionsList, setShowOptionsList] = useState(false);
-  const [reportOpen, setReportOpen] = useState(false);
   // «Nuevo mensaje»: hasta acá la bandeja no podía iniciar ninguna
   // conversación — sólo se llenaba si el otro escribía primero.
   const [nuevoMensajeAbierto, setNuevoMensajeAbierto] = useState(false);
-  const [reportReason, setReportReason] = useState('');
-  const [isReporting, setIsReporting] = useState(false);
   /**
    * Las variables que una plantilla NO pudo reemplazar.
    *
@@ -248,7 +231,6 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const optionsListRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   /**
    * Dónde tiene que quedar el cursor DESPUÉS de que React repinte el campo.
    *
@@ -259,7 +241,15 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
    */
   const cursorPendiente = useRef<number | null>(null);
 
-  const { messages, isLoading: isLoadingMessages, isSending, sendMessage, markAsRead } = useChat(selectedConversationId);
+  const {
+    messages,
+    isLoading: isLoadingMessages,
+    isSending,
+    error: errorDeEnvio,
+    limpiarError,
+    sendMessage,
+    markAsRead,
+  } = useChat(selectedConversationId);
 
   // Copy por actor (tenant ve "propietarios", landlord/agency ve "inquilinos").
   const isTenant = actor === 'tenant';
@@ -355,19 +345,40 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
       setShowMobileChat(true);
       setShowInfoPanel(false);
       setShowOptionsList(false);
-      markAsRead();
+      limpiarError();
+      /* 🔴 `conv.id`, EXPLÍCITO. Sin el argumento, `markAsRead` es el del
+         render anterior y marcaba como leído el hilo que se estaba dejando:
+         abrir la conversación de Beto limpiaba los no leídos de Ana y los de
+         Beto se quedaban ahí para siempre. */
+      markAsRead(conv.id);
       setTimeout(() => refetchConversations(), 500);
       setTimeout(() => inputRef.current?.focus(), 100);
     },
-    [markAsRead, refetchConversations],
+    [markAsRead, limpiarError, refetchConversations],
   );
 
+  /**
+   * Mandar.
+   *
+   * 🔴 Antes: se vaciaba el campo y se llamaba a `sendMessage` sin mirar el
+   * resultado. Si el POST fallaba, el hook sacaba la burbuja optimista y
+   * guardaba el error — que esta pantalla nunca leía. El mensaje desaparecía
+   * en silencio Y el texto se perdía, así que había que reescribirlo de
+   * memoria sin saber siquiera que no había salido.
+   *
+   * Ahora, si falla, el texto VUELVE al campo (lo escrito no se tira) y el
+   * cartel de abajo lo dice con un botón para reintentar.
+   */
   const handleSendMessage = useCallback(async () => {
     const text = messageText.trim();
     if (!text || isSending) return;
     setMessageText('');
     setVariablesSinResolver([]);
-    await sendMessage(text);
+    const salio = await sendMessage(text);
+    if (!salio) {
+      setMessageText(text);
+      return;
+    }
     refetchConversations();
   }, [messageText, isSending, sendMessage, refetchConversations]);
 
@@ -428,109 +439,25 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
     [insertarEnElCursor],
   );
 
-  // Attachments (COMU-02): the file picker is REAL, the SEND is honestly pending.
-  // Reuse one hidden <input>; set `accept` per button before opening it.
-  const openAttachmentPicker = useCallback((accept: string) => {
-    const input = fileInputRef.current;
-    if (!input) return;
-    input.accept = accept;
-    input.click();
-  }, []);
-
-  const handleAttachmentSelected = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      // Reset so re-selecting the SAME file fires onChange again.
-      e.target.value = '';
-      if (!file || !selectedConversation) return;
-
-      const MAX_BYTES = 10 * 1024 * 1024; // 10 MB size cap
-      if (file.size > MAX_BYTES) {
-        toast.error(
-          locale === 'es'
-            ? 'El archivo supera el límite de 10 MB.'
-            : 'The file exceeds the 10 MB limit.',
-        );
-        return;
-      }
-
-      // Contract stub: no chat-attachment endpoint + no message attachment field
-      // yet, so this resolves `null`. Show an HONEST "Próximamente" — never a fake
-      // "enviado", never an orphaned upload to the documents store from the chat.
-      await messagesApi.sendAttachment(selectedConversation.id, file);
-      toast.info(
-        locale === 'es'
-          ? 'El envío de adjuntos estará disponible pronto.'
-          : 'Sending attachments will be available soon.',
-      );
-    },
-    [selectedConversation, locale],
-  );
-
-  // Conversation actions (COMU-02) — SHARED by tenant + landlord/agency. The
-  // endpoints are not live yet, so each degrades to an honest "Próximamente"
-  // toast via the typed service ('unavailable' on 404/403/0) — never `alert`,
-  // never a fabricated success. `report` is a safety action → AlertDialog confirm.
-  const handleArchive = useCallback(async () => {
-    setShowOptionsList(false);
-    if (!selectedConversation) return;
-    const result = await messagesApi.archiveConversation(selectedConversation.id);
-    if (result === 'ok') {
-      toast.success(locale === 'es' ? 'Conversación archivada' : 'Conversation archived');
-      // Optimistically drop the archived thread from view, then re-sync.
-      setSelectedConversationId(null);
-      setShowMobileChat(false);
-      refetchConversations();
-    } else {
-      toast.info(
-        locale === 'es'
-          ? 'Archivar conversaciones estará disponible próximamente.'
-          : 'Archiving conversations will be available soon.',
-      );
-    }
-  }, [selectedConversation, locale, refetchConversations]);
-
-  const handleMute = useCallback(async () => {
-    setShowOptionsList(false);
-    if (!selectedConversation) return;
-    const result = await messagesApi.muteConversation(selectedConversation.id);
-    if (result === 'ok') {
-      toast.success(locale === 'es' ? 'Notificaciones silenciadas' : 'Notifications muted');
-    } else {
-      toast.info(
-        locale === 'es'
-          ? 'Silenciar estará disponible próximamente.'
-          : 'Muting will be available soon.',
-      );
-    }
-  }, [selectedConversation, locale]);
-
-  const handleReport = useCallback(() => {
-    setShowOptionsList(false);
-    setReportOpen(true);
-  }, []);
-
-  const confirmReport = useCallback(async () => {
-    if (!selectedConversation) return;
-    setIsReporting(true);
-    const trimmed = reportReason.trim();
-    const result = await messagesApi.reportConversation(
-      selectedConversation.id,
-      trimmed.length > 0 ? trimmed : undefined,
-    );
-    setIsReporting(false);
-    setReportOpen(false);
-    setReportReason('');
-    if (result === 'ok') {
-      toast.success(locale === 'es' ? 'Conversación reportada' : 'Conversation reported');
-    } else {
-      toast.info(
-        locale === 'es'
-          ? 'Reportar estará disponible próximamente.'
-          : 'Reporting will be available soon.',
-      );
-    }
-  }, [selectedConversation, reportReason, locale]);
+  /*
+   * 🔴 Acá vivían CINCO acciones que no hacían nada: «Archivar», «Silenciar»,
+   * «Reportar», el clip de adjuntos y el botón de imagen.
+   *
+   * Ninguna tiene ruta en el back —`archiveConversation`, `muteConversation` y
+   * `reportConversation` devuelven `'unavailable'` por 404, y `sendAttachment`
+   * ni siquiera hace el POST: está escrito para resolver `null`—, así que las
+   * cinco terminaban en un toast «estará disponible próximamente». El menú de
+   * los tres puntos era una lista de disculpas, y el clip era peor: abría el
+   * explorador de archivos, dejaba elegir uno, validaba su tamaño y después
+   * decía que no. Reportar era el más grave de todos: alguien podía denunciar
+   * una conversación abusiva y creer que quedó denunciada.
+   *
+   * Se retiran hasta que exista el endpoint. Lo que queda del menú es lo único
+   * que funciona: «Ver ficha», que navega de verdad. La casilla de WhatsApp
+   * del panel de información se queda porque NO es un botón: es un renglón
+   * apagado, con `aria-disabled` y la razón escrita, atado a la respuesta real
+   * del `contact-ledger` del agente.
+   */
 
   /**
    * A dónde lleva «Ver ficha» y cómo se llama el renglón.
@@ -569,19 +496,29 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
   /**
    * Con qué se resuelven las variables de una plantilla.
    *
-   * Sólo lo que la conversación abierta SABE. `inmobiliaria` y `saldo` no están
-   * acá a propósito: el widget no tiene ninguno de los dos y
-   * `resolverPlantilla` los va a dejar tal cual, que es lo correcto. Inventar
-   * un nombre de inmobiliaria o un saldo sería mandarle a un cliente un número
-   * que nadie calculó.
+   * Sólo lo que se SABE de verdad. Las ocho plantillas sugeridas usan cinco
+   * variables y acá había tres: `{{inmobiliaria}}` y `{{saldo}}` salían
+   * siempre como hueco, y esos huecos viajaban tal cual en el mensaje que se
+   * le manda a un cliente («Hola Ana, tu saldo con {{inmobiliaria}} es
+   * {{saldo}}»).
+   *
+   * `inmobiliaria` SÍ se puede resolver: es la agencia del usuario que está
+   * escribiendo, y ya la trae `useAuth()`. Se resuelve.
+   *
+   * `saldo` NO, y sigue afuera a propósito: el widget no tiene ningún número
+   * de cartera, y ponerle cualquier cosa sería mandarle a un cliente una
+   * deuda que nadie calculó. El que sí lo tiene es el botón de pendientes
+   * —arma el mensaje con el cobro real, su fecha y su mora—, así que el aviso
+   * de abajo manda para allá en vez de dejar el hueco sin explicación.
    */
   const datosDePlantilla = useMemo(
     () => ({
       nombre: selectedConversation?.name ?? '',
       inmueble: selectedConversation?.property ?? '',
       mes: mesEnCurso(),
+      inmobiliaria: agency?.name ?? '',
     }),
-    [selectedConversation],
+    [selectedConversation, agency?.name],
   );
 
   /* El aviso se apaga solo cuando ya no queda ningún hueco en el campo: quien
@@ -836,10 +773,13 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                             ? 'bg-primary-soft text-primary'
                             : 'text-muted-foreground hover:text-foreground',
                         )}
-                        aria-label={locale === 'es' ? 'Informacion' : 'Information'}
+                        aria-label={locale === 'es' ? 'Información' : 'Information'}
                         icon={<Info className="w-5 h-5" />}
                       />
 
+                      {/* Sin ficha a dónde ir, el menú queda vacío: entonces no
+                          hay menú. Un `⋮` que abre una lista de nada es ruido. */}
+                      {fichaDeLaContraparte && (
                       <div className="relative" ref={optionsListRef}>
                         <IconButton
                           variant="ghost"
@@ -850,7 +790,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               ? 'bg-muted text-foreground'
                               : 'text-muted-foreground hover:text-foreground',
                           )}
-                          aria-label={locale === 'es' ? 'Mas opciones' : 'More options'}
+                          aria-label={locale === 'es' ? 'Más opciones' : 'More options'}
                           icon={<DotsThreeVertical className="w-5 h-5" />}
                         />
 
@@ -881,44 +821,19 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                 actúan sobre el hilo. Sólo aparece cuando hay a
                                 dónde ir; ver `fichaDeLaContraparte`.
                               */}
-                              {fichaDeLaContraparte && (
-                                <>
-                                  <button
-                                    onClick={verFicha}
-                                    data-testid="ver-ficha"
-                                    className="flex w-full items-center gap-3 whitespace-nowrap px-4 py-2.5 text-sm text-fg transition-colors hover:bg-surface-muted"
-                                  >
-                                    <IdentificationCard className="h-4 w-4 flex-shrink-0 text-fg-muted" />
-                                    {fichaDeLaContraparte.etiqueta}
-                                  </button>
-                                  <div className="my-1.5 h-px bg-border" />
-                                </>
-                              )}
                               <button
-                                onClick={handleArchive}
+                                onClick={verFicha}
+                                data-testid="ver-ficha"
                                 className="flex w-full items-center gap-3 whitespace-nowrap px-4 py-2.5 text-sm text-fg transition-colors hover:bg-surface-muted"
                               >
-                                <Archive className="h-4 w-4 flex-shrink-0 text-fg-muted" />
-                                {locale === 'es' ? 'Archivar conversación' : 'Archive conversation'}
-                              </button>
-                              <button
-                                onClick={handleMute}
-                                className="flex w-full items-center gap-3 whitespace-nowrap px-4 py-2.5 text-sm text-fg transition-colors hover:bg-surface-muted"
-                              >
-                                <BellSlash className="h-4 w-4 flex-shrink-0 text-fg-muted" />
-                                {locale === 'es' ? 'Silenciar notificaciones' : 'Mute notifications'}
-                              </button>
-                              <button
-                                onClick={handleReport}
-                                className="flex w-full items-center gap-3 whitespace-nowrap px-4 py-2.5 text-sm text-fg transition-colors hover:bg-surface-muted"
-                              >
-                                <Flag className="h-4 w-4 flex-shrink-0 text-fg-muted" />
-                                {locale === 'es' ? 'Reportar' : 'Report'}
+                                <IdentificationCard className="h-4 w-4 flex-shrink-0 text-fg-muted" />
+                                {fichaDeLaContraparte.etiqueta}
                               </button>
                             </motion.div>
                           )}
                         </AnimatePresence>
                       </div>
+                      )}
                     </div>
                   </div>
 
@@ -1029,28 +944,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                       {/* Message Input */}
                       <div className="px-6 py-4 border-t border-border bg-card">
                         <div className="flex items-center gap-3">
-                          {/* Hidden picker reused by both buttons (accept set per button). */}
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            className="hidden"
-                            onChange={handleAttachmentSelected}
-                          />
                           <div className="flex items-center gap-1">
-                            <IconButton
-                              variant="ghost"
-                              onClick={() => openAttachmentPicker('image/*,application/pdf')}
-                              className="rounded-full text-muted-foreground hover:text-foreground"
-                              aria-label={locale === 'es' ? 'Adjuntar archivo' : 'Attach file'}
-                              icon={<Paperclip className="w-5 h-5" />}
-                            />
-                            <IconButton
-                              variant="ghost"
-                              onClick={() => openAttachmentPicker('image/*')}
-                              className="rounded-full text-muted-foreground hover:text-foreground"
-                              aria-label={locale === 'es' ? 'Enviar imagen' : 'Send image'}
-                              icon={<Image className="w-5 h-5" />}
-                            />
                             {/*
                               Plantillas y pendientes: los dos LLENAN el campo y
                               ninguno manda. Van del lado del adjunto —a la
@@ -1058,22 +952,36 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               mensaje», como el clip; el emoji vive adentro del
                               campo porque decora lo que ya se está escribiendo.
                             */}
-                            <PlantillasDeMensajePopover
-                              locale={locale}
-                              datos={datosDePlantilla}
-                              onElegir={alElegirPlantilla}
-                            />
+                            {/* 🔴 Sólo en el panel de la inmobiliaria. Las
+                                plantillas («Hola {{nombre}}, te recordamos el
+                                pago de {{mes}}») y los pendientes (los cobros
+                                y documentos que la agencia le reclama a esta
+                                persona) son herramientas de cobro: no tienen
+                                sentido en la bandeja del inquilino ni en la
+                                del propietario, que son justamente a quienes
+                                se les cobra. `actor` no alcanza para decidirlo
+                                —'landlord' es la inmobiliaria Y el
+                                propietario—, por eso va por la ruta. */}
+                            {enPanelDeInmobiliaria && (
+                              <PlantillasDeMensajePopover
+                                locale={locale}
+                                datos={datosDePlantilla}
+                                onElegir={alElegirPlantilla}
+                              />
+                            )}
                             {/* `key` por conversación: los pendientes de Ana no
                                 pueden quedar cacheados en el panel de Beto ni
                                 por un cuadro. Remontar es más barato y más
                                 seguro que acordarse de limpiar el estado. */}
-                            <PendientesDelHiloPopover
-                              key={selectedConversation.id}
-                              locale={locale}
-                              conversationId={selectedConversation.id}
-                              nombre={selectedConversation.name}
-                              onElegir={alElegirPendiente}
-                            />
+                            {enPanelDeInmobiliaria && (
+                              <PendientesDelHiloPopover
+                                key={selectedConversation.id}
+                                locale={locale}
+                                conversationId={selectedConversation.id}
+                                nombre={selectedConversation.name}
+                                onElegir={alElegirPendiente}
+                              />
+                            )}
                           </div>
                           <div className="flex-1 relative">
                             <Input
@@ -1109,6 +1017,34 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                         </div>
 
                         {/*
+                          🔴 El envío que falló, DICHO — con el texto de vuelta
+                          en el campo y un botón para reintentar. Sin esto, un
+                          POST caído borraba la burbuja y no dejaba rastro.
+                        */}
+                        {errorDeEnvio && (
+                          <div
+                            data-testid="mensaje-no-enviado"
+                            role="alert"
+                            className="mt-2 flex items-start gap-2 rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger"
+                          >
+                            <Warning className="mt-px h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+                            <span className="flex-1">
+                              {locale === 'es'
+                                ? 'No se pudo enviar. Tu mensaje quedó en el campo: probá de nuevo.'
+                                : "Couldn't send. Your message is back in the box — try again."}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => void handleSendMessage()}
+                              disabled={!messageText.trim() || isSending}
+                              className="shrink-0 font-medium underline underline-offset-2 disabled:opacity-50"
+                            >
+                              {locale === 'es' ? 'Reintentar' : 'Retry'}
+                            </button>
+                          </div>
+                        )}
+
+                        {/*
                           🔴 Los huecos que la plantilla no pudo llenar, DICHOS.
                           Sin esto se manda «Hola {{nombre}}, tu saldo es
                           {{saldo}}» y el que queda mal es quien apretó el
@@ -1125,6 +1061,14 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               {locale === 'es'
                                 ? `Falta completar: ${huecosVisibles.map((v) => `{{${v}}}`).join(', ')}. Revisá el mensaje antes de mandarlo.`
                                 : `Still to fill in: ${huecosVisibles.map((v) => `{{${v}}}`).join(', ')}. Check the message before sending.`}
+                              {huecosVisibles.includes('saldo') && (
+                                <>
+                                  {' '}
+                                  {locale === 'es'
+                                    ? 'El saldo no se completa solo: sacalo del botón de pendientes, que trae el cobro real.'
+                                    : 'The balance is not filled in automatically: take it from the pending items button, which carries the real charge.'}
+                                </>
+                              )}
                             </span>
                           </p>
                         )}
@@ -1162,7 +1106,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                           {/* Panel Header */}
                           <div className="flex items-center justify-between p-4 border-b border-border">
                             <h3 className="text-base font-semibold text-foreground">
-                              {locale === 'es' ? 'Informacion' : 'Information'}
+                              {locale === 'es' ? 'Información' : 'Information'}
                             </h3>
                             <IconButton
                               variant="ghost"
@@ -1220,10 +1164,13 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               )}
                             </div>
 
-                            {/* Quick Actions */}
+                            {/* Acciones rápidas — hoy la única que queda es el
+                                renglón apagado de WhatsApp (tenant). Sin él, el
+                                bloque no tiene contenido y no se pinta. */}
+                            {isTenant && (
                             <div className="mt-6 pt-6 border-t border-border">
                               <MonoLabel className="block mb-3 text-muted-foreground">
-                                {locale === 'es' ? 'Acciones rapidas' : 'Quick actions'}
+                                {locale === 'es' ? 'Acciones rápidas' : 'Quick actions'}
                               </MonoLabel>
                               <div className="space-y-2">
                                 {/*
@@ -1248,22 +1195,9 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                     </span>
                                   </div>
                                 )}
-                                <button
-                                  onClick={handleMute}
-                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
-                                >
-                                  <BellSlash className="w-4 h-4 text-muted-foreground" />
-                                  {locale === 'es' ? 'Silenciar notificaciones' : 'Mute notifications'}
-                                </button>
-                                <button
-                                  onClick={handleArchive}
-                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
-                                >
-                                  <Archive className="w-4 h-4 text-muted-foreground" />
-                                  {locale === 'es' ? 'Archivar conversación' : 'Archive conversation'}
-                                </button>
                               </div>
                             </div>
+                            )}
                           </div>
                         </motion.div>
                       )}
@@ -1276,62 +1210,6 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
         </motion.div>
       </div>
 
-      {/*
-        Report confirm — Radix AlertDialog (role="alertdialog", focus-trapped, no
-        outside-dismiss). The reason is a SINGLE OPTIONAL free-text field: never
-        required and never a suggested reason-for-non-payment prompt (Ley 2300
-        art. 7). Shared by tenant + landlord/agency.
-      */}
-      <AlertDialog
-        open={reportOpen}
-        onOpenChange={(open) => {
-          setReportOpen(open);
-          if (!open) setReportReason('');
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {locale === 'es' ? '¿Reportar esta conversación?' : 'Report this conversation?'}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {locale === 'es'
-                ? 'Nuestro equipo revisará esta conversación. Si querés, contanos qué pasó.'
-                : 'Our team will review this conversation. If you want, tell us what happened.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          <div className="space-y-2">
-            <label htmlFor="report-reason" className="text-sm text-muted-foreground">
-              {locale === 'es' ? 'Cuéntanos qué pasó (opcional)' : 'Tell us what happened (optional)'}
-            </label>
-            <Textarea
-              id="report-reason"
-              value={reportReason}
-              onChange={(e) => setReportReason(e.target.value)}
-              placeholder={locale === 'es' ? 'Escribe aquí (opcional)' : 'Write here (optional)'}
-              maxLength={500}
-              rows={3}
-            />
-          </div>
-
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isReporting}>
-              {locale === 'es' ? 'Cancelar' : 'Cancel'}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                // Handle the report ourselves; the toast fires after the call.
-                e.preventDefault();
-                confirmReport();
-              }}
-              disabled={isReporting}
-            >
-              {locale === 'es' ? 'Reportar conversación' : 'Report conversation'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <NuevoMensajeDrawer
         abierto={nuevoMensajeAbierto}

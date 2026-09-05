@@ -25,6 +25,19 @@ vi.mock('@/lib/hooks/use-onboarding-provisioning', () => ({
   useOnboardingProvisioning: () => mockUseOnboardingProvisioning(),
 }))
 
+/**
+ * 🔴 El paso «Miembros» ahora crea invitaciones REALES en el back
+ * (`POST /inmobiliaria/agency/members`, el mismo endpoint del panel). Antes
+ * mostraba los `rawToken` del micro, que ninguna ruta aceptaba: el enlace daba
+ * 404 y no se podía regenerar (auditoría 2026-09-05).
+ */
+const mockInviteUser = vi.fn()
+vi.mock('@/lib/api/inmobiliaria.service', () => ({
+  inmobiliariaConfigApi: {
+    inviteUser: (invite: unknown) => mockInviteUser(invite),
+  },
+}))
+
 import OnboardingInmobiliariaClient from './OnboardingInmobiliariaClient'
 import { OnboardingSessionError } from '@/lib/api/onboarding-session.service'
 import type { OnboardingSessionStepConflict } from '@/lib/api/generated/agency'
@@ -503,6 +516,11 @@ describe('<OnboardingInmobiliariaClient>', () => {
   })
 
   it('retains the members invite-links screen after submitMembers even though currentStep advances — advance is manual via "Continuar"', async () => {
+    mockInviteUser.mockResolvedValue({
+      emailDelivered: false,
+      emailStatus: 'not_configured',
+      invitationToken: 'tok-back-1',
+    })
     let hookCurrentStep: string = 'members'
     const submitMembers = vi.fn().mockImplementation(async () => {
       hookCurrentStep = 'payment_provider'
@@ -540,6 +558,16 @@ describe('<OnboardingInmobiliariaClient>', () => {
     expect(container.querySelector('[data-testid="members-invite-links"]')).toBeTruthy()
     expect(container.querySelector('[data-testid="payment-provider-step-form"]')).toBeFalsy()
     expect(container.textContent).toContain('admin@inmobiliaria.test')
+
+    // 🔴 La invitación se creó en el BACK y el enlace es el que sí abre.
+    expect(mockInviteUser).toHaveBeenCalledWith({
+      email: 'admin@inmobiliaria.test',
+      name: '',
+      role: 'agente',
+    })
+    expect(container.innerHTML).toContain('/invitacion/tok-back-1')
+    expect(container.innerHTML).not.toContain('raw-token-1')
+    expect(container.innerHTML).not.toContain('/onboarding/invitacion')
 
     const continueBtn = container.querySelector(
       '[data-testid="members-invite-continue"]',

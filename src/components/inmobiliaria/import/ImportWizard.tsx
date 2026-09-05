@@ -316,7 +316,7 @@ export function ImportWizard({
           data-testid="lotes-inmuebles-abiertos"
         >
           <p className="text-sm font-medium text-fg">
-            Tenés una importación sin terminar
+            Tienes una importación sin terminar
           </p>
           {lotesAbiertos.map((l) => (
             <div
@@ -345,7 +345,7 @@ export function ImportWizard({
             </div>
           ))}
           <p className="text-xs text-fg-subtle">
-            Si en cambio subís el mismo archivo de nuevo, los inmuebles se duplican.
+            Si en cambio subes el mismo archivo de nuevo, los inmuebles se duplican.
           </p>
         </section>
       )}

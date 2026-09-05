@@ -376,11 +376,17 @@ function ConsignacionDetailContent() {
     }
   }, [consignacion, isTerminating, t]);
 
-  const handleRenew = useCallback(() => {
-    toast.info(t('inmobiliaria.portafolio.detail.toasts.renewSoon'), {
-      description: t('inmobiliaria.portafolio.detail.toasts.renewDesc'),
-    });
-  }, [t]);
+  /*
+   * 🔴 Acá vivía `handleRenew`, que sólo hacía
+   * `toast.info('Renovar consignación próximamente')`.
+   *
+   * No hay endpoint de renovación de consignación: `consignacionesApi` no lo
+   * tiene y el back tampoco (`RenovacionesService` renueva CONTRATOS, que es
+   * otra cosa — el mandato con el propietario no pasa por ahí). Un ítem de
+   * menú que sólo se disculpa ocupa el lugar de la acción real y hace perder
+   * un clic cada vez, así que se retiró junto con su renglón del menú
+   * (`ConsignacionHeader`). Vuelve el día que exista la ruta.
+   */
 
   /*
    * Antes esto era un toast de «próximamente». Con eso, un inmueble sin agente
@@ -505,7 +511,6 @@ function ConsignacionDetailContent() {
           onViewPortal={handleViewPortal}
           onChangeStatus={handleChangeStatus}
           onTerminate={handleTerminate}
-          onRenew={handleRenew}
         />
       </motion.div>
 

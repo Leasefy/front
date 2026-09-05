@@ -10,6 +10,7 @@ import {
   CheckCircle,
   ChartLineUp,
 } from '@phosphor-icons/react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import {
@@ -134,22 +135,43 @@ function PipelineContent() {
     setIsDetailOpen(true);
   }, []);
 
-  // Handle stage change from drag-and-drop or detail modal
-  const handleStageChange = useCallback(async (itemId: string, newStage: PipelineStage) => {
-    // Optimistic update
-    setItems((prev) =>
-      prev.map((item) =>
+  /**
+   * Mover un lead de etapa — y decir la verdad sobre si se movió.
+   *
+   * 🔴 Antes: la tarjeta se pintaba en la etapa nueva, el tablero cantaba
+   * «Etapa actualizada» sin esperar a nadie, y si el PUT fallaba el único
+   * rastro era un `console.error` + un `refetch()`. La tarjeta volvía sola a
+   * su columna varios segundos después, sin una palabra: quien la arrastró se
+   * quedaba creyendo que el lead había avanzado.
+   *
+   * Ahora: se guarda la foto de la tarjeta ANTES de tocarla, se espera al
+   * back, y si falla se restaura esa foto en el acto (no se delega en el
+   * refetch, que además puede traer datos viejos de una caché). El error se
+   * dice UNA vez, acá, porque el mensaje es el mismo lo hayan disparado el
+   * arrastre o el cajón; y se relanza para que quien llamó no festeje.
+   */
+  const handleStageChange = useCallback(async (
+    itemId: string,
+    newStage: PipelineStage,
+    lostReason?: string,
+  ) => {
+    // La foto de antes: es lo que se restaura si el back dice que no.
+    let anterior: PipelineItem | undefined;
+    setItems((prev) => {
+      anterior = prev.find((i) => i.id === itemId);
+      return prev.map((item) =>
         item.id === itemId
           ? {
               ...item,
               stage: newStage,
+              ...(lostReason ? { lostReason } : {}),
               enteredStageAt: new Date().toISOString(),
               daysInStage: 0,
               updatedAt: new Date().toISOString(),
             }
           : item
-      )
-    );
+      );
+    });
 
     // Also update selected item if it's the one being changed
     setSelectedItem((prev) =>
@@ -157,6 +179,7 @@ function PipelineContent() {
         ? {
             ...prev,
             stage: newStage,
+            ...(lostReason ? { lostReason } : {}),
             enteredStageAt: new Date().toISOString(),
             daysInStage: 0,
             updatedAt: new Date().toISOString(),
@@ -164,15 +187,24 @@ function PipelineContent() {
         : prev
     );
 
-    // Call API to persist the change
     try {
-      await pipelineApi.moveStage(itemId, newStage);
-      // Refetch to get the latest data
+      await pipelineApi.moveStage(itemId, newStage, lostReason);
       refetch();
     } catch (error) {
-      console.error('Error moving pipeline item:', error);
-      // Revert optimistic update on error
-      refetch();
+      // Deshacer en el acto, con la foto guardada.
+      if (anterior) {
+        const previa = anterior;
+        setItems((prev) => prev.map((item) => (item.id === itemId ? previa : item)));
+        setSelectedItem((prev) => (prev?.id === itemId ? previa : prev));
+      }
+      toast.error('No se pudo mover el lead', {
+        description:
+          error instanceof Error
+            ? error.message
+            : 'La tarjeta volvió a su etapa anterior. Probá de nuevo.',
+      });
+      // Relanzar: el tablero y el cajón NO deben cantar éxito.
+      throw error;
     }
   }, [refetch]);
 

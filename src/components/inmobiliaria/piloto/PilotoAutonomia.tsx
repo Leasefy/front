@@ -139,7 +139,19 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
           <SlidersHorizontal weight="duotone" className="mr-1.5 h-4 w-4" aria-hidden="true" />
           {t('inmobiliaria.piloto.autonomia.titulo')}
           {!isLoading && rows.length > 0 && (
-            <span className="ml-1.5 font-mono text-caption tabular-nums text-fg-muted">
+            <span
+              className="ml-1.5 font-mono text-caption tabular-nums text-fg-muted"
+              // «11/12» no dice qué cuenta. Un lector de pantalla leía
+              // «Autonomía 11 12».
+              title={t('inmobiliaria.piloto.autonomia.contadorTitulo', {
+                n: String(autonomos),
+                total: String(totalRoster),
+              })}
+              aria-label={t('inmobiliaria.piloto.autonomia.contadorTitulo', {
+                n: String(autonomos),
+                total: String(totalRoster),
+              })}
+            >
               {autonomos}/{totalRoster}
             </span>
           )}

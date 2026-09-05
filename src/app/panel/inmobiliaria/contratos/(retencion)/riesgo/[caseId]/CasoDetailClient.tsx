@@ -1,5 +1,6 @@
 'use client'
 
+import { AvisoDatosDeEjemplo } from '@/components/estado/AvisoDatosDeEjemplo'
 import { useState } from 'react'
 import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { ChatText, ClipboardText, Buildings, Copy, Check } from '@phosphor-icons/react'
@@ -71,12 +72,15 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
             {STATE_LABEL[c.state]} · {c.city ?? '—'} · {c.propertyCount} inmueble{c.propertyCount === 1 ? '' : 's'} · {c.ownerType}
           </p>
         </div>
-        {usingMock ? (
-          <span className="ml-auto inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
-            Demo
-          </span>
-        ) : null}
+
       </header>
+
+      {usingMock ? (
+        <AvisoDatosDeEjemplo
+          queEsInventado="El propietario, su historial, el plan propuesto y los montos en pesos"
+          queFalta="El agente de Retención no está desplegado: el microservicio sólo monta el webhook de WhatsApp, no las rutas /api/agency/:id/retencion/*. Sin ellas, el cliente cae al mock de src/lib/data/mock-retencion.ts."
+        />
+      ) : null}
 
       <div className="flex flex-col md:flex-row gap-6">
         {/* Main */}

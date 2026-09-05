@@ -19,12 +19,12 @@
 import { useMemo, useState } from 'react'
 import {
   Buildings,
-  CheckCircle,
   IdentificationCard,
   PaperPlaneTilt,
 } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MoneyInput } from '@/components/ui/money-input'
@@ -85,7 +85,6 @@ const LABEL_CLASSES = 'block text-sm font-medium text-fg mb-1.5'
 function EstudioNuevo() {
   const { t } = useI18n()
   const [form, setForm] = useState<FormState>(INITIAL_STATE)
-  const [confirmed, setConfirmed] = useState(false)
 
   /** i18n con fallback — nunca muestra la clave cruda. */
   const tf = (key: string, fallback: string): string => {
@@ -108,12 +107,22 @@ function EstudioNuevo() {
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
-    if (confirmed) setConfirmed(false)
   }
 
+  /*
+   * 🔴 Este formulario NO crea nada, y hasta acá el botón decía «Crear
+   * estudio y enviar solicitud» y lo único que hacía era `setConfirmed(true)`.
+   *
+   * No es que falte cablearlo: no hay a qué. El único camino real para abrir
+   * un estudio es `POST /evaluations/:applicationId`, que arranca desde una
+   * POSTULACIÓN existente — necesita un `applicationId` que este intake libre
+   * no tiene ni puede inventar. Así que el botón queda apagado con la razón a
+   * la vista y arriba se dice a dónde ir para hacerlo de verdad. La pantalla
+   * se queda porque el diseño del formulario es el que se va a cablear el día
+   * que exista la ruta.
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setConfirmed(true)
   }
 
   const ocupacionOptions: { value: Ocupacion; labelKey: string; fallback: string }[] = [
@@ -145,6 +154,20 @@ function EstudioNuevo() {
           )}
         </p>
       </header>
+
+      <AlertaAccionable
+        severidad="warning"
+        titulo="Esta pantalla todavía no crea el estudio"
+        accion={{
+          label: 'Ir a postulaciones',
+          href: '/panel/inmobiliaria/postulaciones',
+        }}
+        className="max-w-3xl"
+        data-testid="estudio-nuevo-aviso"
+      >
+        Es el diseño del formulario, no el circuito: nada de lo que escribas acá se guarda.
+        Hoy un estudio se abre sobre una postulación existente, desde su ficha.
+      </AlertaAccionable>
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
         {/* Tarjeta 1 — Inmueble */}
@@ -401,28 +424,21 @@ function EstudioNuevo() {
           </div>
         </section>
 
-        {/* Confirmación inline (UX-only, sin backend) */}
-        {confirmed && (
-          <div
-            role="status"
-            className="flex items-start gap-3 rounded-lg border border-success/30 bg-success-soft p-4"
+        {/* CTA apagada: no promete lo que no puede hacer. */}
+        <div className="flex flex-col items-end gap-2 pt-1">
+          <Button
+            type="submit"
+            hideArrow
+            disabled
+            data-testid="estudio-nuevo-cta"
+            title="Todavía no se puede crear un estudio desde acá"
           >
-            <CheckCircle className="w-5 h-5 text-success-700 shrink-0 mt-0.5" weight="duotone" aria-hidden="true" />
-            <p className="text-sm text-success-700">
-              {tf(
-                `${NS}.nuevo.confirmacion`,
-                'Próximamente: esto creará el estudio y enviará la solicitud al candidato.',
-              )}
-            </p>
-          </div>
-        )}
-
-        {/* CTA primaria */}
-        <div className="flex items-center justify-end gap-3 pt-1">
-          <Button type="submit" hideArrow>
             <PaperPlaneTilt className="w-4 h-4" weight="bold" aria-hidden="true" />
             {tf(`${NS}.nuevo.cta`, 'Crear estudio y enviar solicitud')}
           </Button>
+          <p className="text-xs text-fg-muted">
+            Todavía no hay a dónde mandarlo: un estudio se abre desde una postulación.
+          </p>
         </div>
       </form>
     </main>

@@ -49,9 +49,16 @@ const ICONO: Record<
   no_aplica: { icono: MinusCircle, clase: "text-fg-subtle" },
 };
 
-/** Singular o plural: «Quedan 1 cosas» delata una pantalla sin cuidar. */
-function clave(base: string, n: number): string {
-  return `inmobiliaria.piloto.preparacion.${base}${n === 1 ? '' : 'Plural'}`
+/**
+ * Singular o plural: «Falta 2 cosa» delata una pantalla sin cuidar.
+ *
+ * 🔴 Esta función existía desde el principio y NADIE la llamaba: el render
+ * usaba las claves en singular a mano, así que las claves plurales
+ * (`noListoPlural`, `listoConPerosPlural`) estaban ahí, escritas, y muertas.
+ * Medido en pantalla el 2026-09-05: «Falta 2 cosa para que opere sola».
+ */
+export function clave(base: string, n: number): string {
+  return `inmobiliaria.piloto.preparacion.${base}${n === 1 ? "" : "Plural"}`;
 }
 
 export function PilotoPreparacion() {
@@ -113,11 +120,11 @@ export function PilotoPreparacion() {
             {data
               ? data.listo
                 ? sueltosQueFaltan > 0
-                  ? t("inmobiliaria.piloto.preparacion.listoConPeros", {
+                  ? t(clave("listoConPeros", sueltosQueFaltan), {
                       n: String(sueltosQueFaltan),
                     })
                   : t("inmobiliaria.piloto.preparacion.listo")
-                : t("inmobiliaria.piloto.preparacion.noListo", {
+                : t(clave("noListo", bloqueantesQueFaltan), {
                     n: String(bloqueantesQueFaltan),
                   })
               : t("inmobiliaria.piloto.preparacion.descripcion")}

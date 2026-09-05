@@ -120,10 +120,20 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
     };
   }, [id, fetchMessages]);
 
+  /**
+   * Enviar.
+   *
+   * 🔴 Devuelve `true`/`false` además de guardar el error: hasta acá, cuando
+   * el POST fallaba, el mensaje optimista se sacaba de la lista y `error`
+   * quedaba en un estado que `MessagesWidget` no leía ni pintaba. Resultado:
+   * escribías, apretabas enviar, y el texto desaparecía sin una sola palabra.
+   * Peor todavía, el campo ya se había vaciado: lo escrito se perdía.
+   */
   const sendMessage = useCallback(
-    async (content: string) => {
-      if (!id || !userId) return;
+    async (content: string): Promise<boolean> => {
+      if (!id || !userId) return false;
       setIsSending(true);
+      setError(null);
       try {
         // Optimistic append
         const optimistic: ChatMessage = {
@@ -144,10 +154,12 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
         await api.sendMessage(id, content);
         // Refetch to get real message with server ID
         await fetchMessages();
+        return true;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error enviando mensaje');
         // Remove optimistic message on error
         setMessages((prev) => prev.filter((m) => !m.id.startsWith('temp-')));
+        return false;
       } finally {
         setIsSending(false);
       }
@@ -156,17 +168,32 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
     [id, userId, user?.name, fetchMessages],
   );
 
-  const markAsRead = useCallback(async () => {
-    if (!id) return;
+  /** Para que la pantalla pueda apagar el cartel cuando ya no aplica. */
+  const limpiarError = useCallback(() => setError(null), []);
+
+  /**
+   * Marcar el hilo como leído.
+   *
+   * 🔴 Acepta un id EXPLÍCITO por una razón concreta: `MessagesWidget` llamaba
+   * a `markAsRead()` dentro del mismo click que hacía `setSelectedConversationId(nuevo)`,
+   * y en ese instante este hook todavía está montado sobre el hilo ANTERIOR
+   * —el estado nuevo recién llega en el render siguiente—. O sea que abrir la
+   * conversación de Beto marcaba como leída la de Ana, y los no leídos de Beto
+   * no se limpiaban nunca. Pasándole el id que se acaba de elegir, no hay
+   * ventana en la que el hook y la pantalla estén mirando hilos distintos.
+   */
+  const markAsRead = useCallback(async (idExplicito?: string) => {
+    const objetivo = idExplicito ?? id;
+    if (!objetivo) return;
     try {
-      await api.markAsRead(id);
+      await api.markAsRead(objetivo);
     } catch {
       // Silently fail - non-critical
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  return { messages, isLoading, isSending, error, sendMessage, markAsRead, refetch: fetchMessages };
+  return { messages, isLoading, isSending, error, limpiarError, sendMessage, markAsRead, refetch: fetchMessages };
 }
 
 /** Universal hook, keyed on `conversation.id`. Use this for anything that

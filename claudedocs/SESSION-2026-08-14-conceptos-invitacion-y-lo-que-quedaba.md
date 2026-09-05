@@ -166,6 +166,6 @@ consignación, cobros de 2026-08, la aprobación de María).
 **De esta sesión ya limpié todo**: los conceptos de prueba, los cobros de
 2026-09 y 2026-10, el lote `lote-prueba-paginacion` y los usuarios
 `prueba.invitacion*`. Queda: la contraseña de `luis.ui1@leasefy-dev.co` en
-`PRueba123#`, la comisión del contrato `c0f6dc78` en 11% (era 8/10), y los tres
+la de QA (1Password), la comisión del contrato `c0f6dc78` en 11% (era 8/10), y los tres
 inquilinos migrados con `onboarding_completed_at` — eso último es la
 corrección, no basura.

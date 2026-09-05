@@ -31,6 +31,7 @@ import {
   useInmobiliariaConfig,
   cobrosApi,
 } from '@/lib/hooks/useInmobiliaria';
+import { agencyApi } from '@/lib/api/inmobiliaria.service';
 import type { Cobro, CobroStatus, CobroSummary } from '@/lib/types/inmobiliaria';
 import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
 import type {
@@ -341,8 +342,23 @@ function CobrosContent() {
     setFilters(newFilters);
   }, []);
 
-  // Handle reminder config save
-  const handleConfigSave = useCallback((config: RecordatorioConfigData) => {
+  /**
+   * Guardar los recordatorios — de verdad.
+   *
+   * Esto era `setReminderConfig(config)` a secas mientras el cajón anunciaba
+   * «Configuración guardada»: ningún request. Los días viven en
+   * `agency.reminderDaysBefore/After` y se recargan al volver a entrar, así que
+   * lo editado se perdía y el back seguía mandando con lo viejo.
+   *
+   * Los CANALES no se mandan: el back no tiene dónde guardarlos
+   * (`UpdateAgencyDto` sólo acepta los dos arreglos de días). Mandarlos sería
+   * un 400 por `forbidNonWhitelisted`; el cajón lo dice en pantalla.
+   */
+  const handleConfigSave = useCallback(async (config: RecordatorioConfigData) => {
+    await agencyApi.updateAgency({
+      reminderDaysBefore: config.daysBefore,
+      reminderDaysAfter: config.daysAfter,
+    });
     setReminderConfig(config);
   }, []);
 

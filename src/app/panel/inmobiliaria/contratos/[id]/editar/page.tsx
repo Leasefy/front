@@ -189,8 +189,26 @@ function EditarContratoContent() {
         return;
       }
 
-      toast.success('Contrato actualizado. Firmalo para enviarlo al inquilino.');
-      router.push(`/panel/inmobiliaria/contratos/${contractId}/firmar`);
+      /*
+       * 🔴 Acá decía «Firmalo para enviarlo al inquilino» y mandaba a
+       * `/firmar`, que respondía «Este contrato no está pendiente de tu
+       * firma»: un callejón sin salida en dos clics.
+       *
+       * El motivo está en el back (`contracts.service.ts` → `updateContract`):
+       * CUALQUIER edición anula las DOS firmas y devuelve el contrato a
+       * PENDING_TENANT_SIGNATURE, porque el inquilino tiene que volver a
+       * firmar el documento corregido. Firmar no es el paso siguiente de
+       * quien edita — es el del inquilino.
+       *
+       * Así que el mensaje dice lo que de verdad pasó (las firmas se cayeron)
+       * y el destino es la ficha del contrato, que es donde se ve el estado y
+       * se puede reenviar.
+       */
+      toast.success('Contrato actualizado', {
+        description:
+          'Al cambiar los términos se anularon las firmas: ahora le toca firmar al inquilino.',
+      });
+      router.push(`/panel/inmobiliaria/contratos/${contractId}`);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Error al actualizar el contrato');
     }

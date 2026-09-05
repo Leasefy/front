@@ -169,6 +169,13 @@ vi.mock('@/lib/api/plantillas-de-mensaje.service', async (importOriginal) => ({
   },
 }));
 
+/* El widget lee el nombre de la inmobiliaria del usuario para resolver
+   `{{inmobiliaria}}` en las plantillas (antes quedaba como hueco en el mensaje
+   que se le manda a un cliente). */
+vi.mock('@/lib/auth', () => ({
+  useAuth: () => ({ agency: { id: 'ag-1', name: 'Inmobiliaria Prueba' } }),
+}));
+
 vi.mock('@/lib/api/agent-contact.service', () => ({
   agentContactApi: { canContact: vi.fn().mockResolvedValue({ allowed: false }) },
 }));
@@ -261,6 +268,7 @@ beforeEach(() => {
     isSending: false,
     sendMessage: vi.fn(),
     markAsRead: markAsReadMock,
+    limpiarError: vi.fn(),
   });
   markAsReadMock.mockReset();
   container = document.createElement('div');
@@ -319,7 +327,7 @@ function clic(el: Element | null | undefined) {
 }
 
 function abrirMenuDeOpciones() {
-  clic(container.querySelector('button[aria-label="Mas opciones"]'));
+  clic(container.querySelector('button[aria-label="Más opciones"]'));
 }
 
 /** Deja que se resuelvan las promesas de los paneles que piden datos al abrir. */
@@ -561,16 +569,19 @@ describe('<MessagesWidget> — el menú de los tres puntos (pedido 3)', () => {
     expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/propietarios?persona=user-ana');
   });
 
-  it('sin id de la contraparte NO se ofrece (la inmobiliaria no tiene ficha)', () => {
+  it('sin id de la contraparte no hay ficha — y sin ficha ya no hay menú', () => {
     conversationsState = [
       makeConversation({ perfil: 'AGENCY', contraparteId: null, name: 'Inmobiliaria Prueba' }),
     ];
     render('landlord');
 
-    abrirMenuDeOpciones();
+    /* 🔴 Antes el menú sobrevivía con «Archivar», «Silenciar» y «Reportar».
+       Las tres pegaban a rutas que el back no tiene: el servicio devuelve
+       'unavailable' por 404 y las tres terminaban en un toast «estará
+       disponible próximamente». Se retiraron, así que sin «Ver ficha» el menú
+       queda vacío y el `⋮` no se pinta. */
+    expect(container.querySelector('button[aria-label="Más opciones"]')).toBeNull();
     expect(container.querySelector('[data-testid="ver-ficha"]')).toBeNull();
-    // Y el resto del menú sigue estando: no se rompió nada por esconder uno.
-    expect(container.textContent).toContain('Archivar conversación');
   });
 
   it('fuera del panel de la inmobiliaria tampoco: el destino no es suyo', () => {
@@ -579,22 +590,34 @@ describe('<MessagesWidget> — el menú de los tres puntos (pedido 3)', () => {
     conversationsState = [makeConversation({ perfil: 'TENANT', contraparteId: 'user-beto' })];
     render('landlord');
 
-    abrirMenuDeOpciones();
+    expect(container.querySelector('button[aria-label="Más opciones"]')).toBeNull();
     expect(container.querySelector('[data-testid="ver-ficha"]')).toBeNull();
   });
 
-  it('«Silenciar notificaciones» no se parte: el renglón es nowrap', () => {
-    conversationsState = [makeConversation()];
+  /**
+   * 🔴 Las cinco acciones que no hacían nada.
+   *
+   * «Archivar», «Silenciar» y «Reportar» no tienen ruta en el back
+   * (`archiveConversation` / `muteConversation` / `reportConversation`
+   * devuelven `'unavailable'` por 404) y el clip de adjuntos ni siquiera hace
+   * el POST: `sendAttachment` está escrito para resolver `null`. Las cinco
+   * terminaban en «estará disponible próximamente» — y «Reportar» era la peor,
+   * porque alguien podía denunciar una conversación abusiva y creer que quedó
+   * denunciada.
+   */
+  it('no ofrece ninguna acción que no exista en el back', () => {
+    conversationsState = [makeConversation({ perfil: 'TENANT', contraparteId: 'user-beto' })];
     render('landlord');
 
     abrirMenuDeOpciones();
-    const silenciar = Array.from(container.querySelectorAll('button')).find((b) =>
-      b.textContent?.includes('Silenciar notificaciones'),
-    );
-    expect(silenciar).toBeTruthy();
-    expect(silenciar!.className).toContain('whitespace-nowrap');
-    // Y el contenedor ya no tiene el ancho fijo que lo partía.
-    expect(silenciar!.parentElement!.className).not.toContain('w-52');
+    for (const disculpa of ['Archivar conversación', 'Silenciar notificaciones', 'Reportar']) {
+      expect(container.textContent).not.toContain(disculpa);
+    }
+    // Y el clip que abría el explorador para después decir que no.
+    expect(container.querySelector('button[aria-label="Adjuntar archivo"]')).toBeNull();
+    expect(container.querySelector('input[type="file"]')).toBeNull();
+    // Lo que SÍ funciona se queda.
+    expect(container.querySelector('[data-testid="ver-ficha"]')).not.toBeNull();
   });
 });
 
@@ -607,6 +630,7 @@ describe('<MessagesWidget> — plantillas (pedido 4)', () => {
       isSending: false,
       sendMessage: enviar,
       markAsRead: markAsReadMock,
+      limpiarError: vi.fn(),
     });
     listarPlantillasMock.mockResolvedValue({
       plantillas: [
@@ -713,6 +737,7 @@ describe('<MessagesWidget> — pendientes de la persona (pedido 5)', () => {
       isSending: false,
       sendMessage: enviar,
       markAsRead: markAsReadMock,
+      limpiarError: vi.fn(),
     });
     pendientesMock.mockResolvedValue({
       cobros: [
@@ -784,5 +809,107 @@ describe('<MessagesWidget> — pendientes de la persona (pedido 5)', () => {
 
     expect(container.querySelector('[data-testid="pendientes-no-disponible"]')).toBeTruthy();
     expect(container.querySelector('[data-testid="pendientes-vacio"]')).toBeNull();
+  });
+});
+
+/**
+ * MSJ-3 — abrir un hilo marcaba como leído el ANTERIOR.
+ *
+ * `handleSelectConversation` llamaba a `markAsRead()` sin argumento, y ese
+ * `markAsRead` es el que `useChat(selectedConversationId)` devolvió en el
+ * render anterior: en el instante del clic todavía apunta al hilo que se está
+ * dejando. Abrir a Beto marcaba a Ana; los no leídos de Beto no se limpiaban
+ * nunca.
+ */
+describe('<MessagesWidget> — marcar como leído (MSJ-3)', () => {
+  it('marca el hilo que se ABRE, no el que se estaba viendo', () => {
+    conversationsState = [
+      makeConversation({ id: 'conv-1', name: 'Ana Uno', contraparteId: 'user-ana' }),
+      makeConversation({ id: 'conv-2', name: 'Beto Dos', contraparteId: 'user-beto' }),
+    ];
+    render('landlord');
+    markAsReadMock.mockClear();
+
+    const segundo = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Beto Dos'),
+    );
+    act(() => {
+      (segundo as HTMLButtonElement).click();
+    });
+
+    expect(markAsReadMock).toHaveBeenCalledWith('conv-2');
+  });
+});
+
+/**
+ * MSJ-4 — el envío que falla desaparecía en silencio.
+ *
+ * El hook guardaba el error y sacaba la burbuja optimista; la pantalla no leía
+ * ese error ni lo pintaba, y el campo ya se había vaciado. Se escribía, se
+ * apretaba enviar, y el texto se esfumaba sin una palabra.
+ */
+describe('<MessagesWidget> — un envío que falla (MSJ-4)', () => {
+  it('lo dice en pantalla y devuelve el texto al campo', async () => {
+    const enviar = vi.fn().mockResolvedValue(false);
+    useChatMock.mockReturnValue({
+      messages: [],
+      isLoading: false,
+      isSending: false,
+      error: 'Network request failed',
+      limpiarError: vi.fn(),
+      sendMessage: enviar,
+      markAsRead: markAsReadMock,
+    });
+    conversationsState = [makeConversation()];
+    render('landlord');
+
+    const campo = container.querySelector('input[type="text"]:not([aria-label*="Buscar"])') as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setter.call(campo, 'Hola, ¿seguimos?');
+      campo.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const enviarBtn = container.querySelector('button[aria-label="Enviar mensaje"]') as HTMLButtonElement;
+    await act(async () => {
+      enviarBtn.click();
+    });
+
+    expect(enviar).toHaveBeenCalledWith('Hola, ¿seguimos?');
+    // El cartel existe...
+    expect(container.querySelector('[data-testid="mensaje-no-enviado"]')).not.toBeNull();
+    // ...y lo escrito no se perdió.
+    const campoDespues = container.querySelector('input[type="text"]:not([aria-label*="Buscar"])') as HTMLInputElement;
+    expect(campoDespues.value).toBe('Hola, ¿seguimos?');
+  });
+});
+
+/**
+ * MSJ-7 — plantillas y pendientes son herramientas de COBRO de la
+ * inmobiliaria, y se ofrecían igual en la bandeja del inquilino y en la del
+ * propietario, que son a quienes se les cobra.
+ */
+describe('<MessagesWidget> — plantillas y pendientes son de la inmobiliaria (MSJ-7)', () => {
+  it('en el panel del inquilino no aparecen', () => {
+    rutaActual.valor = '/inquilino/mensajes';
+    conversationsState = [makeConversation()];
+    render('tenant');
+    expect(container.querySelector('[data-testid="abrir-plantillas"]')).toBeNull();
+    expect(container.querySelector('[data-testid="abrir-pendientes"]')).toBeNull();
+  });
+
+  it('en el panel del propietario tampoco', () => {
+    rutaActual.valor = '/panel/mensajes';
+    conversationsState = [makeConversation()];
+    render('landlord');
+    expect(container.querySelector('[data-testid="abrir-plantillas"]')).toBeNull();
+    expect(container.querySelector('[data-testid="abrir-pendientes"]')).toBeNull();
+  });
+
+  it('en el de la inmobiliaria sí', () => {
+    conversationsState = [makeConversation()];
+    render('landlord');
+    expect(container.querySelector('[data-testid="abrir-plantillas"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="abrir-pendientes"]')).not.toBeNull();
   });
 });

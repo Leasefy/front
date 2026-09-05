@@ -10,6 +10,8 @@
  * `consignacion.propertyId` being present.
  */
 
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import * as React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
@@ -147,5 +149,39 @@ describe('<ConsignacionHeader> — abrir las fotos desde la portada', () => {
     expect(container.querySelector('[data-testid="portada-abrir"]')).toBeNull();
     expect(container.querySelector('[data-testid="portada-ver-fotos"]')).toBeNull();
     expect(container.querySelector('img')).not.toBeNull();
+  });
+});
+
+/**
+ * 🔴 «Renovar consignación» no renovaba nada.
+ *
+ * El ítem del menú llamaba a `onRenew`, y el único `onRenew` del panel
+ * (`/inmuebles/[id]`) hacía `toast.info('Renovar consignación próximamente')`.
+ * No hay endpoint: `consignacionesApi` no lo tiene, y el `RenovacionesService`
+ * del back renueva CONTRATOS, que es otra cosa —el mandato con el propietario
+ * no pasa por ahí—. Un renglón que sólo se disculpa ocupa el lugar de la
+ * acción real y hace perder un clic cada vez que alguien lo busca.
+ *
+ * Se comprueba sobre la FUENTE y no sobre el DOM a propósito: el menú de los
+ * tres puntos es un `DropdownList` de Radix, que en happy-dom no llega a
+ * abrirse (necesita mediciones y capturas de puntero que el entorno no tiene),
+ * así que un test de render pasaría por vacío —diría «no está» porque no hay
+ * menú, no porque se haya quitado el ítem— y no mordería nada. La otra mitad
+ * de la garantía la da el compilador: la prop `onRenew` ya no existe en el
+ * tipo, así que volver a cablear el ítem rompe `tsc`.
+ */
+describe('<ConsignacionHeader> — el menú no ofrece lo que no existe', () => {
+  it('ya no hay «Renovar consignación», y «Terminar» sigue estando', () => {
+    const fuente = readFileSync(
+      resolve(process.cwd(), 'src/components/inmobiliaria/ConsignacionHeader.tsx'),
+      'utf8',
+    );
+    // El renglón muerto y su ícono se fueron…
+    expect(fuente).not.toContain('renewConsignment');
+    expect(fuente).not.toContain('onRenew?.()');
+    expect(fuente).not.toContain('ArrowCounterClockwise');
+    // …y la acción que sí funciona sigue ahí.
+    expect(fuente).toContain('terminateConsignment');
+    expect(fuente).toContain('onTerminate?.()');
   });
 });

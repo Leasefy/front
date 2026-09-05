@@ -1,7 +1,25 @@
 'use client';
 
+/**
+ * Liquidaciones — el neto por propietario del mes, con datos REALES.
+ *
+ * Hasta el 2026-09-05 esta pantalla era una vitrina: una constante `EJEMPLO`
+ * con un canon de $2.500.000 escrito a mano, la fórmula pintada sobre esa
+ * constante con un badge «Ejemplo», y la tabla de egresos con un `EmptyState`
+ * fijo — cero `fetch`. El back ya calculaba exactamente esto y nadie lo
+ * llamaba: `GET /inmobiliaria/dispersiones/preview` devuelve, propietario por
+ * propietario, canon recaudado, comisión, conceptos a favor y a cargo, y el
+ * neto a girar. Es la MISMA cuenta que `generate`, así que lo que se ve acá es
+ * lo que se va a girar en Dispersiones — no una fórmula parecida.
+ *
+ * El desglose de IVA no se muestra: el back lo devuelve dentro de los conceptos
+ * y separarlo acá sería una cuenta distinta de la del giro. La columna «IVA
+ * com.» se retiró en vez de rellenarse con un cálculo del navegador.
+ */
+
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Wallet, Info, PaperPlaneTilt, Receipt, Sparkle } from '@phosphor-icons/react';
+import { Wallet, PaperPlaneTilt, Receipt, Sparkle, ArrowClockwise, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -9,27 +27,65 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button, Badge } from '@/components/ui';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
-import { calcularNeto } from '@/lib/api/tesoreria.types';
+import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
+import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
 
 const COLUMNS = [
-  'colPropietario', 'colCanon', 'colComision', 'colIva', 'colDescuentos', 'colNeto', 'colCuenta', 'colEstado', 'colComprobante',
+  'colPropietario', 'colCanon', 'colComision', 'colAFavor', 'colDescuentos', 'colNeto', 'colCuenta', 'colEstado', 'colComprobante',
 ];
 
-// Ejemplo ilustrativo de la fórmula del neto (etiquetado como ejemplo — no es data real).
-const EJEMPLO = { canonRecibido: 2_500_000, comisionAdmin: 250_000, comisionPorcentaje: 10, ivaPorcentaje: 19, ivaComision: 47_500, descuentos: 0 };
-const EJEMPLO_NETO = calcularNeto(EJEMPLO);
+/** El mes en curso, en el formato que espera el back (`2026-02`). */
+function mesEnCurso(): string {
+  const hoy = new Date();
+  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+}
+
+type Propietario = VistaPreviaDeDispersiones['propietarios'][number];
 
 function TesoreriaContent() {
   const { t } = useI18n();
   const k = (s: string) => `inmobiliaria.tesoreria.${s}`;
+  const [month] = useState(mesEnCurso);
 
-  const formulaRows = [
-    { labelKey: 'fCanon', value: EJEMPLO.canonRecibido, sign: '', tone: 'text-fg' },
-    { labelKey: 'fComision', value: EJEMPLO.comisionAdmin, sign: '−', tone: 'text-danger', note: `${EJEMPLO.comisionPorcentaje}%` },
-    { labelKey: 'fIva', value: EJEMPLO.ivaComision, sign: '−', tone: 'text-danger', note: `${EJEMPLO.ivaPorcentaje}%` },
-    { labelKey: 'fDescuentos', value: EJEMPLO.descuentos, sign: '−', tone: 'text-danger' },
+  const [vista, setVista] = useState<VistaPreviaDeDispersiones | null>(null);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const cargar = useCallback(async () => {
+    setCargando(true);
+    setError(null);
+    try {
+      setVista(await dispersionesApi.preview(month));
+    } catch (e) {
+      // El motivo real, no un «algo salió mal»: si el back explica por qué no
+      // pudo liquidar (por ejemplo un inmueble con copropietarios e impuestos),
+      // esa frase es justo lo que hay que leer.
+      setError(e instanceof Error ? e.message : String(e));
+      setVista(null);
+    } finally {
+      setCargando(false);
+    }
+  }, [month]);
+
+  useEffect(() => {
+    void cargar();
+  }, [cargar]);
+
+  const propietarios: Propietario[] = vista?.propietarios ?? [];
+  const suma = (campo: keyof Propietario) =>
+    propietarios.reduce((s, p) => s + (p[campo] as number), 0);
+
+  // La fórmula, sobre la plata de VERDAD del mes. Las cuatro filas cierran
+  // contra el neto por construcción: el back lo calcula igual.
+  const resumen = [
+    { labelKey: 'fCanon', value: suma('totalCollected'), sign: '', tone: 'text-fg' },
+    { labelKey: 'fComision', value: suma('totalCommission'), sign: '−', tone: 'text-danger' },
+    { labelKey: 'fAFavor', value: suma('totalConceptosAFavor'), sign: '+', tone: 'text-fg' },
+    { labelKey: 'fACargo', value: suma('totalConceptosACargo'), sign: '−', tone: 'text-danger' },
   ];
+  const neto = suma('netToPropietario');
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -56,14 +112,22 @@ function TesoreriaContent() {
         </div>
       </header>
 
-      {/* Honest M1 banner */}
-      <div className="rounded-lg bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
-        <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
-        <div>
-          <p className="text-xs font-semibold text-primary">{t(k('m2BannerTitle'))}</p>
-          <p className="text-xs text-primary/90 mt-0.5">{t(k('m2BannerDesc'))}</p>
+      {error && (
+        <div
+          role="alert"
+          className="rounded-lg border border-danger/30 bg-danger/5 p-4 flex items-start gap-3"
+        >
+          <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" weight="fill" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-fg">{t(k('errorTitle'))}</p>
+            <p className="text-xs text-fg-muted mt-0.5 break-words">{error}</p>
+          </div>
+          <Button variant="secondary" hideArrow onClick={() => void cargar()} className="flex-shrink-0">
+            <ArrowClockwise className="w-4 h-4" />
+            {t(k('retry'))}
+          </Button>
         </div>
-      </div>
+      )}
 
       {/* Facturas de proveedores — captura desde foto/PDF con IA */}
       <section className="rounded-lg border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -85,19 +149,16 @@ function TesoreriaContent() {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Fórmula del neto — ejemplo ilustrativo */}
+        {/* El mes en plata — sumas reales, no una fórmula de ejemplo */}
         <section className="lg:col-span-1 rounded-lg border border-border bg-card p-5 space-y-4 h-fit">
           <div className="flex items-center justify-between">
-            <SectionLabel>{t(k('formulaLabel'))}</SectionLabel>
-            <Badge variant="secondary">{t(k('ejemplo'))}</Badge>
+            <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
+            <Badge variant="secondary">{month}</Badge>
           </div>
           <div className="space-y-2.5">
-            {formulaRows.map((row) => (
+            {resumen.map((row) => (
               <div key={row.labelKey} className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {t(k(row.labelKey))}
-                  {row.note && <span className="text-muted-foreground/60"> ({row.note})</span>}
-                </span>
+                <span className="text-muted-foreground">{t(k(row.labelKey))}</span>
                 <span className={cn('font-mono tabular-nums', row.tone)}>
                   {row.sign}{formatCurrency(row.value)}
                 </span>
@@ -108,8 +169,11 @@ function TesoreriaContent() {
                 <Wallet className="w-4 h-4 text-success" />
                 {t(k('fNeto'))}
               </span>
-              <span className="font-mono tabular-nums font-semibold text-success">
-                {formatCurrency(EJEMPLO_NETO)}
+              <span
+                className="font-mono tabular-nums font-semibold text-success"
+                data-testid="tesoreria-neto-total"
+              >
+                {formatCurrency(neto)}
               </span>
             </div>
           </div>
@@ -126,29 +190,68 @@ function TesoreriaContent() {
               <p className="text-xs text-fg-muted mt-0.5">{t(k('egresosDesc'))}</p>
             </div>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {COLUMNS.map((c) => (
-                  <TableHead key={c} className="whitespace-nowrap">
-                    {t(k(c))}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell colSpan={COLUMNS.length} className="p-0">
-                  <EmptyState
-                    icon={Wallet}
-                    title={t(k('emptyTitle'))}
-                    description={t(k('emptyDesc'))}
-                    action={{ label: t(k('processCta')), href: '/panel/inmobiliaria/pagos/dispersiones' }}
-                  />
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {COLUMNS.map((c) => (
+                    <TableHead key={c} className="whitespace-nowrap">
+                      {t(k(c))}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {cargando && (
+                  <TableRow>
+                    <TableCell colSpan={COLUMNS.length} className="py-10 text-center text-sm text-fg-muted">
+                      {t(k('cargando'))}
+                    </TableCell>
+                  </TableRow>
+                )}
+
+                {!cargando && propietarios.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={COLUMNS.length} className="p-0">
+                      <EmptyState
+                        icon={Wallet}
+                        title={t(k('emptyTitle'))}
+                        description={t(k('emptyDesc'))}
+                        action={{ label: t(k('processCta')), href: '/panel/inmobiliaria/pagos/dispersiones' }}
+                      />
+                    </TableCell>
+                  </TableRow>
+                )}
+
+                {!cargando &&
+                  propietarios.map((p) => (
+                    <TableRow key={p.propietarioId} data-testid="tesoreria-fila">
+                      <TableCell className="font-medium text-fg">{p.propietarioName}</TableCell>
+                      <TableCell className="font-mono tabular-nums">{formatCurrency(p.totalCollected)}</TableCell>
+                      <TableCell className="font-mono tabular-nums text-danger">−{formatCurrency(p.totalCommission)}</TableCell>
+                      <TableCell className="font-mono tabular-nums">{p.totalConceptosAFavor > 0 ? `+${formatCurrency(p.totalConceptosAFavor)}` : '—'}</TableCell>
+                      <TableCell className="font-mono tabular-nums text-danger">{p.totalConceptosACargo > 0 ? `−${formatCurrency(p.totalConceptosACargo)}` : '—'}</TableCell>
+                      <TableCell className="font-mono tabular-nums font-semibold text-success">{formatCurrency(p.netToPropietario)}</TableCell>
+                      <TableCell className="text-xs text-fg-muted whitespace-nowrap">
+                        {p.propietarioBankAccount
+                          ? `${p.propietarioBankName ?? ''} ${p.propietarioBankAccount}`.trim()
+                          : t(k('sinCuenta'))}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={p.yaExiste ? 'secondary' : 'outline'}>
+                          {t(k(p.yaExiste ? 'estadoGenerada' : 'estadoPendiente'))}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button asChild variant="ghost" hideArrow className="h-8 px-2 text-xs">
+                          <Link href="/panel/inmobiliaria/pagos/dispersiones">{t(k('verDispersiones'))}</Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </div>
         </section>
       </div>
     </div>
@@ -156,8 +259,12 @@ function TesoreriaContent() {
 }
 
 export default function TesoreriaPage() {
+  // El sidebar ofrece esta fila a ADMIN y CONTADOR (`CONTADOR_ROLES` en
+  // `arquitectura-del-panel.ts`). Con `adminOnly` el contador la veía y rebotaba
+  // al inicio sin explicación: una fila que se ve y no se puede abrir es una
+  // promesa rota. El gate ahora dice lo mismo que la arquitectura.
   return (
-    <PageGuard adminOnly>
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
       <TesoreriaContent />
     </PageGuard>
   );

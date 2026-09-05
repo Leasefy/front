@@ -8,6 +8,7 @@ vi.mock('@/lib/api/agent-auth', () => ({
 import {
   backendAgentToFrontType,
   targetToHref,
+  targetTienePantalla,
   suggestedActionToResponseAction,
   dispatchToAgentExecution,
   splitSSEEvents,
@@ -53,6 +54,53 @@ describe('suggestedActionToResponseAction', () => {
     expect(
       suggestedActionToResponseAction({ label: 'x', target: 'pagos' }, 1).variant,
     ).toBe('secondary');
+  });
+
+  // 🔴 Medido en vivo: «Ver inmuebles disponibles» mandaba su texto como un
+  // mensaje nuevo y dejaba al operador otros ~25 s esperando por una lista que
+  // el panel ya muestra. Sin `prompt` = el botón navega.
+  it('una acción con pantalla en el panel NAVEGA (no manda un prompt)', () => {
+    const a = suggestedActionToResponseAction({ label: 'Ver inmuebles disponibles', target: 'matching' }, 0);
+    expect(targetTienePantalla('matching')).toBe(true);
+    expect(a.prompt).toBeUndefined();
+    expect(a.href).toBe(targetToHref('matching'));
+  });
+
+  it('las 8 metas del contrato tienen pantalla, así que todas navegan', () => {
+    const targets = ['cobranza', 'cotizador', 'estudio', 'matching', 'pagos', 'conciliacion', 'avaluo', 'cartera'] as const;
+    for (const t of targets) {
+      const a = suggestedActionToResponseAction({ label: `ir a ${t}`, target: t }, 0);
+      expect(targetTienePantalla(t) ? a.prompt : 'x').toBeUndefined();
+    }
+  });
+});
+
+describe('BackendChatResponse — pendingApprovals del camino de respaldo', () => {
+  // 🔴 El espejo del front omitía `pendingApprovals`, así que por el POST de
+  // respaldo una acción vinculante propuesta nunca mostraba su DecisionCard.
+  it('el tipo acepta pendingApprovals y sobrevive el JSON del backend', () => {
+    const crudo = JSON.parse(
+      JSON.stringify({
+        responseText: 'Propongo un acuerdo de pago.',
+        suggestedActions: [],
+        dispatches: [],
+        pendingApprovals: [
+          {
+            id: 'ap-1',
+            agent: 'cobranza',
+            actionType: 'payment_plan',
+            title: 'Acuerdo de pago',
+            description: '3 cuotas',
+            payloadPreview: { cuotas: '3' },
+            options: [{ id: 'o1', label: 'Aprobar', description: 'd', recommendation: 'recommended' }],
+            requiresApproval: true,
+          },
+        ],
+        snapshot: null,
+        generatedAt: '2026-09-05T00:00:00.000Z',
+      }),
+    ) as import('./ai-hub-chat').BackendChatResponse;
+    expect(crudo.pendingApprovals?.[0]?.id).toBe('ap-1');
   });
 });
 

@@ -37,12 +37,21 @@ import {
 } from '@/lib/types/inmobiliaria';
 import Link from 'next/link';
 import { useLenis } from '@/components/providers/SmoothScroll';
+import { MotivoDialog } from '@/components/inmobiliaria/agenda/MotivoDialog';
 
 interface PipelineDetailProps {
   isOpen: boolean;
   onClose: () => void;
   item: PipelineItem | null;
-  onStageChange?: (itemId: string, newStage: PipelineStage) => void;
+  /**
+   * Se ESPERA: resuelve cuando el back confirmó, rechaza cuando no. El cajón
+   * no dice «movido» ni se cierra hasta que resuelva.
+   */
+  onStageChange?: (
+    itemId: string,
+    newStage: PipelineStage,
+    lostReason?: string,
+  ) => void | Promise<void>;
 }
 
 /**
@@ -153,6 +162,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
   const [notes, setNotes] = useState('');
   const [isMoving, setIsMoving] = useState(false);
   const [isMarking, setIsMarking] = useState(false);
+  const [pidiendoMotivo, setPidiendoMotivo] = useState(false);
   const { stop: stopLenis, start: startLenis } = useLenis();
 
   useEffect(() => {
@@ -194,14 +204,26 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
     window.open(`https://wa.me/${cleanPhone}`, '_blank');
   }, []);
 
+  /**
+   * Avanzar de etapa.
+   *
+   * 🔴 Acá había `await new Promise(r => setTimeout(r, 800))`: 800 ms de
+   * espera FINGIDA —un spinner que no esperaba a nada— y después el cartel de
+   * éxito, pasara lo que pasara con el back. El botón se veía «trabajando» y
+   * terminaba en verde incluso con la red caída.
+   *
+   * La espera ahora es la de verdad: la promesa de `onStageChange`.
+   */
   const handleMoveToNext = useCallback(async () => {
     if (!item || !nextStage) return;
 
     setIsMoving(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    if (onStageChange) {
-      onStageChange(item.id, nextStage);
+    try {
+      await onStageChange?.(item.id, nextStage);
+    } catch {
+      // Ya lo avisó quien intentó guardarlo. No hay nada que festejar.
+      setIsMoving(false);
+      return;
     }
 
     toast.success(t('inmobiliaria.pipeline.stageUpdated'), {
@@ -209,16 +231,27 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
     });
 
     setIsMoving(false);
-  }, [item, nextStage, nextStageInfo, onStageChange]);
+  }, [item, nextStage, nextStageInfo, onStageChange, t]);
 
-  const handleMarkAsLost = useCallback(async () => {
+  /**
+   * Marcar perdido — con el motivo, que es el dato por el que existe la
+   * columna «Perdido».
+   *
+   * `pipelineApi.moveStage(id, stage, lostReason)` acepta el motivo desde
+   * siempre y el tipo `PipelineItem` tiene `lostReason`: el cajón incluso lo
+   * PINTA cuando viene. Nadie lo pedía nunca, así que todos los perdidos
+   * quedaban sin explicación. Se reusa `MotivoDialog`, el mismo de cancelar
+   * una visita, con su mínimo de caracteres.
+   */
+  const handleMarkAsLost = useCallback(async (motivo: string) => {
     if (!item) return;
 
     setIsMarking(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    if (onStageChange) {
-      onStageChange(item.id, 'lost');
+    try {
+      await onStageChange?.(item.id, 'lost', motivo);
+    } catch {
+      setIsMarking(false);
+      return;
     }
 
     toast.info(t('inmobiliaria.pipeline.markedAsLost'), {
@@ -226,8 +259,9 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
     });
 
     setIsMarking(false);
+    setPidiendoMotivo(false);
     onClose();
-  }, [item, onStageChange, onClose]);
+  }, [item, onStageChange, onClose, t]);
 
   const handleClose = useCallback(() => {
     setNotes('');
@@ -532,7 +566,8 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
             <Button
               variant="outline"
               hideArrow
-              onClick={handleMarkAsLost}
+              onClick={() => setPidiendoMotivo(true)}
+              data-testid="pipeline-marcar-perdido"
               disabled={isMarking || isMoving}
               isLoading={isMarking}
               className="flex-1 border-danger/30 text-danger hover:bg-danger-soft hover:text-danger"
@@ -567,6 +602,18 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
             )}
           </div>
         )}
+
+        {/* El motivo es obligatorio: un lead perdido sin razón no se puede leer
+            después. Mismo diálogo y mismo mínimo que cancelar una visita. */}
+        <MotivoDialog
+          abierto={pidiendoMotivo}
+          titulo={`¿Marcar a ${item.candidateName} como perdido?`}
+          descripcion="Sale del embudo. Contá por qué se cayó: es lo que se lee después para saber qué falló."
+          etiquetaConfirmar="Marcar como perdido"
+          enviando={isMarking}
+          onCerrar={() => setPidiendoMotivo(false)}
+          onConfirmar={(motivo) => void handleMarkAsLost(motivo)}
+        />
       </SheetContent>
     </Sheet>
   );

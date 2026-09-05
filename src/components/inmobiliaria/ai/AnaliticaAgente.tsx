@@ -14,17 +14,40 @@
  * a flex row of divs, height = % of the serie max, per-day title tooltip and
  * an accessible role="img" summary per serie.
  *
- * 404 from the analitica endpoint (`notAvailable`) renders a friendly
- * "el agente aún no reporta analítica" panel — NOT an error banner.
+ * 🔴 El 404 NO es «el agente aún no reporta».
+ *
+ * `GET …/ai-hub/agentes/{agente}/analitica` NO EXISTE en el microservicio: no
+ * hay ninguna ruta `analitica` montada (`agent-integracion/src/server/routes`
+ * sólo publica `overview` y `autonomia` bajo `agentes/{agente}`). Así que las
+ * cuatro pantallas que usan este componente contestan siempre lo mismo, y lo
+ * contestaban con un cartel amable que decía «el agente aún no reporta
+ * analítica» — como si el agente estuviera trabajando y todavía no hubiera
+ * datos. No: la consulta se cae y nadie se entera. Un fallo permanente
+ * disfrazado de estado vacío no se arregla nunca, porque nadie sabe que está
+ * roto.
+ *
+ * Ahora se ve como lo que es, con `FalloDeCarga` (el mismo cartel del resto
+ * del panel, con su referencia para soporte).
  */
 
-import { ChartBar, Robot } from '@phosphor-icons/react'
+import { ChartBar } from '@phosphor-icons/react'
 
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import type { AgentAnaliticaResponse, AnaliticaSerie } from '@/lib/api/agent-workspace'
 import { useI18n } from '@/lib/i18n'
 import { formatKpiValue } from './SalaAgente'
 
 const NS = 'inmobiliaria.ai.workspace.analitica'
+
+/**
+ * El 404 que devuelve pedir una ruta que el micro no publica. Se arma acá
+ * —con `status`, que es lo que lee `clasificarFallo`— porque el hook se traga
+ * la respuesta y sólo deja la bandera `notAvailable`.
+ */
+const FALLO_SIN_RUTA = Object.assign(
+  new Error('GET /ai-hub/agentes/{agente}/analitica no está publicado por el microservicio'),
+  { status: 404 },
+)
 
 // ── Props ───────────────────────────────────────────────────────────────────
 
@@ -121,26 +144,28 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
   }
 
   if (error) {
+    // El mensaje crudo del backend no se muestra: `FalloDeCarga` lo clasifica
+    // y lo deja en el nodo de diagnóstico.
     return (
-      <div
-        className="rounded-lg border border-danger/30 bg-danger-soft text-danger"
-        data-testid="analitica-error"
-      >
-        {t(`${NS}.error`, { error })}
+      <div data-testid="analitica-error">
+        <FalloDeCarga error={new Error(error)} queEs="la analítica de este agente" enmarcado={false} />
       </div>
     )
   }
 
   if (notAvailable || !data) {
-    // 404 / not deployed — graceful empty state, NOT an error banner.
+    /*
+     * Sin datos y sin excepción: o el micro contestó 404 (la ruta no está
+     * montada) o ni siquiera se pudo preguntar. En los dos casos es un fallo,
+     * no un vacío — ver el encabezado del archivo.
+     */
     return (
-      <div
-        className="rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center"
-        data-testid="analitica-empty"
-      >
-        <Robot className="w-8 h-8 mx-auto text-muted-foreground mb-2" weight="duotone" aria-hidden="true" />
-        <p className="text-sm font-medium text-foreground">{t(`${NS}.emptyTitle`)}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{t(`${NS}.emptyBody`)}</p>
+      <div data-testid="analitica-no-disponible">
+        <FalloDeCarga
+          error={FALLO_SIN_RUTA}
+          queEs="la analítica de este agente"
+          enmarcado={false}
+        />
       </div>
     )
   }

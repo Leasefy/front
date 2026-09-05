@@ -11,7 +11,7 @@ const MENSAJES: Record<string, string> = {
   // puc.service.ts
   CODIGO_FUERA_DEL_ARBOL:
     'El código tiene que empezar con el código de la cuenta padre y ser más largo (1105 → 110505).',
-  PADRE_DESCONOCIDO: 'La cuenta padre que elegiste ya no existe. Recargá el plan.',
+  PADRE_DESCONOCIDO: 'La cuenta padre que elegiste ya no existe. Recarga el plan.',
   PADRE_CON_MOVIMIENTOS:
     'Esa cuenta ya tiene movimientos: no puede convertirse en cuenta mayor con subcuentas.',
   CODIGO_DUPLICADO: 'Ya hay una cuenta con ese código en tu plan.',

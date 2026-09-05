@@ -219,22 +219,18 @@ describe('<MembersStepForm>', () => {
     await clickSubmit()
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
+    // Los VALORES del formulario, no el request del micro: el padre necesita
+    // el `nombre` de cada fila para crear la invitación real en el back.
     expect(onSubmit).toHaveBeenCalledWith({
       members: [
-        { email: 'admin@inmobiliaria.test', role: 'AGENTE' },
-        { email: 'viewer@inmobiliaria.test', role: 'AGENTE' },
+        { email: 'admin@inmobiliaria.test', nombre: '', role: 'AGENTE' },
+        { email: 'viewer@inmobiliaria.test', nombre: '', role: 'AGENTE' },
       ],
     })
   })
 
-  it('calls onSubmit with the mapped payload and does not render invite links on its own — that screen is fully controlled by the `pendingInvites` prop (owned by the parent, see OnboardingInmobiliariaClient)', async () => {
-    const onSubmit = vi.fn().mockResolvedValue({
-      sessionId: 'sess-1',
-      currentStep: 'payment_provider',
-      nextStep: 'policy',
-      draft: {},
-      inviteTokens: [{ email: 'admin@inmobiliaria.test', rawToken: 'raw-token-1' }],
-    })
+  it('calls onSubmit and does not render the results screen on its own — that screen is fully controlled by the `pendingInvites` prop (owned by the parent, see OnboardingInmobiliariaClient)', async () => {
+    const onSubmit = vi.fn().mockResolvedValue({ sessionId: 'sess-1' })
     render({ onSubmit })
 
     setInputValue(byId('members.0.email'), 'admin@inmobiliaria.test')
@@ -242,53 +238,125 @@ describe('<MembersStepForm>', () => {
     await clickSubmit()
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
-    // No local state renders the invite screen — the component just relays
-    // the response to the parent via the resolved `onSubmit` promise.
     expect(container.querySelector('[data-testid="members-invite-links"]')).toBeFalsy()
+  })
+
+  it('el nombre viaja cuando se escribe, y va vacío cuando no — nunca derivado del correo', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(null)
+    render({ onSubmit })
+
+    setInputValue(byId('members.0.email'), 'ana@inmobiliaria.test')
+    setInputValue(byId('members.0.nombre'), '  Ana Restrepo  ')
+
+    await clickSubmit()
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      members: [{ email: 'ana@inmobiliaria.test', nombre: 'Ana Restrepo', role: 'AGENTE' }],
+    })
   })
 })
 
-describe('<MembersStepForm> — invite-links screen (`pendingInvites` prop)', () => {
+/**
+ * 🔴 La pantalla de resultados dejó de mostrar `rawToken`s del micro (que no
+ * los aceptaba ninguna ruta y daban 404) y muestra el resultado de las
+ * invitaciones REALES del back: correo enviado, enlace `/invitacion/<token>`
+ * cuando el correo no salió, y el motivo cuando el back rechazó a alguien.
+ */
+describe('<MembersStepForm> — resultado de las invitaciones (`pendingInvites`)', () => {
   const pendingInvites: React.ComponentProps<typeof MembersStepForm>['pendingInvites'] = {
-    response: {
-      sessionId: 'sess-1',
-      currentStep: 'payment_provider',
-      nextStep: 'policy',
-      draft: {},
-      inviteTokens: [
-        { email: 'admin@inmobiliaria.test', rawToken: 'raw-token-1' },
-        { email: 'viewer@inmobiliaria.test', rawToken: 'raw-token-2' },
-      ],
-    },
-    body: {
-      members: [
-        { email: 'admin@inmobiliaria.test', role: 'ADMIN' },
-        { email: 'viewer@inmobiliaria.test', role: 'VIEWER' },
-      ],
-    },
+    invitaciones: [
+      {
+        email: 'admin@inmobiliaria.test',
+        role: 'ADMIN',
+        nombre: 'Ana Restrepo',
+        enlace: 'https://app.leasefy.co/invitacion/tok-admin',
+        correoEnviado: false,
+        estadoDelCorreo: 'not_configured',
+        error: null,
+      },
+      {
+        email: 'viewer@inmobiliaria.test',
+        role: 'VIEWER',
+        nombre: '',
+        enlace: 'https://app.leasefy.co/invitacion/tok-viewer',
+        correoEnviado: true,
+        estadoDelCorreo: 'sent',
+        error: null,
+      },
+    ],
   }
 
-  it('renders the invite links instead of the form when pendingInvites is set, and the wizard form is gone', () => {
+  it('muestra el resultado en vez del formulario', () => {
     render({ pendingInvites })
 
     expect(container.querySelector('[data-testid="members-step-form"]')).toBeFalsy()
     expect(container.querySelector('[data-testid="members-invite-links"]')).toBeTruthy()
-    expect(container.textContent).toContain('admin@inmobiliaria.test')
+    expect(container.textContent).toContain('Ana Restrepo')
     expect(container.textContent).toContain('viewer@inmobiliaria.test')
     expect(container.textContent).toContain('Administrador')
     expect(container.textContent).toContain('Solo lectura')
   })
 
-  it('shows a prominent warning that the links will not be shown again', () => {
+  it('🔴 el enlace apunta a /invitacion/<token> del back, NUNCA a /onboarding/invitacion', () => {
     render({ pendingInvites })
 
-    const warning = container.querySelector('[data-testid="members-invite-warning"]')
-    expect(warning).toBeTruthy()
-    expect(warning?.textContent).toContain('Guardá estos links ahora')
-    expect(warning?.textContent).toContain('no se vuelven a mostrar')
+    const fila = container.querySelector(
+      '[data-testid="invite-copy-admin@inmobiliaria.test"]',
+    ) as HTMLButtonElement
+    expect(fila.textContent).toContain('/invitacion/tok-admin')
+    expect(container.innerHTML).not.toContain('/onboarding/invitacion')
   })
 
-  it('copies the invite link containing the rawToken when "Copiar" is clicked', async () => {
+  it('ya NO dice que los enlaces no se vuelven a mostrar: era mentira y las invitaciones se reenvían desde el panel', () => {
+    render({ pendingInvites })
+
+    expect(container.textContent).not.toContain('no se vuelven a mostrar')
+    const warning = container.querySelector('[data-testid="members-invite-warning"]')
+    // Sólo avisa por la que NO recibió correo, y ofrece la salida real.
+    expect(warning?.textContent).toContain('el correo no salió')
+    expect(warning?.textContent).toContain('Configuración')
+  })
+
+  it('a quien SÍ recibió el correo no se le ofrece copiar un enlace: se le dice que ya llegó', () => {
+    render({ pendingInvites })
+
+    expect(
+      container.querySelector('[data-testid="invite-sent-viewer@inmobiliaria.test"]'),
+    ).toBeTruthy()
+    expect(
+      container.querySelector('[data-testid="invite-copy-viewer@inmobiliaria.test"]'),
+    ).toBeFalsy()
+  })
+
+  it('un rechazo del back se muestra por persona y no tumba a las demás', () => {
+    render({
+      pendingInvites: {
+        invitaciones: [
+          {
+            email: 'repetido@inmobiliaria.test',
+            role: 'AGENTE',
+            nombre: '',
+            enlace: null,
+            correoEnviado: false,
+            error: 'El usuario ya es miembro activo de esta inmobiliaria.',
+          },
+          pendingInvites.invitaciones[1],
+        ],
+      },
+    })
+
+    expect(
+      container.querySelector('[data-testid="invite-error-repetido@inmobiliaria.test"]')
+        ?.textContent,
+    ).toContain('ya es miembro activo')
+    expect(container.querySelector('[data-testid="members-invite-errors"]')).toBeTruthy()
+    // La que sí salió sigue ahí.
+    expect(
+      container.querySelector('[data-testid="invite-sent-viewer@inmobiliaria.test"]'),
+    ).toBeTruthy()
+  })
+
+  it('copia el enlace del back al tocar la fila', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
 
@@ -303,7 +371,7 @@ describe('<MembersStepForm> — invite-links screen (`pendingInvites` prop)', ()
     })
 
     expect(writeText).toHaveBeenCalledTimes(1)
-    expect(writeText.mock.calls[0]?.[0]).toContain('raw-token-1')
+    expect(writeText.mock.calls[0]?.[0]).toContain('/invitacion/tok-admin')
   })
 
   it('calls onContinueAfterInvites when "Continuar" is clicked — advance is manual, not automatic', () => {

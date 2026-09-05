@@ -68,7 +68,7 @@ const TEXTO_DEL_PROBLEMA: Record<ProblemaDeApertura, string> = {
   POCAS_LINEAS: "Un asiento necesita al menos dos líneas con cuenta y monto.",
   SIN_CUENTA: "Hay una línea con monto pero sin cuenta.",
   SIN_MONTO: "Hay una línea con cuenta pero sin monto.",
-  AMBIGUA: "Una línea tiene débito y crédito a la vez: elegí uno.",
+  AMBIGUA: "Una línea tiene débito y crédito a la vez: elige uno.",
   FUERA_DE_RANGO:
     "Un monto es demasiado grande para una sola línea: partilo en dos.",
   CUENTA_REPETIDA:
@@ -168,7 +168,7 @@ export function AsientoDeApertura({
          */
         onRevisarCargado?.();
         setError(
-          "Se cortó la conexión al enviar. Volvé a tocar «Registrar»: si el asiento alcanzó a guardarse, " +
+          "Se cortó la conexión al enviar. Vuelve a tocar «Registrar»: si el asiento alcanzó a guardarse, " +
             "lo vas a ver tal cual quedó — no se registra dos veces.",
         );
       } else {
@@ -243,7 +243,7 @@ export function AsientoDeApertura({
       </h2>
       <p className="mt-1 max-w-2xl text-sm text-fg-muted">
         Un solo asiento con la fecha de corte y el saldo de cada cuenta a esa
-        fecha: bancos, lo que te deben los inquilinos, lo que les debés a los
+        fecha: bancos, lo que te deben los inquilinos, lo que les debes a los
         propietarios, el patrimonio. Los saldos deudores van en débito y los
         acreedores en crédito, y los dos totales tienen que ser iguales.
       </p>
@@ -315,7 +315,7 @@ export function AsientoDeApertura({
                       aria-label={`Cuenta de la línea ${i + 1}`}
                       data-testid={`apertura-cuenta-${i}`}
                     >
-                      <SelectValue placeholder="Elegí la cuenta" />
+                      <SelectValue placeholder="Elige la cuenta" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={SIN_CUENTA}>Sin cuenta</SelectItem>

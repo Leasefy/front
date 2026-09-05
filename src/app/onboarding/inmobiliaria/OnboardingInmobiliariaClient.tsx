@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { LeasefyLogo } from '@/components/brand'
-import Link from 'next/link'
-import { BrandHomeLink } from '@/components/brand/BrandHomeLink'
 import { useOnboardingSession } from '@/lib/hooks/use-onboarding-session'
 import { useOnboardingProvisioning } from '@/lib/hooks/use-onboarding-provisioning'
 import { OnboardingWizardStepper } from '@/components/onboarding/inmobiliaria/OnboardingWizardStepper'
@@ -18,6 +16,11 @@ import {
   type AgencyStepPreStepValues,
 } from '@/components/onboarding/inmobiliaria/agency-step-prefill'
 import { MembersStepForm, type PendingMembersInvites } from '@/components/onboarding/inmobiliaria/MembersStepForm'
+import { crearInvitacionesDelEquipo } from '@/components/onboarding/inmobiliaria/crear-invitaciones'
+import {
+  toMembersRequest,
+  type MembersStepFormValues,
+} from '@/components/onboarding/inmobiliaria/members-step-schema'
 import { PaymentProviderAutoSkipStep } from '@/components/onboarding/inmobiliaria/PaymentProviderAutoSkipStep'
 import { PolicyAutoSkipStep } from '@/components/onboarding/inmobiliaria/PolicyAutoSkipStep'
 import {
@@ -27,7 +30,6 @@ import {
 import { TermsStepForm } from '@/components/onboarding/inmobiliaria/TermsStepForm'
 import { CompleteStepForm } from '@/components/onboarding/inmobiliaria/CompleteStepForm'
 import { wizardStepLabel } from '@/components/onboarding/inmobiliaria/wizard-steps'
-import type { OnboardingSessionMembersRequest } from '@/lib/api/generated/agency'
 import type { OnboardingWizardStep } from '@/lib/hooks/use-onboarding-session'
 
 /**
@@ -163,11 +165,28 @@ function OnboardingWizard({
   // `currentStep` until the user explicitly clicks "Continuar".
   const [pendingMembersInvites, setPendingMembersInvites] = useState<PendingMembersInvites | null>(null)
 
-  const handleSubmitMembers = async (body: OnboardingSessionMembersRequest) => {
-    const result = await submitMembers(body)
-    if (result && result.inviteTokens.length > 0) {
-      setPendingMembersInvites({ response: result, body })
-    }
+  /**
+   * 🔴 Dos llamadas, en este orden, y por qué.
+   *
+   * 1. El MICRO (`submitMembers`) es quien mueve el asistente al paso
+   *    siguiente. Va primero: si falla, no se creó ninguna invitación y la
+   *    persona puede reintentar el paso entero sin chocar contra un «ya existe
+   *    una invitación pendiente».
+   * 2. El BACK crea las invitaciones DE VERDAD y manda los correos. Los
+   *    `rawToken` del micro no los acepta ninguna pantalla (ver
+   *    `invite-link.ts`): son los tokens del back los que abren
+   *    `/invitacion/<token>`.
+   *
+   * Un fallo del paso 2 NO frena el alta: la pantalla de resultados dice qué
+   * pasó con cada persona y el equipo se puede invitar desde el panel.
+   */
+  const handleSubmitMembers = async (values: MembersStepFormValues) => {
+    const result = await submitMembers(toMembersRequest(values))
+    if (!result) return result
+    if (values.members.length === 0) return result
+
+    const invitaciones = await crearInvitacionesDelEquipo(values.members)
+    if (invitaciones.length > 0) setPendingMembersInvites({ invitaciones })
     return result
   }
 
@@ -202,9 +221,17 @@ function OnboardingWizard({
             paso se partía en dos renglones. */}
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between gap-4 h-16">
-            <BrandHomeLink className="flex items-center gap-2">
+            {/*
+              🔴 NO es `BrandHomeLink`. Ese resuelve `getUserHomeRoute`, y
+              mientras la agencia no termina de crearse la persona sigue con
+              rol `tenant`: el logo la mandaba a `/inquilino`, el panel del
+              INQUILINO, a mitad del alta de una inmobiliaria (auditoría
+              2026-09-05). Dentro del asistente el logo es marca, no salida —
+              para salir está `SalirDelRegistro`, acá al lado.
+            */}
+            <span className="flex items-center gap-2" aria-label="Leasefy">
               <LeasefyLogo size={28} tone="brand" />
-            </BrandHomeLink>
+            </span>
             <OnboardingWizardStepper currentStep={displayStep} />
             {/* El asistente tampoco tenía salida: la única era cerrar la
                 pestaña. Ahora sí, y la promesa de volver donde quedaste la
@@ -287,6 +314,7 @@ function OnboardingWizard({
                 onSubmit={completeOnboarding}
                 error={error !== null && error.kind === 'conflict' ? error : null}
                 onNavigateToStep={setCompleteStepOverride}
+                draft={draft}
               />
             )}
           </>

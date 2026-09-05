@@ -1,6 +1,0 @@
-[     306ms] [ERROR] Failed to load resource: net::ERR_NAME_NOT_RESOLVED @ https://polyfill.io/v3/polyfill.min.js?features=IntersectionObserver:0
-[     392ms] [ERROR] Error: <path> attribute d: Expected path command, "…-83.764,78.064 z\" /\u003E". @ https://www.aptuno.com/static/js/16.15c593f4.chunk.js:1
-[     416ms] [ERROR] Failed to load resource: net::ERR_NAME_NOT_RESOLVED @ https://tagpro.adpromedia.net/secure/Aptuno.js:0
-[     742ms] [ERROR] Attestation check for Attribution Reporting on https://www.facebook.com failed. @ https://www.aptuno.com/politica-de-privacidad:0
-[    3950ms] [WARNING] The resource https://www.aptuno.com/lazyframe.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://www.aptuno.com/politica-de-privacidad:0
-[    8478ms] [WARNING] The resource https://www.aptuno.com/lazyframe.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://www.aptuno.com/politica-de-privacidad:0

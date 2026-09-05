@@ -83,6 +83,14 @@ export const PANEL = '/panel/inmobiliaria';
 
 const CONTADOR_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR];
 
+/**
+ * Los que gestionan: ADMIN y AGENTE. Es lo mismo que `AgencyRoleGuard
+ * allowed="managers"`, y va acá porque una fila del sidebar que un rol ve pero
+ * no puede abrir es una promesa rota — el rol entra y lo devuelven a la
+ * portada sin decirle nada (MSJ-6).
+ */
+const GESTION_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.AGENTE];
+
 export interface PantallaDelPanel {
   /** Clave i18n de la etiqueta. */
   labelKey: string;
@@ -194,7 +202,9 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // micro lo sirva; el workspace está apagado en `agentWorkspaceNav.ts`.
       { key: 'mantenimientos', labelKey: 'inmobiliaria.nav.mantenimientos', href: r('/mantenimientos'), icon: Wrench, module: 'operaciones', scope: 'administracion' },
       { key: 'solicitudes', labelKey: 'inmobiliaria.nav.solicitudes', href: r('/solicitudes'), icon: Lifebuoy, module: null, scope: 'administracion', ia: true, hintKey: 'inmobiliaria.nav.pqrs' },
-      { key: 'mensajes', labelKey: 'inmobiliaria.nav.mensajes', href: r('/mensajes'), icon: Chat, module: null, scope: 'administracion' },
+      // `roles` y no `module`: no hay llave de AGENCY_MODULES para mensajes, y
+      // la pantalla se cierra por rol (`AgencyRoleGuard allowed="managers"`).
+      { key: 'mensajes', labelKey: 'inmobiliaria.nav.mensajes', href: r('/mensajes'), icon: Chat, module: null, roles: GESTION_ROLES, scope: 'administracion' },
       { key: 'agenda', labelKey: 'inmobiliaria.nav.agenda', href: r('/agenda'), icon: CalendarBlank, module: null, scope: 'administracion' },
     ],
   },

@@ -55,6 +55,30 @@ function backendSnapshotToChat(s: BackendSnapshot | null): ChatSnapshot | null {
 // Constants
 // ============================================================================
 
+/**
+ * Aprobación vinculante del backend → la tarjeta de decisión del front.
+ *
+ * Vive a nivel de módulo porque la usan LAS DOS rutas: el evento
+ * `pending_approval` del stream y el `pendingApprovals` de la respuesta POST de
+ * respaldo (que el espejo del front omitía, así que por ahí la aprobación se
+ * perdía en silencio).
+ */
+export function aprobacionADecision(approval: BackendPendingApproval): PendingDecision {
+  return {
+    id: approval.id,
+    approvalId: approval.id,
+    title: approval.title,
+    description: approval.description,
+    category: backendAgentToFrontType(approval.agent),
+    options: approval.options.map((o) => ({
+      id: o.id,
+      label: o.label,
+      description: o.description,
+      recommendation: o.recommendation,
+    })),
+  };
+}
+
 const CHARS_PER_SECOND = 40;
 const LONG_PAUSE_CHARS = new Set(['.', '!', '?']);
 const SHORT_PAUSE_CHARS = new Set([',', ';', ':']);
@@ -65,17 +89,9 @@ const STORAGE_KEY = 'leasefy-beta-conversations';
 const STORAGE_VERSION_KEY = 'leasefy-beta-storage-version';
 const CURRENT_STORAGE_VERSION = 3; // v3 = Clean minimal Synapse-inspired redesign
 const PREFERENCES_STORAGE_KEY = 'leasefy-beta-preferences';
-// Daily reset: the chat starts fresh each calendar day. We stamp the local
-// day (YYYY-MM-DD) and wipe conversations on the first load of a new day.
+// Marca del viejo «reset diario» (ya retirado). Se conserva sólo para poder
+// BORRARLA de los navegadores que la tengan; nada la lee para decidir.
 const DAILY_RESET_KEY = 'leasefy-beta-last-day';
-
-/** Local calendar day key, e.g. "2026-07-01". */
-function todayKey(): string {
-  const d = new Date();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${m}-${day}`;
-}
 const TITLE_MAX_LENGTH = 50;
 const PREVIEW_MAX_LENGTH = 80;
 
@@ -186,24 +202,44 @@ function deserializeConversations(json: string): Conversation[] {
   }
 }
 
+/**
+ * 🔴 Ya NO se borra todo cada día.
+ *
+ * El reset diario dejaba «no tienes conversaciones» en la pantalla mientras el
+ * servidor sí conservaba la memoria del operador: la UI olvidaba y el modelo
+ * recordaba, así que el historial dejaba de ser un historial. Ahora sólo se
+ * limpia por cambio de versión del esquema, y las conversaciones viejas se
+ * podan por antigüedad para que el `localStorage` no crezca sin techo.
+ */
+export const RETENCION_CONVERSACIONES_DIAS = 30;
+
+/** Descarta las conversaciones sin actividad en los últimos N días. */
+export function podarConversacionesViejas(
+  conversaciones: Conversation[],
+  ahora: Date = new Date(),
+): Conversation[] {
+  const corte = ahora.getTime() - RETENCION_CONVERSACIONES_DIAS * 24 * 60 * 60 * 1000;
+  return conversaciones.filter((c) => {
+    const t = c.updatedAt instanceof Date ? c.updatedAt.getTime() : new Date(c.updatedAt).getTime();
+    return Number.isNaN(t) || t >= corte;
+  });
+}
+
 function loadFromStorage(): Conversation[] {
   if (typeof window === 'undefined') return [];
   try {
-    // Clear conversations when the storage version changes (schema migration)
-    // OR when the calendar day rolls over (daily reset). Either way we wipe and
-    // re-stamp both markers, so the chat starts fresh each new day.
+    // Se limpia SÓLO cuando cambia la versión del esquema guardado (migración).
     const storedVersion = localStorage.getItem(STORAGE_VERSION_KEY);
-    const lastDay = localStorage.getItem(DAILY_RESET_KEY);
-    const today = todayKey();
-    if (storedVersion !== String(CURRENT_STORAGE_VERSION) || lastDay !== today) {
+    if (storedVersion !== String(CURRENT_STORAGE_VERSION)) {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.setItem(STORAGE_VERSION_KEY, String(CURRENT_STORAGE_VERSION));
-      localStorage.setItem(DAILY_RESET_KEY, today);
+      // La marca del día ya no gobierna nada; se borra para no dejar basura.
+      localStorage.removeItem(DAILY_RESET_KEY);
       return [];
     }
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return [];
-    return deserializeConversations(stored);
+    return podarConversacionesViejas(deserializeConversations(stored));
   } catch {
     return [];
   }
@@ -483,6 +519,20 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
   const messages = activeConversation?.messages ?? [];
 
+  /**
+   * 🔴 Controlador del turno EN VUELO.
+   *
+   * Sin esto, cambiar/terminar/borrar la conversación sólo limpiaba los
+   * timeouts: el `fetch` del stream seguía vivo y sus handlers volvían a
+   * prender `isAgentsRunning` y `isStreaming` — la conversación NUEVA quedaba
+   * con el compositor bloqueado mientras la vieja se tecleaba invisible, y la
+   * aprobación pendiente del turno abortado se perdía.
+   */
+  const abortRef = useRef<AbortController | null>(null);
+
+  /** Qué se está tecleando y hasta dónde, para que el `done` continúe en vez de reiniciar. */
+  const streamingTargetRef = useRef<{ assistantId: string; text: string } | null>(null);
+
   // Cleanup all timeouts
   const clearTimeouts = useCallback(() => {
     if (delayTimeoutRef.current) {
@@ -497,6 +547,26 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     agentTimeoutsRef.current = [];
   }, []);
 
+  /**
+   * Corta el turno en vuelo y deja la UI en un estado limpio. Abortar es
+   * INTENCIONAL: el turno abortado no pinta error ni cae al respaldo POST.
+   */
+  const abortarTurnoEnCurso = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    clearTimeouts();
+    streamingTargetRef.current = null;
+    charIndexRef.current = 0;
+    pendingDecisionRef.current = null;
+    pendingResponseMetaRef.current = null;
+    setIsThinking(false);
+    setIsStreaming(false);
+    setStreamingContent('');
+    setActiveAgentBlock(null);
+    setIsAgentsRunning(false);
+    aplicarPasos([]);
+  }, [clearTimeouts, aplicarPasos]);
+
   const getCharDelay = useCallback((char: string): number => {
     const baseInterval = 1000 / CHARS_PER_SECOND;
     if (LONG_PAUSE_CHARS.has(char)) return baseInterval * LONG_PAUSE_MULTIPLIER;
@@ -509,8 +579,36 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   // ========================================================================
 
   const startStreaming = useCallback(
-    (assistantId: string, responseText: string, conversationId: string) => {
-      charIndexRef.current = 0;
+    (
+      assistantId: string,
+      responseText: string,
+      conversationId: string,
+      opts: { parcial?: boolean } = {}
+    ) => {
+      // 🔴 El texto se muestra EN CUANTO LLEGA el evento `message`, no al
+      // `done`. El micro manda la respuesta completa antes de despachar; el
+      // front la escondía hasta el cierre del stream y el operador veía 25 s de
+      // pantalla muerta y después todo el texto de golpe.
+      //
+      // `parcial` = esta pasada es la del evento `message` y el turno sigue
+      // vivo: al terminar de escribirse NO se cierran los pasos ni se apaga
+      // `isStreaming` (falta el `done`, que puede traer los resúmenes de los
+      // despachos). La pasada final CONTINÚA desde donde quedó ésta en vez de
+      // reiniciar el tecleo, así el texto no parpadea ni se repite.
+      const parcial = opts.parcial === true;
+      const previo = streamingTargetRef.current;
+      const continua =
+        previo !== null &&
+        previo.assistantId === assistantId &&
+        charIndexRef.current > 0 &&
+        responseText.startsWith(previo.text.slice(0, charIndexRef.current));
+      if (charTimeoutRef.current) {
+        clearTimeout(charTimeoutRef.current);
+        charTimeoutRef.current = null;
+      }
+      streamingTargetRef.current = { assistantId, text: responseText };
+      charIndexRef.current = continua ? charIndexRef.current : 0;
+      if (!continua) setStreamingContent('');
       setIsThinking(false);
       setIsStreaming(true);
       parchearPaso('redactar', { status: 'running', startedAt: new Date() });
@@ -530,6 +628,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
 
       const revealNextChar = () => {
         if (charIndexRef.current >= responseText.length) {
+          if (parcial) {
+            // El texto ya está a la vista; el turno sigue. El cierre real lo
+            // hace la pasada final, cuando llega `done`.
+            charTimeoutRef.current = null;
+            setStreamingContent(responseText);
+            return;
+          }
           // Complete — attach pending decision and response meta
           const decision = pendingDecisionRef.current;
           pendingDecisionRef.current = null;
@@ -558,6 +663,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           setIsStreaming(false);
           setStreamingContent('');
           charTimeoutRef.current = null;
+          streamingTargetRef.current = null;
           cerrarPasos();
           aplicarPasos([]);
           return;
@@ -816,6 +922,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         suggestedActions: BackendSuggestedAction[];
         dispatches: BackendDispatch[];
         snapshot?: ChatSnapshot | null;
+        /**
+         * 🔴 Sólo llega por el camino de respaldo POST: en el stream la
+         * aprobación viene por su propio evento (`onPendingApproval`) y ya
+         * quedó en `pendingDecisionRef`. Acá se convierte con LA MISMA función,
+         * para que las dos rutas pinten la misma `<DecisionCard>`.
+         */
+        pendingApprovals?: BackendPendingApproval[];
       },
       assistantId: string,
       conversationId: string,
@@ -838,6 +951,14 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                 }
           )
         );
+      }
+
+      // 🔴 Camino de respaldo POST: la aprobación pendiente llega en la
+      // respuesta, no por un evento. Si el stream ya dejó una en el ref, ésa
+      // manda (es la misma, y viene con el orden real de los eventos).
+      const aprobacionPost = resp.pendingApprovals?.[0];
+      if (!pendingDecisionRef.current && aprobacionPost) {
+        pendingDecisionRef.current = aprobacionADecision(aprobacionPost);
       }
 
       const actions = resp.suggestedActions.map(suggestedActionToResponseAction);
@@ -916,6 +1037,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       history: { role: 'user' | 'assistant'; content: string }[];
       assistantId: string;
       conversationId: string;
+      /** 🔴 Corta el `fetch` cuando el operador cambia de conversación. */
+      signal: AbortSignal;
     }): Promise<{
       responseText: string;
       suggestedActions: BackendSuggestedAction[];
@@ -945,6 +1068,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         agencyId: args.agencyId,
         message: args.message,
         history: args.history,
+        signal: args.signal,
         handlers: {
           onSnapshot: (s) => {
             collected.snapshot = backendSnapshotToChat(s);
@@ -978,6 +1102,12 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             const ahora = new Date();
             if (turnStepsRef.current.some((p) => p.id === 'entender' && p.status === 'running')) {
               parchearPaso('entender', { status: 'done', completedAt: ahora });
+            }
+            // 🔴 Y se MUESTRA ya. Antes se guardaba en `messageText` y no se
+            // pintaba hasta el `done`: el texto existía y el operador miraba
+            // una pantalla muerta.
+            if (text) {
+              startStreaming(args.assistantId, text, args.conversationId, { parcial: true });
             }
           },
           onDispatchStart: (agent, taskDescription) => {
@@ -1075,19 +1205,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           // tarjeta de decisión que ya existe; `pendingDecisionRef` la adjunta
           // al mensaje cuando termina de escribirse, igual que cualquier otra.
           onPendingApproval: (approval: BackendPendingApproval) => {
-            pendingDecisionRef.current = {
-              id: approval.id,
-              approvalId: approval.id,
-              title: approval.title,
-              description: approval.description,
-              category: backendAgentToFrontType(approval.agent),
-              options: approval.options.map((o) => ({
-                id: o.id,
-                label: o.label,
-                description: o.description,
-                recommendation: o.recommendation,
-              })),
-            };
+            pendingDecisionRef.current = aprobacionADecision(approval);
           },
           // F5: action_proposal events — append to the assistant message (D-42-03 fail-open).
           onActionProposal: (proposal: BackendActionProposal) => {
@@ -1153,7 +1271,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         liveBlock,
       };
     },
-    [parchearPaso, insertarPaso]
+    [parchearPaso, insertarPaso, startStreaming]
   );
 
   // ========================================================================
@@ -1241,6 +1359,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         return;
       }
 
+      // 🔴 Un controlador POR TURNO: cambiar de conversación lo aborta y con él
+      // se van el fetch, los handlers y las banderas globales.
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const { signal } = controller;
+
       void (async () => {
         try {
           // F2c: SSE first — live dispatch indicators + lower perceived latency.
@@ -1250,23 +1375,31 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             history,
             assistantId,
             conversationId,
+            signal,
           });
+          if (signal.aborted) return;
           finishTurn(streamed, assistantId, conversationId, streamed.liveBlock);
         } catch {
+          // Abortar es intencional: ni respaldo POST ni cartel de error.
+          if (signal.aborted) return;
           // Stream failed (route missing, proxy buffering, mid-stream drop) →
           // clear any partial live UI and fall back to the one-shot POST.
           setActiveAgentBlock(null);
           setIsAgentsRunning(false);
           try {
-            const resp = await postChatTurn({ agencyId, message: trimmed, history });
+            const resp = await postChatTurn({ agencyId, message: trimmed, history, signal });
+            if (signal.aborted) return;
             finishTurn(resp, assistantId, conversationId, null);
           } catch {
+            if (signal.aborted) return;
             finalizeError(
               assistantId,
               conversationId,
               'No pude conectarme con el asistente en este momento. Intenta de nuevo en un momento.'
             );
           }
+        } finally {
+          if (abortRef.current === controller) abortRef.current = null;
         }
       })();
     },
@@ -1375,11 +1508,12 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     setActiveAgentBlock(null);
     setIsAgentsRunning(false);
     pendingStreamRef.current = null;
+    abortarTurnoEnCurso();
 
     const newConv = createEmptyConversation();
     setConversations((prev) => [newConv, ...prev]);
     setActiveConversationId(newConv.id);
-  }, [clearTimeouts]);
+  }, [clearTimeouts, abortarTurnoEnCurso]);
 
   const switchConversation = useCallback(
     (id: string) => {
@@ -1392,11 +1526,12 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       setActiveAgentBlock(null);
       setIsAgentsRunning(false);
       pendingStreamRef.current = null;
+      abortarTurnoEnCurso();
       setActiveConversationId(id);
       // Switch to conversations tab so the user sees the conversation
       onTabChangeRef.current?.('conversations');
     },
-    [activeConversationId, clearTimeouts]
+    [activeConversationId, clearTimeouts, abortarTurnoEnCurso]
   );
 
   const deleteConversation = useCallback(
@@ -1422,8 +1557,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       setActiveAgentBlock(null);
       setIsAgentsRunning(false);
       pendingStreamRef.current = null;
+      abortarTurnoEnCurso();
     },
-    [activeConversationId, clearTimeouts]
+    [activeConversationId, clearTimeouts, abortarTurnoEnCurso]
   );
 
   // ========================================================================

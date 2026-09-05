@@ -233,6 +233,15 @@ export const messagesApi = {
   // --------------------------------------------------------------------------
   // Conversation actions — archive / mute / report (COMU-02)
   //
+  // 🔴 HOY NINGUNA PANTALLA LAS LLAMA. Se conserva el contrato tipado —es la
+  // forma exacta que va a tener el día que el back monte las rutas— pero los
+  // botones que las usaban se retiraron de `MessagesWidget`: las tres
+  // resuelven `'unavailable'` por 404 y terminaban en un toast «estará
+  // disponible próximamente». «Reportar» era el peor de los tres, porque
+  // alguien podía denunciar una conversación abusiva y creer que quedó
+  // denunciada. Volver a exponerlas en la UI exige que el endpoint exista
+  // primero, no al revés.
+  //
   // No NestJS route exists yet (external dep — RESEARCH §3). Each degrades
   // HONESTLY: a not-live route (404/403/offline) resolves to `'unavailable'` so
   // the widget shows an honest "Próximamente" toast — it NEVER fabricates a
@@ -303,6 +312,12 @@ export const messagesApi = {
 
   /**
    * Send a chat attachment — CONTRACT STUB (COMU-02).
+   *
+   * 🔴 SIN CALLERS. El clip y el botón de imagen se retiraron del widget: la
+   * función está escrita para resolver `null` sin hacer el POST, así que la
+   * pantalla abría el explorador de archivos, dejaba elegir uno, validaba su
+   * tamaño y después decía que no. La forma multipart de abajo sigue acá como
+   * contrato del día que exista el endpoint.
    *
    * Modeled on `documents.service.ts` `upload` (multipart FormData, Bearer,
    * entityType/entityId) so the eventual real send drops in HERE — but it does

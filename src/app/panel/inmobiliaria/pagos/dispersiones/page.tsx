@@ -235,55 +235,94 @@ function DispersionesContent() {
     setIsDetailOpen(true);
   }, []);
 
-  // Handle process dispersion
-  const handleProcessDispersion = useCallback(async (dispersion: Dispersion) => {
+  /**
+   * Aprobar — el primer par de ojos.
+   *
+   * El front NUNCA llamaba a `approve`, así que toda dispersión seguía en
+   * `pending` y cada «Procesar» moría con un 400 del back (que exige estado
+   * `PROCESSING`). Sin este paso el circuito entero estaba muerto.
+   */
+  const handleApproveDispersion = useCallback(async (dispersion: Dispersion) => {
+    const id = `approve-${dispersion.id}`;
     try {
-      // Optimistic update: Set to processing
-      setDispersiones((prev) =>
-        prev?.map((d) =>
-          d.id === dispersion.id
-            ? {
-                ...d,
-                status: 'processing' as DispersionStatus,
-                updatedAt: new Date().toISOString(),
-              }
-            : d
-        ) ?? []
-      );
-
-      toast.loading(t('inmobiliaria.dispersiones.toasts.processing', { name: dispersion.propietarioName }), {
-        id: `process-${dispersion.id}`,
+      toast.loading(t('inmobiliaria.dispersiones.toasts.processing', { name: dispersion.propietarioName }), { id });
+      await dispersionesApi.approve(dispersion.id);
+      await refetchDispersiones();
+      // El toast va DESPUÉS de la respuesta, y dice lo que de verdad pasó.
+      toast.success(t('inmobiliaria.dispersiones.toasts.aprobada'), {
+        id,
+        description: t('inmobiliaria.dispersiones.toasts.aprobadaDesc'),
       });
+    } catch (error) {
+      await refetchDispersiones();
+      toast.error(t('inmobiliaria.dispersiones.toasts.error'), {
+        id,
+        description: error instanceof Error ? error.message : 'Error al aprobar la dispersión',
+      });
+    }
+  }, [t, refetchDispersiones]);
 
-      // Call API to process dispersion
-      await dispersionesApi.process(dispersion.id);
+  /**
+   * El botón de la fila (tabla y tarjeta).
+   *
+   * Aprobar se puede desde la fila: no pide ningún dato. Marcar un giro NO —
+   * necesita la referencia del banco— así que abre el cajón en vez de disparar
+   * una llamada que el back rechaza. Antes la fila llamaba a `process` con
+   * `{}` sobre una dispersión `pending`: 400 seguro, y el cartel decía que la
+   * transferencia se había enviado.
+   */
+  const handleAccionDeFila = useCallback((dispersion: Dispersion) => {
+    if (dispersion.status === 'pending') {
+      void handleApproveDispersion(dispersion);
+      return;
+    }
+    setSelectedDispersion(dispersion);
+    setIsDetailOpen(true);
+  }, [handleApproveDispersion]);
 
-      // Refetch to get updated status from server
+  /**
+   * Anotar la referencia del giro — el segundo par de ojos.
+   *
+   * El sistema NO envía transferencias: registra la que alguien ya hizo por el
+   * banco. Por eso la referencia es obligatoria (el back la exige) y el texto
+   * dejó de prometer «Transferencia enviada».
+   */
+  const handleProcessDispersion = useCallback(async (dispersion: Dispersion, transferReference: string) => {
+    const id = `process-${dispersion.id}`;
+    try {
+      toast.loading(t('inmobiliaria.dispersiones.toasts.processing', { name: dispersion.propietarioName }), { id });
+
+      await dispersionesApi.process(dispersion.id, transferReference);
       await refetchDispersiones();
 
-      toast.success(t('inmobiliaria.dispersiones.toasts.processed'), {
-        id: `process-${dispersion.id}`,
-        description: t('inmobiliaria.dispersiones.toasts.transferSent', { name: dispersion.propietarioName }),
+      toast.success(t('inmobiliaria.dispersiones.toasts.referenciaGuardada'), {
+        id,
+        description: t('inmobiliaria.dispersiones.toasts.referenciaGuardadaDesc', { name: dispersion.propietarioName }),
       });
 
       setIsDetailOpen(false);
     } catch (error) {
-      // Revert optimistic update on error
       await refetchDispersiones();
       toast.error(t('inmobiliaria.dispersiones.toasts.error'), {
-        id: `process-${dispersion.id}`,
+        id,
         description: error instanceof Error ? error.message : 'Error al procesar dispersión',
       });
     }
-  }, [t, refetchDispersiones, setDispersiones]);
+  }, [t, refetchDispersiones]);
 
-  // Handle retry failed dispersion
-  const handleRetryDispersion = useCallback(async (dispersion: Dispersion) => {
-    // Same logic as process, but starts from failed state
-    await handleProcessDispersion(dispersion);
+  // Reintentar una fallida es el mismo camino: la referencia sigue siendo del banco.
+  const handleRetryDispersion = useCallback(async (dispersion: Dispersion, transferReference: string) => {
+    await handleProcessDispersion(dispersion, transferReference);
   }, [handleProcessDispersion]);
 
-  // Handle process all pending
+  /**
+   * Aprobar todas las pendientes — lo único que se puede hacer en masa.
+   *
+   * Antes esto decía «Procesar todas» y mandaba `{}` a `process`: 400 en todas,
+   * y aun así la pantalla anunciaba «{{count}} transferencias enviadas». Marcar
+   * un giro NO se puede hacer en masa: cada uno lleva la referencia que le dio
+   * el banco, y una referencia inventada es peor que un botón que no está.
+   */
   const handleProcessAll = useCallback(async () => {
     const pending = filteredDispersiones.filter((d) => d.status === 'pending');
     if (pending.length === 0) return;
@@ -293,38 +332,21 @@ function DispersionesContent() {
         id: 'process-all',
       });
 
-      // Optimistic update: Set all to processing
-      setDispersiones((prev) =>
-        prev?.map((d) =>
-          pending.find((p) => p.id === d.id)
-            ? {
-                ...d,
-                status: 'processing' as DispersionStatus,
-                updatedAt: new Date().toISOString(),
-              }
-            : d
-        ) ?? []
-      );
-
-      // Process all dispersiones via API
-      await Promise.all(pending.map((d) => dispersionesApi.process(d.id)));
-
-      // Refetch to get updated data
+      await Promise.all(pending.map((d) => dispersionesApi.approve(d.id)));
       await refetchDispersiones();
 
-      toast.success(t('inmobiliaria.dispersiones.toasts.batchCompleted'), {
+      toast.success(t('inmobiliaria.dispersiones.toasts.aprobadasBatch', { count: pending.length }), {
         id: 'process-all',
-        description: t('inmobiliaria.dispersiones.toasts.batchCompletedDesc', { count: pending.length }),
+        description: t('inmobiliaria.dispersiones.toasts.aprobadasBatchDesc'),
       });
     } catch (error) {
-      // Revert on error
       await refetchDispersiones();
       toast.error(t('inmobiliaria.dispersiones.toasts.error'), {
         id: 'process-all',
-        description: error instanceof Error ? error.message : 'Error al procesar dispersiones',
+        description: error instanceof Error ? error.message : 'Error al aprobar dispersiones',
       });
     }
-  }, [filteredDispersiones, t, refetchDispersiones, setDispersiones]);
+  }, [filteredDispersiones, t, refetchDispersiones]);
 
   // Handle view extracto
   const handleViewExtracto = useCallback((dispersion: Dispersion) => {
@@ -521,7 +543,7 @@ function DispersionesContent() {
               <DispersionTable
                 dispersiones={paginatedDispersiones}
                 onViewDetail={handleDispersionClick}
-                onProcess={handleProcessDispersion}
+                onProcess={handleAccionDeFila}
                 onDownloadExtracto={handleDownloadExtracto}
                 showSummary
               />
@@ -534,7 +556,7 @@ function DispersionesContent() {
                     onViewDetail={handleDispersionClick}
                     onProcess={
                       dispersion.status === 'pending'
-                        ? () => handleProcessDispersion(dispersion)
+                        ? () => handleAccionDeFila(dispersion)
                         : undefined
                     }
                   />
@@ -591,6 +613,7 @@ function DispersionesContent() {
         isOpen={isDetailOpen}
         onClose={handleDetailClose}
         dispersion={selectedDispersion}
+        onApprove={handleApproveDispersion}
         onProcess={handleProcessDispersion}
         onViewExtracto={handleViewExtracto}
         onRetry={handleRetryDispersion}

@@ -54,7 +54,11 @@ interface RecordatorioConfigProps {
   isOpen: boolean;
   onClose: () => void;
   config: RecordatorioConfigData;
-  onSave: (config: RecordatorioConfigData) => void;
+  /**
+   * Guarda de verdad. Devuelve la promesa del back: el cajón NO anuncia
+   * «Configuración guardada» hasta que responde, y si falla lo dice.
+   */
+  onSave: (config: RecordatorioConfigData) => Promise<void> | void;
 }
 
 // Message template previews (these contain dynamic placeholders, not translatable)
@@ -265,23 +269,38 @@ export function RecordatorioConfig({
     localConfig.daysAfter.length > 0 &&
     localConfig.channels.length > 0;
 
-  // Handle save
+  /**
+   * Guardar.
+   *
+   * Antes esto era `setTimeout(500)` + `onSave(localConfig)` + un
+   * `toast.success('Configuración guardada')`, y `onSave` en la página era un
+   * `setState` a secas: no había ni un `fetch`. Los días vivían en
+   * `agency.reminderDaysBefore/After` y se recargaban al volver a entrar, así
+   * que lo editado se perdía y el back seguía mandando con lo viejo.
+   *
+   * Ahora el guardado es real y el cartel sale DESPUÉS de la respuesta.
+   */
   const handleSave = async () => {
     if (!isValid) return;
 
     setIsSaving(true);
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    onSave(localConfig);
-
-    toast.success(t('inmobiliaria.cobros.toasts.configSaved'), {
-      description: t('inmobiliaria.cobros.toasts.configSavedDesc'),
-    });
-
-    setIsSaving(false);
-    onClose();
+    try {
+      await onSave(localConfig);
+      toast.success(t('inmobiliaria.cobros.toasts.configSaved'), {
+        description: t('inmobiliaria.cobros.toasts.configSavedDesc'),
+      });
+      onClose();
+    } catch (error) {
+      toast.error(
+        t('inmobiliaria.cobros.recordatorioConfig.guardarError'),
+        {
+          description:
+            error instanceof Error ? error.message : String(error),
+        },
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -369,6 +388,12 @@ export function RecordatorioConfig({
                 {t('inmobiliaria.cobros.recordatorioConfig.selectAtLeastOneChannel')}
               </p>
             )}
+            {/* El back guarda los DÍAS (`agency.reminderDaysBefore/After`) y no
+                tiene columna para los canales. Decirlo es preferible a que el
+                cartel de «guardado» abarque algo que no se guardó. */}
+            <p className="text-[11px] text-muted-foreground">
+              {t('inmobiliaria.cobros.recordatorioConfig.canalesNoSeGuardan')}
+            </p>
           </motion.section>
 
           {/* Message Templates Section */}

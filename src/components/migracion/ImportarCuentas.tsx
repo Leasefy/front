@@ -170,7 +170,7 @@ export function ImportarCuentas({
       setError(
         // Un hecho del back, no un consuelo: `importar` es idempotente — lo
         // que ya entró sale como «ya existe» la segunda vez.
-        `${mensajeDeContabilidad(e, "No pudimos importar el plan.")} Podés importar de nuevo tranquilo: las cuentas que ya entraron no se duplican.`,
+        `${mensajeDeContabilidad(e, "No pudimos importar el plan.")} Puedes importar de nuevo tranquilo: las cuentas que ya entraron no se duplican.`,
       );
     } finally {
       setCargando(false);
@@ -331,7 +331,7 @@ export function ImportarCuentas({
         <FileArrowUp className="h-8 w-8 text-fg-muted" />
         <div>
           <p className="text-sm font-medium text-fg">
-            {nombreDeArchivo || "Arrastrá el archivo o hacé clic para elegirlo"}
+            {nombreDeArchivo || "Arrastra el archivo o haz clic para elegirlo"}
           </p>
           <p className="text-xs text-fg-subtle">
             Excel o CSV. Nada se crea todavía.
@@ -348,7 +348,7 @@ export function ImportarCuentas({
               <h3 className="font-medium text-fg">Qué es cada columna</h3>
               <p className="text-sm text-fg-muted">
                 {armadas.length} {armadas.length === 1 ? "cuenta" : "cuentas"}{" "}
-                en el archivo. Revisá lo que adivinamos.
+                en el archivo. Revisa lo que adivinamos.
               </p>
             </div>
             <Button
@@ -429,7 +429,7 @@ export function ImportarCuentas({
           {demasiadas ? (
             <Aviso tono="danger">
               Son {armadas.length} cuentas y una importación admite hasta{" "}
-              {MAX_CUENTAS_POR_IMPORTACION}. Partí el archivo y subilo en
+              {MAX_CUENTAS_POR_IMPORTACION}. Partí el archivo y súbelo en
               tandas.
             </Aviso>
           ) : null}

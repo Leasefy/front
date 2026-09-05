@@ -137,8 +137,19 @@ function FirmarContratoContent() {
           </div>
           <div>
             <h2 className="text-xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-400">Contrato firmado</h2>
-            <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
-              El inquilino ya fue notificado para que firme digitalmente.
+            {/*
+              🔴 Acá decía «El inquilino ya fue notificado para que firme
+              digitalmente». Es imposible: en este flujo la inmobiliaria firma
+              ÚLTIMA. `signAsLandlord` (contracts.service.ts) rechaza con
+              «Tenant must sign first» si el inquilino no firmó antes, y al
+              pasar deja el contrato en SIGNED. O sea que cuando esta pantalla
+              aparece, el inquilino YA firmó y no hay nada que notificarle:
+              la pantalla anunciaba un paso que ya había ocurrido y dejaba a
+              quien firmó esperando una respuesta que no iba a llegar.
+            */}
+            <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1" data-testid="firmado-cierre">
+              Firmaron las dos partes. El contrato queda cerrado y el PDF final ya incluye
+              las dos firmas con su certificado.
             </p>
           </div>
           <Button
@@ -166,8 +177,10 @@ function FirmarContratoContent() {
           <CaretLeft className="w-4 h-4" /> Volver
         </Button>
         <h1 className="text-h2 text-fg">Firmar contrato</h1>
+        {/* La inmobiliaria firma ÚLTIMA (el back exige la firma del inquilino
+            antes), así que firmar acá no «envía» nada: cierra el contrato. */}
         <p className="text-sm text-muted-foreground mt-1 line-clamp-2 max-w-2xl">
-          Revisa el documento y firma digitalmente para enviarlo al inquilino.
+          El inquilino ya firmó. Revisá el documento y firmá para cerrar el contrato.
         </p>
       </div>
 

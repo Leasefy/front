@@ -11,9 +11,25 @@
  * barra de abajo, en cuatro tramos, se va llenando con el tiempo del que
  * está en pantalla: dice cuál va, que son cuatro, y cuándo cambia.
  *
- * 🔴 Copy de muestra. Las inmobiliarias y las personas son inventadas, para
- * ver la pieza en pantalla. Antes de producción van testimonios reales, con
- * el permiso de quien los dice; la forma no cambia, sólo la lista.
+ * 🔴 LA LISTA QUE SE MUESTRA ESTÁ VACÍA, Y ES A PROPÓSITO.
+ *
+ * Hasta acá esto pintaba cuatro testimonios inventados —«Mariana Restrepo,
+ * Gerente general, Portofino Inmobiliaria, Medellín»— bajo un título que
+ * afirmaba «Inmobiliarias que ya operan con Leasefy», en la pantalla de
+ * acceso, a la vista de cualquiera. Ninguna de esas inmobiliarias existe y
+ * ninguna de esas personas dijo eso. En Colombia eso es publicidad engañosa
+ * (Ley 1480 de 2011, Estatuto del Consumidor, arts. 29-30): no es un detalle
+ * de copy, es una afirmación falsa sobre clientes reales.
+ *
+ * El comentario que había —«copy de muestra, antes de producción van
+ * testimonios reales»— no protege de nada: un comentario no impide que la
+ * pantalla salga a producción, y de hecho ya estaba montada.
+ *
+ * Así que la pieza se queda —el diseño sirve y está probado— pero la lista que
+ * consume la app es `TESTIMONIOS`, y está vacía: sin testimonios el componente
+ * no pinta NADA. El día que haya frases reales con el permiso de quien las
+ * dijo, se llenan acá y vuelve sola. Los de muestra siguen abajo, con nombre
+ * de muestra, para poder mirar la pieza desde un test o un preview.
  */
 
 import { useEffect, useState } from 'react';
@@ -27,7 +43,16 @@ export interface Testimonio {
   cargo: string;
 }
 
-export const TESTIMONIOS: Testimonio[] = [
+/**
+ * Testimonios REALES. Vacío hasta que existan.
+ *
+ * Requisito para agregar uno: que la persona lo haya dicho y haya dado
+ * permiso escrito para publicarlo con su nombre y su inmobiliaria.
+ */
+export const TESTIMONIOS: Testimonio[] = [];
+
+/** Los inventados, sólo para ver la pieza. NUNCA se montan en la app. */
+export const TESTIMONIOS_DE_MUESTRA: Testimonio[] = [
   {
     agencia: 'Portofino Inmobiliaria',
     ciudad: 'Medellín',
@@ -75,16 +100,30 @@ export function iniciales(nombre: string): string {
     .join('');
 }
 
-export function TestimoniosFlotantes({ intervaloMs = INTERVALO_MS }: { intervaloMs?: number }) {
+export function TestimoniosFlotantes({
+  intervaloMs = INTERVALO_MS,
+  testimonios = TESTIMONIOS,
+}: {
+  intervaloMs?: number;
+  /** Se puede pasar la lista para mirar la pieza; por defecto, la real. */
+  testimonios?: Testimonio[];
+}) {
   const [indice, setIndice] = useState(0);
   const reducido = useReducedMotion();
+  const total = testimonios.length;
 
   useEffect(() => {
-    const id = setInterval(() => setIndice((n) => (n + 1) % TESTIMONIOS.length), intervaloMs);
+    if (total === 0) return;
+    const id = setInterval(() => setIndice((n) => (n + 1) % total), intervaloMs);
     return () => clearInterval(id);
-  }, [intervaloMs]);
+  }, [intervaloMs, total]);
 
-  const t = TESTIMONIOS[indice];
+  // Sin testimonios reales no hay nada que mostrar. El bloque entero —incluido
+  // el título «Inmobiliarias que ya operan con Leasefy»— desaparece: el título
+  // solo también es una afirmación.
+  if (total === 0) return null;
+
+  const t = testimonios[indice % total];
 
   return (
     <div
@@ -138,9 +177,9 @@ export function TestimoniosFlotantes({ intervaloMs = INTERVALO_MS }: { intervalo
             </span>
           </figcaption>
 
-          {/* Cuatro tramos; el que va se llena con el tiempo en pantalla. */}
+          {/* Un tramo por testimonio; el que va se llena con el tiempo en pantalla. */}
           <div className="mt-5 flex gap-1.5" aria-hidden="true">
-            {TESTIMONIOS.map((x, i) => (
+            {testimonios.map((x, i) => (
               <span key={x.agencia} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/20">
                 {i < indice && <span className="block h-full w-full bg-white/70" />}
                 {i === indice && (

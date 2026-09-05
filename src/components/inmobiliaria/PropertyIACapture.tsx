@@ -17,6 +17,16 @@ import { useI18n } from '@/lib/i18n';
 import { Spinner } from '@/components/ui/spinner';
 import { Button, Input, Textarea } from '@/components/ui';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -129,6 +139,7 @@ export function PropertyIACapture() {
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   // ── Review form ──
+  const [confirmarReextraccion, setConfirmarReextraccion] = useState(false);
   const [form, setForm] = useState<ReviewForm | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   // Tracks manual edits so re-extracting (which overwrites the form) can confirm first.
@@ -241,9 +252,18 @@ export function PropertyIACapture() {
       return;
     }
     // Re-extracting overwrites the review form; confirm if the user edited it.
-    if (form && formEditedRef.current && !window.confirm(t(k('confirmReextract')))) {
+    // The confirmation is an AlertDialog from the design system, never
+    // `window.confirm`: the browser dialog ignores the theme, breaks the focus
+    // ring of the panel and some browsers suppress it outright.
+    if (form && formEditedRef.current) {
+      setConfirmarReextraccion(true);
       return;
     }
+    await extraer();
+  };
+
+  const extraer = async () => {
+    if (!audioBlob) return;
     setStep('extracting');
     setErrorMsg(null);
     try {
@@ -651,6 +671,29 @@ export function PropertyIACapture() {
           {t(k('process'))}
         </Button>
       </div>
+
+      <AlertDialog
+        open={confirmarReextraccion}
+        onOpenChange={(abierto) => !abierto && setConfirmarReextraccion(false)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t(k('confirmReextractTitle'))}</AlertDialogTitle>
+            <AlertDialogDescription>{t(k('confirmReextract'))}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t(k('confirmReextractCancel'))}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmarReextraccion(false);
+                void extraer();
+              }}
+            >
+              {t(k('confirmReextractOk'))}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

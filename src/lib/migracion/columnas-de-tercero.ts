@@ -232,13 +232,35 @@ export function armarFila(
  *
  * El back rechaza reusarlo (409), así que la fecha va adentro: dos cargas de
  * propietarios el mismo día se distinguen por la hora. `@MaxLength(60)`.
+ *
+ * 🔴 La hora es la de BOGOTÁ, no la UTC. Con `toISOString()` una carga hecha a
+ * las 09:02 de la mañana se llamaba «propietarios-2026-09-05-1402» (auditoría
+ * 2026-09-05): el nombre existe justamente para que la persona reconozca su
+ * archivo, y una hora que no es la de su reloj no reconoce nada. Cerca de
+ * medianoche además cambiaba el DÍA.
+ *
+ * `Intl` y no un `-5` a mano: restar cinco horas es reimplementar una zona
+ * horaria, y es el mismo criterio de `src/lib/recaudo/meses.ts`.
  */
+const RELOJ_DE_BOGOTA = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Bogota',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
 export function nombreDeLoteSugerido(tipo: 'PROPIETARIO' | 'INQUILINO', ahora = new Date()): string {
   const base = tipo === 'PROPIETARIO' ? 'propietarios' : 'inquilinos';
-  const sello = ahora
-    .toISOString()
-    .slice(0, 16)
-    .replace('T', '-')
-    .replace(':', '');
+  const partes = new Map(
+    RELOJ_DE_BOGOTA.formatToParts(ahora).map((p) => [p.type, p.value] as const),
+  );
+  // `hour12: false` puede dar «24» a la medianoche en algunos motores.
+  const hora = partes.get('hour') === '24' ? '00' : (partes.get('hour') ?? '00');
+  const sello =
+    `${partes.get('year')}-${partes.get('month')}-${partes.get('day')}` +
+    `-${hora}${partes.get('minute')}`;
   return `${base}-${sello}`.slice(0, 60);
 }

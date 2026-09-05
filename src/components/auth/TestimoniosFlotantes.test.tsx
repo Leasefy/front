@@ -24,7 +24,12 @@ vi.mock('framer-motion', () => ({
   useReducedMotion: () => false,
 }))
 
-import { TestimoniosFlotantes, TESTIMONIOS, iniciales } from './TestimoniosFlotantes'
+import {
+  TestimoniosFlotantes,
+  TESTIMONIOS,
+  TESTIMONIOS_DE_MUESTRA,
+  iniciales,
+} from './TestimoniosFlotantes'
 
 let container: HTMLDivElement
 let root: Root
@@ -43,12 +48,31 @@ afterEach(() => {
 const agenciaEnPantalla = () => container.querySelector('[data-testid="testimonio-agencia"]')?.textContent ?? ''
 
 describe('TestimoniosFlotantes', () => {
-  it('son cuatro y empieza por Portofino', () => {
-    expect(TESTIMONIOS).toHaveLength(4)
+  /**
+   * 🔴 Lo que la app monta no puede ser una lista inventada.
+   *
+   * En la pantalla de acceso, a la vista de cualquiera, salían cuatro
+   * testimonios con nombre, cargo, inmobiliaria y ciudad —todos inventados—
+   * bajo el título «Inmobiliarias que ya operan con Leasefy». En Colombia eso
+   * es publicidad engañosa (Ley 1480 de 2011, arts. 29-30). El comentario que
+   * decía «copy de muestra» no impidió que estuviera montado.
+   */
+  it('sin testimonios reales no pinta NADA, ni siquiera el título', () => {
+    expect(TESTIMONIOS).toHaveLength(0)
     act(() => root.render(<TestimoniosFlotantes intervaloMs={1000} />))
+    expect(container.querySelector('[data-testid="testimonios"]')).toBeNull()
+    expect(container.textContent).not.toContain('ya operan con Leasefy')
+  })
+
+  it('con una lista de verdad sí se pinta (la pieza sigue entera)', () => {
+    act(() =>
+      root.render(
+        <TestimoniosFlotantes intervaloMs={1000} testimonios={TESTIMONIOS_DE_MUESTRA} />,
+      ),
+    )
     expect(agenciaEnPantalla()).toContain('Portofino')
-    expect(container.querySelector('blockquote')?.textContent).toContain(TESTIMONIOS[0].frase)
-    expect(container.querySelector('figcaption')?.textContent).toContain(TESTIMONIOS[0].nombre)
+    expect(container.querySelector('blockquote')?.textContent).toContain(TESTIMONIOS_DE_MUESTRA[0].frase)
+    expect(container.querySelector('figcaption')?.textContent).toContain(TESTIMONIOS_DE_MUESTRA[0].nombre)
   })
 
   it('las iniciales del monograma', () => {
@@ -58,11 +82,15 @@ describe('TestimoniosFlotantes', () => {
   })
 
   it('cada tantos segundos sale el siguiente, y después del cuarto vuelve el primero', () => {
-    act(() => root.render(<TestimoniosFlotantes intervaloMs={1000} />))
+    act(() =>
+      root.render(
+        <TestimoniosFlotantes intervaloMs={1000} testimonios={TESTIMONIOS_DE_MUESTRA} />,
+      ),
+    )
     act(() => { vi.advanceTimersByTime(1000) })
-    expect(agenciaEnPantalla()).toContain(TESTIMONIOS[1].agencia)
+    expect(agenciaEnPantalla()).toContain(TESTIMONIOS_DE_MUESTRA[1].agencia)
     act(() => { vi.advanceTimersByTime(2000) })
-    expect(agenciaEnPantalla()).toContain(TESTIMONIOS[3].agencia)
+    expect(agenciaEnPantalla()).toContain(TESTIMONIOS_DE_MUESTRA[3].agencia)
     act(() => { vi.advanceTimersByTime(1000) })
     expect(agenciaEnPantalla()).toContain('Portofino')
   })

@@ -1,5 +1,6 @@
 'use client'
 
+import { AvisoDatosDeEjemplo } from '@/components/estado/AvisoDatosDeEjemplo'
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -228,9 +229,11 @@ export default function RevisionesClient() {
           Decisiones autónomas tomadas por Laura, listas para confirmar, revertir o escalar.
         </p>
         {usingMock ? (
-          <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
-            Datos de demostración
-          </span>
+          <AvisoDatosDeEjemplo
+            className="mt-3"
+            queEsInventado="Las decisiones del agente, los propietarios a los que dice haber escrito y sus montos"
+            queFalta="El agente de Retención no está desplegado: el microservicio sólo monta el webhook de WhatsApp, no las rutas /api/agency/:id/retencion/*. Sin ellas, el cliente cae al mock de src/lib/data/mock-retencion.ts."
+          />
         ) : null}
       </header>
 

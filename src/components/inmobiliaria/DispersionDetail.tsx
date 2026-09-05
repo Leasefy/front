@@ -47,9 +47,18 @@ interface DispersionDetailProps {
   isOpen: boolean;
   onClose: () => void;
   dispersion: Dispersion | null;
-  onProcess?: (dispersion: Dispersion) => void;
+  /**
+   * Primer par de ojos: aprobar. Devuelve la promesa del back — el cajón NO
+   * festeja antes de que responda.
+   */
+  onApprove?: (dispersion: Dispersion) => Promise<void> | void;
+  /**
+   * Segundo par de ojos: anotar la referencia del giro YA hecho. El sistema no
+   * transfiere, así que la referencia es obligatoria y la escribe una persona.
+   */
+  onProcess?: (dispersion: Dispersion, transferReference: string) => Promise<void> | void;
   onViewExtracto?: (dispersion: Dispersion) => void;
-  onRetry?: (dispersion: Dispersion) => void;
+  onRetry?: (dispersion: Dispersion, transferReference: string) => Promise<void> | void;
 }
 
 // Status icons
@@ -227,11 +236,14 @@ export function DispersionDetail({
   isOpen,
   onClose,
   dispersion,
+  onApprove,
   onProcess,
   onViewExtracto,
   onRetry,
 }: DispersionDetailProps) {
   const [isProcessing, setIsProcessing] = React.useState(false);
+  const [referencia, setReferencia] = React.useState('');
+  const [errorDeReferencia, setErrorDeReferencia] = React.useState<string | null>(null);
   const [isDownloadingPDF, setIsDownloadingPDF] = React.useState(false);
   const { t, formatDate, formatCurrency } = useI18n();
   const { config } = useInmobiliariaConfig();
@@ -243,30 +255,58 @@ export function DispersionDetail({
     return propietarios.find((p) => p.id === dispersion.propietarioId) ?? null;
   }, [dispersion, propietarios]);
 
-  // Handle process dispersion
-  const handleProcess = async () => {
-    if (!dispersion || !onProcess) return;
-
+  /**
+   * Aprobar — el primer par de ojos.
+   *
+   * El cajón ya NO anuncia nada: el toast lo emite quien llama, DESPUÉS de que
+   * el back responde. Antes acá había un `setTimeout(1500)` y un
+   * `toast.success('Dispersión procesada')` disparado sin esperar respuesta,
+   * sobre una llamada que el back rechazaba con 400.
+   */
+  const handleApprove = async () => {
+    if (!dispersion || !onApprove) return;
     setIsProcessing(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    onProcess(dispersion);
-    toast.success(t('inmobiliaria.dispersiones.toasts.dispersionProcessed'), {
-      description: t('inmobiliaria.dispersiones.toasts.transferTo', { name: dispersion.propietarioName }),
-    });
-    setIsProcessing(false);
+    try {
+      await onApprove(dispersion);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  // Handle retry failed dispersion
+  /** Anotar la referencia del giro. Sin referencia el back responde 400. */
+  const handleProcess = async () => {
+    if (!dispersion || !onProcess) return;
+    const ref = referencia.trim();
+    if (!ref) {
+      setErrorDeReferencia(t('inmobiliaria.dispersiones.detailView.referenciaFalta'));
+      return;
+    }
+    setErrorDeReferencia(null);
+    setIsProcessing(true);
+    try {
+      await onProcess(dispersion, ref);
+      setReferencia('');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  /** Reintentar una fallida: mismo camino, misma referencia obligatoria. */
   const handleRetry = async () => {
     if (!dispersion || !onRetry) return;
-
+    const ref = referencia.trim();
+    if (!ref) {
+      setErrorDeReferencia(t('inmobiliaria.dispersiones.detailView.referenciaFalta'));
+      return;
+    }
+    setErrorDeReferencia(null);
     setIsProcessing(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    onRetry(dispersion);
-    toast.success(t('inmobiliaria.dispersiones.toasts.retryStarted'), {
-      description: t('inmobiliaria.dispersiones.toasts.processingFor', { name: dispersion.propietarioName }),
-    });
-    setIsProcessing(false);
+    try {
+      await onRetry(dispersion, ref);
+      setReferencia('');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // Handle download PDF
@@ -306,6 +346,9 @@ export function DispersionDetail({
   const isPending = dispersion.status === 'pending';
   const isFailed = dispersion.status === 'failed';
   const isCompleted = dispersion.status === 'completed';
+  /** Aprobada y esperando que OTRA persona anote la referencia del giro. */
+  const esperaReferencia = dispersion.status === 'processing';
+  const pideReferencia = esperaReferencia || isFailed;
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -619,6 +662,46 @@ export function DispersionDetail({
           transition={{ delay: 0.3 }}
           className="sticky bottom-0 p-6 border-t border-border bg-background space-y-3"
         >
+          {/* La referencia del giro: la escribe una persona, el sistema no
+              transfiere. Sin esto el back responde 400 y la pantalla festejaba
+              igual. */}
+          {pideReferencia && (onProcess || onRetry) && (
+            <div className="space-y-1.5">
+              <label
+                htmlFor="dispersion-referencia"
+                className="text-xs font-semibold text-foreground"
+              >
+                {t('inmobiliaria.dispersiones.detailView.referenciaLabel')}
+              </label>
+              <input
+                id="dispersion-referencia"
+                data-testid="dispersion-referencia"
+                value={referencia}
+                onChange={(e) => {
+                  setReferencia(e.target.value);
+                  if (errorDeReferencia) setErrorDeReferencia(null);
+                }}
+                placeholder={t('inmobiliaria.dispersiones.detailView.referenciaPlaceholder')}
+                className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                {t('inmobiliaria.dispersiones.detailView.referenciaAyuda')}
+              </p>
+              {errorDeReferencia && (
+                <p role="alert" className="text-[11px] text-danger">
+                  {errorDeReferencia}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Aprobada: falta que OTRA persona cargue la referencia. */}
+          {esperaReferencia && (
+            <p className="text-[11px] text-muted-foreground">
+              {t('inmobiliaria.dispersiones.detailView.esperandoSegundoOjo')}
+            </p>
+          )}
+
           <div className="flex gap-3">
             {/* View extracto button (secondary - left) */}
             {onViewExtracto && (
@@ -632,22 +715,45 @@ export function DispersionDetail({
               </Button>
             )}
 
-            {/* Process button (primary - right) */}
-            {isPending && onProcess && (
+            {/* Aprobar — primer par de ojos (pendiente → en espera de giro) */}
+            {isPending && onApprove && (
               <Button
                 className="flex-1 bg-primary hover:opacity-90 text-primary-fg"
-                onClick={handleProcess}
+                onClick={handleApprove}
                 disabled={isProcessing}
+                data-testid="dispersion-aprobar"
               >
                 {isProcessing ? (
                   <span className="flex items-center gap-2">
                     <Spinner size="sm" variant="current" />
-                    {t('inmobiliaria.dispersiones.detailView.processingAction')}
+                    {t('inmobiliaria.dispersiones.detailView.aprobando')}
                   </span>
                 ) : (
                   <>
                     <Lightning className="w-4 h-4 mr-2" weight="fill" />
-                    {t('inmobiliaria.dispersiones.detailView.processDispersion')}
+                    {t('inmobiliaria.dispersiones.detailView.aprobar')}
+                  </>
+                )}
+              </Button>
+            )}
+
+            {/* Marcar girada — segundo par de ojos, con referencia */}
+            {esperaReferencia && onProcess && (
+              <Button
+                className="flex-1 bg-primary hover:opacity-90 text-primary-fg"
+                onClick={handleProcess}
+                disabled={isProcessing}
+                data-testid="dispersion-marcar-girada"
+              >
+                {isProcessing ? (
+                  <span className="flex items-center gap-2">
+                    <Spinner size="sm" variant="current" />
+                    {t('inmobiliaria.dispersiones.detailView.marcando')}
+                  </span>
+                ) : (
+                  <>
+                    <Lightning className="w-4 h-4 mr-2" weight="fill" />
+                    {t('inmobiliaria.dispersiones.detailView.marcarGirada')}
                   </>
                 )}
               </Button>

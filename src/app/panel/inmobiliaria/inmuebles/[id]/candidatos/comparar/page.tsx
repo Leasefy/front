@@ -205,7 +205,7 @@ function CompararContent() {
 
 export default function CompararCandidatosPage() {
   return (
-    <PageGuard module="propiedades" action="view">
+    <PageGuard module="portafolio" action="view">
       <CompararContent />
     </PageGuard>
   )

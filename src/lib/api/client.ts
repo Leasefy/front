@@ -198,6 +198,20 @@ export class ApiError extends Error {
     message: string | string[],
     /** Optional machine-readable code forwarded by the backend (e.g. SESSION_SUPERSEDED). */
     public code?: string,
+    /**
+     * El cuerpo del error, entero y sin tocar.
+     *
+     * `message` y `code` no siempre alcanzan: hay 400 que traen la parte más
+     * valiosa de la respuesta en otras claves. El caso que obligó a esto es
+     * `CONTRATO_NO_VALIDO` (`/inmobiliaria/contratos/plantilla/generar`), que
+     * manda un `motivos[]` donde cada entrada dice QUÉ cláusula es ilegal y
+     * POR QUÉ artículo — y eso se perdía acá, dejando a la pantalla con un
+     * párrafo concatenado en vez de la lista que un abogado va a leer.
+     *
+     * Va guardado y no interpretado: quien llama sabe qué forma espera y lo
+     * lee con su propio type guard. Ver `contratos-plantilla.service.ts`.
+     */
+    public detalle?: Record<string, unknown>,
   ) {
     super(Array.isArray(message) ? message.join(' · ') : message)
     this.name = 'ApiError'
@@ -328,7 +342,14 @@ async function request<T>(
     // the same, so a caller can branch on a machine-readable code instead of
     // pattern-matching a human `.message` string.
     const code = typeof errorBody.code === 'string' ? errorBody.code : undefined
-    throw new ApiError(res.status, errorBody.message || `Error ${res.status}`, code)
+    throw new ApiError(
+      res.status,
+      errorBody.message || `Error ${res.status}`,
+      code,
+      // El cuerpo entero, para lo que `message` y `code` no alcanzan a decir
+      // (`motivos[]`, `etiquetasFaltantes[]`, …). Ver `ApiError.detalle`.
+      errorBody as Record<string, unknown>,
+    )
   }
 
   /*

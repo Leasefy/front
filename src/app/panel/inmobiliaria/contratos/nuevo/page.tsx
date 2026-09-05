@@ -10,6 +10,8 @@ import {
   WarningCircle,
   CheckCircle,
   Info,
+  Scales,
+  Sparkle,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -54,6 +56,12 @@ import {
   terminosDeCobro,
   validarDiasDePlazo,
 } from '@/lib/contratos/terminos-de-cobro';
+import { ArmarContratoDesdePlantilla } from '@/components/contratos/plantilla/ArmarContratoDesdePlantilla';
+import { useContratoDesdePlantilla } from '@/lib/contratos/useContratoDesdePlantilla';
+import type {
+  BorradorDeContrato,
+  UsoDelInmueble,
+} from '@/lib/api/contratos-plantilla.service';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -100,6 +108,18 @@ function NuevoContratoContent() {
   const actions = useContractActions();
   const [partes, setPartes] = useState<PartesManuales>(PARTES_VACIAS);
   const [inmuebleElegido, setInmuebleElegido] = useState<string | null>(null);
+  /*
+   * El mandato del inmueble elegido a mano. De ahí sale el PROPIETARIO, que es
+   * quien firma como arrendador: con sólo el `propertyId` el backend lo busca
+   * igual, pero mandarlo cuando se lo tiene evita esa segunda consulta y deja
+   * dicho de qué mandato salió el contrato.
+   */
+  const [consignacionElegida, setConsignacionElegida] = useState<string | null>(null);
+  /*
+   * Vivienda o comercial. Vacío = que lo decida el backend por el tipo de
+   * inmueble; sólo se pregunta cuando responde que no puede (`USO_INDETERMINADO`).
+   */
+  const [uso, setUso] = useState<UsoDelInmueble | ''>('');
   // Los «falta esto» del bloque manual recién después de tocarlo: una pantalla
   // que abre en rojo antes de que la persona haga nada regaña por adelantado.
   const [partesTocadas, setPartesTocadas] = useState(false);
@@ -228,11 +248,65 @@ function NuevoContratoContent() {
     onPickFile(e.dataTransfer.files[0] ?? null);
   }, [onPickFile]);
 
+  /*
+   * El contrato que todavía no existe, tal como lo ve el backend.
+   *
+   * Se arma con los MISMOS valores del formulario de abajo —canon, plazo, día
+   * de pago— y no con una copia aparte: el PDF que se genera y la fila que se
+   * crea tienen que decir lo mismo. El hook vuelve a preparar cuando esto
+   * cambia, y marca como viejo cualquier PDF armado antes del cambio.
+   */
+  const borrador = useMemo<BorradorDeContrato>(() => {
+    const canon = Number(form.monthlyRent);
+    const dia = Number(form.paymentDay);
+    const inquilino = esManual && partes.inquilino.modo === 'nuevo' ? partes.inquilino : null;
+    return {
+      consignacionId: consignacionElegida ?? undefined,
+      propertyId: (esManual ? partes.propertyId : property?.id) || undefined,
+      uso: uso || undefined,
+      arrendatarioNombre: inquilino?.nombre.trim() || application?.tenantName || undefined,
+      arrendatarioDocumento: inquilino?.documento.trim() || undefined,
+      arrendatarioEmail: inquilino?.correo.trim() || undefined,
+      arrendatarioTelefono: inquilino?.telefono.trim() || undefined,
+      canonMensual: Number.isFinite(canon) && canon > 0 ? canon : undefined,
+      diaDePago: Number.isFinite(dia) && dia >= 1 && dia <= 31 ? dia : undefined,
+      fechaInicio: form.startDate || undefined,
+      fechaFin: form.endDate || undefined,
+    };
+  }, [
+    form.monthlyRent,
+    form.paymentDay,
+    form.startDate,
+    form.endDate,
+    esManual,
+    partes,
+    property?.id,
+    application?.tenantName,
+    consignacionElegida,
+    uso,
+  ]);
+
+  const armadoPorElSistema = form.mode === 'template' || form.mode === 'generate';
+  // Con el PDF propio se prepara UNA vez, para saber si la tarjeta de IA se
+  // puede prender. Sólo dentro del panel se vuelve a preguntar en cada cambio.
+  const plantilla = useContratoDesdePlantilla(borrador, { activo: armadoPorElSistema });
+
   // Validation
   const validation = useMemo(() => {
     const errors: Record<string, string> = {};
     if (form.mode === 'upload' && !form.pdfFile) {
       errors.pdfFile = 'Subí el PDF del contrato.';
+    }
+    /*
+     * 🔴 Con el PDF armado por el sistema, «no hay contrato» y «el contrato
+     * quedó viejo» bloquean igual: crear la fila con un PDF que dice otro canon
+     * sería un documento firmado que no coincide con la cuenta.
+     */
+    if (armadoPorElSistema && !plantilla.generado) {
+      errors.contratoArmado = 'Armá el contrato antes de crearlo.';
+    }
+    if (armadoPorElSistema && plantilla.generadoQuedoViejo) {
+      errors.contratoArmado = 'Volvé a armar el contrato: cambiaste datos después de generarlo.';
     }
     if (!form.startDate) errors.startDate = 'Requerido';
     if (!form.endDate) errors.endDate = 'Requerido';
@@ -249,7 +323,14 @@ function NuevoContratoContent() {
     if (errorDePlazo) errors.diasDePlazo = errorDePlazo;
     if (esManual) Object.assign(errors, validarPartes(partes));
     return errors;
-  }, [form, esManual, partes]);
+  }, [
+    form,
+    esManual,
+    partes,
+    armadoPorElSistema,
+    plantilla.generado,
+    plantilla.generadoQuedoViejo,
+  ]);
 
   // El respaldo es opcional —hay arriendos con codeudor y sin póliza— pero si
   // se empieza a llenar tiene que quedar completo: una aseguradora sin número
@@ -283,6 +364,22 @@ function NuevoContratoContent() {
         }
         uploadedPdfPath = uploaded.uploadedPdfPath;
         contractOrigin = 'UPLOADED_PDF';
+      }
+
+      /*
+       * El contrato armado desde la plantilla legal entra por la MISMA puerta
+       * que un PDF subido a mano: `generar` devuelve un `uploadedPdfPath` con
+       * la convención de `POST /contracts/upload-pdf`, así que de acá para
+       * abajo no hay ninguna rama nueva. Lo único que cambia es quién produjo
+       * el archivo.
+       */
+      if (armadoPorElSistema) {
+        if (!plantilla.generado || plantilla.generadoQuedoViejo) {
+          setSubmitError('Armá el contrato antes de crearlo.');
+          return;
+        }
+        uploadedPdfPath = plantilla.generado.uploadedPdfPath;
+        contractOrigin = plantilla.generado.contractOrigin;
       }
 
       const terminos = {
@@ -432,6 +529,9 @@ function NuevoContratoContent() {
             errores={partesTocadas ? validation : {}}
             onInmuebleElegido={(c) => {
               setInmuebleElegido(c.propertyTitle);
+              // El mandato, para que el arrendador del contrato salga del
+              // propietario que lo firmó y no haya que buscarlo otra vez.
+              setConsignacionElegida(c.id);
               // El canon del mandato, si lo hay: una tecla menos y un número
               // que no se contradice con el de la consignación.
               if (c.monthlyRent != null && c.monthlyRent > 0) {
@@ -453,23 +553,66 @@ function NuevoContratoContent() {
               icon={UploadSimple}
             />
             <ModeOption
-              active={false}
-              disabled
+              active={form.mode === 'template'}
+              onClick={() => updateForm('mode', 'template')}
               title="Usar plantilla"
-              desc="Plantillas prediseñadas de Leasefy."
-              icon={FileText}
-              badge="Próximamente"
+              desc="El contrato de ley, con las cláusulas opcionales que elijas."
+              icon={Scales}
             />
+            {/* 🔴 «Generar con IA» sólo se prende cuando el backend dice que
+                está configurada (`iaDisponible`). Mientras no lo sepamos, o
+                cuando dice que no, la tarjeta explica por qué — no promete un
+                «próximamente» que nadie va a cumplir. */}
             <ModeOption
-              active={false}
-              disabled
+              active={form.mode === 'generate'}
+              disabled={plantilla.iaDisponible !== true}
+              onClick={() => updateForm('mode', 'generate')}
               title="Generar con IA"
-              desc="Generación automática según el perfil."
-              icon={FileText}
-              badge="Próximamente"
+              desc={
+                plantilla.iaDisponible === true
+                  ? 'Contás qué querés pactar y el asistente propone las cláusulas.'
+                  : plantilla.iaDisponible === false
+                    ? 'No está configurada en tu cuenta. Armalo con la plantilla.'
+                    : 'Comprobando si está disponible en tu cuenta…'
+              }
+              icon={Sparkle}
+              badge={plantilla.iaDisponible === false ? 'No disponible' : undefined}
             />
           </div>
+
+          {/* Vivienda o comercial. Sólo aparece cuando el backend dice que no lo
+              puede deducir del inmueble: de esa respuesta depende qué LEY rige
+              el contrato, así que no se elige por defecto. */}
+          {plantilla.usoIndeterminado && armadoPorElSistema && (
+            <div className="space-y-1.5" data-testid="nuevo-contrato-uso">
+              <label className="block text-xs font-medium text-fg" htmlFor="contrato-uso">
+                Uso del inmueble
+              </label>
+              <Select
+                value={uso || undefined}
+                onValueChange={(v) => setUso(v as UsoDelInmueble)}
+              >
+                <SelectTrigger id="contrato-uso" data-testid="contrato-uso">
+                  <SelectValue placeholder="Elegí vivienda o comercial" />
+                </SelectTrigger>
+                <SelectContent className="z-[400]">
+                  <SelectItem value="VIVIENDA">Vivienda urbana (Ley 820 de 2003)</SelectItem>
+                  <SelectItem value="COMERCIAL">
+                    Local comercial (Código de Comercio, arts. 518 a 524)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-caption text-fg-muted">{plantilla.usoIndeterminado}</p>
+            </div>
+          )}
         </section>
+
+        {armadoPorElSistema && (
+          <ArmarContratoDesdePlantilla
+            modo={form.mode === 'generate' ? 'generate' : 'template'}
+            estado={plantilla}
+          />
+        )}
 
         {/* 2) PDF upload */}
         {form.mode === 'upload' && (

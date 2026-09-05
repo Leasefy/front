@@ -66,3 +66,49 @@ export const DEPARTAMENTO_NOMBRES: readonly string[] = COLOMBIA_DEPARTAMENTOS.ma
 export function municipiosDe(departamento: string): readonly string[] {
   return COLOMBIA_DEPARTAMENTOS.find((d) => d.nombre === departamento)?.municipios ?? []
 }
+
+/**
+ * Una ciudad del país, con el o los departamentos donde existe ese nombre.
+ *
+ * Hay nombres repetidos entre departamentos —«Albania» está en La Guajira y en
+ * Caquetá, «Sabanalarga» en tres— y en un documento legal lo que se escribe es
+ * el nombre solo. Por eso la lista está deduplicada por nombre: el valor que se
+ * guarda es único, y los departamentos viven en la etiqueta para que quien
+ * elige sepa de cuál está hablando.
+ */
+export interface CiudadGeo {
+  /** Nombre DIVIPOLA. Es lo que termina escrito en el documento. */
+  ciudad: string
+  /** Todos los departamentos que tienen un municipio con ese nombre. */
+  departamentos: readonly string[]
+}
+
+/**
+ * Las 1.100+ ciudades del país, deduplicadas por nombre y ordenadas es-CO.
+ *
+ * Se deriva de `COLOMBIA_DEPARTAMENTOS` a propósito: una segunda lista escrita
+ * a mano garantiza que en seis meses dos pantallas ofrezcan ciudades distintas.
+ */
+export const CIUDADES_DE_COLOMBIA: readonly CiudadGeo[] = (() => {
+  const porNombre = new Map<string, string[]>()
+  for (const depto of COLOMBIA_DEPARTAMENTOS) {
+    for (const municipio of depto.municipios) {
+      const previos = porNombre.get(municipio)
+      if (previos) previos.push(depto.nombre)
+      else porNombre.set(municipio, [depto.nombre])
+    }
+  }
+  return [...porNombre.entries()]
+    .map(([ciudad, departamentos]) => ({ ciudad, departamentos }))
+    .sort((a, b) => a.ciudad.localeCompare(b.ciudad, "es-CO"))
+})()
+
+/**
+ * Cómo se lee una ciudad en el selector: «Envigado · Antioquia».
+ *
+ * El departamento va en la etiqueta y no en el valor porque el Combobox busca
+ * sólo por etiqueta: así escribir «Antioquia» filtra sus municipios.
+ */
+export function etiquetaDeCiudad(c: CiudadGeo): string {
+  return `${c.ciudad} · ${c.departamentos.join(", ")}`
+}

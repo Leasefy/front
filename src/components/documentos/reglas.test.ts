@@ -16,6 +16,7 @@ import {
   puedeGenerar,
   puedePreparar,
   queFaltaElegir,
+  esCampoDeCiudad,
 } from './reglas';
 
 const DOC: DocumentoGenerado = {
@@ -295,3 +296,24 @@ describe('formatos', () => {
     expect(parsearPorcentaje('cinco')).toBeNull();
   });
 });
+
+describe('esCampoDeCiudad', () => {
+  const campo = (nombre: string, tipo = 'texto') =>
+    ({ nombre, tipo }) as Parameters<typeof esCampoDeCiudad>[0]
+
+  it('reconoce el tipo que va a mandar el backend', () => {
+    expect(esCampoDeCiudad(campo('lugarDeFirma', 'ciudad'))).toBe(true)
+  })
+
+  it('mientras tanto lo reconoce por el nombre de la variable', () => {
+    expect(esCampoDeCiudad(campo('ciudad'))).toBe(true)
+    expect(esCampoDeCiudad(campo('ciudadDeFirma'))).toBe(true)
+    expect(esCampoDeCiudad(campo('municipio'))).toBe(true)
+  })
+
+  it('no se lleva por delante campos que no son ciudad', () => {
+    for (const n of ['direccion', 'canalDeNotificacion', 'porcentajeIncremento', 'fechaDeVigencia']) {
+      expect(esCampoDeCiudad(campo(n))).toBe(false)
+    }
+  })
+})

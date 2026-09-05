@@ -364,4 +364,144 @@ describe('GenerarDocumentoDialog', () => {
 
     expect(q('[data-testid="doc-error"]')!.textContent).toContain('Garantía del contrato')
   })
+
+  // ── Ciudad ────────────────────────────────────────────────────────────────
+  // Era un input de texto libre: cada quien escribía «bogota», «Bogotá D.C.» o
+  // «BOGOTA» y el mismo documento legal salía distinto según quién lo generara.
+
+  const PREPARACION_CON_CIUDAD = {
+    ...PREPARACION_CARTA,
+    campos: [
+      {
+        nombre: 'ciudad',
+        etiqueta: 'Ciudad',
+        tipo: 'texto',
+        requerida: true,
+        valor: '',
+      },
+    ],
+    incremento: null,
+  }
+
+  it('la ciudad se elige de la lista de Colombia, no se escribe a mano', async () => {
+    api.preparar.mockResolvedValue(PREPARACION_CON_CIUDAD)
+    await abrir()
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'CARTA_INCREMENTO'))
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-contrato"]')!, 'c-1'))
+
+    const campo = q<HTMLElement>('[data-testid="doc-campo-ciudad"]')!
+    expect(campo).not.toBeNull()
+    // Lo que muerde: si vuelve a ser un <input>, esto falla.
+    expect(campo.tagName).toBe('SELECT')
+
+    const valores = [...(campo as HTMLSelectElement).options].map((o) => o.value)
+    expect(valores).toContain('Medellín')
+    expect(valores).toContain('Bogotá D.C.')
+    expect(valores).toContain('Envigado')
+    // Y son TODAS, no las seis de siempre.
+    expect(valores.length).toBeGreaterThan(1000)
+  })
+
+  it('la ciudad elegida es la que viaja al backend', async () => {
+    api.preparar.mockResolvedValue(PREPARACION_CON_CIUDAD)
+    const creado = { id: 'd-9', name: 'Carta', status: 'DOC_DRAFT' }
+    api.generar.mockResolvedValue(creado)
+    await abrir()
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'CARTA_INCREMENTO'))
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-contrato"]')!, 'c-1'))
+
+    // Sin ciudad no se puede generar: es un campo requerido.
+    expect(q<HTMLButtonElement>('[data-testid="doc-generar"]')!.disabled).toBe(true)
+
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-campo-ciudad"]')!, 'Envigado'))
+    await act(async () => q<HTMLButtonElement>('[data-testid="doc-generar"]')!.click())
+
+    expect(api.generar).toHaveBeenCalledWith(
+      expect.objectContaining({ overrides: expect.objectContaining({ ciudad: 'Envigado' }) }),
+    )
+  })
+
+  it('la fecha de vigencia de una carta no se cuela en el siguiente documento', async () => {
+    // `fechaDeVigencia` sólo existe en la carta de incremento: es lo que fija
+    // el tope del art. 20. Si sobrevive al cierre, el próximo documento —un
+    // inventario, un acta— se prepara con un parámetro que no es suyo.
+    api.preparar.mockResolvedValue(PREPARACION_CARTA)
+    const onGenerado = vi.fn()
+    await act(async () => {
+      root.render(<GenerarDocumentoDialog open onOpenChange={vi.fn()} onGenerado={onGenerado} />)
+    })
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'CARTA_INCREMENTO'))
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-contrato"]')!, 'c-1'))
+    await act(async () =>
+      escribir(q<HTMLInputElement>('[data-testid="doc-campo-fechaDeVigencia"]')!, '2027-04-01'),
+    )
+    expect(api.preparar).toHaveBeenCalledWith(
+      expect.objectContaining({ fechaDeVigencia: '2027-04-01' }),
+    )
+
+    // Se cierra y se vuelve a abrir para otro documento.
+    await act(async () => {
+      root.render(
+        <GenerarDocumentoDialog open={false} onOpenChange={vi.fn()} onGenerado={onGenerado} />,
+      )
+    })
+    await act(async () => {
+      root.render(<GenerarDocumentoDialog open onOpenChange={vi.fn()} onGenerado={onGenerado} />)
+    })
+    api.preparar.mockClear()
+    api.preparar.mockResolvedValue({
+      ...PREPARACION_CARTA,
+      codigo: 'INVENTARIO',
+      contrato: null,
+      inmueble: { id: 'g-1', titulo: 'Casa Envigado', direccion: 'Cra 43' },
+      campos: [],
+      incremento: null,
+    })
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'INVENTARIO'))
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-inmueble"]')!, 'g-1'))
+
+    expect(api.preparar).toHaveBeenCalledWith({
+      codigo: 'INVENTARIO',
+      contractId: undefined,
+      consignacionId: 'g-1',
+    })
+  })
+
+  it('el error del backend NO puede quedar dentro del cajón que scrollea', async () => {
+    // Esta es la causa de «le di generar y no pasó nada»: el acta de devolución
+    // tiene 13 campos, el error se pintaba al final del cajón scrolleable y el
+    // botón que lo dispara vive en el pie, fuera de ese cajón. Con el formulario
+    // scrolleado, el mensaje aparecía donde nadie estaba mirando.
+    api.generar.mockRejectedValue(
+      new Error('Faltan datos para generar el documento: Nombre del arrendatario.'),
+    )
+    await abrir()
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'CARTA_INCREMENTO'))
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-contrato"]')!, 'c-1'))
+    await act(async () => q<HTMLButtonElement>('[data-testid="doc-generar"]')!.click())
+
+    const error = q<HTMLElement>('[data-testid="doc-error"]')!
+    expect(error.textContent).toContain('Nombre del arrendatario')
+    // El cajón de los campos, el que puede quedar scrolleado lejos del pie.
+    expect(error.closest('[data-testid="doc-campos"]')).toBeNull()
+    // Y se anuncia, no sólo se pinta.
+    expect(error.getAttribute('role')).toBe('alert')
+  })
+
+  it('el «falta completar» tampoco se esconde en el scroll', async () => {
+    api.preparar.mockResolvedValue({
+      ...PREPARACION_CARTA,
+      campos: [
+        { nombre: 'llavesEntregadas', etiqueta: 'Llaves entregadas', tipo: 'parrafo', requerida: true, valor: '' },
+      ],
+      incremento: null,
+    })
+    await abrir()
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-tipo"]')!, 'CARTA_INCREMENTO'))
+    await act(async () => elegir(q<HTMLSelectElement>('[data-testid="doc-contrato"]')!, 'c-1'))
+
+    const faltantes = q<HTMLElement>('[data-testid="doc-faltantes"]')!
+    expect(faltantes.textContent).toContain('Llaves entregadas')
+    expect(faltantes.closest('[data-testid="doc-campos"]')).toBeNull()
+  })
 })

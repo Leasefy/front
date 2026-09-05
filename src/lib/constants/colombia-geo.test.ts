@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import {
+  CIUDADES_DE_COLOMBIA,
   COLOMBIA_DEPARTAMENTOS,
   DEPARTAMENTO_NOMBRES,
+  etiquetaDeCiudad,
   municipiosDe,
 } from './colombia-geo'
 
@@ -50,5 +52,38 @@ describe('colombia-geo dataset', () => {
     const collator = new Intl.Collator('es-CO', { sensitivity: 'base' })
     const sorted = [...DEPARTAMENTO_NOMBRES].sort((a, b) => collator.compare(a, b))
     expect(DEPARTAMENTO_NOMBRES).toEqual(sorted)
+  })
+})
+
+describe("CIUDADES_DE_COLOMBIA", () => {
+  it("no repite un nombre de ciudad: el valor del selector tiene que ser único", () => {
+    const nombres = CIUDADES_DE_COLOMBIA.map((c) => c.ciudad)
+    expect(new Set(nombres).size).toBe(nombres.length)
+  })
+
+  it("sale de COLOMBIA_DEPARTAMENTOS y no de una segunda lista escrita a mano", () => {
+    const delOrigen = new Set(COLOMBIA_DEPARTAMENTOS.flatMap((d) => d.municipios))
+    expect(CIUDADES_DE_COLOMBIA.length).toBe(delOrigen.size)
+    for (const c of CIUDADES_DE_COLOMBIA) expect(delOrigen.has(c.ciudad)).toBe(true)
+  })
+
+  it("guarda TODOS los departamentos de un nombre repetido", () => {
+    // Albania existe en La Guajira, Caquetá y Santander: una sola fila, tres deptos.
+    const albania = CIUDADES_DE_COLOMBIA.find((c) => c.ciudad === "Albania")!
+    expect(albania.departamentos.length).toBeGreaterThan(1)
+    expect(albania.departamentos).toContain("La Guajira")
+  })
+
+  it("trae las ciudades grandes y va ordenada es-CO", () => {
+    const nombres = CIUDADES_DE_COLOMBIA.map((c) => c.ciudad)
+    for (const ciudad of ["Bogotá D.C.", "Medellín", "Cali", "Barranquilla", "Envigado"]) {
+      expect(nombres).toContain(ciudad)
+    }
+    expect([...nombres].sort((a, b) => a.localeCompare(b, "es-CO"))).toEqual(nombres)
+  })
+
+  it("la etiqueta lleva el departamento, que es por donde el Combobox busca", () => {
+    const envigado = CIUDADES_DE_COLOMBIA.find((c) => c.ciudad === "Envigado")!
+    expect(etiquetaDeCiudad(envigado)).toBe("Envigado · Antioquia")
   })
 })

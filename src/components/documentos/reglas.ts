@@ -258,3 +258,24 @@ export const ORDEN_DE_TIPOS: CodigoDeDocumentoLegal[] = [
   'INVENTARIO',
   'CARTA_INCREMENTO',
 ];
+
+// ─── Ciudad ──────────────────────────────────────────────────────────────────
+
+/**
+ * Si un campo de la plantilla se llena eligiendo una ciudad de Colombia.
+ *
+ * «Ciudad» es una variable común de casi todas las plantillas legales —el lugar
+ * donde se firma— y hasta ahora era un input de texto libre: cada quien
+ * escribía «bogota», «Bogotá D.C.» o «BOGOTA» y el documento salía distinto.
+ *
+ * Se reconoce por dos caminos. El bueno es que el backend mande
+ * `tipo: 'ciudad'`, y ese día esta función ya lo entiende sin tocar nada. Hasta
+ * entonces se reconoce por el nombre de la variable, que es lo único que hay.
+ * El `tipo` se compara contra `string` porque `TipoDeCampo` todavía no declara
+ * `'ciudad'`: el tipo vive en `src/lib/api/documentos.service.ts` y agregarlo
+ * ahí es el cambio de una línea que acompaña al del backend.
+ */
+export function esCampoDeCiudad(campo: Pick<CampoDeDocumento, 'nombre' | 'tipo'>): boolean {
+  if ((campo.tipo as string) === 'ciudad') return true;
+  return /ciudad|municipio/i.test(campo.nombre);
+}

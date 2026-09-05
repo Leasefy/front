@@ -42,14 +42,28 @@ import {
   type PreparacionDeDocumento,
 } from '@/lib/api/documentos.service';
 import {
+  CIUDADES_DE_COLOMBIA,
+  etiquetaDeCiudad,
+} from '@/lib/constants/colombia-geo';
+import {
   ORDEN_DE_TIPOS,
   avisoDelIncremento,
   camposFaltantes,
+  esCampoDeCiudad,
   formatearPesos,
   puedeGenerar,
   puedePreparar,
   queFaltaElegir,
 } from './reglas';
+
+/**
+ * Las ciudades del país para el selector. Se arma una sola vez, fuera del
+ * componente: son 1.100 y no cambian entre renders.
+ */
+const OPCIONES_DE_CIUDAD: ComboboxOption[] = CIUDADES_DE_COLOMBIA.map((c) => ({
+  value: c.ciudad,
+  label: etiquetaDeCiudad(c),
+}));
 
 interface Props {
   open: boolean;
@@ -114,6 +128,10 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
     setPreparacion(null);
     setValores({});
     setError(null);
+    // `fechaDeVigencia` es SÓLO de la carta de incremento: es lo que fija el
+    // tope del art. 20. Si sobrevive al cierre, el próximo documento —un
+    // inventario, un acta— se prepara con un parámetro que no es suyo.
+    setVigenciaPedida('');
   }, [open]);
 
   const listo = puedePreparar(plantilla, { contractId, consignacionId });
@@ -269,7 +287,10 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[60vh] space-y-5 overflow-y-auto px-1 py-1">
+        <div
+          data-testid="doc-campos"
+          className="max-h-[60vh] space-y-5 overflow-y-auto px-1 py-1"
+        >
           {/* 1 — Tipo */}
           <div className="space-y-1.5">
             <Label htmlFor="doc-tipo">Documento</Label>
@@ -403,13 +424,31 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
                     const vacio = campo.requerida && valor.trim() === '';
                     return (
                       <div key={campo.nombre} className="space-y-1.5">
-                        <Label htmlFor={id}>
+                        {/* El Combobox del DS no acepta `id`, así que para la
+                            ciudad la etiqueta no puede apuntar a nada: un
+                            `htmlFor` colgando es peor que no tenerlo. */}
+                        <Label htmlFor={esCampoDeCiudad(campo) ? undefined : id}>
                           {campo.etiqueta}
                           {!campo.requerida && (
                             <span className="font-normal text-fg-muted"> (opcional)</span>
                           )}
                         </Label>
-                        {campo.tipo === 'parrafo' ? (
+                        {esCampoDeCiudad(campo) ? (
+                          /*
+                           * Ciudad no se escribe: se elige. Es la misma lista
+                           * DIVIPOLA que ya usa el onboarding, no una copia.
+                           */
+                          <Combobox
+                            data-testid={id}
+                            options={OPCIONES_DE_CIUDAD}
+                            value={valor || undefined}
+                            onChange={(v) => escribirCampo(campo.nombre, v ?? '')}
+                            placeholder="Elegí la ciudad"
+                            searchPlaceholder="Ciudad o departamento"
+                            invalid={vacio}
+                            contentClassName="z-[400]"
+                          />
+                        ) : campo.tipo === 'parrafo' ? (
                           <Textarea
                             id={id}
                             data-testid={id}
@@ -443,15 +482,34 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
             </div>
           )}
 
-          {error && (
-            <p
-              data-testid="doc-error"
-              className="rounded-lg bg-danger-soft px-4 py-3 text-body-sm text-danger"
-            >
-              {error}
-            </p>
-          )}
         </div>
+
+        {/*
+         * 🔴 El error y el «falta completar» viven FUERA del cajón que scrollea.
+         *
+         * Estaban adentro, al final de los campos. El acta de devolución tiene
+         * trece: con el formulario scrolleado hasta abajo, el botón «Generar»
+         * —que está en el pie, siempre a la vista— disparaba un 400 y el mensaje
+         * se pintaba en una parte del cajón que nadie estaba mirando. Desde
+         * afuera se veía exactamente lo que reportó Nico: «le di generar y no
+         * pasó nada». Acá, pegados al pie, aparecen justo encima del botón que
+         * los produjo. `role="alert"` para que un lector de pantalla los cante.
+         */}
+        {error && (
+          <p
+            data-testid="doc-error"
+            role="alert"
+            className="mx-1 rounded-lg bg-danger-soft px-4 py-3 text-body-sm text-danger"
+          >
+            {error}
+          </p>
+        )}
+
+        {faltantes.length > 0 && preparacion && (
+          <p data-testid="doc-faltantes" className="px-1 text-caption text-fg-muted">
+            Falta completar: {faltantes.map((c) => c.etiqueta).join(', ')}.
+          </p>
+        )}
 
         <DialogFooter>
           <Button variant="ghost" hideArrow onClick={() => onOpenChange(false)} disabled={generando}>
@@ -466,12 +524,6 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
             {generando ? 'Generando…' : 'Generar'}
           </Button>
         </DialogFooter>
-
-        {faltantes.length > 0 && preparacion && (
-          <p className="px-1 text-caption text-fg-muted">
-            Falta completar: {faltantes.map((c) => c.etiqueta).join(', ')}.
-          </p>
-        )}
       </DialogContent>
     </Dialog>
   );

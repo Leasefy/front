@@ -62,6 +62,25 @@ interface HeroKPIProps {
   onClick?: () => void;
 }
 
+/**
+ * El avance hacia una meta, o `null` cuando no se puede calcular.
+ *
+ * Con la meta en 0 —una inmobiliaria recién creada, sin nada medido todavía— la
+ * división daba `NaN`, y `Math.min(100, NaN)` sigue siendo `NaN`: la barra de
+ * progreso recibía un valor inválido y React lo gritaba una vez por tarjeta.
+ * Medido en la pantalla real: 32 errores de consola en una sola carga, más el
+ * porcentaje impreso como «NaN%» al lado.
+ *
+ * Sin meta no hay avance que mostrar: quien llama pinta una raya y no dibuja la
+ * barra. Cero por ciento sería mentira — no es que no se avanzó, es que todavía
+ * no hay contra qué medir.
+ */
+function porcentajeDeMeta(target: { current: number; value: number }): number | null {
+  if (!Number.isFinite(target.current) || !Number.isFinite(target.value)) return null;
+  if (target.value <= 0) return null;
+  return (target.current / target.value) * 100;
+}
+
 function HeroKPICard({
   icon: Icon,
   label,
@@ -182,16 +201,16 @@ function HeroKPICard({
         {target && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Target className="w-3.5 h-3.5" />
-            <span>{Math.round((target.current / target.value) * 100)}% {target.label}</span>
+            <span>{porcentajeDeMeta(target) === null ? '—' : `${Math.round(porcentajeDeMeta(target)!)}%`} {target.label}</span>
           </div>
         )}
       </div>
 
       {/* Target Progress Bar */}
-      {target && (
+      {target && porcentajeDeMeta(target) !== null && (
         <div className="mt-3">
           <Progress
-            value={Math.min(100, (target.current / target.value) * 100)}
+            value={Math.min(100, porcentajeDeMeta(target)!)}
             variant={accentColor === 'emerald' ? 'success' : accentColor === 'amber' ? 'warning' : 'default'}
             size="xs"
           />

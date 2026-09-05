@@ -113,10 +113,15 @@ function KPICard({
     : tendencia?.direction === 'down';
 
   // Calculate progress
+  // 🔴 Con una inmobiliaria recién creada TODO vale 0, y dividir por 0 da `NaN`:
+  // `Math.min(100, NaN)` sigue siendo `NaN`, así que la barra recibía un valor
+  // inválido y React lo gritaba una vez por tarjeta — 32 errores de consola en
+  // una sola carga de Reportes, con el porcentaje impreso como «NaN%» al lado.
+  // Sin denominador no hay avance que mostrar: `null` y quien llama no dibuja.
   const progress = kpi.target
     ? isInverseMetric
-      ? Math.min(100, (kpi.target / kpi.value) * 100)
-      : Math.min(100, (kpi.value / kpi.target) * 100)
+      ? (kpi.value > 0 ? Math.min(100, (kpi.target / kpi.value) * 100) : null)
+      : (kpi.target > 0 ? Math.min(100, (kpi.value / kpi.target) * 100) : null)
     : null;
 
   return (
@@ -172,12 +177,12 @@ function KPICard({
               'font-semibold font-mono tabular-nums',
               progress >= 100 ? 'text-success' : 'text-primary'
             )}>
-              {progress.toFixed(0)}%
+              {progress === null ? '—' : `${progress.toFixed(0)}%`}
             </span>
           </div>
           <Progress
-            value={Math.min(100, progress)}
-            variant={progress >= 100 ? 'success' : 'default'}
+            value={progress ?? 0}
+            variant={progress !== null && progress >= 100 ? 'success' : 'default'}
             size="sm"
           />
         </div>

@@ -316,7 +316,11 @@ function DonutChartViz({ chart }: { chart: AnalyticsChart }) {
 
   let currentAngle = -90;
   const segments = data.map((value, idx) => {
-    const percentage = (value / total) * 100;
+    // Con todo en 0 —una inmobiliaria recién creada— `total` es 0 y la división
+    // da `NaN`, que se propaga al ángulo y termina en las coordenadas del arco:
+    // el SVG recibe `NaN` y React lo grita. Sin total no hay reparto: cada
+    // porción vale 0 y el gráfico queda vacío, que es la verdad.
+    const percentage = total > 0 ? (value / total) * 100 : 0;
     const angle = (percentage / 100) * 360;
     const startAngle = currentAngle;
     currentAngle += angle;

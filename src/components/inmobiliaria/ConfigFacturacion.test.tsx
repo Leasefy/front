@@ -38,7 +38,7 @@ vi.mock('@/lib/hooks/useSubscription', () => ({
 }))
 
 import { ConfigFacturacion } from './ConfigFacturacion'
-import type { AgencyBilling } from '@/lib/types/inmobiliaria'
+import type { AgencyBilling, BillingInvoice } from '@/lib/types/inmobiliaria'
 import type { AgencyPlan } from '@/lib/types/subscription'
 
 function makeSub(overrides: Record<string, unknown> = {}) {
@@ -88,11 +88,22 @@ afterEach(async () => {
   container.remove()
 })
 
-async function render(billing: AgencyBilling | null) {
+async function render(
+  billing: AgencyBilling | null,
+  invoices: BillingInvoice[] = [],
+) {
   await act(async () => {
-    root.render(<ConfigFacturacion billing={billing} invoices={[]} />)
+    root.render(<ConfigFacturacion billing={billing} invoices={invoices} />)
   })
 }
+
+const FACTURA_PAGA: BillingInvoice = {
+  id: 'inv-1',
+  date: '2026-01-05T00:00:00Z',
+  amount: 250000,
+  status: 'paid',
+  pdfUrl: 'https://facturas.leasefy.co/inv-1.pdf',
+} as unknown as BillingInvoice
 
 describe('ConfigFacturacion — real subscription as source of truth', () => {
   it('renders the plan name + features resolved from the agency catalog', async () => {
@@ -139,5 +150,60 @@ describe('ConfigFacturacion — real subscription as source of truth', () => {
       upgradeBtn!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/upgrade')
+  })
+
+  /*
+   * ── Lo que decía y no hacía ────────────────────────────────────────────
+   *
+   * · «Descargar» tiraba `toast.success('Descargando factura X…')` y NO
+   *   descargaba nada, teniendo el PDF en la misma fila (`invoice.pdfUrl`).
+   * · «Actualizar» (medio de pago) tiraba DOS avisos —uno acá y otro en el
+   *   padre— los dos diciendo «Abriendo formulario de pago…», sin abrir uno.
+   */
+
+  it('🔴 «Descargar» abre el PDF de ESA factura, no un aviso', async () => {
+    const abrir = vi.fn()
+    const original = window.open
+    ;(window as unknown as { open: unknown }).open = abrir
+
+    try {
+      await render(BILLING, [FACTURA_PAGA])
+      const boton = Array.from(container.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('common.download'),
+      )
+      expect(boton).toBeTruthy()
+      await act(async () => {
+        boton!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      })
+      expect(abrir).toHaveBeenCalledWith(
+        'https://facturas.leasefy.co/inv-1.pdf',
+        '_blank',
+        'noopener,noreferrer',
+      )
+    } finally {
+      ;(window as unknown as { open: unknown }).open = original
+    }
+  })
+
+  it('🔴 «Actualizar» el medio de pago lleva a /upgrade, que es donde se toca de verdad', async () => {
+    const onUpdate = vi.fn()
+    await act(async () => {
+      root.render(
+        <ConfigFacturacion billing={BILLING} invoices={[]} onUpdatePaymentMethod={onUpdate} />,
+      )
+    })
+    const boton = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('inmobiliaria.config.billing.update'),
+    )
+    expect(boton).toBeTruthy()
+    await act(async () => {
+      boton!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/upgrade')
+  })
+
+  it('no repite el título de la sección: el marco de Configuración ya lo pone', async () => {
+    await render(BILLING)
+    expect(container.querySelectorAll('h2')).toHaveLength(0)
   })
 })

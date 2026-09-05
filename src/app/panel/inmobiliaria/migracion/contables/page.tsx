@@ -3,8 +3,11 @@
 /**
  * Paso 5 de la migración: los registros contables.
  *
- * Mismo guard que el paso 4: `module="configuracion"`, por `view`. Escribir
- * lo decide el back (ADMIN o CONTADOR).
+ * Mismo guard que el paso 4, y por la misma razón: el back protege
+ * `/inmobiliaria/contabilidad/{asientos,migracion}` con
+ * `ContabilidadEscrituraGuard` —`[ADMIN, CONTADOR]`—, no con
+ * `@RequirePermission('configuracion', …)`. Con `module="configuracion"` el
+ * front expulsaba al CONTADOR de una pantalla que el back sí le abre.
  */
 
 import Link from 'next/link';
@@ -13,11 +16,12 @@ import { Eyebrow } from '@leasefy/cadence';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { RegistrosContables } from '@/components/migracion/RegistrosContables';
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { useI18n } from '@/lib/i18n';
 
 export default function RegistrosContablesPage() {
   return (
-    <PageGuard module="configuracion">
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
       <ContenidoDeContables />
     </PageGuard>
   );

@@ -136,9 +136,18 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
         // la mandaba; acá faltaba (auditoría 2026-09-01).
         claveIdempotencia,
       });
-      toast.success(`Asiento n.º ${creado.numero} creado`, {
-        description: `${lineas.length} líneas por ${veredicto.totales.debitos.toLocaleString('es-CO')} COP.`,
-      });
+      // El mismo 201 sirve para «lo acabo de crear» y para «esta llave ya tenía
+      // asiento»: `yaExistia` es lo único que los distingue, y sin mirarlo el
+      // aviso celebra una creación que no ocurrió.
+      if (creado.yaExistia) {
+        toast.success(`El asiento n.º ${creado.numero} ya estaba registrado`, {
+          description: 'No se creó ninguno nuevo: este envío devolvió el que ya había quedado.',
+        });
+      } else {
+        toast.success(`Asiento n.º ${creado.numero} creado`, {
+          description: `${lineas.length} líneas por ${veredicto.totales.debitos.toLocaleString('es-CO')} COP.`,
+        });
+      }
       onCreado(creado);
       onCerrar();
     } catch (e) {

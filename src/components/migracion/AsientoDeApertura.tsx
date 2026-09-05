@@ -15,7 +15,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckCircle, Plus, Warning, X } from "@phosphor-icons/react";
+import { CheckCircle, Info, Plus, Warning, X } from "@phosphor-icons/react";
 import { CurrencyInput } from "@leasefy/cadence";
 
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ import {
   contabilidadApi,
   LARGO_MAXIMO_DE_DESCRIPCION,
   type AsientoContable,
+  type AsientoRegistrado,
   type CuentaPuc,
 } from "@/lib/api/contabilidad.service";
 import {
@@ -108,7 +109,7 @@ export function AsientoDeApertura({
   ]);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [creado, setCreado] = useState<AsientoContable | null>(null);
+  const [registrado, setRegistrado] = useState<AsientoRegistrado | null>(null);
   /*
    * La llave del intento: UNA por formulario, no por clic.
    *
@@ -117,8 +118,15 @@ export function AsientoDeApertura({
    * devuelve ESE asiento en vez de registrar la apertura dos veces. Por eso
    * se genera al montar y no dentro de `enviar()`: una llave nueva por clic
    * no protegería de nada.
+   *
+   * 🔴 «Un formulario» NO es «un montaje»: «Registrar otro asiento» limpia las
+   * filas sin desmontar nada, y ese es un formulario NUEVO. Con la llave vieja
+   * el back devolvía el asiento anterior —el segundo asiento no se escribía
+   * jamás— y la pantalla lo anunciaba como registrado. Por eso hay setter.
    */
-  const [claveIdempotencia] = useState(() => generarIdempotencyKey());
+  const [claveIdempotencia, setClaveIdempotencia] = useState(() =>
+    generarIdempotencyKey(),
+  );
 
   const ordenadas = useMemo(
     () => [...cuentas].sort((a, b) => a.codigo.localeCompare(b.codigo)),
@@ -155,7 +163,7 @@ export function AsientoDeApertura({
         movimientos: movimientosDeApertura(filas),
         claveIdempotencia,
       });
-      setCreado(asiento);
+      setRegistrado(asiento);
       onCreado(asiento);
     } catch (e) {
       if (e instanceof ApiError && e.status === 0) {
@@ -185,26 +193,50 @@ export function AsientoDeApertura({
     }
   };
 
-  if (creado) {
+  if (registrado) {
+    /*
+     * 🔴 La pantalla no afirma un hecho que no ocurrió.
+     *
+     * `yaExistia` viene del back y es lo único que distingue «lo acabo de
+     * registrar» de «la llave del intento ya tenía asiento y me devolvió ESE».
+     * Las dos respuestas son un 201 con el mismo cuerpo; sin este dato el
+     * cartel anunciaba un registro que nunca pasó.
+     */
+    const yaEstaba = registrado.yaExistia;
+    // El monto sale del asiento GUARDADO, no de las filas que hay en pantalla:
+    // en el caso «ya estaba» el formulario puede haber cambiado desde entonces.
+    const montoDelAsiento = registrado.movimientos.reduce(
+      (suma, m) => suma + m.debitoCop,
+      0,
+    );
     return (
       <section
         className="rounded-lg border border-border bg-surface p-6 shadow-sm"
         data-testid="apertura-creado"
+        data-ya-existia={yaEstaba ? "si" : "no"}
       >
         <div className="flex items-start gap-3">
-          <CheckCircle
-            className="mt-0.5 h-5 w-5 shrink-0 text-success"
-            weight="fill"
-          />
+          {yaEstaba ? (
+            <Info className="mt-0.5 h-5 w-5 shrink-0 text-fg-muted" />
+          ) : (
+            <CheckCircle
+              className="mt-0.5 h-5 w-5 shrink-0 text-success"
+              weight="fill"
+            />
+          )}
           <div>
             <h2 className="font-medium text-fg">
-              Asiento N.º {creado.numero} registrado con fecha{" "}
-              {creado.fecha.slice(0, 10)}
+              {yaEstaba
+                ? `Este asiento ya estaba registrado: es el N.º ${registrado.numero}`
+                : `Asiento N.º ${registrado.numero} registrado con fecha ${registrado.fecha.slice(0, 10)}`}
             </h2>
             <p className="mt-1 text-sm text-fg-muted">
-              {creado.movimientos.length} líneas por{" "}
-              {formatCurrency(totales.debitos)}. Los asientos no se editan: si
-              algo quedó mal, se reversa y se registra de nuevo.
+              {yaEstaba
+                ? `No se creó ninguno nuevo: este envío devolvió el que ya había quedado, ` +
+                  `con fecha ${registrado.fecha.slice(0, 10)} y ${registrado.movimientos.length} líneas por ` +
+                  `${formatCurrency(montoDelAsiento)}. Los saldos iniciales están contados una sola vez.`
+                : `${registrado.movimientos.length} líneas por ${formatCurrency(montoDelAsiento)}. ` +
+                  `Los asientos no se editan: si algo quedó mal, se reversa y se registra de nuevo.`}
             </p>
           </div>
         </div>
@@ -221,8 +253,11 @@ export function AsientoDeApertura({
             variant="outline"
             hideArrow
             onClick={() => {
-              setCreado(null);
+              setRegistrado(null);
               setFilas([filaVacia(), filaVacia()]);
+              // Formulario nuevo, llave nueva: con la vieja el back devolvería
+              // el asiento anterior y el siguiente no se escribiría nunca.
+              setClaveIdempotencia(generarIdempotencyKey());
             }}
           >
             Registrar otro asiento

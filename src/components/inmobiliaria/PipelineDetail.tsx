@@ -45,51 +45,64 @@ interface PipelineDetailProps {
   onStageChange?: (itemId: string, newStage: PipelineStage) => void;
 }
 
-// Mock timeline data generator
-function generateMockTimeline(item: PipelineItem) {
-  const stages: PipelineStage[] = [
-    'lead',
-    'visit_scheduled',
-    'visit_done',
-    'application',
-    'evaluation',
-    'approved',
-    'contract',
-    'handover',
-    'completed',
-    'lost',
-  ];
-
-  const currentStageIndex = stages.indexOf(item.stage);
-  if (currentStageIndex === -1) return [];
-
-  const timeline: {
-    stage: PipelineStage;
-    enteredAt: string;
-    daysSpent: number;
-    isCurrent: boolean;
+/**
+ * Los hitos de la etapa que EXISTEN de verdad.
+ *
+ * ── Lo que había acá antes ───────────────────────────────────────────────
+ * `generateMockTimeline()` pintaba la línea de tiempo completa —las diez
+ * etapas hasta la actual— y para cada una calculaba
+ * `Math.floor(Math.random() * 5) + 1` días. Sólo el último tramo salía del
+ * dato real (`item.daysInStage`). Todo lo anterior era un número al azar,
+ * dibujado con la misma tipografía, el mismo punto y la misma fecha que el
+ * único tramo verdadero: nadie mirando la pantalla podía distinguirlos, y
+ * sobre esos días se decide a quién apurar y a quién soltar.
+ *
+ * ── Por qué no se puede arreglar cableando ───────────────────────────────
+ * El historial no está escrito en ninguna parte. `PipelineItem` guarda dos
+ * escalares —`enteredStageAt` y `daysInStage`— que `PUT /pipeline/:id/stage`
+ * PISA en cada movimiento (`pipeline.service.ts`), y no hay tabla de eventos
+ * del pipeline ni endpoint de historial. Lo que ya pasó no se perdió al
+ * mostrarlo: se perdió al guardarlo.
+ *
+ * Así que la línea de tiempo muestra los dos momentos que sí están
+ * registrados —cuándo entró al pipeline y cuándo entró a la etapa de hoy— y
+ * dice de frente que del medio no hay registro.
+ */
+function hitosReales(item: PipelineItem) {
+  const hitos: {
+    clave: string;
+    /** La etapa, cuando el hito ES una etapa. */
+    stage?: PipelineStage;
+    fecha: string;
+    /** Días en la etapa. Sólo la actual los tiene medidos. */
+    dias?: number;
+    esActual: boolean;
   }[] = [];
 
-  const createdDate = new Date(item.createdAt);
-  let currentDate = new Date(createdDate);
-
-  const stagesToShow =
-    item.stage === 'lost' ? stages.slice(0, currentStageIndex + 1) : stages.slice(0, currentStageIndex + 1);
-
-  stagesToShow.forEach((stage, index) => {
-    const daysInStage = index === stagesToShow.length - 1 ? item.daysInStage : Math.floor(Math.random() * 5) + 1;
-
-    timeline.push({
-      stage,
-      enteredAt: currentDate.toISOString(),
-      daysSpent: daysInStage,
-      isCurrent: stage === item.stage,
+  // Entró a la etapa de hoy. `enteredStageAt` es el campo del back; si por
+  // alguna razón no viene, no lo inventamos con `createdAt` —serían dos
+  // fechas distintas contadas como la misma.
+  if (item.enteredStageAt) {
+    hitos.push({
+      clave: 'etapa-actual',
+      stage: item.stage,
+      fecha: item.enteredStageAt,
+      dias: item.daysInStage,
+      esActual: true,
     });
+  }
 
-    currentDate = new Date(currentDate.getTime() + daysInStage * 24 * 60 * 60 * 1000);
-  });
+  // Entró al pipeline. Se omite si cae el mismo día que la etapa actual:
+  // repetir la fecha sugiere dos eventos donde hay uno.
+  const mismoDia =
+    item.enteredStageAt &&
+    new Date(item.createdAt).toDateString() === new Date(item.enteredStageAt).toDateString();
 
-  return timeline.reverse();
+  if (item.createdAt && !mismoDia) {
+    hitos.push({ clave: 'ingreso', fecha: item.createdAt, esActual: false });
+  }
+
+  return hitos;
 }
 
 // Get next stage in the pipeline
@@ -153,7 +166,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
 
   const timeline = useMemo(() => {
     if (!item) return [];
-    return generateMockTimeline(item);
+    return hitosReales(item);
   }, [item]);
 
   const stageInfo = useMemo(() => {
@@ -410,21 +423,25 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
               <Timer className="w-3.5 h-3.5" />
               {t('inmobiliaria.pipeline.history')}
             </h4>
-            <div className="rounded-lg border border-border bg-card p-4">
+            <div className="rounded-lg border border-border bg-card p-4" data-testid="pipeline-historial">
               <div className="relative pl-5">
                 {/* Vertical line */}
                 <div className="absolute left-[5px] top-1.5 bottom-1.5 w-px bg-border" />
 
                 <div className="space-y-4">
-                  {timeline.map((entry) => {
-                    const entryStageInfo = getPipelineStageInfo(entry.stage);
+                  {timeline.map((hito) => {
+                    const infoDeLaEtapa = hito.stage ? getPipelineStageInfo(hito.stage) : null;
                     return (
-                      <div key={entry.stage} className="relative flex items-start gap-3">
+                      <div
+                        key={hito.clave}
+                        className="relative flex items-start gap-3"
+                        data-hito={hito.clave}
+                      >
                         {/* Dot */}
                         <div
                           className={cn(
                             'absolute -left-5 w-2.5 h-2.5 rounded-full mt-1.5 ring-2 ring-card',
-                            entry.isCurrent ? 'bg-primary' : 'bg-muted-foreground/30'
+                            hito.esActual ? 'bg-primary' : 'bg-muted-foreground/30'
                           )}
                         />
 
@@ -433,17 +450,30 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                             <span
                               className={cn(
                                 'text-sm font-medium',
-                                entry.isCurrent ? 'text-foreground' : 'text-muted-foreground'
+                                hito.esActual ? 'text-foreground' : 'text-muted-foreground'
                               )}
                             >
-                              {entryStageInfo?.labelEs}
+                              {infoDeLaEtapa?.labelEs ??
+                                t('inmobiliaria.pipeline.enteredPipeline')}
                             </span>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {entry.daysSpent} {entry.daysSpent === 1 ? t('inmobiliaria.pipeline.daySingular') : t('inmobiliaria.pipeline.days')} {t('inmobiliaria.pipeline.inThisStage')}
-                            </p>
+                            {/* Los días sólo se afirman donde están medidos: la
+                                etapa actual. En el ingreso al pipeline no hay
+                                nada que contar. */}
+                            {hito.dias !== undefined && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {hito.dias}{' '}
+                                {hito.dias === 1
+                                  ? t('inmobiliaria.pipeline.daySingular')
+                                  : t('inmobiliaria.pipeline.days')}{' '}
+                                {t('inmobiliaria.pipeline.inThisStage')}
+                              </p>
+                            )}
                           </div>
                           <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
-                            {formatDateI18n(new Date(entry.enteredAt), { day: 'numeric', month: 'short' })}
+                            {formatDateI18n(new Date(hito.fecha), {
+                              day: 'numeric',
+                              month: 'short',
+                            })}
                           </span>
                         </div>
                       </div>
@@ -451,6 +481,16 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                   })}
                 </div>
               </div>
+
+              {/* El hueco, dicho de frente. Antes esto se llenaba con
+                  `Math.random()`: diez etapas con sus días, todas menos una
+                  inventadas y ninguna marcada como tal. */}
+              <p
+                className="mt-4 pt-3 border-t border-border-faint text-xs leading-snug text-muted-foreground"
+                data-testid="pipeline-historial-sin-registro"
+              >
+                {t('inmobiliaria.pipeline.historyNotRecorded')}
+              </p>
             </div>
           </div>
 

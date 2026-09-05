@@ -1,9 +1,15 @@
 /**
  * config.test.ts — the mock-mode guard.
  *
- * Project rule: mock mode must NEVER be active in production (fabricated data must
- * not reach real users). Outside prod, mock defaults ON unless explicitly disabled.
- * This is the guard the mantenimiento hooks rely on (they gate mock via getApiConfig).
+ * Regla del producto: el simulado NUNCA corre en producción (los datos inventados
+ * no llegan a un usuario real) y fuera de producción es **opt-in explícito**.
+ *
+ * El test que muerde es el de la variable sin poner: mientras el default fue
+ * `!== 'false'`, desarrollo y staging servían datos inventados sin avisar, y quien
+ * probaba ahí creía estar mirando los suyos. Si alguien vuelve a dar vuelta el
+ * default, este archivo se pone rojo.
+ *
+ * Es la guarda de la que cuelgan los hooks de mantenimiento (gatean por getApiConfig).
  */
 
 import { describe, it, expect, afterEach } from 'vitest';
@@ -35,13 +41,30 @@ describe('getApiConfig — mock-mode guard', () => {
     expect(getApiConfig().useMockApi).toBe(false);
   });
 
-  it('defaults to mock ON outside production when the flag is unset', () => {
+  // 🔴 El que muerde: sin la variable puesta, datos REALES.
+  it('sirve datos reales fuera de producción cuando la variable no está puesta', () => {
     setEnv('development', undefined);
-    expect(getApiConfig().useMockApi).toBe(true);
+    expect(getApiConfig().useMockApi).toBe(false);
+    expect(isMockMode()).toBe(false);
   });
 
-  it('respects the explicit "false" opt-out outside production', () => {
-    setEnv('development', 'false');
+  it('lo mismo en staging: sin variable, nada de simulado', () => {
+    setEnv('staging', undefined);
     expect(getApiConfig().useMockApi).toBe(false);
   });
+
+  it('el simulado es opt-in explícito con "true"', () => {
+    setEnv('development', 'true');
+    expect(getApiConfig().useMockApi).toBe(true);
+    expect(isMockMode()).toBe(true);
+  });
+
+  // Sólo "true" prende el simulado: ningún otro valor cuenta como opt-in.
+  it.each(['false', 'False', '1', 'yes', ''])(
+    'no prende el simulado con el valor %o',
+    (valor) => {
+      setEnv('development', valor);
+      expect(getApiConfig().useMockApi).toBe(false);
+    },
+  );
 });

@@ -30,6 +30,7 @@ import { AGENCY_HOME_ROUTE } from '@/lib/auth/role-routes';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { usePostulacionesPendientes } from '@/lib/hooks/use-postulaciones-pendientes';
 import { MuroDeMigracion } from '@/components/migracion/MuroDeMigracion';
+import { AvisoModoSimulado } from '@/components/estado/AvisoModoSimulado';
 import { useMigracionesPendientes } from '@/lib/hooks/use-migraciones-pendientes';
 import { usePilotoBadge } from '@/lib/hooks/piloto/use-piloto-badge';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
@@ -310,6 +311,13 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
             porque señala el sidebar y el header, que viven en este layout.
             No pinta nada salvo que la preferencia esté encendida. */}
         <TourDelPanel />
+
+        {/* 🔴 Si el panel está sirviendo datos inventados, lo dice. Va acá, en
+            el layout, para cubrir las 156 rutas de una sola vez: un aviso que
+            hay que acordarse de poner pantalla por pantalla es un aviso que
+            falta justo donde importa. Con el simulado apagado —el caso normal,
+            y siempre en producción— no dibuja nada. */}
+        <AvisoModoSimulado />
       </MuroDeMigracion>
 
       {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de

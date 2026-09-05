@@ -2668,7 +2668,9 @@
       "allAgents": "All agents",
       "allProperties": "All properties",
       "to": "to",
-      "clear": "Clear"
+      "clear": "Clear",
+      "enteredPipeline": "Entered the pipeline",
+      "historyNotRecorded": "Earlier stages are not recorded: today only the current stage and when it started are stored. Once stage changes are logged, the full timeline will show up here."
     },
     "agente": {
       "workload": "Workload",
@@ -7984,61 +7986,24 @@
           },
           "historial": {
             "empty": {
-              "title": "No history yet",
-              "description": "Once the study records events, you'll see the full timeline here: from the request to the decision and the team's actions."
-            },
-            "ejemplo": {
-              "title": "Timeline example",
-              "solicitud": {
-                "title": "Request created",
-                "desc": "The candidate started the study process."
-              },
-              "documentos": {
-                "title": "Documents received",
-                "desc": "Identity and income supporting documents were uploaded."
-              },
-              "evaluacion": {
-                "title": "Study evaluated",
-                "desc": "The engine analyzed the information and calculated the score."
-              },
-              "decision": {
-                "title": "Decision recorded",
-                "desc": "The result and next actions were determined."
-              },
-              "pendiente": "— · —",
-              "nota": "Illustrative structure. Real events will appear with their date and author when available."
+              "title": "We can't show the history yet",
+              "description": "Study events are recorded against the candidate's application, and this file opens with the analysis identifier. The link between the two is missing. The engine's result carries no dates of its own either, so for now there is not a single timestamped event we can assert."
             }
           },
           "conversaciones": {
             "empty": {
-              "title": "No conversations yet",
-              "description": "Once you exchange messages with the candidate during the study, the conversation thread will appear here."
-            },
-            "ejemplo": {
-              "title": "Conversation example",
-              "autorAgencia": "Agency",
-              "autorCandidato": "Candidate",
-              "msg1": "Hi, to move forward with your study we need your employment certificate.",
-              "msg2": "Sure, I'll upload it today.",
-              "msg3": "Perfect, thank you. We'll let you know once we have the result.",
-              "nota": "Illustrative structure. Real messages will appear with their date and channel when available."
+              "title": "We can't show the thread yet",
+              "description": "Messages with the candidate are stored against their application, and this file opens with the analysis identifier. The link between the two is missing: until it exists, any conversation shown here would not necessarily be this person's."
             }
           },
           "codeudores": {
             "empty": {
-              "title": "No co-signers yet",
-              "description": "When this study includes one or more co-signers, you'll see their identity, income and document validation here."
+              "title": "Co-signers can't be registered yet",
+              "description": "Today the system only stores whether the application declared a co-signer, without their data: there is no identity, income or documents to show. Once the co-signer exists as a record of its own, their validation will appear here."
             },
             "recomendado": "This study would improve its viability with a co-signer. Once added, their validation will appear here.",
-            "ejemplo": {
-              "title": "Co-signer card example",
-              "nombre": "Co-signer name",
-              "documento": "ID — · — · —",
-              "identidad": "Identity",
-              "ingresos": "Income",
-              "documentos": "Documents",
-              "nota": "Illustrative structure. Each real co-signer will bring its own complete validation when available."
-            }
+            "porQue": "Detected income covers",
+            "porQueUmbral": "the rent, and the threshold we work with is"
           },
           "reporte": {
             "empty": {

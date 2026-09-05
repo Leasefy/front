@@ -262,7 +262,15 @@ export function ReporteFilters({
           </SelectContent>
         </Select>
 
-        {/* Zone Dropdown */}
+        {/* Zonas — sólo si hay zonas de verdad.
+
+            Antes la lista venía quemada en la página («Chapinero», «El
+            Poblado»…) y el desplegable siempre estaba. Ahora las zonas salen
+            del reporte de ocupación: mientras carga, o si la agencia no tiene
+            ninguna, el control no se dibuja. Un desplegable vacío que igual
+            dice «Todas las zonas» sugiere que las zonas existen y que las
+            mostramos todas. */}
+        {zones.length > 0 && (
         <Select
           value={filters.zone ?? 'all'}
           onValueChange={(v) => updateFilter('zone', v === 'all' ? null : v)}
@@ -278,6 +286,7 @@ export function ReporteFilters({
             ))}
           </SelectContent>
         </Select>
+        )}
 
         {/* Favorites Toggle */}
         <Chip

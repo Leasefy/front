@@ -28,6 +28,7 @@ import { SegmentedControl } from '@leasefy/cadence';
 import type { ReportDefinition, ReportId, ReportCategory } from '@/lib/types/inmobiliaria';
 import { REPORT_DEFINITIONS } from '@/lib/constants/inmobiliaria-data';
 import { comoSeBaja, sePuedeBajar, nombreDelArchivo, rutaDeExport, descargarBlob } from '@/lib/reportes/exportables';
+import { zonasDelReporte } from '@/lib/reportes/zonas';
 import {
   useCarteraReport,
   useOcupacionReport,
@@ -247,10 +248,32 @@ function ReportesContent() {
     };
   }, [reports, filters.favoritesOnly, favorites]);
 
-  // Get available zones (from mock data)
-  const zones = useMemo(() => {
-    return ['Zona Norte', 'Chapinero', 'Usaquen', 'El Poblado', 'Zona Centro', 'Suba'];
-  }, []);
+  /**
+   * Las zonas del desplegable, que ahora salen de un reporte de verdad.
+   *
+   * Acá había seis nombres escritos a mano —«Zona Norte», «Chapinero»,
+   * «Usaquen», «El Poblado», «Zona Centro», «Suba»— con el comentario «from
+   * mock data» al lado. En una pantalla de REPORTES, que es donde un dato se
+   * convierte en una decisión: la lista mezclaba barrios de Bogotá con uno de
+   * Medellín y no tenía nada que ver con la agencia que estuviera mirando.
+   * Una agencia de Cali abría su filtro de zonas y veía Chapinero.
+   *
+   * La fuente real es el reporte de ocupación, que el back agrupa por zona
+   * (`OcupacionReport.zones[].zone`) y esta misma página ya carga. Si todavía
+   * no llegó, o la agencia no tiene inmuebles agrupados, la lista queda vacía
+   * y el desplegable no se ofrece: mejor un control menos que seis zonas que
+   * no son suyas.
+   *
+   * ⚠️ Ojo con lo que este filtro NO hace: `filters.zone` se guarda pero
+   * `filteredReports` nunca lo aplica —filtra por categoría, favoritos y
+   * búsqueda—, y ningún endpoint de reportes acepta una zona como parámetro.
+   * Elegir una zona hoy no cambia nada. Eso es un hueco funcional aparte, y
+   * está reportado; acá sólo se arregla que los nombres sean reales.
+   */
+  const zones = useMemo(
+    () => zonasDelReporte(ocupacionReport.report),
+    [ocupacionReport.report],
+  );
 
   // Quick stats
   const stats = useMemo(() => {

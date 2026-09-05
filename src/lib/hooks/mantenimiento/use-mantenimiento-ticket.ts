@@ -72,7 +72,13 @@ export function useMantenimientoTicket(ticketId: string): UseMantenimientoTicket
     }
     const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
     if (!agentUrl) {
-      console.warn('[useMantenimientoTicket] NEXT_PUBLIC_AGENT_URL is not configured')
+    // Sin agente configurado no hay de dónde traer nada. Antes esto era un
+    // console.warn y `setIsLoading(false)`: la pantalla quedaba vacía sin decir
+    // por qué, y un vacío mudo se lee como «no tenés mantenimientos». Un error
+    // explícito manda a <FalloDeCarga>, que sí lo cuenta.
+      setError(
+        'No hay agente configurado (falta NEXT_PUBLIC_AGENT_URL), así que no se pudo traer nada. Esta pantalla está vacía porque no pudimos consultar, no porque no haya datos.',
+      )
       setIsLoading(false)
       return
     }

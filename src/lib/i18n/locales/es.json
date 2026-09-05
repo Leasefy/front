@@ -2707,7 +2707,9 @@
       "allAgents": "Todos los agentes",
       "allProperties": "Todas las propiedades",
       "to": "a",
-      "clear": "Limpiar"
+      "clear": "Limpiar",
+      "enteredPipeline": "Ingresó al pipeline",
+      "historyNotRecorded": "Del recorrido anterior no hay registro: hoy sólo se guarda la etapa actual y desde cuándo entró. Cuando se registren los cambios de etapa, la línea de tiempo completa aparece acá."
     },
     "agente": {
       "workload": "Carga de trabajo",
@@ -8023,61 +8025,24 @@
           },
           "historial": {
             "empty": {
-              "title": "Aún no hay historial",
-              "description": "Cuando el estudio registre eventos, verás aquí la línea de tiempo completa: desde la solicitud hasta la decisión y las acciones del equipo."
-            },
-            "ejemplo": {
-              "title": "Ejemplo de la línea de tiempo",
-              "solicitud": {
-                "title": "Solicitud creada",
-                "desc": "El candidato inició el proceso de estudio."
-              },
-              "documentos": {
-                "title": "Documentos recibidos",
-                "desc": "Se cargaron los soportes de identidad e ingresos."
-              },
-              "evaluacion": {
-                "title": "Estudio evaluado",
-                "desc": "El motor analizó la información y calculó el puntaje."
-              },
-              "decision": {
-                "title": "Decisión registrada",
-                "desc": "Se determinó el resultado y las próximas acciones."
-              },
-              "pendiente": "— · —",
-              "nota": "Estructura ilustrativa. Los eventos reales aparecerán con su fecha y autor cuando estén disponibles."
+              "title": "Todavía no podemos mostrar el historial",
+              "description": "Los eventos del estudio se registran contra la postulación del candidato, y esta ficha se abre con el identificador del análisis. Falta la conexión entre los dos. El resultado del motor tampoco trae fechas propias, así que por ahora no hay ni un solo evento con hora que podamos afirmar."
             }
           },
           "conversaciones": {
             "empty": {
-              "title": "Aún no hay conversaciones",
-              "description": "Cuando intercambies mensajes con el candidato durante el estudio, el hilo de la conversación aparecerá aquí."
-            },
-            "ejemplo": {
-              "title": "Ejemplo de la conversación",
-              "autorAgencia": "Inmobiliaria",
-              "autorCandidato": "Candidato",
-              "msg1": "Hola, para avanzar con tu estudio necesitamos tu certificado laboral.",
-              "msg2": "Claro, lo subo hoy mismo.",
-              "msg3": "Perfecto, gracias. Te avisamos cuando tengamos el resultado.",
-              "nota": "Estructura ilustrativa. Los mensajes reales aparecerán con su fecha y canal cuando estén disponibles."
+              "title": "Todavía no podemos mostrar el hilo",
+              "description": "Los mensajes con el candidato se guardan contra su postulación, y esta ficha se abre con el identificador del análisis. Falta la conexión entre los dos: hasta que exista, cualquier conversación que mostráramos acá no sería necesariamente la de esta persona."
             }
           },
           "codeudores": {
             "empty": {
-              "title": "Aún no hay codeudores",
-              "description": "Cuando este estudio incluya uno o más codeudores, verás aquí su validación de identidad, ingresos y documentos."
+              "title": "Todavía no se pueden registrar codeudores",
+              "description": "Hoy el sistema sólo guarda si la postulación declaró un codeudor, sin sus datos: no hay identidad, ingresos ni documentos que mostrar. Cuando el codeudor exista como ficha propia, su validación aparece acá."
             },
             "recomendado": "Este estudio mejoraría su viabilidad con un codeudor. Cuando se agregue, su validación aparecerá aquí.",
-            "ejemplo": {
-              "title": "Ejemplo de una ficha de codeudor",
-              "nombre": "Nombre del codeudor",
-              "documento": "C.C. — · — · —",
-              "identidad": "Identidad",
-              "ingresos": "Ingresos",
-              "documentos": "Documentos",
-              "nota": "Estructura ilustrativa. Cada codeudor real traerá su propia validación completa cuando esté disponible."
-            }
+            "porQue": "El ingreso detectado cubre",
+            "porQueUmbral": "el canon, y el umbral con el que trabajamos es"
           },
           "reporte": {
             "empty": {

@@ -14,6 +14,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
+import { SIN_MEDIR, anchoDeBarra, tasaMedida, textoDeTasa } from '@/lib/tasas';
 import type { DispersionSummary } from '@/lib/types/inmobiliaria';
 import { nombreDelMes } from '@/lib/utils/mes';
 
@@ -27,7 +28,8 @@ interface DispersionResumenProps {
 /**
  * Get completion rate color based on percentage - subtle version
  */
-function getProgressColor(rate: number): string {
+function getProgressColor(rate: number | null): string {
+  if (rate === null) return 'bg-muted-foreground/30';
   if (rate >= 90) return 'bg-foreground';
   if (rate >= 50) return 'bg-foreground/70';
   if (rate > 0) return 'bg-foreground/50';
@@ -83,9 +85,8 @@ export function DispersionResumen({
 }: DispersionResumenProps) {
   const { t, formatDate, formatCurrency } = useI18n();
   const totalDispersions = summary.dispersionsPending + summary.dispersionsCompleted + summary.dispersionsFailed;
-  const completionRate = totalDispersions > 0
-    ? (summary.dispersionsCompleted / totalDispersions) * 100
-    : 0;
+  // Sin una sola dispersión el avance no existe: `null`, no 0.
+  const completionRate = tasaMedida(summary.dispersionsCompleted, totalDispersions);
 
   // Format month for display
   // `new Date('2026-08-01')` es medianoche UTC: en Colombia retrocede al 31
@@ -160,10 +161,11 @@ export function DispersionResumen({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="text-2xl font-semibold text-foreground tabular-nums"
+                data-testid="dispersiones-avance"
               >
-                {completionRate.toFixed(0)}
+                {completionRate === null ? SIN_MEDIR : completionRate.toFixed(0)}
               </motion.span>
-              <span className="text-lg text-muted-foreground">%</span>
+              {completionRate !== null && <span className="text-lg text-muted-foreground">%</span>}
             </div>
           </div>
         </div>
@@ -174,7 +176,7 @@ export function DispersionResumen({
             <div className="h-1.5 rounded-full bg-muted overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
-                animate={{ width: `${Math.min(completionRate, 100)}%` }}
+                animate={{ width: anchoDeBarra(completionRate) }}
                 transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
                 className={cn('h-full rounded-full', getProgressColor(completionRate))}
               />
@@ -261,22 +263,24 @@ export function DispersionResumenCompact({
 }) {
   const { t, formatCurrency } = useI18n();
   const totalDispersions = summary.dispersionsPending + summary.dispersionsCompleted + summary.dispersionsFailed;
-  const completionRate = totalDispersions > 0
-    ? (summary.dispersionsCompleted / totalDispersions) * 100
-    : 0;
+  // Sin una sola dispersión el avance no existe: `null`, no 0.
+  const completionRate = tasaMedida(summary.dispersionsCompleted, totalDispersions);
 
   return (
     <div className={cn('p-4 rounded-lg border border-border bg-card', className)}>
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-foreground">{t('inmobiliaria.dispersiones.resumen.dispersionsLabel')}</span>
-        <span className="text-lg font-semibold text-foreground tabular-nums">
-          {completionRate.toFixed(0)}%
+        <span
+          className="text-lg font-semibold text-foreground tabular-nums"
+          data-testid="dispersiones-avance-compacto"
+        >
+          {textoDeTasa(completionRate, 0)}
         </span>
       </div>
       <div className="h-1.5 rounded-full bg-muted overflow-hidden mb-3">
         <div
           className={cn('h-full rounded-full transition-all duration-500', getProgressColor(completionRate))}
-          style={{ width: `${Math.min(completionRate, 100)}%` }}
+          style={{ width: anchoDeBarra(completionRate) }}
         />
       </div>
       <div className="flex items-center justify-between text-xs text-muted-foreground">

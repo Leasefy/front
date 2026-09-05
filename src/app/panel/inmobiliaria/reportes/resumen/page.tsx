@@ -34,6 +34,7 @@ import {
   useCobros,
   useMantenimientos,
 } from '@/lib/hooks/useInmobiliaria';
+import { SIN_MEDIR, anchoDeBarra, tasaMedida, textoDeTasa } from '@/lib/tasas';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
 
@@ -306,6 +307,25 @@ function ResumenDelNegocio() {
     totalAgents: 0, closedThisMonth: 0, avgDaysToClose: 0, totalPropietarios: 0, pendingDispersions: 0,
   };
 
+  /*
+   * El back manda `collectionRate` y `occupancyRate` ya en 0 cuando no hay
+   * denominador (su `expectedRevenue > 0 ? … : 0`), así que el número solo no
+   * alcanza para saber si se midió algo. El denominador SÍ viaja en el mismo
+   * payload: con él acá se rehace la cuenta y el «no se midió» queda en null.
+   * Sin esto, una inmobiliaria sin un inmueble leía «0.0% de ocupación».
+   */
+  const tasaDeRecaudo = tasaMedida(kpis.collectedRevenue, kpis.expectedRevenue);
+  const tasaDeOcupacion = tasaMedida(kpis.propertiesRented, kpis.totalProperties);
+
+  /*
+   * La tendencia es un % contra el mes anterior, y ese mes anterior no viaja.
+   * Pero se deduce: el back devuelve 0 sólo si el mes previo fue 0 (si hubiera
+   * sido > 0 con el actual en 0, la variación sería −100). Valor 0 y variación
+   * 0 ⇒ no hay contra qué comparar ⇒ no se pinta flecha.
+   */
+  const hayConQueComparar = (valor: number, variacion: number) =>
+    !(valor === 0 && variacion === 0);
+
   // Etiqueta del mes en curso (es-CO) para el resumen financiero.
   // Sólo la inicial en mayúscula: con `capitalize` de CSS salía «Septiembre De 2026».
   const mesCrudo = new Intl.DateTimeFormat('es-CO', {
@@ -386,8 +406,14 @@ function ResumenDelNegocio() {
         <KPICard
           title={t('inmobiliaria.dashboard.kpi.monthlyCollection')}
           value={formatCurrency(kpis.collectedRevenue)}
-          subtitle={t('inmobiliaria.dashboard.kpi.collectionRateLabel', { rate: kpis.collectionRate.toFixed(1) })}
-          trend={{ value: Math.abs(kpis.collectionTrend), isPositive: kpis.collectionTrend >= 0 }}
+          subtitle={t('inmobiliaria.dashboard.kpi.collectionRateLabel', {
+            rate: textoDeTasa(tasaDeRecaudo),
+          })}
+          trend={
+            hayConQueComparar(kpis.collectedRevenue, kpis.collectionTrend)
+              ? { value: Math.abs(kpis.collectionTrend), isPositive: kpis.collectionTrend >= 0 }
+              : undefined
+          }
           icon={CurrencyDollar}
           href="/panel/inmobiliaria/cobros"
           brandHero
@@ -403,12 +429,16 @@ function ResumenDelNegocio() {
           title={t('inmobiliaria.dashboard.kpi.commissions')}
           value={formatCurrency(kpis.totalCommissions)}
           subtitle={t('inmobiliaria.dashboard.kpi.commissionsGenerated')}
-          trend={{ value: Math.abs(kpis.commissionsTrend), isPositive: kpis.commissionsTrend >= 0 }}
+          trend={
+            hayConQueComparar(kpis.totalCommissions, kpis.commissionsTrend)
+              ? { value: Math.abs(kpis.commissionsTrend), isPositive: kpis.commissionsTrend >= 0 }
+              : undefined
+          }
           icon={Wallet}
         />
         <KPICard
           title={t('inmobiliaria.dashboard.kpi.occupancy')}
-          value={`${kpis.occupancyRate.toFixed(1)}%`}
+          value={textoDeTasa(tasaDeOcupacion)}
           subtitle={t('inmobiliaria.dashboard.kpi.occupancyOf', { rented: kpis.propertiesRented, total: kpis.totalProperties })}
           icon={House}
         />
@@ -499,7 +529,14 @@ function ResumenDelNegocio() {
             </div>
             <div className="flex items-center justify-between text-sm mt-2">
               <span className="text-fg-muted">{t('inmobiliaria.dashboard.team.avgDaysToClose')}</span>
-              <span className="font-semibold text-fg">{t('inmobiliaria.dashboard.team.days', { count: kpis.avgDaysToClose })}</span>
+              {/* Sin un solo cierre el promedio es 0 y se leía «0 días»: una
+                  inmobiliaria que cierra en el acto. Mismo criterio que
+                  AgenteMetrics, que ya escondía el dato sin cierres. */}
+              <span className="font-semibold text-fg" data-testid="resumen-dias-al-cierre">
+                {kpis.avgDaysToClose > 0
+                  ? t('inmobiliaria.dashboard.team.days', { count: kpis.avgDaysToClose })
+                  : SIN_MEDIR}
+              </span>
             </div>
           </div>
         </div>
@@ -614,13 +651,15 @@ function ResumenDelNegocio() {
         <div className="mt-6 pt-5 border-t border-neutral-100 dark:border-neutral-700">
           <div className="flex items-center justify-between text-sm mb-2">
             <MonoLabel>{t('inmobiliaria.dashboard.financial.collectionRate')}</MonoLabel>
-            <span className="font-heading font-semibold text-fg tabular-nums">{kpis.collectionRate.toFixed(1)}%</span>
+            <span className="font-heading font-semibold text-fg tabular-nums" data-testid="resumen-tasa-de-recaudo">
+              {textoDeTasa(tasaDeRecaudo)}
+            </span>
           </div>
           <div className="h-2 rounded-full bg-surface-muted overflow-hidden">
             <div
               className="h-full rounded-full bg-primary transition-all"
               // Topada al 100: con sobre-recaudo la barra se salía del riel.
-              style={{ width: `${Math.min(100, Math.max(0, kpis.collectionRate))}%` }}
+              style={{ width: anchoDeBarra(tasaDeRecaudo) }}
             />
           </div>
         </div>

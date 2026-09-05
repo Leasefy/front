@@ -12,7 +12,11 @@ export interface OccupancySummary {
   totalProperties: number;
   rented: number;
   vacant: number;
-  vacancyRate: number;
+  /**
+   * `null` cuando no hay denominador. Ver `src/lib/tasas.ts`: una tasa sobre
+   * cero casos no es «0 %», es una tasa que nadie midió.
+   */
+  vacancyRate: number | null;
   /**
    * Días promedio vacante. `null` cuando no se puede calcular: el back no
    * guarda desde cuándo está vacío un inmueble. Antes el adaptador ponía un
@@ -37,7 +41,8 @@ export interface OccupancyByZone {
   total: number;
   rented: number;
   vacant: number;
-  vacancyRate: number;
+  /** `null` para una zona sin inmuebles cargados. */
+  vacancyRate: number | null;
 }
 
 export interface OccupancyMonthlyTrend {
@@ -60,9 +65,18 @@ export interface CollectionsSummary {
   totalExpected: number;
   totalCollected: number;
   totalLate: number;
-  moraRate: number;
-  avgDaysLate: number;
-  recoveryRate: number;
+  /**
+   * `null` cuando no hay denominador. Ver `src/lib/tasas.ts`: una tasa sobre
+   * cero casos no es «0 %», es una tasa que nadie midió.
+   */
+  moraRate: number | null;
+  /** `null` sin un solo contrato atrasado: no hay atraso que promediar. */
+  avgDaysLate: number | null;
+  /**
+   * `null` cuando no hay denominador. Ver `src/lib/tasas.ts`: una tasa sobre
+   * cero casos no es «0 %», es una tasa que nadie midió.
+   */
+  recoveryRate: number | null;
 }
 
 export interface CollectionsByMonth {
@@ -70,7 +84,8 @@ export interface CollectionsByMonth {
   expected: number;
   collected: number;
   late: number;
-  moraRate: number;
+  /** `null` para un mes sin cobros emitidos. */
+  moraRate: number | null;
 }
 
 export interface CollectionsDelinquent {
@@ -103,9 +118,14 @@ export interface AgentPerformance {
 
 export interface AgentTeamSummary {
   totalClosings: number;
-  avgConversion: number;
+  /**
+   * `null` cuando no hay denominador. Ver `src/lib/tasas.ts`: una tasa sobre
+   * cero casos no es «0 %», es una tasa que nadie midió.
+   */
+  avgConversion: number | null;
   totalRevenue: number;
-  avgDaysToClose: number;
+  /** `null` sin agentes: no hay a quién promediarle los días al cierre. */
+  avgDaysToClose: number | null;
 }
 
 export interface AgentPerformanceData {

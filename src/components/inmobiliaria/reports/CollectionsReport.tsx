@@ -22,6 +22,7 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
+import { textoDeTasa } from '@/lib/tasas';
 import type { CollectionsData } from '@/lib/data/mock-reports';
 
 interface CollectionsReportProps {
@@ -61,14 +62,20 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
           value={formatCurrency(summary.totalLate)}
           icon={Warning}
           color="red"
-          subtitle={`${summary.moraRate}% tasa de mora`}
+          subtitle={`${textoDeTasa(summary.moraRate)} tasa de mora`}
         />
+        {/* Sin nadie atrasado no hay atraso promedio: el «Prom. 0 dias» decía
+            que la cartera estaba medida y al día, no que estaba vacía. */}
         <KPICard
           label="Tasa de recuperacion"
-          value={`${summary.recoveryRate}%`}
+          value={textoDeTasa(summary.recoveryRate)}
           icon={ArrowClockwise}
           color="violet"
-          subtitle={`Prom. ${summary.avgDaysLate} dias de atraso`}
+          subtitle={
+            summary.avgDaysLate === null
+              ? undefined
+              : `Prom. ${summary.avgDaysLate} dias de atraso`
+          }
         />
       </div>
 
@@ -101,7 +108,7 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
                 className="flex-1 flex flex-col items-center gap-1 group"
               >
                 <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity font-medium whitespace-nowrap">
-                  {m.moraRate}% mora
+                  {textoDeTasa(m.moraRate)} mora
                 </span>
                 <div className="w-full flex-1 flex flex-col justify-end gap-px">
                   <div
@@ -134,33 +141,39 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
               <span className="w-20 text-muted-foreground text-xs shrink-0">
                 {m.month.split(' ')[0]}
               </span>
+              {/* Un mes sin cobros emitidos caía en la banda verde «óptima»:
+                  afirmaba una cartera sana donde no había cartera. */}
               <Progress
-                value={Math.min(m.moraRate * 5, 100)}
+                value={m.moraRate === null ? 0 : Math.min(m.moraRate * 5, 100)}
                 size="xs"
                 variant={
-                  m.moraRate <= 5
-                    ? 'success'
-                    : m.moraRate <= 8
-                      ? 'default'
-                      : m.moraRate <= 10
-                        ? 'warning'
-                        : 'error'
+                  m.moraRate === null
+                    ? 'default'
+                    : m.moraRate <= 5
+                      ? 'success'
+                      : m.moraRate <= 8
+                        ? 'default'
+                        : m.moraRate <= 10
+                          ? 'warning'
+                          : 'error'
                 }
                 className="flex-1"
               />
               <span
                 className={cn(
                   'w-12 text-right text-xs font-medium',
-                  m.moraRate <= 5
-                    ? 'text-success'
-                    : m.moraRate <= 8
-                      ? 'text-primary'
-                      : m.moraRate <= 10
-                        ? 'text-warning'
-                        : 'text-danger'
+                  m.moraRate === null
+                    ? 'text-fg-muted'
+                    : m.moraRate <= 5
+                      ? 'text-success'
+                      : m.moraRate <= 8
+                        ? 'text-primary'
+                        : m.moraRate <= 10
+                          ? 'text-warning'
+                          : 'text-danger'
                 )}
               >
-                {m.moraRate}%
+                {textoDeTasa(m.moraRate)}
               </span>
             </div>
           ))}

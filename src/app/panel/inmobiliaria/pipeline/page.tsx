@@ -28,6 +28,7 @@ import {
 } from '@/components/inmobiliaria';
 import { Spinner } from '@/components/ui/spinner';
 import { KpiCard } from '@leasefy/cadence';
+import { tasaMedida, textoDeTasa } from '@/lib/tasas';
 
 /**
  * Pipeline Page - Kanban board for managing the rental pipeline
@@ -80,12 +81,15 @@ function PipelineContent() {
       );
     }).length;
 
-    // Calculate conversion rate (completed / (completed + lost))
+    /*
+     * Conversión = cerrados / (cerrados + perdidos). Sin un solo caso
+     * resuelto la cuenta no existe: `null`, no 0. Un tablero recién abierto
+     * mostraba «0%» de conversión, que se lee como «perdiste todo» cuando en
+     * realidad todavía no cerró ni se cayó nada.
+     */
     const completed = items.filter((i) => i.stage === 'completed').length;
     const lost = items.filter((i) => i.stage === 'lost').length;
-    const conversionRate = completed + lost > 0
-      ? Math.round((completed / (completed + lost)) * 100)
-      : 0;
+    const conversionRate = tasaMedida(completed, completed + lost);
 
     return { total, inProcess, completedThisMonth, conversionRate };
   }, [items]);
@@ -275,7 +279,7 @@ function PipelineContent() {
         />
         <KpiCard
           label={t('inmobiliaria.pipeline.stats.conversionRate')}
-          value={`${stats.conversionRate}%`}
+          value={textoDeTasa(stats.conversionRate, 0)}
           icon={<ChartLineUp />}
         />
       </motion.div>

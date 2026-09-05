@@ -6,6 +6,7 @@
 import { apiClient, getAccessToken, ApiError } from '@/lib/api/client';
 import { resolveListingType } from '@/lib/api/properties.mapper';
 import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url';
+import { tasaMedida } from '@/lib/tasas';
 import type {
   AgencyProfile,
   UpdateAgencyPayload,
@@ -999,8 +1000,13 @@ export const cobrosApi = {
       totalCollected,
       totalPending: raw.totalPending ?? 0,
       totalLate: raw.totalLate ?? 0,
-      collectionRate:
-        raw.collectionRate ?? (totalExpected > 0 ? (totalCollected / totalExpected) * 100 : 0),
+      /*
+       * Sin nada esperado no hay tasa: `null`, no 0. El `: 0` que había acá
+       * llegaba a la pantalla como «0.0% · Bajo ↘» en un mes sin un solo
+       * cobro. El back tampoco manda `collectionRate` hoy (su `getSummary`
+       * no lo devuelve), así que este es el único lugar donde se decide.
+       */
+      collectionRate: raw.collectionRate ?? tasaMedida(totalCollected, totalExpected),
       cobrosPaid: counts['PAID'] ?? 0,
       cobrosPending: (counts['COBRO_PENDING'] ?? 0) + (counts['PARTIAL'] ?? 0),
       cobrosLate: counts['LATE'] ?? 0,

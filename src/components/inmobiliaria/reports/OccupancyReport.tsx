@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
+import { SIN_MEDIR, textoDeTasa } from '@/lib/tasas';
 import type { OccupancyData } from '@/lib/data/mock-reports';
 
 interface OccupancyReportProps {
@@ -83,11 +84,13 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
           icon={Warning}
           color="amber"
         />
+        {/* Sin un inmueble cargado la vacancia no se midió: raya, y sin el
+            rojo ni la flecha, que eran un veredicto sobre nada. */}
         <KPICard
           label="Tasa vacancia"
-          value={`${summary.vacancyRate}%`}
+          value={textoDeTasa(summary.vacancyRate)}
           icon={TrendUp}
-          color="red"
+          color={summary.vacancyRate === null ? 'blue' : 'red'}
           subtitle={
             summary.avgDaysVacant === null
               ? undefined
@@ -104,26 +107,30 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
         </h3>
         <div className="space-y-3">
           {byZone.map((zone) => {
-            const occupancyRate = 100 - zone.vacancyRate;
+            // Zona sin inmuebles: ni porcentaje ni barra de color, que serían
+            // un juicio («error», en rojo) sobre una zona vacía.
+            const occupancyRate = zone.vacancyRate === null ? null : 100 - zone.vacancyRate;
             return (
               <div key={zone.zone} className="space-y-1.5">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-foreground font-medium">{zone.zone}</span>
                   <span className="text-muted-foreground">
-                    {zone.rented}/{zone.total} ({occupancyRate.toFixed(1)}%)
+                    {zone.rented}/{zone.total} ({textoDeTasa(occupancyRate)})
                   </span>
                 </div>
                 <Progress
-                  value={occupancyRate}
+                  value={occupancyRate ?? 0}
                   size="default"
                   variant={
-                    occupancyRate >= 90
-                      ? 'success'
-                      : occupancyRate >= 70
-                        ? 'default'
-                        : occupancyRate >= 50
-                          ? 'warning'
-                          : 'error'
+                    occupancyRate === null
+                      ? 'default'
+                      : occupancyRate >= 90
+                        ? 'success'
+                        : occupancyRate >= 70
+                          ? 'default'
+                          : occupancyRate >= 50
+                            ? 'warning'
+                            : 'error'
                   }
                 />
               </div>

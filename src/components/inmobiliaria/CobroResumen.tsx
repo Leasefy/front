@@ -16,6 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui';
+import { anchoDeBarra, textoDeTasa } from '@/lib/tasas';
 import type { CobroSummary } from '@/lib/types/inmobiliaria';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/types/inmobiliaria';
 
@@ -78,9 +79,22 @@ export function CobroResumen({
   const { t, formatDate, formatCurrency } = useI18n();
 
   /**
-   * Get collection rate info based on percentage
+   * El color, la etiqueta y la flecha que le corresponden a la tasa.
+   *
+   * Con `rate` en null —un mes sin un solo cobro— NO hay veredicto: ni
+   * «Bajo», ni flecha, ni barra roja. Decir que el recaudo viene bajando
+   * cuando no hubo nada que recaudar es la afirmación más falsa de la
+   * pantalla.
    */
-  const getCollectionRateInfo = (rate: number) => {
+  const getCollectionRateInfo = (rate: number | null) => {
+    if (rate === null) {
+      return {
+        fill: 'bg-muted',
+        text: 'text-fg-muted',
+        label: null,
+        trend: 'none' as const,
+      };
+    }
     if (rate >= 90) {
       return {
         fill: 'bg-success',
@@ -160,18 +174,20 @@ export function CobroResumen({
         <div className="flex items-center justify-between mb-5">
           <div>
             <p className="text-sm text-muted-foreground mb-1">{t('inmobiliaria.cobros.resumen.collectionRate')}</p>
-            <div className="flex items-baseline gap-2">
+            <div className="flex items-baseline gap-2" data-testid="cobros-tasa">
               <motion.span
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2, type: 'spring' }}
                 className="text-4xl font-bold text-foreground"
               >
-                {summary.collectionRate.toFixed(1)}%
+                {textoDeTasa(summary.collectionRate)}
               </motion.span>
-              <span className={cn('text-sm font-medium', rateInfo.text)}>
-                {rateInfo.label}
-              </span>
+              {rateInfo.label && (
+                <span className={cn('text-sm font-medium', rateInfo.text)}>
+                  {rateInfo.label}
+                </span>
+              )}
               {rateInfo.trend === 'up' && (
                 <TrendUp className={cn('w-5 h-5', rateInfo.text)} weight="bold" />
               )}
@@ -192,7 +208,7 @@ export function CobroResumen({
         <div className="h-2 rounded-full overflow-hidden bg-muted mb-5">
           <motion.div
             initial={{ width: 0 }}
-            animate={{ width: `${Math.min(summary.collectionRate, 100)}%` }}
+            animate={{ width: anchoDeBarra(summary.collectionRate) }}
             transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
             className={cn('h-full rounded-full', rateInfo.fill)}
           />
@@ -299,7 +315,15 @@ export function CobroResumenCompact({
 }) {
   const { t, formatCurrency } = useI18n();
 
-  const getCollectionRateInfo = (rate: number) => {
+  // Sin tasa medida no hay color ni flecha — ver el comentario del grande.
+  const getCollectionRateInfo = (rate: number | null) => {
+    if (rate === null) {
+      return {
+        fill: 'bg-muted',
+        text: 'text-fg-muted',
+        trend: 'none' as const,
+      };
+    }
     if (rate >= 90) {
       return {
         fill: 'bg-success',
@@ -327,9 +351,9 @@ export function CobroResumenCompact({
     <div className={cn('p-4 rounded-lg border border-border bg-card', className)}>
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-foreground">{t('inmobiliaria.cobros.resumen.compactCollection')}</span>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5" data-testid="cobros-tasa-compacta">
           <span className="text-xl font-bold text-foreground">
-            {summary.collectionRate.toFixed(0)}%
+            {textoDeTasa(summary.collectionRate, 0)}
           </span>
           {rateInfo.trend === 'up' && (
             <TrendUp className={cn('w-4 h-4', rateInfo.text)} weight="bold" />
@@ -342,7 +366,7 @@ export function CobroResumenCompact({
       <div className="h-2 rounded-full overflow-hidden bg-muted mb-3">
         <div
           className={cn('h-full rounded-full transition-all duration-500', rateInfo.fill)}
-          style={{ width: `${Math.min(summary.collectionRate, 100)}%` }}
+          style={{ width: anchoDeBarra(summary.collectionRate) }}
         />
       </div>
       <div className="flex items-center justify-between text-xs">

@@ -215,14 +215,16 @@ function CobrosContent() {
   const summary: CobroSummary = useMemo(() => {
     if (apiSummary) return apiSummary;
 
-    // Fallback summary while loading
+    // Mientras carga tampoco hay nada medido: la tasa va en null (una raya),
+    // no en 0 — un 0 acá parpadeaba como «0.0% · Bajo ↘» antes de llegar el
+    // resumen de verdad.
     return {
       month: filters.month,
       totalExpected: 0,
       totalCollected: 0,
       totalPending: 0,
       totalLate: 0,
-      collectionRate: 0,
+      collectionRate: null,
       cobrosPaid: 0,
       cobrosPending: 0,
       cobrosLate: 0,

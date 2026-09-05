@@ -1188,7 +1188,7 @@
         "totalProperties": "Total Properties",
         "rentedAndAvailable": "{{rented}} rented · {{available}} available",
         "monthlyCollection": "Monthly Collection",
-        "collectionRateLabel": "{{rate}}% collection rate",
+        "collectionRateLabel": "{{rate}} collection rate",
         "commissions": "Commissions",
         "commissionsGenerated": "Generated this month",
         "occupancy": "Occupancy",

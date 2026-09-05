@@ -1228,7 +1228,7 @@
         "totalProperties": "Propiedades Totales",
         "rentedAndAvailable": "{{rented}} arrendadas · {{available}} disponibles",
         "monthlyCollection": "Recaudo del Mes",
-        "collectionRateLabel": "{{rate}}% tasa de cobro",
+        "collectionRateLabel": "{{rate}} tasa de cobro",
         "commissions": "Comisiones",
         "commissionsGenerated": "Generadas este mes",
         "occupancy": "Ocupación",

@@ -26,6 +26,7 @@ import type {
   TrendDirection,
 } from '@/lib/types/inmobiliaria';
 import { getPeriodLabel } from '@/lib/types/inmobiliaria';
+import { tasaMedida, textoDeTasa } from '@/lib/tasas';
 
 // TODO: Backend - Implementar metricas en tiempo real via WebSocket o SSE
 
@@ -316,12 +317,16 @@ function DonutChartViz({ chart }: { chart: AnalyticsChart }) {
 
   let currentAngle = -90;
   const segments = data.map((value, idx) => {
-    // Con todo en 0 —una inmobiliaria recién creada— `total` es 0 y la división
-    // da `NaN`, que se propaga al ángulo y termina en las coordenadas del arco:
-    // el SVG recibe `NaN` y React lo grita. Sin total no hay reparto: cada
-    // porción vale 0 y el gráfico queda vacío, que es la verdad.
-    const percentage = total > 0 ? (value / total) * 100 : 0;
-    const angle = (percentage / 100) * 360;
+    /*
+     * Con todo en 0 —una inmobiliaria recién creada— `total` es 0 y la
+     * división da `NaN`, que se propaga al ángulo y termina en las
+     * coordenadas del arco: el SVG recibe `NaN` y React lo grita. Sin total
+     * no hay reparto, así que `percentage` queda en `null` y el arco se
+     * dibuja vacío. El null además VIAJA a la leyenda: pintar «0%» en las
+     * cinco filas afirmaba un reparto medido donde no hay nada repartido.
+     */
+    const percentage = tasaMedida(value, total);
+    const angle = ((percentage ?? 0) / 100) * 360;
     const startAngle = currentAngle;
     currentAngle += angle;
 
@@ -363,7 +368,9 @@ function DonutChartViz({ chart }: { chart: AnalyticsChart }) {
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-2xl font-bold text-fg dark:text-white">{data[0]}%</p>
+            <p className="text-2xl font-bold text-fg dark:text-white" data-testid="dona-al-dia">
+              {textoDeTasa(segments[0]?.percentage ?? null, 0)}
+            </p>
             <p className="text-xs text-fg-muted">{t('inmobiliaria.analytics.dashboard.upToDate')}</p>
           </div>
         </div>
@@ -374,7 +381,7 @@ function DonutChartViz({ chart }: { chart: AnalyticsChart }) {
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: segment.color }} />
             <span className="flex-1 text-sm text-fg-muted dark:text-fg-subtle">{segment.label}</span>
             <span className="text-sm font-medium text-fg dark:text-white">
-              {segment.percentage.toFixed(0)}%
+              {textoDeTasa(segment.percentage, 0)}
             </span>
           </div>
         ))}

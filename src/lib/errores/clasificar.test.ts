@@ -147,4 +147,93 @@ describe('clasificarFallo — 401 de sesión muerta', () => {
     expect(fallo.tipo).toBe('servidor')
     expect(fallo.sePuedeReintentar).toBe(true)
   })
+  /**
+   * ── El status que el transporte tiraba a la basura ────────────────────────
+   *
+   * Nico lo vio EN PRODUCCIÓN, en el Piloto automático: las dos tarjetas con
+   * «No pudimos cargar esto — fue un problema nuestro, no tuyo», referencia
+   * `SER-1601`, y un botón «Intentar de nuevo». El «SER» es la pista: la
+   * referencia es `status ?? tipo.slice(0,3)`, así que no había status.
+   *
+   * Las 82 llamadas del panel al micro hacen todas
+   * `throw new Error(\`${res.status}\`)` y el hook guarda `err.message` en un
+   * `useState<string | null>`. Lo que llega acá es el string «403».
+   */
+  it('«403» como string sigue siendo un 403, no un problema nuestro', () => {
+    const fallo = clasificarFallo('403')
+
+    expect(fallo.status).toBe(403)
+    expect(fallo.tipo).toBe('sinPermiso')
+    // Lo que de verdad importa: el botón que no podía funcionar nunca.
+    expect(fallo.sePuedeReintentar).toBe(false)
+  })
+
+  it('«404» como string no ofrece reintentar', () => {
+    const fallo = clasificarFallo('404')
+
+    expect(fallo.status).toBe(404)
+    expect(fallo.tipo).toBe('noExiste')
+    expect(fallo.sePuedeReintentar).toBe(false)
+  })
+
+  it('«401» como string sin sesión manda a entrar de nuevo, no a reintentar', () => {
+    const fallo = clasificarFallo('401')
+
+    expect(fallo.tipo).toBe('sinSesion')
+    expect(fallo.sePuedeReintentar).toBe(false)
+  })
+
+  it('un Error cuyo mensaje ES el status también cuenta', () => {
+    // La forma exacta que tiran los hooks antes de aplanarse a string.
+    const fallo = clasificarFallo(new Error('500'))
+
+    expect(fallo.status).toBe(500)
+    expect(fallo.tipo).toBe('servidor')
+    expect(fallo.sePuedeReintentar).toBe(true)
+  })
+
+  it('un número suelto DENTRO de una frase no se confunde con un status', () => {
+    // El guardián de la regla: si esto se relajara, «404 registros sin
+    // procesar» mandaría a la persona a un cartel de «no existe».
+    const fallo = clasificarFallo('Se cayeron 404 registros')
+
+    expect(fallo.status).toBeNull()
+    expect(fallo.tipo).toBe('servidor')
+  })
+
+  it('un status fuera del rango HTTP no se inventa', () => {
+    const fallo = clasificarFallo('900')
+
+    expect(fallo.status).toBeNull()
+  })
+
+  /**
+   * `fetch` no rechaza con un status: tira un TypeError cuyo texto cambia con
+   * el navegador. Sin esto, quedarse sin red se anunciaba como «fue un
+   * problema nuestro, no tuyo» — y la rama `status === 0` del clasificador era
+   * código muerto para todo el panel.
+   */
+  it.each([
+    ['Chrome', 'Failed to fetch'],
+    ['Firefox', 'NetworkError when attempting to fetch resource.'],
+    ['Safari', 'Load failed'],
+  ])('quedarse sin red se dice como red, no como culpa nuestra (%s)', (_navegador, mensaje) => {
+    const fallo = clasificarFallo(new TypeError(mensaje))
+
+    expect(fallo.status).toBe(0)
+    expect(fallo.tipo).toBe('red')
+    expect(fallo.sePuedeReintentar).toBe(true)
+  })
+
+  it('el mensaje crudo sobrevive aunque el error venga aplanado a string', () => {
+    // Es el único rastro técnico que le queda a soporte: vive en el nodo
+    // `sr-only` del cartel.
+    expect(clasificarFallo('503').mensajeOriginal).toBe('503')
+  })
+
+  it('sin la URL del micro no se ofrece un reintento que no puede funcionar', () => {
+    const fallo = clasificarFallo('not_configured')
+
+    expect(fallo.sePuedeReintentar).toBe(false)
+  })
 })

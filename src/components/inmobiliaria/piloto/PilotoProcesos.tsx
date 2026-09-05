@@ -222,7 +222,7 @@ export function PilotoProcesos({
           error={error ?? undefined}
           vacio={visibles.length === 0}
           queEs={t('inmobiliaria.piloto.procesos.titulo').toLowerCase()}
-          {...(onRefetch ? { onReintentar: () => void onRefetch() } : {})}
+          {...(onRefetch ? { onReintentar: onRefetch } : {})}
           esqueleto={
             <div className="p-4">
               <EsqueletoTarjetas cantidad={3} />

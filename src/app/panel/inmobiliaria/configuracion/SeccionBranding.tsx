@@ -34,7 +34,7 @@ export function SeccionBranding() {
       error={errorCrudo}
       vacio={!agency}
       queEs="el branding de tu inmobiliaria"
-      onReintentar={() => void refetch()}
+      onReintentar={refetch}
       esqueleto={<EsqueletoDeSeccion filas={4} />}
       cuandoVacio={
         <VacioDeSeccion

@@ -345,7 +345,7 @@ function ConciliacionCola() {
           cargando={isLoading}
           error={error}
           queEs="la cola de conciliación"
-          onReintentar={() => void refetch()}
+          onReintentar={refetch}
           esqueleto={
             <div className="flex items-center justify-center py-16" data-testid="conciliacion-cola-loading">
               <Spinner />

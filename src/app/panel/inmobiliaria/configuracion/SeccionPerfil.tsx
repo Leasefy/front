@@ -71,7 +71,7 @@ export function SeccionPerfil() {
       error={errorCrudo}
       vacio={!agency}
       queEs="los datos de tu inmobiliaria"
-      onReintentar={() => void refetch()}
+      onReintentar={refetch}
       esqueleto={<EsqueletoDeSeccion filas={5} />}
       cuandoVacio={
         <VacioDeSeccion

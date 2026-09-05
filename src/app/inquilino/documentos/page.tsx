@@ -377,7 +377,7 @@ export default function DocumentosPage() {
         <FalloDeCarga
           error={errorApps}
           queEs="tus documentos"
-          onReintentar={() => void recargarApps()}
+          onReintentar={recargarApps}
           volverA={{ label: 'Volver a mi panel', href: '/inquilino' }}
         />
       </div>

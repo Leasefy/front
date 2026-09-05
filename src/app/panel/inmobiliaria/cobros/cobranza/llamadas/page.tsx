@@ -326,7 +326,7 @@ function LlamadasContent() {
         <FalloDeCarga
           error={error}
           queEs="las llamadas"
-          onReintentar={() => void refetch()}
+          onReintentar={refetch}
         />
       </main>
     )

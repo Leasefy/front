@@ -370,7 +370,7 @@ function ConciliacionLiquidaciones() {
           cargando={isLoading}
           error={error}
           queEs="las liquidaciones"
-          onReintentar={() => void refetch()}
+          onReintentar={refetch}
           esqueleto={
             <div className="flex items-center justify-center py-16" data-testid="liquidaciones-loading">
               <Spinner />

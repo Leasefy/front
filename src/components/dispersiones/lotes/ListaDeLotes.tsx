@@ -110,7 +110,7 @@ export function ListaDeLotes() {
   }
 
   if (error && lotes.length === 0) {
-    return <FalloDeCarga error={error} queEs="los lotes" onReintentar={() => void refetch()} />;
+    return <FalloDeCarga error={error} queEs="los lotes" onReintentar={refetch} />;
   }
 
   return (

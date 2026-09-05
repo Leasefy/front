@@ -195,7 +195,7 @@ function ContratoDetalleContent() {
         <FalloDeCarga
           error={error}
           queEs="este contrato"
-            onReintentar={() => void refetch()}
+            onReintentar={refetch}
           volverA={{ label: 'Contratos', href: '/panel/inmobiliaria/contratos' }}
         />
       </div>

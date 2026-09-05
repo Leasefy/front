@@ -257,7 +257,7 @@ export function SeccionEquipo() {
           cargando={isLoading}
           error={errorCrudo}
           queEs="el equipo"
-          onReintentar={() => void refetch()}
+          onReintentar={refetch}
           esqueleto={<EsqueletoDeSeccion filas={5} />}
         >
           <ConfigUsuarios
@@ -279,7 +279,7 @@ export function SeccionEquipo() {
           cargando={agentesCargando}
           error={agentesError}
           queEs="el desempeño del equipo"
-          onReintentar={() => void recargarAgentes()}
+          onReintentar={recargarAgentes}
           esqueleto={<EsqueletoDeSeccion filas={3} />}
         >
           {vista === 'ranking' ? (

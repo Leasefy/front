@@ -183,7 +183,7 @@ export default function ApplicationDetailPage() {
         <FalloDeCarga
           error={errorCrudo ?? error}
           queEs="tu postulación"
-            onReintentar={() => void refetch()}
+            onReintentar={refetch}
           volverA={{ label: 'Mis postulaciones', href: '/inquilino/aplicaciones' }}
         />
       </div>

@@ -90,7 +90,7 @@ function RenovacionesContent() {
         data={renovaciones}
         isLoading={isLoading}
         error={error}
-        onReintentar={() => void refetch()}
+        onReintentar={refetch}
         onStartRenewal={openWorkflow}
         onNotifyTenant={handleNotifyTenant}
         onViewDetails={openWorkflow}

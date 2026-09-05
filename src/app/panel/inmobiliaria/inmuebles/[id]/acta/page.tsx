@@ -125,7 +125,7 @@ export default function ActaDeEntregaPage() {
         error={error}
         vacio={!consignacion}
         queEs="el acta"
-        onReintentar={() => void refetch()}
+        onReintentar={refetch}
         esqueleto={<div className="h-96 animate-pulse rounded-lg bg-surface-muted" />}
       >
         {consignacion && (

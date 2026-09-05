@@ -504,7 +504,7 @@ function AnalyticsContent() {
                     <FalloDeCarga
                       error={analyticsError}
                       queEs="las métricas del asistente"
-                      onReintentar={() => void recargarMetricas()}
+                      onReintentar={recargarMetricas}
                       enmarcado={false}
                     />
                   )}

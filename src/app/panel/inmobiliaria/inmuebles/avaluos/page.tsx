@@ -489,7 +489,7 @@ function AvaluosSala() {
             error={errorCrudo}
             vacio={avaluos.length === 0}
             queEs={t(`${NS}.queEs`)}
-            onReintentar={() => void refetch()}
+            onReintentar={refetch}
             cuandoVacio={
               // El vacío son DOS: nunca pediste uno, o el filtro de estado no
               // deja pasar ninguno. Decir «todavía no hay avalúos» cuando hay

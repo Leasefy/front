@@ -297,7 +297,7 @@ export function FilasFrenadas({
         cargando={cargando}
         error={error}
         queEs={t(`${RAIZ}.tabla.queEs`)}
-        onReintentar={() => void cargar()}
+        onReintentar={cargar}
       >
         <Table>
           <TableHeader>

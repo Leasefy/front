@@ -187,7 +187,7 @@ export function CarteraCompleta() {
       cargando={isLoading && !report}
       error={error ? (errorCrudo ?? new Error(error)) : null}
       queEs="la cartera"
-      onReintentar={() => void refetch()}
+      onReintentar={refetch}
       esqueleto={
         <div className="flex items-center justify-center py-16">
           <Spinner />

@@ -187,7 +187,7 @@ export function PilotoCatalogo({ data, isLoading, error, notAvailable, onRefetch
           cargando={isLoading}
           error={notAvailable ? null : error}
           queEs={t(k('queEs'))}
-          {...(onRefetch ? { onReintentar: () => void onRefetch() } : {})}
+          {...(onRefetch ? { onReintentar: onRefetch } : {})}
           esqueleto={<EsqueletoTabla filas={8} columnas={COLUMNAS.length} />}
         >
           <div className="overflow-x-auto">

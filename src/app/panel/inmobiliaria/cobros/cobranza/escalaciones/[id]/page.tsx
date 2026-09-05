@@ -76,7 +76,7 @@ function EscalationDetailContent() {
         <FalloDeCarga
           error={error}
           queEs="esta escalación"
-            onReintentar={() => void refetch()}
+            onReintentar={refetch}
           volverA={{ label: 'Escalaciones', href: '/panel/inmobiliaria/cobros/cobranza/escalaciones' }}
         />
       </div>

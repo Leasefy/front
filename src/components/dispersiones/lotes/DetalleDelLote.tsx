@@ -180,7 +180,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
       <FalloDeCarga
         error={error}
         queEs="el lote"
-        onReintentar={() => void refetch()}
+        onReintentar={refetch}
         volverA={{ label: 'Volver a los lotes', href: '/panel/inmobiliaria/pagos/dispersiones/lotes' }}
       />
     );

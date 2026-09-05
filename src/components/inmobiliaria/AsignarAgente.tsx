@@ -107,7 +107,7 @@ export function AsignarAgente({
           error={errorCrudo}
           vacio={disponibles.length === 0}
           queEs="tu equipo"
-          onReintentar={() => void refetch()}
+          onReintentar={refetch}
           esqueleto={
             <div className="space-y-2 py-2">
               {[0, 1, 2].map((i) => (

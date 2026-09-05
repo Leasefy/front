@@ -290,7 +290,7 @@ function RentabilidadContent() {
         error={errorCrudo}
         vacio={filas.length === 0}
         queEs={t('inmobiliaria.reportes.rentabilidad.loadingWhat')}
-        onReintentar={() => void refetch()}
+        onReintentar={refetch}
         esqueleto={
           <div className="space-y-6">
             <div className="h-24 animate-pulse rounded-lg border border-border bg-card" aria-hidden="true" />

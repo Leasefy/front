@@ -847,7 +847,7 @@ function ReportesContent() {
                   error={ocupacionReport.errorCrudo}
                   vacio={!occupancyData}
                   queEs="el reporte de ocupación"
-                  onReintentar={() => void ocupacionReport.refetch()}
+                  onReintentar={ocupacionReport.refetch}
                   cuandoVacio={<SinDatosDelReporte />}
                 >
                   {occupancyData && <OccupancyReport data={occupancyData} />}
@@ -859,7 +859,7 @@ function ReportesContent() {
                   error={carteraReport.errorCrudo}
                   vacio={!collectionsData}
                   queEs="el reporte de cobros"
-                  onReintentar={() => void carteraReport.refetch()}
+                  onReintentar={carteraReport.refetch}
                   cuandoVacio={<SinDatosDelReporte />}
                 >
                   {collectionsData && <CollectionsReport data={collectionsData} />}

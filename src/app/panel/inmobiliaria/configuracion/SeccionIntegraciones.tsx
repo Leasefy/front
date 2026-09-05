@@ -49,7 +49,7 @@ export function SeccionIntegraciones() {
       error={errorCrudo}
       vacio={integrations.length === 0}
       queEs="las integraciones"
-      onReintentar={() => void refetch()}
+      onReintentar={refetch}
       esqueleto={<EsqueletoDeSeccion filas={4} />}
       cuandoVacio={
         <VacioDeSeccion

@@ -23,7 +23,7 @@ export function SeccionMediosDePago() {
       error={errorCrudo}
       vacio={!agency}
       queEs="los medios de pago"
-      onReintentar={() => void refetch()}
+      onReintentar={refetch}
       esqueleto={<EsqueletoDeSeccion filas={3} />}
       cuandoVacio={
         <VacioDeSeccion

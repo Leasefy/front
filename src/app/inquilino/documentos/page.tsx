@@ -210,15 +210,25 @@ export default function DocumentosPage() {
     setCurrentPage(1);
   };
 
-  // Best-effort SIC-audit consent record per accessed doc (once). The backend store is
-  // authoritative; a missing endpoint degrades to a silent no-op (documentsApi.recordConsent
-  // resolves on 404/403). The real enforcement is the unchecked-default gate, not this call —
-  // so we deliberately do NOT surface a "consentimiento guardado" confirmation here.
+  // Registro de la autorización de habeas data, una vez por documento.
+  //
+  // 🔴 Antes esto era `.catch(() => {})` sobre una ruta que no existía en el
+  // back, así que la autorización nunca se guardaba y nadie se enteraba. Ahora
+  // la ruta existe; si aun así falla, se saca el documento del set para que el
+  // próximo acceso vuelva a intentarlo. Perder la prueba en silencio es lo que
+  // hay que evitar: sin fila no hay cómo acreditar la autorización ante un
+  // reclamo (Ley 1581, arts. 9 y 12).
+  //
+  // No se le muestra un "consentimiento guardado" a la persona: la compuerta
+  // que la protege es la casilla, y anunciar el registro no le agrega nada.
   const maybeRecordConsent = useCallback((docId: string) => {
     if (!consent.purposeDocAccess) return;
     if (recordedConsentRef.current.has(docId)) return;
     recordedConsentRef.current.add(docId);
-    void documentsApi.recordConsent(docId, consent).catch(() => {});
+    void documentsApi.recordConsent(docId, consent).catch((err) => {
+      recordedConsentRef.current.delete(docId);
+      console.error('[documentos] no se pudo registrar el consentimiento', err);
+    });
   }, [consent]);
 
   // Anti-IDOR download: fetch the backend-signed URL → blob → programmatic <a download> →

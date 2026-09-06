@@ -444,12 +444,19 @@ export function PilotoCajon({
                   </MonoLabel></h3>
                   <ul className="space-y-2">
                     {/*
-                      Leer el documento NO es «dónde seguir»: es parte de
-                      decidir acá. Por eso es un botón que abre el sub-cajón y
-                      no un enlace a otra pestaña. El micro ya no manda
-                      `pdfUrl` como enlace —era una ubicación de
-                      almacenamiento, y las filas de semilla apuntaban a un
-                      demo vacío—; con el id del artefacto alcanza.
+                      En una carta, leer el documento no es «dónde seguir»: es
+                      parte de decidir acá. Un solo enlace, y abre el sub-cajón.
+                      *
+                      Los enlaces que manda el micro para una carta se omiten a
+                      propósito, y son dos: el PDF —que no es un enlace sino una
+                      ubicación de almacenamiento, con filas de semilla que
+                      apuntan a un demo vacío— y la pantalla completa, que ya
+                      ofrece el sub-cajón en su pie. Dejarlos daba tres entradas
+                      para lo mismo, una de ellas muerta (Nico, 2026-09-06).
+                      *
+                      🔴 Si el micro llega a mandar un enlace de carta que NO
+                      sea uno de esos dos, acá deja de verse. Revisar
+                      `src/piloto/detalle.ts`, resolvedor `carta`.
                     */}
                     {artifactId && (
                       <li>
@@ -459,15 +466,12 @@ export function PilotoCajon({
                           className="inline-flex items-center gap-1.5 text-body-sm font-medium text-fg hover:underline"
                           data-testid="piloto-cajon-leer-pdf"
                         >
-                          Leer el documento antes de aprobar
+                          Leer la carta antes de aprobar
                           <ArrowsOutSimple weight="bold" className="h-3 w-3" aria-hidden="true" />
                         </button>
-                        <p className="mt-1 text-caption text-fg-muted">
-                          Se abre acá mismo, sin perder el caso.
-                        </p>
                       </li>
                     )}
-                    {data.enlaces.map((enlace) => (
+                    {(artifactId ? [] : data.enlaces).map((enlace) => (
                       <li key={enlace.href + enlace.label}>
                         {esExterno(enlace.href) ? (
                           <a

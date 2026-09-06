@@ -4,10 +4,13 @@
  * PilotoDocumento — el PDF de una carta, dentro del mismo cajón.
  *
  * ── Por qué existe (pedido de Nico, 2026-09-06) ────────────────────────────
- * El cajón ofrecía «Leer el PDF antes de aprobar» como un enlace que abría
- * OTRA pestaña. Eso rompe lo que el Piloto promete —decidir sin salir de la
- * torre— justo en el peor momento: al lado está el botón que autoriza emitir
- * una carta prejurídica, y leerla antes es el único resguardo.
+ * El cajón ofrecía leer el PDF y abrir la carta como enlaces a OTRA pestaña.
+ * Eso rompe lo que el Piloto promete —decidir sin salir de la torre— justo en
+ * el peor momento: al lado está el botón que autoriza emitir una carta
+ * prejurídica, y leerla antes es el único resguardo.
+ *
+ * Hoy el bloque «Dónde seguir» de una carta tiene UNA entrada, y abre esto.
+ * La pantalla completa sigue a un clic, en el pie de acá.
  *
  * ── El enlace además estaba muerto ─────────────────────────────────────────
  * 🔴 `pdfUrl` NO es un enlace: es una ubicación de almacenamiento. En la base

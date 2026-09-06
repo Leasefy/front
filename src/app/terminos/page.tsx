@@ -131,7 +131,7 @@ export default function TerminosPage() {
                   <li>
                     <strong className="text-foreground/85">La inmobiliaria</strong> contrata el
                     servicio para su actividad económica. Le aplican estos términos
-                    completos, incluidas las secciones 6, 8, 9 y 13.
+                    completos, incluidas las secciones 6, 8, 9 y 18.
                   </li>
                   <li>
                     <strong className="text-foreground/85">El propietario</strong> usa el portal
@@ -384,7 +384,96 @@ export default function TerminosPage() {
 
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  13. Obligaciones de la inmobiliaria
+                  13. Estudio de asegurabilidad y pólizas
+                </h2>
+                <p className="mb-3">
+                  La plataforma permite solicitar el estudio de asegurabilidad de un
+                  candidato ante aseguradoras y afianzadoras, y consultar el resultado.
+                </p>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-3">
+                  <li><strong className="text-foreground/85">Leasefy no es aseguradora, afianzadora ni corredor de seguros</strong>, y no interviene en la decisión de asegurar ni en los términos de la póliza.</li>
+                  <li>La aprobación, el rechazo, la prima y las condiciones las define la compañía, bajo sus propios criterios y su propia responsabilidad.</li>
+                  <li>La póliza, si se expide, es un contrato entre esa compañía y quien la tome. Nosotros transmitimos la información y mostramos el resultado.</li>
+                  <li>Un rechazo de asegurabilidad no es una decisión de Leasefy y sus razones las da la compañía que lo emitió.</li>
+                </ul>
+                <p>
+                  El envío de datos del candidato a una aseguradora requiere su
+                  autorización previa, en los términos de la{" "}
+                  <a href="/privacidad" className="text-foreground/90 underline underline-offset-2">Política de tratamiento</a>.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  14. Avalúos
+                </h2>
+                <p>
+                  Cuando la plataforma produce una estimación de valor de un inmueble,
+                  es{" "}
+                  <strong className="text-foreground/90">una referencia para decidir, no un avalúo con efectos legales</strong>.
+                  No sustituye el avalúo de un avaluador inscrito en el Registro
+                  Abierto de Avaluadores cuando la ley o un tercero lo exijan, y no
+                  puede presentarse como tal ante una entidad financiera, una
+                  autoridad ni un juez.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  15. Contabilidad, facturación y conciliación
+                </h2>
+                <p className="mb-3">
+                  La plataforma ayuda a llevar los registros contables, calcular
+                  impuestos y retenciones, conciliar el extracto bancario y preparar
+                  documentos. Son herramientas de apoyo.
+                </p>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-3">
+                  <li><strong className="text-foreground/85">La responsabilidad tributaria y contable es de la inmobiliaria</strong>, incluidas las obligaciones de agente retenedor cuando administra por cuenta de terceros.</li>
+                  <li>Los cálculos dependen de la información y de la configuración que cargue el usuario —tarifas, perfiles tributarios, bases—. Revisarlos antes de declarar o pagar es parte de su deber.</li>
+                  <li>La conciliación sugiere cruces entre movimientos; confirmarlos es una decisión humana.</li>
+                  <li>La emisión de factura electrónica ante la DIAN se realiza a través de proveedores habilitados. Quien está obligado a facturar sigue siendo el responsable ante la autoridad.</li>
+                </ul>
+                <p>
+                  No damos asesoría tributaria ni contable, y un error de configuración
+                  del usuario no se convierte en responsabilidad nuestra por haber
+                  usado la herramienta.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  16. Mantenimientos, solicitudes, agenda y mensajería
+                </h2>
+                <p className="mb-3">
+                  La plataforma permite registrar solicitudes de arreglo y PQRS,
+                  agendar visitas y comunicar a la inmobiliaria con propietarios e
+                  inquilinos.
+                </p>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground">
+                  <li>Somos el canal, no el prestador: la ejecución de un arreglo, la respuesta a una PQRS y el cumplimiento de una visita son de la inmobiliaria o del proveedor que ella contrate.</li>
+                  <li>Registrar una solicitud no la aprueba ni compromete a nadie a atenderla en un plazo, salvo que la inmobiliaria lo haya pactado.</li>
+                  <li>El contenido de los mensajes es de quien los escribe. No los moderamos, y sólo accedemos a ellos para prestar el servicio, atender un reclamo o cumplir una orden de autoridad.</li>
+                </ul>
+              </section>
+
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  17. Migración de información
+                </h2>
+                <p>
+                  Si traés información desde otro sistema, seguís siendo su
+                  responsable: que sea veraz, que tengas derecho a usarla y que
+                  cuentes con la autorización de los titulares. Nosotros la
+                  importamos, mostramos qué quedó sin poder asociarse y no la
+                  completamos por inferencia.{" "}
+                  <strong className="text-foreground/90">Revisar el resultado de una migración antes de operar sobre él es parte del trabajo</strong>,
+                  porque de ahí salen los cobros.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  18. Obligaciones de la inmobiliaria
                 </h2>
                 <p className="mb-3">
                   Además de lo anterior, quien contrata la plataforma para su
@@ -393,7 +482,7 @@ export default function TerminosPage() {
                 <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-3">
                   <li><strong className="text-foreground/85">Contar con la matrícula de arrendadores</strong> vigente donde la ley se la exija, e incluir su número en sus anuncios y contratos (artículos 28 a 31 de la Ley 820).</li>
                   <li>Tener autorización de los propietarios para publicar y administrar sus inmuebles.</li>
-                  <li><strong className="text-foreground/85">Haber obtenido la autorización de tratamiento de datos</strong> de las personas cuya información carga en la plataforma, y responder como responsable del tratamiento frente a ellas (§14).</li>
+                  <li><strong className="text-foreground/85">Haber obtenido la autorización de tratamiento de datos</strong> de las personas cuya información carga en la plataforma, y responder como responsable del tratamiento frente a ellas (§19).</li>
                   <li>Cumplir las obligaciones de prevención de lavado de activos que le correspondan según su tamaño y actividad.</li>
                   <li>Publicar información veraz de los inmuebles. Lo que se anuncia obliga a quien lo anuncia (artículo 29 de la Ley 1480).</li>
                   <li>Cumplir sus obligaciones tributarias, incluidas las de agente retenedor cuando administra por cuenta de terceros.</li>
@@ -406,7 +495,7 @@ export default function TerminosPage() {
 
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  14. Datos personales: quién responde
+                  19. Datos personales: quién responde
                 </h2>
                 <p className="mb-3">
                   Cuando la inmobiliaria carga en la plataforma datos de sus
@@ -432,7 +521,7 @@ export default function TerminosPage() {
 
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  15. Usos prohibidos
+                  20. Usos prohibidos
                 </h2>
                 <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground">
                   <li>Publicar inmuebles inexistentes, ajenos o sin autorización para ofrecerlos.</li>
@@ -447,7 +536,7 @@ export default function TerminosPage() {
 
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  16. Contenido y propiedad intelectual
+                  21. Contenido y propiedad intelectual
                 </h2>
                 <p className="mb-3">
                   El software, la marca y el diseño de la plataforma son de Leasefy. Se
@@ -464,7 +553,7 @@ export default function TerminosPage() {
 
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  17. Responsabilidad
+                  22. Responsabilidad
                 </h2>
                 <p className="mb-3">
                   Respondemos por los daños que causemos por incumplir estas
@@ -492,12 +581,12 @@ export default function TerminosPage() {
 
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  18. Suspensión y terminación
+                  23. Suspensión y terminación
                 </h2>
                 <p className="mb-3">
                   Podés terminar cuando quieras (§6). Nosotros podemos suspender o
                   terminar la cuenta por mora en el pago, por un uso de los prohibidos
-                  en la §15 o por orden de autoridad competente, siempre{" "}
+                  en la §20 o por orden de autoridad competente, siempre{" "}
                   <strong className="text-foreground/90">avisando antes y explicando el motivo</strong>,
                   salvo que la ley lo impida.
                 </p>
@@ -509,7 +598,7 @@ export default function TerminosPage() {
 
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  19. Peticiones, quejas y reclamos
+                  24. Peticiones, quejas y reclamos
                 </h2>
                 <p className="mb-3">
                   Escribinos a{" "}
@@ -531,7 +620,7 @@ export default function TerminosPage() {
 
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  20. Cambios a estos términos
+                  25. Cambios a estos términos
                 </h2>
                 <p>
                   Un cambio sustancial se publica acá con{" "}
@@ -544,7 +633,7 @@ export default function TerminosPage() {
 
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  21. Ley aplicable y controversias
+                  26. Ley aplicable y controversias
                 </h2>
                 <p>
                   Estos términos se rigen por la ley colombiana. Las controversias se

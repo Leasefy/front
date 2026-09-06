@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { Reveal } from '@/components/landing/motion/Reveal'
 import { VignetteRenderer } from '@/components/landing/product/vignettes/VignetteRenderer'
 import { ClosingBanner } from '@/components/landing/home/ClosingBanner'
-import { LandingFooter } from '@/components/landing/layout/LandingFooter'
 import { PRODUCTS } from '@/lib/landing/products'
 import { LANDING_TEXTURES } from '@/lib/landing/assets'
 import type { ProductSlug } from '@/lib/landing/types'
@@ -24,7 +23,7 @@ interface ProductPageProps {
  * (expectation bullets + "otros productos" tiles) was REMOVED — every
  * product page now ends directly with the closing video banner + footer,
  * cloned at runtime in the standalone (duplicated DOM + `__stripAnchors`
- * sanitation) but simply COMPOSED here: `ClosingBanner`/`LandingFooter` are
+ * sanitation) but simply COMPOSED here: `ClosingBanner` is
  * the exact same components the home renders, no cloning needed in React.
  *
  * `product.name`/`product.h1` are the seam SLICE 5's thin route shells
@@ -216,7 +215,6 @@ export function ProductPage({ slug }: ProductPageProps) {
       </section>
 
       <ClosingBanner />
-      <LandingFooter />
     </article>
   )
 }

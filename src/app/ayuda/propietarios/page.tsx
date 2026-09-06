@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { LandingChrome } from "@/components/landing-v2/LandingChrome";
-import { Footer } from "@/components/layout/Footer";
+import { LandingFooterV2 } from "@/components/landing-v2/LandingFooterV2";
 import { SectionLabel } from "@/components/ui/section-label";
 import { Button } from "@/components/ui/button";
 import { CaretDown, House, Users, FileText, CreditCard, Shield, ChartBarHorizontal, CheckCircle, Lightbulb, ChartBar } from '@phosphor-icons/react';
@@ -410,7 +410,7 @@ export default function PropietariosGuidePage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <LandingFooterV2 />
     </LandingChrome>
   );
 }

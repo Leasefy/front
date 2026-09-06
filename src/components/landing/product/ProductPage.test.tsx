@@ -108,9 +108,12 @@ describe('<ProductPage> — crm (detailed copy/wiring)', () => {
     expect(logTimes[0].textContent).toBe(PRODUCTS.crm.night.log[0].time)
   })
 
-  it('renders the closing banner and footer directly (no cloning, no final CTA block)', () => {
+  it('renders the closing banner and leaves the footer to the layout', () => {
     expect(container.querySelector('[data-testid="closing-banner"]')).toBeTruthy()
-    expect(container.querySelector('footer.landing-footer')).toBeTruthy()
+    // El pie lo pone el layout del grupo `(landing)`. Cuando ProductPage
+    // traia el suyo ademas, /productos/* servia DOS <footer> — se veia como
+    // uno solo porque el segundo quedaba abajo del primero.
+    expect(container.querySelector('footer')).toBeNull()
   })
 })
 

@@ -3,7 +3,7 @@ import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { Footer } from "@/components/layout/Footer";
 import { SectionLabel } from "@/components/ui/section-label";
 export const metadata: Metadata = {
-  title: "Términos y Condiciones | Leasefy",
+  title: "Términos y Condiciones",
   description:
     "Términos y condiciones de uso de Leasefy. Plataforma tecnológica para la gestión integral de arrendamientos.",
 };

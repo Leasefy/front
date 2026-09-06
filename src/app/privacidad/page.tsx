@@ -2,10 +2,42 @@ import type { Metadata } from "next";
 import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { Footer } from "@/components/layout/Footer";
 import { SectionLabel } from "@/components/ui/section-label";
+
+/**
+ * Política de Tratamiento de Datos Personales.
+ *
+ * ── Por qué se reescribió entera (2026-09-05) ──────────────────────────────
+ *
+ * La versión anterior describía un producto que no es este. No mencionaba ni
+ * una vez las palabras «voz», «llamada», «grabación», «transcripción»,
+ * «cobranza», «Datacrédito» ni la Sentencia T-323 de 2024 — o sea que todo el
+ * agente de cobranza, que llama a deudores y los graba, era invisible. Y
+ * afirmaba cosas falsas y verificables: apps móviles iOS/Android que no
+ * existen, Google Analytics y un banner de cookies que nunca se instalaron,
+ * tokenización de cuentas bancarias que en realidad son VARCHAR en claro, y
+ * secciones de cumplimiento para México, Brasil, Chile, Perú, Argentina y
+ * Estados Unidos, para un producto que sólo opera en Colombia (no existe
+ * columna `country` en ningún esquema y el catálogo de países de teléfono
+ * tiene una sola entrada).
+ *
+ * La regla que ordenó la reescritura es la misma del resto del panel: el
+ * documento no afirma un hecho que no ocurre. Donde el producto todavía no
+ * hace lo que debería, la política lo dice en vez de prometerlo.
+ *
+ * ── Lo que hay que mantener sincronizado ───────────────────────────────────
+ *
+ * · Los plazos (10 y 15 días hábiles) son los de la Ley 1581, arts. 14 y 15.
+ *   No son los mexicanos de 20 + 15; copiarlos sería incumplir.
+ * · La lista de encargados de la §7 tiene que moverse con el código. Si se
+ *   agrega un proveedor que recibe un dato personal, entra acá.
+ * · Los correos son @leasefy.co. La versión anterior mandaba a
+ *   privacidad@leasefy.com, un dominio que no es el canónico del producto.
+ */
+
 export const metadata: Metadata = {
-  title: "Política de Privacidad | Leasefy",
+  title: "Política de Tratamiento de Datos Personales",
   description:
-    "Política de privacidad y protección de datos personales de Leasefy. Conoce cómo recopilamos, usamos y protegemos tu información.",
+    "Cómo Leasefy recolecta, usa, comparte y protege los datos personales, conforme a la Ley 1581 de 2012 y la Ley 1266 de 2008.",
 };
 
 export default function PrivacidadPage() {
@@ -16,1168 +48,458 @@ export default function PrivacidadPage() {
           <div className="container-platform"><div className="max-w-[800px]">
             <SectionLabel className="mb-4">Legal</SectionLabel>
             <h1 className="text-[2rem] md:text-[3rem] font-light text-foreground leading-[1.15] tracking-[-0.02em] italic mb-4">
-              Política de privacidad
+              Política de tratamiento de datos personales
             </h1>
-            <p className="text-[13px] text-muted-foreground mb-12">
-              Última actualización: 11 de marzo de 2026
-            </p>
+
+            {/* Ficha de cabecera: quién responde, desde cuándo y qué versión.
+                La mayoría de las políticas del mercado colombiano no llevan
+                fecha ni versión, y sin eso no se puede saber qué aceptó cada
+                persona ni cuándo. */}
+            <div className="mb-10 rounded-lg border border-border bg-surface-muted/40 p-5 text-[14px]">
+              <dl className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-[auto_1fr]">
+                <dt className="font-medium text-foreground">Responsable</dt>
+                <dd className="text-muted-foreground">Leasefy S.A.S.</dd>
+                <dt className="font-medium text-foreground">Domicilio</dt>
+                <dd className="text-muted-foreground">Sabaneta, Antioquia, Colombia</dd>
+                <dt className="font-medium text-foreground">Canal de datos personales</dt>
+                <dd className="text-muted-foreground">privacidad@leasefy.co</dd>
+                <dt className="font-medium text-foreground">Ámbito</dt>
+                <dd className="text-muted-foreground">Colombia, únicamente</dd>
+                <dt className="font-medium text-foreground">Vigente desde</dt>
+                <dd className="text-muted-foreground">5 de septiembre de 2026</dd>
+                <dt className="font-medium text-foreground">Versión</dt>
+                <dd className="text-muted-foreground font-mono">v2.0</dd>
+              </dl>
+            </div>
 
             <div className="space-y-10 text-[15px] text-foreground/85 leading-relaxed">
 
-              {/* ── 1. RESPONSABLE DEL TRATAMIENTO ── */}
+              {/* ── 1 ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  1. Responsable del tratamiento
+                  1. Qué cubre esta política, y dónde operamos
                 </h2>
                 <p className="mb-3">
-                  Leasefy S.A.S. (en adelante, &quot;Leasefy&quot;, &quot;nosotros&quot; o la
-                  &quot;Empresa&quot;), sociedad constituida conforme a las leyes de la
-                  República de Colombia, con domicilio principal en Bogotá D.C., es
-                  el responsable del tratamiento de los datos personales recopilados
-                  a través de la plataforma Leasefy (en adelante, la
-                  &quot;Plataforma&quot;).
+                  Leasefy es una plataforma de administración de arriendos que usan
+                  inmobiliarias en Colombia. Esta política explica qué datos
+                  personales tratamos, para qué, con quién los compartimos y qué
+                  podés hacer al respecto.
+                </p>
+                <p className="mb-3">
+                  <strong className="text-foreground/90">Operamos únicamente en Colombia.</strong>{" "}
+                  No prestamos el servicio en otros países. El tratamiento se rige
+                  por la Ley 1581 de 2012 y su Decreto 1377 de 2013, y —cuando hay
+                  información financiera y crediticia— por la Ley 1266 de 2008 y la
+                  Ley 2157 de 2021. La autoridad de control es la Superintendencia
+                  de Industria y Comercio.
                 </p>
                 <p>
-                  Esta Política de Privacidad (en adelante, la &quot;Política&quot;)
-                  describe cómo recopilamos, usamos, compartimos, almacenamos y
-                  protegemos su información personal. Al acceder, registrarse o
-                  utilizar la Plataforma, usted acepta las prácticas descritas en
-                  esta Política. Le recomendamos leerla detenidamente y consultarla
-                  periódicamente.
+                  Aplica al sitio web, al panel de la inmobiliaria, a los portales
+                  del propietario y del inquilino, y a las comunicaciones que
+                  enviamos por correo, WhatsApp y llamada telefónica. No tenemos
+                  aplicaciones móviles.
                 </p>
               </section>
 
-              {/* ── 2. ALCANCE Y APLICABILIDAD ── */}
+              {/* ── 2 ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  2. Alcance y aplicabilidad
+                  2. Quién responde por tus datos: nosotros o tu inmobiliaria
                 </h2>
                 <p className="mb-3">
-                  Esta Política aplica a todos los datos personales recopilados a
-                  través de:
+                  Esta distinción decide a quién reclamarle, así que la ponemos
+                  primero.
                 </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    El sitio web de Leasefy y cualquier subdominio asociado.
-                  </li>
-                  <li>
-                    Las aplicaciones móviles de Leasefy (iOS y Android).
-                  </li>
-                  <li>
-                    Las APIs y servicios integrados de la Plataforma.
-                  </li>
-                  <li>
-                    Las comunicaciones por correo electrónico, WhatsApp, SMS u otros
-                    canales de contacto operados por Leasefy.
-                  </li>
-                  <li>
-                    La interacción con terceros proveedores de servicios que actúan
-                    en nombre de Leasefy.
-                  </li>
-                </ul>
-                <p className="mt-3">
-                  La Plataforma opera en múltiples jurisdicciones. Cuando apliquen
-                  normativas de protección de datos específicas de su país de
-                  residencia, las disposiciones adicionales se describen en la
-                  Sección 17 de esta Política.
-                </p>
-              </section>
-
-              {/* ── 3. DATOS QUE RECOPILAMOS ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  3. Datos que recopilamos
-                </h2>
                 <p className="mb-3">
-                  Recopilamos las siguientes categorías de datos personales:
+                  <strong className="text-foreground/90">Leasefy es responsable</strong> de
+                  los datos de las personas que contratan directamente con nosotros
+                  —las inmobiliarias y quienes usan sus cuentas— y de los datos de
+                  quienes navegan el sitio.
                 </p>
-
-                <h3 className="text-[15px] font-medium text-foreground mb-2 mt-4">
-                  3.1. Datos proporcionados por el usuario
-                </h3>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    <span className="text-foreground/85 font-medium">Datos de identificación:</span>{" "}
-                    nombre completo, número de documento de identidad (cédula de
-                    ciudadanía, cédula de extranjería, pasaporte, CPF, CURP, DNI,
-                    SSN según jurisdicción), fecha de nacimiento, nacionalidad,
-                    fotografía del documento de identidad.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Datos de contacto:</span>{" "}
-                    dirección de correo electrónico, número de teléfono, dirección
-                    física de residencia.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Datos financieros y laborales:</span>{" "}
-                    información de empleo, ingresos mensuales, referencias
-                    bancarias, extractos financieros, información tributaria
-                    necesaria para el proceso de evaluación de arrendamiento.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Datos de inmuebles:</span>{" "}
-                    dirección, características, fotografías, escritura o certificado
-                    de tradición, avalúo y demás información relacionada con los
-                    inmuebles ofrecidos en arrendamiento.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Datos contractuales:</span>{" "}
-                    historial de arrendamiento, contratos anteriores, referencias de
-                    arrendadores previos.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Datos de la empresa (usuarios corporativos):</span>{" "}
-                    razón social, NIT/RFC/CNPJ/RUT/CUIT, registro mercantil,
-                    representación legal, información de agentes autorizados.
-                  </li>
-                </ul>
-
-                <h3 className="text-[15px] font-medium text-foreground mb-2 mt-4">
-                  3.2. Datos recopilados automáticamente
-                </h3>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    <span className="text-foreground/85 font-medium">Datos de uso:</span>{" "}
-                    páginas visitadas, funcionalidades utilizadas, búsquedas
-                    realizadas, inmuebles visualizados, frecuencia y duración de
-                    las sesiones, clics e interacciones con la Plataforma.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Datos del dispositivo:</span>{" "}
-                    dirección IP, tipo y versión del navegador, sistema operativo,
-                    resolución de pantalla, idioma del dispositivo, identificadores
-                    únicos del dispositivo.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Datos de ubicación:</span>{" "}
-                    ubicación aproximada derivada de la dirección IP. No recopilamos
-                    ubicación GPS precisa sin su consentimiento explícito.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Cookies y tecnologías similares:</span>{" "}
-                    identificadores de sesión, preferencias de usuario, datos de
-                    rendimiento. Ver Sección 10 para detalles.
-                  </li>
-                </ul>
-
-                <h3 className="text-[15px] font-medium text-foreground mb-2 mt-4">
-                  3.3. Datos obtenidos de terceros
-                </h3>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    <span className="text-foreground/85 font-medium">Centrales de riesgo e información financiera:</span>{" "}
-                    cuando usted lo autorice y la ley lo permita, consultamos
-                    información crediticia y financiera en centrales de riesgo
-                    autorizadas (en Colombia: DataCrédito, TransUnion CIFIN,
-                    conforme a la Ley 1266 de 2008).
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Proveedores de autenticación:</span>{" "}
-                    cuando inicie sesión con proveedores externos (Google, Apple),
-                    recibimos los datos que usted autorice compartir (nombre, correo,
-                    foto de perfil).
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Fuentes públicas:</span>{" "}
-                    información disponible en registros públicos, conforme a la
-                    legislación aplicable.
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 4. BASE LEGAL DEL TRATAMIENTO ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  4. Base legal del tratamiento
-                </h2>
                 <p className="mb-3">
-                  El tratamiento de sus datos personales se fundamenta en las
-                  siguientes bases legales, según la naturaleza del dato y la
-                  finalidad del tratamiento:
+                  <strong className="text-foreground/90">Leasefy es encargado</strong> cuando
+                  una inmobiliaria carga en la plataforma los datos de sus
+                  propietarios, inquilinos, codeudores o deudores. En ese caso la
+                  responsable es la inmobiliaria: ella decidió recolectarlos y para
+                  qué, y es quien debe haber obtenido tu autorización. Nosotros los
+                  tratamos por cuenta de ella, siguiendo sus instrucciones.
                 </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    <span className="text-foreground/85 font-medium">Consentimiento:</span>{" "}
-                    autorización previa, expresa e informada otorgada por el titular
-                    al momento del registro o en oportunidades posteriores para
-                    finalidades específicas.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Ejecución contractual:</span>{" "}
-                    tratamiento necesario para la prestación de los servicios
-                    contratados a través de la Plataforma.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Obligación legal:</span>{" "}
-                    cumplimiento de obligaciones impuestas por la ley, incluyendo
-                    normativa tributaria, prevención de lavado de activos y
-                    requerimientos de autoridades competentes.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Interés legítimo:</span>{" "}
-                    cuando sea aplicable conforme a la legislación de la jurisdicción
-                    del Usuario, para fines como la prevención del fraude, la
-                    seguridad de la Plataforma y la mejora de los servicios,
-                    siempre que no prevalezcan los derechos fundamentales del
-                    titular.
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 5. FINALIDAD DEL TRATAMIENTO ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  5. Finalidad del tratamiento
-                </h2>
-                <p className="mb-3">
-                  Sus datos personales serán utilizados para las siguientes
-                  finalidades:
-                </p>
-
-                <h3 className="text-[15px] font-medium text-foreground mb-2 mt-4">
-                  5.1. Finalidades principales (necesarias para la prestación del
-                  servicio)
-                </h3>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Gestionar el registro, creación y administración de su cuenta en
-                    la Plataforma.
-                  </li>
-                  <li>
-                    Verificar su identidad y autenticidad de la información
-                    proporcionada.
-                  </li>
-                  <li>
-                    Facilitar la búsqueda, evaluación y formalización de contratos
-                    de arrendamiento.
-                  </li>
-                  <li>
-                    Realizar el análisis de riesgo y scoring de inquilinos, cuando
-                    el usuario lo solicite y autorice.
-                  </li>
-                  <li>
-                    Procesar pagos de cánones de arrendamiento y dispersiones a
-                    propietarios.
-                  </li>
-                  <li>
-                    Generar y facilitar la firma electrónica de contratos y
-                    documentos.
-                  </li>
-                  <li>
-                    Enviar comunicaciones transaccionales relacionadas con el
-                    servicio (confirmaciones, alertas, notificaciones).
-                  </li>
-                  <li>
-                    Proporcionar soporte técnico y atención al cliente.
-                  </li>
-                  <li>
-                    Cumplir con obligaciones legales, tributarias y regulatorias.
-                  </li>
-                  <li>
-                    Prevenir fraude, lavado de activos y financiación del terrorismo.
-                  </li>
-                </ul>
-
-                <h3 className="text-[15px] font-medium text-foreground mb-2 mt-4">
-                  5.2. Finalidades secundarias (requieren consentimiento adicional)
-                </h3>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Enviar comunicaciones comerciales, promocionales y de marketing
-                    sobre productos y servicios de Leasefy.
-                  </li>
-                  <li>
-                    Realizar estudios de mercado, análisis estadísticos y encuestas
-                    de satisfacción.
-                  </li>
-                  <li>
-                    Personalizar la experiencia en la Plataforma mediante análisis de
-                    patrones de uso.
-                  </li>
-                  <li>
-                    Compartir información con socios comerciales para ofertas
-                    relacionadas con el arrendamiento (seguros, servicios públicos,
-                    mudanzas).
-                  </li>
-                </ul>
-                <p className="mt-3">
-                  Usted puede revocar su consentimiento para las finalidades
-                  secundarias en cualquier momento, sin que ello afecte la
-                  prestación de los servicios principales.
+                <p>
+                  Aun así te explicamos acá cómo cuidamos esos datos, porque
+                  escondernos detrás del rol de encargado no te serviría de nada. Si
+                  no sabés cuál inmobiliaria administra tu contrato, escribinos y te
+                  lo decimos.
                 </p>
               </section>
 
-              {/* ── 6. DATOS SENSIBLES ── */}
+              {/* ── 3 ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  6. Datos sensibles
-                </h2>
-                <p className="mb-3">
-                  Conforme al artículo 5 de la Ley 1581 de 2012 (Colombia) y la
-                  normativa equivalente en otras jurisdicciones, los datos sensibles
-                  son aquellos que afectan la intimidad del titular o cuyo uso
-                  indebido puede generar discriminación. Leasefy:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Solo recopila datos sensibles cuando existe una autorización
-                    previa, expresa e informada del titular, o cuando la ley lo
-                    permita sin consentimiento (obligación legal, protección de
-                    interés vital, datos necesarios para el reconocimiento de
-                    derechos en proceso judicial).
-                  </li>
-                  <li>
-                    No condiciona la prestación de sus servicios a la entrega de
-                    datos sensibles, salvo que sean estrictamente necesarios para
-                    la finalidad del tratamiento.
-                  </li>
-                  <li>
-                    Aplica medidas de seguridad reforzadas para el almacenamiento y
-                    procesamiento de datos sensibles.
-                  </li>
-                  <li>
-                    No utiliza datos biométricos sin el consentimiento explícito e
-                    informado del titular, conforme a la legislación aplicable en
-                    cada jurisdicción.
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 7. CONSENTIMIENTO ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  7. Consentimiento y autorización
-                </h2>
-                <p className="mb-3">
-                  Al registrarse en la Plataforma, usted otorga su consentimiento
-                  previo, expreso e informado para el tratamiento de sus datos
-                  personales conforme a esta Política. Adicionalmente:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    La Plataforma presenta solicitudes de autorización específicas
-                    para la consulta de centrales de riesgo, la recopilación de
-                    datos sensibles y el envío de comunicaciones comerciales.
-                  </li>
-                  <li>
-                    Usted puede revocar su consentimiento en cualquier momento, sin
-                    efecto retroactivo, mediante comunicación escrita a{" "}
-                    <a
-                      href="mailto:privacidad@leasefy.com"
-                      className="text-foreground underline underline-offset-4 hover:text-foreground/70 transition-colors"
-                    >
-                      privacidad@leasefy.com
-                    </a>
-                    .
-                  </li>
-                  <li>
-                    La revocación del consentimiento para finalidades principales
-                    puede resultar en la imposibilidad de continuar prestando
-                    algunos servicios.
-                  </li>
-                  <li>
-                    Leasefy conserva prueba del consentimiento otorgado, incluyendo
-                    fecha, hora, medio y alcance de la autorización.
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 8. USO DE IA Y DECISIONES AUTOMATIZADAS ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  8. Uso de inteligencia artificial y decisiones automatizadas
-                </h2>
-                <p className="mb-3">
-                  Leasefy utiliza sistemas de inteligencia artificial (IA) y
-                  algoritmos automatizados en los siguientes procesos:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    <span className="text-foreground/85 font-medium">Evaluación de inquilinos (Scoring):</span>{" "}
-                    análisis automatizado de información financiera, laboral y
-                    personal para generar una puntuación de riesgo indicativa. Esta
-                    puntuación es un insumo de apoyo y no una decisión final
-                    automatizada.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Recomendaciones de propiedades:</span>{" "}
-                    personalización de resultados de búsqueda basada en historial
-                    de navegación y preferencias del usuario.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Detección de fraude:</span>{" "}
-                    monitoreo automatizado de patrones de uso para identificar
-                    actividades sospechosas.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Análisis de mercado:</span>{" "}
-                    estimaciones de valor de arrendamiento basadas en datos del
-                    mercado local.
-                  </li>
-                </ul>
-                <p className="mt-3 mb-3">
-                  Con respecto a las decisiones automatizadas, usted tiene derecho a:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Ser informado cuando una decisión que le afecte se base total o
-                    parcialmente en un proceso automatizado.
-                  </li>
-                  <li>
-                    Solicitar una explicación general de la lógica utilizada y los
-                    factores principales que influyen en el resultado.
-                  </li>
-                  <li>
-                    Solicitar la revisión humana de cualquier decisión automatizada
-                    que le afecte significativamente.
-                  </li>
-                  <li>
-                    Impugnar resultados que considere incorrectos o basados en
-                    información errónea.
-                  </li>
-                </ul>
-                <p className="mt-3 text-[13px] text-muted-foreground italic">
-                  Leasefy se compromete a que sus sistemas de IA no discriminen por
-                  motivos de raza, género, religión, orientación sexual, origen
-                  nacional, discapacidad u otras categorías protegidas. Los modelos
-                  son auditados periódicamente para detectar y corregir sesgos.
-                </p>
-              </section>
-
-              {/* ── 9. DATOS FINANCIEROS Y HABEAS DATA ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  9. Datos financieros y habeas data
-                </h2>
-                <p className="mb-3">
-                  Cuando la evaluación de inquilinos incluya consulta de información
-                  financiera en centrales de riesgo:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    <span className="text-foreground/85 font-medium">En Colombia:</span>{" "}
-                    las consultas se realizan conforme a la Ley 1266 de 2008
-                    (Habeas Data Financiero), previa autorización expresa del
-                    titular. El titular tiene derecho a conocer, actualizar,
-                    rectificar y solicitar la supresión de su información financiera.
-                    Las centrales consultadas son aquellas autorizadas por la
-                    Superintendencia de Industria y Comercio.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">En Estados Unidos:</span>{" "}
-                    si en el futuro se accede a información de consumer reporting
-                    agencies, Leasefy cumplirá con la Fair Credit Reporting Act
-                    (FCRA), incluyendo el deber de proporcionar adverse action
-                    notices, permitir la disputa de información inexacta y limitar
-                    el uso permisible de reportes de crédito.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">En otras jurisdicciones:</span>{" "}
-                    se cumplirá con la normativa local de protección de datos
-                    financieros y crediticios aplicable.
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 10. COOKIES Y TECNOLOGÍAS DE RASTREO ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  10. Cookies y tecnologías de rastreo
-                </h2>
-                <p className="mb-3">
-                  La Plataforma utiliza cookies y tecnologías similares para mejorar
-                  la experiencia del usuario. A continuación se describen los tipos
-                  de cookies utilizadas:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    <span className="text-foreground/85 font-medium">Cookies esenciales:</span>{" "}
-                    necesarias para el funcionamiento básico de la Plataforma
-                    (autenticación, seguridad, preferencias de sesión). No pueden
-                    desactivarse.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Cookies de rendimiento:</span>{" "}
-                    recopilan información anónima sobre el uso de la Plataforma
-                    para mejorar su rendimiento y funcionalidad (tiempos de carga,
-                    errores, páginas más visitadas).
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Cookies funcionales:</span>{" "}
-                    permiten recordar preferencias del usuario (idioma, moneda,
-                    filtros de búsqueda guardados).
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Cookies de análisis:</span>{" "}
-                    utilizadas para comprender cómo los usuarios interactúan con la
-                    Plataforma, mediante herramientas como Google Analytics u otras
-                    plataformas de análisis.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Cookies de publicidad:</span>{" "}
-                    se utilizan para mostrar publicidad relevante al usuario. Solo
-                    se activan con su consentimiento explícito.
-                  </li>
-                </ul>
-                <p className="mt-3">
-                  Usted puede configurar su navegador para rechazar cookies no
-                  esenciales o eliminar las cookies almacenadas. Tenga en cuenta que
-                  la desactivación de ciertas cookies puede afectar la
-                  funcionalidad de la Plataforma. También puede gestionar sus
-                  preferencias de cookies desde el banner de consentimiento de la
-                  Plataforma.
-                </p>
-              </section>
-
-              {/* ── 11. COMPARTIR DATOS CON TERCEROS ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  11. Compartir datos con terceros
-                </h2>
-                <p className="mb-3">
-                  Leasefy podrá compartir sus datos personales con las siguientes
-                  categorías de terceros, siempre conforme a la legislación
-                  aplicable y con las garantías adecuadas:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    <span className="text-foreground/85 font-medium">Proveedores de servicios (encargados del tratamiento):</span>{" "}
-                    empresas que prestan servicios en nombre de Leasefy, incluyendo
-                    procesamiento de pagos, alojamiento en la nube, envío de
-                    comunicaciones, análisis de datos y soporte técnico. Estos
-                    proveedores están obligados contractualmente a proteger sus datos
-                    y a utilizarlos exclusivamente para los fines autorizados.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Contrapartes del arrendamiento:</span>{" "}
-                    los datos necesarios para la evaluación y formalización del
-                    contrato podrán compartirse con la contraparte (Arrendador o
-                    Arrendatario) según corresponda.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Agentes inmobiliarios e inmobiliarias:</span>{" "}
-                    cuando un agente gestione propiedades en nombre de un
-                    propietario, tendrá acceso a los datos necesarios para la
-                    gestión del arrendamiento.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Centrales de riesgo e información financiera:</span>{" "}
-                    cuando usted autorice la consulta o reporte de información
-                    crediticia, conforme a la legislación aplicable.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Autoridades competentes:</span>{" "}
-                    cuando exista una obligación legal, orden judicial,
-                    requerimiento de autoridad administrativa o cuando sea necesario
-                    para la prevención de actividades delictivas.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Empresas del grupo o afiliadas:</span>{" "}
-                    con empresas vinculadas a Leasefy que cumplan con estándares
-                    equivalentes de protección de datos.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">En caso de fusión, adquisición o reorganización:</span>{" "}
-                    si Leasefy participa en una fusión, adquisición, venta de
-                    activos o reestructuración, los datos personales podrán
-                    transferirse como parte de la transacción, previa notificación
-                    a los titulares.
-                  </li>
-                </ul>
-                <p className="mt-3">
-                  Leasefy <span className="text-foreground/85 font-medium">no vende</span>{" "}
-                  datos personales a terceros para fines de marketing directo ni
-                  para ningún otro fin comercial ajeno a la prestación de sus
-                  servicios.
-                </p>
-              </section>
-
-              {/* ── 12. TRANSFERENCIAS INTERNACIONALES DE DATOS ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  12. Transferencias internacionales de datos
-                </h2>
-                <p className="mb-3">
-                  Dado que Leasefy opera en múltiples jurisdicciones y utiliza
-                  proveedores de servicios globales, sus datos personales pueden
-                  ser transferidos y procesados en países distintos al de su
-                  residencia. Cuando esto ocurra:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Las transferencias se realizarán conforme a la normativa de
-                    protección de datos aplicable en la jurisdicción de origen de
-                    los datos.
-                  </li>
-                  <li>
-                    Se implementarán garantías adecuadas, tales como cláusulas
-                    contractuales tipo, acuerdos de transferencia de datos o la
-                    verificación de que el país receptor ofrezca un nivel adecuado
-                    de protección.
-                  </li>
-                  <li>
-                    En Colombia, las transferencias internacionales cumplen con lo
-                    establecido en el artículo 26 de la Ley 1581 de 2012 y la
-                    Circular Única de la SIC.
-                  </li>
-                  <li>
-                    En Brasil, las transferencias cumplen con el Capítulo V de la
-                    LGPD (Arts. 33-36).
-                  </li>
-                  <li>
-                    Los proveedores de infraestructura en la nube utilizados por
-                    Leasefy cumplen con estándares internacionales de seguridad
-                    (SOC 2 Type II, ISO 27001).
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 13. SEGURIDAD DE LOS DATOS ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  13. Seguridad de los datos
-                </h2>
-                <p className="mb-3">
-                  Leasefy implementa medidas técnicas, administrativas y
-                  organizativas apropiadas para proteger sus datos personales
-                  contra el acceso no autorizado, la pérdida, la alteración, la
-                  divulgación o la destrucción, incluyendo:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Cifrado de datos en tránsito (TLS/SSL) y en reposo (AES-256).
-                  </li>
-                  <li>
-                    Autenticación multifactor (MFA) disponible para todos los
-                    usuarios.
-                  </li>
-                  <li>
-                    Control de acceso basado en roles (RBAC) con principio de
-                    mínimo privilegio.
-                  </li>
-                  <li>
-                    Monitoreo continuo de seguridad, detección de intrusiones y
-                    registro de auditoría.
-                  </li>
-                  <li>
-                    Evaluaciones periódicas de seguridad y pruebas de penetración.
-                  </li>
-                  <li>
-                    Planes de respuesta a incidentes y continuidad del negocio.
-                  </li>
-                  <li>
-                    Capacitación regular del personal en materia de protección de
-                    datos y seguridad de la información.
-                  </li>
-                  <li>
-                    Tokenización de datos financieros sensibles (números de tarjeta,
-                    cuentas bancarias).
-                  </li>
-                </ul>
-                <p className="mt-3">
-                  No obstante, ningún sistema de seguridad es infalible. Leasefy no
-                  puede garantizar la seguridad absoluta de la información y no
-                  será responsable de brechas de seguridad que ocurran a pesar de
-                  haber implementado medidas razonables y conformes al estado de la
-                  técnica.
-                </p>
-              </section>
-
-              {/* ── 14. RETENCIÓN DE DATOS ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  14. Retención de datos
-                </h2>
-                <p className="mb-3">
-                  Leasefy conservará sus datos personales durante el tiempo
-                  necesario para cumplir con las finalidades descritas en esta
-                  Política, salvo que un período de retención mayor sea requerido o
-                  permitido por la ley:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    <span className="text-foreground/85 font-medium">Datos de cuenta activa:</span>{" "}
-                    mientras la cuenta permanezca activa y durante el período
-                    necesario para la prestación de servicios.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Datos contractuales:</span>{" "}
-                    por un período mínimo de cinco (5) años después de la
-                    terminación del contrato, conforme a las obligaciones legales
-                    de retención documental.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Datos tributarios y contables:</span>{" "}
-                    por el período establecido en la legislación tributaria
-                    aplicable (generalmente 5-10 años).
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Datos de prevención LA/FT:</span>{" "}
-                    por un período mínimo de cinco (5) años después de la
-                    terminación de la relación comercial, conforme a la normativa
-                    de prevención de lavado de activos.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Registros de firma electrónica:</span>{" "}
-                    por el período de validez del documento firmado y el plazo de
-                    prescripción de las acciones legales derivadas del mismo.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Datos de evaluación/scoring:</span>{" "}
-                    la vigencia de las evaluaciones es indicada al momento de su
-                    generación. Los datos de soporte se conservan conforme a los
-                    plazos legales aplicables.
-                  </li>
-                </ul>
-                <p className="mt-3">
-                  Una vez cumplido el período de retención, los datos serán
-                  eliminados de forma segura o anonimizados de manera irreversible
-                  para fines estadísticos.
-                </p>
-              </section>
-
-              {/* ── 15. DERECHOS DEL TITULAR ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  15. Derechos del titular
-                </h2>
-                <p className="mb-3">
-                  Independientemente de su jurisdicción, como titular de datos
-                  personales usted tiene los siguientes derechos fundamentales:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    <span className="text-foreground/85 font-medium">Acceso:</span>{" "}
-                    conocer qué datos personales suyos están siendo tratados por
-                    Leasefy y obtener una copia de los mismos.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Rectificación:</span>{" "}
-                    solicitar la corrección de datos personales inexactos,
-                    incompletos o desactualizados.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Supresión / Eliminación:</span>{" "}
-                    solicitar la eliminación de sus datos personales cuando ya no
-                    sean necesarios para las finalidades autorizadas, cuando revoque
-                    su consentimiento, o cuando el tratamiento sea ilícito.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Revocación del consentimiento:</span>{" "}
-                    retirar en cualquier momento el consentimiento otorgado para el
-                    tratamiento de sus datos, sin efecto retroactivo.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Oposición:</span>{" "}
-                    oponerse al tratamiento de sus datos para finalidades
-                    específicas, especialmente para fines de marketing directo.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Portabilidad:</span>{" "}
-                    solicitar la entrega de sus datos personales en un formato
-                    estructurado, de uso común y lectura mecánica, cuando sea
-                    técnicamente factible y la legislación lo prevea.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Limitación del tratamiento:</span>{" "}
-                    solicitar que se restrinja el tratamiento de sus datos en
-                    determinadas circunstancias.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">No ser objeto de decisiones automatizadas:</span>{" "}
-                    solicitar intervención humana en decisiones basadas
-                    exclusivamente en tratamientos automatizados que le afecten
-                    significativamente.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Solicitar prueba del consentimiento:</span>{" "}
-                    pedir evidencia de la autorización otorgada para el tratamiento
-                    de sus datos.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Presentar quejas:</span>{" "}
-                    acudir ante la autoridad de protección de datos competente en
-                    su jurisdicción si considera que sus derechos han sido
-                    vulnerados.
-                  </li>
-                </ul>
-                <p className="mt-3">
-                  Para ejercer cualquiera de estos derechos, envíe su solicitud a{" "}
-                  <a
-                    href="mailto:privacidad@leasefy.com"
-                    className="text-foreground underline underline-offset-4 hover:text-foreground/70 transition-colors"
-                  >
-                    privacidad@leasefy.com
-                  </a>
-                  {" "}indicando: (a) su nombre completo y datos de contacto; (b) una
-                  descripción clara de su solicitud; (c) documentos que acrediten
-                  su identidad. Leasefy responderá dentro de los plazos
-                  establecidos por la legislación aplicable (15 días hábiles en
-                  Colombia, conforme a la Ley 1581 de 2012).
-                </p>
-              </section>
-
-              {/* ── 16. DERECHOS ESPECÍFICOS POR JURISDICCIÓN ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  16. Derechos específicos por jurisdicción
+                  3. Qué datos tratamos, según quién seas
                 </h2>
                 <p className="mb-4">
-                  Además de los derechos generales descritos en la Sección 15, las
-                  siguientes jurisdicciones otorgan derechos adicionales:
+                  No todos los que aparecen en la plataforma tienen la misma
+                  relación con nosotros. Por eso va separado.
                 </p>
 
-                {/* Colombia */}
-                <div className="mb-6 pl-4 border-l-2 border-foreground/10">
-                  <h3 className="text-[16px] font-medium text-foreground mb-2">
-                    16.1. Colombia
-                  </h3>
-                  <p className="mb-2">
-                    De conformidad con la Ley 1581 de 2012 y el Decreto 1377 de
-                    2013:
-                  </p>
-                  <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                    <li>
-                      Los titulares pueden ejercer sus derechos de consulta (Art. 14)
-                      y reclamo (Art. 15) directamente ante Leasefy.
-                    </li>
-                    <li>
-                      Las consultas serán atendidas en un término máximo de diez (10)
-                      días hábiles. Los reclamos en un término máximo de quince (15)
-                      días hábiles, prorrogables por ocho (8) días más.
-                    </li>
-                    <li>
-                      Para datos de habeas data financiero (Ley 1266 de 2008), el
-                      titular puede solicitar la actualización, rectificación o
-                      supresión de información reportada en centrales de riesgo.
-                    </li>
-                    <li>
-                      Autoridad de supervisión: Superintendencia de Industria y
-                      Comercio (SIC), Delegatura para la Protección de Datos
-                      Personales.
-                    </li>
-                  </ul>
-                </div>
+                <h3 className="text-[15px] font-medium text-foreground mb-2">
+                  3.1. Si te postulás a un arriendo
+                </h3>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-4">
+                  <li>Identificación: nombre, tipo y número de documento, fecha de nacimiento, estado civil y número de personas a cargo.</li>
+                  <li>Contacto: teléfono, correo y dirección actual.</li>
+                  <li>Laborales y de ingresos: empleador, cargo, antigüedad, salario, otros ingresos y obligaciones mensuales.</li>
+                  <li>Documentos que subís: cédula, desprendibles de pago, extractos bancarios, carta laboral. Guardamos el archivo y también el texto que extraemos de él.</li>
+                  <li>Referencias que aportás: arrendadores anteriores, referencias laborales y personales.</li>
+                  <li>Historial crediticio, cuando autorizás la consulta (ver §5).</li>
+                </ul>
 
-                {/* México */}
-                <div className="mb-6 pl-4 border-l-2 border-foreground/10">
-                  <h3 className="text-[16px] font-medium text-foreground mb-2">
-                    16.2. México
-                  </h3>
-                  <p className="mb-2">
-                    De conformidad con la LFPDPPP:
-                  </p>
-                  <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                    <li>
-                      Los titulares gozan de los derechos ARCO (Acceso,
-                      Rectificación, Cancelación y Oposición).
-                    </li>
-                    <li>
-                      Las solicitudes ARCO serán atendidas en un plazo máximo de
-                      veinte (20) días hábiles.
-                    </li>
-                    <li>
-                      El Aviso de Privacidad se pone a disposición del titular al
-                      momento de la recopilación de datos, conforme al artículo 15
-                      de la LFPDPPP.
-                    </li>
-                    <li>
-                      Autoridad de supervisión: Instituto Nacional de Transparencia,
-                      Acceso a la Información y Protección de Datos Personales
-                      (INAI).
-                    </li>
-                  </ul>
-                </div>
+                <h3 className="text-[15px] font-medium text-foreground mb-2">
+                  3.2. Si sos propietario
+                </h3>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-4">
+                  <li>Identificación y contacto.</li>
+                  <li>Datos bancarios para recibir los giros: banco, tipo y número de cuenta, y titular.</li>
+                  <li>Perfil tributario, para calcular las retenciones.</li>
+                  <li>Los inmuebles que administrás y su historial.</li>
+                </ul>
 
-                {/* Brasil */}
-                <div className="mb-6 pl-4 border-l-2 border-foreground/10">
-                  <h3 className="text-[16px] font-medium text-foreground mb-2">
-                    16.3. Brasil
-                  </h3>
-                  <p className="mb-2">
-                    De conformidad con la LGPD (Lei 13.709/2018):
-                  </p>
-                  <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                    <li>
-                      Los titulares tienen derechos de confirmación de existencia
-                      del tratamiento, acceso, corrección, anonimización, bloqueo,
-                      eliminación, portabilidad, información sobre compartición
-                      con terceros y revocación del consentimiento.
-                    </li>
-                    <li>
-                      Leasefy designará un Encarregado (DPO) conforme al artículo
-                      41 de la LGPD, cuyos datos de contacto estarán publicados en
-                      la Plataforma.
-                    </li>
-                    <li>
-                      Autoridad de supervisión: Autoridade Nacional de Proteção de
-                      Dados (ANPD).
-                    </li>
-                  </ul>
-                </div>
+                <h3 className="text-[15px] font-medium text-foreground mb-2">
+                  3.3. Si tenés un pago en mora
+                </h3>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-4">
+                  <li>Identificación, teléfonos y correo.</li>
+                  <li>El detalle de la obligación: montos, fechas, días de atraso y acuerdos de pago.</li>
+                  <li><strong className="text-foreground/85">La grabación y la transcripción de las llamadas</strong>, y el contenido de los mensajes de WhatsApp y correo (ver §4).</li>
+                  <li>Un resumen de la gestión que produce nuestro sistema: si hubo intención de pago, si manifestaste una dificultad económica, y qué canal y horario funcionan mejor. Sirve para no volver a pedirte lo mismo y para respetar tus preferencias de contacto.</li>
+                </ul>
 
-                {/* Chile */}
-                <div className="mb-6 pl-4 border-l-2 border-foreground/10">
-                  <h3 className="text-[16px] font-medium text-foreground mb-2">
-                    16.4. Chile
-                  </h3>
-                  <p className="mb-2">
-                    De conformidad con la Ley 19.628 y la futura Ley 21.719 (vigente
-                    a partir de diciembre de 2026):
-                  </p>
-                  <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                    <li>
-                      Los titulares tienen derechos de acceso, rectificación,
-                      cancelación, oposición y portabilidad (este último bajo la
-                      nueva Ley 21.719).
-                    </li>
-                    <li>
-                      La nueva ley establecerá la Agencia de Protección de Datos
-                      Personales como autoridad de supervisión.
-                    </li>
-                  </ul>
-                </div>
+                <h3 className="text-[15px] font-medium text-foreground mb-2">
+                  3.4. Si sos codeudor, fiador o referencia
+                </h3>
+                <p className="mb-4 text-muted-foreground">
+                  Puede que estemos tratando tus datos porque otra persona los
+                  aportó al postularse, y que te contactemos por teléfono. Quien te
+                  incluyó debía tener tu permiso. Si no lo diste, escribinos a{" "}
+                  <span className="text-foreground/85 font-medium">privacidad@leasefy.co</span>{" "}
+                  y los sacamos.
+                </p>
 
-                {/* Perú y Argentina */}
-                <div className="mb-6 pl-4 border-l-2 border-foreground/10">
-                  <h3 className="text-[16px] font-medium text-foreground mb-2">
-                    16.5. Perú
-                  </h3>
-                  <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                    <li>
-                      Los titulares gozan de los derechos establecidos en la Ley
-                      29733: acceso, rectificación, cancelación, oposición e
-                      información.
-                    </li>
-                    <li>
-                      Autoridad de supervisión: Autoridad Nacional de Protección
-                      de Datos Personales (ANPDP), adscrita al Ministerio de
-                      Justicia.
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="mb-6 pl-4 border-l-2 border-foreground/10">
-                  <h3 className="text-[16px] font-medium text-foreground mb-2">
-                    16.6. Argentina
-                  </h3>
-                  <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                    <li>
-                      Los titulares gozan de los derechos establecidos en la Ley
-                      25.326: acceso, rectificación, actualización, supresión y
-                      confidencialidad.
-                    </li>
-                    <li>
-                      Autoridad de supervisión: Agencia de Acceso a la Información
-                      Pública (AAIP).
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Estados Unidos */}
-                <div className="pl-4 border-l-2 border-foreground/10">
-                  <h3 className="text-[16px] font-medium text-foreground mb-2">
-                    16.7. Estados Unidos
-                  </h3>
-                  <p className="mb-2">
-                    Para residentes de California y otros estados con leyes de
-                    privacidad:
-                  </p>
-                  <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                    <li>
-                      <span className="text-foreground/85 font-medium">California (CCPA/CPRA):</span>{" "}
-                      los residentes de California tienen derecho a: (a) conocer qué
-                      información personal se recopila y cómo se utiliza; (b)
-                      solicitar la eliminación de su información; (c) optar por no
-                      participar en la &quot;venta&quot; o &quot;compartición&quot; de información
-                      personal; (d) no ser discriminados por ejercer sus derechos de
-                      privacidad; (e) corregir información personal inexacta; (f)
-                      limitar el uso de información personal sensible. Leasefy no
-                      vende información personal de los usuarios.
-                    </li>
-                    <li>
-                      <span className="text-foreground/85 font-medium">Otros estados:</span>{" "}
-                      Leasefy cumplirá con las leyes de privacidad estatales
-                      aplicables, incluyendo las de Virginia (VCDPA), Colorado
-                      (CPA), Connecticut (CTDPA), Utah (UCPA) y otros estados que
-                      adopten legislación de privacidad.
-                    </li>
-                    <li>
-                      Leasefy no recopila deliberadamente información de menores de
-                      13 años (COPPA). Si toma conocimiento de que un menor ha
-                      proporcionado información, la eliminará de inmediato.
-                    </li>
-                  </ul>
-                </div>
+                <h3 className="text-[15px] font-medium text-foreground mb-2">
+                  3.5. Si sólo visitás el sitio
+                </h3>
+                <p className="text-muted-foreground">
+                  Datos técnicos de la conexión y de tu navegador. Ver §10.
+                </p>
               </section>
 
-              {/* ── 17. MENORES DE EDAD ── */}
+              {/* ── 4 ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  17. Menores de edad
+                  4. Llamadas: se graban, y te lo decimos al empezar
+                </h2>
+                <p className="mb-3">
+                  Cuando gestionamos un pago en mora podemos llamarte con un sistema
+                  automatizado. Tres cosas, dichas sin rodeos:
+                </p>
+                <ul className="list-disc pl-5 space-y-2 text-muted-foreground mb-3">
+                  <li>
+                    <strong className="text-foreground/85">Te decimos que es un sistema automatizado.</strong>{" "}
+                    La llamada empieza identificando a quien llama y aclarando que no
+                    es una persona.
+                  </li>
+                  <li>
+                    <strong className="text-foreground/85">Se graba la totalidad de la llamada, y te lo informamos al inicio.</strong>{" "}
+                    Guardamos el audio y su transcripción como prueba de la gestión y
+                    para verificar que cumplimos las reglas de cobranza.
+                  </li>
+                  <li>
+                    <strong className="text-foreground/85">Podés pedir que no te llamemos más.</strong>{" "}
+                    Decilo durante la llamada, o respondé el mensaje de WhatsApp
+                    pidiendo la baja. Queda registrado y deja de usarse ese canal.
+                  </li>
+                </ul>
+                <p>
+                  Los horarios, la frecuencia y los canales que usamos están
+                  limitados por la Ley 2300 de 2023, y el sistema los verifica antes
+                  de cada intento: si el contacto no está permitido, no se hace.
+                  También consultamos el Registro Nacional de Excluidos de la
+                  Superintendencia de Industria y Comercio antes de llamar; si no
+                  podemos consultarlo, no llamamos.
+                </p>
+              </section>
+
+              {/* ── 5 ── */}
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  5. Centrales de riesgo
+                </h2>
+                <p className="mb-3">
+                  El estudio de una postulación puede incluir la consulta de tu
+                  historial en <strong className="text-foreground/90">DataCrédito (Experian)</strong> y{" "}
+                  <strong className="text-foreground/90">TransUnion</strong>. Esa consulta{" "}
+                  <strong className="text-foreground/90">sólo ocurre si la autorizás</strong>,
+                  con una autorización separada del resto del formulario, previa,
+                  expresa e informada, como exige la Ley 1266 de 2008.
+                </p>
+                <p className="mb-3">
+                  Guardamos constancia de esa autorización —la versión exacta del
+                  texto que aceptaste, la fecha y la hora— y podés pedirnos una copia
+                  cuando quieras. Podés revocarla; eso no borra las consultas ya
+                  hechas, pero impide las siguientes.
+                </p>
+                <p>
+                  Si por incumplimiento correspondiera reportar información negativa
+                  a una central, la ley exige avisarte por escrito con al menos{" "}
+                  <strong className="text-foreground/90">veinte (20) días</strong> de
+                  anticipación, para que puedas controvertirla o ponerte al día. Ese
+                  aviso se envía siempre.
+                </p>
+              </section>
+
+              {/* ── 6 ── */}
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  6. Decisiones automatizadas e inteligencia artificial
+                </h2>
+                <p className="mb-3">
+                  Usamos sistemas automatizados, algunos con modelos de lenguaje, en
+                  cuatro puntos: para leer los documentos que subís, para calcular un
+                  puntaje de riesgo de una postulación, para redactar y priorizar las
+                  gestiones de cobranza, y para sugerir inmuebles.
+                </p>
+                <p className="mb-3">
+                  La regla que seguimos, y que la Corte Constitucional fijó en la
+                  Sentencia T-323 de 2024, es la separación entre lo que un sistema
+                  puede ejecutar solo y lo que decide una persona:
+                </p>
+                <ul className="list-disc pl-5 space-y-2 text-muted-foreground mb-3">
+                  <li>
+                    <strong className="text-foreground/85">Los sistemas ejecutan gestiones reversibles</strong>:
+                    recordatorios, mensajes, agendar una llamada, proponer un acuerdo
+                    dentro de los límites que la inmobiliaria configuró.
+                  </li>
+                  <li>
+                    <strong className="text-foreground/85">Las decisiones con efecto jurídico o económico las toma una persona</strong>:
+                    aceptar o rechazar una postulación, aprobar un giro, reportar a
+                    una central, iniciar un proceso.
+                  </li>
+                  <li>
+                    <strong className="text-foreground/85">El puntaje de riesgo es un insumo, no un veredicto.</strong>{" "}
+                    Quien decide a quién arrendarle es el propietario o la
+                    inmobiliaria, no Leasefy ni el modelo.
+                  </li>
+                </ul>
+                <p className="mb-3">
+                  <strong className="text-foreground/90">Tenés derecho a que una persona revise cualquier decisión automatizada que te afecte</strong>,
+                  a que te expliquemos en términos comprensibles qué se tuvo en
+                  cuenta, y a impugnar el resultado si se basó en información
+                  equivocada. Para ejercerlo, escribí a{" "}
+                  <span className="text-foreground/85 font-medium">privacidad@leasefy.co</span>{" "}
+                  indicando de qué decisión se trata.
+                </p>
+                <p>
+                  No usamos estos sistemas para discriminar por raza, sexo,
+                  orientación sexual, religión, origen, discapacidad ni ninguna otra
+                  categoría protegida.
+                </p>
+              </section>
+
+              {/* ── 7 ── */}
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  7. Con quién compartimos datos
+                </h2>
+                <p className="mb-4">
+                  Estos son los proveedores que tratan datos personales por cuenta
+                  nuestra. Los nombramos porque creemos que tenés derecho a saber por
+                  dónde pasa tu información, no sólo a qué «categorías de terceros»
+                  llega.
+                </p>
+                <div className="overflow-x-auto rounded-lg border border-border mb-3">
+                  <table className="w-full min-w-[34rem] text-[13.5px]">
+                    <thead>
+                      <tr className="bg-surface-muted/60 text-left text-muted-foreground">
+                        <th className="px-3 py-2 font-medium">Proveedor</th>
+                        <th className="px-3 py-2 font-medium">Para qué</th>
+                        <th className="px-3 py-2 font-medium">Qué recibe</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-muted-foreground">
+                      <tr className="border-t border-border"><td className="px-3 py-2">Supabase</td><td className="px-3 py-2">Base de datos, cuentas y archivos</td><td className="px-3 py-2">Todo lo que guardamos, incluidos los documentos</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">Anthropic</td><td className="px-3 py-2">Modelos de lenguaje</td><td className="px-3 py-2">Texto de contratos, transcripción de llamadas, fotos de inspección</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">Cohere</td><td className="px-3 py-2">Lectura de documentos</td><td className="px-3 py-2">El contenido de la cédula, desprendibles y extractos</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">Vapi</td><td className="px-3 py-2">Llamadas de voz</td><td className="px-3 py-2">Teléfono y la grabación de la llamada</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">Deepgram</td><td className="px-3 py-2">Transcripción de audio</td><td className="px-3 py-2">El audio de la conversación</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">Kapso</td><td className="px-3 py-2">WhatsApp</td><td className="px-3 py-2">Teléfono, nombre, monto y dirección del inmueble</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">Resend</td><td className="px-3 py-2">Correo</td><td className="px-3 py-2">Correo, nombre y el contenido del mensaje</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">Wompi · Bold</td><td className="px-3 py-2">Pagos</td><td className="px-3 py-2">Correo, número de documento y monto</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">DataCrédito · TransUnion</td><td className="px-3 py-2">Historial crediticio</td><td className="px-3 py-2">Sólo con tu autorización (§5)</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">Certicámara</td><td className="px-3 py-2">Firma electrónica</td><td className="px-3 py-2">Nombre, documento, correo y el documento a firmar</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">Sentry</td><td className="px-3 py-2">Diagnóstico de errores</td><td className="px-3 py-2">Datos técnicos del error</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mb-3">
+                  También compartimos datos con la inmobiliaria que administra tu
+                  contrato y con el propietario del inmueble, en lo que corresponde a
+                  esa relación; con las aseguradoras y afianzadoras, cuando pedís un
+                  estudio de asegurabilidad; y con autoridades, cuando una norma o
+                  una orden judicial lo exige.
+                </p>
+                <p>
+                  <strong className="text-foreground/90">Transferencia internacional.</strong>{" "}
+                  Varios de estos proveedores están fuera de Colombia, principalmente
+                  en Estados Unidos. Cuando el país de destino no cuenta con un nivel
+                  adecuado de protección según la Superintendencia de Industria y
+                  Comercio, la transferencia se ampara en tu autorización y en los
+                  contratos de transmisión que suscribimos con cada proveedor.
+                </p>
+              </section>
+
+              {/* ── 8 ── */}
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  8. Datos sensibles
+                </h2>
+                <p className="mb-3">
+                  Hay datos que la ley protege de forma especial y que no estás
+                  obligado a entregar. En la plataforma pueden aparecer tres:
+                </p>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-3">
+                  <li>Tu <strong className="text-foreground/85">voz</strong>, en la grabación de una llamada de cobranza.</li>
+                  <li>Tu <strong className="text-foreground/85">firma manuscrita</strong>, cuando firmás en pantalla.</li>
+                  <li>Los datos que aparecen impresos en tu <strong className="text-foreground/85">documento de identidad</strong> al escanearlo.</li>
+                </ul>
+                <p>
+                  No los usamos para nada distinto de lo descrito en esta política, y
+                  nunca para decidir sobre vos por tu pertenencia a un grupo.
+                </p>
+              </section>
+
+              {/* ── 9 ── */}
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  9. Cuánto tiempo los guardamos
+                </h2>
+                <p className="mb-3">
+                  Mientras exista la relación —tu cuenta, tu postulación, tu
+                  contrato— y después por el tiempo que las normas comerciales,
+                  contables y tributarias nos obliguen a conservar los soportes, que
+                  en general es de <strong className="text-foreground/90">diez (10) años</strong> desde
+                  el último asiento, según el artículo 60 del Código de Comercio.
+                </p>
+                <p className="mb-3">
+                  Los datos que sólo sirven para un estudio que no prosperó se
+                  eliminan a los noventa (90) días.
+                </p>
+                <p>
+                  Cerrar tu cuenta desactiva el acceso de inmediato. No borra la
+                  información que debemos conservar por obligación legal ni la que
+                  quedó incorporada a un contrato firmado, porque un contrato no se
+                  puede alterar después de firmado.
+                </p>
+              </section>
+
+              {/* ── 10 ── */}
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  10. Cookies y qué guarda tu navegador
+                </h2>
+                <p className="mb-3">
+                  Usamos <strong className="text-foreground/90">una sola familia de cookies</strong>:
+                  las que mantienen tu sesión abierta. Son necesarias para que
+                  puedas usar la plataforma y no se pueden desactivar sin cerrar
+                  sesión.
+                </p>
+                <p className="mb-3">
+                  <strong className="text-foreground/90">No tenemos analítica de terceros, ni cookies de publicidad, ni píxeles de seguimiento.</strong>{" "}
+                  Ni Google Analytics, ni Meta, ni ninguna otra. Por eso tampoco vas
+                  a ver un banner de cookies: no hay nada que consentir.
+                </p>
+                <p>
+                  Además, mientras completás un formulario largo guardamos el
+                  borrador en tu propio navegador, para que no pierdas lo escrito.
+                  Ese borrador no sale de tu equipo. Si usás un computador
+                  compartido, cerrá sesión y borrá los datos del sitio al terminar.
+                </p>
+              </section>
+
+              {/* ── 11 ── */}
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  11. Tus derechos, y cómo ejercerlos
+                </h2>
+                <p className="mb-3">Podés, en cualquier momento:</p>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-3">
+                  <li>Conocer qué datos tuyos tenemos y de dónde salieron.</li>
+                  <li>Pedir que los actualicemos o corrijamos si están mal.</li>
+                  <li>Pedir que los suprimamos, salvo los que debemos conservar por ley.</li>
+                  <li>Revocar la autorización que diste.</li>
+                  <li>Pedir que una persona revise una decisión automatizada (§6).</li>
+                  <li>Pedir que dejemos de contactarte por un canal, o por todos.</li>
+                  <li>Presentar una queja ante la Superintendencia de Industria y Comercio.</li>
+                </ul>
+                <p className="mb-3">
+                  <strong className="text-foreground/90">Canal:</strong>{" "}
+                  <span className="text-foreground/85 font-medium">privacidad@leasefy.co</span>.
+                  Contanos qué querés y cómo verificar que sos vos.
+                </p>
+                <p>
+                  <strong className="text-foreground/90">Plazos.</strong> Una consulta se
+                  responde en <strong className="text-foreground/90">diez (10) días hábiles</strong>,
+                  prorrogables por cinco más. Un reclamo, en{" "}
+                  <strong className="text-foreground/90">quince (15) días hábiles</strong>,
+                  prorrogables por ocho más. Si nos pasamos, avisamos por qué y
+                  cuándo respondemos. Son los plazos de los artículos 14 y 15 de la
+                  Ley 1581 de 2012.
+                </p>
+              </section>
+
+              {/* ── 12 ── */}
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  12. Menores de edad
                 </h2>
                 <p>
-                  La Plataforma está diseñada para personas mayores de edad según
-                  la legislación de cada jurisdicción. Leasefy no recopila
-                  deliberadamente datos personales de menores de edad. Si toma
-                  conocimiento de que un menor ha proporcionado datos personales
-                  sin la autorización de su representante legal, procederá a
-                  eliminar dicha información de manera inmediata. Si usted es padre,
-                  madre o tutor legal y tiene conocimiento de que un menor bajo su
-                  responsabilidad ha proporcionado datos a la Plataforma, por favor
-                  contáctenos a{" "}
-                  <a
-                    href="mailto:privacidad@leasefy.com"
-                    className="text-foreground underline underline-offset-4 hover:text-foreground/70 transition-colors"
-                  >
-                    privacidad@leasefy.com
-                  </a>
-                  .
+                  La plataforma es para mayores de 18 años. No creamos cuentas para
+                  menores. Si un menor aparece como ocupante de una vivienda, sólo
+                  tratamos lo indispensable para el contrato, con autorización de
+                  quien ejerce la patria potestad. Si creés que tenemos datos de un
+                  menor sin ese respaldo, escribinos y los eliminamos.
                 </p>
               </section>
 
-              {/* ── 18. NOTIFICACIÓN DE INCIDENTES ── */}
+              {/* ── 13 ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  18. Notificación de incidentes de seguridad
+                  13. Seguridad e incidentes
                 </h2>
                 <p className="mb-3">
-                  En caso de que ocurra un incidente de seguridad que afecte datos
-                  personales, Leasefy:
+                  Ciframos la información en tránsito, limitamos el acceso interno
+                  por rol, exigimos segundo factor donde corresponde y dejamos
+                  registro de quién consulta datos sensibles. Ningún sistema es
+                  invulnerable, y no vamos a decirte lo contrario.
                 </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Activará su plan de respuesta a incidentes de manera inmediata
-                    para contener y mitigar el impacto.
-                  </li>
-                  <li>
-                    Notificará a la autoridad de protección de datos competente
-                    dentro de los plazos establecidos por la legislación aplicable
-                    (72 horas bajo LGPD en Brasil; sin plazo específico pero
-                    &quot;oportunamente&quot; bajo la Ley 1581 de 2012 en Colombia).
-                  </li>
-                  <li>
-                    Notificará a los titulares afectados cuando el incidente
-                    represente un riesgo alto para sus derechos y libertades,
-                    indicando: (a) la naturaleza del incidente; (b) los datos
-                    potencialmente afectados; (c) las medidas adoptadas; (d) las
-                    recomendaciones para proteger sus intereses.
-                  </li>
-                  <li>
-                    Documentará internamente todos los incidentes de seguridad,
-                    incluyendo las causas, el impacto y las acciones correctivas
-                    implementadas.
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 19. MODIFICACIONES A LA POLÍTICA ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  19. Modificaciones a esta Política
-                </h2>
-                <p className="mb-3">
-                  Leasefy se reserva el derecho de modificar esta Política en
-                  cualquier momento para reflejar cambios en nuestras prácticas,
-                  la legislación aplicable o la operación de la Plataforma. Las
-                  modificaciones serán comunicadas mediante:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Publicación de la versión actualizada en la Plataforma con la
-                    fecha de la última modificación.
-                  </li>
-                  <li>
-                    Notificación por correo electrónico para cambios sustanciales
-                    que afecten el tratamiento de datos, con al menos quince (15)
-                    días de antelación.
-                  </li>
-                  <li>
-                    Para cambios que requieran consentimiento adicional conforme a
-                    la ley, se solicitará nueva autorización antes de implementar
-                    las modificaciones.
-                  </li>
-                </ul>
-                <p className="mt-3">
-                  El uso continuado de la Plataforma después de la publicación de
-                  cambios constituirá aceptación de la Política modificada.
+                <p>
+                  Si ocurre un incidente que afecte tus datos, lo reportamos a la
+                  Superintendencia de Industria y Comercio en el plazo que exige la
+                  Circular Externa 02 de 2015 y te avisamos cuando pueda afectarte.
                 </p>
               </section>
 
-              {/* ── 20. CONTACTO Y OFICIAL DE PROTECCIÓN DE DATOS ── */}
+              {/* ── 14 ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  20. Contacto y oficial de protección de datos
+                  14. Cambios
                 </h2>
-                <p className="mb-3">
-                  Para ejercer sus derechos, realizar consultas o presentar
-                  reclamaciones relacionadas con el tratamiento de sus datos
-                  personales, puede comunicarse con nosotros a través de los
-                  siguientes canales:
+                <p>
+                  Si cambiamos algo sustancial, lo publicamos acá con{" "}
+                  <strong className="text-foreground/90">treinta (30) días</strong> de
+                  anticipación y te avisamos por correo. La versión y la fecha de
+                  vigencia están arriba, y conservamos las versiones anteriores para
+                  que puedas saber qué decía la política cuando aceptaste.
                 </p>
-                <div className="p-5 border border-border rounded-md bg-muted/30 space-y-1">
-                  <p className="text-foreground font-medium">Leasefy S.A.S.</p>
-                  <p className="text-foreground font-medium text-[13px] mt-1">
-                    Oficial de Protección de Datos / Data Protection Officer
-                  </p>
-                  <p className="text-muted-foreground mt-2">
-                    Correo:{" "}
-                    <a
-                      href="mailto:privacidad@leasefy.com"
-                      className="text-foreground underline underline-offset-4 hover:text-foreground/70 transition-colors"
-                    >
-                      privacidad@leasefy.com
-                    </a>
-                  </p>
-                  <p className="text-muted-foreground mt-1">
-                    Correo alternativo:{" "}
-                    <a
-                      href="mailto:dpo@leasefy.com"
-                      className="text-foreground underline underline-offset-4 hover:text-foreground/70 transition-colors"
-                    >
-                      dpo@leasefy.com
-                    </a>
-                  </p>
-                  <p className="text-muted-foreground mt-1">
-                    Bogotá D.C., Colombia
-                  </p>
-                </div>
-
-                <div className="mt-6 p-4 border border-border rounded-md bg-muted/20">
-                  <p className="text-[14px] font-medium text-foreground mb-2">
-                    Autoridades de supervisión por jurisdicción
-                  </p>
-                  <ul className="space-y-1 text-[13px] text-muted-foreground">
-                    <li>
-                      <span className="text-foreground/85">Colombia:</span>{" "}
-                      Superintendencia de Industria y Comercio (SIC) — www.sic.gov.co
-                    </li>
-                    <li>
-                      <span className="text-foreground/85">México:</span>{" "}
-                      Instituto Nacional de Transparencia (INAI) — www.inai.org.mx
-                    </li>
-                    <li>
-                      <span className="text-foreground/85">Brasil:</span>{" "}
-                      Autoridade Nacional de Proteção de Dados (ANPD) — www.gov.br/anpd
-                    </li>
-                    <li>
-                      <span className="text-foreground/85">Chile:</span>{" "}
-                      Consejo para la Transparencia — www.consejotransparencia.cl
-                    </li>
-                    <li>
-                      <span className="text-foreground/85">Perú:</span>{" "}
-                      Autoridad Nacional de Protección de Datos Personales — www.gob.pe/anpdp
-                    </li>
-                    <li>
-                      <span className="text-foreground/85">Argentina:</span>{" "}
-                      Agencia de Acceso a la Información Pública (AAIP) — www.argentina.gob.ar/aaip
-                    </li>
-                    <li>
-                      <span className="text-foreground/85">Estados Unidos:</span>{" "}
-                      Federal Trade Commission (FTC) — www.ftc.gov | California Attorney General — oag.ca.gov
-                    </li>
-                  </ul>
-                </div>
               </section>
 
             </div>

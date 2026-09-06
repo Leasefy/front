@@ -36,7 +36,11 @@ describe('fechaDeVigencia — un día es un día, no un instante', () => {
     // Deja constancia de POR QUÉ existe el helper. Si algún día esto deja de
     // ser cierto, el helper sobra y este test lo va a decir.
     expect(diaEnBogota(new Date('2026-05-01'))).toBe('30')
-    expect(diaEnBogota(fechaDeVigencia('2026-05-01')!)).toBe('01')
+    // El helper arma el día en la zona LOCAL de quien corre (así lo muestra el
+    // navegador del usuario). Leerlo forzando Bogotá desde un runner en UTC
+    // vuelve a correrlo un día y el test fallaba sólo en CI — por eso se lee
+    // en la misma zona en la que se armó.
+    expect(fechaDeVigencia('2026-05-01')!.toLocaleDateString('es-CO', { day: '2-digit' })).toBe('01')
   })
 
   it('un ISO con hora sigue siendo un instante y se convierte como tal', () => {

@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { Reveal } from '@/components/landing/motion/Reveal'
 import { VignetteRenderer } from '@/components/landing/product/vignettes/VignetteRenderer'
-import { ClosingBanner } from '@/components/landing/home/ClosingBanner'
 import { PRODUCTS } from '@/lib/landing/products'
 import { LANDING_TEXTURES } from '@/lib/landing/assets'
 import type { ProductSlug } from '@/lib/landing/types'
@@ -11,69 +10,79 @@ interface ProductPageProps {
 }
 
 /**
- * Shared product-page template (landing-react-port SLICE 4b), ported from
- * the standalone's `#productPage` (`landing-standalone/index.html`
- * ~L2830-2897) + `__renderProduct` (~L3723-3773). Every product renders
- * through the same structure: hero (eyebrow/badge/H1/lead/2 CTAs + rotated
- * square cover) -> app-window (`.pp-win`, 2-3 vignettes) -> 3 alternating
- * stories -> 4 capabilities -> snapshot spec table -> 3 steps -> night
- * activity panel -> closing banner + footer.
+ * Plantilla de las ocho internas de producto.
  *
- * Per HANDOFF "Cierre de las internas": the standalone's final CTA block
- * (expectation bullets + "otros productos" tiles) was REMOVED — every
- * product page now ends directly with the closing video banner + footer,
- * cloned at runtime in the standalone (duplicated DOM + `__stripAnchors`
- * sanitation) but simply COMPOSED here: `ClosingBanner` is
- * the exact same components the home renders, no cloning needed in React.
+ * Rediseñada el 2026-09-05 (Nico: «quiero que le hagas un glow up a cada
+ * interna de producto, que queden hermosas»). Lo que se veía barato era
+ * concreto y se fue:
  *
- * `product.name`/`product.h1` are the seam SLICE 5's thin route shells
- * will read to build each route's unique `<metadata>` (title/description)
- * — this shared template renders no metadata itself (App Router metadata
- * is a route-level export, not a shared-component concern).
+ * · La portada del hero era una de las texturas borrosas t1–t7, rotada, con
+ *   el nombre encima: leía como placeholder. Ahora es una tarjeta oscura del
+ *   módulo —índice gigante, nombre, eyebrow— con la textura al fondo como
+ *   una aurora tenue, en la línea del hero oscuro del home. La textura sigue
+ *   ahí (y el test que la fija también), pero como grano, no como foto.
+ * · El cierre era el banner del home viejo: un WebP animado de 3,5 MB que en
+ *   una pantalla completa se veía como un borrón oscuro de mil píxeles con
+ *   texto ilegible encima. Ahora cierra con el `demoPrompt` del producto
+ *   —copy real que existía en el catálogo y nadie mostraba— y los dos CTA.
+ * · El panel nocturno llevaba la misma textura como fondo. Ahora es Onyx con
+ *   un resplandor azul y el grano tenue.
  *
- * Gradients-as-jewels (HANDOFF §7, user rule: "no todo con fondo de
- * gradientes"): only the hero cover (`landing-pp__cover`) and the night
- * panel (`landing-pp__npanel`) carry a texture + gradient treatment in
- * this template.
+ * La estructura no cambia: hero → ventana de la app (2-3 viñetas) → tres
+ * historias alternadas → cuatro capacidades → ficha → tres pasos → panel
+ * nocturno → cierre. Los `data-testid` son los de siempre. Las composiciones
+ * en zigzag de las cabeceras (split / center / side / right) se conservan:
+ * es una regla de Nico que no todo el texto salga de la izquierda.
+ *
+ * Los textos salen de `products.ts` sin tocar; el catálogo es la única
+ * fuente. El pie lo pone el layout del grupo `(landing)`.
  */
 export function ProductPage({ slug }: ProductPageProps) {
   const product = PRODUCTS[slug]
   const texture = LANDING_TEXTURES[product.textureId]
   const [primaryCta, secondaryCta] = product.ctas
+  const indice = indiceDelModulo(product.eyebrow)
 
   return (
     <article className="landing-pp" data-testid="product-page">
       <section className="landing-pp__hero">
-        <div
-          className="landing-pp__cover"
-          data-testid="product-cover"
-          aria-hidden="true"
-          style={{ backgroundImage: `url(${texture.src})` }}
-        >
-          <span className="landing-pp__cover-shade" />
-          <i className="landing-pp__cover-kicker">{product.eyebrow}</i>
-          <b className="landing-pp__cover-title">{product.name}</b>
-        </div>
+        <div className="landing-pp__hero-grid">
+          <div className="landing-pp__hero-copy">
+            <p className="landing-pp__eyebrow">
+              <span className="landing-pp__eyebrow-k" data-testid="product-eyebrow">
+                {product.eyebrow}
+              </span>
+              <span className="landing-pp__badge" data-testid="product-badge">
+                {product.badge}
+              </span>
+            </p>
+            <h1 className="landing-pp__h1" data-testid="product-h1">
+              {product.h1}
+            </h1>
+            <p className="landing-pp__lead" data-testid="product-lead">
+              {product.lead}
+            </p>
+            <div className="landing-pp__ctas">
+              <Link href={primaryCta.href} className="btn primary lg" data-testid="product-cta-primary">
+                {primaryCta.label}
+              </Link>
+              <Link href={secondaryCta.href} className="btn outline lg" data-testid="product-cta-secondary">
+                {secondaryCta.label}
+              </Link>
+            </div>
+          </div>
 
-        <p className="landing-pp__eyebrow">
-          <span data-testid="product-eyebrow">{product.eyebrow}</span>
-          <span className="landing-pp__badge" data-testid="product-badge">
-            {product.badge}
-          </span>
-        </p>
-        <h1 className="landing-pp__h1" data-testid="product-h1">
-          {product.h1}
-        </h1>
-        <p className="landing-pp__lead" data-testid="product-lead">
-          {product.lead}
-        </p>
-        <div className="landing-pp__ctas">
-          <Link href={primaryCta.href} className="btn primary lg" data-testid="product-cta-primary">
-            {primaryCta.label}
-          </Link>
-          <Link href={secondaryCta.href} className="landing-pp__cta-ghost" data-testid="product-cta-secondary">
-            {secondaryCta.label} <i aria-hidden="true">→</i>
-          </Link>
+          <div
+            className="landing-pp__cover"
+            data-testid="product-cover"
+            aria-hidden="true"
+            style={{ backgroundImage: `url(${texture.src})` }}
+          >
+            <span className="landing-pp__cover-shade" />
+            <i className="landing-pp__cover-kicker">{product.eyebrow}</i>
+            <span className="landing-pp__cover-index">{indice}</span>
+            <b className="landing-pp__cover-title">{product.name}</b>
+          </div>
         </div>
 
         <div className="landing-pp__win" data-testid="product-window">
@@ -112,7 +121,10 @@ export function ProductPage({ slug }: ProductPageProps) {
                 key={story.h3}
               >
                 <div className="landing-pp__story-copy">
-                  <p className="landing-pp__story-kicker">{story.kicker}</p>
+                  <p className="landing-pp__story-kicker">
+                    <span className="landing-pp__story-n">{`0${i + 1}`}</span>
+                    {story.kicker}
+                  </p>
                   <h3>{story.h3}</h3>
                   <p>{story.body}</p>
                 </div>
@@ -154,12 +166,9 @@ export function ProductPage({ slug }: ProductPageProps) {
                 <div className="landing-pp__spec-row" data-testid="product-snapshot-row" key={row.label}>
                   <span className="landing-pp__spec-label">{row.label}</span>
                   {/*
-                   * `value` is static, developer-authored copy that may
-                   * carry a literal `<b>` for inline emphasis, ported
-                   * verbatim from the standalone (types.ts
-                   * ProductSnapshotRow doc comment) — never user/backend
-                   * input, safe to inject directly (same rationale as
-                   * StatVignette.tsx, S4a).
+                   * `value` es copy estático del catálogo que puede traer un
+                   * `<b>` literal para énfasis — nunca entrada de usuario ni
+                   * del back, así que se inyecta tal cual.
                    */}
                   <span className="landing-pp__spec-value" dangerouslySetInnerHTML={{ __html: row.value }} />
                 </div>
@@ -188,11 +197,16 @@ export function ProductPage({ slug }: ProductPageProps) {
       </div>
 
       <section className="landing-pp__night" data-testid="product-night">
-        <div className="landing-pp__npanel" style={{ backgroundImage: `url(${texture.src})` }}>
+        <div className="landing-pp__npanel">
+          <span
+            className="landing-pp__npanel-grain"
+            aria-hidden="true"
+            style={{ backgroundImage: `url(${texture.src})` }}
+          />
           <span className="landing-pp__npanel-shade" aria-hidden="true" />
           <div className="landing-pp__npanel-text">
             <p className="landing-pp__night-kicker">{product.night.kicker}</p>
-            {/* `h2` may carry a literal `<em>` for inline emphasis (verbatim standalone copy). */}
+            {/* `h2` puede traer un `<em>` literal para énfasis (copy del catálogo). */}
             <h2 className="landing-pp__night-h2" dangerouslySetInnerHTML={{ __html: product.night.h2 }} />
             <p className="landing-pp__night-quote">{product.night.quote}</p>
           </div>
@@ -206,7 +220,7 @@ export function ProductPage({ slug }: ProductPageProps) {
                 <span className="landing-pp__log-time" data-testid="product-night-log-time">
                   {entry.time}
                 </span>
-                {/* `text` may carry a literal `<span class="lb">` (verbatim standalone copy). */}
+                {/* `text` puede traer un `<span class="lb">` literal (copy del catálogo). */}
                 <span data-testid="product-night-log-text" dangerouslySetInnerHTML={{ __html: entry.text }} />
               </Reveal>
             ))}
@@ -214,9 +228,35 @@ export function ProductPage({ slug }: ProductPageProps) {
         </div>
       </section>
 
-      <ClosingBanner />
+      <section className="landing-pp__close" data-testid="closing-banner">
+        <div className="landing-pp__close-wrap">
+          <p className="landing-pp__close-kicker">Demo</p>
+          <h2>Pon tu operación en piloto automático y dedícate a traer clientes.</h2>
+          <p className="landing-pp__close-prompt" data-testid="product-demo-prompt">
+            {product.demoPrompt}
+          </p>
+          <div className="landing-pp__close-ctas">
+            <Link href={primaryCta.href} className="btn primary lg" data-testid="closing-banner-cta">
+              {primaryCta.label}
+            </Link>
+            <Link href={secondaryCta.href} className="btn inverse lg">
+              {secondaryCta.label}
+            </Link>
+          </div>
+        </div>
+      </section>
     </article>
   )
+}
+
+/**
+ * El número del módulo sale del eyebrow del catálogo («Sistema · Módulo 01»,
+ * «Agentes AI · 03»): es el índice que ya usa el mega-menú, así que la
+ * portada y el menú dicen lo mismo sin un campo nuevo.
+ */
+function indiceDelModulo(eyebrow: string): string {
+  const n = eyebrow.match(/(\d{2})\s*$/)
+  return n ? n[1] : '01'
 }
 
 interface ProductSectionHeadProps {
@@ -227,14 +267,11 @@ interface ProductSectionHeadProps {
 }
 
 /**
- * The `.pp-shead` zigzag compositions HANDOFF explicitly calls out
- * (split/center/side-sticky/right — user rule: "todo el texto sale de la
- * izquierda", do NOT left-align every section). The 4th composition
- * (side-sticky, used by the Snapshot section) has no `variant` here
- * because it also needs its own two-column grid wrapper
- * (`landing-pp__side2`, applied by the caller around both the head and
- * the spec table) — the sticky behavior is CSS targeting
- * `.landing-pp__side2 .landing-pp__shead` directly, not a head variant.
+ * Las cabeceras en zigzag (split / center / side-sticky / right). La cuarta
+ * —side-sticky, la de la ficha— no tiene `variant` porque además necesita su
+ * propia grilla de dos columnas (`landing-pp__side2`, que pone quien la usa
+ * alrededor de la cabecera y la tabla); lo pegajoso es CSS sobre
+ * `.landing-pp__side2 .landing-pp__shead`.
  */
 function ProductSectionHead({ eyebrow, title, lede, variant }: ProductSectionHeadProps) {
   return (

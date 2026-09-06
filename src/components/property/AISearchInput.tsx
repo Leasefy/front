@@ -1,47 +1,10 @@
 'use client';
 
-import { useState, useCallback, KeyboardEvent, useRef } from 'react';
-import { ArrowUp, MapPin, Bed, House, ArrowSquareOut, X } from '@phosphor-icons/react';
-
-/** Sparkle icon with 3 four-pointed stars */
-function SparkleGradient({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      className={className}
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <defs>
-        <linearGradient id="sparkles-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#8A9CFF" />
-          <stop offset="100%" stopColor="#1A40FF" />
-        </linearGradient>
-      </defs>
-      {/* Large star - centered */}
-      <path
-        d="M10 16c0-3.5 2.5-6 6-6c-3.5 0-6-2.5-6-6c0 3.5-2.5 6-6 6c3.5 0 6 2.5 6 6z"
-        fill="url(#sparkles-gradient)"
-      />
-      {/* Small star top-right */}
-      <path
-        d="M18 9c0-1.5 1-2.5 2.5-2.5c-1.5 0-2.5-1-2.5-2.5c0 1.5-1 2.5-2.5 2.5c1.5 0 2.5 1 2.5 2.5z"
-        fill="url(#sparkles-gradient)"
-      />
-      {/* Medium star bottom-right */}
-      <path
-        d="M19 20c0-2 1.5-3.5 3.5-3.5c-2 0-3.5-1.5-3.5-3.5c0 2-1.5 3.5-3.5 3.5c2 0 3.5 1.5 3.5 3.5z"
-        fill="url(#sparkles-gradient)"
-      />
-    </svg>
-  );
-}
+import { useCallback, useRef, useState, type KeyboardEvent } from 'react';
+import { ArrowUp, Sparkle, X } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
+
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import type { Property } from '@/lib/types/property';
 
 interface AISearchInputProps {
   value: string;
@@ -51,288 +14,142 @@ interface AISearchInputProps {
   placeholder?: string;
   className?: string;
   isMagnifyingGlassing?: boolean;
-  /** AI search results to display */
-  results?: Property[];
-  /** Whether to show results panel */
-  showResults?: boolean;
 }
 
 /**
- * Modern AI search input with results panel
+ * El campo de búsqueda en lenguaje natural del catálogo.
+ *
+ * Rediseñado el 2026-09-06 (Nico: «hay que hacer un glow up de esta sección
+ * de buscar inmueble»). Antes era una caja de 260 px con un textarea de dos
+ * filas, el aviso «Pulsa Enter» y el botón flotando en blanco: leía como un
+ * formulario vacío. Ahora es la barra de una sola fila del sistema de diseño
+ * (DESIGN.md §15): la teja con la chispa —la firma de lo que es IA—, el campo
+ * y el botón redondo. El foco lo marca el contenedor, una sola vez.
+ *
+ * El panel de resultados que traía adentro (`results`/`showResults`) nunca
+ * lo pasaba nadie: la búsqueda filtra la grilla de abajo, que es la única
+ * fuente. Se fue.
  */
 export function AISearchInput({
   value,
   onChange,
   onMagnifyingGlass,
   onClear,
-  placeholder = 'Describe el inmueble que buscas...',
+  placeholder = 'Describe el inmueble que buscas…',
   className,
   isMagnifyingGlassing = false,
-  results = [],
-  showResults = false,
 }: AISearchInputProps) {
-  const [isFocused, setIsFocused] = useState(false);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [conFoco, setConFoco] = useState(false);
 
-  const handleSubmit = useCallback(() => {
-    if (value.trim() && !isMagnifyingGlassing) {
-      onMagnifyingGlass(value.trim());
-    }
+  const enviar = useCallback(() => {
+    const consulta = value.trim();
+    if (consulta && !isMagnifyingGlassing) onMagnifyingGlass(consulta);
   }, [value, onMagnifyingGlass, isMagnifyingGlassing]);
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
+  const alTeclear = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
         e.preventDefault();
-        handleSubmit();
+        enviar();
       }
     },
-    [handleSubmit]
+    [enviar],
   );
 
-  const formatPrice = (price?: number | null) => {
-    if (!price) return '$--';
-    if (price >= 1000000) {
-      return `$${(price / 1000000).toFixed(1)}M`;
-    }
-    return `$${price.toLocaleString()}`;
+  const limpiar = () => {
+    onChange('');
+    onClear?.();
+    inputRef.current?.focus();
   };
 
   return (
-    <div className={cn('w-full max-w-2xl', className)}>
-      {/* Main MagnifyingGlass Container */}
+    <div className={cn('w-full', className)}>
       <div
+        data-testid="ai-search"
         className={cn(
-          'relative bg-white dark:bg-card border transition-all duration-300 overflow-visible',
-          'rounded-xl',
-          isFocused
-            ? 'border-primary/30 shadow-[0_8px_30px_rgba(0,0,0,0.08)] ring-2 ring-primary/10'
-            : 'border-border shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] hover:border-border'
+          'relative flex items-center gap-3 rounded-full border bg-surface p-2 pl-2.5 transition-[border-color,box-shadow] duration-200',
+          conFoco
+            ? 'border-primary/40 shadow-[0_0_0_4px_rgba(26,64,255,0.10)]'
+            : 'border-border shadow-sm hover:border-border-strong',
         )}
       >
-        {/* Top Row - Textarea */}
-        <div className="relative px-5 pt-5 pb-3">
-          <div className="flex items-start gap-4">
-            {/* AI Sparkle Icon */}
-            <div className="flex-shrink-0 mt-1 p-2 bg-gradient-to-br from-primary/10 to-primary/10 rounded-xl">
-              {isMagnifyingGlassing ? (
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                >
-                  <SparkleGradient className="w-5 h-5" />
-                </motion.div>
-              ) : (
-                <SparkleGradient className="w-5 h-5" />
-              )}
-            </div>
-
-            {/* Textarea */}
-            <Textarea
-              ref={inputRef}
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              placeholder={placeholder}
-              aria-label="Búsqueda inteligente de propiedades"
-              disabled={isMagnifyingGlassing}
-              rows={2}
-              className={cn(
-                'border-0 bg-transparent shadow-none resize-none px-0 py-0',
-                /*
-                 * Un solo indicador de foco, no dos.
-                 *
-                 * El contenedor ya marca el foco —borde y halo azules, vía
-                 * `isFocused`— y el Textarea del DS trae ADEMÁS el suyo:
-                 * `focus-visible:shadow-[0_0_0_3px_rgba(26,64,255,.12)]`. Al
-                 * pararse a escribir se veían dos rectángulos redondeados, uno
-                 * dentro del otro. `focus-visible:ring-0` no lo apagaba porque
-                 * el DS no usa el `ring` de Tailwind sino un `box-shadow`.
-                 *
-                 * El foco de teclado NO se pierde: lo sigue mostrando el
-                 * contenedor, que es el control que la persona ve.
-                 */
-                'focus-visible:ring-0 focus-visible:border-0 focus-visible:shadow-none',
-                'text-[15px] md:text-[15px] text-foreground placeholder:text-muted-foreground/70',
-                'leading-relaxed',
-                'disabled:cursor-not-allowed min-h-[52px]'
-              )}
-            />
-          </div>
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-soft">
+          {isMagnifyingGlassing ? (
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.6, repeat: Infinity, ease: 'linear' }}>
+              <Sparkle className="h-5 w-5 text-primary" weight="fill" aria-hidden="true" />
+            </motion.div>
+          ) : (
+            <Sparkle className="h-5 w-5 text-primary" weight="fill" aria-hidden="true" />
+          )}
         </div>
 
-        {/* Robottom Row - Clear + PaperPlaneTilt Button */}
-        <div className="px-5 pb-4 flex items-center justify-between">
-          <p className="text-[11px] text-muted-foreground/60">Pulsa Enter para buscar</p>
-          <div className="flex items-center gap-2">
-            {/* Clear button - shows when there's text or results */}
-            {(value.trim() || showResults) && !isMagnifyingGlassing && (
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                onClick={() => {
-                  onChange('');
-                  onClear?.();
-                }}
-                aria-label="Limpiar búsqueda"
-                className="flex-shrink-0 h-9 w-9"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            )}
-            <Button
-              type="button"
-              size="icon"
-              hideArrow
-              onClick={handleSubmit}
-              disabled={!value.trim() || isMagnifyingGlassing}
-              aria-label="Buscar"
-              className="flex-shrink-0 h-9 w-9"
-            >
-              <ArrowUp className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
+        <input
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={alTeclear}
+          onFocus={() => setConFoco(true)}
+          onBlur={() => setConFoco(false)}
+          placeholder={placeholder}
+          aria-label="Búsqueda inteligente de propiedades"
+          disabled={isMagnifyingGlassing}
+          enterKeyHint="search"
+          autoComplete="off"
+          className="min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-muted disabled:cursor-not-allowed"
+        />
 
-        {/* Loading State */}
+        {value.trim() && !isMagnifyingGlassing && (
+          <button
+            type="button"
+            onClick={limpiar}
+            aria-label="Limpiar búsqueda"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={enviar}
+          disabled={!value.trim() || isMagnifyingGlassing}
+          aria-label="Buscar"
+          className={cn(
+            'flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors',
+            value.trim() && !isMagnifyingGlassing
+              ? 'bg-primary text-primary-fg hover:opacity-90'
+              : 'bg-surface-muted text-fg-subtle',
+          )}
+        >
+          <ArrowUp className="h-5 w-5" weight="bold" aria-hidden="true" />
+        </button>
+
+        {/* La línea de progreso vive en el borde inferior del campo: no abre
+            un panel ni mueve nada de abajo mientras el back interpreta. */}
         <AnimatePresence>
           {isMagnifyingGlassing && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="border-t border-border/50 overflow-hidden"
+            <motion.span
+              aria-hidden="true"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="pointer-events-none absolute inset-x-6 bottom-0 h-0.5 overflow-hidden rounded-full bg-primary-soft"
             >
-              <div className="px-5 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                    >
-                      <SparkleGradient className="w-4 h-4" />
-                    </motion.div>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-[13px] font-medium text-foreground">
-                      Analizando tu búsqueda...
-                    </p>
-                    {/* Progress bar */}
-                    <div className="h-1 bg-surface-muted rounded-full overflow-hidden mt-2">
-                      <motion.div
-                        className="h-full bg-gradient-to-r from-primary to-primary rounded-full"
-                        initial={{ width: '0%' }}
-                        animate={{ width: '100%' }}
-                        transition={{ duration: 1.8, ease: 'easeInOut' }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* AI Results Panel */}
-        <AnimatePresence>
-          {showResults && !isMagnifyingGlassing && results.length > 0 && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="border-t border-border/50 overflow-hidden"
-            >
-              <div className="p-5">
-                {/* AI Response Header */}
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-success-50 flex items-center justify-center">
-                    <svg className="w-4 h-4 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-medium text-foreground">
-                      Encontré{' '}
-                      <span className="text-success font-mono tabular-nums">
-                        {results.length}{' '}
-                        {results.length === 1 ? 'propiedad' : 'propiedades'}
-                      </span>
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Basado en: &ldquo;{value}&rdquo;
-                    </p>
-                  </div>
-                </div>
-
-                {/* Results Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {results.slice(0, 4).map((property, index) => (
-                    <motion.div
-                      key={property.id}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <Link
-                        href={`/propiedades/${property.id}`}
-                        className="group flex gap-3 p-3 bg-surface-muted hover:bg-surface-hover rounded-xl border border-border/50 hover:border-border transition-all"
-                      >
-                        {/* Property Image */}
-                        <div className="w-16 h-16 rounded-md bg-surface-muted flex-shrink-0 overflow-hidden">
-                          {property.images?.[0] ? (
-                            <img
-                              src={property.images[0]}
-                              alt={property.title}
-                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <House className="w-5 h-5 text-muted-foreground" />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Property Info */}
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-[13px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                            {property.title}
-                          </h4>
-                          <p className="text-[11px] text-muted-foreground truncate mt-0.5 flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-primary flex-shrink-0" />
-                            {property.neighborhood || property.city || 'Sin ubicación'}
-                          </p>
-                          <div className="flex items-baseline gap-1.5 mt-1.5">
-                            <span className="text-[14px] font-bold text-foreground font-mono tabular-nums">
-                              {formatPrice(property.listingType === 'sale' ? property.salePrice : property.monthlyRent)}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground">
-                              /mes
-                            </span>
-                          </div>
-                        </div>
-                      </Link>
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* View All Link */}
-                {results.length > 4 && (
-                  <div className="mt-4 pt-4 border-t border-border/50">
-                    <Button variant="link" hideArrow className="h-auto p-0 text-[13px] font-medium">
-                      Ver las {results.length} propiedades encontradas →
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
+              <motion.span
+                className="block h-full w-1/3 rounded-full bg-primary"
+                animate={{ x: ['-100%', '300%'] }}
+                transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            </motion.span>
           )}
         </AnimatePresence>
       </div>
 
+      <p className="mt-2 pl-4 text-xs text-fg-subtle" aria-live="polite">
+        {isMagnifyingGlassing ? 'Interpretando lo que escribiste…' : 'Pulsa Enter para buscar'}
+      </p>
     </div>
   );
 }

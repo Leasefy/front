@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CaretDown, X } from '@phosphor-icons/react';
-import { Chip } from '@leasefy/cadence';
+import { Chip, Eyebrow } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/layout/Navbar';
@@ -42,6 +42,50 @@ const PROPERTY_TYPES = [
   { value: 'house', label: 'Casa' },
   { value: 'studio', label: 'Estudio' },
 ];
+/**
+ * Ejemplos de búsqueda, sacados del catálogo real.
+ *
+ * Enseñan que se puede escribir como se habla y, con un clic, ya hay
+ * resultados. La primera versión era una lista fija —«2 alcobas en Laureles
+ * hasta $3M»— y sonaba muy bien: devolvía CERO contra el inventario real. Un
+ * ejemplo que termina en vacío enseña lo contrario de lo que quiere enseñar.
+ *
+ * Por eso se arman con lo que hay: las combinaciones tipo × ciudad × negocio
+ * más repetidas del catálogo sin filtrar. Y al clickear no dependen sólo del
+ * parser de lenguaje natural: además de escribir el texto ponen las píldoras
+ * de ciudad y tipo, que en el back mandan sobre lo interpretado
+ * (`filters.x ?? parsed.x`). Así el ejemplo siempre aterriza.
+ *
+ * Sólo tipos y ciudades que las píldoras saben mostrar: una ciudad que no
+ * está en `CITIES` filtraría con la píldora diciendo «Ciudad», y eso miente.
+ */
+export type Sugerencia = { texto: string; city: string; type: string };
+
+const TIPO_LABEL: Record<string, string> = { apartment: 'Apartamento', house: 'Casa', studio: 'Estudio' };
+
+export function sugerenciasDelCatalogo(propiedades: Property[]): Sugerencia[] {
+  const conteo = new Map<string, { n: number; s: Sugerencia }>();
+  for (const p of propiedades) {
+    const tipo = TIPO_LABEL[p.type];
+    if (!tipo || !CITIES.includes(p.city)) continue;
+    const venta = p.listingType === 'sale';
+    const clave = `${p.type}|${p.city}|${venta}`;
+    const previo = conteo.get(clave);
+    if (previo) {
+      previo.n += 1;
+      continue;
+    }
+    conteo.set(clave, {
+      n: 1,
+      s: { texto: `${tipo}${venta ? ' en venta' : ''} en ${p.city}`, city: p.city, type: p.type },
+    });
+  }
+  return [...conteo.values()]
+    .sort((a, b) => b.n - a.n || a.s.texto.localeCompare(b.s.texto, 'es'))
+    .slice(0, 4)
+    .map((x) => x.s);
+}
+
 const PRICE_RANGES = [
   { value: '0-1500000', label: 'Hasta $1.5M' },
   { value: '1500000-2500000', label: '$1.5M - $2.5M' },
@@ -156,6 +200,15 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
     setAppliedQuery(query.trim());
   }, []);
 
+  // Una sugerencia llena el campo, pone las píldoras Y busca: es lo que la
+  // persona haría a mano, con la garantía de que aterriza.
+  const buscarSugerencia = useCallback((s: Sugerencia) => {
+    setAiSearchQuery(s.texto);
+    setAppliedQuery(s.texto);
+    setSelectedCity(s.city);
+    setSelectedType(s.type);
+  }, []);
+
   // Client-side: handle 4+ bedrooms filter and sorting
   const filteredProperties = useMemo(() => {
     let result = [...apiProperties];
@@ -197,6 +250,14 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
 
   const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label || 'Recomendado';
   const hasActiveFilters = selectedCity || selectedBedrooms || selectedType || selectedPrice;
+
+  // Se calculan con el catálogo SIN filtrar y se quedan: al clickear una, la
+  // lista filtrada se achica y sin esto los ejemplos se irían con ella.
+  const [sugerencias, setSugerencias] = useState<Sugerencia[]>([]);
+  useEffect(() => {
+    if (appliedQuery || hasActiveFilters || apiProperties.length === 0) return;
+    setSugerencias(sugerenciasDelCatalogo(apiProperties));
+  }, [apiProperties, appliedQuery, hasActiveFilters]);
 
   const clearAllFilters = () => {
     setSelectedCity(null);
@@ -252,7 +313,7 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
       {activeFilter === id && (
         <>
           <div className="fixed inset-0 z-[100]" onClick={() => setActiveFilter(null)} />
-          <div className="absolute left-0 top-full mt-1 py-1 bg-surface border border-border rounded-md z-[110] min-w-[140px]">
+          <div className="absolute left-0 top-full mt-1 py-1 bg-surface border border-border rounded-md shadow-md z-[110] min-w-[140px]">
             {options.map((option) => (
               <Button
                 key={option.value}
@@ -308,16 +369,36 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
             </div>
           )}
 
-          {/* AI Search Section */}
-          <div className="bg-background py-4 md:py-5">
-            <div className="px-4 md:px-6">
-              <h1 className={cn(
-                'font-medium text-foreground tracking-tight mb-4',
-                embedded ? 'text-base' : 'text-lg'
-              )}>
-                Búsqueda inteligente
+          {/* Búsqueda inteligente.
+              Rediseñada el 2026-09-06 (Nico: «hay que hacer un glow up de esta
+              sección de buscar inmueble»). Antes: un título de una línea y una
+              caja de 260 px casi vacía. Ahora un encabezado corto que dice
+              cómo buscar, la barra de una fila del DS y ejemplos que buscan
+              con un clic. */}
+          <div className="bg-surface border-b border-border">
+            <div className={cn('px-4 md:px-6', embedded ? 'pt-5 pb-5' : 'pt-8 pb-7 md:pt-10')}>
+              <Eyebrow accent className="mb-3">
+                Buscar inmueble
+                <span className="text-fg-subtle">
+                  {' · '}
+                  <span className="font-mono tabular-nums">{isInitialLoading ? '…' : filteredProperties.length}</span>
+                  {' disponibles'}
+                </span>
+              </Eyebrow>
+              <h1
+                className={cn(
+                  'font-heading font-semibold tracking-[-0.02em] text-fg text-balance',
+                  embedded ? 'text-xl' : 'text-2xl md:text-[28px] leading-tight',
+                )}
+              >
+                Busca como le hablarías a un asesor
               </h1>
+              <p className="mt-1.5 text-sm text-fg-muted max-w-[52ch]">
+                Ciudad, barrio, presupuesto, mascotas… escríbelo y lo entendemos.
+              </p>
+
               <AISearchInput
+                className="mt-5"
                 value={aiSearchQuery}
                 onChange={setAiSearchQuery}
                 onMagnifyingGlass={handleAiSearch}
@@ -327,84 +408,99 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
                 }}
                 isMagnifyingGlassing={isInitialLoading}
               />
+
               {/* Lo que el buscador sacó del texto. Va acá, pegado al campo,
                   porque es la respuesta a «¿me entendiste?». */}
-              <LoQueEntendimos interpretacion={meta?.interpretacion} className="mt-2" />
+              <LoQueEntendimos interpretacion={meta?.interpretacion} className="mt-3" />
+
+              {/* Sin búsqueda aplicada, los ejemplos. Con una, ya no hacen falta
+                  y estorbarían lo que el buscador entendió. */}
+              {!appliedQuery && sugerencias.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2" data-testid="search-suggestions">
+                  {sugerencias.map((s) => (
+                    <Chip key={s.texto} onClick={() => buscarSugerencia(s)} className="whitespace-nowrap">
+                      {s.texto}
+                    </Chip>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Filters & Results Bar */}
-          <div className="bg-background border-y border-border">
-            <div className="px-4 md:px-6 py-3">
-              {/* Filter Pills Row */}
-              <div className="flex items-center gap-2 mb-3 pb-1 flex-wrap">
-                {renderFilterDropdown(
-                  'city',
-                  'Ciudad',
-                  selectedCity,
-                  CITIES.map(c => ({ value: c, label: c })),
-                  setSelectedCity
-                )}
-                {renderFilterDropdown(
-                  'bedrooms',
-                  'Habitaciones',
-                  selectedBedrooms,
-                  BEDROOMS.map(b => ({ value: b, label: `${b} habitacion${b !== '1' ? 'es' : ''}` })),
-                  setSelectedBedrooms
-                )}
-                {renderFilterDropdown(
-                  'type',
-                  'Tipo',
-                  selectedType,
-                  PROPERTY_TYPES,
-                  setSelectedType
-                )}
-                {renderFilterDropdown(
-                  'price',
-                  'Precio',
-                  selectedPrice,
-                  PRICE_RANGES,
-                  setSelectedPrice
-                )}
+          {/* Filtros + conteo + orden. Pegajosos bajo el header: la grilla es
+              larga y el filtro tiene que estar a mano sin volver arriba. En
+              modo embebido el panel scrollea solo, así que se pegan a su
+              propio borde. */}
+          <div
+            className={cn(
+              'sticky z-20 border-b border-border bg-background/95 backdrop-blur-[2px]',
+              embedded ? 'top-0' : 'top-16 lg:top-[76px]',
+            )}
+          >
+            <div className="px-4 md:px-6 py-3 flex flex-wrap items-center gap-2">
+              {renderFilterDropdown(
+                'city',
+                'Ciudad',
+                selectedCity,
+                CITIES.map(c => ({ value: c, label: c })),
+                setSelectedCity
+              )}
+              {renderFilterDropdown(
+                'bedrooms',
+                'Habitaciones',
+                selectedBedrooms,
+                BEDROOMS.map(b => ({ value: b, label: `${b} habitacion${b !== '1' ? 'es' : ''}` })),
+                setSelectedBedrooms
+              )}
+              {renderFilterDropdown(
+                'type',
+                'Tipo',
+                selectedType,
+                PROPERTY_TYPES,
+                setSelectedType
+              )}
+              {renderFilterDropdown(
+                'price',
+                'Precio',
+                selectedPrice,
+                PRICE_RANGES,
+                setSelectedPrice
+              )}
 
-                {/* Clear Filters */}
-                {hasActiveFilters && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    hideArrow
-                    onClick={clearAllFilters}
-                    className="gap-1 text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    Limpiar
-                  </Button>
-                )}
-              </div>
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  hideArrow
+                  onClick={clearAllFilters}
+                  className="gap-1 text-fg-muted hover:text-fg"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Limpiar
+                </Button>
+              )}
 
-              {/* Results Count + Sort */}
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-foreground/70">
-                  <span className="font-medium text-foreground font-mono tabular-nums">{filteredProperties.length}</span> propiedades
+              {/* Conteo + orden, a la derecha de la misma fila. */}
+              <div className="ml-auto flex items-center gap-3">
+                <p className="text-sm text-fg-muted whitespace-nowrap">
+                  <span className="font-mono tabular-nums font-medium text-fg">{filteredProperties.length}</span> propiedades
                 </p>
-
-                {/* Sort Dropdown */}
                 <div className="relative">
                   <Button
                     variant="ghost"
                     size="sm"
                     hideArrow
                     onClick={() => setShowSortList(!showSortList)}
-                    className="gap-2 px-2 text-sm font-normal text-foreground/70 hover:text-foreground"
+                    className="gap-1.5 px-2 text-sm font-normal text-fg hover:text-primary"
                   >
                     <span>{currentSortLabel}</span>
-                    <CaretDown className={cn('w-4 h-4 transition-transform', showSortList && 'rotate-180')} />
+                    <CaretDown className={cn('w-3.5 h-3.5 transition-transform', showSortList && 'rotate-180')} />
                   </Button>
 
                   {showSortList && (
                     <>
                       <div className="fixed inset-0 z-[100]" onClick={() => setShowSortList(false)} />
-                      <div className="absolute right-0 top-full mt-2 py-1 bg-surface border border-border rounded-md z-[110] min-w-[160px]">
+                      <div className="absolute right-0 top-full mt-2 py-1 bg-surface border border-border rounded-md shadow-md z-[110] min-w-[160px]">
                         {SORT_OPTIONS.map((option) => (
                           <Button
                             key={option.value}
@@ -414,8 +510,8 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
                             className={cn(
                               'w-full justify-start h-auto rounded-none px-4 py-2 text-sm font-normal',
                               sortBy === option.value
-                                ? 'bg-black/5 dark:bg-white/10 text-foreground font-medium'
-                                : 'text-foreground/70 hover:bg-black/5 dark:hover:bg-white/10'
+                                ? 'bg-black/5 dark:bg-white/10 text-fg font-medium'
+                                : 'text-fg-muted hover:bg-black/5 dark:hover:bg-white/10'
                             )}
                           >
                             {option.label}

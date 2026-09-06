@@ -61,12 +61,14 @@ export default function PrivacidadPage() {
                 <dd className="text-muted-foreground">Leasefy S.A.S.</dd>
                 <dt className="font-medium text-foreground">Domicilio</dt>
                 <dd className="text-muted-foreground">Sabaneta, Antioquia, Colombia</dd>
-                <dt className="font-medium text-foreground">Canal de datos personales</dt>
-                <dd className="text-muted-foreground">privacidad@leasefy.co</dd>
+                <dt className="font-medium text-foreground">Área responsable</dt>
+                <dd className="text-muted-foreground">Protección de Datos Personales · privacidad@leasefy.co</dd>
                 <dt className="font-medium text-foreground">Ámbito</dt>
                 <dd className="text-muted-foreground">Colombia, únicamente</dd>
                 <dt className="font-medium text-foreground">Vigente desde</dt>
                 <dd className="text-muted-foreground">5 de septiembre de 2026</dd>
+                <dt className="font-medium text-foreground">Vigencia de la base de datos</dt>
+                <dd className="text-muted-foreground">Mientras dure la relación y los plazos legales de conservación (§9)</dd>
                 <dt className="font-medium text-foreground">Versión</dt>
                 <dd className="text-muted-foreground font-mono">v2.0</dd>
               </dl>
@@ -88,7 +90,8 @@ export default function PrivacidadPage() {
                 <p className="mb-3">
                   <strong className="text-foreground/90">Operamos únicamente en Colombia.</strong>{" "}
                   No prestamos el servicio en otros países. El tratamiento se rige
-                  por la Ley 1581 de 2012 y su Decreto 1377 de 2013, y —cuando hay
+                  por la Ley 1581 de 2012 y el Decreto 1074 de 2015 (que compiló el Decreto
+                  1377 de 2013), y —cuando hay
                   información financiera y crediticia— por la Ley 1266 de 2008 y la
                   Ley 2157 de 2021. La autoridad de control es la Superintendencia
                   de Industria y Comercio.
@@ -350,10 +353,11 @@ export default function PrivacidadPage() {
                 <p>
                   <strong className="text-foreground/90">Transferencia internacional.</strong>{" "}
                   Varios de estos proveedores están fuera de Colombia, principalmente
-                  en Estados Unidos. Cuando el país de destino no cuenta con un nivel
-                  adecuado de protección según la Superintendencia de Industria y
-                  Comercio, la transferencia se ampara en tu autorización y en los
-                  contratos de transmisión que suscribimos con cada proveedor.
+                  en Estados Unidos, que figura en la lista de países con nivel
+                  adecuado de protección de la Superintendencia de Industria y
+                  Comercio. Con cada proveedor suscribimos un contrato de transmisión
+                  que lo obliga a tratar los datos conforme a esta política y sólo
+                  para la finalidad que autorizaste.
                 </p>
               </section>
 
@@ -386,12 +390,15 @@ export default function PrivacidadPage() {
                   Mientras exista la relación —tu cuenta, tu postulación, tu
                   contrato— y después por el tiempo que las normas comerciales,
                   contables y tributarias nos obliguen a conservar los soportes, que
-                  en general es de <strong className="text-foreground/90">diez (10) años</strong> desde
-                  el último asiento, según el artículo 60 del Código de Comercio.
+                  para los libros y papeles del comercio es de{" "}
+                  <strong className="text-foreground/90">diez (10) años</strong>.
                 </p>
                 <p className="mb-3">
-                  Los datos que sólo sirven para un estudio que no prosperó se
-                  eliminan a los noventa (90) días.
+                  Ese plazo es de los soportes contables y no se usa para justificar
+                  guardar todo lo demás. Los datos de un estudio que no prosperó se
+                  eliminan a los noventa (90) días. Las grabaciones de llamadas se
+                  conservan por el tiempo necesario para acreditar la gestión y
+                  atender un reclamo, y luego se suprimen.
                 </p>
                 <p>
                   Cerrar tu cuenta desactiva el acceso de inmediato. No borra la
@@ -441,6 +448,16 @@ export default function PrivacidadPage() {
                   <li>Presentar una queja ante la Superintendencia de Industria y Comercio.</li>
                 </ul>
                 <p className="mb-3">
+                  Consultar tus datos es{" "}
+                  <strong className="text-foreground/90">gratuito</strong>, al menos una
+                  vez por mes calendario y cada vez que cambiemos sustancialmente esta
+                  política. Mientras un reclamo tuyo está en curso, tu registro queda
+                  marcado como{" "}
+                  <strong className="text-foreground/90">«reclamo en trámite»</strong>{" "}
+                  con el motivo, dentro de los dos días hábiles siguientes y hasta que
+                  se decida.
+                </p>
+                <p className="mb-3">
                   <strong className="text-foreground/90">Canal:</strong>{" "}
                   <span className="text-foreground/85 font-medium">privacidad@leasefy.co</span>.
                   Contanos qué querés y cómo verificar que sos vos.
@@ -465,7 +482,9 @@ export default function PrivacidadPage() {
                   La plataforma es para mayores de 18 años. No creamos cuentas para
                   menores. Si un menor aparece como ocupante de una vivienda, sólo
                   tratamos lo indispensable para el contrato, con autorización de
-                  quien ejerce la patria potestad. Si creés que tenemos datos de un
+                  quien ejerce la patria potestad y después de escuchar al menor.
+                  Responder preguntas sobre datos de un menor es facultativo: no
+                  estás obligado a hacerlo y ningún trámite se condiciona a ello. Si creés que tenemos datos de un
                   menor sin ese respaldo, escribinos y los eliminamos.
                 </p>
               </section>

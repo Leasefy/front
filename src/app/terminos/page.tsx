@@ -369,6 +369,7 @@ export default function TerminosPage() {
                   <strong className="text-foreground/90">nadie puede oponerse</strong> — ni el
                   propietario, ni el arrendador, ni el nuevo arrendatario—, so pena de
                   multa. Una cláusula que lo prohíba quedó sin efecto.
+                </p>
               </section>
 
               <section>

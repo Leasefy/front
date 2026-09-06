@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { VERSION_POLITICA_DE_TRATAMIENTO } from '@/lib/legal/versiones';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Download, Eye, MagnifyingGlass, Calendar, CheckCircle, Clock, X, CaretLeft, CaretRight, FolderOpen, IdentificationCard, Money, Briefcase, Bank, Trash, Lock, ShieldCheck, Certificate, XCircle, WarningCircle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
@@ -118,7 +119,7 @@ export default function DocumentosPage() {
   // Both booleans default FALSE (createEmptyDocumentConsent) — never pre-ticked.
   // The MANDATORY `purposeDocAccess` is what actually gates document access below;
   // this UI gate is the real enforcement (server-side persistence is best-effort).
-  const [consent, setConsent] = useState<DocumentConsent>(() => createEmptyDocumentConsent('v1'));
+  const [consent, setConsent] = useState<DocumentConsent>(() => createEmptyDocumentConsent(VERSION_POLITICA_DE_TRATAMIENTO));
   const canAccessDocs = consent.purposeDocAccess;
   // Tracks docs we already best-effort POSTed consent for, so we don't spam the endpoint.
   const recordedConsentRef = useRef<Set<string>>(new Set());

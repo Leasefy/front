@@ -37,6 +37,7 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import {
   ArrowSquareOut,
+  ArrowsOutSimple,
   CaretLeft,
   CaretRight,
   Clock,
@@ -54,7 +55,9 @@ import {
 } from '@leasefy/cadence'
 
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { PilotoAccionForm } from './PilotoAccionForm'
+import { PilotoDocumento } from './PilotoDocumento'
 import {
   Sheet,
   SheetContent,
@@ -92,6 +95,20 @@ export interface PilotoCajonProps {
 /** Un enlace externo (http…) sale del panel; uno relativo navega adentro. */
 function esExterno(href: string): boolean {
   return /^https?:\/\//i.test(href)
+}
+
+/**
+ * El UUID del artefacto cuando el caso ES una carta.
+ *
+ * Los ids del Piloto vienen con prefijo desde el micro (`art:` para los
+ * artefactos legales, ver `src/piloto/detalle.ts`). Con ese id el front puede
+ * pedirle el PDF al endpoint autenticado del micro y mostrarlo sin salir del
+ * cajón — que es lo único que hace falta para leerlo antes de aprobar.
+ */
+export function artifactIdDeCaso(id: string | undefined): string | null {
+  if (!id) return null
+  const m = /^art:(.+)$/.exec(id)
+  return m ? m[1] : null
 }
 
 const TONO_SEVERIDAD: Record<string, string> = {
@@ -192,6 +209,12 @@ export function PilotoCajon({
    * cajón es angosto y dos formularios abiertos se pisan.
    */
   const [abierta, setAbierta] = useState<InboxAccion | null>(null)
+  /**
+   * El documento abierto ENCIMA del caso. Leer la carta no puede costar salir
+   * del Piloto: es lo que se hace justo antes de autorizar que salga.
+   */
+  const [documento, setDocumento] = useState<string | null>(null)
+  const artifactId = artifactIdDeCaso(itemId ?? undefined)
 
   const ejecutar = useCallback(
     async (accion: InboxAccion, valores?: Record<string, unknown>) => {
@@ -226,7 +249,16 @@ export function PilotoCajon({
       <SheetContent
         side="right"
         hideCloseButton
-        className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-xl"
+        /*
+         * Con el sub-cajón abierto, el borde izquierdo se endereza: dos
+         * paneles pegados con las esquinas redondeadas dejan una muesca en la
+         * costura y se leen como dos ventanas sueltas (Nico, 2026-09-06). Al
+         * cerrarlo vuelve a su radio.
+         */
+        className={cn(
+          'flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-xl',
+          documento && 'sm:!rounded-l-none',
+        )}
         data-testid="piloto-cajon"
       >
         {/* Encabezado fijo — el título del caso siempre visible al scrollear */}
@@ -405,12 +437,36 @@ export function PilotoCajon({
                 </section>
               )}
 
-              {data.enlaces.length > 0 && (
+              {(data.enlaces.length > 0 || artifactId) && (
                 <section>
                   <h3 className="mb-2.5"><MonoLabel>
                     {t('inmobiliaria.piloto.cajon.enlaces')}
                   </MonoLabel></h3>
                   <ul className="space-y-2">
+                    {/*
+                      Leer el documento NO es «dónde seguir»: es parte de
+                      decidir acá. Por eso es un botón que abre el sub-cajón y
+                      no un enlace a otra pestaña. El micro ya no manda
+                      `pdfUrl` como enlace —era una ubicación de
+                      almacenamiento, y las filas de semilla apuntaban a un
+                      demo vacío—; con el id del artefacto alcanza.
+                    */}
+                    {artifactId && (
+                      <li>
+                        <button
+                          type="button"
+                          onClick={() => setDocumento(artifactId)}
+                          className="inline-flex items-center gap-1.5 text-body-sm font-medium text-fg hover:underline"
+                          data-testid="piloto-cajon-leer-pdf"
+                        >
+                          Leer el documento antes de aprobar
+                          <ArrowsOutSimple weight="bold" className="h-3 w-3" aria-hidden="true" />
+                        </button>
+                        <p className="mt-1 text-caption text-fg-muted">
+                          Se abre acá mismo, sin perder el caso.
+                        </p>
+                      </li>
+                    )}
                     {data.enlaces.map((enlace) => (
                       <li key={enlace.href + enlace.label}>
                         {esExterno(enlace.href) ? (
@@ -460,7 +516,16 @@ export function PilotoCajon({
                 onEnviar={(valores: Record<string, unknown>) => void ejecutar(abierta, valores)}
               />
             ) : (
-              <div className="flex flex-wrap justify-end gap-2">
+              /*
+               * La primaria va a la DERECHA y las secundarias a la izquierda
+               * (regla de Nico, 2026-09-06; es además la anatomía que ya
+               * describe DESIGN.md §17 para diálogos: «Cancelar  Confirmar»).
+               * El micro manda la primaria PRIMERA, así que el orden visual se
+               * invierte acá — y con `flex-row-reverse` el orden del DOM se
+               * mantiene, que es el que sigue el tabulador: primero la acción
+               * principal, después las alternativas.
+               */
+              <div className="flex flex-wrap-reverse flex-row-reverse justify-start gap-2">
                 {data.acciones.map((accion, i) => (
                   <Button
                     key={accion.label}
@@ -494,6 +559,20 @@ export function PilotoCajon({
           </footer>
         )}
       </SheetContent>
+
+      {/*
+       * Encima del caso, nunca en su lugar: cerrar esto devuelve al caso.
+       * Montado sólo cuando hay documento — el sub-cajón lee la sesión para
+       * pedirle el PDF al micro, y no tiene por qué hacerlo mientras nadie
+       * abrió nada.
+       */}
+      {documento && (
+        <PilotoDocumento
+          artifactId={documento}
+          onClose={() => setDocumento(null)}
+          hrefCompleto={`/panel/inmobiliaria/cobros/cobranza/cartas/${documento}`}
+        />
+      )}
     </Sheet>
   )
 }

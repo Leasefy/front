@@ -11,25 +11,24 @@
  * barra de abajo, en cuatro tramos, se va llenando con el tiempo del que
  * está en pantalla: dice cuál va, que son cuatro, y cuándo cambia.
  *
- * 🔴 LA LISTA QUE SE MUESTRA ESTÁ VACÍA, Y ES A PROPÓSITO.
+ * ── Sobre el contenido de la lista ────────────────────────────────────────
  *
- * Hasta acá esto pintaba cuatro testimonios inventados —«Mariana Restrepo,
- * Gerente general, Portofino Inmobiliaria, Medellín»— bajo un título que
- * afirmaba «Inmobiliarias que ya operan con Leasefy», en la pantalla de
- * acceso, a la vista de cualquiera. Ninguna de esas inmobiliarias existe y
- * ninguna de esas personas dijo eso. En Colombia eso es publicidad engañosa
- * (Ley 1480 de 2011, Estatuto del Consumidor, arts. 29-30): no es un detalle
- * de copy, es una afirmación falsa sobre clientes reales.
+ * Los cuatro textos de abajo los escribimos nosotros: las personas que
+ * aparecen firmándolos no los dijeron. De las cuatro inmobiliarias, Portofino
+ * sí existe —es cliente, aparece en el backoffice y estamos migrando sus
+ * fotos desde `portofinopr.arrendasoft.co`—; «Altavista» sólo figura como
+ * dato de prueba en un test de onboarding, y «Casa Nuestra» y «Nido
+ * Inmobiliario» no aparecen en ninguna parte del sistema.
  *
- * El comentario que había —«copy de muestra, antes de producción van
- * testimonios reales»— no protege de nada: un comentario no impide que la
- * pantalla salga a producción, y de hecho ya estaba montada.
+ * Se muestran igual, bajo el título «Inmobiliarias que ya operan con
+ * Leasefy», por decisión de Nico del 2026-09-05, tomada sabiendo que en
+ * Colombia atribuirle una cita a alguien que no la dijo entra en publicidad
+ * engañosa (Ley 1480 de 2011, arts. 29-30).
  *
- * Así que la pieza se queda —el diseño sirve y está probado— pero la lista que
- * consume la app es `TESTIMONIOS`, y está vacía: sin testimonios el componente
- * no pinta NADA. El día que haya frases reales con el permiso de quien las
- * dijo, se llenan acá y vuelve sola. Los de muestra siguen abajo, con nombre
- * de muestra, para poder mirar la pieza desde un test o un preview.
+ * Reemplazarlos por frases reales es cambiar esta lista y nada más: la pieza
+ * ya toma la que le pasen. Con una sola frase verdadera —dicha por esa
+ * persona y con su permiso para publicarla con su nombre— alcanza para que
+ * la tarjeta funcione.
  */
 
 import { useEffect, useState } from 'react';
@@ -43,16 +42,8 @@ export interface Testimonio {
   cargo: string;
 }
 
-/**
- * Testimonios REALES. Vacío hasta que existan.
- *
- * Requisito para agregar uno: que la persona lo haya dicho y haya dado
- * permiso escrito para publicarlo con su nombre y su inmobiliaria.
- */
-export const TESTIMONIOS: Testimonio[] = [];
-
-/** Los inventados, sólo para ver la pieza. NUNCA se montan en la app. */
-export const TESTIMONIOS_DE_MUESTRA: Testimonio[] = [
+/** Lo que se muestra en el acceso. Ver la nota de arriba sobre su origen. */
+export const TESTIMONIOS: Testimonio[] = [
   {
     agencia: 'Portofino Inmobiliaria',
     ciudad: 'Medellín',
@@ -118,9 +109,8 @@ export function TestimoniosFlotantes({
     return () => clearInterval(id);
   }, [intervaloMs, total]);
 
-  // Sin testimonios reales no hay nada que mostrar. El bloque entero —incluido
-  // el título «Inmobiliarias que ya operan con Leasefy»— desaparece: el título
-  // solo también es una afirmación.
+  // Con la lista vacía se va el bloque entero, título incluido: «Inmobiliarias
+  // que ya operan con Leasefy» sobre cero tarjetas también afirma algo.
   if (total === 0) return null;
 
   const t = testimonios[indice % total];

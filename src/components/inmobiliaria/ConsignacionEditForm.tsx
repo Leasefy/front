@@ -245,7 +245,7 @@ export function ConsignacionEditForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Property Info Section */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-fg dark:text-white">
+        <div className="flex items-center gap-2 text-fg">
           <Buildings className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">{t('inmobiliaria.consignaciones.editForm.propertyInfo')}</h3>
         </div>
@@ -343,7 +343,7 @@ export function ConsignacionEditForm({
 
       {/* Financial Info Section */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-fg dark:text-white">
+        <div className="flex items-center gap-2 text-fg">
           <CurrencyDollar className="w-5 h-5 text-success" />
           <h3 className="font-semibold">{t('inmobiliaria.consignaciones.editForm.financialInfo')}</h3>
         </div>
@@ -438,7 +438,7 @@ export function ConsignacionEditForm({
 
       {/* Contract Info Section */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-fg dark:text-white">
+        <div className="flex items-center gap-2 text-fg">
           <CalendarBlank className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">{t('inmobiliaria.consignaciones.editForm.contractTerms')}</h3>
         </div>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CaretLeft, PaperPlaneTilt } from '@phosphor-icons/react';
 import Link from 'next/link';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { DispersionWizard } from '@/components/inmobiliaria';
 import type { Dispersion } from '@/lib/types/inmobiliaria';
 import { useI18n } from '@/lib/i18n';

@@ -596,6 +596,7 @@ export function PropertyDetailView({
                 onWishlistToggle={() => toggleWishlist(property.id)}
                 listingType={property.listingType}
                 salePrice={property.salePrice}
+                visitTypes={property.visitTypes}
               />
             </div>
           </div>

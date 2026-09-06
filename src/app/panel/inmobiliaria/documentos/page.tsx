@@ -25,9 +25,10 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ClipboardText, FileText, Plus } from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { PermissionGate } from '@/components/auth/PermissionGate';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,7 @@ import {
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
 import {
@@ -131,14 +133,50 @@ function DocumentosContent() {
   );
 
   const { documentos, plantillas, cargando, error, recargar, agregar } = useDocumentosLegales();
-  const { actas, isLoading: cargandoActas, refetch: recargarActas } = useActasEntrega();
+  /*
+   * 🔴 El error de las actas se PINTA, no se traga.
+   *
+   * Las actas se leen de `GET /inmobiliaria/actas`, que pide `portafolio:view`
+   * — no `documentos:view`, que es lo que abre esta pantalla. Un CONTADOR tiene
+   * `documentos: ['view']` y `portafolio: []`: entra acá, abre la pestaña y el
+   * backend responde 403. Antes esta pantalla le pasaba `null` como error a
+   * `EstadoDeDatos`, así que el 403 se veía como «Todavía no hay actas» — la
+   * pantalla afirmando que la agencia no tiene actas cuando lo único cierto es
+   * que esa persona no las puede ver.
+   */
+  const {
+    actas,
+    isLoading: cargandoActas,
+    errorCrudo: errorActas,
+    refetch: recargarActas,
+  } = useActasEntrega();
   const { consignaciones } = useConsignaciones({ status: 'active' });
+
+  /*
+   * Los dos permisos que gobiernan los botones de esta pantalla, y son
+   * DISTINTOS: generar un documento pide `documentos:create`, levantar un acta
+   * pide `portafolio:create` (`POST /inmobiliaria/actas`). Un CONTADOR no tiene
+   * ninguno de los dos; un VIEWER, tampoco.
+   */
+  const { canAccess } = usePermissions();
+  const puedeCrearDocumentos = canAccess('documentos', 'create');
+  const puedeCrearActas = canAccess('portafolio', 'create');
 
   const [filtros, setFiltros] = useState<FiltrosDeDocumentos>(FILTROS_VACIOS);
   const [generarAbierto, setGenerarAbierto] = useState(false);
   const [plantillaAbierta, setPlantillaAbierta] = useState<PlantillaDeLaAgencia | null>(null);
   const [actaAbierta, setActaAbierta] = useState<ActaEntrega | null>(null);
   const [nuevaActaAbierta, setNuevaActaAbierta] = useState(false);
+
+  /*
+   * Los dos cajones se cerraban EN BLANCO. `open` ya estaba bien puesto
+   * (`x !== null`), así que Radix animaba la salida — pero el cuerpo leía la
+   * variable cruda, y en el mismo render en que se cierra ya vale `null`: el
+   * contenido desaparecía de golpe y lo que se deslizaba afuera era un panel
+   * vacío. `useUltimoPresente` lo sostiene mientras dura la animación.
+   */
+  const plantillaVisible = useUltimoPresente(plantillaAbierta);
+  const actaVisible = useUltimoPresente(actaAbierta);
 
   const visibles = useMemo(() => filtrarDocumentos(documentos, filtros), [documentos, filtros]);
 
@@ -319,9 +357,11 @@ function DocumentosContent() {
 
         <EstadoDeDatos
           cargando={pestana === 'actas' ? cargandoActas : cargando}
-          error={pestana === 'actas' ? null : error}
-          queEs="los documentos"
-          onReintentar={() => void recargar()}
+          error={pestana === 'actas' ? errorActas : error}
+          queEs={pestana === 'actas' ? 'las actas' : 'los documentos'}
+          onReintentar={
+            pestana === 'actas' ? () => void recargarActas() : () => void recargar()
+          }
           esqueleto={
             <div className="flex items-center justify-center py-16">
               <Spinner />
@@ -350,7 +390,15 @@ function DocumentosContent() {
                         hayFiltros={hayFiltros(filtros)}
                         titulo={t(k('vacioTitulo'))}
                         descripcion={t(k('vacioDesc'))}
-                        crear={{ label: t(k('generar')), onClick: () => setGenerarAbierto(true) }}
+                        // Mismo permiso que el botón de la cabecera: sin
+                        // `documentos:create` el backend corta con 403 al
+                        // preparar, y un botón que sólo lleva a un error no es
+                        // una salida del vacío.
+                        crear={
+                          puedeCrearDocumentos
+                            ? { label: t(k('generar')), onClick: () => setGenerarAbierto(true) }
+                            : undefined
+                        }
                         onLimpiarFiltros={() => setFiltros(FILTROS_VACIOS)}
                       />
                     </TableCell>
@@ -469,10 +517,18 @@ function DocumentosContent() {
                         icono={ClipboardText}
                         titulo={t(k('vacioActas'))}
                         descripcion={t(k('vacioActasDesc'))}
-                        crear={{
-                          label: t('inmobiliaria.documentos.newActa'),
-                          onClick: () => setNuevaActaAbierta(true),
-                        }}
+                        // `POST /inmobiliaria/actas` pide `portafolio:create`,
+                        // NO `documentos:create`. Un VIEWER —`portafolio:
+                        // ['view']`— veía «Nueva acta», llenaba el formulario
+                        // entero y recién ahí se comía un 403.
+                        crear={
+                          puedeCrearActas
+                            ? {
+                                label: t('inmobiliaria.documentos.newActa'),
+                                onClick: () => setNuevaActaAbierta(true),
+                              }
+                            : undefined
+                        }
                       />
                     </TableCell>
                   </TableRow>
@@ -573,17 +629,23 @@ function DocumentosContent() {
       <Sheet open={plantillaAbierta !== null} onOpenChange={(o) => !o && setPlantillaAbierta(null)}>
         <SheetContent className="w-full sm:max-w-3xl">
           <SheetHeader>
-            <SheetTitle className="text-lg">{plantillaAbierta?.name ?? t(k('plantillaTitulo'))}</SheetTitle>
+            <SheetTitle className="text-lg">{plantillaVisible?.name ?? t(k('plantillaTitulo'))}</SheetTitle>
           </SheetHeader>
-          {plantillaAbierta && (
+          {plantillaVisible && (
             <div className="mt-4 flex h-[calc(100vh-8rem)] flex-col gap-3">
               <p className="text-caption text-fg-muted">
-                {plantillaAbierta.variables.length} variables · {t(k('colVersion'))}{' '}
-                {plantillaAbierta.version}
+                {plantillaVisible.variables.length} variables · {t(k('colVersion'))}{' '}
+                {plantillaVisible.version}
               </p>
+              {/* `bg-white` a propósito, NO `bg-surface`: esto no es una
+                  superficie del panel sino el PAPEL del documento. El srcDoc
+                  trae el HTML de la plantilla con su tinta oscura y sin fondo
+                  propio, así que con `bg-surface` (#0a0a0a en oscuro) la vista
+                  previa quedaría negro sobre negro. El papel es blanco en los
+                  dos temas porque es lo que se va a imprimir. */}
               <iframe
-                title={plantillaAbierta.name}
-                srcDoc={plantillaAbierta.content}
+                title={plantillaVisible.name}
+                srcDoc={plantillaVisible.content}
                 className="h-full w-full rounded-lg border border-border bg-white"
                 sandbox=""
               />
@@ -613,7 +675,7 @@ function DocumentosContent() {
           <SheetHeader>
             <SheetTitle className="text-lg">{t('inmobiliaria.documentos.actaDetail')}</SheetTitle>
           </SheetHeader>
-          <div className="mt-6">{actaAbierta && <ActaEntregaViewer acta={actaAbierta} />}</div>
+          <div className="mt-6">{actaVisible && <ActaEntregaViewer acta={actaVisible} />}</div>
         </SheetContent>
       </Sheet>
     </div>

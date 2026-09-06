@@ -7,10 +7,16 @@
  * dónde apuntar. En la reunión del 2026-08-31 quedó explícito («yo ni siquiera
  * tengo sección de inquilinos»).
  *
- * Sólo lectura, a propósito. Un inquilino nace de un contrato o de la
- * migración de terceros, nunca de un formulario suelto: si se pudiera crear
- * uno acá existirían inquilinos sin arriendo y la lista dejaría de significar
- * «a quién le administro un inmueble». El back tampoco expone POST/PATCH.
+ * ── 🔴 2026-09-04: acá se crea un inquilino ────────────────────────────────
+ *
+ * Este archivo decía «sólo lectura, a propósito». Nico, mirando la pantalla:
+ * «*¿pero por qué crear contrato en inquilinos? En inquilino es crear
+ * inquilino*». Como en Propietarios se crea un propietario.
+ *
+ * El back ahora expone `POST /inmobiliaria/inquilinos` y la lista ya no sale
+ * sólo de los arriendos: una persona sin contrato existe y se ve, con
+ * `arriendos: []`. Lo que NO cambia es que sin contrato no se le cobra — eso
+ * lo dice el cajón que la crea.
  */
 
 import { apiClient } from './client';
@@ -47,14 +53,54 @@ export interface ArriendoDeInquilino {
  * veces al mismo inquilino.
  */
 export interface Inquilino {
+  /**
+   * Su `User.id` cuando tiene cuenta del portal. Cuando no —se cargó con
+   * documento y sin correo—, el id de su ficha de tercero. Es un uuid en los
+   * dos casos y es con lo que el back la vuelve a encontrar.
+   */
   tenantId: string;
   nombre: string;
   email: string | null;
   telefono: string | null;
+  /** Ya normalizado por el back (una cédula son sólo dígitos). */
+  documento: string | null;
   arriendos: ArriendoDeInquilino[];
 }
 
+/** Los cuatro tipos de `PropietarioDocumentType` en el back. No hay otros. */
+export type TipoDeDocumento = 'CC' | 'CE' | 'NIT' | 'PASSPORT';
+
+/**
+ * Lo que se manda para crear UNO.
+ *
+ * El correo y el documento son opcionales, pero el back exige al menos uno:
+ * son las dos llaves con las que después se lo encuentra —el documento para
+ * la migración de contratos, el correo para su cuenta del portal—. El drawer
+ * valida lo mismo antes de mandar, para no gastar un viaje.
+ */
+export interface NuevoInquilino {
+  nombre: string;
+  tipoDocumento?: TipoDeDocumento;
+  documento?: string;
+  correo?: string;
+  telefono?: string;
+}
+
 export const inquilinosApi = {
+  /**
+   * Crear un inquilino, sin contrato.
+   *
+   * Devuelve la persona con la MISMA forma que una fila de la lista (con
+   * `arriendos: []`) e `invitado`: si esta llamada mandó la invitación al
+   * portal, o si la cuenta ya existía y sólo se vinculó.
+   */
+  async crear(datos: NuevoInquilino): Promise<{ inquilino: Inquilino; invitado: boolean }> {
+    return apiClient.post<{ inquilino: Inquilino; invitado: boolean }>(
+      '/inmobiliaria/inquilinos',
+      datos,
+    );
+  },
+
   /**
    * La lista, una fila por persona.
    *

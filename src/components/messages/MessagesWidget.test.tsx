@@ -21,34 +21,39 @@ import type { ChatConversation } from '@/lib/api/messages.types';
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { searchParamsState, useChatMock, markAsReadMock } = vi.hoisted(() => ({
+const { searchParamsState, useChatMock, markAsReadMock, pushMock, rutaActual } = vi.hoisted(() => ({
   searchParamsState: { conversationId: null as string | null, applicationId: null as string | null },
   useChatMock: vi.fn(),
   markAsReadMock: vi.fn(),
+  pushMock: vi.fn(),
+  // El widget se monta en DOS paneles distintos con el mismo `actor='landlord'`
+  // (la inmobiliaria y el propietario). La ruta es lo que los separa, así que
+  // el doble la deja elegir por test.
+  rutaActual: { valor: '/panel/inmobiliaria/mensajes' },
 }));
 
 vi.mock('next/navigation', () => ({
   useSearchParams: () => ({
     get: (key: string) => (key === 'conversationId' ? searchParamsState.conversationId : key === 'applicationId' ? searchParamsState.applicationId : null),
   }),
+  useRouter: () => ({ push: pushMock, replace: vi.fn() }),
+  usePathname: () => rutaActual.valor,
 }));
 
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ t: (k: string) => k, locale: 'es' }),
 }));
 
-// `importOriginal` keeps everything else from the real package (notably the
-// AlertDialog family — archive/mute/report confirm — which MessagesWidget
-// uses via `@/components/ui/alert-dialog`; see the plain-Radix precedent in
-// `cobranza/plantillas/[id]/page.test.tsx`, which doesn't mock cadence at
-// all). Only the 4 components this suite actually stubs get replaced.
+// `importOriginal` keeps everything else from the real package: anything this
+// suite does not stub resolves to the real component instead of `undefined`.
+// The AlertDialog family is still taken from the local adapter mock below.
 vi.mock('@leasefy/cadence', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@leasefy/cadence')>();
   // `react/display-name` can infer a name for a plain arrow-function property
   // (IconButton/MonoLabel below) but not for one wrapped in `forwardRef` — the
   // render function forwardRef sees is anonymous to the rule's static
-  // analysis. Naming these two mocks and setting `.displayName` explicitly is
-  // the standard forwardRef fix rather than disabling the rule.
+  // analysis. Naming these mocks and setting `.displayName` explicitly is the
+  // standard forwardRef fix rather than disabling the rule.
   const MockInput = React.forwardRef(function MockInput(
     props: Record<string, unknown>,
     ref: React.Ref<HTMLInputElement>,
@@ -56,6 +61,14 @@ vi.mock('@leasefy/cadence', async (importOriginal) => {
     return React.createElement('input', { ...props, ref });
   });
   MockInput.displayName = 'Input';
+  // El composer del piloto escribe en un Textarea (adaptador local sobre cadence).
+  const MockTextarea = React.forwardRef(function MockTextarea(
+    props: Record<string, unknown>,
+    ref: React.Ref<HTMLTextAreaElement>,
+  ) {
+    return React.createElement('textarea', { ...props, ref });
+  });
+  MockTextarea.displayName = 'Textarea';
   const MockButton = React.forwardRef(function MockButton(
     props: Record<string, unknown> & { children?: React.ReactNode },
     ref: React.Ref<HTMLButtonElement>,
@@ -66,10 +79,37 @@ vi.mock('@leasefy/cadence', async (importOriginal) => {
   MockButton.displayName = 'Button';
   return {
     ...actual,
-    IconButton: (props: Record<string, unknown>) => React.createElement('button', { 'aria-label': props['aria-label'] }),
+    // 🔴 El doble tiene que pasar `onClick`. El anterior sólo copiaba el
+    // `aria-label`, así que TODO IconButton del widget era —dentro del test— un
+    // botón muerto: el menú de los tres puntos no se podía abrir y sus renglones
+    // eran imposibles de probar. Justamente el defecto que Nico encontró en la
+    // carita de los emojis, escondido en el mock.
+    IconButton: ({ icon, variant, ...rest }: Record<string, unknown> & { icon?: React.ReactNode }) =>
+      React.createElement('button', { type: 'button', ...rest }, icon as React.ReactNode),
     MonoLabel: ({ children }: { children?: React.ReactNode }) => React.createElement('span', null, children),
     Input: MockInput,
+    Textarea: MockTextarea,
     Button: MockButton,
+  };
+});
+
+// El widget (desde el merge del piloto) confirma «reportar» con un AlertDialog
+// que el adaptador local re-exporta de cadence. El mock de cadence de arriba es
+// parcial a propósito, así que el adaptador se mockea aparte con pasamanos.
+vi.mock('@/components/ui/alert-dialog', () => {
+  const pasamanos = ({ children }: { children?: React.ReactNode }) =>
+    React.createElement('div', null, children);
+  const boton = ({ children, ...rest }: Record<string, unknown> & { children?: React.ReactNode }) =>
+    React.createElement('button', rest, children);
+  return {
+    AlertDialog: pasamanos,
+    AlertDialogContent: pasamanos,
+    AlertDialogHeader: pasamanos,
+    AlertDialogFooter: pasamanos,
+    AlertDialogTitle: pasamanos,
+    AlertDialogDescription: pasamanos,
+    AlertDialogAction: boton,
+    AlertDialogCancel: boton,
   };
 });
 
@@ -92,6 +132,79 @@ vi.mock('@phosphor-icons/react', () => ({
   Archive: () => null,
   BellSlash: () => null,
   Flag: () => null,
+  // Los de la insignia de perfil y del cajón de «Nuevo mensaje». Este mock es
+  // TOTAL (no usa importOriginal), así que un ícono que falte no es un warning:
+  // el módulo devuelve undefined y React revienta al renderizarlo.
+  User: () => null,
+  Buildings: () => null,
+  IdentificationBadge: () => null,
+  // El `+` del encabezado, «Ver ficha» y el aviso de huecos de una plantilla.
+  Plus: () => null,
+  IdentificationCard: () => null,
+  Warning: () => null,
+  // Los tres paneles del compositor (emojis, plantillas, pendientes).
+  Notepad: () => null,
+  ListChecks: () => null,
+  Receipt: () => null,
+  CurrencyCircleDollar: () => null,
+  FileText: () => null,
+  ArrowClockwise: () => null,
+}));
+
+// El cajón de «Nuevo mensaje» monta un Sheet, que arrastra los primitivos de
+// diálogo de cadence — y el mock de cadence de este archivo es TOTAL. Se
+// sustituye por un doble: acá lo que se prueba es que la bandeja ofrezca el
+// botón y abra el cajón, no lo que el cajón hace adentro (eso tiene su propio
+// archivo, NuevoMensajeDrawer.test.tsx).
+vi.mock('@/components/messages/NuevoMensajeDrawer', () => ({
+  NuevoMensajeDrawer: ({ abierto }: { abierto: boolean }) =>
+    abierto ? React.createElement('div', { 'data-testid': 'nuevo-mensaje-cajon' }) : null,
+}));
+
+/*
+ * Los dos servicios que consumen los paneles nuevos del compositor.
+ *
+ * `messages.service` va entero (el widget también le pide archivar/silenciar/
+ * reportar); de `plantillas-de-mensaje.service` se reemplaza SÓLO el cliente
+ * HTTP y se deja pasar `resolverPlantilla` de verdad —es la pieza que decide
+ * qué queda sin reemplazar, y probarla contra un doble no probaría nada—.
+ */
+const { pendientesMock, listarPlantillasMock, instalarSugeridasMock } = vi.hoisted(() => ({
+  pendientesMock: vi.fn(),
+  listarPlantillasMock: vi.fn(),
+  instalarSugeridasMock: vi.fn(),
+}));
+
+vi.mock('@/lib/api/messages.service', () => ({
+  messagesApi: {
+    getPendientes: pendientesMock,
+    archiveConversation: vi.fn().mockResolvedValue('unavailable'),
+    muteConversation: vi.fn().mockResolvedValue('unavailable'),
+    reportConversation: vi.fn().mockResolvedValue('unavailable'),
+    sendAttachment: vi.fn().mockResolvedValue(null),
+  },
+}));
+
+vi.mock('@/lib/api/plantillas-de-mensaje.service', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/api/plantillas-de-mensaje.service')>()),
+  plantillasDeMensajeApi: {
+    listar: listarPlantillasMock,
+    instalarSugeridas: instalarSugeridasMock,
+    crear: vi.fn(),
+    actualizar: vi.fn(),
+    eliminar: vi.fn(),
+  },
+}));
+
+/* El widget lee el nombre de la inmobiliaria del usuario para resolver
+   `{{inmobiliaria}}` en las plantillas (antes quedaba como hueco en el mensaje
+   que se le manda a un cliente). */
+vi.mock('@/lib/auth', () => ({
+  useAuth: () => ({ agency: { id: 'ag-1', name: 'Inmobiliaria Prueba' } }),
+}));
+
+vi.mock('@/lib/api/agent-contact.service', () => ({
+  agentContactApi: { canContact: vi.fn().mockResolvedValue({ allowed: false }) },
 }));
 
 // Memoized per-tag — an unmemoized Proxy `get` trap returns a brand-new
@@ -141,6 +254,8 @@ vi.mock('@/lib/hooks/useMessages', () => ({
 }));
 
 import { MessagesWidget } from './MessagesWidget';
+// La clase REAL: es la que `endpointNoDisponible` mira con `instanceof`.
+import { ApiError } from '@/lib/api/client';
 
 function makeConversation(overrides: Partial<ChatConversation> = {}): ChatConversation {
   return {
@@ -149,6 +264,8 @@ function makeConversation(overrides: Partial<ChatConversation> = {}): ChatConver
     applicationId: 'app-1',
     name: 'Ana',
     role: 'Propietario',
+    perfil: 'LANDLORD',
+    contraparteId: 'user-ana',
     email: 'ana@test.com',
     property: 'Depto Chicó',
     propertyId: 'prop-1',
@@ -166,6 +283,11 @@ let root: Root;
 beforeEach(() => {
   searchParamsState.conversationId = null;
   searchParamsState.applicationId = null;
+  rutaActual.valor = '/panel/inmobiliaria/mensajes';
+  pushMock.mockReset();
+  pendientesMock.mockReset().mockResolvedValue({ cobros: [], dispersiones: [], documentos: [] });
+  listarPlantillasMock.mockReset().mockResolvedValue({ plantillas: [] });
+  instalarSugeridasMock.mockReset().mockResolvedValue({ creadas: 0, plantillas: [] });
   conversationsState = [];
   useChatMock.mockReset().mockReturnValue({
     messages: [],
@@ -173,6 +295,7 @@ beforeEach(() => {
     isSending: false,
     sendMessage: vi.fn(),
     markAsRead: markAsReadMock,
+    limpiarError: vi.fn(),
   });
   markAsReadMock.mockReset();
   container = document.createElement('div');
@@ -188,11 +311,97 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function render() {
+function render(actor: 'tenant' | 'landlord' = 'tenant') {
   act(() => {
-    root.render(React.createElement(MessagesWidget, { actor: 'tenant' }));
+    root.render(React.createElement(MessagesWidget, { actor }));
   });
 }
+
+// ── Utilidades para los tests del compositor ───────────────────────────────
+
+function campoDeMensaje(): HTMLInputElement {
+  const campo = container.querySelector<HTMLInputElement>(
+    'input[aria-label="Escribe un mensaje"]',
+  );
+  if (!campo) throw new Error('No se encontró el campo del mensaje.');
+  return campo;
+}
+
+/**
+ * Escribe en un input CONTROLADO por React.
+ *
+ * 🔴 Asignar `.value` a secas no alcanza: React guarda el último valor que él
+ * pintó en un tracker interno del nodo, ve que no cambió y NO dispara
+ * `onChange`. El setter nativo del prototipo esquiva ese tracker, que es lo
+ * que hace que el evento llegue al componente.
+ */
+function escribir(campo: HTMLInputElement, texto: string) {
+  const setter = Object.getOwnPropertyDescriptor(
+    window.HTMLInputElement.prototype,
+    'value',
+  )?.set;
+  act(() => {
+    setter?.call(campo, texto);
+    campo.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+
+function clic(el: Element | null | undefined) {
+  if (!el) throw new Error('No se encontró el elemento a clickear.');
+  act(() => {
+    (el as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+}
+
+function abrirMenuDeOpciones() {
+  clic(container.querySelector('button[aria-label="Más opciones"]'));
+}
+
+/** Deja que se resuelvan las promesas de los paneles que piden datos al abrir. */
+async function esperar() {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+describe('<MessagesWidget> — hilo directo: iniciar y distinguir perfiles', () => {
+  it('la bandeja ofrece iniciar una conversación, incluso vacía', () => {
+    conversationsState = [];
+    render();
+
+    // Antes el vacío decía «cuando te comuniques con…» y no había forma de
+    // comunicarse: sólo se llenaba si el otro escribía primero.
+    expect(container.querySelectorAll('[data-testid="abrir-nuevo-mensaje"]').length).toBeGreaterThan(0);
+    expect(container.querySelector('[data-testid="nuevo-mensaje-cajon"]')).toBeNull();
+  });
+
+  it('el botón abre el cajón', () => {
+    conversationsState = [makeConversation()];
+    render();
+
+    const boton = container.querySelector<HTMLButtonElement>('[data-testid="abrir-nuevo-mensaje"]');
+    expect(boton).toBeTruthy();
+    act(() => {
+      boton!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(container.querySelector('[data-testid="nuevo-mensaje-cajon"]')).toBeTruthy();
+  });
+
+  it('cada conversación lleva la insignia del perfil del interlocutor', () => {
+    conversationsState = [
+      makeConversation({ id: 'conv-1', name: 'Ana', perfil: 'LANDLORD' }),
+      makeConversation({ id: 'conv-2', name: 'Beto', perfil: 'TENANT' }),
+      makeConversation({ id: 'conv-3', name: 'Inmobiliaria Prueba', perfil: 'AGENCY', property: '' }),
+    ];
+    render();
+
+    expect(container.querySelectorAll('[data-testid="insignia-landlord"]').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('[data-testid="insignia-tenant"]').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('[data-testid="insignia-agency"]').length).toBeGreaterThan(0);
+  });
+});
 
 describe('<MessagesWidget> — selection keys on conversation.id, never applicationId (contract-addendum-2.md §B.3)', () => {
   it('auto-selects the first conversation by id when none is selected yet', () => {
@@ -262,5 +471,472 @@ describe('<MessagesWidget> — selection keys on conversation.id, never applicat
     ];
     render();
     expect(useChatMock).toHaveBeenLastCalledWith('conv-2');
+  });
+});
+
+// ===========================================================================
+// Los cinco pedidos de Nico sobre /panel/inmobiliaria/mensajes (2026-09-04)
+// ===========================================================================
+
+describe('<MessagesWidget> — el buscador y el «+» (pedido 1)', () => {
+  it('el «+» del encabezado abre el cajón y se llama por su nombre', () => {
+    conversationsState = [makeConversation()];
+    render('landlord');
+
+    const mas = container.querySelector<HTMLButtonElement>('[data-testid="abrir-nuevo-mensaje"]');
+    expect(mas).toBeTruthy();
+    // Un ícono sin nombre no es descubrible ni accesible: van los dos.
+    expect(mas!.getAttribute('aria-label')).toBe('Nuevo mensaje');
+    expect(mas!.getAttribute('title')).toBe('Nuevo mensaje');
+
+    clic(mas);
+    expect(container.querySelector('[data-testid="nuevo-mensaje-cajon"]')).toBeTruthy();
+  });
+
+  it('el buscador y el «+» viven en la MISMA fila, no apilados', () => {
+    conversationsState = [makeConversation()];
+    render('landlord');
+
+    const buscador = container.querySelector('input[aria-label="Buscar conversación"]');
+    const mas = container.querySelector('[data-testid="abrir-nuevo-mensaje"]');
+    expect(buscador).toBeTruthy();
+    // El padre común es la fila flex del encabezado: el buscador está dentro de
+    // su envoltorio relativo, y el `+` es hermano de ese envoltorio.
+    expect(buscador!.parentElement!.parentElement).toBe(mas!.parentElement);
+  });
+});
+
+describe('<MessagesWidget> — los emojis funcionan (pedido 2)', () => {
+  it('la carita abre el panel y se cierra con Escape', () => {
+    conversationsState = [makeConversation()];
+    render('landlord');
+
+    expect(container.querySelector('[data-testid="panel-emojis"]')).toBeNull();
+    clic(container.querySelector('[data-testid="abrir-emojis"]'));
+    expect(container.querySelector('[data-testid="panel-emojis"]')).toBeTruthy();
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+    expect(container.querySelector('[data-testid="panel-emojis"]')).toBeNull();
+  });
+
+  it('un clic afuera lo cierra', () => {
+    conversationsState = [makeConversation()];
+    render('landlord');
+
+    clic(container.querySelector('[data-testid="abrir-emojis"]'));
+    expect(container.querySelector('[data-testid="panel-emojis"]')).toBeTruthy();
+
+    act(() => {
+      document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    });
+    expect(container.querySelector('[data-testid="panel-emojis"]')).toBeNull();
+  });
+
+  it('🔴 el emoji entra EN LA POSICIÓN DEL CURSOR, no pegado al final', () => {
+    conversationsState = [makeConversation()];
+    render('landlord');
+
+    const campo = campoDeMensaje();
+    escribir(campo, 'Hola Ana, gracias');
+    // El cursor queda justo después de «Hola», antes del espacio.
+    campo.setSelectionRange(4, 4);
+
+    clic(container.querySelector('[data-testid="abrir-emojis"]'));
+    clic(container.querySelector('[data-testid="emoji"][data-emoji="👍"]'));
+
+    expect(campoDeMensaje().value).toBe('Hola👍 Ana, gracias');
+    // Y el cursor queda DESPUÉS del emoji, para poder seguir escribiendo.
+    expect(campoDeMensaje().selectionStart).toBe(4 + '👍'.length);
+  });
+
+  it('con lo que haya seleccionado, el emoji lo reemplaza', () => {
+    conversationsState = [makeConversation()];
+    render('landlord');
+
+    const campo = campoDeMensaje();
+    escribir(campo, 'Listo perfecto');
+    campo.setSelectionRange(6, 14); // «perfecto»
+
+    clic(container.querySelector('[data-testid="abrir-emojis"]'));
+    clic(container.querySelector('[data-testid="emoji"][data-emoji="✅"]'));
+
+    expect(campoDeMensaje().value).toBe('Listo ✅');
+  });
+});
+
+describe('<MessagesWidget> — el menú de los tres puntos (pedido 3)', () => {
+  it('ofrece «Ver ficha del inquilino» y navega con el id de la contraparte', () => {
+    conversationsState = [
+      makeConversation({ perfil: 'TENANT', contraparteId: 'user-beto', name: 'Beto' }),
+    ];
+    render('landlord');
+
+    abrirMenuDeOpciones();
+    const verFicha = container.querySelector('[data-testid="ver-ficha"]');
+    expect(verFicha).toBeTruthy();
+    expect(verFicha!.textContent).toContain('Ver ficha del inquilino');
+
+    clic(verFicha);
+    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inquilinos?persona=user-beto');
+  });
+
+  it('con un propietario cambia la etiqueta y el destino', () => {
+    conversationsState = [
+      makeConversation({ perfil: 'LANDLORD', contraparteId: 'user-ana' }),
+    ];
+    render('landlord');
+
+    abrirMenuDeOpciones();
+    const verFicha = container.querySelector('[data-testid="ver-ficha"]');
+    expect(verFicha!.textContent).toContain('Ver ficha del propietario');
+
+    clic(verFicha);
+    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/propietarios?persona=user-ana');
+  });
+
+  it('sin id de la contraparte no hay ficha — y sin ficha ya no hay menú', () => {
+    conversationsState = [
+      makeConversation({ perfil: 'AGENCY', contraparteId: null, name: 'Inmobiliaria Prueba' }),
+    ];
+    render('landlord');
+
+    /* 🔴 Antes el menú sobrevivía con «Archivar», «Silenciar» y «Reportar».
+       Las tres pegaban a rutas que el back no tiene: el servicio devuelve
+       'unavailable' por 404 y las tres terminaban en un toast «estará
+       disponible próximamente». Se retiraron, así que sin «Ver ficha» el menú
+       queda vacío y el `⋮` no se pinta. */
+    expect(container.querySelector('button[aria-label="Más opciones"]')).toBeNull();
+    expect(container.querySelector('[data-testid="ver-ficha"]')).toBeNull();
+  });
+
+  it('fuera del panel de la inmobiliaria tampoco: el destino no es suyo', () => {
+    // Mismo `actor='landlord'`, pero montado en el panel del PROPIETARIO.
+    rutaActual.valor = '/panel/mensajes';
+    conversationsState = [makeConversation({ perfil: 'TENANT', contraparteId: 'user-beto' })];
+    render('landlord');
+
+    expect(container.querySelector('button[aria-label="Más opciones"]')).toBeNull();
+    expect(container.querySelector('[data-testid="ver-ficha"]')).toBeNull();
+  });
+
+  /**
+   * 🔴 Las cinco acciones que no hacían nada.
+   *
+   * «Archivar», «Silenciar» y «Reportar» no tienen ruta en el back
+   * (`archiveConversation` / `muteConversation` / `reportConversation`
+   * devuelven `'unavailable'` por 404) y el clip de adjuntos ni siquiera hace
+   * el POST: `sendAttachment` está escrito para resolver `null`. Las cinco
+   * terminaban en «estará disponible próximamente» — y «Reportar» era la peor,
+   * porque alguien podía denunciar una conversación abusiva y creer que quedó
+   * denunciada.
+   */
+  it('no ofrece ninguna acción que no exista en el back', () => {
+    conversationsState = [makeConversation({ perfil: 'TENANT', contraparteId: 'user-beto' })];
+    render('landlord');
+
+    abrirMenuDeOpciones();
+    for (const disculpa of ['Archivar conversación', 'Silenciar notificaciones', 'Reportar']) {
+      expect(container.textContent).not.toContain(disculpa);
+    }
+    // Y el clip que abría el explorador para después decir que no.
+    expect(container.querySelector('button[aria-label="Adjuntar archivo"]')).toBeNull();
+    expect(container.querySelector('input[type="file"]')).toBeNull();
+    // Lo que SÍ funciona se queda.
+    expect(container.querySelector('[data-testid="ver-ficha"]')).not.toBeNull();
+  });
+});
+
+describe('<MessagesWidget> — plantillas (pedido 4)', () => {
+  it('la plantilla llena el campo con las variables resueltas y NO manda nada', async () => {
+    const enviar = vi.fn();
+    useChatMock.mockReturnValue({
+      messages: [],
+      isLoading: false,
+      isSending: false,
+      sendMessage: enviar,
+      markAsRead: markAsReadMock,
+      limpiarError: vi.fn(),
+    });
+    listarPlantillasMock.mockResolvedValue({
+      plantillas: [
+        {
+          id: 'pl-1',
+          titulo: 'Recordatorio de canon',
+          cuerpo: 'Hola {{nombre}}, te recuerdo el canon de {{mes}} de {{inmueble}}.',
+          orden: 1,
+        },
+      ],
+    });
+    conversationsState = [makeConversation({ name: 'Ana', property: 'Depto Chicó' })];
+    render('landlord');
+
+    clic(container.querySelector('[data-testid="abrir-plantillas"]'));
+    await esperar();
+
+    clic(container.querySelector('[data-testid="plantilla"]'));
+
+    const texto = campoDeMensaje().value;
+    expect(texto).toContain('Hola Ana');
+    expect(texto).toContain('Depto Chicó');
+    expect(texto).not.toContain('{{');
+    // 🔴 Lo importante: queda EDITABLE en el campo, nadie lo mandó.
+    expect(enviar).not.toHaveBeenCalled();
+  });
+
+  it('🔴 lo que no se pudo reemplazar se DICE en pantalla', async () => {
+    listarPlantillasMock.mockResolvedValue({
+      plantillas: [
+        { id: 'pl-2', titulo: 'Saldo', cuerpo: 'Hola {{nombre}}, tu saldo es {{saldo}}.', orden: 1 },
+      ],
+    });
+    conversationsState = [makeConversation({ name: 'Ana' })];
+    render('landlord');
+
+    clic(container.querySelector('[data-testid="abrir-plantillas"]'));
+    await esperar();
+    clic(container.querySelector('[data-testid="plantilla"]'));
+
+    // El widget no tiene el saldo, así que la variable queda tal cual…
+    expect(campoDeMensaje().value).toContain('{{saldo}}');
+    // …y se avisa, en vez de dejar mandar un hueco en silencio.
+    const aviso = container.querySelector('[data-testid="plantilla-con-huecos"]');
+    expect(aviso).toBeTruthy();
+    expect(aviso!.textContent).toContain('{{saldo}}');
+  });
+
+  it('el aviso se apaga cuando la persona completa el hueco a mano', async () => {
+    listarPlantillasMock.mockResolvedValue({
+      plantillas: [
+        { id: 'pl-2', titulo: 'Saldo', cuerpo: 'Hola {{nombre}}, tu saldo es {{saldo}}.', orden: 1 },
+      ],
+    });
+    conversationsState = [makeConversation({ name: 'Ana' })];
+    render('landlord');
+
+    clic(container.querySelector('[data-testid="abrir-plantillas"]'));
+    await esperar();
+    clic(container.querySelector('[data-testid="plantilla"]'));
+    expect(container.querySelector('[data-testid="plantilla-con-huecos"]')).toBeTruthy();
+
+    escribir(campoDeMensaje(), 'Hola Ana, tu saldo es $200.000.');
+    expect(container.querySelector('[data-testid="plantilla-con-huecos"]')).toBeNull();
+  });
+
+  it('sin plantillas ofrece instalar las sugeridas y después las lista', async () => {
+    listarPlantillasMock.mockResolvedValueOnce({ plantillas: [] }).mockResolvedValueOnce({
+      plantillas: [{ id: 'pl-3', titulo: 'Bienvenida', cuerpo: 'Hola {{nombre}}.', orden: 1 }],
+    });
+    conversationsState = [makeConversation()];
+    render('landlord');
+
+    clic(container.querySelector('[data-testid="abrir-plantillas"]'));
+    await esperar();
+    expect(container.querySelector('[data-testid="plantillas-vacio"]')).toBeTruthy();
+
+    clic(container.querySelector('[data-testid="instalar-plantillas-sugeridas"]'));
+    await esperar();
+
+    expect(instalarSugeridasMock).toHaveBeenCalled();
+    expect(container.querySelector('[data-testid="plantilla"]')).toBeTruthy();
+  });
+
+  it('🔴 un endpoint que todavía no existe NO se lee como «no tenés plantillas»', async () => {
+    listarPlantillasMock.mockRejectedValue(new ApiError(404, 'Not Found'));
+    conversationsState = [makeConversation()];
+    render('landlord');
+
+    clic(container.querySelector('[data-testid="abrir-plantillas"]'));
+    await esperar();
+
+    expect(container.querySelector('[data-testid="plantillas-no-disponible"]')).toBeTruthy();
+    expect(container.querySelector('[data-testid="plantillas-vacio"]')).toBeNull();
+  });
+});
+
+describe('<MessagesWidget> — pendientes de la persona (pedido 5)', () => {
+  it('un cobro se convierte en un mensaje con plata, fecha y mora', async () => {
+    const enviar = vi.fn();
+    useChatMock.mockReturnValue({
+      messages: [],
+      isLoading: false,
+      isSending: false,
+      sendMessage: enviar,
+      markAsRead: markAsReadMock,
+      limpiarError: vi.fn(),
+    });
+    pendientesMock.mockResolvedValue({
+      cobros: [
+        {
+          id: 'c-1',
+          mes: '2026-08',
+          totalCop: 2_400_000,
+          pendienteCop: 2_400_000,
+          vencimiento: '2026-08-05',
+          diasDeMora: 12,
+          estado: 'OVERDUE',
+          contractId: 'ct-1',
+          inmueble: 'Depto Chicó',
+        },
+      ],
+      dispersiones: [],
+      documentos: [],
+    });
+    conversationsState = [makeConversation({ name: 'Ana' })];
+    render('landlord');
+
+    clic(container.querySelector('[data-testid="abrir-pendientes"]'));
+    await esperar();
+    clic(container.querySelector('[data-testid="pendiente-cobro"]'));
+
+    const texto = campoDeMensaje().value;
+    expect(texto).toContain('Hola Ana');
+    expect(texto).toContain('agosto de 2026');
+    expect(texto).toContain('$2.400.000');
+    // 🔴 La fecha NO pasa por `new Date`: en UTC-5 el 05 se leería como el 04.
+    expect(texto).toContain('05/08/2026');
+    expect(texto).toContain('12 días de mora');
+    expect(enviar).not.toHaveBeenCalled();
+  });
+
+  it('un documento se convierte en un mensaje con su enlace', async () => {
+    pendientesMock.mockResolvedValue({
+      cobros: [],
+      dispersiones: [],
+      documentos: [
+        { id: 'd-1', tipo: 'CONTRATO', nombre: 'Contrato 2026', url: 'https://x.test/c.pdf' },
+      ],
+    });
+    conversationsState = [makeConversation({ name: 'Ana' })];
+    render('landlord');
+
+    clic(container.querySelector('[data-testid="abrir-pendientes"]'));
+    await esperar();
+    clic(container.querySelector('[data-testid="pendiente-documento"]'));
+
+    expect(campoDeMensaje().value).toContain('https://x.test/c.pdf');
+    expect(campoDeMensaje().value).toContain('Contrato 2026');
+  });
+
+  it('🔴 «no tiene nada pendiente» y «no pudimos preguntar» se dicen distinto', async () => {
+    conversationsState = [makeConversation()];
+    render('landlord');
+
+    clic(container.querySelector('[data-testid="abrir-pendientes"]'));
+    await esperar();
+    expect(container.querySelector('[data-testid="pendientes-vacio"]')).toBeTruthy();
+    expect(container.querySelector('[data-testid="pendientes-no-disponible"]')).toBeNull();
+
+    // Cerrar y reabrir con la ruta caída.
+    clic(container.querySelector('[data-testid="abrir-pendientes"]'));
+    pendientesMock.mockRejectedValue(new ApiError(404, 'Not Found'));
+    clic(container.querySelector('[data-testid="abrir-pendientes"]'));
+    await esperar();
+
+    expect(container.querySelector('[data-testid="pendientes-no-disponible"]')).toBeTruthy();
+    expect(container.querySelector('[data-testid="pendientes-vacio"]')).toBeNull();
+  });
+});
+
+/**
+ * MSJ-3 — abrir un hilo marcaba como leído el ANTERIOR.
+ *
+ * `handleSelectConversation` llamaba a `markAsRead()` sin argumento, y ese
+ * `markAsRead` es el que `useChat(selectedConversationId)` devolvió en el
+ * render anterior: en el instante del clic todavía apunta al hilo que se está
+ * dejando. Abrir a Beto marcaba a Ana; los no leídos de Beto no se limpiaban
+ * nunca.
+ */
+describe('<MessagesWidget> — marcar como leído (MSJ-3)', () => {
+  it('marca el hilo que se ABRE, no el que se estaba viendo', () => {
+    conversationsState = [
+      makeConversation({ id: 'conv-1', name: 'Ana Uno', contraparteId: 'user-ana' }),
+      makeConversation({ id: 'conv-2', name: 'Beto Dos', contraparteId: 'user-beto' }),
+    ];
+    render('landlord');
+    markAsReadMock.mockClear();
+
+    const segundo = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Beto Dos'),
+    );
+    act(() => {
+      (segundo as HTMLButtonElement).click();
+    });
+
+    expect(markAsReadMock).toHaveBeenCalledWith('conv-2');
+  });
+});
+
+/**
+ * MSJ-4 — el envío que falla desaparecía en silencio.
+ *
+ * El hook guardaba el error y sacaba la burbuja optimista; la pantalla no leía
+ * ese error ni lo pintaba, y el campo ya se había vaciado. Se escribía, se
+ * apretaba enviar, y el texto se esfumaba sin una palabra.
+ */
+describe('<MessagesWidget> — un envío que falla (MSJ-4)', () => {
+  it('lo dice en pantalla y devuelve el texto al campo', async () => {
+    const enviar = vi.fn().mockResolvedValue(false);
+    useChatMock.mockReturnValue({
+      messages: [],
+      isLoading: false,
+      isSending: false,
+      error: 'Network request failed',
+      limpiarError: vi.fn(),
+      sendMessage: enviar,
+      markAsRead: markAsReadMock,
+    });
+    conversationsState = [makeConversation()];
+    render('landlord');
+
+    const campo = container.querySelector('input[type="text"]:not([aria-label*="Buscar"])') as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setter.call(campo, 'Hola, ¿seguimos?');
+      campo.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const enviarBtn = container.querySelector('button[aria-label="Enviar mensaje"]') as HTMLButtonElement;
+    await act(async () => {
+      enviarBtn.click();
+    });
+
+    expect(enviar).toHaveBeenCalledWith('Hola, ¿seguimos?');
+    // El cartel existe...
+    expect(container.querySelector('[data-testid="mensaje-no-enviado"]')).not.toBeNull();
+    // ...y lo escrito no se perdió.
+    const campoDespues = container.querySelector('input[type="text"]:not([aria-label*="Buscar"])') as HTMLInputElement;
+    expect(campoDespues.value).toBe('Hola, ¿seguimos?');
+  });
+});
+
+/**
+ * MSJ-7 — plantillas y pendientes son herramientas de COBRO de la
+ * inmobiliaria, y se ofrecían igual en la bandeja del inquilino y en la del
+ * propietario, que son a quienes se les cobra.
+ */
+describe('<MessagesWidget> — plantillas y pendientes son de la inmobiliaria (MSJ-7)', () => {
+  it('en el panel del inquilino no aparecen', () => {
+    rutaActual.valor = '/inquilino/mensajes';
+    conversationsState = [makeConversation()];
+    render('tenant');
+    expect(container.querySelector('[data-testid="abrir-plantillas"]')).toBeNull();
+    expect(container.querySelector('[data-testid="abrir-pendientes"]')).toBeNull();
+  });
+
+  it('en el panel del propietario tampoco', () => {
+    rutaActual.valor = '/panel/mensajes';
+    conversationsState = [makeConversation()];
+    render('landlord');
+    expect(container.querySelector('[data-testid="abrir-plantillas"]')).toBeNull();
+    expect(container.querySelector('[data-testid="abrir-pendientes"]')).toBeNull();
+  });
+
+  it('en el de la inmobiliaria sí', () => {
+    conversationsState = [makeConversation()];
+    render('landlord');
+    expect(container.querySelector('[data-testid="abrir-plantillas"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="abrir-pendientes"]')).not.toBeNull();
   });
 });

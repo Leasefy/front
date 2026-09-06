@@ -98,24 +98,30 @@ function KPICard({
   onClick?: () => void;
 }) {
   const CategoryIcon = CATEGORY_ICONS[kpi.category];
-  const TrendIcon = TREND_ICONS[kpi.trend.direction];
+  const tendencia = kpi.trend;
+  const TrendIcon = tendencia ? TREND_ICONS[tendencia.direction] : null;
 
   // Determine if lower is better for this KPI
   const isInverseMetric = kpi.id.includes('days') || kpi.id.includes('late');
 
   // For inverse metrics, "down" is good, "up" is bad
   const isPositiveTrend = isInverseMetric
-    ? kpi.trend.direction === 'down'
-    : kpi.trend.direction === 'up';
+    ? tendencia?.direction === 'down'
+    : tendencia?.direction === 'up';
   const isNegativeTrend = isInverseMetric
-    ? kpi.trend.direction === 'up'
-    : kpi.trend.direction === 'down';
+    ? tendencia?.direction === 'up'
+    : tendencia?.direction === 'down';
 
   // Calculate progress
+  // 🔴 Con una inmobiliaria recién creada TODO vale 0, y dividir por 0 da `NaN`:
+  // `Math.min(100, NaN)` sigue siendo `NaN`, así que la barra recibía un valor
+  // inválido y React lo gritaba una vez por tarjeta — 32 errores de consola en
+  // una sola carga de Reportes, con el porcentaje impreso como «NaN%» al lado.
+  // Sin denominador no hay avance que mostrar: `null` y quien llama no dibuja.
   const progress = kpi.target
     ? isInverseMetric
-      ? Math.min(100, (kpi.target / kpi.value) * 100)
-      : Math.min(100, (kpi.value / kpi.target) * 100)
+      ? (kpi.value > 0 ? Math.min(100, (kpi.target / kpi.value) * 100) : null)
+      : (kpi.target > 0 ? Math.min(100, (kpi.value / kpi.target) * 100) : null)
     : null;
 
   return (
@@ -143,18 +149,20 @@ function KPICard({
             {kpi.formattedValue}
           </p>
         </div>
-        <Badge
-          variant={isPositiveTrend ? 'success' : isNegativeTrend ? 'destructive' : 'secondary'}
-          className="gap-1 font-mono tabular-nums flex-shrink-0"
-        >
-          <TrendIcon className="w-3 h-3" weight="bold" />
-          <span>{kpi.trend.percentage > 0 ? '+' : ''}{kpi.trend.percentage.toFixed(1)}%</span>
-        </Badge>
+        {tendencia && TrendIcon && (
+          <Badge
+            variant={isPositiveTrend ? 'success' : isNegativeTrend ? 'destructive' : 'secondary'}
+            className="gap-1 font-mono tabular-nums flex-shrink-0"
+          >
+            <TrendIcon className="w-3 h-3" weight="bold" />
+            <span>{tendencia.percentage > 0 ? '+' : ''}{tendencia.percentage.toFixed(1)}%</span>
+          </Badge>
+        )}
       </div>
 
       {/* Sparkline */}
       <div className="flex-1 flex items-center justify-center min-h-[32px] mb-3">
-        <MiniSparkline points={kpi.sparkline} trend={kpi.trend.direction} />
+        <MiniSparkline points={kpi.sparkline} trend={tendencia?.direction ?? 'stable'} />
       </div>
 
       {/* Progress Bar */}
@@ -169,12 +177,12 @@ function KPICard({
               'font-semibold font-mono tabular-nums',
               progress >= 100 ? 'text-success' : 'text-primary'
             )}>
-              {progress.toFixed(0)}%
+              {progress === null ? '—' : `${progress.toFixed(0)}%`}
             </span>
           </div>
           <Progress
-            value={Math.min(100, progress)}
-            variant={progress >= 100 ? 'success' : 'default'}
+            value={progress ?? 0}
+            variant={progress !== null && progress >= 100 ? 'success' : 'default'}
             size="sm"
           />
         </div>
@@ -199,15 +207,16 @@ function CompactKPICard({
   onClick?: () => void;
 }) {
   const CategoryIcon = CATEGORY_ICONS[kpi.category];
-  const TrendIcon = TREND_ICONS[kpi.trend.direction];
+  const tendencia = kpi.trend;
+  const TrendIcon = tendencia ? TREND_ICONS[tendencia.direction] : null;
 
   const isInverseMetric = kpi.id.includes('days') || kpi.id.includes('late');
   const isPositiveTrend = isInverseMetric
-    ? kpi.trend.direction === 'down'
-    : kpi.trend.direction === 'up';
+    ? tendencia?.direction === 'down'
+    : tendencia?.direction === 'up';
   const isNegativeTrend = isInverseMetric
-    ? kpi.trend.direction === 'up'
-    : kpi.trend.direction === 'down';
+    ? tendencia?.direction === 'up'
+    : tendencia?.direction === 'down';
 
   return (
     <motion.div
@@ -222,13 +231,15 @@ function CompactKPICard({
         <p className="text-xs text-fg-muted truncate">{kpi.label}</p>
         <p className="text-lg font-bold font-mono tabular-nums text-fg">{kpi.formattedValue}</p>
       </div>
-      <Badge
-        variant={isPositiveTrend ? 'success' : isNegativeTrend ? 'destructive' : 'secondary'}
-        className="gap-1 font-mono tabular-nums flex-shrink-0"
-      >
-        <TrendIcon className="w-3.5 h-3.5" weight="bold" />
-        <span>{kpi.trend.percentage > 0 ? '+' : ''}{kpi.trend.percentage.toFixed(1)}%</span>
-      </Badge>
+      {tendencia && TrendIcon && (
+        <Badge
+          variant={isPositiveTrend ? 'success' : isNegativeTrend ? 'destructive' : 'secondary'}
+          className="gap-1 font-mono tabular-nums flex-shrink-0"
+        >
+          <TrendIcon className="w-3.5 h-3.5" weight="bold" />
+          <span>{tendencia.percentage > 0 ? '+' : ''}{tendencia.percentage.toFixed(1)}%</span>
+        </Badge>
+      )}
     </motion.div>
   );
 }
@@ -327,7 +338,7 @@ export function AnalyticsKPICards({
             const categoryKpis = groupedKPIs[category];
             const upTrends = categoryKpis.filter((k) => {
               const isInverse = k.id.includes('days') || k.id.includes('late');
-              return isInverse ? k.trend.direction === 'down' : k.trend.direction === 'up';
+              return isInverse ? k.trend?.direction === 'down' : k.trend?.direction === 'up';
             }).length;
             const CategoryIcon = CATEGORY_ICONS[category];
 

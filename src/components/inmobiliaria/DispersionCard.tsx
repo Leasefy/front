@@ -105,7 +105,7 @@ export function DispersionCard({
       >
         {/* Propietario */}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-fg dark:text-white truncate text-sm">
+          <p className="font-medium text-fg truncate text-sm">
             {dispersion.propietarioName}
           </p>
           <p className="text-xs text-fg-muted dark:text-fg-subtle truncate">
@@ -116,7 +116,7 @@ export function DispersionCard({
 
         {/* Net Amount */}
         <div className="text-right">
-          <p className="font-bold text-success text-sm">
+          <p className="font-mono font-bold tabular-nums text-success text-sm">
             {formatCurrency(dispersion.netToPropietario)}
           </p>
         </div>
@@ -157,7 +157,7 @@ export function DispersionCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
               <User className="w-4 h-4 text-fg-subtle shrink-0" />
-              <h3 className="font-semibold text-fg dark:text-white line-clamp-1">
+              <h3 className="font-semibold text-fg line-clamp-1">
                 {dispersion.propietarioName}
               </h3>
             </div>
@@ -189,7 +189,7 @@ export function DispersionCard({
             <p className="text-sm text-fg-muted dark:text-fg-subtle mb-0.5">
               Cuenta de destino
             </p>
-            <p className="font-medium text-fg dark:text-white truncate text-sm">
+            <p className="font-medium text-fg truncate text-sm">
               {/* Sin cuenta se dice, no se inventa: es a dónde va la plata. */}
               {dispersion.propietarioBankAccount
                 ? formatBankAccount(
@@ -210,7 +210,7 @@ export function DispersionCard({
           <span className="text-sm text-fg-muted dark:text-fg-subtle">
             Neto a dispersar
           </span>
-          <span className="text-xl font-bold text-success">
+          <span className="text-xl font-mono font-bold tabular-nums text-success">
             {formatCurrency(dispersion.netToPropietario)}
           </span>
         </div>
@@ -219,26 +219,27 @@ export function DispersionCard({
         <div className="space-y-1.5 text-sm">
           <div className="flex items-center justify-between text-fg-muted dark:text-fg-subtle">
             <span>Total recaudado</span>
-            <span>{formatCurrency(dispersion.totalCollected)}</span>
+            <span className="font-mono tabular-nums">{formatCurrency(dispersion.totalCollected)}</span>
           </div>
           <div className="flex items-center justify-between text-warning">
             <span>Comision agencia</span>
-            <span>- {formatCurrency(dispersion.totalCommission)}</span>
+            <span className="font-mono tabular-nums">- {formatCurrency(dispersion.totalCommission)}</span>
           </div>
         </div>
       </div>
 
       {/* Properties Summary */}
-      <div className="px-5 py-4 bg-surface-muted dark:bg-muted/20">
+      <div className="px-5 py-4 bg-surface-muted">
         {/* allowlist: collapsible disclosure toggle (count + caret) driving a framer-motion height
             animation inside a clickable card — Cadence Accordion would replace the bespoke animation */}
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
             setShowProperties(!showProperties);
           }}
           aria-expanded={showProperties}
-          className="w-full flex items-center justify-between text-sm text-fg dark:text-fg-subtle hover:text-fg dark:hover:text-white transition-colors"
+          className="w-full flex items-center justify-between text-sm text-fg-muted hover:text-fg transition-colors"
         >
           <div className="flex items-center gap-2">
             <Buildings className="w-4 h-4 text-fg-subtle" />
@@ -273,7 +274,7 @@ export function DispersionCard({
                     <span className="text-fg-muted dark:text-fg-subtle truncate max-w-[180px]">
                       {item.propertyTitle}
                     </span>
-                    <span className="text-fg dark:text-white font-medium">
+                    <span className="text-fg font-mono font-medium tabular-nums">
                       {formatCurrency(item.netAmount)}
                     </span>
                   </div>

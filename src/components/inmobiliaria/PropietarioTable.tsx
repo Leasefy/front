@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   MagnifyingGlass,
@@ -42,13 +41,29 @@ import { IconButton, Chip, SegmentedControl } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import type {
+  CampoDeOrden,
+  FiltrosDePropietarios,
+} from '@/lib/propietarios/filtrar-propietarios';
 
-type SortField = 'name' | 'propertyCount' | 'totalMonthlyRent' | 'pendingBalance' | 'lastPaymentDate';
-type SortDirection = 'asc' | 'desc';
-type TypeFilter = 'all' | 'person' | 'company';
+type SortField = CampoDeOrden;
 
 interface PropietarioTableProps {
+  /**
+   * Las filas que se pintan: **ya filtradas, ordenadas y paginadas** por quien
+   * llama. La tabla no vuelve a tocarlas.
+   *
+   * 🔴 Antes filtraba ella, sobre el `slice` de la página actual que le pasaba
+   * la lista — así que buscar sólo miraba 10 filas de N. Ver
+   * `lib/propietarios/filtrar-propietarios.ts`.
+   */
   propietarios: Propietario[];
+  /** Cuántas filas hay en total con estos filtros (todas las páginas). */
+  totalFiltrado: number;
+  /** Cuántas hay sin filtro ninguno. */
+  total: number;
+  filtros: FiltrosDePropietarios;
+  onFiltros: (filtros: FiltrosDePropietarios) => void;
   onView: (propietario: Propietario) => void;
   onEdit: (propietario: Propietario) => void;
   onDelete: (propietario: Propietario) => void;
@@ -61,85 +76,33 @@ interface PropietarioTableProps {
  */
 export function PropietarioTable({
   propietarios,
+  totalFiltrado,
+  total,
+  filtros,
+  onFiltros,
   onView,
   onEdit,
   onDelete,
   onExport,
 }: PropietarioTableProps) {
   const { t, locale } = useI18n();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortField, setSortField] = useState<SortField>('name');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [filterPending, setFilterPending] = useState(false);
-  const [filterType, setFilterType] = useState<TypeFilter>('all');
+  const searchQuery = filtros.busqueda;
+  const filterType = filtros.tipo;
+  const filterPending = filtros.soloConSaldo;
+  const sortField = filtros.campo;
+  const sortDirection = filtros.sentido;
 
-  // Filter and sort propietarios
-  const filteredPropietarios = useMemo(() => {
-    let result = [...propietarios];
+  const setSearchQuery = (busqueda: string) => onFiltros({ ...filtros, busqueda });
+  const setFilterType = (tipo: FiltrosDePropietarios['tipo']) => onFiltros({ ...filtros, tipo });
+  const setFilterPending = (soloConSaldo: boolean) => onFiltros({ ...filtros, soloConSaldo });
 
-    /*
-     * Buscar no puede tumbar la tabla.
-     *
-     * `email`, `phone` y `documentNumber` llegan en `null` desde el back —un
-     * propietario sin teléfono es normal, no un error— y `null.includes(...)`
-     * revienta el render entero: la pantalla pasa de la tabla a «esta sección
-     * se rompió» en cuanto alguien escribe una letra.
-     *
-     * No se había visto nunca porque la lista llegaba SIEMPRE vacía (el
-     * `res.data` sobre un array pelado), así que no había fila que filtrar.
-     * Arreglar aquello dejó esto al alcance de la primera búsqueda.
-     */
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const contiene = (valor: string | null | undefined) =>
-        (valor ?? '').toLowerCase().includes(query);
-      result = result.filter(
-        (p) =>
-          contiene(p.name) ||
-          contiene(p.email) ||
-          contiene(p.documentNumber) ||
-          contiene(p.phone)
-      );
-    }
-
-    // Pending balance filter. `pendingBalance` puede no venir: `undefined > 0`
-    // es false, que es lo correcto, pero conviene decirlo en vez de confiar en
-    // la coerción.
-    if (filterPending) {
-      result = result.filter((p) => (p.pendingBalance ?? 0) > 0);
-    }
-
-    // Type filter
-    if (filterType === 'person') {
-      result = result.filter((p) => p.documentType !== 'NIT');
-    } else if (filterType === 'company') {
-      result = result.filter((p) => p.documentType === 'NIT');
-    }
-
-    // Sort
-    result.sort((a, b) => {
-      let aVal: string | number = a[sortField] ?? '';
-      let bVal: string | number = b[sortField] ?? '';
-
-      if (typeof aVal === 'string') {
-        aVal = aVal.toLowerCase();
-        bVal = (bVal as string).toLowerCase();
-      }
-
-      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-
-    return result;
-  }, [propietarios, searchQuery, sortField, sortDirection, filterPending, filterType]);
+  const filteredPropietarios = propietarios;
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      onFiltros({ ...filtros, sentido: sortDirection === 'asc' ? 'desc' : 'asc' });
     } else {
-      setSortField(field);
-      setSortDirection('asc');
+      onFiltros({ ...filtros, campo: field, sentido: 'asc' });
     }
   };
 
@@ -159,8 +122,9 @@ export function PropietarioTable({
         navegador y perdía las mayúsculas del `TH`. Ver DispersionTable.
       */}
       <button
+        type="button"
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 uppercase hover:text-foreground"
+        className="flex items-center gap-2 uppercase hover:text-fg"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
@@ -215,7 +179,7 @@ export function PropietarioTable({
         {/* Row 2: Inline Filters */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Type Filter Tabs */}
-          <SegmentedControl<TypeFilter>
+          <SegmentedControl<FiltrosDePropietarios['tipo']>
             value={filterType}
             onChange={setFilterType}
             options={[
@@ -244,10 +208,11 @@ export function PropietarioTable({
               variant="link"
               size="sm"
               hideArrow
-              onClick={() => {
-                setFilterPending(false);
-                setFilterType('all');
-              }}
+              /* Los dos en UN solo cambio: encadenar
+                 `setFilterPending(false)` y `setFilterType('all')` arma los
+                 dos objetos a partir del mismo `filtros` viejo, y el segundo
+                 pisa al primero — «Limpiar» dejaba el saldo pendiente puesto. */
+              onClick={() => onFiltros({ ...filtros, soloConSaldo: false, tipo: 'all' })}
               className="gap-1.5 text-warning"
             >
               <Funnel className="w-4 h-4" weight="fill" />
@@ -258,7 +223,7 @@ export function PropietarioTable({
 
           {/* Results Count */}
           <span className="ml-auto text-sm text-muted-foreground tabular-nums">
-            {filteredPropietarios.length} {t('inmobiliaria.propietario.table.of')} {propietarios.length}
+            {totalFiltrado} {t('inmobiliaria.propietario.table.of')} {total}
           </span>
         </div>
       </div>
@@ -420,8 +385,9 @@ export function PropietarioTable({
           </TableBody>
         </Table>
 
-        {/* Empty State */}
-        {filteredPropietarios.length === 0 && (
+        {/* Empty State — se mira el total con filtros, no las filas de ESTA
+            página: son cosas distintas en cuanto hay paginación. */}
+        {totalFiltrado === 0 && (
           <div className="p-12 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
               <User className="w-8 h-8 text-muted-foreground" />

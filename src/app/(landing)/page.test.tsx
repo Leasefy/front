@@ -11,6 +11,21 @@ import { act } from 'react'
 
 void React // jsx-preserve
 
+// `next/font/google` es un modulo de build: fuera del compilador de Next
+// exporta vacio, y `LandingFooterV2` lo llama en el tope del modulo — asi que
+// sin este mock el archivo entero revienta al importar con
+// «Inter_Tight is not a function», sin llegar a correr un solo test.
+// La fabrica va inline: `vi.mock` se iza sobre las declaraciones del modulo,
+// asi que una const declarada arriba todavia no existe cuando corre.
+vi.mock('next/font/google', () => {
+  const fuente = (opts: { variable?: string }) => ({
+    className: 'mock-font',
+    variable: opts.variable ?? '--font-mock',
+    style: { fontFamily: 'mock-font' },
+  })
+  return { Inter: fuente, Inter_Tight: fuente, IBM_Plex_Mono: fuente }
+})
+
 const initLandingFxMock = vi.fn(() => () => {})
 vi.mock('@/components/landing-v2/landing-fx', () => ({
   initLandingFx: () => initLandingFxMock(),

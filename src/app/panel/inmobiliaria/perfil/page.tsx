@@ -7,11 +7,11 @@ import { User, Envelope, Phone, MapPin, Shield, Camera, FloppyDisk, CheckCircle,
 import { useAuth } from '@/lib/auth';
 import { AgenteHorarioVisitas } from '@/components/inmobiliaria/AgenteHorarioVisitas';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
 import { Button, Input, Spinner } from '@/components/ui';
 import { IconButton } from '@leasefy/cadence';
-import { permissionsApi } from '@/lib/api/inmobiliaria.service';
+import { usePermissionsContext } from '@/lib/context/PermissionsContext';
 import { settingsApi } from '@/lib/api/settings.service';
 import { accountDeletionCopy } from '@/lib/account-deletion/copy';
 
@@ -26,6 +26,58 @@ interface SetupStep {
 }
 
 type EditingSection = 'avatar' | 'personal' | 'emergency' | null;
+
+/** Los campos que esta pantalla pinta y edita. */
+export interface DatosDelPerfil {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  birthDate: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+}
+
+/**
+ * El retrato del usuario tal como lo guarda el backend.
+ *
+ * 🔴 Existe porque «Cancelar» no cancelaba. El formulario se sembraba UNA vez
+ * en el `useState` inicial y `handleCancelEdit` sólo cerraba la edición: lo
+ * tipeado quedaba en `formData`, que es lo mismo que pinta la vista de lectura.
+ * Entonces escribías un nombre, dabas Cancelar, y la ficha seguía mostrando el
+ * nombre descartado — y el siguiente «Guardar» de CUALQUIER sección lo mandaba
+ * al backend como si lo hubieras confirmado.
+ */
+export function datosDelUsuario(
+  user: Partial<DatosDelPerfil> | null | undefined,
+): DatosDelPerfil {
+  return {
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    address: user?.address || '',
+    birthDate: user?.birthDate || '',
+    emergencyContactName: user?.emergencyContactName || '',
+    emergencyContactPhone: user?.emergencyContactPhone || '',
+  };
+}
+
+/**
+ * Un campo vaciado se manda como `null`, no como `undefined`.
+ *
+ * 🔴 `UsersService.updateProfile` distingue las dos cosas a propósito —«null
+ * clears the field; undefined leaves it unchanged»— y esta pantalla mandaba
+ * `undefined` con un `|| undefined`. `JSON.stringify` borra las claves
+ * `undefined`, así que el campo ni siquiera llegaba al backend: borrabas tu
+ * teléfono, apretabas Guardar, salía «Cambios guardados» y el número volvía.
+ * El toast afirmaba un borrado que nunca pasó.
+ */
+export function oNulo(valor: string): string | null {
+  const limpio = valor.trim();
+  return limpio === '' ? null : limpio;
+}
 
 const AGENCY_ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Administrador',
@@ -44,14 +96,16 @@ const AGENCY_ROLE_DESC: Record<string, string> = {
 export default function InmobiliariaPerfilPage() {
   const { t, locale } = useI18n();
   const { user, agency, updateProfile, logout } = useAuth();
-  const [memberRole, setMemberRole] = useState<string | null>(null);
+  /*
+   * El rol sale del contexto, no de una llamada propia.
+   *
+   * Esta pantalla pedía `GET /users/me/permissions` por su cuenta y se comía el
+   * fallo con un `.catch(() => {})` sin cancelación: el mismo pedido que
+   * `PermissionsProvider` ya hizo para todo el panel, repetido en cada visita
+   * al perfil, y con un `setState` que podía llegar después del desmontaje.
+   */
+  const { agencyRole: memberRole } = usePermissionsContext();
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
-
-  useEffect(() => {
-    permissionsApi.getMyPermissions()
-      .then((data) => setMemberRole(data.agencyRole ?? null))
-      .catch(() => {});
-  }, []);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -65,16 +119,23 @@ export default function InmobiliariaPerfilPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state — sourced from auth context, no mock data
-  const [formData, setFormData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    address: user?.address || '',
-    birthDate: user?.birthDate || '',
-    emergencyContactName: user?.emergencyContactName || '',
-    emergencyContactPhone: user?.emergencyContactPhone || '',
-  });
+  const [formData, setFormData] = useState<DatosDelPerfil>(() => datosDelUsuario(user));
+
+  /*
+   * El formulario sigue al usuario del contexto mientras NO se esté editando.
+   *
+   * Sin esto, `formData` era una foto del primer render: si `/users/me`
+   * resolvía después de montar —o si otra pantalla actualizaba el perfil— la
+   * ficha seguía mostrando lo viejo, y como la vista de lectura pinta
+   * `formData`, la pantalla afirmaba datos que ya no eran los guardados.
+   * Mientras hay una sección abierta no se toca: pisaría lo que la persona
+   * está escribiendo.
+   */
+  const usuarioGuardado = JSON.stringify(datosDelUsuario(user));
+  useEffect(() => {
+    if (editingSection !== null) return;
+    setFormData(JSON.parse(usuarioGuardado) as DatosDelPerfil);
+  }, [usuarioGuardado, editingSection]);
 
   // Setup steps derived from data the user has ACTUALLY provided — never
   // hardcoded. There is no phone/identity verification system in the backend,
@@ -130,34 +191,49 @@ export default function InmobiliariaPerfilPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Saved avatar URL (persists after saving)
-  const [savedAvatar, setSavedAvatar] = useState<string | null>(null);
+  /*
+   * 🔴 La foto guardada sale del usuario, no de esta sesión.
+   *
+   * Arrancaba en `null` y sólo se llenaba tras una subida exitosa: al recargar
+   * la página, la foto que la persona YA había subido desaparecía y la ficha
+   * volvía a la inicial del nombre. El backend la devuelve en `avatarUrl`
+   * (`GET /users/me`) y el contexto la expone como `user.avatar`.
+   */
+  const [avatarSubido, setAvatarSubido] = useState<string | null>(null);
+  const savedAvatar = avatarSubido ?? user?.avatar ?? null;
 
   const handleSave = async (section: EditingSection) => {
     setIsSaving(true);
     try {
       if (section === 'avatar' && avatarFile) {
         const { url } = await settingsApi.uploadAvatar(avatarFile);
-        setSavedAvatar(url);
+        setAvatarSubido(url);
         setAvatarFile(null);
       } else if (section === 'personal') {
         await updateProfile({
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim(),
-          phone: formData.phone.trim() || undefined,
-          address: formData.address.trim() || undefined,
-          birthDate: formData.birthDate || undefined,
+          phone: oNulo(formData.phone),
+          address: oNulo(formData.address),
+          birthDate: oNulo(formData.birthDate),
         });
       } else if (section === 'emergency') {
         await updateProfile({
-          emergencyContactName: formData.emergencyContactName.trim() || undefined,
-          emergencyContactPhone: formData.emergencyContactPhone.trim() || undefined,
+          emergencyContactName: oNulo(formData.emergencyContactName),
+          emergencyContactPhone: oNulo(formData.emergencyContactPhone),
         });
       }
       setEditingSection(null);
       toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
-    } catch {
-      toast.error(locale === 'es' ? 'Error al guardar los cambios' : 'Error saving changes');
+    } catch (err) {
+      // El backend dice EXACTAMENTE qué pasó —«Solo se permiten imagenes JPG,
+      // PNG o WebP», «La imagen no puede superar los 10MB»— y ese mensaje es
+      // lo único que le dice a la persona qué corregir. El `catch` pelado lo
+      // tiraba y dejaba un «Error al guardar los cambios» que no ayuda a nadie.
+      const detalle = err instanceof Error && err.message ? err.message : null;
+      toast.error(
+        detalle ?? (locale === 'es' ? 'Error al guardar los cambios' : 'Error saving changes'),
+      );
     } finally {
       setIsSaving(false);
     }
@@ -167,6 +243,10 @@ export default function InmobiliariaPerfilPage() {
     setEditingSection(null);
     setAvatarPreview(null);
     setAvatarFile(null);
+    // Cancelar descarta: el formulario vuelve a lo que está guardado. Sin esta
+    // línea lo tipeado sobrevivía en `formData` —que es lo que pinta la vista
+    // de lectura— y el siguiente «Guardar» lo mandaba al backend.
+    setFormData(datosDelUsuario(user));
   };
 
   // Avatar upload handlers
@@ -182,8 +262,15 @@ export default function InmobiliariaPerfilPage() {
   };
 
   const processFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      toast.error(locale === 'es' ? 'Por favor selecciona una imagen' : 'Please select an image');
+    // Los mismos tres de `accept` y de `UsersService.AVATAR_ALLOWED_MIME_TYPES`:
+    // arrastrar un HEIC esquiva el selector, y el rechazo tiene que llegar acá
+    // y no como un 400 después de apretar Guardar.
+    if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error(
+        locale === 'es'
+          ? 'Solo se permiten imágenes JPG, PNG o WebP'
+          : 'Only JPG, PNG or WebP images are allowed',
+      );
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -237,6 +324,28 @@ export default function InmobiliariaPerfilPage() {
     setDeleteConfirmText('');
     setIsDeleting(false);
   };
+
+  /*
+   * Escape cierra el modal de baja.
+   *
+   * DESIGN.md §7 lo marca OBLIGATORIO para cualquier modal y este no lo tenía:
+   * como es un div a mano —no el `Dialog` de Radix— nadie escuchaba la tecla, y
+   * el único modo de salir era encontrar «Cancelar». El listener va en el
+   * documento y no en el div porque al abrir, el foco se queda en el botón que
+   * lo disparó, que está FUERA del overlay: un `onKeyDown` en el div nunca lo
+   * vería. Mientras se está borrando no cierra: la petición ya salió.
+   */
+  useEffect(() => {
+    if (!showDeleteModal) return;
+    const alPresionar = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || isDeleting) return;
+      e.preventDefault();
+      handleCloseDeleteModal();
+    };
+    document.addEventListener('keydown', alPresionar);
+    return () => document.removeEventListener('keydown', alPresionar);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showDeleteModal, isDeleting]);
 
   // Canonical deletion strings (single source of truth for all five flows).
   const deletionCopy = accountDeletionCopy(locale);
@@ -431,7 +540,11 @@ export default function InmobiliariaPerfilPage() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  // Exactamente los tres formatos que acepta
+                  // `UsersService.uploadAvatar`. Con `image/*` el selector
+                  // dejaba elegir un HEIC o un GIF y el backend contestaba 400
+                  // recién al guardar.
+                  accept="image/jpeg,image/png,image/webp"
                   onChange={handleFileSelect}
                   className="hidden"
                 />
@@ -782,11 +895,11 @@ export default function InmobiliariaPerfilPage() {
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>
-              <p className="text-sm text-fg-muted mb-4">
-                {locale === 'es'
-                  ? 'Estas acciones son irreversibles. Por favor, procede con precaución.'
-                  : 'These actions are irreversible. Please proceed with caution.'}
-              </p>
+              {/* Lo que dice la copia canónica: hay 30 días para volver. Decir
+                  «irreversible» acá y «se recupera si iniciás sesión» dos
+                  clics después es contarle dos cosas distintas a la misma
+                  persona. */}
+              <p className="text-sm text-fg-muted mb-4">{deletionCopy.recovery}</p>
               <Button variant="destructive" hideArrow onClick={handleOpenDeleteModal}>
                 {locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account'}
               </Button>
@@ -795,9 +908,24 @@ export default function InmobiliariaPerfilPage() {
         </div>
       </div>
 
-      {/* Delete Account Modal */}
+      {/*
+        * Delete Account Modal — modal a mano, no el `Dialog` del DS.
+        *
+        * ⚠️ Sigue siendo el hijo suelto que era: sin portal, sin trampa de
+        * foco y sin `lenis.stop()`, las tres cosas que DESIGN.md §8 y §17 le
+        * exigen a cualquier overlay. Convertirlo al `Dialog` de Radix es
+        * reescribir los tres pasos y sus cabeceras de banda, así que queda
+        * anotado. Lo que sí se arregla acá es lo que DESIGN.md §7 marca como
+        * OBLIGATORIO y faltaba: cerrar con Escape y anunciarse como diálogo.
+        * El fondo pasa al tinte del DS: `bg-black` no es un token.
+        */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={deletionCopy.modalTitle}
+          className="fixed inset-0 bg-[#14130F]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -820,30 +948,74 @@ export default function InmobiliariaPerfilPage() {
                 </div>
 
                 <div className="p-6">
-                  <div className="mb-6">
-                    <p className="text-sm font-medium text-fg mb-3">
-                      {locale === 'es' ? 'Se eliminará permanentemente:' : 'Will be permanently deleted:'}
+                  {/*
+                    * 🔴 Esta lista decía que se eliminaban «Datos de la agencia
+                    * y configuración», «Historial de propiedades y contratos»,
+                    * «Información de cobros y dispersiones» y «Conversaciones y
+                    * mensajes». Nada de eso pasa.
+                    *
+                    * `DELETE /users/me/account` (UsersService.deleteAccount)
+                    * hace UNA cosa: marca TU usuario con `isActive: false` y
+                    * `deletedAt`, y revoca tus sesiones. La inmobiliaria, sus
+                    * inmuebles, sus contratos, sus cobros y sus mensajes
+                    * siguen ahí — de hecho el backend te BLOQUEA la baja si
+                    * sos el único administrador, justamente para que nadie se
+                    * quede sin dueño. Decirle a alguien que borra la operación
+                    * de su agencia cuando lo único que pierde es su acceso es
+                    * la peor clase de mentira: la que aterra.
+                    */}
+                  <div className="mb-6 space-y-4">
+                    <div>
+                      <p className="text-sm font-medium text-fg mb-3">
+                        {locale === 'es' ? 'Perderás:' : 'You will lose:'}
+                      </p>
+                      <ul className="space-y-2">
+                        {(locale === 'es'
+                          ? [
+                              'Tu perfil y tus datos personales',
+                              'El acceso al panel de la inmobiliaria',
+                              'Tu sesión en todos tus dispositivos',
+                            ]
+                          : [
+                              'Your profile and personal data',
+                              'Access to the agency panel',
+                              'Your session on every device',
+                            ]
+                        ).map((item) => (
+                          <li key={item} className="flex items-start gap-2 text-sm text-fg-muted">
+                            <TrashSimple className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-fg mb-3">
+                        {locale === 'es' ? 'No se elimina:' : 'What is not deleted:'}
+                      </p>
+                      <ul className="space-y-2">
+                        {(locale === 'es'
+                          ? [
+                              'La información de la inmobiliaria: inmuebles, contratos, cobros y dispersiones siguen siendo de la agencia',
+                              'Las conversaciones y los documentos que ya generaste, que la agencia sigue viendo',
+                            ]
+                          : [
+                              'The agency’s data: properties, contracts, payments and disbursements stay with the agency',
+                              'Conversations and documents you already generated, which the agency keeps seeing',
+                            ]
+                        ).map((item) => (
+                          <li key={item} className="flex items-start gap-2 text-sm text-fg-muted">
+                            <Buildings className="w-4 h-4 text-fg-muted mt-0.5 flex-shrink-0" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <p className="text-xs text-fg-muted">
+                      {locale === 'es'
+                        ? 'No vas a poder darte de baja si tenés contratos de arriendo activos a tu nombre o si sos el único administrador de la inmobiliaria.'
+                        : 'You cannot delete your account while you have active leases in your name, or while you are the agency’s only administrator.'}
                     </p>
-                    <ul className="space-y-2">
-                      {(locale === 'es' ? [
-                        'Tu perfil y toda tu información personal',
-                        'Datos de la agencia y configuración',
-                        'Historial de propiedades y contratos',
-                        'Información de cobros y dispersiones',
-                        'Conversaciones y mensajes',
-                      ] : [
-                        'Your profile and all personal information',
-                        'Agency data and configuration',
-                        'Property and contract history',
-                        'Payment and disbursement information',
-                        'Conversations and messages',
-                      ]).map((item, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm text-fg-muted">
-                          <TrashSimple className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
                   </div>
 
                   <div className="flex gap-3">

@@ -21,10 +21,32 @@ import { act } from 'react'
 void React // jsx-preserve
 
 const postUsersOnboardingMock = vi.fn()
+// El hook pregunta primero dónde quedó la persona. Por defecto: nunca empezó.
+type PuntoDeRetorno = {
+  agentSessionId: string | null
+  tenantId: string | null
+  provisioningStatus: 'PENDING' | 'ACTIVE' | 'FAILED' | null
+  legalName: string | null
+  nit: string | null
+  onboardingCompleted: boolean
+}
+const SIN_EMPEZAR: PuntoDeRetorno = {
+  agentSessionId: null,
+  tenantId: null,
+  provisioningStatus: null,
+  legalName: null,
+  nit: null,
+  onboardingCompleted: false,
+}
+const getOnboardingResumePointMock = vi.fn<() => Promise<PuntoDeRetorno>>(
+  async () => SIN_EMPEZAR,
+)
 vi.mock('@/lib/api/onboarding-provisioning.service', () => ({
   postUsersOnboarding: (...args: unknown[]) => postUsersOnboardingMock(...args),
+  getOnboardingResumePoint: () => getOnboardingResumePointMock(),
 }))
 
+import { ApiError } from '@/lib/api/client'
 import {
   useOnboardingProvisioning,
   INMOBILIARIA_USER_TYPE,
@@ -70,6 +92,7 @@ function flush() {
 }
 
 beforeEach(() => {
+  getOnboardingResumePointMock.mockResolvedValue(SIN_EMPEZAR)
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -263,6 +286,111 @@ describe('useOnboardingProvisioning', () => {
     expect(postUsersOnboardingMock).toHaveBeenCalledWith({
       ...EXPECTED_BODY,
       lastName: 'Ana',
+    })
+  })
+})
+
+
+describe('useOnboardingProvisioning — dónde quedó', () => {
+  it('monta el asistente directo cuando ya hay una sesión minteada', async () => {
+    getOnboardingResumePointMock.mockResolvedValue({
+      agentSessionId: 'sesion-de-ayer',
+      tenantId: 'agencia-1',
+      provisioningStatus: 'ACTIVE',
+      legalName: 'Inmobiliaria Andes SAS',
+      nit: '890903938-8',
+      onboardingCompleted: false,
+    })
+    const hook = renderHook()
+    await flush()
+
+    expect(hook.get().status).toBe('ready')
+    expect(hook.get().sessionId).toBe('sesion-de-ayer')
+    // Nunca se le vuelve a pedir nada: no hay POST.
+    expect(postUsersOnboardingMock).not.toHaveBeenCalled()
+  })
+
+  it('devuelve lo ya escrito para prellenar el paso previo cuando falta la sesión', async () => {
+    getOnboardingResumePointMock.mockResolvedValue({
+      agentSessionId: null,
+      tenantId: 'agencia-1',
+      provisioningStatus: 'ACTIVE',
+      legalName: 'Inmobiliaria Andes SAS',
+      nit: '890903938-8',
+      onboardingCompleted: false,
+    })
+    const hook = renderHook()
+    await flush()
+
+    expect(hook.get().status).toBe('needs-info')
+    expect(hook.get().valoresGuardados).toEqual({
+      razonSocial: 'Inmobiliaria Andes SAS',
+      nit: '890903938-8',
+    })
+  })
+
+  it('con la agencia en FAILED no ofrece reintento: es terminal', async () => {
+    getOnboardingResumePointMock.mockResolvedValue({
+      agentSessionId: null,
+      tenantId: 'agencia-1',
+      provisioningStatus: 'FAILED',
+      legalName: 'Inmobiliaria Andes SAS',
+      nit: '890903938-8',
+      onboardingCompleted: false,
+    })
+    const hook = renderHook()
+    await flush()
+
+    expect(hook.get().status).toBe('error')
+    expect(hook.get().fallo?.reintentable).toBe(false)
+  })
+
+  it('si no se puede averiguar dónde quedó, se empieza igual', async () => {
+    getOnboardingResumePointMock.mockRejectedValue(new Error('sin red'))
+    const hook = renderHook()
+    await flush()
+
+    expect(hook.get().status).toBe('needs-info')
+  })
+
+  it('guarda el mensaje del back en vez de comérselo', async () => {
+    postUsersOnboardingMock.mockRejectedValue(
+      new ApiError(400, 'El registro de esta inmobiliaria no se pudo completar previamente.'),
+    )
+    const hook = renderHook()
+    await flush()
+    act(() => hook.get().provision(VALID_INPUT))
+    await flush()
+
+    expect(hook.get().status).toBe('error')
+    expect(hook.get().fallo?.mensaje).toContain('no se pudo completar previamente')
+    // 400 en este flujo es terminal: reintentar da lo mismo para siempre.
+    expect(hook.get().fallo?.reintentable).toBe(false)
+    expect(hook.get().fallo?.status).toBe(400)
+  })
+
+  it('un 503 sí es reintentable', async () => {
+    postUsersOnboardingMock.mockRejectedValue(new ApiError(503, 'Intenta en unos minutos.'))
+    const hook = renderHook()
+    await flush()
+    act(() => hook.get().provision(VALID_INPUT))
+    await flush()
+
+    expect(hook.get().fallo?.reintentable).toBe(true)
+  })
+
+  it('una sesión en null deja reintentar: el back ya vuelve a intentar el traspaso', async () => {
+    postUsersOnboardingMock.mockResolvedValue({ agentSessionId: null, tenantId: 'agencia-1' })
+    const hook = renderHook()
+    await flush()
+    act(() => hook.get().provision(VALID_INPUT))
+    await flush()
+
+    expect(hook.get().status).toBe('error')
+    expect(hook.get().fallo?.reintentable).toBe(true)
+    expect(hook.get().valoresGuardados).toEqual({
+      razonSocial: 'Inmobiliaria Andes SAS',
+      nit: '900123456-7',
     })
   })
 })

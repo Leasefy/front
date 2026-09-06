@@ -29,15 +29,15 @@ function ProviderRow({ provider, isBackup }: { provider: RecommendedProvider; is
   return (
     <div data-testid={isBackup ? 'proveedor-backup' : 'proveedor-principal'} className="space-y-1.5">
       <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold text-neutral-900 dark:text-white">
+        <span className="text-sm font-semibold text-fg">
           {provider.nombre}
         </span>
         {isBackup && <Badge variant="outline">backup</Badge>}
       </div>
-      <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400">
+      <div className="flex flex-wrap items-center gap-3 text-xs text-fg-muted">
         {provider.rating !== undefined && (
           <span className="inline-flex items-center gap-1">
-            <Star size={13} weight="fill" className="text-amber-400" aria-hidden="true" />
+            <Star size={13} weight="fill" className="text-warning" aria-hidden="true" />
             {provider.rating.toFixed(1)}
           </span>
         )}
@@ -49,7 +49,7 @@ function ProviderRow({ provider, isBackup }: { provider: RecommendedProvider; is
         )}
       </div>
       {provider.motivo && (
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
+        <p className="text-xs text-fg-muted leading-relaxed">
           {provider.motivo}
         </p>
       )}
@@ -66,13 +66,13 @@ export function ProveedorPanel({ proveedorRecomendado }: ProveedorPanelProps) {
     <Card data-testid="proveedor-panel">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Truck size={18} className="text-emerald-500" weight="duotone" aria-hidden="true" />
+          <Truck size={18} className="text-success" weight="duotone" aria-hidden="true" />
           {t(`${ROOT}.detalle.proveedor`)}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 pt-0">
         {!hasAny ? (
-          <p data-testid="proveedor-empty" className="text-sm text-neutral-500 dark:text-neutral-400">
+          <p data-testid="proveedor-empty" className="text-sm text-fg-muted">
             {t(`${ROOT}.card.sinProveedor`)}
           </p>
         ) : (

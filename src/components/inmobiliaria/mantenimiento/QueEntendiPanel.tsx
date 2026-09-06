@@ -27,14 +27,14 @@ export function QueEntendiPanel({ queEntendi, descripcion }: QueEntendiPanelProp
     <Card data-testid="que-entendi-panel">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <ChatCenteredText size={18} className="text-violet-500" weight="duotone" aria-hidden="true" />
+          <ChatCenteredText size={18} className="text-primary" weight="duotone" aria-hidden="true" />
           {t(`${KEY}.queEntendi`)}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 pt-0">
-        <p className="text-sm leading-relaxed text-neutral-900 dark:text-white">{queEntendi}</p>
+        <p className="text-sm leading-relaxed text-fg">{queEntendi}</p>
         <Separator />
-        <p className="text-sm leading-relaxed text-neutral-500 dark:text-neutral-400 italic">
+        <p className="text-sm leading-relaxed text-fg-muted italic">
           {descripcion}
         </p>
       </CardContent>

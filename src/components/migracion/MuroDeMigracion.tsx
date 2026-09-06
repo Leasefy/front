@@ -96,8 +96,26 @@ import { ImportWizard } from "@/components/inmobiliaria/import/ImportWizard";
 import { MigrarContratos } from "@/components/contratos/MigrarContratos";
 import { BienvenidaALeasefy } from "./BienvenidaALeasefy";
 
-/** Cada cuánto el muro vuelve a mirar el estado mientras está puesto. */
-export const CADA_CUANTO_SE_REFRESCA_MS = 5_000;
+/**
+ * Cada cuánto el muro vuelve a mirar el estado mientras está puesto.
+ *
+ * 🔴 Era 5 s. Medido en la auditoría del 2026-09-05: **123 peticiones a
+ * `GET /inmobiliaria/migracion/estado` en 10 minutos con la pantalla quieta**
+ * — 12 por minuto y por pestaña, ~2.400/min con 200 inmobiliarias mirando el
+ * muro. Y el muro sólo cambia cuando la persona ACTÚA.
+ *
+ * Así que el refresco dejó de ser la forma de enterarse y pasó a ser la red de
+ * seguridad. Lo que de verdad refresca es un evento:
+ *  - `irA` (cambiar de paso) — ya estaba;
+ *  - el fin de una operación larga del paso (`ocupado` de `true` a `false`):
+ *    crear terceros, activar inmuebles, activar contratos, sembrar el PUC;
+ *  - volver a la pestaña (`visibilitychange`).
+ *
+ * Con eso, el intervalo sólo cubre lo que cambia SIN que nadie toque nada
+ * (otra persona del equipo trabajando en paralelo, un lote asíncrono que
+ * termina), y un minuto alcanza de sobra.
+ */
+export const CADA_CUANTO_SE_REFRESCA_MS = 60_000;
 
 // ══════════════════════════════════════════════════════════════════════════
 // La compuerta: envuelve el panel entero y decide.
@@ -164,18 +182,43 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
 
   const puesto = estado !== null;
 
+  /*
+   * El intervalo se APAGA con la pestaña, no se saltea un tick. Con
+   * `setInterval` corriendo siempre y un `if (visible)` adentro, el temporizador
+   * sigue despertando al hilo cada tanto para no hacer nada; y al volver a la
+   * pestaña había que esperar al próximo tick para ver el estado real. Ahora al
+   * volver se consulta de una y recién ahí se rearma.
+   */
   useEffect(() => {
     if (!puesto) return;
-    const cadaTanto = setInterval(() => {
-      if (document.visibilityState === "visible") void refrescar();
-    }, CADA_CUANTO_SE_REFRESCA_MS);
-    const alVolver = () => {
-      if (document.visibilityState === "visible") void refrescar();
+    let cadaTanto: ReturnType<typeof setInterval> | null = null;
+
+    const frenar = () => {
+      if (cadaTanto !== null) {
+        clearInterval(cadaTanto);
+        cadaTanto = null;
+      }
     };
-    document.addEventListener("visibilitychange", alVolver);
+    const arrancar = () => {
+      if (cadaTanto === null) {
+        cadaTanto = setInterval(() => void refrescar(), CADA_CUANTO_SE_REFRESCA_MS);
+      }
+    };
+
+    const alCambiarVisibilidad = () => {
+      if (document.visibilityState === "visible") {
+        void refrescar();
+        arrancar();
+      } else {
+        frenar();
+      }
+    };
+
+    if (document.visibilityState === "visible") arrancar();
+    document.addEventListener("visibilitychange", alCambiarVisibilidad);
     return () => {
-      clearInterval(cadaTanto);
-      document.removeEventListener("visibilitychange", alVolver);
+      frenar();
+      document.removeEventListener("visibilitychange", alCambiarVisibilidad);
     };
   }, [puesto, refrescar]);
 
@@ -245,6 +288,22 @@ export function PanelDeMigracion({
    * pie espera a que el paso diga que terminó.
    */
   const [ocupado, setOcupado] = useState(false);
+  /*
+   * 🔴 Lo que reemplaza al sondeo de 5 s: cuando un paso TERMINA de crear
+   * (`ocupado` pasa de true a false) se pregunta el estado de una. Es el único
+   * instante en que el muro tiene algo nuevo que mostrar, y es exactamente el
+   * que se veía tarde: en la auditoría el botón siguió diciendo «Activando…»
+   * ~10 s después de que el back ya tenía los 12 inmuebles activados, y el
+   * rótulo del paso mostró «3 inmuebles» a mitad de camino, porque el conteo
+   * lo traía el tick siguiente y no la respuesta de la operación.
+   */
+  const estabaOcupado = useRef(false);
+  useEffect(() => {
+    if (estabaOcupado.current && !ocupado) {
+      void onResuelta();
+    }
+    estabaOcupado.current = ocupado;
+  }, [ocupado, onResuelta]);
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState(false);
   /**

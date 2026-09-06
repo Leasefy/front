@@ -144,6 +144,11 @@ export interface Property {
 
   // Availability schedule for visits
   availabilitySchedule?: AvailabilitySchedule;
+  /**
+   * Modalidades de visita que acepta el inmueble. Ausente en un back viejo:
+   * en ese caso el aviso ofrece las dos, que es como venía funcionando.
+   */
+  visitTypes?: Array<'IN_PERSON' | 'VIRTUAL'>;
 }
 
 // ============================================================================

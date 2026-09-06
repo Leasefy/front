@@ -142,7 +142,7 @@ export function ChatLessonsPanel() {
       <FalloDeCarga
         error={error}
         queEs="las lecciones del asistente"
-        onReintentar={() => void refresh()}
+        onReintentar={refresh}
       />
     )
   }

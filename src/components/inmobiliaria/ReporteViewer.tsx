@@ -11,10 +11,8 @@ import {
   ChartBar,
   ChartLineUp,
   CurrencyDollar,
-  FilePdf,
-  FileXls,
+  FileCsv,
   DownloadSimple,
-  Printer,
   CalendarBlank,
   MapPin,
   ArrowUp,
@@ -31,14 +29,15 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import type { ReportDefinition, ReportCategory } from '@/lib/types/inmobiliaria';
 import {
   getReportCategoryColor,
-  getReportFormatColor,
   formatCurrency,
 } from '@/lib/types/inmobiliaria';
+import { formatoDelArchivo } from '@/lib/reportes/exportables';
 import type { ReporteFiltersState } from './ReporteFilters';
 import {
   useComisionesReport,
@@ -53,7 +52,11 @@ interface ReporteViewerProps {
   onClose: () => void;
   report: ReportDefinition | null;
   filters: ReporteFiltersState;
-  onExport?: (format: 'pdf' | 'excel') => void;
+  /**
+   * Baja el reporte. Devuelve la promesa del pedido: el botón se queda
+   * deshabilitado hasta que el archivo llegó (o falló), no 1,5 segundos.
+   */
+  onExport?: (format: 'pdf' | 'excel') => void | Promise<void>;
 }
 
 // Map icon names to Phosphor components
@@ -192,24 +195,12 @@ function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, stri
               {data.overallOccupancyRate}%
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.vsPrevMonth')}</p>
-            <div className="flex items-center justify-end gap-1">
-              {data.previousMonthOccupancyRate &&
-              data.overallOccupancyRate > data.previousMonthOccupancyRate ? (
-                <ArrowUp className="w-4 h-4 text-success" />
-              ) : (
-                <ArrowDown className="w-4 h-4 text-danger" />
-              )}
-              <span className="text-sm font-medium">
-                {Math.abs(
-                  data.overallOccupancyRate -
-                    (data.previousMonthOccupancyRate || 0)
-                )}
-                %
-              </span>
-            </div>
-          </div>
+          {/* 🔴 Acá había un «vs mes anterior» que inventaba la comparación.
+              Leía `previousMonthOccupancyRate`, que el back no manda, así que
+              el ternario caía SIEMPRE al else: flecha roja hacia abajo, y como
+              diferencia `|ocupación - 0|`, o sea la ocupación entera. Una
+              inmobiliaria con 83 % de ocupación leía «↓ 83 %» en rojo, una
+              caída que nunca ocurrió. Vuelve cuando el back mande el dato. */}
         </div>
       </div>
 
@@ -226,15 +217,9 @@ function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, stri
           </p>
           <p className="text-xs text-success">{t('inmobiliaria.reporte.rented')}</p>
         </div>
-        <div className="p-3 rounded-md bg-primary-soft text-center">
-          <p className="text-lg font-bold text-primary">
-            {data.totalInProcess}
-          </p>
-          <p className="text-xs text-primary">{t('inmobiliaria.reporte.inProcess')}</p>
-        </div>
         <div className="p-3 rounded-md bg-warning-soft text-center">
           <p className="text-lg font-bold text-warning">
-            {data.totalAvailable}
+            {data.totalVacant}
           </p>
           <p className="text-xs text-warning">{t('inmobiliaria.reporte.available')}</p>
         </div>
@@ -257,16 +242,16 @@ function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, stri
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-xs text-muted-foreground">
-                  {zone.occupied}/{zone.totalProperties}
+                  {zone.occupied}/{zone.total}
                 </span>
                 <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full bg-success rounded-full"
-                    style={{ width: `${zone.occupancyRate}%` }}
+                    style={{ width: `${zone.rate}%` }}
                   />
                 </div>
                 <span className="text-sm font-medium text-foreground w-12 text-right">
-                  {zone.occupancyRate}%
+                  {zone.rate}%
                 </span>
               </div>
             </div>
@@ -536,14 +521,24 @@ export function ReporteViewer({
   const { t, formatDate: fmtDate } = useI18n();
   const [isExporting, setIsExporting] = React.useState(false);
 
-  // Handle export
+  /**
+   * Bajar el reporte.
+   *
+   * Tenía un `await new Promise(r => setTimeout(r, 1500))` antes de llamar a
+   * `onExport`: segundo y medio de rueda girando fingiendo trabajo, que es
+   * exactamente la mentira que `lib/reportes/exportables.ts` documenta haber
+   * sacado del resto del módulo. Y peor: `setIsExporting(false)` corría al
+   * toque, sin esperar la descarga real, así que el botón volvía a estar vivo
+   * con el pedido todavía en vuelo — dos clics, dos descargas.
+   */
   const handleExport = async (format: 'pdf' | 'excel') => {
-    if (!onExport) return;
-
+    if (!onExport || isExporting) return;
     setIsExporting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    onExport(format);
-    setIsExporting(false);
+    try {
+      await onExport(format);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   if (!report) return null;
@@ -551,7 +546,9 @@ export function ReporteViewer({
   const Icon = ICON_MAP[report.icon] || FileText;
   const bgColor = CATEGORY_BG_COLORS[report.category];
   const iconColor = CATEGORY_ICON_COLORS[report.category];
-  const FormatIcon = report.format === 'pdf' ? FilePdf : FileXls;
+  // Ver `formatoDelArchivo`: acá se pintaba `report.format` («EXCEL»/«PDF»)
+  // arriba del botón que dice «Descargar CSV» y baja un `.csv`.
+  const formatoDelArchivoQueBaja = formatoDelArchivo(report.id);
 
   // Get preview component based on report type
   const PreviewContent = () => {
@@ -592,9 +589,17 @@ export function ReporteViewer({
               <SheetTitle className="text-lg font-semibold text-foreground">
                 {report.title}
               </SheetTitle>
-              <p className="text-sm text-muted-foreground mt-0.5">
+              {/*
+                `SheetDescription`, no un `<p>` suelto: `SheetContent` es un
+                Radix Dialog, y un diálogo sin descripción registrada avisa en
+                consola («Missing `Description` … for {DialogContent}») y se
+                abre sin `aria-describedby`, así que el lector de pantalla
+                anuncia el título y nada más. El texto ya estaba acá; lo único
+                que faltaba era que el diálogo supiera que es SU descripción.
+              */}
+              <SheetDescription className="text-sm text-muted-foreground mt-0.5">
                 {report.description}
-              </p>
+              </SheetDescription>
               <div className="flex items-center gap-2 mt-3">
                 <span
                   className={cn(
@@ -604,15 +609,12 @@ export function ReporteViewer({
                 >
                   {report.category}
                 </span>
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
-                    getReportFormatColor(report.format)
-                  )}
-                >
-                  <FormatIcon className="w-3 h-3" />
-                  {report.format.toUpperCase()}
-                </span>
+                {formatoDelArchivoQueBaja && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-success-soft text-success">
+                    <FileCsv className="w-3 h-3" />
+                    {formatoDelArchivoQueBaja}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -680,28 +682,21 @@ export function ReporteViewer({
               ) : (
                 <>
                   <DownloadSimple className="w-4 h-4 mr-2" />
-                  {t('inmobiliaria.reporte.downloadFormat', { format: report.format.toUpperCase() })}
+                  {/* CSV, no `report.format`. El catálogo marca estos reportes
+                      como «excel» o «pdf», pero `/reports/export` responde
+                      `text/csv` y el archivo baja `.csv`: el botón prometía un
+                      formato que nunca llegó. */}
+                  {t('inmobiliaria.reporte.downloadFormat', { format: 'CSV' })}
                 </>
               )}
             </Button>
 
-            {/* Print for PDF */}
-            {report.format === 'pdf' && (
-              <Button
-                variant="secondary"
-                size="icon"
-                hideArrow
-                onClick={() => window.print()}
-              >
-                <Printer className="w-4 h-4" />
-              </Button>
-            )}
+            {/* Acá había un botón de imprimir (`window.print()`) sin una sola
+                regla `@media print` en este componente: imprimía el panel
+                entero con el cajón encima, no el reporte. Y debajo, un rótulo
+                suelto «Exportación programada» sin producto detrás: ni botón,
+                ni frecuencia, ni a dónde llega. Los dos salieron. */}
           </div>
-
-          {/* Scheduled Export - Future Feature */}
-          <p className="text-center text-xs text-muted-foreground mt-4">
-            {t('inmobiliaria.reporte.scheduledExport')}
-          </p>
         </motion.div>
       </SheetContent>
     </Sheet>

@@ -17,7 +17,7 @@ vi.mock('sonner', () => ({
 }))
 
 import { PropertyPhotoPicker } from './PropertyPhotoPicker'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 
 let container: HTMLDivElement
 let root: Root

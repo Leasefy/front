@@ -1,6 +1,7 @@
 import AgentsShowcaseA from "@/components/landing/showcase/AgentsShowcaseA";
 import AgentsShowcaseB from "@/components/landing/showcase/AgentsShowcaseB";
 import AgentsShowcaseC from "@/components/landing/showcase/AgentsShowcaseC";
+import { notFound } from "next/navigation";
 import { ForceLightMode } from "@/components/providers/ForceLightMode";
 
 export const metadata = {
@@ -19,6 +20,12 @@ function VariantLabel({ children }: { children: React.ReactNode }) {
 }
 
 export default function AgentesPreviewPage() {
+  // Vitrina de diseño: compara 3 variantes (A/B/C) del showcase de agentes para
+  // elegir una. Nadie la enlaza y la elección ya está hecha. 404 en producción.
+  if (process.env.NODE_ENV === 'production') {
+    notFound();
+  }
+
   return (
     <ForceLightMode>
       <VariantLabel>Variante A — showcase interactivo</VariantLabel>

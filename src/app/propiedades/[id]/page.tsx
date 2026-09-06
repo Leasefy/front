@@ -3,7 +3,7 @@
 import { use } from 'react';
 
 import { LandingChrome } from '@/components/landing-v2/LandingChrome';
-import { FooterCompact } from '@/components/layout/FooterCompact';
+import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2';
 import { PropertyDetailView } from '@/components/property/PropertyDetailView';
 
 interface PropertyDetailPageProps {
@@ -21,6 +21,10 @@ interface PropertyDetailPageProps {
  * `LandingChrome` fuerza además el modo claro: la hoja de la landing no tiene
  * variante oscura, y con el tema oscuro puesto el header salía claro sobre una
  * ficha oscura.
+ *
+ * El pie también es el de la landing. Cerraba con `FooterCompact` —uno corto
+ * con redes— y era el único pie distinto que quedaba en el sitio público
+ * (Nico, 2026-09-05: «poné el de la landing ahí también»).
  */
 export default function PropertyDetailPage({ params }: PropertyDetailPageProps) {
   const resolvedParams = params instanceof Promise ? use(params) : params;
@@ -36,7 +40,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
           listingHref="/propiedades"
         />
       </main>
-      <FooterCompact />
+      <LandingFooterV2 />
     </LandingChrome>
   );
 }

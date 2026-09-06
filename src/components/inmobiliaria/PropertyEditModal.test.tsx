@@ -35,7 +35,7 @@ vi.mock('@/lib/api/property-photos', async (importOriginal) => {
 import { PropertyEditModal } from './PropertyEditModal'
 import { propertiesApi } from '@/lib/api/properties.service'
 import { uploadPropertyPhotos } from '@/lib/api/property-photos'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 import type { AgencyProperty } from '@/lib/types/property'
 
 const update = propertiesApi.update as unknown as ReturnType<typeof vi.fn>

@@ -27,7 +27,7 @@ import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { useDebtorMemos } from '@/lib/hooks/cobranza/use-debtor-memos'
-import { Button } from '@/components/ui'
+import { Button, Textarea } from '@/components/ui'
 import { LlamadaDetalleSheet } from '@/components/inmobiliaria/cobranza/LlamadaDetalleSheet'
 import { summaryOutcomeLabel } from '@/lib/cobranza/call-vocab'
 
@@ -163,14 +163,13 @@ export function MemosTab({ debtorId }: MemosTabProps) {
         <label htmlFor="memo-nota" className="text-xs font-medium text-fg-muted">
           Añadir nota del equipo
         </label>
-        <textarea
+        <Textarea
           id="memo-nota"
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           maxLength={4000}
           rows={2}
           placeholder="Contexto que el agente no ve: una llamada tuya, un acuerdo de pasillo, lo que toque recordar…"
-          className="w-full rounded-sm border border-border bg-card px-3 py-2 text-sm text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary resize-y"
         />
         <div className="flex items-center justify-between gap-3">
           {errorNota ? (
@@ -268,14 +267,16 @@ export function MemosTab({ debtorId }: MemosTabProps) {
                     </span>
                   )}
                   {m.call_id && (
-                    <button
-                      type="button"
+                    <Button
+                      variant="link"
+                      size="sm"
+                      hideArrow
                       onClick={() => setLlamadaAbierta(m.call_id)}
-                      className="ml-auto text-primary hover:underline"
+                      className="ml-auto px-0 h-auto text-xs text-primary hover:underline"
                       data-testid={`memo-ver-llamada-${m.id}`}
                     >
                       Ver la llamada
-                    </button>
+                    </Button>
                   )}
                 </div>
               </li>

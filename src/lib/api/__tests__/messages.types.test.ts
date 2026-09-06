@@ -11,6 +11,7 @@
 
 import { describe, it, expect } from 'vitest';
 import {
+  formatTime,
   mapToConversation,
   resolveConversationKind,
   type BackendConversation,
@@ -91,5 +92,126 @@ describe('mapToConversation — the breaking-change surface (contract-addendum-2
   it('the id field is always the conversation uuid — the selection key', () => {
     const result = mapToConversation(backendConversation({ id: 'conv-xyz' }));
     expect(result.id).toBe('conv-xyz');
+  });
+});
+
+// ============================================================================
+// Hilo DIRECTO — inmobiliaria ↔ persona, sin inmueble
+// ============================================================================
+
+describe('mapToConversation — hilo directo', () => {
+  it('reconoce el tipo nuevo', () => {
+    expect(resolveConversationKind('DIRECT')).toBe('DIRECT');
+  });
+
+  it('cuando del otro lado está la inmobiliaria, la nombra a ella y marca el perfil AGENCY', () => {
+    const conv = mapToConversation(
+      backendConversation({
+        kind: 'DIRECT',
+        applicationId: null,
+        property: null,
+        propertyId: undefined,
+        otherParticipant: null,
+        agency: { id: 'ag-1', name: 'Inmobiliaria Prueba', logoUrl: null },
+      }),
+    );
+
+    expect(conv.name).toBe('Inmobiliaria Prueba');
+    expect(conv.perfil).toBe('AGENCY');
+    expect(conv.role).toBe('Inmobiliaria');
+  });
+
+  it('sin inmueble, property y propertyId quedan vacíos — nunca la cadena "null"', () => {
+    const conv = mapToConversation(
+      backendConversation({
+        kind: 'DIRECT',
+        applicationId: null,
+        property: null,
+        propertyId: undefined,
+        otherParticipant: null,
+        agency: { id: 'ag-1', name: 'Inmobiliaria Prueba', logoUrl: null },
+      }),
+    );
+
+    expect(conv.property).toBe('');
+    expect(conv.propertyId).toBe('');
+  });
+
+  it('cuando del otro lado hay una persona, el perfil sale de SU rol', () => {
+    const conv = mapToConversation(
+      backendConversation({
+        kind: 'DIRECT',
+        applicationId: null,
+        property: null,
+        propertyId: undefined,
+        agency: { id: 'ag-1', name: 'Inmobiliaria Prueba', logoUrl: null },
+        otherParticipant: {
+          id: 'user-9',
+          firstName: 'Beto',
+          lastName: 'Gil',
+          role: 'TENANT',
+          email: 'beto@test.com',
+        },
+      }),
+    );
+
+    expect(conv.name).toBe('Beto Gil');
+    expect(conv.perfil).toBe('TENANT');
+    expect(conv.role).toBe('Inquilino');
+  });
+
+  it('un rol que no conocemos se dice, no se disfraza de otro', () => {
+    const conv = mapToConversation(
+      backendConversation({
+        otherParticipant: {
+          id: 'user-9',
+          firstName: 'Zoe',
+          lastName: null,
+          role: 'MARCIANO',
+          email: 'zoe@test.com',
+        },
+      }),
+    );
+
+    expect(conv.perfil).toBe('DESCONOCIDO');
+  });
+});
+
+/**
+ * 🔴 «Ayer» es un día del calendario, no 24 horas.
+ *
+ * `formatTime` dividía la diferencia en milisegundos por 86.400.000. Con eso,
+ * un mensaje de anoche a las 23:00 mirado hoy a las 09:00 (10 h de
+ * diferencia) daba `diffDays === 0` y salía como una hora suelta —«11:00 p.
+ * m.»—, indistinguible de un mensaje de esta mañana; y uno de ayer a las 08:00
+ * mirado hoy a las 09:00 (25 h) sí decía «Ayer». Dos mensajes del MISMO día se
+ * etiquetaban distinto según la hora en que abrieras la bandeja, que es
+ * exactamente lo que una fecha no puede hacer.
+ */
+describe('formatTime — días de calendario, no ventanas de 24 h', () => {
+  const ahora = new Date(2026, 8, 5, 9, 0, 0); // sábado 5 de septiembre, 09:00
+
+  it('lo de anoche a las 23:00 es de AYER, aunque hayan pasado 10 horas', () => {
+    expect(formatTime(new Date(2026, 8, 4, 23, 0, 0).toISOString(), ahora)).toBe('Ayer');
+  });
+
+  it('lo de esta madrugada es de HOY: muestra la hora', () => {
+    const r = formatTime(new Date(2026, 8, 5, 0, 30, 0).toISOString(), ahora);
+    expect(r).not.toBe('Ayer');
+    expect(r).toMatch(/\d/);
+  });
+
+  it('lo de ayer temprano —25 h— sigue siendo «Ayer», no un día de la semana', () => {
+    expect(formatTime(new Date(2026, 8, 4, 8, 0, 0).toISOString(), ahora)).toBe('Ayer');
+  });
+
+  it('hace tres días es un día de la semana, no «Ayer»', () => {
+    const r = formatTime(new Date(2026, 8, 2, 23, 30, 0).toISOString(), ahora);
+    expect(r).not.toBe('Ayer');
+    expect(r).not.toMatch(/^\d{1,2}:/);
+  });
+
+  it('una fecha ilegible no rompe la fila: queda vacía', () => {
+    expect(formatTime('no-es-una-fecha', ahora)).toBe('');
   });
 });

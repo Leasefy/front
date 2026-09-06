@@ -51,6 +51,32 @@ describe('TestimoniosFlotantes', () => {
     expect(container.querySelector('figcaption')?.textContent).toContain(TESTIMONIOS[0].nombre)
   })
 
+  /**
+   * La lista es reemplazable a propósito: la idea es cambiarla por frases
+   * reales sin tocar el componente. Este test fija esa puerta — si alguien la
+   * cierra, cambiar los testimonios pasa a ser cirugía.
+   */
+  it('acepta la lista por prop, para poder cambiarla sin tocar la pieza', () => {
+    const reales = [
+      {
+        agencia: 'Otra Inmobiliaria',
+        ciudad: 'Pereira',
+        frase: 'Una frase de verdad.',
+        nombre: 'Nombre Real',
+        cargo: 'Cargo',
+      },
+    ]
+    act(() => root.render(<TestimoniosFlotantes intervaloMs={1000} testimonios={reales} />))
+    expect(agenciaEnPantalla()).toContain('Otra Inmobiliaria')
+    expect(container.textContent).not.toContain('Portofino')
+  })
+
+  it('con la lista vacía no pinta nada, ni siquiera el título', () => {
+    act(() => root.render(<TestimoniosFlotantes intervaloMs={1000} testimonios={[]} />))
+    expect(container.querySelector('[data-testid="testimonios"]')).toBeNull()
+    expect(container.textContent).not.toContain('ya operan con Leasefy')
+  })
+
   it('las iniciales del monograma', () => {
     expect(iniciales('Mariana Restrepo')).toBe('MR')
     expect(iniciales('Julián')).toBe('J')
@@ -58,7 +84,11 @@ describe('TestimoniosFlotantes', () => {
   })
 
   it('cada tantos segundos sale el siguiente, y después del cuarto vuelve el primero', () => {
-    act(() => root.render(<TestimoniosFlotantes intervaloMs={1000} />))
+    act(() =>
+      root.render(
+        <TestimoniosFlotantes intervaloMs={1000} />,
+      ),
+    )
     act(() => { vi.advanceTimersByTime(1000) })
     expect(agenciaEnPantalla()).toContain(TESTIMONIOS[1].agencia)
     act(() => { vi.advanceTimersByTime(2000) })

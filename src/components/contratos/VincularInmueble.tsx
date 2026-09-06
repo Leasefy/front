@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import { LinkSimple } from '@phosphor-icons/react'
+import { Buildings, LinkSimple } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
+import { EmptyState } from '@/components/ui/empty-state'
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service'
 import { contractsApi } from '@/lib/api/contracts.service'
 import type { Consignacion } from '@/lib/types/inmobiliaria'
@@ -143,10 +144,12 @@ export function VincularInmueble({ contract, puedeVincular, onActualizado }: Pro
             {consignaciones === null ? (
               <p className="text-sm text-muted-foreground">Cargando inmuebles…</p>
             ) : opciones.length === 0 && !error ? (
-              <p className="text-sm text-muted-foreground">
-                No hay inmuebles consignados. Primero hay que cargar el inmueble en
-                Inmuebles y consignarlo.
-              </p>
+              <EmptyState
+                icon={Buildings}
+                title="No hay inmuebles consignados"
+                description="Primero hay que cargar el inmueble en Inmuebles y consignarlo."
+                className="px-0 py-6"
+              />
             ) : opciones.length === 0 ? null : (
               <div data-testid="vincular-inmueble-select">
                 <Combobox
@@ -162,7 +165,7 @@ export function VincularInmueble({ contract, puedeVincular, onActualizado }: Pro
                 />
               </div>
             )}
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            {error ? <p className="text-sm text-danger">{error}</p> : null}
           </div>
 
           <DialogFooter>

@@ -98,4 +98,27 @@ describe('<MantenimientoKpiStrip>', () => {
     expect(container.querySelector('[data-testid="kpi-strip"]')).not.toBeNull()
     expect(container.querySelector('[data-testid="anti-gaming"]')).not.toBeNull()
   })
+
+  /**
+   * Lo que no se pudo traer NO se dibuja como cero.
+   *
+   * `kpis=null` es «la consulta falló o el endpoint todavía no existe», no «tu
+   * operación está en cero». Con `?? 0` la franja decía «0 tickets abiertos» y
+   * «0 % de SLA» mientras el cartel de error vivía debajo: tranquilizaba y
+   * avisaba del fallo al mismo tiempo. Los nueve valores van con raya.
+   */
+  it('nunca imprime 0 cuando kpis=null: los 9 valores van con raya', () => {
+    act(() => {
+      root.render(React.createElement(MantenimientoKpiStrip, { kpis: null, isLoading: false }))
+    })
+    const valores = Array.from(
+      container.querySelectorAll('[data-testid="kpi-strip"] p.text-xl'),
+    ).map((el) => el.textContent ?? '')
+
+    expect(valores).toHaveLength(9)
+    for (const v of valores) {
+      expect(v).toBe('—')
+      expect(v).not.toMatch(/\d/)
+    }
+  })
 })

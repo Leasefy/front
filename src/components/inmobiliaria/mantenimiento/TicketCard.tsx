@@ -46,25 +46,24 @@ function formatCOP(value: number): string {
 
 /** Tailwind classes per severity (calca daysBadgeClasses de DeudoresListClient). */
 const SEVERITY_CLASSES: Record<Severity, string> = {
-  emergencia:
-    'bg-red-50 text-red-700 ring-1 ring-red-200 dark:bg-red-950/30 dark:text-red-400 dark:ring-red-800',
-  alta:
-    'bg-orange-50 text-orange-700 ring-1 ring-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:ring-orange-800',
-  media:
-    'bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:ring-amber-800',
-  baja:
-    'bg-sky-50 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:ring-sky-800',
-  informativa:
-    'bg-neutral-100 text-neutral-600 ring-1 ring-neutral-200 dark:bg-neutral-800/50 dark:text-neutral-400 dark:ring-neutral-700',
+  // emergencia y alta comparten el tono `danger` (los dos son severidad crítica);
+  // el anillo a full distingue la emergencia. El label i18n va siempre al lado,
+  // así que el color no es el único portador de la distinción.
+  emergencia: 'bg-danger-soft text-danger ring-1 ring-danger',
+  alta: 'bg-danger-soft text-danger ring-1 ring-danger/30',
+  media: 'bg-warning-soft text-warning ring-1 ring-warning/30',
+  baja: 'bg-info-soft text-info ring-1 ring-info/30',
+  informativa: 'bg-surface-muted text-fg-muted ring-1 ring-border',
 }
 
 /** Tailwind classes per score bucket (the colored score pill). */
 const BUCKET_CLASSES: Record<ScoreBucket, string> = {
-  bajo: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
-  medio: 'bg-sky-100 text-sky-800 dark:bg-sky-950/40 dark:text-sky-300',
-  alto: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300',
-  critico: 'bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-300',
-  emergencia: 'bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300',
+  bajo: 'bg-surface-muted text-fg-muted',
+  medio: 'bg-info-soft text-info',
+  alto: 'bg-warning-soft text-warning',
+  critico: 'bg-danger-soft text-danger',
+  // `critico` y `emergencia` caen los dos en `danger`; el anillo escala el último.
+  emergencia: 'bg-danger-soft text-danger ring-1 ring-danger',
 }
 
 /**
@@ -125,11 +124,11 @@ export function TicketCard({ ticket, onSelect }: TicketCardProps) {
           handleActivate()
         }
       }}
-      className="cursor-pointer p-4 transition-colors hover:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:hover:border-violet-500"
+      className="cursor-pointer p-4 transition-colors hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
     >
       {/* Header: title + score pill */}
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white leading-snug">
+        <h3 className="text-sm font-semibold text-fg leading-snug">
           {ticket.titulo}
         </h3>
         <span
@@ -146,7 +145,7 @@ export function TicketCard({ ticket, onSelect }: TicketCardProps) {
       </div>
 
       {/* Inmueble */}
-      <p className="mt-1.5 flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
+      <p className="mt-1.5 flex items-center gap-1 text-xs text-fg-muted">
         <MapPin size={13} weight="duotone" className="shrink-0" />
         <span className="truncate">
           {ticket.inmueble.address}
@@ -157,33 +156,33 @@ export function TicketCard({ ticket, onSelect }: TicketCardProps) {
       {/* Severidad + categoría + tiempo */}
       <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
         <Badge className={SEVERITY_CLASSES[ticket.severidad]}>{sev}</Badge>
-        <Badge className="bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300" Icon={Wrench}>
+        <Badge className="bg-surface-muted text-fg-muted" Icon={Wrench}>
           {cat}
         </Badge>
-        <span className="inline-flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500">
+        <span className="inline-flex items-center gap-1 text-xs text-fg-subtle">
           <Clock size={12} weight="duotone" className="shrink-0" />
           {relativeTime(ticket.createdAt, locale)}
         </span>
       </div>
 
       {/* Proveedor sugerido */}
-      <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">
-        <span className="text-neutral-400 dark:text-neutral-500">
+      <p className="mt-2 text-xs text-fg-muted">
+        <span className="text-fg-subtle">
           {t('inmobiliaria.ai.mantenimiento.card.proveedorSugerido')}:
         </span>{' '}
         {ticket.proveedorSugerido ? (
-          <span className="font-medium text-neutral-800 dark:text-neutral-200">
+          <span className="font-medium text-fg">
             {ticket.proveedorSugerido}
           </span>
         ) : (
-          <span className="italic text-neutral-400 dark:text-neutral-500">
+          <span className="italic text-fg-subtle">
             {t('inmobiliaria.ai.mantenimiento.card.sinProveedor')}
           </span>
         )}
       </p>
 
       {/* Responsable — ALWAYS a hypothesis, never a verdict (FENCE) */}
-      <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+      <p className="mt-1 text-xs text-fg-muted">
         <span aria-hidden="true">≈ </span>
         {responsableLabel}
       </p>
@@ -191,13 +190,13 @@ export function TicketCard({ ticket, onSelect }: TicketCardProps) {
       {/* Secondary badges */}
       <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
         {ticket.requiereAprobacion ? (
-          <Badge className="bg-violet-50 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-950/30 dark:text-violet-300 dark:ring-violet-800">
+          <Badge className="bg-primary-soft text-primary ring-1 ring-primary/30">
             {t('inmobiliaria.ai.mantenimiento.card.requiereAprobacion')}
           </Badge>
         ) : null}
         {ticket.reabierto ? (
           <Badge
-            className="bg-rose-50 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:ring-rose-800"
+            className="bg-danger-soft text-danger ring-1 ring-danger/30"
             Icon={ArrowsClockwise}
           >
             {t('inmobiliaria.ai.mantenimiento.card.reabierto')}
@@ -205,7 +204,7 @@ export function TicketCard({ ticket, onSelect }: TicketCardProps) {
         ) : null}
         {ticket.retencionRiesgo ? (
           <Badge
-            className="bg-fuchsia-50 text-fuchsia-700 ring-1 ring-fuchsia-200 dark:bg-fuchsia-950/30 dark:text-fuchsia-300 dark:ring-fuchsia-800"
+            className="bg-warning-soft text-warning ring-1 ring-warning/30"
             Icon={ShieldWarning}
           >
             {t('inmobiliaria.ai.mantenimiento.card.retencionRiesgo')}
@@ -216,14 +215,14 @@ export function TicketCard({ ticket, onSelect }: TicketCardProps) {
           // key (reported as a coordination gap). We use the existing-but-non-canonical
           // `inbox.card.hasPhotos` only for the aria-label so the badge stays accessible.
           <span
-            className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400"
+            className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-surface-muted text-fg-subtle"
             aria-label={t('inmobiliaria.ai.mantenimiento.inbox.card.hasPhotos')}
           >
             <Camera size={12} weight="duotone" />
           </span>
         ) : null}
         {ticket.costoEstimadoCop !== undefined ? (
-          <Badge className="bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-800">
+          <Badge className="bg-success-soft text-success ring-1 ring-success/30">
             {formatCOP(ticket.costoEstimadoCop)}
           </Badge>
         ) : null}

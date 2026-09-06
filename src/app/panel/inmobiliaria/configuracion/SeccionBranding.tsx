@@ -6,7 +6,7 @@
  * config para que el resto de las secciones vea lo nuevo.
  */
 
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { Palette } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -34,7 +34,7 @@ export function SeccionBranding() {
       error={errorCrudo}
       vacio={!agency}
       queEs="el branding de tu inmobiliaria"
-      onReintentar={() => void refetch()}
+      onReintentar={refetch}
       esqueleto={<EsqueletoDeSeccion filas={4} />}
       cuandoVacio={
         <VacioDeSeccion

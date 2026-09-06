@@ -121,6 +121,7 @@ export function ExportButton({
       // (Excel is green) and its hover/fill states fight the per-format brand fill; bespoke 3-size
       // scale + AnimatePresence success/icon swap that Button's loading prop can't model.
       <button
+        type="button"
         onClick={() => onExport(format)}
         disabled={disabled || isLoading}
         className={cn(
@@ -130,7 +131,12 @@ export function ExportButton({
             ? 'bg-success hover:opacity-90 text-white'
             : disabled
               ? 'bg-surface-muted dark:bg-ink text-fg-subtle dark:text-fg-muted cursor-not-allowed'
-              : `${config.buttonBg} text-white shadow-${format === 'pdf' ? 'red' : 'green'}-500/25`,
+              // `text-white`: sobre un relleno `bg-danger` / `bg-success` no hay token
+              // de primer plano. `danger-fg` y `success-fg` son ALIAS del mismo rojo /
+              // verde (lo dice el preset), así que usarlos sería tinta sobre su propio
+              // color. El único par relleno+tinta real del DS es `bg-primary` /
+              // `text-primary-fg`.
+              : `${config.buttonBg} text-white`,
           className
         )}
       >
@@ -177,6 +183,7 @@ export function ExportButton({
       <DropdownListTrigger asChild>
         {/* allowlist (Cadence GAP): format-brand export CTA with AnimatePresence icon swap; see note above */}
         <button
+          type="button"
           disabled={disabled || isLoading}
           className={cn(
             'inline-flex items-center justify-center font-medium transition-all',
@@ -237,7 +244,7 @@ export function ExportButton({
             />
           </div>
           <div>
-            <p className="text-sm font-medium text-fg dark:text-white">
+            <p className="text-sm font-medium text-fg">
               {t('inmobiliaria.finance.export.downloadPDF')}
             </p>
             <p className="text-xs text-fg-muted dark:text-fg-subtle">
@@ -263,7 +270,7 @@ export function ExportButton({
             />
           </div>
           <div>
-            <p className="text-sm font-medium text-fg dark:text-white">
+            <p className="text-sm font-medium text-fg">
               {t('inmobiliaria.finance.export.downloadExcel')}
             </p>
             <p className="text-xs text-fg-muted dark:text-fg-subtle">
@@ -326,13 +333,17 @@ export function ExportButtonCompact({
   return (
     // allowlist (Cadence GAP): compact format-brand icon export CTA (no success/green variant); see note above
     <button
+      type="button"
       onClick={() => onExport(format)}
       disabled={disabled || isLoading}
       className={cn(
         'p-2 rounded-md transition-colors',
         disabled
           ? 'text-fg-subtle dark:text-fg-muted cursor-not-allowed'
-          : `${config.color} hover:${config.bgColor}`,
+          // El hover se escribe COMPLETO por formato: `hover:${config.bgColor}` es un
+          // nombre armado por interpolación y el escáner de Tailwind no lo ve, así que
+          // esa clase nunca se generó y el hover no existía.
+          : cn(config.color, format === 'pdf' ? 'hover:bg-danger-soft' : 'hover:bg-success-soft'),
         className
       )}
       title={config.label}

@@ -80,32 +80,36 @@ export function DayAvailabilityRow({
   );
 
   return (
-    <div className={cn(
-      "flex items-start gap-4 py-3 px-4 rounded-sm border transition-colors",
-      enabled
-        ? "bg-card border-border"
-        : "bg-muted/30 border-border/50"
-    )}>
-      {/* Toggle and day name */}
-      <div className="flex items-center gap-3 min-w-[140px] pt-1.5">
+    <div
+      className={cn(
+        'flex items-center gap-3 px-4 py-2.5 transition-colors sm:gap-4',
+        !enabled && 'bg-surface-muted/30',
+      )}
+    >
+      {/* Interruptor + día, en un ancho fijo para que las horas de todos los
+          días queden alineadas en una sola columna. */}
+      <div className="flex w-[122px] shrink-0 items-center gap-2.5 sm:w-[136px]">
         <Switch
           checked={enabled}
           onCheckedChange={handleToggle}
           aria-label={`Habilitar ${dayLabel}`}
         />
-        <span className={cn(
-          "text-sm font-medium transition-colors",
-          enabled ? "text-foreground" : "text-muted-foreground"
-        )}>
+        <span
+          className={cn(
+            'text-sm font-medium transition-colors',
+            enabled ? 'text-fg' : 'text-fg-subtle',
+          )}
+        >
           <span className="hidden sm:inline">{dayLabel}</span>
           <span className="sm:hidden">{shortLabel}</span>
         </span>
       </div>
 
-      {/* Time ranges or disabled message */}
-      <div className="flex-1">
+      {/* Las horas. Varias franjas se apilan; una sola —el caso normal— ocupa
+          UN renglón, no tres. */}
+      <div className="min-w-0 flex-1">
         {enabled ? (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {ranges.map((range, index) => (
               <TimeRangeInput
                 key={index}
@@ -115,22 +119,29 @@ export function DayAvailabilityRow({
                 showRemove={ranges.length > 1}
               />
             ))}
-
-            {canAddRange && (
-              <button
-                type="button"
-                onClick={handleAddRange}
-                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Agregar horario</span>
-              </button>
-            )}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground pt-1.5">No disponible</p>
+          <span className="text-sm text-fg-subtle">Sin visitas</span>
         )}
       </div>
+
+      {/* «Agregar» como icono al final del renglón: antes era una línea entera
+          debajo de cada día y por sí sola duplicaba el alto de la lista. */}
+      <button
+        type="button"
+        onClick={handleAddRange}
+        disabled={!canAddRange}
+        aria-label={`Agregar otro horario el ${dayLabel}`}
+        title="Agregar otro horario"
+        className={cn(
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors',
+          canAddRange
+            ? 'text-fg-muted hover:bg-surface-muted hover:text-fg'
+            : 'invisible',
+        )}
+      >
+        <Plus className="h-4 w-4" aria-hidden />
+      </button>
     </div>
   );
 }

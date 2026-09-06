@@ -107,7 +107,7 @@ function CommissionRatioBar({
           {t('inmobiliaria.finance.commBreakdown.net')}: {formatCurrency(net)}
         </span>
       </div>
-      <div className="h-2 rounded-full bg-muted overflow-hidden flex">
+      <div className="h-2 rounded-full bg-surface-muted overflow-hidden flex">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${commissionPercent}%` }}
@@ -142,24 +142,27 @@ export function ComisionDesglose({
   // Compact variant - just show summary with expand option
   if (variant === 'compact' && !isExpanded) {
     return (
+      // allowlist: disclosure toggle de fila entera (etiqueta + importe + caret)
+      // como UN solo objetivo de clic — Button no puede hospedar esa fila.
       <button
+        type="button"
         onClick={() => setIsExpanded(true)}
         aria-expanded={false}
         className={cn(
-          'w-full flex items-center justify-between p-4 text-left group hover:bg-muted/30 transition-colors',
+          'w-full flex items-center justify-between p-4 text-left group hover:bg-surface-hover transition-colors',
           className
         )}
       >
         <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-fg-muted">
             {items.length} {items.length === 1 ? t('inmobiliaria.finance.commBreakdown.property') : t('inmobiliaria.finance.commBreakdown.properties')}
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-foreground tabular-nums">
+          <span className="text-sm font-medium text-fg tabular-nums">
             {formatCurrency(totals.totalCommission)}
           </span>
-          <CaretDown className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+          <CaretDown className="w-4 h-4 text-fg-muted group-hover:text-fg transition-colors" />
         </div>
       </button>
     );
@@ -176,15 +179,17 @@ export function ComisionDesglose({
     >
       {/* Header (only in compact expanded mode) */}
       {variant === 'compact' && isExpanded && (
+        // allowlist: mismo disclosure toggle, en su estado abierto.
         <button
+          type="button"
           onClick={() => setIsExpanded(false)}
           aria-expanded={true}
-          className="w-full px-4 py-3 flex items-center justify-between text-left border-b border-border hover:bg-muted/30 transition-colors"
+          className="w-full px-4 py-3 flex items-center justify-between text-left border-b border-border hover:bg-surface-hover transition-colors"
         >
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-fg-muted">
             {items.length} {items.length === 1 ? t('inmobiliaria.finance.commBreakdown.property') : t('inmobiliaria.finance.commBreakdown.properties')}
           </span>
-          <CaretDown className="w-4 h-4 text-muted-foreground rotate-180" />
+          <CaretDown className="w-4 h-4 text-fg-muted rotate-180" />
         </button>
       )}
 
@@ -210,19 +215,19 @@ export function ComisionDesglose({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="hover:bg-muted/30 transition-colors"
+                    className="hover:bg-surface-hover transition-colors"
                   >
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
-                          <Icon className="w-4 h-4 text-muted-foreground" />
+                        <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center flex-shrink-0">
+                          <Icon className="w-4 h-4 text-fg-muted" />
                         </div>
-                        <span className="text-sm text-foreground truncate max-w-[200px]">
+                        <span className="text-sm text-fg truncate max-w-[200px]">
                           {item.propertyTitle}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-right font-medium text-foreground">
+                    <TableCell className="text-right font-medium text-fg">
                       {formatCurrency(item.rentCollected)}
                     </TableCell>
                     {showPercentages && (
@@ -242,11 +247,11 @@ export function ComisionDesglose({
             </AnimatePresence>
           </TableBody>
           <TableFooter>
-            <TableRow className="bg-muted/50 font-semibold">
+            <TableRow className="bg-surface-muted font-semibold">
               <TableCell>
-                <span className="text-foreground">{t('inmobiliaria.finance.commBreakdown.total')} ({items.length} {t('inmobiliaria.finance.commBreakdown.properties')})</span>
+                <span className="text-fg">{t('inmobiliaria.finance.commBreakdown.total')} ({items.length} {t('inmobiliaria.finance.commBreakdown.properties')})</span>
               </TableCell>
-              <TableCell className="text-right text-foreground">
+              <TableCell className="text-right text-fg">
                 {formatCurrency(totals.totalCollected)}
               </TableCell>
               {showPercentages && <TableCell />}
@@ -263,7 +268,7 @@ export function ComisionDesglose({
 
       {/* Commission Ratio Visualization - only for full variant */}
       {variant === 'full' && (
-        <div className="p-4 border-t border-border bg-muted/30">
+        <div className="p-4 border-t border-border bg-surface-muted">
           <CommissionRatioBar commission={totals.totalCommission} net={totals.totalNet} t={t} />
         </div>
       )}
@@ -287,7 +292,7 @@ export function ComisionDesgloseCompact({
   return (
     <div className={cn('space-y-3', className)}>
       <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">
+        <span className="text-sm text-fg-muted">
           {items.length} {items.length === 1 ? t('inmobiliaria.finance.commBreakdown.property') : t('inmobiliaria.finance.commBreakdown.properties')}
         </span>
         <span className="text-sm font-medium text-primary">

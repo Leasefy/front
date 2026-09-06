@@ -22,7 +22,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import {
   CaretLeft,
   Check,
@@ -180,7 +180,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
       <FalloDeCarga
         error={error}
         queEs="el lote"
-        onReintentar={() => void refetch()}
+        onReintentar={refetch}
         volverA={{ label: 'Volver a los lotes', href: '/panel/inmobiliaria/pagos/dispersiones/lotes' }}
       />
     );

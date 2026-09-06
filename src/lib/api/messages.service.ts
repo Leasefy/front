@@ -3,6 +3,8 @@ import type {
   BackendConversationsResponse,
   BackendConversationWithMessages,
   ConversationActionResult,
+  DestinatariosDirectos,
+  PendientesDeLaConversacion,
 } from './messages.types';
 
 // ---------------------------------------------------------------------------
@@ -46,6 +48,57 @@ export const messagesApi = {
   // has the real `id` from `getConversations()`, so it uses these
   // exclusively — "calling the new routes for both kinds is simpler and is
   // the recommended shape" (§B.3 item 2).
+
+  // ── Hilos DIRECTOS (inmobiliaria ↔ inquilino o propietario) ──────────────
+  // No cuelgan de ningún aviso. Se abren con estas dos rutas y de ahí en más
+  // se leen y se escriben con las de `/conversations/:id`, porque es el mismo
+  // hilo con la misma tabla de mensajes.
+
+  /**
+   * GET /conversations/directos/destinatarios — a quién puedo escribirle.
+   *
+   * Devuelve las dos claves siempre (una vacía): a un miembro de la
+   * inmobiliaria le llegan personas, y a un inquilino o propietario le llegan
+   * inmobiliarias. Sale del MISMO predicado que autoriza el POST, así que
+   * nada de lo que aparece en la lista puede terminar en un 403.
+   */
+  getDestinatariosDirectos(q?: string) {
+    const query = q?.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
+    return apiClient.get<DestinatariosDirectos>(
+      `/conversations/directos/destinatarios${query}`,
+    );
+  },
+
+  /**
+   * POST /conversations/directos — abrir (o reabrir) el hilo directo.
+   *
+   * Idempotente: dos toques al botón devuelven el mismo hilo. Se manda
+   * `counterpartId` desde el panel de la inmobiliaria y `agencyId` desde el de
+   * un inquilino o un propietario.
+   */
+  abrirHiloDirecto(destino: { agencyId?: string; counterpartId?: string }) {
+    return apiClient.post<{ conversationId: string }>(
+      '/conversations/directos',
+      destino,
+    );
+  },
+
+  /**
+   * GET /conversations/:id/pendientes — qué le puedo mandar a esta persona.
+   *
+   * Sale de la relación real que ya tiene con la inmobiliaria: sus cobros sin
+   * pagar, las dispersiones que se le deben y los documentos de sus contratos.
+   * Las tres claves viajan SIEMPRE, aunque vengan vacías: ausente y vacío son
+   * contratos distintos, y el compositor recorre las tres sin ramificar.
+   *
+   * En un hilo que no es directo devuelve las tres vacías: la pregunta «qué le
+   * debe esta persona» no tiene sentido sobre una consulta de un aviso.
+   */
+  getPendientes(conversationId: string) {
+    return apiClient.get<PendientesDeLaConversacion>(
+      `/conversations/${conversationId}/pendientes`,
+    );
+  },
 
   /** GET /conversations/:id */
   getConversationMessages(conversationId: string) {
@@ -180,6 +233,15 @@ export const messagesApi = {
   // --------------------------------------------------------------------------
   // Conversation actions — archive / mute / report (COMU-02)
   //
+  // 🔴 HOY NINGUNA PANTALLA LAS LLAMA. Se conserva el contrato tipado —es la
+  // forma exacta que va a tener el día que el back monte las rutas— pero los
+  // botones que las usaban se retiraron de `MessagesWidget`: las tres
+  // resuelven `'unavailable'` por 404 y terminaban en un toast «estará
+  // disponible próximamente». «Reportar» era el peor de los tres, porque
+  // alguien podía denunciar una conversación abusiva y creer que quedó
+  // denunciada. Volver a exponerlas en la UI exige que el endpoint exista
+  // primero, no al revés.
+  //
   // No NestJS route exists yet (external dep — RESEARCH §3). Each degrades
   // HONESTLY: a not-live route (404/403/offline) resolves to `'unavailable'` so
   // the widget shows an honest "Próximamente" toast — it NEVER fabricates a
@@ -250,6 +312,12 @@ export const messagesApi = {
 
   /**
    * Send a chat attachment — CONTRACT STUB (COMU-02).
+   *
+   * 🔴 SIN CALLERS. El clip y el botón de imagen se retiraron del widget: la
+   * función está escrita para resolver `null` sin hacer el POST, así que la
+   * pantalla abría el explorador de archivos, dejaba elegir uno, validaba su
+   * tamaño y después decía que no. La forma multipart de abajo sigue acá como
+   * contrato del día que exista el endpoint.
    *
    * Modeled on `documents.service.ts` `upload` (multipart FormData, Bearer,
    * entityType/entityId) so the eventual real send drops in HERE — but it does

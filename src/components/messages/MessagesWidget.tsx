@@ -1,51 +1,47 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Chat,
   ChatCircle,
   MagnifyingGlass,
   PaperPlaneTilt,
-  Paperclip,
   DotsThreeVertical,
   Check,
   Checks,
   Info,
-  Image,
-  Smiley,
   ArrowLeft,
   X,
   House,
   Envelope,
-  Archive,
-  BellSlash,
-  Flag,
+  Plus,
+  IdentificationCard,
+  Warning,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { IconButton, MonoLabel } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from '@/components/ui/alert-dialog';
-import { toast } from 'sonner';
+import { useAuth } from '@/lib/auth';
 import { useConversations, useChat } from '@/lib/hooks/useMessages';
-import { messagesApi } from '@/lib/api/messages.service';
 import { agentContactApi } from '@/lib/api/agent-contact.service';
 import type { ChatConversation } from '@/lib/api/messages.types';
+import { InsigniaDePerfil } from '@/components/messages/InsigniaDePerfil';
+/* `BotonNuevoMensaje` ya NO se importa: era la pastilla primary «Nuevo
+   mensaje» que ocupaba una fila entera arriba del buscador. Nico: «podrías
+   mejor hacer el buscador un poco más pequeño y colocar el primary un + y se
+   va a entender que es un nuevo mensaje». El botón vive ahora acá abajo
+   (`BotonDeNuevoMensaje`), en la misma fila que el buscador. */
+import { NuevoMensajeDrawer } from '@/components/messages/NuevoMensajeDrawer';
+import { SelectorDeEmojis } from '@/components/messages/SelectorDeEmojis';
+import { PlantillasDeMensajePopover } from '@/components/messages/PlantillasDeMensajePopover';
+import { PendientesDelHiloPopover } from '@/components/messages/PendientesDelHiloPopover';
+import { mesEnCurso } from '@/components/messages/pendientes-a-mensaje';
 import { PQRS_SLA_BUSINESS_DAYS } from '@/lib/constants/response-sla';
 
 // ============================================================================
@@ -88,6 +84,48 @@ function formatMessageTime(isoStr: string): string {
   return date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
 }
 
+/**
+ * El `+` que abre «Nuevo mensaje».
+ *
+ * Reemplaza a la pastilla primary de ancho completo que vivía arriba del
+ * buscador: entre las dos se comían la mitad del alto útil de la columna, que
+ * es donde tienen que estar las conversaciones. Nico: «esto está feo».
+ *
+ * 🔴 Un ícono solo NO es una etiqueta. Lleva `aria-label` (para quien navega
+ * con lector de pantalla) y `title` (para quien pasa el mouse y no sabe qué
+ * hace el cuadradito): el `+` se entiende una vez que lo usaste, no la primera
+ * vez que lo viste.
+ */
+function BotonDeNuevoMensaje({
+  onClick,
+  locale,
+  conEtiqueta = false,
+}: {
+  onClick: () => void;
+  locale: string;
+  /** En el vacío sí va con texto: ahí no hay nada más que mirar y es EL camino. */
+  conEtiqueta?: boolean;
+}) {
+  const etiqueta = locale === 'es' ? 'Nuevo mensaje' : 'New message';
+  // `hideArrow`: el variant primary del DS agrega una ↗ automática, y acá el
+  // único ícono que corresponde es el `+`.
+  return (
+    <Button
+      type="button"
+      size="sm"
+      hideArrow
+      onClick={onClick}
+      aria-label={etiqueta}
+      title={etiqueta}
+      data-testid="abrir-nuevo-mensaje"
+      className={cn('shrink-0 gap-1.5', conEtiqueta ? 'px-3' : 'w-9 px-0')}
+    >
+      <Plus className="h-4 w-4" weight="bold" aria-hidden="true" />
+      {conEtiqueta && <span>{etiqueta}</span>}
+    </Button>
+  );
+}
+
 // ============================================================================
 // Loading skeletons
 // ============================================================================
@@ -97,14 +135,14 @@ function ConversationsSkeleton() {
     <div className="divide-y divide-border">
       {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="flex items-start gap-3 px-4 py-4 animate-pulse">
-          <div className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-neutral-700 flex-shrink-0" />
+          <div className="w-12 h-12 rounded-full bg-surface-muted flex-shrink-0" />
           <div className="flex-1 space-y-2">
             <div className="flex items-center justify-between">
-              <div className="h-4 w-28 bg-neutral-200 dark:bg-neutral-700 rounded" />
-              <div className="h-3 w-10 bg-neutral-200 dark:bg-neutral-700 rounded" />
+              <div className="h-4 w-28 bg-surface-muted rounded" />
+              <div className="h-3 w-10 bg-surface-muted rounded" />
             </div>
-            <div className="h-3 w-36 bg-neutral-200 dark:bg-neutral-700 rounded" />
-            <div className="h-3 w-48 bg-neutral-200 dark:bg-neutral-700 rounded" />
+            <div className="h-3 w-36 bg-surface-muted rounded" />
+            <div className="h-3 w-48 bg-surface-muted rounded" />
           </div>
         </div>
       ))}
@@ -120,7 +158,7 @@ function MessagesSkeleton() {
           <div className={cn(
             'h-12 rounded-lg',
             i % 2 === 0
-              ? 'w-3/5 bg-neutral-200 dark:bg-neutral-700 rounded-bl-sm'
+              ? 'w-3/5 bg-surface-muted rounded-bl-sm'
               : 'w-2/5 bg-primary-soft rounded-br-sm'
           )} />
         </div>
@@ -135,6 +173,9 @@ function MessagesSkeleton() {
 
 export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidgetProps) {
   const { t, locale } = useI18n();
+  /* Para `{{inmobiliaria}}` de las plantillas: el nombre real de la agencia
+     del usuario, no uno inventado. Ver `datosDePlantilla`. */
+  const { agency } = useAuth();
   const {
     conversations,
     totalUnread,
@@ -144,6 +185,18 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
   } = useConversations();
 
   const searchParams = useSearchParams();
+  const router = useRouter();
+  /**
+   * En qué panel está montado el widget.
+   *
+   * `actor` NO alcanza para decidir si «Ver ficha» tiene sentido: `'landlord'`
+   * es a la vez el panel de la inmobiliaria (`/panel/inmobiliaria/mensajes`) y
+   * el del propietario (`/panel/mensajes`), y las fichas de inquilinos y
+   * propietarios son de la inmobiliaria. Mandar a un propietario a
+   * `/panel/inmobiliaria/inquilinos` sería un clic que rebota contra un guard.
+   */
+  const pathname = usePathname();
+  const enPanelDeInmobiliaria = (pathname ?? '').startsWith('/panel/inmobiliaria');
   // contract-addendum-2.md §B.3 item 6 — the widget accepts BOTH the new
   // `?conversationId=` param and the legacy `?applicationId=` deep-link
   // (signed-contract flows still use the latter and must keep resolving).
@@ -159,9 +212,17 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [showOptionsList, setShowOptionsList] = useState(false);
-  const [reportOpen, setReportOpen] = useState(false);
-  const [reportReason, setReportReason] = useState('');
-  const [isReporting, setIsReporting] = useState(false);
+  // «Nuevo mensaje»: hasta acá la bandeja no podía iniciar ninguna
+  // conversación — sólo se llenaba si el otro escribía primero.
+  const [nuevoMensajeAbierto, setNuevoMensajeAbierto] = useState(false);
+  /**
+   * Las variables que una plantilla NO pudo reemplazar.
+   *
+   * Se guardan para poder DECIRLO debajo del campo: mandar «Hola {{nombre}}»
+   * es peor que no haber tenido plantillas. Se limpia solo cuando el texto ya
+   * no tiene ningún hueco —porque la persona lo completó a mano— y al mandar.
+   */
+  const [variablesSinResolver, setVariablesSinResolver] = useState<string[]>([]);
   // COMU-03: WhatsApp is a first-class channel but ROUTED BY THE AGENT — the
   // frontend never dispatches it. This flag is fed ONLY by the agent's
   // contact-ledger gate (agentContactApi.canContact), which returns
@@ -170,9 +231,25 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const optionsListRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  /**
+   * Dónde tiene que quedar el cursor DESPUÉS de que React repinte el campo.
+   *
+   * No se puede mover en el mismo tick que el `setState`: el `<input>` es
+   * controlado, así que su `value` todavía es el viejo y `setSelectionRange`
+   * apuntaría a un texto que ya no existe. Se anota acá y lo aplica el efecto
+   * de abajo, cuando el DOM ya tiene el texto nuevo.
+   */
+  const cursorPendiente = useRef<number | null>(null);
 
-  const { messages, isLoading: isLoadingMessages, isSending, sendMessage, markAsRead } = useChat(selectedConversationId);
+  const {
+    messages,
+    isLoading: isLoadingMessages,
+    isSending,
+    error: errorDeEnvio,
+    limpiarError,
+    sendMessage,
+    markAsRead,
+  } = useChat(selectedConversationId);
 
   // Copy por actor (tenant ve "propietarios", landlord/agency ve "inquilinos").
   const isTenant = actor === 'tenant';
@@ -206,6 +283,20 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
 
   const selectedConversation: ChatConversation | undefined = conversations.find(
     (c) => c.id === selectedConversationId,
+  );
+
+  /**
+   * Un hilo recién abierto todavía no está en la lista: se selecciona primero
+   * —así el panel de la derecha ya puede cargar sus mensajes por id— y recién
+   * después se vuelve a pedir la bandeja para que aparezca la fila.
+   */
+  const alAbrirHiloNuevo = useCallback(
+    (conversationId: string) => {
+      setSelectedConversationId(conversationId);
+      setShowMobileChat(true);
+      void refetchConversations();
+    },
+    [refetchConversations],
   );
 
   const filteredConversations = conversations.filter(
@@ -254,124 +345,188 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
       setShowMobileChat(true);
       setShowInfoPanel(false);
       setShowOptionsList(false);
-      markAsRead();
+      limpiarError();
+      /* 🔴 `conv.id`, EXPLÍCITO. Sin el argumento, `markAsRead` es el del
+         render anterior y marcaba como leído el hilo que se estaba dejando:
+         abrir la conversación de Beto limpiaba los no leídos de Ana y los de
+         Beto se quedaban ahí para siempre. */
+      markAsRead(conv.id);
       setTimeout(() => refetchConversations(), 500);
       setTimeout(() => inputRef.current?.focus(), 100);
     },
-    [markAsRead, refetchConversations],
+    [markAsRead, limpiarError, refetchConversations],
   );
 
+  /**
+   * Mandar.
+   *
+   * 🔴 Antes: se vaciaba el campo y se llamaba a `sendMessage` sin mirar el
+   * resultado. Si el POST fallaba, el hook sacaba la burbuja optimista y
+   * guardaba el error — que esta pantalla nunca leía. El mensaje desaparecía
+   * en silencio Y el texto se perdía, así que había que reescribirlo de
+   * memoria sin saber siquiera que no había salido.
+   *
+   * Ahora, si falla, el texto VUELVE al campo (lo escrito no se tira) y el
+   * cartel de abajo lo dice con un botón para reintentar.
+   */
   const handleSendMessage = useCallback(async () => {
     const text = messageText.trim();
     if (!text || isSending) return;
     setMessageText('');
-    await sendMessage(text);
+    setVariablesSinResolver([]);
+    const salio = await sendMessage(text);
+    if (!salio) {
+      setMessageText(text);
+      return;
+    }
     refetchConversations();
   }, [messageText, isSending, sendMessage, refetchConversations]);
 
-  // Attachments (COMU-02): the file picker is REAL, the SEND is honestly pending.
-  // Reuse one hidden <input>; set `accept` per button before opening it.
-  const openAttachmentPicker = useCallback((accept: string) => {
-    const input = fileInputRef.current;
-    if (!input) return;
-    input.accept = accept;
-    input.click();
+  /**
+   * Mete un texto EN LA POSICIÓN DEL CURSOR y deja el cursor después.
+   *
+   * Es lo que usan los tres: el emoji, la plantilla y el pendiente. Si hay algo
+   * seleccionado, lo reemplaza —que es lo que hace cualquier editor—. Sin
+   * cursor (el campo nunca tuvo foco) va al final, que es el único lugar
+   * razonable.
+   */
+  const insertarEnElCursor = useCallback((fragmento: string) => {
+    /* La selección se lee ACÁ, una vez, y no adentro del updater: React puede
+       reinvocar un updater (StrictMode lo hace en desarrollo) y leer el DOM
+       desde adentro lo volvería impredecible. */
+    const campo = inputRef.current;
+    const inicioLeido = campo?.selectionStart ?? null;
+    const finLeido = campo?.selectionEnd ?? null;
+
+    setMessageText((actual) => {
+      // Sin cursor —el campo nunca tuvo foco— va al final, que es el único
+      // lugar razonable.
+      const inicio = inicioLeido ?? actual.length;
+      const fin = finLeido ?? actual.length;
+      cursorPendiente.current = inicio + fragmento.length;
+      return actual.slice(0, inicio) + fragmento + actual.slice(fin);
+    });
   }, []);
 
-  const handleAttachmentSelected = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      // Reset so re-selecting the SAME file fires onChange again.
-      e.target.value = '';
-      if (!file || !selectedConversation) return;
+  /* Devuelve el foco al campo y pone el cursor donde corresponde, ya con el
+     texto nuevo pintado. Sin esto hay que volver a hacer clic para escribir. */
+  useEffect(() => {
+    const posicion = cursorPendiente.current;
+    if (posicion === null) return;
+    cursorPendiente.current = null;
+    const campo = inputRef.current;
+    if (!campo) return;
+    campo.focus();
+    campo.setSelectionRange?.(posicion, posicion);
+  }, [messageText]);
 
-      const MAX_BYTES = 10 * 1024 * 1024; // 10 MB size cap
-      if (file.size > MAX_BYTES) {
-        toast.error(
-          locale === 'es'
-            ? 'El archivo supera el límite de 10 MB.'
-            : 'The file exceeds the 10 MB limit.',
-        );
-        return;
-      }
-
-      // Contract stub: no chat-attachment endpoint + no message attachment field
-      // yet, so this resolves `null`. Show an HONEST "Próximamente" — never a fake
-      // "enviado", never an orphaned upload to the documents store from the chat.
-      await messagesApi.sendAttachment(selectedConversation.id, file);
-      toast.info(
-        locale === 'es'
-          ? 'El envío de adjuntos estará disponible pronto.'
-          : 'Sending attachments will be available soon.',
-      );
+  /** La plantilla llena el campo; NUNCA manda. Lo que quedó con hueco se dice. */
+  const alElegirPlantilla = useCallback(
+    (texto: string, sinResolver: string[]) => {
+      insertarEnElCursor(texto);
+      setVariablesSinResolver(sinResolver);
     },
-    [selectedConversation, locale],
+    [insertarEnElCursor],
   );
 
-  // Conversation actions (COMU-02) — SHARED by tenant + landlord/agency. The
-  // endpoints are not live yet, so each degrades to an honest "Próximamente"
-  // toast via the typed service ('unavailable' on 404/403/0) — never `alert`,
-  // never a fabricated success. `report` is a safety action → AlertDialog confirm.
-  const handleArchive = useCallback(async () => {
-    setShowOptionsList(false);
-    if (!selectedConversation) return;
-    const result = await messagesApi.archiveConversation(selectedConversation.id);
-    if (result === 'ok') {
-      toast.success(locale === 'es' ? 'Conversación archivada' : 'Conversation archived');
-      // Optimistically drop the archived thread from view, then re-sync.
-      setSelectedConversationId(null);
-      setShowMobileChat(false);
-      refetchConversations();
-    } else {
-      toast.info(
-        locale === 'es'
-          ? 'Archivar conversaciones estará disponible próximamente.'
-          : 'Archiving conversations will be available soon.',
-      );
-    }
-  }, [selectedConversation, locale, refetchConversations]);
+  const alElegirPendiente = useCallback(
+    (texto: string) => {
+      insertarEnElCursor(texto);
+      /* Un pendiente trae datos reales, no plantilla: si venía un aviso de
+         variables sin resolver de antes, ya no describe lo que hay en el campo. */
+      setVariablesSinResolver([]);
+    },
+    [insertarEnElCursor],
+  );
 
-  const handleMute = useCallback(async () => {
-    setShowOptionsList(false);
-    if (!selectedConversation) return;
-    const result = await messagesApi.muteConversation(selectedConversation.id);
-    if (result === 'ok') {
-      toast.success(locale === 'es' ? 'Notificaciones silenciadas' : 'Notifications muted');
-    } else {
-      toast.info(
-        locale === 'es'
-          ? 'Silenciar estará disponible próximamente.'
-          : 'Muting will be available soon.',
-      );
-    }
-  }, [selectedConversation, locale]);
+  /*
+   * 🔴 Acá vivían CINCO acciones que no hacían nada: «Archivar», «Silenciar»,
+   * «Reportar», el clip de adjuntos y el botón de imagen.
+   *
+   * Ninguna tiene ruta en el back —`archiveConversation`, `muteConversation` y
+   * `reportConversation` devuelven `'unavailable'` por 404, y `sendAttachment`
+   * ni siquiera hace el POST: está escrito para resolver `null`—, así que las
+   * cinco terminaban en un toast «estará disponible próximamente». El menú de
+   * los tres puntos era una lista de disculpas, y el clip era peor: abría el
+   * explorador de archivos, dejaba elegir uno, validaba su tamaño y después
+   * decía que no. Reportar era el más grave de todos: alguien podía denunciar
+   * una conversación abusiva y creer que quedó denunciada.
+   *
+   * Se retiran hasta que exista el endpoint. Lo que queda del menú es lo único
+   * que funciona: «Ver ficha», que navega de verdad. La casilla de WhatsApp
+   * del panel de información se queda porque NO es un botón: es un renglón
+   * apagado, con `aria-disabled` y la razón escrita, atado a la respuesta real
+   * del `contact-ledger` del agente.
+   */
 
-  const handleReport = useCallback(() => {
-    setShowOptionsList(false);
-    setReportOpen(true);
-  }, []);
-
-  const confirmReport = useCallback(async () => {
-    if (!selectedConversation) return;
-    setIsReporting(true);
-    const trimmed = reportReason.trim();
-    const result = await messagesApi.reportConversation(
-      selectedConversation.id,
-      trimmed.length > 0 ? trimmed : undefined,
-    );
-    setIsReporting(false);
-    setReportOpen(false);
-    setReportReason('');
-    if (result === 'ok') {
-      toast.success(locale === 'es' ? 'Conversación reportada' : 'Conversation reported');
-    } else {
-      toast.info(
-        locale === 'es'
-          ? 'Reportar estará disponible próximamente.'
-          : 'Reporting will be available soon.',
-      );
+  /**
+   * A dónde lleva «Ver ficha» y cómo se llama el renglón.
+   *
+   * Tres condiciones, y las tres son necesarias: estar en el panel de la
+   * inmobiliaria (las fichas son suyas), tener el `User.id` del interlocutor, y
+   * que ese interlocutor sea una persona con ficha —un inquilino o un
+   * propietario—. Un agente de la misma inmobiliaria o la inmobiliaria misma no
+   * tienen ficha en estas dos listas, así que el renglón no aparece. Ofrecer un
+   * destino que no existe es peor que no ofrecer nada.
+   */
+  const fichaDeLaContraparte = useMemo(() => {
+    if (!enPanelDeInmobiliaria || !selectedConversation?.contraparteId) return null;
+    const id = selectedConversation.contraparteId;
+    if (selectedConversation.perfil === 'TENANT') {
+      return {
+        href: `/panel/inmobiliaria/inquilinos?persona=${encodeURIComponent(id)}`,
+        etiqueta: locale === 'es' ? 'Ver ficha del inquilino' : "View tenant's profile",
+      };
     }
-  }, [selectedConversation, reportReason, locale]);
+    if (selectedConversation.perfil === 'LANDLORD') {
+      return {
+        href: `/panel/inmobiliaria/propietarios?persona=${encodeURIComponent(id)}`,
+        etiqueta: locale === 'es' ? 'Ver ficha del propietario' : "View owner's profile",
+      };
+    }
+    return null;
+  }, [enPanelDeInmobiliaria, selectedConversation, locale]);
+
+  const verFicha = useCallback(() => {
+    if (!fichaDeLaContraparte) return;
+    setShowOptionsList(false);
+    router.push(fichaDeLaContraparte.href);
+  }, [fichaDeLaContraparte, router]);
+
+  /**
+   * Con qué se resuelven las variables de una plantilla.
+   *
+   * Sólo lo que se SABE de verdad. Las ocho plantillas sugeridas usan cinco
+   * variables y acá había tres: `{{inmobiliaria}}` y `{{saldo}}` salían
+   * siempre como hueco, y esos huecos viajaban tal cual en el mensaje que se
+   * le manda a un cliente («Hola Ana, tu saldo con {{inmobiliaria}} es
+   * {{saldo}}»).
+   *
+   * `inmobiliaria` SÍ se puede resolver: es la agencia del usuario que está
+   * escribiendo, y ya la trae `useAuth()`. Se resuelve.
+   *
+   * `saldo` NO, y sigue afuera a propósito: el widget no tiene ningún número
+   * de cartera, y ponerle cualquier cosa sería mandarle a un cliente una
+   * deuda que nadie calculó. El que sí lo tiene es el botón de pendientes
+   * —arma el mensaje con el cobro real, su fecha y su mora—, así que el aviso
+   * de abajo manda para allá en vez de dejar el hueco sin explicación.
+   */
+  const datosDePlantilla = useMemo(
+    () => ({
+      nombre: selectedConversation?.name ?? '',
+      inmueble: selectedConversation?.property ?? '',
+      mes: mesEnCurso(),
+      inmobiliaria: agency?.name ?? '',
+    }),
+    [selectedConversation, agency?.name],
+  );
+
+  /* El aviso se apaga solo cuando ya no queda ningún hueco en el campo: quien
+     completó «{{saldo}}» a mano no tiene por qué seguir viendo una alerta. */
+  const huecosVisibles =
+    variablesSinResolver.length > 0 && messageText.includes('{{')
+      ? variablesSinResolver
+      : [];
 
   return (
     <div className="h-[calc(100vh-64px)] bg-bg overflow-hidden flex flex-col">
@@ -428,19 +583,30 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                 showMobileChat && 'hidden md:flex',
               )}
             >
-              {/* Search Header */}
-              <div className="p-4 border-b border-border bg-card">
-                <div className="relative">
-                  <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              {/*
+                Buscador y «nuevo mensaje» en UNA fila.
+                Antes eran dos bloques apilados —una pastilla primary de ancho
+                completo arriba y un buscador de 44 px de alto abajo— y entre
+                los dos ocupaban ~110 px de la columna donde tienen que estar
+                las conversaciones. Ahora el buscador se estira y el `+` es un
+                cuadrado de la misma altura al lado.
+              */}
+              <div className="flex items-center gap-2 border-b border-border bg-card p-3">
+                <div className="relative min-w-0 flex-1">
+                  <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted" />
                   <Input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={locale === 'es' ? 'Buscar conversación...' : 'Search conversation...'}
+                    placeholder={locale === 'es' ? 'Buscar conversación' : 'Search conversation'}
                     aria-label={locale === 'es' ? 'Buscar conversación' : 'Search conversation'}
-                    className="h-11 pl-11 rounded-full bg-muted"
+                    className="h-9 rounded-md bg-surface-muted pl-9 pr-3 text-sm md:text-sm"
                   />
                 </div>
+                <BotonDeNuevoMensaje
+                  locale={locale}
+                  onClick={() => setNuevoMensajeAbierto(true)}
+                />
               </div>
 
               {/* Conversations */}
@@ -470,9 +636,20 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                       {searchQuery
                         ? (locale === 'es' ? 'No se encontraron conversaciones' : 'No conversations found')
                         : (locale === 'es'
-                            ? `Cuando te comuniques con ${otherParty}, tus conversaciones aparecerán aquí.`
-                            : `When you communicate with ${otherParty}, your conversations will appear here.`)}
+                            ? `Escribile a ${otherParty} desde acá; las conversaciones te van a quedar en esta lista.`
+                            : `Message ${otherParty} from here; your conversations will stay in this list.`)}
                     </p>
+                    {/* Acá SÍ va con texto: en un vacío el `+` de arriba es lo
+                        único que hay para hacer, y conviene nombrarlo. */}
+                    {!searchQuery && (
+                      <div className="mt-4">
+                        <BotonDeNuevoMensaje
+                          locale={locale}
+                          conEtiqueta
+                          onClick={() => setNuevoMensajeAbierto(true)}
+                        />
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="divide-y divide-border">
@@ -510,11 +687,14 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               {conversation.lastMessageTime}
                             </span>
                           </div>
-                          <p className="text-xs text-muted-foreground truncate mb-1">
-                            {conversation.property
-                              ? `${conversation.role} · ${conversation.property}`
-                              : conversation.role}
-                          </p>
+                          <div className="mb-1 flex min-w-0 items-center gap-1.5">
+                            <InsigniaDePerfil perfil={conversation.perfil} conIcono={false} />
+                            {conversation.property && (
+                              <span className="truncate text-xs text-muted-foreground">
+                                {conversation.property}
+                              </span>
+                            )}
+                          </div>
                           <p
                             className={cn(
                               'text-sm truncate',
@@ -573,10 +753,14 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                         <p className="text-sm font-semibold text-foreground">
                           {selectedConversation.name}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {selectedConversation.role}
-                          {selectedConversation.property && ` · ${selectedConversation.property}`}
-                        </p>
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <InsigniaDePerfil perfil={selectedConversation.perfil} />
+                          {selectedConversation.property && (
+                            <span className="truncate text-xs text-muted-foreground">
+                              {selectedConversation.property}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -589,10 +773,13 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                             ? 'bg-primary-soft text-primary'
                             : 'text-muted-foreground hover:text-foreground',
                         )}
-                        aria-label={locale === 'es' ? 'Informacion' : 'Information'}
+                        aria-label={locale === 'es' ? 'Información' : 'Information'}
                         icon={<Info className="w-5 h-5" />}
                       />
 
+                      {/* Sin ficha a dónde ir, el menú queda vacío: entonces no
+                          hay menú. Un `⋮` que abre una lista de nada es ruido. */}
+                      {fichaDeLaContraparte && (
                       <div className="relative" ref={optionsListRef}>
                         <IconButton
                           variant="ghost"
@@ -603,7 +790,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               ? 'bg-muted text-foreground'
                               : 'text-muted-foreground hover:text-foreground',
                           )}
-                          aria-label={locale === 'es' ? 'Mas opciones' : 'More options'}
+                          aria-label={locale === 'es' ? 'Más opciones' : 'More options'}
                           icon={<DotsThreeVertical className="w-5 h-5" />}
                         />
 
@@ -614,33 +801,40 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.95, y: -10 }}
                               transition={{ duration: 0.15 }}
-                              className="absolute right-0 top-full mt-2 w-52 bg-card rounded-lg border border-border py-2 z-50"
+                              /*
+                                `w-52` (208 px) no le daba: «Silenciar
+                                notificaciones» se partía en dos renglones y
+                                quedaba descolgado del ícono, y los otros dos
+                                ítems —de una línea— dejaban el menú con tres
+                                ritmos distintos. Ahora el ancho lo fija el
+                                contenido (`w-max`) con un piso y un techo, y
+                                cada renglón es `whitespace-nowrap`: los cuatro
+                                miden lo mismo de alto.
+                              */
+                              className="absolute right-0 top-full z-50 mt-2 w-max min-w-56 max-w-[18rem] overflow-hidden rounded-lg border border-border bg-surface py-1.5"
                             >
+                              {/*
+                                «Ver ficha» va PRIMERO: es lo que Nico pidió
+                                («que desde acá se pueda ir a ver el detalle del
+                                inquilino») y es lo único del menú que lleva a
+                                otro lado — archivar, silenciar y reportar
+                                actúan sobre el hilo. Sólo aparece cuando hay a
+                                dónde ir; ver `fichaDeLaContraparte`.
+                              */}
                               <button
-                                onClick={handleArchive}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                                type="button"
+                                onClick={verFicha}
+                                data-testid="ver-ficha"
+                                className="flex w-full items-center gap-3 whitespace-nowrap px-4 py-2.5 text-sm text-fg transition-colors hover:bg-surface-muted"
                               >
-                                <Archive className="w-4 h-4 text-muted-foreground" />
-                                {locale === 'es' ? 'Archivar conversación' : 'Archive conversation'}
-                              </button>
-                              <button
-                                onClick={handleMute}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
-                              >
-                                <BellSlash className="w-4 h-4 text-muted-foreground" />
-                                {locale === 'es' ? 'Silenciar notificaciones' : 'Mute notifications'}
-                              </button>
-                              <button
-                                onClick={handleReport}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
-                              >
-                                <Flag className="w-4 h-4 text-muted-foreground" />
-                                {locale === 'es' ? 'Reportar' : 'Report'}
+                                <IdentificationCard className="h-4 w-4 flex-shrink-0 text-fg-muted" />
+                                {fichaDeLaContraparte.etiqueta}
                               </button>
                             </motion.div>
                           )}
                         </AnimatePresence>
                       </div>
+                      )}
                     </div>
                   </div>
 
@@ -710,6 +904,19 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                         : 'bg-card text-foreground border border-border rounded-bl-sm',
                                     )}
                                   >
+                                    {/* Quién habla, sólo al empezar una tanda:
+                                        repetirlo en cada burbuja es ruido, y
+                                        omitirlo siempre deja sin saber cuál de
+                                        los agentes contestó. */}
+                                    {!message.isMine &&
+                                      messages[index - 1]?.senderName !== message.senderName && (
+                                        <div className="mb-1.5 flex items-center gap-1.5">
+                                          <span className="text-xs font-semibold text-foreground">
+                                            {message.senderName}
+                                          </span>
+                                          <InsigniaDePerfil perfil={message.perfil} conIcono={false} />
+                                        </div>
+                                      )}
                                     <p className="text-sm leading-relaxed">{message.content}</p>
                                     <div
                                       className={cn(
@@ -738,28 +945,44 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                       {/* Message Input */}
                       <div className="px-6 py-4 border-t border-border bg-card">
                         <div className="flex items-center gap-3">
-                          {/* Hidden picker reused by both buttons (accept set per button). */}
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            className="hidden"
-                            onChange={handleAttachmentSelected}
-                          />
                           <div className="flex items-center gap-1">
-                            <IconButton
-                              variant="ghost"
-                              onClick={() => openAttachmentPicker('image/*,application/pdf')}
-                              className="rounded-full text-muted-foreground hover:text-foreground"
-                              aria-label={locale === 'es' ? 'Adjuntar archivo' : 'Attach file'}
-                              icon={<Paperclip className="w-5 h-5" />}
-                            />
-                            <IconButton
-                              variant="ghost"
-                              onClick={() => openAttachmentPicker('image/*')}
-                              className="rounded-full text-muted-foreground hover:text-foreground"
-                              aria-label={locale === 'es' ? 'Enviar imagen' : 'Send image'}
-                              icon={<Image className="w-5 h-5" />}
-                            />
+                            {/*
+                              Plantillas y pendientes: los dos LLENAN el campo y
+                              ninguno manda. Van del lado del adjunto —a la
+                              izquierda del campo— porque son «traer algo al
+                              mensaje», como el clip; el emoji vive adentro del
+                              campo porque decora lo que ya se está escribiendo.
+                            */}
+                            {/* 🔴 Sólo en el panel de la inmobiliaria. Las
+                                plantillas («Hola {{nombre}}, te recordamos el
+                                pago de {{mes}}») y los pendientes (los cobros
+                                y documentos que la agencia le reclama a esta
+                                persona) son herramientas de cobro: no tienen
+                                sentido en la bandeja del inquilino ni en la
+                                del propietario, que son justamente a quienes
+                                se les cobra. `actor` no alcanza para decidirlo
+                                —'landlord' es la inmobiliaria Y el
+                                propietario—, por eso va por la ruta. */}
+                            {enPanelDeInmobiliaria && (
+                              <PlantillasDeMensajePopover
+                                locale={locale}
+                                datos={datosDePlantilla}
+                                onElegir={alElegirPlantilla}
+                              />
+                            )}
+                            {/* `key` por conversación: los pendientes de Ana no
+                                pueden quedar cacheados en el panel de Beto ni
+                                por un cuadro. Remontar es más barato y más
+                                seguro que acordarse de limpiar el estado. */}
+                            {enPanelDeInmobiliaria && (
+                              <PendientesDelHiloPopover
+                                key={selectedConversation.id}
+                                locale={locale}
+                                conversationId={selectedConversation.id}
+                                nombre={selectedConversation.name}
+                                onElegir={alElegirPendiente}
+                              />
+                            )}
                           </div>
                           <div className="flex-1 relative">
                             <Input
@@ -772,12 +995,15 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               aria-label={locale === 'es' ? 'Escribe un mensaje' : 'Type a message'}
                               className="h-12 pl-5 pr-12 rounded-full bg-muted"
                             />
-                            <IconButton
-                              variant="ghost"
-                              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full text-muted-foreground hover:text-foreground hover:bg-transparent"
-                              aria-label="Emoji"
-                              icon={<Smiley className="w-5 h-5" />}
-                            />
+                            {/* La colocación va en un envoltorio, no en el
+                                `className` del selector: su raíz es `relative`
+                                (ancla su propio panel) y Tailwind emite
+                                `.relative` después de `.absolute`, así que
+                                pasarle la posición por prop no habría hecho
+                                nada — y sin error. */}
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                              <SelectorDeEmojis locale={locale} onElegir={insertarEnElCursor} />
+                            </div>
                           </div>
                           <Button
                             size="icon"
@@ -790,6 +1016,63 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                             <PaperPlaneTilt className="w-5 h-5" />
                           </Button>
                         </div>
+
+                        {/*
+                          🔴 El envío que falló, DICHO — con el texto de vuelta
+                          en el campo y un botón para reintentar. Sin esto, un
+                          POST caído borraba la burbuja y no dejaba rastro.
+                        */}
+                        {errorDeEnvio && (
+                          <div
+                            data-testid="mensaje-no-enviado"
+                            role="alert"
+                            className="mt-2 flex items-start gap-2 rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger"
+                          >
+                            <Warning className="mt-px h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+                            <span className="flex-1">
+                              {locale === 'es'
+                                ? 'No se pudo enviar. Tu mensaje quedó en el campo: probá de nuevo.'
+                                : "Couldn't send. Your message is back in the box — try again."}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => void handleSendMessage()}
+                              disabled={!messageText.trim() || isSending}
+                              className="shrink-0 font-medium underline underline-offset-2 disabled:opacity-50"
+                            >
+                              {locale === 'es' ? 'Reintentar' : 'Retry'}
+                            </button>
+                          </div>
+                        )}
+
+                        {/*
+                          🔴 Los huecos que la plantilla no pudo llenar, DICHOS.
+                          Sin esto se manda «Hola {{nombre}}, tu saldo es
+                          {{saldo}}» y el que queda mal es quien apretó el
+                          botón. No bloquea el envío —puede que el hueco sea a
+                          propósito— pero no deja que pase desapercibido.
+                        */}
+                        {huecosVisibles.length > 0 && (
+                          <p
+                            data-testid="plantilla-con-huecos"
+                            className="mt-2 flex items-start gap-1.5 text-xs text-warning"
+                          >
+                            <Warning className="mt-px h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+                            <span>
+                              {locale === 'es'
+                                ? `Falta completar: ${huecosVisibles.map((v) => `{{${v}}}`).join(', ')}. Revisá el mensaje antes de mandarlo.`
+                                : `Still to fill in: ${huecosVisibles.map((v) => `{{${v}}}`).join(', ')}. Check the message before sending.`}
+                              {huecosVisibles.includes('saldo') && (
+                                <>
+                                  {' '}
+                                  {locale === 'es'
+                                    ? 'El saldo no se completa solo: sacalo del botón de pendientes, que trae el cobro real.'
+                                    : 'The balance is not filled in automatically: take it from the pending items button, which carries the real charge.'}
+                                </>
+                              )}
+                            </span>
+                          </p>
+                        )}
 
                         {/*
                           Static expected-response hint (COMU-04, tenant only).
@@ -824,7 +1107,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                           {/* Panel Header */}
                           <div className="flex items-center justify-between p-4 border-b border-border">
                             <h3 className="text-base font-semibold text-foreground">
-                              {locale === 'es' ? 'Informacion' : 'Information'}
+                              {locale === 'es' ? 'Información' : 'Information'}
                             </h3>
                             <IconButton
                               variant="ghost"
@@ -843,9 +1126,9 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               <h4 className="text-base font-semibold text-foreground">
                                 {selectedConversation.name}
                               </h4>
-                              <p className="text-sm text-muted-foreground">
-                                {selectedConversation.role}
-                              </p>
+                              <div className="mt-1 flex justify-center">
+                                <InsigniaDePerfil perfil={selectedConversation.perfil} />
+                              </div>
                             </div>
 
                             <div className="space-y-4">
@@ -882,10 +1165,13 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               )}
                             </div>
 
-                            {/* Quick Actions */}
+                            {/* Acciones rápidas — hoy la única que queda es el
+                                renglón apagado de WhatsApp (tenant). Sin él, el
+                                bloque no tiene contenido y no se pinta. */}
+                            {isTenant && (
                             <div className="mt-6 pt-6 border-t border-border">
                               <MonoLabel className="block mb-3 text-muted-foreground">
-                                {locale === 'es' ? 'Acciones rapidas' : 'Quick actions'}
+                                {locale === 'es' ? 'Acciones rápidas' : 'Quick actions'}
                               </MonoLabel>
                               <div className="space-y-2">
                                 {/*
@@ -910,22 +1196,9 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                     </span>
                                   </div>
                                 )}
-                                <button
-                                  onClick={handleMute}
-                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
-                                >
-                                  <BellSlash className="w-4 h-4 text-muted-foreground" />
-                                  {locale === 'es' ? 'Silenciar notificaciones' : 'Mute notifications'}
-                                </button>
-                                <button
-                                  onClick={handleArchive}
-                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
-                                >
-                                  <Archive className="w-4 h-4 text-muted-foreground" />
-                                  {locale === 'es' ? 'Archivar conversación' : 'Archive conversation'}
-                                </button>
                               </div>
                             </div>
+                            )}
                           </div>
                         </motion.div>
                       )}
@@ -938,62 +1211,12 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
         </motion.div>
       </div>
 
-      {/*
-        Report confirm — Radix AlertDialog (role="alertdialog", focus-trapped, no
-        outside-dismiss). The reason is a SINGLE OPTIONAL free-text field: never
-        required and never a suggested reason-for-non-payment prompt (Ley 2300
-        art. 7). Shared by tenant + landlord/agency.
-      */}
-      <AlertDialog
-        open={reportOpen}
-        onOpenChange={(open) => {
-          setReportOpen(open);
-          if (!open) setReportReason('');
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {locale === 'es' ? '¿Reportar esta conversación?' : 'Report this conversation?'}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {locale === 'es'
-                ? 'Nuestro equipo revisará esta conversación. Si querés, contanos qué pasó.'
-                : 'Our team will review this conversation. If you want, tell us what happened.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
 
-          <div className="space-y-2">
-            <label htmlFor="report-reason" className="text-sm text-muted-foreground">
-              {locale === 'es' ? 'Cuéntanos qué pasó (opcional)' : 'Tell us what happened (optional)'}
-            </label>
-            <Textarea
-              id="report-reason"
-              value={reportReason}
-              onChange={(e) => setReportReason(e.target.value)}
-              placeholder={locale === 'es' ? 'Escribe aquí (opcional)' : 'Write here (optional)'}
-              maxLength={500}
-              rows={3}
-            />
-          </div>
-
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isReporting}>
-              {locale === 'es' ? 'Cancelar' : 'Cancel'}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                // Handle the report ourselves; the toast fires after the call.
-                e.preventDefault();
-                confirmReport();
-              }}
-              disabled={isReporting}
-            >
-              {locale === 'es' ? 'Reportar conversación' : 'Report conversation'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <NuevoMensajeDrawer
+        abierto={nuevoMensajeAbierto}
+        onCerrar={() => setNuevoMensajeAbierto(false)}
+        onHiloAbierto={alAbrirHiloNuevo}
+      />
     </div>
   );
 }

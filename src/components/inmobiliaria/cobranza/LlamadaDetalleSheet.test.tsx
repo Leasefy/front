@@ -38,7 +38,12 @@ vi.mock('next/link', () => ({
 }))
 
 vi.mock('@/components/ui/sheet', () => ({
-  Sheet: ({ children }: { children: React.ReactNode }) => <div data-testid="sheet">{children}</div>,
+  // Con el cajón cerrado Radix no pinta nada, y desde que el cajón se cierra
+  // con `open` (y no desmontándose, que era lo que mataba la animación de
+  // salida) esa diferencia importa: si el mock pintara igual, el test estaría
+  // midiendo al mock.
+  Sheet: ({ open, children }: { open?: boolean; children: React.ReactNode }) =>
+    open === false ? null : <div data-testid="sheet">{children}</div>,
   SheetContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SheetTitle: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
 }))

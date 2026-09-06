@@ -165,7 +165,7 @@ export function Recaudo() {
         cargando={cargando && !resumen}
         error={error}
         queEs="el recaudo"
-        onReintentar={() => void recargar()}
+        onReintentar={recargar}
         esqueleto={
           <div className="flex items-center justify-center py-16">
             <Spinner />

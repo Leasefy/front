@@ -232,11 +232,14 @@ function MetricCard({
   const label = isEs ? metric.labelEs : metric.labelEn;
   const Icon = METRIC_ICONS[metric.id] || Buildings;
 
-  // Calculate delta
-  const deltaRaw =
-    metric.previousValue !== 0
-      ? ((metric.currentValue - metric.previousValue) / metric.previousValue) * 100
-      : 0;
+  // La variación, sólo si hay período anterior con qué compararla. Sin él no
+  // se dibuja la insignia: un «0,0 %» sobre un mes anterior que nadie trajo es
+  // afirmar que no cambió nada.
+  const hayComparacion =
+    metric.previousValue !== undefined && metric.previousValue !== 0;
+  const deltaRaw = hayComparacion
+    ? ((metric.currentValue - metric.previousValue!) / metric.previousValue!) * 100
+    : 0;
   const delta = Math.abs(deltaRaw).toFixed(1);
   const isPositiveChange = deltaRaw > 0;
 

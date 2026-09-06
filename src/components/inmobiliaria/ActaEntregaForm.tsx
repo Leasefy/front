@@ -276,6 +276,7 @@ export function ActaEntregaForm({
             return (
               <div key={step.id} className="flex items-center">
                 <button
+                  type="button"
                   onClick={() => status !== 'upcoming' && goToStep(step.id)}
                   disabled={status === 'upcoming'}
                   className={cn(
@@ -289,7 +290,7 @@ export function ActaEntregaForm({
                       status === 'completed'
                         ? 'bg-success text-white'
                         : status === 'current'
-                        ? 'bg-primary text-primary-foreground'
+                        ? 'bg-primary text-primary-fg'
                         : 'bg-surface-muted text-fg-muted'
                     )}
                   >
@@ -305,7 +306,7 @@ export function ActaEntregaForm({
                       status === 'current'
                         ? 'text-primary'
                         : status === 'completed'
-                        ? 'text-foreground'
+                        ? 'text-fg'
                         : 'text-fg-muted'
                     )}
                   >
@@ -332,7 +333,7 @@ export function ActaEntregaForm({
         {/* Mobile Progress */}
         <div className="md:hidden">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-foreground">
+            <span className="text-sm font-medium text-fg">
               {t('inmobiliaria.acta.stepProgress', { current: currentStep, total: 6 })}: {t(STEP_KEYS[currentStep - 1]?.labelKey)}
             </span>
             <span className="text-sm text-fg-muted">

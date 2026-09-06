@@ -6,9 +6,13 @@
  *
  * F1 (landing-react-port final integration): the v2 home (`/`) renders its
  * OWN header/footer (LandingHome's markup is a 1:1 port of the standalone
- * index.html, self-contained). The shared LandingHeader/LandingFooter must
- * NOT render on `/` to avoid a double header/footer — every other route in
- * this group still gets them.
+ * index.html, self-contained). The shared chrome must NOT render on `/` to
+ * avoid a double header/footer — every other route in this group still gets it.
+ *
+ * 2026-09-05: ese chrome compartido ES el del home — `LandingChrome`
+ * (header v2) y `LandingFooterV2`—, no el par viejo de `landing/layout/`.
+ * Los dos ultimos tests lo fijan por marcas propias del v2 (`#hdr`, `.fgrid2`)
+ * y no por la etiqueta `<header>`, que ambos pares cumplian por igual.
  */
 import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -36,6 +40,12 @@ vi.mock('next/font/google', () => ({
     variable: opts.variable ?? '--font-ibm-plex-mono',
     style: { fontFamily: 'mock-ibm-plex-mono' },
   }),
+}))
+
+// El header v2 decide que enlaces muestra segun quien mira, asi que sin
+// esto `useAuth()` revienta y el layout entero no monta.
+vi.mock('@/lib/auth/use-auth', () => ({
+  useAuth: () => ({ isAuthenticated: false, isLoading: false, user: null, activeContext: null }),
 }))
 
 const usePathnameMock = vi.fn(() => '/landing-preview')
@@ -131,7 +141,7 @@ describe('<LandingLayout>', () => {
     expect(wrapper.className).toContain('--font-inter')
   })
 
-  it('does NOT render the shared LandingHeader/LandingFooter on the v2 home route (/) — LandingHome supplies its own', () => {
+  it('does NOT render the shared chrome on the v2 home route (/) — LandingHome supplies its own', () => {
     usePathnameMock.mockReturnValue('/')
     act(() => {
       root.render(
@@ -146,7 +156,7 @@ describe('<LandingLayout>', () => {
     expect(wrapper?.querySelector('[data-testid="page-content"]')?.textContent).toBe('contenido')
   })
 
-  it('still renders the shared header/footer on internal routes (e.g. /blog)', () => {
+  it('renders the SAME chrome as the home on internal routes (header v2 + pie v2)', () => {
     usePathnameMock.mockReturnValue('/blog')
     act(() => {
       root.render(
@@ -156,7 +166,24 @@ describe('<LandingLayout>', () => {
       )
     })
     const wrapper = container.querySelector('[data-testid="landing-scope"]')
-    expect(wrapper?.querySelector('header')).toBeTruthy()
-    expect(wrapper?.querySelector('footer')).toBeTruthy()
+    // `#hdr` y `.fgrid2` son del port v2. El par viejo también traía
+    // <header>/<footer>, así que preguntar por la etiqueta no distinguía
+    // nada: es justo lo que dejó al blog con otro logo y otro pie.
+    expect(wrapper?.querySelector('header#hdr')).toBeTruthy()
+    expect(wrapper?.querySelector('footer .fgrid2')).toBeTruthy()
+    expect(wrapper?.querySelector('[data-testid="landing-chrome"]')).toBeTruthy()
+  })
+
+  it('marca el enlace del nav que corresponde a la ruta', () => {
+    usePathnameMock.mockReturnValue('/blog')
+    act(() => {
+      root.render(
+        <LandingLayout>
+          <p>contenido</p>
+        </LandingLayout>,
+      )
+    })
+    const actual = container.querySelector('nav.main [aria-current="page"]')
+    expect(actual?.textContent).toContain('Blog')
   })
 })

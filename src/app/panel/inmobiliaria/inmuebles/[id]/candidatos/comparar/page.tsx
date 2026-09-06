@@ -147,7 +147,7 @@ function CompararContent() {
         <FalloDeCarga
           error={error}
           queEs="la comparación"
-          onReintentar={() => void cargar()}
+          onReintentar={cargar}
           volverA={{ label: 'Volver a candidatos', href: volverALista }}
         />
       ) : entradas.length < MINIMO_A_COMPARAR ? (
@@ -205,7 +205,7 @@ function CompararContent() {
 
 export default function CompararCandidatosPage() {
   return (
-    <PageGuard module="propiedades" action="view">
+    <PageGuard module="portafolio" action="view">
       <CompararContent />
     </PageGuard>
   )

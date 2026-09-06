@@ -135,7 +135,7 @@ vi.mock('@/lib/api/migracion-estado.service', async () => {
   return { ...actual, migracionEstadoApi: estadoMock };
 });
 
-import { MuroDeMigracion } from './MuroDeMigracion';
+import { CADA_CUANTO_SE_REFRESCA_MS, MuroDeMigracion } from './MuroDeMigracion';
 
 // ══════════════════════════════════════════════════════════════════════════
 
@@ -535,7 +535,7 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
       expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('inquilinos');
 
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(5_000);
+        await vi.advanceTimersByTimeAsync(CADA_CUANTO_SE_REFRESCA_MS);
       });
 
       expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('inquilinos');
@@ -608,8 +608,95 @@ describe('el pie espera a que el paso termine de crear', () => {
   });
 });
 
+/*
+ * 🔴 Auditoría 2026-09-05: con la pantalla quieta el muro pedía el estado 123
+ * veces en 10 minutos (uno cada 5 s). El refresco pasó a ser la red de
+ * seguridad y lo que refresca de verdad son los eventos: terminar una
+ * operación del paso, cambiar de paso, volver a la pestaña.
+ */
+describe('el muro no sondea: se entera por eventos', () => {
+  it('el intervalo es de un minuto, no de 5 s', () => {
+    expect(CADA_CUANTO_SE_REFRESCA_MS).toBeGreaterThanOrEqual(60_000);
+  });
+
+  it('con la pantalla quieta 10 minutos pide el estado unas pocas veces, no 100', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: RECIEN_LLEGADA,
+    });
+
+    vi.useFakeTimers();
+    try {
+      await pintar();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10 * 60_000);
+      });
+      // Con los 5 s de antes esto daba 121. Al revés: si alguien vuelve a
+      // bajar la cadencia, este número se dispara y el test cae.
+      expect(estadoMock.estado.mock.calls.length).toBeLessThanOrEqual(15);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('cuando el paso TERMINA de crear (ocupado → libre) se pregunta el estado de una, sin esperar al tick', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [paso('propietarios', 'listo', 60, '60 propietarios'), ...RECIEN_LLEGADA.slice(1)],
+    });
+
+    await pintar();
+    await click('muro-ir-propietarios');
+    const antesDeOcupar = estadoMock.estado.mock.calls.length;
+
+    await click('paso-ocupado-on');
+    // Mientras crea no se pregunta nada: la respuesta a mitad de camino
+    // mostraría un conteo parcial.
+    expect(estadoMock.estado.mock.calls.length).toBe(antesDeOcupar);
+
+    await click('paso-ocupado-off');
+    expect(estadoMock.estado.mock.calls.length).toBeGreaterThan(antesDeOcupar);
+  });
+
+  it('con la pestaña oculta el intervalo se apaga; al volver se consulta de una', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: RECIEN_LLEGADA,
+    });
+
+    const visibilidad = vi.spyOn(document, 'visibilityState', 'get');
+    vi.useFakeTimers();
+    try {
+      await pintar();
+
+      visibilidad.mockReturnValue('hidden');
+      await act(async () => {
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      const oculta = estadoMock.estado.mock.calls.length;
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(CADA_CUANTO_SE_REFRESCA_MS * 3);
+      });
+      expect(estadoMock.estado.mock.calls.length).toBe(oculta);
+
+      visibilidad.mockReturnValue('visible');
+      await act(async () => {
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      expect(estadoMock.estado.mock.calls.length).toBe(oculta + 1);
+    } finally {
+      vi.useRealTimers();
+      visibilidad.mockRestore();
+    }
+  });
+});
+
 describe('el muro vuelve a mirar el estado mientras está puesto', () => {
-  it('cada 5 s; un fallo de red NO lo baja; una respuesta nueva actualiza la barra sin mover a la persona', async () => {
+  it('cada tanto; un fallo de red NO lo baja; una respuesta nueva actualiza la barra sin mover a la persona', async () => {
     estadoMock.estado
       .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA })
       .mockRejectedValueOnce(new Error('503'))
@@ -627,7 +714,7 @@ describe('el muro vuelve a mirar el estado mientras está puesto', () => {
 
       // Primer refresco: falla. El muro se queda, con el paso montado.
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(5_000);
+        await vi.advanceTimersByTimeAsync(CADA_CUANTO_SE_REFRESCA_MS);
       });
       expect(estadoMock.estado).toHaveBeenCalledTimes(2);
       expect(q('muro-migracion')).not.toBeNull();
@@ -636,7 +723,7 @@ describe('el muro vuelve a mirar el estado mientras está puesto', () => {
       // Segundo: terceros pasó a listo. La barra lo dice, el pie ofrece
       // seguir, y la pantalla NO cambió sola.
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(5_000);
+        await vi.advanceTimersByTimeAsync(CADA_CUANTO_SE_REFRESCA_MS);
       });
       expect(q('muro-paso-propietarios')?.getAttribute('data-estado')).toBe('listo');
       expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('propietarios');
@@ -657,7 +744,7 @@ describe('el muro vuelve a mirar el estado mientras está puesto', () => {
       await pintar();
       expect(q('muro-migracion')).not.toBeNull();
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(5_000);
+        await vi.advanceTimersByTimeAsync(CADA_CUANTO_SE_REFRESCA_MS);
       });
       expect(q('muro-migracion')).toBeNull();
     } finally {
@@ -690,7 +777,7 @@ describe('la bienvenida cuando el muro se levanta', () => {
       await pintar();
       expect(q('bienvenida-a-leasefy')).toBeNull();
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(5_000);
+        await vi.advanceTimersByTimeAsync(CADA_CUANTO_SE_REFRESCA_MS);
       });
 
       const bienvenida = q('bienvenida-a-leasefy');
@@ -721,7 +808,7 @@ describe('la bienvenida cuando el muro se levanta', () => {
     try {
       await pintar();
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(5_000);
+        await vi.advanceTimersByTimeAsync(CADA_CUANTO_SE_REFRESCA_MS);
       });
       const bienvenida = q('bienvenida-a-leasefy');
       expect(bienvenida?.textContent).toContain('Bienvenido a Leasefy');

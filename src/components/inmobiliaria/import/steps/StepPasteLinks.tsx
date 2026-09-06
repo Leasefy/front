@@ -146,7 +146,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
       <div className="rounded-md bg-surface-muted border border-border p-3 flex items-start gap-2">
         <LinkSimple className="w-5 h-5 text-fg-muted flex-shrink-0 mt-0.5" aria-hidden="true" />
         <p className="text-body-sm text-fg-muted dark:text-fg-subtle">
-          Sirve el mismo enlace que mandás por WhatsApp: el de SIMI, Daytona, Nuby,
+          Sirve el mismo enlace que mandas por WhatsApp: el de SIMI, Daytona, Nuby,
           Wasi, FincaRaíz, Metrocuadrado o Ciencuadras. Si la ficha se ve en el
           navegador sin entrar con usuario, se puede leer.
         </p>
@@ -322,7 +322,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
                           {leFaltaDireccion
                             ? 'El portal no publica la dirección. Escribila para poder importarlo:'
                             : direccionEsAproximada
-                              ? 'El portal no publica la dirección exacta — usamos una aproximación. Escribí la dirección real si la tenés:'
+                              ? 'El portal no publica la dirección exacta — usamos una aproximación. Escribe la dirección real si la tienes:'
                               : 'Dirección del inmueble:'}
                         </label>
                         <Input
@@ -360,7 +360,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
           {leidos.length > 0 && (
             <p className="text-body-sm text-fg-muted">
               Seguí a la revisión para mirar los datos antes de crear los inmuebles.
-              Lo que falte lo podés completar ahí.
+              Lo que falte lo puedes completar ahí.
             </p>
           )}
         </div>

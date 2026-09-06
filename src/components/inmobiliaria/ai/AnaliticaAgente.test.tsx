@@ -83,24 +83,34 @@ describe('AnaliticaAgente — states', () => {
     expect(container.querySelector('[data-testid="analitica-loading"]')).not.toBeNull()
   })
 
-  it('renders the error banner', () => {
-    render({ error: '500' })
+  it('renders the error banner without leaking the raw backend message', () => {
+    render({ error: 'Internal Server Error' })
     const err = container.querySelector('[data-testid="analitica-error"]')
     expect(err).not.toBeNull()
-    expect(err!.textContent).toContain('500')
+    expect(err!.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
   })
 
-  it('renders the friendly not-available panel on 404 (NOT an error)', () => {
+  /*
+   * 🔴 Este test decía lo contrario: exigía que un 404 pintara un cartel
+   * amable con «El agente aún no reporta analítica», y que NO se viera como
+   * error. Pero la ruta `…/agentes/{agente}/analitica` no existe en el
+   * microservicio: el 404 es permanente. Decirle «todavía no hay datos» a un
+   * fallo que nunca se va a resolver solo es la forma más segura de que nadie
+   * lo arregle. Ahora tiene que verse como fallo.
+   */
+  it('muestra el 404 como fallo, no como vacío amable', () => {
     render({ notAvailable: true })
-    const empty = container.querySelector('[data-testid="analitica-empty"]')
-    expect(empty).not.toBeNull()
-    expect(empty!.textContent).toContain('El agente aún no reporta analítica')
-    expect(container.querySelector('[data-testid="analitica-error"]')).toBeNull()
+    const fallo = container.querySelector('[data-testid="analitica-no-disponible"]')
+    expect(fallo).not.toBeNull()
+    expect(fallo!.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
+    expect(fallo!.textContent).not.toContain('aún no reporta')
+    // Sobre una ruta que no existe, reintentar sería mentir.
+    expect(fallo!.querySelector('[data-testid="reintentar"]')).toBeNull()
   })
 
-  it('renders the same panel when data is null without notAvailable', () => {
+  it('sin datos y sin bandera, también es un fallo', () => {
     render({ data: null })
-    expect(container.querySelector('[data-testid="analitica-empty"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="analitica-no-disponible"]')).not.toBeNull()
   })
 })
 

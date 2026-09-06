@@ -207,14 +207,16 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
                     </p>
                   )}
                   {pp.call_id && (
-                    <button
-                      type="button"
+                    <Button
+                      variant="link"
+                      size="sm"
+                      hideArrow
                       onClick={() => setLlamadaAbierta(pp.call_id)}
-                      className="mt-1.5 text-xs text-primary hover:underline"
+                      className="mt-1.5 px-0 h-auto text-xs text-primary hover:underline"
                       data-testid={`compromiso-ver-llamada-${pp.id}`}
                     >
                       Ver la llamada donde la hizo
-                    </button>
+                    </Button>
                   )}
                 </li>
               )

@@ -29,9 +29,13 @@ const CLAVES_DE_INQUILINOS = [
   'eyebrow',
   'titulo',
   'subtitulo',
-  // El botón «Crear un contrato», la única salida para cargar UN inquilino
-  // (Nico, 2026-09-04: «pues acá también se debería poder»).
+  // El primario desde el 2026-09-04 (Nico: «en inquilino es crear
+  // inquilino») y el camino al contrato entero, que quedó de secundario.
+  'nuevoInquilino',
   'crearContrato',
+  // La fila de quien todavía no tiene contrato: qué le pasa y qué hacer.
+  'sinArriendo',
+  'crearSuContrato',
   'queEs',
   'queSon',
   'buscarPlaceholder',

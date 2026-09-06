@@ -157,6 +157,13 @@ describe('useAgentWorkItems — abortable fetch (stale-response race)', () => {
     expect(hookResult!.items).toEqual([{ id: 'fresh' }])
     // The AbortError from the cancelled first fetch must NOT surface as error.
     expect(hookResult!.error).toBeNull()
+    // Ni en `errorCrudo`. Esta línea faltaba y por eso el test pasaba con el
+    // bug puesto: `setErrorCrudo(err)` corría ANTES del guard de cancelación,
+    // así que la Sala de Pagos pintaba «No pudimos cargar esto» con su
+    // referencia aunque los datos llegaran bien un instante después. Visto en
+    // la pantalla real: dos pedidos abortados por el doble montaje de React y
+    // el tercero con 200.
+    expect(hookResult!.errorCrudo).toBeNull()
     expect(hookResult!.isLoading).toBe(false)
   })
 })

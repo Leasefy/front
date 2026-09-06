@@ -1,22 +1,26 @@
 /**
- * BlogListing.test.tsx — the blog listing (landing-react-port SLICE 6),
- * ported from the standalone's `#blogPage` (`landing-standalone/index.html`
- * ~L2773-2827, CSS ~L1520-1566). Structure/wiring only per Strict TDD:
- * copy/data sourced from `blog-posts.ts` (UNTOUCHED, design §2), real
- * `<Link>` hrefs (no `#` fragments), category filter interaction, and
- * texture-backed card art (t1-t7, HANDOFF §5b) sourced from the shared
- * `LANDING_TEXTURES` constants (S2) — never a hardcoded `/landing/**` path.
+ * BlogListing.test.tsx — el listado del blog. Estructura y cableado:
+ * copia y datos salen de `blog-posts.ts` (única fuente), los `<Link>` llevan
+ * rutas reales (nunca `#`), el filtro por categoría funciona, y la foto de
+ * cada tarjeta es LA DEL ARTÍCULO (`post.image`) — no una textura decorativa
+ * que leía como placeholder (rediseño del 2026-09-05).
  */
 import * as React from 'react'
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
 void React // jsx-preserve
 
+vi.mock('next/image', () => ({
+  default: (props: Record<string, unknown>) => {
+    const { fill: _fill, priority: _priority, ...rest } = props
+    return <img data-testid="next-image-mock" alt="" {...rest} />
+  },
+}))
+
 import { BlogListing } from './BlogListing'
 import { blogPosts, blogCategories } from '@/lib/data/blog-posts'
-import { LANDING_TEXTURES } from '@/lib/landing/assets'
 
 let container: HTMLDivElement
 let root: Root
@@ -72,12 +76,40 @@ describe('<BlogListing>', () => {
     expect(cards[0].textContent).toContain(blogPosts[1].title)
   })
 
-  it('sources card art from the shared LANDING_TEXTURES constants (t1-t7), never a hardcoded path', () => {
+  it('cada tarjeta lleva la foto de SU artículo, no una textura decorativa', () => {
     render()
-    const featuredMedia = container.querySelector('[data-testid="blog-featured"] .landing-bp__media') as HTMLElement
-    const validSrcs = Object.values(LANDING_TEXTURES).map((texture) => texture.src)
-    const matchesTexture = validSrcs.some((src) => featuredMedia.style.backgroundImage.includes(src))
-    expect(matchesTexture).toBe(true)
+    const destacada = container.querySelector('[data-testid="blog-featured"] img') as HTMLImageElement
+    expect(destacada.getAttribute('src')).toBe(blogPosts[0].image)
+    const tarjetas = Array.from(container.querySelectorAll('[data-testid="blog-card"] img')) as HTMLImageElement[]
+    tarjetas.forEach((img, i) => expect(img.getAttribute('src')).toBe(blogPosts[i + 1].image))
+    // La foto es decorativa al lado del título: alt vacío, no el título repetido.
+    expect(destacada.getAttribute('alt')).toBe('')
+  })
+
+  it('no numera las tarjetas: el orden no significa nada', () => {
+    render()
+    expect(container.querySelector('.landing-bp__gn')).toBeNull()
+  })
+
+  it('muestra un estado vacío cuando la categoría no tiene artículos', () => {
+    render()
+    // Todas las categorías publicadas tienen artículos; se fuerza el vacío
+    // pidiendo una que no existe en los datos mediante el propio filtro.
+    const tabs = Array.from(container.querySelectorAll('[role="tab"]')) as HTMLButtonElement[]
+    const sinArticulos = tabs.find(
+      (t) => t.textContent !== 'Todos' && !blogPosts.some((p) => p.category === t.textContent),
+    )
+    if (!sinArticulos) {
+      // Hoy toda categoría tiene al menos un artículo: no hay vacío que mostrar
+      // y no debe haber un cartel de vacío en pantalla.
+      expect(container.querySelector('[data-testid="blog-empty"]')).toBeNull()
+      return
+    }
+    act(() => {
+      sinArticulos.click()
+    })
+    expect(container.querySelector('[data-testid="blog-empty"]')?.textContent).toContain(sinArticulos.textContent)
+    expect(container.querySelector('[data-testid="blog-featured"]')).toBeNull()
   })
 
   it('filters posts by category on tab click', () => {

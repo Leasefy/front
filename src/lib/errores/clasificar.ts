@@ -60,6 +60,27 @@ function haySesionViva(): boolean {
   return Boolean(getAccessToken())
 }
 
+/** Un mensaje que ES el status y nada más: lo que tiran los hooks del micro. */
+const SOLO_EL_STATUS = /^[1-5]\d\d$/
+
+/**
+ * Lo que dice cada navegador cuando el pedido NO llegó a salir.
+ * Chrome, Firefox, Safari y React Native, en ese orden.
+ */
+const ASI_SUENA_LA_RED_CAIDA = [
+  'failed to fetch',
+  'networkerror',
+  'load failed',
+  'network request failed',
+]
+
+/** El texto del error, venga como Error o como string ya aplanado. */
+function textoDe(error: unknown): string | null {
+  if (typeof error === 'string') return error
+  if (error instanceof Error) return error.message
+  return null
+}
+
 function statusDe(error: unknown): number | null {
   if (error instanceof ApiError) return error.status
   // Algunos servicios reenvían el error sin conservar la clase.
@@ -67,12 +88,42 @@ function statusDe(error: unknown): number | null {
     const s = (error as { status: unknown }).status
     if (typeof s === 'number') return s
   }
+
+  // 🔴 Acá se recupera un status que el transporte tira a la basura.
+  //
+  // Las 82 llamadas del panel al microservicio de agentes hacen, todas, lo
+  // mismo:  `if (!res.ok) throw new Error(\`${res.status}\`)`  y después el
+  // hook guarda `err.message` en un `useState<string | null>`. Para cuando el
+  // error llega hasta acá ya no es un `ApiError` ni tiene `.status`: es el
+  // string «403».
+  //
+  // El resultado se vio en producción, en el Piloto automático: las dos
+  // tarjetas decían «Fue un problema nuestro, no tuyo. Probá de nuevo» con
+  // referencia SER-1601 — «SER» porque no había status que poner. Un 403 (no
+  // tenés permiso) y un 401 (tu sesión venció) se pintaban idénticos a un 500,
+  // los tres con un botón «Intentar de nuevo» que no podía funcionar nunca.
+  // Que es exactamente el bug que esta tabla de cuatro estados existe para
+  // evitar, derrotado un piso más abajo.
+  //
+  // Se acepta SÓLO cuando el mensaje entero es el número, para que un
+  // «Se cayeron 404 registros» no se lea como un 404.
+  const texto = textoDe(error)?.trim()
+  if (!texto) return null
+  if (SOLO_EL_STATUS.test(texto)) return Number(texto)
+
+  // `fetch` no rechaza con un status: tira un TypeError cuyo texto depende del
+  // navegador. Sin esto, quedarse sin red se anunciaba como «fue un problema
+  // nuestro» — y la rama `status === 0` de acá abajo era código muerto para
+  // todo el panel.
+  const enMinuscula = texto.toLowerCase()
+  if (ASI_SUENA_LA_RED_CAIDA.some((senal) => enMinuscula.includes(senal))) return 0
+
   return null
 }
 
 export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarga {
   const status = statusDe(error)
-  const mensajeOriginal = error instanceof Error ? error.message : null
+  const mensajeOriginal = textoDe(error)
   const eso = ctx.queEs ?? 'esto'
 
   if (status === 404) {
@@ -151,6 +202,23 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
       descripcion:
         'Revisá tu conexión. Los datos siguen ahí; apenas vuelva la red los traemos.',
       sePuedeReintentar: true,
+      status,
+      mensajeOriginal,
+    }
+  }
+
+  // `not_configured` = a este build le falta la URL del microservicio de
+  // agentes. No es un tropiezo del servidor: es una pieza que nunca se
+  // enchufó, y ninguna cantidad de reintentos la va a enchufar. Ofrecer
+  // «Intentar de nuevo» ahí es el mismo botón falso que un reintento sobre un
+  // 404.
+  if (mensajeOriginal?.trim() === 'not_configured') {
+    return {
+      tipo: 'servidor',
+      titulo: 'Esto todavía no está conectado',
+      descripcion:
+        'Falta una pieza de nuestro lado, no algo que puedas resolver desde acá. Escribinos con la referencia de abajo y lo habilitamos.',
+      sePuedeReintentar: false,
       status,
       mensajeOriginal,
     }

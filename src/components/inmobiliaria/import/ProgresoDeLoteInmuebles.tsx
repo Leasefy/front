@@ -59,7 +59,7 @@ export function ProgresoDeLoteInmuebles({
       ) : null}
 
       <p className="text-sm text-fg-muted">
-        Podés cerrar esta pestaña — seguimos trabajando igual, y te avisamos con
+        Puedes cerrar esta pestaña — seguimos trabajando igual, y te avisamos con
         una notificación cuando termine.
       </p>
 

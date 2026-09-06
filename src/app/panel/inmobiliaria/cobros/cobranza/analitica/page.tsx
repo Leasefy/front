@@ -66,7 +66,7 @@ export default function CobranzaAnaliticaPage() {
         <FalloDeCarga
           error={error}
           queEs="la analítica de cobranza"
-          onReintentar={() => void refetch()}
+          onReintentar={refetch}
         />
       </main>
     )

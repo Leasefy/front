@@ -340,6 +340,26 @@ describe('nombreDeLoteSugerido', () => {
     const b = nombreDeLoteSugerido('INQUILINO', new Date('2026-08-31T16:30:00.000Z'));
     expect(a).not.toBe(b);
   });
+
+  it('🔴 la hora es la de Bogotá, no la UTC', () => {
+    // El caso medido: a las 09:02 de la mañana en Bogotá el nombre decía 1402.
+    expect(nombreDeLoteSugerido('PROPIETARIO', new Date('2026-09-05T14:02:00.000Z'))).toBe(
+      'propietarios-2026-09-05-0902',
+    );
+  });
+
+  it('🔴 tampoco se adelanta de DÍA: 21:30 en Bogotá no es «el 6»', () => {
+    // 2026-09-06T02:30Z = 2026-09-05 21:30 en Bogotá.
+    expect(nombreDeLoteSugerido('INQUILINO', new Date('2026-09-06T02:30:00.000Z'))).toBe(
+      'inquilinos-2026-09-05-2130',
+    );
+  });
+
+  it('la medianoche de Bogotá se escribe 00, nunca 24', () => {
+    expect(nombreDeLoteSugerido('INQUILINO', new Date('2026-09-06T05:10:00.000Z'))).toBe(
+      'inquilinos-2026-09-06-0010',
+    );
+  });
 });
 
 describe('mapearColumnas — el espejo del back con encabezados del mundo real', () => {

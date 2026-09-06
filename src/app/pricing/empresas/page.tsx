@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { LandingChrome } from "@/components/landing-v2/LandingChrome";
-import { Footer } from '@/components/layout/Footer';
+import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2';
 import { SectionLabel } from '@/components/ui/section-label';
 import { Calculator, Check, Buildings, TrendDown, Envelope, Phone, Shield, Lightning, Infinity as InfinityIcon, CheckCircle } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
@@ -512,7 +512,7 @@ export default function EmpresasCalculadoraPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <LandingFooterV2 />
     </LandingChrome>
   );
 }

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { LandingChrome } from "@/components/landing-v2/LandingChrome";
-import { Footer } from '@/components/layout/Footer';
+import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2';
 import { Button } from '@/components/ui/button';
 import { CTASection } from '@/components/home/CTASection';
 import { FAQSection } from '@/components/home/FAQSection';
@@ -1332,7 +1332,7 @@ export default function PropietariosPage() {
         <FAQSection />
         <CTASection />
       </main>
-      <Footer />
+      <LandingFooterV2 />
     </LandingChrome>
   );
 }

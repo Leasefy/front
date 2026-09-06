@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LandingChrome } from "@/components/landing-v2/LandingChrome";
-import { Footer } from "@/components/layout/Footer";
+import { LandingFooterV2 } from "@/components/landing-v2/LandingFooterV2";
 import { SectionLabel } from "@/components/ui/section-label";
 
 /**
@@ -662,7 +662,7 @@ export default function TerminosPage() {
           </div></div>
         </section>
       </main>
-      <Footer />
+      <LandingFooterV2 />
     </LandingChrome>
   );
 }

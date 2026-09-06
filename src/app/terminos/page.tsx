@@ -414,16 +414,21 @@ export default function TerminosPage() {
 
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  14. Avalúos
+                  14. Estimación comercial de valor
                 </h2>
+                <p className="mb-3">
+                  Cuando la plataforma calcula cuánto podría valer un inmueble, el
+                  resultado es una{" "}
+                  <strong className="text-foreground/90">estimación comercial de valor referencial</strong>:
+                  una referencia para decidir un precio de arriendo o de venta.
+                </p>
                 <p>
-                  Cuando la plataforma produce una estimación de valor de un inmueble,
-                  es{" "}
-                  <strong className="text-foreground/90">una referencia para decidir, no un avalúo con efectos legales</strong>.
-                  No sustituye el avalúo de un avaluador inscrito en el Registro
-                  Abierto de Avaluadores cuando la ley o un tercero lo exijan, y no
-                  puede presentarse como tal ante una entidad financiera, una
-                  autoridad ni un juez.
+                  <strong className="text-foreground/90">No constituye un avalúo formal</strong>{" "}
+                  ni un dictamen pericial, no lo emite un avaluador inscrito en el
+                  Registro Abierto de Avaluadores, y no puede presentarse como tal
+                  ante una entidad financiera, una autoridad ni un juez. Cuando la
+                  ley o un tercero exijan un avalúo, hay que contratarlo aparte, con
+                  un avaluador inscrito (Ley 1673 de 2013).
                 </p>
               </section>
 

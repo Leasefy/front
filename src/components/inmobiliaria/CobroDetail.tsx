@@ -513,7 +513,14 @@ export function CobroDetail({
           transition={{ delay: 0.35 }}
           className="sticky bottom-0 p-6 border-t border-border bg-background space-y-3"
         >
-          <div className="flex gap-3">
+          {/*
+            La acción principal —hacer el recibo— va a la DERECHA y la
+            secundaria a la izquierda (regla de Nico, 2026-09-06; misma
+            anatomía que DESIGN.md §17 para diálogos). Con `flex-row-reverse`
+            el orden del DOM no cambia: el tabulador sigue llegando primero a
+            la principal, que es la que la persona vino a hacer.
+          */}
+          <div className="flex flex-row-reverse gap-3">
             {isPending && onRegisterPayment && (
               <Button
                 className="flex-1 bg-success hover:bg-success text-white"

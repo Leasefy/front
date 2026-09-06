@@ -227,3 +227,39 @@ describe('PilotoCajon — modo alerta', () => {
     expect(texto()).toContain('sinCasos')
   })
 })
+
+describe('PilotoCajon — una carta se lee acá mismo', () => {
+  /**
+   * Antes de esto el bloque «Dónde seguir» de una carta tenía TRES entradas
+   * para lo mismo: la del sub-cajón, «Leer el PDF antes de aprobar» —muerta,
+   * apuntaba a `pdfUrl`, que es una ubicación de almacenamiento— y «Abrir la
+   * carta», que sacaba del Piloto (Nico, 2026-09-06).
+   */
+  const CARTA = {
+    ...DETALLE,
+    id: 'art:carta-9',
+    fuente: 'carta',
+    enlaces: [
+      { label: 'Leer el PDF antes de aprobar', href: 'https://demo.leasefy.co/cartas/2.pdf' },
+      { label: 'Abrir la carta', href: '/panel/inmobiliaria/cobros/cobranza/cartas/carta-9' },
+    ],
+  }
+
+  it('deja UN solo enlace, y es el que abre el documento sin salir', () => {
+    estado.detalle = CARTA
+    render({ tipo: 'item', id: 'art:carta-9' })
+    expect(document.body.querySelector('[data-testid="piloto-cajon-leer-pdf"]')).toBeTruthy()
+    // Los dos del micro no se pintan: uno está muerto y el otro lo ofrece el
+    // pie del sub-cajón.
+    expect(texto()).not.toContain('Leer el PDF antes de aprobar')
+    expect(texto()).not.toContain('Abrir la carta')
+    expect(document.body.querySelectorAll('a[href*="demo.leasefy.co"]')).toHaveLength(0)
+  })
+
+  it('un caso que NO es carta conserva los enlaces del micro', () => {
+    estado.detalle = { ...DETALLE, enlaces: [{ label: 'Ver la llamada', href: '/x/llamadas/1' }] }
+    render({ tipo: 'item', id: 'esc:e-1' })
+    expect(texto()).toContain('Ver la llamada')
+    expect(document.body.querySelector('[data-testid="piloto-cajon-leer-pdf"]')).toBeNull()
+  })
+})

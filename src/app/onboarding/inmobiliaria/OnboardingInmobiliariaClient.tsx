@@ -3,20 +3,24 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { LeasefyLogo } from '@/components/brand'
-import Link from 'next/link'
-import { BrandHomeLink } from '@/components/brand/BrandHomeLink'
 import { useOnboardingSession } from '@/lib/hooks/use-onboarding-session'
 import { useOnboardingProvisioning } from '@/lib/hooks/use-onboarding-provisioning'
 import { OnboardingWizardStepper } from '@/components/onboarding/inmobiliaria/OnboardingWizardStepper'
 import { OnboardingSessionErrorBanner } from '@/components/onboarding/inmobiliaria/OnboardingSessionErrorBanner'
 import { OnboardingProvisioningErrorBanner } from '@/components/onboarding/inmobiliaria/OnboardingProvisioningErrorBanner'
 import { OwnerNameStepForm } from '@/components/onboarding/inmobiliaria/OwnerNameStepForm'
+import { SalirDelRegistro } from '@/components/onboarding/SalirDelRegistro'
 import { AgencyStepForm } from '@/components/onboarding/inmobiliaria/AgencyStepForm'
 import {
   computeAgencyStepPrefill,
   type AgencyStepPreStepValues,
 } from '@/components/onboarding/inmobiliaria/agency-step-prefill'
 import { MembersStepForm, type PendingMembersInvites } from '@/components/onboarding/inmobiliaria/MembersStepForm'
+import { crearInvitacionesDelEquipo } from '@/components/onboarding/inmobiliaria/crear-invitaciones'
+import {
+  toMembersRequest,
+  type MembersStepFormValues,
+} from '@/components/onboarding/inmobiliaria/members-step-schema'
 import { PaymentProviderAutoSkipStep } from '@/components/onboarding/inmobiliaria/PaymentProviderAutoSkipStep'
 import { PolicyAutoSkipStep } from '@/components/onboarding/inmobiliaria/PolicyAutoSkipStep'
 import {
@@ -26,7 +30,6 @@ import {
 import { TermsStepForm } from '@/components/onboarding/inmobiliaria/TermsStepForm'
 import { CompleteStepForm } from '@/components/onboarding/inmobiliaria/CompleteStepForm'
 import { wizardStepLabel } from '@/components/onboarding/inmobiliaria/wizard-steps'
-import type { OnboardingSessionMembersRequest } from '@/lib/api/generated/agency'
 import type { OnboardingWizardStep } from '@/lib/hooks/use-onboarding-session'
 
 /**
@@ -50,7 +53,22 @@ export default function OnboardingInmobiliariaClient() {
 }
 
 function ProvisionedOnboardingWizard() {
-  const { status, sessionId, agencyPrefill, retry, provision } = useOnboardingProvisioning()
+  const { status, sessionId, agencyPrefill, valoresGuardados, fallo, retry, provision } =
+    useOnboardingProvisioning()
+
+  // Mientras se pregunta dónde quedó esta persona no se le muestra el paso
+  // previo: pedirle la razón social para tapársela medio segundo después con
+  // el asistente ya empezado sería peor que esperar.
+  if (status === 'resuming') {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-3" data-testid="onboarding-resuming">
+          <div className="w-8 h-8 border-2 border-border border-t-primary rounded-full animate-spin" />
+          <p className="text-body-sm text-fg-muted">Buscando dónde quedaste...</p>
+        </div>
+      </div>
+    )
+  }
 
   // Provisioning always needs the owner's name plus the agency's razón
   // social and NIT — collect them here and provision explicitly (see
@@ -58,20 +76,30 @@ function ProvisionedOnboardingWizard() {
   // in flight so the submit button can disable itself (double-submit guard).
   if (status === 'needs-info' || status === 'provisioning') {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center p-6">
-        <div className="max-w-sm w-full">
-          <OwnerNameStepForm onSubmit={provision} isSubmitting={status === 'provisioning'} />
-        </div>
-      </div>
+      <OwnerNameStepForm
+        onSubmit={provision}
+        isSubmitting={status === 'provisioning'}
+        valoresIniciales={
+          valoresGuardados
+            ? { razonSocial: valoresGuardados.razonSocial, nit: valoresGuardados.nit }
+            : undefined
+        }
+      />
     )
   }
 
   if (status === 'error') {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center p-6">
-        <div className="max-w-sm w-full">
-          <OnboardingProvisioningErrorBanner onRetry={retry} />
-        </div>
+      <div className="min-h-screen bg-bg">
+        <header className="flex items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
+          <LeasefyLogo className="h-6 w-auto" />
+          <SalirDelRegistro />
+        </header>
+        <main className="flex min-h-[calc(100vh-5rem)] items-center justify-center px-6 pb-16">
+          <div className="w-full max-w-md">
+            <OnboardingProvisioningErrorBanner onRetry={retry} fallo={fallo} />
+          </div>
+        </main>
       </div>
     )
   }
@@ -137,11 +165,28 @@ function OnboardingWizard({
   // `currentStep` until the user explicitly clicks "Continuar".
   const [pendingMembersInvites, setPendingMembersInvites] = useState<PendingMembersInvites | null>(null)
 
-  const handleSubmitMembers = async (body: OnboardingSessionMembersRequest) => {
-    const result = await submitMembers(body)
-    if (result && result.inviteTokens.length > 0) {
-      setPendingMembersInvites({ response: result, body })
-    }
+  /**
+   * 🔴 Dos llamadas, en este orden, y por qué.
+   *
+   * 1. El MICRO (`submitMembers`) es quien mueve el asistente al paso
+   *    siguiente. Va primero: si falla, no se creó ninguna invitación y la
+   *    persona puede reintentar el paso entero sin chocar contra un «ya existe
+   *    una invitación pendiente».
+   * 2. El BACK crea las invitaciones DE VERDAD y manda los correos. Los
+   *    `rawToken` del micro no los acepta ninguna pantalla (ver
+   *    `invite-link.ts`): son los tokens del back los que abren
+   *    `/invitacion/<token>`.
+   *
+   * Un fallo del paso 2 NO frena el alta: la pantalla de resultados dice qué
+   * pasó con cada persona y el equipo se puede invitar desde el panel.
+   */
+  const handleSubmitMembers = async (values: MembersStepFormValues) => {
+    const result = await submitMembers(toMembersRequest(values))
+    if (!result) return result
+    if (values.members.length === 0) return result
+
+    const invitaciones = await crearInvitacionesDelEquipo(values.members)
+    if (invitaciones.length > 0) setPendingMembersInvites({ invitaciones })
     return result
   }
 
@@ -171,12 +216,27 @@ function OnboardingWizard({
   return (
     <div className="min-h-screen bg-bg">
       <header className="sticky top-0 z-20 bg-surface/95 backdrop-blur-sm border-b border-border-faint">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16">
-            <BrandHomeLink className="flex items-center gap-2">
+        {/* Más ancho que el `max-w-md` del cuerpo a propósito: con el logo, los
+            cuatro pasos y la salida en la misma fila, a 2xl el rótulo de un
+            paso se partía en dos renglones. */}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between gap-4 h-16">
+            {/*
+              🔴 NO es `BrandHomeLink`. Ese resuelve `getUserHomeRoute`, y
+              mientras la agencia no termina de crearse la persona sigue con
+              rol `tenant`: el logo la mandaba a `/inquilino`, el panel del
+              INQUILINO, a mitad del alta de una inmobiliaria (auditoría
+              2026-09-05). Dentro del asistente el logo es marca, no salida —
+              para salir está `SalirDelRegistro`, acá al lado.
+            */}
+            <span className="flex items-center gap-2" aria-label="Leasefy">
               <LeasefyLogo size={28} tone="brand" />
-            </BrandHomeLink>
+            </span>
             <OnboardingWizardStepper currentStep={displayStep} />
+            {/* El asistente tampoco tenía salida: la única era cerrar la
+                pestaña. Ahora sí, y la promesa de volver donde quedaste la
+                cumple el punto de retorno del back. */}
+            <SalirDelRegistro />
           </div>
         </div>
       </header>
@@ -254,6 +314,7 @@ function OnboardingWizard({
                 onSubmit={completeOnboarding}
                 error={error !== null && error.kind === 'conflict' ? error : null}
                 onNavigateToStep={setCompleteStepOverride}
+                draft={draft}
               />
             )}
           </>

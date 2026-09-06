@@ -10,7 +10,7 @@
  */
 
 import { useCallback, useId, useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { LockSimple } from '@phosphor-icons/react';
 import { Banner } from '@leasefy/cadence';
 

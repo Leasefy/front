@@ -15,7 +15,7 @@ describe('etiquetaDeFaltante — the full wu-4-report.md §6 vocabulary', () => 
     ['area', 'área'],
     ['canon', 'canon mensual'],
     ['precio_venta', 'precio de venta'],
-    ['precio_inconsistente', 'canon y precio de venta juntos (elegí uno)'],
+    ['precio_inconsistente', 'canon y precio de venta juntos (elige uno)'],
     ['tipo_de_negocio', 'tipo de operación (arriendo/venta)'],
     ['departamento', 'departamento'],
     ['fecha_consignacion', 'fecha de consignación'],

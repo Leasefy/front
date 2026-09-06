@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { VERSION_POLITICA_DE_TRATAMIENTO } from '@/lib/legal/versiones';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Download, Eye, MagnifyingGlass, Calendar, CheckCircle, Clock, X, CaretLeft, CaretRight, FolderOpen, IdentificationCard, Money, Briefcase, Bank, Trash, Lock, ShieldCheck, Certificate, XCircle, WarningCircle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
@@ -118,7 +119,7 @@ export default function DocumentosPage() {
   // Both booleans default FALSE (createEmptyDocumentConsent) — never pre-ticked.
   // The MANDATORY `purposeDocAccess` is what actually gates document access below;
   // this UI gate is the real enforcement (server-side persistence is best-effort).
-  const [consent, setConsent] = useState<DocumentConsent>(() => createEmptyDocumentConsent('v1'));
+  const [consent, setConsent] = useState<DocumentConsent>(() => createEmptyDocumentConsent(VERSION_POLITICA_DE_TRATAMIENTO));
   const canAccessDocs = consent.purposeDocAccess;
   // Tracks docs we already best-effort POSTed consent for, so we don't spam the endpoint.
   const recordedConsentRef = useRef<Set<string>>(new Set());
@@ -210,15 +211,25 @@ export default function DocumentosPage() {
     setCurrentPage(1);
   };
 
-  // Best-effort SIC-audit consent record per accessed doc (once). The backend store is
-  // authoritative; a missing endpoint degrades to a silent no-op (documentsApi.recordConsent
-  // resolves on 404/403). The real enforcement is the unchecked-default gate, not this call —
-  // so we deliberately do NOT surface a "consentimiento guardado" confirmation here.
+  // Registro de la autorización de habeas data, una vez por documento.
+  //
+  // 🔴 Antes esto era `.catch(() => {})` sobre una ruta que no existía en el
+  // back, así que la autorización nunca se guardaba y nadie se enteraba. Ahora
+  // la ruta existe; si aun así falla, se saca el documento del set para que el
+  // próximo acceso vuelva a intentarlo. Perder la prueba en silencio es lo que
+  // hay que evitar: sin fila no hay cómo acreditar la autorización ante un
+  // reclamo (Ley 1581, arts. 9 y 12).
+  //
+  // No se le muestra un "consentimiento guardado" a la persona: la compuerta
+  // que la protege es la casilla, y anunciar el registro no le agrega nada.
   const maybeRecordConsent = useCallback((docId: string) => {
     if (!consent.purposeDocAccess) return;
     if (recordedConsentRef.current.has(docId)) return;
     recordedConsentRef.current.add(docId);
-    void documentsApi.recordConsent(docId, consent).catch(() => {});
+    void documentsApi.recordConsent(docId, consent).catch((err) => {
+      recordedConsentRef.current.delete(docId);
+      console.error('[documentos] no se pudo registrar el consentimiento', err);
+    });
   }, [consent]);
 
   // Anti-IDOR download: fetch the backend-signed URL → blob → programmatic <a download> →
@@ -377,7 +388,7 @@ export default function DocumentosPage() {
         <FalloDeCarga
           error={errorApps}
           queEs="tus documentos"
-          onReintentar={() => void recargarApps()}
+          onReintentar={recargarApps}
           volverA={{ label: 'Volver a mi panel', href: '/inquilino' }}
         />
       </div>

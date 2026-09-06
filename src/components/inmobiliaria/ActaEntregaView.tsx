@@ -153,7 +153,7 @@ export function ActaEntregaView({
             <div className="w-8 h-8 rounded-md bg-success-soft flex items-center justify-center">
               <Package className="w-4 h-4 text-success" />
             </div>
-            <h3 className="text-base font-semibold text-foreground">{t('inmobiliaria.acta.title')}</h3>
+            <h3 className="text-base font-semibold text-fg">{t('inmobiliaria.acta.title')}</h3>
           </div>
           <div className="flex items-center gap-2">
             {/* Imprimir abre la hoja del acta (`/inmuebles/[id]/acta`); sin
@@ -164,7 +164,7 @@ export function ActaEntregaView({
                 size="icon"
                 hideArrow
                 onClick={onPrint}
-                className="h-8 w-8 text-muted-foreground"
+                className="h-8 w-8 text-fg-muted"
                 title={t('inmobiliaria.acta.print')}
                 aria-label={t('inmobiliaria.acta.print')}
               >
@@ -176,7 +176,7 @@ export function ActaEntregaView({
               size="icon"
               hideArrow
               onClick={onDownload}
-              className="h-8 w-8 text-muted-foreground opacity-50 cursor-not-allowed"
+              className="h-8 w-8 text-fg-muted opacity-50 cursor-not-allowed"
               disabled
               title={t('inmobiliaria.acta.comingSoon')}
             >
@@ -184,7 +184,7 @@ export function ActaEntregaView({
             </Button>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-fg-muted">
           {t('inmobiliaria.acta.deliveryDateLabel')}: {fmtDate(contractDate)}
         </p>
       </div>
@@ -214,7 +214,7 @@ export function ActaEntregaView({
 
             {/* Search */}
             <div className="relative">
-              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-muted z-10" />
               <Input
                 type="text"
                 placeholder={t('inmobiliaria.acta.searchItem')}
@@ -264,12 +264,12 @@ export function ActaEntregaView({
                         className="border-b border-border/60 last:border-0"
                       >
                         <TableCell className="py-3 px-2">
-                          <span className="font-medium text-foreground text-sm">
+                          <span className="font-medium text-fg text-sm">
                             {item.name}
                           </span>
                         </TableCell>
                         <TableCell className="py-3 px-2 text-center">
-                          <span className="text-muted-foreground text-sm">
+                          <span className="text-fg-muted text-sm">
                             {item.quantity}
                           </span>
                         </TableCell>
@@ -283,11 +283,11 @@ export function ActaEntregaView({
                         </TableCell>
                         <TableCell className="py-3 px-2">
                           {item.notes ? (
-                            <span className="text-muted-foreground text-sm line-clamp-1">
+                            <span className="text-fg-muted text-sm line-clamp-1">
                               {item.notes}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground/70 text-sm">-</span>
+                            <span className="text-fg-subtle text-sm">-</span>
                           )}
                         </TableCell>
                         <TableCell className="py-3 px-2">
@@ -296,9 +296,10 @@ export function ActaEntregaView({
                               // allowlist: clickable image-tile thumbnail (wraps an <img>) opening a
                               // lightbox — Button/IconButton can't host a fill image without breaking it
                               <button
+                                type="button"
                                 onClick={() => setSelectedImage(item.photoUrl!)}
                                 aria-label={item.name}
-                                className="w-8 h-8 rounded-md overflow-hidden bg-muted hover:ring-2 hover:ring-primary transition-all"
+                                className="w-8 h-8 rounded-md overflow-hidden bg-surface-muted hover:ring-2 hover:ring-primary transition-all"
                               >
                                 <img
                                   src={item.photoUrl}
@@ -307,7 +308,7 @@ export function ActaEntregaView({
                                 />
                               </button>
                             ) : (
-                              <span className="text-muted-foreground/70">-</span>
+                              <span className="text-fg-subtle">-</span>
                             )}
                           </div>
                         </TableCell>
@@ -367,8 +368,8 @@ export function ActaEntregaView({
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <p className="font-medium text-foreground">{item.name}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-medium text-fg">{item.name}</p>
+                        <p className="text-sm text-fg-muted">
                           {t('inmobiliaria.acta.quantity')}: {item.quantity}
                         </p>
                       </div>
@@ -404,7 +405,7 @@ export function ActaEntregaView({
                       </div>
                     </div>
                     {item.notes && (
-                      <p className="text-sm text-muted-foreground mb-2">
+                      <p className="text-sm text-fg-muted mb-2">
                         {item.notes}
                       </p>
                     )}
@@ -412,9 +413,10 @@ export function ActaEntregaView({
                       // allowlist: clickable image-tile thumbnail (wraps an <img>) opening a
                       // lightbox — Button/IconButton can't host a fill image without breaking it
                       <button
+                        type="button"
                         onClick={() => setSelectedImage(item.photoUrl!)}
                         aria-label={item.name}
-                        className="w-16 h-16 rounded-md overflow-hidden bg-muted"
+                        className="w-16 h-16 rounded-md overflow-hidden bg-surface-muted"
                       >
                         <img
                           src={item.photoUrl}
@@ -444,7 +446,7 @@ export function ActaEntregaView({
 
             {/* Total Count — el total del filtro completo, no el de la página. */}
             <div className="flex items-center justify-between pt-3 border-t border-border">
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-fg-muted">
                 {t('inmobiliaria.acta.total')}: {totalFiltrado} items
               </span>
               {onAddItem && (

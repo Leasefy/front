@@ -19,7 +19,17 @@ export type EventoTipo =
 /** De dónde nace el evento: derivado por el sistema o creado por el usuario. */
 export type EventoOrigen = 'sistema' | 'usuario';
 
-export type EventoEstado = 'pendiente' | 'completado' | 'vencido' | 'cancelado';
+/**
+ * `confirmado` es una visita ACEPTADA. Sin él, confirmar una cita desde la
+ * tabla dejaba la fila diciendo «Pendiente»: la pantalla no reflejaba lo que
+ * el usuario acababa de hacer.
+ */
+export type EventoEstado =
+  | 'pendiente'
+  | 'confirmado'
+  | 'completado'
+  | 'vencido'
+  | 'cancelado';
 
 /** A qué entidad del CRM/ERP se ata el evento o la tarea (AGEN-02). */
 export type EventoVinculoTipo = 'contrato' | 'propiedad' | 'tercero' | 'pqrs';
@@ -40,6 +50,15 @@ export interface EventoAgenda {
   vinculoLabel?: string;
   responsableId?: string;
   responsableNombre?: string;
+  /**
+   * Modalidad de la visita (`IN_PERSON` | `VIRTUAL`). Sólo en `tipo: 'visita'`.
+   * Es lo primero que necesita saber quien la atiende: si hay que ir a abrir el
+   * inmueble o conectarse.
+   */
+  modalidad?: string;
+  /** Cómo ubicar a quien visita. Sólo en `tipo: 'visita'`. */
+  contactoTelefono?: string;
+  contactoEmail?: string;
 }
 
 /** Conteos por tipo de evento para el resumen de la agenda. */

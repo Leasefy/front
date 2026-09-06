@@ -11,7 +11,7 @@
  */
 
 import { useMemo, useState } from 'react'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label'
 import { Combobox } from '@/components/ui/combobox'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { useAgentes } from '@/lib/hooks/useInmobiliaria'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { ApiError } from '@/lib/api/client'
 import { pqrsApi } from '@/lib/api/pqrs-agencia.service'
 import type { ActualizarPqrsInput, Pqrs, PqrsEstado } from '@/lib/api/pqrs-agencia.types'
@@ -50,7 +51,11 @@ function Dato({ etiqueta, children }: { etiqueta: string; children: React.ReactN
   )
 }
 
-export function PqrsDrawer({ pqrs, open, onOpenChange, onActualizado }: Props) {
+export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }: Props) {
+  // La pantalla cierra con `setSeleccionada(null)`, así que `open` y `pqrs` se
+  // apagan en el MISMO render: el cajón salía deslizándose en blanco. Conservar
+  // la última solicitud es lo que lo hace salir mostrando lo que mostraba.
+  const pqrs = useUltimoPresente(entrante)
   const { formatDate } = useI18n()
   const { agentes } = useAgentes({ skip: !open })
   const [guardando, setGuardando] = useState(false)

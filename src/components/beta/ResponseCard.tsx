@@ -13,6 +13,7 @@ import {
   Buildings,
   ArrowRight,
 } from '@phosphor-icons/react';
+import Link from 'next/link';
 import type { Icon } from '@phosphor-icons/react';
 import { Button, Badge } from '@/components/ui';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
@@ -126,6 +127,34 @@ function ActionButton({
   // «no se entiende ese botón, se siente muy raro». Tres iconos huérfanos en
   // fila se leen como ruido, no como opción. La sección sigue a un clic en la
   // barra lateral; acá el botón hace UNA cosa: preguntarle al asistente.
+  // 🔴 Cuando la acción TIENE pantalla en el panel, el botón navega.
+  //
+  // Antes toda acción mandaba su texto como un mensaje nuevo: medido en vivo,
+  // «Ver inmuebles disponibles» dejaba al operador otros ~25 s esperando por
+  // una lista que el panel ya muestra a un clic — un botón que parece
+  // navegación y era un prompt. El mapeo marca cuáles son navegables dejando
+  // `prompt` sin definir (`suggestedActionToResponseAction`); las que no
+  // tienen pantalla siguen preguntándole al asistente, que es lo único que
+  // puede responderlas.
+  const navega = !action.prompt && Boolean(action.href);
+
+  if (navega) {
+    return (
+      <Button
+        asChild
+        variant={variant}
+        size="sm"
+        hideArrow
+        className="gap-1.5 rounded-md shrink-0"
+      >
+        <Link href={action.href!}>
+          {ActionIcon && <ActionIcon className="w-3.5 h-3.5" weight="duotone" />}
+          {action.label}
+        </Link>
+      </Button>
+    );
+  }
+
   return (
     <Button
       type="button"

@@ -23,13 +23,35 @@ export interface CreateCitaInput {
  * Agenda API — reads the aggregated system events for the current agency and
  * schedules agency visits.
  */
+/** Presencial o por video. Son los dos que entiende el back. */
+export type TipoDeVisita = 'IN_PERSON' | 'VIRTUAL';
+
+export interface DisponibilidadDeVisitas {
+  /** La agenda PRESENCIAL. Se conserva por compatibilidad. */
+  windows: AvailabilityWindow[];
+  /**
+   * Una agenda por modalidad. Son distintas a propósito: una videollamada se
+   * atiende a las 8 de la noche y abrir el inmueble a esa hora no.
+   * Ausente = un back anterior a la separación.
+   */
+  agendas?: Record<TipoDeVisita, AvailabilityWindow[]>;
+  /** Vacío = no se acepta ninguna, aunque haya horarios cargados. */
+  visitTypes: TipoDeVisita[];
+}
+
 export const agendaApi = {
   async getAgenda(): Promise<AgendaListResponse> {
     try {
       return await apiClient.get<AgendaListResponse>('/inmobiliaria/agenda');
     } catch (err) {
-      // No agency context / not permitted → honest empty agenda, not a crash.
-      if (err instanceof ApiError && (err.status === 403 || err.status === 404)) {
+      // Sin contexto de agencia (404) la agenda vacía ES la verdad.
+      //
+      // 🔴 El 403 NO se traga. «No tenés acceso» y «no hay nada agendado» son
+      // hechos distintos, y `FalloDeCarga` ya sabe decir el primero sin ofrecer
+      // un "Reintentar" que no arregla nada. Devolver un feed vacío ahí hacía
+      // que la pantalla afirmara que la agencia no tiene nada agendado —
+      // pudiendo estar llena.
+      if (err instanceof ApiError && err.status === 404) {
         return { resumen: RESUMEN_AGENDA_VACIO, eventos: [], total: 0 };
       }
       throw err;
@@ -51,21 +73,34 @@ export const agendaApi = {
     await apiClient.patch(`/inmobiliaria/agenda/tareas/${id}`, input);
   },
 
-  /** GET visit availability windows for one of the agency's properties. */
-  async getDisponibilidad(propertyId: string): Promise<AvailabilityWindow[]> {
-    return apiClient.get<AvailabilityWindow[]>(
+  /**
+   * GET cómo se visita este inmueble: sus ventanas y qué modalidades acepta.
+   *
+   * Antes devolvía el arreglo de ventanas suelto; ahora es un objeto, porque
+   * la pantalla que edita esto es una sola y pedir las modalidades aparte era
+   * un viaje de más.
+   */
+  async getDisponibilidad(propertyId: string): Promise<DisponibilidadDeVisitas> {
+    return apiClient.get<DisponibilidadDeVisitas>(
       `/inmobiliaria/agenda/propiedades/${propertyId}/disponibilidad`,
     );
   },
 
-  /** PUT — replace the full weekly availability for a property. */
+  /**
+   * PUT — reemplaza la semana entera del inmueble.
+   *
+   * `visitTypes` ausente = no se tocan las modalidades que ya tenía. La lista
+   * VACÍA sí se aplica y significa «ninguna».
+   */
   async setDisponibilidad(
     propertyId: string,
     windows: AvailabilityWindow[],
-  ): Promise<AvailabilityWindow[]> {
-    return apiClient.put<AvailabilityWindow[]>(
+    visitTypes?: TipoDeVisita[],
+    visitType: TipoDeVisita = 'IN_PERSON',
+  ): Promise<DisponibilidadDeVisitas> {
+    return apiClient.put<DisponibilidadDeVisitas>(
       `/inmobiliaria/agenda/propiedades/${propertyId}/disponibilidad`,
-      { windows },
+      { windows, visitType, ...(visitTypes ? { visitTypes } : {}) },
     );
   },
 

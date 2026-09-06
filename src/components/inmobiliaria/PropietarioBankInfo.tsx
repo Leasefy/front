@@ -52,14 +52,14 @@ export function PropietarioBankInfo({
       >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
-              <Bank className="w-5 h-5 text-muted-foreground" />
+            <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
+              <Bank className="w-5 h-5 text-fg-muted" />
             </div>
             <div>
-              <h4 className="font-semibold text-fg dark:text-white">
+              <h4 className="font-semibold text-fg">
                 {t('inmobiliaria.propietario.bankInfo.bankAccount')}
               </h4>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-fg-muted">
                 {t('inmobiliaria.propietario.bankInfo.sinCuenta')}
               </p>
             </div>
@@ -115,7 +115,7 @@ export function PropietarioBankInfo({
             <Bank className="w-5 h-5 text-success" />
           </div>
           <div>
-            <h4 className="font-semibold text-fg dark:text-white">
+            <h4 className="font-semibold text-fg">
               {t('inmobiliaria.propietario.bankInfo.bankAccount')}
             </h4>
             <p className="text-xs text-fg-muted dark:text-fg-subtle">
@@ -139,7 +139,7 @@ export function PropietarioBankInfo({
         {/* Bank */}
         <div className="flex items-center justify-between py-2 border-b border-border-faint dark:border-border-strong">
           <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.propietario.bankInfo.bank')}</span>
-          <span className="font-medium text-fg dark:text-white">
+          <span className="font-medium text-fg">
             {bank?.name || bankAccount.bankName || bankAccount.bank}
           </span>
         </div>
@@ -147,7 +147,7 @@ export function PropietarioBankInfo({
         {/* Account Type */}
         <div className="flex items-center justify-between py-2 border-b border-border-faint dark:border-border-strong">
           <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.propietario.bankInfo.type')}</span>
-          <span className="font-medium text-fg dark:text-white">
+          <span className="font-medium text-fg">
             {accountTypeLabel}
           </span>
         </div>
@@ -156,7 +156,7 @@ export function PropietarioBankInfo({
         <div className="flex items-center justify-between py-2 border-b border-border-faint dark:border-border-strong">
           <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.propietario.bankInfo.number')}</span>
           <div className="flex items-center gap-2">
-            <span className="font-mono font-medium text-fg dark:text-white">
+            <span className="font-mono font-medium text-fg">
               {showAccount ? bankAccount.accountNumber : maskAccount(bankAccount.accountNumber)}
             </span>
             <div className="flex items-center gap-1">
@@ -185,7 +185,7 @@ export function PropietarioBankInfo({
         {/* Account Holder */}
         <div className="flex items-center justify-between py-2">
           <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.propietario.bankInfo.holder')}</span>
-          <span className="font-medium text-fg dark:text-white">
+          <span className="font-medium text-fg">
             {bankAccount.accountHolder}
           </span>
         </div>
@@ -224,7 +224,7 @@ export function PropietarioBankInfoCompact({
         <Bank className="w-4 h-4 text-success" />
       </div>
       <div className="min-w-0">
-        <p className="text-sm font-medium text-fg dark:text-white truncate">
+        <p className="text-sm font-medium text-fg truncate">
           {bank?.name || bankAccount.bankName || bankAccount.bank} {maskAccount(bankAccount.accountNumber)}
         </p>
         <p className="text-xs text-fg-muted dark:text-fg-subtle">

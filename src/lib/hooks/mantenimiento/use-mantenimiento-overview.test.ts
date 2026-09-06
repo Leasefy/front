@@ -2,7 +2,7 @@
  * use-mantenimiento-overview.test.ts — Phase 7 plan 07-01 (Task 3 TDD)
  *
  * Pattern: createRoot + act + a local renderHook probe (NO @testing-library).
- * Mock mode (NEXT_PUBLIC_USE_MOCK_API unset) resolves the KPI envelope after the delay.
+ * El simulado (NEXT_PUBLIC_USE_MOCK_API=true, opt-in) resuelve el sobre de KPIs tras el delay.
  * C7-02: data is the { kpis, generatedAt } ENVELOPE, not bare MaintenanceKpis.
  */
 
@@ -38,7 +38,10 @@ function renderHook(): { current: ReturnType<typeof useMantenimientoOverview> | 
 }
 
 beforeEach(() => {
-  delete process.env.NEXT_PUBLIC_USE_MOCK_API // → mock mode default
+  // Estos tests ejercitan la rama SIMULADA, y el simulado dejó de venir por
+  // defecto: hay que pedirlo con todas las letras. Antes alcanzaba con borrar
+  // la variable, y esa misma comodidad servía datos inventados en staging.
+  process.env.NEXT_PUBLIC_USE_MOCK_API = 'true'
   process.env.NEXT_PUBLIC_MOCK_DELAY_MS = '10' // fast mock delay
   _mockAgency = { id: 'agency-test-mant' }
   container = document.createElement('div')
@@ -106,5 +109,37 @@ describe('useMantenimientoOverview', () => {
     expect(result.current!.isLoading).toBe(false)
     expect(fetchSpy).not.toHaveBeenCalled()
     delete process.env.NEXT_PUBLIC_AGENT_URL
+  })
+
+  /**
+   * Con el simulado apagado y sin agente configurado, el hook no tiene de dónde
+   * traer nada. Callarse deja la pantalla vacía, y un vacío mudo se lee como
+   * «no tenés mantenimientos» — que es afirmar algo que no sabemos. El error
+   * explícito es lo que manda a <FalloDeCarga> a contar qué pasó.
+   */
+  it('sin agente configurado explica el vacío en vez de callarse', async () => {
+    process.env.NEXT_PUBLIC_USE_MOCK_API = 'false'
+    delete process.env.NEXT_PUBLIC_AGENT_URL
+    const result = renderHook()
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20))
+    })
+    expect(result.current!.isLoading).toBe(false)
+    expect(result.current!.data).toBeNull()
+    expect(result.current!.error).toContain('NEXT_PUBLIC_AGENT_URL')
+  })
+
+  /**
+   * El que muerde de este archivo: si alguien vuelve a poner el simulado por
+   * defecto, este test se cae. Sin la variable puesta se pega a datos reales.
+   */
+  it('sin la variable puesta NO sirve datos simulados', async () => {
+    delete process.env.NEXT_PUBLIC_USE_MOCK_API
+    delete process.env.NEXT_PUBLIC_AGENT_URL
+    const result = renderHook()
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 40))
+    })
+    expect(result.current!.data).toBeNull()
   })
 })

@@ -9,12 +9,13 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { CaretLeft, Buildings, X, CalendarPlus } from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button, EmptyState } from '@/components/ui';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FotosDelInmueble } from '@/components/inmobiliaria/FotosDelInmueble';
+import { VisitasDelInmueble } from '@/components/inmobiliaria/VisitasDelInmueble';
 import { VisorDeFotos } from '@/components/inmobiliaria/inmueble/VisorDeFotos';
 import { UbicacionDelInmueble } from '@/components/inmobiliaria/inmueble/UbicacionDelInmueble';
 import {
@@ -375,11 +376,17 @@ function ConsignacionDetailContent() {
     }
   }, [consignacion, isTerminating, t]);
 
-  const handleRenew = useCallback(() => {
-    toast.info(t('inmobiliaria.portafolio.detail.toasts.renewSoon'), {
-      description: t('inmobiliaria.portafolio.detail.toasts.renewDesc'),
-    });
-  }, [t]);
+  /*
+   * 🔴 Acá vivía `handleRenew`, que sólo hacía
+   * `toast.info('Renovar consignación próximamente')`.
+   *
+   * No hay endpoint de renovación de consignación: `consignacionesApi` no lo
+   * tiene y el back tampoco (`RenovacionesService` renueva CONTRATOS, que es
+   * otra cosa — el mandato con el propietario no pasa por ahí). Un ítem de
+   * menú que sólo se disculpa ocupa el lugar de la acción real y hace perder
+   * un clic cada vez, así que se retiró junto con su renglón del menú
+   * (`ConsignacionHeader`). Vuelve el día que exista la ruta.
+   */
 
   /*
    * Antes esto era un toast de «próximamente». Con eso, un inmueble sin agente
@@ -504,7 +511,6 @@ function ConsignacionDetailContent() {
           onViewPortal={handleViewPortal}
           onChangeStatus={handleChangeStatus}
           onTerminate={handleTerminate}
-          onRenew={handleRenew}
         />
       </motion.div>
 
@@ -586,6 +592,17 @@ function ConsignacionDetailContent() {
               propertyId={consignacion.propertyId}
               consignacionId={consignacion.id}
             />
+          </motion.div>
+
+          {/* Cuándo se puede visitar. Va junto a los candidatos porque es lo
+              otro que pasa mientras el inmueble está disponible — y sin esto
+              el aviso del marketplace dice «Sin disponibilidad» siempre. */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.23 }}
+          >
+            <VisitasDelInmueble propertyId={consignacion.propertyId} />
           </motion.div>
 
           <motion.div

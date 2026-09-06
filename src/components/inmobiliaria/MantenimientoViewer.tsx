@@ -271,6 +271,7 @@ function PhotoGallery({
           // hosts a fill image; Button/IconButton can't (image-tile precedent).
           <button
             key={idx}
+            type="button"
             onClick={() => setSelectedPhoto(url)}
             className="aspect-square rounded-md bg-muted overflow-hidden relative group"
           >
@@ -286,6 +287,7 @@ function PhotoGallery({
           // allowlist: add-photo dropzone tile (aspect-square dashed grid cell) — custom upload
           // affordance; FileDropzone's chip UI can't model the in-grid square tile.
           <button
+            type="button"
             onClick={onUpload}
             className="aspect-square rounded-md border-2 border-dashed border-border hover:border-primary/30 transition-colors flex items-center justify-center"
           >

@@ -26,8 +26,17 @@ import {
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import { TablePagination } from '@/components/ui/pagination'
 import { Spinner } from '@/components/ui/spinner'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { DesgloseAdeudado } from '@/components/inmobiliaria/DesgloseAdeudado'
 import { RecibosDeCajaHistorial } from '@/components/inmobiliaria/RecibosDeCajaHistorial'
 import { contractsApi } from '@/lib/api/contracts.service'
@@ -140,32 +149,42 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
         </div>
       ) : error ? (
         <div className="space-y-2 px-5 py-6 text-sm">
-          <p className="text-destructive">{error}</p>
+          <p className="text-danger">{error}</p>
           <Button variant="secondary" size="sm" hideArrow onClick={() => void cargar()}>
             Reintentar
           </Button>
         </div>
       ) : cobros.length === 0 ? (
-        <p className="px-5 py-6 text-sm text-muted-foreground" data-testid="cobros-vacio">
-          {contract.propertyId === null
-            ? 'Sin inmueble vinculado no hay cobros: el cobro sale de la consignación del inmueble. Vinculalo en la tarjeta Propiedad.'
-            : 'Todavía no se generó ningún cobro para este contrato. Los cobros se generan desde Cobros, mes a mes; cuando salga el primero, aparece acá con su desglose.'}
-        </p>
+        <div data-testid="cobros-vacio">
+          {contract.propertyId === null ? (
+            <EmptyState
+              icon={Receipt}
+              title="Sin inmueble vinculado no hay cobros"
+              description="El cobro sale de la consignación del inmueble. Vinculalo en la tarjeta Propiedad."
+            />
+          ) : (
+            <EmptyState
+              icon={Receipt}
+              title="Todavía no se generó ningún cobro para este contrato"
+              description="Los cobros se generan desde Cobros, mes a mes; cuando salga el primero, aparece acá con su desglose."
+            />
+          )}
+        </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="px-5 py-2.5 font-medium">Período</th>
-                <th className="px-3 py-2.5 font-medium">Vence</th>
-                <th className="px-3 py-2.5 text-right font-medium">Total</th>
-                <th className="px-3 py-2.5 text-right font-medium">Pagado</th>
-                <th className="px-3 py-2.5 text-right font-medium">Saldo</th>
-                <th className="px-3 py-2.5 font-medium">Estado</th>
-                <th className="w-10 px-3 py-2.5" />
-              </tr>
-            </thead>
-            <tbody>
+        <div>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>Período</TableHead>
+                <TableHead>Vence</TableHead>
+                <TableHead numeric>Total</TableHead>
+                <TableHead numeric>Pagado</TableHead>
+                <TableHead numeric>Saldo</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="w-10" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {pageItems.map((c) => {
                 const estaAbierto = abierto === c.id
                 const estado = ESTADO[c.status] ?? { etiqueta: c.status, variante: 'default' as const }
@@ -180,8 +199,8 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
                   />
                 )
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
 
           {/* Pie de tabla del design system: cuántos períodos hay en total y
               cuántos se ven. */}
@@ -222,41 +241,38 @@ function FilaDeCobro({
 
   return (
     <>
-      <tr
-        className={cn(
-          'cursor-pointer border-b border-border transition-colors hover:bg-muted/40',
-          abierto && 'bg-muted/30',
-        )}
+      <TableRow
+        className="cursor-pointer"
+        selected={abierto}
         onClick={onToggle}
         data-testid={`cobro-${cobro.month}`}
         aria-expanded={abierto}
       >
-        <td className="whitespace-nowrap px-5 py-3 font-medium text-foreground">{periodo}</td>
-        <td className="whitespace-nowrap px-3 py-3 tabular-nums text-muted-foreground">{vence}</td>
-        <td className="px-3 py-3 text-right tabular-nums text-foreground">
-          {formatCurrency(cobro.totalWithFees)}
-        </td>
-        <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">
+        <TableCell className="whitespace-nowrap font-medium">{periodo}</TableCell>
+        <TableCell muted className="whitespace-nowrap tabular-nums">
+          {vence}
+        </TableCell>
+        <TableCell numeric>{formatCurrency(cobro.totalWithFees)}</TableCell>
+        <TableCell numeric muted>
           {formatCurrency(cobro.paidAmount)}
-        </td>
-        <td
-          className={cn(
-            'px-3 py-3 text-right tabular-nums',
-            cobro.pendingAmount > 0 ? 'font-medium text-foreground' : 'text-muted-foreground',
-          )}
+        </TableCell>
+        <TableCell
+          numeric
+          muted={cobro.pendingAmount <= 0}
+          className={cn(cobro.pendingAmount > 0 && 'font-medium')}
         >
           {formatCurrency(cobro.pendingAmount)}
-        </td>
-        <td className="px-3 py-3">
+        </TableCell>
+        <TableCell>
           <Badge variant={estado.variante}>{estado.etiqueta}</Badge>
-        </td>
-        <td className="px-3 py-3 text-muted-foreground">
+        </TableCell>
+        <TableCell muted>
           {abierto ? <CaretDown className="h-4 w-4" /> : <CaretRight className="h-4 w-4" />}
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
       {abierto ? (
-        <tr className="border-b border-border bg-muted/20">
-          <td colSpan={7} className="px-5 py-4">
+        <TableRow className="bg-surface-muted hover:bg-surface-muted">
+          <TableCell colSpan={7} className="px-4 py-4">
             {/* `width: 0; min-width: 100%`: el detalle ocupa el ancho de la
                 tabla sin ENSANCHARLA — si no, el desglose y los recibos
                 empujan las columnas y la tabla se sale de la tarjeta. */}
@@ -279,8 +295,8 @@ function FilaDeCobro({
                 </Button>
               </div>
             </div>
-          </td>
-        </tr>
+          </TableCell>
+        </TableRow>
       ) : null}
     </>
   )

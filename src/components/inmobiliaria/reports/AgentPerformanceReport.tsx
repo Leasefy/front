@@ -25,6 +25,7 @@ import {
   PAGE_SIZE_OPTIONS,
   useTablePagination,
 } from '@/lib/hooks/use-table-pagination';
+import { SIN_MEDIR, textoDeTasa } from '@/lib/tasas';
 import type { AgentPerformanceData } from '@/lib/data/mock-reports';
 
 interface AgentPerformanceReportProps {
@@ -102,9 +103,11 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
           icon={Trophy}
           color="amber"
         />
+        {/* Sin agentes cargados no hay promedio de equipo: «0%» y «0d»
+            acusaban de bajo rendimiento a un equipo que no existe. */}
         <KPICard
           label="Conversion promedio"
-          value={`${teamSummary.avgConversion}%`}
+          value={textoDeTasa(teamSummary.avgConversion)}
           icon={ChartLineUp}
           color="blue"
         />
@@ -116,7 +119,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
         />
         <KPICard
           label="Prom. dias al cierre"
-          value={`${teamSummary.avgDaysToClose}d`}
+          value={teamSummary.avgDaysToClose === null ? SIN_MEDIR : `${teamSummary.avgDaysToClose}d`}
           icon={Clock}
           color="violet"
         />

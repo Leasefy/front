@@ -151,7 +151,7 @@ async function leerLibro(XLSX: typeof import('xlsx'), file: File): Promise<impor
     if (!esZip && !esCfb) {
       throw new Error(
         `No se pudo leer «${file.name}»: el archivo está dañado o no es una planilla de Excel. ` +
-          `Exportalo de nuevo desde tu sistema (Excel o CSV) y volvé a subirlo.`,
+          `Expórtalo de nuevo desde tu sistema (Excel o CSV) y vuelve a subirlo.`,
       );
     }
   }
@@ -167,7 +167,7 @@ async function leerLibro(XLSX: typeof import('xlsx'), file: File): Promise<impor
   } catch (e) {
     throw new Error(
       `No se pudo leer «${file.name}»: el archivo está dañado o no es una planilla. ` +
-        `Exportalo de nuevo desde tu sistema (Excel o CSV) y volvé a subirlo.`,
+        `Expórtalo de nuevo desde tu sistema (Excel o CSV) y vuelve a subirlo.`,
       { cause: e },
     );
   }
@@ -219,7 +219,7 @@ export async function parseSpreadsheetFile(
   if (!esTexto && filaDeEncabezados.length === 0 && rawData.length === 0) {
     throw new Error(
       `No se pudo leer «${file.name}»: el archivo está dañado, protegido o vacío. ` +
-        `Exportalo de nuevo desde tu sistema y volvé a subirlo.`,
+        `Expórtalo de nuevo desde tu sistema y vuelve a subirlo.`,
     );
   }
 

@@ -367,7 +367,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
       await refrescar(lote.trim());
     } catch {
       setError(
-        'La carga quedó preparada, pero no pudimos leer sus filas. Tocá «Actualizar la lista».',
+        'La carga quedó preparada, pero no pudimos leer sus filas. Toca «Actualizar la lista».',
       );
     }
     setCargando(false);
@@ -410,7 +410,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
 
   /** El aviso de cuando la acción SÍ pasó y lo que falló fue releer la lista. */
   const AVISO_DE_REFRESCO =
-    'El cambio se guardó, pero no pudimos refrescar la lista. Tocá «Actualizar la lista» para verla al día.';
+    'El cambio se guardó, pero no pudimos refrescar la lista. Toca «Actualizar la lista» para verla al día.';
 
   /**
    * Devuelve qué pasó, para que la fila que disparó la acción pueda mostrar
@@ -469,7 +469,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
       try {
         await refrescar(loteAbierto, p);
       } catch (e) {
-        setError(mensaje(e, 'No pudimos traer esa página. Tocá «Actualizar la lista».'));
+        setError(mensaje(e, 'No pudimos traer esa página. Toca «Actualizar la lista».'));
       } finally {
         setCargando(false);
       }
@@ -683,7 +683,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           <div className="flex items-start gap-2">
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
             <p className="text-sm text-fg">
-              No pudimos verificar si tenés una carga sin terminar. Podés seguir igual — pero si
+              No pudimos verificar si tienes una carga sin terminar. Puedes seguir igual — pero si
               dejaste una a medias, reintentá primero: volver a subir el mismo archivo duplica a
               las personas.
             </p>
@@ -699,7 +699,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           className="space-y-3 rounded-lg border border-primary/30 bg-surface p-5 shadow-sm"
           data-testid="lotes-abiertos"
         >
-          <p className="text-sm font-medium text-fg">Tenés una carga sin terminar</p>
+          <p className="text-sm font-medium text-fg">Tienes una carga sin terminar</p>
           {lotesVisibles.map((l) => (
             <div key={l.lote} className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm text-fg-muted">
@@ -722,7 +722,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             </div>
           ))}
           <p className="text-xs text-fg-subtle">
-            Si volvés a subir el mismo archivo con otro nombre, las personas se duplican y hay
+            Si vuelves a subir el mismo archivo con otro nombre, las personas se duplican y hay
             que resolver el duplicado una por una.
           </p>
         </section>
@@ -812,7 +812,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             Descargar la plantilla
           </Button>
           <p className="text-xs text-fg-subtle">
-            O subí el archivo que ya tenés: abajo se muestra cómo entendimos tus columnas.
+            O sube el archivo que ya tienes: abajo se muestra cómo entendimos tus columnas.
           </p>
         </div>
 
@@ -856,7 +856,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               {/* Deshabilitado sin decir por qué = un dropzone que «no anda».
                   La espera y el fallo de la plantilla se dicen acá mismo. */}
               {plantilla
-                ? nombreDeArchivo || 'Arrastrá el archivo o hacé clic para elegirlo'
+                ? nombreDeArchivo || 'Arrastra el archivo o haz clic para elegirlo'
                 : errorDePlantilla
                   ? 'No se puede subir todavía — reintentá arriba la lectura de columnas.'
                   : 'Preparando la pantalla: leyendo las columnas esperadas…'}
@@ -898,7 +898,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               <h2 className="text-sm font-medium text-fg">Así entendimos tus columnas</h2>
               <p className="text-xs text-fg-muted">
                 <span className="font-mono tabular-nums">{filas.length}</span> filas en el
-                archivo. Revisá el mapeo antes de seguir: lo que se mapea mal no falla, se guarda
+                archivo. Revisa el mapeo antes de seguir: lo que se mapea mal no falla, se guarda
                 en el campo de al lado.
               </p>
             </div>
@@ -978,7 +978,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                     : `Faltan ${faltanObligatorias.length} columnas obligatorias`}
                 </p>
                 <p className="mt-0.5 text-sm text-fg-muted">
-                  {faltanObligatorias.map((c) => c.titulo).join(' · ')} — igual podés seguir: las
+                  {faltanObligatorias.map((c) => c.titulo).join(' · ')} — igual puedes seguir: las
                   filas van a quedar marcadas y se completan acá mismo, sin volver a subir nada.
                 </p>
               </div>
@@ -1000,7 +1000,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                     .map((c) => `fila ${c.fila}: ${c.campo} (${c.largo} de ${c.maximo})`)
                     .join(' · ')}
                   {celdasLargas.length > 3 ? ` y ${celdasLargas.length - 3} más` : ''}. Corregilas
-                  en el archivo y volvé a subirlo — no las recortamos por vos.
+                  en el archivo y vuelve a subirlo — no las recortamos por ti.
                 </p>
               </div>
             </div>
@@ -1027,7 +1027,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               data-testid="nombre-del-lote"
             />
             <span className="block text-xs text-fg-subtle">
-              Sirve para volver a encontrarla si la dejás a medias. No se puede repetir.
+              Sirve para volver a encontrarla si la dejas a medias. No se puede repetir.
             </span>
           </label>
 
@@ -1397,9 +1397,9 @@ function ListaDeTrabajo({
           {/* El empujón al paso siguiente sólo adentro del asistente: la
               pantalla suelta no tiene ese pie. */}
           {resumen.listos > 0
-            ? ' Ya podés crear las que quedaron listas con el botón de arriba.'
+            ? ' Ya puedes crear las que quedaron listas con el botón de arriba.'
             : enElMuro
-              ? ' Podés seguir con el paso siguiente desde el botón de abajo.'
+              ? ' Puedes seguir con el paso siguiente desde el botón de abajo.'
               : ''}
         </p>
       ) : null}
@@ -1488,10 +1488,10 @@ function ResolucionMasiva({
               aria-labelledby="masivo-campo-etiqueta"
               data-testid="masivo-campo"
             >
-              <SelectValue placeholder="Elegí un campo" />
+              <SelectValue placeholder="Elige un campo" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={IGNORAR}>Elegí un campo</SelectItem>
+              <SelectItem value={IGNORAR}>Elige un campo</SelectItem>
               {columnas.map((c) => (
                 <SelectItem key={c.campo} value={c.campo}>
                   {c.titulo}
@@ -1513,7 +1513,7 @@ function ResolucionMasiva({
                   aria-labelledby="masivo-valor-etiqueta"
                   data-testid="masivo-valor"
                 >
-                  <SelectValue placeholder="Elegí" />
+                  <SelectValue placeholder="Elige" />
                 </SelectTrigger>
                 <SelectContent>
                   {columna.opciones.map((o) => (

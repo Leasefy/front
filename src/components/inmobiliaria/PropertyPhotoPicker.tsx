@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ImageSquare, X } from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { IconButton } from '@leasefy/cadence';
 import {
   PROPERTY_PHOTO_ALLOWED_TYPES,

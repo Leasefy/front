@@ -99,7 +99,7 @@ de dev es compartida. El cableado de lectura está verificado; las mutaciones no
 ## Cómo reproducir el QA
 
 ```bash
-# Cuentas con cartera real (las dos con PRueba123#)
+# Cuentas con cartera real (las dos con la contraseña de QA — está en 1Password)
 hola+inmobiliaria3@leasefy.co      # tenant f1849975… 45 deudores, 59 llamadas
 pruebasarrendador1902@gmail.com    # tenant 6d37b582…  3 deudores, 107 llamadas
                                    #   ← 34 con outcome+duración: el único que

@@ -22,7 +22,6 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { toast } from 'sonner';
 import { formatCurrency as formatCOP, formatDate } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -184,19 +183,28 @@ export function ConfigFacturacion({
     return labels[status];
   };
 
+  /**
+   * «Actualizar» el medio de pago. No hay pantalla ni endpoint para cambiarlo
+   * suelto: el medio queda registrado cuando se paga un plan, y esa pasarela
+   * vive en `/upgrade` (Wompi). Antes esto tiraba DOS avisos, los dos diciendo
+   * «Abriendo formulario de pago…» — uno acá y otro en el padre— y no abría
+   * ninguno. Ahora lleva al único lugar donde el medio de pago se toca de
+   * verdad.
+   */
   const handleUpdatePaymentMethod = useCallback(() => {
     onUpdatePaymentMethod?.();
-    toast.info(t('inmobiliaria.config.billing.openingPaymentForm'));
-  }, [onUpdatePaymentMethod, t]);
+    router.push(UPGRADE_ROUTE);
+  }, [onUpdatePaymentMethod, router]);
 
-  const handleDownloadInvoice = useCallback(
-    (invoice: BillingInvoice) => {
-      toast.success(
-        t('inmobiliaria.config.billing.downloadingInvoice', { id: invoice.id })
-      );
-    },
-    [t]
-  );
+  /**
+   * Descargar la factura. Decía «Descargando factura X…» y no descargaba nada,
+   * teniendo el PDF a mano en la misma fila (`invoice.pdfUrl` — el botón sólo
+   * se dibuja cuando existe). Ahora abre ESE PDF.
+   */
+  const handleDownloadInvoice = useCallback((invoice: BillingInvoice) => {
+    if (!invoice.pdfUrl) return;
+    window.open(invoice.pdfUrl, '_blank', 'noopener,noreferrer');
+  }, []);
 
   const goToUpgrade = useCallback(() => {
     router.push(UPGRADE_ROUTE);
@@ -228,15 +236,9 @@ export function ConfigFacturacion({
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
-      {/* Header */}
-      <div className="space-y-1">
-        <h2 className="text-base font-semibold text-fg">
-          {t('inmobiliaria.config.billing.title')}
-        </h2>
-        <p className="text-sm text-fg-muted">
-          {t('inmobiliaria.config.billing.subtitle')}
-        </p>
-      </div>
+      {/* Sin encabezado propio: el marco de Configuración ya pone «Plan y
+          facturación» con su explicación justo arriba, y los dos juntos se
+          leían como el mismo título repetido. */}
 
       {/* Plan & Usage Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

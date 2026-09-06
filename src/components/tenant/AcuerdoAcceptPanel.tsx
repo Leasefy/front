@@ -28,7 +28,7 @@
  */
 
 import { useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { Check, FileText, ArrowRight, SealCheck } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';

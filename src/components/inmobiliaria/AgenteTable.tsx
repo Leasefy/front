@@ -192,6 +192,7 @@ export function AgenteTable({
         controles y el botón perdía las mayúsculas del `TH`. Ver DispersionTable.
       */}
       <button
+        type="button"
         onClick={() => handleSort(field)}
         className="inline-flex items-center gap-1.5 uppercase hover:text-fg"
       >

@@ -22,6 +22,14 @@ import { useI18n } from '@/lib/i18n'
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { FileText } from '@phosphor-icons/react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import type {
   TopScriptsData,
   TopScriptsRow,
@@ -73,66 +81,55 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
       <h3 className="text-sm font-semibold text-fg-muted mb-3">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}
       </h3>
-      <div className="overflow-x-auto rounded-md border border-border bg-surface">
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            {/*
-              Tabla suelta (no usa las primitivas del DS), así que los `<th>`
-              llevan a mano el tratamiento de encabezado del `TableHead`: mono
-              11px en mayúsculas, fg-subtle. Antes eran sans 12px en minúsculas
-              y esta tabla se leía distinta del resto del panel.
-            */}
-            <tr>
-              <th className="text-left px-3 py-2 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
+      {/* `overflow-hidden` recorta las esquinas redondeadas; el scroll horizontal
+          lo pone el `Table` del DS en su propio contenedor. */}
+      <div className="overflow-hidden rounded-md border border-border bg-surface">
+        <Table>
+          <TableHeader>
+            {/* El encabezado no es una fila sobre la que se pueda actuar: sin hover. */}
+            <TableRow className="hover:bg-transparent">
+              <TableHead scope="col" className="px-3">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.script')}
-              </th>
-              <th className="text-left px-3 py-2 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
+              </TableHead>
+              <TableHead scope="col" className="px-3">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.stage')}
-              </th>
-              <th className="text-right px-3 py-2 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
+              </TableHead>
+              <TableHead scope="col" numeric className="px-3">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.nCalls')}
-              </th>
-              <th className="text-right px-3 py-2 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
+              </TableHead>
+              <TableHead scope="col" numeric className="px-3">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.conversionRate')}
-              </th>
-              <th className="text-right px-3 py-2 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
+              </TableHead>
+              <TableHead scope="col" numeric className="px-3">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.lift')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {rows.map((row) => (
-              <tr
-                key={row.scriptTemplateId}
-                className="border-b border-border hover:bg-surface-muted"
-              >
-                <td className="px-3 py-2 text-fg">
-                  {row.scriptName}
-                </td>
-                <td className="px-3 py-2 text-fg-muted font-semibold">
-                  {row.stage}
-                </td>
-                <td className="px-3 py-2 text-right tabular-nums text-fg-muted">
+              <TableRow key={row.scriptTemplateId}>
+                <TableCell className="px-3">{row.scriptName}</TableCell>
+                <TableCell className="px-3 font-semibold text-fg-muted">{row.stage}</TableCell>
+                <TableCell numeric className="px-3 font-mono text-fg-muted">
                   {row.nCalls}
-                </td>
-                <td className="px-3 py-2 text-right tabular-nums text-fg-muted">
+                </TableCell>
+                <TableCell numeric className="px-3 font-mono text-fg-muted">
                   {(row.conversionRate * 100).toFixed(1)}%
-                </td>
-                <td
+                </TableCell>
+                <TableCell
+                  numeric
                   className={
-                    'px-3 py-2 text-right tabular-nums font-medium ' +
-                    (row.lift >= 1
-                      ? 'text-success'
-                      : 'text-warning')
+                    'px-3 font-mono font-medium ' +
+                    (row.lift >= 1 ? 'text-success' : 'text-warning')
                   }
                 >
                   {row.lift >= 0 ? '+' : ''}
                   {((row.lift - 1) * 100).toFixed(0)}%
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </section>
   )

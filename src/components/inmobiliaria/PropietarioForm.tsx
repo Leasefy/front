@@ -258,7 +258,7 @@ export function PropietarioForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Personal Information */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-fg dark:text-white">
+        <div className="flex items-center gap-2 text-fg">
           {isCompany ? (
             <Buildings className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
           ) : (
@@ -405,7 +405,7 @@ export function PropietarioForm({
 
       {/* Bank Account */}
       <div className="space-y-4 pt-4 border-t border-border-faint dark:border-border-strong">
-        <div className="flex items-center gap-2 text-fg dark:text-white">
+        <div className="flex items-center gap-2 text-fg">
           <Bank className="w-5 h-5 text-success" />
           <h3 className="font-semibold">{t('inmobiliaria.propietario.form.bankDataTitle')}</h3>
         </div>

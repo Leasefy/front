@@ -7,6 +7,7 @@
  */
 
 import { useState } from "react";
+import { notFound } from "next/navigation";
 import {
   SquaresFour,
   Coins,
@@ -266,6 +267,13 @@ function ChatHome() {
 }
 
 export default function SidebarPreviewPage() {
+  // Vitrina de diseño ya consumida: el sidebar real (PlanSidebar) ya adoptó estos
+  // estilos. Nadie enlaza esta ruta. En producción devolvemos 404 para no dejar
+  // el backoffice de muestra abierto y sin indexar. NODE_ENV lo inlinea Next.
+  if (process.env.NODE_ENV === 'production') {
+    notFound();
+  }
+
   return (
     <div className="h-screen w-full bg-surface-muted p-3">
       <div className="flex h-full w-full overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">

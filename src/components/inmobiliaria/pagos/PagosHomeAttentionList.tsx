@@ -17,6 +17,7 @@ import { Bell, CaretRight } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import type {
@@ -60,7 +61,7 @@ export function PagosHomeAttentionList({
         <CardTitle className="text-base">
           {t('inmobiliaria.ai.pagos_home.attention.title')}
         </CardTitle>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-fg-muted">
           {t('inmobiliaria.ai.pagos_home.attention.subtitle')}
         </p>
       </CardHeader>
@@ -70,18 +71,20 @@ export function PagosHomeAttentionList({
         ) : error && !isLoading ? (
           <div
             role="alert"
-            className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 flex items-center justify-between gap-4"
+            className="rounded-lg border border-danger bg-danger-soft p-4 flex items-center justify-between gap-4"
           >
-            <p className="text-sm text-rose-600 dark:text-rose-400">
+            <p className="text-sm text-danger">
               {t('inmobiliaria.ai.pagos_home.errors.loading')}: {error}
             </p>
-            <button
+            <Button
               type="button"
+              variant="link"
+              size="sm"
               onClick={onRetry}
-              className="shrink-0 text-xs font-medium text-rose-600 dark:text-rose-400 underline hover:no-underline"
+              className="shrink-0 h-auto px-0 text-xs font-medium text-danger underline hover:no-underline"
             >
               {t('inmobiliaria.ai.pagos_home.errors.retry')}
-            </button>
+            </Button>
           </div>
         ) : !data || data.items.length === 0 ? (
           <EmptyState
@@ -132,22 +135,22 @@ function AttentionRow({
           'w-full text-left flex items-start gap-3 rounded-lg border p-3 transition-colors',
           'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
           active
-            ? 'border-primary/40 bg-primary/5'
-            : 'border-border hover:bg-muted/50',
+            ? 'border-primary bg-primary-soft'
+            : 'border-border hover:bg-surface-hover',
         ].join(' ')}
       >
         <div className="flex flex-col items-start gap-1.5 min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant={PRIORITY_BADGE_VARIANT[item.priority]}>{priorityLabel}</Badge>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-fg-muted">
               {t(`inmobiliaria.ai.pagos_home.attention.kind.${item.kind}`)}
             </span>
           </div>
-          <p className="text-sm font-medium text-foreground truncate w-full">{item.title}</p>
-          <p className="text-xs text-muted-foreground line-clamp-2">{item.detail}</p>
+          <p className="text-sm font-medium text-fg truncate w-full">{item.title}</p>
+          <p className="text-xs text-fg-muted line-clamp-2">{item.detail}</p>
         </div>
         <div className="flex flex-col items-end gap-1.5 shrink-0">
-          <span className="text-sm font-semibold tabular-nums text-foreground">
+          <span className="text-sm font-mono font-semibold tabular-nums text-fg">
             {formatCurrency(item.totalCop)}
           </span>
           <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
@@ -172,11 +175,11 @@ function AttentionSkeleton() {
           className="rounded-lg border border-border p-3 flex items-start justify-between gap-3"
         >
           <div className="space-y-2 flex-1">
-            <div className="h-4 w-16 rounded-full bg-muted" />
-            <div className="h-4 w-3/4 rounded bg-muted" />
-            <div className="h-3 w-1/2 rounded bg-muted" />
+            <div className="h-4 w-16 rounded-full bg-surface-muted" />
+            <div className="h-4 w-3/4 rounded bg-surface-muted" />
+            <div className="h-3 w-1/2 rounded bg-surface-muted" />
           </div>
-          <div className="h-4 w-20 rounded bg-muted" />
+          <div className="h-4 w-20 rounded bg-surface-muted" />
         </li>
       ))}
     </ul>

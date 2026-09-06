@@ -257,7 +257,7 @@ export default function PostulacionesPage() {
         <FalloDeCarga
           error={error}
           queEs="las postulaciones"
-          onReintentar={() => void load()}
+          onReintentar={load}
         />
       ) : items.length === 0 ? (
         /* Sin nada que atender, lo útil no son seis tiles en cero ni una tabla

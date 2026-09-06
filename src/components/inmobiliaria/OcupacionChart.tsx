@@ -91,17 +91,22 @@ function DonutChart({
 /**
  * Horizontal stacked bar for zone breakdown
  */
+/**
+ * 🔴 Esta barra pintaba tres franjas —ocupado, «en proceso», disponible— sobre
+ * datos que sólo tienen dos estados. `inProcess` y `available` no existen en
+ * la respuesta del back, así que las dos últimas franjas se dibujaban con NaN
+ * y la etiqueta decía «NaN%». Ahora son dos, que es lo que el back distingue.
+ */
 function ZoneBar({ zone, t }: { zone: OcupacionZone; t: (key: string) => string }) {
-  const occupiedPercent = (zone.occupied / zone.totalProperties) * 100;
-  const inProcessPercent = (zone.inProcess / zone.totalProperties) * 100;
-  const availablePercent = (zone.available / zone.totalProperties) * 100;
+  const occupiedPercent = zone.total > 0 ? (zone.occupied / zone.total) * 100 : 0;
+  const vacantPercent = zone.total > 0 ? (zone.vacant / zone.total) * 100 : 0;
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-fg dark:text-white">{zone.zone}</span>
         <span className="text-sm text-fg-muted dark:text-fg-subtle">
-          {Math.round(zone.occupancyRate)}% {t('inmobiliaria.finance.occupancy.occupied')}
+          {Math.round(zone.rate)}% {t('inmobiliaria.finance.occupancy.occupied')}
         </span>
       </div>
       <div className="h-3 rounded-full bg-surface-muted dark:bg-ink overflow-hidden flex">
@@ -113,19 +118,11 @@ function ZoneBar({ zone, t }: { zone: OcupacionZone; t: (key: string) => string 
             className="bg-success dark:bg-success h-full"
           />
         )}
-        {inProcessPercent > 0 && (
+        {vacantPercent > 0 && (
           <motion.div
             initial={{ width: 0 }}
-            animate={{ width: `${inProcessPercent}%` }}
+            animate={{ width: `${vacantPercent}%` }}
             transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
-            className="bg-primary dark:bg-primary h-full"
-          />
-        )}
-        {availablePercent > 0 && (
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${availablePercent}%` }}
-            transition={{ duration: 0.5, ease: 'easeOut', delay: 0.2 }}
             className="bg-muted dark:bg-ink h-full"
           />
         )}
@@ -136,11 +133,7 @@ function ZoneBar({ zone, t }: { zone: OcupacionZone; t: (key: string) => string 
           {t('inmobiliaria.finance.occupancy.occupiedPlural')}
         </span>
         <span>
-          <span className="font-medium text-primary">{zone.inProcess}</span>{' '}
-          {t('inmobiliaria.finance.occupancy.inProcess')}
-        </span>
-        <span>
-          <span className="font-medium text-fg-muted dark:text-fg-subtle">{zone.available}</span>{' '}
+          <span className="font-medium text-fg-muted dark:text-fg-subtle">{zone.vacant}</span>{' '}
           {t('inmobiliaria.finance.occupancy.available')}
         </span>
       </div>
@@ -163,14 +156,14 @@ function ZoneCard({ zone, t }: { zone: OcupacionZone; t: (key: string) => string
         <span
           className={cn(
             'text-lg font-bold',
-            zone.occupancyRate >= 80
+            zone.rate >= 80
               ? 'text-success'
-              : zone.occupancyRate >= 60
+              : zone.rate >= 60
               ? 'text-warning'
               : 'text-danger'
           )}
         >
-          {Math.round(zone.occupancyRate)}%
+          {Math.round(zone.rate)}%
         </span>
       </div>
 
@@ -178,11 +171,7 @@ function ZoneCard({ zone, t }: { zone: OcupacionZone; t: (key: string) => string
       <div className="h-2 rounded-full bg-surface-muted dark:bg-ink overflow-hidden flex mb-3">
         <div
           className="bg-success dark:bg-success h-full"
-          style={{ width: `${(zone.occupied / zone.totalProperties) * 100}%` }}
-        />
-        <div
-          className="bg-primary dark:bg-primary h-full"
-          style={{ width: `${(zone.inProcess / zone.totalProperties) * 100}%` }}
+          style={{ width: `${zone.total > 0 ? (zone.occupied / zone.total) * 100 : 0}%` }}
         />
       </div>
 
@@ -193,12 +182,12 @@ function ZoneCard({ zone, t }: { zone: OcupacionZone; t: (key: string) => string
           <p className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.finance.occupancy.occupiedPlural')}</p>
         </div>
         <div>
-          <p className="font-bold text-primary">{zone.inProcess}</p>
-          <p className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.finance.occupancy.inProcess')}</p>
+          <p className="font-bold text-fg-muted dark:text-fg-subtle">{zone.vacant}</p>
+          <p className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.finance.occupancy.available')}</p>
         </div>
         <div>
-          <p className="font-bold text-fg-muted dark:text-fg-subtle">{zone.available}</p>
-          <p className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.finance.occupancy.available')}</p>
+          <p className="font-bold text-fg dark:text-white">{zone.total}</p>
+          <p className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.finance.occupancy.total')}</p>
         </div>
       </div>
     </motion.div>
@@ -213,14 +202,17 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
   const { t } = useI18n();
   const [viewVariant, setViewVariant] = useState<'chart' | 'cards'>(variant);
 
-  // Calculate trend
-  const trend = useMemo(() => {
-    if (!data.previousMonthOccupancyRate) return null;
-    const diff = data.overallOccupancyRate - data.previousMonthOccupancyRate;
-    if (diff > 2) return { type: 'up' as const, diff: Math.round(diff) };
-    if (diff < -2) return { type: 'down' as const, diff: Math.round(Math.abs(diff)) };
-    return { type: 'stable' as const, diff: 0 };
-  }, [data.overallOccupancyRate, data.previousMonthOccupancyRate]);
+  /**
+   * 🔴 «vs mes anterior» nunca tuvo con qué compararse.
+   *
+   * Esto leía `data.previousMonthOccupancyRate`, un campo que el back no
+   * manda. El `if (!…) return null` hacía que el bloque no se pintara nunca,
+   * así que el defecto no se veía: era una comparación muerta, no una rota.
+   * Si algún día el back manda la ocupación del mes anterior, el cálculo
+   * vuelve acá; mientras tanto la pantalla no promete una tendencia que no
+   * puede calcular.
+   */
+  const trend = null as { type: 'up' | 'down' | 'stable'; diff: number } | null;
 
   return (
     <div className={cn('space-y-6', className)}>
@@ -322,19 +314,11 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
             <p className="text-sm text-success">{t('inmobiliaria.finance.occupancy.occupiedPlural')}</p>
           </div>
 
-          <div className="p-4 rounded-lg border border-primary/30 bg-primary-soft">
-            <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center mb-3">
-              <Hourglass className="w-5 h-5 text-primary" />
-            </div>
-            <p className="text-2xl font-bold text-primary">{data.totalInProcess}</p>
-            <p className="text-sm text-primary">{t('inmobiliaria.finance.occupancy.inProcess')}</p>
-          </div>
-
           <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface-muted">
             <div className="w-10 h-10 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center mb-3">
               <Buildings className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
             </div>
-            <p className="text-2xl font-bold text-fg dark:text-fg-subtle">{data.totalAvailable}</p>
+            <p className="text-2xl font-bold text-fg dark:text-fg-subtle">{data.totalVacant}</p>
             <p className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.finance.occupancy.available')}</p>
           </div>
         </div>

@@ -125,7 +125,7 @@ permisos. El agente se reinicia solo tocando un archivo de `src/` (`tsx watch`).
 ruta que no existe** (ni carpeta ni rewrite). Ese front nunca pudo hablarle al
 agente — de ahí el 404 de `/agent-proxy/api/tenant/aprobacion`.
 
-Cuentas (todas `PRueba123#`):
+Cuentas (todas con la contraseña de QA — está en 1Password):
 
 | cuenta | qué tiene |
 |---|---|

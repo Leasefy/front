@@ -102,26 +102,21 @@ export const documentsApi = {
   },
 
   /**
-   * POST /documents/:id/consent — records the tenant's per-purpose Ley 1581
-   * consent ({@link DocumentConsent}) for SIC audit.
+   * POST /documents/:documentId/consent — registra el consentimiento de habeas
+   * data (Ley 1581) sobre los documentos del arriendo.
    *
-   * Best-effort: the authoritative, SIC-audit consent store is **backend-owned**.
-   * If the endpoint is absent (404) or forbidden (403) this degrades to a resolved
-   * no-op rather than blocking the flow — the real, enforcing gate is the
-   * unchecked-default consent UI (v7-02-03), which won't let the user proceed
-   * without ticking `purposeDocAccess`. Any other error is re-thrown so genuine
-   * failures are not swallowed.
+   * 🔴 Hasta 2026-09-06 esta llamada caía en el vacío: la ruta no existía en el
+   * back —el controlador declaraba siete y ninguna era esta— y acá se
+   * silenciaba el 404 «degradando a un no-op», con el argumento de que la
+   * compuerta real era la casilla sin marcar del formulario. Esa casilla
+   * bloquea el flujo, sí, pero no es prueba de nada: la persona autorizaba y
+   * la autorización no quedaba registrada en ningún lado.
+   *
+   * Ya no se silencia. Si el registro falla, el llamador se entera: sin fila
+   * no hay forma de acreditar la autorización ante un reclamo, que es lo que
+   * exigen el art. 9 de la Ley 1581 y el art. 12 (entregar copia al titular).
    */
   async recordConsent(docId: string, consent: DocumentConsent): Promise<void> {
-    try {
-      await apiClient.post<void>(`/documents/${docId}/consent`, consent);
-    } catch (err) {
-      // Missing/blocked endpoint → silent no-op (persistence is a disclosed
-      // backend dependency). Surface everything else.
-      if (err instanceof ApiError && (err.status === 404 || err.status === 403)) {
-        return;
-      }
-      throw err;
-    }
+    await apiClient.post<void>(`/documents/${docId}/consent`, consent);
   },
 };

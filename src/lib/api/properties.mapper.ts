@@ -108,6 +108,17 @@ export function mapBackendProperty(bp: BackendProperty): Property {
 
     // Sale vs rent (contract.md T-0038 §3.2.2-§3.2.4)
     listingType: resolveListingType(bp.listingType),
+    // Ausente en un back viejo ⇒ se deja `undefined` y el aviso ofrece las dos,
+    // que es como venía funcionando. NUNCA se rellena con un arreglo vacío:
+    // vacío significa «ninguna» y apagaría el agendamiento sin que nadie lo
+    // haya pedido.
+    ...(Array.isArray((bp as { visitTypes?: unknown }).visitTypes)
+      ? {
+          visitTypes: (bp as unknown as {
+            visitTypes: Array<'IN_PERSON' | 'VIRTUAL'>;
+          }).visitTypes,
+        }
+      : {}),
     salePrice: bp.salePrice ?? null,
 
     // Pricing

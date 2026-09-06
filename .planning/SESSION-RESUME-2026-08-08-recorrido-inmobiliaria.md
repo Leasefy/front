@@ -152,7 +152,7 @@ tienen de dónde sacar el id llevan al listado, donde el botón sí pregunta.
   desde `~/rent/back`), que sí tiene `AGENT_API_KEY`.
 - El front de `:3002` se levanta apuntando ahí:
   `NEXT_PUBLIC_BACKEND_URL=http://localhost:3010 pnpm dev -p 3002`
-- **Cuenta de agencia que funciona:** `agencia.demo.1786238152@leasefy-dev.co` / `PRueba123#`
+- **Cuenta de agencia que funciona:** `agencia.demo.1786238152@leasefy-dev.co` / `<contraseña en 1Password>`
   (creada vía admin API + onboarding contra :3010).
 - ⚠️ `qa.inmobiliaria@leasefy-dev.co` quedó **trabada**: el back la tiene como `TENANT`.
 

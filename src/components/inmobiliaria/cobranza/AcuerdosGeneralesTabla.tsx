@@ -33,6 +33,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { TablePagination } from '@/components/ui/pagination'
 import {
   PAGE_SIZE_OPTIONS,
@@ -54,6 +64,13 @@ export function AcuerdosGeneralesTabla() {
 
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [errorAccion, setErrorAccion] = useState<string | null>(null)
+  /**
+   * El acuerdo que se está por borrar. Se confirma con `AlertDialog` del
+   * sistema de diseño, nunca con `window.confirm`: el diálogo del navegador no
+   * respeta el tema, no se puede leer con el mismo foco que el resto del panel
+   * y en algunos navegadores queda bloqueado por el propio navegador.
+   */
+  const [aBorrar, setABorrar] = useState<AcuerdoGeneral | null>(null)
 
   // Sin `resetKey`: la tabla no tiene filtros ni búsqueda, así que no hay nada
   // que cambie el conjunto de filas y obligue a volver a la página 1. Si el
@@ -76,26 +93,22 @@ export function AcuerdosGeneralesTabla() {
     [editar],
   )
 
-  const eliminar = useCallback(
-    async (a: AcuerdoGeneral) => {
-      // Borrar un acuerdo cambia lo que el agente ofrece a partir de la próxima
-      // llamada: se confirma, y se dice cuál.
-      const ok = window.confirm(
-        `¿Borrar «${a.name}»? El agente deja de ofrecerlo desde la próxima llamada. Para pausarlo sin perderlo, apagalo.`,
-      )
-      if (!ok) return
-      setOcupado(a.id)
-      setErrorAccion(null)
-      try {
-        await borrar(a.id)
-      } catch (e) {
-        setErrorAccion(e instanceof Error ? e.message : 'No pudimos borrar el acuerdo.')
-      } finally {
-        setOcupado(null)
-      }
-    },
-    [borrar],
-  )
+  // Borrar un acuerdo cambia lo que el agente ofrece a partir de la próxima
+  // llamada: se confirma, y se dice cuál.
+  const eliminar = useCallback(async () => {
+    const a = aBorrar
+    if (!a) return
+    setABorrar(null)
+    setOcupado(a.id)
+    setErrorAccion(null)
+    try {
+      await borrar(a.id)
+    } catch (e) {
+      setErrorAccion(e instanceof Error ? e.message : 'No pudimos borrar el acuerdo.')
+    } finally {
+      setOcupado(null)
+    }
+  }, [aBorrar, borrar])
 
   return (
     <Card>
@@ -126,13 +139,15 @@ export function AcuerdosGeneralesTabla() {
           className="flex items-center justify-between gap-3 flex-wrap border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger"
         >
           <span>No pudimos cargar los acuerdos generales. {error}</span>
-          <button
-            type="button"
+          <Button
+            variant="link"
+            size="sm"
+            hideArrow
             onClick={() => void refetch()}
-            className="shrink-0 underline underline-offset-2 hover:no-underline"
+            className="shrink-0 px-0 h-auto text-sm text-danger underline hover:no-underline"
           >
             Reintentar
-          </button>
+          </Button>
         </div>
       )}
 
@@ -219,7 +234,7 @@ export function AcuerdosGeneralesTabla() {
                           size="sm"
                           hideArrow
                           disabled={ocupado === a.id}
-                          onClick={() => void eliminar(a)}
+                          onClick={() => setABorrar(a)}
                           aria-label={`Borrar ${a.name}`}
                         >
                           <Trash className="w-4 h-4 text-danger" aria-hidden="true" />
@@ -253,6 +268,22 @@ export function AcuerdosGeneralesTabla() {
           />
         </div>
       )}
+
+      <AlertDialog open={aBorrar !== null} onOpenChange={(abierto) => !abierto && setABorrar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Borrar «{aBorrar?.name}»?</AlertDialogTitle>
+            <AlertDialogDescription>
+              El agente deja de ofrecerlo desde la próxima llamada. Para pausarlo sin perderlo,
+              apágalo con el interruptor.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void eliminar()}>Borrar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   )
 }

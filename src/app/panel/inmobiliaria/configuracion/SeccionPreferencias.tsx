@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { Compass, Globe, Moon } from '@phosphor-icons/react';
 
 import { Button, Switch } from '@/components/ui';

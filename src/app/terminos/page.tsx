@@ -1,11 +1,63 @@
 import type { Metadata } from "next";
 import { LandingChrome } from "@/components/landing-v2/LandingChrome";
-import { Footer } from "@/components/layout/Footer";
+import { LandingFooterV2 } from "@/components/landing-v2/LandingFooterV2";
 import { SectionLabel } from "@/components/ui/section-label";
+
+/**
+ * Términos y Condiciones.
+ *
+ * ── Por qué se reescribieron enteros (2026-09-05) ──────────────────────────
+ *
+ * La versión anterior tenía 34 secciones y siete jurisdicciones —Colombia,
+ * México, Brasil, Chile, Perú, Argentina y Estados Unidos— con declaraciones
+ * de cumplimiento de la LFPDPPP, la LGPD, el CCPA, la FCRA y la Fair Housing
+ * Act. El producto opera SÓLO en Colombia: no existe columna `country` en
+ * ningún esquema, la moneda tiene guarda dura en COP y el catálogo de países
+ * de teléfono tiene una sola entrada. Declarar cumplimiento ante seis
+ * reguladores extranjeros no protege: crea seis obligaciones inexistentes.
+ *
+ * Tres cláusulas se cayeron por ineficaces, no por gusto (Ley 1480 art. 43):
+ *
+ *   · El tope de responsabilidad en USD $100 — num. 1, limitar la
+ *     responsabilidad legal del proveedor.
+ *   · El descargo «as is» / «según disponibilidad» — num. 2, renuncia a la
+ *     garantía legal de los arts. 7 y 8.
+ *   · La renovación automática sin salida — num. 14.
+ *
+ * El art. 42 es claro: las cláusulas abusivas «serán ineficaces de pleno
+ * derecho». No hay que demandarlas para que no produzcan efecto, así que
+ * tenerlas escritas sólo servía para parecer poco serios ante un cliente que
+ * nos confía su recaudo.
+ *
+ * Y se retiró la promesa de un «código de verificación único que permite a
+ * terceros confirmar la autenticidad del resultado»: la página que lo haría
+ * lee `localStorage` con un comentario `// Mock:` al lado, así que un tercero
+ * en otro navegador nunca puede verificar nada.
+ *
+ * ── El cambio estructural ──────────────────────────────────────────────────
+ *
+ * Ahora hay TRES relaciones distintas y el documento las separa (§3), porque
+ * el régimen de cláusulas abusivas protege al consumidor y no al empresario:
+ * la inmobiliaria contrata un servicio para su actividad económica; el
+ * propietario y el inquilino pueden ser consumidores. Un texto único para los
+ * tres deja las limitaciones sin efecto frente a los dos últimos.
+ *
+ * ── Lo que hay que mantener sincronizado ───────────────────────────────────
+ *
+ * · §8 (dinero en tránsito): el mandato es de administración ESPECÍFICA. La
+ *   palabra «libre administración» activaría el supuesto 2 del Decreto 1981
+ *   de 1988 (captación masiva). Cualquier cláusula que permita invertir,
+ *   prestar o retener saldos a discreción rompe eso. Tampoco puede haber
+ *   billetera ni saldo acumulable: eso convertiría a Leasefy en candidata a
+ *   ser vigilada como SEDPE.
+ * · §9 (agente automatizado): el catálogo es cerrado a propósito. Si el
+ *   Piloto gana una acción nueva, entra acá o no se puede ejecutar.
+ */
+
 export const metadata: Metadata = {
-  title: "Términos y Condiciones | Leasefy",
+  title: "Términos y Condiciones",
   description:
-    "Términos y condiciones de uso de Leasefy. Plataforma tecnológica para la gestión integral de arrendamientos.",
+    "Condiciones de uso de la plataforma Leasefy para inmobiliarias, propietarios e inquilinos en Colombia.",
 };
 
 export default function TerminosPage() {
@@ -18,1554 +70,599 @@ export default function TerminosPage() {
             <h1 className="text-[2rem] md:text-[3rem] font-light text-foreground leading-[1.15] tracking-[-0.02em] italic mb-4">
               Términos y condiciones
             </h1>
-            <p className="text-[13px] text-muted-foreground mb-12">
-              Última actualización: 11 de marzo de 2026
-            </p>
+
+            <div className="mb-10 rounded-lg border border-border bg-surface-muted/40 p-5 text-[14px]">
+              <dl className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-[auto_1fr]">
+                <dt className="font-medium text-foreground">Prestador</dt>
+                <dd className="text-muted-foreground">Leasefy S.A.S.</dd>
+                <dt className="font-medium text-foreground">Domicilio</dt>
+                <dd className="text-muted-foreground">Sabaneta, Antioquia, Colombia</dd>
+                <dt className="font-medium text-foreground">Contacto</dt>
+                <dd className="text-muted-foreground">hola@leasefy.co</dd>
+                <dt className="font-medium text-foreground">Ámbito</dt>
+                <dd className="text-muted-foreground">Colombia, únicamente</dd>
+                <dt className="font-medium text-foreground">Vigente desde</dt>
+                <dd className="text-muted-foreground">5 de septiembre de 2026</dd>
+                <dt className="font-medium text-foreground">Versión</dt>
+                <dd className="text-muted-foreground font-mono">v2.0</dd>
+              </dl>
+            </div>
 
             <div className="space-y-10 text-[15px] text-foreground/85 leading-relaxed">
 
-              {/* ── 1. OBJETO Y ALCANCE ── */}
               <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  1. Objeto y alcance
-                </h2>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">1. Qué es esto</h2>
                 <p className="mb-3">
-                  Los presentes Términos y Condiciones de Uso (en adelante, los
-                  &quot;Términos&quot;) regulan el acceso, registro y uso de la plataforma
-                  tecnológica Leasefy (en adelante, la &quot;Plataforma&quot;), operada por
-                  Leasefy S.A.S. (en adelante, &quot;Leasefy&quot;, &quot;nosotros&quot; o la
-                  &quot;Empresa&quot;), sociedad constituida conforme a las leyes de la
-                  República de Colombia con domicilio principal en Bogotá D.C.
-                </p>
-                <p className="mb-3">
-                  Estos Términos constituyen un acuerdo legal vinculante entre usted
-                  (el &quot;Usuario&quot;) y Leasefy. Al acceder, registrarse o utilizar la
-                  Plataforma por cualquier medio, usted declara haber leído,
-                  comprendido y aceptado la totalidad de estos Términos, así como
-                  nuestra Política de Privacidad. Si no está de acuerdo con alguna
-                  disposición, debe abstenerse de utilizar la Plataforma.
+                  Leasefy es una plataforma que usan las inmobiliarias colombianas
+                  para administrar arriendos: publicar inmuebles, estudiar
+                  candidatos, generar contratos, recaudar el canon, girarlo al
+                  propietario y gestionar la cartera.
                 </p>
                 <p>
-                  La Plataforma opera en múltiples jurisdicciones. Cuando
-                  disposiciones específicas de una jurisdicción apliquen a su uso,
-                  se indicarán en la Sección 27 (Disposiciones por Jurisdicción) de
-                  estos Términos. En caso de conflicto entre las disposiciones
-                  generales y las específicas por jurisdicción, prevalecerán estas
-                  últimas.
+                  Estos términos regulan el uso de la plataforma. Se rigen por la ley
+                  colombiana. <strong className="text-foreground/90">Sólo operamos en Colombia</strong>{" "}
+                  y no prestamos el servicio en otros países.
                 </p>
               </section>
 
-              {/* ── 2. DEFINICIONES ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  2. Definiciones
+                  2. Lo que Leasefy no es
                 </h2>
-                <p className="mb-3">
-                  Los siguientes términos tendrán el significado que se les atribuye
-                  a continuación, independientemente de que se utilicen en singular o
-                  plural:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    <span className="text-foreground/85 font-medium">Plataforma:</span>{" "}
-                    el sitio web, aplicaciones móviles, APIs y cualquier otro medio
-                    digital mediante el cual Leasefy presta sus servicios.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Usuario:</span>{" "}
-                    toda persona natural o jurídica que acceda, se registre o utilice
-                    la Plataforma en cualquiera de sus roles.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Arrendador / Propietario:</span>{" "}
-                    persona natural o jurídica que ofrece uno o más inmuebles en
-                    arrendamiento a través de la Plataforma.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Arrendatario / Inquilino:</span>{" "}
-                    persona natural que busca, se postula o arrienda un inmueble a través
-                    de la Plataforma.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Agente Inmobiliario:</span>{" "}
-                    persona natural o jurídica que actúa como intermediario
-                    inmobiliario, corredor o administrador de propiedades y utiliza
-                    la Plataforma para gestionar portafolios de arrendamiento en
-                    representación de terceros.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Inmobiliaria / Agencia:</span>{" "}
-                    persona jurídica dedicada a la intermediación inmobiliaria que
-                    utiliza la Plataforma para administrar múltiples propiedades y
-                    agentes.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Contrato de Arrendamiento:</span>{" "}
-                    acuerdo celebrado entre el Arrendador y el Arrendatario para el
-                    uso y goce de un inmueble a cambio de un canon, conforme a la
-                    legislación aplicable en cada jurisdicción.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Evaluación de Inquilino / Scoring:</span>{" "}
-                    análisis de perfil del potencial arrendatario que genera una
-                    puntuación de riesgo indicativa, basada en información
-                    proporcionada voluntariamente y fuentes permitidas por la ley.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Servicios:</span>{" "}
-                    el conjunto de funcionalidades ofrecidas a través de la
-                    Plataforma, incluyendo el marketplace de propiedades, gestión de
-                    arrendamientos, procesamiento de pagos, firma electrónica,
-                    evaluación de inquilinos y demás herramientas descritas en la
-                    Sección 6.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Contenido del Usuario:</span>{" "}
-                    toda información, texto, fotografía, documento o material que un
-                    Usuario publique, cargue o comparta a través de la Plataforma.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Plan de Suscripción:</span>{" "}
-                    el paquete de servicios contratado por el Usuario, cuyas
-                    características, precios y condiciones específicas se detallan
-                    en la página de precios de la Plataforma.
-                  </li>
+                <p className="mb-3">Conviene decirlo antes que nada:</p>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground">
+                  <li><strong className="text-foreground/85">No somos parte del contrato de arrendamiento.</strong> Ese contrato es entre el propietario y el inquilino.</li>
+                  <li><strong className="text-foreground/85">No somos inmobiliaria.</strong> No captamos, no mostramos inmuebles ni asesoramos sobre arrendar.</li>
+                  <li><strong className="text-foreground/85">No somos entidad financiera, aseguradora ni afianzadora</strong>, ni garantizamos el pago del canon.</li>
+                  <li><strong className="text-foreground/85">No damos asesoría jurídica, contable ni tributaria.</strong> Las plantillas y los cálculos son herramientas; la responsabilidad de usarlos bien es de quien los usa.</li>
+                  <li><strong className="text-foreground/85">No decidimos a quién se le arrienda.</strong> Eso lo decide el propietario o su inmobiliaria (§10).</li>
                 </ul>
               </section>
 
-              {/* ── 3. ELEGIBILIDAD ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  3. Elegibilidad
+                  3. Tres relaciones distintas, y cuál te aplica
                 </h2>
                 <p className="mb-3">
-                  Para registrarse y utilizar la Plataforma, usted declara y
-                  garantiza que:
+                  No todos los que usan la plataforma tienen el mismo contrato con
+                  nosotros, y la ley no los trata igual.
                 </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
+                <ul className="list-disc pl-5 space-y-2 text-muted-foreground mb-3">
                   <li>
-                    Es mayor de edad según la legislación aplicable en su
-                    jurisdicción (18 años en Colombia, México, Chile, Perú y
-                    Argentina; 18 años en Brasil; 18 años en Estados Unidos, salvo
-                    excepciones estatales).
+                    <strong className="text-foreground/85">La inmobiliaria</strong> contrata el
+                    servicio para su actividad económica. Le aplican estos términos
+                    completos, incluidas las secciones 6, 8, 9 y 18.
                   </li>
                   <li>
-                    Si actúa en representación de una persona jurídica, cuenta con
-                    la capacidad legal y autorización necesaria para vincular a dicha
-                    entidad a estos Términos.
+                    <strong className="text-foreground/85">El propietario</strong> usa el portal
+                    para ver su inmueble, sus giros y sus documentos. Si contrata
+                    directamente con nosotros un plan pago, es consumidor.
                   </li>
                   <li>
-                    No ha sido previamente suspendido o inhabilitado para usar la
-                    Plataforma.
-                  </li>
-                  <li>
-                    Cumple con todas las leyes y regulaciones aplicables en su
-                    jurisdicción para celebrar contratos de arrendamiento, actuar
-                    como intermediario inmobiliario o utilizar servicios financieros
-                    digitales.
-                  </li>
-                  <li>
-                    No se encuentra en ninguna lista de sanciones internacionales
-                    (OFAC, ONU, Unión Europea) ni es una Persona Políticamente
-                    Expuesta (PEP) sin haberlo declarado previamente.
+                    <strong className="text-foreground/85">El inquilino y el candidato</strong> usan
+                    el portal para postularse, firmar y pagar. Son consumidores.
                   </li>
                 </ul>
-              </section>
-
-              {/* ── 4. REGISTRO Y CUENTAS DE USUARIO ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  4. Registro y cuentas de usuario
-                </h2>
-                <p className="mb-3">
-                  Para acceder a las funcionalidades de la Plataforma, usted deberá
-                  crear una cuenta proporcionando información veraz, completa y
-                  actualizada. Usted se compromete a:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Mantener la exactitud y vigencia de su información personal en
-                    todo momento.
-                  </li>
-                  <li>
-                    Mantener la confidencialidad de sus credenciales de acceso
-                    (contraseña, tokens de autenticación, factores de autenticación
-                    multifactor).
-                  </li>
-                  <li>
-                    No compartir su cuenta ni permitir el acceso de terceros no
-                    autorizados.
-                  </li>
-                  <li>
-                    Notificar inmediatamente a Leasefy sobre cualquier uso no
-                    autorizado de su cuenta o cualquier brecha de seguridad.
-                  </li>
-                </ul>
-                <p className="mt-3">
-                  Leasefy se reserva el derecho de verificar la identidad de los
-                  Usuarios mediante documentos de identidad, verificación biométrica
-                  u otros mecanismos permitidos por la ley. Usted es responsable de
-                  toda la actividad que ocurra bajo su cuenta, incluidas las acciones
-                  de terceros que accedan con sus credenciales.
+                <p>
+                  Cuando alguien actúa como consumidor, se aplica el Estatuto del
+                  Consumidor (Ley 1480 de 2011) y{" "}
+                  <strong className="text-foreground/90">ninguna cláusula de estos términos limita los derechos que esa ley le reconoce</strong>.
+                  Si algo de acá dijera lo contrario, no produce efecto.
                 </p>
               </section>
 
-              {/* ── 5. NATURALEZA DEL SERVICIO ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  5. Naturaleza del servicio
+                  4. Cuenta y seguridad
                 </h2>
                 <p className="mb-3">
-                  Leasefy opera como una plataforma tecnológica de intermediación
-                  digital que facilita la conexión entre Arrendadores, Arrendatarios
-                  y Agentes Inmobiliarios. Se precisa expresamente que:
+                  Para usar la plataforma hay que crear una cuenta con información
+                  veraz y mantenerla al día. Sos responsable de lo que pase con tus
+                  credenciales; avisanos apenas sospeches un uso no autorizado.
                 </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Leasefy <span className="text-foreground/85 font-medium">no es parte</span>{" "}
-                    de los contratos de arrendamiento que se celebren entre los
-                    Usuarios.
-                  </li>
-                  <li>
-                    Leasefy <span className="text-foreground/85 font-medium">no es un corredor inmobiliario</span>,
-                    agente de bienes raíces, ni presta servicios de asesoría
-                    inmobiliaria, jurídica o financiera.
-                  </li>
-                  <li>
-                    Leasefy <span className="text-foreground/85 font-medium">no garantiza</span>{" "}
-                    la disponibilidad, calidad, estado o legalidad de los inmuebles
-                    publicados, ni la veracidad o exactitud de la información
-                    proporcionada por los Usuarios.
-                  </li>
-                  <li>
-                    Leasefy <span className="text-foreground/85 font-medium">no actúa como entidad financiera</span>,
-                    compañía de seguros ni garante de las obligaciones contractuales
-                    entre las partes.
-                  </li>
-                  <li>
-                    Leasefy facilita herramientas tecnológicas para la gestión, pero
-                    la responsabilidad sobre las decisiones de arrendamiento recae
-                    exclusivamente en las partes involucradas.
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 6. SERVICIOS OFRECIDOS ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  6. Servicios ofrecidos
-                </h2>
-                <p className="mb-3">
-                  A través de la Plataforma, Leasefy ofrece las siguientes
-                  funcionalidades, cuya disponibilidad puede variar según el Plan
-                  de Suscripción y la jurisdicción del Usuario:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    <span className="text-foreground/85 font-medium">Marketplace de propiedades:</span>{" "}
-                    publicación, búsqueda y visualización de inmuebles disponibles
-                    para arrendamiento.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Gestión de arrendamientos:</span>{" "}
-                    herramientas para la administración del ciclo de vida del
-                    contrato de arrendamiento, incluyendo renovaciones, ajustes de
-                    canon y terminaciones.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Evaluación de inquilinos (Scoring):</span>{" "}
-                    análisis de perfil con generación de puntuación de riesgo
-                    indicativa. Ver Sección 11 para detalles y limitaciones.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Procesamiento de pagos y dispersiones:</span>{" "}
-                    facilitación del cobro de cánones de arrendamiento y dispersión
-                    de fondos a propietarios. Ver Sección 10 para detalles.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Firma electrónica:</span>{" "}
-                    generación y firma electrónica de contratos y documentos
-                    relacionados. Ver Sección 12.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Panel de gestión para inmobiliarias:</span>{" "}
-                    herramientas de administración de portafolios, agentes,
-                    reportes financieros y operativos.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Notificaciones y comunicaciones:</span>{" "}
-                    alertas sobre vencimientos, pagos, mantenimiento y otros eventos
-                    relevantes del arrendamiento.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Documentos y reportes:</span>{" "}
-                    generación de extractos de pago, reportes financieros,
-                    certificados de arrendamiento y documentos complementarios.
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 7. PLANES Y SUSCRIPCIONES ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  7. Planes y suscripciones
-                </h2>
-                <p className="mb-3">
-                  La Plataforma ofrece diferentes Planes de Suscripción con
-                  funcionalidades, límites y precios específicos. Al contratar un
-                  plan, usted acepta:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Los precios, características y limitaciones vigentes al momento
-                    de la contratación, tal como se describen en la página de
-                    precios de la Plataforma.
-                  </li>
-                  <li>
-                    Los planes pueden ser de facturación mensual o anual, según la
-                    modalidad seleccionada.
-                  </li>
-                  <li>
-                    Leasefy podrá modificar los precios y características de los
-                    planes con un aviso previo de al menos treinta (30) días
-                    calendario. Las modificaciones aplicarán al siguiente período de
-                    facturación.
-                  </li>
-                  <li>
-                    La falta de pago oportuno podrá resultar en la suspensión o
-                    degradación del plan, sin perjuicio del cobro de los valores
-                    adeudados.
-                  </li>
-                  <li>
-                    Algunas funcionalidades pueden estar disponibles como
-                    complementos (add-ons) contratables individualmente.
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 8. PAGOS Y FACTURACIÓN ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  8. Pagos y facturación
-                </h2>
-                <p className="mb-3">
-                  Al realizar pagos a través de la Plataforma, usted acepta las
-                  siguientes condiciones:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Los pagos se procesan a través de pasarelas de pago autorizadas
-                    y reguladas. Leasefy no almacena directamente información de
-                    tarjetas de crédito o débito.
-                  </li>
-                  <li>
-                    Usted autoriza los cargos recurrentes correspondientes a su Plan
-                    de Suscripción según la periodicidad contratada.
-                  </li>
-                  <li>
-                    Los precios pueden incluir impuestos aplicables (IVA, GST u
-                    otros) según la jurisdicción. Los impuestos serán calculados y
-                    mostrados antes de la confirmación del pago.
-                  </li>
-                  <li>
-                    Las facturas electrónicas se emitirán conforme a la normativa
-                    tributaria aplicable y estarán disponibles en la Plataforma.
-                  </li>
-                  <li>
-                    En caso de contracargo (chargeback) fraudulento o injustificado,
-                    Leasefy se reserva el derecho de suspender la cuenta y perseguir
-                    las acciones legales pertinentes.
-                  </li>
-                  <li>
-                    Las monedas de cobro y los métodos de pago disponibles podrán
-                    variar según la jurisdicción del Usuario.
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 9. CANCELACIÓN Y REEMBOLSOS ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  9. Cancelación y reembolsos
-                </h2>
-                <p className="mb-3">
-                  La cancelación de suscripciones y la política de reembolsos se
-                  rigen por las siguientes condiciones:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Usted puede cancelar su suscripción en cualquier momento desde
-                    la configuración de su cuenta. La cancelación será efectiva al
-                    final del período de facturación vigente.
-                  </li>
-                  <li>
-                    No se realizarán reembolsos parciales por períodos no utilizados,
-                    salvo disposición legal en contrario o que aplique el derecho de
-                    retracto conforme a la Sección 20.
-                  </li>
-                  <li>
-                    En caso de cobros duplicados o erróneos, Leasefy procesará el
-                    reembolso correspondiente dentro de los quince (15) días hábiles
-                    siguientes a la notificación del Usuario.
-                  </li>
-                  <li>
-                    Para suscripciones anuales, aplica el derecho de retracto dentro
-                    de los cinco (5) días hábiles siguientes a la contratación en
-                    Colombia, conforme al artículo 47 de la Ley 1480 de 2011, y
-                    según la normativa de cada jurisdicción.
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 10. PROCESAMIENTO DE PAGOS Y DISPERSIONES ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  10. Procesamiento de pagos de arrendamiento y dispersiones
-                </h2>
-                <p className="mb-3">
-                  Cuando la Plataforma sea utilizada para el cobro y dispersión de
-                  cánones de arrendamiento, aplican las siguientes condiciones
-                  adicionales:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Leasefy actúa exclusivamente como facilitador tecnológico del
-                    procesamiento de pagos. Los fondos pertenecen en todo momento al
-                    Arrendador o a quien este designe.
-                  </li>
-                  <li>
-                    Las dispersiones a propietarios se realizarán dentro de los
-                    plazos establecidos en el plan contratado, sujetos a la
-                    disponibilidad de fondos y verificación de la transacción.
-                  </li>
-                  <li>
-                    Leasefy podrá retener fondos temporalmente cuando existan indicios
-                    razonables de fraude, lavado de activos o actividades ilícitas,
-                    conforme a la normativa aplicable.
-                  </li>
-                  <li>
-                    Las comisiones por procesamiento de pagos serán informadas
-                    previamente y deducidas según lo establecido en el Plan de
-                    Suscripción.
-                  </li>
-                  <li>
-                    Leasefy no será responsable por retrasos en las dispersiones
-                    ocasionados por la pasarela de pagos, la entidad financiera del
-                    Usuario o causas de fuerza mayor.
-                  </li>
-                  <li>
-                    En jurisdicciones donde se requiera licencia o registro como
-                    transmisor de dinero (money transmitter), Leasefy operará a
-                    través de proveedores debidamente autorizados.
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 11. EVALUACIÓN DE INQUILINOS Y USO DE IA ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  11. Evaluación de inquilinos, scoring y uso de inteligencia artificial
-                </h2>
-                <p className="mb-3">
-                  Leasefy ofrece un servicio de evaluación de perfil de inquilinos
-                  que genera una puntuación de riesgo indicativa. Es fundamental
-                  comprender las siguientes condiciones y limitaciones:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    <span className="text-foreground/85 font-medium">Naturaleza indicativa:</span>{" "}
-                    el scoring es una herramienta de apoyo a la toma de decisiones y
-                    no constituye una recomendación, garantía ni calificación
-                    crediticia oficial. La decisión final de arrendamiento es
-                    responsabilidad exclusiva del Arrendador.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Uso de inteligencia artificial:</span>{" "}
-                    el proceso de evaluación puede utilizar modelos de inteligencia
-                    artificial y aprendizaje automático para analizar la información
-                    proporcionada. Estos modelos son complementarios y no sustituyen
-                    el criterio humano.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Fuentes de información:</span>{" "}
-                    la evaluación se basa en información proporcionada
-                    voluntariamente por el Usuario y, cuando la ley lo permita y el
-                    Usuario lo autorice, en consultas a centrales de riesgo y
-                    fuentes de información financiera autorizadas (en Colombia,
-                    conforme a la Ley 1266 de 2008 — Habeas Data Financiero).
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">No discriminación:</span>{" "}
-                    Leasefy se compromete a que sus modelos de evaluación no
-                    discriminen por motivos de raza, color, religión, sexo,
-                    orientación sexual, identidad de género, origen nacional,
-                    estado familiar, discapacidad, edad u otras categorías
-                    protegidas por la ley aplicable.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Derecho de explicación:</span>{" "}
-                    el Usuario evaluado tendrá derecho a solicitar una explicación
-                    general de los factores que influyeron en su puntuación, así
-                    como a impugnar resultados que considere incorrectos.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Verificación del scoring:</span>{" "}
-                    la Plataforma genera un código de verificación único para cada
-                    evaluación, que permite a terceros confirmar la autenticidad del
-                    resultado a través de la Plataforma. La verificación muestra
-                    información limitada para proteger la privacidad del evaluado.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Vigencia:</span>{" "}
-                    las evaluaciones tienen una vigencia limitada indicada al
-                    momento de su generación. Leasefy no garantiza que las
-                    condiciones del evaluado permanezcan invariables después de la
-                    fecha de evaluación.
-                  </li>
-                </ul>
-                <p className="mt-3 text-[13px] text-muted-foreground italic">
-                  En Estados Unidos, el servicio de scoring de Leasefy no
-                  constituye un &quot;consumer report&quot; bajo la Fair Credit Reporting
-                  Act (FCRA) ni se basa en información de consumer reporting
-                  agencies. Las decisiones de vivienda basadas en reportes de
-                  crédito tradicionales deben cumplir con la FCRA, la Fair Housing
-                  Act (FHA) y la Equal Credit Opportunity Act (ECOA). Leasefy no
-                  reemplaza dichos procesos.
+                <p>
+                  Sólo puede abrir cuenta quien sea mayor de edad. Una cuenta admite
+                  una sesión activa a la vez: al entrar desde otro dispositivo, la
+                  anterior se cierra.
                 </p>
               </section>
 
-              {/* ── 12. FIRMA ELECTRÓNICA ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  12. Firma electrónica de documentos
+                  5. Disponibilidad del servicio
                 </h2>
                 <p className="mb-3">
-                  La Plataforma permite la generación y firma electrónica de
-                  contratos de arrendamiento y documentos relacionados. Al utilizar
-                  esta funcionalidad, usted acepta que:
+                  Trabajamos para que la plataforma esté disponible y funcione como se
+                  describe. Puede haber interrupciones por mantenimiento, por fallas
+                  de terceros de los que dependemos —el proveedor de nube, la
+                  pasarela de pagos, la telefonía— o por causas fuera de nuestro
+                  control.
                 </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    La firma electrónica realizada a través de la Plataforma tiene
-                    la misma validez y efectos jurídicos que una firma manuscrita,
-                    conforme a la legislación aplicable: Ley 527 de 1999 (Colombia),
-                    NOM-151-SCFI-2016 (México), Ley 25.506 (Argentina), MP
-                    2.200-2/2001 (Brasil), Ley 19.799 (Chile), E-SIGN Act y UETA
-                    (Estados Unidos).
-                  </li>
-                  <li>
-                    Leasefy registra metadatos de cada firma, incluyendo fecha, hora,
-                    dirección IP y método de autenticación, como evidencia de la
-                    transacción.
-                  </li>
-                  <li>
-                    El Usuario es responsable de revisar íntegramente el contenido
-                    de cualquier documento antes de firmarlo electrónicamente.
-                  </li>
-                  <li>
-                    Leasefy almacenará los documentos firmados de manera segura
-                    durante el período que establezca la ley aplicable, y los pondrá
-                    a disposición de las partes para su descarga.
-                  </li>
-                  <li>
-                    En caso de requerir una firma electrónica avanzada o certificada
-                    por disposición legal o por acuerdo de las partes, el Usuario
-                    deberá utilizar un prestador de servicios de certificación
-                    acreditado.
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 13. CONTRATOS DE ARRENDAMIENTO ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  13. Contratos de arrendamiento
-                </h2>
-                <p className="mb-3">
-                  Los contratos de arrendamiento facilitados a través de la
-                  Plataforma se rigen por las siguientes condiciones:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    El contrato se celebra exclusivamente entre el Arrendador y el
-                    Arrendatario. Leasefy no es parte del contrato ni asume
-                    obligaciones derivadas del mismo.
-                  </li>
-                  <li>
-                    La Plataforma puede proporcionar plantillas de contratos como
-                    referencia. Estas plantillas no constituyen asesoría jurídica y
-                    es responsabilidad de las partes adaptar su contenido a sus
-                    necesidades específicas.
-                  </li>
-                  <li>
-                    En Colombia, los contratos de arrendamiento de vivienda urbana
-                    se rigen por la Ley 820 de 2003 y las disposiciones aplicables
-                    del Código Civil colombiano. La Plataforma incorpora las
-                    disposiciones obligatorias de dicha legislación en sus
-                    plantillas.
-                  </li>
-                  <li>
-                    El reajuste del canon de arrendamiento se realizará conforme a
-                    la legislación aplicable en cada jurisdicción. En Colombia, no
-                    podrá exceder el 100% del IPC del año anterior, conforme al
-                    artículo 20 de la Ley 820 de 2003.
-                  </li>
-                  <li>
-                    Se recomienda a las partes obtener asesoría legal independiente
-                    antes de celebrar cualquier contrato de arrendamiento.
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 14. OBLIGACIONES DEL USUARIO ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  14. Obligaciones del usuario
-                </h2>
-                <p className="mb-3">
-                  Todo Usuario de la Plataforma se compromete a:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Proporcionar información veraz, completa, precisa y actualizada
-                    al registrarse y durante todo el uso de la Plataforma.
-                  </li>
-                  <li>
-                    Utilizar la Plataforma de buena fe y conforme a la ley, la
-                    moral, el orden público y estos Términos.
-                  </li>
-                  <li>
-                    Mantener la confidencialidad de sus credenciales de acceso y no
-                    compartirlas con terceros.
-                  </li>
-                  <li>
-                    No publicar información falsa, engañosa o fraudulenta sobre
-                    inmuebles, condiciones de arrendamiento o identidad personal.
-                  </li>
-                  <li>
-                    Cumplir oportunamente con las obligaciones derivadas de los
-                    contratos de arrendamiento celebrados a través de la Plataforma.
-                  </li>
-                  <li>
-                    Notificar inmediatamente a Leasefy cualquier irregularidad, uso
-                    indebido o brecha de seguridad detectada.
-                  </li>
-                  <li>
-                    Respetar los derechos de propiedad intelectual de Leasefy y de
-                    terceros.
-                  </li>
-                  <li>
-                    Abstenerse de utilizar mecanismos de scraping, bots o
-                    herramientas automatizadas para extraer información de la
-                    Plataforma.
-                  </li>
-                  <li>
-                    Cumplir con las obligaciones tributarias derivadas de las
-                    operaciones realizadas a través de la Plataforma.
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 15. USOS PROHIBIDOS ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  15. Usos prohibidos
-                </h2>
-                <p className="mb-3">
-                  Queda expresamente prohibido utilizar la Plataforma para:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Publicar inmuebles inexistentes, ajenos o sobre los cuales no se
-                    tiene autorización legal para ofrecer en arrendamiento.
-                  </li>
-                  <li>
-                    Realizar actividades fraudulentas, incluyendo suplantación de
-                    identidad, estafas o phishing.
-                  </li>
-                  <li>
-                    Lavar activos, financiar el terrorismo o realizar cualquier
-                    actividad tipificada como delito.
-                  </li>
-                  <li>
-                    Discriminar en la oferta o selección de arrendatarios por motivos
-                    de raza, color, religión, sexo, orientación sexual, identidad de
-                    género, origen nacional, estado familiar, discapacidad, edad u
-                    otras categorías protegidas.
-                  </li>
-                  <li>
-                    Distribuir virus, malware, código malicioso o intentar vulnerar
-                    la seguridad de la Plataforma.
-                  </li>
-                  <li>
-                    Utilizar la Plataforma para enviar spam, comunicaciones
-                    comerciales no solicitadas o publicidad no autorizada.
-                  </li>
-                  <li>
-                    Realizar ingeniería inversa, descompilar o desensamblar el
-                    software de la Plataforma.
-                  </li>
-                  <li>
-                    Eludir las medidas de seguridad, autenticación o restricciones
-                    de acceso de la Plataforma.
-                  </li>
-                  <li>
-                    Utilizar la información de scoring o evaluaciones para fines
-                    distintos a la toma de decisiones de arrendamiento, o compartir
-                    resultados de manera discriminatoria.
-                  </li>
-                  <li>
-                    Cualquier otra actividad que contravenga la legislación aplicable,
-                    estos Términos o los derechos de terceros.
-                  </li>
-                </ul>
-                <p className="mt-3">
-                  El incumplimiento de estas prohibiciones podrá resultar en la
-                  suspensión o terminación inmediata de la cuenta, sin perjuicio de
-                  las acciones legales que correspondan.
+                <p>
+                  Avisamos con anticipación los mantenimientos programados. Ante una
+                  interrupción prolongada imputable a nosotros, la inmobiliaria puede
+                  pedir la compensación proporcional del período no disponible.
                 </p>
               </section>
 
-              {/* ── 16. OBLIGACIONES ESPECÍFICAS PARA AGENTES E INMOBILIARIAS ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  16. Disposiciones para agentes inmobiliarios e inmobiliarias
+                  6. Planes, precios y facturación
                 </h2>
-                <p className="mb-3">
-                  Los Agentes Inmobiliarios e Inmobiliarias que utilicen la
-                  Plataforma aceptan adicionalmente:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Contar con las licencias, permisos y registros necesarios para
-                    ejercer la intermediación inmobiliaria en su jurisdicción.
-                  </li>
-                  <li>
-                    Actuar con la debida diligencia en la verificación de los
-                    inmuebles que publiquen y la información de los propietarios que
-                    representen.
-                  </li>
-                  <li>
-                    Mantener actualizadas las autorizaciones de los propietarios para
-                    la publicación y gestión de sus inmuebles.
-                  </li>
-                  <li>
-                    Cumplir con las obligaciones de prevención de lavado de activos y
-                    financiación del terrorismo (SARLAFT en Colombia) aplicables a su
-                    actividad.
-                  </li>
-                  <li>
-                    Garantizar la confidencialidad de la información personal de los
-                    inquilinos y propietarios con los que interactúen.
-                  </li>
-                  <li>
-                    Leasefy se reserva el derecho de verificar la identidad y
-                    credenciales de los agentes, y de suspender o revocar el acceso
-                    en caso de incumplimiento.
-                  </li>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-3">
+                  <li>Los precios vigentes son los publicados al momento de contratar, en pesos colombianos y con los impuestos discriminados.</li>
+                  <li>Un cambio de precio se avisa con <strong className="text-foreground/85">treinta (30) días</strong> de anticipación y rige desde el siguiente período.</li>
+                  <li>La facturación es mensual o anual, según lo contratado.</li>
+                  <li>La mora puede llevar a suspender el servicio, previo aviso, sin perjuicio del cobro de lo adeudado.</li>
+                  <li><strong className="text-foreground/85">Podés cancelar cuando quieras</strong>, desde la configuración de la cuenta y sin penalidad. La cancelación surte efecto al final del período pagado.</li>
                 </ul>
-              </section>
-
-              {/* ── 17. CONTENIDO DEL USUARIO ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  17. Contenido del usuario
-                </h2>
-                <p className="mb-3">
-                  Al publicar, cargar o compartir Contenido del Usuario en la
-                  Plataforma, usted:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Declara ser el titular o tener la autorización necesaria para
-                    compartir dicho contenido.
-                  </li>
-                  <li>
-                    Otorga a Leasefy una licencia no exclusiva, mundial, libre de
-                    regalías y sublicenciable para usar, reproducir, modificar,
-                    adaptar, publicar y mostrar dicho contenido con el fin de operar
-                    y mejorar la Plataforma.
-                  </li>
-                  <li>
-                    Reconoce que Leasefy puede moderar, editar o eliminar contenido
-                    que considere inapropiado, ilegal o contrario a estos Términos.
-                  </li>
-                  <li>
-                    Comprende que el contenido publicado puede ser indexado por
-                    motores de búsqueda, salvo que el Usuario configure opciones de
-                    privacidad disponibles.
-                  </li>
-                  <li>
-                    Es el único responsable del contenido que publique y de cualquier
-                    consecuencia legal derivada del mismo.
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 18. PROPIEDAD INTELECTUAL ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  18. Propiedad intelectual
-                </h2>
-                <p className="mb-3">
-                  Todos los contenidos, materiales, software, código fuente,
-                  algoritmos, diseños, marcas, logotipos, nombres comerciales,
-                  bases de datos y demás elementos que componen la Plataforma son
-                  propiedad exclusiva de Leasefy o de sus licenciantes, y están
-                  protegidos por las leyes nacionales e internacionales de propiedad
-                  intelectual, incluyendo pero no limitado a:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Decisión 486 de la Comunidad Andina (Propiedad Industrial).
-                  </li>
-                  <li>
-                    Ley 23 de 1982 y Ley 1915 de 2018 (Derechos de Autor - Colombia).
-                  </li>
-                  <li>
-                    Copyright Act (Title 17 U.S.C.) y Lanham Act (Estados Unidos).
-                  </li>
-                  <li>
-                    Tratados internacionales aplicables (Convenio de Berna, ADPIC/TRIPS).
-                  </li>
-                </ul>
-                <p className="mt-3">
-                  Queda prohibida la reproducción, distribución, modificación,
-                  comunicación pública, ingeniería inversa o cualquier uso no
-                  autorizado del contenido de la Plataforma, total o parcialmente,
-                  sin el consentimiento previo y escrito de Leasefy.
+                <p>
+                  Al cancelar, mantenemos tu información disponible para descarga
+                  durante <strong className="text-foreground/90">sesenta (60) días</strong>.
                 </p>
               </section>
 
-              {/* ── 19. LIMITACIÓN DE RESPONSABILIDAD ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  19. Limitación de responsabilidad
+                  7. Retracto y reversión del pago
                 </h2>
                 <p className="mb-3">
-                  En la máxima medida permitida por la ley aplicable:
+                  Si contratás como consumidor, tenés{" "}
+                  <strong className="text-foreground/90">cinco (5) días hábiles</strong> para
+                  retractarte, contados desde la celebración del contrato, conforme al
+                  artículo 47 de la Ley 1480 de 2011. Escribinos a{" "}
+                  <span className="text-foreground/85 font-medium">hola@leasefy.co</span> y
+                  devolvemos lo pagado dentro de los{" "}
+                  <strong className="text-foreground/90">quince (15) días calendario</strong>{" "}
+                  siguientes.
                 </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Leasefy proporciona la Plataforma &quot;tal como está&quot; (&quot;as is&quot;) y
-                    &quot;según disponibilidad&quot; (&quot;as available&quot;), sin garantías
-                    expresas o implícitas de comerciabilidad, idoneidad para un fin
-                    particular o no infracción.
-                  </li>
-                  <li>
-                    Leasefy no garantiza que la Plataforma esté libre de errores,
-                    interrupciones, virus o defectos, ni que funcione de manera
-                    ininterrumpida.
-                  </li>
-                  <li>
-                    Leasefy no será responsable por daños indirectos, incidentales,
-                    especiales, consecuenciales o punitivos, incluyendo lucro
-                    cesante, pérdida de datos, pérdida de oportunidades de negocio o
-                    daños a la reputación.
-                  </li>
-                  <li>
-                    La responsabilidad total acumulada de Leasefy frente a un Usuario
-                    no excederá el mayor valor entre: (a) los montos pagados por el
-                    Usuario a Leasefy durante los doce (12) meses anteriores al
-                    evento que generó la reclamación, o (b) el equivalente a cien
-                    dólares estadounidenses (USD $100).
-                  </li>
-                  <li>
-                    Leasefy no se responsabiliza por los conflictos, incumplimientos
-                    contractuales, daños materiales o perjuicios que puedan surgir
-                    entre Arrendadores y Arrendatarios derivados de los contratos de
-                    arrendamiento.
-                  </li>
-                  <li>
-                    Las limitaciones anteriores no aplican en jurisdicciones donde la
-                    exclusión o limitación de ciertas garantías o responsabilidades
-                    no esté permitida por ley.
-                  </li>
-                </ul>
-              </section>
-
-              {/* ── 20. DERECHO DE RETRACTO Y PROTECCIÓN AL CONSUMIDOR ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  20. Derecho de retracto y protección al consumidor
-                </h2>
-                <p className="mb-3">
-                  En cumplimiento de la normativa de protección al consumidor
-                  aplicable:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    <span className="text-foreground/85 font-medium">Colombia (Ley 1480 de 2011):</span>{" "}
-                    el consumidor tiene derecho a retractarse de la compra de
-                    servicios digitales dentro de los cinco (5) días hábiles
-                    siguientes a la contratación, mediante comunicación escrita a
-                    Leasefy. El reembolso se realizará dentro de los treinta (30)
-                    días calendario siguientes. Igualmente, aplica el derecho de
-                    reversión del pago conforme al artículo 51 cuando el servicio no
-                    corresponda a lo contratado.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">México (Ley Federal de Protección al Consumidor):</span>{" "}
-                    el consumidor puede cancelar la contratación dentro de los cinco
-                    (5) días hábiles posteriores a la entrega del servicio, sin
-                    necesidad de justificación.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Brasil (Código de Defesa do Consumidor):</span>{" "}
-                    el consumidor tiene derecho de arrepentimiento (arrependimento)
-                    de siete (7) días desde la contratación de servicios adquiridos
-                    fuera del establecimiento comercial.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Otras jurisdicciones:</span>{" "}
-                    aplicará la normativa de protección al consumidor local. Leasefy
-                    garantiza el cumplimiento de los estándares mínimos de protección
-                    vigentes en cada país donde opere.
-                  </li>
-                </ul>
-                <p className="mt-3">
-                  Para ejercer su derecho de retracto o presentar una reclamación,
-                  comuníquese a{" "}
-                  <a
-                    href="mailto:soporte@leasefy.com"
-                    className="text-foreground underline underline-offset-4 hover:text-foreground/70 transition-colors"
-                  >
-                    soporte@leasefy.com
-                  </a>
-                  .
+                <p>
+                  También podés pedir la <strong className="text-foreground/90">reversión del pago</strong>{" "}
+                  cuando haya fraude, una operación que no solicitaste, o un servicio
+                  no prestado o distinto del contratado (artículo 51 de la misma ley),
+                  dentro de los cinco días hábiles siguientes a que te enteres,
+                  avisándonos a nosotros y a tu banco o emisor del medio de pago.
                 </p>
               </section>
 
-              {/* ── 21. INDEMNIZACIÓN ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  21. Indemnización
+                  8. El dinero del arriendo: de quién es y cuándo se gira
+                </h2>
+                <p className="mb-3">
+                  Cuando la inmobiliaria usa la plataforma para recaudar, lo hace bajo
+                  un <strong className="text-foreground/90">mandato de administración específica y determinada</strong>:
+                  recaudar el canon, descontar la comisión pactada y las retenciones
+                  que correspondan, y girar el saldo al propietario en el plazo
+                  convenido. Nada más.
+                </p>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-3">
+                  <li><strong className="text-foreground/85">El dinero recaudado es del propietario</strong> desde que ingresa y hasta que se le gira. Está en tránsito, no en administración libre.</li>
+                  <li><strong className="text-foreground/85">No invertimos, prestamos ni disponemos de esos fondos</strong>, ni los retenemos a discreción, ni generan rendimientos a nuestro favor.</li>
+                  <li><strong className="text-foreground/85">No hay billetera ni saldo acumulable.</strong> La plataforma no abre depósitos ni guarda dinero a la vista de nadie.</li>
+                  <li>El recaudo se procesa a través de pasarelas autorizadas y vigiladas. No almacenamos datos de tarjetas.</li>
+                  <li>Podemos retener un giro cuando exista una orden de autoridad competente o un indicio razonable de fraude, informando el motivo.</li>
+                </ul>
+                <p>
+                  Cada giro queda soportado con su detalle: qué se recaudó, qué se
+                  descontó y por qué concepto.{" "}
+                  <strong className="text-foreground/90">Girar fuera del plazo pactado es un incumplimiento del contrato de administración</strong>,
+                  y como tal puede reclamarse.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  9. El agente automatizado (Piloto)
+                </h2>
+                <p className="mb-3">
+                  La plataforma incluye agentes que ejecutan gestiones por cuenta de
+                  la inmobiliaria. Activarlos es{" "}
+                  <strong className="text-foreground/90">un mandato aparte, limitado y revocable</strong>,
+                  que se acepta con una manifestación propia y no queda incluido en la
+                  aceptación general de estos términos.
+                </p>
+                <p className="mb-2 font-medium text-foreground/90">Lo que el agente puede hacer</p>
+                <ul className="list-disc pl-5 space-y-1 text-muted-foreground mb-3">
+                  <li>Enviar recordatorios y comunicaciones de cobro por los canales autorizados.</li>
+                  <li>Realizar llamadas de gestión de cartera dentro de los horarios y frecuencias que permite la ley.</li>
+                  <li>Proponer acuerdos de pago dentro de los límites que la inmobiliaria configuró.</li>
+                  <li>Agendar visitas, citas y recordatorios.</li>
+                  <li>Preparar documentos, conciliaciones y reportes para revisión humana.</li>
+                  <li>Priorizar la cartera y sugerir la siguiente gestión.</li>
+                </ul>
+                <p className="mb-3 text-muted-foreground">
+                  <strong className="text-foreground/85">Toda acción no incluida en esta lista está prohibida.</strong>
+                </p>
+                <p className="mb-2 font-medium text-foreground/90">Lo que el agente no puede hacer</p>
+                <ul className="list-disc pl-5 space-y-1 text-muted-foreground mb-3">
+                  <li>Disponer de fondos, ordenar giros o aprobar dispersiones por sí solo.</li>
+                  <li>Celebrar, modificar o terminar un contrato de arrendamiento.</li>
+                  <li>Condonar deudas, otorgar quitas o renunciar a derechos del propietario.</li>
+                  <li>Iniciar acciones judiciales.</li>
+                  <li>Reportar a centrales de riesgo sin la decisión de una persona.</li>
+                </ul>
+                <p className="mb-3">
+                  <strong className="text-foreground/90">Tres modos.</strong> En{" "}
+                  <em>sombra</em> el agente sólo sugiere; en <em>copiloto</em> prepara y
+                  espera aprobación; en <em>autónomo</em> ejecuta las acciones de la
+                  lista de arriba. El modo lo elige la inmobiliaria y puede cambiarlo
+                  o apagarlo cuando quiera, volviendo a gestión manual.
+                </p>
+                <p className="mb-3">
+                  <strong className="text-foreground/90">El modo nunca levanta un límite legal.</strong>{" "}
+                  Los horarios y la frecuencia de contacto de la Ley 2300 de 2023, el
+                  respeto a quien pidió no ser contactado y las reglas de protección de
+                  datos se verifican antes de cada gestión, en cualquier modo. La
+                  autonomía sólo puede exigir más intervención humana, nunca menos
+                  cumplimiento.
+                </p>
+                <p className="mb-2 font-medium text-foreground/90">Cómo se comunica</p>
+                <ul className="list-disc pl-5 space-y-1 text-muted-foreground mb-3">
+                  <li>Se identifica como sistema automatizado al inicio de cada llamada.</li>
+                  <li>Informa que la llamada se graba.</li>
+                  <li>Tiene prohibido usar lenguaje intimidatorio o humillante, y simular ser una autoridad, un juzgado o un despacho judicial.</li>
+                  <li>No pregunta el motivo del incumplimiento (artículo 7 de la Ley 2300).</li>
+                  <li>No contacta a referencias ni a terceros ajenos a la obligación.</li>
+                </ul>
+                <p>
+                  Cada gestión queda registrada con fecha, hora, canal, destinatario y
+                  contenido. La inmobiliaria puede consultar ese registro, y la persona
+                  contactada puede pedir copia de la gestión que la involucra.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  10. Estudio de candidatos: quién decide
+                </h2>
+                <p className="mb-3">
+                  La plataforma organiza la información de un candidato y produce un
+                  puntaje de riesgo.{" "}
+                  <strong className="text-foreground/90">Ese puntaje es un insumo, no una decisión.</strong>{" "}
+                  Quien decide a quién arrendarle es el propietario o su inmobiliaria,
+                  bajo su responsabilidad.
+                </p>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-3">
+                  <li>La consulta a centrales de riesgo requiere autorización previa, expresa e informada del candidato, otorgada por separado.</li>
+                  <li>Una decisión no puede basarse únicamente en el reporte de incumplimiento de una central. Ante un rechazo, el candidato puede pedir por escrito las razones objetivas.</li>
+                  <li>El candidato puede pedir que una persona revise una decisión que se haya tomado con apoyo de sistemas automatizados.</li>
+                  <li>Está prohibido usar la plataforma para discriminar por raza, sexo, orientación sexual, religión, origen, discapacidad, edad o composición familiar.</li>
+                </ul>
+                <p>
+                  El detalle del tratamiento de datos está en la{" "}
+                  <a href="/privacidad" className="text-foreground/90 underline underline-offset-2">Política de tratamiento</a>.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  11. Contratos de arrendamiento
+                </h2>
+                <p className="mb-3">
+                  Las plantillas de la plataforma son un punto de partida, no asesoría
+                  legal. Quien las usa debe revisarlas y adaptarlas.
+                </p>
+                <p className="mb-3">
+                  <strong className="text-foreground/90">Vivienda urbana.</strong> Se rige por la
+                  Ley 820 de 2003. Conviene tener presente que{" "}
+                  <strong className="text-foreground/90">está prohibido exigir depósitos en dinero u otras cauciones reales</strong>{" "}
+                  (artículo 16), bajo cualquier denominación; que el canon no puede
+                  exceder el 1 % del valor comercial del inmueble (artículo 18); que el
+                  reajuste anual no puede superar el IPC del año anterior y{" "}
+                  <strong className="text-foreground/90">debe comunicarse por el medio que el contrato haya previsto, so pena de ser inoponible</strong>{" "}
+                  (artículo 20); y que hay que entregar copia firmada al arrendatario y
+                  al codeudor dentro de los diez días siguientes (artículo 8).
+                </p>
+                <p>
+                  <strong className="text-foreground/90">Local comercial.</strong> Es otro régimen:
+                  artículos 518 a 524 del Código de Comercio, que son imperativos —
+                  incluyen el derecho de renovación y el desahucio con seis meses de
+                  anticipación—. No se puede usar una plantilla de vivienda para un
+                  local.
+                </p>
+                <p>
+                  Desde la Ley 2625 de 2026, el arrendatario de un local tiene derecho
+                  a fijar un <strong className="text-foreground/90">aviso de traslado</strong> de
+                  hasta 1.600 cm² durante un mes contado desde la restitución, a su
+                  costo, y{" "}
+                  <strong className="text-foreground/90">nadie puede oponerse</strong> — ni el
+                  propietario, ni el arrendador, ni el nuevo arrendatario—, so pena de
+                  multa. Una cláusula que lo prohíba quedó sin efecto.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  12. Firma electrónica
+                </h2>
+                <p className="mb-3">
+                  Al usar la plataforma para firmar,{" "}
+                  <strong className="text-foreground/90">las partes acuerdan expresamente que el método de firma que provee Leasefy es el mecanismo de identificación y autenticación del documento</strong>,
+                  conforme a la Ley 527 de 1999 y a los artículos 2.2.2.47.1 y
+                  siguientes del Decreto 1074 de 2015. La firma así realizada tiene los
+                  mismos efectos que la manuscrita.
+                </p>
+                <p>
+                  De cada firma conservamos el registro del método usado, la fecha y
+                  hora, la dirección IP y la evidencia de integridad del documento, y
+                  entregamos copia a quien la pida. El documento se conserva en su
+                  formato original.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  13. Estudio de asegurabilidad y pólizas
+                </h2>
+                <p className="mb-3">
+                  La plataforma permite solicitar el estudio de asegurabilidad de un
+                  candidato ante aseguradoras y afianzadoras, y consultar el resultado.
+                </p>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-3">
+                  <li><strong className="text-foreground/85">Leasefy no es aseguradora, afianzadora ni corredor de seguros</strong>, y no interviene en la decisión de asegurar ni en los términos de la póliza.</li>
+                  <li>La aprobación, el rechazo, la prima y las condiciones las define la compañía, bajo sus propios criterios y su propia responsabilidad.</li>
+                  <li>La póliza, si se expide, es un contrato entre esa compañía y quien la tome. Nosotros transmitimos la información y mostramos el resultado.</li>
+                  <li>Un rechazo de asegurabilidad no es una decisión de Leasefy y sus razones las da la compañía que lo emitió.</li>
+                </ul>
+                <p>
+                  El envío de datos del candidato a una aseguradora requiere su
+                  autorización previa, en los términos de la{" "}
+                  <a href="/privacidad" className="text-foreground/90 underline underline-offset-2">Política de tratamiento</a>.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  14. Estimación comercial de valor
+                </h2>
+                <p className="mb-3">
+                  Cuando la plataforma calcula cuánto podría valer un inmueble, el
+                  resultado es una{" "}
+                  <strong className="text-foreground/90">estimación comercial de valor referencial</strong>:
+                  una referencia para decidir un precio de arriendo o de venta.
+                </p>
+                <p>
+                  <strong className="text-foreground/90">No constituye un avalúo formal</strong>{" "}
+                  ni un dictamen pericial, no lo emite un avaluador inscrito en el
+                  Registro Abierto de Avaluadores, y no puede presentarse como tal
+                  ante una entidad financiera, una autoridad ni un juez. Cuando la
+                  ley o un tercero exijan un avalúo, hay que contratarlo aparte, con
+                  un avaluador inscrito (Ley 1673 de 2013).
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  15. Contabilidad, facturación y conciliación
+                </h2>
+                <p className="mb-3">
+                  La plataforma ayuda a llevar los registros contables, calcular
+                  impuestos y retenciones, conciliar el extracto bancario y preparar
+                  documentos. Son herramientas de apoyo.
+                </p>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-3">
+                  <li><strong className="text-foreground/85">La responsabilidad tributaria y contable es de la inmobiliaria</strong>, incluidas las obligaciones de agente retenedor cuando administra por cuenta de terceros.</li>
+                  <li>Los cálculos dependen de la información y de la configuración que cargue el usuario —tarifas, perfiles tributarios, bases—. Revisarlos antes de declarar o pagar es parte de su deber.</li>
+                  <li>La conciliación sugiere cruces entre movimientos; confirmarlos es una decisión humana.</li>
+                  <li>La emisión de factura electrónica ante la DIAN se realiza a través de proveedores habilitados. Quien está obligado a facturar sigue siendo el responsable ante la autoridad.</li>
+                </ul>
+                <p>
+                  No damos asesoría tributaria ni contable, y un error de configuración
+                  del usuario no se convierte en responsabilidad nuestra por haber
+                  usado la herramienta.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  16. Mantenimientos, solicitudes, agenda y mensajería
+                </h2>
+                <p className="mb-3">
+                  La plataforma permite registrar solicitudes de arreglo y PQRS,
+                  agendar visitas y comunicar a la inmobiliaria con propietarios e
+                  inquilinos.
+                </p>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground">
+                  <li>Somos el canal, no el prestador: la ejecución de un arreglo, la respuesta a una PQRS y el cumplimiento de una visita son de la inmobiliaria o del proveedor que ella contrate.</li>
+                  <li>Registrar una solicitud no la aprueba ni compromete a nadie a atenderla en un plazo, salvo que la inmobiliaria lo haya pactado.</li>
+                  <li>El contenido de los mensajes es de quien los escribe. No los moderamos, y sólo accedemos a ellos para prestar el servicio, atender un reclamo o cumplir una orden de autoridad.</li>
+                </ul>
+              </section>
+
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  17. Migración de información
                 </h2>
                 <p>
-                  Usted acepta defender, indemnizar y mantener indemne a Leasefy,
-                  sus directores, empleados, agentes, contratistas y afiliados
-                  frente a cualquier reclamación, daño, obligación, pérdida, costo o
-                  gasto (incluyendo honorarios razonables de abogados) que surja de
-                  o esté relacionado con: (a) su uso de la Plataforma; (b) el
-                  incumplimiento de estos Términos; (c) la violación de derechos de
-                  terceros, incluyendo derechos de propiedad intelectual, privacidad
-                  o publicidad; (d) la información o contenido que publique en la
-                  Plataforma; o (e) sus actividades de arrendamiento realizadas a
-                  través de la Plataforma.
+                  Si traés información desde otro sistema, seguís siendo su
+                  responsable: que sea veraz, que tengas derecho a usarla y que
+                  cuentes con la autorización de los titulares. Nosotros la
+                  importamos, mostramos qué quedó sin poder asociarse y no la
+                  completamos por inferencia.{" "}
+                  <strong className="text-foreground/90">Revisar el resultado de una migración antes de operar sobre él es parte del trabajo</strong>,
+                  porque de ahí salen los cobros.
                 </p>
               </section>
 
-              {/* ── 22. TERMINACIÓN Y SUSPENSIÓN ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  22. Terminación y suspensión
+                  18. Obligaciones de la inmobiliaria
                 </h2>
                 <p className="mb-3">
-                  Leasefy puede suspender o terminar su acceso a la Plataforma, total
-                  o parcialmente, con o sin previo aviso, en los siguientes casos:
+                  Además de lo anterior, quien contrata la plataforma para su
+                  operación se obliga a:
                 </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Incumplimiento de cualquier disposición de estos Términos.
-                  </li>
-                  <li>
-                    Actividades fraudulentas, ilegales o que representen un riesgo
-                    para la seguridad de la Plataforma u otros Usuarios.
-                  </li>
-                  <li>
-                    Falta de pago de las obligaciones derivadas del Plan de
-                    Suscripción durante un período superior a treinta (30) días.
-                  </li>
-                  <li>
-                    Inactividad prolongada de la cuenta por un período superior a
-                    doce (12) meses.
-                  </li>
-                  <li>
-                    Requerimiento de autoridad judicial o administrativa competente.
-                  </li>
-                  <li>
-                    Decisión de Leasefy de descontinuar la Plataforma o alguno de
-                    sus servicios, con un aviso previo razonable.
-                  </li>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-3">
+                  <li><strong className="text-foreground/85">Contar con la matrícula de arrendadores</strong> vigente donde la ley se la exija, e incluir su número en sus anuncios y contratos (artículos 28 a 31 de la Ley 820).</li>
+                  <li>Tener autorización de los propietarios para publicar y administrar sus inmuebles.</li>
+                  <li><strong className="text-foreground/85">Haber obtenido la autorización de tratamiento de datos</strong> de las personas cuya información carga en la plataforma, y responder como responsable del tratamiento frente a ellas (§19).</li>
+                  <li>Cumplir las obligaciones de prevención de lavado de activos que le correspondan según su tamaño y actividad.</li>
+                  <li>Publicar información veraz de los inmuebles. Lo que se anuncia obliga a quien lo anuncia (artículo 29 de la Ley 1480).</li>
+                  <li>Cumplir sus obligaciones tributarias, incluidas las de agente retenedor cuando administra por cuenta de terceros.</li>
                 </ul>
-                <p className="mt-3">
-                  En caso de terminación, Leasefy proporcionará al Usuario un plazo
-                  razonable para descargar su información y documentos, salvo que la
-                  terminación se deba a actividades fraudulentas o ilegales. Las
-                  obligaciones de confidencialidad, propiedad intelectual,
-                  limitación de responsabilidad e indemnización sobrevivirán a la
-                  terminación.
+                <p>
+                  Damos las herramientas para cumplir estos deberes; cumplirlos es de
+                  la inmobiliaria.
                 </p>
               </section>
 
-              {/* ── 23. VIVIENDA JUSTA Y NO DISCRIMINACIÓN ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  23. Vivienda justa y no discriminación
+                  19. Datos personales: quién responde
                 </h2>
                 <p className="mb-3">
-                  Leasefy se compromete con los principios de igualdad de
-                  oportunidades en materia de vivienda y prohíbe la discriminación
-                  en cualquiera de sus formas. Todos los Usuarios deben cumplir con:
+                  Cuando la inmobiliaria carga en la plataforma datos de sus
+                  propietarios, inquilinos, codeudores o deudores,{" "}
+                  <strong className="text-foreground/90">ella es la responsable del tratamiento y Leasefy actúa como encargado</strong>,
+                  tratándolos por su cuenta y siguiendo sus instrucciones.
                 </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    La legislación de vivienda justa aplicable en cada jurisdicción,
-                    incluyendo la Fair Housing Act (FHA) en Estados Unidos, la
-                    Constitución Política de Colombia (Art. 13 - Derecho a la
-                    igualdad), y normativa equivalente en otros países.
-                  </li>
-                  <li>
-                    La prohibición de rechazar, condicionar o discriminar en la
-                    oferta o selección de arrendatarios basándose en categorías
-                    protegidas como raza, color, religión, sexo, orientación sexual,
-                    identidad de género, origen nacional, estado familiar,
-                    discapacidad, edad, condición migratoria o cualquier otra
-                    categoría protegida por ley.
-                  </li>
-                  <li>
-                    La obligación de realizar adaptaciones razonables para personas
-                    con discapacidad cuando así lo requiera la ley.
-                  </li>
+                <p className="mb-3">Como encargado nos obligamos a:</p>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-3">
+                  <li>Tratar los datos sólo para las finalidades que el titular autorizó y que la inmobiliaria indicó.</li>
+                  <li>Aplicar las obligaciones de la política de tratamiento de la inmobiliaria.</li>
+                  <li>Guardar la seguridad y la confidencialidad de la información.</li>
+                  <li>Atender las consultas y reclamos que nos lleguen y trasladarlos cuando corresponda.</li>
+                  <li>Informarle cualquier incidente de seguridad que afecte sus datos, y reportarlo a la autoridad cuando la ley nos obligue.</li>
+                  <li>Devolver o suprimir los datos al terminar la relación, salvo lo que debamos conservar por ley.</li>
                 </ul>
-                <p className="mt-3">
-                  Leasefy investigará las denuncias de discriminación y tomará las
-                  medidas correctivas apropiadas, incluyendo la suspensión o
-                  terminación de cuentas.
+                <p>
+                  De los datos de nuestros propios clientes y de quien navega el sitio,
+                  el responsable es Leasefy. Todo el detalle está en la{" "}
+                  <a href="/privacidad" className="text-foreground/90 underline underline-offset-2">Política de tratamiento</a>.
                 </p>
               </section>
 
-              {/* ── 24. PREVENCIÓN DE LAVADO DE ACTIVOS ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  24. Prevención de lavado de activos y financiación del terrorismo
+                  20. Usos prohibidos
+                </h2>
+                <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground">
+                  <li>Publicar inmuebles inexistentes, ajenos o sin autorización para ofrecerlos.</li>
+                  <li>Suplantar identidades o falsificar documentos.</li>
+                  <li>Usar la plataforma para lavar activos o financiar actividades ilícitas.</li>
+                  <li>Discriminar en la selección de arrendatarios.</li>
+                  <li>Usar el resultado de un estudio para una finalidad distinta de decidir sobre ese arrendamiento, o compartirlo con quien no participa en él.</li>
+                  <li>Extraer información de forma automatizada, vulnerar la seguridad o hacer ingeniería inversa del software.</li>
+                  <li>Enviar comunicaciones comerciales no solicitadas a través de la plataforma.</li>
+                </ul>
+              </section>
+
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  21. Contenido y propiedad intelectual
                 </h2>
                 <p className="mb-3">
-                  En cumplimiento de la normativa de prevención de lavado de activos
-                  y financiación del terrorismo (LA/FT), Leasefy:
+                  El software, la marca y el diseño de la plataforma son de Leasefy. Se
+                  otorga el derecho a usarlos mientras dure la relación, y nada más.
                 </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Implementa procedimientos de conocimiento del cliente (KYC) y
-                    debida diligencia para la verificación de identidad de los
-                    Usuarios.
-                  </li>
-                  <li>
-                    Puede requerir documentación adicional para verificar la
-                    identidad, origen de fondos y actividad económica del Usuario.
-                  </li>
-                  <li>
-                    Monitorea las transacciones realizadas a través de la Plataforma
-                    para detectar operaciones inusuales o sospechosas.
-                  </li>
-                  <li>
-                    Reportará a las autoridades competentes (UIAF en Colombia,
-                    FinCEN en Estados Unidos, UIF en México, COAF en Brasil) las
-                    operaciones sospechosas detectadas, sin necesidad de notificación
-                    previa al Usuario.
-                  </li>
-                  <li>
-                    Se reserva el derecho de congelar cuentas, retener fondos o
-                    suspender transacciones cuando existan indicios razonables de
-                    actividades ilícitas.
-                  </li>
-                </ul>
-                <p className="mt-3">
-                  El Usuario se compromete a no utilizar la Plataforma para
-                  cualquier actividad relacionada con el lavado de activos,
-                  financiación del terrorismo o proliferación de armas de destrucción
-                  masiva.
+                <p>
+                  La información y los archivos que cargás siguen siendo tuyos. Nos
+                  autorizás a alojarlos, procesarlos y mostrarlos{" "}
+                  <strong className="text-foreground/90">con el único fin de prestarte el servicio</strong>{" "}
+                  y mientras dure la relación. No los usamos para otra cosa, no los
+                  cedemos y no adquirimos ninguna licencia perpetua sobre ellos.
                 </p>
               </section>
 
-              {/* ── 25. COMUNICACIONES ELECTRÓNICAS ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  25. Comunicaciones electrónicas
+                  22. Responsabilidad
                 </h2>
                 <p className="mb-3">
-                  Al registrarse en la Plataforma, usted consiente recibir
-                  comunicaciones electrónicas de Leasefy, incluyendo:
+                  Respondemos por los daños que causemos por incumplir estas
+                  obligaciones, conforme a la ley colombiana.
                 </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    <span className="text-foreground/85 font-medium">Comunicaciones transaccionales:</span>{" "}
-                    confirmaciones de pago, notificaciones de vencimiento,
-                    actualizaciones contractuales y alertas de seguridad. Estas
-                    comunicaciones son esenciales para la prestación del servicio y
-                    no pueden desactivarse.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Comunicaciones de servicio:</span>{" "}
-                    actualizaciones de la Plataforma, cambios en los Términos,
-                    nuevas funcionalidades y mantenimientos programados.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Comunicaciones promocionales:</span>{" "}
-                    ofertas, contenido educativo y novedades comerciales. Usted
-                    puede desactivar estas comunicaciones en cualquier momento desde
-                    la configuración de su cuenta o mediante el enlace de
-                    desuscripción incluido en cada comunicación, conforme a la Ley
-                    2300 de 2023 (Colombia), CAN-SPAM Act (EE.UU.) y normativa
-                    aplicable.
-                  </li>
-                </ul>
-                <p className="mt-3">
-                  Las comunicaciones por WhatsApp, SMS u otros canales de mensajería
-                  se realizarán únicamente con su consentimiento previo y conforme a
-                  la normativa de comunicaciones no solicitadas de cada jurisdicción.
+                <p className="mb-3">
+                  <strong className="text-foreground/90">Frente a consumidores</strong>, la
+                  garantía legal de los artículos 7 y 8 de la Ley 1480 de 2011 se
+                  aplica íntegramente y no admite renuncia ni límite. Nada de este
+                  documento la restringe.
+                </p>
+                <p className="mb-3">
+                  <strong className="text-foreground/90">Frente a la inmobiliaria</strong>, y sólo
+                  respecto de daños indirectos o lucro cesante, las partes acuerdan
+                  como límite el valor pagado a Leasefy en los doce meses anteriores al
+                  hecho. Este límite{" "}
+                  <strong className="text-foreground/90">no aplica al dolo, a la culpa grave, al incumplimiento de las obligaciones de protección de datos ni al manejo del dinero recaudado</strong>.
+                </p>
+                <p>
+                  No respondemos por lo que ocurra entre propietario e inquilino en
+                  ejecución de su contrato de arrendamiento, ni por las decisiones que
+                  la inmobiliaria tome usando la plataforma.
                 </p>
               </section>
 
-              {/* ── 26. FUERZA MAYOR ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  26. Fuerza mayor
+                  23. Suspensión y terminación
+                </h2>
+                <p className="mb-3">
+                  Podés terminar cuando quieras (§6). Nosotros podemos suspender o
+                  terminar la cuenta por mora en el pago, por un uso de los prohibidos
+                  en la §20 o por orden de autoridad competente, siempre{" "}
+                  <strong className="text-foreground/90">avisando antes y explicando el motivo</strong>,
+                  salvo que la ley lo impida.
+                </p>
+                <p>
+                  En cualquier caso conservás sesenta (60) días para descargar tu
+                  información.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  24. Peticiones, quejas y reclamos
+                </h2>
+                <p className="mb-3">
+                  Escribinos a{" "}
+                  <span className="text-foreground/85 font-medium">hola@leasefy.co</span>. Toda
+                  solicitud recibe{" "}
+                  <strong className="text-foreground/90">número de radicado con fecha y hora</strong>,
+                  y podés hacerle seguimiento. Respondemos dentro de los plazos legales.
+                </p>
+                <p>
+                  Si el reclamo es sobre tus datos personales, el canal es{" "}
+                  <span className="text-foreground/85 font-medium">privacidad@leasefy.co</span>{" "}
+                  y los plazos están en la Política de tratamiento. Como consumidor
+                  podés acudir a la{" "}
+                  <a href="https://www.sic.gov.co" className="text-foreground/90 underline underline-offset-2" target="_blank" rel="noopener noreferrer">
+                    Superintendencia de Industria y Comercio
+                  </a>.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-[18px] font-medium text-foreground mb-3">
+                  25. Cambios a estos términos
                 </h2>
                 <p>
-                  Leasefy no será responsable del incumplimiento o retraso en el
-                  cumplimiento de sus obligaciones cuando dicho incumplimiento o
-                  retraso se deba a causas de fuerza mayor o caso fortuito,
-                  incluyendo pero no limitado a: desastres naturales, pandemias,
-                  conflictos armados, actos de terrorismo, fallos en la
-                  infraestructura de telecomunicaciones, ataques cibernéticos,
-                  cambios legislativos o regulatorios, decisiones gubernamentales,
-                  huelgas o cualquier otra circunstancia imprevisible e irresistible
-                  ajena al control de Leasefy. Leasefy realizará esfuerzos
-                  comercialmente razonables para restablecer el servicio lo antes
-                  posible.
+                  Un cambio sustancial se publica acá con{" "}
+                  <strong className="text-foreground/90">treinta (30) días</strong> de
+                  anticipación y se avisa por correo. Si no estás de acuerdo, podés
+                  terminar sin penalidad antes de que entre a regir. Conservamos las
+                  versiones anteriores.
                 </p>
               </section>
 
-              {/* ── 27. DISPOSICIONES POR JURISDICCIÓN ── */}
               <section>
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  27. Disposiciones específicas por jurisdicción
-                </h2>
-                <p className="mb-4">
-                  Las siguientes disposiciones complementan o modifican los Términos
-                  generales según la jurisdicción del Usuario:
-                </p>
-
-                {/* Colombia */}
-                <div className="mb-6 pl-4 border-l-2 border-foreground/10">
-                  <h3 className="text-[16px] font-medium text-foreground mb-2">
-                    27.1. Colombia
-                  </h3>
-                  <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                    <li>
-                      Los contratos de arrendamiento de vivienda urbana se rigen por
-                      la Ley 820 de 2003 y el Código Civil colombiano.
-                    </li>
-                    <li>
-                      El tratamiento de datos personales se realiza conforme a la
-                      Ley 1581 de 2012 y el Decreto 1377 de 2013. La consulta de
-                      datos financieros se rige por la Ley 1266 de 2008 (Habeas Data
-                      Financiero).
-                    </li>
-                    <li>
-                      La protección al consumidor se rige por la Ley 1480 de 2011
-                      (Estatuto del Consumidor), incluyendo los derechos de retracto
-                      (Art. 47), reversión de pagos (Art. 51) y la prohibición de
-                      cláusulas abusivas (Art. 42-43). No se incluirán en estos
-                      Términos las cláusulas enumeradas en la &quot;lista negra&quot; del
-                      artículo 43.
-                    </li>
-                    <li>
-                      La firma electrónica se ampara en la Ley 527 de 1999 sobre
-                      mensajes de datos y comercio electrónico, y el Decreto 2364
-                      de 2012.
-                    </li>
-                    <li>
-                      Las comunicaciones comerciales cumplen con la Ley 2300 de 2023
-                      que regula los horarios y medios de contacto con los
-                      consumidores.
-                    </li>
-                    <li>
-                      Autoridad de supervisión: Superintendencia de Industria y
-                      Comercio (SIC). Jurisdicción: jueces de la República de
-                      Colombia, con domicilio en Bogotá D.C.
-                    </li>
-                  </ul>
-                </div>
-
-                {/* México */}
-                <div className="mb-6 pl-4 border-l-2 border-foreground/10">
-                  <h3 className="text-[16px] font-medium text-foreground mb-2">
-                    27.2. México
-                  </h3>
-                  <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                    <li>
-                      Los contratos de arrendamiento se rigen por el Código Civil
-                      Federal y los códigos civiles de cada entidad federativa
-                      aplicable.
-                    </li>
-                    <li>
-                      La protección de datos personales se rige por la Ley Federal
-                      de Protección de Datos Personales en Posesión de los
-                      Particulares (LFPDPPP) y su Reglamento.
-                    </li>
-                    <li>
-                      La firma electrónica se ampara en la NOM-151-SCFI-2016 y el
-                      Código de Comercio (Título Segundo).
-                    </li>
-                    <li>
-                      Autoridad de supervisión: Instituto Nacional de Transparencia,
-                      Acceso a la Información y Protección de Datos Personales
-                      (INAI) y la Procuraduría Federal del Consumidor (PROFECO).
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Brasil */}
-                <div className="mb-6 pl-4 border-l-2 border-foreground/10">
-                  <h3 className="text-[16px] font-medium text-foreground mb-2">
-                    27.3. Brasil
-                  </h3>
-                  <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                    <li>
-                      Los contratos de arrendamiento se rigen por la Lei do
-                      Inquilinato (Lei 8.245/1991).
-                    </li>
-                    <li>
-                      La protección de datos personales se rige por la Lei Geral de
-                      Proteção de Dados (LGPD - Lei 13.709/2018). El Usuario tiene
-                      derecho a confirmación, acceso, corrección, anonimización,
-                      portabilidad y eliminación de sus datos.
-                    </li>
-                    <li>
-                      La protección al consumidor se rige por el Código de Defesa do
-                      Consumidor (CDC - Lei 8.078/1990), incluyendo el derecho de
-                      arrependimento de 7 días.
-                    </li>
-                    <li>
-                      La firma electrónica se ampara en la Medida Provisória
-                      2.200-2/2001 y la Lei 14.063/2020.
-                    </li>
-                    <li>
-                      Autoridad de supervisión: Autoridade Nacional de Proteção de
-                      Dados (ANPD).
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Chile */}
-                <div className="mb-6 pl-4 border-l-2 border-foreground/10">
-                  <h3 className="text-[16px] font-medium text-foreground mb-2">
-                    27.4. Chile
-                  </h3>
-                  <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                    <li>
-                      Los contratos de arrendamiento se rigen por la Ley 18.101
-                      sobre Arrendamiento de Predios Urbanos y el Código Civil
-                      chileno.
-                    </li>
-                    <li>
-                      La protección de datos personales se rige por la Ley 19.628
-                      sobre Protección de la Vida Privada, y a partir de diciembre
-                      de 2026, por la nueva Ley 21.719 de Protección de Datos
-                      Personales.
-                    </li>
-                    <li>
-                      La firma electrónica se ampara en la Ley 19.799 sobre
-                      Documentos Electrónicos y Firma Electrónica.
-                    </li>
-                    <li>
-                      La protección al consumidor se rige por la Ley 19.496 sobre
-                      Protección de los Derechos de los Consumidores, administrada
-                      por el SERNAC.
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Perú */}
-                <div className="mb-6 pl-4 border-l-2 border-foreground/10">
-                  <h3 className="text-[16px] font-medium text-foreground mb-2">
-                    27.5. Perú
-                  </h3>
-                  <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                    <li>
-                      Los contratos de arrendamiento se rigen por el Código Civil
-                      peruano (Libro VII, Sección Segunda).
-                    </li>
-                    <li>
-                      La protección de datos personales se rige por la Ley 29733 y
-                      su Reglamento (D.S. 003-2013-JUS).
-                    </li>
-                    <li>
-                      Autoridad de supervisión: Autoridad Nacional de Protección de
-                      Datos Personales (ANPDP) e INDECOPI para protección al
-                      consumidor.
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Argentina */}
-                <div className="mb-6 pl-4 border-l-2 border-foreground/10">
-                  <h3 className="text-[16px] font-medium text-foreground mb-2">
-                    27.6. Argentina
-                  </h3>
-                  <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                    <li>
-                      Los contratos de arrendamiento se rigen por el Código Civil y
-                      Comercial de la Nación (Arts. 1187 y ss.).
-                    </li>
-                    <li>
-                      La protección de datos personales se rige por la Ley 25.326 de
-                      Protección de Datos Personales y su Decreto Reglamentario
-                      1558/2001.
-                    </li>
-                    <li>
-                      La firma electrónica se ampara en la Ley 25.506 de Firma
-                      Digital.
-                    </li>
-                    <li>
-                      Autoridad de supervisión: Agencia de Acceso a la Información
-                      Pública (AAIP) y Dirección Nacional de Defensa del Consumidor.
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Estados Unidos */}
-                <div className="pl-4 border-l-2 border-foreground/10">
-                  <h3 className="text-[16px] font-medium text-foreground mb-2">
-                    27.7. Estados Unidos
-                  </h3>
-                  <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                    <li>
-                      Los contratos de arrendamiento se rigen por la legislación
-                      estatal del lugar donde se ubique el inmueble.
-                    </li>
-                    <li>
-                      La Fair Housing Act (42 U.S.C. § 3601 et seq.) prohíbe la
-                      discriminación en vivienda por motivos de raza, color,
-                      religión, sexo, origen nacional, estado familiar o
-                      discapacidad. Los usuarios deben cumplir con las leyes de
-                      vivienda justa federales, estatales y locales.
-                    </li>
-                    <li>
-                      Si el servicio de scoring utiliza información de consumer
-                      reporting agencies, cumplirá con la Fair Credit Reporting Act
-                      (15 U.S.C. § 1681). Incluye el derecho a adverse action
-                      notices cuando un solicitante sea rechazado.
-                    </li>
-                    <li>
-                      La Equal Credit Opportunity Act (ECOA) prohíbe la
-                      discriminación crediticia por categorías protegidas.
-                    </li>
-                    <li>
-                      Para residentes de California: aplican los derechos adicionales
-                      del California Consumer Privacy Act (CCPA) y California Privacy
-                      Rights Act (CPRA), incluyendo el derecho a conocer, eliminar y
-                      optar por no vender información personal. Ver nuestra Política
-                      de Privacidad para detalles.
-                    </li>
-                    <li>
-                      La firma electrónica se ampara en la Electronic Signatures in
-                      Global and National Commerce Act (E-SIGN Act, 15 U.S.C. § 7001
-                      et seq.) y la Uniform Electronic Transactions Act (UETA).
-                    </li>
-                    <li>
-                      Las comunicaciones comerciales cumplen con la CAN-SPAM Act (15
-                      U.S.C. § 7701 et seq.) y el Telephone Consumer Protection Act
-                      (TCPA).
-                    </li>
-                    <li>
-                      Leasefy no recopila deliberadamente información de menores de
-                      13 años, conforme a la Children&apos;s Online Privacy Protection
-                      Act (COPPA).
-                    </li>
-                  </ul>
-                </div>
-              </section>
-
-              {/* ── 28. MODIFICACIONES A LOS TÉRMINOS ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  28. Modificaciones a los Términos
-                </h2>
-                <p className="mb-3">
-                  Leasefy se reserva el derecho de modificar estos Términos en
-                  cualquier momento. Las modificaciones se comunicarán al Usuario
-                  mediante:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    Publicación de la versión actualizada en la Plataforma con
-                    indicación de la fecha de la última actualización.
-                  </li>
-                  <li>
-                    Notificación por correo electrónico para cambios sustanciales,
-                    con al menos quince (15) días de antelación a su entrada en
-                    vigor.
-                  </li>
-                  <li>
-                    Aviso destacado en la Plataforma durante los primeros treinta
-                    (30) días desde la modificación.
-                  </li>
-                </ul>
-                <p className="mt-3">
-                  El uso continuado de la Plataforma después de la fecha de entrada
-                  en vigor de los nuevos Términos constituirá aceptación de los
-                  mismos. Si no está de acuerdo con las modificaciones, deberá dejar
-                  de utilizar la Plataforma y podrá solicitar la cancelación de su
-                  cuenta.
-                </p>
-              </section>
-
-              {/* ── 29. RESOLUCIÓN DE CONFLICTOS ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  29. Resolución de conflictos
-                </h2>
-                <p className="mb-3">
-                  Cualquier controversia derivada del uso de la Plataforma o de la
-                  interpretación de estos Términos se resolverá conforme al
-                  siguiente procedimiento:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                  <li>
-                    <span className="text-foreground/85 font-medium">Etapa 1 — Negociación directa:</span>{" "}
-                    las partes intentarán resolver la controversia de buena fe
-                    mediante negociación directa durante un plazo de treinta (30)
-                    días calendario.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Etapa 2 — Mediación:</span>{" "}
-                    si la negociación directa no resulta en un acuerdo, las partes
-                    podrán acudir a mediación ante un centro de conciliación
-                    reconocido en la jurisdicción aplicable.
-                  </li>
-                  <li>
-                    <span className="text-foreground/85 font-medium">Etapa 3 — Arbitraje o jurisdicción ordinaria:</span>{" "}
-                    si la mediación no prospera, la controversia se someterá a
-                    arbitraje o a la jurisdicción ordinaria según las siguientes
-                    reglas: (i) para usuarios en Colombia: arbitraje administrado por
-                    el Centro de Arbitraje y Conciliación de la Cámara de Comercio de
-                    Bogotá, o jurisdicción ordinaria en Bogotá D.C.; (ii) para
-                    usuarios en otras jurisdicciones: los tribunales competentes del
-                    domicilio del Usuario, conforme a la legislación procesal
-                    aplicable.
-                  </li>
-                </ul>
-                <p className="mt-3">
-                  Lo anterior no limita el derecho del consumidor a acudir
-                  directamente a las autoridades de protección al consumidor ni a
-                  ejercer acciones de grupo o colectivas cuando la legislación
-                  aplicable lo permita.
-                </p>
-              </section>
-
-              {/* ── 30. DIVISIBILIDAD ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  30. Divisibilidad
+                  26. Ley aplicable y controversias
                 </h2>
                 <p>
-                  Si cualquier disposición de estos Términos es declarada nula,
-                  inválida o inaplicable por un tribunal competente, dicha
-                  disposición se considerará separada del resto de los Términos, los
-                  cuales continuarán en pleno vigor y efecto. La disposición nula o
-                  inaplicable será reemplazada por una disposición válida que se
-                  aproxime en la mayor medida posible al propósito económico y
-                  jurídico de la disposición original.
+                  Estos términos se rigen por la ley colombiana. Las controversias se
+                  someten a los jueces de la República de Colombia. Si sos consumidor,
+                  conservás el derecho de acudir al juez de tu domicilio y a la
+                  Superintendencia de Industria y Comercio: nada de este documento te
+                  obliga a litigar en otra ciudad ni a renunciar a esa opción.
                 </p>
-              </section>
-
-              {/* ── 31. CESIÓN ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  31. Cesión
-                </h2>
-                <p>
-                  Usted no podrá ceder ni transferir sus derechos u obligaciones
-                  bajo estos Términos sin el consentimiento previo y escrito de
-                  Leasefy. Leasefy podrá ceder estos Términos, total o parcialmente,
-                  a cualquier empresa afiliada, sucesora o adquirente de sus activos
-                  o negocio, previa notificación al Usuario.
-                </p>
-              </section>
-
-              {/* ── 32. ACUERDO COMPLETO ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  32. Acuerdo completo
-                </h2>
-                <p>
-                  Estos Términos, junto con la Política de Privacidad, los términos
-                  específicos de cada Plan de Suscripción y cualquier acuerdo
-                  adicional celebrado entre usted y Leasefy, constituyen el acuerdo
-                  completo entre las partes con respecto al uso de la Plataforma y
-                  reemplazan todos los acuerdos, comunicaciones y propuestas
-                  anteriores, sean orales o escritos, relativos al mismo objeto.
-                </p>
-              </section>
-
-              {/* ── 33. LEGISLACIÓN APLICABLE ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  33. Legislación aplicable
-                </h2>
-                <p>
-                  Estos Términos se rigen por la legislación de la República de
-                  Colombia, sin perjuicio de las disposiciones imperativas de
-                  protección al consumidor y protección de datos personales
-                  aplicables en la jurisdicción de residencia del Usuario. Cuando la
-                  legislación local del Usuario establezca protecciones más
-                  favorables que las previstas en estos Términos, prevalecerán las
-                  protecciones locales.
-                </p>
-              </section>
-
-              {/* ── 34. CONTACTO ── */}
-              <section>
-                <h2 className="text-[18px] font-medium text-foreground mb-3">
-                  34. Contacto
-                </h2>
-                <p className="mb-3">
-                  Para cualquier consulta, reclamación o solicitud relacionada con
-                  estos Términos, puede comunicarse con nosotros a través de los
-                  siguientes canales:
-                </p>
-                <div className="p-5 border border-border rounded-md bg-muted/30 space-y-1">
-                  <p className="text-foreground font-medium">Leasefy S.A.S.</p>
-                  <p className="text-muted-foreground">NIT: [Pendiente de registro]</p>
-                  <p className="text-muted-foreground">
-                    Correo general:{" "}
-                    <a
-                      href="mailto:soporte@leasefy.com"
-                      className="text-foreground underline underline-offset-4 hover:text-foreground/70 transition-colors"
-                    >
-                      soporte@leasefy.com
-                    </a>
-                  </p>
-                  <p className="text-muted-foreground">
-                    Correo legal:{" "}
-                    <a
-                      href="mailto:legal@leasefy.com"
-                      className="text-foreground underline underline-offset-4 hover:text-foreground/70 transition-colors"
-                    >
-                      legal@leasefy.com
-                    </a>
-                  </p>
-                  <p className="text-muted-foreground">
-                    Protección de datos:{" "}
-                    <a
-                      href="mailto:privacidad@leasefy.com"
-                      className="text-foreground underline underline-offset-4 hover:text-foreground/70 transition-colors"
-                    >
-                      privacidad@leasefy.com
-                    </a>
-                  </p>
-                  <p className="text-muted-foreground">Bogotá D.C., Colombia</p>
-                </div>
               </section>
 
             </div>
           </div></div>
         </section>
       </main>
-      <Footer />
+      <LandingFooterV2 />
     </LandingChrome>
   );
 }

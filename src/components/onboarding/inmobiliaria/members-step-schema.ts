@@ -42,6 +42,14 @@ export const MEMBER_ROLE_OPTIONS: { value: MemberRole; label: string }[] = [
 
 const memberRowSchema = z.object({
   email: z.string().trim().min(1, 'El correo es obligatorio.').email('Ingresa un correo válido.'),
+  /**
+   * Opcional a propósito. El DTO del back (`InviteMemberDto`) exige la clave
+   * `name`, pero acepta el string vacío y guarda `null` — el equipo muestra
+   * entonces el correo hasta que la persona se registre. Pedirlo obligatorio
+   * frenaría el alta por un dato que quien invita puede no tener a mano, y
+   * derivarlo del correo sería inventarle un nombre a alguien.
+   */
+  nombre: z.string().trim().max(120, 'El nombre no puede pasar de 120 caracteres.').optional(),
   role: z.enum(['AGENTE', 'CONTADOR', 'ADMIN', 'VIEWER'], {
     errorMap: () => ({ message: 'Selecciona un rol.' }),
   }),
@@ -73,6 +81,7 @@ export type MembersStepFormValues = z.infer<typeof membersStepSchema>
 /** Default row appended when the user clicks "Agregar miembro". */
 export const MEMBERS_STEP_NEW_ROW: MembersStepFormValues['members'][number] = {
   email: '',
+  nombre: '',
   role: 'AGENTE',
 }
 

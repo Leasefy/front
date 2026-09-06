@@ -12,7 +12,7 @@ import {
 } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useInvitation } from '@/lib/hooks/useInvitation';
-import { getAccessToken } from '@/lib/api/client';
+import { apiClient } from '@/lib/api/client';
 
 // ============================================================================
 // Helpers
@@ -147,24 +147,20 @@ export default function InvitacionPage() {
     setAccepting(true);
     setActionError(null);
     try {
-      const accessToken = getAccessToken();
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'}/inmobiliaria/agency/invitations/${token}/accept`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          },
-        }
-      );
+      /*
+       * 🔴 Por `apiClient`, no por `fetch` a mano.
+       *
+       * Hasta el 2026-09-05 estas dos llamadas armaban la URL con
+       * `process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'`: en un
+       * despliegue donde esa variable no llegue al bundle, aceptar una
+       * invitación en producción apunta al localhost de quien abre la página.
+       * `apiClient` además trae la sesión, el reintento del 401 que acaba de
+       * vencer y el mensaje de error del back ya desempaquetado.
+       */
+      await apiClient.post(`/inmobiliaria/agency/invitations/${token}/accept`);
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.message || 'No se pudo aceptar la invitación');
-      }
-
-      // Hard navigation so auth context reinitializes with the updated role from backend
+      // Navegación dura para que el contexto de auth vuelva a arrancar con el
+      // rol nuevo que escribió el back.
       window.location.replace('/panel/inmobiliaria');
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Error al aceptar la invitación');
@@ -177,19 +173,12 @@ export default function InvitacionPage() {
     setDeclining(true);
     setActionError(null);
     try {
-      const accessToken = getAccessToken();
-      await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'}/inmobiliaria/agency/invitations/${token}/decline`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          },
-        }
-      ).catch(() => {
-        // Ignore network errors on decline — navigate away anyway
-      });
+      // Mismo criterio que aceptar: la URL del back la resuelve `apiClient`.
+      await apiClient
+        .post(`/inmobiliaria/agency/invitations/${token}/decline`)
+        .catch(() => {
+          // Un fallo de red al rechazar no cambia nada para la persona.
+        });
 
       router.push('/');
     } catch {
@@ -374,7 +363,7 @@ export default function InvitacionPage() {
 
         {/* Footer */}
         <p className="text-center text-xs text-fg-subtle">
-          Necesitas ayuda?{' '}
+          ¿Necesitas ayuda?{' '}
           <Link href="/ayuda" className="underline hover:text-fg-muted">
             Visita el centro de ayuda
           </Link>

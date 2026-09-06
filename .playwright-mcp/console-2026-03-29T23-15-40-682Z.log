@@ -1,7 +1,0 @@
-[    1592ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/login:0
-[    1950ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
-[    1950ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
-[    1950ms] [WARNING] [Auth] Supabase not configured — running without authentication @ webpack-internal:///(app-pages-browser)/./src/lib/auth/auth-context.tsx:117
-[    1953ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
-[    1953ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:17
-[    1953ms] [WARNING] [Auth] Supabase not configured — running without authentication @ webpack-internal:///(app-pages-browser)/./src/lib/auth/auth-context.tsx:117

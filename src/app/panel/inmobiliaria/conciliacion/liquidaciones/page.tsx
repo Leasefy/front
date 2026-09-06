@@ -27,7 +27,7 @@
  */
 
 import { useMemo, useState } from 'react'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 import { Receipt, ShieldCheck } from '@phosphor-icons/react'
 
 import {
@@ -370,7 +370,7 @@ function ConciliacionLiquidaciones() {
           cargando={isLoading}
           error={error}
           queEs="las liquidaciones"
-          onReintentar={() => void refetch()}
+          onReintentar={refetch}
           esqueleto={
             <div className="flex items-center justify-center py-16" data-testid="liquidaciones-loading">
               <Spinner />

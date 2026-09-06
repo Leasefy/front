@@ -181,8 +181,9 @@ export function CobroTable({
         así que el botón no heredaba las mayúsculas del `TH`. Ver DispersionTable.
       */}
       <button
+        type="button"
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 uppercase hover:text-foreground"
+        className="flex items-center gap-2 uppercase hover:text-fg"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
@@ -217,7 +218,7 @@ export function CobroTable({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.02 }}
                 onClick={() => onCobroClick?.(cobro)}
-                className="hover:bg-muted/50 cursor-pointer transition-colors"
+                className="hover:bg-surface-hover cursor-pointer transition-colors"
               >
                 {/* Property */}
                 <TableCell className="p-4">
@@ -226,10 +227,10 @@ export function CobroTable({
                       <HouseLine className="w-5 h-5 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-medium text-foreground truncate max-w-[180px]">
+                      <p className="font-medium text-fg truncate max-w-[180px]">
                         {cobro.propertyTitle}
                       </p>
-                      <p className="text-sm text-muted-foreground truncate max-w-[180px]">
+                      <p className="text-sm text-fg-muted truncate max-w-[180px]">
                         {cobro.propertyAddress}
                       </p>
                     </div>
@@ -243,7 +244,7 @@ export function CobroTable({
                       <User className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-medium text-foreground truncate max-w-[140px]">
+                      <p className="font-medium text-fg truncate max-w-[140px]">
                         {cobro.tenantName}
                       </p>
                       <div className="flex items-center gap-2">
@@ -251,10 +252,10 @@ export function CobroTable({
                           <a
                             href={`mailto:${cobro.tenantEmail}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="p-1 rounded hover:bg-muted transition-colors"
+                            className="p-1 rounded hover:bg-surface-muted transition-colors"
                             title={t('inmobiliaria.cobros.table.sendEmail')}
                           >
-                            <Envelope className="w-3.5 h-3.5 text-muted-foreground" />
+                            <Envelope className="w-3.5 h-3.5 text-fg-muted" />
                           </a>
                         )}
                         {cobro.tenantPhone && (
@@ -276,14 +277,14 @@ export function CobroTable({
 
                 {/* Month */}
                 <TableCell className="p-4">
-                  <span className="text-foreground capitalize">
+                  <span className="text-fg capitalize">
                     {formatMonth(cobro.month)}
                   </span>
                 </TableCell>
 
                 {/* Total */}
                 <TableCell className="p-4">
-                  <span className="font-semibold text-foreground">
+                  <span className="font-semibold text-fg">
                     {formatCurrency(cobro.totalAmount)}
                   </span>
                 </TableCell>
@@ -296,7 +297,7 @@ export function CobroTable({
                       ? 'text-success'
                       : cobro.paidAmount > 0
                       ? 'text-primary'
-                      : 'text-muted-foreground'
+                      : 'text-fg-muted'
                   )}>
                     {formatCurrency(cobro.paidAmount)}
                   </span>
@@ -310,7 +311,7 @@ export function CobroTable({
                       ? 'text-danger'
                       : cobro.pendingAmount > 0
                       ? 'text-warning'
-                      : 'text-muted-foreground'
+                      : 'text-fg-muted'
                   )}>
                     {formatCurrency(cobro.pendingAmount)}
                   </span>
@@ -335,7 +336,7 @@ export function CobroTable({
                       <CheckCircle className="w-4 h-4" weight="fill" />
                     </div>
                   ) : (
-                    <span className="text-muted-foreground">&mdash;</span>
+                    <span className="text-fg-muted">&mdash;</span>
                   )}
                 </TableCell>
 
@@ -373,14 +374,14 @@ export function CobroTable({
         {/* Summary Row */}
         {showSummary && cobros.length > 0 && (
           <TableFooter>
-            <TableRow className="bg-muted/30 border-t border-border">
+            <TableRow className="bg-surface-muted border-t border-border">
               <TableCell colSpan={3} className="p-4">
-                <span className="font-semibold text-foreground">
+                <span className="font-semibold text-fg">
                   {t('inmobiliaria.cobros.table.totalSummary', { count: cobros.length })}
                 </span>
               </TableCell>
               <TableCell className="p-4">
-                <span className="font-bold text-foreground">
+                <span className="font-bold text-fg">
                   {formatCurrency(summary.totalExpected)}
                 </span>
               </TableCell>
@@ -403,13 +404,13 @@ export function CobroTable({
       {/* Empty State */}
       {sortedCobros.length === 0 && (
         <div className="p-12 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-            <CurrencyCircleDollar className="w-8 h-8 text-muted-foreground" />
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-surface-muted flex items-center justify-center">
+            <CurrencyCircleDollar className="w-8 h-8 text-fg-muted" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-1">
+          <h3 className="text-lg font-semibold text-fg mb-1">
             {t('inmobiliaria.cobros.table.noCollections')}
           </h3>
-          <p className="text-muted-foreground">
+          <p className="text-fg-muted">
             {t('inmobiliaria.cobros.table.noCollectionsDesc')}
           </p>
         </div>

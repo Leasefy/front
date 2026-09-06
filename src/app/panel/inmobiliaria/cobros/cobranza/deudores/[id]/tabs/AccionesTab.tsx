@@ -11,7 +11,7 @@
 
 import * as React from 'react'
 import { useState } from 'react'
-import { Badge } from '@/components/ui'
+import { Badge, Button } from '@/components/ui'
 
 import { useI18n } from '@/lib/i18n'
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
@@ -202,13 +202,15 @@ export function AccionesTab({
             <p className="text-xs text-warning">
               No pudimos cargar el historial. <span className="opacity-80">{audit.error}</span>
             </p>
-            <button
-              type="button"
+            <Button
+              variant="link"
+              size="sm"
+              hideArrow
               onClick={() => void audit.refetch()}
-              className="text-xs text-warning underline shrink-0"
+              className="shrink-0 px-0 h-auto text-xs text-warning underline"
             >
               Reintentar
-            </button>
+            </Button>
           </div>
         ) : audit.isLoading && !audit.data ? (
           <div className="space-y-1">

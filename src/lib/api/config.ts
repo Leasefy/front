@@ -2,10 +2,11 @@
  * API environment configuration for the Leasefy AI platform.
  *
  * Controls switching between mock and real API backends via environment variables.
- * Defaults to mock mode when NEXT_PUBLIC_USE_MOCK_API is not explicitly set to "false".
+ * Real API by default: the simulated mode is opt-in and explicit.
  *
  * Environment variables:
- *   NEXT_PUBLIC_USE_MOCK_API  — "true" (default) or "false"
+ *   NEXT_PUBLIC_USE_MOCK_API  — "true" para pedir el simulado; cualquier otra cosa
+ *                               (incluido faltar) = datos reales
  *   NEXT_PUBLIC_AI_API_URL    — Backend URL, defaults to "/api/v1/ai"
  *   NEXT_PUBLIC_MOCK_DELAY_MS — Mock response delay in ms, defaults to 800
  */
@@ -28,18 +29,25 @@ export interface ApiConfig {
 // ============================================================================
 
 /**
- * Returns the current API configuration from environment variables.
- * Defaults to mock mode (useMockApi=true) when NEXT_PUBLIC_USE_MOCK_API is unset.
+ * Devuelve la configuración de API leída del entorno.
+ *
+ * El simulado es **opt-in explícito**: sin la variable puesta, la app pega a los
+ * datos reales. Antes era al revés (`!== 'false'`), y eso significaba que en
+ * desarrollo y en *staging* el panel servía datos inventados sin decirlo: quien
+ * probaba ahí sacaba conclusiones sobre pantallas que "funcionaban" porque un
+ * mock las llenaba. Un simulado silencioso es peor que no tenerlo.
+ *
+ * Mismo criterio que `funnel.service.ts` (`isMockMode`): en producción nunca,
+ * fuera de producción sólo si alguien lo pide con todas las letras.
  */
 export function getApiConfig(): ApiConfig {
-  // Mock mode is NEVER allowed in production (project rule: fabricated data must
-  // never reach real users). In prod we force the real API regardless of the env
-  // flag; outside prod we default to mock unless explicitly disabled. Mirrors the
-  // guard in funnel.service.ts / aprobacion.
+  // El simulado NUNCA corre en producción (regla del producto: los datos
+  // inventados no llegan a un usuario real). Fuera de producción hay que pedirlo
+  // con `NEXT_PUBLIC_USE_MOCK_API=true`; sin la variable, datos reales.
   const useMock =
     process.env.NODE_ENV === 'production'
       ? false
-      : process.env.NEXT_PUBLIC_USE_MOCK_API !== 'false';
+      : process.env.NEXT_PUBLIC_USE_MOCK_API === 'true';
 
   return {
     baseUrl: process.env.NEXT_PUBLIC_AI_API_URL || '/api/v1/ai',

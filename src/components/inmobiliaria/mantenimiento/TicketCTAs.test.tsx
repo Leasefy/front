@@ -120,4 +120,52 @@ describe('<TicketCTAs>', () => {
     })
     expect(onEscalar).toHaveBeenCalledTimes(1)
   })
+
+  /**
+   * 🔴 Con `motivoDeshabilitado` NINGÚN botón acciona, ni siquiera desde un
+   * estado que la máquina permite.
+   *
+   * Es la única forma honesta de tener acá cinco botones: el micro sirve estos
+   * tickets sólo por GET y el estado vive en el back detrás de un rail S2S que
+   * el navegador no puede usar. Antes los botones cambiaban el estado LOCAL y
+   * escribían en el historial que se había avisado al proveedor. Si alguien
+   * saca la guarda, esto se pone rojo.
+   */
+  it('motivoDeshabilitado apaga las 5 acciones y muestra el porqué', () => {
+    const spies = {
+      onAsignar: vi.fn(),
+      onPedirInfo: vi.fn(),
+      onSolicitarAprobacion: vi.fn(),
+      onEscalar: vi.fn(),
+      onCerrar: vi.fn(),
+    }
+    render({
+      estado: 'proveedor_sugerido',
+      motivoDeshabilitado: 'Desde acá el ticket sólo se mira.',
+      ...spies,
+    })
+
+    const motivo = container.querySelector('[data-testid="cta-motivo-deshabilitado"]')
+    expect(motivo).not.toBeNull()
+    expect(motivo!.textContent).toContain('sólo se mira')
+
+    for (const testid of [
+      'cta-asignar',
+      'cta-pedir-info',
+      'cta-solicitar-aprobacion',
+      'cta-escalar',
+      'cta-cerrar',
+    ]) {
+      const boton = container.querySelector<HTMLButtonElement>(`[data-testid="${testid}"]`)
+      expect(boton).not.toBeNull()
+      expect(boton!.disabled).toBe(true)
+      act(() => {
+        boton!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      })
+    }
+
+    // Ni un handler llamado, y el diálogo de cierre nunca se abre.
+    for (const spy of Object.values(spies)) expect(spy).not.toHaveBeenCalled()
+    expect(container.querySelector('[data-testid="cta-cerrar-dialog"]')).toBeNull()
+  })
 })

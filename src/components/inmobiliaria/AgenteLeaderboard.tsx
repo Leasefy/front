@@ -6,9 +6,6 @@ import { motion } from 'framer-motion';
 import {
   Trophy,
   Medal,
-  TrendUp,
-  TrendDown,
-  Minus,
   ChartLineUp,
   CurrencyDollar,
   Calendar,
@@ -30,15 +27,24 @@ type TimeRange = 'month' | 'year';
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 /**
- * Generate a mock trend based on agente performance
- * In production, this would compare against previous period
+ * La columna «Trend» no tenía con qué compararse.
+ *
+ * `getMockTrend()` prometía una tendencia —flecha verde para arriba, roja para
+ * abajo— y su propio comentario admitía que en producción «esto compararía
+ * contra el período anterior». No comparaba nada: era un umbral sobre
+ * `conversionRate`, el MISMO número que la columna de al lado ya muestra en
+ * porcentaje. O sea, la fila decía dos veces lo mismo, y la segunda vez lo
+ * decía como si fuera un movimiento en el tiempo. Una flecha roja al lado del
+ * nombre de un agente, en la pantalla del equipo, es una cosa seria.
+ *
+ * `AgenteMetrics` no trae ningún dato del período anterior —`closedThisMonth`,
+ * `commissionsThisMonth`, `conversionRate` son todos del período actual—, así
+ * que la tendencia no se puede calcular ni cableando. La columna se queda,
+ * vacía y explicada: el día que el back mande el período anterior, el dato
+ * entra acá.
  */
-function getMockTrend(agente: Agente): 'up' | 'down' | 'stable' {
-  // Use conversion rate as a stable factor for mock trends
-  if (agente.metrics.conversionRate >= 0.6) return 'up';
-  if (agente.metrics.conversionRate <= 0.45) return 'down';
-  return 'stable';
-}
+const SIN_COMPARACION =
+  'Todavía no hay tendencia: falta el dato del período anterior con el que compararse.';
 
 /**
  * AgenteLeaderboard - Ranked table of agentes by performance
@@ -180,7 +186,6 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
               const rank = index + 1;
               const isTopThree = rank <= 3;
               const isFirst = rank === 1;
-              const trend = getMockTrend(agente);
 
               const closings = timeRange === 'month'
                 ? agente.metrics.closedThisMonth
@@ -283,23 +288,18 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                     </span>
                   </div>
 
-                  {/* Trend */}
-                  <div className="col-span-1 flex items-center justify-center">
-                    {trend === 'up' && (
-                      <div className="w-6 h-6 rounded-full bg-success-soft flex items-center justify-center">
-                        <TrendUp className="w-3.5 h-3.5 text-success" weight="bold" />
-                      </div>
-                    )}
-                    {trend === 'down' && (
-                      <div className="w-6 h-6 rounded-full bg-danger-soft flex items-center justify-center">
-                        <TrendDown className="w-3.5 h-3.5 text-danger" weight="bold" />
-                      </div>
-                    )}
-                    {trend === 'stable' && (
-                      <div className="w-6 h-6 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center">
-                        <Minus className="w-3.5 h-3.5 text-fg-subtle" weight="bold" />
-                      </div>
-                    )}
+                  {/* Tendencia — sin período anterior no hay nada que afirmar. */}
+                  <div
+                    className="col-span-1 flex items-center justify-center"
+                    data-testid="agente-tendencia"
+                  >
+                    <span
+                      className="text-sm text-fg-subtle tabular-nums"
+                      title={SIN_COMPARACION}
+                      aria-label={SIN_COMPARACION}
+                    >
+                      —
+                    </span>
                   </div>
                 </motion.div>
               );

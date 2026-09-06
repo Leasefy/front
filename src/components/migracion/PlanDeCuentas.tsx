@@ -302,8 +302,15 @@ export function PlanDeCuentas({
       ) : null}
 
       {/* Con la lectura caída no sabemos si hay plan: ofrecer la semilla acá
-          sería invitar a sembrar sobre un plan que no vimos. */}
-      {!hayCuentas && !falloDeCarga ? (
+          sería invitar a sembrar sobre un plan que no vimos.
+
+          🔴 Y desaparece en cuanto la persona eligió una de las tres puertas.
+          Mientras se revisaba el archivo, «Todavía no hay plan de cuentas» con
+          sus tres botones seguía pintado ARRIBA de «Así va a quedar»: dos
+          estados contradictorios en la misma pantalla (auditoría 2026-09-05).
+          La siembra es la excepción y por eso NO está en la condición: su
+          botón muestra el «Cargando…» acá mismo. */}
+      {!hayCuentas && !falloDeCarga && !importando && !formulario ? (
         <SinPlan
           sembrando={sembrando}
           onSembrar={sembrar}
@@ -490,7 +497,7 @@ function SinPlan({
         Todavía no hay plan de cuentas
       </h2>
       <p className="mt-1 max-w-2xl text-sm text-fg-muted">
-        Si ya tenés uno en tu sistema actual, subilo: entra con tus códigos, que son los que tu
+        Si ya tienes uno en tu sistema actual, súbelo: entra con tus códigos, que son los que tu
         contador conoce. Si no, arrancá con el plan base: las cuentas del Decreto 2650 que usa
         una inmobiliaria —caja y bancos, la cartera de arrendamientos, lo que se le debe a los
         propietarios, las comisiones, los gastos—. Son unas cien entre clases, grupos, cuentas y
@@ -499,7 +506,7 @@ function SinPlan({
       <ul className="mt-3 space-y-1 text-sm text-fg-muted">
         <li className="flex items-start gap-2">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
-          Todas quedan editables: podés renombrar, desactivar y agregar las tuyas.
+          Todas quedan editables: puedes renombrar, desactivar y agregar las tuyas.
         </li>
         <li className="flex items-start gap-2">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
@@ -507,7 +514,7 @@ function SinPlan({
         </li>
         <li className="flex items-start gap-2">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
-          Si ya tenés cuentas cargadas, no las toca.
+          Si ya tienes cuentas cargadas, no las toca.
         </li>
       </ul>
       <div className="mt-5 flex flex-wrap gap-2">
@@ -529,7 +536,13 @@ function SinPlan({
         >
           Cargar el plan de cuentas base
         </Button>
-        <Button variant="ghost" onClick={onAMano} disabled={sembrando} hideArrow>
+        <Button
+          variant="ghost"
+          onClick={onAMano}
+          disabled={sembrando}
+          hideArrow
+          data-testid="puc-vacio-a-mano"
+        >
           Crear las cuentas a mano
         </Button>
       </div>
@@ -580,7 +593,7 @@ function PendientesDelContador({
           </h2>
           <p className="mt-0.5 text-sm text-fg-muted">
             El plan base las trae con el código más usado, pero no es una decisión del sistema.
-            Si tu contador usa otro código, creá la cuenta con el suyo y desactivá ésta.
+            Si tu contador usa otro código, crea la cuenta con el suyo y desactivá ésta.
           </p>
         </div>
       </div>
@@ -822,7 +835,7 @@ function FormularioDeCuenta({
           </h2>
           {editando ? (
             <p className="mt-0.5 text-sm text-fg-muted">
-              El código no se cambia: un código es una cuenta. Si necesitás otro, creá una cuenta
+              El código no se cambia: un código es una cuenta. Si necesitas otro, crea una cuenta
               nueva y desactivá ésta.
             </p>
           ) : (

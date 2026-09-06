@@ -31,6 +31,7 @@ import {
   useInmobiliariaConfig,
   cobrosApi,
 } from '@/lib/hooks/useInmobiliaria';
+import { agencyApi } from '@/lib/api/inmobiliaria.service';
 import type { Cobro, CobroStatus, CobroSummary } from '@/lib/types/inmobiliaria';
 import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
 import type {
@@ -214,14 +215,16 @@ function CobrosContent() {
   const summary: CobroSummary = useMemo(() => {
     if (apiSummary) return apiSummary;
 
-    // Fallback summary while loading
+    // Mientras carga tampoco hay nada medido: la tasa va en null (una raya),
+    // no en 0 — un 0 acá parpadeaba como «0.0% · Bajo ↘» antes de llegar el
+    // resumen de verdad.
     return {
       month: filters.month,
       totalExpected: 0,
       totalCollected: 0,
       totalPending: 0,
       totalLate: 0,
-      collectionRate: 0,
+      collectionRate: null,
       cobrosPaid: 0,
       cobrosPending: 0,
       cobrosLate: 0,
@@ -341,8 +344,23 @@ function CobrosContent() {
     setFilters(newFilters);
   }, []);
 
-  // Handle reminder config save
-  const handleConfigSave = useCallback((config: RecordatorioConfigData) => {
+  /**
+   * Guardar los recordatorios — de verdad.
+   *
+   * Esto era `setReminderConfig(config)` a secas mientras el cajón anunciaba
+   * «Configuración guardada»: ningún request. Los días viven en
+   * `agency.reminderDaysBefore/After` y se recargan al volver a entrar, así que
+   * lo editado se perdía y el back seguía mandando con lo viejo.
+   *
+   * Los CANALES no se mandan: el back no tiene dónde guardarlos
+   * (`UpdateAgencyDto` sólo acepta los dos arreglos de días). Mandarlos sería
+   * un 400 por `forbidNonWhitelisted`; el cajón lo dice en pantalla.
+   */
+  const handleConfigSave = useCallback(async (config: RecordatorioConfigData) => {
+    await agencyApi.updateAgency({
+      reminderDaysBefore: config.daysBefore,
+      reminderDaysAfter: config.daysAfter,
+    });
     setReminderConfig(config);
   }, []);
 
@@ -483,25 +501,21 @@ function CobrosContent() {
           />
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => shiftMonth(-1)}
+              <IconButton
+                variant="ghost"
+                icon={<CaretLeft className="w-4 h-4" />}
                 aria-label="Mes anterior"
-                className="p-1 rounded-md text-fg-muted hover:text-fg hover:bg-muted transition-colors"
-              >
-                <CaretLeft className="w-4 h-4" />
-              </button>
+                onClick={() => shiftMonth(-1)}
+              />
               <span className="text-sm font-medium text-fg text-center tabular-nums min-w-[7rem]">
                 {monthDisplay}
               </span>
-              <button
-                type="button"
-                onClick={() => shiftMonth(1)}
+              <IconButton
+                variant="ghost"
+                icon={<CaretRight className="w-4 h-4" />}
                 aria-label="Mes siguiente"
-                className="p-1 rounded-md text-fg-muted hover:text-fg hover:bg-muted transition-colors"
-              >
-                <CaretRight className="w-4 h-4" />
-              </button>
+                onClick={() => shiftMonth(1)}
+              />
             </div>
             <span className="text-xs text-fg-muted tabular-nums">
               {filteredCobros.length} {t('inmobiliaria.nav.cobros').toLowerCase()}

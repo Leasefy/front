@@ -28,7 +28,7 @@ vi.mock('@/lib/api/inmobiliaria.service', () => ({
 
 import { ConfigBranding } from './ConfigBranding'
 import { agencyApi } from '@/lib/api/inmobiliaria.service'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 import type { AgencyProfile } from '@/lib/types/inmobiliaria'
 
 const uploadAgencyLogo = agencyApi.uploadAgencyLogo as unknown as ReturnType<typeof vi.fn>

@@ -14,7 +14,7 @@
  */
 
 import { useState } from 'react'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 import { CheckCircle, Sparkle, XCircle } from '@phosphor-icons/react'
 import { MonoLabel } from '@leasefy/cadence'
 

@@ -28,7 +28,7 @@ import type { TenantSubscriptionTextT } from '@/lib/context/TenantProfileContext
 import { TEAM_ROLES, AGENTE_TEAM_ENTRY, type TeamRole } from '@/lib/types/team';
 import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service';
 import { useAgencyUsers } from '@/lib/hooks/useInmobiliaria';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import {
   searchData,
   groupSearchResults,

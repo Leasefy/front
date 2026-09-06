@@ -213,6 +213,23 @@ export interface AsientoContable {
   movimientos: MovimientoContable[];
 }
 
+/**
+ * Lo que devuelve `POST /asientos`: el asiento, MÁS si esta llamada lo creó.
+ *
+ * 🔴 El reintento con la misma `claveIdempotencia` responde el mismo 201 con el
+ * asiento de antes. Sin `yaExistia` las dos respuestas son idénticas y la
+ * pantalla no tiene con qué distinguirlas: termina anunciando «Asiento N.º 7
+ * registrado» de algo que ESTA llamada no registró. El dato lo tiene el back
+ * (`ResultadoDeAsentar` en `asientos.service.ts`) y sólo él: acá no se deduce.
+ */
+export interface AsientoRegistrado extends AsientoContable {
+  /**
+   * `false` = lo escribió esta llamada. `true` = la llave del intento ya tenía
+   * asiento y el back devolvió ESE: no se registró nada nuevo.
+   */
+  yaExistia: boolean;
+}
+
 /** `GET /asientos`: paginado por `limite` / `desplazamiento`, orden `numero desc`. */
 export interface PaginaDeAsientos {
   total: number;
@@ -732,9 +749,14 @@ export const contabilidadApi = {
       );
     },
 
-    /** Un asiento cuadrado. El back valida de nuevo; acá sólo se filtran claves. */
-    async crear(asiento: AsientoNuevo): Promise<AsientoContable> {
-      return apiClient.post<AsientoContable>(`${BASE}/asientos`, cuerpoDeAsiento(asiento));
+    /**
+     * Un asiento cuadrado. El back valida de nuevo; acá sólo se filtran claves.
+     *
+     * Devuelve `AsientoRegistrado`: mirá `yaExistia` antes de anunciar nada — con
+     * la llave del intento ya usada, esto NO creó ningún asiento.
+     */
+    async crear(asiento: AsientoNuevo): Promise<AsientoRegistrado> {
+      return apiClient.post<AsientoRegistrado>(`${BASE}/asientos`, cuerpoDeAsiento(asiento));
     },
 
     async reversar(id: string, opciones: OpcionesDeReversa = {}): Promise<ResultadoDeReversa> {

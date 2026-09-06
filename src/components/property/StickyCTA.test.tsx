@@ -28,6 +28,8 @@ vi.mock('@/lib/api/visits.service', () => ({
 vi.mock('@/lib/api/messages.service', () => ({
   messagesApi: { createPropertyInquiry: (...args: unknown[]) => createPropertyInquiryMock(...args) },
 }))
+const toast = vi.hoisted(() => Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }))
+vi.mock('sonner', () => ({ toast }))
 
 import { StickyCTA } from './StickyCTA'
 
@@ -44,6 +46,10 @@ beforeEach(() => {
   writeText.mockClear()
   pushMock.mockClear()
   createPropertyInquiryMock.mockReset()
+  toast.success.mockClear()
+  toast.error.mockClear()
+  // La hoja nativa NO existe por defecto: quien la quiera, la pone.
+  delete (navigator as { share?: unknown }).share
 })
 
 afterEach(() => {
@@ -255,5 +261,82 @@ describe('<StickyCTA> — RENT listing (regression)', () => {
     render()
     expect(container.textContent).toContain('Postularme')
     expect(container.textContent).not.toContain('Contactar')
+  })
+})
+
+// ============================================================================
+// Compartir — Nico (2026-09-04): «el de compartir ¿qué hace? porque toast
+// ninguno de los dos da».
+// ============================================================================
+
+describe('<StickyCTA> — compartir avisa lo que pasó', () => {
+  /** El botón de compartir del encabezado de la tarjeta (40px). */
+  const botonCompartir = () => q('[data-testid="share-copy-header"]') as HTMLButtonElement
+
+  const clic = async (boton: HTMLButtonElement) => {
+    await act(async () => {
+      boton.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+  }
+
+  it('sin hoja nativa copia al portapapeles Y lo dice con un toast', async () => {
+    render()
+    await clic(botonCompartir())
+
+    expect(writeText).toHaveBeenCalledTimes(1)
+    expect(writeText.mock.calls[0][0]).toContain('/propiedades/p1')
+    // Antes el único aviso era el ícono cambiando a un tilde 2 segundos dentro
+    // de un botón de 40px: nadie lo veía.
+    expect(toast.success).toHaveBeenCalledTimes(1)
+    expect(String(toast.success.mock.calls[0][0])).toContain('Copiamos el enlace')
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('con hoja nativa comparte por ahí y NO toca el portapapeles ni molesta con un toast', async () => {
+    const share = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true })
+    render()
+    await clic(botonCompartir())
+
+    expect(share).toHaveBeenCalledTimes(1)
+    expect(share.mock.calls[0][0].url).toContain('/propiedades/p1')
+    expect(writeText).not.toHaveBeenCalled()
+    // La hoja del sistema ya fue la señal.
+    expect(toast.success).not.toHaveBeenCalled()
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('cancelar la hoja nativa NO es un error: no se dice nada', async () => {
+    const abort = Object.assign(new Error('cancelado'), { name: 'AbortError' })
+    Object.defineProperty(navigator, 'share', {
+      value: vi.fn().mockRejectedValue(abort),
+      configurable: true,
+    })
+    render()
+    await clic(botonCompartir())
+
+    expect(toast.error).not.toHaveBeenCalled()
+    expect(toast.success).not.toHaveBeenCalled()
+    // Cancelar tampoco cae al portapapeles a espaldas del usuario.
+    expect(writeText).not.toHaveBeenCalled()
+  })
+
+  it('si el portapapeles falla lo DICE en vez de comerse el error', async () => {
+    writeText.mockRejectedValueOnce(new Error('NotAllowedError'))
+    render()
+    await clic(botonCompartir())
+
+    expect(toast.error).toHaveBeenCalledTimes(1)
+    expect(toast.success).not.toHaveBeenCalled()
+  })
+
+  it('el botón del panel de la inmobiliaria usa el MISMO camino que el del encabezado', async () => {
+    authState = { user: { role: 'agency' }, isAuthenticated: true, hasActiveAgencyMembership: false }
+    render()
+
+    await clic(q('[data-testid="agency-share-copy"]') as HTMLButtonElement)
+    expect(writeText).toHaveBeenCalledTimes(1)
+    expect(toast.success).toHaveBeenCalledTimes(1)
   })
 })

@@ -6682,6 +6682,30 @@
           "callId"
         ]
       },
+      "CobranzaManualCallBloqueada": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "valla": {
+            "type": "string",
+            "enum": [
+              "opt_out",
+              "horario",
+              "frecuencia"
+            ]
+          },
+          "motivo": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "valla",
+          "motivo"
+        ]
+      },
       "CobranzaManualCallBody": {
         "type": "object",
         "properties": {
@@ -6689,6 +6713,9 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 500
+          },
+          "omitir_tope_de_frecuencia": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -12375,6 +12402,219 @@
           "totales",
           "enVivo",
           "fuentes",
+          "tomadoAt"
+        ]
+      },
+      "AiHubCatalogoProceso": {
+        "type": "object",
+        "properties": {
+          "clave": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "queHace": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string",
+            "enum": [
+              "dinero",
+              "operacion",
+              "captacion",
+              "plataforma"
+            ]
+          },
+          "quien": {
+            "type": "object",
+            "properties": {
+              "tipo": {
+                "type": "string",
+                "enum": [
+                  "agente",
+                  "sistema"
+                ]
+              },
+              "agente": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "etiqueta": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "tipo",
+              "agente",
+              "etiqueta"
+            ]
+          },
+          "modo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "sombra",
+              "copiloto",
+              "autonomo"
+            ]
+          },
+          "modoGobierna": {
+            "type": "boolean"
+          },
+          "corre": {
+            "type": "boolean"
+          },
+          "porQueNoCorre": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "disparador": {
+            "type": "string"
+          },
+          "fuente": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ultima": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "at": {
+                "type": "string"
+              },
+              "que": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "at",
+              "que"
+            ]
+          },
+          "sinDato": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "enlace": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "href": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "label",
+              "href"
+            ]
+          }
+        },
+        "required": [
+          "clave",
+          "id",
+          "nombre",
+          "queHace",
+          "area",
+          "quien",
+          "modo",
+          "modoGobierna",
+          "corre",
+          "porQueNoCorre",
+          "disparador",
+          "fuente",
+          "ultima",
+          "sinDato",
+          "enlace"
+        ]
+      },
+      "AiHubCatalogoResponse": {
+        "type": "object",
+        "properties": {
+          "procesos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubCatalogoProceso"
+            }
+          },
+          "totales": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "number"
+              },
+              "corriendo": {
+                "type": "number"
+              },
+              "conSenal": {
+                "type": "number"
+              },
+              "sinDato": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "total",
+              "corriendo",
+              "conSenal",
+              "sinDato"
+            ]
+          },
+          "porArea": {
+            "type": "object",
+            "properties": {
+              "dinero": {
+                "type": "number"
+              },
+              "operacion": {
+                "type": "number"
+              },
+              "captacion": {
+                "type": "number"
+              },
+              "plataforma": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "dinero",
+              "operacion",
+              "captacion",
+              "plataforma"
+            ]
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "tomadoAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "procesos",
+          "totales",
+          "porArea",
+          "activo",
           "tomadoAt"
         ]
       },
@@ -32079,6 +32319,16 @@
               }
             }
           },
+          "409": {
+            "description": "Una valla legal frenó la llamada (opt-out, horario Ley 2300 o tope de frecuencia)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaManualCallBloqueada"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Audit-first write failed",
             "content": {
@@ -39862,6 +40112,83 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AiHubProcesosResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/catalogo": {
+      "get": {
+        "operationId": "getAiHubCatalogo",
+        "summary": "Piloto automático — el catálogo de todos los procesos de la plataforma",
+        "description": "Una fila por proceso automatizado real (cron, evento o cola) de los dos servicios: qué hace, quién lo corre, en qué modo está, cuándo dejó su última huella y a dónde ir a verlo. Cuando no hay forma de saber cuándo corrió, `ultima` es null y `sinDato` dice por qué.",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El catálogo completo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubCatalogoResponse"
                 }
               }
             }

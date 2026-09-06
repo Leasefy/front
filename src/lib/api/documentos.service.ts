@@ -88,6 +88,12 @@ export interface PlantillaDeLaAgencia {
 
 export type TipoDeCampo =
   | 'texto'
+  /**
+   * Una ciudad de Colombia: se pinta con el selector de DIVIPOLA
+   * (`CIUDADES_DE_COLOMBIA`) y no como campo libre. Escrita a mano, la misma
+   * ciudad entra de cinco formas distintas y después no cruza con nada.
+   */
+  | 'ciudad'
   | 'parrafo'
   | 'fecha'
   | 'moneda'

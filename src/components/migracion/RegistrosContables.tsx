@@ -114,7 +114,7 @@ export function RegistrosContables({
   if (cuentas === null) {
     return (
       <p className="text-sm text-fg-muted" role="status">
-        Leyendo lo que ya tenés cargado…
+        Leyendo lo que ya tienes cargado…
       </p>
     );
   }
@@ -215,7 +215,7 @@ export function RegistrosContables({
               </h2>
               <p className="mt-0.5 text-sm text-fg-muted">
                 Un asiento se imputa a cuentas, y todavía no hay ninguna que
-                reciba movimientos. Cargá el plan en el paso 4 y volvé.
+                reciba movimientos. Carga el plan en el paso 4 y vuelve.
               </p>
             </div>
           </div>

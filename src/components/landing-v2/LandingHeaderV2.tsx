@@ -62,6 +62,12 @@ export function LandingHeaderV2({ activo, fxExterno = false }: LandingHeaderV2Pr
   const esInmobiliaria = !isLoading && (activeContext === "agency" || user?.role === "agency");
   const verMarketplace = !esInmobiliaria;
 
+  // «Ver planes», «Producto» y «Agentes AI» apuntan a secciones que viven en
+  // el home. Desde /blog o /terminos un `#planes` pelado no lleva a ningun
+  // lado: hay que ir al home Y a la seccion. En el home se dejan tal cual
+  // para que el scroll suave de `initLandingFx` los siga atendiendo.
+  const alHome = fxExterno ? "" : "/";
+
   // El menu movil se arma desde una lista para que el numerito quede derivado
   // del orden real: escondiendo un item a mano quedaba 02..07 y el menu se lee
   // roto. Los numeros son parte del diseno, no decoracion.
@@ -69,9 +75,9 @@ export function LandingHeaderV2({ activo, fxExterno = false }: LandingHeaderV2Pr
     ...(verMarketplace
       ? [{ href: "/propiedades", label: "Buscar inmueble", clave: "inmuebles" as const }]
       : []),
-    { href: "#producto", label: "Producto" },
-    { href: "#producto", label: "Agentes AI" },
-    { href: "#contacto", label: "Planes" },
+    { href: `${alHome}#producto`, label: "Producto" },
+    { href: `${alHome}#producto`, label: "Agentes AI" },
+    { href: `${alHome}#contacto`, label: "Planes" },
     { href: "/avaluo", label: "Avalúos", clave: "avaluo" },
     { href: "/blog", label: "Blog", clave: "blog" },
     { href: "/contacto", label: "Contacto", clave: "contacto" },
@@ -98,27 +104,52 @@ export function LandingHeaderV2({ activo, fxExterno = false }: LandingHeaderV2Pr
       menu.classList.remove("open");
       document.documentElement.classList.remove("menu-open");
     };
+    // El mega-menu de «Producto» lo abre `initLandingFx` alternando `pm-open`
+    // en el <html>. Fuera de la landing ese script no corre: sin esto el
+    // enlace no abre nada, y el header viejo que este reemplaza SI tenia su
+    // mega-menu funcionando en /blog y /productos/*.
+    const raiz = document.documentElement;
+    const trigger = document.getElementById("pmTrigger");
+    const cerrarProducto = () => raiz.classList.remove("pm-open");
+    const alternarProducto = (e: MouseEvent) => {
+      e.preventDefault();
+      raiz.classList.toggle("pm-open");
+    };
+    const cerrarSiEsAfuera = (e: MouseEvent) => {
+      if (!raiz.classList.contains("pm-open")) return;
+      const donde = e.target as Element | null;
+      if (donde?.closest?.("#pmenu") || donde?.closest?.("#pmTrigger")) return;
+      cerrarProducto();
+    };
+
     const conEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") cerrar();
+      if (e.key !== "Escape") return;
+      cerrar();
+      cerrarProducto();
     };
 
     menuBtn.addEventListener("click", abrir);
     closeBtn.addEventListener("click", cerrar);
     menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", cerrar));
+    trigger?.addEventListener("click", alternarProducto);
+    document.addEventListener("click", cerrarSiEsAfuera);
     document.addEventListener("keydown", conEsc);
 
     return () => {
       menuBtn.removeEventListener("click", abrir);
       closeBtn.removeEventListener("click", cerrar);
       menu.querySelectorAll("a").forEach((a) => a.removeEventListener("click", cerrar));
+      trigger?.removeEventListener("click", alternarProducto);
+      document.removeEventListener("click", cerrarSiEsAfuera);
       document.removeEventListener("keydown", conEsc);
       cerrar();
+      cerrarProducto();
     };
   }, [fxExterno]);
 
   return (
     <>
-<header id="hdr"><div className="container hrow"><a href="#top" className="logo" aria-label="Leasefy — inicio"><svg viewBox="0 0 947 235"><use href="#lfLogo" /></svg></a><nav className="main"><a href="#producto" id="pmTrigger" data-nav="producto">Producto <i className="pm-ar" aria-hidden="true">▾</i></a>{verMarketplace && <a href="/propiedades" data-nav="inmuebles" aria-current={activo === "inmuebles" ? "page" : undefined}>Buscar inmueble</a>}<a href="/avaluo" data-nav="avaluo" aria-current={activo === "avaluo" ? "page" : undefined}>Avalúos</a><a href="/blog" data-nav="blog" aria-current={activo === "blog" ? "page" : undefined}>Blog</a><a href="/contacto" data-nav="contacto" aria-current={activo === "contacto" ? "page" : undefined}>Contacto</a></nav><div className="hcta"><a className="lnk" href="#planes">Ver planes</a><LandingAuthCta variant="header" /><LandingRegistroCta variant="header" /></div><button className="mbtn" id="menuBtn" aria-label="Abrir menú">Menú <span className="bars"><span></span><span></span></span></button></div><div id="pmenu" aria-hidden="true"><div className="container pm-grid"><div className="pm-sys"><p className="pm-k">El sistema</p><a className="pm-big" href="/productos/crm"><span className="pm-gn" aria-hidden="true">01</span><b>CRM inmobiliario</b><span>Tu comercial de punta a punta</span><i>Ver producto →</i></a><a className="pm-big" href="/productos/erp"><span className="pm-gn" aria-hidden="true">02</span><b>ERP de arriendos</b><span>La plata en orden, sola</span><i>Ver producto →</i></a></div><div className="pm-agents"><p className="pm-k">Agentes AI</p><div className="pm-list"><a href="/productos/cobranza"><b>Cobranza</b><span>La mora se persigue sola</span></a><a href="/productos/inquilino"><b>Estudio del inquilino</b><span>Verificación en minutos</span></a><a href="/productos/avaluos"><b>Avalúos</b><span>El precio correcto</span></a><a href="/productos/conciliacion"><b>Conciliación</b><span>Cuadre contra el banco</span></a><a href="/productos/matching"><b>Matching</b><span>Opciones el mismo día</span></a><a href="/productos/asegurabilidad"><b>Asegurabilidad</b><span>Contratos protegidos</span></a></div></div><div className="pm-foot"><a href="#producto">Visión general en el home ↓</a><a href="#planes">Ver planes →</a></div></div></div></header><div className="mmenu" id="mmenu"><div className="top"><span className="logo mlogo"><svg viewBox="0 0 947 235"><use href="#lfLogo" /></svg></span><button id="closeBtn" aria-label="Cerrar menú">Cerrar ✕</button></div><nav>{itemsMovil.map((it, i) => (<a key={`${it.href}-${it.label}`} href={it.href} aria-current={it.clave && activo === it.clave ? "page" : undefined}><span className="n">{String(i + 1).padStart(2, "0")}</span><span className="t">{it.label}</span></a>))}</nav><div className="bottom"><LandingAuthCta variant="mobile" /><LandingRegistroCta variant="mobile" /><a className="btn outline lg" href="#planes">Ver planes</a></div></div>
+<header id="hdr"><div className="container hrow"><a href="/" className="logo" aria-label="Leasefy — inicio"><svg viewBox="0 0 947 235"><use href="#lfLogo" /></svg></a><nav className="main"><a href={`${alHome}#producto`} id="pmTrigger" data-nav="producto">Producto <i className="pm-ar" aria-hidden="true">▾</i></a>{verMarketplace && <a href="/propiedades" data-nav="inmuebles" aria-current={activo === "inmuebles" ? "page" : undefined}>Buscar inmueble</a>}<a href="/avaluo" data-nav="avaluo" aria-current={activo === "avaluo" ? "page" : undefined}>Avalúos</a><a href="/blog" data-nav="blog" aria-current={activo === "blog" ? "page" : undefined}>Blog</a><a href="/contacto" data-nav="contacto" aria-current={activo === "contacto" ? "page" : undefined}>Contacto</a></nav><div className="hcta"><a className="lnk" href={`${alHome}#planes`}>Ver planes</a><LandingAuthCta variant="header" /><LandingRegistroCta variant="header" /></div><button className="mbtn" id="menuBtn" aria-label="Abrir menú">Menú <span className="bars"><span></span><span></span></span></button></div><div id="pmenu" aria-hidden="true"><div className="container pm-grid"><div className="pm-sys"><p className="pm-k">El sistema</p><a className="pm-big" href="/productos/crm"><span className="pm-gn" aria-hidden="true">01</span><b>CRM inmobiliario</b><span>Tu comercial de punta a punta</span><i>Ver producto →</i></a><a className="pm-big" href="/productos/erp"><span className="pm-gn" aria-hidden="true">02</span><b>ERP de arriendos</b><span>La plata en orden, sola</span><i>Ver producto →</i></a></div><div className="pm-agents"><p className="pm-k">Agentes AI</p><div className="pm-list"><a href="/productos/cobranza"><b>Cobranza</b><span>La mora se persigue sola</span></a><a href="/productos/inquilino"><b>Estudio del inquilino</b><span>Verificación en minutos</span></a><a href="/productos/avaluos"><b>Avalúos</b><span>El precio correcto</span></a><a href="/productos/conciliacion"><b>Conciliación</b><span>Cuadre contra el banco</span></a><a href="/productos/matching"><b>Matching</b><span>Opciones el mismo día</span></a><a href="/productos/asegurabilidad"><b>Asegurabilidad</b><span>Contratos protegidos</span></a></div></div><div className="pm-foot"><a href={`${alHome}#producto`}>Visión general en el home ↓</a><a href={`${alHome}#planes`}>Ver planes →</a></div></div></div></header><div className="mmenu" id="mmenu"><div className="top"><span className="logo mlogo"><svg viewBox="0 0 947 235"><use href="#lfLogo" /></svg></span><button id="closeBtn" aria-label="Cerrar menú">Cerrar ✕</button></div><nav>{itemsMovil.map((it, i) => (<a key={`${it.href}-${it.label}`} href={it.href} aria-current={it.clave && activo === it.clave ? "page" : undefined}><span className="n">{String(i + 1).padStart(2, "0")}</span><span className="t">{it.label}</span></a>))}</nav><div className="bottom"><LandingAuthCta variant="mobile" /><LandingRegistroCta variant="mobile" /><a className="btn outline lg" href={`${alHome}#planes`}>Ver planes</a></div></div>
     </>
   );
 }

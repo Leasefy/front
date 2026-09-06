@@ -13,7 +13,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 import { RadioCard, RadioCardGroup, SegmentedControl } from '@leasefy/cadence'
 
 import { Button } from '@/components/ui/button'
@@ -179,7 +179,7 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
                 onChange={(e) => set('solicitanteNombre', e.target.value)}
                 onBlur={() => tocar('solicitanteNombre')}
                 placeholder="Nombre de quien presenta la solicitud"
-                maxLength={120}
+                maxLength={200}
                 autoComplete="off"
                 aria-invalid={Boolean(mostrarError('solicitanteNombre'))}
                 required
@@ -198,7 +198,7 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
                 value={form.solicitanteContacto}
                 onChange={(e) => set('solicitanteContacto', e.target.value)}
                 placeholder="Correo o teléfono"
-                maxLength={120}
+                maxLength={200}
                 autoComplete="off"
               />
             </div>

@@ -63,8 +63,6 @@
     "messages": "Mensajes",
     "profile": "Perfil",
     "settings": "Configuración",
-    "saved": "Guardados",
-    "forYou": "Para Ti",
     "help": "Ayuda",
     "logout": "Cerrar sesión",
     "approval": "Mi tope de arriendo"
@@ -1014,6 +1012,7 @@
       "procesos": {
         "titulo": "Procesos",
         "descripcion": "Lo que el Piloto hizo, paso a paso: depósitos que detectó y concilió, llamadas de Laura y mensajes con los inquilinos.",
+        "loQuePaso": "Lo que pasó",
         "volver": "Piloto automático",
         "enVivo": "En vivo",
         "enVivoVacio": "Nada en curso ahora mismo",
@@ -1066,6 +1065,7 @@
       },
       "autonomia": {
         "titulo": "Autonomía",
+        "contadorTitulo": "{{n}} de {{total}} agentes pueden actuar solos, sin que nadie apruebe",
         "hint": "Define cuánto puede hacer cada agente sin ti.",
         "soloAdmin": "Solo un administrador puede cambiar el modo.",
         "vacia": "Ningún agente reporta su autonomía todavía",
@@ -1132,11 +1132,49 @@
       "gobierno": {
         "activo": "Activa",
         "inactivo": "Apagada para tu inmobiliaria",
-        "apagadoServidor": "Apagada en el servidor",
+        "apagadoServidor": "Todavía no disponible en tu plan",
         "proximamente": "Próximamente",
-        "switchAria": "Encender o apagar {agente} para tu inmobiliaria",
-        "toastOn": "{agente} encendida para tu inmobiliaria",
-        "toastOff": "{agente} apagada para tu inmobiliaria"
+        "switchAria": "Encender o apagar {{agente}} para tu inmobiliaria",
+        "toastOn": "{{agente}} encendida para tu inmobiliaria",
+        "toastOff": "{{agente}} apagada para tu inmobiliaria"
+      },
+      "catalogo": {
+        "titulo": "Todos los procesos",
+        "descripcion": "Toda la maquinaria de la plataforma, proceso por proceso: qué hace cada uno, quién lo corre, en qué modo está y cuándo se lo vio por última vez.",
+        "queEs": "procesos",
+        "buscar": "Buscar un proceso",
+        "resumen": "{{total}} procesos · {{corriendo}} encendidos · {{conSenal}} con señal reciente",
+        "filtrarArea": "Filtrar por área",
+        "filtrarModo": "Filtrar por modo",
+        "area": {
+          "todas": "Todo",
+          "dinero": "Dinero",
+          "operacion": "Operación",
+          "captacion": "Captación",
+          "plataforma": "Plataforma"
+        },
+        "modo": {
+          "todos": "Todos",
+          "sombra": "Sombra",
+          "copiloto": "Copiloto",
+          "autonomo": "Automático",
+          "sistema": "Sin modo"
+        },
+        "col": {
+          "proceso": "Proceso",
+          "quien": "Quién lo corre",
+          "cuando": "Cuándo corre",
+          "ultima": "Última señal",
+          "abrir": "Abrir"
+        },
+        "sinModo": "Lo corre el sistema",
+        "modoNoManda": "El modo queda registrado, pero todavía no cambia lo que este proceso hace.",
+        "apagado": "Apagado",
+        "noDisponible": "No disponible",
+        "vacio": "Nada con ese filtro",
+        "vacioHint": "Probá con otra área, otro modo o borrando la búsqueda.",
+        "sinFuente": "No pudimos consultar los procesos",
+        "sinFuenteHint": "La fuente no respondió; esto no significa que no haya procesos corriendo."
       }
     },
     "mobileNav": {
@@ -1191,7 +1229,7 @@
         "totalProperties": "Propiedades Totales",
         "rentedAndAvailable": "{{rented}} arrendadas · {{available}} disponibles",
         "monthlyCollection": "Recaudo del Mes",
-        "collectionRateLabel": "{{rate}}% tasa de cobro",
+        "collectionRateLabel": "{{rate}} tasa de cobro",
         "commissions": "Comisiones",
         "commissionsGenerated": "Generadas este mes",
         "occupancy": "Ocupación",
@@ -1338,7 +1376,30 @@
         "changePasswordDesc": "Actualiza tu clave de acceso",
         "changePasswordToast": "Se enviará un enlace a tu correo",
         "activeSessions": "Sesiones activas",
-        "activeSessionsDesc": "1 dispositivo conectado"
+        "activeSessionsDesc": "Mira qué dispositivo tiene tu sesión",
+        "sessionsTitle": "Sesiones activas",
+        "sessionsIntro": "Leasefy mantiene una sola sesión abierta a la vez. Si entras desde otro dispositivo, este se cierra automáticamente.",
+        "sessionsThisDevice": "Este dispositivo",
+        "sessionsOtherDevice": "Otro dispositivo",
+        "sessionsSince": "Sesión iniciada",
+        "sessionsLastSeen": "Última actividad",
+        "sessionsUnknownTime": "No lo sabemos: esta sesión empezó antes de que guardáramos ese dato.",
+        "sessionsEmpty": "No hay ninguna sesión abierta.",
+        "sessionsError": "No pudimos leer tus sesiones.",
+        "sessionsRetry": "Reintentar",
+        "sessionsCloseAll": "Cerrar sesión en este dispositivo",
+        "sessionsCloseAllHint": "Vuelves al inicio de sesión. Tendrás que entrar de nuevo con tu correo.",
+        "passwordModalTitle": "Cambiar tu contraseña",
+        "passwordModalLead": "Al confirmar te llega un enlace a {{email}}, y desde ahí eliges tu contraseña nueva.",
+        "passwordModalWhy": "Se hace por correo a propósito: así nadie que se siente frente a tu pantalla abierta puede cambiarte la clave sin tener también tu correo.",
+        "passwordModalExpiry": "El enlace sirve una sola vez y vence en una hora. Si se vence, vuelve acá y pide otro.",
+        "passwordModalSpam": "Si no llega en unos minutos, revisa el correo no deseado.",
+        "passwordModalSend": "Enviarme el enlace",
+        "passwordModalSending": "Enviando...",
+        "passwordModalSent": "Enlace enviado a {{email}}",
+        "passwordModalSentBody": "Revisa tu correo. El enlace vence en una hora.",
+        "passwordModalError": "No pudimos enviar el enlace. Intenta de nuevo.",
+        "passwordModalClose": "Entendido"
       },
       "extractoMensual": {
         "title": "Extracto mensual al propietario",
@@ -1661,7 +1722,14 @@
         "testConnection": "Probar conexion",
         "cancel": "Cancelar",
         "saving": "Guardando...",
-        "save": "Guardar"
+        "save": "Guardar",
+        "viewDetail": "Ver detalle",
+        "detailStatus": "Estado",
+        "detailCategory": "Categoría",
+        "detailLastSync": "Última sincronización",
+        "detailNeverSynced": "Todavía no sincronizó",
+        "keysNotHere": "Las llaves y los webhooks de esta integración todavía no se configuran desde el panel. Desde acá la prendés o la apagás; el resto lo hacemos nosotros con vos.",
+        "close": "Cerrar"
       },
       "billing": {
         "title": "Facturación",
@@ -1803,6 +1871,9 @@
         "created": "{{name}} agregado correctamente",
         "updated": "Propietario actualizado correctamente",
         "exporting": "Exportando propietarios a Excel...",
+        "exported": "Directorio exportado",
+        "exportedDesc": "Se descargó {{archivo}} con {{count}} propietarios",
+        "exportError": "No se pudo exportar. Intenta de nuevo.",
         "createError": "No se pudo crear el propietario. Intenta de nuevo.",
         "updateError": "No se pudo actualizar el propietario. Intenta de nuevo.",
         "deleteError": "No se pudo eliminar el propietario. Intenta de nuevo."
@@ -1838,6 +1909,7 @@
         "exportDone": "Datos exportados",
         "exportDoneDesc": "Se descargó {{archivo}}",
         "exportError": "No se pudo exportar. Intenta de nuevo.",
+        "exportIncompleto": "No pudimos leer los inmuebles o los giros, así que el archivo saldría incompleto. Recargá la ficha y volvé a intentar.",
         "moreActions": "Más acciones",
         "perfilTributario": "Perfil tributario",
         "personaNatural": "Persona natural",
@@ -2166,6 +2238,8 @@
         "days": "{{count}} dias",
         "selectAtLeastOneDay": "Selecciona al menos un dia",
         "notificationChannels": "Canales de Notificacion",
+        "canalesNoSeGuardan": "Los días sí se guardan. La elección de canales todavía no: el back no tiene dónde guardarla y se manda por correo y WhatsApp según la configuración de la inmobiliaria.",
+        "guardarError": "No se pudo guardar la configuración",
         "selectAtLeastOneChannel": "Selecciona al menos un canal de notificacion",
         "messageTemplates": "Plantillas de Mensajes",
         "preExpiryTemplate": "Recordatorio pre-vencimiento",
@@ -2236,10 +2310,16 @@
         "generatedDesc": "Se generaron {{count}} dispersiones",
         "processed": "Dispersión procesada",
         "processing": "Procesando dispersión para {{name}}...",
-        "transferSent": "Transferencia enviada a {{name}}",
+        "transferSent": "Quedó registrado el giro a {{name}}",
         "processingBatch": "Procesando {{count}} dispersiones...",
+        "aprobada": "Dispersión aprobada",
+        "aprobadaDesc": "Falta que otra persona cargue la referencia de la transferencia.",
+        "referenciaGuardada": "Referencia registrada",
+        "referenciaGuardadaDesc": "Quedó anotado el giro a {{name}}. El sistema no envía transferencias: las registra.",
+        "aprobadasBatch": "{{count}} dispersiones aprobadas",
+        "aprobadasBatchDesc": "Quedan en espera de que otra persona cargue la referencia de cada giro.",
         "batchCompleted": "Dispersiones completadas",
-        "batchCompletedDesc": "{{count}} transferencias enviadas exitosamente",
+        "batchCompletedDesc": "{{count}} giros registrados",
         "pdfDownloaded": "PDF descargado",
         "pdfDownloadedDesc": "Extracto de {{name}}",
         "couldNotGenerate": "No se pudo generar el extracto",
@@ -2247,7 +2327,7 @@
         "error": "Error al procesar la dispersión",
         "copiedToClipboard": "Copiado al portapapeles",
         "dispersionProcessed": "Dispersión procesada",
-        "transferTo": "Se realizó la transferencia a {{name}}",
+        "transferTo": "Quedó registrado el giro a {{name}}",
         "retryStarted": "Reintento iniciado",
         "processingFor": "Procesando dispersión para {{name}}"
       },
@@ -2285,6 +2365,16 @@
         "transferError": "Error en la transferencia",
         "viewExtracto": "Ver Extracto",
         "processDispersion": "Procesar Dispersión",
+        "aprobar": "Aprobar dispersión",
+        "aprobando": "Aprobando…",
+        "marcarGirada": "Marcar como girada",
+        "marcando": "Guardando…",
+        "referenciaLabel": "Referencia de la transferencia",
+        "referenciaPlaceholder": "Ej.: TRF-2026-02-001",
+        "referenciaAyuda": "El número con el que el banco identifica el giro. El sistema no transfiere: anota lo que vos ya hiciste.",
+        "referenciaFalta": "Escribí la referencia de la transferencia.",
+        "esperandoSegundoOjo": "Aprobada. La referencia la carga otra persona: es el segundo par de ojos sobre la plata del propietario.",
+        "aprobarTodas": "Aprobar las pendientes",
         "processingAction": "Procesando...",
         "retry": "Reintentar",
         "retrying": "Reintentando...",
@@ -2646,7 +2736,9 @@
       "allAgents": "Todos los agentes",
       "allProperties": "Todas las propiedades",
       "to": "a",
-      "clear": "Limpiar"
+      "clear": "Limpiar",
+      "enteredPipeline": "Ingresó al pipeline",
+      "historyNotRecorded": "Del recorrido anterior no hay registro: hoy sólo se guarda la etapa actual y desde cuándo entró. Cuando se registren los cambios de etapa, la línea de tiempo completa aparece acá."
     },
     "agente": {
       "workload": "Carga de trabajo",
@@ -3425,6 +3517,10 @@
         "consignmentContractUploaded": "Contrato adjuntado",
         "consignmentContractUploadError": "No se pudo adjuntar el contrato",
         "consignmentContractOnlyPdf": "Tiene que ser un PDF de hasta 10 MB.",
+        "consignmentContractPreview": "Vista previa del contrato de consignación",
+        "consignmentContractNoPreview": "¿No ves el PDF? Tu navegador puede estar bloqueando el visor.",
+        "consignmentContractOpenTab": "Abrir en pestaña nueva",
+        "consignmentContractDownload": "Descargar",
         "handoverReportOpen": "Abrir el acta para imprimir",
         "gallery": "Galería ({{count}} fotos)",
         "photoAlt": "Foto {{number}}",
@@ -3469,7 +3565,7 @@
         },
         "step1": {
           "title": "Seleccionar Propietario",
-          "subtitle": "Elige un propietario existente o crea uno nuevo"
+          "subtitle": "Elige uno o varios propietarios, o crea uno nuevo"
         },
         "step2": {
           "title": "Datos de la Propiedad",
@@ -4270,7 +4366,6 @@
       "print": "Imprimir",
       "downloadPdf": "Descargar PDF",
       "downloadError": "No se pudo bajar el PDF del acta",
-      "downloadPdf": "Descargar PDF",
       "partiesInvolved": "Partes involucradas",
       "inventorySection": "Inventario",
       "itemsLabel": "ítems",
@@ -6023,12 +6118,6 @@
         "overview": {
           "title": "Cobranza",
           "subtitle": "El agente cobra por ti; tú decides solo los casos críticos.",
-          "kpis": {
-            "deudoresActivos": "Deudores activos",
-            "pagadoHoy": "Pagado hoy",
-            "llamadasHoy": "Llamadas hoy",
-            "escalacionesPendientes": "Escalaciones pendientes"
-          },
           "stages": {
             "title": "Estado por etapa",
             "avgDays": "días promedio",
@@ -6340,15 +6429,6 @@
             "title": "Trazabilidad de estado",
             "empty": "Sin transiciones de estado.",
             "transition": "{{from}} → {{to}}"
-          },
-          "cost": {
-            "title": "Costos",
-            "llm": "LLM",
-            "voice": "Voz",
-            "whatsapp": "WhatsApp",
-            "total": "Total",
-            "empty": "Sin costo registrado.",
-            "platform": "Plataforma"
           },
           "compliance": {
             "pillAria": "Marca de cumplimiento: {{label}}"
@@ -7959,61 +8039,24 @@
           },
           "historial": {
             "empty": {
-              "title": "Aún no hay historial",
-              "description": "Cuando el estudio registre eventos, verás aquí la línea de tiempo completa: desde la solicitud hasta la decisión y las acciones del equipo."
-            },
-            "ejemplo": {
-              "title": "Ejemplo de la línea de tiempo",
-              "solicitud": {
-                "title": "Solicitud creada",
-                "desc": "El candidato inició el proceso de estudio."
-              },
-              "documentos": {
-                "title": "Documentos recibidos",
-                "desc": "Se cargaron los soportes de identidad e ingresos."
-              },
-              "evaluacion": {
-                "title": "Estudio evaluado",
-                "desc": "El motor analizó la información y calculó el puntaje."
-              },
-              "decision": {
-                "title": "Decisión registrada",
-                "desc": "Se determinó el resultado y las próximas acciones."
-              },
-              "pendiente": "— · —",
-              "nota": "Estructura ilustrativa. Los eventos reales aparecerán con su fecha y autor cuando estén disponibles."
+              "title": "Todavía no podemos mostrar el historial",
+              "description": "Los eventos del estudio se registran contra la postulación del candidato, y esta ficha se abre con el identificador del análisis. Falta la conexión entre los dos. El resultado del motor tampoco trae fechas propias, así que por ahora no hay ni un solo evento con hora que podamos afirmar."
             }
           },
           "conversaciones": {
             "empty": {
-              "title": "Aún no hay conversaciones",
-              "description": "Cuando intercambies mensajes con el candidato durante el estudio, el hilo de la conversación aparecerá aquí."
-            },
-            "ejemplo": {
-              "title": "Ejemplo de la conversación",
-              "autorAgencia": "Inmobiliaria",
-              "autorCandidato": "Candidato",
-              "msg1": "Hola, para avanzar con tu estudio necesitamos tu certificado laboral.",
-              "msg2": "Claro, lo subo hoy mismo.",
-              "msg3": "Perfecto, gracias. Te avisamos cuando tengamos el resultado.",
-              "nota": "Estructura ilustrativa. Los mensajes reales aparecerán con su fecha y canal cuando estén disponibles."
+              "title": "Todavía no podemos mostrar el hilo",
+              "description": "Los mensajes con el candidato se guardan contra su postulación, y esta ficha se abre con el identificador del análisis. Falta la conexión entre los dos: hasta que exista, cualquier conversación que mostráramos acá no sería necesariamente la de esta persona."
             }
           },
           "codeudores": {
             "empty": {
-              "title": "Aún no hay codeudores",
-              "description": "Cuando este estudio incluya uno o más codeudores, verás aquí su validación de identidad, ingresos y documentos."
+              "title": "Todavía no se pueden registrar codeudores",
+              "description": "Hoy el sistema sólo guarda si la postulación declaró un codeudor, sin sus datos: no hay identidad, ingresos ni documentos que mostrar. Cuando el codeudor exista como ficha propia, su validación aparece acá."
             },
             "recomendado": "Este estudio mejoraría su viabilidad con un codeudor. Cuando se agregue, su validación aparecerá aquí.",
-            "ejemplo": {
-              "title": "Ejemplo de una ficha de codeudor",
-              "nombre": "Nombre del codeudor",
-              "documento": "C.C. — · — · —",
-              "identidad": "Identidad",
-              "ingresos": "Ingresos",
-              "documentos": "Documentos",
-              "nota": "Estructura ilustrativa. Cada codeudor real traerá su propia validación completa cuando esté disponible."
-            }
+            "porQue": "El ingreso detectado cubre",
+            "porQueUmbral": "el canon, y el umbral con el que trabajamos es"
           },
           "reporte": {
             "empty": {
@@ -8639,10 +8682,6 @@
             "vacio": "Sin actividad reciente todavía."
           }
         },
-        "disabled": {
-          "title": "Pagos IA no está activo todavía",
-          "description": "Esta funcionalidad está en vista previa y aún no está habilitada para tu inmobiliaria. Te avisaremos cuando esté lista."
-        },
         "errors": {
           "loading": "No pudimos cargar esta sección",
           "retry": "Reintentar"
@@ -8680,47 +8719,12 @@
           "openDetail": "Ver detalle"
         },
         "detail": {
-          "title": "Detalle del pago",
-          "description": "Contexto, actividad y recomendación del agente.",
-          "loading": "Cargando detalle…",
-          "notFound": {
-            "title": "Detalle no disponible",
-            "description": "No encontramos información para este pago."
-          },
           "contexto": {
-            "title": "Contexto",
             "periodo": "Período",
-            "total": "Total",
-            "status": "Estado",
             "dueDate": "Vence",
-            "tenant": "Inquilino",
-            "phone": "Teléfono",
-            "property": "Inmueble",
-            "noDueDate": "Sin fecha"
-          },
-          "actividad": {
-            "title": "Actividad",
-            "empty": "Sin actividad registrada."
-          },
-          "recomendacion": {
-            "title": "Recomendación del agente"
+            "property": "Inmueble"
           },
           "close": "Cerrar"
-        },
-        "ownerInbox": {
-          "title": "Bandeja de propietarios",
-          "subtitle": "Propietarios con liquidaciones por procesar.",
-          "columns": {
-            "propietario": "Propietario",
-            "inmuebles": "Inmuebles",
-            "valorAPagar": "Valor a pagar",
-            "estado": "Estado",
-            "accion": "Acción"
-          },
-          "empty": {
-            "title": "Sin propietarios pendientes",
-            "description": "No hay liquidaciones de propietarios por procesar en este momento."
-          }
         }
       }
     },
@@ -8881,6 +8885,17 @@
       "fIva": "IVA sobre comisión",
       "fDescuentos": "Descuentos",
       "fNeto": "Neto al propietario",
+      "fAFavor": "Conceptos a favor",
+      "fACargo": "Conceptos a cargo",
+      "colAFavor": "A favor",
+      "resumenLabel": "El mes, en plata",
+      "estadoGenerada": "Dispersión generada",
+      "estadoPendiente": "Sin generar",
+      "verDispersiones": "Ver en Dispersiones",
+      "errorTitle": "No se pudieron cargar las liquidaciones",
+      "retry": "Reintentar",
+      "cargando": "Calculando el neto del mes…",
+      "sinCuenta": "Sin cuenta registrada",
       "egresosTitle": "Egresos",
       "egresosDesc": "Neto por propietario del periodo, con cuenta destino y comprobante.",
       "colPropietario": "Propietario",
@@ -8892,8 +8907,8 @@
       "colCuenta": "Cuenta destino",
       "colEstado": "Estado",
       "colComprobante": "Comprobante",
-      "emptyTitle": "Sin egresos aún",
-      "emptyDesc": "Los egresos netos se calcularán cuando el motor (M1) esté activo. El procesamiento del pago se hace en Dispersiones.",
+      "emptyTitle": "Este mes todavía no hay nada que liquidar",
+      "emptyDesc": "Aparece un propietario acá cuando alguno de sus cobros del mes queda pagado (total o parcialmente). El giro se ejecuta en Dispersiones.",
       "registrarFacturaCta": "Registrar factura",
       "facturasCardTitle": "Facturas de proveedores",
       "facturasCardDesc": "Subí la foto o el PDF de una factura y la IA la lee: proveedor, número, montos y fechas. Vos revisás y la registrás en cuentas por pagar.",
@@ -9075,6 +9090,7 @@
       "retry": "Reintentar",
       "origen_sistema": "Sistema",
       "origen_usuario": "Tú",
+      "estado_confirmado": "Confirmada",
       "estado_pendiente": "Pendiente",
       "estado_completado": "Completado",
       "estado_vencido": "Vencido",
@@ -9169,6 +9185,9 @@
       "errorAudioTooLarge": "El audio es demasiado largo. Graba una descripción más corta.",
       "autoStopped": "Grabación detenida automáticamente (máximo 4 minutos).",
       "confirmReextract": "Volver a procesar reemplazará los datos que editaste. ¿Continuar?",
+      "confirmReextractTitle": "¿Volver a procesar la grabación?",
+      "confirmReextractCancel": "Conservar lo que edité",
+      "confirmReextractOk": "Volver a procesar",
       "errorMicDenied": "Permiso de micrófono denegado. Habilítalo en el navegador para grabar.",
       "errorMicNotFound": "No se encontró un micrófono.",
       "errorMicUnsupported": "Tu navegador no permite grabar audio aquí (requiere HTTPS).",
@@ -9244,10 +9263,8 @@
     "commandPalette": {
       "title": "Buscar en Leasefy",
       "inputLabel": "Buscar o escribir un comando",
-      "placeholder": "Buscar…",
       "inputPlaceholder": "Buscá inmuebles, contratos, propietarios… o escribí una acción",
       "clearLabel": "Limpiar búsqueda",
-      "triggerAriaLabel": "Abrir buscador (⌘K)",
       "resultsLabel": "Resultados de búsqueda",
       "noResults": "Sin resultados para “{{query}}”",
       "noResultsHint": "Probá con el código, el nombre o el documento.",
@@ -9426,6 +9443,25 @@
             "necesitas": "Necesitas tener al candidato ya aprobado."
           }
         }
+      }
+    },
+    "tour": {
+      "saltar": "Saltar",
+      "atras": "Atrás",
+      "siguiente": "Siguiente",
+      "terminar": "Listo",
+      "paso": "Paso {{n}} de {{total}}",
+      "buscador": {
+        "titulo": "Busca cualquier cosa desde acá",
+        "cuerpo": "Un inmueble, un contrato, una persona o una pantalla del panel. Se abre también con ⌘K, sin soltar el teclado."
+      },
+      "piloto": {
+        "titulo": "Tú decides cuánto hace la IA sola",
+        "cuerpo": "Sombra mira y propone. Copiloto te deja cada acción lista para tu visto bueno. Automático actúa dentro de la ley y de tus topes. El modo lo cambias acá, y vale para toda la flota."
+      },
+      "agentes": {
+        "titulo": "Cada agente vive dentro de su módulo",
+        "cuerpo": "No hay una sección aparte de «IA»: la cobranza está en Cobros, la asegurabilidad en Postulaciones. Entras donde está el trabajo, no donde está la tecnología."
       }
     }
   },
@@ -10392,13 +10428,13 @@
       "suggestionsLabel": "Sugerencias · Agentes Leasefy",
       "prompts": {
         "cobros": "Cobros y recaudos",
-        "cobros_desc": "Como van mis cobros este mes?",
+        "cobros_desc": "¿Cómo van mis cobros este mes?",
         "propiedades": "Propiedades",
         "propiedades_desc": "Resume el estado de mis propiedades",
         "contratos": "Contratos",
-        "contratos_desc": "Hay contratos proximos a vencer?",
+        "contratos_desc": "¿Hay contratos próximos a vencer?",
         "mantenimiento": "Mantenimiento",
-        "mantenimiento_desc": "Que solicitudes de mantenimiento hay?",
+        "mantenimiento_desc": "¿Qué solicitudes de mantenimiento hay?",
         "candidatos": "Candidatos",
         "candidatos_desc": "Muestra los candidatos pre-filtrados",
         "reportes": "Reportes",
@@ -10512,9 +10548,22 @@
       "demo": "Demo"
     }
   },
+  "propiedad": {
+    "compartir": {
+      "copiado": "Copiamos el enlace del inmueble",
+      "falloAlCopiar": "No pudimos copiar el enlace",
+      "falloAlCopiarDetalle": "Copialo a mano desde la barra de direcciones del navegador."
+    }
+  },
   "wishlist": {
     "errors": {
       "saveFailed": "No se pudo actualizar tus favoritos. Intenta de nuevo."
+    },
+    "toast": {
+      "guardado": "Lo guardamos en tus favoritos",
+      "guardadoLocal": "Lo guardamos en este navegador",
+      "guardadoLocalDetalle": "Iniciá sesión como inquilino para tenerlo en tus guardados.",
+      "quitado": "Lo quitamos de tus favoritos"
     }
   },
   "inquilino": {
@@ -10906,7 +10955,7 @@
   "inquilinos": {
     "eyebrow": "Terceros",
     "titulo": "Inquilinos",
-    "subtitulo": "Las personas que viven en los inmuebles que administrás, con todos sus arriendos juntos. Cada inquilino nace de su contrato: si es uno solo, cargalo a mano; si son muchos, traelos con la migración.",
+    "subtitulo": "Las personas que viven en los inmuebles que administrás, con todos sus arriendos juntos. Cargá uno acá, o traé los que ya tenés en otro sistema con la migración.",
     "queEs": "los inquilinos",
     "queSon": "inquilinos",
     "buscarPlaceholder": "Buscá por nombre, correo o teléfono",
@@ -10921,9 +10970,12 @@
       "arriendosVigentes": "Arriendos vigentes",
       "canonVigente": "Canon mensual vigente"
     },
-    "vacioDescripcion": "Todavía no hay ningún arriendo en tu inmobiliaria. Traé los que ya tenés en otro sistema, o cargá uno a mano y su inquilino aparece acá.",
+    "vacioDescripcion": "Todavía no tenés inquilinos. Traé los que ya tenés en otro sistema, o cargá uno acá mismo.",
     "vacioContrato": "Migrar contratos",
     "crearContrato": "Crear un contrato",
+    "nuevoInquilino": "Nuevo inquilino",
+    "sinArriendo": "Sin arriendo",
+    "crearSuContrato": "Crear su contrato",
     "sinContacto": "Sin correo ni teléfono",
     "sinInmueble": "Sin inmueble asignado",
     "conteoArriendoUno": "1 arriendo · {{vigentes}} vigente",
@@ -10948,7 +11000,7 @@
       "deTotal": "de {{n}} en total",
       "saldoPendiente": "Saldo pendiente",
       "diasDeMora": "{{n}} días de mora",
-      "arriendos": "Arriendos ({{n}})",
+      "arriendos": "Arriendos",
       "arriendosIncluyeTerminados": "Todos los que tiene con vos, incluidos los terminados.",
       "cargandoArriendos": "Buscando los terminados…",
       "arriendosIncompletos": "No se pudo traer el detalle completo: puede faltar algún arriendo terminado.",
@@ -10958,8 +11010,10 @@
       "cargandoPagos": "Cargando sus pagos…",
       "errorPagos": "No se pudieron cargar los pagos.",
       "pagosIncompletos": "Falta el detalle de alguno de sus contratos: lo que ves está incompleto.",
-      "sinPagos": "Todavía no se ha generado ningún cobro para sus contratos.",
-      "sinContratos": "No tiene ningún contrato al cual colgarle un cobro.",
+      "sinPagosTitulo": "Todavía no hay cobros",
+      "sinPagos": "Cuando se genere el primer cobro de sus contratos, aparece acá con su estado y su saldo.",
+      "sinArriendosTitulo": "Todavía no tiene ningún arriendo",
+      "sinContratos": "Sin un contrato no hay canon, ni cobros, ni nada que cobrarle. Creale uno y el cajón se llena solo.",
       "reintentar": "Reintentar",
       "ultimoPago": "Último pago el {{fecha}}",
       "recordatorios": "{{n}} recordatorios · último el {{fecha}}",
@@ -10967,7 +11021,14 @@
       "venceEl": "Vence el {{fecha}}",
       "debe": "Debe {{monto}}",
       "yMasCobros": "y {{n}} cobros más, en el contrato.",
-      "verCobrosDelContrato": "Ver todos sus cobros en el contrato"
+      "verCobrosDelContrato": "Ver todos sus cobros en el contrato",
+      "alDia": "Al día",
+      "escribirCorreo": "Escribirle al correo",
+      "llamar": "Llamar",
+      "documento": "Documento",
+      "copiar": "Copiar",
+      "copiado": "Copiado",
+      "noSePudoCopiar": "No pudimos copiar. Seleccionalo y copialo a mano."
     },
     "estados": {
       "activo": "Activo",

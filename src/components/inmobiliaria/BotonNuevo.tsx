@@ -69,6 +69,7 @@ import {
 
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { AVALUO_WIZARD_URL } from '@/lib/avaluo/wizard-url'
 import { SelectorPostulacion } from '@/components/inmobiliaria/SelectorPostulacion'
@@ -291,15 +292,44 @@ function IntroDelFlujo({
   onCancelar: () => void
   onEmpezar: () => void
 }) {
-  const { t } = useI18n()
-  if (!flujo) return null
+  /*
+   * `open` manda de verdad. Antes era `if (!flujo) return null` con
+   * `<Dialog open>` fijo: cerrar era desmontarlo de un tirón y Radix se
+   * quedaba sin nada que animar, así que el diálogo desaparecía en seco.
+   * `useUltimoPresente` conserva el flujo mientras se va — en el render del
+   * cierre ya es null y el diálogo saldría vacío.
+   */
+  const ultimo = useUltimoPresente(flujo)
 
+  return (
+    <Dialog open={Boolean(flujo)} onOpenChange={(abierto) => !abierto && onCancelar()}>
+      {/* 🔴 `DialogContent` reparte a sus hijos DIRECTOS en cabecera / cuerpo /
+          pie (`repartirHijos` en `ui/dialog.tsx`). Un componente interpuesto
+          hace que el `DialogHeader` deje de verse como cabecera —título chico,
+          con el padding del cuerpo— y que el Content pinte SU aspa además de la
+          de la cabecera: dos ✕. Por eso el `DialogContent` vive adentro. */}
+      {ultimo && (
+        <CuerpoDeLaIntro flujo={ultimo} onCancelar={onCancelar} onEmpezar={onEmpezar} />
+      )}
+    </Dialog>
+  )
+}
+
+function CuerpoDeLaIntro({
+  flujo,
+  onCancelar,
+  onEmpezar,
+}: {
+  flujo: FlujoNuevo
+  onCancelar: () => void
+  onEmpezar: () => void
+}) {
+  const { t } = useI18n()
   const claves = flujoIntro(flujo.key)
   const Icono = flujo.icon
 
   return (
-    <Dialog open onOpenChange={(abierto) => !abierto && onCancelar()}>
-      <DialogContent className="sm:max-w-lg">
+    <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary-soft">
             <Icono className="h-5 w-5 text-primary" />
@@ -348,7 +378,6 @@ function IntroDelFlujo({
             </Button>
           </div>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </DialogContent>
   )
 }

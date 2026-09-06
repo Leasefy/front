@@ -4850,6 +4850,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/ai-hub/catalogo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Piloto automático — el catálogo de todos los procesos de la plataforma
+         * @description Una fila por proceso automatizado real (cron, evento o cola) de los dos servicios: qué hace, quién lo corre, en qué modo está, cuándo dejó su última huella y a dónde ir a verlo. Cuando no hay forma de saber cuándo corrió, `ultima` es null y `sinDato` dice por qué.
+         */
+        get: operations["getAiHubCatalogo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/piloto/conciliacion/conciliar-seguros": {
         parameters: {
             query?: never;
@@ -9912,8 +9932,15 @@ export interface components {
             callId: string;
             stub?: boolean;
         };
+        CobranzaManualCallBloqueada: {
+            error: string;
+            /** @enum {string} */
+            valla: "opt_out" | "horario" | "frecuencia";
+            motivo: string;
+        };
         CobranzaManualCallBody: {
             reason: string;
+            omitir_tope_de_frecuencia?: boolean;
         };
         CobranzaWaTemplatesList: {
             templates: {
@@ -11279,6 +11306,53 @@ export interface components {
                 /** @enum {string} */
                 whatsapp: "ok" | "sin_back" | "error";
             };
+            tomadoAt: string;
+        };
+        AiHubCatalogoProceso: {
+            clave: string;
+            id: string;
+            nombre: string;
+            queHace: string;
+            /** @enum {string} */
+            area: "dinero" | "operacion" | "captacion" | "plataforma";
+            quien: {
+                /** @enum {string} */
+                tipo: "agente" | "sistema";
+                agente: string | null;
+                etiqueta: string;
+            };
+            /** @enum {string|null} */
+            modo: "sombra" | "copiloto" | "autonomo" | null;
+            modoGobierna: boolean;
+            corre: boolean;
+            porQueNoCorre: string | null;
+            disparador: string;
+            fuente: string | null;
+            ultima: {
+                at: string;
+                que: string;
+            } | null;
+            sinDato: string | null;
+            enlace: {
+                label: string;
+                href: string;
+            } | null;
+        };
+        AiHubCatalogoResponse: {
+            procesos: components["schemas"]["AiHubCatalogoProceso"][];
+            totales: {
+                total: number;
+                corriendo: number;
+                conSenal: number;
+                sinDato: number;
+            };
+            porArea: {
+                dinero: number;
+                operacion: number;
+                captacion: number;
+                plataforma: number;
+            };
+            activo: boolean;
             tomadoAt: string;
         };
         PilotoConciliacionSegurosResponse: {
@@ -17187,6 +17261,15 @@ export interface operations {
                     "application/json": components["schemas"]["CobranzaInterventionError"];
                 };
             };
+            /** @description Una valla legal frenó la llamada (opt-out, horario Ley 2300 o tope de frecuencia) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaManualCallBloqueada"];
+                };
+            };
             /** @description Audit-first write failed */
             500: {
                 headers: {
@@ -21881,6 +21964,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiHubProcesosResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAiHubCatalogo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El catálogo completo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubCatalogoResponse"];
                 };
             };
             /** @description JWT faltante o inválido */

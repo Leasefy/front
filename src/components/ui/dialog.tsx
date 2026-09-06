@@ -163,6 +163,22 @@ function bandaDe(hijo: React.ReactNode): BandaDeModal | null {
   return (hijo.type as ComponenteDeBanda).bandaDeModal ?? null
 }
 
+/**
+ * 🔴 EL REPARTO MIRA SÓLO A LOS HIJOS **DIRECTOS** DEL `DialogContent`.
+ *
+ * Si entre el `DialogContent` y su `DialogHeader` se interpone un componente
+ * —cosa que pasa naturalmente al extraer el cuerpo a `<CuerpoDeAlgo />` para
+ * poder animar el cierre— la cabecera deja de reconocerse y pasan DOS cosas a
+ * la vez, ninguna con error:
+ *   1. El header cae al cuerpo: título con tamaño y padding de cuerpo.
+ *   2. El Content pinta SU aspa creyendo que la cabecera no trae ninguna,
+ *      además de la que sí pinta la cabecera ⇒ **dos ✕**.
+ *
+ * Por eso, cuando el cuerpo se extrae a un componente, el `DialogContent` va
+ * ADENTRO de ese componente, no envolviéndolo. Hay un test que lo fija en
+ * `CompletarMandatoDialog.test.tsx` («una sola ✕, y el título va en la
+ * cabecera»), que es donde apareció.
+ */
 interface RepartoDeHijos {
   cabecera: React.ReactNode
   cuerpo: React.ReactNode[]

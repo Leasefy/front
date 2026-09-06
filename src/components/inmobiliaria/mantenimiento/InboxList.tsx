@@ -15,6 +15,7 @@
  */
 
 import { Wrench } from '@phosphor-icons/react'
+import { Button } from '@/components/ui/button'
 import { useI18n } from '@/lib/i18n'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import type { MaintenanceTicketCard } from '@/lib/types/mantenimiento'
@@ -27,6 +28,17 @@ interface InboxListProps {
   hasActiveFilters: boolean
   onSelect: (id: string) => void
   onClearFilters: () => void
+  /**
+   * ¿La consulta falló? Entonces esta lista no dice nada.
+   *
+   * La página pinta el cartel del fallo arriba y después llamaba a esta lista
+   * con `tickets = []`, que caía en el vacío «No hay tickets»: la pantalla
+   * afirmaba «falló» y «no tenés nada» al mismo tiempo, y lo segundo es una
+   * mentira tranquilizadora. Es el mismo orden que impone `EstadoDeDatos`
+   * (carga → fallo → vacío → datos): el vacío va DESPUÉS del fallo, nunca al
+   * lado.
+   */
+  error?: string | null
 }
 
 const SKELETON_COUNT = 5
@@ -37,9 +49,13 @@ export function InboxList({
   hasActiveFilters,
   onSelect,
   onClearFilters,
+  error = null,
 }: InboxListProps) {
   const { t } = useI18n()
   const sorted = sortByScoreDesc(tickets)
+
+  // Falló y no hay nada que mostrar: habla el cartel de arriba, no un vacío.
+  if (error && sorted.length === 0) return null
 
   // 1. Loading and nothing rendered yet → skeletons.
   if (isLoading && sorted.length === 0) {
@@ -52,13 +68,13 @@ export function InboxList({
         {Array.from({ length: SKELETON_COUNT }, (_, i) => (
           <div
             key={`skeleton-${i}`}
-            className="rounded-[1px] border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 animate-pulse"
+            className="rounded-lg border border-border bg-surface p-4 animate-pulse"
           >
-            <div className="h-4 w-3/4 rounded bg-neutral-200 dark:bg-neutral-700" />
-            <div className="mt-2 h-3 w-1/2 rounded bg-neutral-200 dark:bg-neutral-700" />
+            <div className="h-4 w-3/4 rounded bg-surface-muted" />
+            <div className="mt-2 h-3 w-1/2 rounded bg-surface-muted" />
             <div className="mt-3 flex gap-2">
-              <div className="h-5 w-16 rounded-full bg-neutral-200 dark:bg-neutral-700" />
-              <div className="h-5 w-20 rounded-full bg-neutral-200 dark:bg-neutral-700" />
+              <div className="h-5 w-16 rounded-full bg-surface-muted" />
+              <div className="h-5 w-20 rounded-full bg-surface-muted" />
             </div>
           </div>
         ))}
@@ -69,17 +85,13 @@ export function InboxList({
   // 2. Empty WITH active filters → "no match" + clear.
   if (!isLoading && sorted.length === 0 && hasActiveFilters) {
     return (
-      <div className="rounded-lg border border-dashed border-neutral-200 dark:border-neutral-700 px-6 py-12 text-center">
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
+      <div className="rounded-lg border border-dashed border-border px-6 py-12 text-center">
+        <p className="text-sm text-fg-muted mb-3">
           {t('inmobiliaria.ai.mantenimiento.inbox.emptyFiltered')}
         </p>
-        <button
-          type="button"
-          onClick={onClearFilters}
-          className="text-xs font-medium px-3 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800"
-        >
+        <Button type="button" variant="outline" size="sm" onClick={onClearFilters}>
           {t('inmobiliaria.ai.mantenimiento.filters.limpiar')}
-        </button>
+        </Button>
       </div>
     )
   }

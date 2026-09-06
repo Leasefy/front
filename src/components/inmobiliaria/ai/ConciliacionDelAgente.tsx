@@ -29,7 +29,7 @@
  */
 
 import { useRef, useState, type ChangeEvent } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import {
   Bank,
   Info,
@@ -136,20 +136,50 @@ function fmtDate(iso: string | null): string {
 // ── Reject dialog ───────────────────────────────────────────────────────────
 
 interface RejectDialogProps {
-  matchId: string;
+  /** `null` = cerrado. Antes el padre lo montaba con `{rejectTarget && …}`. */
+  matchId: string | null;
   onConfirm: (reason: string) => void;
   onCancel: () => void;
   t: (k: string) => string;
   busy: boolean;
 }
 
-function RejectDialog({ matchId: _matchId, onConfirm, onCancel, t, busy }: RejectDialogProps) {
+/**
+ * El envoltorio: sólo es dueño del `Dialog`.
+ *
+ * Antes el padre lo montaba con `{rejectTarget && <RejectDialog …>}` y acá
+ * dentro el `open` estaba fijo — o sea que cerrar era desmontarlo de un tirón
+ * y Radix se quedaba sin nada que animar. Ahora vive siempre y el `open` manda.
+ *
+ * El motivo escrito NO se conserva a propósito: vive en el cuerpo, que Radix
+ * desmonta al terminar la salida, así que la próxima vez el textarea abre
+ * vacío —como cuando el padre lo remontaba— pero sin vaciarse a la vista
+ * mientras el diálogo se va.
+ */
+function RejectDialog({ matchId, onConfirm, onCancel, t, busy }: RejectDialogProps) {
+  return (
+    <Dialog open={Boolean(matchId)} onOpenChange={(o) => { if (!o && !busy) onCancel(); }}>
+      {/* 🔴 `DialogContent` reparte a sus hijos DIRECTOS en cabecera / cuerpo /
+          pie (`repartirHijos` en `ui/dialog.tsx`). Un componente interpuesto
+          hace que el `DialogHeader` deje de verse como cabecera —título chico,
+          con el padding del cuerpo— y que el Content pinte SU aspa además de la
+          de la cabecera: dos ✕. Por eso el `DialogContent` vive adentro. */}
+      <CuerpoDelRechazo onConfirm={onConfirm} onCancel={onCancel} t={t} busy={busy} />
+    </Dialog>
+  );
+}
+
+function CuerpoDelRechazo({
+  onConfirm,
+  onCancel,
+  t,
+  busy,
+}: Omit<RejectDialogProps, 'matchId'>) {
   const [reason, setReason] = useState('');
   const k = (s: string) => `inmobiliaria.conciliacion.${s}`;
 
   return (
-    <Dialog open onOpenChange={(o) => { if (!o && !busy) onCancel(); }}>
-      <DialogContent className="max-w-sm">
+    <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>{t(k('rejectDialogTitle'))}</DialogTitle>
           <DialogDescription>{t(k('rejectDialogDesc'))}</DialogDescription>
@@ -176,8 +206,7 @@ function RejectDialog({ matchId: _matchId, onConfirm, onCancel, t, busy }: Rejec
             {t(k('rejectConfirm'))}
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </DialogContent>
   );
 }
 
@@ -290,6 +319,9 @@ export function ConciliacionDelAgente() {
   const [busyRow, setBusyRow] = useState<string | null>(null);
   // Reject dialog state
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
+  // Ojo el orden: con los dos en null, `busyRow === rejectTarget` sería cierto
+  // y el diálogo cerrado se creería ocupado.
+  const rechazoEnCurso = rejectTarget !== null && busyRow === rejectTarget;
   // Statement upload state (hacia el MICRO, no hacia el ERP)
   const [bank, setBank] = useState<IngestBank>('bancolombia');
   const [uploading, setUploading] = useState(false);
@@ -603,16 +635,15 @@ export function ConciliacionDelAgente() {
         )}
       </div>
 
-      {/* Reject dialog */}
-      {rejectTarget && (
-        <RejectDialog
-          matchId={rejectTarget}
-          onConfirm={handleRejectSubmit}
-          onCancel={() => setRejectTarget(null)}
-          t={t}
-          busy={busyRow === rejectTarget}
-        />
-      )}
+      {/* Reject dialog — montado siempre: si lo montara `{rejectTarget && …}`
+          cerrar sería borrarlo del árbol y no habría animación de salida. */}
+      <RejectDialog
+        matchId={rejectTarget}
+        onConfirm={handleRejectSubmit}
+        onCancel={() => setRejectTarget(null)}
+        t={t}
+        busy={rechazoEnCurso}
+      />
     </details>
   );
 }

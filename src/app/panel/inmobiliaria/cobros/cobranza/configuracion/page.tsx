@@ -48,6 +48,13 @@ import { useAutonomy, type AutonomyLevel } from '@/lib/hooks/cobranza/use-autono
 import { CobranzaConfiguracionSkeleton } from '@/components/skeleton/panel/CobranzaConfiguracionSkeleton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -495,58 +502,64 @@ function CobranzaConfiguracionContent() {
               <Label htmlFor="billingModel" className="text-sm">
                 Modelo de facturación
               </Label>
-              <select
-                id="billingModel"
-                data-testid="field-billingModel"
-                className="w-full rounded-md border border-border bg-card px-3 min-h-[44px] text-sm"
-                disabled={!canEdit}
+              <Select
                 value={negDraft.billingModel}
-                onChange={(e) => updateNeg('billingModel', e.target.value as NegotiationDraft['billingModel'])}
+                onValueChange={(v) => updateNeg('billingModel', v as NegotiationDraft['billingModel'])}
+                disabled={!canEdit}
               >
-                {BILLING_MODELS.map((m) => (
-                  <option key={m} value={m}>
-                    {BILLING_MODEL_LABELS[m]}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="billingModel" data-testid="field-billingModel">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {BILLING_MODELS.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {BILLING_MODEL_LABELS[m]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <Label htmlFor="crmProvider" className="text-sm">
                 CRM
               </Label>
-              <select
-                id="crmProvider"
-                data-testid="field-crmProvider"
-                className="w-full rounded-md border border-border bg-card px-3 min-h-[44px] text-sm"
-                disabled={!canEdit}
+              <Select
                 value={negDraft.crmProvider}
-                onChange={(e) => updateNeg('crmProvider', e.target.value as NegotiationDraft['crmProvider'])}
+                onValueChange={(v) => updateNeg('crmProvider', v as NegotiationDraft['crmProvider'])}
+                disabled={!canEdit}
               >
-                {CRM_PROVIDERS.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="crmProvider" data-testid="field-crmProvider">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CRM_PROVIDERS.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {p}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <Label htmlFor="erpProvider" className="text-sm">
                 ERP
               </Label>
-              <select
-                id="erpProvider"
-                data-testid="field-erpProvider"
-                className="w-full rounded-md border border-border bg-card px-3 min-h-[44px] text-sm"
-                disabled={!canEdit}
+              <Select
                 value={negDraft.erpProvider}
-                onChange={(e) => updateNeg('erpProvider', e.target.value as NegotiationDraft['erpProvider'])}
+                onValueChange={(v) => updateNeg('erpProvider', v as NegotiationDraft['erpProvider'])}
+                disabled={!canEdit}
               >
-                {ERP_PROVIDERS.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="erpProvider" data-testid="field-erpProvider">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ERP_PROVIDERS.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {p}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

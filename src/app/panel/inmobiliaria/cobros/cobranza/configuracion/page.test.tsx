@@ -224,7 +224,7 @@ describe('<CobranzaConfiguracionPage> — layout', () => {
 describe('<CobranzaConfiguracionPage> — role gate', () => {
   it('renders editable inputs and a save button when canAccess(cobranza, configure) is true', () => {
     render()
-    const crm = byTestId('field-crmProvider') as HTMLSelectElement
+    const crm = byTestId('field-crmProvider') as HTMLButtonElement
     expect(crm).toBeTruthy()
     expect(crm.disabled).toBe(false)
     expect(byTestId('save-comercial')).toBeTruthy()
@@ -233,7 +233,7 @@ describe('<CobranzaConfiguracionPage> — role gate', () => {
   it('renders read-only inputs and no save actions when canAccess(cobranza, configure) is false', () => {
     canConfigure = false
     render()
-    const crm = byTestId('field-crmProvider') as HTMLSelectElement
+    const crm = byTestId('field-crmProvider') as HTMLButtonElement
     expect(crm).toBeTruthy()
     expect(crm.disabled).toBe(true)
     expect(byTestId('save-comercial')).toBeFalsy()
@@ -269,11 +269,16 @@ describe('<CobranzaConfiguracionPage> — facturación (PATCH /policy, partial)'
   it('manda SÓLO lo que cambió', async () => {
     render()
 
-    const crm = byTestId('field-crmProvider') as HTMLSelectElement
+    // El campo que se toca es la comisión (un <input>): CRM/ERP/facturación
+    // pasaron a ser <Select> del sistema de diseño —un <button> con la lista en
+    // un portal de Radix— y no se manejan desde jsdom. Lo que este test fija
+    // sigue siendo lo mismo: el PATCH lleva ÚNICAMENTE la clave que cambió.
+    const fee = byTestId('field-successFeePct') as HTMLInputElement
     await act(async () => {
-      const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set
-      setter?.call(crm, 'domus')
-      crm.dispatchEvent(new Event('change', { bubbles: true }))
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+      setter?.call(fee, '9')
+      fee.dispatchEvent(new Event('input', { bubbles: true }))
+      fee.dispatchEvent(new Event('change', { bubbles: true }))
       await Promise.resolve()
     })
 
@@ -285,7 +290,7 @@ describe('<CobranzaConfiguracionPage> — facturación (PATCH /policy, partial)'
     })
 
     expect(patchPolicy).toHaveBeenCalledTimes(1)
-    expect(patchPolicy).toHaveBeenCalledWith({ crmProvider: 'domus' })
+    expect(patchPolicy).toHaveBeenCalledWith({ successFeePct: 0.09 })
   })
 
   it('la comisión se escribe en %, no en fracción', () => {

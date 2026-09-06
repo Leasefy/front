@@ -8,33 +8,47 @@ interface BlogArticleProps {
 }
 
 /**
- * Blog article presentation (landing-react-port SLICE 6), restyled to the
- * landing language. `BlogPost` (`blog-posts.ts`) is UNTOUCHED (design §2) —
- * this component only changes how the same data renders.
+ * Artículo del blog.
+ *
+ * Rediseñado el 2026-09-05 junto con el listado. El título va ARRIBA de la
+ * foto, en tinta, en vez de blanco sobre un degradado a pantalla completa:
+ * se lee mejor y la foto queda como pieza editorial enmarcada, no como
+ * fondo. `BlogPost` (`blog-posts.ts`) no cambia; los `data-testid` tampoco.
  */
 export function BlogArticle({ post, related }: BlogArticleProps) {
   return (
     <article className="landing-ba" data-testid="blog-article">
-      <div className="landing-ba__hero">
-        <Image src={post.image} alt={post.title} fill className="landing-ba__hero-img" sizes="100vw" priority />
-        <div className="landing-ba__hero-shade" aria-hidden="true" />
-        <div className="landing-ba__hero-content">
-          <p className="landing-ba__hero-meta">
+      <div className="landing-ba__wrap">
+        <Link href="/blog" className="landing-ba__back" data-testid="article-back">
+          <i aria-hidden="true">←</i> Volver al blog
+        </Link>
+
+        <header className="landing-ba__head">
+          <p className="landing-ba__meta">
             <span className="landing-ba__cat" data-testid="article-category">
               {post.category}
             </span>
             <span>{post.date}</span>
             <span aria-hidden="true">·</span>
-            <span>{post.readTime}</span>
+            <span>{post.readTime} de lectura</span>
           </p>
           <h1 data-testid="article-title">{post.title}</h1>
-        </div>
-      </div>
+          <p className="landing-ba__lede">{post.excerpt}</p>
+          <p className="landing-ba__author">
+            Por <b>{post.author || 'Equipo Leasefy'}</b>
+          </p>
+        </header>
 
-      <div className="landing-ba__wrap">
-        <Link href="/blog" className="landing-ba__back" data-testid="article-back">
-          <i aria-hidden="true">←</i> Volver al blog
-        </Link>
+        <div className="landing-ba__hero">
+          <Image
+            src={post.image}
+            alt={post.title}
+            fill
+            className="landing-ba__hero-img"
+            sizes="(min-width: 1400px) 1304px, 100vw"
+            priority
+          />
+        </div>
 
         <div className="landing-ba__body" data-testid="article-body">
           {post.content ? (
@@ -48,7 +62,10 @@ export function BlogArticle({ post, related }: BlogArticleProps) {
       {related.length > 0 && (
         <section className="landing-ba__related" data-testid="article-related">
           <div className="landing-ba__wrap">
-            <h2>Artículos relacionados</h2>
+            <div className="landing-ba__related-head">
+              <h2>Seguí leyendo</h2>
+              <Link href="/blog">Todos los artículos →</Link>
+            </div>
             <div className="landing-bp__grid">
               {related.map((item) => (
                 <Link
@@ -57,12 +74,26 @@ export function BlogArticle({ post, related }: BlogArticleProps) {
                   className="landing-bp__card"
                   data-testid="article-related-card"
                 >
-                  <div className="landing-bp__media" style={{ backgroundImage: `url(${item.image})` }}>
+                  <div className="landing-bp__media">
+                    <Image
+                      src={item.image}
+                      alt=""
+                      fill
+                      sizes="(min-width: 760px) 33vw, 100vw"
+                      className="landing-bp__img"
+                    />
                     <span className="landing-bp__cat">{item.category}</span>
                   </div>
                   <div className="landing-bp__body">
-                    <p className="landing-bp__meta">{item.date}</p>
+                    <p className="landing-bp__meta">
+                      <span>{item.date}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{item.readTime}</span>
+                    </p>
                     <h3>{item.title}</h3>
+                    <span className="landing-bp__more">
+                      Leer <i aria-hidden="true">→</i>
+                    </span>
                   </div>
                 </Link>
               ))}

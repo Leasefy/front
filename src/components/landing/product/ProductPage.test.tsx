@@ -108,9 +108,23 @@ describe('<ProductPage> — crm (detailed copy/wiring)', () => {
     expect(logTimes[0].textContent).toBe(PRODUCTS.crm.night.log[0].time)
   })
 
-  it('renders the closing banner and footer directly (no cloning, no final CTA block)', () => {
-    expect(container.querySelector('[data-testid="closing-banner"]')).toBeTruthy()
-    expect(container.querySelector('footer.landing-footer')).toBeTruthy()
+  it('cierra con la demo del producto y deja el pie al layout', () => {
+    const cierre = container.querySelector('[data-testid="closing-banner"]')
+    expect(cierre).toBeTruthy()
+    // `demoPrompt` existía en el catálogo para los ocho productos y ninguna
+    // pantalla lo mostraba; el cierre es su lugar.
+    expect(container.querySelector('[data-testid="product-demo-prompt"]')?.textContent).toBe(PRODUCTS.crm.demoPrompt)
+    const cta = cierre?.querySelector('[data-testid="closing-banner-cta"]')
+    expect(cta?.getAttribute('href')).toBe(PRODUCTS.crm.ctas[0].href)
+    // El pie lo pone el layout del grupo `(landing)`. Cuando ProductPage
+    // traia el suyo ademas, /productos/* servia DOS <footer> — se veia como
+    // uno solo porque el segundo quedaba abajo del primero.
+    expect(container.querySelector('footer')).toBeNull()
+  })
+
+  it('la portada muestra el índice del módulo que ya usa el mega-menú', () => {
+    // «Sistema · Módulo 01» → 01. Un campo nuevo diría lo mismo dos veces.
+    expect(container.querySelector('.landing-pp__cover-index')?.textContent).toBe('01')
   })
 })
 

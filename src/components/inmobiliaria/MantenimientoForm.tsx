@@ -173,7 +173,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                 </div>
               )}
               <div>
-                <p className="font-medium text-fg dark:text-white">
+                <p className="font-medium text-fg">
                   {selectedConsignacion.propertyTitle}
                 </p>
                 <p className="text-sm text-fg-muted dark:text-fg-subtle">
@@ -250,7 +250,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-fg dark:text-white truncate">
+                        <p className="font-medium text-fg truncate">
                           {consignacion.propertyTitle}
                         </p>
                         <p className="text-sm text-fg-muted dark:text-fg-subtle truncate">
@@ -414,7 +414,7 @@ function PhotoUpload({ photos, onAdd, onRemove, t }: PhotoUploadProps) {
 
         {/* Add photo button */}
         {photos.length < 5 && (
-          <label className="w-24 h-24 rounded-xl border-2 border-dashed border-border dark:border-border-strong flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary/30 dark:hover:border-primary/30 hover:bg-primary-soft transition-all">
+          <label className="w-24 h-24 rounded-xl border-2 border-dashed border-border dark:border-border-strong flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary/30 hover:bg-primary-soft transition-all">
             <Camera className="w-6 h-6 text-fg-subtle" />
             <span className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.mantenimiento.addPhoto')}</span>
             {/* allowlist: hidden type=file behind a custom camera dropzone tile (playbook hidden/file-input allowlist) */}

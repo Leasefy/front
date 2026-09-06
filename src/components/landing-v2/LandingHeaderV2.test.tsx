@@ -186,4 +186,70 @@ describe('LandingHeaderV2', () => {
       expect(numeros).toEqual(['01', '02', '03', '04', '05', '06', '07'])
     })
   })
+
+  describe('fuera de la landing', () => {
+    // `initLandingFx` —que abre el mega-menú y hace el scroll suave— sólo
+    // corre en el home. Todo lo de acá es lo que el header tiene que
+    // resolver solo cuando lo montan en /blog, /avaluo o /terminos.
+
+    it('el mega-menú de Producto abre, cierra con Escape y cierra clickeando afuera', () => {
+      montar()
+      const raiz = document.documentElement
+      const trigger = container.querySelector('#pmTrigger') as HTMLAnchorElement
+
+      act(() => {
+        trigger.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+      })
+      expect(raiz.classList.contains('pm-open')).toBe(true)
+
+      act(() => {
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+      })
+      expect(raiz.classList.contains('pm-open')).toBe(false)
+
+      act(() => {
+        trigger.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+      })
+      expect(raiz.classList.contains('pm-open')).toBe(true)
+      act(() => {
+        document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      })
+      expect(raiz.classList.contains('pm-open')).toBe(false)
+    })
+
+    it('el clic en Producto no navega al ancla', () => {
+      montar()
+      const trigger = container.querySelector('#pmTrigger') as HTMLAnchorElement
+      const evento = new MouseEvent('click', { bubbles: true, cancelable: true })
+      act(() => {
+        trigger.dispatchEvent(evento)
+      })
+      expect(evento.defaultPrevented).toBe(true)
+      document.documentElement.classList.remove('pm-open')
+    })
+
+    it('con fxExterno NO toca el mega-menú — ese es de initLandingFx', () => {
+      montar({ fxExterno: true })
+      const trigger = container.querySelector('#pmTrigger') as HTMLAnchorElement
+      act(() => {
+        trigger.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+      })
+      // Dos dueños alternando la misma clase la dejarían donde estaba.
+      expect(document.documentElement.classList.contains('pm-open')).toBe(false)
+    })
+
+    it('las anclas que viven en el home se piden CON el home', () => {
+      // Un `#planes` pelado desde /blog no lleva a ningún lado: la sección
+      // está en el home. Con fxExterno se dejan crudas para que el scroll
+      // suave del home las siga atendiendo.
+      montar()
+      const rutas = [...container.querySelectorAll('nav.main a')].map((a) => a.getAttribute('href'))
+      expect(rutas).toEqual(['/#producto', '/propiedades', '/avaluo', '/blog', '/contacto'])
+      const planes = [...container.querySelectorAll('.hcta a')].map((a) => a.getAttribute('href'))
+      expect(planes).toContain('/#planes')
+      const movil = [...container.querySelectorAll('#mmenu nav a')].map((a) => a.getAttribute('href'))
+      expect(movil).toContain('/#producto')
+      expect(movil).toContain('/#contacto')
+    })
+  })
 })

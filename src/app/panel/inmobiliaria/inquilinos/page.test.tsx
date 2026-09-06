@@ -12,12 +12,13 @@
  *    tenés en otro sistema» es pedirle migrar a alguien que acaba de migrar.
  *    Se dice el número real y el botón lleva a completar la migración.
  *
- * 3. **Uno solo** (2026-09-04): «¿y si no quiero migrar un montón de
- *    inquilinos sino que quiero crear uno solo, qué?». El contrato manual
- *    (`?modo=manual`) es ese camino, y tiene que estar en los dos vacíos Y con
- *    la lista llena — quien ya tiene 40 inquilinos no vuelve a ver un vacío
- *    nunca más. La ruta importa: `/contratos/nuevo` a secas responde «Falta el
- *    parámetro applicationId».
+ * 3. **Uno solo** (2026-09-04): «*¿pero por qué crear contrato en inquilinos?
+ *    En inquilino es crear inquilino*». El primario es «Nuevo inquilino», que
+ *    abre el cajón; el contrato manual (`?modo=manual`) queda de secundario y
+ *    NO se va —un inquilino sin contrato no cobra—. Los dos tienen que estar
+ *    en los dos vacíos Y con la lista llena: quien ya tiene 40 inquilinos no
+ *    vuelve a ver un vacío nunca más. La ruta importa: `/contratos/nuevo` a
+ *    secas responde «Falta el parámetro applicationId».
  */
 
 import * as React from 'react';
@@ -35,6 +36,18 @@ vi.mock('@/lib/i18n', () => ({
     t: (k: string) => k,
     formatCurrency: (n: number) => String(n),
   }),
+}));
+
+/*
+ * `?persona=<User.id>` — con quién viene la pantalla desde otro lado (hoy,
+ * «Ver ficha del inquilino» en la bandeja de mensajes).
+ */
+const { paramsState } = vi.hoisted(() => ({ paramsState: { persona: null as string | null } }));
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => ({
+    get: (k: string) => (k === 'persona' ? paramsState.persona : null),
+  }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 
 vi.mock('@/components/auth/PageGuard', () => ({
@@ -75,10 +88,30 @@ vi.mock('@/components/auth/PermissionGate', () => ({
 vi.mock('@/components/inmobiliaria/InquilinosTable', () => ({
   BarraDeInquilinos: () => null,
   InquilinosTable: () => null,
+  // La ruta vive en la tabla (la usa también la fila sin arriendo) y la
+  // página la importa de ahí: si el mock no la re-exporta, el `href` del
+  // botón secundario queda en `undefined` y el test pasaría igual.
+  RUTA_DEL_CONTRATO_MANUAL: '/panel/inmobiliaria/contratos/nuevo?modo=manual',
 }));
 
+/*
+ * El cajón se prueba aparte; acá lo único que importa es A QUIÉN le abrieron,
+ * así que el doble publica el `tenantId` que recibió.
+ */
 vi.mock('@/components/inmobiliaria/InquilinoDrawer', () => ({
-  InquilinoDrawer: () => null,
+  InquilinoDrawer: ({ persona }: { persona: { tenantId: string } | null }) =>
+    persona ? <div data-testid="cajon-inquilino" data-persona={persona.tenantId} /> : null,
+}));
+
+/*
+ * El cajón de crear se prueba aparte (`NuevoInquilinoDrawer.test.tsx`). Acá
+ * sólo importa que la página lo monte y que el botón lo abra, así que el
+ * stub publica su estado en el DOM.
+ */
+vi.mock('@/components/inmobiliaria/NuevoInquilinoDrawer', () => ({
+  NuevoInquilinoDrawer: ({ abierto }: { abierto: boolean }) => (
+    <div data-testid="cajon-nuevo-inquilino" data-abierto={String(abierto)} />
+  ),
 }));
 
 /** La deuda de migración es lo único que cambia entre los dos vacíos. */
@@ -100,6 +133,7 @@ const UNA_PERSONA: Inquilino[] = [
     nombre: 'Marta Ríos',
     email: 'marta@ejemplo.co',
     telefono: '3001234567',
+    documento: '1020304050',
     arriendos: [
       {
         leaseId: 'l-1',
@@ -131,6 +165,7 @@ beforeEach(() => {
   listaMock.mockReset();
   listaMock.mockReturnValue([]);
   llavesPedidas.length = 0;
+  paramsState.persona = null;
 });
 
 afterEach(() => {
@@ -155,9 +190,8 @@ describe('/panel/inmobiliaria/inquilinos — vacío sin nada migrado', () => {
     expect(enlaces[0].getAttribute('href')).toBe('/panel/inmobiliaria/contratos/migrar');
     expect(enlaces[0].textContent).toContain('inquilinos.vacioContrato');
 
-    // El paso «Terceros» de la migración no lleva botón: carga personas, no
-    // arriendos, y esta lista seguiría vacía.
-    expect(vacio!.querySelectorAll('button')).toHaveLength(0);
+    // El paso «Terceros» de la migración sigue sin botón propio: cargar UNA
+    // persona ya no manda a esa pantalla, la crea acá.
     expect(host.querySelector('a[href*="migracion/terceros"]')).toBeNull();
     expect(vacio!.textContent).toContain('inquilinos.vacioDescripcion');
   });
@@ -234,14 +268,98 @@ describe('/panel/inmobiliaria/inquilinos — el camino de cargar UNO solo', () =
     expect(new Set(llavesPedidas)).toEqual(new Set(['contratos:create']));
   });
 
-  it('🔴 el subtítulo ya no niega que se pueda crear a mano', () => {
+  it('🔴 el subtítulo ya no dice que el inquilino nazca de su contrato', () => {
     /*
-     * El texto real, no la clave: decía «acá no se crea a nadie a mano», y con
-     * el botón nuevo eso pasó a ser mentira. Se lee del diccionario porque la
-     * pantalla, en el test, rinde claves.
+     * El texto real, no la clave: decía «cada inquilino nace de su contrato»,
+     * y desde que se puede crear uno solo eso pasó a ser mentira. Se lee del
+     * diccionario porque la pantalla, en el test, rinde claves.
      */
-    expect(es.inquilinos.subtitulo).not.toContain('no se crea a nadie a mano');
-    expect(es.inquilinos.subtitulo).toContain('cargalo a mano');
-    expect(en.inquilinos.subtitulo).not.toContain('nobody is created by hand');
+    expect(es.inquilinos.subtitulo).not.toContain('nace de su contrato');
+    expect(es.inquilinos.subtitulo).toContain('Cargá uno acá');
+    expect(en.inquilinos.subtitulo).not.toContain('comes from their lease');
+  });
+});
+
+describe('/panel/inmobiliaria/inquilinos — «Nuevo inquilino»', () => {
+  it('está en el encabezado con la lista llena, y abre el cajón', () => {
+    deudaMock.mockReturnValue(null);
+    listaMock.mockReturnValue(UNA_PERSONA);
+    montar();
+
+    const cajon = host.querySelector('[data-testid="cajon-nuevo-inquilino"]')!;
+    expect(cajon.getAttribute('data-abierto')).toBe('false');
+
+    const boton = host.querySelector<HTMLButtonElement>(
+      '[data-testid="nuevo-inquilino"]',
+    )!;
+    expect(boton).not.toBeNull();
+    expect(boton.textContent).toContain('inquilinos.nuevoInquilino');
+
+    act(() => {
+      boton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(
+      host
+        .querySelector('[data-testid="cajon-nuevo-inquilino"]')!
+        .getAttribute('data-abierto'),
+    ).toBe('true');
+  });
+
+  it('🔴 y también en el vacío, al lado de migrar y del contrato manual', () => {
+    deudaMock.mockReturnValue(null);
+    listaMock.mockReturnValue([]);
+    montar();
+
+    const vacio = host.querySelector('[data-testid="sin-datos"]')!;
+    // Los TRES caminos conviven: migrar (muchos), crear la persona (uno) y el
+    // contrato entero (la persona con su arriendo de una).
+    expect(vacio.querySelector('a[href="/panel/inmobiliaria/contratos/migrar"]')).not.toBeNull();
+    expect(vacio.querySelector('[data-testid="nuevo-inquilino"]')).not.toBeNull();
+    expect(vacio.querySelector('[data-testid="crear-contrato-manual"]')).not.toBeNull();
+  });
+
+  it('🔴 pide la MISMA llave que el POST del back: contratos/create', () => {
+    deudaMock.mockReturnValue(null);
+    listaMock.mockReturnValue(UNA_PERSONA);
+    montar();
+
+    // Un botón que abre un cajón cuyo guardar devuelve 403 es peor que no
+    // tener botón.
+    expect(new Set(llavesPedidas)).toEqual(new Set(['contratos:create']));
+  });
+});
+
+describe('/panel/inmobiliaria/inquilinos — ?persona= (desde la bandeja de mensajes)', () => {
+  it('abre el cajón de esa persona', () => {
+    deudaMock.mockReturnValue(null);
+    listaMock.mockReturnValue(UNA_PERSONA);
+    paramsState.persona = 't-1';
+    montar();
+
+    const cajon = host.querySelector('[data-testid="cajon-inquilino"]');
+    expect(cajon).not.toBeNull();
+    expect(cajon!.getAttribute('data-persona')).toBe('t-1');
+    expect(host.querySelector('[data-testid="persona-no-encontrada"]')).toBeNull();
+  });
+
+  it('🔴 si no está, lo DICE — no deja la pantalla igual sin explicar por qué', () => {
+    deudaMock.mockReturnValue(null);
+    listaMock.mockReturnValue(UNA_PERSONA);
+    paramsState.persona = 't-que-no-existe';
+    montar();
+
+    expect(host.querySelector('[data-testid="cajon-inquilino"]')).toBeNull();
+    const aviso = host.querySelector('[data-testid="persona-no-encontrada"]');
+    expect(aviso).not.toBeNull();
+    expect(aviso!.textContent).toContain('No encontramos a esa persona en el directorio');
+  });
+
+  it('sin el parámetro no pasa nada: ni cajón ni aviso', () => {
+    deudaMock.mockReturnValue(null);
+    listaMock.mockReturnValue(UNA_PERSONA);
+    montar();
+
+    expect(host.querySelector('[data-testid="cajon-inquilino"]')).toBeNull();
+    expect(host.querySelector('[data-testid="persona-no-encontrada"]')).toBeNull();
   });
 });

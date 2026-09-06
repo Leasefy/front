@@ -32,7 +32,7 @@ const ETIQUETAS: Record<FaltanteInmueble, string> = {
   area: 'área',
   canon: 'canon mensual',
   precio_venta: 'precio de venta',
-  precio_inconsistente: 'canon y precio de venta juntos (elegí uno)',
+  precio_inconsistente: 'canon y precio de venta juntos (elige uno)',
   tipo_de_negocio: 'tipo de operación (arriendo/venta)',
   departamento: 'departamento',
   fecha_consignacion: 'fecha de consignación',

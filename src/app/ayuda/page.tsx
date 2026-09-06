@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { LandingChrome } from "@/components/landing-v2/LandingChrome";
-import { Footer } from "@/components/layout/Footer";
+import { LandingFooterV2 } from "@/components/landing-v2/LandingFooterV2";
 import { SectionLabel } from "@/components/ui/section-label";
 import { CaretDown } from '@phosphor-icons/react';
 
@@ -185,7 +185,7 @@ export default function AyudaPage() {
           </div></div>
         </section>
       </main>
-      <Footer />
+      <LandingFooterV2 />
     </LandingChrome>
   );
 }

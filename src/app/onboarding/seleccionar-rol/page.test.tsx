@@ -127,3 +127,64 @@ describe('SeleccionarRolPage — invitation guard', () => {
     expect(container.textContent).not.toContain('Propietario')
   })
 })
+
+
+/**
+ * Lo seleccionado en el producto es azul primary. Acá había tres bloques
+ * copiados y dos de ellos se marcaban en negro (`bg-ink`, `border-fg`); sólo
+ * la tarjeta de inmobiliaria usaba el azul. Estos tests fijan que las tres se
+ * marquen igual y que exista una salida.
+ */
+describe('selección de perfil', () => {
+  function clickCard(testId: string) {
+    const card = container.querySelector(`[data-testid="${testId}"]`) as HTMLElement
+    act(() => {
+      card.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    return card
+  }
+
+  it.each(['perfil-tenant', 'perfil-landlord', 'perfil-inmobiliaria'])(
+    '%s se marca en azul primary, nunca en negro',
+    async (testId) => {
+      await render()
+      const card = clickCard(testId)
+
+      expect(card.className).toContain('border-primary')
+      expect(card.className).toContain('bg-primary-soft')
+      expect(card.className).not.toContain('bg-ink')
+      expect(card.className).not.toContain('border-fg')
+      expect(card.getAttribute('aria-checked')).toBe('true')
+
+      // El check y el azulejo del icono también son primary.
+      expect(card.innerHTML).toContain('bg-primary')
+      expect(card.innerHTML).not.toContain('bg-ink')
+    },
+  )
+
+  it('sólo queda una marcada a la vez', async () => {
+    await render()
+    clickCard('perfil-tenant')
+    const inmobiliaria = clickCard('perfil-inmobiliaria')
+    const inquilino = container.querySelector('[data-testid="perfil-tenant"]') as HTMLElement
+
+    expect(inmobiliaria.getAttribute('aria-checked')).toBe('true')
+    expect(inquilino.getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('el botón de continuar arranca deshabilitado y se habilita al elegir', async () => {
+    await render()
+    const boton = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.trim() === 'Continuar',
+    ) as HTMLButtonElement
+
+    expect(boton.disabled).toBe(true)
+    clickCard('perfil-tenant')
+    expect(boton.disabled).toBe(false)
+  })
+
+  it('se puede salir del registro desde acá', async () => {
+    await render()
+    expect(container.querySelector('[data-testid="salir-del-registro"]')).toBeTruthy()
+  })
+})

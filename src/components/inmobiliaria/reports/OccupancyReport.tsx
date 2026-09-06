@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
+import { SIN_MEDIR, textoDeTasa } from '@/lib/tasas';
 import type { OccupancyData } from '@/lib/data/mock-reports';
 
 interface OccupancyReportProps {
@@ -56,9 +57,14 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
     shouldPaginate,
   } = useTablePagination(byProperty);
 
-  // Find max occupancy for trend scaling
-  const maxOccupancy = Math.max(...monthlyTrend.map((m) => m.occupancyRate));
-  const minOccupancy = Math.min(...monthlyTrend.map((m) => m.occupancyRate));
+  // La escala sale SÓLO de los meses que se midieron. Un `null` colado acá se
+  // convertiría en 0 al comparar y aplastaría toda la serie contra el piso.
+  const mesesMedidos = monthlyTrend
+    .map((m) => m.occupancyRate)
+    .filter((r): r is number => r !== null);
+  const hayAlgoQueGraficar = mesesMedidos.length > 0;
+  const maxOccupancy = hayAlgoQueGraficar ? Math.max(...mesesMedidos) : 0;
+  const minOccupancy = hayAlgoQueGraficar ? Math.min(...mesesMedidos) : 0;
   const range = maxOccupancy - minOccupancy || 1;
 
   return (
@@ -83,12 +89,18 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
           icon={Warning}
           color="amber"
         />
+        {/* Sin un inmueble cargado la vacancia no se midió: raya, y sin el
+            rojo ni la flecha, que eran un veredicto sobre nada. */}
         <KPICard
           label="Tasa vacancia"
-          value={`${summary.vacancyRate}%`}
+          value={textoDeTasa(summary.vacancyRate)}
           icon={TrendUp}
-          color="red"
-          subtitle={`Prom. ${summary.avgDaysVacant} dias vacante`}
+          color={summary.vacancyRate === null ? 'blue' : 'red'}
+          subtitle={
+            summary.avgDaysVacant === null
+              ? undefined
+              : `Prom. ${summary.avgDaysVacant} días vacante`
+          }
         />
       </div>
 
@@ -100,26 +112,30 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
         </h3>
         <div className="space-y-3">
           {byZone.map((zone) => {
-            const occupancyRate = 100 - zone.vacancyRate;
+            // Zona sin inmuebles: ni porcentaje ni barra de color, que serían
+            // un juicio («error», en rojo) sobre una zona vacía.
+            const occupancyRate = zone.vacancyRate === null ? null : 100 - zone.vacancyRate;
             return (
               <div key={zone.zone} className="space-y-1.5">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-foreground font-medium">{zone.zone}</span>
                   <span className="text-muted-foreground">
-                    {zone.rented}/{zone.total} ({occupancyRate.toFixed(1)}%)
+                    {zone.rented}/{zone.total} ({textoDeTasa(occupancyRate)})
                   </span>
                 </div>
                 <Progress
-                  value={occupancyRate}
+                  value={occupancyRate ?? 0}
                   size="default"
                   variant={
-                    occupancyRate >= 90
-                      ? 'success'
-                      : occupancyRate >= 70
-                        ? 'default'
-                        : occupancyRate >= 50
-                          ? 'warning'
-                          : 'error'
+                    occupancyRate === null
+                      ? 'default'
+                      : occupancyRate >= 90
+                        ? 'success'
+                        : occupancyRate >= 70
+                          ? 'default'
+                          : occupancyRate >= 50
+                            ? 'warning'
+                            : 'error'
                   }
                 />
               </div>
@@ -134,26 +150,39 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
           <TrendUp className="w-4 h-4 text-fg-muted" />
           Tendencia de ocupacion (12 meses)
         </h3>
+        {/* Doce ceros al lado de un encabezado que dice 83 % son la misma
+            pantalla afirmando dos cosas incompatibles. La serie se deriva de
+            los cobros: sin cobros no se midió nada, y lo honesto es decirlo en
+            vez de dibujar doce barras en el piso. */}
+        {!hayAlgoQueGraficar && (
+          <p className="text-sm text-fg-muted">
+            Todavía no hay historial de cobros para reconstruir la ocupación mes a mes.
+          </p>
+        )}
         <div className="flex items-end gap-1.5 h-36">
-          {monthlyTrend.map((m) => {
-            const height = ((m.occupancyRate - minOccupancy + 5) / (range + 10)) * 100;
+          {hayAlgoQueGraficar && monthlyTrend.map((m) => {
+            const medido = m.occupancyRate;
+            const height =
+              medido === null ? 0 : ((medido - minOccupancy + 5) / (range + 10)) * 100;
             return (
               <div
                 key={m.month}
                 className="flex-1 flex flex-col items-center gap-1 group"
               >
                 <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity font-medium">
-                  {m.occupancyRate}%
+                  {medido === null ? SIN_MEDIR : `${medido}%`}
                 </span>
                 <div className="w-full flex-1 flex items-end">
                   <div
                     className={cn(
                       'w-full rounded-t transition-all duration-300 group-hover:opacity-80',
-                      m.occupancyRate >= 90
-                        ? 'bg-success dark:bg-success'
-                        : m.occupancyRate >= 85
-                          ? 'bg-primary dark:bg-primary'
-                          : 'bg-warning dark:bg-warning'
+                      medido === null
+                        ? 'bg-border dark:bg-border-strong'
+                        : medido >= 90
+                          ? 'bg-success dark:bg-success'
+                          : medido >= 85
+                            ? 'bg-primary dark:bg-primary'
+                            : 'bg-warning dark:bg-warning'
                     )}
                     style={{ height: `${height}%` }}
                   />

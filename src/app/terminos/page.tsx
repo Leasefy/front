@@ -361,6 +361,14 @@ export default function TerminosPage() {
                   anticipación—. No se puede usar una plantilla de vivienda para un
                   local.
                 </p>
+                <p>
+                  Desde la Ley 2625 de 2026, el arrendatario de un local tiene derecho
+                  a fijar un <strong className="text-foreground/90">aviso de traslado</strong> de
+                  hasta 1.600 cm² durante un mes contado desde la restitución, a su
+                  costo, y{" "}
+                  <strong className="text-foreground/90">nadie puede oponerse</strong> — ni el
+                  propietario, ni el arrendador, ni el nuevo arrendatario—, so pena de
+                  multa. Una cláusula que lo prohíba quedó sin efecto.
               </section>
 
               <section>

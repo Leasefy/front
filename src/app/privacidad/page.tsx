@@ -28,8 +28,19 @@ import { SectionLabel } from "@/components/ui/section-label";
  *
  * · Los plazos (10 y 15 días hábiles) son los de la Ley 1581, arts. 14 y 15.
  *   No son los mexicanos de 20 + 15; copiarlos sería incumplir.
- * · La lista de encargados de la §7 tiene que moverse con el código. Si se
- *   agrega un proveedor que recibe un dato personal, entra acá.
+ * · La §7 lista FUNCIONES, no marcas. La versión nominada se sacó a
+ *   propósito: nombrar los once proveedores no lo exige ninguna norma
+ *   colombiana (el art. 2.2.2.25.3.1 del Decreto 1074 enumera el contenido
+ *   mínimo y los encargados no están), publicaba el stack completo, y
+ *   convertía cada cambio de proveedor en una afirmación falsa en un
+ *   documento legal. La lista con nombres va en el Anexo de Encargo que
+ *   firma la inmobiliaria, y se entrega a quien la pida por correo.
+ *   Al 2026-09-05 es: Supabase (infraestructura) · Anthropic y Cohere
+ *   (modelos) · Vapi (telefonía) · Deepgram (transcripción) · Kapso
+ *   (WhatsApp) · Resend (correo) · Wompi y Bold (pagos) · Certicámara
+ *   (firma) · Sentry (errores). Si entra o sale uno, actualizar acá y en
+ *   el Anexo — pero la tabla publicada sólo cambia si cambia una FUNCIÓN
+ *   o el país desde donde se procesa.
  * · Los correos son @leasefy.co. La versión anterior mandaba a
  *   privacidad@leasefy.com, un dominio que no es el canónico del producto.
  */
@@ -314,50 +325,56 @@ export default function PrivacidadPage() {
                   7. Con quién compartimos datos
                 </h2>
                 <p className="mb-4">
-                  Estos son los proveedores que tratan datos personales por cuenta
-                  nuestra. Los nombramos porque creemos que tenés derecho a saber por
-                  dónde pasa tu información, no sólo a qué «categorías de terceros»
-                  llega.
+                  Para operar delegamos algunas funciones en proveedores que tratan
+                  datos personales por cuenta nuestra, bajo contrato y sólo para la
+                  finalidad que autorizaste. Estas son las funciones que delegamos,
+                  qué dato recibe cada una y desde dónde se procesa.
                 </p>
                 <div className="overflow-x-auto rounded-lg border border-border mb-3">
                   <table className="w-full min-w-[34rem] text-[13.5px]">
                     <thead>
                       <tr className="bg-surface-muted/60 text-left text-muted-foreground">
-                        <th className="px-3 py-2 font-medium">Proveedor</th>
-                        <th className="px-3 py-2 font-medium">Para qué</th>
-                        <th className="px-3 py-2 font-medium">Qué recibe</th>
+                        <th className="px-3 py-2 font-medium">Función</th>
+                        <th className="px-3 py-2 font-medium">Qué datos recibe</th>
+                        <th className="px-3 py-2 font-medium">Dónde se procesa</th>
                       </tr>
                     </thead>
                     <tbody className="text-muted-foreground">
-                      <tr className="border-t border-border"><td className="px-3 py-2">Supabase</td><td className="px-3 py-2">Base de datos, cuentas y archivos</td><td className="px-3 py-2">Todo lo que guardamos, incluidos los documentos</td></tr>
-                      <tr className="border-t border-border"><td className="px-3 py-2">Anthropic</td><td className="px-3 py-2">Modelos de lenguaje</td><td className="px-3 py-2">Texto de contratos, transcripción de llamadas, fotos de inspección</td></tr>
-                      <tr className="border-t border-border"><td className="px-3 py-2">Cohere</td><td className="px-3 py-2">Lectura de documentos</td><td className="px-3 py-2">El contenido de la cédula, desprendibles y extractos</td></tr>
-                      <tr className="border-t border-border"><td className="px-3 py-2">Vapi</td><td className="px-3 py-2">Llamadas de voz</td><td className="px-3 py-2">Teléfono y la grabación de la llamada</td></tr>
-                      <tr className="border-t border-border"><td className="px-3 py-2">Deepgram</td><td className="px-3 py-2">Transcripción de audio</td><td className="px-3 py-2">El audio de la conversación</td></tr>
-                      <tr className="border-t border-border"><td className="px-3 py-2">Kapso</td><td className="px-3 py-2">WhatsApp</td><td className="px-3 py-2">Teléfono, nombre, monto y dirección del inmueble</td></tr>
-                      <tr className="border-t border-border"><td className="px-3 py-2">Resend</td><td className="px-3 py-2">Correo</td><td className="px-3 py-2">Correo, nombre y el contenido del mensaje</td></tr>
-                      <tr className="border-t border-border"><td className="px-3 py-2">Wompi · Bold</td><td className="px-3 py-2">Pagos</td><td className="px-3 py-2">Correo, número de documento y monto</td></tr>
-                      <tr className="border-t border-border"><td className="px-3 py-2">DataCrédito · TransUnion</td><td className="px-3 py-2">Historial crediticio</td><td className="px-3 py-2">Sólo con tu autorización (§5)</td></tr>
-                      <tr className="border-t border-border"><td className="px-3 py-2">Certicámara</td><td className="px-3 py-2">Firma electrónica</td><td className="px-3 py-2">Nombre, documento, correo y el documento a firmar</td></tr>
-                      <tr className="border-t border-border"><td className="px-3 py-2">Sentry</td><td className="px-3 py-2">Diagnóstico de errores</td><td className="px-3 py-2">Datos técnicos del error</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">Infraestructura y almacenamiento</td><td className="px-3 py-2">Todo lo que guardamos, incluidos los documentos que subís</td><td className="px-3 py-2">Estados Unidos</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">Modelos de inteligencia artificial</td><td className="px-3 py-2">Texto de contratos, transcripciones de llamadas, fotos de inspección y el contenido de los documentos que analizamos</td><td className="px-3 py-2">Estados Unidos y Canadá</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">Telefonía y transcripción de llamadas</td><td className="px-3 py-2">Tu teléfono, la grabación de la llamada y su transcripción</td><td className="px-3 py-2">Estados Unidos</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">Mensajería por WhatsApp y correo</td><td className="px-3 py-2">Teléfono o correo, nombre y el contenido del mensaje</td><td className="px-3 py-2">Estados Unidos</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">Pasarelas de pago</td><td className="px-3 py-2">Nombre, número de documento, correo y monto</td><td className="px-3 py-2">Colombia</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">Firma electrónica</td><td className="px-3 py-2">Nombre, documento, correo y el documento a firmar</td><td className="px-3 py-2">Colombia</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">Diagnóstico de errores</td><td className="px-3 py-2">Datos técnicos del error, sin el contenido de tus documentos</td><td className="px-3 py-2">Estados Unidos</td></tr>
                     </tbody>
                   </table>
                 </div>
                 <p className="mb-3">
+                  Ninguno de estos proveedores puede usar tus datos para fines
+                  propios, cederlos a un tercero ni conservarlos una vez terminado el
+                  servicio. Si necesitás la lista nominada de proveedores —por
+                  ejemplo, para tu propia evaluación de riesgo como cliente
+                  institucional— escribinos a{" "}
+                  <span className="text-foreground/85 font-medium">privacidad@leasefy.co</span>{" "}
+                  y te la enviamos actualizada.
+                </p>
+                <p className="mb-3">
                   También compartimos datos con la inmobiliaria que administra tu
                   contrato y con el propietario del inmueble, en lo que corresponde a
                   esa relación; con las aseguradoras y afianzadoras, cuando pedís un
-                  estudio de asegurabilidad; y con autoridades, cuando una norma o
-                  una orden judicial lo exige.
+                  estudio de asegurabilidad; con las centrales de riesgo, en los
+                  términos de la §5 y sólo si lo autorizaste; y con autoridades,
+                  cuando una norma o una orden judicial lo exige.
                 </p>
                 <p>
-                  <strong className="text-foreground/90">Transferencia internacional.</strong>{" "}
-                  Varios de estos proveedores están fuera de Colombia, principalmente
-                  en Estados Unidos, que figura en la lista de países con nivel
-                  adecuado de protección de la Superintendencia de Industria y
-                  Comercio. Con cada proveedor suscribimos un contrato de transmisión
-                  que lo obliga a tratar los datos conforme a esta política y sólo
-                  para la finalidad que autorizaste.
+                  <strong className="text-foreground/90">Cuando los datos salen del país.</strong>{" "}
+                  Los proveedores de la tabla que están fuera de Colombia reciben los
+                  datos como <em>encargados</em>, bajo un contrato de transmisión que
+                  los obliga a tratarlos conforme a esta política y sólo para la
+                  finalidad que autorizaste, en los términos del artículo
+                  2.2.2.25.5.2 del Decreto 1074 de 2015. No entregamos tus datos a
+                  ningún responsable del tratamiento fuera de Colombia.
                 </p>
               </section>
 

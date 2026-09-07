@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { FeatureAnnouncement } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
 import type { DecisionDeMigracion } from '@/lib/migracion/decision-de-migracion'
 
 /**
@@ -50,7 +51,11 @@ export function ModalDecisionDeMigracion({
         role="dialog"
         aria-modal="true"
         aria-label="¿Migramos tu inmobiliaria?"
-        className="flex flex-col items-center gap-3 outline-none"
+        // La tarjeta de cadence no tiene pie: las otras dos salidas van DENTRO
+        // de la misma tarjeta (Nico, 2026-09-07), como secundaria y terciaria.
+        // El envoltorio pone el radio y la sombra; la tarjeta pierde los suyos
+        // abajo para que el pie se lea como parte de ella.
+        className="w-[420px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-[20px] bg-surface shadow-[0_24px_60px_rgba(20,19,15,0.16)] outline-none"
       >
         <FeatureAnnouncement
           appName="Leasefy"
@@ -59,25 +64,29 @@ export function ModalDecisionDeMigracion({
           description="Si ya operas con otro sistema o con hojas de cálculo, traemos tus datos para que arranques con todo cargado: propietarios e inquilinos, inmuebles y contratos, y tu plan de cuentas con los saldos contables. Toma unos minutos y se puede hacer por partes."
           ctaLabel="Migrar ahora"
           onCta={() => onDecidir('ahora')}
-          className="max-w-[calc(100vw-2rem)]"
+          className="w-full max-w-full rounded-b-none shadow-none"
         />
-        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[13px]">
-          <button
+        <div className="flex flex-col gap-2 px-[18px] pb-5">
+          <Button
             type="button"
+            variant="outline"
+            hideArrow
+            className="h-11 w-full rounded-full"
             onClick={() => onDecidir('luego')}
-            className="font-medium text-white/90 underline-offset-2 hover:underline"
             data-testid="migrar-en-otro-momento"
           >
             En otro momento
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            hideArrow
+            className="h-10 w-full rounded-full text-fg-muted"
             onClick={() => onDecidir('nunca')}
-            className="text-white/70 underline-offset-2 hover:underline"
             data-testid="no-requiero-migracion"
           >
             No requiero migración
-          </button>
+          </Button>
         </div>
       </div>
     </div>,

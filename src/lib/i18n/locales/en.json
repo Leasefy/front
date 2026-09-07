@@ -11050,7 +11050,16 @@
       "titulo": "Accounting entries",
       "subtitulo": "The balances you start with, or the full history. It needs the chart of accounts in place."
     },
+    "recordatorio": {
+      "titulo": "Migrate your agency",
+      "detalle": "Bring owners, tenants, properties and contracts over from your current system.",
+      "tituloEnCurso": "Finish your migration",
+      "avance": "{{hechos}} of {{total}} steps done · next: {{paso}}",
+      "migrar": "Migrate now",
+      "cerrar": "Close the migration reminder"
+    },
     "muro": {
+      "cerrar": "Close and continue later",
       "eyebrow": "Getting started",
       "titulo": "Bring your operation over first",
       "subtitulo": "Everything happens in here: load what you already have in your current system, in order — each step needs the previous one.",

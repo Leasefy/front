@@ -3,16 +3,18 @@
  * primera vez al panel (Nico, 2026-09-07): antes del muro de migración se le
  * pregunta si quiere migrar ahora, en otro momento, o si no necesita migrar.
  *
- *  - `ahora`: ve el muro con los pasos, como siempre.
- *  - `luego`: el muro se omite en el back (`POST /inmobiliaria/migracion/omitir`)
- *    y queda un recordatorio anclado en el sidebar hasta que migre o lo descarte.
- *  - `nunca`: se omite en el back y no hay recordatorio. Desde Configuración →
- *    Migración siempre se puede migrar igual, se haya descartado o no.
+ *  - `ahora`: ve la migración a pantalla completa, con los pasos.
+ *  - `luego`: el muro se omite en el back (`POST /inmobiliaria/migracion/omitir`).
+ *    También es lo que queda al cerrar la migración con su ✕ sin terminarla.
+ *  - `nunca`: se omite en el back y el recordatorio del sidebar se apaga. Es
+ *    lo que escribe la ✕ del propio recordatorio. Desde Configuración →
+ *    Migración siempre se puede migrar igual y volver a prender el recordatorio.
  *
- * La decisión vive en localStorage por agencia: el muro ya sabe si está
- * resuelta en el back; lo que el back no guarda es «quiero que me lo
- * recuerden», y eso es de este navegador. Se avisa con un evento para que el
- * sidebar reaccione sin recargar.
+ * 🔴 Lo que el recordatorio MUESTRA —cuántos pasos van, cuál sigue— no vive
+ * acá: sale del estado que contesta el back (`GET /inmobiliaria/migracion/estado`),
+ * que es por cuenta y no por navegador. Acá sólo vive «no me lo recuerdes»,
+ * que el back no guarda; por eso es de este navegador. Se avisa con un evento
+ * para que el sidebar reaccione sin recargar.
  */
 
 export type DecisionDeMigracion = 'ahora' | 'luego' | 'nunca'
@@ -52,7 +54,12 @@ export function guardarDecisionDeMigracion(
   window.dispatchEvent(new CustomEvent(EVENTO_DECISION_DE_MIGRACION, { detail: { agencyId, decision } }))
 }
 
-/** El recordatorio del sidebar se muestra sólo con «en otro momento». */
-export function migracionPendienteDeRecordar(agencyId: string | null | undefined): boolean {
-  return leerDecisionDeMigracion(agencyId) === 'luego'
+/**
+ * El recordatorio del sidebar se apaga sólo con «no requiero migración» o con
+ * su ✕ (las dos escriben `nunca`). Mientras tanto se muestra siempre que el
+ * back diga que la migración está sin terminar — incluida la agencia que
+ * eligió «ahora» y cerró a mitad de camino.
+ */
+export function recordatorioDeMigracionDescartado(agencyId: string | null | undefined): boolean {
+  return leerDecisionDeMigracion(agencyId) === 'nunca'
 }

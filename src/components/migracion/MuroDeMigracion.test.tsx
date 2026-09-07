@@ -135,7 +135,7 @@ vi.mock('@/lib/api/migracion-estado.service', async () => {
   return { ...actual, migracionEstadoApi: estadoMock };
 });
 
-import { CADA_CUANTO_SE_REFRESCA_MS, MuroDeMigracion } from './MuroDeMigracion';
+import { CADA_CUANTO_SE_REFRESCA_MS, MuroDeMigracion, useMigracion } from './MuroDeMigracion';
 
 // ══════════════════════════════════════════════════════════════════════════
 
@@ -1084,5 +1084,127 @@ describe('con todo listo pero la migración a medias', () => {
   it('la tabla fila por fila se monta con el veredicto', async () => {
     await pintar();
     expect(q('veredicto-filas')).not.toBeNull();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// La ✕ y la migración abierta a mano (Nico, 2026-09-07)
+// ══════════════════════════════════════════════════════════════════════════
+
+describe('la ✕ del muro: «que tenga la posibilidad de cerrar si lo quiere»', () => {
+  beforeEach(() => {
+    localStorage.setItem('leasefy:migracion:decision:agencia', 'ahora');
+  });
+
+  it('es pantalla completa, no un modal: sin velo ni tarjeta flotante', async () => {
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+    await pintar();
+
+    const muro = q('muro-migracion') as HTMLElement;
+    expect(muro.className).toContain('inset-0');
+    expect(muro.className).not.toContain('backdrop-blur');
+    expect(muro.className).not.toContain('color-mix');
+    expect(q('muro-cerrar')?.getAttribute('aria-label')).toBe('migracion.muro.cerrar');
+  });
+
+  it('con el muro puesto, cerrar omite «en otro momento», abre el panel, guarda «luego» y NO saluda', async () => {
+    const abierto = { bloquea: false, resuelta: 'omitida', pasos: RECIEN_LLEGADA };
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA })
+      .mockResolvedValue(abierto);
+    estadoMock.omitir.mockResolvedValue(abierto);
+    await pintar();
+    expect(q('muro-migracion')).not.toBeNull();
+
+    await click('muro-cerrar');
+    await act(async () => {});
+
+    expect(estadoMock.omitir).toHaveBeenCalledWith('en_otro_momento');
+    expect(q('muro-migracion')).toBeNull();
+    expect(q('bienvenida-a-leasefy')).toBeNull();
+    expect((q('panel-detras-del-muro') as HTMLElement).className).not.toContain('blur');
+    expect(localStorage.getItem('leasefy:migracion:decision:agencia')).toBe('luego');
+  });
+
+  it('mientras el paso está ocupado la ✕ queda apagada', async () => {
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+    await pintar();
+
+    await click('paso-ocupado-on');
+    expect((q('muro-cerrar') as HTMLButtonElement).disabled).toBe(true);
+    await click('paso-ocupado-off');
+    expect((q('muro-cerrar') as HTMLButtonElement).disabled).toBe(false);
+  });
+});
+
+describe('la migración abierta a mano, con el muro abajo', () => {
+  function Abridor() {
+    const migracion = useMigracion();
+    return (
+      <button type="button" data-testid="abrir-migracion" onClick={() => migracion?.abrir()}>
+        {migracion?.estado
+          ? `${migracion.estado.pasos.filter((p) => p.estado === 'listo').length} listos`
+          : 'sin estado'}
+      </button>
+    );
+  }
+
+  async function pintarConAbridor() {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    await act(async () => {
+      root = createRoot(container);
+      root.render(
+        <MuroDeMigracion>
+          <Abridor />
+        </MuroDeMigracion>,
+      );
+    });
+    await act(async () => {});
+  }
+
+  const A_MEDIAS: PasoDeMigracion[] = [
+    paso('propietarios', 'listo', 12, '12 propietarios'),
+    paso('inquilinos', 'listo', 30, '30 inquilinos'),
+    paso('propiedades', 'pendiente'),
+    paso('contratos', 'pendiente'),
+    paso('puc', 'pendiente'),
+    paso('contables', 'pendiente'),
+  ];
+
+  it('el contexto trae el estado aunque no bloquee; «abrir» monta la migración en el primer paso sin terminar, sin «arranco de cero», y la ✕ la cierra sin omitir nada', async () => {
+    estadoMock.estado.mockResolvedValue({ bloquea: false, resuelta: 'omitida', pasos: A_MEDIAS });
+    await pintarConAbridor();
+
+    expect(q('muro-migracion')).toBeNull();
+    expect(q('abrir-migracion')?.textContent).toBe('2 listos');
+
+    await click('abrir-migracion');
+    await act(async () => {});
+    expect(q('muro-migracion')).not.toBeNull();
+    expect(q('contenido-propiedades')).not.toBeNull();
+    expect(q('muro-arrancar-de-cero')).toBeNull();
+    expect((q('panel-detras-del-muro') as HTMLElement).getAttribute('inert')).toBe('');
+
+    await click('muro-cerrar');
+    expect(estadoMock.omitir).not.toHaveBeenCalled();
+    expect(q('muro-migracion')).toBeNull();
+    expect((q('panel-detras-del-muro') as HTMLElement).getAttribute('inert')).toBeNull();
+  });
+
+  it('con todo listo, «Entrar al panel» la marca terminada y la cierra', async () => {
+    const listo = { bloquea: false, resuelta: 'omitida', pasos: TODO_MIGRADO };
+    estadoMock.estado.mockResolvedValue(listo);
+    estadoMock.terminar.mockResolvedValue({ ...listo, resuelta: 'completada' });
+    await pintarConAbridor();
+
+    await click('abrir-migracion');
+    await act(async () => {});
+    expect(q('muro-ya-termine')).not.toBeNull();
+
+    await click('muro-ya-termine');
+    await act(async () => {});
+    expect(estadoMock.terminar).toHaveBeenCalledTimes(1);
+    expect(q('muro-migracion')).toBeNull();
   });
 });

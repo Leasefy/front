@@ -11090,7 +11090,16 @@
       "titulo": "Registros contables",
       "subtitulo": "Los saldos con los que arrancás o el histórico completo. Necesita el plan de cuentas armado."
     },
+    "recordatorio": {
+      "titulo": "Migra tu inmobiliaria",
+      "detalle": "Trae propietarios, inquilinos, inmuebles y contratos desde tu sistema actual.",
+      "tituloEnCurso": "Termina tu migración",
+      "avance": "{{hechos}} de {{total}} pasos listos · sigue {{paso}}",
+      "migrar": "Migrar ahora",
+      "cerrar": "Cerrar el recordatorio de migración"
+    },
     "muro": {
+      "cerrar": "Cerrar y seguir después",
       "eyebrow": "Puesta en marcha",
       "titulo": "Traé tu operación antes de empezar",
       "subtitulo": "Todo pasa acá adentro: cargá lo que ya tenés en tu sistema actual, en orden — cada paso necesita al anterior.",

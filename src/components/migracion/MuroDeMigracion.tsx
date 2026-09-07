@@ -67,12 +67,20 @@ import {
   leerDecisionDeMigracion,
   type DecisionDeMigracion,
 } from "@/lib/migracion/decision-de-migracion";
-import { useCallback, useEffect, useRef, useState, useContext } from "react";
-import { ArrowRight, Check, Lock, Warning } from "@phosphor-icons/react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { ArrowRight, Check, Lock, Warning, X } from "@phosphor-icons/react";
 
 import { ApiError } from "@/lib/api/client";
 
 import { Button } from "@/components/ui/button";
+import { ASPA_DE_CIERRE } from "@/components/ui/aspa-de-cierre";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/lib/hooks/usePermissions";
@@ -87,6 +95,7 @@ import {
   MODULO_DEL_PASO,
   esExigible,
   hayDeuda,
+  leerEstado,
   normalizarEstado,
   pasoActual,
   pasoHabilitado,
@@ -102,6 +111,13 @@ import { RegistrosContables } from "./RegistrosContables";
 import { ImportWizard } from "@/components/inmobiliaria/import/ImportWizard";
 import { MigrarContratos } from "@/components/contratos/MigrarContratos";
 import { BienvenidaALeasefy } from "./BienvenidaALeasefy";
+import {
+  MigracionContext,
+  type ContextoDeMigracion,
+} from "./migracion-context";
+
+export { MigracionContext, useMigracion } from "./migracion-context";
+export type { ContextoDeMigracion } from "./migracion-context";
 
 /**
  * Cada cuánto el muro vuelve a mirar el estado mientras está puesto.
@@ -130,6 +146,13 @@ export const CADA_CUANTO_SE_REFRESCA_MS = 60_000;
 
 export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   const [estado, setEstado] = useState<EstadoDeMigracion | null>(null);
+  // Lo que el back contestó, bloquee o no: alimenta el recordatorio del
+  // sidebar y la migración abierta a mano. `estado` (arriba) es sólo el que
+  // BLOQUEA; los dos salen de la misma respuesta.
+  const [conocido, setConocido] = useState<EstadoDeMigracion | null>(null);
+  // Abierta a mano —«Migrar ahora» del sidebar o de Configuración— con el
+  // muro abajo. Se cierra con su ✕ sin tocar nada en el back.
+  const [abiertaAMano, setAbiertaAMano] = useState(false);
   // La pregunta previa al muro (Nico, 2026-09-07): ahora, en otro momento o
   // no requiero. Vive en localStorage por agencia (ver decision-de-migracion.ts).
   // Contexto crudo y no `useAuth()`: ese lanza sin AuthProvider, y el muro no
@@ -163,8 +186,10 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
       const bruto = await migracionEstadoApi.estado();
       // Ojo: `normalizarEstado` devuelve null ante CUALQUIER duda. Ese null
       // es «panel abierto», no «error» — no hay cartel que mostrar.
+      setConocido(leerEstado(bruto));
       setEstado(normalizarEstado(bruto));
     } catch {
+      setConocido(null);
       setEstado(null);
     }
   }, []);
@@ -181,7 +206,10 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
       const bruto = await migracionEstadoApi.estado();
       const nuevo = normalizarEstado(bruto);
       const previo = estadoAnterior.current;
-      if (previo !== null && nuevo === null) {
+      setConocido(leerEstado(bruto));
+      // Sin bienvenida cuando se salió por decisión («en otro momento», la
+      // ✕): la persona no terminó nada, no hay qué celebrar.
+      if (previo !== null && nuevo === null && !saltarBienvenida.current) {
         // Se levantó. Los conteos salen de la respuesta que LEVANTA el muro,
         // no del último estado bloqueado: ése es de antes de terminar el
         // último paso, y el paso recién terminado saldría con 0.
@@ -270,13 +298,44 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
     },
     [agencyId, refrescar],
   );
-  const tapado = puesto || bienvenida !== null;
+  /*
+   * La ✕ del muro (Nico, 2026-09-07: «que tenga la posibilidad de cerrar si
+   * lo quiere»). Con el muro puesto, cerrar es salir «en otro momento»: se
+   * omite en el back para que el panel se abra, y el recordatorio del
+   * sidebar queda mostrando cómo va. Abierta a mano, cerrar es sólo cerrar.
+   */
+  const cerrar = useCallback(async () => {
+    setAbiertaAMano(false);
+    if (!puesto) return;
+    guardarDecisionDeMigracion(agencyId, "luego");
+    setDecision("luego");
+    saltarBienvenida.current = true;
+    try {
+      await migracionEstadoApi.omitir("en_otro_momento");
+    } catch {
+      // Si no se pudo omitir, el muro sigue: es mejor que un panel a medias.
+    }
+    await refrescar();
+  }, [agencyId, puesto, refrescar]);
+
+  const abrir = useCallback(() => {
+    setAbiertaAMano(true);
+    void refrescar();
+  }, [refrescar]);
+
+  const contexto = useMemo<ContextoDeMigracion>(
+    () => ({ estado: conocido, abrir, recargar: refrescar }),
+    [conocido, abrir, refrescar],
+  );
+
+  const aMano = !puesto && abiertaAMano && conocido !== null;
+  const tapado = puesto || aMano || bienvenida !== null;
   const inerte = tapado
     ? ({ inert: "" } as unknown as Record<string, string>)
     : {};
 
   return (
-    <>
+    <MigracionContext.Provider value={contexto}>
       <div
         {...inerte}
         aria-hidden={tapado || undefined}
@@ -292,8 +351,19 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
         decision === null ? (
           <ModalDecisionDeMigracion onDecidir={decidir} />
         ) : (
-          <PanelDeMigracion estado={estado} onResuelta={refrescar} />
+          <PanelDeMigracion
+            estado={estado}
+            onResuelta={refrescar}
+            onCerrar={cerrar}
+          />
         )
+      ) : aMano ? (
+        <PanelDeMigracion
+          estado={conocido}
+          onResuelta={refrescar}
+          onCerrar={cerrar}
+          onTerminada={() => setAbiertaAMano(false)}
+        />
       ) : null}
       {bienvenida ? (
         <BienvenidaALeasefy
@@ -302,7 +372,7 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
           onEntrar={() => setBienvenida(null)}
         />
       ) : null}
-    </>
+    </MigracionContext.Provider>
   );
 }
 
@@ -313,9 +383,15 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
 export function PanelDeMigracion({
   estado,
   onResuelta,
+  onCerrar,
+  onTerminada,
 }: {
   estado: EstadoDeMigracion;
   onResuelta: () => void | Promise<void>;
+  /** La ✕ de arriba a la derecha. Sin esto no hay ✕. */
+  onCerrar?: () => void | Promise<void>;
+  /** Abierta a mano: «Entrar al panel» la cierra en vez de dejarla puesta. */
+  onTerminada?: () => void;
 }) {
   const { t } = useI18n();
   const lenis = useLenis();
@@ -494,6 +570,7 @@ export function PanelDeMigracion({
       if (via === "terminar") await migracionEstadoApi.terminar();
       else await migracionEstadoApi.omitir();
       await onResuelta();
+      if (via === "terminar") onTerminada?.();
       // Si el back todavía dice que bloquea, el muro sigue puesto y los
       // botones tienen que volver a funcionar.
       setEnviando(false);
@@ -513,11 +590,11 @@ export function PanelDeMigracion({
   return (
     <div
       /*
-       * El velo va con `color-mix` sobre la variable del shell: los tokens de
-       * cadence resuelven a un color literal, así que el modificador de
-       * opacidad de Tailwind (`bg-x/70`) no genera nada con ellos.
+       * Pantalla completa, no un modal (Nico, 2026-09-07): sin velo, sin
+       * tarjeta flotante. Ocupa todo y el contenido se centra a 1200px
+       * adentro. Lo que hay detrás queda inerte igual (ver la compuerta).
        */
-      className="fixed inset-0 z-[120] flex justify-center bg-[color-mix(in_srgb,var(--plan-page-bg)_78%,transparent)] p-3 backdrop-blur-[2px] sm:p-5 lg:p-8"
+      className="fixed inset-0 z-[120] flex flex-col bg-surface"
       data-testid="muro-migracion"
     >
       <div
@@ -526,62 +603,90 @@ export function PanelDeMigracion({
         role="dialog"
         aria-modal="true"
         aria-labelledby="muro-migracion-titulo"
-        className="flex h-full w-full max-w-[1200px] flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-lg outline-none motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-300"
+        className="flex h-full w-full flex-col overflow-hidden outline-none motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200"
       >
         {/* ── Arriba, fijo: el mapa ─────────────────────────────────────── */}
-        <header className="shrink-0 border-b border-border-faint px-5 pb-5 pt-5 sm:px-8 sm:pt-6">
-          <div className="flex items-baseline justify-between gap-x-6 font-mono text-[11px] text-fg-subtle">
-            <p className="uppercase tracking-wider">
-              {t("migracion.muro.eyebrow")}
-            </p>
-            <p className="shrink-0 tabular-nums" data-testid="muro-progreso">
-              {t("migracion.muro.progresoDe", {
-                n: hechos,
-                total: exigibles.length,
-              })}
-            </p>
+        <header className="shrink-0 border-b border-border-faint">
+          <div className="mx-auto w-full max-w-[1200px] px-5 pb-5 pt-5 sm:px-8 sm:pt-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-x-6 font-mono text-[11px] text-fg-subtle">
+                  <p className="uppercase tracking-wider">
+                    {t("migracion.muro.eyebrow")}
+                  </p>
+                  <p className="shrink-0 tabular-nums" data-testid="muro-progreso">
+                    {t("migracion.muro.progresoDe", {
+                      n: hechos,
+                      total: exigibles.length,
+                    })}
+                  </p>
+                </div>
+                <div className="mt-1.5 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                  <h1
+                    id="muro-migracion-titulo"
+                    className="text-xl font-semibold tracking-tight text-fg"
+                  >
+                    {t("migracion.muro.titulo")}
+                  </h1>
+                  <p className="text-sm text-fg-muted">
+                    {t("migracion.muro.subtitulo")}
+                  </p>
+                </div>
+              </div>
+              {/*
+               * La ✕ (Nico, 2026-09-07): con el muro puesto sale «en otro
+               * momento» y el sidebar recuerda cómo va; abierta a mano, sólo
+               * cierra. Apagada mientras el paso crea: cerrar a mitad de una
+               * carga deja el archivo a medias.
+               */}
+              {onCerrar ? (
+                <button
+                  type="button"
+                  onClick={() => void onCerrar()}
+                  disabled={ocupado || enviando}
+                  aria-label={t("migracion.muro.cerrar")}
+                  title={t("migracion.muro.cerrar")}
+                  data-testid="muro-cerrar"
+                  className={cn(ASPA_DE_CIERRE, "disabled:opacity-50")}
+                >
+                  <X size={16} weight="bold" aria-hidden="true" />
+                </button>
+              ) : null}
+            </div>
+            <BarraDePasos
+              pasos={pasos}
+              seleccionado={indice}
+              onIr={irA}
+              bloqueada={ocupado}
+            />
           </div>
-          <div className="mt-1.5 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-            <h1
-              id="muro-migracion-titulo"
-              className="text-xl font-semibold tracking-tight text-fg"
-            >
-              {t("migracion.muro.titulo")}
-            </h1>
-            <p className="text-sm text-fg-muted">
-              {t("migracion.muro.subtitulo")}
-            </p>
-          </div>
-          <BarraDePasos
-            pasos={pasos}
-            seleccionado={indice}
-            onIr={irA}
-            bloqueada={ocupado}
-          />
         </header>
 
         {confirmando ? (
           <div
-            className="flex-1 overflow-y-auto px-5 py-6 sm:px-8"
+            className="flex-1 overflow-y-auto"
             data-lenis-prevent
             style={{ overscrollBehavior: "contain" }}
           >
-            <ConfirmarArranqueDeCero
-              enviando={enviando}
-              onCancelar={() => setConfirmando(false)}
-              onAceptar={() => resolver("omitir")}
-            />
+            <div className="mx-auto w-full max-w-[1200px] px-5 py-6 sm:px-8">
+              <ConfirmarArranqueDeCero
+                enviando={enviando}
+                onCancelar={() => setConfirmando(false)}
+                onAceptar={() => resolver("omitir")}
+              />
+            </div>
           </div>
         ) : (
           <>
             {/* ── El cuerpo: el paso elegido, entero ──────────────────── */}
             <div
               ref={cuerpo}
-              className="flex-1 overflow-y-auto px-5 py-6 sm:px-8"
+              className="flex-1 overflow-y-auto"
               data-lenis-prevent
               style={{ overscrollBehavior: "contain" }}
               data-testid="muro-pasos"
             >
+              <div className="mx-auto w-full max-w-[1200px] px-5 py-6 sm:px-8">
               {/*
                 Con los pasos completos hay DOS finales posibles, y decir el
                 que no es fue el bug: «Tu operación ya está adentro» sobre 89
@@ -632,10 +737,12 @@ export function PanelDeMigracion({
                   {falloDetalle ?? t("migracion.muro.fallo")}
                 </p>
               ) : null}
+              </div>
             </div>
 
             {/* ── Abajo, fijo: las salidas ─────────────────────────────── */}
-            <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border-faint px-5 py-4 sm:px-8">
+            <footer className="shrink-0 border-t border-border-faint">
+              <div className="mx-auto flex w-full max-w-[1200px] flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-8">
               {/*
                * 🔴 La salida de la inmobiliaria nueva. Está SIEMPRE que falte
                * algo, aunque no haya un solo paso listo: quien arranca de cero
@@ -643,7 +750,9 @@ export function PanelDeMigracion({
                * no escondida. Con todo listo sobra: «entrar al panel» es la
                * puerta, y el back nunca la rechaza en ese estado.
                */}
-              {listo ? (
+              {listo || !estado.bloquea ? (
+                // Abierta a mano ya no hay muro del que salir: «arranco de
+                // cero» no significa nada acá.
                 <span />
               ) : (
                 <button
@@ -719,6 +828,7 @@ export function PanelDeMigracion({
                   {t("migracion.muro.terminaEstePaso")}
                 </p>
               )}
+              </div>
             </footer>
           </>
         )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { ChatsCircle, AirTrafficControl } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -35,11 +35,7 @@ import { useMigracionesPendientes } from '@/lib/hooks/use-migraciones-pendientes
 import { usePilotoBadge } from '@/lib/hooks/piloto/use-piloto-badge';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { useAuth } from '@/lib/auth/use-auth';
-import {
-  EVENTO_DECISION_DE_MIGRACION,
-  guardarDecisionDeMigracion,
-  migracionPendienteDeRecordar,
-} from "@/lib/migracion/decision-de-migracion";
+import { RecordatorioDeMigracion } from '@/components/migracion/RecordatorioDeMigracion';
 import { hexToHslTriplet } from '@/lib/utils/hex-to-hsl';
 
 /** Registers the global ⌘K keyboard shortcut for the command palette. */
@@ -104,19 +100,6 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // admins. Falls back to the i18n title while loading / if empty, so the brand
   // never flashes empty. `logoUrl` empty → PlanSidebar shows the LeasefyMark.
   const { agency } = useAuth();
-  // Recordatorio de migración anclado al sidebar: «en otro momento» lo prende,
-  // «Descartar» (acá o en Configuración → Migración) lo apaga.
-  const [migracionPendiente, setMigracionPendiente] = useState(false);
-  useEffect(() => {
-    const leer = () => setMigracionPendiente(migracionPendienteDeRecordar(agency?.id));
-    leer();
-    window.addEventListener(EVENTO_DECISION_DE_MIGRACION, leer);
-    window.addEventListener("storage", leer);
-    return () => {
-      window.removeEventListener(EVENTO_DECISION_DE_MIGRACION, leer);
-      window.removeEventListener("storage", leer);
-    };
-  }, [agency?.id]);
   const { config } = useInmobiliariaConfig();
   // El mismo gate que usa la propia pantalla de Equipo (`SeccionEquipo`) para
   // decidir si muestra el formulario de invitación.
@@ -288,9 +271,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           // quien no lo tiene lo expulsaba el `PageGuard` sin explicación.
           showInvite={puedeInvitarAlEquipo}
           onInvite={() => router.push('/panel/inmobiliaria/configuracion/equipo')}
-          migracionPendiente={migracionPendiente}
-          onMigrar={() => router.push("/panel/inmobiliaria/configuracion/migracion")}
-          onDescartarMigracion={() => guardarDecisionDeMigracion(agency?.id, "nunca")}
+          // El recordatorio de migración: cómo va, «Migrar ahora» y una ✕
+          // (Nico, 2026-09-07). Lee el estado del muro por contexto.
+          footerCards={<RecordatorioDeMigracion />}
           showUpgrade={showUpgradeCta}
           // 🔴 A la pasarela de verdad, no a Configuración. Apuntaba a la raíz
           // de `/configuracion`, que es el PERFIL de la inmobiliaria: quien

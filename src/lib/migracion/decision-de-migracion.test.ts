@@ -3,7 +3,7 @@ import {
   EVENTO_DECISION_DE_MIGRACION,
   guardarDecisionDeMigracion,
   leerDecisionDeMigracion,
-  migracionPendienteDeRecordar,
+  recordatorioDeMigracionDescartado,
 } from './decision-de-migracion'
 
 describe('decisión de migración', () => {
@@ -15,13 +15,15 @@ describe('decisión de migración', () => {
     expect(leerDecisionDeMigracion('a2')).toBeNull()
   })
 
-  it('sólo «en otro momento» deja el recordatorio del sidebar', () => {
+  it('sólo «no requiero migración» (o la ✕ del recordatorio) apaga el recordatorio del sidebar', () => {
+    expect(recordatorioDeMigracionDescartado('a1')).toBe(false)
     guardarDecisionDeMigracion('a1', 'luego')
-    expect(migracionPendienteDeRecordar('a1')).toBe(true)
-    guardarDecisionDeMigracion('a1', 'nunca')
-    expect(migracionPendienteDeRecordar('a1')).toBe(false)
+    expect(recordatorioDeMigracionDescartado('a1')).toBe(false)
     guardarDecisionDeMigracion('a1', 'ahora')
-    expect(migracionPendienteDeRecordar('a1')).toBe(false)
+    expect(recordatorioDeMigracionDescartado('a1')).toBe(false)
+    guardarDecisionDeMigracion('a1', 'nunca')
+    expect(recordatorioDeMigracionDescartado('a1')).toBe(true)
+    expect(recordatorioDeMigracionDescartado('a2')).toBe(false)
   })
 
   it('avisa con un evento para que el sidebar reaccione sin recargar', () => {

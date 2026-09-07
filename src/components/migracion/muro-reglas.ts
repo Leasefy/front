@@ -66,6 +66,54 @@ export function normalizarEstado(bruto: unknown): EstadoDeMigracion | null {
 }
 
 /**
+ * El estado tal cual lo contó el back, bloquee o no.
+ *
+ * `normalizarEstado` sólo devuelve algo cuando hay que BLOQUEAR. Para lo
+ * demás —el recordatorio del sidebar, la migración abierta a mano desde
+ * Configuración (Nico, 2026-09-07)— hace falta saber cómo van los pasos con
+ * el muro abajo. Misma exigencia de forma; ante cualquier duda, `null`.
+ */
+export function leerEstado(bruto: unknown): EstadoDeMigracion | null {
+  if (typeof bruto !== 'object' || bruto === null) return null;
+  const e = bruto as Record<string, unknown>;
+  if (typeof e.bloquea !== 'boolean') return null;
+  if (!Array.isArray(e.pasos) || e.pasos.length === 0) return null;
+  if (!e.pasos.every(esPaso)) return null;
+  const resuelta =
+    e.resuelta === 'completada' || e.resuelta === 'omitida' ? e.resuelta : null;
+  return { bloquea: e.bloquea, resuelta, pasos: e.pasos as PasoDeMigracion[] };
+}
+
+export interface ProgresoDeMigracion {
+  /** Pasos exigibles ya listos. */
+  hechos: number;
+  /** Pasos exigibles en total. */
+  total: number;
+  /** El primer paso exigible sin terminar; `null` con todo listo. */
+  siguiente: PasoDeMigracion | null;
+}
+
+/** Cuántos pasos exigibles están listos y cuál sigue: lo que dice el recordatorio del sidebar. */
+export function progresoDeMigracion(pasos: PasoDeMigracion[]): ProgresoDeMigracion {
+  const exigibles = pasos.filter(esExigible);
+  const hechos = exigibles.filter((p) => p.estado === 'listo').length;
+  const siguiente = exigibles.find((p) => p.estado !== 'listo') ?? null;
+  return { hechos, total: exigibles.length, siguiente };
+}
+
+/**
+ * ¿Queda migración por hacer? Decide si el sidebar recuerda.
+ *
+ * Quien dijo «terminé» no tiene nada pendiente aunque después borre un
+ * propietario; quien salió con la ✕ o con «en otro momento» sí, mientras
+ * falte un paso exigible.
+ */
+export function migracionSinTerminar(estado: EstadoDeMigracion): boolean {
+  if (estado.resuelta === 'completada') return false;
+  return !todoListo(estado.pasos);
+}
+
+/**
  * Un paso que el back declara `no_disponible` no cuenta para nada.
  *
  * Hoy los seis pasos existen; el estado queda como fallo genérico —si un

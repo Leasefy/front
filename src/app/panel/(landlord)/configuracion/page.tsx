@@ -45,7 +45,7 @@ import {
 
 export default function ConfiguracionPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, changePassword } = useAuth();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { locale, setLocale, t } = useI18n();
   const { stats: visitStats } = useVisits();
@@ -112,17 +112,25 @@ export default function ConfiguracionPage() {
       toast.error(t('landlordSettings.toasts.passwordTooWeak'));
       return;
     }
+    /*
+     * Esto pedía la contraseña actual y no la miraba: cambiaba la nueva directo
+     * en Supabase (Nico, 2026-09-07). Quien dejara una sesión abierta podía
+     * cambiarle la contraseña al dueño sin conocer la suya. `changePassword`
+     * es el mismo camino del inquilino: el back verifica la actual y recién
+     * ahí actualiza.
+     */
     setIsLoading(true);
     try {
-      const supabase = getSupabase();
-      if (!supabase) throw new Error('Supabase not initialized');
-      const { error } = await supabase.auth.updateUser({ password: passwordForm.new });
-      if (error) throw error;
+      await changePassword(passwordForm.current, passwordForm.new);
       setShowPasswordModal(false);
       setPasswordForm({ current: '', new: '', confirm: '' });
       toast.success(t('landlordSettings.toasts.passwordUpdated'));
     } catch (err) {
-      toast.error((err as Error).message || 'Error al cambiar contraseña');
+      toast.error(
+        err instanceof Error && err.message
+          ? err.message
+          : t('landlordSettings.toasts.passwordChangeFailed'),
+      );
     } finally {
       setIsLoading(false);
     }

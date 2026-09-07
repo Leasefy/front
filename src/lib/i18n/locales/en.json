@@ -717,6 +717,7 @@
       "passwordsDontMatch": "Passwords do not match",
       "passwordTooShort": "Password must be at least 8 characters",
       "passwordTooWeak": "The password is still weak: follow the tip below the field",
+      "passwordChangeFailed": "We couldn't change your password. Please try again.",
       "passwordUpdated": "Password updated successfully",
       "sessionClosed": "Session closed successfully",
       "allSessionsClosed": "All other sessions have been closed",

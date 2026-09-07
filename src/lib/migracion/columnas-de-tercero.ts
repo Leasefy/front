@@ -291,7 +291,12 @@ export function mapearColumnas(
   const candidatos: { i: number; campo: string; termino: string }[] = [];
   mapeo.forEach((m, i) => {
     if (m.campo || m.parte) return;
-    const n = normalizarEncabezado(encabezados[i]);
+    // «Municipio (Departamento)»: lo de afuera del paréntesis es lo que la
+    // columna ES; lo de adentro es un detalle que luego se parte. Sin esto,
+    // «departamento» (más largo) le ganaba a «municipio» y la ciudad entera
+    // entraba como departamento.
+    const fuera = normalizarEncabezado(encabezados[i].replace(/\([^)]*\)/g, ' '));
+    const n = fuera || normalizarEncabezado(encabezados[i]);
     if (!n) return;
     for (const columna of columnas) {
       if (usados.has(columna.campo)) continue;

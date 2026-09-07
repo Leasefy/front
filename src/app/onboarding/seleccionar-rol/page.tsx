@@ -208,12 +208,10 @@ export default function SeleccionarRolPage() {
     setIsLoading(true)
     const perfil = PERFILES.find((opcion) => opcion.valor === selected)?.bandera ?? 'tenant'
     // La elección se guarda para que la próxima entrada retome en este
-    // onboarding y no acá (Nico, 2026-09-07). Si guardar falla o tarda, no
-    // retiene a nadie: sigue igual y, a lo sumo, la próxima vez vuelve al selector.
-    await Promise.race([
-      elegirPerfil(perfil).catch(() => undefined),
-      new Promise<void>((resolver) => setTimeout(resolver, 1500)),
-    ])
+    // onboarding y no acá (Nico, 2026-09-07). Se guarda en segundo plano: el
+    // clic navega YA, y si guardar falla o tarda no retiene a nadie — a lo
+    // sumo la próxima vez vuelve al selector.
+    void elegirPerfil(perfil).catch(() => undefined)
     router.push(rutaDeOnboarding(perfil))
   }
 

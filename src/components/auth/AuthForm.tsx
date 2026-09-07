@@ -957,7 +957,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               </ol>
             </div>
             {webmail && (
-              <Button asChild className="w-full h-11 rounded-full text-[14px]">
+              <Button asChild hideArrow className="w-full h-11 rounded-full text-[14px]">
                 <a href={webmail.url} target="_blank" rel="noopener noreferrer" data-testid="abrir-correo">
                   Abrir {webmail.nombre}
                   <ArrowSquareOut className="ml-2 h-4 w-4" weight="bold" aria-hidden="true" />
@@ -1047,7 +1047,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 no volver a un login al que todavía no se puede entrar. La
                 flecha de arriba ya lleva de vuelta. */}
             {webmail && (
-              <Button asChild className="w-full h-11 rounded-full text-[14px]">
+              <Button asChild hideArrow className="w-full h-11 rounded-full text-[14px]">
                 <a href={webmail.url} target="_blank" rel="noopener noreferrer" data-testid="abrir-correo">
                   Abrir {webmail.nombre}
                   <ArrowSquareOut className="ml-2 h-4 w-4" weight="bold" aria-hidden="true" />

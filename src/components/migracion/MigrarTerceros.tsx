@@ -79,6 +79,7 @@ import {
   obligatoriasSinMapear,
   PARTES_DEL_NOMBRE,
   remapear,
+  VALOR_A_NOTAS,
   valorDeParte,
   type MapeoDeColumna,
 } from '@/lib/migracion/columnas-de-tercero';
@@ -929,7 +930,9 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                     <TableCell className="font-medium">{m.columna || '(sin nombre)'}</TableCell>
                     <TableCell>
                       <Select
-                        value={m.campo ?? (m.parte ? valorDeParte(m.parte) : IGNORAR)}
+                        value={
+                          m.campo ?? (m.parte ? valorDeParte(m.parte) : m.aNotas ? VALOR_A_NOTAS : IGNORAR)
+                        }
                         onValueChange={(v) =>
                           setMapeo((actual) =>
                             remapear(actual, m.columna, v === IGNORAR ? null : v),
@@ -958,6 +961,11 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                                 </SelectItem>
                               ))
                             : null}
+                          {/* Lo que no tiene campo pero no se tira («Otro
+                              Teléfono»): se pega a las notas de la ficha. */}
+                          {columnas.some((c) => c.campo === 'notas') ? (
+                            <SelectItem value={VALOR_A_NOTAS}>Notas · agregar esta columna</SelectItem>
+                          ) : null}
                         </SelectContent>
                       </Select>
                     </TableCell>

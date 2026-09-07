@@ -103,6 +103,17 @@ export function valorDeParte(parte: ParteDelNombre): string {
   return `${VALOR_DE_PARTE}${parte}`;
 }
 
+/**
+ * Una columna que no tiene campo pero que no se puede tirar («Otro Teléfono»,
+ * «Representante Legal»): se agrega a las notas de la ficha como
+ * «Columna: valor». En el archivo real 185 filas traían un segundo teléfono
+ * y 10 un representante legal, y se perdían (2026-09-07).
+ */
+export const VALOR_A_NOTAS = 'notas:+';
+
+/** Encabezados que van solos a las notas cuando no mapearon a nada. */
+const A_NOTAS_SOLAS = [/^(otro|segundo|2do) tel/, /tel(efono)? 2$/, /^representante legal/];
+
 export function parteDeValor(valor: string | null): ParteDelNombre | null {
   if (!valor || !valor.startsWith(VALOR_DE_PARTE)) return null;
   const parte = valor.slice(VALOR_DE_PARTE.length);
@@ -188,6 +199,8 @@ export interface MapeoDeColumna {
    * campo `nombre`.
    */
   parte?: ParteDelNombre;
+  /** Se agrega a las notas de la ficha como «Columna: valor». Excluyente con `campo`. */
+  aNotas?: boolean;
   /** Con qué término empató. Vacío cuando no empató nada o es manual. */
   porque: string;
   /** `false` = empató por contención, no por igualdad. Se muestra distinto. */
@@ -302,6 +315,19 @@ export function mapearColumnas(
     mapeo[c.i].exacto = false;
   }
 
+  // ── Pasada 3: lo que no tiene campo pero no se tira, a las notas. ────────
+  if (columnas.some((c) => c.campo === 'notas')) {
+    mapeo.forEach((m, i) => {
+      if (m.campo || m.parte) return;
+      const n = normalizarEncabezado(encabezados[i]);
+      if (n && A_NOTAS_SOLAS.some((re) => re.test(n))) {
+        m.aNotas = true;
+        m.porque = 'se agrega a las notas';
+        m.exacto = true;
+      }
+    });
+  }
+
   return mapeo;
 }
 
@@ -319,13 +345,15 @@ export function remapear(
   valor: string | null,
 ): MapeoDeColumna[] {
   const parte = parteDeValor(valor);
-  const campo = parte ? null : valor;
+  const aNotas = valor === VALOR_A_NOTAS;
+  const campo = parte || aNotas ? null : valor;
   return mapeo.map((m) => {
     if (m.columna === columna) {
       return {
         columna,
         campo,
         ...(parte ? { parte } : {}),
+        ...(aNotas ? { aNotas: true } : {}),
         porque: '',
         exacto: false,
         isManual: true,
@@ -442,6 +470,15 @@ export function armarFila(
     const compuesto = componerNombre(partes);
     if (compuesto) cruda.nombre = compuesto;
   }
+  // Las columnas «a notas» se pegan debajo de la nota propia, una por línea.
+  const lineas = mapeo
+    .filter((m) => m.aNotas)
+    .map((m) => {
+      const v = celda(fila[m.columna]);
+      return v ? `${m.columna}: ${v}` : '';
+    })
+    .filter(Boolean);
+  if (lineas.length > 0) cruda.notas = [celda(cruda.notas), ...lineas].filter(Boolean).join('\n');
   return filaDePlantilla(cruda);
 }
 

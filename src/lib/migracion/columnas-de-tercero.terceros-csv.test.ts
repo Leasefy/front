@@ -25,6 +25,7 @@ const PLANTILLA = [
   col('banco', 'Banco', ['banco', 'entidad bancaria', 'entidad']),
   col('tipoCuenta', 'Tipo de cuenta', ['tipo cuenta', 'clase de cuenta']),
   col('numeroCuenta', 'Número de cuenta', ['numero cuenta', 'nro cuenta', 'cuenta']),
+  col('notas', 'Notas', ['notas', 'observaciones', 'comentarios']),
 ]
 
 const ENCABEZADOS = ['Código', 'Tipo Documento', 'Documento', 'Dígito de Verificación', 'Tratamiento',
@@ -71,6 +72,17 @@ describe('Terceros.csv de una inmobiliaria real', () => {
     expect(por['Banco'].campo).toBe('banco')
     expect(por['Tipo Cuenta'].campo).toBe('tipoCuenta')
     expect(por['Nro. Cuenta'].campo).toBe('numeroCuenta')
+  })
+
+  it('«Otro Teléfono» y «Representante Legal» no se tiran: van a las notas de la ficha', () => {
+    expect(por['Otro Teléfono']).toMatchObject({ campo: null, aNotas: true })
+    expect(por['Representante Legal']).toMatchObject({ campo: null, aNotas: true })
+    const mapeo = mapearColumnas(PLANTILLA, ENCABEZADOS)
+    const fila = armarFila({ 'Nombre Completo/Razón Social': 'GRUPO SAN PIO S.A.S', 'Otro Teléfono': ' 3017863100 ', 'Representante Legal': 'MAURICIO SRETER', 'Estado Civil': 'Soltero' }, mapeo)
+    // En el orden de las columnas del archivo (Representante Legal va antes).
+    expect(fila.notas).toBe('Representante Legal: MAURICIO SRETER\nOtro Teléfono: 3017863100')
+    // Lo que no se pidió («Estado Civil») sigue afuera.
+    expect(armarFila({ 'Nombre Completo/Razón Social': 'X', 'Estado Civil': 'Soltero' }, mapeo).notas).toBeUndefined()
   })
 
   it('una columna nunca pisa a otra: cada campo, una sola vez', () => {

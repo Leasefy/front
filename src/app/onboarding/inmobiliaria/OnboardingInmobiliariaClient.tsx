@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { LeasefyLogo } from '@/components/brand'
+import { LeasefyLogotype } from '@/components/brand/LeasefySymbol'
 import { useOnboardingSession } from '@/lib/hooks/use-onboarding-session'
 import { useOnboardingProvisioning } from '@/lib/hooks/use-onboarding-provisioning'
 import { OnboardingWizardStepper } from '@/components/onboarding/inmobiliaria/OnboardingWizardStepper'
@@ -92,7 +92,7 @@ function ProvisionedOnboardingWizard() {
     return (
       <div className="min-h-screen bg-bg">
         <header className="flex items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
-          <LeasefyLogo className="h-6 w-auto" />
+          <LeasefyLogotype className="h-6 w-auto" title="Leasefy" />
           <SalirDelRegistro />
         </header>
         <main className="flex min-h-[calc(100vh-5rem)] items-center justify-center px-6 pb-16">
@@ -230,7 +230,7 @@ function OnboardingWizard({
               para salir está `SalirDelRegistro`, acá al lado.
             */}
             <span className="flex items-center gap-2" aria-label="Leasefy">
-              <LeasefyLogo size={28} tone="brand" />
+              <LeasefyLogotype size={24} className="text-fg" title="Leasefy" />
             </span>
             {/* Un paso hecho devuelve a ese paso (Nico, 2026-09-07). Es el
                 mismo override que usa el CTA de «faltan pasos» de Confirmar:

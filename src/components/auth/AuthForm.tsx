@@ -224,6 +224,69 @@ const reglaDeCorreo = (valor: string) => {
   return r.ok || r.motivo;
 };
 
+type EstadoDeReenvio = {
+  estado: 'listo' | 'enviando' | 'enviado';
+  /** Segundos hasta poder reenviar otra vez; Supabase limita a uno por minuto. */
+  espera: number;
+  error: string | null;
+};
+
+/**
+ * «¿No te llegó? Reenviar el enlace», con su espera y su error. Lo usan la
+ * pantalla de «Revisa tu correo» y el login cuando Supabase responde que el
+ * correo no está confirmado: ahí es donde llega quien abrió un enlace vencido
+ * (/auth/enlace lo manda a entrar), y sin esto no tenía cómo pedir otro.
+ */
+function ReenvioDeConfirmacion({
+  reenvio,
+  onReenviar,
+  onCorregir,
+}: {
+  reenvio: EstadoDeReenvio;
+  onReenviar: () => void;
+  onCorregir?: () => void;
+}) {
+  return (
+    <div className="space-y-1.5 text-[13px] text-fg-subtle" data-testid="reenvio-de-confirmacion">
+      {reenvio.estado === 'enviado' ? (
+        <p className="text-success" role="status">
+          Listo, te lo reenviamos. Dale un minuto y revisa también spam.
+        </p>
+      ) : (
+        <p>
+          ¿No te llegó?{' '}
+          <button
+            type="button"
+            onClick={onReenviar}
+            disabled={reenvio.estado === 'enviando' || reenvio.espera > 0}
+            className={cn(ENLACE, 'disabled:text-fg-subtle disabled:no-underline')}
+            data-testid="reenviar-confirmacion"
+          >
+            {reenvio.estado === 'enviando'
+              ? 'Reenviando…'
+              : reenvio.espera > 0
+                ? `Reenviar en ${reenvio.espera} s`
+                : 'Reenviar el enlace'}
+          </button>
+        </p>
+      )}
+      {reenvio.error && (
+        <p className="text-danger" role="alert">
+          {reenvio.error}
+        </p>
+      )}
+      {onCorregir && (
+        <p>
+          ¿Te equivocaste de correo?{' '}
+          <button type="button" onClick={onCorregir} className={ENLACE} data-testid="corregir-correo">
+            Corregirlo
+          </button>
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -248,12 +311,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   };
   /** A dónde vuelve el enlace de confirmación; el reenvío tiene que usar el mismo. */
   const redirectDeConfirmacion = React.useRef<string | null>(null);
-  const [reenvio, setReenvio] = React.useState<{
-    estado: 'listo' | 'enviando' | 'enviado';
-    /** Segundos hasta poder reenviar otra vez; Supabase limita a uno por minuto. */
-    espera: number;
-    error: string | null;
-  }>({ estado: 'listo', espera: 0, error: null });
+  const [reenvio, setReenvio] = React.useState<EstadoDeReenvio>({ estado: 'listo', espera: 0, error: null });
+  /** El correo con el que intentó entrar y Supabase dijo «sin confirmar»: ahí se ofrece reenviar. */
+  const [correoSinConfirmar, setCorreoSinConfirmar] = React.useState<string | null>(null);
   React.useEffect(() => {
     if (reenvio.espera <= 0) return;
     const id = setTimeout(() => {
@@ -412,6 +472,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     setError(null);
     aceptarCorreoTalCual(null);
     setReenvio({ estado: 'listo', espera: 0, error: null });
+    setCorreoSinConfirmar(null);
     loginForm.reset();
     registerForm.reset();
     forgotPasswordForm.reset();
@@ -429,6 +490,15 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   // profile picker at /onboarding/seleccionar-rol.
   const onboardingDest = () =>
     explicitRole ? getOnboardingHref(explicitRole) : '/onboarding/seleccionar-rol';
+
+  // Preserve context on the email-confirmation link so it returns through
+  // /auth/callback (which exchanges the code server-side and honors returnUrl)
+  // instead of Supabase's default Site URL (the root "/"), which would drop the
+  // invitation/onboarding context and land the user as a bare TENANT.
+  const enlaceDeConfirmacion = () => {
+    const dest = returnUrl && returnUrl !== '/' ? returnUrl : onboardingDest();
+    return `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(dest)}`;
+  };
 
   // Redirect to the correct dashboard based on user role
   const redirectAfterLogin = React.useCallback((role: string | undefined) => {
@@ -458,9 +528,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   const handleLoginSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setError(null);
+    setCorreoSinConfirmar(null);
+    const correo = normalizarCorreo(data.email);
     try {
       didAuthenticateInForm.current = true;
-      const userData = await signInWithEmail(normalizarCorreo(data.email), data.password);
+      const userData = await signInWithEmail(correo, data.password);
       if (!userData) {
         // Supabase accepted the credentials but the profile bootstrap failed
         // WITHOUT throwing (e.g. 409 duplicate identity: fetchUser stored the
@@ -484,7 +556,13 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
         setError('Correo o contraseña incorrectos.');
       } else if (msg.includes('Email not confirmed')) {
-        setError('Debes confirmar tu correo antes de iniciar sesión. Revisa tu bandeja de entrada.');
+        // Acá llega quien abrió un enlace de confirmación vencido: /auth/enlace
+        // lo manda a entrar. Sin el reenvío no tenía cómo pedir otro.
+        setResetEmail(correo);
+        redirectDeConfirmacion.current = enlaceDeConfirmacion();
+        setReenvio({ estado: 'listo', espera: 0, error: null });
+        setCorreoSinConfirmar(correo);
+        setError('Tu correo todavía no está confirmado. Busca el enlace en tu bandeja (y en spam) o pide uno nuevo.');
       } else {
         setError('Error al iniciar sesión. Intenta de nuevo.');
       }
@@ -518,12 +596,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     setIsLoading(true);
     setError(null);
     try {
-      // Preserve context on the email-confirmation link so it returns through
-      // /auth/callback (which exchanges the code server-side and honors returnUrl)
-      // instead of Supabase's default Site URL (the root "/"), which would drop the
-      // invitation/onboarding context and land the user as a bare TENANT.
-      const dest = returnUrl && returnUrl !== '/' ? returnUrl : onboardingDest();
-      const emailRedirectTo = `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(dest)}`;
+      const emailRedirectTo = enlaceDeConfirmacion();
       // Persist the deep-linked role (if any) as intended_role on the Supabase
       // user. Without a deep-link the user picks their role at
       // /onboarding/seleccionar-rol, so this is `undefined` here.
@@ -733,6 +806,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               </div>
               {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
+              {error && correoSinConfirmar && (
+                <ReenvioDeConfirmacion reenvio={reenvio} onReenviar={reenviarConfirmacion} />
+              )}
               <Button
                 type="submit"
                 disabled={isLoading}
@@ -891,49 +967,14 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 </a>
               </Button>
             )}
-            <div className="space-y-1.5 text-[13px] text-fg-subtle" data-testid="reenvio-de-confirmacion">
-              {reenvio.estado === 'enviado' ? (
-                <p className="text-success" role="status">
-                  Listo, te lo reenviamos. Dale un minuto y revisa también spam.
-                </p>
-              ) : (
-                <p>
-                  ¿No te llegó?{' '}
-                  <button
-                    type="button"
-                    onClick={reenviarConfirmacion}
-                    disabled={reenvio.estado === 'enviando' || reenvio.espera > 0}
-                    className={cn(ENLACE, 'disabled:text-fg-subtle disabled:no-underline')}
-                    data-testid="reenviar-confirmacion"
-                  >
-                    {reenvio.estado === 'enviando'
-                      ? 'Reenviando…'
-                      : reenvio.espera > 0
-                        ? `Reenviar en ${reenvio.espera} s`
-                        : 'Reenviar el enlace'}
-                  </button>
-                </p>
-              )}
-              {reenvio.error && (
-                <p className="text-danger" role="alert">
-                  {reenvio.error}
-                </p>
-              )}
-              <p>
-                ¿Te equivocaste de correo?{' '}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setError(null);
-                    setRegisterStep('credentials');
-                  }}
-                  className={ENLACE}
-                  data-testid="corregir-correo"
-                >
-                  Corregirlo
-                </button>
-              </p>
-            </div>
+            <ReenvioDeConfirmacion
+              reenvio={reenvio}
+              onReenviar={reenviarConfirmacion}
+              onCorregir={() => {
+                setError(null);
+                setRegisterStep('credentials');
+              }}
+            />
             <p className="mt-6 border-t border-border/70 pt-5 text-[13px] text-fg-subtle">
               ¿Ya confirmaste desde otro dispositivo?{' '}
               <button type="button" onClick={() => handleModeSwitch('login')} className={ENLACE}>

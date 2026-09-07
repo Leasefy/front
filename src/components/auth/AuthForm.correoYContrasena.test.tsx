@@ -311,6 +311,38 @@ describe('AuthForm — login: el correo', () => {
     expect(signInWithEmailMock.mock.calls[0][0]).toBe('ana@example.com')
   })
 
+  it('con el correo sin confirmar (enlace vencido) ofrece reenviar el enlace desde el login', async () => {
+    signInWithEmailMock.mockRejectedValue(new Error('Email not confirmed'))
+    resendMock.mockResolvedValue(undefined)
+    await renderLogin()
+    await act(async () => {
+      setInputValue(input('email'), 'Nico@Gmail.com')
+      setInputValue(input('password'), 'loquesea')
+    })
+    await submit()
+    expect(container.textContent).toContain('todavía no está confirmado')
+
+    await click(porTestId('reenviar-confirmacion'))
+    expect(resendMock).toHaveBeenCalledTimes(1)
+    expect(resendMock.mock.calls[0][0]).toBe('nico@gmail.com')
+    expect(String(resendMock.mock.calls[0][1])).toContain('/auth/callback?returnUrl=')
+    expect(container.textContent).toContain('te lo reenviamos')
+    // Sin «Corregirlo»: el correo del login es el que escribió, no hay nada que corregir acá.
+    expect(porTestId('corregir-correo')).toBeNull()
+  })
+
+  it('con la contraseña mal no ofrece reenviar nada', async () => {
+    signInWithEmailMock.mockRejectedValue(new Error('Invalid login credentials'))
+    await renderLogin()
+    await act(async () => {
+      setInputValue(input('email'), 'nico@gmail.com')
+      setInputValue(input('password'), 'loquesea')
+    })
+    await submit()
+    expect(container.textContent).toContain('Correo o contraseña incorrectos')
+    expect(porTestId('reenviar-confirmacion')).toBeNull()
+  })
+
   it('el dominio mal escrito se ofrece pero no bloquea (la contraseña vieja sigue valiendo)', async () => {
     signInWithEmailMock.mockResolvedValue({ id: 'u1', role: 'tenant' })
     await renderLogin()

@@ -26,9 +26,7 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { ArrowRight } from '@phosphor-icons/react'
-
-import { LeasefyLogo } from '@/components/brand'
+import { LeasefyLogotype } from '@/components/brand/LeasefySymbol'
 import { Button } from '@/components/ui/button'
 import { ForceLightMode } from '@/components/providers/ForceLightMode'
 import { getSupabase } from '@/lib/supabase/client'
@@ -52,11 +50,15 @@ function EnlaceContent() {
     if (typeof window !== 'undefined' && window.location.hash) {
       const crudo = window.location.hash.replace(/^#/, '')
       const params = new URLSearchParams(crudo)
-      const codigo = params.get('error') ?? params.get('error_code')
+      const codigo = params.get('error_code') ?? params.get('error')
       if (codigo) {
+        // Supabase manda la descripción en inglés («Email link is invalid or
+        // has expired»); acá se traduce por código y no se muestra la cruda
+        // (Nico, 2026-09-07).
         setError(
-          params.get('error_description') ??
-            'El enlace ya no sirve. Pedí que te lo reenvíen.',
+          codigo === 'otp_expired'
+            ? 'El enlace ya venció o ya se usó. Si era el de confirmar tu correo, entra con tu correo y contraseña y te ofrecemos uno nuevo.'
+            : 'El enlace no es válido. Si era el de confirmar tu correo, entra con tu correo y contraseña y te ofrecemos uno nuevo.',
         )
         return
       }
@@ -98,8 +100,9 @@ function EnlaceContent() {
     <ForceLightMode>
       <div className="min-h-screen bg-bg flex items-center justify-center px-4">
         <div className="w-full max-w-[400px] text-center">
-          <div className="flex justify-center mb-8">
-            <LeasefyLogo size={28} tone="brand" />
+          {/* El mismo logotipo que el resto de las pantallas de acceso: el símbolo azul suelto no es la marca (Nico, 2026-09-07). */}
+          <div className="mb-8 flex justify-center">
+            <LeasefyLogotype size={24} className="text-fg" title="Leasefy" />
           </div>
 
           {error ? (
@@ -108,11 +111,9 @@ function EnlaceContent() {
                 No pudimos abrir el enlace
               </h1>
               <p className="text-sm text-fg-muted mb-6">{error}</p>
-              <Button asChild className="w-full">
-                <a href="/auth">
-                  Ir a iniciar sesión
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </a>
+              {/* Sin flecha propia: el Button del producto ya trae la suya y acá salían dos (Nico, 2026-09-07). */}
+              <Button asChild className="h-12 w-full rounded-full text-[14px]">
+                <a href="/auth">Ir a iniciar sesión</a>
               </Button>
             </>
           ) : (

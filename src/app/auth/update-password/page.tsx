@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useState } from 'react';
-import { LeasefyLogo } from '@/components/brand';
+import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -148,7 +148,7 @@ function UpdatePasswordContent() {
           {/* Logo — authenticated users go to their dashboard */}
           <div className="flex justify-center mb-8">
             <BrandHomeLink>
-              <LeasefyLogo size={28} tone="brand" />
+              <LeasefyLogotype size={24} className="text-fg" title="Leasefy" />
             </BrandHomeLink>
           </div>
 

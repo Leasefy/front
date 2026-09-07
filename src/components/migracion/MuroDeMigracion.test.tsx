@@ -272,6 +272,9 @@ describe('cuando no se puede saber, el panel se ve normal', () => {
 
 describe('con `bloquea: true`', () => {
   beforeEach(() => {
+    // Sin decisión guardada primero aparece la pregunta «¿Migramos tu inmobiliaria?»
+    // (2026-09-07); estas pruebas son del muro en sí, así que la decisión ya está tomada.
+    localStorage.setItem('leasefy:migracion:decision:agencia', 'ahora');
     estadoMock.estado.mockResolvedValue({
       bloquea: true,
       resuelta: null,

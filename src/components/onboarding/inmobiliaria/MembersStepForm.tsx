@@ -265,77 +265,97 @@ export function MembersStepForm({
 
       <FieldError message={errors.members?.message} />
 
+      {/* Una tarjeta por persona, con cada campo rotulado. Antes eran tres
+          controles sueltos sin rótulo y el selector del rol quedaba más alto
+          que el correo: no se entendía qué iba en cada uno ni que las tres
+          cosas eran de la misma persona (Nico, 2026-09-07). */}
       <div className="space-y-4">
         {fields.map((field, index) => (
-          <div key={field.id} data-testid={`member-row-${index}`} className="flex items-start gap-3">
-            <div className="flex-1 space-y-2">
-              <label htmlFor={`members.${index}.email`} className="sr-only">
-                Correo del miembro {index + 1}
-              </label>
-              <Input
-                id={`members.${index}.email`}
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                spellCheck={false}
-                placeholder="correo@inmobiliaria.com"
-                className="h-11"
-                {...register(`members.${index}.email` as const)}
-              />
-              <FieldError message={errors.members?.[index]?.email?.message} />
+          <div
+            key={field.id}
+            data-testid={`member-row-${index}`}
+            className="space-y-3 rounded-lg border border-border bg-surface p-4"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
+                Miembro {index + 1}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                hideArrow
+                disabled={fields.length === 1}
+                onClick={() => remove(index)}
+                aria-label={`Quitar miembro ${index + 1}`}
+                data-testid={`members-remove-row-${index}`}
+                className="h-8 w-8"
+              >
+                <Trash className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_10rem]">
+              <div>
+                <label htmlFor={`members.${index}.email`} className="mb-1.5 block text-sm font-medium text-fg">
+                  Correo
+                </label>
+                <Input
+                  id={`members.${index}.email`}
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  spellCheck={false}
+                  placeholder="correo@inmobiliaria.com"
+                  className="h-11"
+                  {...register(`members.${index}.email` as const)}
+                />
+                <FieldError message={errors.members?.[index]?.email?.message} />
+              </div>
+
+              <div>
+                <label htmlFor={`members.${index}.role`} className="mb-1.5 block text-sm font-medium text-fg">
+                  Rol
+                </label>
+                <Controller
+                  control={control}
+                  name={`members.${index}.role` as const}
+                  render={({ field: roleField }) => (
+                    <Select value={roleField.value} onValueChange={roleField.onChange}>
+                      {/* Misma altura que el correo de al lado, y el rótulo arriba
+                          en los dos: así los controles quedan al mismo nivel. */}
+                      <SelectTrigger id={`members.${index}.role`} className="h-11">
+                        <SelectValue placeholder="Rol" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MEMBER_ROLE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </div>
+
+            <div>
               {/* Opcional: sin nombre, el equipo muestra el correo hasta que
                   la persona se registre. No se deriva del correo. */}
-              <label htmlFor={`members.${index}.nombre`} className="sr-only">
-                Nombre del miembro {index + 1} (opcional)
+              <label htmlFor={`members.${index}.nombre`} className="mb-1.5 block text-sm font-medium text-fg">
+                Nombre y apellido <span className="font-normal text-fg-subtle">(opcional)</span>
               </label>
               <Input
                 id={`members.${index}.nombre`}
                 type="text"
                 autoComplete="name"
-                placeholder="Nombre y apellido (opcional)"
+                placeholder="Ej: Ana María Pérez"
+                className="h-11"
                 {...register(`members.${index}.nombre` as const)}
               />
               <FieldError message={errors.members?.[index]?.nombre?.message} />
             </div>
-
-            <div className="w-40">
-              <label htmlFor={`members.${index}.role`} className="sr-only">
-                Rol del miembro {index + 1}
-              </label>
-              <Controller
-                control={control}
-                name={`members.${index}.role` as const}
-                render={({ field: roleField }) => (
-                  <Select value={roleField.value} onValueChange={roleField.onChange}>
-                    {/* Misma altura que el correo de al lado: sin esto el select
-                        quedaba más alto y la fila se veía torcida. */}
-                    <SelectTrigger id={`members.${index}.role`} className="h-11">
-                      <SelectValue placeholder="Rol" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MEMBER_ROLE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              hideArrow
-              disabled={fields.length === 1}
-              onClick={() => remove(index)}
-              aria-label={`Quitar miembro ${index + 1}`}
-              data-testid={`members-remove-row-${index}`}
-            >
-              <Trash className="w-4 h-4" />
-            </Button>
           </div>
         ))}
       </div>

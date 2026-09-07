@@ -60,7 +60,14 @@
  * otra forma, el panel se ve normal. Está en `normalizarEstado()`.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { AuthContext } from "@/lib/auth/auth-context";
+import { ModalDecisionDeMigracion } from "./DecisionDeMigracion";
+import {
+  guardarDecisionDeMigracion,
+  leerDecisionDeMigracion,
+  type DecisionDeMigracion,
+} from "@/lib/migracion/decision-de-migracion";
+import { useCallback, useEffect, useRef, useState, useContext } from "react";
 import { ArrowRight, Check, Lock, Warning } from "@phosphor-icons/react";
 
 import { ApiError } from "@/lib/api/client";
@@ -123,6 +130,20 @@ export const CADA_CUANTO_SE_REFRESCA_MS = 60_000;
 
 export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   const [estado, setEstado] = useState<EstadoDeMigracion | null>(null);
+  // La pregunta previa al muro (Nico, 2026-09-07): ahora, en otro momento o
+  // no requiero. Vive en localStorage por agencia (ver decision-de-migracion.ts).
+  // Contexto crudo y no `useAuth()`: ese lanza sin AuthProvider, y el muro no
+  // puede ser lo que tumba el panel (mismo criterio que SalirDelRegistro).
+  const agency = useContext(AuthContext)?.agency ?? null;
+  const agencyId = agency?.id ?? null;
+  const [decision, setDecision] = useState<DecisionDeMigracion | null>(null);
+  const [decisionLeida, setDecisionLeida] = useState(false);
+  useEffect(() => {
+    setDecision(leerDecisionDeMigracion(agencyId));
+    setDecisionLeida(true);
+  }, [agencyId]);
+  // Al omitir por decisión no hay celebración: la persona eligió no migrar todavía.
+  const saltarBienvenida = useRef(false);
   /*
    * El muro estaba puesto y dejó de estarlo EN ESTA SESIÓN: ése es el momento
    * que se celebra (`BienvenidaALeasefy`). Se detecta en `refrescar`, nunca en
@@ -170,6 +191,7 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
           resuelta: bruto.resuelta === "omitida" ? "omitida" : "completada",
         });
       }
+      saltarBienvenida.current = false;
       setEstado(nuevo);
     } catch {
       // Se queda como estaba.
@@ -231,6 +253,23 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
    * Es lo que vuelve inerte al sidebar y a toda la navegación: sin esto, la
    * persona se pasea por el panel con el muro dibujado encima.
    */
+  const decidir = useCallback(
+    async (elegida: DecisionDeMigracion) => {
+      guardarDecisionDeMigracion(agencyId, elegida);
+      setDecision(elegida);
+      if (elegida === "ahora") return;
+      saltarBienvenida.current = true;
+      try {
+        await migracionEstadoApi.omitir(
+          elegida === "luego" ? "en_otro_momento" : "no_requiere_migracion",
+        );
+      } catch {
+        // Si no se pudo omitir, el muro sigue: es mejor que un panel a medias.
+      }
+      await refrescar();
+    },
+    [agencyId, refrescar],
+  );
   const tapado = puesto || bienvenida !== null;
   const inerte = tapado
     ? ({ inert: "" } as unknown as Record<string, string>)
@@ -249,8 +288,12 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
       >
         {children}
       </div>
-      {puesto ? (
-        <PanelDeMigracion estado={estado} onResuelta={refrescar} />
+      {puesto && decisionLeida ? (
+        decision === null ? (
+          <ModalDecisionDeMigracion onDecidir={decidir} />
+        ) : (
+          <PanelDeMigracion estado={estado} onResuelta={refrescar} />
+        )
       ) : null}
       {bienvenida ? (
         <BienvenidaALeasefy

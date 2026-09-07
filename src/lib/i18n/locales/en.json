@@ -1278,6 +1278,8 @@
         "mediosDePagoDesc": "How tenants pay you: accounts, links and cash",
         "integraciones": "Integrations",
         "integracionesDesc": "Service connections",
+        "migracion": "Migration",
+        "migracionDesc": "Bring your data from another system",
         "facturacion": "Plan & billing",
         "facturacionDesc": "Your Leasefy plan, usage and invoices",
         "notificaciones": "Notifications",

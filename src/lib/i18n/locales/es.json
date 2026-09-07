@@ -1318,6 +1318,8 @@
         "mediosDePagoDesc": "Cómo te paga el inquilino: cuentas, enlaces y efectivo",
         "integraciones": "Integraciones",
         "integracionesDesc": "Conexiones con servicios",
+        "migracion": "Migración",
+        "migracionDesc": "Trae tus datos de otro sistema",
         "facturacion": "Plan y facturación",
         "facturacionDesc": "Tu plan de Leasefy, el uso y las facturas",
         "notificaciones": "Notificaciones",

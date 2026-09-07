@@ -156,6 +156,10 @@ export interface PlanSidebarProps {
   /** Show the "Invita a tu equipo" footer card (cadence §Navigation). */
   showInvite?: boolean;
   /** Handler for the invite-card button. */
+  /** Recordatorio anclado: la inmobiliaria dijo «migrar en otro momento» (Nico, 2026-09-07). */
+  migracionPendiente?: boolean;
+  onMigrar?: () => void;
+  onDescartarMigracion?: () => void;
   onInvite?: () => void;
 }
 
@@ -371,6 +375,10 @@ interface SidebarContentProps {
   workspaceName?: string;
   workspaceLogoUrl?: string;
   showInvite?: boolean;
+  /** Recordatorio anclado: la inmobiliaria dijo «migrar en otro momento» (Nico, 2026-09-07). */
+  migracionPendiente?: boolean;
+  onMigrar?: () => void;
+  onDescartarMigracion?: () => void;
   onInvite?: () => void;
 }
 
@@ -394,6 +402,9 @@ function SidebarContent({
   workspaceLogoUrl,
   showInvite = false,
   onInvite,
+  migracionPendiente = false,
+  onMigrar,
+  onDescartarMigracion,
 }: SidebarContentProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -651,6 +662,33 @@ function SidebarContent({
         </div>
       ) : (
         <div className="px-3 pb-3 space-y-2.5">
+          {migracionPendiente && (
+            <div
+              className="rounded-lg border border-border bg-surface p-3 space-y-2"
+              data-testid="sidebar-migracion-pendiente"
+            >
+              <p className="text-[13px] font-medium text-fg">Migra tu inmobiliaria</p>
+              <p className="text-[12px] leading-snug text-fg-muted">
+                Dijiste que en otro momento. Cuando quieras, traemos tus datos.
+              </p>
+              <div className="flex items-center gap-3 pt-0.5">
+                <button
+                  type="button"
+                  onClick={onMigrar}
+                  className="text-[12.5px] font-medium text-primary hover:underline underline-offset-2"
+                >
+                  Migrar ahora
+                </button>
+                <button
+                  type="button"
+                  onClick={onDescartarMigracion}
+                  className="text-[12.5px] text-fg-subtle hover:text-fg hover:underline underline-offset-2"
+                >
+                  Descartar
+                </button>
+              </div>
+            </div>
+          )}
           {showInvite && !inviteDismissed && (
             <div className="relative group/invite">
               <button
@@ -710,6 +748,9 @@ export function PlanSidebar({
   workspaceLogoUrl,
   showInvite = false,
   onInvite,
+  migracionPendiente = false,
+  onMigrar,
+  onDescartarMigracion,
 }: PlanSidebarProps) {
   const { isCollapsed, toggle } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -754,6 +795,9 @@ export function PlanSidebar({
           workspaceLogoUrl={workspaceLogoUrl}
           showInvite={showInvite}
           onInvite={onInvite}
+          migracionPendiente={migracionPendiente}
+          onMigrar={onMigrar}
+          onDescartarMigracion={onDescartarMigracion}
         />
       </aside>
 

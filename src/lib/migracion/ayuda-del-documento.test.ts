@@ -34,18 +34,18 @@ describe('tipoDeDocumentoDe', () => {
 describe('ayudaDelNumeroDeDocumento', () => {
   it('a un NIT le habla del dígito de verificación; a una CC, de sus 3 a 10 dígitos — y nunca del dígito con el que empieza', () => {
     expect(ayudaDelNumeroDeDocumento('NIT')).toBe(
-      '3 a 10 dígitos; el dígito de verificación después del guion se ignora.',
+      '3 a 20 dígitos; el dígito de verificación después del guion se ignora.',
     );
     expect(ayudaDelNumeroDeDocumento('CC')).toBe(
-      '3 a 10 dígitos, sin puntos ni espacios.',
+      '3 a 20 dígitos, sin puntos ni espacios.',
     );
     expect(ayudaDelNumeroDeDocumento('CC')).not.toContain('empiezan');
   });
 
   it('TI, CE y pasaporte tienen su propio largo', () => {
-    expect(ayudaDelNumeroDeDocumento('TI')).toContain('10 u 11 dígitos');
-    expect(ayudaDelNumeroDeDocumento('CE')).toContain('3 a 10 dígitos');
-    expect(ayudaDelNumeroDeDocumento('PASSPORT')).toContain('5 a 15 letras o dígitos');
+    expect(ayudaDelNumeroDeDocumento('TI')).toContain('3 a 20 dígitos');
+    expect(ayudaDelNumeroDeDocumento('CE')).toContain('3 a 20 dígitos');
+    expect(ayudaDelNumeroDeDocumento('PASSPORT')).toContain('3 a 20 letras o dígitos');
   });
 
   it('sin tipo no inventa una regla: pide el tipo primero', () => {

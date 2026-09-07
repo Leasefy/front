@@ -42,16 +42,16 @@ export function tipoDeDocumentoDe(crudo: unknown): TipoDeDocumento | null {
 }
 
 /*
- * 🔴 Ningún texto dice con qué dígito empieza un documento. Decía «las de
- * 10 empiezan por 1» y Nico lo tumbó (2026-09-07: «sí hay cédulas en
- * Colombia que inician con 3»). Sólo el largo, que sí es firme.
+ * 🔴 Ningún texto dice qué «parece» un documento ni con qué dígito empieza.
+ * Nico (2026-09-07): «lo que coloquen ahí no son números de celulares, y
+ * menos si la columna dice número de documento». Sólo largo y caracteres.
  */
 const AYUDA: Record<TipoDeDocumento, string> = {
-  NIT: '3 a 10 dígitos; el dígito de verificación después del guion se ignora.',
-  CC: '3 a 10 dígitos, sin puntos ni espacios.',
-  TI: '10 u 11 dígitos, sin puntos ni espacios.',
-  CE: '3 a 10 dígitos, sin puntos ni espacios.',
-  PASSPORT: '5 a 15 letras o dígitos, sin espacios.',
+  NIT: '3 a 20 dígitos; el dígito de verificación después del guion se ignora.',
+  CC: '3 a 20 dígitos, sin puntos ni espacios.',
+  TI: '3 a 20 dígitos, sin puntos ni espacios.',
+  CE: '3 a 20 dígitos, sin puntos ni espacios.',
+  PASSPORT: '3 a 20 letras o dígitos, sin espacios.',
 };
 
 /** Sin tipo no se adivina la regla: se pide el tipo primero. */

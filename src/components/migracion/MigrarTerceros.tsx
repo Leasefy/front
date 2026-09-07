@@ -300,6 +300,14 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
   );
 
   const refrescar = useCallback(async (elLote: string, pag = 1) => {
+    // Las reglas del back cambian; las filas guardadas no. Antes de listar se
+    // les pide al back que las vuelva a mirar con las reglas de hoy (no hace
+    // nada si ya están al día). Si falla, se lista igual.
+    try {
+      await migracionTercerosApi.revisar(elLote);
+    } catch {
+      // Se lista igual.
+    }
     const [r, p] = await Promise.all([
       migracionTercerosApi.resumen(elLote),
       migracionTercerosApi.filas({

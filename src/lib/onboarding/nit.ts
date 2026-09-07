@@ -11,12 +11,12 @@
  *    que asigna la DIAN (800…, 890…, 900…, 901…).
  *  - Persona natural inscrita en el RUT: su cédula. Las cédulas nuevas (desde
  *    2003) tienen 10 dígitos; las viejas, entre 6 y 8.
- *  El asistente del agente (`agent-integracion`, `NIT_REGEX`) sólo acepta 9 o
- *  10 dígitos antes del guion, y el back crea la agencia ANTES de llamarlo:
- *  un NIT que pase acá y no allá deja «Tu inmobiliaria quedó creada, pero no
- *  alcanzamos a abrir el asistente» sin salida (Nico lo vio el 2026-09-07 con
- *  8 dígitos). Por eso acá se exige lo mismo: 9 o 10. Con la DV son 10 u 11
- *  caracteres numéricos («un NIT va de 9 a 11 dígitos», Nico).
+ *  Las tres capas —este campo, el DTO del back y el `NIT_REGEX` del asistente
+ *  del agente— aceptan lo mismo: de 6 a 10 dígitos antes del guion (Nico,
+ *  2026-09-07: una persona natural con cédula vieja tiene que poder registrar
+ *  su inmobiliaria). Si una capa exigiera más que otra, el back crearía la
+ *  agencia y el asistente contestaría 400: «Tu inmobiliaria quedó creada, pero
+ *  no alcanzamos a abrir el asistente», sin salida. Pasó con 8 dígitos.
  *
  * El dígito de verificación se calcula multiplicando cada dígito del base
  * —de derecha a izquierda— por un peso primo fijo, sumando, y tomando el
@@ -30,8 +30,8 @@
 /** Pesos de la DIAN, aplicados de derecha a izquierda sobre el base. */
 const PESOS = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71] as const
 
-/** Lo mínimo que acepta el asistente del agente: el NIT de una empresa. */
-export const BASE_MINIMO = 9
+/** La cédula vieja más corta que se acepta como NIT de persona natural. */
+export const BASE_MINIMO = 6
 /** Ni la cédula más larga ni un NIT de persona jurídica pasan de acá. */
 export const BASE_MAXIMO = 10
 /** Lo que trae un NIT de persona jurídica, que es el caso normal acá. */
@@ -144,7 +144,7 @@ export function revisarNit(crudo: string): RevisionDeNit {
     return {
       ok: false,
       motivo: 'corto',
-      mensaje: `Le faltan dígitos: un NIT tiene ${BASE_PERSONA_JURIDICA} antes del guion (${BASE_MAXIMO} si es una cédula nueva).`,
+      mensaje: `Le faltan dígitos: un NIT tiene entre ${BASE_MINIMO} y ${BASE_MAXIMO} antes del guion (${BASE_PERSONA_JURIDICA} en una empresa; si es tu cédula, escríbela tal cual).`,
     }
   }
 
@@ -152,7 +152,7 @@ export function revisarNit(crudo: string): RevisionDeNit {
     return {
       ok: false,
       motivo: 'largo',
-      mensaje: `Le sobran dígitos: un NIT tiene ${BASE_PERSONA_JURIDICA} antes del guion (${BASE_MAXIMO} como máximo, si es una cédula nueva).`,
+      mensaje: `Le sobran dígitos: un NIT tiene entre ${BASE_MINIMO} y ${BASE_MAXIMO} antes del guion (${BASE_MAXIMO} como máximo, si es una cédula nueva).`,
     }
   }
 

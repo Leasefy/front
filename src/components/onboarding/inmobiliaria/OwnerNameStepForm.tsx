@@ -202,7 +202,7 @@ export function OwnerNameStepForm({
                   <span className="font-mono tabular-nums">{revision.nitBueno.bonito}</span>
                 </FormHint>
               ) : (
-                <FormHint>9 dígitos (10 si es cédula) más el de verificación; el guion se pone solo. Si no lo sabes, lo calculamos.</FormHint>
+                <FormHint>9 dígitos en una empresa; si es tu cédula, escríbela tal cual (de 6 a 10). El dígito de verificación se pone solo y, si no lo sabes, lo calculamos.</FormHint>
               )}
             </FormField>
 

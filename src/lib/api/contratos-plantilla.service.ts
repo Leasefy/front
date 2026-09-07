@@ -330,6 +330,14 @@ export const contratosPlantillaApi = {
    * Puede fallar con `400 USO_INDETERMINADO` cuando ni el formulario ni el
    * tipo de inmueble dicen si es vivienda o comercial.
    */
+  /**
+   * ¿Está configurada la IA? Es configuración, no borrador: se pregunta al
+   * abrir la pantalla, sin esperar a que `preparar` salga bien.
+   */
+  async iaDisponible(): Promise<{ iaDisponible: boolean }> {
+    return apiClient.get<{ iaDisponible: boolean }>(`${BASE}/ia`);
+  },
+
   async preparar(params: {
     borrador: BorradorDeContrato;
     /** Lo que la persona ya escribió, para no perderlo. */

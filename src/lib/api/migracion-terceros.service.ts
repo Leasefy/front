@@ -490,6 +490,16 @@ export const migracionTercerosApi = {
    * tarjeta de «tenés una carga sin terminar» no aparecía y la persona
    * resubía el archivo, duplicando a todo el mundo.
    */
+  /**
+   * Vuelve a pasar las filas del lote por las reglas ACTUALES del back. Barato
+   * cuando ya están al día. Existe porque una regla que cambia no debe dejar
+   * filas frenadas por un motivo que ya no existe (Nico, 2026-09-07: 798
+   * filas con el mensaje viejo hasta volver a subir el archivo).
+   */
+  async revisar(lote: string): Promise<{ revisadas: number; ahoraListas: number }> {
+    return apiClient.post<{ revisadas: number; ahoraListas: number }>(`${BASE}/revisar`, { lote });
+  },
+
   async lotesAbiertos(): Promise<LoteDeTerceros[]> {
     return apiClient.get<LoteDeTerceros[]>(`${BASE}/lotes`);
   },

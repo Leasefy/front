@@ -4,6 +4,7 @@ import {
   formatearNitAlEscribir,
   revisarNit,
   BASE_MAXIMO,
+  BASE_MINIMO,
   BASE_PERSONA_JURIDICA,
   LARGO_MAXIMO_AL_ESCRIBIR,
 } from './nit'
@@ -93,19 +94,28 @@ describe('revisarNit', () => {
     if (r.ok) expect(r.normalizado).toBe(`1020304050-${digitoDeVerificacion('1020304050')}`)
   })
 
-  it('una cédula vieja de 8 dígitos NO pasa: el asistente del agente exige 9 o 10', () => {
-    // Nico lo vio el 2026-09-07: con 8 dígitos el back creaba la agencia y el
-    // agente respondía 400 → «Tu inmobiliaria quedó creada, pero no alcanzamos
-    // a abrir el asistente», sin salida.
-    const r = revisarNit('90000000-8')
-    expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.motivo).toBe('corto')
+  it('una cédula vieja de 6, 7 u 8 dígitos SÍ pasa: es el NIT de una persona natural (Nico, 2026-09-07)', () => {
+    // Antes se exigían 9 o 10 porque el asistente del agente sólo aceptaba eso
+    // y el back crea la agencia ANTES de llamarlo. Las tres capas aceptan ya
+    // de 6 a 10, así que la cédula vieja entra sin quedar «creada pero sin
+    // asistente».
+    for (const cedula of ['569942', '3513861', '43159272']) {
+      const r = revisarNit(cedula)
+      expect(r.ok).toBe(true)
+      if (r.ok) expect(r.normalizado).toBe(`${cedula}-${digitoDeVerificacion(cedula)}`)
+    }
   })
 
-  it('nombra los 9 dígitos de una empresa cuando la longitud no da', () => {
+  it('con menos de 6 dígitos o más de 10 dice el rango', () => {
     const r = revisarNit('12345')
-    if (!r.ok) expect(r.mensaje).toContain(String(BASE_PERSONA_JURIDICA))
+    expect(r.ok).toBe(false)
+    if (!r.ok) {
+      expect(r.motivo).toBe('corto')
+      expect(r.mensaje).toContain(`${BASE_MINIMO} y ${BASE_MAXIMO}`)
+      expect(r.mensaje).toContain(String(BASE_PERSONA_JURIDICA))
+    }
     const largo = revisarNit('900000000000000000000')
+    expect(largo.ok).toBe(false)
     if (!largo.ok) expect(largo.mensaje).toContain(String(BASE_MAXIMO))
   })
 

@@ -382,7 +382,7 @@ describe('la ayuda del número de documento depende del tipo de la fila (2026-09
       codigo: 'DOCUMENTO_INVALIDO' as const,
       campo: 'documento',
       mensaje:
-        'El número de documento «3193209445» es el mismo de la columna Teléfono: si es el celular, escribe el documento; si es el documento, corrige el teléfono',
+        'Para una CC el número tiene entre 3 y 20 dígitos; la celda trae «12»',
     },
   ];
 
@@ -402,11 +402,11 @@ describe('la ayuda del número de documento depende del tipo de la fila (2026-09
       }),
     });
     expect(ayudaDelDocumento()).toBe(
-      '3 a 10 dígitos; el dígito de verificación después del guion se ignora.',
+      '3 a 20 dígitos; el dígito de verificación después del guion se ignora.',
     );
   });
 
-  it('a una CC le dice 3 a 10 dígitos, sin mencionar el NIT ni el dígito con el que empieza', async () => {
+  it('a una CC le dice 3 a 20 dígitos, sin mencionar el NIT ni el dígito con el que empieza', async () => {
     await pintar({
       fila: fila({
         datos: { _fila: 450, nombre: 'Gloria Amparo', documento: '3193209445', tipoDocumento: 'CC' },
@@ -414,7 +414,7 @@ describe('la ayuda del número de documento depende del tipo de la fila (2026-09
       }),
     });
     expect(ayudaDelDocumento()).toBe(
-      '3 a 10 dígitos, sin puntos ni espacios.',
+      '3 a 20 dígitos, sin puntos ni espacios.',
     );
     expect(ayudaDelDocumento()).not.toContain('NIT');
     expect(ayudaDelDocumento()).not.toContain('empiezan');

@@ -267,9 +267,6 @@ export default function SeleccionarRolPage() {
             {isLoading ? <Spinner size="sm" variant="current" /> : 'Continuar'}
           </Button>
 
-          <p className="mt-4 text-center text-caption text-fg-subtle">
-            Puedes cambiar esto después desde tu perfil.
-          </p>
         </div>
       </main>
     </div>

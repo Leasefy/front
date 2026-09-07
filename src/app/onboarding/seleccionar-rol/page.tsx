@@ -123,8 +123,8 @@ export default function SeleccionarRolPage() {
   const router = useRouter()
   const { user, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole } = useAuth()
   // Admin can switch signup profiles off (see /admin/registration-profiles).
-  // Fails open: while loading or if the config backend is down, all are shown.
-  const { isEnabled: isProfileEnabled } = useEnabledProfiles()
+  // Fails open: if the config backend is down (or takes too long), all are shown.
+  const { isEnabled: isProfileEnabled, esProvisional } = useEnabledProfiles()
   const [selected, setSelected] = useState<RoleChoice>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -138,6 +138,20 @@ export default function SeleccionarRolPage() {
     const id = setTimeout(() => setProbeWaitElapsed(true), 4000)
     return () => clearTimeout(id)
   }, [])
+
+  /*
+   * Las tarjetas no se pintan hasta saber cuáles dejó el admin (Nico,
+   * 2026-09-07: «Propietario» está apagado y se alcanzó a ver un instante).
+   * El hook arranca con todos los perfiles mientras llega la respuesta, y
+   * pintarlos así es exactamente el parpadeo. Espera acotada: si la config no
+   * responde, se pintan todos igual — el registro nunca se bloquea por esto.
+   */
+  const [configWaitElapsed, setConfigWaitElapsed] = useState(false)
+  useEffect(() => {
+    const id = setTimeout(() => setConfigWaitElapsed(true), 2500)
+    return () => clearTimeout(id)
+  }, [])
+  const perfilesListos = !esProvisional || configWaitElapsed
 
   // Defense-in-depth: an invited user must NEVER see the personal role picker.
   // If a pending invitation token is present, send them to /registro (the
@@ -213,20 +227,34 @@ export default function SeleccionarRolPage() {
             </p>
           </div>
 
-          <div
-            role="radiogroup"
-            aria-label="Tu perfil"
-            className="mb-7 grid grid-cols-1 gap-3"
-          >
-            {visibles.map((perfil) => (
-              <TarjetaDePerfil
-                key={perfil.valor}
-                opcion={perfil}
-                seleccionada={selected === perfil.valor}
-                onSelect={() => setSelected(perfil.valor)}
-              />
-            ))}
-          </div>
+          {perfilesListos ? (
+            <div
+              role="radiogroup"
+              aria-label="Tu perfil"
+              className="mb-7 grid grid-cols-1 gap-3"
+            >
+              {visibles.map((perfil) => (
+                <TarjetaDePerfil
+                  key={perfil.valor}
+                  opcion={perfil}
+                  seleccionada={selected === perfil.valor}
+                  onSelect={() => setSelected(perfil.valor)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div
+              className="mb-7 grid grid-cols-1 gap-3"
+              role="status"
+              aria-live="polite"
+              aria-label="Cargando los perfiles"
+              data-testid="perfiles-cargando"
+            >
+              {[0, 1].map((i) => (
+                <div key={i} className="h-[104px] animate-pulse rounded-lg border border-border bg-surface-muted" />
+              ))}
+            </div>
+          )}
 
           <Button
             type="button"

@@ -37,11 +37,14 @@ vi.mock('@/lib/auth/use-auth', () => ({
 
 // The picker now filters cards by admin-enabled profiles. Mock the hook to keep
 // all profiles visible (fail-open default) and avoid a real config fetch.
+// `perfilesState` deja simular la carga sin caché (el parpadeo de «Propietario»).
+const perfilesState = { esProvisional: false, enabled: new Set(['tenant', 'landlord', 'agency']) }
 vi.mock('@/lib/hooks/use-enabled-profiles', () => ({
   useEnabledProfiles: () => ({
-    enabled: new Set(['tenant', 'landlord', 'agency']),
-    isEnabled: () => true,
-    isLoading: false,
+    enabled: perfilesState.enabled,
+    isEnabled: (key: string) => perfilesState.enabled.has(key),
+    isLoading: perfilesState.esProvisional,
+    esProvisional: perfilesState.esProvisional,
   }),
 }))
 
@@ -53,6 +56,8 @@ let root: Root
 beforeEach(() => {
   localStorage.clear()
   replaceMock.mockClear()
+  perfilesState.esProvisional = false
+  perfilesState.enabled = new Set(['tenant', 'landlord', 'agency'])
   authState.user = null
   authState.hasActiveAgencyMembership = false
   authState.agencyMembershipChecked = true
@@ -128,6 +133,59 @@ describe('SeleccionarRolPage — invitation guard', () => {
   })
 })
 
+
+/**
+ * «Propietario» está apagado desde el admin y aun así se alcanzó a ver un
+ * instante (Nico, 2026-09-07): el hook arranca con todos los perfiles y la
+ * pantalla los pintaba mientras llegaba la respuesta.
+ */
+describe('SeleccionarRolPage — mientras se sabe qué perfiles dejó el admin', () => {
+  it('sin respuesta ni caché no pinta ninguna tarjeta: ni la apagada ni las otras', async () => {
+    perfilesState.esProvisional = true
+
+    await render()
+
+    expect(container.querySelector('[data-testid="perfiles-cargando"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="perfil-landlord"]')).toBeNull()
+    expect(container.textContent).not.toContain('Propietario')
+    expect(container.textContent).not.toContain('Inquilino')
+  })
+
+  it('cuando llega la respuesta pinta sólo lo que quedó encendido', async () => {
+    perfilesState.esProvisional = true
+    await render()
+
+    perfilesState.esProvisional = false
+    perfilesState.enabled = new Set(['tenant', 'agency'])
+    await act(async () => {
+      root.render(<SeleccionarRolPage />)
+    })
+
+    expect(container.querySelector('[data-testid="perfiles-cargando"]')).toBeNull()
+    expect(container.textContent).toContain('Inquilino')
+    expect(container.textContent).toContain('Soy una inmobiliaria')
+    expect(container.textContent).not.toContain('Propietario')
+  })
+
+  it('si la config no responde, a los 2,5 s pinta todas igual (nunca bloquea el registro)', async () => {
+    vi.useFakeTimers()
+    try {
+      perfilesState.esProvisional = true
+      await render()
+      expect(container.querySelector('[data-testid="perfiles-cargando"]')).not.toBeNull()
+
+      await act(async () => {
+        vi.advanceTimersByTime(2600)
+      })
+
+      expect(container.querySelector('[data-testid="perfiles-cargando"]')).toBeNull()
+      expect(container.textContent).toContain('Inquilino')
+      expect(container.textContent).toContain('Propietario')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
 
 /**
  * Lo seleccionado en el producto es azul primary. Acá había tres bloques

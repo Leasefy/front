@@ -121,7 +121,7 @@ export function BienvenidaALeasefy({
         <p className="mx-auto mt-3 max-w-md text-sm text-fg-muted">
           {resuelta === "completada"
             ? "Tu operación ya está acá adentro. De ahora en más, todo lo que hagas queda en un solo lugar."
-            : "Arrancás de cero, con todo el sistema a tu disposición. Lo primero que cargues va a ser lo primero que aparezca."}
+            : "Arrancas de cero, con todo el sistema a tu disposición. Lo primero que cargues va a ser lo primero que aparezca."}
         </p>
 
         {cargado.length > 0 ? (

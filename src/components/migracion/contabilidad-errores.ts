@@ -18,7 +18,7 @@ const MENSAJES: Record<string, string> = {
   NATURALEZA_CON_MOVIMIENTOS: 'La cuenta tiene movimientos: la naturaleza ya no se puede cambiar.',
   CUENTA_MAYOR: 'Una cuenta con subcuentas no puede recibir movimientos. Imputá en la subcuenta.',
   CUENTA_CON_MOVIMIENTOS: 'La cuenta tiene movimientos: se puede desactivar, pero no borrar ni dejar de ser imputable.',
-  CUENTA_CON_SUBCUENTAS: 'La cuenta tiene subcuentas: primero borrá o desactivá las subcuentas.',
+  CUENTA_CON_SUBCUENTAS: 'La cuenta tiene subcuentas: primero borra o desactiva las subcuentas.',
   // asientos.service.ts
   ASIENTO_INCOMPLETO: 'Un asiento necesita al menos dos líneas.',
   MOVIMIENTO_AMBIGUO: 'Una línea no puede tener débito y crédito a la vez.',

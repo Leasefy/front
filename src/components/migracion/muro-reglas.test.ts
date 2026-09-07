@@ -9,6 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import type { PasoDeMigracion } from '@/lib/api/migracion-estado.service';
 import {
+  leerEstado,
   siguientePaso,
   normalizarEstado,
   pasoActual,
@@ -386,7 +387,7 @@ describe('vacioPorMigracion — qué dice una lista vacía', () => {
     expect(vacioPorMigracion(leerDeuda(RESUMEN_DE_NICO))).toBe(true);
   });
 
-  it('sin deuda, el vacío es el de siempre («traé lo que ya tenés»)', () => {
+  it('sin deuda, el vacío es el de siempre («trae lo que ya tienes»)', () => {
     expect(vacioPorMigracion(deuda({ contratos: 91 }))).toBe(false);
   });
 
@@ -449,5 +450,22 @@ describe('faltasDeLaFila', () => {
 
   it('una fila descartada no cuenta: alguien decidió que no entra', () => {
     expect(faltasDeLaFila(fila({ estado: 'DESCARTADO', propertyId: null }))).toEqual([]);
+  });
+});
+
+describe('recordatorioDescartado (por cuenta, 2026-09-07)', () => {
+  const pasos = [
+    { id: 'propietarios', estado: 'listo', detalle: null, conteo: 1 },
+    { id: 'inquilinos', estado: 'pendiente', detalle: null, conteo: 0 },
+  ];
+
+  it('pasa tal cual cuando el back lo manda como booleano, en las dos lecturas', () => {
+    expect(normalizarEstado({ bloquea: true, resuelta: null, pasos, recordatorioDescartado: true })?.recordatorioDescartado).toBe(true);
+    expect(leerEstado({ bloquea: false, resuelta: 'omitida', pasos, recordatorioDescartado: false })?.recordatorioDescartado).toBe(false);
+  });
+
+  it('un back viejo que no lo manda (o lo manda mal) deja la llave ausente, no `false`', () => {
+    expect('recordatorioDescartado' in (normalizarEstado({ bloquea: true, resuelta: null, pasos }) ?? {})).toBe(false);
+    expect('recordatorioDescartado' in (leerEstado({ bloquea: false, resuelta: null, pasos, recordatorioDescartado: 'sí' }) ?? {})).toBe(false);
   });
 });

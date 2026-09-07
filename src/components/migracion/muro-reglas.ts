@@ -62,7 +62,19 @@ export function normalizarEstado(bruto: unknown): EstadoDeMigracion | null {
     e.resuelta === 'completada' || e.resuelta === 'omitida' ? e.resuelta : null;
   // Un muro sin un solo paso que hacer es un callejón: no se levanta.
   if (e.pasos.length === 0) return null;
-  return { bloquea: true, resuelta, pasos: e.pasos as PasoDeMigracion[] };
+  return {
+    bloquea: true,
+    resuelta,
+    pasos: e.pasos as PasoDeMigracion[],
+    ...recordatorioDe(e),
+  };
+}
+
+/** `recordatorioDescartado` sólo si el back lo mandó como booleano; un back viejo no lo trae. */
+function recordatorioDe(e: Record<string, unknown>): { recordatorioDescartado?: boolean } {
+  return typeof e.recordatorioDescartado === 'boolean'
+    ? { recordatorioDescartado: e.recordatorioDescartado }
+    : {};
 }
 
 /**
@@ -81,7 +93,12 @@ export function leerEstado(bruto: unknown): EstadoDeMigracion | null {
   if (!e.pasos.every(esPaso)) return null;
   const resuelta =
     e.resuelta === 'completada' || e.resuelta === 'omitida' ? e.resuelta : null;
-  return { bloquea: e.bloquea, resuelta, pasos: e.pasos as PasoDeMigracion[] };
+  return {
+    bloquea: e.bloquea,
+    resuelta,
+    pasos: e.pasos as PasoDeMigracion[],
+    ...recordatorioDe(e),
+  };
 }
 
 export interface ProgresoDeMigracion {
@@ -355,7 +372,7 @@ export function migracionCerrada(
  *
  * Inquilinos, Propietarios y Cobros salen todos de la misma cadena: contrato
  * → inmueble → consignación → cobro. Si esa cadena está cortada, la lista
- * está vacía **por eso**, y decirle a la persona «traé los que ya tenés en
+ * está vacía **por eso**, y decirle a la persona «trae los que ya tienes en
  * otro sistema» —justo después de que los trajo— es pedirle que migre dos
  * veces.
  */

@@ -28,7 +28,7 @@ vi.mock('@/lib/i18n', () => ({
 
 const { rutaActual, estadoMock } = vi.hoisted(() => ({
   rutaActual: { valor: '/panel/inmobiliaria/reportes/resumen' },
-  estadoMock: { estado: vi.fn(), terminar: vi.fn(), omitir: vi.fn() },
+  estadoMock: { estado: vi.fn(), terminar: vi.fn(), omitir: vi.fn(), recordatorio: vi.fn() },
 }));
 
 vi.mock('next/navigation', () => ({
@@ -207,6 +207,8 @@ beforeEach(() => {
   estadoMock.estado.mockReset();
   estadoMock.terminar.mockReset();
   estadoMock.omitir.mockReset();
+  estadoMock.recordatorio.mockReset();
+  estadoMock.recordatorio.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -1206,5 +1208,68 @@ describe('la migración abierta a mano, con el muro abajo', () => {
     await act(async () => {});
     expect(estadoMock.terminar).toHaveBeenCalledTimes(1);
     expect(q('muro-migracion')).toBeNull();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// La pregunta previa: «¿Migramos tu inmobiliaria?»
+// ══════════════════════════════════════════════════════════════════════════
+
+describe('la pregunta previa al muro', () => {
+  // La pregunta se portalea a `document.body` (como los modales): se busca en
+  // todo el documento, no en el contenedor.
+  const qDoc = (testid: string) => document.querySelector(`[data-testid="${testid}"]`);
+  async function clickDoc(testid: string) {
+    const el = qDoc(testid) as HTMLElement | null;
+    if (!el) throw new Error(`No existe [data-testid="${testid}"] en el documento`);
+    await act(async () => {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+  });
+
+  it('sin decisión guardada aparece la pregunta y no el muro; «Migrar ahora» abre el muro', async () => {
+    await pintar();
+    expect(qDoc('decision-de-migracion')).not.toBeNull();
+    expect(q('muro-migracion')).toBeNull();
+  });
+
+  it('«No requiero migración» omite en el back Y apaga el recordatorio EN LA CUENTA', async () => {
+    const abierto = { bloquea: false, resuelta: 'omitida', pasos: RECIEN_LLEGADA, recordatorioDescartado: true };
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA })
+      .mockResolvedValue(abierto);
+    estadoMock.omitir.mockResolvedValue(abierto);
+    await pintar();
+
+    await clickDoc('no-requiero-migracion');
+    await act(async () => {});
+
+    expect(estadoMock.omitir).toHaveBeenCalledWith('no_requiere_migracion');
+    expect(estadoMock.recordatorio).toHaveBeenCalledWith(true);
+    expect(qDoc('decision-de-migracion')).toBeNull();
+    expect(q('muro-migracion')).toBeNull();
+    expect(localStorage.getItem('leasefy:migracion:decision:agencia')).toBe('nunca');
+  });
+
+  it('«En otro momento» omite en el back sin tocar el recordatorio: se sigue recordando', async () => {
+    const abierto = { bloquea: false, resuelta: 'omitida', pasos: RECIEN_LLEGADA, recordatorioDescartado: false };
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA })
+      .mockResolvedValue(abierto);
+    estadoMock.omitir.mockResolvedValue(abierto);
+    await pintar();
+
+    await clickDoc('migrar-en-otro-momento');
+    await act(async () => {});
+
+    expect(estadoMock.omitir).toHaveBeenCalledWith('en_otro_momento');
+    expect(estadoMock.recordatorio).not.toHaveBeenCalled();
+    expect(q('bienvenida-a-leasefy')).toBeNull();
+    expect(localStorage.getItem('leasefy:migracion:decision:agencia')).toBe('luego');
   });
 });

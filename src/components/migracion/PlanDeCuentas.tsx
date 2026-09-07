@@ -453,7 +453,7 @@ export function PlanDeCuentas({
       {hayCuentas && !sinPaso5 ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4">
           <p className="text-sm text-fg-muted">
-            Cuando el plan esté como tu contador lo quiere, seguí con los registros contables.
+            Cuando el plan esté como tu contador lo quiere, sigue con los registros contables.
           </p>
           {onContinuar ? (
             <Button hideArrow onClick={onContinuar} data-testid="puc-continuar">
@@ -498,7 +498,7 @@ function SinPlan({
       </h2>
       <p className="mt-1 max-w-2xl text-sm text-fg-muted">
         Si ya tienes uno en tu sistema actual, súbelo: entra con tus códigos, que son los que tu
-        contador conoce. Si no, arrancá con el plan base: las cuentas del Decreto 2650 que usa
+        contador conoce. Si no, arranca con el plan base: las cuentas del Decreto 2650 que usa
         una inmobiliaria —caja y bancos, la cartera de arrendamientos, lo que se le debe a los
         propietarios, las comisiones, los gastos—. Son unas cien entre clases, grupos, cuentas y
         subcuentas.
@@ -593,7 +593,7 @@ function PendientesDelContador({
           </h2>
           <p className="mt-0.5 text-sm text-fg-muted">
             El plan base las trae con el código más usado, pero no es una decisión del sistema.
-            Si tu contador usa otro código, crea la cuenta con el suyo y desactivá ésta.
+            Si tu contador usa otro código, crea la cuenta con el suyo y desactiva ésta.
           </p>
         </div>
       </div>
@@ -836,7 +836,7 @@ function FormularioDeCuenta({
           {editando ? (
             <p className="mt-0.5 text-sm text-fg-muted">
               El código no se cambia: un código es una cuenta. Si necesitas otro, crea una cuenta
-              nueva y desactivá ésta.
+              nueva y desactiva ésta.
             </p>
           ) : (
             <p className="mt-0.5 text-sm text-fg-muted">

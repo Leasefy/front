@@ -66,12 +66,18 @@ export function ModalDecisionDeMigracion({
           onCta={() => onDecidir('ahora')}
           className="w-full max-w-full rounded-b-none shadow-none"
         />
-        <div className="flex flex-col gap-2 px-[18px] pb-5">
+        {/*
+          La tarjeta de cadence cierra con `p-6` (24px) debajo de su CTA. El
+          `-mt-3` deja la secundaria a 12px del primary, y el `px-6` la alinea
+          con los bordes del primary (Nico, 2026-09-07: «que quede más cerca,
+          a 12px, y que respeten el mismo padding a los lados»).
+        */}
+        <div className="-mt-3 flex flex-col gap-1.5 px-6 pb-6">
           <Button
             type="button"
             variant="outline"
             hideArrow
-            className="h-11 w-full rounded-full"
+            className="h-12 w-full rounded-full text-[15px]"
             onClick={() => onDecidir('luego')}
             data-testid="migrar-en-otro-momento"
           >

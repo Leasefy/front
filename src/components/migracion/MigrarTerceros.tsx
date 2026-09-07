@@ -1198,7 +1198,7 @@ function ListaDeTrabajo({
 
         {resumen.listos === 0 && resumen.requierenAtencion > 0 ? (
           <p className="text-sm text-fg-muted">
-            Todavía no hay ninguna lista. Resolvé lo de abajo y van pasando solas.
+            Todavía no hay ninguna lista. Resuelve lo de abajo y van pasando solas.
           </p>
         ) : null}
 
@@ -1323,7 +1323,7 @@ function ListaDeTrabajo({
             {tipo === 'INQUILINO'
               ? 'No se crearon todavía: son personas que ya existen en la plataforma —quizá las subiste en Propietarios o ya tenían cuenta— o filas a las que les falta un dato. '
               : 'No se crearon todavía: son personas que ya existen en la plataforma, filas repetidas en el archivo, o a las que les falta un dato. '}
-            Resolvé cada una acá, o marcá varias y resolvelas juntas: al decidir salen de esta
+            Resuelve cada una acá, o marca varias y resuélvelas juntas: al decidir salen de esta
             lista y quedan listas para crear con el botón de arriba.
           </p>
           {/* El caso de casi todas: ya existen. Una decisión, no ochenta y cinco. */}

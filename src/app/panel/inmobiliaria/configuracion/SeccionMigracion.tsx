@@ -6,6 +6,7 @@ import { ArrowsClockwise, BellSimple, Buildings, FileText, ListNumbers, Users } 
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useMigracion } from '@/components/migracion/migracion-context';
+import { migracionEstadoApi } from '@/lib/api/migracion-estado.service';
 import {
   EVENTO_DECISION_DE_MIGRACION,
   guardarDecisionDeMigracion,
@@ -63,8 +64,16 @@ export function SeccionMigracion() {
     return () => window.removeEventListener(EVENTO_DECISION_DE_MIGRACION, leer);
   }, [agencyId]);
 
-  // El recordatorio se apaga sólo con «no requiero migración» o con su ✕.
-  const recordando = decision !== 'nunca';
+  // El recordatorio se apaga sólo con «no requiero migración» o con su ✕. La
+  // cuenta manda (`recordatorioDescartado` del back); el navegador adelanta.
+  const recordando = !(migracion?.estado?.recordatorioDescartado === true || decision === 'nunca');
+  const alternar = () => {
+    guardarDecisionDeMigracion(agencyId, recordando ? 'nunca' : 'luego');
+    void migracionEstadoApi
+      .recordatorio(recordando)
+      .then(() => migracion?.recargar())
+      .catch(() => undefined);
+  };
 
   return (
     <div className="space-y-4" data-testid="seccion-migracion">
@@ -113,7 +122,7 @@ export function SeccionMigracion() {
             size="sm"
             hideArrow
             data-testid="alternar-recordatorio-de-migracion"
-            onClick={() => guardarDecisionDeMigracion(agencyId, recordando ? 'nunca' : 'luego')}
+            onClick={alternar}
           >
             {recordando ? 'Descartar' : 'Recordármelo'}
           </Button>

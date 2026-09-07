@@ -15,6 +15,11 @@ import type { EstadoDeMigracion, PasoDeMigracion } from '@/lib/api/migracion-est
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+const { recordatorioMock } = vi.hoisted(() => ({ recordatorioMock: vi.fn() }));
+vi.mock('@/lib/api/migracion-estado.service', () => ({
+  migracionEstadoApi: { recordatorio: recordatorioMock },
+}));
+
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({
     t: (k: string, params?: Record<string, unknown>) =>
@@ -65,7 +70,8 @@ function pintar(
   container = document.createElement('div');
   document.body.appendChild(container);
   const abrir = vi.fn();
-  const contexto: ContextoDeMigracion = { estado, abrir, recargar: async () => {} };
+  const recargar = vi.fn(async () => {});
+  const contexto: ContextoDeMigracion = { estado, abrir, recargar };
   act(() => {
     root = createRoot(container);
     root.render(
@@ -78,12 +84,16 @@ function pintar(
       ),
     );
   });
-  return { abrir };
+  return { abrir, recargar };
 }
 
 const q = (testid: string) => container.querySelector(`[data-testid="${testid}"]`);
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  recordatorioMock.mockReset();
+  recordatorioMock.mockResolvedValue(undefined);
+});
 
 afterEach(() => {
   act(() => root?.unmount());
@@ -154,19 +164,41 @@ describe('cuándo no se muestra', () => {
     pintar({ bloquea: false, resuelta: 'omitida', pasos: A_MEDIAS });
     expect(q('sidebar-migracion')).toBeNull();
   });
+
+  it('la cuenta manda: descartado en el back (otro navegador) → nada, aunque acá no haya nada guardado', () => {
+    pintar({ bloquea: false, resuelta: 'omitida', pasos: A_MEDIAS, recordatorioDescartado: true });
+    expect(q('sidebar-migracion')).toBeNull();
+  });
+
+  it('y al revés: el back dice «recordar» aunque este navegador tenga «nunca» de antes… salvo que se acabe de apretar la ✕', () => {
+    localStorage.setItem('leasefy:migracion:decision:agencia', 'nunca');
+    pintar({ bloquea: false, resuelta: 'omitida', pasos: A_MEDIAS, recordatorioDescartado: false });
+    // El navegador guarda una copia de la ✕: se respeta hasta que la cuenta diga otra cosa.
+    expect(q('sidebar-migracion')).toBeNull();
+  });
 });
 
 describe('la ✕', () => {
-  it('cierra la tarjeta y lo guarda como «nunca»; «Recordármelo» (luego) la vuelve a traer', () => {
-    pintar({ bloquea: false, resuelta: 'omitida', pasos: A_MEDIAS });
+  it('cierra la tarjeta al instante, lo guarda como «nunca» acá y EN LA CUENTA, y recarga el estado', async () => {
+    const { recargar } = pintar({ bloquea: false, resuelta: 'omitida', pasos: A_MEDIAS });
     expect(q('sidebar-migracion')).not.toBeNull();
 
-    act(() => (q('sidebar-migracion-cerrar') as HTMLElement).click());
+    await act(async () => (q('sidebar-migracion-cerrar') as HTMLElement).click());
     expect(q('sidebar-migracion')).toBeNull();
     expect(localStorage.getItem('leasefy:migracion:decision:agencia')).toBe('nunca');
+    expect(recordatorioMock).toHaveBeenCalledWith(true);
+    expect(recargar).toHaveBeenCalledTimes(1);
 
+    // «Recordármelo» (luego) la vuelve a traer.
     act(() => guardarDecisionDeMigracion(null, 'luego'));
     expect(q('sidebar-migracion')).not.toBeNull();
+  });
+
+  it('si el back no contesta la ✕, la tarjeta igual se cierra acá: la copia local ya está escrita', async () => {
+    recordatorioMock.mockRejectedValue(new Error('sin red'));
+    pintar({ bloquea: false, resuelta: 'omitida', pasos: A_MEDIAS });
+    await act(async () => (q('sidebar-migracion-cerrar') as HTMLElement).click());
+    expect(q('sidebar-migracion')).toBeNull();
   });
 
   it('es una ✕ con nombre accesible, no un «Descartar» de texto', () => {

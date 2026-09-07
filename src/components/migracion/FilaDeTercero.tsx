@@ -282,7 +282,7 @@ export function FilaDeTercero({
           <p className="text-sm text-fg-muted">
             Si es la misma persona, la fila se engancha a la ficha que ya está y
             <strong className="font-medium text-fg"> no le pisa ni un dato</strong> — la ficha se
-            edita desde Propietarios. Si son dos personas distintas, corregí el documento acá abajo.
+            edita desde Propietarios. Si son dos personas distintas, corrige el documento acá abajo.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button size="sm" hideArrow disabled={guardando} onClick={() => void vincular()}>

@@ -66,6 +66,12 @@ export interface EstadoDeMigracion {
   /** Cómo salió del muro quien ya salió. `null` = todavía no salió. */
   resuelta: 'completada' | 'omitida' | null;
   pasos: PasoDeMigracion[];
+  /**
+   * Quien pregunta cerró el recordatorio del menú (su ✕ o «no requiero
+   * migración»). Es por cuenta —`agency_members.preferences`— y no por
+   * navegador (Nico, 2026-09-07). Ausente en un back viejo.
+   */
+  recordatorioDescartado?: boolean;
 }
 
 export const migracionEstadoApi = {
@@ -99,5 +105,10 @@ export const migracionEstadoApi = {
       `${BASE}/omitir`,
       limpio ? { motivo: limpio } : {},
     );
+  },
+
+  /** La ✕ del recordatorio del menú (`true`) o «recordármelo» (`false`). Del miembro que llama. */
+  async recordatorio(descartado: boolean): Promise<EstadoDeMigracion> {
+    return apiClient.post<EstadoDeMigracion>(`${BASE}/recordatorio`, { descartado });
   },
 };

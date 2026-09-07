@@ -241,7 +241,7 @@ export function RegistrosContables({
         </section>
       ) : cuentas.length === 0 ? null : (
         // La tercera pata del if: lectura caída y sin cuentas del último
-        // éxito. No sabemos si hay plan — ni «andá al paso 4» ni un selector
+        // éxito. No sabemos si hay plan — ni «ve al paso 4» ni un selector
         // de cuentas vacío; queda el cartel de arriba con su Reintentar.
         <>
           <div className="space-y-3">

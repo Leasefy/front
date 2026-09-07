@@ -11084,11 +11084,11 @@
     },
     "puc": {
       "titulo": "Cuentas del PUC",
-      "subtitulo": "Tu plan de cuentas: dónde caen los movimientos. Arrancá con el plan base del Decreto 2650 y ajustalo con tu contador."
+      "subtitulo": "Tu plan de cuentas: dónde caen los movimientos. Arranca con el plan base del Decreto 2650 y ajústalo con tu contador."
     },
     "contables": {
       "titulo": "Registros contables",
-      "subtitulo": "Los saldos con los que arrancás o el histórico completo. Necesita el plan de cuentas armado."
+      "subtitulo": "Los saldos con los que arrancas o el histórico completo. Necesita el plan de cuentas armado."
     },
     "recordatorio": {
       "titulo": "Migra tu inmobiliaria",
@@ -11101,20 +11101,20 @@
     "muro": {
       "cerrar": "Cerrar y seguir después",
       "eyebrow": "Puesta en marcha",
-      "titulo": "Traé tu operación antes de empezar",
-      "subtitulo": "Todo pasa acá adentro: cargá lo que ya tenés en tu sistema actual, en orden — cada paso necesita al anterior.",
+      "titulo": "Trae tu operación antes de empezar",
+      "subtitulo": "Todo pasa acá adentro: carga lo que ya tienes en tu sistema actual, en orden — cada paso necesita al anterior.",
       "progreso": "Progreso de la migración",
       "hecho": "Listo",
       "falta": "Falta: {{detalle}}",
       "enEspera": "En espera",
       "noDisponible": "No disponible ahora. No te frena.",
-      "primero": "Primero terminá {{paso}}",
+      "primero": "Primero termina {{paso}}",
       "yaTermine": "Entrar al panel",
       "arrancarDeCero": "No vengo de otro sistema, arranco de cero",
       "fallo": "No pudimos guardar eso. Intentá de nuevo en un momento.",
       "confirmar": {
-        "titulo": "¿Arrancás de cero?",
-        "detalle": "Vas a entrar al panel sin nada cargado: cada propietario, inquilino, inmueble y contrato lo vas a tener que crear a mano. Si venís de otro sistema, migrar te ahorra ese trabajo. Podés volver a la migración cuando quieras desde el menú.",
+        "titulo": "¿Arrancas de cero?",
+        "detalle": "Vas a entrar al panel sin nada cargado: cada propietario, inquilino, inmueble y contrato lo vas a tener que crear a mano. Si vienes de otro sistema, migrar te ahorra ese trabajo. Puedes volver a la migración cuando quieras desde el menú.",
         "aceptar": "Sí, arranco de cero",
         "cancelar": "Volver a los pasos"
       },
@@ -11124,7 +11124,7 @@
       "todoListo": {
         "eyebrow": "Todo listo",
         "titulo": "Tu operación ya está adentro",
-        "detalle": "Los pasos están completos. Podés seguir cargando desde acá o entrar al panel; la migración queda en el menú por si te falta algo."
+        "detalle": "Los pasos están completos. Puedes seguir cargando desde acá o entrar al panel; la migración queda en el menú por si te falta algo."
       },
       "veredicto": {
         "eyebrow": "Cómo quedó tu migración",
@@ -11181,19 +11181,19 @@
       "terminaEstePaso": "Cuando termines este paso vas a poder seguir.",
       "irAlPaso": "Ir a {{paso}}",
       "pendiente": "Pendiente",
-      "noDisponibleDetalle": "Este paso no se pudo verificar en este momento. No te frena: seguí con los demás y volvé después.",
+      "noDisponibleDetalle": "Este paso no se pudo verificar en este momento. No te frena: sigue con los demás y vuelve después.",
       "sinPermiso": "Este paso lo tiene que hacer un administrador de tu inmobiliaria: tu usuario no tiene permiso para cargar estos datos."
     },
     "eyebrow": "Arranque",
     "titulo": "Migrá tu operación",
-    "subtitulo": "Traé lo que ya tenés en otro sistema, en el orden en que cada paso necesita al anterior. Podés dejarlo a medias y retomarlo cuando quieras: nada se pierde.",
+    "subtitulo": "Trae lo que ya tienes en otro sistema, en el orden en que cada paso necesita al anterior. Puedes dejarlo a medias y retomarlo cuando quieras: nada se pierde.",
     "retomar": "Retomar",
     "empezar": "Empezar",
     "noDisponible": "Todavía no está disponible",
-    "retomarAviso": "Tenés una carga sin terminar. Retomala desde donde quedó — volver a subir el archivo duplica las filas.",
+    "retomarAviso": "Tienes una carga sin terminar. Retómala desde donde quedó — volver a subir el archivo duplica las filas.",
     "orden": {
       "titulo": "El orden importa",
-      "detalle": "Cada paso necesita al anterior: el inmueble necesita dueño y el contrato se pega al inmueble (por código o dirección). Podés saltarte un paso si ya tenés esos datos cargados, pero nada te va a esperar después."
+      "detalle": "Cada paso necesita al anterior: el inmueble necesita dueño y el contrato se pega al inmueble (por código o dirección). Puedes saltarte un paso si ya tienes esos datos cargados, pero nada te va a esperar después."
     },
     "estados": {
       "enConstruccion": "En construcción",
@@ -11217,7 +11217,7 @@
     "pasos": {
       "propietarios": {
         "titulo": "Propietarios",
-        "descripcion": "Las personas a las que les pagás. Del propietario hace falta el documento y la cuenta bancaria para poder girarle.",
+        "descripcion": "Las personas a las que les pagas. Del propietario hace falta el documento y la cuenta bancaria para poder girarle.",
         "corto": "Propietarios"
       },
       "inquilinos": {
@@ -11237,7 +11237,7 @@
       },
       "puc": {
         "titulo": "Cuentas del PUC",
-        "descripcion": "Tu plan de cuentas, para que los movimientos caigan donde tu contador los espera. Podés arrancar con el plan base del Decreto 2650 y ajustarlo.",
+        "descripcion": "Tu plan de cuentas, para que los movimientos caigan donde tu contador los espera. Puedes arrancar con el plan base del Decreto 2650 y ajustarlo.",
         "corto": "Plan de cuentas"
       },
       "contables": {
@@ -11248,7 +11248,7 @@
     },
     "terceros": {
       "titulo": "Terceros: propietarios e inquilinos",
-      "subtitulo": "Subí el archivo que ya tenés — no hace falta que tenga nuestro formato. Nada se crea hasta que revises: lo que le falte a una fila se completa acá mismo, sin volver a subir nada."
+      "subtitulo": "Sube el archivo que ya tienes — no hace falta que tenga nuestro formato. Nada se crea hasta que revises: lo que le falte a una fila se completa acá mismo, sin volver a subir nada."
     }
   },
   "reglasDeMora": {

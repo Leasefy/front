@@ -213,7 +213,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
   const [lotesAbiertos, setLotesAbiertos] = useState<LoteAbierto[]>([]);
 
   /**
-   * T-0039 — descartar un lote directamente desde la tarjeta "Tenés una
+   * T-0039 — descartar un lote directamente desde la tarjeta "Tienes una
    * migración sin terminar", sin tener que abrirlo primero (`retomar`). El
    * owner lo pidió así: un lote que no se quiere continuar hoy obliga a
    * entrar a él sólo para llegar al botón de T-0036, que vive adentro de
@@ -478,7 +478,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
         lotesConsignados.current.delete(elLote);
         setConsignando(false);
         toast.error(
-          "No pudimos consignar los propietarios del archivo automáticamente. Las filas quedaron con su formulario — completalas a mano o volvé a entrar para reintentar.",
+          "No pudimos consignar los propietarios del archivo automáticamente. Las filas quedaron con su formulario — complétalas a mano o vuelve a entrar para reintentar.",
         );
         return;
       }
@@ -857,7 +857,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
           data-testid="lotes-abiertos"
         >
           <p className="text-sm font-medium text-foreground">
-            Tenés una migración sin terminar
+            Tienes una migración sin terminar
           </p>
           {lotesAbiertos.map((l) => {
             // F1 (contrato §3.2.A3) — `estado` ausente es un lote anterior
@@ -993,8 +993,8 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
           className="rounded-md border border-border bg-warning-soft p-3 text-sm text-fg"
           data-testid="lotes-abiertos-fallo"
         >
-          No pudimos verificar si tenés una migración sin terminar. Si dejaste
-          una a medias, retomala antes de volver a subir el archivo — resubirlo
+          No pudimos verificar si tienes una migración sin terminar. Si dejaste
+          una a medias, retómala antes de volver a subir el archivo — resubirlo
           duplica las filas.
         </p>
       ) : null}
@@ -1044,7 +1044,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
             <p className="text-sm font-medium text-foreground">
               {isDragActive
                 ? "Soltá el archivo acá"
-                : "Arrastrá el archivo de contratos o hacé clic para elegirlo"}
+                : "Arrastra el archivo de contratos o haz clic para elegirlo"}
             </p>
             <p className="text-xs text-muted-foreground">
               Excel o CSV exportado de tu sistema actual
@@ -1069,7 +1069,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
               </h2>
               <p className="text-xs text-muted-foreground">
                 {filas.length} contratos en el archivo. Revisá el mapeo antes de
-                seguir, y corregí a mano lo que haga falta: «arrendador» es el
+                seguir, y corrige a mano lo que haga falta: «arrendador» es el
                 propietario y «arrendatario» es el inquilino, y se parecen
                 demasiado.
               </p>
@@ -1116,8 +1116,8 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                 {faltanEsenciales.map((f) => (
                   <li key={f.clave} data-testid={`falta-${f.clave}`}>
                     {f.hayColumnaPosible
-                      ? `Elegí en el desplegable la columna de tu archivo que trae ${f.etiqueta}.`
-                      : `Tu archivo no trae ninguna columna de ${f.nombreCorto}. Agregala y volvé a subirlo.`}
+                      ? `Elige en el desplegable la columna de tu archivo que trae ${f.etiqueta}.`
+                      : `Tu archivo no trae ninguna columna de ${f.nombreCorto}. Agrégala y vuelve a subirlo.`}
                   </li>
                 ))}
               </ul>
@@ -1203,7 +1203,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                             data-testid={`dudosa-${m.columna}`}
                             className="rounded-lg border border-warning/40 bg-warning-soft px-1.5 py-0.5 text-warning"
                           >
-                            confirmá esto
+                            confirma esto
                           </span>
                         ) : null}
                       </div>
@@ -1218,7 +1218,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
             Informativo, no bloquea: cualquier archivo se puede revisar. Se
             calla mientras la compuerta está arriba — ahí ya está dicho lo
             mismo, con el consejo correcto, y repetirlo con palabras más
-            flojas («podés completarlos después») contradice al aviso que sí
+            flojas («puedes completarlos después») contradice al aviso que sí
             frena.
           */}
           {noMapeados.length > 0 && faltanEsenciales.length === 0 ? (
@@ -1232,7 +1232,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                 </p>
                 <p className="mt-0.5 text-body-sm text-fg-muted">
                   {noMapeados.map((c) => NOMBRE_DE_CAMPO[c]).join(" · ")} —
-                  podés completarlos fila por fila después de revisar.
+                  puedes completarlos fila por fila después de revisar.
                 </p>
               </div>
             </div>
@@ -1255,7 +1255,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                 </h3>
                 <p className="text-xs text-fg-muted">
                   Todavía no se crea nada. Si algo acá está en la fila
-                  equivocada, corregí el mapeo de arriba.
+                  equivocada, corrige el mapeo de arriba.
                 </p>
               </div>
               <div className="overflow-x-auto">
@@ -1326,9 +1326,9 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
               ) : null}
               {huecos.length > 0 ? (
                 <p className="mt-1">
-                  Podés seguir: esas filas van a pedir el dato una por una en
+                  Puedes seguir: esas filas van a pedir el dato una por una en
                   la lista de trabajo. Si es un error del archivo, corregilo y
-                  volvé a subirlo.
+                  vuelve a subirlo.
                 </p>
               ) : null}
             </AlertaAccionable>
@@ -1359,7 +1359,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
  * El modal de confirmación de "Descartar este lote" — copia y anatomía
  * congeladas por contract.md T-0036 §3.2.C6. Dos call sites lo necesitan
  * idéntico: `ListaDeTrabajo` (T-0036, el lote ya abierto) y la tarjeta
- * "Tenés una migración sin terminar" (T-0039, sin abrirlo). Antes de T-0039
+ * "Tienes una migración sin terminar" (T-0039, sin abrirlo). Antes de T-0039
  * vivía inline dentro de `ListaDeTrabajo`; se extrajo acá para que ningún
  * call site pueda divergir por accidente — un dato o una frase que cambia en
  * uno y no en el otro es exactamente el tipo de drift que este componente
@@ -1417,7 +1417,7 @@ function DialogoDescartarLote({
               portafolio.
             </span>
             <span className="block">
-              Podés volver a intentarlo subiendo el mismo archivo otra vez — el
+              Puedes volver a intentarlo subiendo el mismo archivo otra vez — el
               archivo original no se modifica.
             </span>
           </AlertDialogDescription>
@@ -1686,7 +1686,7 @@ function ListaDeTrabajo({
               <>
                 Asociamos {resumenAsociacion.hechas - resumenAsociacion.fallidas}{" "}
                 de {resumenAsociacion.hechas}. Las {resumenAsociacion.fallidas}{" "}
-                que no pudimos quedaron abajo sin propietario — elegilo a mano
+                que no pudimos quedaron abajo sin propietario — elígelo a mano
                 en su fila.
               </>
             )}
@@ -1743,7 +1743,7 @@ function ListaDeTrabajo({
             data-testid="aviso-activados-sin-propietario"
           >
             El cobro sale de la consignación del inmueble y nadie dijo de quién
-            es. Elegí el propietario en cada fila, o seleccioná varias y usá
+            es. Elige el propietario en cada fila, o selecciona varias y usa
             «Mismo propietario».
           </AlertaAccionable>
         ) : null}
@@ -1840,7 +1840,7 @@ function ListaDeTrabajo({
                       : "contratos quedaron"
                   } sin activar porque no ${
                     activacion.sinInmueble === 1 ? "tiene" : "tienen"
-                  } inmueble: elegilo o crealo en la lista y volvé a activar.`}
+                  } inmueble: elígelo o créalo en la lista y vuelve a activar.`}
             </p>
           ) : null}
           {activacion.fallidas > 0 ? (
@@ -1889,7 +1889,7 @@ function ListaDeTrabajo({
       {/* ── La revisión ────────────────────────────────────────────────── */}
       {/*
        * Con todo activado ya no hay nada que revisar, y seguir diciendo
-       * «revisá antes de activarlos» sobre cinco filas que dicen «Ya
+       * «revisa antes de activarlos» sobre cinco filas que dicen «Ya
        * activado» manda a buscar un botón que no existe.
        */}
       <div>
@@ -2070,7 +2070,7 @@ function ListaDeTrabajo({
                     data-testid="aviso-sin-invitar"
                   >
                     No se crea ninguna cuenta: el correo del inquilino queda
-                    guardado en cada contrato, y podés invitarlo cuando quieras
+                    guardado en cada contrato, y puedes invitarlo cuando quieras
                     desde ahí.
                   </p>
                 ) : null}
@@ -2113,7 +2113,7 @@ function ListaDeTrabajo({
 
         {resumen.activables === 0 && resumen.pendientes > 0 ? (
           <p className="text-sm text-muted-foreground">
-            Ninguno se puede activar todavía. Resolvé lo de arriba y van pasando
+            Ninguno se puede activar todavía. Resuelve lo de arriba y van pasando
             a listos solos.
           </p>
         ) : null}

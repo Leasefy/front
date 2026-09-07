@@ -291,6 +291,9 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
         await migracionEstadoApi.omitir(
           elegida === "luego" ? "en_otro_momento" : "no_requiere_migracion",
         );
+        // «No requiero migración» también apaga el recordatorio EN LA CUENTA,
+        // para que no reaparezca en otro navegador (Nico, 2026-09-07).
+        if (elegida === "nunca") await migracionEstadoApi.recordatorio(true);
       } catch {
         // Si no se pudo omitir, el muro sigue: es mejor que un panel a medias.
       }
@@ -467,7 +470,7 @@ export function PanelDeMigracion({
       setSeleccionado(i);
       cuerpo.current?.scrollTo({ top: 0 });
       // Quien acaba de sembrar el PUC y aprieta «continuar» no debería ver
-      // «primero terminá el PUC» hasta el próximo refresco de 5 s.
+      // «primero termina el PUC» hasta el próximo refresco de 5 s.
       void onResuelta();
       // Y quien acaba de vincular 89 inmuebles y vuelve al veredicto no
       // debería seguir leyendo «89 sin inmueble».
@@ -605,39 +608,33 @@ export function PanelDeMigracion({
         aria-labelledby="muro-migracion-titulo"
         className="flex h-full w-full flex-col overflow-hidden outline-none motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200"
       >
-        {/* ── Arriba, fijo: el mapa ─────────────────────────────────────── */}
-        <header className="shrink-0 border-b border-border-faint">
-          <div className="mx-auto w-full max-w-[1200px] px-5 pb-5 pt-5 sm:px-8 sm:pt-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline justify-between gap-x-6 font-mono text-[11px] text-fg-subtle">
-                  <p className="uppercase tracking-wider">
-                    {t("migracion.muro.eyebrow")}
-                  </p>
-                  <p className="shrink-0 tabular-nums" data-testid="muro-progreso">
-                    {t("migracion.muro.progresoDe", {
-                      n: hechos,
-                      total: exigibles.length,
-                    })}
-                  </p>
-                </div>
-                <div className="mt-1.5 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                  <h1
-                    id="muro-migracion-titulo"
-                    className="text-xl font-semibold tracking-tight text-fg"
-                  >
-                    {t("migracion.muro.titulo")}
-                  </h1>
-                  <p className="text-sm text-fg-muted">
-                    {t("migracion.muro.subtitulo")}
-                  </p>
-                </div>
-              </div>
+        {/*
+          ── Arriba, fijo: el mapa ──────────────────────────────────────────
+          A todo el ancho, con el mismo margen a los dos lados: la ✕ va en el
+          borde derecho de la pantalla, no en el de una columna centrada
+          (Nico, 2026-09-07: «la ✕ debería quedar full a la derecha
+          respetando el padding de la derecha»).
+        */}
+        <header className="shrink-0 border-b border-border-faint px-5 pb-5 pt-4 sm:px-8 lg:px-10">
+          <div className="flex items-center justify-between gap-4">
+            <p className="font-mono text-[11px] uppercase tracking-wider text-fg-subtle">
+              {t("migracion.muro.eyebrow")}
+            </p>
+            <div className="flex items-center gap-4">
+              <p
+                className="font-mono text-[11px] tabular-nums text-fg-subtle"
+                data-testid="muro-progreso"
+              >
+                {t("migracion.muro.progresoDe", {
+                  n: hechos,
+                  total: exigibles.length,
+                })}
+              </p>
               {/*
-               * La ✕ (Nico, 2026-09-07): con el muro puesto sale «en otro
-               * momento» y el sidebar recuerda cómo va; abierta a mano, sólo
-               * cierra. Apagada mientras el paso crea: cerrar a mitad de una
-               * carga deja el archivo a medias.
+               * La ✕: con el muro puesto sale «en otro momento» y el sidebar
+               * recuerda cómo va; abierta a mano, sólo cierra. Apagada
+               * mientras el paso crea: cerrar a mitad de una carga deja el
+               * archivo a medias.
                */}
               {onCerrar ? (
                 <button
@@ -653,13 +650,24 @@ export function PanelDeMigracion({
                 </button>
               ) : null}
             </div>
-            <BarraDePasos
-              pasos={pasos}
-              seleccionado={indice}
-              onIr={irA}
-              bloqueada={ocupado}
-            />
           </div>
+          <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <h1
+              id="muro-migracion-titulo"
+              className="text-xl font-semibold tracking-tight text-fg"
+            >
+              {t("migracion.muro.titulo")}
+            </h1>
+            <p className="text-sm text-fg-muted">
+              {t("migracion.muro.subtitulo")}
+            </p>
+          </div>
+          <BarraDePasos
+            pasos={pasos}
+            seleccionado={indice}
+            onIr={irA}
+            bloqueada={ocupado}
+          />
         </header>
 
         {confirmando ? (
@@ -668,7 +676,7 @@ export function PanelDeMigracion({
             data-lenis-prevent
             style={{ overscrollBehavior: "contain" }}
           >
-            <div className="mx-auto w-full max-w-[1200px] px-5 py-6 sm:px-8">
+            <div className="w-full px-5 py-6 sm:px-8 lg:px-10">
               <ConfirmarArranqueDeCero
                 enviando={enviando}
                 onCancelar={() => setConfirmando(false)}
@@ -686,7 +694,8 @@ export function PanelDeMigracion({
               style={{ overscrollBehavior: "contain" }}
               data-testid="muro-pasos"
             >
-              <div className="mx-auto w-full max-w-[1200px] px-5 py-6 sm:px-8">
+              {/* A todo el ancho: el paso reparte su contenido en dos columnas (ver PasoEnFoco). */}
+              <div className="w-full px-5 py-6 sm:px-8 lg:px-10">
               {/*
                 Con los pasos completos hay DOS finales posibles, y decir el
                 que no es fue el bug: «Tu operación ya está adentro» sobre 89
@@ -742,7 +751,7 @@ export function PanelDeMigracion({
 
             {/* ── Abajo, fijo: las salidas ─────────────────────────────── */}
             <footer className="shrink-0 border-t border-border-faint">
-              <div className="mx-auto flex w-full max-w-[1200px] flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-8">
+              <div className="flex w-full flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-8 lg:px-10">
               {/*
                * 🔴 La salida de la inmobiliaria nueva. Está SIEMPRE que falte
                * algo, aunque no haya un solo paso listo: quien arranca de cero
@@ -971,7 +980,7 @@ function BarraDePasos({
             </div>
 
             {/* El porqué del candado, para quien lee con lector de pantalla:
-                «Primero terminá “Propiedades”». En pantalla lo dice el orden. */}
+                «Primero termina “Propiedades”». En pantalla lo dice el orden. */}
             {!hecho && !apagado && !habilitado && frena ? (
               <span className="sr-only" data-testid={`muro-porque-${paso.id}`}>
                 {t("migracion.muro.primero", {
@@ -1058,25 +1067,32 @@ function PasoEnFoco({
       data-testid="muro-en-foco"
       data-paso={paso.id}
       aria-labelledby="muro-en-foco-titulo"
+      /*
+       * A pantalla completa sobra ancho para una sola columna (Nico,
+       * 2026-09-07: «como ya tienes más espacio puedes mejorar toda la
+       * distribución»). Desde xl el paso va en dos: a la izquierda qué es y
+       * cómo va (fijo mientras el contenido hace scroll), a la derecha el
+       * contenido con todo el ancho que necesitan sus tablas. Abajo de xl,
+       * apilado como siempre.
+       */
+      className="xl:grid xl:grid-cols-[minmax(0,5fr)_minmax(0,13fr)] xl:items-start xl:gap-x-12 2xl:grid-cols-[minmax(0,4fr)_minmax(0,14fr)]"
     >
-      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-        <div className="min-w-0 max-w-2xl">
-          <p className="font-mono text-[11px] uppercase tracking-wider text-fg-subtle">
-            {t("migracion.muro.pasoDe", { n: indice + 1, total: pasos.length })}
-          </p>
-          <h2
-            id="muro-en-foco-titulo"
-            className="mt-1 text-balance text-2xl font-semibold tracking-tight text-fg"
-          >
-            {t(`migracion.pasos.${paso.id}.titulo`)}
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-fg-muted">
-            {t(`migracion.pasos.${paso.id}.descripcion`)}
-          </p>
-        </div>
+      <div className="min-w-0 xl:sticky xl:top-0">
+        <p className="font-mono text-[11px] uppercase tracking-wider text-fg-subtle">
+          {t("migracion.muro.pasoDe", { n: indice + 1, total: pasos.length })}
+        </p>
+        <h2
+          id="muro-en-foco-titulo"
+          className="mt-1 text-balance text-2xl font-semibold tracking-tight text-fg"
+        >
+          {t(`migracion.pasos.${paso.id}.titulo`)}
+        </h2>
+        <p className="mt-2 max-w-prose text-sm leading-relaxed text-fg-muted">
+          {t(`migracion.pasos.${paso.id}.descripcion`)}
+        </p>
         {hecho ? (
           <p
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-success-soft px-3 py-1.5 font-mono text-xs tabular-nums text-success"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-success-soft px-3 py-1.5 font-mono text-xs tabular-nums text-success"
             data-testid="muro-paso-listo"
           >
             <Check className="h-3.5 w-3.5" weight="bold" />
@@ -1091,7 +1107,7 @@ function PasoEnFoco({
            * avanzaba (2026-09-02 12:42).
            */
           <p
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1.5 font-mono text-xs tabular-nums text-warning"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1.5 font-mono text-xs tabular-nums text-warning"
             data-testid="muro-paso-falta"
           >
             {t("migracion.muro.falta", { detalle: paso.detalle })}
@@ -1099,7 +1115,7 @@ function PasoEnFoco({
         ) : null}
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 min-w-0 xl:mt-0">
         {!disponible ? (
           <Aviso testid="muro-aviso-no-disponible">
             {t("migracion.muro.noDisponibleDetalle")}

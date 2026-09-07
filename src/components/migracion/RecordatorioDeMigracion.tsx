@@ -13,8 +13,10 @@
  * ESTA cuenta: cuántos pasos exigibles están listos y cuál sigue. Antes la
  * tarjeta sólo sabía «dijo que en otro momento» —un booleano de este
  * navegador— y decía lo mismo a quien no había empezado y a quien iba por
- * la mitad. Lo único que sigue siendo del navegador es la ✕: el back no
- * guarda «no me lo recuerdes» (ver decision-de-migracion.ts).
+ * la mitad. La ✕ también es de la cuenta: va a `agency_members.preferences`
+ * por `POST /inmobiliaria/migracion/recordatorio` y vuelve en el estado como
+ * `recordatorioDescartado`; el navegador sólo guarda una copia para que la
+ * tarjeta desaparezca al instante y para un back que todavía no lo mande.
  *
  * ── Cuándo NO se muestra ──────────────────────────────────────────────────
  *
@@ -29,6 +31,7 @@ import { useContext, useEffect, useState } from "react";
 import { X } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
+import { migracionEstadoApi } from "@/lib/api/migracion-estado.service";
 import { AuthContext } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n";
 import {
@@ -60,8 +63,18 @@ export function RecordatorioDeMigracion() {
   }, [agencyId]);
 
   const estado = migracion?.estado ?? null;
-  if (!migracion || !estado || estado.bloquea || descartado) return null;
+  if (!migracion || !estado || estado.bloquea) return null;
+  // La cuenta manda; el navegador sólo adelanta la ✕ recién apretada.
+  if (estado.recordatorioDescartado === true || descartado) return null;
   if (!migracionSinTerminar(estado)) return null;
+
+  const cerrar = () => {
+    guardarDecisionDeMigracion(agencyId, "nunca");
+    void migracionEstadoApi
+      .recordatorio(true)
+      .then(() => migracion.recargar())
+      .catch(() => undefined);
+  };
 
   const { hechos, total, siguiente } = progresoDeMigracion(estado.pasos);
   const empezada = hechos > 0;
@@ -76,7 +89,7 @@ export function RecordatorioDeMigracion() {
     >
       <button
         type="button"
-        onClick={() => guardarDecisionDeMigracion(agencyId, "nunca")}
+        onClick={cerrar}
         aria-label={t("migracion.recordatorio.cerrar")}
         data-testid="sidebar-migracion-cerrar"
         className="absolute right-1.5 top-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg"

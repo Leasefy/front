@@ -427,7 +427,7 @@ describe('la ayuda del número de documento depende del tipo de la fila (2026-09
         errores: errorDeDocumento,
       }),
     });
-    expect(ayudaDelDocumento()).toContain('elegilo primero');
+    expect(ayudaDelDocumento()).toContain('elígelo primero');
   });
 });
 

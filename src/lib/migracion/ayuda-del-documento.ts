@@ -56,7 +56,7 @@ const AYUDA: Record<TipoDeDocumento, string> = {
 
 /** Sin tipo no se adivina la regla: se pide el tipo primero. */
 export const AYUDA_SIN_TIPO =
-  'Sin puntos ni espacios. El largo depende del tipo de documento: elegilo primero.';
+  'Sin puntos ni espacios. El largo depende del tipo de documento: elígelo primero.';
 
 export function ayudaDelNumeroDeDocumento(tipo: TipoDeDocumento | null): string {
   return tipo ? AYUDA[tipo] : AYUDA_SIN_TIPO;

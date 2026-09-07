@@ -12,6 +12,8 @@ import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { useAuth } from '@/lib/auth';
 import { getAccessToken } from '@/lib/api/client';
 import { sanitizeReturnUrl } from '@/lib/utils';
+import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena';
+import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
 
 /**
  * Llama al endpoint REST de Supabase Auth directo con fetch nativo, sin pasar
@@ -102,7 +104,8 @@ function UpdatePasswordContent() {
   const [success, setSuccess] = useState(false);
 
   const passwordsMatch = password === confirm;
-  const isStrong = password.length >= 8;
+  // El mismo mínimo que el registro (medidor de contraseña, 2026-09-07).
+  const isStrong = fortalezaDeContrasena(password).cumpleMinimo;
   // CRÍTICO: esperar a authLoading false antes de permitir submit, así
   // el AuthProvider terminó su init (fetchUser + checkMfaLevel) y no
   // chocan los locks de @supabase/auth-js cuando llamamos updateUser.
@@ -208,9 +211,7 @@ function UpdatePasswordContent() {
                       {showPassword ? <EyeSlash className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  {password && !isStrong && (
-                    <p className="text-xs text-danger mt-1">Mínimo 8 caracteres</p>
-                  )}
+                  <MedidorDeContrasena contrasena={password} className="mt-2" />
                 </div>
 
                 {/* Confirm */}

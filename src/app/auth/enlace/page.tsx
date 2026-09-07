@@ -77,8 +77,12 @@ function EnlaceContent() {
 
     const red = setTimeout(() => {
       if (!navegado) {
+        // El enlace de confirmación del registro sólo abre sesión en el
+        // navegador donde se creó la cuenta (PKCE). Abierto desde el celular,
+        // acá no hay sesión, pero la cuenta SÍ quedó confirmada: decirlo
+        // evita que la persona pida otro enlace que va a fallar igual.
         setError(
-          'No pudimos verificar el enlace. Puede haber vencido o ya haberse usado — pedí que te lo reenvíen.',
+          'No pudimos abrir sesión desde este enlace. Si estabas confirmando tu correo desde otro dispositivo, la cuenta ya quedó confirmada: inicia sesión con tu contraseña. Si el enlace venció o ya se usó, pedí que te lo reenvíen.',
         )
       }
     }, 8000)

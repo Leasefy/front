@@ -765,6 +765,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (error) throw error
   }, [])
 
+  /**
+   * Reenvía el correo de confirmación del registro. Con el MISMO `redirectTo`
+   * que el primero: sin él, el enlace nuevo vuelve a la raíz del sitio y la
+   * persona pierde el onboarding al que iba (Nico, 2026-09-07: «Revisa tu
+   * correo» no ofrecía reenviar).
+   */
+  const resendSignUpEmail = useCallback(async (email: string, redirectTo?: string) => {
+    const supabase = getSupabase()
+    if (!supabase) throw new Error('Supabase not initialized')
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      ...(redirectTo ? { options: { emailRedirectTo: redirectTo } } : {}),
+    })
+    if (error) throw error
+  }, [])
+
   /** Update password for authenticated user (works for both email and Google users) */
   const updatePassword = useCallback(async (newPassword: string) => {
     const supabase = getSupabase()
@@ -938,6 +955,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signInWithEmail,
     signUpWithEmail,
     sendPasswordReset,
+    resendSignUpEmail,
     updatePassword,
     verifyCurrentPassword,
     changePassword,

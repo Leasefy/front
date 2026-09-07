@@ -4733,6 +4733,14 @@
         "hintDigitsOnly": "Solo dígitos, sin puntos ni guiones",
         "accountHolder": "Titular de la cuenta",
         "hintMatchBank": "Debe coincidir con el nombre registrado en el banco",
+        "department": "Departamento",
+        "selectDepartment": "Seleccionar departamento…",
+        "noDepartment": "Sin departamento",
+        "holderDocumentType": "Tipo de documento del titular",
+        "holderDocumentTypePlaceholder": "Tipo",
+        "holderDocument": "Documento del titular",
+        "hintHolderDocument": "Solo si la cuenta está a nombre de otra persona. Bancolombia lo pide en el archivo de dispersión.",
+        "errHolderDocTypeRequired": "Elige el tipo de documento del titular",
         "internalNotes": "Notas internas",
         "hintTeamOnly": "Solo visible para el equipo",
         "cancel": "Cancelar",
@@ -4825,6 +4833,7 @@
         "type": "Tipo",
         "number": "Número",
         "holder": "Titular",
+        "holderDocument": "Documento del titular",
         "savings": "Ahorros",
         "checking": "Corriente",
         "hide": "Ocultar",
@@ -10776,14 +10785,14 @@
       "ph": {
         "nombre": "Ej: María Restrepo",
         "correo": "Ej: maria@correo.com",
-        "password": "Mínimo 6 caracteres"
+        "password": "Mínimo 8 caracteres"
       },
       "cta": "Crear cuenta y ver mi catálogo",
       "volver": "Volver al resultado",
       "err": {
         "nombre": "Escribe tu nombre.",
         "email": "Escribe un correo válido.",
-        "password": "Mínimo 6 caracteres.",
+        "password": "Todavía es débil: sigue el consejo de abajo.",
         "existe": "Ya existe una cuenta con este correo. Inicia sesión y tu aprobación te espera adentro.",
         "generico": "No pudimos crear tu cuenta. Intenta de nuevo."
       },

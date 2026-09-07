@@ -9,6 +9,9 @@ import { getSupabase } from '@/lib/supabase/client';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
 import { apiClient, ApiError } from '@/lib/api/client';
 import { Input } from '@/components/ui/input';
+import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena';
+import { normalizarCorreo, validarCorreo } from '@/lib/auth/correo';
+import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
 import type { InvitationInfo } from '@/lib/types/inmobiliaria';
 
 const PENDING_INVITATION_KEY = 'pending-invitation-token';
@@ -209,12 +212,14 @@ function RegistroContent() {
       // Redirect back to this same page so the ?code= exchange happens client-side
       // and the invitationToken stays in the URL for the auto-accept effect.
       const redirectTo = window.location.href;
-      const result = await signUpWithEmail(data.email, data.password, redirectTo);
+      // Normalizado (minúsculas, sin espacios): es lo que después se escribe al entrar.
+      const correo = normalizarCorreo(data.email);
+      const result = await signUpWithEmail(correo, data.password, redirectTo);
       if (result?.requiresConfirmation) {
         setConfirmed(true);
         return;
       }
-      await signInWithEmail(data.email, data.password);
+      await signInWithEmail(correo, data.password);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (msg.includes('already registered') || msg.includes('User already registered')) {
@@ -509,7 +514,7 @@ function RegistroContent() {
                       <div className="relative">
                         <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
-                          {...authForm.register('email', { required: 'Requerido', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Email inválido' } })}
+                          {...authForm.register('email', { required: 'Requerido', validate: (v: string) => { const r = validarCorreo(v); return r.ok || r.motivo; } })}
                           type="email"
                           placeholder="tu@email.com"
                           // The invitation is bound to a specific email; the invitee must
@@ -534,12 +539,23 @@ function RegistroContent() {
                       <div className="relative">
                         <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
-                          {...authForm.register('password', { required: 'Requerido', minLength: { value: 6, message: 'Mínimo 6 caracteres' } })}
+                          {...authForm.register('password', {
+                            required: 'Requerido',
+                            // El mismo mínimo que /auth (medidor de contraseña, 2026-09-07).
+                            validate: (v: string) =>
+                              fortalezaDeContrasena(v, { correo: authForm.getValues('email') }).cumpleMinimo ||
+                              'Todavía es débil: sigue el consejo de abajo.',
+                          })}
                           type="password"
-                          placeholder="Mínimo 6 caracteres"
+                          placeholder="Mínimo 8 caracteres"
                           className="w-full pl-9"
                         />
                       </div>
+                      <MedidorDeContrasena
+                        contrasena={authForm.watch('password') ?? ''}
+                        correo={authForm.watch('email')}
+                        className="mt-2"
+                      />
                       {authForm.formState.errors.password && (
                         <p className="text-xs text-destructive mt-1">{authForm.formState.errors.password.message}</p>
                       )}

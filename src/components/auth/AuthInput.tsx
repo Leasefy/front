@@ -51,6 +51,14 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
             ref={ref}
             id={inputId}
             autoComplete={getAutoComplete()}
+            /*
+             * El teclado del celular pone mayúscula inicial y «corrige» lo que
+             * escribe la persona: «Nicolas@gmail.com» o «nico@gmail.como». Un
+             * correo no es una frase; se le apaga todo eso (Nico, 2026-09-07).
+             */
+            {...(type === 'email'
+              ? { autoCapitalize: 'none', autoCorrect: 'off', spellCheck: false, inputMode: 'email' as const }
+              : {})}
             aria-invalid={!!error}
             aria-describedby={error ? errorId : undefined}
             className={cn(

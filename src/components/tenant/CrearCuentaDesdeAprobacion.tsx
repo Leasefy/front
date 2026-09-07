@@ -28,6 +28,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena'
+import { normalizarCorreo, validarCorreo } from '@/lib/auth/correo'
+import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena'
 import { useAuth } from '@/lib/auth/use-auth'
 import { useTf, type Tf } from '@/lib/i18n/use-tf'
 
@@ -77,10 +80,13 @@ export function CrearCuentaDesdeAprobacion({
   function validar(): boolean {
     const e: Record<string, string> = {}
     if (nombre.trim().length < 2) e.nombre = tf(`${NS}.err.nombre`, 'Escribe tu nombre.')
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) e.email = tf(`${NS}.err.email`, 'Escribe un correo válido.')
-    // Mínimo de Supabase. Decirlo antes evita un error del servidor que no
-    // explica nada.
-    if (password.length < 6) e.password = tf(`${NS}.err.password`, 'Mínimo 6 caracteres.')
+    const correo = validarCorreo(email)
+    if (!correo.ok) e.email = correo.motivo
+    // El mismo mínimo que el registro de /auth; el medidor de abajo dice qué
+    // le falta (2026-09-07).
+    if (!fortalezaDeContrasena(password, { correo: email }).cumpleMinimo) {
+      e.password = tf(`${NS}.err.password`, 'Todavía es débil: sigue el consejo de abajo.')
+    }
     setErrores(e)
     return Object.keys(e).length === 0
   }
@@ -93,7 +99,7 @@ export function CrearCuentaDesdeAprobacion({
     setEnviando(true)
     try {
       const { requiresConfirmation } = await signUpWithEmail(
-        email.trim(),
+        normalizarCorreo(email),
         password,
         `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(DESTINO)}`,
         'tenant',
@@ -176,10 +182,11 @@ export function CrearCuentaDesdeAprobacion({
               id="password"
               type="password"
               autoComplete="new-password"
-              placeholder={tf(`${NS}.ph.password`, 'Mínimo 6 caracteres')}
+              placeholder={tf(`${NS}.ph.password`, 'Mínimo 8 caracteres')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <MedidorDeContrasena contrasena={password} correo={email} className="mt-2" />
           </Campo>
 
           {errorGeneral && (

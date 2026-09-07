@@ -4693,6 +4693,14 @@
         "hintDigitsOnly": "Digits only, no dots or dashes",
         "accountHolder": "Account holder",
         "hintMatchBank": "Must match the name registered with the bank",
+        "department": "Department",
+        "selectDepartment": "Select a department…",
+        "noDepartment": "No department",
+        "holderDocumentType": "Holder's ID type",
+        "holderDocumentTypePlaceholder": "Type",
+        "holderDocument": "Holder's ID number",
+        "hintHolderDocument": "Only if the account belongs to someone else. Bancolombia requires it in the disbursement file.",
+        "errHolderDocTypeRequired": "Choose the holder's ID type",
         "internalNotes": "Internal notes",
         "hintTeamOnly": "Only visible to the team",
         "cancel": "Cancel",
@@ -4785,6 +4793,7 @@
         "type": "Type",
         "number": "Number",
         "holder": "Holder",
+        "holderDocument": "Holder's ID",
         "savings": "Savings",
         "checking": "Checking",
         "hide": "Hide",
@@ -10736,14 +10745,14 @@
       "ph": {
         "nombre": "e.g. María Restrepo",
         "correo": "e.g. maria@email.com",
-        "password": "At least 6 characters"
+        "password": "At least 8 characters"
       },
       "cta": "Create account and see my catalog",
       "volver": "Back to the result",
       "err": {
         "nombre": "Enter your name.",
         "email": "Enter a valid email.",
-        "password": "At least 6 characters.",
+        "password": "Still weak: follow the tip below.",
         "existe": "An account with this email already exists. Sign in and your approval is waiting inside.",
         "generico": "We couldn't create your account. Please try again."
       },

@@ -223,6 +223,8 @@ export interface AuthContextType extends AuthState {
   /** `perfil` → user_metadata: datos que ya conocemos antes de que tenga cuenta. */
   signUpWithEmail: (email: string, password: string, redirectTo?: string, intendedRole?: UserRole, perfil?: Record<string, string>) => Promise<{ requiresConfirmation: boolean }>
   sendPasswordReset: (email: string) => Promise<void>
+  /** Reenvía el correo de confirmación del registro, con el mismo `redirectTo` del primero. */
+  resendSignUpEmail: (email: string, redirectTo?: string) => Promise<void>
   updatePassword: (newPassword: string) => Promise<void>
   /** Re-authenticate with current password to verify identity before sensitive operations */
   verifyCurrentPassword: (password: string) => Promise<boolean>

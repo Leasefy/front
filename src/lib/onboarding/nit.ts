@@ -7,11 +7,16 @@
  * (`900.123.456-8`), así que acá se limpian antes de revisar nada.
  *
  * Longitud del base:
- *  - Persona jurídica (el caso normal de una inmobiliaria): 9 dígitos.
- *  - Persona natural inscrita en el RUT: su cédula, que puede tener entre 6 y
- *    10 dígitos. Una inmobiliaria puede estar a nombre de una persona natural,
- *    así que NO se exige 9 — se aceptan 6 a 10 y se explica la norma cuando
- *    queda fuera de ese rango.
+ *  - Persona jurídica (el caso normal de una inmobiliaria): 9 dígitos, los
+ *    que asigna la DIAN (800…, 890…, 900…, 901…).
+ *  - Persona natural inscrita en el RUT: su cédula. Las cédulas nuevas (desde
+ *    2003) tienen 10 dígitos; las viejas, entre 6 y 8.
+ *  El asistente del agente (`agent-integracion`, `NIT_REGEX`) sólo acepta 9 o
+ *  10 dígitos antes del guion, y el back crea la agencia ANTES de llamarlo:
+ *  un NIT que pase acá y no allá deja «Tu inmobiliaria quedó creada, pero no
+ *  alcanzamos a abrir el asistente» sin salida (Nico lo vio el 2026-09-07 con
+ *  8 dígitos). Por eso acá se exige lo mismo: 9 o 10. Con la DV son 10 u 11
+ *  caracteres numéricos («un NIT va de 9 a 11 dígitos», Nico).
  *
  * El dígito de verificación se calcula multiplicando cada dígito del base
  * —de derecha a izquierda— por un peso primo fijo, sumando, y tomando el
@@ -25,8 +30,8 @@
 /** Pesos de la DIAN, aplicados de derecha a izquierda sobre el base. */
 const PESOS = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71] as const
 
-/** Un base más corto que esto no es un documento de identidad colombiano. */
-export const BASE_MINIMO = 6
+/** Lo mínimo que acepta el asistente del agente: el NIT de una empresa. */
+export const BASE_MINIMO = 9
 /** Ni la cédula más larga ni un NIT de persona jurídica pasan de acá. */
 export const BASE_MAXIMO = 10
 /** Lo que trae un NIT de persona jurídica, que es el caso normal acá. */
@@ -139,7 +144,7 @@ export function revisarNit(crudo: string): RevisionDeNit {
     return {
       ok: false,
       motivo: 'corto',
-      mensaje: `Le faltan dígitos: el NIT de una empresa tiene ${BASE_PERSONA_JURIDICA} antes del guion.`,
+      mensaje: `Le faltan dígitos: un NIT tiene ${BASE_PERSONA_JURIDICA} antes del guion (${BASE_MAXIMO} si es una cédula nueva).`,
     }
   }
 
@@ -147,18 +152,25 @@ export function revisarNit(crudo: string): RevisionDeNit {
     return {
       ok: false,
       motivo: 'largo',
-      mensaje: `Le sobran dígitos: el NIT de una empresa tiene ${BASE_PERSONA_JURIDICA} antes del guion.`,
+      mensaje: `Le sobran dígitos: un NIT tiene ${BASE_PERSONA_JURIDICA} antes del guion (${BASE_MAXIMO} como máximo, si es una cédula nueva).`,
     }
   }
 
   const dv = digitoDeVerificacion(base)
 
   if (dvEscrito !== undefined && Number(dvEscrito) !== dv) {
+    // Con 9 dígitos y guion puede ser también una cédula de 10 a la que el
+    // campo le puso el guion antes de tiempo (ver `formatearNitAlEscribir`):
+    // decírselo evita que crea que su NIT está mal.
+    const pista =
+      base.length === BASE_PERSONA_JURIDICA
+        ? ` Si tu NIT tiene ${BASE_MAXIMO} dígitos, sigue escribiendo: el guion se acomoda solo.`
+        : ''
     return {
       ok: false,
       motivo: 'digito-de-verificacion',
       // Decirle cuál ES ahorra el viaje al RUT: el dígito se deduce del resto.
-      mensaje: `El dígito de verificación no corresponde. Para ${conPuntos(base)} es ${dv}.`,
+      mensaje: `El dígito de verificación no corresponde. Para ${conPuntos(base)} es ${dv}.${pista}`,
     }
   }
 
@@ -172,13 +184,21 @@ export function revisarNit(crudo: string): RevisionDeNit {
   }
 }
 
+/** Lo más largo que puede quedar en el campo: 10 dígitos, el guion y la DV. */
+export const LARGO_MAXIMO_AL_ESCRIBIR = BASE_MAXIMO + 2
+
 /**
- * Formatea el NIT MIENTRAS se escribe: sólo dígitos, y al llegar al noveno
- * pone el guion solo; lo que sigue es el dígito de verificación (uno). Nico
- * (2026-09-07): «coloca tú solito el guion cuando llegue al número». Nunca
- * más de 9 + 1: lo que sobre se descarta al teclear, no después con un error.
+ * Formatea el NIT MIENTRAS se escribe: sólo dígitos, y el guion lo pone el
+ * campo, no la persona (Nico, 2026-09-07: «cuando llegues al número máximo
+ * coloca el guion dentro del input»). Como el base puede tener 9 o 10
+ * dígitos, el guion va siempre antes del ÚLTIMO dígito en cuanto hay diez o
+ * más: `9001234568` → `900123456-8`, `10203040509` → `1020304050-9`. Con
+ * nueve o menos no hay guion: todavía es el número. Nunca más de 10 + 1: lo
+ * que sobre se descarta al teclear, no después con un error (antes se podían
+ * escribir 21 ceros y recién al enviar se quejaba).
  */
 export function formatearNitAlEscribir(crudo: string): string {
-  const digitos = crudo.replace(/\D/g, '').slice(0, 10);
-  return digitos.length > 9 ? `${digitos.slice(0, 9)}-${digitos.slice(9)}` : digitos;
+  const digitos = crudo.replace(/\D/g, '').slice(0, BASE_MAXIMO + 1)
+  if (digitos.length <= BASE_PERSONA_JURIDICA) return digitos
+  return `${digitos.slice(0, -1)}-${digitos.slice(-1)}`
 }

@@ -9,7 +9,7 @@ import {
 
 const VALID: AgencyStepFormValues = {
   legalName: 'Inmobiliaria Test SAS',
-  nit: '900123456-7',
+  nit: '900123456-8',
   address: { calle: 'Calle 10 # 20-30', ciudad: 'Medellín', departamento: 'Antioquia', codigoPostal: '' },
   primaryContactEmail: 'contacto@inmobiliaria.test',
   primaryContactPhone: '3001234567',
@@ -99,7 +99,7 @@ describe('toAgencyRequest', () => {
   it('maps the form values to the agent request, defaulting billingModel to standard', () => {
     expect(toAgencyRequest(VALID)).toEqual({
       legalName: 'Inmobiliaria Test SAS',
-      nit: '900123456-7',
+      nit: '900123456-8',
       address: { calle: 'Calle 10 # 20-30', ciudad: 'Medellín', departamento: 'Antioquia' },
       primaryContactEmail: 'contacto@inmobiliaria.test',
       primaryContactPhone: '3001234567',

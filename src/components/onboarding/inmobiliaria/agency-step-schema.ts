@@ -6,6 +6,7 @@
  * `AgencyStepForm` (react-hook-form holds the field state; zod is the single
  * source of truth for validation rules — same pattern as `ThresholdEditor`).
  */
+import { revisarNit } from '@/lib/onboarding/nit'
 import { z } from 'zod'
 import type { OnboardingSessionAgencyRequest } from '@/lib/api/generated/agency'
 
@@ -65,7 +66,16 @@ export function errorDelTelefono(valor: string, pais: string): string | null {
 
 const camposDelPaso = z.object({
   legalName: z.string().trim().min(1, 'La razón social es obligatoria.'),
-  nit: z.string().trim().min(1, 'El NIT es obligatorio.'),
+  // La misma revisión que el paso previo: 9 o 10 dígitos y el dígito de
+  // verificación de la DIAN. El agente rechaza cualquier otra cosa con 400.
+  nit: z
+    .string()
+    .trim()
+    .min(1, 'El NIT es obligatorio.')
+    .superRefine((valor, ctx) => {
+      const revision = revisarNit(valor)
+      if (!revision.ok) ctx.addIssue({ code: z.ZodIssueCode.custom, message: revision.mensaje })
+    }),
   address: z.object({
     // `calle` (contract key) is surfaced to the user as "Dirección"; `ciudad`
     // as "Municipio". The keys stay as the agent contract defines them.

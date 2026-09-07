@@ -75,10 +75,10 @@ function fillEditableFields() {
 
 describe('<AgencyStepForm> — prefill', () => {
   it('renders with legalName/nit prefilled from the pre-step values', () => {
-    render({ prefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-7' } })
+    render({ prefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-8' } })
 
     expect(byId('legalName').value).toBe('Inmobiliaria Andes SAS')
-    expect(byId('nit').value).toBe('900123456-7')
+    expect(byId('nit').value).toBe('900123456-8')
   })
 
   it('renders with proposedAgencyName/contactEmail values from the resume draft', () => {
@@ -107,7 +107,7 @@ describe('<AgencyStepForm> — prefill', () => {
 
 describe('<AgencyStepForm> — razón social + NIT read-only', () => {
   it('renders legalName and nit as read-only when both come prefilled', () => {
-    render({ prefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-7' } })
+    render({ prefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-8' } })
 
     expect(byId('legalName').readOnly).toBe(true)
     expect(byId('nit').readOnly).toBe(true)
@@ -118,7 +118,7 @@ describe('<AgencyStepForm> — razón social + NIT read-only', () => {
     render({
       prefill: {
         legalName: 'Inmobiliaria Andes SAS',
-        nit: '900123456-7',
+        nit: '900123456-8',
         // Departamento + Municipio are comboboxes (not operable under happy-dom),
         // so seed them here to let the submit pass the schema.
         address: { departamento: 'Cundinamarca', ciudad: 'Bogotá', calle: '', codigoPostal: '' },
@@ -132,7 +132,7 @@ describe('<AgencyStepForm> — razón social + NIT read-only', () => {
     expect(onSubmit).toHaveBeenCalledTimes(1)
     const body = onSubmit.mock.calls[0][0]
     expect(body.legalName).toBe('Inmobiliaria Andes SAS')
-    expect(body.nit).toBe('900123456-7')
+    expect(body.nit).toBe('900123456-8')
   })
 
   it('degrades legalName + nit to editable inputs when NOT prefilled (fallback)', () => {
@@ -149,7 +149,7 @@ describe('<AgencyStepForm> — razón social + NIT read-only', () => {
   })
 
   it('keeps address/contact fields editable even when legalName + nit are confirmed', () => {
-    render({ prefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-7' } })
+    render({ prefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-8' } })
 
     expect(byId('address.calle').readOnly).toBe(false)
     expect(byId('primaryContactEmail').readOnly).toBe(false)

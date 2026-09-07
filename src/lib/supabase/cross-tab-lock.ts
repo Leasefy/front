@@ -1,3 +1,4 @@
+import { NavigatorLockAcquireTimeoutError } from '@supabase/auth-js'
 import type { LockFunc } from '@supabase/supabase-js'
 
 /**
@@ -37,14 +38,18 @@ import type { LockFunc } from '@supabase/supabase-js'
 /**
  * Error de "no pude tomar el lock a tiempo".
  *
- * auth-js documenta el contrato por PROPIEDAD, no por clase: «An error is a
- * timeout if it has `isAcquireTimeout` set to true». Por eso alcanza con la
- * marca y no hace falta importar su clase interna (que además no está
- * re-exportada por `@supabase/supabase-js`).
+ * auth-js DOCUMENTA el contrato por propiedad («an error is a timeout if it
+ * has `isAcquireTimeout` set to true»), pero su `_autoRefreshTokenTick`
+ * (2.106) lo comprueba con `instanceof LockAcquireTimeoutError`. Un error
+ * propio con la marca pasaba el contrato documentado y no el real: el tick
+ * lo relanzaba, y cada carga con sesión dejaba un rechazo sin manejar en la
+ * consola («1 error» en el overlay de Next, visto el 2026-09-07). Por eso se
+ * hereda de la clase de auth-js —`@supabase/auth-js` es dependencia directa,
+ * fijada a la MISMA versión que usa supabase-js, para que sea la misma clase—
+ * que además trae la marca `isAcquireTimeout` por si alguna versión vuelve a
+ * mirar la propiedad.
  */
-class LockAcquireTimeout extends Error {
-  readonly isAcquireTimeout = true
-
+class LockAcquireTimeout extends NavigatorLockAcquireTimeoutError {
   constructor(name: string) {
     super(`No se pudo tomar el lock de auth "${name}" a tiempo`)
     this.name = 'LockAcquireTimeoutError'

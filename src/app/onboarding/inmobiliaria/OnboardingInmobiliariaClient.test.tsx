@@ -312,7 +312,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     })
   })
 
-  it('bloquea el envío cuando el NIT trae letras y lo dice sin jerga', () => {
+  it('el campo del NIT sólo deja dígitos, y con pocos bloquea el envío y lo dice sin jerga', () => {
     const provision = vi.fn()
     mockUseOnboardingProvisioning.mockReturnValue(
       baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
@@ -321,11 +321,25 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
 
     setInputValue(byId('ownerFullName'), 'Ana Pérez')
     setInputValue(byId('agencyName'), 'Inmobiliaria Andes SAS')
+    // Las letras y los puntos no entran: el campo se queda con los dígitos.
     setInputValue(byId('agencyNit'), 'NIT 900.123')
+    expect(byId('agencyNit').value).toBe('900123')
     submitNameForm()
 
     expect(provision).not.toHaveBeenCalled()
-    expect(container.textContent).toContain('sólo números')
+    expect(container.textContent).toContain('Le faltan dígitos')
+  })
+
+  it('el guion lo pone el campo al décimo dígito, y no deja escribir de más', () => {
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ status: 'needs-info', sessionId: null, provision: vi.fn() }),
+    )
+    render()
+
+    setInputValue(byId('agencyNit'), '9001234568')
+    expect(byId('agencyNit').value).toBe('900123456-8')
+    setInputValue(byId('agencyNit'), '900000000000000000000')
+    expect(byId('agencyNit').value).toBe('9000000000-0')
   })
 
   it('rechaza un dígito de verificación que no corresponde y dice cuál es', () => {

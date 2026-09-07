@@ -1,62 +1,46 @@
 'use client';
 
 /**
- * /panel/inmobiliaria/avaluos/[id] — agency avalúo detail page.
+ * `/panel/inmobiliaria/avaluos/[id]` — se fue con su hermana `/avaluos`.
  *
- * Reuses useAvaluoStatus (polling hook) and AvaluoEstadoCard (status card
- * with download link) from plans 34-03/34-04.
+ * Era una TERCERA implementación del detalle de un avalúo, divergente de la
+ * canónica (`/inmuebles/avaluos/[id]`, que es la que enlaza el sidebar):
  *
- * The parent layout provides AuthProvider + agency sidebar — do NOT add
- * ForceLightMode here (panel is not a public light-only route).
+ *   · Sin guard. La canónica está detrás de `PageGuard module="avaluos"`; ésta
+ *     no comprobaba nada, así que cualquier miembro de la agencia —incluido
+ *     uno sin el módulo— podía abrirla con un id en la URL.
+ *   · Contra otro servicio. Leía `GET {AVALUO_API_URL}/api/avaluo/:id/status`
+ *     del micro de avalúos, público y sin auth, en vez de
+ *     `GET /ai-hub/work-items/avaluos/:id` del back.
+ *   · Sin entrada. Ningún enlace del panel llevaba acá, y su propio «Todos los
+ *     avalúos» apuntaba a `/avaluos`, que redirige a OTRO módulo.
+ *
+ * La ruta no se borra —puede haber enlaces guardados— pero manda a la pantalla
+ * de verdad, que sí valida el permiso. `useAvaluoStatus` y `AvaluoEstadoCard`
+ * siguen vivos: los usa el seguimiento público del avalúo.
  */
 
-import Link from 'next/link';
-import { ArrowLeft } from '@phosphor-icons/react';
-import { useParams } from 'next/navigation';
-import { useAvaluoStatus } from '@/lib/hooks/use-avaluo-status';
-import { AvaluoEstadoCard } from '@/components/avaluo/AvaluoEstadoCard';
+import { useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 
-export default function PanelAvaluoDetailPage() {
+import { Spinner } from '@/components/ui';
+
+export default function AvaluoDetalleLegacyPage() {
   const params = useParams<{ id: string }>();
-  const id = params.id;
+  const router = useRouter();
+  const id = params?.id;
 
-  const { statusData, isLoading, isError } = useAvaluoStatus(id ?? null);
+  useEffect(() => {
+    router.replace(
+      id
+        ? `/panel/inmobiliaria/inmuebles/avaluos/${id}`
+        : '/panel/inmobiliaria/inmuebles/avaluos',
+    );
+  }, [id, router]);
 
   return (
-    <div className="p-6 lg:p-8 space-y-6">
-      {/* ── Back nav ──────────────────────────────────────────────── */}
-      <Link
-        href="/panel/inmobiliaria/avaluos"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Todos los avalúos
-      </Link>
-
-      {/* ── Header ────────────────────────────────────────────────── */}
-      <div className="space-y-1">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Avalúo comercial
-        </p>
-        <h1 className="text-h2 text-fg">
-          Detalle del avalúo
-        </h1>
-        {id && (
-          <p className="text-sm text-muted-foreground line-clamp-2 max-w-2xl">
-            Referencia: <span className="font-mono">{id}</span>
-          </p>
-        )}
-      </div>
-
-      {/* ── Status card — reuses AvaluoEstadoCard from 34-04 ─────── */}
-      <div className="max-w-xl">
-        <AvaluoEstadoCard
-          submissionId={id ?? ''}
-          statusData={statusData}
-          isLoading={isLoading}
-          isError={isError}
-        />
-      </div>
+    <div className="flex items-center justify-center py-24">
+      <Spinner size="md" variant="muted" />
     </div>
   );
 }

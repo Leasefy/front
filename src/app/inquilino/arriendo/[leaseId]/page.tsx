@@ -70,7 +70,7 @@ export default function LeaseDetailPage() {
         <FalloDeCarga
           error={leaseError}
           queEs="tu arriendo"
-          onReintentar={() => void refetchLease()}
+          onReintentar={refetchLease}
           volverA={{ label: 'Mi arriendo', href: '/inquilino/arriendo' }}
         />
       </div>

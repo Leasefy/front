@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';

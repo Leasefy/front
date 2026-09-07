@@ -15,7 +15,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowSquareOut } from '@phosphor-icons/react'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'

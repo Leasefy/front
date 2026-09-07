@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
 import { useDocumentAnalysis } from '@/lib/hooks/useDocumentAnalysis';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import type { DocumentAnalysisResult } from '@/lib/api/ai-analysis.service';
 
 // ============================================================================

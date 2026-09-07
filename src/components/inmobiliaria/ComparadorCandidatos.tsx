@@ -22,6 +22,14 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { IconTooltip } from '@/components/ui/icon-tooltip'
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
   construirComparacion,
   type CandidatoComparado,
 } from '@/lib/inmobiliaria/comparacion'
@@ -62,30 +70,35 @@ export function ComparadorCandidatos({
   const filas = useMemo(() => construirComparacion(entradas), [entradas])
 
   return (
-    <div className={cn('overflow-x-auto overscroll-contain', className)} data-lenis-prevent>
-      <table
-        className="w-full min-w-[640px] border-separate border-spacing-0"
+    // El scroll horizontal y su `overscroll` los pone el `Table` del DS; acá
+    // sólo queda el `data-lenis-prevent`, que Lenis busca en los ancestros.
+    // Dos contenedores de scroll anidados dejaban el de afuera inerte y, con
+    // `overscroll-contain` en los dos ejes, ese contenedor inerte se tragaba la
+    // rueda del mouse.
+    <div className={className} data-lenis-prevent>
+      <Table
+        className="min-w-[640px] border-separate border-spacing-0"
         data-testid="comparador-candidatos"
       >
-        <thead>
-          <tr>
-            <th
+        <TableHeader className="bg-transparent dark:bg-transparent">
+          <TableRow className="hover:bg-transparent">
+            <TableHead
               scope="col"
-              className="sticky left-0 top-0 z-20 w-[200px] border-b border-border bg-card px-4 py-4 text-left align-bottom"
+              className="sticky left-0 top-0 z-20 h-auto w-[200px] border-b border-border bg-card px-4 py-4 align-bottom font-sans normal-case"
             >
               {/* Mismo tracking que el encabezado del DS (`TableHead`, 0.04em);
                   `tracking-mono-label` (0.12em) lo separaba del resto del panel. */}
               <span className="font-mono text-label uppercase tracking-[0.04em] text-fg-subtle">
                 Comparación
               </span>
-            </th>
+            </TableHead>
             {entradas.map(({ candidato, evaluacion }) => {
               const nivel = evaluacion?.level ?? candidato.riskScore?.level
               return (
-                <th
+                <TableHead
                   key={candidato.id}
                   scope="col"
-                  className="sticky top-0 z-10 min-w-[180px] border-b border-l border-border bg-card px-4 py-4 text-left align-bottom"
+                  className="sticky top-0 z-10 h-auto min-w-[180px] border-b border-l border-border bg-card px-4 py-4 align-bottom font-sans normal-case"
                 >
                   <div className="flex items-center gap-2.5">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-medium text-primary">
@@ -107,19 +120,24 @@ export function ComparadorCandidatos({
                       )}
                     </div>
                   </div>
-                </th>
+                </TableHead>
               )
             })}
-          </tr>
-        </thead>
+          </TableRow>
+        </TableHeader>
 
-        <tbody>
+        <TableBody>
           {filas.map((f) => (
-            <tr key={f.clave} className="group">
-              <th
+            <TableRow key={f.clave} className="group">
+              <TableHead
                 scope="row"
                 className={cn(
-                  'sticky left-0 z-10 border-b border-border bg-card px-4 py-3 text-left align-top',
+                  // Encabezado de FILA: es una etiqueta, no un encabezado de
+                  // columna, así que se le quita el mono-mayúsculas que el
+                  // `TableHead` del DS aplica a los de columna (heredable: sin
+                  // `font-sans`/`normal-case` el texto de la fila salía en
+                  // JetBrains Mono y en versales).
+                  'sticky left-0 z-10 h-auto border-b border-border bg-card px-4 py-3 align-top font-sans normal-case',
                   // Lo que no diferencia, no decide: se atenúa.
                   f.todosIguales && 'opacity-60',
                 )}
@@ -135,12 +153,12 @@ export function ComparadorCandidatos({
                     </IconTooltip>
                   )}
                 </span>
-              </th>
+              </TableHead>
 
               {f.celdas.map((celda, i) => {
                 const esMejor = f.mejores.includes(i)
                 return (
-                  <td
+                  <TableCell
                     key={`${f.clave}-${i}`}
                     className={cn(
                       'border-b border-l border-border px-4 py-3 align-top transition-colors',
@@ -179,22 +197,22 @@ export function ComparadorCandidatos({
                         )}
                       </div>
                     )}
-                  </td>
+                  </TableCell>
                 )
               })}
-            </tr>
+            </TableRow>
           ))}
 
           {(onVerFicha || onElegir) && (
-            <tr>
-              <th
+            <TableRow className="hover:bg-transparent">
+              <TableHead
                 scope="row"
-                className="sticky left-0 z-10 bg-card px-4 py-4 text-left align-top"
+                className="sticky left-0 z-10 h-auto bg-card px-4 py-4 align-top font-sans normal-case"
               >
                 <span className="sr-only">Acciones</span>
-              </th>
+              </TableHead>
               {entradas.map(({ candidato }) => (
-                <td key={`acc-${candidato.id}`} className="border-l border-border px-4 py-4 align-top">
+                <TableCell key={`acc-${candidato.id}`} className="border-l border-border px-4 py-4 align-top">
                   <div className="flex flex-col gap-2">
                     {onElegir && (
                       <Button
@@ -217,12 +235,12 @@ export function ComparadorCandidatos({
                       </Button>
                     )}
                   </div>
-                </td>
+                </TableCell>
               ))}
-            </tr>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   )
 }

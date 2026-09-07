@@ -1,9 +1,10 @@
 /**
  * inquilinos.service.test.ts — la sección que no existía.
  *
- * El back es sólo lectura (`InquilinosController`: dos `@Get`, ni un `@Post`),
- * así que acá no hay cuerpos que contrastar contra un DTO. Lo que sí se puede
- * romper en silencio es el QUERY: `estado` es un enum de tres valores
+ * Desde el 2026-09-04 el back SÍ tiene un `@Post` (crear un inquilino solo),
+ * así que ahora hay un cuerpo que contrastar contra un DTO — y con
+ * `whitelist + forbidNonWhitelisted` una clave de más es un 400 del request
+ * entero. Lo que además se puede romper en silencio es el QUERY: `estado` es un enum de tres valores
  * (`activos | terminados | todos`) y `buscar` un texto libre. Mandar
  * `estado=activo` o `q=` en vez de `buscar=` no da error — da la lista
  * completa, que se ve exactamente igual a «no hay filtro aplicado».
@@ -15,6 +16,7 @@
  *   (4) obtener → GET /:tenantId, con el id escapado
  *   (5) el agrupamiento por persona viene del back y no se vuelve a hacer acá
  *   (6) arriendosVigentes cuenta ENDING_SOON como vivo
+ *   (7) crear → POST con el cuerpo que acepta `CreateInquilinoDto`
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -32,6 +34,13 @@ const PARAMETROS_DEL_CONTROLLER = ['buscar', 'estado'];
 
 /** Los tres valores que declara el `@ApiQuery({ enum: [...] })` del back. */
 const ESTADOS_DEL_CONTROLLER = ['activos', 'terminados', 'todos'];
+
+/**
+ * Las ÚNICAS claves de `CreateInquilinoDto`
+ * (back-erp/src/inmobiliaria/inquilinos/dto/create-inquilino.dto.ts). El back
+ * corre con `forbidNonWhitelisted: true`: una de más y el POST entero es 400.
+ */
+const CLAVES_DEL_DTO = ['nombre', 'tipoDocumento', 'documento', 'correo', 'telefono'];
 
 function mockFetchOnce(body: unknown, init: { ok?: boolean; status?: number } = {}) {
   const { ok = true, status = 200 } = init;
@@ -126,6 +135,7 @@ describe('inquilinosApi.obtener', () => {
       nombre: 'Jorge Restrepo',
       email: 'jorge@correo.co',
       telefono: null,
+      documento: null,
       arriendos: [],
     };
     const fetchMock = mockFetchOnce(persona);
@@ -157,6 +167,7 @@ describe('la forma que devuelve el back', () => {
         nombre: 'María Gómez',
         email: 'maria@correo.co',
         telefono: '3105551234',
+        documento: '52123456',
         arriendos: [
           {
             leaseId: 'l-1',
@@ -198,6 +209,7 @@ describe('arriendosVigentes', () => {
     nombre: 'María Gómez',
     email: null,
     telefono: null,
+    documento: null,
     arriendos: (['ACTIVE', 'ENDING_SOON', 'ENDED', 'TERMINATED'] as const).map((estado, i) => ({
       leaseId: `l-${i}`,
       contractId: `c-${i}`,
@@ -222,5 +234,55 @@ describe('arriendosVigentes', () => {
       'ACTIVE',
       'ENDING_SOON',
     ]);
+  });
+});
+
+// ── (7) crear ────────────────────────────────────────────────────────────────
+
+describe('inquilinosApi.crear', () => {
+  it('POSTea a /inmobiliaria/inquilinos con el cuerpo tal cual', async () => {
+    const fetchMock = mockFetchOnce({
+      inquilino: {
+        tenantId: 'u-1',
+        nombre: 'Carla Mesa',
+        email: 'carla@ejemplo.co',
+        telefono: null,
+        documento: '1020304050',
+        arriendos: [],
+      },
+      invitado: true,
+    });
+
+    const r = await inquilinosApi.crear({
+      nombre: 'Carla Mesa',
+      tipoDocumento: 'CC',
+      documento: '1020304050',
+      correo: 'carla@ejemplo.co',
+    });
+
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/inquilinos')).toBe(true);
+    expect(opts.method).toBe('POST');
+    expect(JSON.parse(opts.body as string)).toEqual({
+      nombre: 'Carla Mesa',
+      tipoDocumento: 'CC',
+      documento: '1020304050',
+      correo: 'carla@ejemplo.co',
+    });
+    // La persona vuelve con la MISMA forma que una fila de la lista.
+    expect(r.inquilino.arriendos).toEqual([]);
+    expect(r.invitado).toBe(true);
+  });
+
+  it('🔴 no manda ninguna clave que el DTO no acepte', async () => {
+    const fetchMock = mockFetchOnce({ inquilino: {}, invitado: false });
+
+    await inquilinosApi.crear({ nombre: 'Carla Mesa', documento: '1020304050' });
+
+    const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const cuerpo = JSON.parse(opts.body as string) as Record<string, unknown>;
+    for (const clave of Object.keys(cuerpo)) {
+      expect(CLAVES_DEL_DTO).toContain(clave);
+    }
   });
 });

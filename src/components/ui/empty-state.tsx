@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 /**
- * EmptyState — el estado vacío del panel.
+ * EmptyState — EL estado vacío del panel. Canónico único.
  *
  * Antes delegaba en el `EmptyState` de cadence, que pinta el icono sobre una
  * loseta con gradiente cobalto→cian. Nico (2026-09-03): «hay unos gradientes
@@ -14,9 +14,23 @@ import { Button } from '@/components/ui/button';
  * el cambio de cara se hace acá una sola vez: icono en un círculo gris
  * (`bg-surface-muted`), título en tinta, descripción apagada, CTA secundaria.
  *
+ * ── Por qué éste y no el otro ──────────────────────────────────────────────
+ *
+ * Hasta el 2026-09-05 convivían DOS estados vacíos con la misma cara nominal:
+ * éste y `@/components/data-display/EmptyState`. El otro pintaba el ícono en
+ * un `rounded-2xl` —una loseta, no un círculo— y armaba sus CTAs con `<a>` y
+ * `<button>` crudos con clases a mano. Gana éste porque cumple la regla
+ * literal («encerrado en círculos») y porque sus CTAs son el `Button` del DS,
+ * así que heredan pill, foco cobalto y `active:scale`.
+ *
+ * `data-display/EmptyState` sigue existiendo como ADAPTADOR sobre éste: mantiene
+ * su API (`primaryCta` / `secondaryCta`) para no tocar sus ~47 call sites, pero
+ * ya no dibuja nada propio.
+ *
  * La API de props se conserva tal cual:
  *   - `icon` sigue siendo un `Icon` de Phosphor.
  *   - `action` sigue siendo `{ label, href }` o `{ label, onClick }`.
+ *   - `secondaryAction` (nuevo) es la segunda salida, en tono link.
  */
 
 // ============================================================================
@@ -44,6 +58,8 @@ export interface EmptyStateProps {
   description: string;
   /** Optional CTA button */
   action?: EmptyStateAction;
+  /** Segunda salida, en tono link (la usa el adaptador de data-display). */
+  secondaryAction?: EmptyStateAction;
   /** Additional CSS classes */
   className?: string;
 }
@@ -52,15 +68,40 @@ export interface EmptyStateProps {
 // Component
 // ============================================================================
 
+function renderAction(
+  action: EmptyStateAction,
+  variant: 'secondary' | 'link',
+  size: 'sm',
+) {
+  if (action.href) {
+    return (
+      <Button asChild variant={variant} size={size}>
+        <Link href={action.href}>{action.label}</Link>
+      </Button>
+    );
+  }
+  return (
+    <Button type="button" variant={variant} size={size} onClick={action.onClick}>
+      {action.label}
+    </Button>
+  );
+}
+
 export function EmptyState({
   icon: IconComponent,
   title,
   description,
   action,
+  secondaryAction,
   className,
 }: EmptyStateProps) {
   return (
     <div
+      // role="status" + aria-label hacen que el lector de pantalla anuncie el
+      // vacío UNA vez con su título, en vez de leer ícono + título + párrafo
+      // sueltos cuando la lista termina de cargar.
+      role="status"
+      aria-label={title}
       className={cn('flex flex-col items-center justify-center px-6 py-12 text-center', className)}
       data-testid="empty-state"
     >
@@ -72,19 +113,8 @@ export function EmptyState({
       </span>
       <p className="text-[15px] font-semibold text-fg">{title}</p>
       <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-fg-muted">{description}</p>
-      {action && (
-        <div className="mt-5">
-          {action.href ? (
-            <Button asChild variant="secondary" size="sm">
-              <Link href={action.href}>{action.label}</Link>
-            </Button>
-          ) : (
-            <Button variant="secondary" size="sm" onClick={action.onClick}>
-              {action.label}
-            </Button>
-          )}
-        </div>
-      )}
+      {action && <div className="mt-5">{renderAction(action, 'secondary', 'sm')}</div>}
+      {secondaryAction && <div className="mt-2">{renderAction(secondaryAction, 'link', 'sm')}</div>}
     </div>
   );
 }

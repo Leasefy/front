@@ -35,6 +35,8 @@ export interface TicketDetailProps {
   onSolicitarAprobacion: () => void
   onEscalar: () => void
   onCerrar: () => void
+  /** Se lo pasa tal cual a `TicketCTAs`: por qué las 5 acciones están apagadas. */
+  motivoDeshabilitado?: string
 }
 
 function severityVariant(sev: Severity): 'destructive' | 'warning' | 'secondary' {
@@ -51,6 +53,7 @@ export function TicketDetail({
   onSolicitarAprobacion,
   onEscalar,
   onCerrar,
+  motivoDeshabilitado,
 }: TicketDetailProps) {
   const { t } = useI18n()
   const { inmueble } = detail
@@ -105,6 +108,7 @@ export function TicketDetail({
                 onSolicitarAprobacion={onSolicitarAprobacion}
                 onEscalar={onEscalar}
                 onCerrar={onCerrar}
+                motivoDeshabilitado={motivoDeshabilitado}
               />
             </CardContent>
           </Card>

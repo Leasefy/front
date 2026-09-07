@@ -25,6 +25,19 @@ vi.mock('@/lib/hooks/use-onboarding-provisioning', () => ({
   useOnboardingProvisioning: () => mockUseOnboardingProvisioning(),
 }))
 
+/**
+ * 🔴 El paso «Miembros» ahora crea invitaciones REALES en el back
+ * (`POST /inmobiliaria/agency/members`, el mismo endpoint del panel). Antes
+ * mostraba los `rawToken` del micro, que ninguna ruta aceptaba: el enlace daba
+ * 404 y no se podía regenerar (auditoría 2026-09-05).
+ */
+const mockInviteUser = vi.fn()
+vi.mock('@/lib/api/inmobiliaria.service', () => ({
+  inmobiliariaConfigApi: {
+    inviteUser: (invite: unknown) => mockInviteUser(invite),
+  },
+}))
+
 import OnboardingInmobiliariaClient from './OnboardingInmobiliariaClient'
 import { OnboardingSessionError } from '@/lib/api/onboarding-session.service'
 import type { OnboardingSessionStepConflict } from '@/lib/api/generated/agency'
@@ -55,6 +68,8 @@ function baseProvisioningResult(overrides: Record<string, unknown> = {}) {
     status: 'ready',
     sessionId: 'sess-provisioned',
     agencyPrefill: null,
+    valoresGuardados: null,
+    fallo: null,
     retry: vi.fn(),
     provision: vi.fn(),
     ...overrides,
@@ -200,7 +215,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
 
   function fillAgencyFields() {
     setInputValue(byId('agencyName'), 'Inmobiliaria Andes SAS')
-    setInputValue(byId('agencyNit'), '900123456-7')
+    setInputValue(byId('agencyNit'), '900123456-8')
   }
 
   beforeEach(() => {
@@ -234,11 +249,11 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
       firstName: 'Ana',
       lastName: 'María Pérez Gómez',
       agencyName: 'Inmobiliaria Andes SAS',
-      nit: '900123456-7',
+      nit: '900123456-8',
     })
   })
 
-  it('falls back lastName to firstName for a single-word name', () => {
+  it('pide el apellido en vez de guardar «Ana Ana» como nombre y apellido', () => {
     const provision = vi.fn()
     mockUseOnboardingProvisioning.mockReturnValue(
       baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
@@ -249,12 +264,8 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     fillAgencyFields()
     submitNameForm()
 
-    expect(provision).toHaveBeenCalledWith({
-      firstName: 'Ana',
-      lastName: 'Ana',
-      agencyName: 'Inmobiliaria Andes SAS',
-      nit: '900123456-7',
-    })
+    expect(provision).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('Falta el apellido')
   })
 
   it('blocks submit and shows a hint per empty required field', () => {
@@ -267,12 +278,12 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     submitNameForm()
 
     expect(provision).not.toHaveBeenCalled()
-    expect(container.textContent).toContain('Ingresa tu nombre completo para continuar.')
+    expect(container.textContent).toContain('Escribe tu nombre completo para continuar.')
     expect(container.textContent).toContain('La razón social es obligatoria.')
     expect(container.textContent).toContain('El NIT es obligatorio.')
   })
 
-  // Colombian RUT documents print the NIT dot-separated ("900.123.456-7") —
+  // Colombian RUT documents print the NIT dot-separated ("900.123.456-8") —
   // accept it, but always post the normalized digits-only form.
   it('accepts a dotted RUT-style NIT and provisions with it normalized', () => {
     const provision = vi.fn()
@@ -283,7 +294,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
 
     setInputValue(byId('ownerFullName'), 'Ana Pérez')
     setInputValue(byId('agencyName'), 'Inmobiliaria Andes SAS')
-    setInputValue(byId('agencyNit'), '900.123.456-7')
+    setInputValue(byId('agencyNit'), '900.123.456-8')
     submitNameForm()
 
     expect(provision).toHaveBeenCalledTimes(1)
@@ -291,11 +302,11 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
       firstName: 'Ana',
       lastName: 'Pérez',
       agencyName: 'Inmobiliaria Andes SAS',
-      nit: '900123456-7',
+      nit: '900123456-8',
     })
   })
 
-  it('blocks submit when the NIT is not digits with an optional check digit', () => {
+  it('bloquea el envío cuando el NIT trae letras y lo dice sin jerga', () => {
     const provision = vi.fn()
     mockUseOnboardingProvisioning.mockReturnValue(
       baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
@@ -308,7 +319,65 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     submitNameForm()
 
     expect(provision).not.toHaveBeenCalled()
-    expect(container.textContent).toContain('Ingresa un NIT válido. Ej: 900123456-7')
+    expect(container.textContent).toContain('sólo números')
+  })
+
+  it('rechaza un dígito de verificación que no corresponde y dice cuál es', () => {
+    const provision = vi.fn()
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
+    )
+    render()
+
+    setInputValue(byId('ownerFullName'), 'Ana Pérez')
+    setInputValue(byId('agencyName'), 'Inmobiliaria Andes SAS')
+    // El ejemplo que traía el formulario: para 900.123.456 el dígito es 8.
+    setInputValue(byId('agencyNit'), '900123456-7')
+    submitNameForm()
+
+    expect(provision).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('es 8')
+  })
+
+  it('completa el dígito de verificación cuando no lo escriben', () => {
+    const provision = vi.fn()
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
+    )
+    render()
+
+    setInputValue(byId('ownerFullName'), 'Ana Pérez')
+    setInputValue(byId('agencyName'), 'Inmobiliaria Andes SAS')
+    setInputValue(byId('agencyNit'), '890903938')
+    submitNameForm()
+
+    expect(provision).toHaveBeenCalledWith(
+      expect.objectContaining({ nit: '890903938-8' }),
+    )
+  })
+
+  it('retoma con la razón social y el NIT que ya había escrito', () => {
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({
+        status: 'needs-info',
+        sessionId: null,
+        valoresGuardados: { razonSocial: 'Inmobiliaria Andes SAS', nit: '890903938-8' },
+      }),
+    )
+    render()
+
+    expect((byId('agencyName') as HTMLInputElement).value).toBe('Inmobiliaria Andes SAS')
+    expect((byId('agencyNit') as HTMLInputElement).value).toBe('890903938-8')
+  })
+
+  it('ofrece salir del registro desde el paso previo', () => {
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ status: 'needs-info', sessionId: null }),
+    )
+    render()
+
+    expect(container.querySelector('[data-testid="salir-del-registro"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="volver-a-perfiles"]')).toBeTruthy()
   })
 })
 
@@ -447,6 +516,11 @@ describe('<OnboardingInmobiliariaClient>', () => {
   })
 
   it('retains the members invite-links screen after submitMembers even though currentStep advances — advance is manual via "Continuar"', async () => {
+    mockInviteUser.mockResolvedValue({
+      emailDelivered: false,
+      emailStatus: 'not_configured',
+      invitationToken: 'tok-back-1',
+    })
     let hookCurrentStep: string = 'members'
     const submitMembers = vi.fn().mockImplementation(async () => {
       hookCurrentStep = 'payment_provider'
@@ -484,6 +558,16 @@ describe('<OnboardingInmobiliariaClient>', () => {
     expect(container.querySelector('[data-testid="members-invite-links"]')).toBeTruthy()
     expect(container.querySelector('[data-testid="payment-provider-step-form"]')).toBeFalsy()
     expect(container.textContent).toContain('admin@inmobiliaria.test')
+
+    // 🔴 La invitación se creó en el BACK y el enlace es el que sí abre.
+    expect(mockInviteUser).toHaveBeenCalledWith({
+      email: 'admin@inmobiliaria.test',
+      name: '',
+      role: 'agente',
+    })
+    expect(container.innerHTML).toContain('/invitacion/tok-back-1')
+    expect(container.innerHTML).not.toContain('raw-token-1')
+    expect(container.innerHTML).not.toContain('/onboarding/invitacion')
 
     const continueBtn = container.querySelector(
       '[data-testid="members-invite-continue"]',

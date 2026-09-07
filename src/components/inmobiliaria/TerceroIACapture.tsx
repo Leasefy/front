@@ -14,7 +14,7 @@ import {
   X,
   Plus,
 } from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';

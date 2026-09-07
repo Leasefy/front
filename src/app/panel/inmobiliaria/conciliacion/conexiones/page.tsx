@@ -28,7 +28,7 @@
 
 import { useMemo, useState } from 'react'
 import { AlertaAccionable } from '@/components/ui/alerta-accionable'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 import { PlugsConnected, Plus } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -422,7 +422,7 @@ function ConciliacionConexiones() {
           cargando={isLoading && items.length === 0}
           error={error}
           queEs="las conexiones"
-          onReintentar={() => void refetch()}
+          onReintentar={refetch}
           esqueleto={
             <div className="flex items-center justify-center py-16" data-testid="conexiones-loading">
               <Spinner />

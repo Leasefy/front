@@ -18,7 +18,7 @@
  */
 
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { Scales } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';

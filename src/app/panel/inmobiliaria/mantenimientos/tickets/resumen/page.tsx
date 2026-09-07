@@ -1,5 +1,6 @@
 'use client'
 
+import { ArrowClockwise } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { useMantenimientoOverview } from '@/lib/hooks/mantenimiento/use-mantenimiento-overview'
@@ -18,7 +19,7 @@ import { MantenimientoKpiStrip } from '@/components/inmobiliaria/mantenimiento/M
  */
 export default function MantenimientoOverviewPage() {
   const { t, locale } = useI18n()
-  const { data, isLoading, error } = useMantenimientoOverview()
+  const { data, isLoading, error, refetch } = useMantenimientoOverview()
 
   const generatedAtLabel = data?.generatedAt
     ? new Intl.DateTimeFormat(locale === 'es' ? 'es-CO' : 'en-US', {
@@ -46,15 +47,25 @@ export default function MantenimientoOverviewPage() {
         )}
       </header>
 
-      {/* KPI Strip — 7 health + 2 anti-gaming */}
-      <MantenimientoKpiStrip kpis={data?.kpis ?? null} isLoading={isLoading} />
-
-      {/* Error state */}
+      {/* El fallo va ARRIBA de los números, no debajo: si la consulta murió, lo
+          primero que hay que leer es que no hay datos —y con qué reintentar—,
+          no nueve tarjetas con raya que se leen como si fueran la operación. */}
       {error && !isLoading && (
-        <AlertaAccionable severidad="danger" titulo={t('inmobiliaria.ai.mantenimiento.overview.errorLoading')}>
+        <AlertaAccionable
+          severidad="danger"
+          titulo={t('inmobiliaria.ai.mantenimiento.overview.errorLoading')}
+          accion={{
+            label: t('inmobiliaria.ai.cobranza.deudores.errorRetry'),
+            onClick: () => void refetch(),
+            icon: <ArrowClockwise size={14} weight="bold" />,
+          }}
+        >
           {error}
         </AlertaAccionable>
       )}
+
+      {/* KPI Strip — 7 health + 2 anti-gaming */}
+      <MantenimientoKpiStrip kpis={data?.kpis ?? null} isLoading={isLoading} />
     </main>
   )
 }

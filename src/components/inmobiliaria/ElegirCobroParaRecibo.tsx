@@ -333,7 +333,7 @@ export function ElegirCobroParaRecibo({
                 className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border px-4 py-6 text-center"
                 data-testid="sin-cobros-pendientes"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-muted">
                   <Buildings className="h-5 w-5 text-fg-muted" aria-hidden="true" />
                 </div>
                 <div className="space-y-1">
@@ -367,7 +367,7 @@ export function ElegirCobroParaRecibo({
                     onClick={() => onElegir(c)}
                     data-testid={`cobro-pendiente-${c.month}`}
                     className={cn(
-                      'w-full rounded-lg border border-border bg-background p-3 text-left transition-all',
+                      'w-full rounded-lg border border-border bg-surface p-3 text-left transition-all',
                       'hover:border-fg/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     )}
                   >

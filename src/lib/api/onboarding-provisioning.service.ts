@@ -55,3 +55,31 @@ export function postUsersOnboarding(
 ): Promise<UsersMeOnboardingResponse> {
   return apiClient.post<UsersMeOnboardingResponse>('/users/me/onboarding', body)
 }
+
+/**
+ * Punto de retorno del asistente, tal como lo ve el back para el usuario
+ * autenticado. `GET /users/me/onboarding/session`.
+ *
+ * Existe para que quien cerró la pestaña (o entra desde otro computador) no
+ * tenga que volver a escribir la razón social y el NIT: si ya hay una sesión
+ * minteada, el asistente se monta directo en el paso donde iba.
+ *
+ * `agentSessionId` en null significa tres cosas distintas y `provisioningStatus`
+ * es lo que las separa:
+ *  - `null` → todavía no hay agencia; se muestra el paso previo.
+ *  - `'ACTIVE'` → la agencia existe y el traspaso al agente falló; reenviar el
+ *    paso previo lo vuelve a intentar (el back ya no devuelve null para siempre).
+ *  - `'FAILED'` → terminal, lo tiene que destrabar soporte; no ofrecer reintento.
+ */
+export interface OnboardingResumePoint {
+  agentSessionId: string | null
+  tenantId: string | null
+  provisioningStatus: 'PENDING' | 'ACTIVE' | 'FAILED' | null
+  legalName: string | null
+  nit: string | null
+  onboardingCompleted: boolean
+}
+
+export function getOnboardingResumePoint(): Promise<OnboardingResumePoint> {
+  return apiClient.get<OnboardingResumePoint>('/users/me/onboarding/session')
+}

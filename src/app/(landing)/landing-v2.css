@@ -36,7 +36,9 @@ html{scroll-padding-top:96px}
 .lv2 .btn.lg{height:48px;padding:0 28px;font-size:15px}
 .lv2 .btn.sm{height:36px;padding:0 16px;font-size:13px}
 .lv2 .btn.primary{background:var(--blue);color:#fff}.lv2 .btn.primary:hover{background:#1233d6}
-.lv2 .btn.outline{border:1px solid rgba(17,17,17,.2);color:var(--ink)}.lv2 .btn.outline:hover{border-color:rgba(17,17,17,.6)}
+/* `.outline` choca con la utilidad de Tailwind (`outline-style:solid`): sin esto el botón lleva un anillo de 3px de currentColor siempre, sin foco. */
+.lv2 .btn.outline{border:1px solid rgba(17,17,17,.2);color:var(--ink);outline:0}.lv2 .btn.outline:hover{border-color:rgba(17,17,17,.6)}
+.lv2 .btn.outline:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
 .lv2 .btn.inverse{background:#fff;color:var(--ink)}.lv2 .btn.inverse:hover{background:var(--paper)}
 .lv2 .btn.odark{border:1px solid rgba(255,255,255,.25);color:#fff}.lv2 .btn.odark:hover{border-color:rgba(255,255,255,.7);background:rgba(255,255,255,.05)}
 .lv2 .btn .ar{transition:transform .3s}.lv2 .btn:hover .ar{transform:translateX(2px)}
@@ -114,6 +116,18 @@ html.product-open .lv2 nav.main a[data-nav="producto"]::after{transform:scaleX(1
 .lv2 header:not(.scrolled) .mbtn{color:#fff}
 .lv2 header:not(.scrolled) .mbtn .bars span{background:#fff}
 .lv2 header.scrolled nav.main a::after{background:var(--ink)}
+/* Con el mega-menú abierto el header se pinta sólido, como si estuviera scrolleado: un panel claro colgando de una franja transparente sobre el hero oscuro era dos superficies pegadas por la mitad. */
+html.pm-open .lv2 header{background:var(--paper);border-color:var(--line)}
+html.pm-open .lv2 header .logo{color:var(--ink)}
+html.pm-open .lv2 header nav.main a{color:rgba(17,17,17,.7)}
+html.pm-open .lv2 header nav.main a:hover{color:var(--ink)}
+html.pm-open .lv2 header nav.main a::after{background:var(--ink)}
+html.pm-open .lv2 header .hcta .lnk{color:rgba(17,17,17,.7)}
+html.pm-open .lv2 header .hcta .lnk:hover{color:var(--ink)}
+html.pm-open .lv2 header .btn.outline{color:var(--ink);border-color:rgba(17,17,17,.2)}
+html.pm-open .lv2 header .btn.outline:hover{background:transparent;border-color:rgba(17,17,17,.6)}
+html.pm-open .lv2 header .mbtn{color:var(--ink)}
+html.pm-open .lv2 header .mbtn .bars span{background:var(--ink)}
 /* ── Link activo por RUTA ──────────────────────────────────────────────────
    Las reglas de `html.*-open` de más arriba marcan las internas que se abren
    ENCIMA de la landing. Esta marca dónde estás cuando el header viaja a otra
@@ -1555,7 +1569,7 @@ html.blog-open .lv2 .bp-grid .bp-card,
 /* ── Mega menú de producto ── */
 .lv2 .pm-ar{font-style:normal;display:inline-block;font-size:9px;margin-left:2px;transition:transform .3s var(--ease)}
 html.pm-open .lv2 .pm-ar{transform:rotate(180deg)}
-.lv2 #pmenu{position:absolute;left:0;right:0;top:100%;background:rgba(248,247,245,.96);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--line);box-shadow:0 40px 80px -40px rgba(17,17,17,.35);opacity:0;visibility:hidden;transform:translateY(-8px);transition:opacity .35s var(--ease),transform .35s var(--ease),visibility 0s .35s;pointer-events:none}
+.lv2 #pmenu{position:absolute;left:0;right:0;top:100%;background:var(--paper);border-top:1px solid var(--line);border-bottom:1px solid var(--line);box-shadow:0 40px 80px -40px rgba(17,17,17,.35);opacity:0;visibility:hidden;transform:translateY(-8px);transition:opacity .35s var(--ease),transform .35s var(--ease),visibility 0s .35s;pointer-events:none}
 html.pm-open .lv2 #pmenu{opacity:1;visibility:visible;transform:none;transition:opacity .35s var(--ease),transform .35s var(--ease);pointer-events:auto}
 .lv2 .pm-grid{display:grid;gap:28px;padding-top:28px;padding-bottom:24px}
 @media(min-width:1024px){.lv2 .pm-grid{grid-template-columns:5fr 7fr;column-gap:56px}}

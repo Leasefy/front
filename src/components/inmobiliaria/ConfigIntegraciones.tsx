@@ -17,14 +17,12 @@ import {
   Warning,
   ArrowsClockwise,
   Gear,
-  Info,
   Key,
   CaretRight,
   MagnifyingGlass,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { toast } from 'sonner';
 import { formatRelativeTime } from '@/lib/format';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -65,26 +63,40 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 interface ConfigIntegracionesProps {
   integrations: AgencyIntegration[];
-  onToggle?: (integrationId: string, enabled: boolean) => void;
-  onConfigure?: (integrationId: string, config: Record<string, string>) => void;
+  /**
+   * Prende o apaga la integración. Devuelve la promesa del pedido: el
+   * interruptor espera al back y el aviso lo da quien hizo el pedido.
+   */
+  onToggle?: (integrationId: string, enabled: boolean) => void | Promise<void>;
   isLoading?: boolean;
 }
 
 /**
- * ConfigIntegraciones - Integration management for third-party services
+ * ConfigIntegraciones — las integraciones de la agencia: prenderlas, apagarlas
+ * y ver en qué estado están.
  *
- * Features:
- * - Category tabs for filtering integrations
- * - Toggle switches to enable/disable integrations
- * - Status badges (active, inactive, pending, error)
- * - Configuration dialog for API key setup
- * - Last sync time display
- * - Error message display for failed integrations
+ * ── Lo que esta pantalla NO hace, y por qué ya no lo dice ───────────────────
+ *
+ * Tenía tres afirmaciones falsas, las tres con un `setTimeout` haciendo de
+ * servidor:
+ *
+ *   · «Probar conexión» esperaba 1,5 s y SIEMPRE decía «Conexión con X
+ *     exitosa». No contactaba nada; no podía fallar.
+ *   · «Guardar» esperaba 0,8 s, tiraba la API Key escrita y decía
+ *     «Configuración de X guardada». La llave nunca salía del navegador.
+ *   · El interruptor avisaba «X activado» ANTES de que el back contestara
+ *     —el pedido ni se esperaba— y encima el aviso salía dos veces, porque
+ *     quien hace el pedido ya avisa.
+ *
+ * No hay endpoint para las llaves de una integración (el back sólo expone
+ * `GET /agency/integrations` y `PUT /agency/integrations/:id` con
+ * `{ isEnabled }`). Así que el formulario se fue: el detalle dice qué pasa y
+ * qué falta, en vez de cobrar una llave que nadie guarda. Un botón apagado que
+ * explica por qué es mejor que uno que dice «guardado» y no guarda.
  */
 export function ConfigIntegraciones({
   integrations,
   onToggle,
-  onConfigure,
   isLoading = false,
 }: ConfigIntegracionesProps) {
   const { t } = useI18n();
@@ -101,8 +113,6 @@ export function ConfigIntegraciones({
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [selectedIntegration, setSelectedIntegration] = useState<AgencyIntegration | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [apiKey, setApiKey] = useState('');
 
   // Filter integrations by category and search
   const filteredIntegrations = useMemo(() => {
@@ -135,68 +145,28 @@ export function ConfigIntegraciones({
     return counts;
   }, [integrations]);
 
+  /**
+   * El interruptor ESPERA al back. El aviso lo da quien hizo el pedido
+   * (`SeccionIntegraciones.alternar`), que es el único que sabe si salió bien:
+   * avisar acá además duplicaba el toast y, cuando el back fallaba, se veían
+   * los dos —«activado» y «Error al actualizar»— uno encima del otro.
+   */
   const handleToggle = useCallback(
     async (integration: AgencyIntegration) => {
-      const newEnabled = !integration.isEnabled;
       setTogglingId(integration.id);
-
       try {
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 600));
-
-        onToggle?.(integration.id, newEnabled);
-        toast.success(
-          newEnabled
-            ? t('inmobiliaria.config.integrations.toasts.activated', { name: integration.name })
-            : t('inmobiliaria.config.integrations.toasts.deactivated', { name: integration.name })
-        );
-      } catch (err) {
-        toast.error(t('inmobiliaria.config.integrations.toasts.updateError', { name: integration.name }));
+        await onToggle?.(integration.id, !integration.isEnabled);
       } finally {
         setTogglingId(null);
       }
     },
-    [onToggle, t]
+    [onToggle]
   );
 
   const handleConfigure = useCallback((integration: AgencyIntegration) => {
     setSelectedIntegration(integration);
-    setApiKey('');
     setIsDialogOpen(true);
   }, []);
-
-  const handleSaveConfig = useCallback(async () => {
-    if (!selectedIntegration) return;
-
-    setIsSaving(true);
-    try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      onConfigure?.(selectedIntegration.id, { apiKey });
-      toast.success(t('inmobiliaria.config.integrations.toasts.configSaved', { name: selectedIntegration.name }));
-      setIsDialogOpen(false);
-    } catch (err) {
-      toast.error(t('inmobiliaria.config.integrations.toasts.configError', { name: selectedIntegration.name }));
-    } finally {
-      setIsSaving(false);
-    }
-  }, [selectedIntegration, apiKey, onConfigure, t]);
-
-  const handleTestConnection = useCallback(async () => {
-    if (!selectedIntegration) return;
-
-    setIsSaving(true);
-    try {
-      // Simulate connection test
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      toast.success(t('inmobiliaria.config.integrations.toasts.connectionSuccess', { name: selectedIntegration.name }));
-    } catch (err) {
-      toast.error(t('inmobiliaria.config.integrations.toasts.connectionError', { name: selectedIntegration.name }));
-    } finally {
-      setIsSaving(false);
-    }
-  }, [selectedIntegration, t]);
 
   const getStatusIcon = (status: IntegrationStatus) => {
     switch (status) {
@@ -235,19 +205,14 @@ export function ConfigIntegraciones({
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
-      {/* Header */}
+      {/* Cabecera. Sin título ni subtítulo propios: el marco de Configuración
+          ya pone «Integraciones» y su explicación arriba, y repetirlos dejaba
+          dos encabezados iguales pegados. Queda lo que ESE marco no dice:
+          cuántas están activas. */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h2 className="text-base font-semibold text-fg">{t('inmobiliaria.config.integrations.title')}</h2>
-            <Badge variant="secondary" className="bg-success-soft text-success">
-              {activeCount} {t('inmobiliaria.config.integrations.active')}
-            </Badge>
-          </div>
-          <p className="text-sm text-fg-muted mt-1">
-            {t('inmobiliaria.config.integrations.subtitleFull')}
-          </p>
-        </div>
+        <Badge variant="secondary" className="bg-success-soft text-success">
+          {activeCount} {t('inmobiliaria.config.integrations.active')}
+        </Badge>
 
         {/* Search */}
         <div className="relative w-full sm:w-64">
@@ -395,7 +360,9 @@ export function ConfigIntegraciones({
                         </div>
                       )}
 
-                    {/* Configure Button */}
+                    {/* Detalle. Se llamaba «Configurar» y abría un formulario
+                        de API Key que no guardaba nada: ahora dice lo que
+                        muestra. */}
                     {integration.isEnabled && (
                       <Button
                         variant="link"
@@ -404,7 +371,7 @@ export function ConfigIntegraciones({
                         className="mt-3 h-auto p-0"
                       >
                         <Gear className="w-4 h-4" />
-                        {t('inmobiliaria.config.integrations.configure')}
+                        {t('inmobiliaria.config.integrations.viewDetail')}
                         <CaretRight className="w-3 h-3" />
                       </Button>
                     )}
@@ -425,7 +392,11 @@ export function ConfigIntegraciones({
         )}
       </div>
 
-      {/* Configuration Dialog */}
+      {/* Detalle de la integración.
+          Era un formulario de API Key con «Probar conexión» y «Guardar»: los
+          dos esperaban un `setTimeout` y decían que había salido bien sin
+          hablar con nadie, y la llave escrita se tiraba. Como no hay endpoint
+          para las llaves, el diálogo dice qué hay y qué falta. */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -436,7 +407,7 @@ export function ConfigIntegraciones({
                   return <IconComponent className="w-5 h-5 text-fg-muted" weight="duotone" />;
                 })()
               )}
-              {t('inmobiliaria.config.integrations.configureTitle', { name: selectedIntegration?.name ?? '' })}
+              {selectedIntegration?.name ?? ''}
             </DialogTitle>
             <DialogDescription>
               {selectedIntegration?.description}
@@ -444,70 +415,57 @@ export function ConfigIntegraciones({
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            {/* Info Banner */}
-            <div className="p-3 rounded-md bg-primary-soft border border-primary/30">
-              <div className="flex gap-2">
-                <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" weight="fill" />
-                <p className="text-xs text-primary">
-                  {t('inmobiliaria.config.integrations.apiKeyInfo', { name: selectedIntegration?.name ?? '' })}
-                </p>
+            <dl className="grid grid-cols-2 gap-3">
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-fg-subtle">
+                  {t('inmobiliaria.config.integrations.detailStatus')}
+                </dt>
+                <dd className="mt-1 text-sm text-fg">
+                  {selectedIntegration
+                    ? getIntegrationStatusLabel(selectedIntegration.status)
+                    : '—'}
+                </dd>
               </div>
-            </div>
-
-            {/* API Key Input */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-foreground">
-                API Key <span className="text-danger">*</span>
-              </label>
-              <div className="relative">
-                <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
-                <Input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="sk_live_xxxxxxxxxxxxx"
-                  className="w-full pl-10 pr-4"
-                />
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-fg-subtle">
+                  {t('inmobiliaria.config.integrations.detailCategory')}
+                </dt>
+                <dd className="mt-1 text-sm text-fg">
+                  {selectedIntegration
+                    ? getIntegrationCategoryLabel(selectedIntegration.category)
+                    : '—'}
+                </dd>
               </div>
-            </div>
+              <div className="col-span-2">
+                <dt className="text-xs uppercase tracking-wide text-fg-subtle">
+                  {t('inmobiliaria.config.integrations.detailLastSync')}
+                </dt>
+                <dd className="mt-1 text-sm text-fg">
+                  {selectedIntegration?.lastSyncAt
+                    ? formatRelativeTime(selectedIntegration.lastSyncAt)
+                    : t('inmobiliaria.config.integrations.detailNeverSynced')}
+                </dd>
+              </div>
+            </dl>
 
-            {/* Test Connection Button */}
-            <Button
-              variant="outline"
-              hideArrow
-              className="w-full justify-center"
-              onClick={handleTestConnection}
-              disabled={!apiKey || isSaving}
-              isLoading={isSaving}
-            >
-              {!isSaving && <ArrowsClockwise className="w-4 h-4" />}
-              {t('inmobiliaria.config.integrations.testConnection')}
-            </Button>
+            {selectedIntegration?.status === 'error' && selectedIntegration.errorMessage && (
+              <div className="flex gap-2 rounded-md border border-danger/30 bg-danger-soft p-3">
+                <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
+                <p className="text-xs text-danger">{selectedIntegration.errorMessage}</p>
+              </div>
+            )}
+
+            <div className="flex gap-2 rounded-md border border-border bg-surface-muted p-3">
+              <Key className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
+              <p className="text-xs text-fg-muted">
+                {t('inmobiliaria.config.integrations.keysNotHere')}
+              </p>
+            </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="secondary"
-              hideArrow
-              onClick={() => setIsDialogOpen(false)}
-              disabled={isSaving}
-            >
-              {t('inmobiliaria.config.integrations.cancel')}
-            </Button>
-            <Button
-              hideArrow
-              onClick={handleSaveConfig}
-              disabled={!apiKey || isSaving}
-              isLoading={isSaving}
-            >
-              {isSaving ? (
-                t('inmobiliaria.config.integrations.saving')
-              ) : (
-                <>
-                  <Check className="w-4 h-4" />
-                  {t('inmobiliaria.config.integrations.save')}
-                </>
-              )}
+          <DialogFooter>
+            <Button hideArrow onClick={() => setIsDialogOpen(false)}>
+              {t('inmobiliaria.config.integrations.close')}
             </Button>
           </DialogFooter>
         </DialogContent>

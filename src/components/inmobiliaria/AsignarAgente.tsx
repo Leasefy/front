@@ -14,7 +14,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { Briefcase, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -107,7 +107,7 @@ export function AsignarAgente({
           error={errorCrudo}
           vacio={disponibles.length === 0}
           queEs="tu equipo"
-          onReintentar={() => void refetch()}
+          onReintentar={refetch}
           esqueleto={
             <div className="space-y-2 py-2">
               {[0, 1, 2].map((i) => (

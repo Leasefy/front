@@ -24,7 +24,7 @@
  * Capability token is read from localStorage (avaluo:cap:<submissionId>).
  */
 
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 import {
   ArrowDown,
   ArrowSquareOut,

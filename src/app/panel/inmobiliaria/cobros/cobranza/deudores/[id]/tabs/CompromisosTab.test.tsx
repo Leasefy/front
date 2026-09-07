@@ -28,7 +28,18 @@ vi.mock('@/lib/i18n', () => ({
 }))
 
 vi.mock('@/components/ui', () => ({
-  Button: ({ children }: { children: React.ReactNode }) => <button type="button">{children}</button>,
+  // Reenvía las props al <button>: «Ver la llamada donde la hizo» pasó a ser un
+  // <Button> del DS y el test lo busca por `data-testid` y lo clickea.
+  Button: ({
+    children,
+    hideArrow: _hideArrow,
+    isLoading: _isLoading,
+    ...props
+  }: React.ComponentProps<'button'> & { hideArrow?: boolean; isLoading?: boolean }) => (
+    <button type="button" {...props}>
+      {children}
+    </button>
+  ),
 }))
 
 vi.mock('@/components/inmobiliaria/cobranza/LlamadaDetalleSheet', () => ({

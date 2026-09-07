@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { CalendarBlank, CalendarPlus, Plus } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -17,6 +17,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { RESUMEN_AGENDA_VACIO } from '@/lib/api/agenda.types';
 import type { AgendaListResponse, EventoAgenda, EventoTipo, EventoEstado } from '@/lib/api/agenda.types';
 import { agendaApi } from '@/lib/api/agenda.service';
+import { fechaLocal } from '@/lib/fechas-locales';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
 import { NuevaTareaDrawer } from '@/components/inmobiliaria/agenda/NuevaTareaDrawer';
 import { EventoAgendaDrawer } from '@/components/inmobiliaria/agenda/EventoAgendaDrawer';
@@ -49,6 +50,7 @@ const TIPO_DOT: Record<EventoTipo, string> = {
 /** Badge classes per event status. */
 const ESTADO_BADGE: Record<EventoEstado, string> = {
   pendiente: 'bg-primary/10 text-primary',
+  confirmado: 'bg-success-500/10 text-success',
   completado: 'bg-success-500/10 text-success',
   vencido: 'bg-error-500/10 text-danger',
   cancelado: 'bg-neutral-400/10 text-muted-foreground',
@@ -122,8 +124,14 @@ function AgendaContent() {
     shouldPaginate,
   } = useTablePagination(eventos);
 
+  /**
+   * El día se lee del CALENDARIO, no del instante: `new Date('2026-10-01…Z')`
+   * en Colombia (UTC-5) cae el 30 de septiembre, y una agenda que corre los
+   * vencimientos un día para atrás no sirve. Mismo helper que usa el cajón,
+   * así que tabla y detalle nunca dicen días distintos.
+   */
   const formatFecha = (iso: string) => {
-    const d = new Date(iso);
+    const d = fechaLocal(iso) ?? new Date(iso);
     if (Number.isNaN(d.getTime())) return iso;
     return new Intl.DateTimeFormat(locale === 'es' ? 'es-CO' : 'en-US', {
       day: '2-digit',
@@ -254,34 +262,40 @@ function AgendaContent() {
                         </span>
                         {e.tipo === 'visita' && e.estadoRaw === 'PENDING' && (
                           <span className="flex items-center gap-1.5">
-                            <button
+                            <Button
                               type="button"
+                              variant="link"
+                              size="sm"
                               disabled={actingId === visitIdOf(e.id)}
                               onClick={(ev) => { ev.stopPropagation(); void runCitaAction(visitIdOf(e.id), () => agendaApi.aceptarCita(visitIdOf(e.id))); }}
-                              className="text-caption font-medium text-success hover:underline disabled:opacity-50"
+                              className="h-auto px-0 text-caption font-medium text-success"
                             >
                               {t(k('citaConfirmar'))}
-                            </button>
+                            </Button>
                             <span className="text-border">·</span>
-                            <button
+                            <Button
                               type="button"
+                              variant="link"
+                              size="sm"
                               disabled={actingId === visitIdOf(e.id)}
                               onClick={(ev) => { ev.stopPropagation(); void runCitaAction(visitIdOf(e.id), () => agendaApi.rechazarCita(visitIdOf(e.id))); }}
-                              className="text-caption font-medium text-danger hover:underline disabled:opacity-50"
+                              className="h-auto px-0 text-caption font-medium text-danger"
                             >
                               {t(k('citaRechazar'))}
-                            </button>
+                            </Button>
                           </span>
                         )}
                         {e.tipo === 'visita' && e.estadoRaw === 'ACCEPTED' && (
-                          <button
+                          <Button
                             type="button"
+                            variant="link"
+                            size="sm"
                             disabled={actingId === visitIdOf(e.id)}
                             onClick={(ev) => { ev.stopPropagation(); void runCitaAction(visitIdOf(e.id), () => agendaApi.cancelarCita(visitIdOf(e.id))); }}
-                            className="text-caption font-medium text-muted-foreground hover:underline disabled:opacity-50"
+                            className="h-auto px-0 text-caption font-medium text-fg-muted"
                           >
                             {t(k('citaCancelar'))}
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </TableCell>
@@ -321,7 +335,10 @@ function AgendaContent() {
 
 export default function AgendaPage() {
   return (
-    <PageGuard adminOnly>
+    // El sidebar (`arquitectura-del-panel.ts`) ofrece esta pantalla a TODOS
+    // los roles de agencia y el back la sirve con `operaciones:view`. Con
+    // `adminOnly` el enlace existía y al tocarlo te sacaba, sin decir nada.
+    <PageGuard module="operaciones">
       <AgendaContent />
     </PageGuard>
   );

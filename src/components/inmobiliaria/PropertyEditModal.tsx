@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { X } from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { uploadPropertyPhotos, PROPERTY_PHOTO_MAX_COUNT } from '@/lib/api/property-photos';
 import { PropertyPhotoPicker } from '@/components/inmobiliaria/PropertyPhotoPicker';

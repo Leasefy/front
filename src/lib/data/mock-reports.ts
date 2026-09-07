@@ -12,8 +12,18 @@ export interface OccupancySummary {
   totalProperties: number;
   rented: number;
   vacant: number;
-  vacancyRate: number;
-  avgDaysVacant: number;
+  /**
+   * `null` cuando no hay denominador. Ver `src/lib/tasas.ts`: una tasa sobre
+   * cero casos no es «0 %», es una tasa que nadie midió.
+   */
+  vacancyRate: number | null;
+  /**
+   * Días promedio vacante. `null` cuando no se puede calcular: el back no
+   * guarda desde cuándo está vacío un inmueble. Antes el adaptador ponía un
+   * `0` fijo y la tarjeta decía «Prom. 0 días vacante», que se lee como una
+   * medición perfecta en vez de como un dato que falta.
+   */
+  avgDaysVacant: number | null;
 }
 
 export interface OccupancyProperty {
@@ -31,12 +41,14 @@ export interface OccupancyByZone {
   total: number;
   rented: number;
   vacant: number;
-  vacancyRate: number;
+  /** `null` para una zona sin inmuebles cargados. */
+  vacancyRate: number | null;
 }
 
 export interface OccupancyMonthlyTrend {
   month: string;
-  occupancyRate: number;
+  /** `null` cuando el mes no se pudo medir. Ver `OcupacionTrendItem`. */
+  occupancyRate: number | null;
 }
 
 export interface OccupancyData {
@@ -54,9 +66,18 @@ export interface CollectionsSummary {
   totalExpected: number;
   totalCollected: number;
   totalLate: number;
-  moraRate: number;
-  avgDaysLate: number;
-  recoveryRate: number;
+  /**
+   * `null` cuando no hay denominador. Ver `src/lib/tasas.ts`: una tasa sobre
+   * cero casos no es «0 %», es una tasa que nadie midió.
+   */
+  moraRate: number | null;
+  /** `null` sin un solo contrato atrasado: no hay atraso que promediar. */
+  avgDaysLate: number | null;
+  /**
+   * `null` cuando no hay denominador. Ver `src/lib/tasas.ts`: una tasa sobre
+   * cero casos no es «0 %», es una tasa que nadie midió.
+   */
+  recoveryRate: number | null;
 }
 
 export interface CollectionsByMonth {
@@ -64,7 +85,8 @@ export interface CollectionsByMonth {
   expected: number;
   collected: number;
   late: number;
-  moraRate: number;
+  /** `null` para un mes sin cobros emitidos. */
+  moraRate: number | null;
 }
 
 export interface CollectionsDelinquent {
@@ -97,9 +119,14 @@ export interface AgentPerformance {
 
 export interface AgentTeamSummary {
   totalClosings: number;
-  avgConversion: number;
+  /**
+   * `null` cuando no hay denominador. Ver `src/lib/tasas.ts`: una tasa sobre
+   * cero casos no es «0 %», es una tasa que nadie midió.
+   */
+  avgConversion: number | null;
   totalRevenue: number;
-  avgDaysToClose: number;
+  /** `null` sin agentes: no hay a quién promediarle los días al cierre. */
+  avgDaysToClose: number | null;
 }
 
 export interface AgentPerformanceData {
@@ -116,7 +143,13 @@ export interface ExecutiveMetric {
   labelEs: string;
   labelEn: string;
   currentValue: number;
-  previousValue: number;
+  /**
+   * El valor del período anterior. OPCIONAL: sin él no hay variación que
+   * mostrar. `GET /reports/flujo-caja` no devuelve el mes previo, y el
+   * adaptador ponía `previousValue: 0` — un «0,0 %» de variación que nadie
+   * midió, sobre un mes anterior inventado.
+   */
+  previousValue?: number;
   format: 'percent' | 'currency' | 'number' | 'days';
   higherIsBetter: boolean;
 }

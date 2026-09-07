@@ -51,8 +51,15 @@ export interface BackendConversation {
    * `leaseId`; carried through only when the backend returns it.
    */
   caseId?: string;
-  property: { id: string; title: string };
-  otherParticipant: BackendParticipant;
+  /** BREAKING: era obligatorio. `null` en un hilo DIRECTO, que no cuelga de
+   * ningún aviso. La clave viaja siempre. */
+  property: { id: string; title: string } | null;
+  /** NUEVO. La inmobiliaria del hilo DIRECTO; `null` en los otros dos. */
+  agency?: { id: string; name: string; logoUrl: string | null } | null;
+  /** BREAKING: era obligatorio. `null` cuando el «otro» no es una persona —
+   * pasa cuando un inquilino o un propietario mira su hilo con la
+   * inmobiliaria, que es una organización y no un usuario. */
+  otherParticipant: BackendParticipant | null;
   lastMessage: BackendLastMessage | null;
   unreadCount: number;
   updatedAt: string;
@@ -143,7 +150,21 @@ export type ConversationActionResult = 'ok' | 'unavailable';
 // Frontend mapped types
 // ============================================================================
 
-export type ConversationKind = 'APPLICATION' | 'PROPERTY_INQUIRY';
+export type ConversationKind = 'APPLICATION' | 'PROPERTY_INQUIRY' | 'DIRECT';
+
+/**
+ * El distintivo de perfil que se pinta al lado del nombre en la conversación.
+ *
+ * Sale del rol REAL del interlocutor, no del hilo: en la misma bandeja de la
+ * inmobiliaria conviven inquilinos, propietarios y agentes, y sin la insignia
+ * no se sabe con quién se está hablando hasta leer el mensaje.
+ */
+export type PerfilEnLaConversacion =
+  | 'TENANT'
+  | 'LANDLORD'
+  | 'AGENT'
+  | 'AGENCY'
+  | 'DESCONOCIDO';
 
 export interface ChatConversation {
   /** contract-addendum-2.md §B.3 — the identity. Selection MUST key on this,
@@ -158,8 +179,26 @@ export interface ChatConversation {
   caseId?: string;
   name: string;
   role: string;
+  /**
+   * El `User.id` del interlocutor — con qué llegar a su ficha desde el hilo.
+   *
+   * 🔴 Sale de `otherParticipant.id`, que la bandeja ya trae en TODOS los
+   * hilos; NO de `counterpartId`, que sólo existe en `GET /conversations/:id`
+   * y sólo en un hilo directo. Lo que se necesita acá es «con quién estoy
+   * hablando», y eso es `otherParticipant` — el mismo campo del que ya salen
+   * el nombre, el rol y el correo que la fila pinta.
+   *
+   * `null` cuando del otro lado NO hay una persona: es la inmobiliaria, que es
+   * una organización y no tiene ficha de inquilino ni de propietario. Con null
+   * la pantalla no ofrece «Ver ficha» — no la ofrece rota.
+   */
+  contraparteId: string | null;
+  /** El rol crudo, para elegir el color de la insignia sin parsear la etiqueta. */
+  perfil: PerfilEnLaConversacion;
   email: string;
+  /** Cadena vacía cuando el hilo no cuelga de un inmueble (hilo directo). */
   property: string;
+  /** Cadena vacía en un hilo directo — nunca `'null'` ni `'undefined'`. */
   propertyId: string;
   lastMessage: string;
   lastMessageTime: string;
@@ -172,6 +211,12 @@ export interface ChatMessage {
   content: string;
   isMine: boolean;
   senderName: string;
+  /**
+   * El perfil de quien escribió. En un hilo directo del lado de la
+   * inmobiliaria pueden contestar varios agentes distintos, así que sin esto
+   * no se sabe quién dijo qué.
+   */
+  perfil: PerfilEnLaConversacion;
   readAt: string | null;
   createdAt: string;
 }
@@ -189,6 +234,7 @@ export function resolveConversationKind(raw: string | undefined): ConversationKi
   if (raw === undefined) return 'APPLICATION';
   if (raw === 'APPLICATION') return 'APPLICATION';
   if (raw === 'PROPERTY_INQUIRY') return 'PROPERTY_INQUIRY';
+  if (raw === 'DIRECT') return 'DIRECT';
   throw new Error(`Tipo de conversación desconocido: "${raw}".`);
 }
 
@@ -202,28 +248,68 @@ function formatRole(role: string): string {
     case 'LANDLORD': return 'Propietario';
     case 'TENANT': return 'Inquilino';
     case 'AGENT': return 'Agente';
+    case 'ADMIN': return 'Administrador';
+    case 'AGENCY': return 'Inmobiliaria';
     default: return role;
   }
 }
 
-function formatTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+/** El rol crudo, normalizado. Lo desconocido se dice, no se disfraza. */
+function resolverPerfil(role: string | undefined): PerfilEnLaConversacion {
+  switch (role) {
+    case 'TENANT': return 'TENANT';
+    case 'LANDLORD': return 'LANDLORD';
+    case 'AGENT': return 'AGENT';
+    case 'AGENCY': return 'AGENCY';
+    default: return 'DESCONOCIDO';
+  }
+}
 
-  if (diffDays === 0) {
+/**
+ * Cuándo fue el último mensaje, para la fila de la bandeja.
+ *
+ * 🔴 «Ayer» es un DÍA DEL CALENDARIO, no 24 horas.
+ *
+ * Lo que había dividía la diferencia en milisegundos por 86.400.000: un
+ * mensaje de anoche a las 23:00 visto hoy a las 09:00 daba `diffDays === 0` y
+ * salía como una hora suelta —«11:00 p. m.»— como si fuera de hoy; y uno de
+ * hoy a las 00:30 visto a las 23:00 seguía diciendo la hora, bien, pero uno de
+ * ayer a las 08:00 visto hoy a las 09:00 (25 h) decía «Ayer», mientras que uno
+ * de ayer a las 22:00 visto hoy a las 09:00 (11 h) decía la hora. Dos mensajes
+ * del mismo día se etiquetaban distinto según la hora en que mirabas.
+ *
+ * Se comparan días de calendario locales, que es lo que significa la palabra.
+ */
+function diaCalendario(d: Date): number {
+  return Math.floor(
+    (Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86_400_000),
+  );
+}
+
+export function formatTime(dateStr: string, ahora: Date = new Date()): string {
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return '';
+  const dias = diaCalendario(ahora) - diaCalendario(date);
+
+  if (dias <= 0) {
     return date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
   }
-  if (diffDays === 1) return 'Ayer';
-  if (diffDays < 7) {
+  if (dias === 1) return 'Ayer';
+  if (dias < 7) {
     return date.toLocaleDateString('es-CO', { weekday: 'short' });
   }
   return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
 }
 
 export function mapToConversation(backend: BackendConversation): ChatConversation {
-  const { otherParticipant, lastMessage, property } = backend;
+  const { otherParticipant, lastMessage, property, agency } = backend;
+
+  // Cuando del otro lado NO hay una persona, el interlocutor es la
+  // inmobiliaria. No se la disfraza de usuario: se la nombra como lo que es y
+  // el perfil pasa a 'AGENCY', que es lo que pinta la insignia.
+  const esLaAgencia = !otherParticipant && !!agency;
+  const rolCrudo = esLaAgencia ? 'AGENCY' : otherParticipant?.role;
+
   return {
     id: backend.id,
     kind: resolveConversationKind(backend.kind),
@@ -234,12 +320,21 @@ export function mapToConversation(backend: BackendConversation): ChatConversatio
     // stays `undefined` today; never fabricated or derived from applicationId.
     leaseId: backend.leaseId,
     caseId: backend.caseId,
-    name: formatName(otherParticipant.firstName, otherParticipant.lastName),
-    role: formatRole(otherParticipant.role),
-    email: otherParticipant.email,
-    property: property.title,
+    name: esLaAgencia
+      ? agency!.name
+      : otherParticipant
+        ? formatName(otherParticipant.firstName, otherParticipant.lastName)
+        : 'Usuario',
+    role: formatRole(rolCrudo ?? ''),
+    // `null` cuando el «otro» es la inmobiliaria: no hay persona a la que ir.
+    contraparteId: otherParticipant?.id ?? null,
+    perfil: resolverPerfil(rolCrudo),
+    email: otherParticipant?.email ?? '',
+    // Vacío, no `'null'`: la pantalla ya trata la cadena vacía como «sin
+    // inmueble» y la pinta omitiéndola.
+    property: property?.title ?? '',
     // NEW top-level field; older back build → fall back to `property.id`.
-    propertyId: backend.propertyId ?? property.id,
+    propertyId: backend.propertyId ?? property?.id ?? '',
     lastMessage: lastMessage?.content ?? '',
     lastMessageTime: lastMessage ? formatTime(lastMessage.createdAt) : '',
     unreadCount: backend.unreadCount,
@@ -253,7 +348,92 @@ export function mapToMessage(backend: BackendChatMessage, currentUserId: string)
     content: backend.content,
     isMine: backend.senderId === currentUserId,
     senderName: formatName(backend.sender.firstName, backend.sender.lastName),
+    perfil: resolverPerfil(backend.sender.role),
     readAt: backend.readAt,
     createdAt: backend.createdAt,
   };
+}
+
+// ============================================================================
+// Hilos directos — a quién puedo escribirle
+// ============================================================================
+
+/** Una persona a la que la inmobiliaria le puede escribir. */
+export interface DestinatarioPersona {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: string;
+  email: string;
+  avatarUrl: string | null;
+}
+
+/** Una inmobiliaria a la que un inquilino o un propietario le puede escribir. */
+export interface DestinatarioAgencia {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+}
+
+/**
+ * Las dos claves viajan SIEMPRE, una vacía. `tipo` dice cuál mirar, pero el
+ * front no necesita ramificar antes de leer: recorrer la vacía no rompe nada.
+ */
+export interface DestinatariosDirectos {
+  tipo: 'PERSONAS' | 'AGENCIAS';
+  personas: DestinatarioPersona[];
+  agencias: DestinatarioAgencia[];
+}
+
+/** Cómo nombrar a un destinatario en la lista. */
+export function nombreDelDestinatario(p: DestinatarioPersona): string {
+  const partes = [p.firstName, p.lastName].filter(Boolean);
+  return partes.length > 0 ? partes.join(' ') : p.email;
+}
+
+// ============================================================================
+// Pendientes de la conversación — qué le puedo mandar a esta persona
+// ============================================================================
+
+/** Un cobro sin pagar del inquilino. Los importes son enteros en pesos. */
+export interface CobroPendienteDelHilo {
+  id: string;
+  /** 'YYYY-MM'. */
+  mes: string;
+  totalCop: number;
+  pendienteCop: number;
+  /** 'YYYY-MM-DD'. Fecha calendario: NUNCA un timestamp (en UTC-5 se corre un día). */
+  vencimiento: string;
+  diasDeMora: number;
+  estado: string;
+  contractId: string | null;
+  inmueble: string | null;
+}
+
+/** Plata que la inmobiliaria le debe al propietario. */
+export interface DispersionPendienteDelHilo {
+  id: string;
+  mes: string;
+  netoCop: number;
+  estado: string;
+  inmueble: string | null;
+}
+
+/** Un archivo que ya existe y se puede compartir en el hilo. */
+export interface DocumentoDelHilo {
+  id: string;
+  tipo: 'CONTRATO' | 'ACTA' | 'DOCUMENTO';
+  nombre: string;
+  url: string;
+}
+
+/**
+ * Las tres claves viajan siempre, aunque vengan vacías. En un hilo que no es
+ * directo las tres son `[]`: preguntar «qué le debe esta persona» no tiene
+ * sentido sobre la consulta de un aviso.
+ */
+export interface PendientesDeLaConversacion {
+  cobros: CobroPendienteDelHilo[];
+  dispersiones: DispersionPendienteDelHilo[];
+  documentos: DocumentoDelHilo[];
 }

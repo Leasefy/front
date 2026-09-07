@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { LandingChrome } from "@/components/landing-v2/LandingChrome";
-import { Footer } from '@/components/layout/Footer';
+import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2';
 import { CTASection } from '@/components/home/CTASection';
 import { Shield, Lightning, Headphones, CheckCircle, Check, House, Briefcase, Calculator, Buildings, UserCheck, ArrowRight, Circle } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
@@ -1309,7 +1309,7 @@ export default function PricingPage() {
       {/* CTA section - reusable component matching home */}
       <CTASection />
       </main>
-      <Footer />
+      <LandingFooterV2 />
     </LandingChrome>
   );
 }

@@ -5,7 +5,6 @@ import {
   Buildings,
   CreditCard,
   Globe,
-  Palette,
   Plugs,
   Shield,
   ShieldCheck,
@@ -37,8 +36,10 @@ import {
  *   Equipo era `module: 'agentes'` y Automatización IA no tenía guard (la veía
  *   todo miembro). Unificar no le abre a nadie una pantalla nueva ni le cierra
  *   una que tenía.
- * · «Agentes IA» no está: Nico pidió ocultarla (`/configuracion/agentes`
- *   redirige a la raíz).
+ * · «Agentes IA» y «Branding» no están: Nico pidió ocultarlas
+ *   (`/configuracion/agentes` y `/configuracion/branding` redirigen a la
+ *   raíz). El id de Branding sigue en `SeccionId` y su pantalla sigue viva en
+ *   `contenido.tsx` — esconderla es sacarla del menú, no borrar el trabajo.
  */
 
 export const RAIZ_CONFIGURACION = '/panel/inmobiliaria/configuracion';
@@ -101,15 +102,6 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     labelKey: 'inmobiliaria.config.tabs.perfil',
     descKey: 'inmobiliaria.config.tabs.perfilDesc',
     icon: Buildings,
-    gate: { tipo: 'admin' },
-  },
-  {
-    id: 'branding',
-    grupo: 'inmobiliaria',
-    slug: 'branding',
-    labelKey: 'inmobiliaria.config.tabs.branding',
-    descKey: 'inmobiliaria.config.tabs.brandingDesc',
-    icon: Palette,
     gate: { tipo: 'admin' },
   },
   {

@@ -218,6 +218,7 @@ export function VencimientosTable({
         y hereda el resto con `inherit`. Patrón canónico en DispersionTable.
       */}
       <button
+        type="button"
         onClick={() => handleSort(field)}
         className="flex items-center gap-2 font-[inherit] text-[inherit] uppercase tracking-[inherit] text-fg-subtle transition-colors hover:text-fg"
       >
@@ -239,7 +240,7 @@ export function VencimientosTable({
             <Warning className="w-5 h-5 text-danger" weight="fill" />
             <span className="text-sm font-medium text-danger">{t('inmobiliaria.finance.expirations.critical30d')}</span>
           </div>
-          <p className="text-2xl font-bold">{data.summary.bucket0to30}</p>
+          <p className="text-2xl font-mono font-bold tabular-nums">{data.summary.bucket0to30}</p>
           <p className="text-xs text-danger mt-1">{t('inmobiliaria.finance.expirations.contractsExpiring')}</p>
         </div>
 
@@ -251,7 +252,7 @@ export function VencimientosTable({
               {t('inmobiliaria.finance.expirations.warning3160d')}
             </span>
           </div>
-          <p className="text-2xl font-bold text-warning">
+          <p className="text-2xl font-mono font-bold tabular-nums text-warning">
             {data.summary.bucket31to60}
           </p>
         </div>
@@ -264,7 +265,7 @@ export function VencimientosTable({
               {t('inmobiliaria.finance.expirations.info6190d')}
             </span>
           </div>
-          <p className="text-2xl font-bold text-primary">
+          <p className="text-2xl font-mono font-bold tabular-nums text-primary">
             {data.summary.bucket61to90}
           </p>
         </div>
@@ -277,7 +278,7 @@ export function VencimientosTable({
               {t('inmobiliaria.finance.expirations.total')}
             </span>
           </div>
-          <p className="text-2xl font-bold text-fg dark:text-white">
+          <p className="text-2xl font-mono font-bold tabular-nums text-fg">
             {data.summary.totalVencimientos}
           </p>
         </div>
@@ -420,7 +421,7 @@ export function VencimientosTable({
                     className={cn(
                       'border-b border-border-faint dark:border-border-strong transition-colors',
                       isSelected && 'bg-primary-soft',
-                      !isSelected && 'hover:bg-surface-muted dark:hover:bg-muted/20'
+                      !isSelected && 'hover:bg-surface-muted'
                     )}
                   >
                     {/* Checkbox */}
@@ -453,7 +454,7 @@ export function VencimientosTable({
                           />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-medium text-fg dark:text-white truncate max-w-[160px]">
+                          <p className="font-medium text-fg truncate max-w-[160px]">
                             {item.propertyTitle}
                           </p>
                           <p className="text-sm text-fg-muted dark:text-fg-subtle truncate max-w-[160px]">
@@ -470,7 +471,7 @@ export function VencimientosTable({
                           <User className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-medium text-fg dark:text-white truncate max-w-[120px]">
+                          <p className="font-medium text-fg truncate max-w-[120px]">
                             {item.tenantName}
                           </p>
                         </div>
@@ -566,7 +567,7 @@ export function VencimientosTable({
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-success-soft flex items-center justify-center">
               <CheckSquare className="w-8 h-8 text-success" weight="fill" />
             </div>
-            <h3 className="text-lg font-semibold text-fg dark:text-white mb-1">
+            <h3 className="text-lg font-semibold text-fg mb-1">
               {t('inmobiliaria.finance.expirations.noExpirations')}
             </h3>
             <p className="text-fg-muted dark:text-fg-subtle">

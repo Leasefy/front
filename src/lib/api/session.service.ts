@@ -59,3 +59,33 @@ export function claimSession(token?: string, body?: ClaimSessionBody): Promise<C
 export function revokeSession(token?: string): Promise<RevokeSessionResponse> {
   return sessionApi.revoke(token)
 }
+
+/**
+ * Un dispositivo con la sesión de esta persona abierta.
+ *
+ * `desde` y `ultimaSenal` vienen en ISO o en null: las sesiones anteriores a
+ * las columnas nuevas no saben desde cuándo están, y eso se dice, no se
+ * inventa una fecha.
+ */
+export interface DispositivoConSesion {
+  etiqueta: string
+  esEsteDispositivo: boolean
+  desde: string | null
+  ultimaSenal: string | null
+}
+
+export interface SesionesActivasResponse {
+  /**
+   * Siempre true: Leasefy permite una sesión a la vez por persona. Viene en la
+   * respuesta para que la pantalla pueda EXPLICAR por qué la lista trae una
+   * sola fila, en vez de dejar a alguien buscando sus otros dispositivos.
+   */
+  unaSesionALaVez: boolean
+  dispositivos: DispositivoConSesion[]
+}
+
+/** GET /auth/session/dispositivos — lo que muestra «Sesiones activas». */
+export function getSesionesActivas(deviceId?: string): Promise<SesionesActivasResponse> {
+  const query = deviceId ? `?deviceId=${encodeURIComponent(deviceId)}` : ''
+  return apiClient.get<SesionesActivasResponse>(`/auth/session/dispositivos${query}`)
+}

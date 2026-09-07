@@ -1,7 +1,0 @@
-[    3459ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:16
-[    3460ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:16
-[    3460ms] [WARNING] [Auth] Supabase not configured — running without authentication @ webpack-internal:///(app-pages-browser)/./src/lib/auth/auth-context.tsx:117
-[    3469ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:16
-[    3469ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:16
-[    3469ms] [WARNING] [Auth] Supabase not configured — running without authentication @ webpack-internal:///(app-pages-browser)/./src/lib/auth/auth-context.tsx:117
-[   95841ms] [WARNING] [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — running without Supabase @ webpack-internal:///(app-pages-browser)/./src/lib/supabase/client.ts:16

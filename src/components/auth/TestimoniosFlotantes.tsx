@@ -11,9 +11,24 @@
  * barra de abajo, en cuatro tramos, se va llenando con el tiempo del que
  * está en pantalla: dice cuál va, que son cuatro, y cuándo cambia.
  *
- * 🔴 Copy de muestra. Las inmobiliarias y las personas son inventadas, para
- * ver la pieza en pantalla. Antes de producción van testimonios reales, con
- * el permiso de quien los dice; la forma no cambia, sólo la lista.
+ * ── Sobre el contenido de la lista ────────────────────────────────────────
+ *
+ * Los cuatro textos de abajo los escribimos nosotros: las personas que
+ * aparecen firmándolos no los dijeron. De las cuatro inmobiliarias, Portofino
+ * sí existe —es cliente, aparece en el backoffice y estamos migrando sus
+ * fotos desde `portofinopr.arrendasoft.co`—; «Altavista» sólo figura como
+ * dato de prueba en un test de onboarding, y «Casa Nuestra» y «Nido
+ * Inmobiliario» no aparecen en ninguna parte del sistema.
+ *
+ * Se muestran igual, bajo el título «Inmobiliarias que ya operan con
+ * Leasefy», por decisión de Nico del 2026-09-05, tomada sabiendo que en
+ * Colombia atribuirle una cita a alguien que no la dijo entra en publicidad
+ * engañosa (Ley 1480 de 2011, arts. 29-30).
+ *
+ * Reemplazarlos por frases reales es cambiar esta lista y nada más: la pieza
+ * ya toma la que le pasen. Con una sola frase verdadera —dicha por esa
+ * persona y con su permiso para publicarla con su nombre— alcanza para que
+ * la tarjeta funcione.
  */
 
 import { useEffect, useState } from 'react';
@@ -27,6 +42,7 @@ export interface Testimonio {
   cargo: string;
 }
 
+/** Lo que se muestra en el acceso. Ver la nota de arriba sobre su origen. */
 export const TESTIMONIOS: Testimonio[] = [
   {
     agencia: 'Portofino Inmobiliaria',
@@ -75,16 +91,29 @@ export function iniciales(nombre: string): string {
     .join('');
 }
 
-export function TestimoniosFlotantes({ intervaloMs = INTERVALO_MS }: { intervaloMs?: number }) {
+export function TestimoniosFlotantes({
+  intervaloMs = INTERVALO_MS,
+  testimonios = TESTIMONIOS,
+}: {
+  intervaloMs?: number;
+  /** Se puede pasar la lista para mirar la pieza; por defecto, la real. */
+  testimonios?: Testimonio[];
+}) {
   const [indice, setIndice] = useState(0);
   const reducido = useReducedMotion();
+  const total = testimonios.length;
 
   useEffect(() => {
-    const id = setInterval(() => setIndice((n) => (n + 1) % TESTIMONIOS.length), intervaloMs);
+    if (total === 0) return;
+    const id = setInterval(() => setIndice((n) => (n + 1) % total), intervaloMs);
     return () => clearInterval(id);
-  }, [intervaloMs]);
+  }, [intervaloMs, total]);
 
-  const t = TESTIMONIOS[indice];
+  // Con la lista vacía se va el bloque entero, título incluido: «Inmobiliarias
+  // que ya operan con Leasefy» sobre cero tarjetas también afirma algo.
+  if (total === 0) return null;
+
+  const t = testimonios[indice % total];
 
   return (
     <div
@@ -138,9 +167,9 @@ export function TestimoniosFlotantes({ intervaloMs = INTERVALO_MS }: { intervalo
             </span>
           </figcaption>
 
-          {/* Cuatro tramos; el que va se llena con el tiempo en pantalla. */}
+          {/* Un tramo por testimonio; el que va se llena con el tiempo en pantalla. */}
           <div className="mt-5 flex gap-1.5" aria-hidden="true">
-            {TESTIMONIOS.map((x, i) => (
+            {testimonios.map((x, i) => (
               <span key={x.agencia} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/20">
                 {i < indice && <span className="block h-full w-full bg-white/70" />}
                 {i === indice && (

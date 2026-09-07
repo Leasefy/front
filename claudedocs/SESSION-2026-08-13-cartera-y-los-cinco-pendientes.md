@@ -170,7 +170,7 @@ Lo de la sesión anterior sigue igual (contratos `MIGRATED`, inquilinos `*.ui@` 
 cobros de 2026-08, la aprobación de María).
 
 **De esta sesión**: el lote `lote-prueba-paginacion` (30 filas) **ya lo borré**;
-la contraseña de `luis.ui1@leasefy-dev.co` quedó en `PRueba123#`; la comisión del
+la contraseña de `luis.ui1@leasefy-dev.co` quedó en la de QA (1Password); la comisión del
 contrato `c0f6dc78` quedó en **11%** en contrato y consignación (era 8/10); y los
 tres inquilinos migrados tienen `onboarding_completed_at` seteado — eso último
 es la corrección, no basura.

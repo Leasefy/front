@@ -43,7 +43,7 @@ export function ImagenesPanel({ vision }: ImagenesPanelProps) {
     <Card data-testid="imagenes-panel">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <ImageSquare size={18} className="text-sky-500" weight="duotone" aria-hidden="true" />
+          <ImageSquare size={18} className="text-info" weight="duotone" aria-hidden="true" />
           {t(`${KEY}.imagenes`)}
         </CardTitle>
       </CardHeader>
@@ -51,7 +51,7 @@ export function ImagenesPanel({ vision }: ImagenesPanelProps) {
         {vision.length === 0 ? (
           <div
             data-testid="vision-empty"
-            className="rounded-lg border-2 border-dashed border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/30 px-4 py-6 text-center text-sm text-neutral-500 dark:text-neutral-400"
+            className="rounded-lg border-2 border-dashed border-border bg-surface-muted px-4 py-6 text-center text-sm text-fg-muted"
           >
             {t(`${KEY}.imagenes`)}
           </div>
@@ -62,7 +62,7 @@ export function ImagenesPanel({ vision }: ImagenesPanelProps) {
               <div
                 key={idx}
                 data-testid="vision-item"
-                className="rounded-lg border border-neutral-200 dark:border-neutral-700 p-4 space-y-3"
+                className="rounded-lg border border-border p-4 space-y-3"
               >
                 {/* Safety hold — most prominent, destructive */}
                 {v.safety_hold && (
@@ -100,7 +100,7 @@ export function ImagenesPanel({ vision }: ImagenesPanelProps) {
 
                 {/* Photo quality — Progress */}
                 <div data-testid="vision-quality" className="space-y-1">
-                  <div className="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
+                  <div className="flex items-center justify-between text-xs text-fg-muted">
                     <span>{t(`${KEY}.calidadFoto`)}</span>
                     <span className="font-mono">{pct}%</span>
                   </div>
@@ -112,15 +112,15 @@ export function ImagenesPanel({ vision }: ImagenesPanelProps) {
                   <div
                     data-testid="vision-cannot-determine"
                     className={cn(
-                      'rounded-md border border-amber-200 dark:border-amber-800/60',
-                      'bg-amber-50 dark:bg-amber-950/20 p-3',
+                      'rounded-md border border-warning/30',
+                      'bg-warning-soft p-3',
                     )}
                   >
-                    <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1.5">
+                    <p className="flex items-center gap-1.5 text-xs font-semibold text-warning mb-1.5">
                       <Warning size={14} weight="duotone" aria-hidden="true" />
                       {t(`${KEY}.visionLimite`)}
                     </p>
-                    <ul className="list-disc list-inside space-y-0.5 text-xs text-amber-700 dark:text-amber-300">
+                    <ul className="list-disc list-inside space-y-0.5 text-xs text-warning">
                       {v.cannot_determine.map((c, i) => (
                         <li key={i}>{c}</li>
                       ))}

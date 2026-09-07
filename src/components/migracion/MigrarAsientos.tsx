@@ -201,7 +201,7 @@ export function MigrarAsientos({
         `${mensajeDeContabilidad(
           e,
           "No pudimos aplicar el lote.",
-        )} Podés aplicar de nuevo tranquilo: los asientos que ya entraron no se duplican.`,
+        )} Puedes aplicar de nuevo tranquilo: los asientos que ya entraron no se duplican.`,
       );
     } finally {
       setCargando(false);
@@ -261,7 +261,7 @@ export function MigrarAsientos({
           <div>
             <p className="text-sm font-medium text-fg">
               {nombreDeArchivo ||
-                "Arrastrá el archivo o hacé clic para elegirlo"}
+                "Arrastra el archivo o haz clic para elegirlo"}
             </p>
             <p className="text-xs text-fg-subtle">
               Excel o CSV. Nada se crea todavía.
@@ -289,7 +289,7 @@ export function MigrarAsientos({
             <div>
               <h2 className="font-medium text-fg">Qué es cada columna</h2>
               <p className="text-sm text-fg-muted">
-                {filas.length} filas → {armados.length} asientos. Revisá lo que
+                {filas.length} filas → {armados.length} asientos. Revisa lo que
                 adivinamos.
               </p>
             </div>
@@ -380,7 +380,7 @@ export function MigrarAsientos({
               <p className="text-sm text-fg">
                 Son {armados.length} asientos y un lote admite hasta{" "}
                 {MAX_ASIENTOS_POR_LOTE}. Partí el archivo (por año, por ejemplo)
-                y subilo en tandas.
+                y súbelo en tandas.
               </p>
             </div>
           ) : null}
@@ -499,7 +499,7 @@ function Revision({
               </h3>
               <p className="mt-0.5 text-sm text-fg-muted">
                 No se crean solas: un código suelto no dice ni la naturaleza ni
-                de qué cuelga. Crealas en el paso 4 con tu contador y volvé a
+                de qué cuelga. Créalas en el paso 4 con tu contador y vuelve a
                 revisar: el archivo sigue acá.
               </p>
             </div>
@@ -628,7 +628,7 @@ function Revision({
         </Button>
         {revision.rechazadas > 0 ? (
           <p className="text-sm text-fg-muted">
-            Los {revision.rechazadas} con problemas quedan afuera; podés
+            Los {revision.rechazadas} con problemas quedan afuera; puedes
             corregir el archivo y subirlo de nuevo con el mismo nombre de lote
             sin duplicar los que ya entraron.
           </p>

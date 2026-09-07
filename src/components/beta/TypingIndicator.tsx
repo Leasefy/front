@@ -26,12 +26,30 @@ interface TypingIndicatorProps {
  * tiene a mano, y en qué tramo de la espera va. En cuanto despacha agentes,
  * `AgentTaskThread` toma el relevo con las tareas reales.
  */
+/**
+ * 🔴 Umbrales de la espera, en segundos.
+ *
+ * `longer` («Sigo en ello — está tomando más de lo normal») saltaba a los 8 s y
+ * medido en vivo un turno normal tarda 20-25 s: el aviso salía SIEMPRE, así que
+ * «más de lo normal» describía lo normal y dejaba de significar nada. Ahora la
+ * fase intermedia cubre la espera típica y el aviso aparece recién cuando el
+ * turno de verdad se pasó.
+ */
+export const ESPERA_LEYENDO_S = 3;
+export const ESPERA_MAS_DE_LO_NORMAL_S = 35;
+
+export function faseDeEspera(segundos: number): 'reading' | 'deciding' | 'longer' {
+  if (segundos < ESPERA_LEYENDO_S) return 'reading';
+  if (segundos < ESPERA_MAS_DE_LO_NORMAL_S) return 'deciding';
+  return 'longer';
+}
+
 export function TypingIndicator({ historyCount = 0, snapshot, className }: TypingIndicatorProps) {
   const { t } = useI18n();
   const desde = useSince(true);
   const ms = useElapsed(desde, true);
   const s = ms / 1000;
-  const fase = s < 3 ? 'reading' : s < 8 ? 'deciding' : 'longer';
+  const fase = faseDeEspera(s);
 
   const lineas = useMemo(() => {
     const out: string[] = [];

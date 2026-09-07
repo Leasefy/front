@@ -40,11 +40,28 @@ vi.mock('@/lib/i18n', () => ({
 }))
 
 vi.mock('@/components/ui', () => ({
-  Button: ({ children, ...rest }: { children: React.ReactNode } & Record<string, unknown>) => (
-    <button type={(rest.type as 'submit' | 'button') ?? 'button'} disabled={Boolean(rest.disabled)}>
+  // Reenvía onClick y data-testid: «Ver la llamada» pasó a ser un <Button> del
+  // DS y el test lo busca por su testid y lo clickea. `hideArrow`/`isLoading`
+  // se quedan afuera — no son atributos del DOM.
+  Button: ({
+    children,
+    hideArrow: _hideArrow,
+    isLoading: _isLoading,
+    variant: _variant,
+    size: _size,
+    ...rest
+  }: { children: React.ReactNode } & Record<string, unknown>) => (
+    <button
+      {...(rest as React.ComponentProps<'button'>)}
+      type={(rest.type as 'submit' | 'button') ?? 'button'}
+      disabled={Boolean(rest.disabled)}
+    >
       {children}
     </button>
   ),
+  // El textarea de la nota es el <Textarea> del DS; acá alcanza con el nativo,
+  // que es lo que el test busca con querySelector('textarea').
+  Textarea: (props: React.ComponentProps<'textarea'>) => <textarea {...props} />,
 }))
 
 vi.mock('@/components/inmobiliaria/cobranza/LlamadaDetalleSheet', () => ({

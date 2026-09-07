@@ -3,8 +3,8 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import { Inter, Inter_Tight, IBM_Plex_Mono } from 'next/font/google'
-import { LandingHeader } from '@/components/landing/layout/LandingHeader'
-import { LandingFooter } from '@/components/landing/layout/LandingFooter'
+import { LandingChrome } from '@/components/landing-v2/LandingChrome'
+import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2'
 import './landing.css'
 import './landing-v2.css'
 
@@ -39,10 +39,25 @@ const inter = Inter({
 
 // Routes whose home markup (LandingHome, port fiel of the standalone
 // index.html) is fully self-contained — it renders its OWN <header>/<footer>
-// 1:1 with the original design. Rendering the shared LandingHeader/
-// LandingFooter here too would double them up. Every other route in this
-// group (blog, contacto, productos, landing-preview) keeps the shared chrome.
+// 1:1 with the original design. Rendering the shared chrome here too would
+// double it up. Every other route in this group (blog, contacto, productos,
+// landing-preview) keeps the shared chrome.
 const SELF_CONTAINED_CHROME_PATHS = ['/']
+
+// El chrome del grupo es el MISMO del home: `LandingChrome` (header v2 +
+// LogoDefs + modo claro forzado) y `LandingFooterV2`, extraídos de
+// `LandingHome` justamente para esto. Antes el grupo montaba el par viejo
+// —`landing/layout/LandingHeader` y `LandingFooter`—, así que entrar al blog
+// cambiaba el logo (texto «Leasefy» en vez del logotipo), perdía la mitad del
+// nav («Buscar inmueble», «Avalúos»), perdía «Ver planes» e «Iniciar sesión»,
+// y cerraba con un pie que no es el nuestro (Nico, 2026-09-05, mirando /blog).
+function navActivo(pathname: string | null) {
+  if (!pathname) return undefined
+  if (pathname.startsWith('/blog')) return 'blog' as const
+  if (pathname.startsWith('/contacto')) return 'contacto' as const
+  if (pathname.startsWith('/productos')) return 'producto' as const
+  return undefined
+}
 
 interface LandingLayoutProps {
   children: ReactNode
@@ -81,9 +96,14 @@ export default function LandingLayout({ children }: LandingLayoutProps) {
         } as CSSProperties
       }
     >
-      {!hasOwnChrome && <LandingHeader />}
-      {children}
-      {!hasOwnChrome && <LandingFooter />}
+      {hasOwnChrome ? (
+        children
+      ) : (
+        <LandingChrome activo={navActivo(pathname)}>
+          {children}
+          <LandingFooterV2 />
+        </LandingChrome>
+      )}
     </div>
   )
 }

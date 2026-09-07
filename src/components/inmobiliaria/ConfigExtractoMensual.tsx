@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { EnvelopeSimple, PaperPlaneTilt, Warning, CaretDown } from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { Button, Input } from '@/components/ui';
 import { Switch } from '@/components/ui/switch';

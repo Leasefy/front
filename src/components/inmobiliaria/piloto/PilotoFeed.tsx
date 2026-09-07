@@ -178,7 +178,7 @@ export function PilotoFeed({
         error={error ?? undefined}
         vacio={items.length === 0}
         queEs={t('inmobiliaria.piloto.feed.titulo').toLowerCase()}
-        {...(onRefetch ? { onReintentar: () => void onRefetch() } : {})}
+        {...(onRefetch ? { onReintentar: onRefetch } : {})}
         esqueleto={
           <div className="p-4">
             <EsqueletoTarjetas cantidad={3} />

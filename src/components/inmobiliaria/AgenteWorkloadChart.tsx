@@ -10,6 +10,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { SIN_MEDIR, promedioMedido } from '@/lib/tasas';
 import type { Agente } from '@/lib/types/inmobiliaria';
 
 interface AgenteWorkloadChartProps {
@@ -55,14 +56,17 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
 
   // Calculate stats
   const stats = useMemo(() => {
+    // Sin agentes activos no hay carga promedio: `null`, no «0.0». Un cero
+    // acá se leía como un equipo desocupado en vez de como un equipo que
+    // todavía no existe.
     if (sortedAgentes.length === 0) {
-      return { max: 0, avg: 0, total: 0, overloaded: 0 };
+      return { max: 0, avg: null as number | null, total: 0, overloaded: 0 };
     }
 
     const properties = sortedAgentes.map((a) => a.assignedPropertyIds.length);
     const total = properties.reduce((sum, p) => sum + p, 0);
     const max = Math.max(...properties);
-    const avg = total / sortedAgentes.length;
+    const avg: number | null = promedioMedido(properties);
     const overloaded = sortedAgentes.filter(
       (a) => a.assignedPropertyIds.length > OVERLOADED_THRESHOLD
     ).length;
@@ -137,7 +141,9 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
         </div>
         <div>
           <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.averageLabel')}</p>
-          <p className="text-lg font-bold text-foreground">{stats.avg.toFixed(1)}</p>
+          <p className="text-lg font-bold text-foreground" data-testid="carga-promedio">
+            {stats.avg === null ? SIN_MEDIR : stats.avg.toFixed(1)}
+          </p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.recommendedMax')}</p>

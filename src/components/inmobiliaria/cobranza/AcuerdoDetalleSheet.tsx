@@ -26,6 +26,7 @@ import { ArrowRight, PhoneCall } from '@phosphor-icons/react'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Badge, Button } from '@/components/ui'
 import { useI18n } from '@/lib/i18n'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { channelLabel } from '@/lib/cobranza/call-vocab'
 import {
   ACUERDO_ESTADO,
@@ -65,13 +66,41 @@ function Dato({
   )
 }
 
+/**
+ * El envoltorio: sólo es dueño del `Sheet`.
+ *
+ * Antes esto era `if (!acuerdo) return null` con `<Sheet open>` fijo, o sea
+ * que cerrar era desmontarlo de un tirón. Radix anima la salida sólo si el
+ * contenido sigue montado con `data-state="closed"` mientras dura la
+ * animación: sin nada montado no hay qué animar y el cajón se cortaba en seco
+ * (Nico, 2026-09-04). `useUltimoPresente` conserva el acuerdo mientras se va
+ * —en el render del cierre ya es null y el cajón saldría en blanco—.
+ */
 export function AcuerdoDetalleSheet({
   acuerdo,
   onClose,
 }: AcuerdoDetalleSheetProps) {
-  const { formatCurrency, formatDate, formatRelativeDate } = useI18n()
+  const ultimo = useUltimoPresente(acuerdo)
 
-  if (!acuerdo) return null
+  return (
+    <Sheet
+      open={Boolean(acuerdo)}
+      onOpenChange={(abierto) => {
+        if (!abierto) onClose()
+      }}
+    >
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-lg !p-0 flex flex-col gap-0"
+      >
+        {ultimo && <CuerpoDelAcuerdo acuerdo={ultimo} />}
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+function CuerpoDelAcuerdo({ acuerdo }: { acuerdo: AcuerdoRow }) {
+  const { formatCurrency, formatDate, formatRelativeDate } = useI18n()
 
   const estado = ACUERDO_ESTADO[acuerdo.estado]
   const fecha = (iso: string | null) => {
@@ -83,16 +112,7 @@ export function AcuerdoDetalleSheet({
   }
 
   return (
-    <Sheet
-      open
-      onOpenChange={(abierto) => {
-        if (!abierto) onClose()
-      }}
-    >
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-lg !p-0 flex flex-col gap-0"
-      >
+    <>
         <SheetTitle className="sr-only">
           Acuerdo de pago de {acuerdo.deudor}
         </SheetTitle>
@@ -193,7 +213,6 @@ export function AcuerdoDetalleSheet({
             </Link>
           </Button>
         </div>
-      </SheetContent>
-    </Sheet>
+    </>
   )
 }

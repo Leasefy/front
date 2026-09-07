@@ -27,6 +27,12 @@ export default function MigrarTercerosPage() {
    * Guard por `view`, no por `create`: `canAccess()` en false también es lo que
    * devuelve mientras el servicio de permisos no contesta, y el guard REDIRIGE.
    * Quién puede aplicar de verdad lo decide el back.
+   *
+   * 🔴 Y sí, esto NO coincide con sus hermanas `/migracion/{puc,contables}`, que
+   * gatean por `roles={[ADMIN, CONTADOR]}`. No es una inconsistencia a limpiar:
+   * ahí el back usa `ContabilidadEscrituraGuard`; acá usa de verdad
+   * `@RequirePermission('configuracion', …)`, y el CONTADOR no tiene ese módulo.
+   * Abrirle esta pantalla lo mandaría a un 403 después de subir el archivo.
    */
   return (
     <PageGuard module="configuracion">

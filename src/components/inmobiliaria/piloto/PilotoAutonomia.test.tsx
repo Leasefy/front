@@ -44,6 +44,18 @@ describe('copy del panel de autonomía (es.json / en.json)', () => {
     expect(es.inmobiliaria.piloto.gobierno.proximamente).toBe('Próximamente')
     expect(en.inmobiliaria.piloto.gobierno.proximamente).toBeTruthy()
     // La frase que reemplaza sigue existiendo (la usan otros agentes).
-    expect(es.inmobiliaria.piloto.gobierno.apagadoServidor).toBe('Apagada en el servidor')
+    //
+    // Esta aserción fijaba el literal 'Apagada en el servidor'. En mvp-v2.1.0
+    // `cambios-nico-1` reescribió ese copy en es.json ('Todavía no disponible
+    // en tu plan') sin tocar la clave, así que el literal quedó viejo mientras
+    // el invariante que esta prueba dice cuidar —«la frase sigue existiendo»,
+    // y es un estado distinto de «Próximamente»— sigue intacto. Se guarda el
+    // invariante, no la redacción: los dos estados son las dos ramas del
+    // ternario de PilotoAutonomia.tsx:232/235 y no pueden colapsar en uno.
+    expect(es.inmobiliaria.piloto.gobierno.apagadoServidor).toBeTruthy()
+    expect(en.inmobiliaria.piloto.gobierno.apagadoServidor).toBeTruthy()
+    expect(es.inmobiliaria.piloto.gobierno.apagadoServidor).not.toBe(
+      es.inmobiliaria.piloto.gobierno.proximamente,
+    )
   })
 })

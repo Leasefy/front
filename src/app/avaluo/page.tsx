@@ -5,6 +5,8 @@ import {
   Seal,
 } from "@phosphor-icons/react/dist/ssr";
 import { Eyebrow } from "@leasefy/cadence";
+import { LandingChrome } from "@/components/landing-v2/LandingChrome";
+import { LandingFooterV2 } from "@/components/landing-v2/LandingFooterV2";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AVALUO_WIZARD_URL } from "@/lib/avaluo/wizard-url";
@@ -39,16 +41,17 @@ const HOW_IT_WORKS = [
 
 export default function AvaluoPage() {
   return (
-    <main className="min-h-screen bg-bg">
+    <LandingChrome activo="avaluo">
+      <main className="min-h-screen bg-bg">
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="flex flex-col items-center justify-center px-4 pt-24 pb-16 text-center section-padding">
+      <section className="flex flex-col items-center justify-center px-4 pt-32 md:pt-40 pb-16 text-center section-padding">
         {/* Overline label */}
         <Eyebrow className="justify-center mb-6">Leasefy valuaciones</Eyebrow>
 
         {/* Headline — highlighted word on ink (brand surface) */}
         <h1 className="text-display max-w-3xl mx-auto leading-tight">
           Avalúo comercial{" "}
-          <span className="inline-block px-4 py-1 rounded-[14px] bg-ink text-ink-fg">
+          <span className="inline-block px-4 py-1 rounded-[14px] bg-primary text-primary-fg">
             certificado
           </span>
         </h1>
@@ -118,14 +121,9 @@ export default function AvaluoPage() {
           ))}
         </div>
 
-        {/* Secondary CTA at bottom */}
+        {/* Salida alterna — el CTA vive una sola vez, en el hero */}
         <div className="mt-12 text-center">
-          <Button asChild size="lg">
-            <a href={AVALUO_WIZARD_URL} target="_blank" rel="noopener noreferrer">
-              Solicitar avalúo
-            </a>
-          </Button>
-          <p className="mt-4 text-xs text-fg-muted">
+          <p className="text-xs text-fg-muted">
             También podés escribirnos a{" "}
             <a
               href="mailto:avaluos@leasefy.co"
@@ -157,6 +155,8 @@ export default function AvaluoPage() {
           </p>
         </div>
       </section>
-    </main>
+      </main>
+      <LandingFooterV2 />
+    </LandingChrome>
   );
 }

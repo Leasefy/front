@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { Eyebrow } from '@leasefy/cadence';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { useI18n } from '@/lib/i18n';
@@ -90,7 +90,7 @@ function RenovacionesContent() {
         data={renovaciones}
         isLoading={isLoading}
         error={error}
-        onReintentar={() => void refetch()}
+        onReintentar={refetch}
         onStartRenewal={openWorkflow}
         onNotifyTenant={handleNotifyTenant}
         onViewDetails={openWorkflow}

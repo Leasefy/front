@@ -5,7 +5,7 @@
  * propietario. Los dos guardan por el MISMO endpoint (`PUT /inmobiliaria/agency`).
  */
 
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { Buildings, Info } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -71,7 +71,7 @@ export function SeccionPerfil() {
       error={errorCrudo}
       vacio={!agency}
       queEs="los datos de tu inmobiliaria"
-      onReintentar={() => void refetch()}
+      onReintentar={refetch}
       esqueleto={<EsqueletoDeSeccion filas={5} />}
       cuandoVacio={
         <VacioDeSeccion

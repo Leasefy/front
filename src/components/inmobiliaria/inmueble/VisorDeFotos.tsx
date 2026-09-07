@@ -17,6 +17,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { CaretLeft, CaretRight, X } from '@phosphor-icons/react';
+import { IconButton } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 
 export interface VisorDeFotosProps {
@@ -123,15 +124,13 @@ export function VisorDeFotos({ fotos, indice, onCerrar, onCambiar, titulo }: Vis
             onClick={(e) => { if (e.target === e.currentTarget) onCerrar(); }}
           >
             {total > 1 && (
-              <button
-                type="button"
+              <IconButton
                 onClick={() => ir(actual - 1)}
-                className="absolute left-2 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:inline-flex"
+                className="absolute left-2 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 bg-white/10 text-white hover:bg-white/20 hover:text-white focus-visible:ring-white/70 focus-visible:ring-offset-0 sm:inline-flex [&_svg]:size-6"
                 aria-label="Foto anterior"
                 data-testid="visor-anterior"
-              >
-                <CaretLeft className="h-6 w-6" weight="bold" />
-              </button>
+                icon={<CaretLeft weight="bold" />}
+              />
             )}
             {/* eslint-disable-next-line @next/next/no-img-element -- fotos en Storage/portales, sin dominio fijo para next/image */}
             <img
@@ -147,15 +146,13 @@ export function VisorDeFotos({ fotos, indice, onCerrar, onCambiar, titulo }: Vis
               data-testid="visor-foto"
             />
             {total > 1 && (
-              <button
-                type="button"
+              <IconButton
                 onClick={() => ir(actual + 1)}
-                className="absolute right-2 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:inline-flex"
+                className="absolute right-2 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 bg-white/10 text-white hover:bg-white/20 hover:text-white focus-visible:ring-white/70 focus-visible:ring-offset-0 sm:inline-flex [&_svg]:size-6"
                 aria-label="Foto siguiente"
                 data-testid="visor-siguiente"
-              >
-                <CaretRight className="h-6 w-6" weight="bold" />
-              </button>
+                icon={<CaretRight weight="bold" />}
+              />
             )}
           </div>
 

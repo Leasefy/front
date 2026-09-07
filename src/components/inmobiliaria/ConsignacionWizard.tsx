@@ -27,6 +27,7 @@ import { uploadPropertyPhotos } from '@/lib/api/property-photos';
 import { ApiError } from '@/lib/api/client';
 import { TYPE_TO_BACKEND } from '@/lib/api/properties.mapper';
 import { consignacionesApi, propietariosApi } from '@/lib/api/inmobiliaria.service';
+import { aListaDelCable, motivoInvalido } from './CopropietariosField';
 import type { PropertyType } from '@/lib/types/property';
 import type { Propietario, Agente, InventoryItem, PropietarioFormData } from '@/lib/types/inmobiliaria';
 import {
@@ -120,7 +121,18 @@ export function ConsignacionWizard({
     switch (currentStep) {
       case 1:
         // Must have selected or created a propietario
-        return Boolean(formData.propietarioId);
+        // El principal, y —con más de un dueño— un reparto que cierre. Sin
+        // esto se podría avanzar con los copropietarios llevándose el 110 %.
+        return (
+          Boolean(formData.propietarioId) &&
+          motivoInvalido(
+            (formData.copropietarios ?? []).map((c) => ({
+              propietarioId: c.propietarioId,
+              participacionBps: c.participacionBps,
+            })),
+            formData.propietarioId ?? null,
+          ) === null
+        );
       case 2: {
         // Must have property details — thresholds mirror CreatePropertyDto
         // (contract.md §3.2): bedrooms 0-20, bathrooms 1-10, area 10-10000 m²,
@@ -217,9 +229,14 @@ export function ConsignacionWizard({
    * Returns whether it's safe to advance.
    */
   const persistOwnerIfNeeded = useCallback(async (): Promise<boolean> => {
+    // Con varios dueños el pendiente puede ser un COPROPIETARIO y no el
+    // principal, así que el id temporal se lee de su propio campo y se
+    // reemplaza donde aparezca — si no, viajaría un `new-…` al back.
+    const pendienteId = formData.duenoPendienteId ?? '';
     const propietarioId = formData.propietarioId ?? '';
-    const isTempId = propietarioId.startsWith('new-');
-    const isOwnRecord = !isTempId && Boolean(propietarioId) && Boolean(formData.newPropietarioData);
+    const isTempId = pendienteId.startsWith('new-');
+    const isOwnRecord =
+      !isTempId && Boolean(propietarioId) && Boolean(formData.newPropietarioData);
     if (!isTempId && !isOwnRecord) return true;
 
     setIsPersistingOwner(true);
@@ -227,7 +244,19 @@ export function ConsignacionWizard({
     try {
       if (isTempId) {
         const created = await propietariosApi.create(formData.newPropietarioData!);
-        updateFormData({ propietarioId: created.id });
+        const real = (id: string) => (id === pendienteId ? created.id : id);
+        updateFormData({
+          propietarioId: real(propietarioId),
+          ...(formData.copropietarios
+            ? {
+                copropietarios: formData.copropietarios.map((c) => ({
+                  ...c,
+                  propietarioId: real(c.propietarioId),
+                })),
+              }
+            : {}),
+          duenoPendienteId: undefined,
+        });
       } else {
         await propietariosApi.update(propietarioId, formData.newPropietarioData!);
       }
@@ -248,7 +277,14 @@ export function ConsignacionWizard({
     } finally {
       setIsPersistingOwner(false);
     }
-  }, [formData.propietarioId, formData.newPropietarioData, updateFormData, t]);
+  }, [
+    formData.propietarioId,
+    formData.newPropietarioData,
+    formData.duenoPendienteId,
+    formData.copropietarios,
+    updateFormData,
+    t,
+  ]);
 
   const goToNextStep = useCallback(async () => {
     if (currentStep >= 6 || !isStepValid || isPersistingOwner) return;
@@ -401,8 +437,20 @@ export function ConsignacionWizard({
       // dentro de la misma transacción del create() de la propiedad.
       const agenteUserId = selectedAgente?.userId ?? user?.id;
       try {
+        // La lista sólo viaja si hay copropietarios de verdad. `null` = un solo
+        // dueño y se manda la forma vieja (`propietarioId` suelto), que es lo
+        // que el back espera: mandar los dos a la vez es un 400.
+        const listaDeDuenos = aListaDelCable(
+          (formData.copropietarios ?? []).map((c) => ({
+            propietarioId: c.propietarioId,
+            participacionBps: c.participacionBps,
+          })),
+          formData.propietarioId ?? '',
+        );
+
         await consignacionesApi.create({
           propietarioId: formData.propietarioId ?? '',
+          ...(listaDeDuenos ? { copropietarios: listaDeDuenos } : {}),
           propertyId: property.id,
           ...(agenteUserId ? { agenteUserId } : {}),
           propertyTitle: formData.propertyTitle ?? '',

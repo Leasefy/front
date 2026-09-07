@@ -122,7 +122,10 @@ function renderHook(filters?: InboxFilters): { current: ReturnType<typeof useMan
 }
 
 beforeEach(() => {
-  delete process.env.NEXT_PUBLIC_USE_MOCK_API
+  // Estos tests ejercitan la rama SIMULADA, y el simulado dejó de venir por
+  // defecto: hay que pedirlo con todas las letras. Antes alcanzaba con borrar
+  // la variable, y esa misma comodidad servía datos inventados en staging.
+  process.env.NEXT_PUBLIC_USE_MOCK_API = 'true'
   process.env.NEXT_PUBLIC_MOCK_DELAY_MS = '10'
   _mockAgency = { id: 'agency-test-mant' }
   container = document.createElement('div')

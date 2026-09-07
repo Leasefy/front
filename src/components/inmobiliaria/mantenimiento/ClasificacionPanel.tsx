@@ -57,7 +57,7 @@ export function ClasificacionPanel({ clasificacion, responsableProbable }: Clasi
     <Card data-testid="clasificacion-panel">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Tag size={18} className="text-indigo-500" weight="duotone" aria-hidden="true" />
+          <Tag size={18} className="text-primary" weight="duotone" aria-hidden="true" />
           {t(`${ROOT}.detalle.clasificacion`)}
         </CardTitle>
       </CardHeader>
@@ -71,25 +71,25 @@ export function ClasificacionPanel({ clasificacion, responsableProbable }: Clasi
 
         {/* Score + bucket */}
         <div className="space-y-1">
-          <div className="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
+          <div className="flex items-center justify-between text-xs text-fg-muted">
             <span>
               {t(`${ROOT}.card.score`)} · {t(`${ROOT}.enums.bucket.${bucketKey(clasificacion.bucket)}`)}
             </span>
-            <span className="font-mono text-neutral-900 dark:text-white">{score}</span>
+            <span className="font-mono text-fg">{score}</span>
           </div>
           <Progress value={score} size="sm" />
         </div>
 
-        <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">
+        <p className="text-sm leading-relaxed text-fg-muted">
           {clasificacion.rationale}
         </p>
 
         {/* Responsable probable — explicitly a HYPOTHESIS, never a verdict */}
         <div
           data-testid="responsable-hipotesis"
-          className="rounded-lg bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-700 p-3"
+          className="rounded-lg bg-surface-muted border border-border p-3"
         >
-          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1.5">
+          <p className="text-xs font-medium text-fg-muted mb-1.5">
             {t(`${ROOT}.detalle.responsableHipotesis`)}
           </p>
           <Badge variant="secondary">{t(`${ROOT}.enums.responsable.${responsableProbable}`)}</Badge>

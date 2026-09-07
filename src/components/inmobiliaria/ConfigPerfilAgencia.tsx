@@ -36,7 +36,7 @@ import {
 } from '@/components/ui';
 import { Chip, CurrencyInput } from '@leasefy/cadence';
 import { Switch } from '@/components/ui/switch';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
 import { formatCurrency } from '@/lib/format';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';

@@ -232,7 +232,14 @@ function OnboardingWizard({
             <span className="flex items-center gap-2" aria-label="Leasefy">
               <LeasefyLogo size={28} tone="brand" />
             </span>
-            <OnboardingWizardStepper currentStep={displayStep} />
+            {/* Un paso hecho devuelve a ese paso (Nico, 2026-09-07). Es el
+                mismo override que usa el CTA de «faltan pasos» de Confirmar:
+                se limpia solo cuando el paso se vuelve a enviar bien. */}
+            <OnboardingWizardStepper
+              currentStep={displayStep}
+              reachedStep={currentStep}
+              onNavigateToStep={setCompleteStepOverride}
+            />
             {/* El asistente tampoco tenía salida: la única era cerrar la
                 pestaña. Ahora sí, y la promesa de volver donde quedaste la
                 cumple el punto de retorno del back. */}

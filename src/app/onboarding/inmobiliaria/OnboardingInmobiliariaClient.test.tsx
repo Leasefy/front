@@ -472,6 +472,25 @@ describe('<OnboardingInmobiliariaClient>', () => {
     expect(container.querySelector('[data-testid="wizard-step-placeholder"]')).toBeFalsy()
   })
 
+  it('clic en un paso hecho de la barra vuelve a ese paso (Nico, 2026-09-07)', () => {
+    mockUseOnboardingSession.mockReturnValue(baseHookResult({ currentStep: 'habeas_data' }))
+    render()
+    expect(container.querySelector('[data-testid="terms-step-form"]')).toBeTruthy()
+
+    const volverAAgencia = container.querySelector('[data-testid="wizard-step-link-agency"]') as HTMLButtonElement
+    expect(volverAAgencia).toBeTruthy()
+    act(() => {
+      volverAAgencia.click()
+    })
+
+    expect(container.querySelector('[data-testid="agency-step-form"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="terms-step-form"]')).toBeFalsy()
+    // Los pasos de más adelante siguen hechos: se puede volver a Habeas Data.
+    expect(container.querySelector('[data-testid="wizard-step-link-habeas_data"]')).toBeTruthy()
+    // El actual (Agencia) no es botón.
+    expect(container.querySelector('[data-testid="wizard-step-link-agency"]')).toBeFalsy()
+  })
+
   it('mounts <TermsStepForm> on the habeas_data step (no upload form) and forwards acceptTerms on submit', async () => {
     const acceptTerms = vi.fn().mockResolvedValue({
       sessionId: 'sess-1',

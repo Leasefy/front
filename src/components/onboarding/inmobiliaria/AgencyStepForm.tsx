@@ -3,7 +3,6 @@
 import { Controller, useForm, type FieldPath } from 'react-hook-form'
 import { formatearNitAlEscribir } from '@/lib/onboarding/nit'
 import { PhoneInput } from '@leasefy/cadence'
-import { useState } from 'react'
 import { ArrowRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +14,7 @@ import {
   AGENCY_STEP_DEFAULT_VALUES,
   agencyStepSchema,
   toAgencyRequest,
+  pistaDelTelefono,
   type AgencyStepFormValues,
 } from './agency-step-schema'
 
@@ -78,7 +78,9 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
       address: { ...AGENCY_STEP_DEFAULT_VALUES.address, ...prefill?.address },
     },
   })
-  const [paisDelTelefono, setPaisDelTelefono] = useState('CO')
+  // El país vive en el formulario (no en un `useState` aparte) para que el
+  // esquema valide el largo del número con él.
+  const paisDelTelefono = watch('primaryContactCountry') || 'CO'
 
   // Municipio options depend on the chosen departamento. Watching the field
   // re-renders the municipio combobox with the right list; changing the
@@ -248,9 +250,8 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
         </label>
         {/* Con selector de país y su indicativo (Nico, 2026-09-07). El valor
             que viaja al back sigue siendo el número sin indicativo, igual que
-            antes; el país queda en el campo, no en el contrato. 🔴 Los
-            mínimos/máximos POR PAÍS no están: el esquema valida el formato
-            de siempre. */}
+            antes; el país queda en el formulario y el esquema valida con él
+            cuántos dígitos tiene un número de ese país. */}
         <Controller
           control={control}
           name="primaryContactPhone"
@@ -259,14 +260,21 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
               id="primaryContactPhone"
               autoComplete="tel"
               countryCode={paisDelTelefono}
-              onCountryChange={setPaisDelTelefono}
+              onCountryChange={(codigo) =>
+                setValue('primaryContactCountry', codigo, { shouldValidate: false })
+              }
               value={field.value ?? ''}
               onChange={field.onChange}
               onBlur={field.onBlur}
+              invalid={Boolean(errors.primaryContactPhone)}
             />
           )}
         />
-        <FieldError message={errors.primaryContactPhone?.message} />
+        {errors.primaryContactPhone?.message ? (
+          <FieldError message={errors.primaryContactPhone.message} />
+        ) : (
+          <p className="mt-1.5 text-xs text-fg-subtle">{pistaDelTelefono(paisDelTelefono)}</p>
+        )}
       </div>
 
       {submitError && (

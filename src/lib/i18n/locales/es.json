@@ -716,6 +716,7 @@
       "lightModeEnabled": "Modo claro activado",
       "passwordsDontMatch": "Las contraseñas no coinciden",
       "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
+      "passwordTooWeak": "La contraseña todavía es débil: sigue el consejo debajo del campo",
       "passwordUpdated": "Contraseña actualizada correctamente",
       "sessionClosed": "Sesión cerrada correctamente",
       "allSessionsClosed": "Todas las otras sesiones han sido cerradas",

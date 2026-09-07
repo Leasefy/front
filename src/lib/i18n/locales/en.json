@@ -716,6 +716,7 @@
       "lightModeEnabled": "Light mode enabled",
       "passwordsDontMatch": "Passwords do not match",
       "passwordTooShort": "Password must be at least 8 characters",
+      "passwordTooWeak": "The password is still weak: follow the tip below the field",
       "passwordUpdated": "Password updated successfully",
       "sessionClosed": "Session closed successfully",
       "allSessionsClosed": "All other sessions have been closed",

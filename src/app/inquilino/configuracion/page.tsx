@@ -18,6 +18,8 @@ import type { Locale } from '@/lib/i18n';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena';
+import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
 import { Switch } from '@/components/ui/switch';
 import {
   Select,
@@ -118,7 +120,7 @@ function esteDispositivo(): string {
 
 export default function ConfiguracionPage() {
   const router = useRouter();
-  const { signOut, changePassword } = useAuth();
+  const { signOut, changePassword, user: usuario } = useAuth();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { t, locale, setLocale } = useI18n();
   const [mounted, setMounted] = useState(false);
@@ -179,6 +181,8 @@ export default function ConfiguracionPage() {
 
   // Form states
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
+  // El mismo mínimo que el registro (medidor de contraseña, 2026-09-07).
+  const nuevaCumple = fortalezaDeContrasena(passwordForm.new, { correo: usuario?.email }).cumpleMinimo;
   const [isLoading, setIsLoading] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
@@ -234,8 +238,8 @@ export default function ConfiguracionPage() {
       toast.error('Las contraseñas no coinciden');
       return;
     }
-    if (passwordForm.new.length < 8) {
-      toast.error('La contraseña debe tener al menos 8 caracteres');
+    if (!nuevaCumple) {
+      toast.error('La contraseña todavía es débil: sigue el consejo debajo del campo');
       return;
     }
     /*
@@ -617,6 +621,7 @@ export default function ConfiguracionPage() {
               className="w-full h-12 rounded-xl bg-surface"
               placeholder="Mínimo 8 caracteres"
             />
+            <MedidorDeContrasena contrasena={passwordForm.new} correo={usuario?.email} className="mt-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-fg mb-2">Confirmar contraseña</label>
@@ -642,7 +647,7 @@ export default function ConfiguracionPage() {
               hideArrow
               isLoading={isLoading}
               onClick={handlePasswordChange}
-              disabled={isLoading || !passwordForm.current || !passwordForm.new || !passwordForm.confirm}
+              disabled={isLoading || !passwordForm.current || !passwordForm.new || !passwordForm.confirm || !nuevaCumple}
               className="flex-1 bg-primary text-primary-fg hover:bg-primary-hover"
             >
               {isLoading ? 'Actualizando...' : 'Cambiar contraseña'}

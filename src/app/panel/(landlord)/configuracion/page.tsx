@@ -28,6 +28,8 @@ import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import type { NotificationSettings } from '@/lib/api/settings.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena';
+import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Select,
@@ -65,6 +67,8 @@ export default function ConfiguracionPage() {
 
   // Form states
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
+  // El mismo mínimo que el registro (medidor de contraseña, 2026-09-07).
+  const nuevaCumple = fortalezaDeContrasena(passwordForm.new, { correo: user?.email }).cumpleMinimo;
   const [isLoading, setIsLoading] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
@@ -104,8 +108,8 @@ export default function ConfiguracionPage() {
       toast.error(t('landlordSettings.toasts.passwordsDontMatch'));
       return;
     }
-    if (passwordForm.new.length < 8) {
-      toast.error(t('landlordSettings.toasts.passwordTooShort'));
+    if (!nuevaCumple) {
+      toast.error(t('landlordSettings.toasts.passwordTooWeak'));
       return;
     }
     setIsLoading(true);
@@ -558,6 +562,7 @@ export default function ConfiguracionPage() {
               onChange={(e) => setPasswordForm(prev => ({ ...prev, new: e.target.value }))}
               placeholder={t('landlordSettings.modals.changePassword.minChars')}
             />
+            <MedidorDeContrasena contrasena={passwordForm.new} correo={user?.email} className="mt-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.changePassword.confirmPassword')}</label>
@@ -580,7 +585,7 @@ export default function ConfiguracionPage() {
             <Button
               hideArrow
               onClick={handlePasswordChange}
-              disabled={isLoading || !passwordForm.current || !passwordForm.new || !passwordForm.confirm}
+              disabled={isLoading || !passwordForm.current || !passwordForm.new || !passwordForm.confirm || !nuevaCumple}
               isLoading={isLoading}
               className="flex-1"
             >

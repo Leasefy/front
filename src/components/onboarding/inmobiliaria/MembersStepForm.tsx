@@ -279,6 +279,7 @@ export function MembersStepForm({
                 autoComplete="email"
                 spellCheck={false}
                 placeholder="correo@inmobiliaria.com"
+                className="h-11"
                 {...register(`members.${index}.email` as const)}
               />
               <FieldError message={errors.members?.[index]?.email?.message} />
@@ -306,7 +307,9 @@ export function MembersStepForm({
                 name={`members.${index}.role` as const}
                 render={({ field: roleField }) => (
                   <Select value={roleField.value} onValueChange={roleField.onChange}>
-                    <SelectTrigger id={`members.${index}.role`}>
+                    {/* Misma altura que el correo de al lado: sin esto el select
+                        quedaba más alto y la fila se veía torcida. */}
+                    <SelectTrigger id={`members.${index}.role`} className="h-11">
                       <SelectValue placeholder="Rol" />
                     </SelectTrigger>
                     <SelectContent>

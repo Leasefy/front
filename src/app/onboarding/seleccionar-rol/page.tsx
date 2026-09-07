@@ -10,7 +10,7 @@ import { useEnabledProfiles } from '@/lib/hooks/use-enabled-profiles'
 import { getAgencyHomeRoute } from '@/lib/auth/role-routes'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
-import { LeasefyLogo } from '@/components/brand'
+import { LeasefyLogotype } from '@/components/brand'
 import { SalirDelRegistro } from '@/components/onboarding/SalirDelRegistro'
 import { saludo } from '@/lib/onboarding/saludo'
 
@@ -197,7 +197,8 @@ export default function SeleccionarRolPage() {
   return (
     <div className="min-h-screen bg-bg">
       <header className="flex items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
-        <LeasefyLogo className="h-6 w-auto" />
+        {/* El mismo logotipo que la sidebar del panel y el header de los pasos — el cuadrado azul no es la marca (Nico, 2026-09-07). */}
+        <LeasefyLogotype className="h-6 w-auto" />
         <SalirDelRegistro />
       </header>
 

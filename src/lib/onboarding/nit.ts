@@ -171,3 +171,14 @@ export function revisarNit(crudo: string): RevisionDeNit {
     traiaDv: dvEscrito !== undefined,
   }
 }
+
+/**
+ * Formatea el NIT MIENTRAS se escribe: sólo dígitos, y al llegar al noveno
+ * pone el guion solo; lo que sigue es el dígito de verificación (uno). Nico
+ * (2026-09-07): «coloca tú solito el guion cuando llegue al número». Nunca
+ * más de 9 + 1: lo que sobre se descarta al teclear, no después con un error.
+ */
+export function formatearNitAlEscribir(crudo: string): string {
+  const digitos = crudo.replace(/\D/g, '').slice(0, 10);
+  return digitos.length > 9 ? `${digitos.slice(0, 9)}-${digitos.slice(9)}` : digitos;
+}

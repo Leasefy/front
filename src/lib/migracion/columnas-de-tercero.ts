@@ -126,30 +126,44 @@ export function mapearColumnas(
     }
   });
 
-  // ── Pasada 2: contención, gana el alias más largo. ───────────────────────
+  // ── Pasada 2: contención, gana el alias más largo — ENTRE TODAS las
+  // columnas, no en el orden del archivo. ───────────────────────────────────
+  //
+  // 🔴 Antes se resolvía columna por columna, de izquierda a derecha, y cada
+  // una se quedaba con el mejor campo que quedara libre. Con el archivo real
+  // de una inmobiliaria (Terceros.csv) «Primer Nombre/Razón Social» venía
+  // ANTES que «Nombre Completo/Razón Social»: la primera empataba `nombre`
+  // por «razon social» y la segunda —la buena— encontraba el campo tomado.
+  // El propietario entraba llamándose «MARIA». (Nico, 2026-09-07.)
+  //
+  // Ahora se juntan todos los empates posibles y se asignan del término más
+  // largo al más corto: «nombre completo» (15) le gana a «razon social» (12)
+  // sin importar en qué columna del archivo esté cada uno.
+  const candidatos: { i: number; campo: string; termino: string }[] = [];
   mapeo.forEach((m, i) => {
     if (m.campo) return;
     const n = normalizarEncabezado(encabezados[i]);
     if (!n) return;
-
-    let mejor: { campo: string; termino: string } | null = null;
     for (const columna of columnas) {
       if (usados.has(columna.campo)) continue;
       for (const termino of terminosDe(columna)) {
         if (termino.length < LARGO_MINIMO_PARA_CONTENER) continue;
-        if (!n.includes(termino)) continue;
-        if (!mejor || termino.length > mejor.termino.length) {
-          mejor = { campo: columna.campo, termino };
-        }
+        if (n.includes(termino)) candidatos.push({ i, campo: columna.campo, termino });
       }
     }
-    if (mejor) {
-      usados.add(mejor.campo);
-      m.campo = mejor.campo;
-      m.porque = mejor.termino;
-      m.exacto = false;
-    }
   });
+  // Estable ante empates de largo: gana la columna que está más a la
+  // izquierda, que es lo que hacía la versión anterior.
+  candidatos.sort((a, b) => b.termino.length - a.termino.length || a.i - b.i);
+  const columnasTomadas = new Set<number>();
+  for (const c of candidatos) {
+    if (usados.has(c.campo) || columnasTomadas.has(c.i)) continue;
+    usados.add(c.campo);
+    columnasTomadas.add(c.i);
+    mapeo[c.i].campo = c.campo;
+    mapeo[c.i].porque = c.termino;
+    mapeo[c.i].exacto = false;
+  }
 
   return mapeo;
 }

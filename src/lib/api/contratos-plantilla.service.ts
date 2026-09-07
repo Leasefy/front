@@ -53,7 +53,7 @@ export type QuienPagaElConcepto =
   | 'INMOBILIARIA'
   | 'TERCERO';
 
-export type TipoDeDocumentoDePersona = 'CC' | 'CE' | 'NIT' | 'PASSPORT';
+export type TipoDeDocumentoDePersona = 'CC' | 'CE' | 'TI' | 'NIT' | 'PASSPORT';
 
 /** `TipoDocumentoLegal`, acotado a las dos plantillas de contrato. */
 export type CodigoDePlantillaDeContrato = 'CONTRATO_VIVIENDA' | 'CONTRATO_COMERCIAL';

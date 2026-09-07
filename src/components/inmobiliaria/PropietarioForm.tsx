@@ -63,6 +63,7 @@ interface PropietarioFormProps {
 const DOCUMENT_TYPE_VALUES: { value: DocumentType; hint: string }[] = [
   { value: 'CC', hint: 'Ej: 80.123.456' },
   { value: 'CE', hint: 'Ej: 123456' },
+  { value: 'TI', hint: 'Ej: 1.023.456.789' },
   { value: 'NIT', hint: 'Ej: 900.456.789-1' },
   { value: 'PASSPORT', hint: 'Ej: AB123456' },
 ];
@@ -70,6 +71,7 @@ const DOCUMENT_TYPE_VALUES: { value: DocumentType; hint: string }[] = [
 const DOCUMENT_TYPE_LABEL_KEYS: Record<DocumentType, string> = {
   CC: 'inmobiliaria.propietario.form.docCC',
   CE: 'inmobiliaria.propietario.form.docCE',
+  TI: 'inmobiliaria.propietario.form.docTI',
   NIT: 'inmobiliaria.propietario.form.docNIT',
   PASSPORT: 'inmobiliaria.propietario.form.docPassport',
 };
@@ -483,7 +485,6 @@ export function PropietarioForm({
             onChange={(e) => updateField('accountNumber', e.target.value.replace(/[^0-9]/g, ''))}
             onBlur={() => setTouched((prev) => ({ ...prev, accountNumber: true }))}
             placeholder="1234567890"
-            maxLength={20}
             className={cn(
               'font-mono',
               touched.accountNumber && errors.accountNumber && 'border-danger/30'

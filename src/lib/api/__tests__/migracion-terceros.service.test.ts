@@ -19,7 +19,7 @@
  *   (7) resolverMasivo → PATCH /filas troceado en 200 (@ArrayMaxSize)
  *   (8) aplicar     → POST /aplicar, cuerpo {lote} exacto
  *   (9) las claves de fila coinciden con FilaTerceroDto, ni una más
- *  (10) celdasDemasiadoLargas replica los @MaxLength del DTO
+ *  (10) ninguna celda tiene tope de caracteres (Nico, 2026-09-07)
  *  (11) lotesAbiertos deriva los lotes sin un GET /lotes que no existe
  */
 
@@ -29,7 +29,6 @@ import {
   migracionTercerosApi,
   soloClavesDeFila,
   filaDePlantilla,
-  celdasDemasiadoLargas,
   CLAVES_DE_FILA,
   MAX_IDS_POR_TANDA,
   type FilaDeStaging,
@@ -80,25 +79,6 @@ const CLAVES_DEL_DTO_DE_APLICAR = ['lote'];
 /** `ListarFilasTercerosDto`. */
 const QUERY_DEL_DTO_DE_FILAS = ['lote', 'tipo', 'estado', 'pagina', 'porPagina'];
 
-/** `@MaxLength` de cada celda, del mismo DTO. */
-const LARGOS_DEL_DTO: Record<string, number> = {
-  tipoDocumento: 30,
-  documento: 40,
-  nombre: 200,
-  correo: 255,
-  telefono: 40,
-  direccion: 300,
-  ciudad: 50,
-  banco: 100,
-  tipoCuenta: 40,
-  numeroCuenta: 60,
-  titularCuenta: 200,
-  responsableIva: 20,
-  agenteRetenedorRenta: 20,
-  agenteRetenedorIva: 20,
-  agenteRetenedorIca: 20,
-  notas: 1000,
-};
 
 // ── Utilería ─────────────────────────────────────────────────────────────────
 
@@ -491,28 +471,20 @@ describe('el armado de una fila', () => {
   });
 });
 
-// ── (10) largos ──────────────────────────────────────────────────────────────
+// ── (10) sin tope ────────────────────────────────────────────────────────────
 
-describe('celdasDemasiadoLargas', () => {
-  it('replica los @MaxLength del DTO', () => {
-    // Si el back afloja o aprieta un largo y esta tabla no se entera, el aviso
-    // de la pantalla miente en una de las dos direcciones.
-    for (const [campo, maximo] of Object.entries(LARGOS_DEL_DTO)) {
-      const sobra = celdasDemasiadoLargas([{ [campo]: 'x'.repeat(maximo + 1) }]);
-      expect(sobra, `${campo} debería exceder en ${maximo + 1}`).toHaveLength(1);
-      expect(sobra[0].maximo).toBe(maximo);
-      const justo = celdasDemasiadoLargas([{ [campo]: 'x'.repeat(maximo) }]);
-      expect(justo, `${campo} en ${maximo} debería caber`).toEqual([]);
-    }
-  });
-
-  it('señala la fila con el número que la persona ve en el Excel', () => {
-    const problemas = celdasDemasiadoLargas([
-      { nombre: 'Jorge' },
-      { nombre: 'x'.repeat(201) },
-    ]);
-    // 1-based: la segunda fila de datos es la 2, no la 1.
-    expect(problemas).toEqual([{ fila: 2, campo: 'nombre', largo: 201, maximo: 200 }]);
+describe('las celdas no tienen tope de caracteres', () => {
+  it('una celda de 500 caracteres viaja tal cual: ni se recorta ni se avisa', () => {
+    // «3103640479 / NELSON HERRERA - ESPOSO 3217834480» son 47 caracteres de
+    // teléfono en el archivo real de una inmobiliaria; con el tope de 40 la
+    // carga no pasaba de la subida (Nico, 2026-09-07). El back tampoco lo
+    // tiene ya: sus columnas son TEXT.
+    const largo = 'x'.repeat(500);
+    expect(filaDePlantilla({ telefono: largo, nombre: largo, documento: largo })).toEqual({
+      telefono: largo,
+      nombre: largo,
+      documento: largo,
+    });
   });
 });
 

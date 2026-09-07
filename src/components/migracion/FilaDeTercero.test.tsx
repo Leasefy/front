@@ -155,7 +155,7 @@ describe('FilaDeTercero', () => {
     // cambiar el tipo de documento a NIT cambia la regla del número.
     await pintar({
       fila: fila({
-        errores: [{ codigo: 'DOCUMENTO_INVALIDO', campo: 'documento', mensaje: 'No es válido.' }],
+        errores: [{ codigo: 'FALTA_DOCUMENTO', campo: 'documento', mensaje: 'No se pudo leer.' }],
       }),
     });
 

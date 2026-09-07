@@ -9830,10 +9830,10 @@ export interface components {
             /** @description Phone number */
             phone?: string;
             /**
-             * @description Document type (CC, CE, NIT, PASSPORT)
+             * @description Document type (CC, CE, TI, NIT, PASSPORT)
              * @enum {string}
              */
-            documentType: "CC" | "CE" | "NIT" | "PASSPORT";
+            documentType: "CC" | "CE" | "TI" | "NIT" | "PASSPORT";
             /** @description Document number */
             documentNumber: string;
             /** @description Physical address */
@@ -9869,10 +9869,10 @@ export interface components {
             /** @description Phone number */
             phone?: string;
             /**
-             * @description Document type (CC, CE, NIT, PASSPORT)
+             * @description Document type (CC, CE, TI, NIT, PASSPORT)
              * @enum {string}
              */
-            documentType?: "CC" | "CE" | "NIT" | "PASSPORT";
+            documentType?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT";
             /** @description Document number */
             documentNumber?: string;
             /** @description Physical address */

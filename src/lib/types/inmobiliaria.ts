@@ -9,7 +9,7 @@ import type { BankCode, AccountType } from './payment-accounts';
 // Propietario (Property Owner/Client)
 // ============================================================================
 
-export type DocumentType = 'CC' | 'CE' | 'NIT' | 'PASSPORT';
+export type DocumentType = 'CC' | 'CE' | 'TI' | 'NIT' | 'PASSPORT';
 
 export interface PropietarioBankAccount {
   bank: BankCode;

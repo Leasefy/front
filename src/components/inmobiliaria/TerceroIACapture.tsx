@@ -180,7 +180,15 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
       if (campo === 'banco') return { ...prev, bancoNombre: valor };
       if (campo === 'tipoDocumento') {
         const up = valor.toUpperCase();
-        const tipo = up.includes('NIT') ? 'NIT' : up.includes('CE') ? 'CE' : up.includes('PASS') ? 'PASSPORT' : 'CC';
+        const tipo = up.includes('NIT')
+          ? 'NIT'
+          : up.includes('CE')
+            ? 'CE'
+            : up.includes('PASS')
+              ? 'PASSPORT'
+              : up === 'TI' || up.includes('TARJETA')
+                ? 'TI'
+                : 'CC';
         return { ...prev, tipoDocumento: tipo };
       }
       if (campo === 'fieldConfidence') return prev;

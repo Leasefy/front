@@ -53,10 +53,8 @@ export type CodigoDeError =
   | 'FALTA_TIPO_DOCUMENTO'
   | 'TIPO_DOCUMENTO_DESCONOCIDO'
   | 'FALTA_DOCUMENTO'
-  | 'DOCUMENTO_INVALIDO'
   | 'FALTA_CORREO'
   | 'CORREO_INVALIDO'
-  | 'TELEFONO_INVALIDO'
   | 'FALTA_BANCO'
   | 'BANCO_DESCONOCIDO'
   | 'FALTA_TIPO_CUENTA'
@@ -125,32 +123,14 @@ export type CampoDeFila = (typeof CLAVES_DE_FILA)[number];
 export type FilaTercero = Partial<Record<CampoDeFila, string>>;
 
 /**
- * `@MaxLength` de cada celda en `FilaTerceroDto`.
- *
- * Se copia acá para poder avisar ANTES de mandar. Una celda de 250 caracteres
- * en la fila 800 no devuelve «la fila 800 tiene el nombre muy largo»: devuelve
- * un 400 con las 1.200 filas adentro y sin decir cuál. Avisar antes es la
- * diferencia entre corregir una celda y abandonar la migración.
+ * 🔴 Sin tope de caracteres por celda (Nico, 2026-09-07): «no deberíamos
+ * tener límites de caracteres para ningún campo, para no limitar cómo lo
+ * tenga cada inmobiliaria». Acá vivía una copia de los `@MaxLength` del DTO
+ * para avisar antes de mandar; el archivo real traía «3103640479 / NELSON
+ * HERRERA - ESPOSO 3217834480» en el teléfono (47 caracteres contra 40) y la
+ * carga no pasaba de la pantalla de subida. El back ya no tiene `@MaxLength`
+ * y sus columnas son TEXT, así que no hay nada que replicar.
  */
-export const LARGO_MAXIMO_DE_CELDA: Record<CampoDeFila, number> = {
-  tipoDocumento: 30,
-  documento: 40,
-  nombre: 200,
-  correo: 255,
-  telefono: 40,
-  direccion: 300,
-  ciudad: 50,
-  banco: 100,
-  tipoCuenta: 40,
-  numeroCuenta: 60,
-  titularCuenta: 200,
-  responsableIva: 20,
-  agenteRetenedorRenta: 20,
-  agenteRetenedorIva: 20,
-  agenteRetenedorIca: 20,
-  notas: 1000,
-  externalId: 64,
-};
 
 /** `MAX_FILAS_POR_LOTE` en `MigracionTercerosService`. */
 export const MAX_FILAS_POR_LOTE = 5_000;
@@ -332,35 +312,6 @@ export function filaDePlantilla(cruda: Record<string, unknown>): FilaTercero {
     if (valor) salida[clave as CampoDeFila] = valor;
   }
   return salida;
-}
-
-/** Una celda que no cabe en su columna, con dónde está. */
-export interface CeldaDemasiadoLarga {
-  /** 1-based, como en el Excel. */
-  fila: number;
-  campo: CampoDeFila;
-  largo: number;
-  maximo: number;
-}
-
-/**
- * Las celdas que el back va a rechazar por largo, antes de mandarlas.
- *
- * No se truncan: recortar una cédula o una razón social en silencio es peor
- * que el 400. Se listan con su número de fila para que la persona sepa dónde
- * mirar en su propio archivo.
- */
-export function celdasDemasiadoLargas(filas: FilaTercero[]): CeldaDemasiadoLarga[] {
-  const problemas: CeldaDemasiadoLarga[] = [];
-  filas.forEach((fila, i) => {
-    for (const [clave, valor] of Object.entries(fila)) {
-      const maximo = LARGO_MAXIMO_DE_CELDA[clave as CampoDeFila];
-      if (valor && valor.length > maximo) {
-        problemas.push({ fila: i + 1, campo: clave as CampoDeFila, largo: valor.length, maximo });
-      }
-    }
-  });
-  return problemas;
 }
 
 // ══ HTTP ════════════════════════════════════════════════════════════════════

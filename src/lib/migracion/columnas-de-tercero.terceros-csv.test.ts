@@ -6,7 +6,7 @@
  * 2026-09-07): el propietario entraba llamándose «MARIA».
  */
 import { describe, expect, it } from 'vitest'
-import { mapearColumnas } from './columnas-de-tercero'
+import { armarFila, mapearColumnas, obligatoriasSinMapear } from './columnas-de-tercero'
 
 const col = (campo: string, titulo: string, alias: string[], obligatoria = false) =>
   ({ campo, titulo, alias, obligatoria, ejemplo: '' }) as never
@@ -39,6 +39,23 @@ describe('Terceros.csv de una inmobiliaria real', () => {
   it('el nombre COMPLETO se queda con `nombre`, aunque el primer nombre venga antes', () => {
     expect(por['Nombre Completo/Razón Social'].campo).toBe('nombre')
     expect(por['Primer Nombre/Razón Social'].campo).toBeNull()
+  })
+
+  it('las cuatro columnas del nombre partido se reconocen como PARTES, no como `nombre`', () => {
+    expect(por['Primer Nombre/Razón Social']).toMatchObject({ campo: null, parte: 'primerNombre' })
+    expect(por['Segundo Nombre']).toMatchObject({ campo: null, parte: 'segundoNombre', exacto: true })
+    expect(por['Primer Apellido']).toMatchObject({ campo: null, parte: 'primerApellido' })
+    expect(por['Segundo Apellido']).toMatchObject({ campo: null, parte: 'segundoApellido' })
+  })
+
+  it('una fila sin nombre completo lo arma con las partes; con nombre completo, ese gana', () => {
+    const mapeo = mapearColumnas(PLANTILLA, ENCABEZADOS)
+    const base = { 'Primer Nombre/Razón Social': 'MARIA', 'Segundo Nombre': '', 'Primer Apellido': 'RUIZ', 'Segundo Apellido': 'GOMEZ' }
+    expect(armarFila({ ...base, 'Nombre Completo/Razón Social': '' }, mapeo).nombre).toBe('MARIA RUIZ GOMEZ')
+    expect(armarFila({ ...base, 'Nombre Completo/Razón Social': 'MARIA RUIZ GOMEZ DE LA HOZ' }, mapeo).nombre).toBe(
+      'MARIA RUIZ GOMEZ DE LA HOZ',
+    )
+    expect(obligatoriasSinMapear(PLANTILLA, mapeo).map((c) => c.campo)).not.toContain('nombre')
   })
 
   it('documento y tipo de documento mapean exactos', () => {

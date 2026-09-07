@@ -38,7 +38,7 @@ import { setAccessToken } from '../client';
 const BASE = '/inmobiliaria/migracion-terceros';
 
 /**
- * Las 16 claves de `FilaTerceroDto`
+ * Las 18 claves de `FilaTerceroDto`
  * (back-erp/src/inmobiliaria/migracion-terceros/dto/migracion-terceros.dto.ts).
  * Escritas a mano a propósito: si se importaran de `CLAVES_DE_FILA` el test
  * compararía el servicio contra sí mismo.
@@ -46,11 +46,13 @@ const BASE = '/inmobiliaria/migracion-terceros';
 const CLAVES_DEL_DTO_DE_FILA = [
   'tipoDocumento',
   'documento',
+  'digitoVerificacion',
   'nombre',
   'correo',
   'telefono',
   'direccion',
   'ciudad',
+  'departamento',
   'banco',
   'tipoCuenta',
   'numeroCuenta',

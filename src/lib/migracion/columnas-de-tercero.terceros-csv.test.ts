@@ -16,12 +16,14 @@ const col = (campo: string, titulo: string, alias: string[], obligatoria = false
 const PLANTILLA = [
   col('tipoDocumento', 'Tipo de documento', ['tipo documento', 'tipo doc', 'tipo de identificacion', 'tipo id', 'clase documento'], true),
   col('documento', 'Número de documento', ['documento', 'cedula', 'cc', 'nit', 'nro documento', 'numero de documento'], true),
+  col('digitoVerificacion', 'Dígito de verificación', ['digito de verificacion', 'digito verificacion', 'dv']),
   col('nombre', 'Nombre completo', ['nombre', 'nombre completo', 'razon social', 'nombres y apellidos', 'propietario'], true),
   col('externalId', 'Código en tu sistema', ['codigo', 'id', 'consecutivo']),
   col('telefono', 'Teléfono', ['telefono', 'celular', 'movil', 'contacto', 'tel']),
   col('correo', 'Correo', ['correo', 'email', 'e mail']),
   col('direccion', 'Dirección', ['direccion', 'domicilio']),
   col('ciudad', 'Ciudad', ['ciudad', 'municipio']),
+  col('departamento', 'Departamento', ['departamento', 'depto', 'dpto']),
   col('banco', 'Banco', ['banco', 'entidad bancaria', 'entidad']),
   col('tipoCuenta', 'Tipo de cuenta', ['tipo cuenta', 'clase de cuenta']),
   col('numeroCuenta', 'Número de cuenta', ['numero cuenta', 'nro cuenta', 'cuenta']),
@@ -62,6 +64,8 @@ describe('Terceros.csv de una inmobiliaria real', () => {
   it('documento y tipo de documento mapean exactos', () => {
     expect(por['Documento']).toMatchObject({ campo: 'documento', exacto: true })
     expect(por['Tipo Documento']).toMatchObject({ campo: 'tipoDocumento', exacto: true })
+    // El DV del NIT viene en su propia columna: ya no se ignora, se compara con el calculado.
+    expect(por['Dígito de Verificación']).toMatchObject({ campo: 'digitoVerificacion', exacto: true })
   })
 
   it('lo demás que el archivo trae y sabemos guardar', () => {

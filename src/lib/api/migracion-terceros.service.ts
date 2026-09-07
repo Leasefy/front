@@ -53,6 +53,7 @@ export type CodigoDeError =
   | 'FALTA_TIPO_DOCUMENTO'
   | 'TIPO_DOCUMENTO_DESCONOCIDO'
   | 'FALTA_DOCUMENTO'
+  | 'NIT_DV_INVALIDO'
   | 'CORREO_INVALIDO'
   | 'FALTA_BANCO'
   | 'FALTA_TIPO_CUENTA'
@@ -96,11 +97,15 @@ export interface ErrorDeFila {
 export const CLAVES_DE_FILA = [
   'tipoDocumento',
   'documento',
+  // Del NIT: se compara con el calculado (2026-09-07).
+  'digitoVerificacion',
   'nombre',
   'correo',
   'telefono',
   'direccion',
   'ciudad',
+  // Partido de «Caldas (Antioquia)» o en su propia columna (2026-09-07).
+  'departamento',
   'banco',
   'tipoCuenta',
   'numeroCuenta',

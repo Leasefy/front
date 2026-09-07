@@ -112,6 +112,13 @@ function CeldaEditable({
             {/* «Sin definir» existe a propósito: vacío significa «no lo
                 sabemos», que NO es lo mismo que «no». */}
             <SelectItem value={SIN_VALOR}>Sin definir</SelectItem>
+            {/* Un valor que no está en el catálogo —un banco como «CONFIAR»
+                que se guardó tal como venía— se muestra y se puede dejar:
+                sin esta opción el select lo pintaba como «Sin definir» y
+                guardar la fila lo borraba en silencio. */}
+            {valor && !columna.opciones.includes(valor) ? (
+              <SelectItem value={valor}>{valor} (como viene en el archivo)</SelectItem>
+            ) : null}
             {columna.opciones.map((o) => (
               <SelectItem key={o} value={o}>
                 {o}

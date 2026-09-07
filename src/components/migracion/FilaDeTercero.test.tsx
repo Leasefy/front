@@ -375,3 +375,21 @@ describe('valorEditable', () => {
     expect(valorEditable(1020304050)).toBe('1020304050');
   });
 });
+
+describe('un valor fuera del catálogo (2026-09-07)', () => {
+  it('se muestra como viene en el archivo y se puede dejar, en vez de pintarse «Sin definir»', async () => {
+    // Un banco como «CONFIAR» se guarda tal cual; acá el catálogo de la
+    // columna de prueba es el del tipo de documento, y «RC» no está.
+    await pintar({
+      fila: fila({
+        datos: { _fila: 3, nombre: 'Ana', documento: '1', tipoDocumento: 'RC' },
+        errores: [{ codigo: 'FALTA_NOMBRE', campo: 'nombre', mensaje: 'falta el nombre' }],
+      }),
+    });
+    await click(boton('Ver todos los campos')!);
+    const select = container.querySelector('[data-testid="campo-tipoDocumento"]');
+    expect(select).not.toBeNull();
+    expect(select?.textContent).toContain('RC');
+    expect(select?.textContent).not.toContain('Sin definir');
+  });
+});

@@ -53,10 +53,8 @@ export type CodigoDeError =
   | 'FALTA_TIPO_DOCUMENTO'
   | 'TIPO_DOCUMENTO_DESCONOCIDO'
   | 'FALTA_DOCUMENTO'
-  | 'FALTA_CORREO'
   | 'CORREO_INVALIDO'
   | 'FALTA_BANCO'
-  | 'BANCO_DESCONOCIDO'
   | 'FALTA_TIPO_CUENTA'
   | 'TIPO_CUENTA_DESCONOCIDO'
   | 'FALTA_NUMERO_CUENTA'
@@ -246,6 +244,12 @@ export interface ResumenDeAplicacion {
   invitados: number;
   /** Cuentas creadas sin invitación por el límite de correo del proveedor. Un back viejo no lo manda. */
   sinInvitar?: number;
+  /**
+   * Inquilinos aplicados SIN cuenta del portal porque la fila no traía correo:
+   * existen para la inmobiliaria con su documento; la cuenta nace cuando se
+   * les cargue el correo (2026-09-07). Un back viejo no lo manda.
+   */
+  sinCorreo?: number;
   resultados: ResultadoDeFila[];
   /**
    * Cuántas filas listas quedaron sin intentarse en esta llamada: mientras

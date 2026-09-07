@@ -1235,7 +1235,21 @@ function ListaDeTrabajo({
                 invitación todavía
               </>
             ) : null}
+            {(aplicacion.sinCorreo ?? 0) > 0 ? (
+              <>
+                {' · '}
+                <span className="font-mono tabular-nums">{aplicacion.sinCorreo}</span> sin
+                correo
+              </>
+            ) : null}
           </p>
+          {(aplicacion.sinCorreo ?? 0) > 0 ? (
+            <p className="text-sm text-fg-muted" data-testid="sin-correo">
+              {aplicacion.sinCorreo === 1
+                ? 'Un inquilino venía sin correo: quedó creado con su documento, sin cuenta del portal. La cuenta nace cuando le cargues el correo desde su ficha.'
+                : `${aplicacion.sinCorreo} inquilinos venían sin correo: quedaron creados con su documento, sin cuenta del portal. La cuenta nace cuando les cargues el correo desde su ficha.`}
+            </p>
+          ) : null}
           {(aplicacion.sinInvitar ?? 0) > 0 ? (
             <p className="text-sm text-fg-muted" data-testid="sin-invitar">
               El proveedor de correo limitó los envíos: esas cuentas quedaron creadas y la

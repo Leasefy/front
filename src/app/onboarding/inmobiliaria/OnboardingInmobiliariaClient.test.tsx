@@ -42,6 +42,12 @@ import OnboardingInmobiliariaClient from './OnboardingInmobiliariaClient'
 import { OnboardingSessionError } from '@/lib/api/onboarding-session.service'
 import type { OnboardingSessionStepConflict } from '@/lib/api/generated/agency'
 
+// `CompleteStepForm` refresca la sesión antes de salir (arreglo del bucle del
+// 2026-09-07); sin este mock `useAuth()` revienta fuera del AuthProvider.
+vi.mock('@/lib/auth/use-auth', () => ({
+  useAuth: () => ({ refreshUser: async () => {}, user: null, isAuthenticated: false, isLoading: false }),
+}))
+
 let container: HTMLDivElement
 let root: Root
 

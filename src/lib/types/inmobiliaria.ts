@@ -23,6 +23,13 @@ export interface PropietarioBankAccount {
   accountType: AccountType;
   accountNumber: string;
   accountHolder: string;
+  /**
+   * Documento del titular cuando la cuenta NO es del propietario (2026-09-07).
+   * Bancolombia lo exige en el archivo de dispersión; sin él el lote usa el
+   * documento del propietario. Sólo vienen cuando existen.
+   */
+  accountHolderDocument?: string;
+  accountHolderDocumentType?: DocumentType;
 }
 
 export interface Propietario {
@@ -36,6 +43,8 @@ export interface Propietario {
   documentNumber: string;
   address?: string;
   city?: string;
+  /** Departamento, aparte de la ciudad; lo parte la migración y lo edita el formulario. */
+  department?: string | null;
   bankAccount: PropietarioBankAccount;
   propertyCount: number;
   activeLeases: number;
@@ -88,10 +97,14 @@ export interface PropietarioFormData {
   documentNumber: string;
   address?: string;
   city?: string;
+  department?: string;
   bankCode: BankCode | '';
   accountType: AccountType | '';
   accountNumber: string;
   accountHolder: string;
+  /** Documento del titular de la cuenta si no es el propietario; vacío = es el propietario. */
+  accountHolderDocumentType?: DocumentType | '';
+  accountHolderDocument?: string;
   notes?: string;
   /** Perfil tributario; `null` = sin definir. Van al back tal cual. */
   responsableIva?: boolean | null;

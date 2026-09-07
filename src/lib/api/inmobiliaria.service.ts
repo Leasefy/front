@@ -8,6 +8,7 @@ import { resolveListingType } from '@/lib/api/properties.mapper';
 import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url';
 import { tasaMedida } from '@/lib/tasas';
 import type {
+  DocumentType,
   AgencyProfile,
   UpdateAgencyPayload,
   Propietario,
@@ -175,6 +176,8 @@ type PropietarioDelBack = Omit<Propietario, 'bankAccount' | 'propertyCount' | 'a
   bankAccountType?: string | null;
   bankAccountNumber?: string | null;
   bankAccountHolder?: string | null;
+  bankAccountHolderDocument?: string | null;
+  bankAccountHolderDocumentType?: DocumentType | null;
   propertyCount?: number;
   activeLeases?: number;
   totalMonthlyRent?: number;
@@ -199,7 +202,15 @@ export function codigoDeBanco(nombre: string | null | undefined): BankCode | '' 
 }
 
 export function normalizePropietario(raw: PropietarioDelBack): Propietario {
-  const { bankName, bankAccountType, bankAccountNumber, bankAccountHolder, ...rest } = raw;
+  const {
+    bankName,
+    bankAccountType,
+    bankAccountNumber,
+    bankAccountHolder,
+    bankAccountHolderDocument,
+    bankAccountHolderDocumentType,
+    ...rest
+  } = raw;
   return {
     ...(rest as Omit<Propietario, 'bankAccount'>),
     propertyCount: raw.propertyCount ?? 0,
@@ -213,6 +224,10 @@ export function normalizePropietario(raw: PropietarioDelBack): Propietario {
       accountType: (bankAccountType ?? '').toLowerCase().startsWith('corr') ? 'checking' : 'savings',
       accountNumber: bankAccountNumber ?? '',
       accountHolder: bankAccountHolder ?? '',
+      ...(bankAccountHolderDocument ? { accountHolderDocument: bankAccountHolderDocument } : {}),
+      ...(bankAccountHolderDocument && bankAccountHolderDocumentType
+        ? { accountHolderDocumentType: bankAccountHolderDocumentType }
+        : {}),
     },
   };
 }
@@ -241,8 +256,29 @@ function mapAccountTypeToWire(type: AccountType): string {
 function mapPropietarioBankFields<T extends Partial<PropietarioFormData>>(
   data: T,
 ): Omit<T, 'bankCode' | 'accountType' | 'accountNumber' | 'accountHolder'> & Record<string, unknown> {
-  const { bankCode, accountType, accountNumber, accountHolder, ...rest } = data;
+  const {
+    bankCode,
+    accountType,
+    accountNumber,
+    accountHolder,
+    accountHolderDocument,
+    accountHolderDocumentType,
+    department,
+    ...rest
+  } = data;
   const payload: Record<string, unknown> = { ...rest };
+
+  // Sólo cuando el formulario los manda: un PUT parcial (las notas solas) no
+  // debe tocar el titular ni el departamento. Vacío se manda como `null`,
+  // que en el back limpia el dato; un tipo sin documento no significa nada.
+  if (department !== undefined) {
+    payload.department = department.trim() || null;
+  }
+  if (accountHolderDocument !== undefined || accountHolderDocumentType !== undefined) {
+    const documento = (accountHolderDocument ?? '').trim();
+    payload.bankAccountHolderDocument = documento || null;
+    payload.bankAccountHolderDocumentType = documento && accountHolderDocumentType ? accountHolderDocumentType : null;
+  }
 
   if (bankCode) {
     payload.bankCode = mapBankCodeToWire(bankCode);

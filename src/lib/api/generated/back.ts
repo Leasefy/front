@@ -9840,6 +9840,8 @@ export interface components {
             address?: string;
             /** @description City */
             city?: string;
+            /** @description Departamento (Antioquia, Cundinamarca…) */
+            department?: string;
             /** @description Bank name for disbursements */
             bankName?: string;
             /** @description Bank account type (e.g. AHORROS, CORRIENTE) */
@@ -9848,6 +9850,13 @@ export interface components {
             bankAccountNumber?: string;
             /** @description Bank account holder name */
             bankAccountHolder?: string;
+            /**
+             * @description Tipo de documento del titular de la cuenta, si no es el propietario
+             * @enum {string}
+             */
+            bankAccountHolderDocumentType?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT";
+            /** @description Documento del titular de la cuenta, si no es el propietario */
+            bankAccountHolderDocument?: string;
             /** @description Additional notes */
             notes?: string;
             /** @description Tags for categorization */
@@ -9879,6 +9888,8 @@ export interface components {
             address?: string;
             /** @description City */
             city?: string;
+            /** @description Departamento (Antioquia, Cundinamarca…) */
+            department?: string;
             /** @description Bank name for disbursements */
             bankName?: string;
             /** @description Bank account type (e.g. AHORROS, CORRIENTE) */
@@ -9887,6 +9898,13 @@ export interface components {
             bankAccountNumber?: string;
             /** @description Bank account holder name */
             bankAccountHolder?: string;
+            /**
+             * @description Tipo de documento del titular de la cuenta, si no es el propietario
+             * @enum {string}
+             */
+            bankAccountHolderDocumentType?: "CC" | "CE" | "TI" | "NIT" | "PASSPORT";
+            /** @description Documento del titular de la cuenta, si no es el propietario */
+            bankAccountHolderDocument?: string;
             /** @description Additional notes */
             notes?: string;
             /** @description Tags for categorization */

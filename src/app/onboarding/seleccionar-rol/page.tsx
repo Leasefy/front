@@ -7,6 +7,7 @@ import { House, Buildings, Storefront, Check, type Icon } from '@phosphor-icons/
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth/use-auth'
 import { useEnabledProfiles } from '@/lib/hooks/use-enabled-profiles'
+import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding'
 import { getAgencyHomeRoute } from '@/lib/auth/role-routes'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
@@ -121,12 +122,21 @@ function TarjetaDePerfil({
 
 export default function SeleccionarRolPage() {
   const router = useRouter()
-  const { user, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole } = useAuth()
+  const { user, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole, perfilElegido, elegirPerfil } = useAuth()
   // Admin can switch signup profiles off (see /admin/registration-profiles).
   // Fails open: if the config backend is down (or takes too long), all are shown.
   const { isEnabled: isProfileEnabled, esProvisional } = useEnabledProfiles()
   const [selected, setSelected] = useState<RoleChoice>(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  // Si ya había elegido y se fue antes de terminar, la tarjeta arranca
+  // marcada: «Continuar» es un clic. Sólo si el admin no apagó ese perfil.
+  useEffect(() => {
+    if (!perfilElegido) return
+    const opcion = PERFILES.find((perfil) => perfil.bandera === perfilElegido)
+    if (!opcion || !isProfileEnabled(opcion.bandera)) return
+    setSelected((actual) => actual ?? opcion.valor)
+  }, [perfilElegido, isProfileEnabled])
 
   // Bounded fallback for the membership-probe wait below: if the probe never
   // settles (e.g. it wasn't triggered on this client-side navigation, or the
@@ -193,17 +203,18 @@ export default function SeleccionarRolPage() {
     return null
   }
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!selected) return
     setIsLoading(true)
-
-    if (selected === 'landlord') {
-      router.push('/onboarding/propietario')
-    } else if (selected === 'inmobiliaria') {
-      router.push('/onboarding/inmobiliaria')
-    } else {
-      router.push('/onboarding/inquilino')
-    }
+    const perfil = PERFILES.find((opcion) => opcion.valor === selected)?.bandera ?? 'tenant'
+    // La elección se guarda para que la próxima entrada retome en este
+    // onboarding y no acá (Nico, 2026-09-07). Si guardar falla o tarda, no
+    // retiene a nadie: sigue igual y, a lo sumo, la próxima vez vuelve al selector.
+    await Promise.race([
+      elegirPerfil(perfil).catch(() => undefined),
+      new Promise<void>((resolver) => setTimeout(resolver, 1500)),
+    ])
+    router.push(rutaDeOnboarding(perfil))
   }
 
   const visibles = PERFILES.filter((perfil) => isProfileEnabled(perfil.bandera))

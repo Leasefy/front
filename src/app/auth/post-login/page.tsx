@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth/use-auth';
+import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { sanitizeReturnUrl } from '@/lib/utils';
 
@@ -29,6 +30,7 @@ function PostLoginResolver() {
     isAuthenticated,
     isLoading: authLoading,
     needsOnboarding,
+    perfilElegido,
     mfaRequired,
     agencyRole,
     agencyMembershipChecked,
@@ -61,9 +63,10 @@ function PostLoginResolver() {
       router.replace(returnUrl);
       return;
     }
-    // JWT valid but backend has no user record yet → onboarding.
+    // JWT valid but backend has no user record yet → onboarding (el del
+    // perfil que ya eligió, o el selector).
     if (needsOnboarding) {
-      router.replace('/onboarding/seleccionar-rol');
+      router.replace(rutaDeOnboarding(perfilElegido));
       return;
     }
     // Genuinely unauthenticated (e.g. navigated here directly, or the code
@@ -72,9 +75,10 @@ function PostLoginResolver() {
       router.replace('/auth');
       return;
     }
-    // Onboarding not complete → role picker.
+    // Onboarding sin terminar → retomar donde lo dejó: el onboarding del
+    // perfil elegido, o el selector si nunca eligió (Nico, 2026-09-07).
     if (!user.onboardingCompleted) {
-      router.replace('/onboarding/seleccionar-rol');
+      router.replace(rutaDeOnboarding(perfilElegido));
       return;
     }
     // Explicit destination wins over the role default.
@@ -95,6 +99,7 @@ function PostLoginResolver() {
     isAuthenticated,
     user,
     needsOnboarding,
+    perfilElegido,
     mfaRequired,
     returnUrl,
     agencyRole,

@@ -14,6 +14,7 @@ import {
   haySesionGuardada,
 } from './session-terminal'
 import { claimSession, revokeSession } from '@/lib/api/session.service'
+import { CLAVE_DE_PERFIL_ELEGIDO, leerPerfilElegido, type PerfilDeOnboarding } from './perfil-de-onboarding'
 import { getDeviceId } from '@/lib/auth/device-id'
 import {
   readActiveContext,
@@ -222,6 +223,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [mfaRequired, setMfaRequired] = useState(false)
   const [needsOnboarding, setNeedsOnboarding] = useState(false)
+  // El perfil elegido en «Selecciona tu perfil». Vive en `user_metadata` de
+  // Supabase y se relee de la sesión en cada evento (ver perfil-de-onboarding.ts).
+  const [perfilElegido, setPerfilElegido] = useState<PerfilDeOnboarding | null>(null)
   // Initialize from localStorage so cobranza/cotizador hooks that gate on
   // `agency?.id` can fire their first fetch in parallel with the Supabase
   // session hydration. The `onAuthStateChange` handler still calls
@@ -533,6 +537,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [user?.id])
 
   /**
+   * Guarda el perfil elegido en «Selecciona tu perfil». Va a `user_metadata`
+   * de Supabase —no a nuestro back— para que la próxima entrada, desde el
+   * dispositivo que sea, retome en el onboarding de ese perfil y no en el
+   * selector (Nico, 2026-09-07). El estado se adelanta: si guardar falla, la
+   * pantalla igual sigue con lo elegido y la próxima entrada vuelve al selector.
+   */
+  const elegirPerfil = useCallback(async (perfil: PerfilDeOnboarding) => {
+    setPerfilElegido(perfil)
+    const supabase = getSupabase()
+    if (!supabase) return
+    const { error } = await supabase.auth.updateUser({
+      data: { [CLAVE_DE_PERFIL_ELEGIDO]: perfil },
+    })
+    if (error) throw error
+  }, [])
+
+  /**
    * Single-session: claim this device's session as the active one. Must run
    * BEFORE the first authenticated request (fetchUser) so a device that only
    * opened the app (INITIAL_SESSION, not SIGNED_IN) becomes active instead of
@@ -589,6 +610,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
           return providers.includes('email')
         }
 
+        /**
+         * auth-js corre este callback ADENTRO de su lock de sesión y espera a
+         * que devuelva. Cualquier método de auth-js llamado acá (`mfa.*`,
+         * `getSession`, `updateUser`, `refreshSession`…) pide ese mismo lock y
+         * se queda esperando al callback, que a su vez lo espera a él. Medido
+         * con `navigator.locks.query()` el 2026-09-07: el lock quedaba «held»
+         * para siempre en cada carga con sesión. Sin lock libre no hay
+         * auto-refresh del token, `updateUser` no vuelve nunca, y todo lo que
+         * seguía al `await checkMfaLevel()` de INITIAL_SESSION —la sonda de
+         * membresía, soltar el loader— sólo llegaba por la red de 5 s (el
+         * spinner de 5 s en cada recarga era esto).
+         *
+         * Por eso el chequeo de MFA sale a un `setTimeout(0)`: corre recién
+         * cuando el callback ya devolvió y el lock está libre, que es lo que
+         * pide la documentación de Supabase para llamar a auth desde acá.
+         */
+        const alSoltarElLock = (tarea: () => Promise<void>) => {
+          setTimeout(() => {
+            void tarea()
+          }, 0)
+        }
+
         if (event === 'INITIAL_SESSION') {
           if (!session) {
             // Sin sesión hay que decirlo EXPLÍCITAMENTE. `setAccessToken` es lo
@@ -609,10 +652,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             if (userData) userData.hasPassword = getHasPassword(session)
             setUser(userData)
             setNeedsOnboarding(needsOnb)
-            await checkMfaLevel()
-            if (userData?.onboardingCompleted) {
-              requestNotificationPermission().catch(() => {})
-            }
+            setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
             // Probe agency membership for every authenticated user (coexistence).
             // Fire-and-forget: the global loader must NOT wait on
             // /inmobiliaria/agency latency (only the agency-route gate waits, on
@@ -620,6 +660,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
             if (userData) {
               void probeAgencyMembership(session.access_token)
             }
+            // El loader se suelta recién con el MFA resuelto (como siempre se
+            // quiso), pero fuera del callback — ver `alSoltarElLock`.
+            const yaHizoOnboarding = userData?.onboardingCompleted === true
+            alSoltarElLock(async () => {
+              await checkMfaLevel()
+              setIsLoading(false)
+              if (yaHizoOnboarding) {
+                requestNotificationPermission().catch(() => {})
+              }
+            })
+            return
           }
           setIsLoading(false)
         } else if (event === 'SIGNED_IN' && session) {
@@ -631,16 +682,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (userData) userData.hasPassword = getHasPassword(session)
           setUser(userData)
           setNeedsOnboarding(needsOnb)
+          setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
           setIsLoading(false)
-          await checkMfaLevel()
-          if (userData?.onboardingCompleted) {
-            requestNotificationPermission().catch(() => {})
-          }
           // Probe agency membership for every authenticated user (coexistence).
           // Fire-and-forget (isLoading already released above).
           if (userData) {
             void probeAgencyMembership(session.access_token)
           }
+          // SIGNED_IN también puede venir de adentro del lock (`setSession` en
+          // /auth/enlace, el canje del código): el MFA se chequea al soltarlo.
+          const yaHizoOnboarding = userData?.onboardingCompleted === true
+          alSoltarElLock(async () => {
+            await checkMfaLevel()
+            if (yaHizoOnboarding) {
+              requestNotificationPermission().catch(() => {})
+            }
+          })
         } else if (event === 'SIGNED_OUT') {
           // auth-js emite SIGNED_OUT cuando descarta una sesión que no pudo
           // renovar (`_removeSession`). Si NO fue el usuario el que se fue y
@@ -662,7 +719,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
           clearActiveContext()
           setMfaRequired(false)
           setNeedsOnboarding(false)
+          setPerfilElegido(null)
           setIsLoading(false)
+        } else if (event === 'USER_UPDATED' && session) {
+          // `updateUser` (por ejemplo, guardar el perfil elegido) trae el
+          // usuario nuevo en la misma sesión: releer los metadatos acá.
+          setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
         } else if (event === 'TOKEN_REFRESHED' && session) {
           huboSesionRef.current = true
           setAccessToken(session.access_token)
@@ -670,7 +732,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (userData) userData.hasPassword = getHasPassword(session)
           setUser(userData)
           setNeedsOnboarding(needsOnb)
-          await checkMfaLevel()
+          setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
+          // El refresco corre adentro del lock de auth-js: el MFA se chequea al soltarlo.
+          alSoltarElLock(checkMfaLevel)
           // Probe agency membership for every authenticated user (coexistence).
           // Fire-and-forget so the global loader isn't blocked by agency latency
           // (the agency-route gate still waits on agencyMembershipChecked).
@@ -718,6 +782,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { user: userData, needsOnboarding: needsOnb } = await fetchUser(data.session)
       setUser(userData)
       setNeedsOnboarding(needsOnb)
+      setPerfilElegido(leerPerfilElegido(data.session.user?.user_metadata))
       // Resolve the MFA gate before returning so callers (AuthForm) can short-circuit
       // the panel redirect to /auth/mfa-verify when a second factor is required.
       await checkMfaLevel()
@@ -857,6 +922,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setAccessToken(null)
     setUser(null)
     setNeedsOnboarding(false)
+    setPerfilElegido(null)
     setAgencyState(null)
     setAgencyRole(null)
     setAgencyMemberStatus(null)
@@ -943,6 +1009,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isLoading,
     mfaRequired,
     needsOnboarding,
+    perfilElegido,
     agency,
     agencyRole,
     agencyMemberStatus,
@@ -951,6 +1018,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     activeContext,
     refreshAgency,
     setActiveContext,
+    elegirPerfil,
     signInWithGoogle,
     signInWithEmail,
     signUpWithEmail,

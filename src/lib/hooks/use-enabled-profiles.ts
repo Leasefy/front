@@ -78,12 +78,23 @@ export interface UseEnabledProfilesResult {
 }
 
 export function useEnabledProfiles(): UseEnabledProfilesResult {
-  const [cacheInicial] = useState<readonly RegistrationProfileKey[] | null>(leerCache)
-  const [keys, setKeys] = useState<readonly RegistrationProfileKey[]>(cacheInicial ?? ALL_ENABLED)
+  // `undefined` = todavía no se miró la caché. Se lee al montar y NO en el
+  // estado inicial: en el servidor no hay localStorage, y un estado inicial
+  // distinto entre servidor y navegador rompe la hidratación (el HTML traía
+  // el esqueleto y el cliente pintaba tarjetas; React lo reportaba como error
+  // en «Selecciona tu perfil», 2026-09-07).
+  const [cacheInicial, setCacheInicial] = useState<
+    readonly RegistrationProfileKey[] | null | undefined
+  >(undefined)
+  const [keys, setKeys] = useState<readonly RegistrationProfileKey[]>(ALL_ENABLED)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
+
+    const cache = leerCache()
+    setCacheInicial(cache)
+    if (cache) setKeys(cache)
 
     fetchEnabledRegistrationProfiles()
       .then((enabledKeys) => {
@@ -116,6 +127,6 @@ export function useEnabledProfiles(): UseEnabledProfilesResult {
     enabled,
     isEnabled: (key) => enabled.has(key),
     isLoading,
-    esProvisional: isLoading && cacheInicial === null,
+    esProvisional: isLoading && !cacheInicial,
   }
 }

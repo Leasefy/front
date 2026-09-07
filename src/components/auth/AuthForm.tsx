@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { AuthInput } from './AuthInput';
 import { useAuth } from '@/lib/auth/use-auth';
 import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
+import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
 import { SesionYaAbierta } from './SesionYaAbierta';
@@ -47,15 +48,6 @@ interface AuthFormProps {
   defaultRole?: 'tenant' | 'landlord' | 'agency';
   returnUrl?: string;
 }
-
-// Role → onboarding entry point. The profile *picker* itself lives at
-// /onboarding/seleccionar-rol (the single selection surface); this map only
-// resolves the deep-link destination when a caller already knows the role.
-const roleHrefById: Record<'tenant' | 'landlord' | 'agency', string> = {
-  tenant: '/onboarding/inquilino',
-  landlord: '/onboarding/propietario',
-  agency: '/onboarding/inmobiliaria',
-};
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -290,7 +282,7 @@ function ReenvioDeConfirmacion({
 export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendSignUpEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, mfaRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendSignUpEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, perfilElegido, mfaRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership } = useAuth();
 
   const [mode, setMode] = React.useState<AuthMode>('login');
   const [registerStep, setRegisterStep] = React.useState<RegisterStep>('credentials');
@@ -388,15 +380,17 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       window.location.href = returnUrl;
       return;
     }
-    // JWT valid but backend has no user record yet → onboarding
+    // JWT valid but backend has no user record yet → onboarding. Si ya había
+    // elegido perfil antes de irse, directo a ese onboarding y no al selector.
     if (needsOnboarding) {
-      window.location.href = '/onboarding/seleccionar-rol';
+      window.location.href = rutaDeOnboarding(perfilElegido);
       return;
     }
     if (!isAuthenticated || !user) return;
-    // Si el onboarding no está completo, siempre ir a seleccionar rol
+    // Onboarding sin terminar: retomar donde lo dejó — el onboarding del
+    // perfil que eligió, o el selector si nunca eligió (Nico, 2026-09-07).
     if (!user.onboardingCompleted) {
-      window.location.href = '/onboarding/seleccionar-rol';
+      window.location.href = rutaDeOnboarding(perfilElegido);
       return;
     }
     if (returnUrl && returnUrl !== '/') {
@@ -411,7 +405,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     const isAgencyUser = user.role === 'agency' || hasActiveAgencyMembership;
     if (isAgencyUser && !agencyMembershipChecked && !probeWaitElapsed) return;
     window.location.href = getRoleHomeRoute(user.role, agencyRole);
-  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, mfaRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, probeWaitElapsed]);
+  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, perfilElegido, mfaRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, probeWaitElapsed]);
   // A caller may deep-link with the role already chosen — via the `defaultRole`
   // prop (e.g. the publish wizard) or a `?role=` query. When present, the
   // post-signup destination skips the picker and goes straight to that role's
@@ -478,8 +472,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     forgotPasswordForm.reset();
   };
 
+  // Role → onboarding entry point (the map lives in perfil-de-onboarding.ts).
+  // The profile *picker* itself is /onboarding/seleccionar-rol; this only
+  // resolves the deep-link destination when a caller already knows the role.
   const getOnboardingHref = (role: 'tenant' | 'landlord' | 'agency') => {
-    const href = roleHrefById[role];
+    const href = rutaDeOnboarding(role);
     return returnUrl && returnUrl !== '/'
       ? `${href}?returnUrl=${encodeURIComponent(returnUrl)}`
       : href;
@@ -489,7 +486,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   // role's onboarding (carrying returnUrl forward); otherwise the single
   // profile picker at /onboarding/seleccionar-rol.
   const onboardingDest = () =>
-    explicitRole ? getOnboardingHref(explicitRole) : '/onboarding/seleccionar-rol';
+    explicitRole ? getOnboardingHref(explicitRole) : rutaDeOnboarding(null);
 
   // Preserve context on the email-confirmation link so it returns through
   // /auth/callback (which exchanges the code server-side and honors returnUrl)

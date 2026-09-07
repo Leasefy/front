@@ -134,6 +134,20 @@ export function esCodigoDeSesionMuerta(code: string | undefined): boolean {
   return code != null && CODIGOS_DE_SESION_MUERTA.has(code)
 }
 
+/**
+ * ¿Este 401 `SESSION_SUPERSEDED` responde a un token que ya no es el de esta
+ * pestaña? Entonces la sesión que lo desplazó es la NUESTRA, más nueva, y la
+ * respuesta no dice nada sobre ella: no hay que cerrar nada.
+ */
+export function esRespuestaDeUnTokenViejo(
+  code: string | undefined,
+  tokenUsado: string | null | undefined,
+): boolean {
+  if (code !== 'SESSION_SUPERSEDED' || !tokenUsado) return false
+  const tokenVigente = getAccessToken()
+  return tokenVigente != null && tokenVigente !== tokenUsado
+}
+
 // ============================================================================
 // Unauthorized handler — el backstop global de 401.
 // Lo registra el AuthProvider. Dispara SOLO con un `code` de sesión muerta,
@@ -296,7 +310,16 @@ async function request<T>(
           return request<T>(method, path, body, tokenNuevo, true)
         }
       }
-      _onUnauthorized?.(code as string)
+      // Un SUPERSEDED para un token que YA no es el de esta pestaña es una
+      // respuesta vieja: fue la sesión nueva de este mismo navegador la que
+      // desplazó a la anterior (un enlace mágico o de invitación abierto con
+      // sesión previa; un reingreso en la misma pestaña). Cerrar sesión acá
+      // mataría la sesión nueva y la persona caería en /auth sin motivo —
+      // visto el 2026-09-07: la sonda de membresía con el token viejo llegaba
+      // al back después del claim del nuevo.
+      if (!esRespuestaDeUnTokenViejo(code, tokenUsado)) {
+        _onUnauthorized?.(code as string)
+      }
       throw new ApiError(401, errorBody.message || 'No autorizado', code)
     }
 
@@ -414,7 +437,9 @@ async function requestBlob(path: string, token?: string, yaSeReintento = false):
         const tokenNuevo = await renovarTokenVencido(tokenUsado)
         if (tokenNuevo) return requestBlob(path, tokenNuevo, true)
       }
-      _onUnauthorized?.(code as string)
+      if (!esRespuestaDeUnTokenViejo(code, tokenUsado)) {
+        _onUnauthorized?.(code as string)
+      }
       throw new ApiError(401, errorBody.message || 'No autorizado', code)
     }
 

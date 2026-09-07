@@ -12,18 +12,21 @@ void React
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { replaceMock, authState } = vi.hoisted(() => ({
+const { replaceMock, pushMock, elegirPerfilMock, authState } = vi.hoisted(() => ({
   replaceMock: vi.fn(),
+  pushMock: vi.fn(),
+  elegirPerfilMock: vi.fn(),
   authState: {
     user: null as Record<string, unknown> | null,
     hasActiveAgencyMembership: false,
     agencyMembershipChecked: true,
     agencyRole: null as string | null,
+    perfilElegido: null as string | null,
   },
 }))
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: replaceMock, push: vi.fn() }),
+  useRouter: () => ({ replace: replaceMock, push: pushMock }),
 }))
 
 vi.mock('@/lib/auth/use-auth', () => ({
@@ -32,6 +35,8 @@ vi.mock('@/lib/auth/use-auth', () => ({
     hasActiveAgencyMembership: authState.hasActiveAgencyMembership,
     agencyMembershipChecked: authState.agencyMembershipChecked,
     agencyRole: authState.agencyRole,
+    perfilElegido: authState.perfilElegido,
+    elegirPerfil: elegirPerfilMock,
   }),
 }))
 
@@ -62,6 +67,10 @@ beforeEach(() => {
   authState.hasActiveAgencyMembership = false
   authState.agencyMembershipChecked = true
   authState.agencyRole = null
+  authState.perfilElegido = null
+  pushMock.mockClear()
+  elegirPerfilMock.mockReset()
+  elegirPerfilMock.mockResolvedValue(undefined)
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -244,5 +253,67 @@ describe('selección de perfil', () => {
   it('se puede salir del registro desde acá', async () => {
     await render()
     expect(container.querySelector('[data-testid="salir-del-registro"]')).toBeTruthy()
+  })
+})
+
+/*
+ * Retomar donde lo dejó (Nico, 2026-09-07): la elección se guarda al continuar
+ * y, si vuelve al selector con una elección hecha, la tarjeta arranca marcada.
+ */
+describe('SeleccionarRolPage — retomar donde lo dejó', () => {
+  const botonContinuar = () =>
+    Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.trim() === 'Continuar',
+    ) as HTMLButtonElement
+
+  const marcar = async (testId: string) => {
+    const card = container.querySelector(`[data-testid="${testId}"]`) as HTMLElement
+    await act(async () => {
+      card.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  }
+
+  it('con un perfil ya elegido, su tarjeta arranca marcada y «Continuar» habilitado', async () => {
+    authState.perfilElegido = 'agency'
+
+    await render()
+
+    const inmobiliaria = container.querySelector('[data-testid="perfil-inmobiliaria"]') as HTMLElement
+    expect(inmobiliaria.getAttribute('aria-checked')).toBe('true')
+    expect(botonContinuar().disabled).toBe(false)
+  })
+
+  it('si el admin apagó el perfil que había elegido, no se marca nada', async () => {
+    authState.perfilElegido = 'landlord'
+    perfilesState.enabled = new Set(['tenant', 'agency'])
+
+    await render()
+
+    expect(container.querySelector('[aria-checked="true"]')).toBeNull()
+    expect(botonContinuar().disabled).toBe(true)
+  })
+
+  it('al continuar guarda el perfil elegido y va a su onboarding', async () => {
+    await render()
+    await marcar('perfil-inmobiliaria')
+
+    await act(async () => {
+      botonContinuar().click()
+    })
+
+    expect(elegirPerfilMock).toHaveBeenCalledWith('agency')
+    expect(pushMock).toHaveBeenCalledWith('/onboarding/inmobiliaria')
+  })
+
+  it('si guardar la elección falla, igual sigue al onboarding', async () => {
+    elegirPerfilMock.mockRejectedValue(new Error('sin red'))
+
+    await render()
+    await marcar('perfil-tenant')
+    await act(async () => {
+      botonContinuar().click()
+    })
+
+    expect(pushMock).toHaveBeenCalledWith('/onboarding/inquilino')
   })
 })

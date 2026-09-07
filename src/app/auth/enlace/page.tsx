@@ -45,11 +45,19 @@ function EnlaceContent() {
       return
     }
 
-    // Un error explícito viaja en el mismo fragmento (enlace vencido o ya
-    // usado). Decirlo es mejor que quedarse girando.
+    let navegado = false
+    const ir = () => {
+      if (navegado) return
+      navegado = true
+      window.location.href = destino
+    }
+
     if (typeof window !== 'undefined' && window.location.hash) {
       const crudo = window.location.hash.replace(/^#/, '')
       const params = new URLSearchParams(crudo)
+
+      // Un error explícito viaja en el mismo fragmento (enlace vencido o ya
+      // usado). Decirlo es mejor que quedarse girando.
       const codigo = params.get('error_code') ?? params.get('error')
       if (codigo) {
         // Supabase manda la descripción en inglés («Email link is invalid or
@@ -62,13 +70,35 @@ function EnlaceContent() {
         )
         return
       }
-    }
 
-    let navegado = false
-    const ir = () => {
-      if (navegado) return
-      navegado = true
-      window.location.href = destino
+      // Flujo implícito (invitaciones y enlaces generados desde el admin):
+      // los tokens vienen en el fragmento. El cliente está en modo PKCE y a
+      // esos NO los canjea solo —auth-js los rechaza como «Not a valid PKCE
+      // flow url»—, así que la sesión se abre a mano. Sin esto un enlace
+      // válido terminaba en «No pudimos abrir el enlace» a los 8 segundos
+      // (visto el 2026-09-07 con un enlace de confirmación del admin).
+      const accessToken = params.get('access_token')
+      const refreshToken = params.get('refresh_token')
+      if (accessToken && refreshToken) {
+        let vigente = true
+        const noSePudo = () =>
+          setError(
+            'No pudimos abrir sesión desde este enlace. Pedí que te lo reenvíen, o entra con tu correo y contraseña si ya tienes una.',
+          )
+        sb.auth
+          .setSession({ access_token: accessToken, refresh_token: refreshToken })
+          .then(({ error: fallo }) => {
+            if (!vigente) return
+            if (fallo) noSePudo()
+            else ir()
+          })
+          .catch(() => {
+            if (vigente) noSePudo()
+          })
+        return () => {
+          vigente = false
+        }
+      }
     }
 
     const {

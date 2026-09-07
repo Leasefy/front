@@ -6,6 +6,7 @@
  */
 
 import type { ActiveContext } from './active-context'
+import type { PerfilDeOnboarding } from './perfil-de-onboarding'
 
 // ============================================================================
 // Roles
@@ -197,6 +198,13 @@ export interface AuthState {
    * Callers should redirect to /onboarding/seleccionar-rol when this is true.
    */
   needsOnboarding: boolean
+  /**
+   * El perfil elegido en «Selecciona tu perfil» (o al registrarse con
+   * `?role=`), guardado en los metadatos del usuario de Supabase. Con el
+   * onboarding sin terminar, la entrada retoma en el onboarding de ese
+   * perfil y no en el selector. `null` si nunca eligió.
+   */
+  perfilElegido: PerfilDeOnboarding | null
   /** Agency the user belongs to (populated for AGENT / INMOBILIARIA roles AND
    *  for personal-role users who hold an agency membership — coexistence) */
   agency: Agency | null
@@ -247,6 +255,11 @@ export interface AuthContextType extends AuthState {
   /** Switch the active context for a DUAL-CONTEXT user. Persisted per-user;
    *  a no-op for single-context users. */
   setActiveContext: (context: ActiveContext) => void
+  /**
+   * Guarda el perfil elegido en «Selecciona tu perfil» para que la próxima
+   * entrada —desde cualquier dispositivo— retome en su onboarding.
+   */
+  elegirPerfil: (perfil: PerfilDeOnboarding) => Promise<void>
 }
 
 /**

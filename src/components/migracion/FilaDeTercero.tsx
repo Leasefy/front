@@ -36,6 +36,10 @@ import {
   type FilaDeStaging,
   type FilaTercero,
 } from '@/lib/api/migracion-terceros.service';
+import {
+  ayudaDelNumeroDeDocumento,
+  tipoDeDocumentoDe,
+} from '@/lib/migracion/ayuda-del-documento';
 
 /** Radix no admite `value=""` en un `<SelectItem>`. */
 const SIN_VALOR = '__vacio__';
@@ -223,6 +227,20 @@ export function FilaDeTercero({
   const valorDe = (campo: string): string =>
     borrador[campo] ?? valorEditable(fila.datos[campo]);
 
+  /**
+   * La ayuda bajo «Número de documento» es la del TIPO de la fila —o del que
+   * el operador acaba de elegir en el select, si lo cambió—: a una cédula no
+   * se le habla del dígito de verificación del NIT (2026-09-07). La regla que
+   * valida el back es por tipo; este texto es su espejo.
+   */
+  const conAyudaPorTipo = (columna: ColumnaDePlantilla): ColumnaDePlantilla =>
+    columna.campo === 'documento'
+      ? {
+          ...columna,
+          ayuda: ayudaDelNumeroDeDocumento(tipoDeDocumentoDe(valorDe('tipoDocumento'))),
+        }
+      : columna;
+
   const nombre = valorEditable(fila.datos.nombre) || 'sin nombre';
 
   return (
@@ -289,7 +307,7 @@ export function FilaDeTercero({
           {visibles.map((columna) => (
             <CeldaEditable
               key={columna.campo}
-              columna={columna}
+              columna={conAyudaPorTipo(columna)}
               valor={valorDe(columna.campo)}
               onCambia={(v) => setBorrador((b) => ({ ...b, [columna.campo]: v }))}
             />

@@ -53,12 +53,12 @@ export type CodigoDeError =
   | 'FALTA_TIPO_DOCUMENTO'
   | 'TIPO_DOCUMENTO_DESCONOCIDO'
   | 'FALTA_DOCUMENTO'
+  /** El número no cumple la regla de SU tipo (largo, primer dígito, letras). */
+  | 'DOCUMENTO_INVALIDO'
   | 'NIT_DV_INVALIDO'
   | 'CORREO_INVALIDO'
-  | 'FALTA_BANCO'
-  | 'FALTA_TIPO_CUENTA'
-  | 'TIPO_CUENTA_DESCONOCIDO'
-  | 'FALTA_NUMERO_CUENTA'
+  // Sin códigos de banco, tipo ni número de cuenta (2026-09-07): la cuenta
+  // bancaria no bloquea la fila; se completa después desde Propietarios.
   | 'DUPLICADO_EN_EL_LOTE'
   | 'CORREO_REPETIDO_EN_EL_LOTE'
   | 'YA_EXISTE_EN_LA_AGENCIA'

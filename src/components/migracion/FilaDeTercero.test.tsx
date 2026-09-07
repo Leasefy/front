@@ -376,6 +376,60 @@ describe('valorEditable', () => {
   });
 });
 
+describe('la ayuda del número de documento depende del tipo de la fila (2026-09-07)', () => {
+  const errorDeDocumento = [
+    {
+      codigo: 'DOCUMENTO_INVALIDO' as const,
+      campo: 'documento',
+      mensaje:
+        'Para una CC el número tiene entre 6 y 10 dígitos (las de 10 empiezan por 1); la celda trae «3193209445», que es el celular de la fila',
+    },
+  ];
+
+  /** El texto que el input del documento referencia con `aria-describedby`. */
+  function ayudaDelDocumento(): string | null | undefined {
+    const id = container
+      .querySelector('[data-testid="campo-documento"]')
+      ?.getAttribute('aria-describedby');
+    return id ? document.getElementById(id)?.textContent : null;
+  }
+
+  it('a un NIT le habla del dígito de verificación, no de cédulas', async () => {
+    await pintar({
+      fila: fila({
+        datos: { _fila: 3, nombre: 'Masterpar S.A.S.', documento: '900515021', tipoDocumento: 'NIT' },
+        errores: errorDeDocumento,
+      }),
+    });
+    expect(ayudaDelDocumento()).toBe(
+      '9 o 10 dígitos; el dígito de verificación después del guion se ignora.',
+    );
+  });
+
+  it('a una CC le dice 6 a 10 dígitos, sin mencionar el NIT', async () => {
+    await pintar({
+      fila: fila({
+        datos: { _fila: 450, nombre: 'Gloria Amparo', documento: '3193209445', tipoDocumento: 'CC' },
+        errores: errorDeDocumento,
+      }),
+    });
+    expect(ayudaDelDocumento()).toBe(
+      '6 a 10 dígitos, sin puntos ni espacios (las de 10 empiezan por 1).',
+    );
+    expect(ayudaDelDocumento()).not.toContain('NIT');
+  });
+
+  it('sin tipo no inventa la regla: pide el tipo primero', async () => {
+    await pintar({
+      fila: fila({
+        datos: { _fila: 7, nombre: 'Ana', documento: '12', tipoDocumento: null },
+        errores: errorDeDocumento,
+      }),
+    });
+    expect(ayudaDelDocumento()).toContain('elegilo primero');
+  });
+});
+
 describe('un valor fuera del catálogo (2026-09-07)', () => {
   it('se muestra como viene en el archivo y se puede dejar, en vez de pintarse «Sin definir»', async () => {
     // Un banco como «CONFIAR» se guarda tal cual; acá el catálogo de la

@@ -214,13 +214,29 @@ export const CASOS_REALES: Array<[string, CampoDeContrato | null]> = [
   ['Fecha de nacimiento', null],
   ['Código', null],
   ['Código postal', null],
-  ['Código del contrato', null],
   ['Teléfono', null],
   ['Cédula', null],
   ['Matrícula inmobiliaria', null],
-  ['Observaciones', null],
-  ['Estrato', null],
   ['Zutano mengano', null],
+  /*
+   * 2026-09-08: estas tres dejaron de estar sin campo. Vienen en el export
+   * real de contratos y ahora tienen destino propio — el consecutivo es la
+   * llave con la que se le cuelgan al contrato sus documentos contables
+   * viejos, y el estrato y las observaciones son datos del contrato que antes
+   * se tiraban enteros.
+   */
+  ['Código del contrato', 'consecutivoContrato'],
+  ['Consecutivo', 'consecutivoContrato'],
+  ['Observaciones', 'observaciones'],
+  ['Notas', 'observaciones'],
+  ['Estrato', 'estratoInmueble'],
+  ['Estrato Propiedad', 'estratoInmueble'],
+  ['Propiedad', 'propiedadCodigoYDireccion'],
+  ['Canon Total', 'canonTotal'],
+  ['Escenario', 'escenario'],
+  ['Estado', 'estadoContrato'],
+  ['Fecha Creación', 'fechaCreacionOrigen'],
+  ['Creado por', 'creadoPor'],
 ]
 
 describe('la tabla de encabezados reales', () => {
@@ -228,9 +244,45 @@ describe('la tabla de encabezados reales', () => {
     expect(campoDe(encabezado)).toBe(esperado)
   })
 
-  it('los 19 campos del contrato tienen al menos un encabezado que los reconoce', () => {
+  /*
+   * `fechaTerminacion` no entra acá: sólo aparece cuando el archivo trae
+   * TAMBIÉN una columna de fin pactado, y esta tabla mira un encabezado por
+   * vez. Su caso vive en `archivo-real-contratos.test.ts`.
+   */
+  it('todos los campos del contrato tienen al menos un encabezado que los reconoce', () => {
     const cubiertos = new Set(CASOS_REALES.map(([, campo]) => campo).filter(Boolean))
-    expect(cubiertos.size).toBe(19)
+    expect([...cubiertos].sort()).toEqual(
+      [
+        'canon',
+        'canonTotal',
+        'ciudadInmueble',
+        'codigoInmueble',
+        'comision',
+        'consecutivoContrato',
+        'creadoPor',
+        'deposito',
+        'diaDePago',
+        'direccionInmueble',
+        'escenario',
+        'estadoContrato',
+        'estratoInmueble',
+        'fechaCreacionOrigen',
+        'fechaFin',
+        'fechaInicio',
+        'inquilinoCorreo',
+        'inquilinoDocumento',
+        'inquilinoNombre',
+        'inquilinoTelefono',
+        'observaciones',
+        'periodicidad',
+        'propiedadCodigoYDireccion',
+        'propietarioCorreo',
+        'propietarioDocumento',
+        'propietarioNombre',
+        'propietarioTelefono',
+        'uso',
+      ].sort(),
+    )
   })
 })
 

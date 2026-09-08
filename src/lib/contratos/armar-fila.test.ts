@@ -160,6 +160,20 @@ describe('cada campo mapeado llega al payload', () => {
       usoInmueble: 'VIVIENDA',
       periodicidad: 'MENSUAL',
       comisionPorcentaje: 10,
+      // La celda del inquilino es UNA persona sin documento pegado: la lista
+      // la trae igual, porque es la misma columna de la que sale el titular.
+      inquilinos: [{ nombre: 'María Restrepo' }],
+      // Este archivo (el genérico, no el export real) no trae ninguna de las
+      // columnas nuevas: viajan ausentes, nunca en blanco.
+      ciudad: undefined,
+      codigoInmueble: undefined,
+      externalId: undefined,
+      escenarioOrigen: undefined,
+      estadoOrigen: undefined,
+      fechaTerminacion: undefined,
+      observaciones: undefined,
+      creadoPor: undefined,
+      fechaCreacionOrigen: undefined,
     })
   })
 })
@@ -278,23 +292,41 @@ describe('el propietario del archivo viaja en la fila', () => {
   })
 })
 
+/**
+ * 🔴 `codigoInmueble` cambió de forma el 2026-09-08 (back `48e30bb`): era un
+ * `@IsInt()` que significaba el consecutivo de Leasefy y hoy es TEXTO que
+ * significa, primero, el «Código» del sistema del que se migra
+ * (`Property.externalId`). Por eso un «A-12» ya no es basura que hay que
+ * tirar: es un código de inmueble perfectamente válido allá.
+ */
 describe('código y ciudad del inmueble', () => {
-  it('un código numérico viaja como entero, con o sin «#»', () => {
+  it('el código viaja como texto, con o sin «#»', () => {
     const mapeo = mapearColumnas(['Código del inmueble', 'Ciudad'])
     expect(armarFilaAMigrar({ 'Código del inmueble': '144', Ciudad: 'Medellín' }, mapeo)).toMatchObject({
-      codigoInmueble: 144,
+      codigoInmueble: '144',
       ciudad: 'Medellín',
     })
-    expect(armarFilaAMigrar({ 'Código del inmueble': '#7' }, mapeo).codigoInmueble).toBe(7)
-    expect(armarFilaAMigrar({ 'Código del inmueble': 12 }, mapeo).codigoInmueble).toBe(12)
+    expect(armarFilaAMigrar({ 'Código del inmueble': '#7' }, mapeo).codigoInmueble).toBe('7')
+    expect(armarFilaAMigrar({ 'Código del inmueble': 12 }, mapeo).codigoInmueble).toBe('12')
   })
 
-  it('un código que no es nuestro consecutivo («A-12», «0», vacío) viaja ausente, nunca 400ea el lote', () => {
+  it('un código no numérico («A-12», «0007») ya SÍ viaja: es el del sistema viejo', () => {
     const mapeo = mapearColumnas(['Código del inmueble'])
-    expect(armarFilaAMigrar({ 'Código del inmueble': 'A-12' }, mapeo).codigoInmueble).toBeUndefined()
-    expect(armarFilaAMigrar({ 'Código del inmueble': '0' }, mapeo).codigoInmueble).toBeUndefined()
+    expect(armarFilaAMigrar({ 'Código del inmueble': 'A-12' }, mapeo).codigoInmueble).toBe('A-12')
+    // El back prueba el externalId exacto y después sin ceros a la izquierda:
+    // recortarlos acá le quitaría el intento exacto.
+    expect(armarFilaAMigrar({ 'Código del inmueble': '0007' }, mapeo).codigoInmueble).toBe('0007')
+  })
+
+  it('vacío viaja ausente, y un código más largo que el tope del DTO también', () => {
+    const mapeo = mapearColumnas(['Código del inmueble'])
     expect(armarFilaAMigrar({ 'Código del inmueble': '' }, mapeo).codigoInmueble).toBeUndefined()
-    expect(armarFilaAMigrar({ 'Código del inmueble': '1.5' }, mapeo).codigoInmueble).toBeUndefined()
+    expect(armarFilaAMigrar({ 'Código del inmueble': '   ' }, mapeo).codigoInmueble).toBeUndefined()
+    // `@MaxLength(64)`: pasarse NO es un faltante de la fila, es un 400 del
+    // lote entero. Sin código, el back resuelve por dirección y lo dice.
+    expect(
+      armarFilaAMigrar({ 'Código del inmueble': 'X'.repeat(65) }, mapeo).codigoInmueble,
+    ).toBeUndefined()
   })
 
   it('sin columna de ciudad no manda ciudad (el back cae a la de la inmobiliaria)', () => {

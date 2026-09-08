@@ -20,6 +20,13 @@
 import type { CampoDeContrato, MapeoDeColumna } from './columnas-de-contrato'
 import type { FilaAMigrar } from '@/lib/api/contracts.service'
 import {
+  codigoYDireccion,
+  estratoDePalabras,
+  fechaDeOrigen,
+  listaDePersonas,
+  type PersonaDeOrigen,
+} from '@/lib/migracion/valores-de-origen'
+import {
   comoEntero,
   comoFecha,
   comoPeriodicidad,
@@ -44,35 +51,134 @@ function plataDeContrato(v: unknown): number | undefined {
   return n
 }
 
+/**
+ * Lo que el archivo del sistema viejo trae, ya leído.
+ *
+ * Es el modelo de LECTURA del front: lo usan la vista previa y el resumen del
+ * paso para mostrar el dato antes de guardar nada. Casi todo viaja además al
+ * back —`MigrarContratoDto` los declara desde el 2026-09-08 (`48e30bb`)— y
+ * `leerFilaDelArchivo` los copia a la fila con los nombres del DTO.
+ *
+ * Lo único que se queda acá es `estrato`: el contrato no tiene dónde guardarlo
+ * (es del inmueble, y ahí sí entra por la importación de inmuebles).
+ *
+ * 🔴 `codigoDeOrigen` merecía un párrafo aparte y ya no: hasta el 2026-09-08
+ * `codigoInmueble` era un `@IsInt()` que significaba el consecutivo de Leasefy
+ * (el «#144» de Inmuebles), y mandar ahí el código del sistema viejo no daba
+ * error — asociaba el contrato al inmueble EQUIVOCADO. Hoy el campo es texto y
+ * significa PRIMERO `Property.externalId`, así que este código es exactamente
+ * lo que va.
+ */
+export interface DatosDeOrigenDeContrato {
+  /** «Consecutivo»: el número del contrato en el sistema viejo. */
+  consecutivo?: string
+  /** El código del inmueble en el sistema viejo (lo de antes del primer « - »). */
+  codigoDeOrigen?: string
+  /** Todos los propietarios del contrato, en el orden del archivo. El [1] es el titular. */
+  propietarios: PersonaDeOrigen[]
+  /** Todos los inquilinos, igual. */
+  inquilinos: PersonaDeOrigen[]
+  /** El texto del escenario tributario, tal cual. */
+  escenario?: string
+  /** «Activo» / «Terminado» / «En Construcción», tal cual. */
+  estado?: string
+  /** Cuándo se terminó de verdad (distinta de la fecha fin pactada). */
+  fechaTerminacion?: string
+  /** Notas del contrato. Multilínea en el archivo real. */
+  observaciones?: string
+  estrato?: number
+  fechaCreacion?: string
+  creadoPor?: string
+}
+
+/** Lo que sale de una fila: lo que viaja y lo que todavía no. */
+export interface FilaLeida {
+  fila: FilaAMigrar
+  origen: DatosDeOrigenDeContrato
+}
+
 export function armarFilaAMigrar(
   fila: Record<string, unknown>,
   mapeo: MapeoDeColumna[],
 ): FilaAMigrar {
+  return leerFilaDelArchivo(fila, mapeo).fila
+}
+
+/**
+ * Lee una fila COMPLETA: lo que viaja al back y lo que el archivo trae y
+ * todavía no tiene dónde ir.
+ */
+export function leerFilaDelArchivo(
+  fila: Record<string, unknown>,
+  mapeo: MapeoDeColumna[],
+): FilaLeida {
   const v = (campo: CampoDeContrato) => valorDe(fila, mapeo, campo)
 
   const rawInicio = v('fechaInicio')
   const rawFin = v('fechaFin')
-  const rawCanon = v('canon')
   const rawDeposito = v('deposito')
   const rawDia = v('diaDePago')
   const rawUso = v('uso')
 
   const dia = hayValor(rawDia) ? comoEntero(rawDia) : undefined
 
-  return {
+  /*
+   * «Propiedad» = «3 - CR 50 127 SUR 61 OF 502». Una sola celda con el código
+   * del inmueble y su dirección. Si el archivo además trae columnas propias de
+   * dirección o de código, ésas mandan: son datos, no una deducción.
+   */
+  const propiedad = codigoYDireccion(v('propiedadCodigoYDireccion'))
+  const direccion = textoOpcional(v('direccionInmueble')) ?? propiedad.direccion ?? ''
+
+  /*
+   * «Propietario de Propiedad» e «Inquilino» vienen como
+   * «[1] 43090971 - LUZ ADRIANA, [2] 42979803 - MARIA»: la lista completa en
+   * una celda. El [1] es el titular del contrato; los demás quedan en `origen`
+   * para que la pantalla los muestre y el back los cree como copropietarios /
+   * co-inquilinos cuando tenga el campo.
+   */
+  const propietarios = listaDePersonas(v('propietarioNombre'))
+  const inquilinos = listaDePersonas(v('inquilinoNombre'))
+
+  /*
+   * El canon: manda «Canon Total». «Valor Canon» es el mismo canon repartido
+   * entre los dueños y en los contratos con dos llega como una LISTA
+   * («$451,000.00, $649,000.00»), que no es un número — `plataDeContrato` lo
+   * devuelve ausente, que es lo correcto, pero el contrato se quedaba sin
+   * canon habiendo un total perfectamente legible al lado.
+   */
+  const canonTotal = plataDeContrato(v('canonTotal'))
+  const canonSuelto = plataDeContrato(v('canon'))
+
+  /*
+   * Lo que el archivo dice del contrato más allá del canon: el consecutivo, el
+   * escenario tributario, el estado, las observaciones. Se lee una vez y se
+   * usa para las dos cosas —la vista previa y el payload— porque tener dos
+   * lecturas del mismo dato es tener una pantalla que muestra una cosa y un
+   * back que recibe otra.
+   */
+  const consecutivo = textoDeOrigen(v('consecutivoContrato'))
+  const escenario = textoOpcional(v('escenario'))
+  const estado = textoOpcional(v('estadoContrato'))
+  const fechaTerminacion = fechaDeOrigen(v('fechaTerminacion'))
+  const observaciones = textoOpcional(v('observaciones'))
+  const fechaCreacion = fechaDeOrigen(v('fechaCreacionOrigen'))
+  const creadoPor = textoOpcional(v('creadoPor'))
+
+  const filaAMigrar: FilaAMigrar = {
     // Estructuralmente obligatorios en el DTO — nunca se omiten, aunque
     // viajen vacíos (`migrar-contrato.dto.ts`: `direccion` e `inquilino` no
     // llevan `@IsOptional()`).
-    direccion: String(v('direccionInmueble') ?? ''),
+    direccion,
     inquilino: {
-      nombre: String(v('inquilinoNombre') ?? ''),
+      nombre: inquilinoPrincipal(inquilinos, v),
       correo: String(v('inquilinoCorreo') ?? ''),
       telefono: textoOpcional(v('inquilinoTelefono')),
-      documento: textoOpcional(v('inquilinoDocumento')),
+      documento: textoOpcional(v('inquilinoDocumento')) ?? inquilinos[0]?.documento,
     },
     startDate: hayValor(rawInicio) ? comoFecha(rawInicio) : undefined,
     endDate: hayValor(rawFin) ? comoFecha(rawFin) : undefined,
-    monthlyRent: plataDeContrato(rawCanon),
+    monthlyRent: canonTotal ?? canonSuelto,
     deposit: plataDeContrato(rawDeposito),
     // X5: un día de pago ausente o fuera de [1,28] viaja ausente, nunca
     // fabricado como "el 1" — eso es lo que hacía que 1383 filas quedaran
@@ -84,21 +190,109 @@ export function armarFilaAMigrar(
     // no es un porcentaje. `Number(v) || undefined` convertía el 0 en «no hay
     // dato» — el único caso en que un valor escrito desaparecía en silencio.
     comisionPorcentaje: comoPorcentaje(v('comision')),
-    // El «#144» de Inmuebles: gana a la dirección en el back. Un código que
-    // no es un entero positivo viaja ausente (un «A-12» del sistema viejo no
-    // es nuestro consecutivo) — el back lo diría con 400 para TODO el lote.
-    codigoInmueble: codigoDeInmueble(v('codigoInmueble')),
+    /*
+     * El código del inmueble. Gana a la dirección del lado del back, que lo
+     * prueba contra `Property.externalId` primero y contra el consecutivo de
+     * Leasefy después.
+     *
+     * La columna propia manda sobre el código empaquetado en «Propiedad»: una
+     * columna que alguien mapeó a mano es un dato, y lo de «3 - CR 50…» es una
+     * deducción. Si no hay columna, el `3` de la celda sirve igual.
+     */
+    codigoInmueble:
+      codigoDeInmueble(v('codigoInmueble')) ?? codigoDeInmueble(propiedad.codigo),
     ciudad: textoOpcional(v('ciudadInmueble'))?.slice(0, 50),
-    ...propietarioDe(v),
+    ...propietarioDe(v, propietarios),
+    // La llave de idempotencia del contrato: sin ella, reimportar duplica el
+    // historial y los comprobantes viejos no saben de qué contrato colgarse.
+    externalId: consecutivo,
+    // Sólo cuando el archivo trae la lista: una lista vacía no dice nada que
+    // el back no sepa ya, y ocupa lugar en un lote de 1.851 filas.
+    ...(propietarios.length > 0 ? { propietarios: propietarios.map(soloDocumentoYNombre) } : {}),
+    ...(inquilinos.length > 0 ? { inquilinos: inquilinos.map(soloDocumentoYNombre) } : {}),
+    escenarioOrigen: escenario,
+    estadoOrigen: estado,
+    fechaTerminacion,
+    observaciones,
+    creadoPor,
+    fechaCreacionOrigen: fechaCreacion,
+  }
+
+  return {
+    fila: filaAMigrar,
+    origen: {
+      consecutivo,
+      codigoDeOrigen: propiedad.codigo,
+      propietarios,
+      inquilinos,
+      escenario,
+      estado,
+      fechaTerminacion,
+      observaciones,
+      estrato: estratoDePalabras(v('estratoInmueble')),
+      fechaCreacion,
+      creadoPor,
+    },
   }
 }
 
-function codigoDeInmueble(raw: unknown): number | undefined {
+/**
+ * De `PersonaDeOrigen` a lo que el DTO declara: documento y nombre, nada más.
+ *
+ * `orden` es del front —así sabe quién es el titular— y no está en
+ * `TerceroDelArchivoDto`. Con `forbidNonWhitelisted: true`, mandarlo sería un
+ * 400 del LOTE entero, no de la fila; el orden ya viaja implícito en la
+ * posición del arreglo, que es como el back lo lee.
+ */
+function soloDocumentoYNombre(p: PersonaDeOrigen): { documento?: string; nombre?: string } {
+  return {
+    ...(p.documento ? { documento: p.documento } : {}),
+    ...(p.nombre ? { nombre: p.nombre } : {}),
+  }
+}
+
+/**
+ * El nombre del inquilino titular. Cuando la celda venía empaquetada
+ * («[1] 1026159836 - JUAN CAMILO LOPEZ»), el nombre es el del [1] — no el
+ * texto entero, que guardaría un inquilino llamado «[1] 1026159836 - JUAN…».
+ */
+function inquilinoPrincipal(
+  inquilinos: PersonaDeOrigen[],
+  v: (campo: CampoDeContrato) => unknown,
+): string {
+  const crudo = String(v('inquilinoNombre') ?? '').trim()
+  if (inquilinos.length === 0) return crudo
+  return inquilinos[0].nombre ?? crudo
+}
+
+/**
+ * El tope que declaran `codigoInmueble` y `externalId` en el DTO
+ * (`@MaxLength(64)`). Pasarse NO es un faltante de la fila: es un 400 del lote
+ * entero, así que un valor más largo viaja ausente y el back resuelve la fila
+ * por dirección diciéndolo.
+ */
+const MAX_LARGO_DE_CODIGO = 64
+
+/**
+ * El código del inmueble tal como lo escribe el archivo.
+ *
+ * Ya NO se exige que sea un entero: desde el 2026-09-08 este campo es texto y
+ * significa primero `Property.externalId`, y un «A-12» es un código de
+ * inmueble perfectamente válido en el sistema del que se migra. El `#` sí se
+ * quita — es cómo Leasefy ESCRIBE el consecutivo, no parte del código.
+ */
+function codigoDeInmueble(raw: unknown): string | undefined {
   if (!hayValor(raw)) return undefined
-  const texto = String(raw).trim().replace(/^#/, '')
-  if (!/^\d+$/.test(texto)) return undefined
-  const n = Number(texto)
-  return Number.isSafeInteger(n) && n >= 1 ? n : undefined
+  const texto = String(raw).trim().replace(/^#/, '').trim()
+  if (!texto || texto.length > MAX_LARGO_DE_CODIGO) return undefined
+  return texto
+}
+
+/** Un texto corto que el DTO limita a 64: más largo no viaja (400 del lote). */
+function textoDeOrigen(raw: unknown): string | undefined {
+  const texto = textoOpcional(raw)
+  if (!texto || texto.length > MAX_LARGO_DE_CODIGO) return undefined
+  return texto
 }
 
 /**
@@ -106,16 +300,23 @@ function codigoDeInmueble(raw: unknown): number | undefined {
  * que viene desde la migración»). Sólo con documento: sin él no hay ficha que
  * resolver ni crear, y el nombre solo se presta a homónimos. En blanco no
  * viaja nada.
+ *
+ * Cuando el archivo trae la lista empaquetada, el titular es el [1]; los
+ * demás quedan en `origen.propietarios` hasta que el back reciba
+ * copropietarios.
  */
 function propietarioDe(
   v: (campo: CampoDeContrato) => unknown,
+  propietarios: PersonaDeOrigen[],
 ): Pick<FilaAMigrar, 'propietario'> {
-  const documento = textoOpcional(v('propietarioDocumento'))
+  const documento = textoOpcional(v('propietarioDocumento')) ?? propietarios[0]?.documento
   if (!documento) return {}
+  const nombreDeColumna = textoOpcional(v('propietarioNombre'))
+  const nombre = propietarios[0]?.nombre ?? nombreDeColumna
   return {
     propietario: {
       documento,
-      nombre: textoOpcional(v('propietarioNombre')),
+      nombre,
       correo: textoOpcional(v('propietarioCorreo')),
       telefono: textoOpcional(v('propietarioTelefono')),
     },

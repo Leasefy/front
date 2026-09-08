@@ -24,6 +24,13 @@ export interface AISuggestion {
 
 export interface ImportProperty {
   _rowIndex: number;
+  /**
+   * El código del inmueble en el sistema del que se migra (Propiedades.csv,
+   * columna «Código»). Es la llave con la que la inmobiliaria identifica el
+   * inmueble y con la que sus contratos lo nombran, así que viaja al back como
+   * `externalId` y se guarda en `Property.externalId`.
+   */
+  externalId?: string;
   propertyTitle?: string;
   propertyAddress?: string;
   propertyCity?: string;
@@ -54,6 +61,20 @@ export interface ImportProperty {
   notes?: string;
   /** contract.md T-0038 §3.2.6 (D5, R6) — "YYYY-MM-DD", agency-only. */
   consignedAt?: string;
+  /** Estrato ya leído a número (el archivo lo trae en palabras: «Tres»). */
+  stratum?: number;
+  /**
+   * ── Tres columnas más del archivo real, que sí viajan ─────────────────────
+   *
+   * `toImportarInmuebleDto` las manda como `urbanizacion`, `llavesEn` y
+   * `creadaPor`, los nombres exactos que declara `ImportarInmuebleDto` en el
+   * back. Las dos primeras terminan dentro de la descripción del inmueble; la
+   * tercera queda en el registro de lo que vino tal cual, sin copiarse a la
+   * ficha (es un empleado de la otra empresa, no describe al inmueble).
+   */
+  urbanizacion?: string;
+  llavesEn?: string;
+  creadaPor?: string;
   suggestions: AISuggestion[];
   selected: boolean;
   hasErrors: boolean;
@@ -108,6 +129,7 @@ export interface ImportWizardState {
 // `required: false` for all four — C13 ("origin governs validation"): every
 // field is optional at ingestion, completeness is enforced at activation.
 export const TARGET_FIELDS = [
+  { key: 'externalId', label: 'Código', required: false },
   { key: 'propertyTitle', label: 'Título', required: false },
   { key: 'propertyAddress', label: 'Dirección', required: true },
   { key: 'propertyCity', label: 'Ciudad', required: true },
@@ -128,4 +150,8 @@ export const TARGET_FIELDS = [
   { key: 'status', label: 'Estado', required: false },
   { key: 'notes', label: 'Observaciones', required: false },
   { key: 'consignedAt', label: 'Fecha de consignación', required: false },
+  { key: 'stratum', label: 'Estrato', required: false },
+  { key: 'urbanizacion', label: 'Urbanización / conjunto', required: false },
+  { key: 'llavesEn', label: 'Llaves en', required: false },
+  { key: 'creadaPor', label: 'Creada por', required: false },
 ] as const;

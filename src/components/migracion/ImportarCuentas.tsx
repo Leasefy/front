@@ -132,6 +132,18 @@ export function ImportarCuentas({
     () => obligatoriasSinMapear(COLUMNAS_DE_CUENTA, mapeo),
     [mapeo],
   );
+  /**
+   * Columnas que el archivo trae, que se mandan, y que el plan de cuentas NO
+   * guarda: no hay dónde. Decirlo es la diferencia entre «se ignoró» y «se
+   * perdió sin que nadie avisara».
+   */
+  const banderasIgnoradas = useMemo(
+    () =>
+      mapeo
+        .filter((m) => m.campo === "controlDeTerceros" || m.campo === "cajaOBanco")
+        .map((m) => m.columna),
+    [mapeo],
+  );
   const armadas = useMemo(
     () => (filas.length ? armarCuentas(filas, mapeo) : []),
     [filas, mapeo],
@@ -438,7 +450,21 @@ export function ImportarCuentas({
             Los códigos con puntos o guiones se entienden («1105-05» → 110505).
             La jerarquía sale del código: 1105 queda debajo de 11, y 110505
             debajo de 1105. Las cuentas que ya tengas se dejan como están.
+            «Último Nivel» es la cuenta que recibe movimientos, y «Habilitado»
+            decide si queda activa.
           </Aviso>
+
+          {banderasIgnoradas.length > 0 ? (
+            <Aviso tono="info" testId="cuentas-banderas-ignoradas">
+              {banderasIgnoradas.length === 1
+                ? `La columna «${banderasIgnoradas[0]}» se lee pero no se guarda: `
+                : `Las columnas ${banderasIgnoradas
+                    .map((c) => `«${c}»`)
+                    .join(" y ")} se leen pero no se guardan: `}
+              el plan de cuentas todavía no tiene dónde ponerlas. Nada más del
+              archivo se pierde.
+            </Aviso>
+          ) : null}
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <Button

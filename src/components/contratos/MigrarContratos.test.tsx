@@ -58,7 +58,11 @@ import {
   leerPrimerasFilas,
   parseSpreadsheetFile,
 } from '@/components/inmobiliaria/import/lib/parseFile'
-import { contractsApi, type FilaDeMigracion } from '@/lib/api/contracts.service'
+import {
+  contractsApi,
+  type FilaDeMigracion,
+  type ResumenLote,
+} from '@/lib/api/contracts.service'
 import { MigrarContratos } from './MigrarContratos'
 
 let container: HTMLDivElement
@@ -209,7 +213,10 @@ function filaDeMigracion(over: Partial<FilaDeMigracion> = {}): FilaDeMigracion {
  * página 1, 5 en la página 2) — el mínimo para que aparezcan tanto la
  * paginación como el control "Seleccionar las {total} del lote".
  */
-async function avanzarAListaDeTrabajo(activables = 0) {
+async function avanzarAListaDeTrabajo(
+  activables = 0,
+  masResumen: Partial<ResumenLote> = {},
+) {
   await subirArchivoMinimo()
   const b = botonRevisar()
 
@@ -241,6 +248,7 @@ async function avanzarAListaDeTrabajo(activables = 0) {
     activados: 0,
     descartados: 0,
     activables,
+    ...masResumen,
   })
   vi.mocked(contractsApi.migracion.filas).mockResolvedValue({
     filas: Array.from({ length: 25 }, (_, i) => filaDeMigracion({ fila: i })),
@@ -1848,5 +1856,78 @@ describe('<MigrarContratos> — la cuota de administración', () => {
     )
     expect(container.querySelector('[data-testid="aviso-comision"]')).toBeNull()
     expect(container.querySelector('[data-testid="avisos-del-archivo"]')).toBeNull()
+  })
+})
+
+/**
+ * El resumen honesto del final del paso (back `48e30bb`).
+ *
+ * «2.851 filas listas» no dice si el archivo se entendió. «2.740 pegadas por
+ * el código, 90 por la dirección, 21 sin inmueble» sí — y separar los caminos
+ * es lo que le dice a alguien QUÉ revisar, porque un empate de direcciones no
+ * merece la misma confianza que un código exacto.
+ */
+describe('<MigrarContratos> — a qué quedó pegada cada fila', () => {
+  it('muestra los cuatro caminos del inmueble, los terceros y los históricos', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(0, {
+      asociacion: {
+        inmueblePorCodigo: 20,
+        inmueblePorDireccion: 6,
+        inmuebleAMano: 2,
+        sinInmueble: 2,
+        conPropietario: 28,
+        conInquilino: 30,
+        historicos: 11,
+      },
+    })
+
+    const caja = container.querySelector('[data-testid="asociacion-del-lote"]')
+    expect(caja).toBeTruthy()
+    const texto = caja?.textContent ?? ''
+    expect(texto).toContain('28 de 30 quedaron con inmueble')
+    expect(texto).toContain('Por su código')
+    expect(texto).toContain('Por la dirección')
+    expect(texto).toContain('Elegido a mano')
+    expect(texto).toContain('Sin inmueble')
+    expect(texto).toContain('quedaron con propietario')
+    expect(texto).toContain('quedaron con inquilino')
+    expect(texto).toContain('vienen terminados del sistema anterior')
+  })
+
+  /*
+   * 🔴 Un back que todavía no manda `asociacion` no puede hacer que la
+   * pantalla afirme «0 por código, 0 por dirección»: eso es una respuesta a
+   * una pregunta que nadie contestó. La sección simplemente no se dibuja.
+   */
+  it('sin el dato del back, no dibuja la sección — nunca en ceros', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(0)
+
+    expect(container.querySelector('[data-testid="lista-de-trabajo"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="asociacion-del-lote"]')).toBeNull()
+  })
+
+  it('sin históricos no inventa la línea', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(0, {
+      asociacion: {
+        inmueblePorCodigo: 30,
+        inmueblePorDireccion: 0,
+        inmuebleAMano: 0,
+        sinInmueble: 0,
+        conPropietario: 30,
+        conInquilino: 30,
+        historicos: 0,
+      },
+    })
+
+    const texto =
+      container.querySelector('[data-testid="asociacion-del-lote"]')?.textContent ?? ''
+    expect(texto).toContain('30 de 30 quedaron con inmueble')
+    expect(texto).not.toContain('vienen terminados del sistema anterior')
   })
 })

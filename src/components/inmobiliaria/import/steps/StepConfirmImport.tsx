@@ -19,6 +19,8 @@ import { toast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api/client";
 import { faltantesParaElBack } from "../lib/requisitosDelBack";
 import { toImportarInmuebleDto } from "../lib/toImportarInmuebleDto";
+import { resumenDeLecturaDeInmuebles } from "../lib/resumenDeLectura";
+import type { ImportProperty } from "../lib/importTypes";
 import {
   geocodeImportRow,
   GEOCODE_ROW_DELAY_MS,
@@ -990,6 +992,13 @@ export function StepConfirmImport({
         </div>
       </div>
 
+      {/*
+        El resumen honesto del paso: qué trae el archivo, con el número
+        exacto. El bloque de arriba cuenta filas; éste responde la pregunta con
+        la que alguien termina el paso — «¿cuántos quedaron con propietario?».
+      */}
+      <ResumenDeLoQueSeLeyo inmuebles={state.properties} />
+
       <div className="rounded-lg border border-border dark:border-border-strong bg-surface-muted dark:bg-white/[0.02] p-5">
         <div className="flex items-start gap-3">
           <UserCircle className="w-5 h-5 text-fg-subtle dark:text-fg-muted mt-0.5 flex-shrink-0" />
@@ -1070,5 +1079,47 @@ export function StepConfirmImport({
         <div className="flex justify-end">{botonImportar}</div>
       )}
     </div>
+  );
+}
+
+/**
+ * Qué trae el archivo, con el número exacto y el motivo de lo que falta.
+ *
+ * No promete asociación —a qué ficha va cada propietario lo decide el back al
+ * activar—: dice cuántas filas traen con qué buscar. Un archivo puede tener
+ * 2.895 filas perfectas y ninguna cédula, y entonces nacen 2.895 inmuebles sin
+ * dueño sin un solo error a la vista.
+ */
+function ResumenDeLoQueSeLeyo({ inmuebles }: { inmuebles: ImportProperty[] }) {
+  const resumen = resumenDeLecturaDeInmuebles(inmuebles);
+  if (resumen.total === 0) return null;
+
+  return (
+    <section
+      className="rounded-lg border border-border bg-surface-muted p-5"
+      data-testid="resumen-de-lectura-inmuebles"
+    >
+      <h3 className="text-sm font-semibold text-fg">
+        Qué trae el archivo, de sus {resumen.total}{" "}
+        {resumen.total === 1 ? "fila" : "filas"}
+      </h3>
+      <p className="mt-0.5 text-xs text-fg-muted">
+        Esto es lo que se pudo LEER. A qué propietario y a qué contrato queda
+        cada inmueble lo resuelve el servidor al activarlos, y lo dice fila por
+        fila.
+      </p>
+      <ul className="mt-3 space-y-2">
+        {resumen.renglones.map((r) => (
+          <li key={r.que} className="text-sm">
+            <span className="font-mono tabular-nums text-fg">{r.con}</span>
+            <span className="text-fg-muted"> de {resumen.total} · </span>
+            <span className="text-fg">{r.que}</span>
+            {r.porque ? (
+              <span className="block text-xs text-fg-muted">{r.porque}</span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

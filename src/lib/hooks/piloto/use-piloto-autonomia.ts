@@ -21,6 +21,17 @@ import { useAuth } from '@/lib/auth'
 import { fetchAgentAutonomia, type VallaItem } from '@/lib/api/agent-workspace'
 import { putPilotoAutonomia, type AutonomiaModo } from '@/lib/api/piloto'
 import type { AgenteId } from '@/lib/api/work-item'
+import { mapWithConcurrency } from '@/lib/utils/concurrency'
+
+/**
+ * T-0076: los 12 agentes del roster se pedían con
+ * `Promise.allSettled(PILOTO_AGENTES.map(...))` — 12 peticiones simultáneas,
+ * el mayor contribuyente al burst que tumbaba `/panel/inmobiliaria/piloto`
+ * contra `agents_limit` de NGINX (5 r/s, burst 10; ver ledger de la tarea).
+ * `CONCURRENCIA_AUTONOMIA` acota cuántas van en vuelo a la vez; el resultado
+ * —una fila por agente que contestó, fail-soft por agente— es idéntico.
+ */
+const CONCURRENCIA_AUTONOMIA = 3
 
 /**
  * El roster del panel (work-item.ts, cerrado 2026-06-08) MÁS los agentes
@@ -103,8 +114,8 @@ export function usePilotoAutonomia(): UsePilotoAutonomiaResult {
     const controller = new AbortController()
     abortRef.current = controller
     setIsLoading(true)
-    const settled = await Promise.allSettled(
-      PILOTO_AGENTES.map((agente) => fetchAgentAutonomia(agencyId, agente, controller.signal)),
+    const settled = await mapWithConcurrency(PILOTO_AGENTES, CONCURRENCIA_AUTONOMIA, (agente) =>
+      fetchAgentAutonomia(agencyId, agente, controller.signal),
     )
     if (controller.signal.aborted) return
 

@@ -18,6 +18,7 @@
  */
 
 import { agentAuthHeaders } from './agent-auth'
+import { conBackoff } from './fetch-with-backoff'
 import type { AgenteId, OwnerRole, WorkItem, WorkItemAction, WorkItemEstado } from './work-item'
 
 // ── Overview (Sala) ─────────────────────────────────────────────────────────
@@ -174,10 +175,14 @@ async function getJson<T>(
 ): Promise<AgentWorkspaceFetchResult<T>> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) throw new Error('not_configured')
-  const res = await globalThis.fetch(`${agentUrl}${path}`, {
-    headers: agentAuthHeaders(),
+  // T-0076: mismo backoff que piloto.ts sobre un 429 de `agents_limit` (o el
+  // fallo de red que ese 429 parece sin CORS en la página de error de
+  // NGINX) — ver fetch-with-backoff.ts. `usePilotoAutonomia` es el mayor
+  // consumidor de este fetcher: 12 llamadas por montaje, una por agente.
+  const res = await conBackoff(
+    () => globalThis.fetch(`${agentUrl}${path}`, { headers: agentAuthHeaders(), signal }),
     signal,
-  })
+  )
   if (res.status === 404) return { data: null, notAvailable: true }
   if (!res.ok) throw new Error(`${res.status}`)
   return { data: (await res.json()) as T, notAvailable: false }

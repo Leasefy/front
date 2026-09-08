@@ -23,6 +23,7 @@ import { ShieldCheck, SlidersHorizontal } from '@phosphor-icons/react'
 import { SegmentedControl, Switch } from '@leasefy/cadence'
 
 import { Button } from '@/components/ui/button'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import {
   Sheet,
   SheetContent,
@@ -79,7 +80,11 @@ export interface PilotoAutonomiaProps {
 
 export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
   const { t } = useI18n()
-  const { rows, totalRoster, isLoading, busyAgente, setModo } = autonomia
+  // T-0076: `error` se descartaba acá — un fallo real (un 429 del gateway,
+  // por ejemplo) se leía IGUAL que «ningún agente reporta autonomía todavía»
+  // (`rows.length === 0` con `error: null`), un estado vacío honesto que no
+  // es lo que pasó. Ahora un fallo real se dice como tal, con retry.
+  const { rows, totalRoster, isLoading, error, busyAgente, setModo, refetch } = autonomia
   const { isAdmin } = usePermissionsContext()
   const { agency } = useAuth()
   const [abierto, setAbierto] = useState(false)
@@ -188,8 +193,11 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
           ))}
         </dl>
 
-        {/* Honestidad: si algún agente no reportó, se dice — su modo no se sabe. */}
-        {mudos > 0 && !isLoading && (
+        {/* Honestidad: si algún agente no reportó, se dice — su modo no se sabe.
+            Con `error` ya se dice de otra forma más abajo (FalloDeCarga); las
+            dos juntas —«12 no reportaron» y «no pudimos cargar»— dirían lo
+            mismo dos veces. */}
+        {mudos > 0 && !isLoading && !error && (
           <p className="mt-3 text-caption text-fg-subtle">
             {t('inmobiliaria.piloto.autonomia.mudos', { n: String(mudos) })}
           </p>
@@ -212,7 +220,19 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
               />
             ))}
 
-          {!isLoading && rows.length === 0 && (
+          {/* Un fallo real primero: «vacía» es una respuesta correcta con
+              cero agentes, no lo que pasó cuando la petición ni siquiera
+              volvió (T-0076: antes esto se mostraba idéntico a un 404). */}
+          {!isLoading && error && rows.length === 0 && (
+            <FalloDeCarga
+              error={error}
+              queEs="la autonomía de los agentes"
+              onReintentar={refetch}
+              enmarcado={false}
+            />
+          )}
+
+          {!isLoading && !error && rows.length === 0 && (
             <p className="text-body-sm text-fg-muted">
               {t('inmobiliaria.piloto.autonomia.vacia')}
             </p>

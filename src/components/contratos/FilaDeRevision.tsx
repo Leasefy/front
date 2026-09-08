@@ -202,6 +202,14 @@ export function FilaDeRevision({
         {fila.datos.direccion || "Sin dirección en el archivo"}
       </p>
 
+      {/*
+        Por qué camino quedó pegado el inmueble. Un `propertyId` es un uuid que
+        no le dice a nadie si el contrato de la señora del 802 quedó pegado por
+        su código o porque las direcciones se parecían — y esas dos cosas no
+        merecen la misma confianza al revisar.
+      */}
+      <ComoQuedoElInmueble asociacion={fila.asociacion} />
+
       <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
         <div>
           <p className="mb-1 text-xs text-muted-foreground">Propietario</p>
@@ -356,6 +364,44 @@ function CampoComision({
       }}
       data-testid={testId}
     />
+  );
+}
+
+/**
+ * Cómo quedó pegado el inmueble de esta fila, en una línea.
+ *
+ * Los cuatro caminos que el back distingue, y por qué importan al revisar:
+ *
+ *   codigo    → el «Código» del sistema anterior coincidió. Es exacto.
+ *   direccion → empataron los textos. Es un parecido: hay que mirarlo.
+ *   manual    → alguien lo eligió acá. Ya hubo una persona decidiendo.
+ *   ninguno   → no quedó pegado a nada; los faltantes de abajo lo dicen.
+ *
+ * 🔴 Ausente (una fila preparada antes de que el back mandara esto) no se
+ * dibuja: no se afirma «ninguno» sobre algo que nadie contestó.
+ */
+function ComoQuedoElInmueble({
+  asociacion,
+}: {
+  asociacion?: FilaDeMigracion["asociacion"];
+}) {
+  const inmueble = asociacion?.inmueble;
+  if (!inmueble || inmueble.asociadoPor === "ninguno") return null;
+
+  const dice =
+    inmueble.asociadoPor === "codigo"
+      ? `Pegado por su código${inmueble.codigo ? ` ${inmueble.codigo}` : ""}`
+      : inmueble.asociadoPor === "direccion"
+        ? "Pegado porque la dirección coincidió — vale la pena mirarlo"
+        : "Inmueble elegido a mano";
+
+  return (
+    <p
+      className="text-xs text-fg-subtle"
+      data-testid={`asociacion-${inmueble.asociadoPor}`}
+    >
+      {dice}
+    </p>
   );
 }
 

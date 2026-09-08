@@ -304,10 +304,11 @@ describe('el faltante dice QUÉ decía el archivo', () => {
 });
 
 /**
- * `inmueble_codigo` (2026-09-02): el archivo trajo «#N» y no hay #N. NO se
- * cae a la dirección en silencio — es la señal de que el archivo trae los
- * códigos del sistema viejo. Se resuelve igual que `inmueble`: elegir un
- * candidato o crear.
+ * `inmueble_codigo` (2026-09-02): el archivo señaló un inmueble por su código
+ * y ningún inmueble de la agencia lo tiene. NO se cae a la dirección en
+ * silencio — un código que no existe es la señal de que el archivo está
+ * corrido o de que ese inmueble no se cargó. Se resuelve igual que
+ * `inmueble`: elegir un candidato o crear.
  */
 describe('<FaltantesDeFila> — el código del inmueble no existe', () => {
   it('lo explica, muestra el código y la dirección del archivo, y ofrece las mismas salidas que «inmueble»', () => {
@@ -317,12 +318,12 @@ describe('<FaltantesDeFila> — el código del inmueble no existe', () => {
       candidatos: [],
       datos: {
         direccion: 'Cra 43A # 5-15',
-        codigoInmueble: 999,
+        codigoInmueble: '999',
         inquilino: { nombre: 'Ana', correo: 'ana@correo.co' },
       },
     })
     expect(EXPLICACION.inmueble_codigo?.titulo).toBeTruthy()
-    expect(celdaDelFaltante(f, 'inmueble_codigo')).toBe('#999 · Cra 43A # 5-15')
+    expect(celdaDelFaltante(f, 'inmueble_codigo')).toBe('código 999 · Cra 43A # 5-15')
 
     render(f)
     expect(container.textContent).toContain(EXPLICACION.inmueble_codigo.titulo)

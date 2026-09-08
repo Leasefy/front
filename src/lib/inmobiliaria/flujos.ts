@@ -3,8 +3,8 @@
  *
  * Por qué existe: el panel tiene 156 rutas y ninguna dice "empieza acá". Para
  * abrir una consignación hay que saber que vive dentro de Consignaciones, y
- * para evaluar a un candidato hay que saber que está bajo Evaluación de
- * candidatos → Nueva evaluación. Quien entra por primera vez no lo sabe, y el
+ * para pedir la asegurabilidad de un candidato hay que saber que está bajo
+ * Postulaciones → Asegurabilidad. Quien entra por primera vez no lo sabe, y el
  * sidebar —agrupado por módulo de negocio— tampoco se lo dice.
  *
  * Esta lista alimenta el botón «Nuevo» que vive debajo del buscador. No

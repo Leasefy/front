@@ -28,6 +28,7 @@ import { WizardRestoreBanner } from '@/components/inmobiliaria/cotizador/WizardR
 import { PageGuard } from '@/components/auth/PageGuard'
 import { CotizadorWizardSkeleton } from '@/components/skeleton/panel/CotizadorWizardSkeleton'
 import { Button } from '@/components/ui/button'
+import { SectionLabel } from '@/components/ui/section-label'
 
 const EMPTY_CANDIDATO = { cedula: '', nombre: '', ciudad: '' }
 const EMPTY_PROPIEDAD = { canonCop: '' as number | '', tipoInmueble: '', codeudoresCount: 0 }
@@ -336,7 +337,9 @@ export default function NuevaCotizacionPage() {
         setStep1Errors({ cedula: t('inmobiliaria.ai.cotizador.nueva.errors.cedulaInvalida') })
         setStep(1)
       } else {
-        setSubmitError(err instanceof Error ? err.message : 'Error desconocido')
+        setSubmitError(
+          err instanceof Error ? err.message : 'No se pudo enviar la consulta. Intenta de nuevo.',
+        )
       }
     } finally {
       setIsSubmitting(false)
@@ -356,22 +359,25 @@ export default function NuevaCotizacionPage() {
 
   return (
     <PageGuard module="cotizador" action="view">
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <div className="border-b border-border bg-card px-4 py-4 sm:px-6">
+      <div className="p-6 lg:p-8 space-y-6">
+        {/* Encabezado de la casa. Antes era una franja a todo lo ancho con su
+            propio fondo y un `min-h-screen`: la única pestaña de la sección
+            que no se veía como las demás. */}
+        <header className="space-y-1.5">
+          <SectionLabel>{t('inmobiliaria.ai.nav.cotizador')}</SectionLabel>
           <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cotizador.nueva.title')}
           </h1>
-          <p className="mt-1 text-sm text-fg-muted max-w-2xl line-clamp-2">
+          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
             {t('inmobiliaria.ai.cotizador.nueva.subtitle')}
           </p>
-        </div>
+        </header>
 
+        {/* El asistente va en una columna angosta bajo el encabezado: el paso
+            actual y el formulario comparten el mismo ancho. */}
+        <div className="max-w-lg">
         {/* Step indicator — candidato → propiedad → config → review */}
         <WizardStepIndicator totalSteps={4} currentStep={step} />
-
-        {/* Main content */}
-        <div className="mx-auto max-w-lg px-4 pb-8 sm:px-6">
           {/* Phase 33 D-33-14: pre-fill GET failure banner — 404/network on parent quote */}
           {isReQuoteMode && prefillFailed && !prefillDismissed && (
             <div

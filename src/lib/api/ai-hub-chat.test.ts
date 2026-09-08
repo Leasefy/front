@@ -34,7 +34,9 @@ describe('targetToHref', () => {
     expect(targetToHref('cotizador')).toBe('/panel/inmobiliaria/postulaciones/asegurabilidad');
     expect(targetToHref('pagos')).toBe('/panel/inmobiliaria/pagos');
     expect(targetToHref('cartera')).toBe('/panel/inmobiliaria/cobros/cobranza');
-    expect(targetToHref('estudio')).toBe('/panel/inmobiliaria/postulaciones/estudio');
+    // Evaluación de candidatos está oculta (Nico, 2026-09-08): sin workspace,
+    // el target cae al Piloto como cualquier meta sin pantalla.
+    expect(targetToHref('estudio')).toBe('/panel/inmobiliaria/piloto');
     expect(targetToHref('conciliacion')).toBe('/panel/inmobiliaria/conciliacion');
   });
 });
@@ -66,12 +68,20 @@ describe('suggestedActionToResponseAction', () => {
     expect(a.href).toBe(targetToHref('matching'));
   });
 
-  it('las 8 metas del contrato tienen pantalla, así que todas navegan', () => {
-    const targets = ['cobranza', 'cotizador', 'estudio', 'matching', 'pagos', 'conciliacion', 'avaluo', 'cartera'] as const;
-    for (const t of targets) {
+  it('las metas del contrato con pantalla navegan; Evaluación de candidatos está oculta y pregunta', () => {
+    const conPantalla = ['cobranza', 'cotizador', 'matching', 'pagos', 'conciliacion', 'avaluo', 'cartera'] as const;
+    for (const t of conPantalla) {
       const a = suggestedActionToResponseAction({ label: `ir a ${t}`, target: t }, 0);
-      expect(targetTienePantalla(t) ? a.prompt : 'x').toBeUndefined();
+      expect(targetTienePantalla(t), t).toBe(true);
+      expect(a.prompt).toBeUndefined();
     }
+    // `estudio` sigue en el contrato del micro, pero su sección está oculta
+    // (Nico, 2026-09-08): sin workspace no hay pantalla que abrir, así que el
+    // botón le pregunta al asistente en vez de mandar a una puerta que
+    // devuelve a Postulaciones.
+    const oculta = suggestedActionToResponseAction({ label: 'ir a estudio', target: 'estudio' }, 0);
+    expect(targetTienePantalla('estudio')).toBe(false);
+    expect(oculta.prompt).toBe('ir a estudio');
   });
 });
 

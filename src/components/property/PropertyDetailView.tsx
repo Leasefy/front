@@ -27,7 +27,7 @@ const MapaDelInmueble = dynamic(
 );
 
 // Offering-agency social networks rendered in the compact "Síguenos" row.
-// X / Facebook / Instagram SVGs mirror src/components/layout/FooterCompact.tsx;
+// X / Facebook / Instagram SVGs (el viejo `FooterCompact` que los traía ya no existe);
 // TikTok + WhatsApp added here. Icons are w-4 h-4, fill currentColor.
 const AGENCY_SOCIAL_NETWORKS: {
   key: 'instagram' | 'facebook' | 'x' | 'tiktok' | 'whatsapp';

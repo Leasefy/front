@@ -277,6 +277,16 @@ describe('arquitectura del panel — agentes', () => {
     }
   });
 
+  it('Evaluación de candidatos NO está en el catálogo: oculta por ahora (Nico, 2026-09-08)', () => {
+    // Las páginas siguen bajo `postulaciones/estudio/` y su layout devuelve a
+    // Postulaciones; ninguna card, fila ni workspace la ofrece mientras tanto.
+    const hrefs = pantallas.map((p) => p.href);
+    expect(hrefs.some((h) => h.startsWith(`${PANEL}/postulaciones/estudio`))).toBe(false);
+    expect(AGENT_WORKSPACES.find((w) => w.slug === 'estudio')).toBeUndefined();
+    expect(existsSync(join(APP, 'postulaciones/estudio/layout.tsx')), 'la puerta que devuelve a Postulaciones').toBe(true);
+    expect(existsSync(join(APP, 'postulaciones/estudio/page.tsx')), 'las páginas siguen vivas').toBe(true);
+  });
+
   it('Tickets (agente de mantenimiento) NO está en el catálogo ni tiene workspace: es mock-first sin endpoint (Nico, 2026-09-03)', () => {
     const hrefs = pantallas.map((p) => p.href);
     expect(hrefs.some((h) => h.includes('/mantenimientos/tickets'))).toBe(false);

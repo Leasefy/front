@@ -9,12 +9,18 @@
  * a recibir un canon vacío; no hay un segundo camino donde eso se arregle.
  */
 
-import { armarFilaAMigrar } from './armar-fila'
+import {
+  armarFilaAMigrar,
+  leerFilaDelArchivo,
+  type DatosDeOrigenDeContrato,
+} from './armar-fila'
 import { comoEntero, hayValor, valorDe } from './leer-celdas'
 import {
+  faltantesEsenciales,
   REQUISITOS_ESENCIALES,
   type CampoDeContrato,
   type ClaveEsencial,
+  type FaltanteEsencial,
   type MapeoDeColumna,
 } from './columnas-de-contrato'
 import { formatCurrency } from '@/lib/format'
@@ -38,9 +44,11 @@ export interface HuecoEsencial {
 
 /** El orden en que se muestran los campos: primero lo que identifica y cobra. */
 const ORDEN: CampoDeContrato[] = [
+  'propiedadCodigoYDireccion',
   'direccionInmueble',
   'codigoInmueble',
   'ciudadInmueble',
+  'consecutivoContrato',
   'inquilinoNombre',
   'inquilinoCorreo',
   'inquilinoDocumento',
@@ -48,6 +56,7 @@ const ORDEN: CampoDeContrato[] = [
   'fechaInicio',
   'fechaFin',
   'canon',
+  'canonTotal',
   'diaDePago',
   'deposito',
   'uso',
@@ -57,6 +66,13 @@ const ORDEN: CampoDeContrato[] = [
   'propietarioDocumento',
   'propietarioCorreo',
   'propietarioTelefono',
+  'estratoInmueble',
+  'escenario',
+  'estadoContrato',
+  'fechaTerminacion',
+  'observaciones',
+  'fechaCreacionOrigen',
+  'creadoPor',
 ]
 
 const USO_LEGIBLE: Record<'VIVIENDA' | 'COMERCIAL', string> = {
@@ -80,12 +96,47 @@ const PERIODICIDAD_LEGIBLE: Record<
  * ese dato» — y se muestra como tal, nunca como un 0 o un guion que se
  * pueda confundir con un valor.
  */
-function valorLegible(campo: CampoDeContrato, f: FilaAMigrar): string | null {
+function valorLegible(
+  campo: CampoDeContrato,
+  f: FilaAMigrar,
+  origen: DatosDeOrigenDeContrato,
+): string | null {
   switch (campo) {
+    /*
+     * ── Lo que el archivo trae y el back todavía no recibe ────────────────
+     *
+     * Se muestra igual: la vista previa existe para que alguien vea el dato
+     * ANTES de guardar, y esconder una columna que sí se leyó es la forma
+     * más fácil de que nadie note que el archivo la traía.
+     */
+    case 'propiedadCodigoYDireccion':
+      return origen.codigoDeOrigen ? `${origen.codigoDeOrigen} · ${f.direccion}` : f.direccion || null
+    case 'consecutivoContrato':
+      return origen.consecutivo ?? null
+    case 'canonTotal':
+      return f.monthlyRent === undefined ? null : formatCurrency(f.monthlyRent)
+    case 'estratoInmueble':
+      return origen.estrato === undefined ? null : String(origen.estrato)
+    case 'escenario':
+      return origen.escenario ?? null
+    case 'estadoContrato':
+      return origen.estado ?? null
+    case 'fechaTerminacion':
+      return origen.fechaTerminacion ?? null
+    case 'observaciones':
+      // Multilínea en el archivo real: en una tabla, una sola línea.
+      return origen.observaciones?.replace(/\s+/g, ' ').trim() || null
+    case 'fechaCreacionOrigen':
+      return origen.fechaCreacion ?? null
+    case 'creadoPor':
+      return origen.creadoPor ?? null
     case 'direccionInmueble':
       return f.direccion || null
+    // Sin el «#» de antes: el valor ya no es el consecutivo de Leasefy sino el
+    // código con el que la inmobiliaria nombra su inmueble, y escribirlo
+    // «#0007» lo hace pasar por otra cosa.
     case 'codigoInmueble':
-      return f.codigoInmueble === undefined ? null : `#${f.codigoInmueble}`
+      return f.codigoInmueble ?? null
     case 'ciudadInmueble':
       return f.ciudad ?? null
     case 'inquilinoNombre':
@@ -141,10 +192,10 @@ export function vistaPreviaDeFilas(
   )
   if (mapeados.size === 0 || filas.length === 0) return []
 
-  const muestra = filas.slice(0, cuantas).map((f) => armarFilaAMigrar(f, mapeo))
+  const muestra = filas.slice(0, cuantas).map((f) => leerFilaDelArchivo(f, mapeo))
   return ORDEN.filter((campo) => mapeados.has(campo)).map((campo) => ({
     campo,
-    valores: muestra.map((f) => valorLegible(campo, f)),
+    valores: muestra.map(({ fila, origen }) => valorLegible(campo, fila, origen)),
   }))
 }
 
@@ -206,6 +257,130 @@ export function huecosEsenciales(
       total: armadas.length,
     }))
     .filter((h) => h.sinDato / h.total > umbral)
+}
+
+/**
+ * La compuerta, mirando también los DATOS y no sólo el mapeo.
+ *
+ * ── El falso bloqueo que esto arregla ──────────────────────────────────────
+ *
+ * `faltantesEsenciales` mira qué campos quedaron mapeados a una columna. Con
+ * el export real de contratos eso frenaba el archivo por «correo ni documento
+ * del inquilino»: no hay una columna de cédula: el documento viene DENTRO de
+ * «Inquilino» («[1] 71211270 - NOMBRE») y `armarFilaAMigrar` lo saca. 1.847 de
+ * 1.851 filas traían el documento y la pantalla decía que ninguna.
+ *
+ * Así que un requisito deja de frenar cuando alguna fila de la muestra SÍ lo
+ * entrega ya interpretado. Las filas que igual queden sin ese dato no se
+ * esconden: `huecosEsenciales` las cuenta y las muestra con el número exacto.
+ * La división es esa — la compuerta dice «este archivo no puede funcionar», el
+ * aviso dice «a estas filas les falta algo».
+ */
+export function faltantesEsencialesConDatos(
+  filas: Array<Record<string, unknown>>,
+  mapeo: MapeoDeColumna[],
+  muestra = 200,
+): FaltanteEsencial[] {
+  const faltan = faltantesEsenciales(mapeo)
+  if (filas.length === 0) return faltan
+  const leidas = filas.slice(0, muestra).map((f) => armarFilaAMigrar(f, mapeo))
+  return faltan.filter((r) => !leidas.some((f) => cumple(r.clave, f)))
+}
+
+/* ── El resumen honesto del paso ──────────────────────────────────────────── */
+
+/** Cuántas filas quedan con cada cosa identificada, y cuántas no. */
+export interface RenglonDeResumen {
+  /** «Inmueble», «Propietario»… */
+  que: string;
+  /** Cuántas filas traen ese dato ya legible. */
+  con: number;
+  /** Por qué las otras no. Vacío si no falta ninguna. */
+  porque: string;
+}
+
+export interface ResumenDeLectura {
+  total: number;
+  renglones: RenglonDeResumen[];
+}
+
+/**
+ * Lo que el archivo alcanza a identificar, ANTES de mandar nada.
+ *
+ * No promete asociación: eso lo decide el back contra el portafolio de la
+ * agencia y lo devuelve fila por fila. Lo que sí se puede afirmar acá es
+ * cuántas filas traen con qué buscar — y cuántas no traen nada, que es la
+ * pregunta que alguien hace al final del paso («¿cuántos quedaron sin
+ * inmueble y por qué?»).
+ *
+ * Se calcula sobre el archivo ENTERO, no sobre una muestra: el promedio de
+ * las tres primeras filas no dice nada sobre la 1.400.
+ */
+export function resumenDeLectura(
+  filas: Array<Record<string, unknown>>,
+  mapeo: MapeoDeColumna[],
+): ResumenDeLectura {
+  const leidas = filas.map((f) => leerFilaDelArchivo(f, mapeo));
+  const total = leidas.length;
+  const cuenta = (predicado: (l: (typeof leidas)[number]) => boolean) =>
+    leidas.filter(predicado).length;
+
+  const conCodigo = cuenta(({ origen }) => Boolean(origen.codigoDeOrigen));
+  const conDireccion = cuenta(({ fila }) => fila.direccion.trim() !== '');
+  const conInmueble = cuenta(
+    ({ fila, origen }) => Boolean(origen.codigoDeOrigen) || fila.direccion.trim() !== '',
+  );
+  const conPropietario = cuenta(({ fila }) => Boolean(fila.propietario?.documento));
+  const conInquilino = cuenta(({ fila }) => (fila.inquilino.documento ?? '') !== '');
+  const conCorreo = cuenta(({ fila }) => fila.inquilino.correo.trim() !== '');
+  const conConsecutivo = cuenta(({ origen }) => Boolean(origen.consecutivo));
+
+  return {
+    total,
+    renglones: [
+      {
+        que: 'Inmueble identificable',
+        con: conInmueble,
+        porque:
+          conInmueble === total
+            ? ''
+            : `${total - conInmueble} filas no traen ni código ni dirección del inmueble.` +
+              ` (${conCodigo} traen código de origen, ${conDireccion} traen dirección.)`,
+      },
+      {
+        que: 'Propietario con documento',
+        con: conPropietario,
+        porque:
+          conPropietario === total
+            ? ''
+            : `${total - conPropietario} filas traen el propietario sin cédula ni NIT: sin documento no hay ficha que resolver y el nombre solo crea homónimos.`,
+      },
+      {
+        que: 'Inquilino con documento',
+        con: conInquilino,
+        porque:
+          conInquilino === total
+            ? ''
+            : `${total - conInquilino} filas traen al inquilino sin documento.`,
+      },
+      {
+        que: 'Inquilino con correo',
+        con: conCorreo,
+        porque:
+          conCorreo === total
+            ? ''
+            : `${total - conCorreo} filas no traen correo: esos inquilinos no reciben la invitación al portal hasta que alguien lo complete.`,
+      },
+      {
+        que: 'Consecutivo del sistema anterior',
+        con: conConsecutivo,
+        porque:
+          conConsecutivo === total
+            ? ''
+            : `${total - conConsecutivo} filas no traen consecutivo: sin él no se les pueden colgar los documentos contables viejos.`,
+      },
+    ],
+  };
 }
 
 /** Una columna mapeada cuyos valores no tienen la forma del campo. */

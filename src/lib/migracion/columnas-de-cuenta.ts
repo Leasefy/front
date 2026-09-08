@@ -21,8 +21,30 @@
 import type { ColumnaDePlantilla } from '@/lib/api/migracion-terceros.service';
 import type { CuentaImportada } from '@/lib/api/contabilidad.service';
 import type { MapeoDeColumna } from './columnas-de-tercero';
+import { banderaDeOrigen } from './valores-de-origen';
 
-export type CampoDeCuenta = 'codigo' | 'nombre' | 'naturaleza' | 'imputable';
+export type CampoDeCuenta =
+  | 'codigo'
+  | 'nombre'
+  | 'naturaleza'
+  | 'imputable'
+  /**
+   * ── Las columnas del PUC real (2026-09-08) ──────────────────────────────
+   *
+   * El archivo de la inmobiliaria trae
+   * `Nombre;Código;Control de Terceros;Caja o Banco;Último Nivel;Habilitado`,
+   * con «SI»/«NO» en las cuatro banderas. Ninguna de las cuatro se reconocía:
+   * las 2.794 cuentas entraban sin saber cuáles reciben movimientos, así que
+   * el back tenía que deducirlo del árbol.
+   *
+   * «Último Nivel» ES «recibe movimientos»: se manda como `imputable`, que es
+   * lo que el DTO del back ya recibe. Las otras tres se leen y se muestran,
+   * pero todavía no viajan — ver `armarCuentas`.
+   */
+  | 'ultimoNivel'
+  | 'habilitado'
+  | 'controlDeTerceros'
+  | 'cajaOBanco';
 
 export const COLUMNAS_DE_CUENTA: readonly (ColumnaDePlantilla & { campo: CampoDeCuenta })[] = [
   {
@@ -55,6 +77,38 @@ export const COLUMNAS_DE_CUENTA: readonly (ColumnaDePlantilla & { campo: CampoDe
     ejemplo: 'Sí',
     alias: ['imputable', 'movimiento', 'recibe movimientos', 'auxiliar', 'detalle si no', 'es auxiliar', 'nivel detalle'],
     ayuda: 'Sí/No. Si falta, lo decide el árbol: las cuentas con subcuentas no reciben movimientos.',
+  },
+  {
+    campo: 'ultimoNivel',
+    titulo: 'Último nivel',
+    obligatoria: false,
+    ejemplo: 'SI',
+    alias: ['ultimo nivel', 'es ultimo nivel', 'ultimo nivel si no', 'nivel final', 'hoja'],
+    ayuda: 'SI/NO. Una cuenta de último nivel es la que recibe movimientos.',
+  },
+  {
+    campo: 'habilitado',
+    titulo: 'Habilitada',
+    obligatoria: false,
+    ejemplo: 'SI',
+    alias: ['habilitado', 'habilitada', 'activa', 'activo', 'estado cuenta', 'vigente'],
+    ayuda: 'SI/NO. Una cuenta deshabilitada existe pero no se puede usar.',
+  },
+  {
+    campo: 'controlDeTerceros',
+    titulo: 'Control de terceros',
+    obligatoria: false,
+    ejemplo: 'NO',
+    alias: ['control de terceros', 'control terceros', 'maneja terceros', 'exige tercero', 'requiere tercero'],
+    ayuda: 'SI/NO. Las cuentas que exigen decir de quién es el saldo.',
+  },
+  {
+    campo: 'cajaOBanco',
+    titulo: 'Caja o banco',
+    obligatoria: false,
+    ejemplo: 'NO',
+    alias: ['caja o banco', 'caja banco', 'es caja o banco', 'efectivo', 'cuenta de tesoreria'],
+    ayuda: 'SI/NO. Las cuentas de efectivo, para conciliar.',
   },
 ];
 
@@ -99,15 +153,37 @@ export function armarCuentas(
     if (!codigo && !nombre) continue;
 
     const naturaleza = texto(leer(fila, 'naturaleza'));
+
+    // `imputable` sigue viajando CRUDO: el back conoce «Sí», «S», «1» y
+    // `true`, y lo que no entiende lo dice fila por fila en la revisión.
+    // Interpretarlo acá le quitaría esa frase.
     const imputableCrudo = leer(fila, 'imputable');
     const imputable =
       typeof imputableCrudo === 'boolean' ? imputableCrudo : texto(imputableCrudo);
+
+    /*
+     * Las cuatro banderas del export real, ya en `true`/`false`. `undefined`
+     * («la celda no dice ni SI ni NO») NO viaja: el DTO las declara
+     * `@IsBoolean()` y una bandera adivinada apaga una cuenta contable.
+     *
+     * `ultimoNivel` manda sobre `imputable` del lado del back («Último Nivel»
+     * es el nombre real de esa columna) y `habilitado` decide `activa`.
+     * `controlDeTerceros` y `cajaOBanco` el back las recibe y las ignora, y
+     * lo dice: mandarlas es lo que le permite decirlo.
+     */
+    const banderas = {
+      ultimoNivel: banderaDeOrigen(leer(fila, 'ultimoNivel')),
+      habilitado: banderaDeOrigen(leer(fila, 'habilitado')),
+      controlDeTerceros: banderaDeOrigen(leer(fila, 'controlDeTerceros')),
+      cajaOBanco: banderaDeOrigen(leer(fila, 'cajaOBanco')),
+    };
 
     cuentas.push({
       codigo,
       nombre,
       ...(naturaleza ? { naturaleza } : {}),
       ...(imputable !== '' ? { imputable } : {}),
+      ...Object.fromEntries(Object.entries(banderas).filter(([, v]) => v !== undefined)),
     });
   }
   return cuentas;

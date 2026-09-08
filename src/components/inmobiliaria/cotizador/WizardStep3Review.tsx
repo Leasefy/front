@@ -69,16 +69,16 @@ export function WizardStep3Review({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-base font-semibold text-foreground">
+      <h2 className="text-base font-semibold text-fg">
         {t('inmobiliaria.ai.cotizador.nueva.step3.heading')}
       </h2>
 
       {/* Review card */}
-      <div className="rounded-lg border border-border bg-card p-5 space-y-3">
+      <div className="rounded-lg border border-border bg-surface p-5 space-y-3">
         {rows.map(row => (
           <div key={row.label} className="flex justify-between gap-4">
-            <span className="text-sm text-muted-foreground">{row.label}</span>
-            <span className="text-sm font-medium text-foreground text-right">{row.value}</span>
+            <span className="text-sm text-fg-muted">{row.label}</span>
+            <span className="text-sm font-medium text-fg text-right">{row.value}</span>
           </div>
         ))}
       </div>

@@ -5,8 +5,8 @@
  *
  * El problema que resuelve: hay 156 rutas y ninguna dice "empieza acá". Para
  * abrir una consignación hay que saber que vive dentro de Consignaciones; para
- * evaluar a un candidato, que está bajo Evaluación de candidatos → Nueva
- * evaluación. El sidebar está agrupado por módulo de negocio, así que le
+ * pedir la asegurabilidad de un candidato, que está bajo Postulaciones →
+ * Asegurabilidad. El sidebar está agrupado por módulo de negocio, así que le
  * responde bien a quien ya sabe dónde va, y a nadie más.
  *
  * Dos decisiones que vale la pena dejar escritas:

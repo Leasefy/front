@@ -17,7 +17,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Gavel, ArrowCounterClockwise } from '@phosphor-icons/react'
+import { usePathname } from 'next/navigation'
+import { Gavel, ArrowCounterClockwise, ArrowSquareOut } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,6 +49,15 @@ export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
   const [reglas, setReglas] = useState<ReglaDeMoraDelContrato[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [ocupada, setOcupada] = useState<string | null>(null)
+
+  // La pantalla de reglas de la inmobiliaria devuelve a quien llegó desde acá
+  // a ESTE contrato y no a Cobros (Nico, 2026-09-08: «yo estaba era en
+  // contratos»). Fuera del App Router `usePathname()` viene null y el enlace
+  // va sin `volver`.
+  const pathname = usePathname()
+  const hrefDeReglas = pathname
+    ? `${PANTALLA_DE_REGLAS}?volver=${encodeURIComponent(pathname)}`
+    : PANTALLA_DE_REGLAS
 
   const cargar = useCallback(async () => {
     setError(null)
@@ -90,8 +100,13 @@ export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
           <Gavel className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-base font-semibold text-foreground">Reglas de mora</h3>
         </div>
-        <Button asChild variant="ghost" size="sm" hideArrow>
-          <Link href={PANTALLA_DE_REGLAS}>Las de la inmobiliaria</Link>
+        {/* Ghost y sin icono se leía como un texto suelto, no como un botón
+            (Nico, 2026-09-08). El icono es el nuestro: sin la flecha del DS. */}
+        <Button asChild variant="outline" size="sm" hideArrow>
+          <Link href={hrefDeReglas}>
+            <ArrowSquareOut className="h-4 w-4" />
+            Ver las de la inmobiliaria
+          </Link>
         </Button>
       </div>
 
@@ -108,7 +123,7 @@ export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
         <p className="text-sm text-muted-foreground" data-testid="reglas-vacio">
           La inmobiliaria todavía no tiene reglas de mora: a este contrato no
           se le cobra interés ni honorario cuando se atrasa.{' '}
-          <Link href={PANTALLA_DE_REGLAS} className="font-medium text-primary hover:underline">
+          <Link href={hrefDeReglas} className="font-medium text-primary hover:underline">
             Crear la primera regla
           </Link>
           .

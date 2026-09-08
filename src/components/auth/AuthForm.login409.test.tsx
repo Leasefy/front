@@ -141,3 +141,19 @@ describe('AuthForm — login resolves null (409 bootstrap failure)', () => {
     expect(replaceMock).not.toHaveBeenCalled()
   })
 })
+
+describe('AuthForm — login resolves a user (Nico, 2026-09-08: el CTA no vuelve a activarse)', () => {
+  it('keeps the spinner and the button disabled until the redirect changes the screen', async () => {
+    signInWithEmailMock.mockResolvedValue({ id: 'u-1', email: 'ana@example.com' } as never)
+
+    await renderAndSubmitLogin()
+
+    expect(signInWithEmailMock).toHaveBeenCalledTimes(1)
+    // Antes el `finally` lo soltaba acá y se veía «Iniciar sesión» otra vez
+    // mientras la sesión todavía se resolvía.
+    expect(submitButton().disabled).toBe(true)
+    expect(submitButton().textContent).toMatch(/Ingresando/)
+    expect(pushMock).not.toHaveBeenCalled()
+    expect(replaceMock).not.toHaveBeenCalled()
+  })
+})

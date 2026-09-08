@@ -5582,7 +5582,7 @@
         },
         "configuracion": {
           "title": "Configuración y autonomía",
-          "subtitle": "Qué puede hacer el agente por su cuenta y qué requiere siempre tu aprobación. Por ahora solo lectura: hoy nada se aplica sin tu visto bueno."
+          "subtitle": "Qué puede hacer el agente por su cuenta y qué requiere siempre tu aprobación. El modo lo cambia un administrador; los límites los publica el agente."
         },
         "aseguradoras": {
           "pageTitle": "Aseguradoras",
@@ -5774,7 +5774,10 @@
             "states": {
               "active": "Activo",
               "deprecated": "Obsoleto",
-              "under_review": "En revisión"
+              "under_review": "En revisión",
+              "unvalidated": "Sin validar",
+              "validated": "Validado",
+              "drift_detected": "Cambió en la fuente"
             },
             "empty": "Sin datos de supuestos"
           },
@@ -7569,7 +7572,9 @@
             "creado": "Creado",
             "match_sugerido": "Cruce sugerido",
             "match_confirmado": "Cruce confirmado",
-            "match_rechazado": "Cruce rechazado"
+            "match_rechazado": "Cruce rechazado",
+            "caso_creado": "Caso creado",
+            "caso_decidido": "Decidido"
           }
         },
         "accionSugerida": {
@@ -7628,7 +7633,7 @@
           "comun": {
             "colaTitle": "Por revisar",
             "configTitle": "Configuración y autonomía",
-            "configDesc": "Qué puede hacer el agente por su cuenta y qué requiere siempre tu aprobación. Por ahora solo lectura: hoy nada se aplica sin tu visto bueno.",
+            "configDesc": "Qué puede hacer el agente por su cuenta y qué requiere siempre tu aprobación. Debajo del modo dice qué cambia hoy, de verdad, para este agente.",
             "analiticaTitle": "Analítica",
             "enCola": "Pendientes",
             "pendientes": "Pendientes",
@@ -7720,43 +7725,44 @@
           "matching": {
             "eyebrow": "Agente · Matching",
             "salaTitulo": "Matching",
-            "salaDesc": "Te encuentra inquilinos ya validados para tus propiedades vacantes. Revisas la mejor coincidencia y apruebas el contacto — nada se envía sin ti.",
-            "colaDesc": "Candidatos que el agente emparejó con propiedades compatibles. Revisa la mejor coincidencia y sus factores de calce, luego acciónala (para contactar) o descártala. Modo Copiloto: nada se hace sin ti.",
-            "colaEmptyHint": "Aún no hay coincidencias. El agente cruza los candidatos aprobados en Evaluación de candidatos con tus propiedades vacantes — los resultados aparecerán aquí.",
-            "casoColaLabel": "Cola de matching",
+            "salaDesc": "Cuando un candidato se queda sin el inmueble al que aplicó (o cuando lo pides desde su ficha), cruza su perfil con tus inmuebles disponibles y te deja las opciones compatibles para que decidas si se las mandamos.",
+            "colaDesc": "Candidatos con inmuebles compatibles esperando tu decisión. Revisas los calces y eliges si se le mandan las opciones o se descartan.",
+            "casoColaLabel": "Candidatos sugeridos",
             "crossPregunta": "¿Es confiable este candidato?",
             "crossDestino": "Evaluación de candidatos",
-            "analiticaDesc": "Cuántas coincidencias propuso el agente, qué tan bien calzaron y cuántos candidatos terminaron contactados, día a día.",
             "colaTitle": "Candidatos sugeridos",
             "colaLabel": "Candidatos sugeridos",
+            "queEs": "el resumen de Matching",
+            "sinTrabajo": {
+              "title": "Matching todavía no tiene casos en tu cartera",
+              "desc": "Cuando un candidato se quede sin inmueble, o cuando pidas compatibles desde su ficha, acá verás las opciones que encontró y podrás decidir si se le mandan."
+            },
             "comoFunciona": {
               "title": "¿Cómo funciona?",
               "step1": {
-                "title": "Un candidato pasa el Estudio",
-                "desc": "Solo entran candidatos ya validados."
+                "title": "Un candidato se queda sin inmueble",
+                "desc": "Lo rechazaron, otro se quedó con el inmueble, o pediste compatibles desde su ficha."
               },
               "step2": {
-                "title": "El agente lo cruza con tus propiedades vacantes",
-                "desc": "Calcula qué tan bien calza con cada una."
+                "title": "El agente lo cruza con tus inmuebles disponibles",
+                "desc": "Compara ingresos, antigüedad laboral, presupuesto y zona con cada inmueble en arriendo."
               },
               "step3": {
-                "title": "Revisas la mejor coincidencia y por qué calza",
-                "desc": "Con los factores de calce a la vista."
-              },
-              "step4": {
-                "title": "Apruebas y el agente hace el contacto",
-                "desc": "Nada se envía sin tu visto bueno."
+                "title": "Decides si se le mandan las opciones",
+                "desc": "En copiloto quedan en la cola para tu visto bueno; en autónomo salen solas por correo (máximo uno al día por candidato)."
               }
             },
             "estado": {
-              "detectado": "Coincidencia nueva",
-              "sugerido": "Coincidencia propuesta",
+              "detectado": "Caso nuevo",
+              "sugerido": "Esperando tu decisión",
               "en_revision": "En tu revisión",
-              "aprobado": "Contacto aprobado",
-              "ejecutando": "Contactando",
-              "resuelto": "Conectado",
-              "rechazado": "Descartada",
-              "fallo": "Con problema"
+              "aprobado": "Envío aprobado",
+              "ejecutando": "Enviando",
+              "resuelto": "Opciones enviadas",
+              "rechazado": "Descartado",
+              "fallo": "Falló el envío",
+              "caso_creado": "Caso creado",
+              "caso_decidido": "Decidido"
             }
           },
           "pagos": {

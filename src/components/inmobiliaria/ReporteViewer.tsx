@@ -27,10 +27,10 @@ import { useI18n } from '@/lib/i18n';
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
+import { CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Button } from '@/components/ui/button';
 import type { ReportDefinition, ReportCategory } from '@/lib/types/inmobiliaria';
 import {
@@ -571,12 +571,15 @@ export function ReporteViewer({
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto p-0">
+      {/* La anatomía del cajón de la casa (cabecera fija, cuerpo con scroll,
+          pie fijo) con `SheetContent` propio: `Cajon` apaga `aria-describedby`
+          y este cajón SÍ registra su descripción (ver el test de al lado). */}
+      <SheetContent className="flex w-full flex-col gap-0 !p-0 sm:max-w-xl">
         {/* Header */}
-        <SheetHeader className="p-6 pb-4 border-b border-border sticky top-0 bg-gradient-to-b from-background via-background to-background/95 backdrop-blur-sm z-10">
+        <div className="flex-none border-b border-border px-6 py-5 pr-14">
           {/* La ✕ la pone `SheetContent`: es la misma de todos los cajones y
               modales del producto. Acá había una segunda, dibujada a mano. */}
-          <div className="flex items-start gap-4 pr-10">
+          <div className="flex items-start gap-4">
             <div
               className={cn(
                 'w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
@@ -618,13 +621,13 @@ export function ReporteViewer({
               </div>
             </div>
           </div>
-        </SheetHeader>
+        </div>
 
-        {/* Filters Applied */}
+        {/* Filters Applied: fijos debajo de la cabecera, no hacen scroll. */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="px-6 py-4 bg-primary-soft border-b border-primary/30"
+          className="flex-none px-6 py-4 bg-primary-soft border-b border-primary/30"
         >
           <h4 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">
             {t('inmobiliaria.reporte.appliedFilters')}
@@ -646,7 +649,7 @@ export function ReporteViewer({
         </motion.div>
 
         {/* Preview Content */}
-        <div className="p-6 space-y-4">
+        <CajonCuerpo className="space-y-4">
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             {t('inmobiliaria.reporte.previewLabel')}
           </h4>
@@ -658,46 +661,38 @@ export function ReporteViewer({
           >
             <PreviewContent />
           </motion.div>
-        </div>
+        </CajonCuerpo>
 
         {/* Actions Footer */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="sticky bottom-0 p-6 border-t border-border bg-gradient-to-t from-background via-background to-background/95 backdrop-blur-sm"
-        >
-          <div className="flex gap-3">
-            {/* Export Primary */}
-            <Button
-              hideArrow
-              className="flex-1"
-              onClick={() => handleExport(report.format)}
-              disabled={isExporting}
-            >
-              {isExporting ? (
-                <>
-                  <span className="animate-pulse">{t('inmobiliaria.reporte.exporting')}</span>
-                </>
-              ) : (
-                <>
-                  <DownloadSimple className="w-4 h-4 mr-2" />
-                  {/* CSV, no `report.format`. El catálogo marca estos reportes
-                      como «excel» o «pdf», pero `/reports/export` responde
-                      `text/csv` y el archivo baja `.csv`: el botón prometía un
-                      formato que nunca llegó. */}
-                  {t('inmobiliaria.reporte.downloadFormat', { format: 'CSV' })}
-                </>
-              )}
-            </Button>
+        <CajonPie>
+          {/* Export Primary */}
+          <Button
+            hideArrow
+            onClick={() => handleExport(report.format)}
+            disabled={isExporting}
+          >
+            {isExporting ? (
+              <>
+                <span className="animate-pulse">{t('inmobiliaria.reporte.exporting')}</span>
+              </>
+            ) : (
+              <>
+                <DownloadSimple className="w-4 h-4 mr-2" />
+                {/* CSV, no `report.format`. El catálogo marca estos reportes
+                    como «excel» o «pdf», pero `/reports/export` responde
+                    `text/csv` y el archivo baja `.csv`: el botón prometía un
+                    formato que nunca llegó. */}
+                {t('inmobiliaria.reporte.downloadFormat', { format: 'CSV' })}
+              </>
+            )}
+          </Button>
 
-            {/* Acá había un botón de imprimir (`window.print()`) sin una sola
-                regla `@media print` en este componente: imprimía el panel
-                entero con el cajón encima, no el reporte. Y debajo, un rótulo
-                suelto «Exportación programada» sin producto detrás: ni botón,
-                ni frecuencia, ni a dónde llega. Los dos salieron. */}
-          </div>
-        </motion.div>
+          {/* Acá había un botón de imprimir (`window.print()`) sin una sola
+              regla `@media print` en este componente: imprimía el panel
+              entero con el cajón encima, no el reporte. Y debajo, un rótulo
+              suelto «Exportación programada» sin producto detrás: ni botón,
+              ni frecuencia, ni a dónde llega. Los dos salieron. */}
+        </CajonPie>
       </SheetContent>
     </Sheet>
   );

@@ -1,39 +1,15 @@
-'use client'
+import { redirect } from 'next/navigation'
 
 /**
- * /ai/matching/analitica — F10: per-agent Analítica (superficie 6).
+ * /panel/inmobiliaria/postulaciones/matching/analitica — RETIRADA.
  *
- * Thin instantiation of <AnaliticaAgente> over
- * GET …/ai-hub/agentes/matching/analitica (404 → graceful panel).
+ * El micro no expone `ai-hub/agentes/{agente}/analitica` para ningún agente:
+ * esta pestaña era un error garantizado (<AnaliticaAgente> pintaba un
+ * <FalloDeCarga> con un 404 sintético en cada visita). Una pestaña que
+ * siempre falla es un control muerto, y el producto no muestra lo que no
+ * hace. La ruta se conserva sólo para que un enlace viejo no dé 404: manda
+ * al Resumen.
  */
-
-import { PageGuard } from '@/components/auth/PageGuard'
-import { useAgentAnalitica } from '@/lib/hooks/ai/use-agent-analitica'
-import { AnaliticaAgente } from '@/components/inmobiliaria/ai/AnaliticaAgente'
-import { useI18n } from '@/lib/i18n'
-
-function MatchingAnalitica() {
-  const { t } = useI18n()
-  const { data, isLoading, error, notAvailable } = useAgentAnalitica('matching')
-
-  return (
-    <div className="p-6 lg:p-8 space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle')}</h1>
-        <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">
-          {t('inmobiliaria.ai.workspace.pages.matching.analiticaDesc')}
-        </p>
-      </header>
-
-      <AnaliticaAgente data={data} isLoading={isLoading} error={error} notAvailable={notAvailable} />
-    </div>
-  )
-}
-
-export default function MatchingAnaliticaPage() {
-  return (
-    <PageGuard module="matching">
-      <MatchingAnalitica />
-    </PageGuard>
-  )
+export default function MatchingAnaliticaRetiradaPage() {
+  redirect('/panel/inmobiliaria/postulaciones/matching')
 }

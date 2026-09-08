@@ -67,7 +67,6 @@ import {
   parseSpreadsheetFile,
 } from "@/components/inmobiliaria/import/lib/parseFile";
 import {
-  faltantesEsenciales,
   mapearColumnas,
   mejorFilaDeEncabezado,
   remapear,
@@ -77,14 +76,17 @@ import {
 } from "@/lib/contratos/columnas-de-contrato";
 import {
   comisionQueNoParecePorcentaje,
+  faltantesEsencialesConDatos,
   huecosEsenciales,
+  resumenDeLectura,
   vistaPreviaDeFilas,
 } from "@/lib/contratos/vista-previa-de-migracion";
-import { armarFilaAMigrar } from "@/lib/contratos/armar-fila";
+import { armarFilaAMigrar, leerFilaDelArchivo } from "@/lib/contratos/armar-fila";
 import { documentoComoLlave } from "@/lib/contratos/leer-celdas";
 import { generarIdempotencyKey } from "@/lib/contratos/idempotencia";
 import {
   contractsApi,
+  type AsociacionDelLote,
   type FilaDeMigracion,
   type LoteAbierto,
   type ResumenActivacion,
@@ -120,6 +122,18 @@ const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   propietarioDocumento: "Documento del propietario",
   propietarioCorreo: "Correo del propietario",
   propietarioTelefono: "Teléfono del propietario",
+  // Las columnas del export real: una sola celda con el código y la
+  // dirección, y los datos del contrato que antes se tiraban enteros.
+  propiedadCodigoYDireccion: "Propiedad (código y dirección)",
+  consecutivoContrato: "Consecutivo del contrato",
+  estratoInmueble: "Estrato del inmueble",
+  canonTotal: "Canon total",
+  escenario: "Escenario tributario",
+  estadoContrato: "Estado del contrato",
+  fechaTerminacion: "Fecha en que se terminó",
+  observaciones: "Observaciones",
+  fechaCreacionOrigen: "Fecha de creación (sistema anterior)",
+  creadoPor: "Creado por",
 };
 
 /** Todos los campos posibles, para ofrecerlos en el selector de remapeo. */
@@ -162,16 +176,26 @@ function duenosDe(
   const cCorreo = col("propietarioCorreo");
   const cTel = col("propietarioTelefono");
   const out = new Map<number, DuenoDelArchivo>();
-  if (!cDoc) return out;
+  /*
+   * 🔴 Sin `cDoc` NO se sale de una: el export real no trae una columna de
+   * cédula del propietario, trae «Propietario de Propiedad» con el documento
+   * y el nombre pegados («[1] 900111222 - CONSTRUCTORA…»). `leerFilaDelArchivo`
+   * ya los separa; salir acá dejaba 1.850 contratos sin propietario habiendo
+   * el documento en el archivo.
+   */
+  if (!cDoc && !cNombre) return out;
   filas.forEach((fila, i) => {
     const texto = (c?: string) => (c ? String(fila[c] ?? "").trim() : "");
+    const { fila: leida } = leerFilaDelArchivo(fila, mapeo);
     // La MISMA llave que usa la migración de terceros: «1.004.997.858» del
     // archivo de contratos tiene que caer en el propietario que terceros ya
     // creó como «1004997858», no crear un duplicado.
-    const documento = documentoComoLlave(texto(cDoc));
+    const documento = documentoComoLlave(
+      texto(cDoc) || leida.propietario?.documento || "",
+    );
     if (!documento) return;
     out.set(i, {
-      nombre: texto(cNombre) || documento,
+      nombre: leida.propietario?.nombre || texto(cNombre) || documento,
       documento,
       correo: texto(cCorreo) || undefined,
       telefono: texto(cTel) || undefined,
@@ -299,7 +323,16 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
    * inmueble, identificar al inquilino y poder cobrarle—. `uso`, depósito,
    * comisión y periodicidad siguen sin bloquear.
    */
-  const faltanEsenciales = useMemo(() => faltantesEsenciales(mapeo), [mapeo]);
+  /*
+   * 🔴 Mira el mapeo Y los datos. El export real no trae una columna de cédula
+   * del inquilino —el documento viene dentro de «Inquilino»— y mirando sólo el
+   * mapeo la compuerta frenaba un archivo que traía el documento en 1.847 de
+   * sus 1.851 filas.
+   */
+  const faltanEsenciales = useMemo(
+    () => faltantesEsencialesConDatos(filas, mapeo),
+    [filas, mapeo],
+  );
   const dudosas = useMemo(
     () => mapeo.filter((m) => m.certeza === "dudosa"),
     [mapeo],
@@ -309,6 +342,13 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
     [filas, mapeo],
   );
   const huecos = useMemo(() => huecosEsenciales(filas, mapeo), [filas, mapeo]);
+  /**
+   * El resumen honesto del paso: cuántas filas traen con qué identificar el
+   * inmueble, el propietario y el inquilino — y cuántas no, con el motivo.
+   * No promete asociación (eso lo decide el back contra el portafolio), pero
+   * sí dice lo que el archivo alcanza a dar, con el número exacto.
+   */
+  const lectura = useMemo(() => resumenDeLectura(filas, mapeo), [filas, mapeo]);
   /**
    * La comisión es un porcentaje y la columna puede traer pesos. Si llega
    * así, `comoPorcentaje` la descarta por estar fuera de [0,100] y TODAS esas
@@ -528,8 +568,12 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
      * la pantalla, no una garantía: lo que no puede pasar NUNCA es que salga
      * un `preparar()` con lo esencial sin mapear, porque del otro lado se
      * crean filas de verdad — 110 la última vez.
+     *
+     * Tiene que ser la MISMA compuerta que se muestra arriba (la que mira el
+     * mapeo y los datos): con la versión que sólo mira el mapeo, la pantalla
+     * dejaba pasar y el botón no hacía nada, sin decir por qué.
      */
-    if (faltantesEsenciales(mapeo).length > 0) return;
+    if (faltantesEsencialesConDatos(filas, mapeo).length > 0) return;
     setCargando(true);
     setError(null);
     try {
@@ -1239,6 +1283,44 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
           ) : null}
 
           {/*
+            El resumen del paso, con el número exacto y el motivo. Va ANTES de
+            la vista previa: la tabla de tres filas dice cómo se ve una fila;
+            esto dice cuántas de las 1.850 quedan con qué.
+          */}
+          {lectura.total > 0 ? (
+            <div
+              className="rounded-lg border border-border bg-surface-muted p-4"
+              data-testid="resumen-de-lectura"
+            >
+              <h3 className="text-sm font-medium text-fg">
+                Qué trae el archivo, de sus {lectura.total}{" "}
+                {lectura.total === 1 ? "fila" : "filas"}
+              </h3>
+              <p className="mt-0.5 text-xs text-fg-muted">
+                Esto es lo que se pudo LEER. A qué inmueble y a qué ficha queda
+                asociada cada fila lo decide el servidor contra tu portafolio, y
+                lo dice fila por fila en el paso siguiente.
+              </p>
+              <ul className="mt-3 space-y-2">
+                {lectura.renglones.map((r) => (
+                  <li key={r.que} className="text-sm">
+                    <span className="font-mono tabular-nums text-fg">
+                      {r.con}
+                    </span>
+                    <span className="text-fg-muted"> de {lectura.total} · </span>
+                    <span className="text-fg">{r.que}</span>
+                    {r.porque ? (
+                      <span className="block text-xs text-fg-muted">
+                        {r.porque}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {/*
             La vista previa honesta: el dato YA interpretado, antes de crear
             nada. Un mapeo se puede leer y parecer razonable; lo que no miente
             es ver «$ 1.800.000» o «sin dato» en la celda que va a viajar.
@@ -1630,6 +1712,14 @@ function ListaDeTrabajo({
           />
           <Dato etiqueta="Ya activados" valor={resumen.activados} />
         </div>
+
+        {/*
+         * A qué quedó pegado el lote, y POR QUÉ CAMINO. «2.851 listas» no dice
+         * si el archivo se entendió; «2.740 por el código, 90 por la dirección,
+         * 21 sin inmueble» sí. Lo cuenta el back contra el portafolio real de
+         * la agencia — acá no se calcula nada.
+         */}
+        <AsociacionDelLoteResumen asociacion={resumen.asociacion} total={resumen.total} />
 
         {/*
          * Qué está pasando, en palabras. El paso hace un trabajo real —buscar
@@ -2124,6 +2214,125 @@ function ListaDeTrabajo({
         Subir otro archivo
         <ArrowRight className="ml-1.5 h-4 w-4" />
       </Button>
+    </div>
+  );
+}
+
+/**
+ * A qué quedó asociado el lote y por qué camino (back `48e30bb`).
+ *
+ * ── Por qué los tres caminos van separados ─────────────────────────────────
+ *
+ * «Quedó pegado por su código» y «quedó pegado porque las direcciones se
+ * parecían» no merecen la misma confianza, y juntarlos en un «2.851 asociados»
+ * esconde exactamente lo que hay que revisar. El tercero, «lo eligió una
+ * persona», tampoco es lo mismo: ahí ya hubo alguien mirando.
+ *
+ * 🔴 Nada se calcula acá. Los números salen de contar contra el portafolio
+ * real de la agencia, que es algo que sólo el back puede hacer; si no los
+ * manda (un back anterior a esto), la sección NO se dibuja — cero líneas, no
+ * líneas en cero.
+ */
+function AsociacionDelLoteResumen({
+  asociacion,
+  total,
+}: {
+  asociacion?: AsociacionDelLote;
+  total: number;
+}) {
+  if (!asociacion) return null;
+
+  const conInmueble =
+    asociacion.inmueblePorCodigo +
+    asociacion.inmueblePorDireccion +
+    asociacion.inmuebleAMano;
+
+  const renglones: Array<{ que: string; cuantas: number; porque: string }> = [
+    {
+      que: "Por su código",
+      cuantas: asociacion.inmueblePorCodigo,
+      porque:
+        "El código con el que tu sistema anterior identifica el inmueble coincidió con el de un inmueble tuyo. Es la asociación buena: no depende de cómo esté escrita la dirección.",
+    },
+    {
+      que: "Por la dirección",
+      cuantas: asociacion.inmueblePorDireccion,
+      porque:
+        "No había código, o el inmueble se cargó sin él, y la dirección coincidió con una sola. Vale la pena mirar estas.",
+    },
+    {
+      que: "Elegido a mano",
+      cuantas: asociacion.inmuebleAMano,
+      porque: "Alguien eligió el inmueble en esta pantalla.",
+    },
+    {
+      que: "Sin inmueble",
+      cuantas: asociacion.sinInmueble,
+      porque:
+        "Ni el código ni la dirección dieron con uno. Estos contratos no generan cobros hasta que tengan inmueble.",
+    },
+  ];
+
+  return (
+    <div
+      className="rounded-lg border border-border bg-surface-muted p-4"
+      data-testid="asociacion-del-lote"
+    >
+      <h3 className="text-sm font-medium text-fg">
+        A qué quedó pegada cada fila
+      </h3>
+      <p className="mt-0.5 text-xs text-fg-muted">
+        {conInmueble} de {total} quedaron con inmueble. El camino importa: por
+        código es exacto; por dirección es un parecido.
+      </p>
+
+      <ul className="mt-3 space-y-2">
+        {renglones.map((r) => (
+          <li key={r.que} className="text-sm">
+            <span className="font-mono tabular-nums text-fg">{r.cuantas}</span>
+            <span className="text-fg-muted"> de {total} · </span>
+            <span className="text-fg">{r.que}</span>
+            {r.cuantas > 0 ? (
+              <span className="block text-xs text-fg-muted">{r.porque}</span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-3 space-y-1 border-t border-border pt-3 text-sm">
+        <p>
+          <span className="font-mono tabular-nums text-fg">
+            {asociacion.conPropietario}
+          </span>
+          <span className="text-fg-muted"> de {total} · </span>
+          <span className="text-fg">quedaron con propietario</span>
+        </p>
+        <p>
+          <span className="font-mono tabular-nums text-fg">
+            {asociacion.conInquilino}
+          </span>
+          <span className="text-fg-muted"> de {total} · </span>
+          <span className="text-fg">quedaron con inquilino</span>
+        </p>
+        {/* Un histórico se migra igual —hace falta para el historial y para
+            colgarle los comprobantes viejos— pero no activa nada. Decirlo
+            evita la pregunta «¿por qué activé 1.851 y sólo cobran 741?». */}
+        {asociacion.historicos > 0 ? (
+          <p>
+            <span className="font-mono tabular-nums text-fg">
+              {asociacion.historicos}
+            </span>
+            <span className="text-fg-muted"> de {total} · </span>
+            <span className="text-fg">
+              vienen terminados del sistema anterior
+            </span>
+            <span className="block text-xs text-fg-muted">
+              Entran como historial: no ocupan el inmueble, no generan cobros y
+              sirven para colgarles los comprobantes contables viejos.
+            </span>
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }

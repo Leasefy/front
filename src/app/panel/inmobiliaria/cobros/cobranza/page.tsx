@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useState, useCallback, useMemo, useRef } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -53,6 +53,17 @@ export default function CobranzaOverviewPage() {
 
   // Data hook
   const { data, isLoading, error, refetch } = useCarteraOverview()
+
+  // Sin deudores no hay resumen que leer: la pantalla manda a Casos, que es
+  // donde se sube la cartera. Con al menos uno, el resumen es la entrada
+  // (Nico, 2026-09-08).
+  const sinDeudores =
+    Boolean(data) &&
+    (data?.kpis.deudoresActivos ?? 0) === 0 &&
+    (data?.stages ?? []).every((s) => s.count === 0)
+  useEffect(() => {
+    if (sinDeudores) router.replace('/panel/inmobiliaria/cobros/cobranza/deudores')
+  }, [sinDeudores, router])
 
   // Local state for realtime-prepended transitions
   const [realtimeTransitions, setRealtimeTransitions] = useState<StageTransitionEvent[]>([])
@@ -151,7 +162,7 @@ export default function CobranzaOverviewPage() {
   )
 
   // ── Skeleton + EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─────────
-  if (isLoading && !data) return <CobranzaOverviewSkeleton />
+  if ((isLoading && !data) || sinDeudores) return <CobranzaOverviewSkeleton />
 
   if (!data && !isLoading && !error) {
     return (

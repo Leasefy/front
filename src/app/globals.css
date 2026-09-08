@@ -1812,3 +1812,12 @@ select:-webkit-autofill:active {
 [data-radix-popper-content-wrapper] {
   z-index: 400 !important;
 }
+
+/* Una tarjeta de radio elegida se marca en azul, no en negro (Nico, 2026-09-08:
+   «cuando se selecciona debe ser en azul»). El RadioCard de cadence trae el
+   borde en tinta; acá manda el primario, en todos los formularios a la vez. */
+button[role='radio'][data-state='checked'].group {
+  /* `--primary` acá es un triplete HSL (230 100% 55%), no un color: va envuelto en hsl(). */
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.14);
+}

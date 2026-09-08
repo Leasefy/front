@@ -16,69 +16,20 @@ import {
   Tooltip,
   Legend,
 } from 'recharts'
+import { ChartBar } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
-import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
+import { SinDatos } from '@/components/estado/SinDatos'
 import type { PrimaDistributionRow } from '@/lib/hooks/cotizador/use-insights'
 
 // ---------------------------------------------------------------------------
-// RangeBar custom shape
+// Colores — tokens del tema, no hex (recharts pinta atributos SVG y el
+// navegador resuelve `var(--…)` en ellos). El rango p25→p75 va en cobalto
+// atenuado; la mediana, en el color de la superficie para que se lea sobre
+// el rango en los dos temas (antes era `white`, invisible en oscuro).
 // ---------------------------------------------------------------------------
-// Recharts injects { x, y, width, height, value, ...rest } into the shape.
-// For a Bar with dataKey="p75", Recharts computes:
-//   y     = pixel position of the bar top (p75 value mapped to chart Y)
-//   height = pixel height from y to the baseline (0 or chart bottom)
-// We need to render p25→p75 as a colored rect and p50 as a white tick line.
-// The additional p25/p50 values are passed as extra props via the data array.
-
-interface RangeBarProps {
-  x?: number
-  y?: number
-  width?: number
-  height?: number
-  // These come from the data array row (same object as Bar dataKey row)
-  p25Px?: number    // pre-computed pixel Y for p25
-  p50Px?: number    // pre-computed pixel Y for p50
-  p75Px?: number    // pre-computed pixel Y for p75 (same as y for Bar)
-}
-
-function RangeBar(props: RangeBarProps) {
-  const { x = 0, y = 0, width = 0, p25Px, p50Px } = props
-
-  // The bar top is at y (p75 mapped), but we need the p25→p75 range.
-  // p25Px and p50Px are pre-computed by the parent component using the YAxis scale.
-  // If not available (initial render), fall back to the bar itself.
-  const rectTop = y
-  const rectBottom = p25Px ?? y + 40 // fallback
-  const rectHeight = Math.max(rectBottom - rectTop, 2)
-
-  const p50Y = p50Px ?? rectTop + rectHeight / 2
-  const barX = x + width * 0.15
-  const barWidth = width * 0.7
-
-  return (
-    <g>
-      {/* p25→p75 range rectangle */}
-      <rect
-        x={barX}
-        y={rectTop}
-        width={barWidth}
-        height={rectHeight}
-        fill="#7B95FF"
-        fillOpacity={0.6}
-        rx={2}
-      />
-      {/* p50 median tick line */}
-      <line
-        x1={barX}
-        x2={barX + barWidth}
-        y1={p50Y}
-        y2={p50Y}
-        stroke="white"
-        strokeWidth={2}
-      />
-    </g>
-  )
-}
+const RANGO = 'hsl(var(--primary))'
+const MEDIANA = 'var(--surface)'
+const EJE = 'var(--fg-muted)'
 
 // ---------------------------------------------------------------------------
 // Props & data transformation
@@ -88,15 +39,10 @@ interface PrimaDistributionChartProps {
   isLoading?: boolean
 }
 
-// Pivot data by canon_range for the X axis.
-// Pre-compute pixel positions using a simple linear scale since we cannot
-// easily access Recharts' internal YAxis scale here. Instead, we pass the
-// raw p25/p50/p75 values and compute pixel coords inside a wrapper that has
-// access to the chart's full Y domain.
-//
-// Simpler approach: use a single flat BarChart grouped by carrier per X tick
-// (canonRange), and encode the p25/p50 values as extra fields on the data row
-// so RangeBar can compute the relative offsets itself using the injected props.
+// Pivot data by canon_range for the X axis. Use a single flat BarChart grouped
+// by carrier per X tick (canonRange), and encode the p25/p50 values as extra
+// fields on the data row so RangeBar can compute the relative offsets itself
+// using the injected props.
 
 type ChartRow = {
   canonRange: string
@@ -134,20 +80,20 @@ function buildChartData(rows: PrimaDistributionRow[]): {
 }
 
 // ---------------------------------------------------------------------------
-// 5-color carrier palette
+// Paleta por aseguradora (leyenda): cobalto y los tonos de apoyo del tema.
 // ---------------------------------------------------------------------------
 const CARRIER_COLORS = [
-  '#1A40FF', // electric-blue (primary)
-  '#7B95FF', // blue-tint
-  '#6B6B6B', // neutral-mid
-  '#9B9B9B', // neutral-light
-  '#C9CDD3', // neutral-pale
+  'hsl(var(--primary))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
 ]
 
 // ---------------------------------------------------------------------------
 // Custom shape factory per carrier (closure captures carrier name for p25/p50 lookup)
 // ---------------------------------------------------------------------------
-function makeRangeBar(carrier: string, yMax: number, chartHeight: number) {
+function makeRangeBar(carrier: string) {
   // Returns a function-shape compatible with Recharts' ActiveShape
   return function CarrierRangeBar(props: Record<string, unknown>) {
     const x = (props.x as number) ?? 0
@@ -181,7 +127,7 @@ function makeRangeBar(carrier: string, yMax: number, chartHeight: number) {
           y={rectTop}
           width={barWidth}
           height={rectHeight}
-          fill="#7B95FF"
+          fill={RANGO}
           fillOpacity={0.6}
           rx={2}
         />
@@ -190,7 +136,7 @@ function makeRangeBar(carrier: string, yMax: number, chartHeight: number) {
           x2={barX + barWidth}
           y1={p50Px}
           y2={p50Px}
-          stroke="white"
+          stroke={MEDIANA}
           strokeWidth={2}
         />
       </g>
@@ -228,22 +174,24 @@ export function PrimaDistributionChart({
   // Loading skeleton
   if (isLoading && data === null) {
     return (
-      <div className="h-[260px] space-y-3 animate-pulse">
-        <div className="h-4 w-48 bg-surface-muted dark:bg-ink rounded" />
-        <div className="h-[220px] bg-surface-muted dark:bg-ink rounded-lg" />
+      <div className="h-[260px] space-y-3 animate-pulse" role="status" aria-label="Cargando">
+        <div className="h-4 w-48 bg-surface-muted rounded" />
+        <div className="h-[220px] bg-surface-muted rounded-lg" />
+        <span className="sr-only">Cargando…</span>
       </div>
     )
   }
 
-  // Empty state
+  // El vacío de la casa, sin «Fase 35».
   if (!data || data.length === 0) {
     return (
-      <div className="h-[260px] flex items-center justify-center">
-        <NoDataYetBadge
-          reason={t('inmobiliaria.ai.cotizador.insights.primaDistributionTitle')}
-          phase={35}
-        />
-      </div>
+      <SinDatos
+        queSon="primas"
+        icono={ChartBar}
+        titulo="Todavía no hay distribución de prima"
+        descripcion="Cuando haya primas cotizadas en varios rangos de canon, la distribución por aseguradora se grafica acá."
+        className="py-10"
+      />
     )
   }
 
@@ -252,15 +200,17 @@ export function PrimaDistributionChart({
 
   return (
     <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-      <BarChart data={chartData} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
+      {/* Margen de abajo para que la leyenda no se monte sobre «Rango de canon». */}
+      <BarChart data={chartData} margin={{ top: 8, right: 8, bottom: 28, left: 0 }}>
         <XAxis
           dataKey="canonRange"
-          tick={{ fontSize: 10 }}
+          tick={{ fontSize: 10, fill: EJE }}
           label={{
             value: t('inmobiliaria.ai.cotizador.insights.charts.primaDistribution.xAxisLabel'),
             position: 'insideBottom',
-            offset: -4,
+            offset: -12,
             fontSize: 10,
+            fill: EJE,
           }}
         />
         <YAxis
@@ -268,12 +218,13 @@ export function PrimaDistributionChart({
           tickFormatter={(v: number) =>
             v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : `${(v / 1000).toFixed(0)}K`
           }
-          tick={{ fontSize: 10 }}
+          tick={{ fontSize: 10, fill: EJE }}
           label={{
             value: t('inmobiliaria.ai.cotizador.insights.charts.primaDistribution.yAxisLabel'),
             angle: -90,
             position: 'insideLeft',
             fontSize: 10,
+            fill: EJE,
           }}
         />
         <Tooltip
@@ -282,9 +233,9 @@ export function PrimaDistributionChart({
             return [`$${(n / 1000).toFixed(0)}K`]
           }}
         />
-        <Legend wrapperStyle={{ fontSize: 11 }} />
+        <Legend wrapperStyle={{ fontSize: 11, paddingTop: 16 }} />
         {carriers.map((carrier, idx) => {
-          const ShapeComponent = makeRangeBar(carrier, yMax, CHART_HEIGHT)
+          const ShapeComponent = makeRangeBar(carrier)
           return (
             <Bar
               key={carrier}

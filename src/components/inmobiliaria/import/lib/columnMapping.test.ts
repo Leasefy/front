@@ -37,9 +37,8 @@ describe('encabezados sin campo nuestro: mejor nada que cualquier cosa', () => {
     ['Teléfono inquilino', 'mismo caso'],
     ['Codeudor', 'no es el propietario'],
     ['Fiador', 'no es el propietario'],
-    ['Estrato', 'es un número del 1 al 6, iba a status'],
     ['Matrícula inmobiliaria', 'no hay campo'],
-    ['Código inmueble', 'identificador del sistema de origen'],
+    ['Código postal', 'no es el código del inmueble'],
     ['Correo propietario', 'no hay campo de correo; iba a ownerName'],
   ])('%s queda sin mapear (%s)', (encabezado) => {
     expect(campoDe(encabezado)).toBeNull()
@@ -136,8 +135,32 @@ describe('T-0038 §3.8 — nuevas columnas de venta/departamento/consignación',
     expect(campoDe(encabezado)).toBe(campo)
   })
 
-  it('"Código" sigue bloqueado — el código es asignado por el servidor (contract.md §3.2.5), no se importa', () => {
-    expect(campoDe('Código')).toBeNull()
+  /*
+   * 🔴 Cambio del 2026-09-08 (Nico): «el más importante es el de ID (Código):
+   * así identifican las inmobiliarias el inmueble y con ese id lo identifican
+   * en el contrato». El consecutivo de LEASEFY lo sigue asignando el servidor
+   * — es otro número. Éste es el del sistema del que se migra y va a
+   * `Property.externalId`.
+   */
+  it.each([
+    ['Código', 'externalId'],
+    ['Código inmueble', 'externalId'],
+    ['Referencia', 'externalId'],
+    ['Consecutivo', 'externalId'],
+    ['Id', 'externalId'],
+    ['Estrato', 'stratum'],
+    ['Urbanización', 'urbanizacion'],
+    ['Llaves en', 'llavesEn'],
+    ['Creada Por', 'creadaPor'],
+    ['Servicio', 'listingType'],
+    ['Teléfonos Propietario', 'ownerPhone'],
+    ['Fecha Creación', 'consignedAt'],
+  ])('«%s» → %s', (encabezado, campo) => {
+    expect(campoDe(encabezado)).toBe(campo)
+  })
+
+  it('«Ciudad» no cae en el código sólo porque contiene «id»', () => {
+    expect(campoDe('Ciudad')).toBe('propertyCity')
   })
 })
 
@@ -167,9 +190,11 @@ describe('una exportación completa, como llega de un sistema real', () => {
     expect(porColumna['Nombre del propietario']).toBe('ownerName')
     expect(porColumna['Celular propietario']).toBe('ownerPhone')
 
-    // Los dos que no son nuestros quedan en blanco, no en el campo de al lado.
+    // El que no es nuestro queda en blanco, no en el campo de al lado.
     expect(porColumna['Arrendatario']).toBeNull()
-    expect(porColumna['Estrato']).toBeNull()
+    // El estrato y el código ya tienen destino propio.
+    expect(porColumna['Estrato']).toBe('stratum')
+    expect(porColumna['Código']).toBe('externalId')
   })
 
   it('ninguna columna se mapea dos veces al mismo campo', () => {
@@ -208,9 +233,9 @@ describe('encabezados reales de Colombia', () => {
     ['Área m2', 'propertyArea'],
     ['Mts2', 'propertyArea'],
     ['Ciudad/Municipio', 'propertyCity'],
+    ['Estrato', 'stratum'],
     // Sin campo nuestro: mejor nada que un campo equivocado.
     ['Matrícula inmobiliaria', null],
-    ['Estrato', null],
   ];
 
   it.each(esperado)('«%s» → %s', (encabezado, campo) => {

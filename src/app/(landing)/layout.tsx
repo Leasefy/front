@@ -47,7 +47,7 @@ const SELF_CONTAINED_CHROME_PATHS = ['/']
 // El chrome del grupo es el MISMO del home: `LandingChrome` (header v2 +
 // LogoDefs + modo claro forzado) y `LandingFooterV2`, extraídos de
 // `LandingHome` justamente para esto. Antes el grupo montaba el par viejo
-// —`landing/layout/LandingHeader` y `LandingFooter`—, así que entrar al blog
+// —`landing/layout/LandingHeader` y `LandingFooter`, hoy borrados—, así que entrar al blog
 // cambiaba el logo (texto «Leasefy» en vez del logotipo), perdía la mitad del
 // nav («Buscar inmueble», «Avalúos»), perdía «Ver planes» e «Iniciar sesión»,
 // y cerraba con un pie que no es el nuestro (Nico, 2026-09-05, mirando /blog).

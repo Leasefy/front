@@ -1394,11 +1394,17 @@ export type RenovacionStatus =
   | 'completed'      // Fully processed
   | 'terminated';    // Won't renew
 
+/**
+ * Un movimiento del historial, tal como lo guarda el back
+ * (`renovacion_history`). La lista no lo trae; el detalle sí.
+ */
 export interface RenovacionHistoryItem {
-  date: string;
+  id?: string;
+  /** 'notified' | 'note' | 'tenant_accepted' | 'tenant_requested' | el estado del back cuando la nota acompaña un cambio de etapa. */
   action: string;
-  actor: 'system' | 'agent' | 'tenant' | 'owner';
-  notes?: string;
+  description?: string | null;
+  actorName?: string | null;
+  createdAt?: string;
 }
 
 export interface Renovacion {
@@ -1420,9 +1426,17 @@ export interface Renovacion {
    */
   tenantPhone: string | null;
   tenantEmail: string | null;
+  /**
+   * `User.id` del inquilino cuando la renovación cuelga de un Lease con
+   * cuenta en Leasefy. Null en un contrato migrado: ahí «enviar» llega sólo
+   * al correo del contrato, y el inquilino no acepta desde ningún panel.
+   */
+  tenantUserId?: string | null;
   propietarioName: string;
   /** El contrato vivo del inmueble, resuelto por el back al leer. */
   contractId?: string | null;
+  /** Número visible del contrato («Contrato #99»), del mismo contrato vivo. */
+  contractCode?: number | null;
 
   // Current lease
   currentRent: number;

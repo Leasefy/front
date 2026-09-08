@@ -720,14 +720,36 @@ function mapBackendContractRejection(br: BackendContractRejection): ContractReje
  * `inquilino` son la excepción — el DTO los exige siempre presentes, aunque
  * vacíos.
  */
+/**
+ * Un tercero de una lista del archivo («[1] 43090971 - LUZ ADRIANA, [2] …»),
+ * ya partido. Espejo de `TerceroDelArchivoDto`: **sólo estas dos claves**. El
+ * `orden` que el front usa para saber quién es el titular NO viaja — con
+ * `forbidNonWhitelisted: true` sería un 400 del lote entero.
+ */
+export interface TerceroDelArchivo {
+  documento?: string;
+  nombre?: string;
+}
+
 export interface FilaAMigrar {
   direccion: string;
   /**
-   * El «#144» de Inmuebles, cuando el archivo lo trae. El back resuelve por
-   * código ANTES que por dirección; un código inexistente deja la fila con
-   * `inmueble_codigo`, nunca se cae a la dirección en silencio.
+   * El código con el que la inmobiliaria identifica el inmueble.
+   *
+   * 🔴 Cambió de forma el 2026-09-08 (back `48e30bb`): era un `number` y
+   * significaba «el #144 de Leasefy». Ahora es TEXTO y significa, primero, el
+   * «Código» del sistema del que se migra (`Property.externalId`) — el `3` de
+   * «3 - CR 50 127 SUR 61 OF 502», que es como el archivo de contratos nombra
+   * al inmueble. `resolverInmueble` prueba, en este orden: externalId exacto →
+   * externalId sin ceros a la izquierda → el consecutivo de Leasefy →
+   * dirección. Tope de 64 caracteres en el DTO.
+   *
+   * El back resuelve por código ANTES que por dirección; un código inexistente
+   * deja la fila con `inmueble_codigo`, nunca se cae a la dirección en
+   * silencio — un código que no existe es la señal de que el archivo está
+   * corrido, y callarla pega el contrato al inmueble equivocado.
    */
-  codigoInmueble?: number;
+  codigoInmueble?: string;
   /** Sólo para CREAR el inmueble cuando no está cargado. */
   ciudad?: string;
   inquilino: { nombre: string; correo: string; telefono?: string; documento?: string };
@@ -746,6 +768,45 @@ export interface FilaAMigrar {
    * archivo ya dijo, ni siquiera si la persona recarga a mitad.
    */
   propietario?: { nombre?: string; documento?: string; correo?: string; telefono?: string };
+  /**
+   * El «Consecutivo» del contrato en el sistema anterior. Es la LLAVE de
+   * idempotencia: el back lo guarda en `Contract.externalId` y con él evita
+   * que reimportar el archivo duplique el historial. Sin esto, los documentos
+   * contables viejos no saben de qué contrato colgarse. Tope de 64.
+   */
+  externalId?: string;
+  /**
+   * TODOS los dueños, en el orden del archivo. El `[1]` es el principal y los
+   * demás quedan como copropietarios en partes iguales. `propietario`
+   * (singular) sigue mandando cuando viene: esto lo complementa.
+   */
+  propietarios?: TerceroDelArchivo[];
+  /**
+   * TODOS los inquilinos. El `[1]` es el titular —el que se enlaza como
+   * inquilino del contrato— y los demás quedan escritos en las cláusulas: este
+   * esquema no tiene un modelo de co-arrendatario y el back no inventa uno.
+   */
+  inquilinos?: TerceroDelArchivo[];
+  /**
+   * El «Escenario» tributario, tal como lo escribió la inmobiliaria. El back
+   * lo guarda entero y deriva de él las banderas de IVA y retención; lo que el
+   * texto no dice queda vacío y la revisión lo explica.
+   */
+  escenarioOrigen?: string;
+  /**
+   * «Activo» / «Terminado» / «En Construcción», crudo. Un terminado se migra
+   * igual —hace falta para el historial y para colgarle los comprobantes
+   * viejos— pero nace histórico: no ocupa el inmueble ni crea arriendo.
+   */
+  estadoOrigen?: string;
+  /** «Fecha de Terminación»: cuándo terminó DE VERDAD, que no es `endDate`. */
+  fechaTerminacion?: string;
+  /** Las observaciones del contrato, multilínea. Van a las cláusulas. */
+  observaciones?: string;
+  /** Quién creó el contrato en el sistema anterior. Informativo. */
+  creadoPor?: string;
+  /** Cuándo se creó allá («2022-04-04 17:33:13»). Informativo. */
+  fechaCreacionOrigen?: string;
 }
 
 export type EstadoMigracion = 'PENDIENTE' | 'LISTO' | 'ACTIVADO' | 'DESCARTADO';
@@ -782,6 +843,73 @@ export interface InmuebleCandidato {
   ocupado?: boolean;
 }
 
+/**
+ * Cómo quedó pegada una de las partes de la fila.
+ *
+ * `documento` es la llave buena; `nombre` es el último recurso y sólo cuando
+ * resolvió a UNO; `correo` significa que hay con qué crear la cuenta al
+ * activar; `ninguno` es que no quedó pegada a nada.
+ */
+export interface AsociacionDeTercero {
+  asociadoPor: 'documento' | 'nombre' | 'correo' | 'ninguno';
+  documento: string | null;
+  nombre: string | null;
+  /** La ficha o cuenta a la que quedó pegada, si quedó pegada a alguna. */
+  id: string | null;
+  /** Cuántos venían en el archivo: 2 o 3 es copropiedad o co-inquilinos. */
+  cuantos: number;
+}
+
+/**
+ * A QUÉ quedó asociada una fila y POR QUÉ CAMINO. Sin esto, un `propertyId` es
+ * un uuid que no dice si el contrato de la señora del 802 quedó pegado por su
+ * código o porque las direcciones se parecían.
+ *
+ * Ausente (`undefined`/`null`) en las filas preparadas antes de que el back lo
+ * emitiera: entonces no se afirma nada, nunca «ninguno».
+ */
+export interface AsociacionDeFila {
+  inmueble: {
+    /**
+     * `codigo` (el «Código» de la inmobiliaria o el consecutivo de Leasefy) ·
+     * `direccion` (empató el texto) · `manual` (lo eligió una persona en la
+     * pantalla) · `ninguno`.
+     */
+    asociadoPor: 'codigo' | 'direccion' | 'manual' | 'ninguno';
+    codigo: string | null;
+    direccion: string | null;
+    propertyId: string | null;
+  };
+  propietario: AsociacionDeTercero;
+  inquilino: AsociacionDeTercero;
+  /** Qué NO se pudo derivar del escenario tributario, en español. */
+  escenario: string[];
+  /** Si el contrato viene TERMINADO del sistema anterior. */
+  historico: boolean;
+}
+
+/**
+ * Cuántas filas del lote quedaron asociadas a qué (back `48e30bb`).
+ *
+ * Los tres primeros suman `total - sinInmueble`, y van separados a propósito:
+ * «quedó pegado por su código» y «quedó pegado porque las direcciones se
+ * parecían» no merecen la misma confianza.
+ *
+ * Opcional en `ResumenLote`: un back viejo no lo manda y entonces la pantalla
+ * no dibuja la sección — nunca un 0.
+ */
+export interface AsociacionDelLote {
+  inmueblePorCodigo: number;
+  inmueblePorDireccion: number;
+  /** Lo eligió una persona en la pantalla de revisión. */
+  inmuebleAMano: number;
+  sinInmueble: number;
+  conPropietario: number;
+  conInquilino: number;
+  /** Filas TERMINADAS en el sistema anterior: se migran sin activar nada. */
+  historicos: number;
+}
+
 export interface FilaDeMigracion {
   id: string;
   lote: string;
@@ -816,6 +944,13 @@ export interface FilaDeMigracion {
    * `'inmueble_ocupado'`.
    */
   overrides?: string[];
+  /**
+   * Por qué camino quedó pegada esta fila (back `48e30bb`). El back la saca a
+   * la superficie desde `datos._asociacion` justamente para que la pantalla no
+   * tenga que bucear en el JSON. `null` en las filas preparadas antes de que
+   * esto existiera: ausencia, no «ninguno».
+   */
+  asociacion?: AsociacionDeFila | null;
 }
 
 export interface CambiosDeFila {
@@ -980,6 +1115,14 @@ export interface ResumenLote {
    * Un back viejo no lo manda: `undefined` ⇒ no se afirma nada.
    */
   activadosSinPropietario?: number;
+  /**
+   * A QUÉ quedó asociado el lote y POR QUÉ CAMINO (back `48e30bb`). Es el
+   * resumen honesto del final del paso: «2.740 pegadas por el código, 90 por
+   * la dirección, 21 sin inmueble» dice si el archivo se entendió; «2.851
+   * listas» no. Un back viejo no lo manda: `undefined` ⇒ la sección no se
+   * dibuja, nunca en ceros.
+   */
+  asociacion?: AsociacionDelLote;
 }
 
 /**

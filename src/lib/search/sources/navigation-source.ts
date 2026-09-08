@@ -52,7 +52,10 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'action', title: 'Solicitar avalúo', context: 'Avalúos', href: `${P}/inmuebles/avaluos`, keywords: 'crear avaluo valoracion solicitar nuevo', permission: { module: 'avaluos', action: 'create' } },
   { kind: 'page', title: 'Postulaciones', context: 'Captación y arriendo', href: `${P}/postulaciones`, keywords: 'candidatos aplicaciones solicitudes recorrido' },
   { kind: 'page', title: 'Matching', context: 'Postulaciones', href: `${P}/postulaciones/matching`, keywords: 'buscar propiedades perfil compatibles ia', permission: { module: 'matching', action: 'view' } },
-  { kind: 'page', title: 'Evaluación de candidatos', context: 'Postulaciones', href: `${P}/postulaciones/estudio`, keywords: 'estudio scoring evaluacion candidato riesgo ia', permission: { module: 'estudio', action: 'view' } },
+  // «Evaluación de candidatos» (`/postulaciones/estudio`) está OCULTA por ahora
+  // (Nico, 2026-09-08; ver `arquitectura-del-panel.ts`): ofrecerla acá sería
+  // mandar a una puerta que devuelve a Postulaciones.
+  // { kind: 'page', title: 'Evaluación de candidatos', context: 'Postulaciones', href: `${P}/postulaciones/estudio`, keywords: 'estudio scoring evaluacion candidato riesgo ia', permission: { module: 'estudio', action: 'view' } },
   { kind: 'page', title: 'Soportes', context: 'Postulaciones', href: `${P}/postulaciones/soportes`, keywords: 'soportes de candidatos documentos revision papeles', permission: { module: 'documentos', action: 'view' } },
   { kind: 'page', title: 'Asegurabilidad', context: 'Postulaciones', href: `${P}/postulaciones/asegurabilidad`, keywords: 'cotizador seguros polizas garantias afianzable', permission: { module: 'cotizador', action: 'view' } },
   { kind: 'page', title: 'Contratos', context: 'Captación y arriendo', href: `${P}/contratos`, keywords: 'arriendos leasing', permission: { module: 'contratos', action: 'view' } },

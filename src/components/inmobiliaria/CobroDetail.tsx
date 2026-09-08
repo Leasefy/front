@@ -29,12 +29,8 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { SheetTitle } from '@/components/ui/sheet';
+import { Cajon, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
@@ -234,346 +230,345 @@ export function CobroDetail({
   const isLate = cobro.status === 'late';
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-0">
-        {/* Header */}
-        <SheetHeader className="p-6 pb-4 border-b border-border sticky top-0 bg-background z-10">
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <SheetTitle className="text-lg font-semibold text-foreground">
-                {cobro.propertyTitle}
-              </SheetTitle>
-              <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                <MapPin className="w-4 h-4" />
-                {cobro.propertyAddress}
-              </p>
-            </div>
-            <StatusBadge status={cobro.status} />
+    <Cajon abierto={isOpen} onOpenChange={(open) => !open && onClose()} ancho="sm:max-w-lg">
+      {/* Cabecera fija. La insignia de estado va a la derecha del título,
+          por eso no usa `CajonCabecera`. */}
+      <div className="flex-none border-b border-border px-6 py-5 pr-14">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <SheetTitle className="text-lg font-semibold text-foreground">
+              {cobro.propertyTitle}
+            </SheetTitle>
+            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+              <MapPin className="w-4 h-4" />
+              {cobro.propertyAddress}
+            </p>
           </div>
-        </SheetHeader>
-
-        <div className="p-6 space-y-6" onWheel={(e) => e.stopPropagation()}>
-          {/* Property Section */}
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-3"
-          >
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Buildings className="w-4 h-4 text-primary" />
-              {t('inmobiliaria.cobros.detail.propertySection')}
-            </h3>
-            <div className="p-4 rounded-lg border border-border bg-muted/30">
-              {consignacion?.propertyThumbnail && (
-                <div className="w-full h-32 rounded-md overflow-hidden mb-3">
-                  <img
-                    src={consignacion.propertyThumbnail}
-                    alt={cobro.propertyTitle}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-              <div className="space-y-2">
-                <p className="font-medium text-foreground">{cobro.propertyTitle}</p>
-                <p className="text-sm text-muted-foreground">{cobro.propertyAddress}</p>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="capitalize">{consignacion?.propertyType || t('inmobiliaria.cobros.detail.propertySection')}</span>
-                  <span>&bull;</span>
-                  <span>{consignacion?.propertyZone || ''}</span>
-                </div>
-                {consignacion && (
-                  <Link
-                    href={`/panel/inmobiliaria/inmuebles/${consignacion.id}`}
-                    onClick={onClose}
-                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-2"
-                  >
-                    {t('inmobiliaria.cobros.detail.viewConsignacion')}
-                    <CaretRight className="w-4 h-4" />
-                  </Link>
-                )}
-              </div>
-            </div>
-          </motion.section>
-
-          {/* Tenant Section */}
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="space-y-3"
-          >
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <User className="w-4 h-4 text-primary" />
-              {t('inmobiliaria.cobros.detail.tenantSection')}
-            </h3>
-            <div className="p-4 rounded-lg border border-border bg-muted/30 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center">
-                  <User className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">{cobro.tenantName}</p>
-                  {cobro.tenantEmail && (
-                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <Envelope className="w-3.5 h-3.5" />
-                      <span>{cobro.tenantEmail}</span>
-                      <CopyButton text={cobro.tenantEmail} tooltip={t('inmobiliaria.cobros.detail.copyTooltip')} />
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {cobro.tenantPhone && (
-                  <>
-                    <ContactAction
-                      icon={Phone}
-                      href={`tel:${cobro.tenantPhone}`}
-                      label={t('inmobiliaria.cobros.detail.callAction')}
-                      className="bg-muted hover:bg-muted/80 text-foreground"
-                    />
-                    <ContactAction
-                      icon={WhatsappLogo}
-                      href={`https://wa.me/${cobro.tenantPhone.replace(/\D/g, '')}`}
-                      label="WhatsApp"
-                      className="bg-success-soft hover:bg-success-soft text-success dark:bg-success/30 dark:hover:bg-success/50 dark:text-success"
-                    />
-                  </>
-                )}
-                {cobro.tenantEmail && (
-                  <ContactAction
-                    icon={Envelope}
-                    href={`mailto:${cobro.tenantEmail}`}
-                    label="Email"
-                    className="bg-primary-soft hover:bg-primary-soft text-primary dark:bg-primary/30 dark:hover:bg-primary/50 dark:text-primary"
-                  />
-                )}
-              </div>
-            </div>
-          </motion.section>
-
-          {/* Propietario Section */}
-          {propietario && (
-            <motion.section
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="space-y-3"
-            >
-              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Bank className="w-4 h-4 text-primary" />
-                {t('inmobiliaria.cobros.detail.ownerSection')}
-              </h3>
-              <div className="p-4 rounded-lg border border-border bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-foreground">{propietario.name}</p>
-                    <p className="text-sm text-muted-foreground">{propietario.email ?? '—'}</p>
-                  </div>
-                  <Link
-                    href={conRegreso(`/panel/inmobiliaria/propietarios/${propietario.id}`, '/panel/inmobiliaria/cobros')}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    {t('inmobiliaria.cobros.detail.viewProfile')}
-                  </Link>
-                </div>
-              </div>
-            </motion.section>
-          )}
-
-          {/* Amount Breakdown Section */}
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-3"
-          >
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <CurrencyCircleDollar className="w-4 h-4 text-primary" />
-              {t('inmobiliaria.cobros.detail.breakdownSection')}
-            </h3>
-            {/* Mes y vencimiento. Va en su propia tarjeta: el desglose trae la
-                suya, y una tarjeta dentro de otra con el mismo fondo y el
-                mismo borde no se lee como jerarquía, se lee como un error. */}
-            <div className="rounded-lg border border-border bg-muted/30 p-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.detail.monthLabel')}</p>
-                  <p className="font-medium text-foreground">
-                    {mesEnTitulo(cobro.month, locale === 'en' ? 'en' : 'es')}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.detail.dueDateLabel')}</p>
-                  <p className="font-medium text-foreground">
-                    {formatDate(new Date(cobro.dueDate), {
-                      day: 'numeric',
-                      month: 'short',
-                    })}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/*
-              🔴 Antes acá vivían cuatro filas fijas (canon, admin, mora,
-              total). Eso es exactamente lo que la inmobiliaria dijo que no
-              alcanza: no muestra el honorario de cobranza ni las retenciones,
-              y con eso se acepta un abono parcial creyendo que el cliente
-              quedó al día. Ahora manda el desglose del back, y cuando la
-              agencia no lo tiene, la pantalla lo dice.
-            */}
-            <DesgloseAdeudado
-              cobro={cobroVigente ?? cobro}
-              conceptos={conceptos}
-              cargando={cargandoDetalle}
-              fallo={falloDesglose}
-              onReintentar={recargar}
-            />
-
-            {isLate && (
-              <div className="rounded-md border border-danger/30 bg-danger-soft p-3 dark:border-danger/40">
-                <div className="flex items-center gap-2">
-                  <Warning className="w-4 h-4 text-danger" weight="fill" />
-                  <span className="text-sm font-medium text-danger">
-                    {t('inmobiliaria.cobros.detail.daysLate', { count: cobro.daysLate })}
-                  </span>
-                </div>
-              </div>
-            )}
-          </motion.section>
-
-          {/* Recibos de caja — cada abono, su documento */}
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-            className="space-y-3"
-          >
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Receipt className="w-4 h-4 text-primary" />
-              {t('recibos.historial.titulo')}
-            </h3>
-            <RecibosDeCajaHistorial
-              recibos={recibos}
-              cargando={cargandoDetalle}
-              fallo={falloRecibos}
-              onReintentar={recargar}
-              onAnular={anularRecibo}
-            />
-          </motion.section>
-
-          {/* Reminder History Section */}
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="space-y-3"
-          >
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Bell className="w-4 h-4 text-primary" />
-              {t('inmobiliaria.cobros.detail.remindersSection')} ({cobro.remindersSent})
-            </h3>
-            {/* Lo que se sabe de verdad: cuántos salieron y cuándo fue el
-                último. Antes se INVENTABA una lista (fechas, canal email/
-                WhatsApp alternado, «pre-vencimiento»/«mora») a partir del
-                contador — recordatorios que nunca existieron, con fecha. */}
-            {cobro.remindersSent > 0 ? (
-              <div className="p-3 rounded-lg border border-border bg-muted/30 flex items-center gap-3" data-testid="recordatorios-resumen">
-                <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center">
-                  <Bell className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {t('inmobiliaria.cobros.detail.remindersCount', { count: cobro.remindersSent })}
-                  </p>
-                  {cobro.lastReminderDate && (
-                    <p className="text-xs text-muted-foreground">
-                      {t('inmobiliaria.cobros.detail.lastReminder')}{' '}
-                      {formatDate(new Date(cobro.lastReminderDate), {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground p-4 rounded-lg border border-dashed border-border text-center">
-                {t('inmobiliaria.cobros.detail.noReminders')}
-              </p>
-            )}
-          </motion.section>
+          <StatusBadge status={cobro.status} />
         </div>
+      </div>
 
-        {/* Actions Footer */}
-        <motion.div
+      <CajonCuerpo className="space-y-6">
+        {/* Property Section */}
+        <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
-          className="sticky bottom-0 p-6 border-t border-border bg-background space-y-3"
+          className="space-y-3"
         >
-          {/*
-            La acción principal —hacer el recibo— va a la DERECHA y la
-            secundaria a la izquierda (regla de Nico, 2026-09-06; misma
-            anatomía que DESIGN.md §17 para diálogos). Con `flex-row-reverse`
-            el orden del DOM no cambia: el tabulador sigue llegando primero a
-            la principal, que es la que la persona vino a hacer.
-          */}
-          <div className="flex flex-row-reverse gap-3">
-            {isPending && onRegisterPayment && (
-              <Button
-                className="flex-1 bg-success hover:bg-success text-white"
-                onClick={() => onRegisterPayment(cobro)}
-              >
-                <Receipt className="w-4 h-4 mr-2" />
-                {t('recibos.hacer')}
-              </Button>
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Buildings className="w-4 h-4 text-primary" />
+            {t('inmobiliaria.cobros.detail.propertySection')}
+          </h3>
+          <div className="p-4 rounded-lg border border-border bg-muted/30">
+            {consignacion?.propertyThumbnail && (
+              <div className="w-full h-32 rounded-md overflow-hidden mb-3">
+                <img
+                  src={consignacion.propertyThumbnail}
+                  alt={cobro.propertyTitle}
+                  className="w-full h-full object-cover"
+                />
+              </div>
             )}
-            {isPending && onSendReminder && (
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={handleSendReminder}
-                disabled={isSendingReminder}
-              >
-                {isSendingReminder ? (
-                  <span className="flex items-center gap-2">
-                    <Spinner size="sm" variant="current" />
-                    {t('inmobiliaria.cobros.detail.sendingReminder')}
-                  </span>
-                ) : (
-                  <>
-                    <Bell className="w-4 h-4 mr-2" />
-                    {t('inmobiliaria.cobros.detail.sendReminder')}
-                  </>
-                )}
-              </Button>
-            )}
+            <div className="space-y-2">
+              <p className="font-medium text-foreground">{cobro.propertyTitle}</p>
+              <p className="text-sm text-muted-foreground">{cobro.propertyAddress}</p>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="capitalize">{consignacion?.propertyType || t('inmobiliaria.cobros.detail.propertySection')}</span>
+                <span>&bull;</span>
+                <span>{consignacion?.propertyZone || ''}</span>
+              </div>
+              {consignacion && (
+                <Link
+                  href={`/panel/inmobiliaria/inmuebles/${consignacion.id}`}
+                  onClick={onClose}
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-2"
+                >
+                  {t('inmobiliaria.cobros.detail.viewConsignacion')}
+                  <CaretRight className="w-4 h-4" />
+                </Link>
+              )}
+            </div>
           </div>
-          {/* El documento del período, imprimible: la cuenta de cobro. */}
-          <Button asChild variant="ghost" className="w-full">
-            <Link
-              href={`/panel/inmobiliaria/cobros/${cobro.id}/cuenta-de-cobro?volver=${encodeURIComponent('/panel/inmobiliaria/cobros')}`}
-              data-testid="cuenta-de-cobro"
-            >
-              <Printer className="w-4 h-4 mr-2" />
-              Cuenta de cobro
-            </Link>
-          </Button>
+        </motion.section>
+
+        {/* Tenant Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="space-y-3"
+        >
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <User className="w-4 h-4 text-primary" />
+            {t('inmobiliaria.cobros.detail.tenantSection')}
+          </h3>
+          <div className="p-4 rounded-lg border border-border bg-muted/30 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center">
+                <User className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium text-foreground">{cobro.tenantName}</p>
+                {cobro.tenantEmail && (
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Envelope className="w-3.5 h-3.5" />
+                    <span>{cobro.tenantEmail}</span>
+                    <CopyButton text={cobro.tenantEmail} tooltip={t('inmobiliaria.cobros.detail.copyTooltip')} />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {cobro.tenantPhone && (
+                <>
+                  <ContactAction
+                    icon={Phone}
+                    href={`tel:${cobro.tenantPhone}`}
+                    label={t('inmobiliaria.cobros.detail.callAction')}
+                    className="bg-muted hover:bg-muted/80 text-foreground"
+                  />
+                  <ContactAction
+                    icon={WhatsappLogo}
+                    href={`https://wa.me/${cobro.tenantPhone.replace(/\D/g, '')}`}
+                    label="WhatsApp"
+                    className="bg-success-soft hover:bg-success-soft text-success dark:bg-success/30 dark:hover:bg-success/50 dark:text-success"
+                  />
+                </>
+              )}
+              {cobro.tenantEmail && (
+                <ContactAction
+                  icon={Envelope}
+                  href={`mailto:${cobro.tenantEmail}`}
+                  label="Email"
+                  className="bg-primary-soft hover:bg-primary-soft text-primary dark:bg-primary/30 dark:hover:bg-primary/50 dark:text-primary"
+                />
+              )}
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Propietario Section */}
+        {propietario && (
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="space-y-3"
+          >
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Bank className="w-4 h-4 text-primary" />
+              {t('inmobiliaria.cobros.detail.ownerSection')}
+            </h3>
+            <div className="p-4 rounded-lg border border-border bg-muted/30">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-foreground">{propietario.name}</p>
+                  <p className="text-sm text-muted-foreground">{propietario.email ?? '—'}</p>
+                </div>
+                <Link
+                  href={conRegreso(`/panel/inmobiliaria/propietarios/${propietario.id}`, '/panel/inmobiliaria/cobros')}
+                  className="text-sm text-primary hover:underline"
+                >
+                  {t('inmobiliaria.cobros.detail.viewProfile')}
+                </Link>
+              </div>
+            </div>
+          </motion.section>
+        )}
+
+        {/* Amount Breakdown Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="space-y-3"
+        >
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <CurrencyCircleDollar className="w-4 h-4 text-primary" />
+            {t('inmobiliaria.cobros.detail.breakdownSection')}
+          </h3>
+          {/* Mes y vencimiento. Va en su propia tarjeta: el desglose trae la
+              suya, y una tarjeta dentro de otra con el mismo fondo y el
+              mismo borde no se lee como jerarquía, se lee como un error. */}
+          <div className="rounded-lg border border-border bg-muted/30 p-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.detail.monthLabel')}</p>
+                <p className="font-medium text-foreground">
+                  {mesEnTitulo(cobro.month, locale === 'en' ? 'en' : 'es')}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.detail.dueDateLabel')}</p>
+                <p className="font-medium text-foreground">
+                  {formatDate(new Date(cobro.dueDate), {
+                    day: 'numeric',
+                    month: 'short',
+                  })}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/*
+            🔴 Antes acá vivían cuatro filas fijas (canon, admin, mora,
+            total). Eso es exactamente lo que la inmobiliaria dijo que no
+            alcanza: no muestra el honorario de cobranza ni las retenciones,
+            y con eso se acepta un abono parcial creyendo que el cliente
+            quedó al día. Ahora manda el desglose del back, y cuando la
+            agencia no lo tiene, la pantalla lo dice.
+          */}
+          <DesgloseAdeudado
+            cobro={cobroVigente ?? cobro}
+            conceptos={conceptos}
+            cargando={cargandoDetalle}
+            fallo={falloDesglose}
+            onReintentar={recargar}
+          />
+
           {isLate && (
+            <div className="rounded-md border border-danger/30 bg-danger-soft p-3 dark:border-danger/40">
+              <div className="flex items-center gap-2">
+                <Warning className="w-4 h-4 text-danger" weight="fill" />
+                <span className="text-sm font-medium text-danger">
+                  {t('inmobiliaria.cobros.detail.daysLate', { count: cobro.daysLate })}
+                </span>
+              </div>
+            </div>
+          )}
+        </motion.section>
+
+        {/* Recibos de caja — cada abono, su documento */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="space-y-3"
+        >
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Receipt className="w-4 h-4 text-primary" />
+            {t('recibos.historial.titulo')}
+          </h3>
+          <RecibosDeCajaHistorial
+            recibos={recibos}
+            cargando={cargandoDetalle}
+            fallo={falloRecibos}
+            onReintentar={recargar}
+            onAnular={anularRecibo}
+          />
+        </motion.section>
+
+        {/* Reminder History Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="space-y-3"
+        >
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Bell className="w-4 h-4 text-primary" />
+            {t('inmobiliaria.cobros.detail.remindersSection')} ({cobro.remindersSent})
+          </h3>
+          {/* Lo que se sabe de verdad: cuántos salieron y cuándo fue el
+              último. Antes se INVENTABA una lista (fechas, canal email/
+              WhatsApp alternado, «pre-vencimiento»/«mora») a partir del
+              contador — recordatorios que nunca existieron, con fecha. */}
+          {cobro.remindersSent > 0 ? (
+            <div className="p-3 rounded-lg border border-border bg-muted/30 flex items-center gap-3" data-testid="recordatorios-resumen">
+              <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center">
+                <Bell className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {t('inmobiliaria.cobros.detail.remindersCount', { count: cobro.remindersSent })}
+                </p>
+                {cobro.lastReminderDate && (
+                  <p className="text-xs text-muted-foreground">
+                    {t('inmobiliaria.cobros.detail.lastReminder')}{' '}
+                    {formatDate(new Date(cobro.lastReminderDate), {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground p-4 rounded-lg border border-dashed border-border text-center">
+              {t('inmobiliaria.cobros.detail.noReminders')}
+            </p>
+          )}
+        </motion.section>
+      </CajonCuerpo>
+
+      {/* Pie fijo. A la izquierda lo secundario (la cuenta de cobro, marcar
+          en mora); a la derecha las acciones del cobro. */}
+      <CajonPie
+        izquierda={
+          <>
+            {/* El documento del período, imprimible: la cuenta de cobro. */}
+            <Button asChild variant="ghost">
+              <Link
+                href={`/panel/inmobiliaria/cobros/${cobro.id}/cuenta-de-cobro?volver=${encodeURIComponent('/panel/inmobiliaria/cobros')}`}
+                data-testid="cuenta-de-cobro"
+              >
+                <Printer className="w-4 h-4 mr-2" />
+                Cuenta de cobro
+              </Link>
+            </Button>
+            {isLate && (
+              <Button
+                variant="ghost"
+                className="text-danger hover:bg-danger-soft dark:hover:bg-danger/20"
+                onClick={handleMarkDefaulted}
+              >
+                <XCircle className="w-4 h-4 mr-2" />
+                {t('inmobiliaria.cobros.detail.markDefaulted')}
+              </Button>
+            )}
+          </>
+        }
+      >
+        {/*
+          La acción principal —hacer el recibo— va a la DERECHA y la
+          secundaria a la izquierda (regla de Nico, 2026-09-06; misma
+          anatomía que DESIGN.md §17 para diálogos). Con `flex-row-reverse`
+          el orden del DOM no cambia: el tabulador sigue llegando primero a
+          la principal, que es la que la persona vino a hacer.
+        */}
+        <div className="flex flex-row-reverse gap-3">
+          {isPending && onRegisterPayment && (
             <Button
-              variant="ghost"
-              className="w-full text-danger hover:bg-danger-soft dark:hover:bg-danger/20"
-              onClick={handleMarkDefaulted}
+              className="bg-success hover:bg-success text-white"
+              onClick={() => onRegisterPayment(cobro)}
             >
-              <XCircle className="w-4 h-4 mr-2" />
-              {t('inmobiliaria.cobros.detail.markDefaulted')}
+              <Receipt className="w-4 h-4 mr-2" />
+              {t('recibos.hacer')}
             </Button>
           )}
-        </motion.div>
-      </SheetContent>
-    </Sheet>
+          {isPending && onSendReminder && (
+            <Button
+              variant="outline"
+              onClick={handleSendReminder}
+              disabled={isSendingReminder}
+            >
+              {isSendingReminder ? (
+                <span className="flex items-center gap-2">
+                  <Spinner size="sm" variant="current" />
+                  {t('inmobiliaria.cobros.detail.sendingReminder')}
+                </span>
+              ) : (
+                <>
+                  <Bell className="w-4 h-4 mr-2" />
+                  {t('inmobiliaria.cobros.detail.sendReminder')}
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      </CajonPie>
+    </Cajon>
   );
 }
 

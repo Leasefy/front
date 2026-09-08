@@ -172,11 +172,14 @@ describe('Recaudo', () => {
     expect($('[data-testid="cifra-disponible"]').textContent).toContain('nunca pasó por un recibo');
   });
 
-  it('un mes sin nada es un vacío honesto, no cuatro ceros', async () => {
+  it('un mes sin nada lo dice, pero deja las cifras en cero y las tablas de la casa a la vista', async () => {
     resumenMock.mockResolvedValue(VACIO);
     await montar();
-    expect(host.querySelector('[data-testid="cifras"]')).toBeNull();
+    expect(host.querySelector('[data-testid="mes-sin-movimiento"]')).not.toBeNull();
     expect(host.textContent).toContain('Nada que contar en');
+    expect(host.querySelector('[data-testid="cifras"]')).not.toBeNull();
+    expect(host.querySelector('[data-testid="serie-mensual"]')).not.toBeNull();
+    expect(host.querySelector('[data-testid="sin-recibos"]')).not.toBeNull();
     expect(mesSinMovimiento(VACIO)).toBe(true);
     expect(mesSinMovimiento(resumen())).toBe(false);
     // Un mes con cobros pendientes pero sin plata NO es un mes vacío.

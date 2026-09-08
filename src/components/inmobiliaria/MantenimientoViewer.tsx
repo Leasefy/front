@@ -3,12 +3,8 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { SheetTitle } from '@/components/ui/sheet';
+import { Cajon, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import {
   Dialog,
   DialogContent,
@@ -457,262 +453,257 @@ export function MantenimientoViewer({
 
   return (
     <>
-      <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto p-0">
-          {/* Header */}
-          <div className="sticky top-0 z-10 bg-background border-b border-border">
-            <SheetHeader className="p-4">
-              {/* `pr-10` reserva el hueco de la ✕ del `SheetContent`, que es la
-                  misma de todo el producto. Acá había una segunda a mano. */}
-              <div className="flex items-start gap-3 pr-10">
-                <div
-                  className={cn(
-                    'w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0',
-                    priorityStyle.bg
-                  )}
-                >
-                  <TypeIcon className={cn('w-5 h-5', priorityStyle.text)} />
-                </div>
-                <div>
-                  <SheetTitle className="text-left text-lg font-semibold text-fg">{solicitud.title}</SheetTitle>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    {typeInfo?.labelEs} · {fmtDate(solicitud.createdAt)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Status & Priority Badges */}
-              <div className="flex flex-wrap gap-2 mt-3">
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
-                    statusStyle.bg,
-                    statusStyle.text
-                  )}
-                >
-                  <statusStyle.icon className="w-3.5 h-3.5" />
-                  {t(statusStyle.labelKey)}
-                </span>
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
-                    priorityStyle.bg,
-                    priorityStyle.text
-                  )}
-                >
-                  <Warning className="w-3.5 h-3.5" />
-                  {t('inmobiliaria.mantenimiento.priorityLabel')}: {t(priorityStyle.labelKey)}
-                </span>
-              </div>
-            </SheetHeader>
+      <Cajon abierto={isOpen} onOpenChange={(open) => !open && onClose()} ancho="sm:max-w-xl">
+        {/* Cabecera fija. El ícono del tipo va a la izquierda del título y las
+            insignias debajo, por eso no usa `CajonCabecera`. El `pr-14` del
+            cajón reserva el hueco de la ✕, que es la misma de todo el producto. */}
+        <div className="flex-none border-b border-border px-6 py-5 pr-14">
+          <div className="flex items-start gap-3">
+            <div
+              className={cn(
+                'w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0',
+                priorityStyle.bg
+              )}
+            >
+              <TypeIcon className={cn('w-5 h-5', priorityStyle.text)} />
+            </div>
+            <div>
+              <SheetTitle className="text-left text-lg font-semibold text-fg">{solicitud.title}</SheetTitle>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {typeInfo?.labelEs} · {fmtDate(solicitud.createdAt)}
+              </p>
+            </div>
           </div>
 
-          {/* Content */}
-          <div className="p-4 space-y-6">
-            {/* Property & People */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Buildings className="w-4 h-4" />
-                {t('inmobiliaria.mantenimiento.propertyAndPeople')}
-              </h4>
-              <div className="p-4 rounded-lg border border-border bg-card space-y-3">
+          {/* Status & Priority Badges */}
+          <div className="flex flex-wrap gap-2 mt-3">
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
+                statusStyle.bg,
+                statusStyle.text
+              )}
+            >
+              <statusStyle.icon className="w-3.5 h-3.5" />
+              {t(statusStyle.labelKey)}
+            </span>
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
+                priorityStyle.bg,
+                priorityStyle.text
+              )}
+            >
+              <Warning className="w-3.5 h-3.5" />
+              {t('inmobiliaria.mantenimiento.priorityLabel')}: {t(priorityStyle.labelKey)}
+            </span>
+          </div>
+        </div>
+
+        {/* Content */}
+        <CajonCuerpo className="space-y-6">
+          {/* Property & People */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Buildings className="w-4 h-4" />
+              {t('inmobiliaria.mantenimiento.propertyAndPeople')}
+            </h4>
+            <div className="p-4 rounded-lg border border-border bg-card space-y-3">
+              <div>
+                <p className="font-medium text-foreground">{solicitud.propertyTitle}</p>
+                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                  <MapPin className="w-3.5 h-3.5" />
+                  {solicitud.propertyAddress}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="font-medium text-foreground">{solicitud.propertyTitle}</p>
-                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
-                    <MapPin className="w-3.5 h-3.5" />
-                    {solicitud.propertyAddress}
-                  </p>
+                  <p className="text-muted-foreground">{t('inmobiliaria.mantenimiento.tenant')}</p>
+                  <p className="font-medium text-foreground">{solicitud.tenantName}</p>
                 </div>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">{t('inmobiliaria.mantenimiento.tenant')}</p>
-                    <p className="font-medium text-foreground">{solicitud.tenantName}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">{t('inmobiliaria.mantenimiento.owner')}</p>
-                    <p className="font-medium text-foreground">{solicitud.propietarioName}</p>
-                  </div>
+                <div>
+                  <p className="text-muted-foreground">{t('inmobiliaria.mantenimiento.owner')}</p>
+                  <p className="font-medium text-foreground">{solicitud.propietarioName}</p>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Description */}
+          {/* Description */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              {t('inmobiliaria.mantenimiento.descriptionLabel')}
+            </h4>
+            <p className="text-sm text-muted-foreground">{solicitud.description}</p>
+          </div>
+
+          {/* Before Photos */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Camera className="w-4 h-4" />
+              {t('inmobiliaria.mantenimiento.photosBefore')}
+            </h4>
+            <PhotoGallery
+              photos={solicitud.photoUrls}
+              label=""
+              emptyLabel={t('inmobiliaria.mantenimiento.noPhotosProblem')}
+              t={t}
+              onUpload={
+                onUploadPhoto
+                  ? () => onUploadPhoto(solicitud.id, 'before', [])
+                  : undefined
+              }
+            />
+          </div>
+
+          {/* Quotations Section */}
+          {(solicitud.status === 'quoted' ||
+            solicitud.status === 'reported' ||
+            solicitud.quotes.length > 0) && (
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                {t('inmobiliaria.mantenimiento.descriptionLabel')}
+                <CurrencyDollar className="w-4 h-4" />
+                {t('inmobiliaria.mantenimiento.quotations')}
               </h4>
-              <p className="text-sm text-muted-foreground">{solicitud.description}</p>
+              <CotizacionComparator
+                solicitud={solicitud}
+                onSelectQuote={handleSelectQuote}
+                onRequestNewQuote={
+                  onRequestQuote ? () => onRequestQuote(solicitud.id) : undefined
+                }
+                selectedQuoteId={selectedQuoteId}
+              />
             </div>
+          )}
 
-            {/* Before Photos */}
+          {/* After Photos (if in progress or completed) */}
+          {['in_progress', 'completed'].includes(solicitud.status) && (
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Camera className="w-4 h-4" />
-                {t('inmobiliaria.mantenimiento.photosBefore')}
+                <CheckCircle className="w-4 h-4" />
+                {t('inmobiliaria.mantenimiento.photosAfter')}
               </h4>
               <PhotoGallery
-                photos={solicitud.photoUrls}
+                photos={solicitud.completionPhotoUrls}
                 label=""
-                emptyLabel={t('inmobiliaria.mantenimiento.noPhotosProblem')}
+                emptyLabel={t('inmobiliaria.mantenimiento.noPhotosCompleted')}
                 t={t}
                 onUpload={
-                  onUploadPhoto
-                    ? () => onUploadPhoto(solicitud.id, 'before', [])
+                  solicitud.status === 'in_progress' && onUploadPhoto
+                    ? () => onUploadPhoto(solicitud.id, 'after', [])
                     : undefined
                 }
               />
             </div>
+          )}
 
-            {/* Quotations Section */}
-            {(solicitud.status === 'quoted' ||
-              solicitud.status === 'reported' ||
-              solicitud.quotes.length > 0) && (
-              <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <CurrencyDollar className="w-4 h-4" />
-                  {t('inmobiliaria.mantenimiento.quotations')}
-                </h4>
-                <CotizacionComparator
-                  solicitud={solicitud}
-                  onSelectQuote={handleSelectQuote}
-                  onRequestNewQuote={
-                    onRequestQuote ? () => onRequestQuote(solicitud.id) : undefined
-                  }
-                  selectedQuoteId={selectedQuoteId}
-                />
-              </div>
-            )}
-
-            {/* After Photos (if in progress or completed) */}
-            {['in_progress', 'completed'].includes(solicitud.status) && (
-              <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" />
-                  {t('inmobiliaria.mantenimiento.photosAfter')}
-                </h4>
-                <PhotoGallery
-                  photos={solicitud.completionPhotoUrls}
-                  label=""
-                  emptyLabel={t('inmobiliaria.mantenimiento.noPhotosCompleted')}
-                  t={t}
-                  onUpload={
-                    solicitud.status === 'in_progress' && onUploadPhoto
-                      ? () => onUploadPhoto(solicitud.id, 'after', [])
-                      : undefined
-                  }
-                />
-              </div>
-            )}
-
-            {/* Completion Notes */}
-            {solicitud.status === 'completed' && solicitud.completionNotes && (
-              <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Note className="w-4 h-4" />
-                  {t('inmobiliaria.mantenimiento.completionNotes')}
-                </h4>
-                <p className="text-sm text-muted-foreground p-3 rounded-md bg-muted">
-                  {solicitud.completionNotes}
-                </p>
-              </div>
-            )}
-
-            {/* Timeline */}
+          {/* Completion Notes */}
+          {solicitud.status === 'completed' && solicitud.completionNotes && (
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                {t('inmobiliaria.mantenimiento.history')}
+                <Note className="w-4 h-4" />
+                {t('inmobiliaria.mantenimiento.completionNotes')}
               </h4>
-              <Timeline events={timeline} fmtDate={fmtDate} />
-            </div>
-
-            {/* Who Pays */}
-            <div className="p-4 rounded-lg border border-border bg-muted/50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CurrencyDollar className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">{t('inmobiliaria.mantenimiento.whoPays')}</span>
-                </div>
-                <Badge
-                  variant={
-                    solicitud.paidBy === 'owner'
-                      ? 'default'
-                      : solicitud.paidBy === 'tenant'
-                      ? 'warning'
-                      : 'secondary'
-                  }
-                >
-                  {solicitud.paidBy === 'owner'
-                    ? t('inmobiliaria.mantenimiento.paidByOwner')
-                    : solicitud.paidBy === 'tenant'
-                    ? t('inmobiliaria.mantenimiento.paidByTenant')
-                    : solicitud.paidBy === 'split'
-                    ? t('inmobiliaria.mantenimiento.paidBySplit')
-                    : t('inmobiliaria.mantenimiento.paidByAgency')}
-                </Badge>
-              </div>
-            </div>
-          </div>
-
-          {/* Actions Footer */}
-          {solicitud.status !== 'completed' && solicitud.status !== 'cancelled' && (
-            <div className="sticky bottom-0 border-t border-border bg-background p-4 space-y-3">
-              {/* Primary Action based on status */}
-              {solicitud.status === 'approved' && (
-                <Button
-                  hideArrow
-                  onClick={handleStartWork}
-                  className="w-full"
-                >
-                  <Play className="w-5 h-5" weight="fill" />
-                  {t('inmobiliaria.mantenimiento.startWork')}
-                </Button>
-              )}
-
-              {solicitud.status === 'in_progress' && (
-                // success/green: Cadence Button has no success variant (logged gap) — real Button
-                // keeps DS states; only the fill is overridden for the missing tone.
-                <Button
-                  hideArrow
-                  onClick={() => setShowCompleteDialog(true)}
-                  className="w-full bg-success text-white hover:bg-success/90"
-                >
-                  <CheckCircle className="w-5 h-5" weight="fill" />
-                  {t('inmobiliaria.mantenimiento.markCompleted')}
-                </Button>
-              )}
-
-              {/* Secondary Actions
-                  «Agregar nota» sólo aparece si alguien puede guardarla. El
-                  botón estaba siempre, y en Operaciones el handler era un
-                  `toast.success('Nota agregada')` sin nada detrás: no existe
-                  endpoint de notas para mantenimientos (el controlador tiene
-                  quote/select-quote/approve/complete/cancel y nada más). */}
-              <div className="flex items-center gap-2">
-                {onAddNote && (
-                  <Button
-                    variant="outline"
-                    hideArrow
-                    onClick={() => setShowNoteDialog(true)}
-                    className="flex-1"
-                  >
-                    <ChatCircle className="w-4 h-4" />
-                    {t('inmobiliaria.mantenimiento.addNote')}
-                  </Button>
-                )}
-                <IconButton
-                  variant="outline"
-                  onClick={() => setShowCancelDialog(true)}
-                  aria-label={t('inmobiliaria.mantenimiento.cancelRequest')}
-                  icon={<Trash className="w-4 h-4" />}
-                  className="border-danger/30 text-danger hover:bg-danger-soft hover:text-danger"
-                />
-              </div>
+              <p className="text-sm text-muted-foreground p-3 rounded-md bg-muted">
+                {solicitud.completionNotes}
+              </p>
             </div>
           )}
-        </SheetContent>
-      </Sheet>
+
+          {/* Timeline */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              {t('inmobiliaria.mantenimiento.history')}
+            </h4>
+            <Timeline events={timeline} fmtDate={fmtDate} />
+          </div>
+
+          {/* Who Pays */}
+          <div className="p-4 rounded-lg border border-border bg-muted/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CurrencyDollar className="w-5 h-5 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">{t('inmobiliaria.mantenimiento.whoPays')}</span>
+              </div>
+              <Badge
+                variant={
+                  solicitud.paidBy === 'owner'
+                    ? 'default'
+                    : solicitud.paidBy === 'tenant'
+                    ? 'warning'
+                    : 'secondary'
+                }
+              >
+                {solicitud.paidBy === 'owner'
+                  ? t('inmobiliaria.mantenimiento.paidByOwner')
+                  : solicitud.paidBy === 'tenant'
+                  ? t('inmobiliaria.mantenimiento.paidByTenant')
+                  : solicitud.paidBy === 'split'
+                  ? t('inmobiliaria.mantenimiento.paidBySplit')
+                  : t('inmobiliaria.mantenimiento.paidByAgency')}
+              </Badge>
+            </div>
+          </div>
+        </CajonCuerpo>
+
+        {/* Pie fijo: cancelar la solicitud (destructivo) a la izquierda; la
+            nota y la acción principal del estado a la derecha. */}
+        {solicitud.status !== 'completed' && solicitud.status !== 'cancelled' && (
+          <CajonPie
+            izquierda={
+              <IconButton
+                variant="outline"
+                onClick={() => setShowCancelDialog(true)}
+                aria-label={t('inmobiliaria.mantenimiento.cancelRequest')}
+                icon={<Trash className="w-4 h-4" />}
+                className="border-danger/30 text-danger hover:bg-danger-soft hover:text-danger"
+              />
+            }
+          >
+            {/* «Agregar nota» sólo aparece si alguien puede guardarla. El
+                botón estaba siempre, y en Operaciones el handler era un
+                `toast.success('Nota agregada')` sin nada detrás: no existe
+                endpoint de notas para mantenimientos (el controlador tiene
+                quote/select-quote/approve/complete/cancel y nada más). */}
+            {onAddNote && (
+              <Button
+                variant="outline"
+                hideArrow
+                onClick={() => setShowNoteDialog(true)}
+              >
+                <ChatCircle className="w-4 h-4" />
+                {t('inmobiliaria.mantenimiento.addNote')}
+              </Button>
+            )}
+
+            {/* Primary Action based on status */}
+            {solicitud.status === 'approved' && (
+              <Button
+                hideArrow
+                onClick={handleStartWork}
+              >
+                <Play className="w-5 h-5" weight="fill" />
+                {t('inmobiliaria.mantenimiento.startWork')}
+              </Button>
+            )}
+
+            {solicitud.status === 'in_progress' && (
+              // success/green: Cadence Button has no success variant (logged gap) — real Button
+              // keeps DS states; only the fill is overridden for the missing tone.
+              <Button
+                hideArrow
+                onClick={() => setShowCompleteDialog(true)}
+                className="bg-success text-white hover:bg-success/90"
+              >
+                <CheckCircle className="w-5 h-5" weight="fill" />
+                {t('inmobiliaria.mantenimiento.markCompleted')}
+              </Button>
+            )}
+          </CajonPie>
+        )}
+      </Cajon>
 
       {/* Add Note Dialog */}
       <Dialog open={showNoteDialog} onOpenChange={setShowNoteDialog}>

@@ -35,13 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { ApiError } from '@/lib/api/client';
 import {
   inquilinosApi,
@@ -158,17 +152,14 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado }: Props)
   };
 
   return (
-    <Sheet open={abierto} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-xl" data-lenis-prevent>
-        <SheetHeader className="space-y-1 border-b border-border pb-4">
-          <SheetTitle className="text-lg font-semibold text-fg">Nuevo inquilino</SheetTitle>
-          <SheetDescription className="text-sm text-fg-muted">
-            La persona queda cargada en tu inmobiliaria. Empieza a cobrar cuando tenga su
-            contrato.
-          </SheetDescription>
-        </SheetHeader>
+    <Cajon abierto={abierto} onOpenChange={onOpenChange} ancho="sm:max-w-xl">
+      <CajonCabecera
+        titulo="Nuevo inquilino"
+        descripcion="La persona queda cargada en tu inmobiliaria. Empieza a cobrar cuando tenga su contrato."
+      />
 
-        <div className="mt-4 space-y-4" data-testid="nuevo-inquilino">
+      <CajonCuerpo>
+        <div className="space-y-4" data-testid="nuevo-inquilino">
           <Campo label="Nombre completo" error={tocado && errores.nombre}>
             <Input
               value={form.nombre}
@@ -237,32 +228,32 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado }: Props)
               {errores.llave}
             </p>
           ) : null}
-
-          <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              hideArrow
-              onClick={() => onOpenChange(false)}
-              disabled={guardando}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              hideArrow
-              onClick={() => void guardar()}
-              disabled={guardando}
-              data-testid="inquilino-guardar"
-            >
-              Crear inquilino
-            </Button>
-          </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </CajonCuerpo>
+
+      <CajonPie>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          hideArrow
+          onClick={() => onOpenChange(false)}
+          disabled={guardando}
+        >
+          Cancelar
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          hideArrow
+          onClick={() => void guardar()}
+          disabled={guardando}
+          data-testid="inquilino-guardar"
+        >
+          Crear inquilino
+        </Button>
+      </CajonPie>
+    </Cajon>
   );
 }
 

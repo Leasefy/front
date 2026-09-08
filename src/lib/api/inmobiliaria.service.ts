@@ -3,6 +3,7 @@
  * Connects to backend /api/v1/inmobiliaria endpoints
  */
 
+import { mantenimientoAlBack, mantenimientoDelBack } from './mantenimiento-enums';
 import { apiClient, getAccessToken, ApiError } from '@/lib/api/client';
 import { resolveListingType } from '@/lib/api/properties.mapper';
 import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url';
@@ -1306,19 +1307,24 @@ export const mantenimientoApi = {
     if (params?.consignacionId) query.set('consignacionId', params.consignacionId);
     const qs = query.toString();
     const res = await apiClient.get<{ data: SolicitudMantenimiento[] } | SolicitudMantenimiento[]>(`${BASE}/mantenimiento${qs ? `?${qs}` : ''}`);
-    return lista(res);
+    return lista(res).map(mantenimientoDelBack);
   },
 
   async getById(id: string): Promise<SolicitudMantenimiento> {
-    return apiClient.get<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}`);
+    return mantenimientoDelBack(await apiClient.get<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}`));
   },
 
   async create(data: Partial<SolicitudMantenimiento>): Promise<SolicitudMantenimiento> {
-    return apiClient.post<SolicitudMantenimiento>(`${BASE}/mantenimiento`, data);
+    // Los enums viajan en el vocabulario del back: antes esto daba 400 por «plumbing».
+    return mantenimientoDelBack(
+      await apiClient.post<SolicitudMantenimiento>(`${BASE}/mantenimiento`, mantenimientoAlBack(data)),
+    );
   },
 
   async update(id: string, data: Partial<SolicitudMantenimiento>): Promise<SolicitudMantenimiento> {
-    return apiClient.patch<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}`, data);
+    return mantenimientoDelBack(
+      await apiClient.patch<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}`, mantenimientoAlBack(data)),
+    );
   },
 
   /**
@@ -1330,12 +1336,12 @@ export const mantenimientoApi = {
   async changeStatus(id: string, status: string): Promise<SolicitudMantenimiento> {
     switch (status) {
       case 'approved':
-        return apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/approve`);
+        return mantenimientoDelBack(await apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/approve`));
       case 'completed':
         // `completionNotes`/`completionPhotoUrls` are optional and not collected here.
-        return apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/complete`, {});
+        return mantenimientoDelBack(await apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/complete`, {}));
       case 'cancelled':
-        return apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/cancel`);
+        return mantenimientoDelBack(await apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/cancel`));
       default:
         throw new Error(`Unsupported maintenance status transition: ${status}`);
     }
@@ -1347,11 +1353,12 @@ export const mantenimientoApi = {
   },
 
   async approveQuote(id: string, quoteId: string): Promise<SolicitudMantenimiento> {
-    return apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/select-quote`, { quoteId });
+    return mantenimientoDelBack(await apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/select-quote`, { quoteId }));
   },
 
   async getKanban(): Promise<Record<string, SolicitudMantenimiento[]>> {
-    return apiClient.get<Record<string, SolicitudMantenimiento[]>>(`${BASE}/mantenimiento/kanban`);
+    const columnas = await apiClient.get<Record<string, SolicitudMantenimiento[]>>(`${BASE}/mantenimiento/kanban`);
+    return Object.fromEntries(Object.entries(columnas).map(([k, filas]) => [k, (filas ?? []).map(mantenimientoDelBack)]));
   },
 };
 

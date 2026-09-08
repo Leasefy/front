@@ -28,14 +28,8 @@ import {
 import { Badge } from "@leasefy/cadence";
 
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { CajonCabecera, CajonCuerpo } from "@/components/ui/cajon";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useI18n } from "@/lib/i18n";
 import { usePilotoPreparacion } from "@/lib/hooks/piloto/use-piloto-preparacion";
 import type { EstadoRequisito } from "@/lib/api/piloto";
@@ -106,18 +100,22 @@ export function PilotoPreparacion() {
         </Button>
       </SheetTrigger>
 
-      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2 text-lg font-semibold text-fg">
-            <Gauge
-              weight="duotone"
-              className="h-5 w-5 text-fg-muted"
-              aria-hidden="true"
-            />
-            {t("inmobiliaria.piloto.preparacion.titulo")}
-          </SheetTitle>
-          <SheetDescription>
-            {data
+      {/* La anatomía del cajón de la casa (cabecera fija, cuerpo con scroll),
+          con `SheetContent` propio porque el disparador vive acá adentro. */}
+      <SheetContent side="right" className="flex w-full flex-col gap-0 !p-0 sm:max-w-lg">
+        <CajonCabecera
+          titulo={
+            <span className="flex items-center gap-2">
+              <Gauge
+                weight="duotone"
+                className="h-5 w-5 text-fg-muted"
+                aria-hidden="true"
+              />
+              {t("inmobiliaria.piloto.preparacion.titulo")}
+            </span>
+          }
+          descripcion={
+            data
               ? data.listo
                 ? sueltosQueFaltan > 0
                   ? t(clave("listoConPeros", sueltosQueFaltan), {
@@ -127,11 +125,11 @@ export function PilotoPreparacion() {
                 : t(clave("noListo", bloqueantesQueFaltan), {
                     n: String(bloqueantesQueFaltan),
                   })
-              : t("inmobiliaria.piloto.preparacion.descripcion")}
-          </SheetDescription>
-        </SheetHeader>
+              : t("inmobiliaria.piloto.preparacion.descripcion")
+          }
+        />
 
-        <div className="mt-5 space-y-3">
+        <CajonCuerpo className="space-y-3">
           {/* El esqueleto sale SIEMPRE que se está midiendo, no sólo la
               primera vez: al reabrir el panel tras cambiar la autonomía, la
               medición anterior seguía en pantalla y se leía como la nueva
@@ -218,7 +216,7 @@ export function PilotoPreparacion() {
                 </article>
               );
             })}
-        </div>
+        </CajonCuerpo>
       </SheetContent>
     </Sheet>
   );

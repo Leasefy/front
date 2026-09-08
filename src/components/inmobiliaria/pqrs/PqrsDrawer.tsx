@@ -17,7 +17,8 @@ import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
 import { Label } from '@/components/ui/label'
 import { Combobox } from '@/components/ui/combobox'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Cajon, CajonCuerpo } from '@/components/ui/cajon'
+import { SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { useAgentes } from '@/lib/hooks/useInmobiliaria'
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { ApiError } from '@/lib/api/client'
@@ -90,107 +91,108 @@ export function PqrsDrawer({ pqrs: entrante, open, onOpenChange, onActualizado }
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto" data-lenis-prevent>
-        {pqrs && (
-          <>
-            <SheetHeader className="space-y-1 border-b border-border pb-4">
-              <div className="flex items-center gap-2 pr-8">
-                <SheetTitle className="text-lg font-semibold text-fg">{pqrs.radicado}</SheetTitle>
-                <span
-                  className={cn(
-                    'inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium',
-                    ESTADO_BADGE[pqrs.estado],
-                  )}
-                  data-testid="pqrs-estado-badge"
-                >
-                  {ESTADO_LABEL[pqrs.estado]}
-                </span>
-              </div>
-              <SheetDescription className="text-sm text-fg-muted">
-                {TIPO_LABEL[pqrs.tipo]} · radicada el {fecha(pqrs.createdAt)}
-              </SheetDescription>
-            </SheetHeader>
-
-            <div className="mt-6 space-y-6">
-              <section className="space-y-2">
-                <h3 className="text-base font-medium text-fg">{pqrs.asunto}</h3>
-                {pqrs.descripcion ? (
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-fg-muted">{pqrs.descripcion}</p>
-                ) : (
-                  <p className="text-sm text-fg-subtle">Sin descripción.</p>
+    <Cajon abierto={open} onOpenChange={onOpenChange} ancho="sm:max-w-xl">
+      {pqrs && (
+        <>
+          {/* Cabecera fija: el radicado y el estado se quedan a la vista
+              mientras el cuerpo hace scroll. La insignia va al lado del título,
+              por eso no usa `CajonCabecera`. */}
+          <div className="flex-none border-b border-border px-6 py-5 pr-14">
+            <div className="flex items-center gap-2">
+              <SheetTitle className="text-lg font-semibold text-fg">{pqrs.radicado}</SheetTitle>
+              <span
+                className={cn(
+                  'inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium',
+                  ESTADO_BADGE[pqrs.estado],
                 )}
-              </section>
+                data-testid="pqrs-estado-badge"
+              >
+                {ESTADO_LABEL[pqrs.estado]}
+              </span>
+            </div>
+            <SheetDescription className="mt-0.5 text-sm text-fg-muted">
+              {TIPO_LABEL[pqrs.tipo]} · radicada el {fecha(pqrs.createdAt)}
+            </SheetDescription>
+          </div>
 
-              <dl className="grid grid-cols-1 gap-4 rounded-lg border border-border bg-surface-muted/40 p-4 sm:grid-cols-2">
-                <Dato etiqueta="Solicitante">
-                  <span className="font-medium">{pqrs.solicitanteNombre}</span>
-                  <span className="text-fg-muted"> · {SOLICITANTE_LABEL[pqrs.solicitanteTipo]}</span>
-                  {pqrs.solicitanteContacto && (
-                    <span className="block text-fg-muted">{pqrs.solicitanteContacto}</span>
-                  )}
-                </Dato>
-                <Dato etiqueta="Inmueble">
-                  {pqrs.inmuebleLabel ?? <span className="text-fg-subtle">Sin inmueble</span>}
-                </Dato>
-                <Dato etiqueta="Asignado a">
-                  {pqrs.asignadoANombre ?? <span className="text-fg-subtle">Sin asignar</span>}
-                </Dato>
-                <Dato etiqueta="Radicada el">{fecha(pqrs.createdAt)}</Dato>
-                <Dato etiqueta="SLA">
-                  {sla && (
-                    <span className={cn('tabular-nums', sla.vencido && 'text-danger font-medium')} data-testid="pqrs-sla">
-                      {sla.texto}
-                    </span>
-                  )}
-                  <span className="block text-fg-muted">vence el {fecha(pqrs.slaVenceAt)}</span>
-                </Dato>
-                {pqrs.resueltaAt && <Dato etiqueta="Resuelta el">{fecha(pqrs.resueltaAt)}</Dato>}
-                {pqrs.cerradaAt && <Dato etiqueta="Cerrada el">{fecha(pqrs.cerradaAt)}</Dato>}
-              </dl>
+          <CajonCuerpo className="space-y-6">
+            <section className="space-y-2">
+              <h3 className="text-base font-medium text-fg">{pqrs.asunto}</h3>
+              {pqrs.descripcion ? (
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-fg-muted">{pqrs.descripcion}</p>
+              ) : (
+                <p className="text-sm text-fg-subtle">Sin descripción.</p>
+              )}
+            </section>
 
-              <section className="space-y-4 border-t border-border pt-5">
-                <div className="space-y-1.5">
-                  <Label htmlFor="pqrs-mover">Estado</Label>
-                  {siguientes.length > 0 ? (
-                    <Combobox
-                      data-testid="pqrs-mover"
-                      options={siguientes.map((e) => ({ value: e, label: ESTADO_LABEL[e] }))}
-                      value={undefined}
-                      onChange={(v) => {
-                        if (v) void actualizar({ estado: v as PqrsEstado }, `Movida a ${ESTADO_LABEL[v as PqrsEstado]}`)
-                      }}
-                      placeholder={`${ESTADO_LABEL[pqrs.estado]} · mover a…`}
-                      searchPlaceholder="Estado"
-                      disabled={guardando}
-                      contentClassName="z-[400]"
-                    />
-                  ) : (
-                    <p className="text-sm text-fg-muted">Cerrada. Ya no admite cambios.</p>
-                  )}
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="pqrs-asignar">Asignar a</Label>
+            <dl className="grid grid-cols-1 gap-4 rounded-lg border border-border bg-surface-muted/40 p-4 sm:grid-cols-2">
+              <Dato etiqueta="Solicitante">
+                <span className="font-medium">{pqrs.solicitanteNombre}</span>
+                <span className="text-fg-muted"> · {SOLICITANTE_LABEL[pqrs.solicitanteTipo]}</span>
+                {pqrs.solicitanteContacto && (
+                  <span className="block text-fg-muted">{pqrs.solicitanteContacto}</span>
+                )}
+              </Dato>
+              <Dato etiqueta="Inmueble">
+                {pqrs.inmuebleLabel ?? <span className="text-fg-subtle">Sin inmueble</span>}
+              </Dato>
+              <Dato etiqueta="Asignado a">
+                {pqrs.asignadoANombre ?? <span className="text-fg-subtle">Sin asignar</span>}
+              </Dato>
+              <Dato etiqueta="Radicada el">{fecha(pqrs.createdAt)}</Dato>
+              <Dato etiqueta="SLA">
+                {sla && (
+                  <span className={cn('tabular-nums', sla.vencido && 'text-danger font-medium')} data-testid="pqrs-sla">
+                    {sla.texto}
+                  </span>
+                )}
+                <span className="block text-fg-muted">vence el {fecha(pqrs.slaVenceAt)}</span>
+              </Dato>
+              {pqrs.resueltaAt && <Dato etiqueta="Resuelta el">{fecha(pqrs.resueltaAt)}</Dato>}
+              {pqrs.cerradaAt && <Dato etiqueta="Cerrada el">{fecha(pqrs.cerradaAt)}</Dato>}
+            </dl>
+
+            <section className="space-y-4 border-t border-border pt-5">
+              <div className="space-y-1.5">
+                <Label htmlFor="pqrs-mover">Estado</Label>
+                {siguientes.length > 0 ? (
                   <Combobox
-                    data-testid="pqrs-asignar"
-                    options={opcionesAgente}
-                    value={pqrs.asignadoAUserId ?? undefined}
+                    data-testid="pqrs-mover"
+                    options={siguientes.map((e) => ({ value: e, label: ESTADO_LABEL[e] }))}
+                    value={undefined}
                     onChange={(v) => {
-                      if (v === (pqrs.asignadoAUserId ?? undefined)) return
-                      const nombre = opcionesAgente.find((o) => o.value === v)?.label
-                      void actualizar({ asignadoAUserId: v ?? null }, nombre ? `Asignada a ${nombre}` : 'Sin asignar')
+                      if (v) void actualizar({ estado: v as PqrsEstado }, `Movida a ${ESTADO_LABEL[v as PqrsEstado]}`)
                     }}
-                    placeholder={opcionesAgente.length ? 'Elegir un responsable' : 'Sin agentes activos'}
-                    searchPlaceholder="Nombre del agente"
-                    disabled={guardando || opcionesAgente.length === 0 || pqrs.estado === 'CERRADA'}
+                    placeholder={`${ESTADO_LABEL[pqrs.estado]} · mover a…`}
+                    searchPlaceholder="Estado"
+                    disabled={guardando}
                     contentClassName="z-[400]"
                   />
-                </div>
-              </section>
-            </div>
-          </>
-        )}
-      </SheetContent>
-    </Sheet>
+                ) : (
+                  <p className="text-sm text-fg-muted">Cerrada. Ya no admite cambios.</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="pqrs-asignar">Asignar a</Label>
+                <Combobox
+                  data-testid="pqrs-asignar"
+                  options={opcionesAgente}
+                  value={pqrs.asignadoAUserId ?? undefined}
+                  onChange={(v) => {
+                    if (v === (pqrs.asignadoAUserId ?? undefined)) return
+                    const nombre = opcionesAgente.find((o) => o.value === v)?.label
+                    void actualizar({ asignadoAUserId: v ?? null }, nombre ? `Asignada a ${nombre}` : 'Sin asignar')
+                  }}
+                  placeholder={opcionesAgente.length ? 'Elegir un responsable' : 'Sin agentes activos'}
+                  searchPlaceholder="Nombre del agente"
+                  disabled={guardando || opcionesAgente.length === 0 || pqrs.estado === 'CERRADA'}
+                  contentClassName="z-[400]"
+                />
+              </div>
+            </section>
+          </CajonCuerpo>
+        </>
+      )}
+    </Cajon>
   )
 }

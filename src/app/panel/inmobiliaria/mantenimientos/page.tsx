@@ -32,13 +32,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SegmentedControl } from '@leasefy/cadence';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
+import { Cajon, CajonCabecera } from '@/components/ui/cajon';
 import type {
   Renovacion,
   SolicitudMantenimiento,
@@ -821,28 +815,20 @@ function OperacionesContent() {
       />
 
       {/* Mantenimiento Form Sheet */}
-      <Sheet open={isMantenimientoFormOpen} onOpenChange={setIsMantenimientoFormOpen}>
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
-          {/* Cabecera del tamaño de los demás drawers (`text-lg`), no el título
-              gigante por defecto del DS (Nico, 2026-09-03). */}
-          <SheetHeader className="space-y-1 border-b border-border pb-4">
-            <SheetTitle className="text-lg font-semibold text-fg">
-              {t('inmobiliaria.operaciones.maintenance.newRequest')}
-            </SheetTitle>
-            <SheetDescription className="text-sm text-fg-muted">
-              {t('inmobiliaria.operaciones.maintenance.newRequestDesc')}
-            </SheetDescription>
-          </SheetHeader>
-          <div className="mt-4">
-            <MantenimientoForm
-              consignaciones={rentedConsignaciones}
-              onSubmit={handleMantenimientoFormSubmit}
-              onCancel={handleMantenimientoFormCancel}
-              isSubmitting={isSubmittingMantenimiento}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* El cajón de la casa: cabecera fija, cuerpo con scroll, pie fijo con
+          «Crear solicitud» y lo que falta (Nico, 2026-09-08). */}
+      <Cajon abierto={isMantenimientoFormOpen} onOpenChange={setIsMantenimientoFormOpen} data-testid="nueva-solicitud-cajon">
+        <CajonCabecera
+          titulo={t('inmobiliaria.operaciones.maintenance.newRequest')}
+          descripcion={t('inmobiliaria.operaciones.maintenance.newRequestDesc')}
+        />
+        <MantenimientoForm
+          consignaciones={rentedConsignaciones}
+          onSubmit={handleMantenimientoFormSubmit}
+          onCancel={handleMantenimientoFormCancel}
+          isSubmitting={isSubmittingMantenimiento}
+        />
+      </Cajon>
     </div>
   );
 }

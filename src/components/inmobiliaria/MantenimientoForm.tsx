@@ -15,7 +15,6 @@ import {
   X,
   Upload,
   Check,
-  Info,
   User,
   MapPin,
   MagnifyingGlass,
@@ -25,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button, Input, Textarea } from '@/components/ui';
 import { IconButton, RadioCardGroup, RadioCard } from '@leasefy/cadence';
+import { CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import type {
   Consignacion,
   MantenimientoType,
@@ -45,7 +45,6 @@ export interface MantenimientoFormData {
   description: string;
   photoUrls?: string[];
   paidBy: MantenimientoPaidBy;
-  accessNotes?: string;
 }
 
 interface MantenimientoFormProps {
@@ -75,25 +74,25 @@ const PRIORITY_OPTIONS: { value: MantenimientoPriority; labelKey: string; descKe
     value: 'low',
     labelKey: 'inmobiliaria.mantenimiento.priorityLow',
     descKey: 'inmobiliaria.mantenimiento.priorityLowDesc',
-    color: 'border-fg-muted bg-surface-muted dark:bg-surface-muted',
+    color: '',
   },
   {
     value: 'medium',
     labelKey: 'inmobiliaria.mantenimiento.priorityMedium',
     descKey: 'inmobiliaria.mantenimiento.priorityMediumDesc',
-    color: 'border-primary/30 bg-primary-soft',
+    color: '',
   },
   {
     value: 'high',
     labelKey: 'inmobiliaria.mantenimiento.priorityHigh',
     descKey: 'inmobiliaria.mantenimiento.priorityHighDesc',
-    color: 'border-warning/30 bg-warning-soft',
+    color: '',
   },
   {
     value: 'emergency',
     labelKey: 'inmobiliaria.mantenimiento.priorityEmergency',
     descKey: 'inmobiliaria.mantenimiento.priorityEmergencyDesc',
-    color: 'border-danger/30 bg-danger-soft',
+    color: '',
   },
 ];
 
@@ -448,17 +447,11 @@ function PaidBySelector({ selected, onSelect, t }: PaidBySelectorProps) {
         {t('inmobiliaria.mantenimiento.paymentResponsible')} <span className="text-danger">*</span>
       </label>
 
-      <div className="p-4 rounded-lg bg-primary-soft border border-primary/30 mb-4">
-        <div className="flex gap-3">
-          <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-          <p className="text-sm text-primary">
-            {t('inmobiliaria.mantenimiento.paymentInfo')}
-          </p>
-        </div>
-      </div>
-
+      {/* Dos columnas: en cuatro, cada tarjeta quedaba de una palabra por
+          línea (Nico, 2026-09-08: «se ve super estrecho»). El aviso de
+          «se determinará según el contrato» se fue: contradecía al campo. */}
       <RadioCardGroup
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+        className="grid grid-cols-1 sm:grid-cols-2 gap-3"
         value={selected}
         onValueChange={(v) => onSelect(v as MantenimientoPaidBy)}
       >
@@ -500,7 +493,6 @@ export function MantenimientoForm({
     description: string;
     photoUrls: string[];
     paidBy: MantenimientoPaidBy;
-    accessNotes: string;
   }>({
     consignacionId: preselectedConsignacionId || '',
     type: '',
@@ -509,7 +501,6 @@ export function MantenimientoForm({
     description: '',
     photoUrls: [],
     paidBy: 'owner',
-    accessNotes: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -575,14 +566,28 @@ export function MantenimientoForm({
       description: formData.description,
       photoUrls: formData.photoUrls.length > 0 ? formData.photoUrls : undefined,
       paidBy: formData.paidBy,
-      accessNotes: formData.accessNotes || undefined,
     });
   };
 
-  const selectedConsignacion = consignaciones.find((c) => c.id === formData.consignacionId);
+  // Lo que falta se dice en el pie mientras se llena, y el botón espera:
+  // antes se podía dar «Crear» con todo vacío y el error salía después.
+  const faltantes: string[] = [];
+  if (!formData.consignacionId) faltantes.push('el inmueble');
+  if (!formData.type) faltantes.push('el tipo');
+  if (!formData.priority) faltantes.push('la prioridad');
+  if (formData.title.trim().length < 5) faltantes.push('un título de al menos 5 letras');
+  if (formData.description.trim().length < 20) faltantes.push('una descripción de al menos 20 letras');
+  const loQueFalta =
+    faltantes.length === 0
+      ? null
+      : faltantes.length === 1
+        ? `Te falta ${faltantes[0]}.`
+        : `Te falta ${faltantes.slice(0, -1).join(', ')} y ${faltantes[faltantes.length - 1]}.`;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="contents">
+      <CajonCuerpo>
+      <div className="space-y-8">
       {/* Section 1: Property Selection */}
       <div className="space-y-4">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
@@ -725,32 +730,13 @@ export function MantenimientoForm({
         />
       </div>
 
-      {/* Section 4: Additional Info */}
-      <div className="space-y-6 pt-6 border-t border-border-faint dark:border-border-strong">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
-          <Info className="h-4 w-4 text-fg-muted" />
-          {t('inmobiliaria.mantenimiento.additionalInfo')}
-        </h3>
-
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
-            {t('inmobiliaria.mantenimiento.accessInstructions')}
-          </label>
-          <Textarea
-            value={formData.accessNotes}
-            onChange={(e) => updateField('accessNotes', e.target.value)}
-            rows={3}
-            placeholder={t('inmobiliaria.mantenimiento.accessPlaceholder')}
-            className="w-full resize-none"
-          />
-        </div>
       </div>
+      </CajonCuerpo>
 
-      {/* Actions */}
-      <div className="flex items-center justify-end gap-3 pt-6 border-t border-border-faint dark:border-border-strong">
+      <CajonPie ayuda={loQueFalta ? <span data-testid="mantenimiento-falta">{loQueFalta}</span> : null}>
         <Button
           type="button"
-          variant="secondary"
+          variant="outline"
           hideArrow
           onClick={onCancel}
           disabled={isSubmitting}
@@ -760,19 +746,14 @@ export function MantenimientoForm({
         <Button
           type="submit"
           hideArrow
-          disabled={isSubmitting}
+          disabled={isSubmitting || faltantes.length > 0}
           isLoading={isSubmitting}
+          data-testid="mantenimiento-crear"
         >
-          {isSubmitting ? (
-            t('inmobiliaria.mantenimiento.creating')
-          ) : (
-            <>
-              <Check className="w-5 h-5" />
-              {t('inmobiliaria.mantenimiento.createRequest')}
-            </>
-          )}
+          <Check className="w-5 h-5" />
+          {isSubmitting ? t('inmobiliaria.mantenimiento.creating') : t('inmobiliaria.mantenimiento.createRequest')}
         </Button>
-      </div>
+      </CajonPie>
     </form>
   );
 }

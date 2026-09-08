@@ -318,6 +318,9 @@ const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
     'Tile de foto y celda de dropzone: cuadrados que se llenan de imagen.',
   'components/inmobiliaria/MantenimientoViewer.tsx':
     'Tile de imagen y celda de dropzone (ya traían comentario de allowlist propio).',
+  'components/inmobiliaria/cobranza/CobranzaImportCard.tsx':
+    '`<input type="file" className="sr-only">` detrás de un `<label>` dropzone propio: ' +
+    'el «Choose File / No file chosen» del navegador salía en inglés y con su dibujo.',
   'components/inmobiliaria/pagos/PagosHomeAttentionList.tsx':
     'La fila entera de la bandeja es clickeable.',
   'components/inmobiliaria/ActaEntregaView.tsx':

@@ -193,7 +193,7 @@ export default function BandejaClient() {
         <EmptyState
           icon={Warning}
           title="No hay casos en este filtro."
-          description="Probá con otra pestaña o cambiá lo que escribiste en la búsqueda."
+          description="Prueba con otra pestaña o cambia lo que escribiste en la búsqueda."
         />
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border">

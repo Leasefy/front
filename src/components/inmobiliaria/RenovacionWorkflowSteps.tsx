@@ -370,7 +370,7 @@ ${agencyName || ''}`.trimEnd();
             </div>
             <p className="text-xs text-muted-foreground">
               El tope legal de aumento en vivienda es el IPC del año calendario
-              anterior. El sistema no lo trae solo: escribí el que publicó el DANE.
+              anterior. El sistema no lo trae solo: escribe el que publicó el DANE.
             </p>
           </div>
           <div className="space-y-1.5">

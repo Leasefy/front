@@ -26,7 +26,7 @@ export function DigestView({ digest }: { digest: Digest }) {
         title="Resumen mensual"
         subtitle="Tu recaudo, ocupación y novedades del mes."
         icon={Bell}
-        emptyDescription="Este resumen todavía se está generando. Volvé a intentarlo en unos minutos."
+        emptyDescription="Este resumen todavía se está generando. Vuelve a intentarlo en unos minutos."
       />
     );
   }

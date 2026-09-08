@@ -56,7 +56,7 @@ describe('periodo — validarRango', () => {
   })
 
   it('rechaza meses a medio escribir', () => {
-    expect(validarRango('', '2026-04')).toMatch(/Elegí/)
-    expect(validarRango('2026-13', '2026-04')).toMatch(/Elegí/)
+    expect(validarRango('', '2026-04')).toMatch(/Elige/)
+    expect(validarRango('2026-13', '2026-04')).toMatch(/Elige/)
   })
 })

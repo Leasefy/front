@@ -98,7 +98,7 @@ const VACIO_POR_PESTANA: Record<EstadoDelMovimientoBancario, { titulo: string; d
   PENDIENTE: {
     titulo: 'Nada pendiente de conciliar',
     descripcion:
-      'Cargá el extracto del banco y acá aparecen las líneas con los cobros que se les parecen.',
+      'Carga el extracto del banco y acá aparecen las líneas con los cobros que se les parecen.',
   },
   CONCILIADO: {
     titulo: 'Todavía no hay movimientos conciliados',
@@ -416,7 +416,7 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
             <AlertDialogDescription>
               Se emite un recibo de caja por cada línea que tiene un solo cobro con el valor exacto y el
               nombre o la dirección en la descripción. Lo que tenga dudas queda pendiente para que lo
-              mires vos. El lote corre sobre TODOS los movimientos pendientes, no sólo sobre los de
+              mires tú. El lote corre sobre TODOS los movimientos pendientes, no sólo sobre los de
               esta página.
             </AlertDialogDescription>
           </AlertDialogHeader>

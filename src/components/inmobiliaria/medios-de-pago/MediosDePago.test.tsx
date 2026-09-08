@@ -171,10 +171,10 @@ describe('MediosDePago — la lista', () => {
 
   it('si el back rechaza el switch, el mensaje sale por toast', async () => {
     listarMock.mockResolvedValueOnce([medio()]);
-    actualizarMock.mockRejectedValueOnce(new Error('No tenés permiso para editar la configuración.'));
+    actualizarMock.mockRejectedValueOnce(new Error('No tienes permiso para editar la configuración.'));
     await montar();
     await clic($('[data-testid="activo-m1"]'));
-    expect(toastMock.error).toHaveBeenCalledWith('No tenés permiso para editar la configuración.');
+    expect(toastMock.error).toHaveBeenCalledWith('No tienes permiso para editar la configuración.');
   });
 
   it('bajar un medio manda el orden completo a PUT /orden', async () => {
@@ -208,7 +208,7 @@ describe('MediosDePago — el estado vacío y las sugerencias', () => {
     listarMock.mockResolvedValueOnce([]);
     crearMock.mockResolvedValueOnce(medio({ id: 'm-ef', tipo: 'EFECTIVO', nombre: 'Efectivo en la oficina' }));
     await montar();
-    expect($('[data-testid="medios-vacio"]').textContent).toContain('Todavía no tenés medios de pago');
+    expect($('[data-testid="medios-vacio"]').textContent).toContain('Todavía no tienes medios de pago');
     await clic(botonConTexto('Usar este medio', $('[data-testid="sugerencia-efectivo"]')));
     expect(crearMock).toHaveBeenCalledWith({ tipo: 'EFECTIVO', nombre: 'Efectivo en la oficina' });
     expect(document.body.querySelector('[data-testid="medios-vacio"]')).toBeNull();

@@ -14,8 +14,8 @@
  *
  * ⚠️ Acá vivía una nota que decía que `physicalSendMethod` y `sentToAddress`
  *   se aceptaban «para la compuerta de la UI» pero NO viajaban. Eso convertía
- *   el formulario en una mentira: el panel no deja aprobar hasta que elegís
- *   método de envío y escribís la dirección a la que se manda una carta
+ *   el formulario en una mentira: el panel no deja aprobar hasta que eliges
+ *   método de envío y escribes la dirección a la que se manda una carta
  *   PREJURÍDICA, y después los tiraba. Las dos columnas quedaban NULL y la
  *   tabla de Cartas mostraba «—» en «Método de envío» para todas las filas.
  *   Desde 2026-08-10 viajan y el agente las persiste y las deja en `audit_log`.

@@ -30,7 +30,7 @@ void React
 interface PauseModalProps {
   /**
    * `reanudar` manda `paused_until: null`, que es como el agente entiende
-   * «volvé a trabajar este caso». Es la MISMA puerta que pausar —mismo
+   * «vuelve a trabajar este caso». Es la MISMA puerta que pausar —mismo
    * endpoint, mismo permiso, mismo motivo obligatorio— porque las dos son la
    * misma decisión y las dos tienen que quedar en la bitácora.
    */

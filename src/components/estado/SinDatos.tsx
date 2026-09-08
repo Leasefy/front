@@ -8,10 +8,10 @@
  * decía igual:
  *
  *   «Todavía no hay inmuebles»  → nunca creaste uno. Lo útil es crear el primero.
- *   «Todavía no hay inmuebles»  → tenés 200, pero ninguno coincide con lo que
+ *   «Todavía no hay inmuebles»  → tienes 200, pero ninguno coincide con lo que
  *                                 buscaste. Lo útil es limpiar el filtro.
  *
- * Decirle «no tenés inmuebles» a alguien que tiene 200 es afirmar algo falso, y
+ * Decirle «no tienes inmuebles» a alguien que tiene 200 es afirmar algo falso, y
  * además lo deja sin salida: el botón que necesita —limpiar la búsqueda— no
  * está. Nico lo reportó al revés: una pantalla sin nada creado que en vez de
  * invitar a crear mostraba un error.
@@ -73,10 +73,10 @@ export function SinDatos({
 
   const tituloFinal = hayFiltros
     ? `Ningún resultado`
-    : (titulo ?? `Todavía no tenés ${queSon}`)
+    : (titulo ?? `Todavía no tienes ${queSon}`)
 
   const descripcionFinal = hayFiltros
-    ? `Ningún ${queSon.replace(/e?s$/, '')} coincide con lo que buscaste. Probá con otra búsqueda o quitá los filtros.`
+    ? `Ningún ${queSon.replace(/e?s$/, '')} coincide con lo que buscaste. Prueba con otra búsqueda o quita los filtros.`
     : (descripcion ?? `Cuando agregues el primero, aparece acá.`)
 
   return (

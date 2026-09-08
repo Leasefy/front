@@ -141,7 +141,7 @@ export function AcuerdosTabla({
           <p className="text-xs text-fg-muted max-w-sm">
             {filtro === 'todos'
               ? 'Acá aparece lo que cada deudor se comprometió a pagar: lo que el agente registra en una llamada y los planes de cuotas que armes.'
-              : 'Cambiá el filtro para ver los demás.'}
+              : 'Cambia el filtro para ver los demás.'}
           </p>
         </div>
       ) : (

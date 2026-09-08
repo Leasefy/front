@@ -64,7 +64,7 @@ export default function AuditsPage() {
     try {
       const sb = getSupabase()
       const token = sb ? (await sb.auth.getSession()).data.session?.access_token : null
-      if (!token) throw new Error('Sesión expirada — volvé a iniciar sesión.')
+      if (!token) throw new Error('Sesión expirada — vuelve a iniciar sesión.')
       const exportUrl = adminApiUrl('/audits/export.csv', {
         type:   type   || undefined,
         tenant: tenant || undefined,
@@ -229,7 +229,7 @@ export default function AuditsPage() {
         isLoading={events.isLoading}
         error={events.error}
         emptyTitle="Sin eventos"
-        emptyHint="Ajustá los filtros."
+        emptyHint="Ajusta los filtros."
       />
 
       {events.data && (

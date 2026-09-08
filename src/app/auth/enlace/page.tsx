@@ -26,9 +26,7 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { ArrowRight } from '@phosphor-icons/react'
-
-import { LeasefyLogo } from '@/components/brand'
+import { LeasefyLogotype } from '@/components/brand/LeasefySymbol'
 import { Button } from '@/components/ui/button'
 import { ForceLightMode } from '@/components/providers/ForceLightMode'
 import { getSupabase } from '@/lib/supabase/client'
@@ -47,26 +45,60 @@ function EnlaceContent() {
       return
     }
 
-    // Un error explícito viaja en el mismo fragmento (enlace vencido o ya
-    // usado). Decirlo es mejor que quedarse girando.
-    if (typeof window !== 'undefined' && window.location.hash) {
-      const crudo = window.location.hash.replace(/^#/, '')
-      const params = new URLSearchParams(crudo)
-      const codigo = params.get('error') ?? params.get('error_code')
-      if (codigo) {
-        setError(
-          params.get('error_description') ??
-            'El enlace ya no sirve. Pedí que te lo reenvíen.',
-        )
-        return
-      }
-    }
-
     let navegado = false
     const ir = () => {
       if (navegado) return
       navegado = true
       window.location.href = destino
+    }
+
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const crudo = window.location.hash.replace(/^#/, '')
+      const params = new URLSearchParams(crudo)
+
+      // Un error explícito viaja en el mismo fragmento (enlace vencido o ya
+      // usado). Decirlo es mejor que quedarse girando.
+      const codigo = params.get('error_code') ?? params.get('error')
+      if (codigo) {
+        // Supabase manda la descripción en inglés («Email link is invalid or
+        // has expired»); acá se traduce por código y no se muestra la cruda
+        // (Nico, 2026-09-07).
+        setError(
+          codigo === 'otp_expired'
+            ? 'El enlace ya venció o ya se usó. Si era el de confirmar tu correo, entra con tu correo y contraseña y te ofrecemos uno nuevo.'
+            : 'El enlace no es válido. Si era el de confirmar tu correo, entra con tu correo y contraseña y te ofrecemos uno nuevo.',
+        )
+        return
+      }
+
+      // Flujo implícito (invitaciones y enlaces generados desde el admin):
+      // los tokens vienen en el fragmento. El cliente está en modo PKCE y a
+      // esos NO los canjea solo —auth-js los rechaza como «Not a valid PKCE
+      // flow url»—, así que la sesión se abre a mano. Sin esto un enlace
+      // válido terminaba en «No pudimos abrir el enlace» a los 8 segundos
+      // (visto el 2026-09-07 con un enlace de confirmación del admin).
+      const accessToken = params.get('access_token')
+      const refreshToken = params.get('refresh_token')
+      if (accessToken && refreshToken) {
+        let vigente = true
+        const noSePudo = () =>
+          setError(
+            'No pudimos abrir sesión desde este enlace. Pide que te lo reenvíen, o entra con tu correo y contraseña si ya tienes una.',
+          )
+        sb.auth
+          .setSession({ access_token: accessToken, refresh_token: refreshToken })
+          .then(({ error: fallo }) => {
+            if (!vigente) return
+            if (fallo) noSePudo()
+            else ir()
+          })
+          .catch(() => {
+            if (vigente) noSePudo()
+          })
+        return () => {
+          vigente = false
+        }
+      }
     }
 
     const {
@@ -77,8 +109,12 @@ function EnlaceContent() {
 
     const red = setTimeout(() => {
       if (!navegado) {
+        // El enlace de confirmación del registro sólo abre sesión en el
+        // navegador donde se creó la cuenta (PKCE). Abierto desde el celular,
+        // acá no hay sesión, pero la cuenta SÍ quedó confirmada: decirlo
+        // evita que la persona pida otro enlace que va a fallar igual.
         setError(
-          'No pudimos verificar el enlace. Puede haber vencido o ya haberse usado — pedí que te lo reenvíen.',
+          'No pudimos abrir sesión desde este enlace. Si estabas confirmando tu correo desde otro dispositivo, la cuenta ya quedó confirmada: inicia sesión con tu contraseña. Si el enlace venció o ya se usó, pide que te lo reenvíen.',
         )
       }
     }, 8000)
@@ -94,8 +130,9 @@ function EnlaceContent() {
     <ForceLightMode>
       <div className="min-h-screen bg-bg flex items-center justify-center px-4">
         <div className="w-full max-w-[400px] text-center">
-          <div className="flex justify-center mb-8">
-            <LeasefyLogo size={28} tone="brand" />
+          {/* El mismo logotipo que el resto de las pantallas de acceso: el símbolo azul suelto no es la marca (Nico, 2026-09-07). */}
+          <div className="mb-8 flex justify-center">
+            <LeasefyLogotype size={24} className="text-fg" title="Leasefy" />
           </div>
 
           {error ? (
@@ -104,11 +141,9 @@ function EnlaceContent() {
                 No pudimos abrir el enlace
               </h1>
               <p className="text-sm text-fg-muted mb-6">{error}</p>
-              <Button asChild className="w-full">
-                <a href="/auth">
-                  Ir a iniciar sesión
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </a>
+              {/* Sin flecha propia: el Button del producto ya trae la suya y acá salían dos (Nico, 2026-09-07). */}
+              <Button asChild className="h-12 w-full rounded-full text-[14px]">
+                <a href="/auth">Ir a iniciar sesión</a>
               </Button>
             </>
           ) : (

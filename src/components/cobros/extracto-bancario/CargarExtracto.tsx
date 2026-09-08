@@ -201,7 +201,7 @@ export function CargarExtracto({ onCargado }: Props) {
 
           {faltan.length > 0 ? (
             <Banner variant="warning" title="Falta indicar una columna">
-              Sin {faltan.join(', ')} no hay cómo cargar el extracto. Elegí la columna del archivo que la trae.
+              Sin {faltan.join(', ')} no hay cómo cargar el extracto. Elige la columna del archivo que la trae.
             </Banner>
           ) : (
             <>

@@ -257,7 +257,7 @@ export default function CarteraStagePage() {
         isLoading={result.isLoading}
         error={result.error}
         emptyTitle={`Sin deudores en ${stage}`}
-        emptyHint={tenant ? 'Probá quitando el filtro de inmobiliaria.' : undefined}
+        emptyHint={tenant ? 'Prueba quitando el filtro de inmobiliaria.' : undefined}
       />
 
       {result.data && (

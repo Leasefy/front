@@ -3,7 +3,7 @@
 /**
  * Medios de pago de la inmobiliaria — la pestaña de configuración.
  *
- * Es lo que la inmobiliaria le muestra al inquilino («transferí acá», «pagá
+ * Es lo que la inmobiliaria le muestra al inquilino («transfiere acá», «paga
  * por este enlace») y lo que alimenta el selector de medio del recibo de
  * caja. Un medio no se borra: se apaga, porque los recibos viejos lo nombran.
  *
@@ -183,8 +183,8 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
         <div className="space-y-5" data-testid="medios-vacio">
           <EmptyState
             icon={Wallet}
-            title="Todavía no tenés medios de pago"
-            description="Sin medios, el inquilino no sabe a dónde pagarte y el recibo de caja usa la lista genérica. Empezá con los dos de siempre, o armá el tuyo."
+            title="Todavía no tienes medios de pago"
+            description="Sin medios, el inquilino no sabe a dónde pagarte y el recibo de caja usa la lista genérica. Empieza con los dos de siempre, o arma el tuyo."
             action={puedeEditar ? { label: 'Crear un medio', onClick: abrirNuevo } : undefined}
           />
           {puedeEditar && (

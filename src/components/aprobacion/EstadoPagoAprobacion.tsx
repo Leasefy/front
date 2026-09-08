@@ -109,7 +109,7 @@ export function EstadoPagoAprobacion({
         icon={<EnvelopeSimple className="w-6 h-6 text-primary" aria-hidden="true" />}
         tono="primary"
         titulo="Pago confirmado"
-        descripcion="Te enviamos un correo para autorizar y completar tu estudio — tenés 48 horas."
+        descripcion="Te enviamos un correo para autorizar y completar tu estudio — tienes 48 horas."
       >
         <Button asChild className="w-full">
           <Link href="/inquilino/aprobacion">Ver mi aprobación</Link>
@@ -141,8 +141,8 @@ export function EstadoPagoAprobacion({
         >
           <ArrowSquareOut className="w-3.5 h-3.5" aria-hidden="true" />
           {popupBlocked
-            ? 'No se abrió la pestaña — abrí el pago acá'
-            : '¿No ves la pestaña? Abrila de nuevo'}
+            ? 'No se abrió la pestaña — abre el pago acá'
+            : '¿No ves la pestaña? Ábrela de nuevo'}
         </a>
       )}
       <Button variant="ghost" size="sm" hideArrow onClick={() => refetch()} className="mt-1">

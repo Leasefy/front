@@ -61,7 +61,7 @@ async function apiFetch(input: RequestInfo, init?: RequestInit): Promise<Respons
     res = await fetch(input, init)
   } catch {
     throw new AvaluoApiError(
-      'No fue posible conectar con el servicio de avalúos. Verificá tu conexión e intentá de nuevo.',
+      'No fue posible conectar con el servicio de avalúos. Verifica tu conexión e intenta de nuevo.',
       0
     )
   }
@@ -92,14 +92,14 @@ function statusMessage(status: number, body: Record<string, unknown> | null): st
       return 'El certificado no está en el estado esperado para esta operación.'
     case 422: {
       const detail = typeof body?.detail === 'string' ? body.detail : null
-      return detail ?? 'Los datos enviados no son válidos. Revisá el formulario.'
+      return detail ?? 'Los datos enviados no son válidos. Revisa el formulario.'
     }
     case 429:
-      return 'Demasiadas solicitudes. Por favor, intentá de nuevo en unos minutos.'
+      return 'Demasiadas solicitudes. Por favor, intenta de nuevo en unos minutos.'
     case 503:
-      return 'El servicio de avalúos no está disponible en este momento. Intentá más tarde.'
+      return 'El servicio de avalúos no está disponible en este momento. Intenta más tarde.'
     default:
-      return `Error inesperado del servidor (${status}). Intentá de nuevo.`
+      return `Error inesperado del servidor (${status}). Intenta de nuevo.`
   }
 }
 
@@ -249,7 +249,7 @@ export async function uploadPhoto(
     })
   } catch {
     throw new AvaluoApiError(
-      `No fue posible subir "${file.name}". Verificá tu conexión.`,
+      `No fue posible subir "${file.name}". Verifica tu conexión.`,
       0
     )
   }
@@ -311,7 +311,7 @@ export async function downloadCertificate(
     res = await fetch(url)
   } catch {
     throw new AvaluoApiError(
-      'No fue posible descargar el certificado. Verificá tu conexión.',
+      'No fue posible descargar el certificado. Verifica tu conexión.',
       0
     )
   }

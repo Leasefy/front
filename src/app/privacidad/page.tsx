@@ -96,7 +96,7 @@ export default function PrivacidadPage() {
                   Leasefy es una plataforma de administración de arriendos que usan
                   inmobiliarias en Colombia. Esta política explica qué datos
                   personales tratamos, para qué, con quién los compartimos y qué
-                  podés hacer al respecto.
+                  puedes hacer al respecto.
                 </p>
                 <p className="mb-3">
                   <strong className="text-foreground/90">Operamos únicamente en Colombia.</strong>{" "}
@@ -141,7 +141,7 @@ export default function PrivacidadPage() {
                 <p>
                   Aun así te explicamos acá cómo cuidamos esos datos, porque
                   escondernos detrás del rol de encargado no te serviría de nada. Si
-                  no sabés cuál inmobiliaria administra tu contrato, escribinos y te
+                  no sabes cuál inmobiliaria administra tu contrato, escríbenos y te
                   lo decimos.
                 </p>
               </section>
@@ -157,29 +157,29 @@ export default function PrivacidadPage() {
                 </p>
 
                 <h3 className="text-[15px] font-medium text-foreground mb-2">
-                  3.1. Si te postulás a un arriendo
+                  3.1. Si te postulas a un arriendo
                 </h3>
                 <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-4">
                   <li>Identificación: nombre, tipo y número de documento, fecha de nacimiento, estado civil y número de personas a cargo.</li>
                   <li>Contacto: teléfono, correo y dirección actual.</li>
                   <li>Laborales y de ingresos: empleador, cargo, antigüedad, salario, otros ingresos y obligaciones mensuales.</li>
-                  <li>Documentos que subís: cédula, desprendibles de pago, extractos bancarios, carta laboral. Guardamos el archivo y también el texto que extraemos de él.</li>
-                  <li>Referencias que aportás: arrendadores anteriores, referencias laborales y personales.</li>
-                  <li>Historial crediticio, cuando autorizás la consulta (ver §5).</li>
+                  <li>Documentos que subes: cédula, desprendibles de pago, extractos bancarios, carta laboral. Guardamos el archivo y también el texto que extraemos de él.</li>
+                  <li>Referencias que aportas: arrendadores anteriores, referencias laborales y personales.</li>
+                  <li>Historial crediticio, cuando autorizas la consulta (ver §5).</li>
                 </ul>
 
                 <h3 className="text-[15px] font-medium text-foreground mb-2">
-                  3.2. Si sos propietario
+                  3.2. Si eres propietario
                 </h3>
                 <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-4">
                   <li>Identificación y contacto.</li>
                   <li>Datos bancarios para recibir los giros: banco, tipo y número de cuenta, y titular.</li>
                   <li>Perfil tributario, para calcular las retenciones.</li>
-                  <li>Los inmuebles que administrás y su historial.</li>
+                  <li>Los inmuebles que administras y su historial.</li>
                 </ul>
 
                 <h3 className="text-[15px] font-medium text-foreground mb-2">
-                  3.3. Si tenés un pago en mora
+                  3.3. Si tienes un pago en mora
                 </h3>
                 <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-4">
                   <li>Identificación, teléfonos y correo.</li>
@@ -189,18 +189,18 @@ export default function PrivacidadPage() {
                 </ul>
 
                 <h3 className="text-[15px] font-medium text-foreground mb-2">
-                  3.4. Si sos codeudor, fiador o referencia
+                  3.4. Si eres codeudor, fiador o referencia
                 </h3>
                 <p className="mb-4 text-muted-foreground">
                   Puede que estemos tratando tus datos porque otra persona los
                   aportó al postularse, y que te contactemos por teléfono. Quien te
-                  incluyó debía tener tu permiso. Si no lo diste, escribinos a{" "}
+                  incluyó debía tener tu permiso. Si no lo diste, escríbenos a{" "}
                   <span className="text-foreground/85 font-medium">privacidad@leasefy.co</span>{" "}
                   y los sacamos.
                 </p>
 
                 <h3 className="text-[15px] font-medium text-foreground mb-2">
-                  3.5. Si sólo visitás el sitio
+                  3.5. Si sólo visitas el sitio
                 </h3>
                 <p className="text-muted-foreground">
                   Datos técnicos de la conexión y de tu navegador. Ver §10.
@@ -228,8 +228,8 @@ export default function PrivacidadPage() {
                     para verificar que cumplimos las reglas de cobranza.
                   </li>
                   <li>
-                    <strong className="text-foreground/85">Podés pedir que no te llamemos más.</strong>{" "}
-                    Decilo durante la llamada, o respondé el mensaje de WhatsApp
+                    <strong className="text-foreground/85">Puedes pedir que no te llamemos más.</strong>{" "}
+                    Decilo durante la llamada, o responde el mensaje de WhatsApp
                     pidiendo la baja. Queda registrado y deja de usarse ese canal.
                   </li>
                 </ul>
@@ -252,14 +252,14 @@ export default function PrivacidadPage() {
                   El estudio de una postulación puede incluir la consulta de tu
                   historial en <strong className="text-foreground/90">DataCrédito (Experian)</strong> y{" "}
                   <strong className="text-foreground/90">TransUnion</strong>. Esa consulta{" "}
-                  <strong className="text-foreground/90">sólo ocurre si la autorizás</strong>,
+                  <strong className="text-foreground/90">sólo ocurre si la autorizas</strong>,
                   con una autorización separada del resto del formulario, previa,
                   expresa e informada, como exige la Ley 1266 de 2008.
                 </p>
                 <p className="mb-3">
                   Guardamos constancia de esa autorización —la versión exacta del
-                  texto que aceptaste, la fecha y la hora— y podés pedirnos una copia
-                  cuando quieras. Podés revocarla; eso no borra las consultas ya
+                  texto que aceptaste, la fecha y la hora— y puedes pedirnos una copia
+                  cuando quieras. Puedes revocarla; eso no borra las consultas ya
                   hechas, pero impide las siguientes.
                 </p>
                 <p>
@@ -278,7 +278,7 @@ export default function PrivacidadPage() {
                 </h2>
                 <p className="mb-3">
                   Usamos sistemas automatizados, algunos con modelos de lenguaje, en
-                  cuatro puntos: para leer los documentos que subís, para calcular un
+                  cuatro puntos: para leer los documentos que subes, para calcular un
                   puntaje de riesgo de una postulación, para redactar y priorizar las
                   gestiones de cobranza, y para sugerir inmuebles.
                 </p>
@@ -305,10 +305,10 @@ export default function PrivacidadPage() {
                   </li>
                 </ul>
                 <p className="mb-3">
-                  <strong className="text-foreground/90">Tenés derecho a que una persona revise cualquier decisión automatizada que te afecte</strong>,
+                  <strong className="text-foreground/90">Tienes derecho a que una persona revise cualquier decisión automatizada que te afecte</strong>,
                   a que te expliquemos en términos comprensibles qué se tuvo en
                   cuenta, y a impugnar el resultado si se basó en información
-                  equivocada. Para ejercerlo, escribí a{" "}
+                  equivocada. Para ejercerlo, escribe a{" "}
                   <span className="text-foreground/85 font-medium">privacidad@leasefy.co</span>{" "}
                   indicando de qué decisión se trata.
                 </p>
@@ -340,7 +340,7 @@ export default function PrivacidadPage() {
                       </tr>
                     </thead>
                     <tbody className="text-muted-foreground">
-                      <tr className="border-t border-border"><td className="px-3 py-2">Infraestructura y almacenamiento</td><td className="px-3 py-2">Todo lo que guardamos, incluidos los documentos que subís</td><td className="px-3 py-2">Estados Unidos</td></tr>
+                      <tr className="border-t border-border"><td className="px-3 py-2">Infraestructura y almacenamiento</td><td className="px-3 py-2">Todo lo que guardamos, incluidos los documentos que subes</td><td className="px-3 py-2">Estados Unidos</td></tr>
                       <tr className="border-t border-border"><td className="px-3 py-2">Modelos de inteligencia artificial</td><td className="px-3 py-2">Texto de contratos, transcripciones de llamadas, fotos de inspección y el contenido de los documentos que analizamos</td><td className="px-3 py-2">Estados Unidos y Canadá</td></tr>
                       <tr className="border-t border-border"><td className="px-3 py-2">Telefonía y transcripción de llamadas</td><td className="px-3 py-2">Tu teléfono, la grabación de la llamada y su transcripción</td><td className="px-3 py-2">Estados Unidos</td></tr>
                       <tr className="border-t border-border"><td className="px-3 py-2">Mensajería por WhatsApp y correo</td><td className="px-3 py-2">Teléfono o correo, nombre y el contenido del mensaje</td><td className="px-3 py-2">Estados Unidos</td></tr>
@@ -353,16 +353,16 @@ export default function PrivacidadPage() {
                 <p className="mb-3">
                   Ninguno de estos proveedores puede usar tus datos para fines
                   propios, cederlos a un tercero ni conservarlos una vez terminado el
-                  servicio. Si necesitás la lista nominada de proveedores —por
+                  servicio. Si necesitas la lista nominada de proveedores —por
                   ejemplo, para tu propia evaluación de riesgo como cliente
-                  institucional— escribinos a{" "}
+                  institucional— escríbenos a{" "}
                   <span className="text-foreground/85 font-medium">privacidad@leasefy.co</span>{" "}
                   y te la enviamos actualizada.
                 </p>
                 <p className="mb-3">
                   También compartimos datos con la inmobiliaria que administra tu
                   contrato y con el propietario del inmueble, en lo que corresponde a
-                  esa relación; con las aseguradoras y afianzadoras, cuando pedís un
+                  esa relación; con las aseguradoras y afianzadoras, cuando pides un
                   estudio de asegurabilidad; con las centrales de riesgo, en los
                   términos de la §5 y sólo si lo autorizaste; y con autoridades,
                   cuando una norma o una orden judicial lo exige.
@@ -389,12 +389,12 @@ export default function PrivacidadPage() {
                 </p>
                 <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-3">
                   <li>Tu <strong className="text-foreground/85">voz</strong>, en la grabación de una llamada de cobranza.</li>
-                  <li>Tu <strong className="text-foreground/85">firma manuscrita</strong>, cuando firmás en pantalla.</li>
+                  <li>Tu <strong className="text-foreground/85">firma manuscrita</strong>, cuando firmas en pantalla.</li>
                   <li>Los datos que aparecen impresos en tu <strong className="text-foreground/85">documento de identidad</strong> al escanearlo.</li>
                 </ul>
                 <p>
                   No los usamos para nada distinto de lo descrito en esta política, y
-                  nunca para decidir sobre vos por tu pertenencia a un grupo.
+                  nunca para decidir sobre ti por tu pertenencia a un grupo.
                 </p>
               </section>
 
@@ -442,10 +442,10 @@ export default function PrivacidadPage() {
                   a ver un banner de cookies: no hay nada que consentir.
                 </p>
                 <p>
-                  Además, mientras completás un formulario largo guardamos el
+                  Además, mientras completas un formulario largo guardamos el
                   borrador en tu propio navegador, para que no pierdas lo escrito.
-                  Ese borrador no sale de tu equipo. Si usás un computador
-                  compartido, cerrá sesión y borrá los datos del sitio al terminar.
+                  Ese borrador no sale de tu equipo. Si usas un computador
+                  compartido, cierra sesión y borra los datos del sitio al terminar.
                 </p>
               </section>
 
@@ -454,7 +454,7 @@ export default function PrivacidadPage() {
                 <h2 className="text-[18px] font-medium text-foreground mb-3">
                   11. Tus derechos, y cómo ejercerlos
                 </h2>
-                <p className="mb-3">Podés, en cualquier momento:</p>
+                <p className="mb-3">Puedes, en cualquier momento:</p>
                 <ul className="list-disc pl-5 space-y-1.5 text-muted-foreground mb-3">
                   <li>Conocer qué datos tuyos tenemos y de dónde salieron.</li>
                   <li>Pedir que los actualicemos o corrijamos si están mal.</li>
@@ -477,7 +477,7 @@ export default function PrivacidadPage() {
                 <p className="mb-3">
                   <strong className="text-foreground/90">Canal:</strong>{" "}
                   <span className="text-foreground/85 font-medium">privacidad@leasefy.co</span>.
-                  Contanos qué querés y cómo verificar que sos vos.
+                  Cuéntanos qué quieres y cómo verificar que eres tú.
                 </p>
                 <p>
                   <strong className="text-foreground/90">Plazos.</strong> Una consulta se
@@ -501,8 +501,8 @@ export default function PrivacidadPage() {
                   tratamos lo indispensable para el contrato, con autorización de
                   quien ejerce la patria potestad y después de escuchar al menor.
                   Responder preguntas sobre datos de un menor es facultativo: no
-                  estás obligado a hacerlo y ningún trámite se condiciona a ello. Si creés que tenemos datos de un
-                  menor sin ese respaldo, escribinos y los eliminamos.
+                  estás obligado a hacerlo y ningún trámite se condiciona a ello. Si crees que tenemos datos de un
+                  menor sin ese respaldo, escríbenos y los eliminamos.
                 </p>
               </section>
 

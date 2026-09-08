@@ -82,7 +82,7 @@ export function MotivoDialog({
             onChange={(e) => setMotivo(e.target.value)}
             rows={3}
             disabled={enviando}
-            placeholder="Contá qué pasó. Lo va a leer quien esperaba la visita."
+            placeholder="Cuenta qué pasó. Lo va a leer quien esperaba la visita."
             data-testid="motivo-texto"
           />
           {/* Un contador que dice cuánto FALTA, no cuánto va: el botón apagado
@@ -90,7 +90,7 @@ export function MotivoDialog({
           <p className="text-xs text-fg-muted">
             {sirve
               ? 'Se guarda con la cancelación y queda en el historial de la visita.'
-              : `Escribí ${falta} ${falta === 1 ? 'carácter' : 'caracteres'} más.`}
+              : `Escribe ${falta} ${falta === 1 ? 'carácter' : 'caracteres'} más.`}
           </p>
         </div>
 

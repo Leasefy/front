@@ -130,7 +130,7 @@ describe('CarrierForm — create mode', () => {
     })
 
     expect(onSubmit).not.toHaveBeenCalled()
-    const message = 'Para cambiar las credenciales, completá los tres campos (se guardan como un bloque).'
+    const message = 'Para cambiar las credenciales, completa los tres campos (se guardan como un bloque).'
     expect(container.textContent).toContain(message)
     // Error shown against BOTH empty fields, not just one.
     const baseUrlField = byId('carrier-config_base_url').closest('div')

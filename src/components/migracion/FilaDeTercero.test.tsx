@@ -155,7 +155,7 @@ describe('FilaDeTercero', () => {
     // cambiar el tipo de documento a NIT cambia la regla del número.
     await pintar({
       fila: fila({
-        errores: [{ codigo: 'DOCUMENTO_INVALIDO', campo: 'documento', mensaje: 'No es válido.' }],
+        errores: [{ codigo: 'FALTA_DOCUMENTO', campo: 'documento', mensaje: 'No se pudo leer.' }],
       }),
     });
 
@@ -262,6 +262,28 @@ describe('FilaDeTercero', () => {
   it('mientras guarda, no se puede disparar la acción dos veces', async () => {
     await pintar({ guardando: true });
     expect(boton('No traer esta fila')?.disabled).toBe(true);
+  });
+
+  it('«No traer esta fila» gira y apaga las acciones hasta que el back contesta (Nico, 2026-09-07)', async () => {
+    let resolver: (r: { ok: boolean; mensaje: string | null }) => void = () => undefined;
+    const pendiente = new Promise<{ ok: boolean; mensaje: string | null }>((r) => {
+      resolver = r;
+    });
+    const onDescartar = vi.fn().mockReturnValue(pendiente);
+    await pintar({ onDescartar });
+
+    await click(boton('No traer esta fila')!);
+    expect(onDescartar).toHaveBeenCalledTimes(1);
+    const descartando = boton('No traer esta fila')!;
+    expect(descartando.disabled).toBe(true);
+    // `isLoading` del Button: gira y no recibe clics.
+    expect(descartando.className).toContain('opacity-70');
+    expect(boton('Guardar')?.disabled).toBe(true);
+
+    await act(async () => {
+      resolver({ ok: true, mensaje: null });
+    });
+    expect(boton('No traer esta fila')?.disabled).toBe(false);
   });
 
   describe('cuando la acción falla', () => {
@@ -373,5 +395,78 @@ describe('valorEditable', () => {
 
   it('un número del Excel se muestra como texto', () => {
     expect(valorEditable(1020304050)).toBe('1020304050');
+  });
+});
+
+describe('la ayuda del número de documento depende del tipo de la fila (2026-09-07)', () => {
+  const errorDeDocumento = [
+    {
+      codigo: 'DOCUMENTO_INVALIDO' as const,
+      campo: 'documento',
+      mensaje:
+        'Para una CC el número tiene entre 3 y 20 dígitos; la celda trae «12»',
+    },
+  ];
+
+  /** El texto que el input del documento referencia con `aria-describedby`. */
+  function ayudaDelDocumento(): string | null | undefined {
+    const id = container
+      .querySelector('[data-testid="campo-documento"]')
+      ?.getAttribute('aria-describedby');
+    return id ? document.getElementById(id)?.textContent : null;
+  }
+
+  it('a un NIT le habla del dígito de verificación, no de cédulas', async () => {
+    await pintar({
+      fila: fila({
+        datos: { _fila: 3, nombre: 'Masterpar S.A.S.', documento: '900515021', tipoDocumento: 'NIT' },
+        errores: errorDeDocumento,
+      }),
+    });
+    expect(ayudaDelDocumento()).toBe(
+      '3 a 20 dígitos; el dígito de verificación después del guion se ignora.',
+    );
+  });
+
+  it('a una CC le dice 3 a 20 dígitos, sin mencionar el NIT ni el dígito con el que empieza', async () => {
+    await pintar({
+      fila: fila({
+        datos: { _fila: 450, nombre: 'Gloria Amparo', documento: '3193209445', tipoDocumento: 'CC' },
+        errores: errorDeDocumento,
+      }),
+    });
+    expect(ayudaDelDocumento()).toBe(
+      '3 a 20 dígitos, sin puntos ni espacios.',
+    );
+    expect(ayudaDelDocumento()).not.toContain('NIT');
+    expect(ayudaDelDocumento()).not.toContain('empiezan');
+  });
+
+  it('sin tipo no inventa la regla: pide el tipo primero', async () => {
+    await pintar({
+      fila: fila({
+        datos: { _fila: 7, nombre: 'Ana', documento: '12', tipoDocumento: null },
+        errores: errorDeDocumento,
+      }),
+    });
+    expect(ayudaDelDocumento()).toContain('elígelo primero');
+  });
+});
+
+describe('un valor fuera del catálogo (2026-09-07)', () => {
+  it('se muestra como viene en el archivo y se puede dejar, en vez de pintarse «Sin definir»', async () => {
+    // Un banco como «CONFIAR» se guarda tal cual; acá el catálogo de la
+    // columna de prueba es el del tipo de documento, y «RC» no está.
+    await pintar({
+      fila: fila({
+        datos: { _fila: 3, nombre: 'Ana', documento: '1', tipoDocumento: 'RC' },
+        errores: [{ codigo: 'FALTA_NOMBRE', campo: 'nombre', mensaje: 'falta el nombre' }],
+      }),
+    });
+    await click(boton('Ver todos los campos')!);
+    const select = container.querySelector('[data-testid="campo-tipoDocumento"]');
+    expect(select).not.toBeNull();
+    expect(select?.textContent).toContain('RC');
+    expect(select?.textContent).not.toContain('Sin definir');
   });
 });

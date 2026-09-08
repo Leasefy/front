@@ -173,7 +173,7 @@ export default function OptOutsPage() {
         isLoading={result.isLoading}
         error={result.error}
         emptyTitle="Sin opt-outs"
-        emptyHint="Ajustá la búsqueda."
+        emptyHint="Ajusta la búsqueda."
       />
 
       {result.data && (

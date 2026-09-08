@@ -52,7 +52,7 @@ export default function NuevaSolicitudPage() {
         });
         return;
       }
-      toast('No pudimos enviar la solicitud', { description: res.error ?? 'Intentá de nuevo.' });
+      toast('No pudimos enviar la solicitud', { description: res.error ?? 'Intenta de nuevo.' });
     } finally {
       setSubmitting(false);
     }
@@ -70,7 +70,7 @@ export default function NuevaSolicitudPage() {
     return (
       <PortalPlaceholder
         title="Nueva solicitud"
-        subtitle="Pedile a tu inmobiliaria lo que necesites, con debido proceso."
+        subtitle="Pídele a tu inmobiliaria lo que necesites, con debido proceso."
         icon={ChatCircleText}
         emptyDescription="Vas a poder abrir solicitudes operativas para tus inmuebles. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
       />
@@ -103,7 +103,7 @@ export default function NuevaSolicitudPage() {
               ) : (
                 <Select value={propertyRef} onValueChange={setPropertyRef}>
                   <SelectTrigger aria-label="Inmueble">
-                    <SelectValue placeholder="Elegí un inmueble…" />
+                    <SelectValue placeholder="Elige un inmueble…" />
                   </SelectTrigger>
                   <SelectContent>
                     {inmuebles.map((inm) => (
@@ -135,7 +135,7 @@ export default function NuevaSolicitudPage() {
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value.slice(0, MAX_DESC))}
                 rows={5}
-                placeholder="Contanos qué necesitás…"
+                placeholder="Cuéntanos qué necesitas…"
               />
               <p className="text-xs text-fg-muted mt-1 text-right font-mono tabular-nums">
                 {descripcion.length}/{MAX_DESC}

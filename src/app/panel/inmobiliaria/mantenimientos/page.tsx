@@ -107,7 +107,7 @@ const ENCABEZADO: Record<TabValue, { titulo: string; bajada: string }> = {
   },
   ipc: {
     titulo: 'Calculadora de IPC',
-    bajada: 'Calculá el canon del año que viene con el IPC vigente.',
+    bajada: 'Calcula el canon del año que viene con el IPC vigente.',
   },
 };
 
@@ -499,7 +499,7 @@ function OperacionesContent() {
           className="grid grid-cols-2 md:grid-cols-4 gap-4"
         >
           {/* Un cero que en realidad es «no lo pudimos traer» afirma algo
-              falso, y encima tranquiliza: «no tenés renovaciones pendientes».
+              falso, y encima tranquiliza: «no tienes renovaciones pendientes».
               Cuando la consulta falló va una raya. */}
           <StatCard
             icon={ClockCounterClockwise}

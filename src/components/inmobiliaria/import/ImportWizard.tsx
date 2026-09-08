@@ -102,7 +102,7 @@ export function ImportWizard({
   }, []);
 
   /*
-   * La tarjeta de «tenés una importación sin terminar» — mismo patrón que
+   * La tarjeta de «tienes una importación sin terminar» — mismo patrón que
    * MigrarTerceros. El lote vive en el servidor desde `preparar()`: una
    * recarga o un «cancelar» a mitad no pierde nada, pero sin esta tarjeta la
    * persona no tenía cómo VOLVER a él — re-subía el archivo y duplicaba el

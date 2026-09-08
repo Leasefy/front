@@ -153,6 +153,29 @@ export function useContratoDesdePlantilla(
   const borradorSerializado = JSON.stringify(borrador);
   const clausulasSerializadas = JSON.stringify([...clausulas].sort());
 
+  // ── ¿Hay IA? ───────────────────────────────────────────────────────────────
+
+  /*
+   * 🔴 Se pregunta al montar, aparte de `preparar`. Antes `iaDisponible` sólo
+   * llegaba con la respuesta buena de `preparar`, y `preparar` contesta «falta
+   * elegir el uso del inmueble» hasta que la persona elige inmueble: la
+   * tarjeta «Generar con IA» se quedaba en «Comprobando…» para siempre (Nico,
+   * 2026-09-07). Si esta consulta falla no se afirma nada: sigue en null y
+   * `preparar` lo trae cuando pueda.
+   */
+  useEffect(() => {
+    let vigente = true;
+    contratosPlantillaApi
+      .iaDisponible()
+      .then((r) => {
+        if (vigente && typeof r?.iaDisponible === 'boolean') setIaDisponible(r.iaDisponible);
+      })
+      .catch(() => undefined);
+    return () => {
+      vigente = false;
+    };
+  }, []);
+
   // ── Preparar ───────────────────────────────────────────────────────────────
 
   useEffect(() => {

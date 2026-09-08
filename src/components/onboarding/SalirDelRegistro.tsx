@@ -65,7 +65,7 @@ export function SalirDelRegistro({ onAntesDeSalir }: SalirDelRegistroProps) {
         type="button"
         onClick={() => setAbierto(true)}
         data-testid="salir-del-registro"
-        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-body-sm text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-surface px-4 text-body-sm font-medium text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
       >
         <SignOut className="h-4 w-4" weight="bold" aria-hidden />
         Salir

@@ -41,7 +41,7 @@ function esPaso(v: unknown): v is PasoDeMigracion {
 }
 
 /**
- * 🔴 El único lugar del front que puede decir «bloqueá».
+ * 🔴 El único lugar del front que puede decir «bloquea».
  *
  * Recibe lo que sea que haya devuelto la red y devuelve `null` —es decir,
  * panel abierto— ante cualquier cosa que no sea, sin ambigüedad, un estado
@@ -62,7 +62,72 @@ export function normalizarEstado(bruto: unknown): EstadoDeMigracion | null {
     e.resuelta === 'completada' || e.resuelta === 'omitida' ? e.resuelta : null;
   // Un muro sin un solo paso que hacer es un callejón: no se levanta.
   if (e.pasos.length === 0) return null;
-  return { bloquea: true, resuelta, pasos: e.pasos as PasoDeMigracion[] };
+  return {
+    bloquea: true,
+    resuelta,
+    pasos: e.pasos as PasoDeMigracion[],
+    ...recordatorioDe(e),
+  };
+}
+
+/** `recordatorioDescartado` sólo si el back lo mandó como booleano; un back viejo no lo trae. */
+function recordatorioDe(e: Record<string, unknown>): { recordatorioDescartado?: boolean } {
+  return typeof e.recordatorioDescartado === 'boolean'
+    ? { recordatorioDescartado: e.recordatorioDescartado }
+    : {};
+}
+
+/**
+ * El estado tal cual lo contó el back, bloquee o no.
+ *
+ * `normalizarEstado` sólo devuelve algo cuando hay que BLOQUEAR. Para lo
+ * demás —el recordatorio del sidebar, la migración abierta a mano desde
+ * Configuración (Nico, 2026-09-07)— hace falta saber cómo van los pasos con
+ * el muro abajo. Misma exigencia de forma; ante cualquier duda, `null`.
+ */
+export function leerEstado(bruto: unknown): EstadoDeMigracion | null {
+  if (typeof bruto !== 'object' || bruto === null) return null;
+  const e = bruto as Record<string, unknown>;
+  if (typeof e.bloquea !== 'boolean') return null;
+  if (!Array.isArray(e.pasos) || e.pasos.length === 0) return null;
+  if (!e.pasos.every(esPaso)) return null;
+  const resuelta =
+    e.resuelta === 'completada' || e.resuelta === 'omitida' ? e.resuelta : null;
+  return {
+    bloquea: e.bloquea,
+    resuelta,
+    pasos: e.pasos as PasoDeMigracion[],
+    ...recordatorioDe(e),
+  };
+}
+
+export interface ProgresoDeMigracion {
+  /** Pasos exigibles ya listos. */
+  hechos: number;
+  /** Pasos exigibles en total. */
+  total: number;
+  /** El primer paso exigible sin terminar; `null` con todo listo. */
+  siguiente: PasoDeMigracion | null;
+}
+
+/** Cuántos pasos exigibles están listos y cuál sigue: lo que dice el recordatorio del sidebar. */
+export function progresoDeMigracion(pasos: PasoDeMigracion[]): ProgresoDeMigracion {
+  const exigibles = pasos.filter(esExigible);
+  const hechos = exigibles.filter((p) => p.estado === 'listo').length;
+  const siguiente = exigibles.find((p) => p.estado !== 'listo') ?? null;
+  return { hechos, total: exigibles.length, siguiente };
+}
+
+/**
+ * ¿Queda migración por hacer? Decide si el sidebar recuerda.
+ *
+ * Quien dijo «terminé» no tiene nada pendiente aunque después borre un
+ * propietario; quien salió con la ✕ o con «en otro momento» sí, mientras
+ * falte un paso exigible.
+ */
+export function migracionSinTerminar(estado: EstadoDeMigracion): boolean {
+  if (estado.resuelta === 'completada') return false;
+  return !todoListo(estado.pasos);
 }
 
 /**
@@ -307,7 +372,7 @@ export function migracionCerrada(
  *
  * Inquilinos, Propietarios y Cobros salen todos de la misma cadena: contrato
  * → inmueble → consignación → cobro. Si esa cadena está cortada, la lista
- * está vacía **por eso**, y decirle a la persona «traé los que ya tenés en
+ * está vacía **por eso**, y decirle a la persona «trae los que ya tienes en
  * otro sistema» —justo después de que los trajo— es pedirle que migre dos
  * veces.
  */

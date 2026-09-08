@@ -264,7 +264,7 @@ function ContenidoDeInquilinos() {
    *
    * Esta lista sale de `lease.findMany` agrupado por `tenantId`, y un
    * contrato migrado sin inmueble no produce arriendo: la lista queda vacía
-   * y hasta hoy decía «Todavía no hay ningún arriendo… traé los que ya tenés
+   * y hasta hoy decía «Todavía no hay ningún arriendo… trae los que ya tienes
    * en otro sistema» — o sea, le pedía migrar a alguien que acababa de
    * migrar 91 contratos. Nico: «va y ve y sólo existen los contratos pero
    * sin nada asociado».

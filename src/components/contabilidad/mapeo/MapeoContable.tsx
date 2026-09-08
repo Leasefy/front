@@ -216,7 +216,7 @@ export function MapeoContable() {
                 .join(' · ')}
               {faltantes.mapeoCompleto
                 ? '. Con el mapeo completo, se asientan con la fecha de su documento.'
-                : '. Completá el mapeo y reprocesá.'}
+                : '. Completa el mapeo y reprocesa.'}
             </p>
           </div>
           <Button size="sm" hideArrow onClick={() => void reprocesar()} disabled={reprocesando} data-testid="reprocesar-asientos">
@@ -285,7 +285,7 @@ export function MapeoContable() {
                       ) : null}
                     </div>
                   ) : (
-                    <span className="font-mono text-xs text-fg-subtle" title="Creala en el plan de cuentas con ese código, o elegí otra">
+                    <span className="font-mono text-xs text-fg-subtle" title="Créala en el plan de cuentas con ese código, o elige otra">
                       {e.codigoPropuesto} no está en el PUC
                     </span>
                   )}

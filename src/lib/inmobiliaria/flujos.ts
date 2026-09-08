@@ -1,7 +1,7 @@
 /**
  * flujos.ts — los flujos que una inmobiliaria puede *empezar*, en un solo lugar.
  *
- * Por qué existe: el panel tiene 156 rutas y ninguna dice "empezá acá". Para
+ * Por qué existe: el panel tiene 156 rutas y ninguna dice "empieza acá". Para
  * abrir una consignación hay que saber que vive dentro de Consignaciones, y
  * para evaluar a un candidato hay que saber que está bajo Evaluación de
  * candidatos → Nueva evaluación. Quien entra por primera vez no lo sabe, y el

@@ -3,7 +3,7 @@
  *
  * `apiClient.getBlob` —el que baja TODOS los CSV de Reportes— no lo hacía: era
  * un `fetch` pelado. Con el token recién vencido moría en un 401 y la pantalla,
- * que no distingue, culpaba al reporte («Probá de nuevo en un momento») cuando
+ * que no distingue, culpaba al reporte («Prueba de nuevo en un momento») cuando
  * el problema era la sesión. Un GET normal disparado en el mismo instante se
  * recuperaba solo; la descarga, no.
  */

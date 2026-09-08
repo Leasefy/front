@@ -81,6 +81,7 @@ export const INQUILINO_VACIO: InquilinoForm = {
 export const TIPOS_DE_DOCUMENTO: Array<{ value: TipoDeDocumento; label: string }> = [
   { value: 'CC', label: 'Cédula' },
   { value: 'CE', label: 'Cédula de extranjería' },
+  { value: 'TI', label: 'Tarjeta de identidad' },
   { value: 'NIT', label: 'NIT' },
   { value: 'PASSPORT', label: 'Pasaporte' },
 ];
@@ -88,15 +89,15 @@ export const TIPOS_DE_DOCUMENTO: Array<{ value: TipoDeDocumento; label: string }
 /** Qué falta. Vacío = se puede guardar. Mismas reglas que el back. */
 export function validarInquilino(f: InquilinoForm): Record<string, string> {
   const e: Record<string, string> = {};
-  if (f.nombre.trim().length < 2) e.nombre = 'Escribí el nombre del inquilino.';
+  if (f.nombre.trim().length < 2) e.nombre = 'Escribe el nombre del inquilino.';
 
   const correo = f.correo.trim();
   if (correo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) {
-    e.correo = 'Revisá el correo: falta el @ o el dominio.';
+    e.correo = 'Revisa el correo: falta el @ o el dominio.';
   }
   if (!correo && !f.documento.trim()) {
     e.llave =
-      'Poné al menos el correo o el documento: es con lo que después lo encontramos al hacerle el contrato.';
+      'Pon al menos el correo o el documento: es con lo que después lo encontramos al hacerle el contrato.';
   }
   return e;
 }
@@ -173,7 +174,6 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado }: Props)
               value={form.nombre}
               onChange={(e) => set('nombre', e.target.value)}
               placeholder="María Fernanda Ruiz"
-              maxLength={120}
               data-testid="inquilino-nombre"
             />
           </Campo>
@@ -202,7 +202,6 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado }: Props)
                 value={form.documento}
                 onChange={(e) => set('documento', e.target.value)}
                 placeholder="1020304050"
-                maxLength={30}
                 inputMode="numeric"
                 data-testid="inquilino-documento"
               />
@@ -219,7 +218,6 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado }: Props)
               value={form.correo}
               onChange={(e) => set('correo', e.target.value)}
               placeholder="maria@ejemplo.co"
-              maxLength={160}
               data-testid="inquilino-correo"
             />
           </Campo>
@@ -229,7 +227,6 @@ export function NuevoInquilinoDrawer({ abierto, onOpenChange, onCreado }: Props)
               value={form.telefono}
               onChange={(e) => set('telefono', e.target.value)}
               placeholder="3001234567"
-              maxLength={30}
               inputMode="tel"
               data-testid="inquilino-telefono"
             />

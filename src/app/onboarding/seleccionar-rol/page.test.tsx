@@ -12,18 +12,21 @@ void React
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { replaceMock, authState } = vi.hoisted(() => ({
+const { replaceMock, pushMock, elegirPerfilMock, authState } = vi.hoisted(() => ({
   replaceMock: vi.fn(),
+  pushMock: vi.fn(),
+  elegirPerfilMock: vi.fn(),
   authState: {
     user: null as Record<string, unknown> | null,
     hasActiveAgencyMembership: false,
     agencyMembershipChecked: true,
     agencyRole: null as string | null,
+    perfilElegido: null as string | null,
   },
 }))
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: replaceMock, push: vi.fn() }),
+  useRouter: () => ({ replace: replaceMock, push: pushMock }),
 }))
 
 vi.mock('@/lib/auth/use-auth', () => ({
@@ -32,16 +35,21 @@ vi.mock('@/lib/auth/use-auth', () => ({
     hasActiveAgencyMembership: authState.hasActiveAgencyMembership,
     agencyMembershipChecked: authState.agencyMembershipChecked,
     agencyRole: authState.agencyRole,
+    perfilElegido: authState.perfilElegido,
+    elegirPerfil: elegirPerfilMock,
   }),
 }))
 
 // The picker now filters cards by admin-enabled profiles. Mock the hook to keep
 // all profiles visible (fail-open default) and avoid a real config fetch.
+// `perfilesState` deja simular la carga sin caché (el parpadeo de «Propietario»).
+const perfilesState = { esProvisional: false, enabled: new Set(['tenant', 'landlord', 'agency']) }
 vi.mock('@/lib/hooks/use-enabled-profiles', () => ({
   useEnabledProfiles: () => ({
-    enabled: new Set(['tenant', 'landlord', 'agency']),
-    isEnabled: () => true,
-    isLoading: false,
+    enabled: perfilesState.enabled,
+    isEnabled: (key: string) => perfilesState.enabled.has(key),
+    isLoading: perfilesState.esProvisional,
+    esProvisional: perfilesState.esProvisional,
   }),
 }))
 
@@ -53,10 +61,16 @@ let root: Root
 beforeEach(() => {
   localStorage.clear()
   replaceMock.mockClear()
+  perfilesState.esProvisional = false
+  perfilesState.enabled = new Set(['tenant', 'landlord', 'agency'])
   authState.user = null
   authState.hasActiveAgencyMembership = false
   authState.agencyMembershipChecked = true
   authState.agencyRole = null
+  authState.perfilElegido = null
+  pushMock.mockClear()
+  elegirPerfilMock.mockReset()
+  elegirPerfilMock.mockResolvedValue(undefined)
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -130,6 +144,59 @@ describe('SeleccionarRolPage — invitation guard', () => {
 
 
 /**
+ * «Propietario» está apagado desde el admin y aun así se alcanzó a ver un
+ * instante (Nico, 2026-09-07): el hook arranca con todos los perfiles y la
+ * pantalla los pintaba mientras llegaba la respuesta.
+ */
+describe('SeleccionarRolPage — mientras se sabe qué perfiles dejó el admin', () => {
+  it('sin respuesta ni caché no pinta ninguna tarjeta: ni la apagada ni las otras', async () => {
+    perfilesState.esProvisional = true
+
+    await render()
+
+    expect(container.querySelector('[data-testid="perfiles-cargando"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="perfil-landlord"]')).toBeNull()
+    expect(container.textContent).not.toContain('Propietario')
+    expect(container.textContent).not.toContain('Inquilino')
+  })
+
+  it('cuando llega la respuesta pinta sólo lo que quedó encendido', async () => {
+    perfilesState.esProvisional = true
+    await render()
+
+    perfilesState.esProvisional = false
+    perfilesState.enabled = new Set(['tenant', 'agency'])
+    await act(async () => {
+      root.render(<SeleccionarRolPage />)
+    })
+
+    expect(container.querySelector('[data-testid="perfiles-cargando"]')).toBeNull()
+    expect(container.textContent).toContain('Inquilino')
+    expect(container.textContent).toContain('Soy una inmobiliaria')
+    expect(container.textContent).not.toContain('Propietario')
+  })
+
+  it('si la config no responde, a los 2,5 s pinta todas igual (nunca bloquea el registro)', async () => {
+    vi.useFakeTimers()
+    try {
+      perfilesState.esProvisional = true
+      await render()
+      expect(container.querySelector('[data-testid="perfiles-cargando"]')).not.toBeNull()
+
+      await act(async () => {
+        vi.advanceTimersByTime(2600)
+      })
+
+      expect(container.querySelector('[data-testid="perfiles-cargando"]')).toBeNull()
+      expect(container.textContent).toContain('Inquilino')
+      expect(container.textContent).toContain('Propietario')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+/**
  * Lo seleccionado en el producto es azul primary. Acá había tres bloques
  * copiados y dos de ellos se marcaban en negro (`bg-ink`, `border-fg`); sólo
  * la tarjeta de inmobiliaria usaba el azul. Estos tests fijan que las tres se
@@ -186,5 +253,67 @@ describe('selección de perfil', () => {
   it('se puede salir del registro desde acá', async () => {
     await render()
     expect(container.querySelector('[data-testid="salir-del-registro"]')).toBeTruthy()
+  })
+})
+
+/*
+ * Retomar donde lo dejó (Nico, 2026-09-07): la elección se guarda al continuar
+ * y, si vuelve al selector con una elección hecha, la tarjeta arranca marcada.
+ */
+describe('SeleccionarRolPage — retomar donde lo dejó', () => {
+  const botonContinuar = () =>
+    Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.trim() === 'Continuar',
+    ) as HTMLButtonElement
+
+  const marcar = async (testId: string) => {
+    const card = container.querySelector(`[data-testid="${testId}"]`) as HTMLElement
+    await act(async () => {
+      card.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  }
+
+  it('con un perfil ya elegido, su tarjeta arranca marcada y «Continuar» habilitado', async () => {
+    authState.perfilElegido = 'agency'
+
+    await render()
+
+    const inmobiliaria = container.querySelector('[data-testid="perfil-inmobiliaria"]') as HTMLElement
+    expect(inmobiliaria.getAttribute('aria-checked')).toBe('true')
+    expect(botonContinuar().disabled).toBe(false)
+  })
+
+  it('si el admin apagó el perfil que había elegido, no se marca nada', async () => {
+    authState.perfilElegido = 'landlord'
+    perfilesState.enabled = new Set(['tenant', 'agency'])
+
+    await render()
+
+    expect(container.querySelector('[aria-checked="true"]')).toBeNull()
+    expect(botonContinuar().disabled).toBe(true)
+  })
+
+  it('al continuar guarda el perfil elegido y va a su onboarding', async () => {
+    await render()
+    await marcar('perfil-inmobiliaria')
+
+    await act(async () => {
+      botonContinuar().click()
+    })
+
+    expect(elegirPerfilMock).toHaveBeenCalledWith('agency')
+    expect(pushMock).toHaveBeenCalledWith('/onboarding/inmobiliaria')
+  })
+
+  it('si guardar la elección falla, igual sigue al onboarding', async () => {
+    elegirPerfilMock.mockRejectedValue(new Error('sin red'))
+
+    await render()
+    await marcar('perfil-tenant')
+    await act(async () => {
+      botonContinuar().click()
+    })
+
+    expect(pushMock).toHaveBeenCalledWith('/onboarding/inquilino')
   })
 })

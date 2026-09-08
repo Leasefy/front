@@ -116,7 +116,7 @@ export function AcuerdosGeneralesTabla() {
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-fg">Acuerdos generales</h2>
           <p className="text-xs text-fg-muted max-w-xl leading-relaxed">
-            Las reglas que el agente cierra solo: «si el deudor cabe acá, tomalo
+            Las reglas que el agente cierra solo: «si el deudor cabe acá, tómalo
             y no me preguntes». Sin ninguno, el agente usa las condiciones que
             trae Leasefy por etapa de mora.
           </p>
@@ -172,7 +172,7 @@ export function AcuerdosGeneralesTabla() {
           </p>
           <p className="text-xs text-fg-muted max-w-md">
             Mientras tanto el agente negocia con las condiciones que trae Leasefy
-            para cada etapa de mora. Escribí uno cuando quieras que ofrezca algo
+            para cada etapa de mora. Escribe uno cuando quieras que ofrezca algo
             distinto.
           </p>
           {canEdit && (

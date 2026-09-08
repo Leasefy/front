@@ -76,7 +76,7 @@ export function CierreDePeriodo({
   const [error, setError] = useState<string | null>(null);
 
   const problema = useMemo(() => {
-    if (!diaDe(hasta)) return 'Elegí un día.';
+    if (!diaDe(hasta)) return 'Elige un día.';
     if (cerradaHasta && hasta <= cerradaHasta) {
       return `Ya está cerrada hasta el ${diaLegible(cerradaHasta)}: la nueva fecha tiene que ser posterior.`;
     }
@@ -196,7 +196,7 @@ export function CierreDePeriodo({
 
           <div className="space-y-2">
             <Label htmlFor={`${id}-escribir`}>
-              Para confirmar, escribí la fecha tal cual:{' '}
+              Para confirmar, escribe la fecha tal cual:{' '}
               <span className="font-mono tabular-nums text-fg">{hasta}</span>
             </Label>
             <Input

@@ -85,7 +85,7 @@ const OUTCOME_ACTIVE_CLASS: Record<Outcome, string> = {
 
 const NOTES_PLACEHOLDER: Record<Outcome, string> = {
   upheld: 'Confirmación de revisión (opcional)',
-  overridden: 'Explicá qué del payload modificarías y por qué',
+  overridden: 'Explica qué del payload modificarías y por qué',
   escalated: 'Razón de la escalación legal',
 }
 

@@ -98,7 +98,7 @@ export function AvaluoEstadoCard({
                 No pudimos obtener el estado del avalúo
               </p>
               <p className="text-xs text-fg-muted mt-1">
-                Verificá tu conexión. La página se actualiza automáticamente.
+                Verifica tu conexión. La página se actualiza automáticamente.
               </p>
             </div>
           </div>
@@ -121,7 +121,7 @@ export function AvaluoEstadoCard({
 
   const handleDownloadCertificate = () => {
     if (!certId || !capToken) {
-      toast.error('No encontramos tu token de acceso. Intentá desde el mismo navegador donde solicitaste el avalúo.')
+      toast.error('No encontramos tu token de acceso. Intenta desde el mismo navegador donde solicitaste el avalúo.')
       return
     }
     const url = certificateUrl(certId, capToken)

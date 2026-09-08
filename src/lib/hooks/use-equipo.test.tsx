@@ -1,5 +1,5 @@
 /**
- * El agente que acabás de invitar tiene que aparecer en la tabla.
+ * El agente que acabas de invitar tiene que aparecer en la tabla.
  *
  * `GET /inmobiliaria/agentes` sólo devuelve miembros ACTIVE y con usuario
  * vinculado, así que una invitación recién creada (INVITED, sin usuario) no

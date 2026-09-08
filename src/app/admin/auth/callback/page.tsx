@@ -81,7 +81,7 @@ function CallbackInner() {
     // arrives, the link was invalid/expired — tell the user instead of spinning.
     const safety = setTimeout(() => {
       if (!navigated) {
-        setErr('No pudimos verificar el magic link. Puede haber expirado o ya fue usado — pedí uno nuevo.')
+        setErr('No pudimos verificar el magic link. Puede haber expirado o ya fue usado — pide uno nuevo.')
       }
     }, 8000)
 

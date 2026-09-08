@@ -387,7 +387,7 @@ describe('FacturaProveedorIACapture', () => {
   it('error de la extracción: se muestra el mensaje del agente y se puede reintentar', async () => {
     await montar();
     api.extractBill.mockRejectedValue(
-      new ApiError(400, '«factura.heic»: formato no soportado (image/heic). Subí una foto (JPG, PNG, WebP) o un PDF.'),
+      new ApiError(400, '«factura.heic»: formato no soportado (image/heic). Sube una foto (JPG, PNG, WebP) o un PDF.'),
     );
     await elegir([archivo('factura.jpg', 'image/jpeg')]);
     await click('[data-testid="factura-ia-extraer"]');

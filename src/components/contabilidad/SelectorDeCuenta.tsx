@@ -32,7 +32,7 @@ export function SelectorDeCuenta({
   soloImputables = false,
   invalid,
   disabled,
-  placeholder = 'Elegí una cuenta',
+  placeholder = 'Elige una cuenta',
   className,
 }: SelectorDeCuentaProps) {
   const opciones = useMemo<ComboboxOption[]>(

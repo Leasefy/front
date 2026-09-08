@@ -104,7 +104,7 @@ describe('apApi.extractBill', () => {
     agentFetchMock.mockResolvedValueOnce(new Response('too big', { status: 413 }));
     await expect(apApi.extractBill(AGENCY, [archivo('a.pdf', 'application/pdf')])).rejects.toThrow(/20 MB/);
 
-    agentFetchMock.mockResolvedValueOnce(respuesta(429, { success: false, error: 'Demasiadas solicitudes. Intentá de nuevo en un momento.' }));
+    agentFetchMock.mockResolvedValueOnce(respuesta(429, { success: false, error: 'Demasiadas solicitudes. Intenta de nuevo en un momento.' }));
     await expect(apApi.extractBill(AGENCY, [archivo('a.pdf', 'application/pdf')])).rejects.toThrow(/Demasiadas/);
 
     agentFetchMock.mockResolvedValueOnce(respuesta(403, { success: false, error: 'Forbidden' }));

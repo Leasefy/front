@@ -406,7 +406,7 @@ describe('<ConsignacionWizard> — publishes the property after the mandate (T-0
   })
 
   it('does not show the success toast when the publish PATCH fails, and surfaces the backend message', async () => {
-    const backendMessage = 'Alcanzaste el límite de propiedades de tu plan. Subí de plan para agregar más.'
+    const backendMessage = 'Alcanzaste el límite de propiedades de tu plan. Sube de plan para agregar más.'
     propertiesApiMock.update.mockRejectedValueOnce(new ApiError(402, backendMessage))
 
     await driveToStep6ThenSubmit()

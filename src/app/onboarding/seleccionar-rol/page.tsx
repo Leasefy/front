@@ -7,10 +7,11 @@ import { House, Buildings, Storefront, Check, type Icon } from '@phosphor-icons/
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth/use-auth'
 import { useEnabledProfiles } from '@/lib/hooks/use-enabled-profiles'
+import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding'
 import { getAgencyHomeRoute } from '@/lib/auth/role-routes'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
-import { LeasefyLogo } from '@/components/brand'
+import { LeasefyLogotype } from '@/components/brand'
 import { SalirDelRegistro } from '@/components/onboarding/SalirDelRegistro'
 import { saludo } from '@/lib/onboarding/saludo'
 
@@ -121,12 +122,21 @@ function TarjetaDePerfil({
 
 export default function SeleccionarRolPage() {
   const router = useRouter()
-  const { user, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole } = useAuth()
+  const { user, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole, perfilElegido, elegirPerfil } = useAuth()
   // Admin can switch signup profiles off (see /admin/registration-profiles).
-  // Fails open: while loading or if the config backend is down, all are shown.
-  const { isEnabled: isProfileEnabled } = useEnabledProfiles()
+  // Fails open: if the config backend is down (or takes too long), all are shown.
+  const { isEnabled: isProfileEnabled, esProvisional } = useEnabledProfiles()
   const [selected, setSelected] = useState<RoleChoice>(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  // Si ya había elegido y se fue antes de terminar, la tarjeta arranca
+  // marcada: «Continuar» es un clic. Sólo si el admin no apagó ese perfil.
+  useEffect(() => {
+    if (!perfilElegido) return
+    const opcion = PERFILES.find((perfil) => perfil.bandera === perfilElegido)
+    if (!opcion || !isProfileEnabled(opcion.bandera)) return
+    setSelected((actual) => actual ?? opcion.valor)
+  }, [perfilElegido, isProfileEnabled])
 
   // Bounded fallback for the membership-probe wait below: if the probe never
   // settles (e.g. it wasn't triggered on this client-side navigation, or the
@@ -138,6 +148,20 @@ export default function SeleccionarRolPage() {
     const id = setTimeout(() => setProbeWaitElapsed(true), 4000)
     return () => clearTimeout(id)
   }, [])
+
+  /*
+   * Las tarjetas no se pintan hasta saber cuáles dejó el admin (Nico,
+   * 2026-09-07: «Propietario» está apagado y se alcanzó a ver un instante).
+   * El hook arranca con todos los perfiles mientras llega la respuesta, y
+   * pintarlos así es exactamente el parpadeo. Espera acotada: si la config no
+   * responde, se pintan todos igual — el registro nunca se bloquea por esto.
+   */
+  const [configWaitElapsed, setConfigWaitElapsed] = useState(false)
+  useEffect(() => {
+    const id = setTimeout(() => setConfigWaitElapsed(true), 2500)
+    return () => clearTimeout(id)
+  }, [])
+  const perfilesListos = !esProvisional || configWaitElapsed
 
   // Defense-in-depth: an invited user must NEVER see the personal role picker.
   // If a pending invitation token is present, send them to /registro (the
@@ -179,17 +203,16 @@ export default function SeleccionarRolPage() {
     return null
   }
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!selected) return
     setIsLoading(true)
-
-    if (selected === 'landlord') {
-      router.push('/onboarding/propietario')
-    } else if (selected === 'inmobiliaria') {
-      router.push('/onboarding/inmobiliaria')
-    } else {
-      router.push('/onboarding/inquilino')
-    }
+    const perfil = PERFILES.find((opcion) => opcion.valor === selected)?.bandera ?? 'tenant'
+    // La elección se guarda para que la próxima entrada retome en este
+    // onboarding y no acá (Nico, 2026-09-07). Se guarda en segundo plano: el
+    // clic navega YA, y si guardar falla o tarda no retiene a nadie — a lo
+    // sumo la próxima vez vuelve al selector.
+    void elegirPerfil(perfil).catch(() => undefined)
+    router.push(rutaDeOnboarding(perfil))
   }
 
   const visibles = PERFILES.filter((perfil) => isProfileEnabled(perfil.bandera))
@@ -197,7 +220,8 @@ export default function SeleccionarRolPage() {
   return (
     <div className="min-h-screen bg-bg">
       <header className="flex items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
-        <LeasefyLogo className="h-6 w-auto" />
+        {/* El mismo logotipo que la sidebar del panel y el header de los pasos — el cuadrado azul no es la marca (Nico, 2026-09-07). */}
+        <LeasefyLogotype className="h-6 w-auto" />
         <SalirDelRegistro />
       </header>
 
@@ -212,20 +236,34 @@ export default function SeleccionarRolPage() {
             </p>
           </div>
 
-          <div
-            role="radiogroup"
-            aria-label="Tu perfil"
-            className="mb-7 grid grid-cols-1 gap-3"
-          >
-            {visibles.map((perfil) => (
-              <TarjetaDePerfil
-                key={perfil.valor}
-                opcion={perfil}
-                seleccionada={selected === perfil.valor}
-                onSelect={() => setSelected(perfil.valor)}
-              />
-            ))}
-          </div>
+          {perfilesListos ? (
+            <div
+              role="radiogroup"
+              aria-label="Tu perfil"
+              className="mb-7 grid grid-cols-1 gap-3"
+            >
+              {visibles.map((perfil) => (
+                <TarjetaDePerfil
+                  key={perfil.valor}
+                  opcion={perfil}
+                  seleccionada={selected === perfil.valor}
+                  onSelect={() => setSelected(perfil.valor)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div
+              className="mb-7 grid grid-cols-1 gap-3"
+              role="status"
+              aria-live="polite"
+              aria-label="Cargando los perfiles"
+              data-testid="perfiles-cargando"
+            >
+              {[0, 1].map((i) => (
+                <div key={i} className="h-[104px] animate-pulse rounded-lg border border-border bg-surface-muted" />
+              ))}
+            </div>
+          )}
 
           <Button
             type="button"
@@ -238,9 +276,6 @@ export default function SeleccionarRolPage() {
             {isLoading ? <Spinner size="sm" variant="current" /> : 'Continuar'}
           </Button>
 
-          <p className="mt-4 text-center text-caption text-fg-subtle">
-            Puedes cambiar esto después desde tu perfil.
-          </p>
         </div>
       </main>
     </div>

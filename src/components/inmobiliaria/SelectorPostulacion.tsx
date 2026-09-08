@@ -138,7 +138,7 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
           <DialogTitle>¿Para quién es el contrato?</DialogTitle>
           <DialogDescription>
             Sobre una postulación aprobada salen solos el inquilino, la propiedad y el canon. Si el
-            arriendo se cerró por fuera, armalo a mano.
+            arriendo se cerró por fuera, ármalo a mano.
           </DialogDescription>
         </DialogHeader>
 
@@ -223,7 +223,7 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
 
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-border bg-surface-muted/60 px-4 py-3">
           <p className="text-sm text-fg-muted">
-            ¿Sin postulación? Elegís un inmueble consignado y el inquilino.
+            ¿Sin postulación? Eliges un inmueble consignado y el inquilino.
           </p>
           <Button
             variant="secondary"

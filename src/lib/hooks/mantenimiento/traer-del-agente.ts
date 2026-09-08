@@ -38,7 +38,7 @@ export const AGENTE_APAGADO =
 
 export const SIN_AGENCIA =
   'Todavía no sabemos con qué inmobiliaria estás trabajando, así que no se consultó nada. ' +
-  'Volvé a entrar o cambiá de inmobiliaria; esta pantalla está vacía porque no preguntamos, no porque no haya datos.'
+  'Vuelve a entrar o cambia de inmobiliaria; esta pantalla está vacía porque no preguntamos, no porque no haya datos.'
 
 /**
  * Traduce una respuesta que no fue 2xx a algo que se pueda leer.

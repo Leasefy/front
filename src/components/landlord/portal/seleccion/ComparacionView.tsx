@@ -54,7 +54,7 @@ export function ComparacionView({ agencyId, processId, comparacion, reload }: Co
         });
         return;
       }
-      toast('No pudimos registrar la elección', { description: res.error ?? 'Intentá de nuevo.' });
+      toast('No pudimos registrar la elección', { description: res.error ?? 'Intenta de nuevo.' });
     } finally {
       setSubmitting(false);
     }
@@ -70,7 +70,7 @@ export function ComparacionView({ agencyId, processId, comparacion, reload }: Co
           <CaretLeft className="w-4 h-4" /> Elegir inquilino
         </Link>
 
-        <h1 className="text-2xl font-semibold">Compará y elegí</h1>
+        <h1 className="text-2xl font-semibold">Compará y elige</h1>
         <p className="text-sm text-fg-muted mt-1">
           Postulados asegurables de tu inmueble. Tu elección se auto-valida y habilita el contrato.
         </p>
@@ -123,7 +123,7 @@ export function ComparacionView({ agencyId, processId, comparacion, reload }: Co
                       <div className="space-y-2">
                         <p className="text-xs text-fg-muted flex items-start gap-1">
                           <Warning className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                          Elegir a {c.candidateName} habilita el contrato. ¿Confirmás?
+                          Elegir a {c.candidateName} habilita el contrato. ¿Confirmas?
                         </p>
                         <div className="flex gap-2">
                           <Button size="sm" onClick={() => confirmElegir(c.id, c.candidateName)} disabled={submitting} hideArrow>

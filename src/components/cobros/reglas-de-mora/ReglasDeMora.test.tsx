@@ -270,12 +270,12 @@ describe('ReglasDeMora — la tabla', () => {
 
   it('si el back rechaza el switch, el mensaje sale por toast y la fila no cambia', async () => {
     listarMock.mockResolvedValueOnce([regla()]);
-    actualizarMock.mockRejectedValueOnce(new ApiError(403, 'No tenés permiso para editar reglas.'));
+    actualizarMock.mockRejectedValueOnce(new ApiError(403, 'No tienes permiso para editar reglas.'));
     await montar();
 
     await clic($('[data-testid="activa-r-1"]'));
 
-    expect(toastMock.error).toHaveBeenCalledWith('No tenés permiso para editar reglas.');
+    expect(toastMock.error).toHaveBeenCalledWith('No tienes permiso para editar reglas.');
     expect($('[data-testid="regla-r-1"]').textContent).not.toContain('Apagada');
   });
 
@@ -318,7 +318,7 @@ describe('ReglasDeMora — el estado vacío y las plantillas', () => {
     expect(document.querySelector('[data-testid="reglas-lista"]')).toBeNull();
     expect(document.querySelector('[data-testid^="regla-"]')).toBeNull();
     const zona = $('[data-testid="reglas-sugerencias"]');
-    expect(zona.textContent).toContain('Empezá con una de estas');
+    expect(zona.textContent).toContain('Empieza con una de estas');
     expect(zona.textContent).toContain('Todavía no existen');
     // Las dos tarjetas cuelgan de la zona de sugerencias, no de la página.
     expect(zona.querySelectorAll('[data-testid^="plantilla-"]')).toHaveLength(2);
@@ -417,7 +417,7 @@ describe('ReglasDeMora — el editor', () => {
   it('un 400 del back se muestra tal cual adentro del modal, y el modal sigue abierto', async () => {
     listarMock.mockResolvedValueOnce([regla()]);
     const mensaje =
-      'Una tasa DIARIA de 0.5% son 15.0% al mes. Si querés esa cifra mensual, la diaria es ese número dividido 30.';
+      'Una tasa DIARIA de 0.5% son 15.0% al mes. Si quieres esa cifra mensual, la diaria es ese número dividido 30.';
     crearMock.mockRejectedValueOnce(new ApiError(400, mensaje));
     await montar();
     await abrirEditorNuevo();
@@ -440,7 +440,7 @@ describe('ReglasDeMora — el editor', () => {
 
     expect(crearMock).not.toHaveBeenCalled();
     expect($('[data-testid="error-regla-nombre"]').textContent).toContain('El nombre necesita al menos 3 letras.');
-    expect($('[data-testid="error-regla-valor"]').textContent).toContain('Poné el valor.');
+    expect($('[data-testid="error-regla-valor"]').textContent).toContain('Pon el valor.');
   });
 
   it('una tasa diaria mayor que 1 % se frena localmente con el mensaje del back', async () => {

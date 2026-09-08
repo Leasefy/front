@@ -183,7 +183,7 @@ export interface UseOwnerProcesosResult {
 /**
  * Lista de procesos de elección del propietario (F2). `unavailable` = portal no cableado
  * (sin agencyId) → "Próximamente". Una lista vacía CON agencyId es un estado legítimo
- * ("no tenés procesos de elección"), NO "Próximamente" — lo distingue la página.
+ * ("no tienes procesos de elección"), NO "Próximamente" — lo distingue la página.
  */
 export function useOwnerProcesos(): UseOwnerProcesosResult {
   const agencyId = useOwnerAgencyId();
@@ -256,7 +256,7 @@ export interface UseOwnerSolicitudesResult {
 
 /**
  * Lista de solicitudes del propietario (F4). `unavailable` = portal no cableado. Una lista vacía
- * CON agencyId es estado legítimo ("no tenés solicitudes") — lo distingue la página.
+ * CON agencyId es estado legítimo ("no tienes solicitudes") — lo distingue la página.
  */
 export function useOwnerSolicitudes(): UseOwnerSolicitudesResult {
   const agencyId = useOwnerAgencyId();

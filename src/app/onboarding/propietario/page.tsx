@@ -1,6 +1,6 @@
 'use client'
 
-import { LeasefyLogo } from '@/components/brand';
+import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -268,7 +268,7 @@ function OnboardingPropietarioContent() {
         <div className="max-w-2xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             <BrandHomeLink className="flex items-center gap-2">
-              <LeasefyLogo size={28} tone="brand" />
+              <LeasefyLogotype size={24} className="text-fg" title="Leasefy" />
             </BrandHomeLink>
 
             {/* Progress */}

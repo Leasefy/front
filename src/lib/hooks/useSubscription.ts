@@ -30,7 +30,7 @@ export function useMySubscription() {
       // A 5xx or network error means we could not load the subscription;
       // silently degrading to starter could hide paid features from paying users.
       // The caller should check `error` and show "no pudimos cargar tu plan".
-      setError(err instanceof Error ? err.message : 'No pudimos cargar tu plan. Intentá de nuevo.');
+      setError(err instanceof Error ? err.message : 'No pudimos cargar tu plan. Intenta de nuevo.');
       // Leave `subscription` as null so UIs that render based on plan cannot
       // accidentally use stale/incorrect plan data.
     } finally {

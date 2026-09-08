@@ -447,7 +447,7 @@ function PurchaseModal({
                   onValueChange={(v) => setForm({ ...form, bankCode: v })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccioná un banco" />
+                    <SelectValue placeholder="Selecciona un banco" />
                   </SelectTrigger>
                   <SelectContent>
                     {banks.map((b) => (

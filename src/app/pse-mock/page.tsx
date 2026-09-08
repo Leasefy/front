@@ -84,9 +84,9 @@ function PSEMockContent() {
   }, []);
 
   const validate = () => {
-    if (!bankCode) return 'Seleccioná tu banco.';
-    if (!docNumber.trim()) return 'Ingresá tu número de documento.';
-    if (!holderName.trim()) return 'Ingresá el nombre del titular.';
+    if (!bankCode) return 'Selecciona tu banco.';
+    if (!docNumber.trim()) return 'Ingresa tu número de documento.';
+    if (!holderName.trim()) return 'Ingresa el nombre del titular.';
     return null;
   };
 
@@ -124,7 +124,7 @@ function PSEMockContent() {
       const known = MOCK_OUTCOMES[lastDigit];
       setPseError({
         title: known?.label ?? 'Transacción rechazada',
-        description: known?.description ?? (msg || 'La transacción no pudo completarse. Intentá de nuevo.'),
+        description: known?.description ?? (msg || 'La transacción no pudo completarse. Intenta de nuevo.'),
       });
       setPageState('error');
     }
@@ -227,7 +227,7 @@ function PSEMockContent() {
             onChange={(e) => setBankCode(e.target.value)}
             className="w-full h-11 px-3 rounded-md border border-border bg-surface text-[14px] text-fg focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
           >
-            <option value="">Seleccioná tu banco</option>
+            <option value="">Selecciona tu banco</option>
             {banks.map((b) => (
               <option key={b.code} value={b.code}>{b.name}</option>
             ))}

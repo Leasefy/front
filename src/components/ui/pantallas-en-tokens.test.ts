@@ -436,7 +436,7 @@ describe('cobertura', () => {
   it.each(COBERTURA)('%s existe', (rel) => {
     expect(
       existsSync(join(RAIZ, rel)),
-      'Este archivo está en COBERTURA pero no existe. Si se renombró, actualizá la ' +
+      'Este archivo está en COBERTURA pero no existe. Si se renombró, actualiza la ' +
         'ruta; borrar la entrada deja la pantalla sin compuerta.',
     ).toBe(true)
   })
@@ -451,7 +451,7 @@ describe('pantallas de uso diario — colores por token', () => {
       `Colores crudos: ${[...new Set(encontrados)].join(', ')}. Usá los tokens de ` +
         'Cadence (bg-surface / text-fg / text-fg-muted / border-border / bg-primary-soft ' +
         '/ bg-success-soft / bg-warning-soft / bg-danger-soft / bg-info-soft). Si el caso ' +
-        'es legítimo, agregá el archivo a COLOR_CRUDO_JUSTIFICADO **con su motivo**.',
+        'es legítimo, agrega el archivo a COLOR_CRUDO_JUSTIFICADO **con su motivo**.',
     ).toEqual([])
   })
 
@@ -461,7 +461,7 @@ describe('pantallas de uso diario — colores por token', () => {
     (rel) => {
       expect(
         coloresCrudos(leer(rel)).length,
-        'Este archivo ya no tiene colores crudos: sacalo de COLOR_CRUDO_JUSTIFICADO.',
+        'Este archivo ya no tiene colores crudos: sácalo de COLOR_CRUDO_JUSTIFICADO.',
       ).toBeGreaterThan(0)
     },
   )
@@ -476,7 +476,7 @@ describe('pantallas de uso diario — controles por primitiva', () => {
       `Controles a mano: ${[...new Set(encontrados)].join(', ')}. Usá Button / ` +
         'IconButton / Input / Select / Textarea de @/components/ui. Si el caso es ' +
         'legítimo (fila clickeable, disparador de popover con estado, input de archivo ' +
-        'escondido), agregá el archivo a CONTROL_A_MANO_JUSTIFICADO **con su motivo**.',
+        'escondido), agrega el archivo a CONTROL_A_MANO_JUSTIFICADO **con su motivo**.',
     ).toEqual([])
   })
 
@@ -485,7 +485,7 @@ describe('pantallas de uso diario — controles por primitiva', () => {
     (rel) => {
       expect(
         controlesAMano(leer(rel)).length,
-        'Este archivo ya no tiene controles a mano: sacalo de CONTROL_A_MANO_JUSTIFICADO.',
+        'Este archivo ya no tiene controles a mano: sácalo de CONTROL_A_MANO_JUSTIFICADO.',
       ).toBeGreaterThan(0)
     },
   )

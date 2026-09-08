@@ -3,7 +3,7 @@
  * palabras.
  *
  * Un acuerdo puntual se arma para una persona. El acuerdo GENERAL es la regla:
- * «si el deudor cabe en estas condiciones, tomalo y no me preguntes». Vive en
+ * «si el deudor cabe en estas condiciones, tómalo y no me preguntes». Vive en
  * la política de la agencia (`GET/PATCH /api/agency/:id/policy`) y el agente ya
  * la lee en cada negociación.
  *
@@ -78,7 +78,7 @@ export function avisosDelAcuerdo(d: AcuerdoGeneral): string[] {
 
   if (d.maxPlanMonths < 1 && planes.length > 0) {
     avisos.push(
-      `El plazo máximo está en ${d.maxPlanMonths}, así que el agente no puede armar ningún cronograma —aunque estén marcados ${planes.join(', ')} meses. Subilo a ${mayor} para que los plazos marcados sirvan.`,
+      `El plazo máximo está en ${d.maxPlanMonths}, así que el agente no puede armar ningún cronograma —aunque estén marcados ${planes.join(', ')} meses. Súbelo a ${mayor} para que los plazos marcados sirvan.`,
     )
   } else if (mayor !== undefined && d.maxPlanMonths > 0 && mayor > d.maxPlanMonths) {
     avisos.push(

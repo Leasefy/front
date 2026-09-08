@@ -97,7 +97,7 @@ function normalizarDelContrato(cruda: ReglaDeMoraDelContratoCruda): ReglaDeMoraD
 function cuerpoDeAjuste(ajuste: AjusteDeReglaDelContrato): Record<string, unknown> {
   const cuerpo: Record<string, unknown> = {};
   if (ajuste.aplica !== undefined) cuerpo.aplica = ajuste.aplica;
-  // `null` SÍ viaja: es «volvé a lo de la agencia».
+  // `null` SÍ viaja: es «vuelve a lo de la agencia».
   if (ajuste.valor !== undefined) cuerpo.valor = ajuste.valor;
   if (ajuste.disparadorDia !== undefined) cuerpo.disparadorDia = ajuste.disparadorDia;
   return cuerpo;

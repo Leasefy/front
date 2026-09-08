@@ -52,7 +52,7 @@ export default function AvaluoEstadoPage() {
       const label = wompiStatus === 'APPROVED'
         ? 'Pago recibido correctamente.'
         : wompiStatus === 'DECLINED'
-          ? 'El pago fue rechazado. Podés intentarlo nuevamente.'
+          ? 'El pago fue rechazado. Puedes intentarlo nuevamente.'
           : `Estado del pago: ${wompiStatus}`
 
       // Un frame de espera, a propósito: React corre los efectos de abajo hacia

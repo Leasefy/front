@@ -60,7 +60,7 @@ describe('applicationsApi.createGuest — forwards the backend error code', () =
       status: 409,
       json: async () => ({
         statusCode: 409,
-        message: 'Esta propiedad está en venta. No se puede postular: contactá a la inmobiliaria por chat o agendá una visita.',
+        message: 'Esta propiedad está en venta. No se puede postular: contacta a la inmobiliaria por chat o agenda una visita.',
         code: 'PROPIEDAD_EN_VENTA',
       }),
     } as unknown as Response);
@@ -70,7 +70,7 @@ describe('applicationsApi.createGuest — forwards the backend error code', () =
     ).rejects.toMatchObject({
       status: 409,
       code: 'PROPIEDAD_EN_VENTA',
-      message: 'Esta propiedad está en venta. No se puede postular: contactá a la inmobiliaria por chat o agendá una visita.',
+      message: 'Esta propiedad está en venta. No se puede postular: contacta a la inmobiliaria por chat o agenda una visita.',
     });
   });
 

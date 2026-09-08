@@ -6,7 +6,7 @@
  * Va FIJO y no dentro de la lista de notificaciones, por una razón de fondo:
  * un plazo legal no es una notificación. Una notificación se marca como leída y
  * se va; un término de la Ley 1581 sigue corriendo aunque lo hayas visto, y sólo
- * desaparece cuando resolvés la solicitud. Mezclarlo con lo demás —ordenado por
+ * desaparece cuando resuelves la solicitud. Mezclarlo con lo demás —ordenado por
  * fecha, con botón de "marcar como leída"— le daría al operador una forma de
  * silenciar algo que no se puede silenciar.
  *

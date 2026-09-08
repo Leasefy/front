@@ -36,6 +36,10 @@ import {
   type FilaDeStaging,
   type FilaTercero,
 } from '@/lib/api/migracion-terceros.service';
+import {
+  ayudaDelNumeroDeDocumento,
+  tipoDeDocumentoDe,
+} from '@/lib/migracion/ayuda-del-documento';
 
 /** Radix no admite `value=""` en un `<SelectItem>`. */
 const SIN_VALOR = '__vacio__';
@@ -112,6 +116,13 @@ function CeldaEditable({
             {/* «Sin definir» existe a propósito: vacío significa «no lo
                 sabemos», que NO es lo mismo que «no». */}
             <SelectItem value={SIN_VALOR}>Sin definir</SelectItem>
+            {/* Un valor que no está en el catálogo —un banco como «CONFIAR»
+                que se guardó tal como venía— se muestra y se puede dejar:
+                sin esta opción el select lo pintaba como «Sin definir» y
+                guardar la fila lo borraba en silencio. */}
+            {valor && !columna.opciones.includes(valor) ? (
+              <SelectItem value={valor}>{valor} (como viene en el archivo)</SelectItem>
+            ) : null}
             {columna.opciones.map((o) => (
               <SelectItem key={o} value={o}>
                 {o}
@@ -191,30 +202,62 @@ export function FilaDeTercero({
    * manera más rápida de que alguien abandone una migración de 600 filas.
    */
   const [errorDeFila, setErrorDeFila] = useState<string | null>(null);
+  /*
+   * Qué acción de la fila está esperando al back. «No traer esta fila» y
+   * «Usar la ficha existente» no tenían estado de carga: se apretaba, no
+   * pasaba nada visible, y se volvía a apretar (Nico, 2026-09-07). Mientras
+   * una acción corre, las tres quedan apagadas y la que corre gira.
+   */
+  const [ocupadaEn, setOcupadaEn] = useState<'vincular' | 'descartar' | null>(null);
+  const ocupada = guardando || ocupadaEn !== null;
 
   const guardar = async () => {
     setErrorDeFila(null);
     const r = await onCorregir(borrador as FilaTercero);
     if (r.ok) setBorrador({});
     else if (r.mensaje) {
-      setErrorDeFila(`${r.mensaje} Lo que escribiste sigue acá — reintentá Guardar.`);
+      setErrorDeFila(`${r.mensaje} Lo que escribiste sigue acá — reintenta Guardar.`);
     }
   };
 
   const vincular = async () => {
     setErrorDeFila(null);
-    const r = await onVincular();
-    if (!r.ok && r.mensaje) setErrorDeFila(`${r.mensaje} Reintentá.`);
+    setOcupadaEn('vincular');
+    try {
+      const r = await onVincular();
+      if (!r.ok && r.mensaje) setErrorDeFila(`${r.mensaje} Reintenta.`);
+    } finally {
+      setOcupadaEn(null);
+    }
   };
 
   const descartar = async () => {
     setErrorDeFila(null);
-    const r = await onDescartar();
-    if (!r.ok && r.mensaje) setErrorDeFila(`${r.mensaje} Reintentá.`);
+    setOcupadaEn('descartar');
+    try {
+      const r = await onDescartar();
+      if (!r.ok && r.mensaje) setErrorDeFila(`${r.mensaje} Reintenta.`);
+    } finally {
+      setOcupadaEn(null);
+    }
   };
 
   const valorDe = (campo: string): string =>
     borrador[campo] ?? valorEditable(fila.datos[campo]);
+
+  /**
+   * La ayuda bajo «Número de documento» es la del TIPO de la fila —o del que
+   * el operador acaba de elegir en el select, si lo cambió—: a una cédula no
+   * se le habla del dígito de verificación del NIT (2026-09-07). La regla que
+   * valida el back es por tipo; este texto es su espejo.
+   */
+  const conAyudaPorTipo = (columna: ColumnaDePlantilla): ColumnaDePlantilla =>
+    columna.campo === 'documento'
+      ? {
+          ...columna,
+          ayuda: ayudaDelNumeroDeDocumento(tipoDeDocumentoDe(valorDe('tipoDocumento'))),
+        }
+      : columna;
 
   const nombre = valorEditable(fila.datos.nombre) || 'sin nombre';
 
@@ -257,10 +300,16 @@ export function FilaDeTercero({
           <p className="text-sm text-fg-muted">
             Si es la misma persona, la fila se engancha a la ficha que ya está y
             <strong className="font-medium text-fg"> no le pisa ni un dato</strong> — la ficha se
-            edita desde Propietarios. Si son dos personas distintas, corregí el documento acá abajo.
+            edita desde Propietarios. Si son dos personas distintas, corrige el documento acá abajo.
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" hideArrow disabled={guardando} onClick={() => void vincular()}>
+            <Button
+              size="sm"
+              hideArrow
+              disabled={ocupada}
+              isLoading={ocupadaEn === 'vincular'}
+              onClick={() => void vincular()}
+            >
               <LinkIcon className="mr-1.5 h-4 w-4" />
               Es la misma persona
             </Button>
@@ -282,7 +331,7 @@ export function FilaDeTercero({
           {visibles.map((columna) => (
             <CeldaEditable
               key={columna.campo}
-              columna={columna}
+              columna={conAyudaPorTipo(columna)}
               valor={valorDe(columna.campo)}
               onCambia={(v) => setBorrador((b) => ({ ...b, [columna.campo]: v }))}
             />
@@ -294,7 +343,7 @@ export function FilaDeTercero({
         <Button
           size="sm"
           hideArrow
-          disabled={!hayCambios || guardando}
+          disabled={!hayCambios || ocupada}
           isLoading={guardando}
           onClick={() => void guardar()}
         >
@@ -319,7 +368,8 @@ export function FilaDeTercero({
           size="sm"
           variant="outline"
           hideArrow
-          disabled={guardando}
+          disabled={ocupada}
+          isLoading={ocupadaEn === 'descartar'}
           className="text-danger hover:bg-danger-soft hover:text-danger"
           onClick={() => void descartar()}
         >

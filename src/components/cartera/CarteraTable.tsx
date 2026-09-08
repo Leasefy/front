@@ -4,7 +4,7 @@
  * CarteraTable — las deudas de la cartera en la tabla de la casa.
  *
  * ── Por qué existe (Nico, 2026-09-02) ──────────────────────────────────────
- * «Esto sabés que debe tener una tabla como las que ya usamos, y hasta para
+ * «Esto sabes que debe tener una tabla como las que ya usamos, y hasta para
  * los empty state, y cuando tenga datos que tenga paginación.»
  *
  * Mismos primitivos que Agenda e Inquilinos (`Table` de `@/components/ui/table`,

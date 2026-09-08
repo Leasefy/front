@@ -94,7 +94,7 @@ export function LibroAuxiliar() {
             cuentas={cuentas}
             value={cuentaId}
             onChange={setCuentaId}
-            placeholder={cargandoCuentas ? 'Cargando el plan…' : 'Buscá por código o nombre'}
+            placeholder={cargandoCuentas ? 'Cargando el plan…' : 'Busca por código o nombre'}
             disabled={cargandoCuentas}
             className="w-full"
           />
@@ -148,7 +148,7 @@ export function LibroAuxiliar() {
                       <SinDatos
                         queSon="movimientos"
                         icono={ListMagnifyingGlass}
-                        titulo={sinCuenta ? 'Elegí una cuenta' : 'Sin movimientos en este rango'}
+                        titulo={sinCuenta ? 'Elige una cuenta' : 'Sin movimientos en este rango'}
                         descripcion={
                           sinCuenta
                             ? 'El auxiliar muestra cada movimiento de una cuenta con su saldo corrido.'

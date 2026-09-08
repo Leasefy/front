@@ -65,7 +65,7 @@ type ViewMode = 'grid' | 'table';
 function PortafolioContent() {
   const { t } = useI18n();
   const router = useRouter();
-  // `useApiData` captura el fallo en su estado y NO lo relanza: si sólo tomás
+  // `useApiData` captura el fallo en su estado y NO lo relanza: si sólo tomas
   // los datos, una petición que falló llega como `[]` y la pantalla afirma
   // «Todavía no hay inmuebles». Lo mismo pasaba durante la carga. Son estados
   // distintos y ahora se leen distinto.
@@ -201,14 +201,14 @@ function PortafolioContent() {
   }, [filters, portafolioRows]);
 
   /**
-   * ¿Hay algún filtro puesto? Es lo ÚNICO que distingue «todavía no tenés
+   * ¿Hay algún filtro puesto? Es lo ÚNICO que distingue «todavía no tienes
    * inmuebles» de «ninguno coincide con lo que buscaste». Decirle lo primero a
    * quien tiene 200 y filtró mal es afirmar algo falso y dejarlo sin salida.
    */
   //
   // ⚠️ Y un filtro sólo EXPLICA el vacío si había algo que filtrar: sin este
   // `&& hay alguno` una inmobiliaria recién creada —cero inmuebles— vería
-  // «quitá los filtros» en vez de «creá el primero».
+  // «quita los filtros» en vez de «crea el primero».
   const hayFiltrosPuestos =
     Boolean(filters.search) ||
     filters.availability !== 'all' ||
@@ -369,7 +369,7 @@ function PortafolioContent() {
       setMotivoDelRechazo(
         err instanceof Error && err.message
           ? err.message
-          : 'No pudimos retirarlo. Probá de nuevo en un momento.',
+          : 'No pudimos retirarlo. Prueba de nuevo en un momento.',
       );
     } finally {
       setEliminando(false);

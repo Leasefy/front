@@ -166,13 +166,13 @@ export function sugerencias(agencia?: { name?: string | null; razonSocial?: stri
       id: 'transferencia',
       titulo: 'Transferencia a la cuenta de la inmobiliaria',
       explicacion:
-        'La cuenta a la que el inquilino transfiere el canon. Se muestra con el número tapado; el completo lo das vos por el canal que elijas.',
+        'La cuenta a la que el inquilino transfiere el canon. Se muestra con el número tapado; el completo lo das tú por el canal que elijas.',
       valores: {
         tipo: 'TRANSFERENCIA',
         nombre: 'Transferencia bancaria',
         titular: agencia?.razonSocial || agencia?.name || null,
         documentoTitular: agencia?.nit || null,
-        instrucciones: 'Mandá el comprobante con la dirección del inmueble.',
+        instrucciones: 'Manda el comprobante con la dirección del inmueble.',
       },
       directa: false,
     },

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/auth/use-auth'
 import { ArrowRight, CheckCircle, WarningCircle } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
@@ -149,6 +150,7 @@ export function CompleteStepForm({
   draft,
 }: CompleteStepFormProps) {
   const router = useRouter()
+  const { refreshUser } = useAuth()
   const [redirecting, setRedirecting] = useState(false)
   const resumen = resumenDelRegistro(draft)
 
@@ -170,6 +172,25 @@ export function CompleteStepForm({
     const result = await onSubmit()
     if (result) {
       setRedirecting(true)
+      /*
+       * 🔴 Refrescar la sesión ANTES de navegar (Nico, 2026-09-07: «me dejó en
+       * un bucle, no me deja crear cuenta»).
+       *
+       * `/complete` creaba la inmobiliaria bien, pero el contexto de auth
+       * seguía con el `/users/me` de antes —sin membresía— y `ProtectedRoute`,
+       * al ver `needsOnboarding`, devolvía al selector de rol. De ahí el rol
+       * de nuevo, el «Ya casi está» de golpe (la sesión del back ya estaba en
+       * el paso 4) y el selector otra vez. El flujo de inquilino ya hace este
+       * refresco; éste no lo hacía.
+       *
+       * Si el refresco falla igual se navega: el guardián vuelve a sondear la
+       * membresía por su cuenta, y quedarse acá sería otro callejón.
+       */
+      try {
+        await refreshUser()
+      } catch {
+        // ver arriba
+      }
       router.replace(RUTA_DEL_PANEL)
     }
   }

@@ -303,7 +303,7 @@ export interface Contract {
    * Misma forma que `BackendProperty.code` y que el dominio `Property.code`:
    * un solo shape para un solo concepto en todo el front. Ausente sólo cuando
    * el `back` es anterior a T-0040; en ese caso **no se renderiza nada**
-   * (nunca `—`, nunca `#0`). Guardá con `!= null`.
+   * (nunca `—`, nunca `#0`). Guarda con `!= null`.
    */
   code?: number;
   status: ContractStatus;

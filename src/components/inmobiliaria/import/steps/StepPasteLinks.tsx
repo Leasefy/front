@@ -136,7 +136,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
-          Pegá los enlaces de tus inmuebles
+          Pega los enlaces de tus inmuebles
         </h2>
         <p className="text-sm text-fg-muted dark:text-fg-subtle">
           Uno por línea. Leemos cada ficha y armamos el inmueble con sus fotos.
@@ -359,7 +359,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
 
           {leidos.length > 0 && (
             <p className="text-body-sm text-fg-muted">
-              Seguí a la revisión para mirar los datos antes de crear los inmuebles.
+              Sigue a la revisión para mirar los datos antes de crear los inmuebles.
               Lo que falte lo puedes completar ahí.
             </p>
           )}

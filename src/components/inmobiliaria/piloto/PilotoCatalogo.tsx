@@ -5,7 +5,7 @@
  *
  * Nico (2026-09-04), mirando la píldora «Piloto · Sombra» del header con su
  * menú: «¿el modal con todos los procesos funcionales, que muestre todos los
- * procesos de todo lo que pasa en la plataforma? Si no, hacelo».
+ * procesos de todo lo que pasa en la plataforma? Si no, hazlo».
  *
  * No lo mostraba: la pantalla contaba INSTANCIAS de tres cosas (un depósito,
  * una llamada, un hilo de WhatsApp). Esta tabla cuenta la MAQUINARIA: qué

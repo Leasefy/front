@@ -1,5 +1,5 @@
 /**
- * 🔴 «No tenés acceso» no es «no hay nada agendado».
+ * 🔴 «No tienes acceso» no es «no hay nada agendado».
  *
  * `getAgenda` se tragaba el 403 y devolvía un feed vacío, así que la pantalla
  * afirmaba que la agencia no tiene nada en la agenda — pudiendo estar llena.
@@ -20,7 +20,7 @@ const { agendaApi } = await import('./agenda.service')
 afterEach(() => vi.clearAllMocks())
 
 describe('agendaApi.getAgenda', () => {
-  it('un 403 se propaga: la pantalla tiene que poder decir «no tenés acceso»', async () => {
+  it('un 403 se propaga: la pantalla tiene que poder decir «no tienes acceso»', async () => {
     getMock.mockRejectedValue(new ApiError(403, 'Forbidden'))
     await expect(agendaApi.getAgenda()).rejects.toBeInstanceOf(ApiError)
   })

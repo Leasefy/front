@@ -161,8 +161,8 @@ export default function HealthPage() {
           })}
 
           <div className="card p-4 mt-2 border-l-4 border-l-fg-subtle text-xs text-fg-muted">
-            Para activar un check <span className="pill">unconfigured</span>, agregá el env var indicado
-            a <code className="font-mono">.env.local</code> y recargá la página.
+            Para activar un check <span className="pill">unconfigured</span>, agrega el env var indicado
+            a <code className="font-mono">.env.local</code> y recarga la página.
           </div>
         </>
       )}

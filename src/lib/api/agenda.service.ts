@@ -46,7 +46,7 @@ export const agendaApi = {
     } catch (err) {
       // Sin contexto de agencia (404) la agenda vacía ES la verdad.
       //
-      // 🔴 El 403 NO se traga. «No tenés acceso» y «no hay nada agendado» son
+      // 🔴 El 403 NO se traga. «No tienes acceso» y «no hay nada agendado» son
       // hechos distintos, y `FalloDeCarga` ya sabe decir el primero sin ofrecer
       // un "Reintentar" que no arregla nada. Devolver un feed vacío ahí hacía
       // que la pantalla afirmara que la agencia no tiene nada agendado —

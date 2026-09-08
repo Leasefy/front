@@ -121,9 +121,9 @@ export const DESCRIPCION_MAX = 2000
 /** Campo → mensaje. Vacío = se puede radicar. */
 export function validarPqrs(form: PqrsFormulario): Record<string, string> {
   const errores: Record<string, string> = {}
-  if (!form.solicitanteNombre.trim()) errores.solicitanteNombre = 'Escribí quién la presenta.'
+  if (!form.solicitanteNombre.trim()) errores.solicitanteNombre = 'Escribe quién la presenta.'
   const asunto = form.asunto.trim()
-  if (!asunto) errores.asunto = 'Escribí de qué se trata.'
+  if (!asunto) errores.asunto = 'Escribe de qué se trata.'
   else if (asunto.length > ASUNTO_MAX) errores.asunto = `Máximo ${ASUNTO_MAX} caracteres.`
   if (form.descripcion.length > DESCRIPCION_MAX) errores.descripcion = `Máximo ${DESCRIPCION_MAX} caracteres.`
   return errores

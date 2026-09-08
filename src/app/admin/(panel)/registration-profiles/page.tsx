@@ -127,7 +127,7 @@ export default function RegistrationProfilesPage() {
 
     // Client-side mirror of the backend guard: never disable the last one.
     if (!next && enabledCount <= 1) {
-      setActionError('No podés desactivar el último perfil activo. Al menos uno debe quedar habilitado.')
+      setActionError('No puedes desactivar el último perfil activo. Al menos uno debe quedar habilitado.')
       return
     }
 

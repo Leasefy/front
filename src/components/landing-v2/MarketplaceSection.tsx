@@ -113,9 +113,9 @@ export function MarketplaceSection() {
             que tenía acá no numeraba ninguna secuencia real. Un marcador
             ordinal sólo se gana su lugar cuando el orden dice algo. */}
         <div className="mkt-head">
-          <h2 className="h-big">Encontrá tu próximo arriendo.</h2>
+          <h2 className="h-big">Encuentra tu próximo arriendo.</h2>
           <p className="lead">
-            Inmuebles de inmobiliarias que ya operan con Leasefy. Te postulás una sola vez y con
+            Inmuebles de inmobiliarias que ya operan con Leasefy. Te postulas una sola vez y con
             esa aprobación te alcanzan todos los que entren en tu presupuesto.
           </p>
         </div>
@@ -163,7 +163,7 @@ export function MarketplaceSection() {
             Ver todos los inmuebles <span className="ar">→</span>
           </a>
           <a className="btn outline lg" href="/aprobacion">
-            Conocé tu tope de arriendo
+            Conoce tu tope de arriendo
           </a>
         </div>
       </div>

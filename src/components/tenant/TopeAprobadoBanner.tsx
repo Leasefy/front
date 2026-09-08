@@ -89,7 +89,7 @@ export function TopeAprobadoBanner({
   }
 
   /*
-   * Rechazado: la salida no es "consultá otra vez" —eso es pedirle que repita
+   * Rechazado: la salida no es "consulta otra vez" —eso es pedirle que repita
    * lo que acaba de fallar— sino la pantalla que explica qué puede hacer
    * (mejorar perfil, esperar, o que alguien se postule por él).
    */
@@ -265,7 +265,7 @@ export function SobreTopeOverlay({ referencia }: { referencia: Referencia | null
             >
               {tf(
                 `${NS}.overlay.codeudorHint`,
-                'Podés postularte con el perfil de otra persona (un codeudor) para que tome el arriendo por vos.',
+                'Puedes postularte con el perfil de otra persona (un codeudor) para que tome el arriendo por ti.',
               )}
             </span>
           </span>
@@ -329,7 +329,7 @@ export function SobreTopeAlert({
           {'. '}
           {tf(
             `${NS}.alerta.codeudor`,
-            'Podés postularte con el perfil de otra persona (un codeudor) que sí sea apto para este valor.',
+            'Puedes postularte con el perfil de otra persona (un codeudor) que sí sea apto para este valor.',
           )}
         </p>
       </div>

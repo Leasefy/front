@@ -29,7 +29,7 @@ export interface FalloDeCarga {
   tipo: TipoDeFallo
   titulo: string
   descripcion: string
-  /** Sólo lo que puede cambiar si volvés a pedirlo. */
+  /** Sólo lo que puede cambiar si vuelves a pedirlo. */
   sePuedeReintentar: boolean
   /** El status HTTP, si lo hubo. 0 = ni siquiera salió el pedido. */
   status: number | null
@@ -53,7 +53,7 @@ export interface Contexto {
  * El orden importa: al morir el refresh token, `_accessToken` sigue teniendo el
  * último valor —vencido, pero presente— así que preguntar sólo por el token
  * daba "sesión viva" justo cuando ya no la había, y la pantalla ofrecía
- * «Probá de nuevo» para siempre.
+ * «Prueba de nuevo» para siempre.
  */
 function haySesionViva(): boolean {
   if (sesionTerminada()) return false
@@ -98,9 +98,9 @@ function statusDe(error: unknown): number | null {
   // string «403».
   //
   // El resultado se vio en producción, en el Piloto automático: las dos
-  // tarjetas decían «Fue un problema nuestro, no tuyo. Probá de nuevo» con
+  // tarjetas decían «Fue un problema nuestro, no tuyo. Prueba de nuevo» con
   // referencia SER-1601 — «SER» porque no había status que poner. Un 403 (no
-  // tenés permiso) y un 401 (tu sesión venció) se pintaban idénticos a un 500,
+  // tienes permiso) y un 401 (tu sesión venció) se pintaban idénticos a un 500,
   // los tres con un botón «Intentar de nuevo» que no podía funcionar nunca.
   // Que es exactamente el bug que esta tabla de cuatro estados existe para
   // evitar, derrotado un piso más abajo.
@@ -131,7 +131,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
       tipo: 'noExiste',
       titulo: `No encontramos ${eso}`,
       descripcion:
-        'Puede que se haya eliminado, o que el enlace esté mal. Revisá la dirección o volvé al listado.',
+        'Puede que se haya eliminado, o que el enlace esté mal. Revisa la dirección o vuelve al listado.',
       sePuedeReintentar: false,
       status,
       mensajeOriginal,
@@ -141,9 +141,9 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
   if (status === 403) {
     return {
       tipo: 'sinPermiso',
-      titulo: 'No tenés acceso a esto',
+      titulo: 'No tienes acceso a esto',
       descripcion:
-        'Tu rol en la inmobiliaria no incluye esta sección. Pedile a un administrador que te lo habilite.',
+        'Tu rol en la inmobiliaria no incluye esta sección. Pídele a un administrador que te lo habilite.',
       sePuedeReintentar: false,
       status,
       mensajeOriginal,
@@ -160,13 +160,13 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
     // reportando un tropiezo, está diciendo que la sesión no vuelve. Se chequea
     // antes que nada porque el cierre global es asíncrono —esta pantalla puede
     // clasificar su error antes de que la bandera se levante— y mostrar
-    // «Probá de nuevo» en ese hueco es exactamente el bug que se está
+    // «Prueba de nuevo» en ese hueco es exactamente el bug que se está
     // arreglando.
     if (error instanceof ApiError && esCodigoDeSesionMuerta(error.code)) {
       return {
         tipo: 'sinSesion',
         titulo: 'Tu sesión se venció',
-        descripcion: 'Volvé a entrar para seguir donde estabas.',
+        descripcion: 'Vuelve a entrar para seguir donde estabas.',
         sePuedeReintentar: false,
         status,
         mensajeOriginal,
@@ -178,7 +178,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
         tipo: 'servidor',
         titulo: 'No pudimos cargar esto',
         descripcion:
-          'Tu sesión sigue abierta; fue esta consulta la que no pasó. Probá de nuevo.',
+          'Tu sesión sigue abierta; fue esta consulta la que no pasó. Prueba de nuevo.',
         sePuedeReintentar: true,
         status,
         mensajeOriginal,
@@ -187,7 +187,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
     return {
       tipo: 'sinSesion',
       titulo: 'Tu sesión se venció',
-      descripcion: 'Volvé a entrar para seguir donde estabas.',
+      descripcion: 'Vuelve a entrar para seguir donde estabas.',
       sePuedeReintentar: false,
       status,
       mensajeOriginal,
@@ -200,7 +200,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
       tipo: 'red',
       titulo: 'No pudimos conectarnos',
       descripcion:
-        'Revisá tu conexión. Los datos siguen ahí; apenas vuelva la red los traemos.',
+        'Revisa tu conexión. Los datos siguen ahí; apenas vuelva la red los traemos.',
       sePuedeReintentar: true,
       status,
       mensajeOriginal,
@@ -217,7 +217,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
       tipo: 'servidor',
       titulo: 'Esto todavía no está conectado',
       descripcion:
-        'Falta una pieza de nuestro lado, no algo que puedas resolver desde acá. Escribinos con la referencia de abajo y lo habilitamos.',
+        'Falta una pieza de nuestro lado, no algo que puedas resolver desde acá. Escríbenos con la referencia de abajo y lo habilitamos.',
       sePuedeReintentar: false,
       status,
       mensajeOriginal,
@@ -228,7 +228,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
     tipo: 'servidor',
     titulo: 'No pudimos cargar esto',
     descripcion:
-      'Fue un problema nuestro, no tuyo. Probá de nuevo en un momento; si sigue igual, escribinos con la referencia de abajo.',
+      'Fue un problema nuestro, no tuyo. Prueba de nuevo en un momento; si sigue igual, escríbenos con la referencia de abajo.',
     sePuedeReintentar: true,
     status,
     mensajeOriginal,

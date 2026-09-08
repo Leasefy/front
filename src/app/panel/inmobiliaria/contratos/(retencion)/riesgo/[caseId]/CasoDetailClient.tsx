@@ -310,8 +310,8 @@ function MensajeTab({ bundle }: { bundle: CaseBundle }) {
       <Section title="Mensaje al propietario">
         <AlertaAccionable severidad="danger" titulo="No se puede redactar el mensaje todavía">
           {guard.reasons.length
-            ? `Los datos del caso no cuadran (${guard.reasons.join(', ')}). Revisalos antes de escribirle al propietario.`
-            : 'Los datos del caso no cuadran. Revisalos antes de escribirle al propietario.'}
+            ? `Los datos del caso no cuadran (${guard.reasons.join(', ')}). Revísalos antes de escribirle al propietario.`
+            : 'Los datos del caso no cuadran. Revísalos antes de escribirle al propietario.'}
         </AlertaAccionable>
       </Section>
     )
@@ -321,8 +321,8 @@ function MensajeTab({ bundle }: { bundle: CaseBundle }) {
     <div className="space-y-4">
       {/* Antes: «Laura nunca envía sola (v1)» — nombre interno y versión en la
           cara de la inmobiliaria, en una caja ámbar fuera del sistema de tokens. */}
-      <AlertaAccionable severidad="info" titulo="El mensaje no se manda solo: lo revisás y lo enviás vos">
-        El asistente redacta el borrador de abajo. Ajustalo si hace falta, copialo y mandalo desde tu WhatsApp o correo.
+      <AlertaAccionable severidad="info" titulo="El mensaje no se manda solo: lo revisas y lo envías tú">
+        El asistente redacta el borrador de abajo. Ajústalo si hace falta, cópialo y mándalo desde tu WhatsApp o correo.
       </AlertaAccionable>
 
       <Section title="Borrador de mensaje">

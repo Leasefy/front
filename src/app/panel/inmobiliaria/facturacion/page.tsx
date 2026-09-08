@@ -4,7 +4,7 @@
  * Facturación — la estructura del módulo, con el motor DIAN todavía por
  * llegar (M2).
  *
- * Nico (2026-09-03): «esas tabs ¿por qué están fuera de la tabla? sabés que
+ * Nico (2026-09-03): «esas tabs ¿por qué están fuera de la tabla? sabes que
  * deben quedar dentro». Las pestañas son la primera fila de la tarjeta de la
  * tabla, como el buscador y el filtro de Inquilinos. Lo que había además y se
  * fue:

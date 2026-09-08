@@ -19,7 +19,7 @@ interface AgencyRoleGuardProps {
  * Gate de acceso por rol de agencia. Úselo para páginas donde el backend todavía
  * no expone el módulo correspondiente en `effectivePermissions` (ej. 'contratos').
  *
- * Cuando el backend agregue el módulo, migrá a `<PageGuard module="..." />` que
+ * Cuando el backend agregue el módulo, migra a `<PageGuard module="..." />` que
  * ya existe en `src/components/auth/PageGuard.tsx`.
  */
 export function AgencyRoleGuard({

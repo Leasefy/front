@@ -96,7 +96,7 @@ const PENDIENTES = {
       naturaleza: 'DEBITO' as const,
       imputable: true,
       fuente: 'PENDIENTE_DE_CONFIRMAR' as const,
-      nota: 'El 4x1000. Confirmá con tu contador si lo lleva en 511580 o en otra subcuenta.',
+      nota: 'El 4x1000. Confirma con tu contador si lo lleva en 511580 o en otra subcuenta.',
     },
   ],
 };

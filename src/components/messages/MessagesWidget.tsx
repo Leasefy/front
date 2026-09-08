@@ -1031,7 +1031,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                             <Warning className="mt-px h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
                             <span className="flex-1">
                               {locale === 'es'
-                                ? 'No se pudo enviar. Tu mensaje quedó en el campo: probá de nuevo.'
+                                ? 'No se pudo enviar. Tu mensaje quedó en el campo: prueba de nuevo.'
                                 : "Couldn't send. Your message is back in the box — try again."}
                             </span>
                             <button
@@ -1060,13 +1060,13 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                             <Warning className="mt-px h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
                             <span>
                               {locale === 'es'
-                                ? `Falta completar: ${huecosVisibles.map((v) => `{{${v}}}`).join(', ')}. Revisá el mensaje antes de mandarlo.`
+                                ? `Falta completar: ${huecosVisibles.map((v) => `{{${v}}}`).join(', ')}. Revisa el mensaje antes de mandarlo.`
                                 : `Still to fill in: ${huecosVisibles.map((v) => `{{${v}}}`).join(', ')}. Check the message before sending.`}
                               {huecosVisibles.includes('saldo') && (
                                 <>
                                   {' '}
                                   {locale === 'es'
-                                    ? 'El saldo no se completa solo: sacalo del botón de pendientes, que trae el cobro real.'
+                                    ? 'El saldo no se completa solo: sácalo del botón de pendientes, que trae el cobro real.'
                                     : 'The balance is not filled in automatically: take it from the pending items button, which carries the real charge.'}
                                 </>
                               )}

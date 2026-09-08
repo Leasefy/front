@@ -8,6 +8,7 @@ import { resolveListingType } from '@/lib/api/properties.mapper';
 import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url';
 import { tasaMedida } from '@/lib/tasas';
 import type {
+  DocumentType,
   AgencyProfile,
   UpdateAgencyPayload,
   Propietario,
@@ -70,10 +71,10 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:300
  * La lista, venga envuelta en `{ data }` o pelada.
  *
  * ⚠️ Esto NO es tolerancia por gusto: **cinco tablas del panel decían «todavía
- * no tenés nada» con los datos ahí**. El código hacía `res.data` sobre lo que
+ * no tienes nada» con los datos ahí**. El código hacía `res.data` sobre lo que
  * el back devuelve como array pelado, `[].data` es `undefined`, y el hook lo
  * pinta como lista vacía. Medido en el CRM de Propietarios: la respuesta traía
- * tres propietarios y la pantalla mostraba «Todavía no tenés propietarios».
+ * tres propietarios y la pantalla mostraba «Todavía no tienes propietarios».
  *
  * Es la tercera vez que la misma confusión de forma tumba una pantalla, y
  * ninguna de las tres se cayó: se veía como «no hay datos», que es indistinguible
@@ -154,7 +155,7 @@ function mapBankCodeToWire(code: BankCode): string {
   const wire = BANK_CODE_TO_WIRE[code];
   if (!wire) {
     throw new Error(
-      `Banco no soportado: "${code}". Este banco no tiene un código válido del backend — revisá BANK_CODE_TO_WIRE en inmobiliaria.service.ts.`,
+      `Banco no soportado: "${code}". Este banco no tiene un código válido del backend — revisa BANK_CODE_TO_WIRE en inmobiliaria.service.ts.`,
     );
   }
   return wire;
@@ -175,6 +176,8 @@ type PropietarioDelBack = Omit<Propietario, 'bankAccount' | 'propertyCount' | 'a
   bankAccountType?: string | null;
   bankAccountNumber?: string | null;
   bankAccountHolder?: string | null;
+  bankAccountHolderDocument?: string | null;
+  bankAccountHolderDocumentType?: DocumentType | null;
   propertyCount?: number;
   activeLeases?: number;
   totalMonthlyRent?: number;
@@ -199,7 +202,15 @@ export function codigoDeBanco(nombre: string | null | undefined): BankCode | '' 
 }
 
 export function normalizePropietario(raw: PropietarioDelBack): Propietario {
-  const { bankName, bankAccountType, bankAccountNumber, bankAccountHolder, ...rest } = raw;
+  const {
+    bankName,
+    bankAccountType,
+    bankAccountNumber,
+    bankAccountHolder,
+    bankAccountHolderDocument,
+    bankAccountHolderDocumentType,
+    ...rest
+  } = raw;
   return {
     ...(rest as Omit<Propietario, 'bankAccount'>),
     propertyCount: raw.propertyCount ?? 0,
@@ -213,6 +224,10 @@ export function normalizePropietario(raw: PropietarioDelBack): Propietario {
       accountType: (bankAccountType ?? '').toLowerCase().startsWith('corr') ? 'checking' : 'savings',
       accountNumber: bankAccountNumber ?? '',
       accountHolder: bankAccountHolder ?? '',
+      ...(bankAccountHolderDocument ? { accountHolderDocument: bankAccountHolderDocument } : {}),
+      ...(bankAccountHolderDocument && bankAccountHolderDocumentType
+        ? { accountHolderDocumentType: bankAccountHolderDocumentType }
+        : {}),
     },
   };
 }
@@ -241,8 +256,29 @@ function mapAccountTypeToWire(type: AccountType): string {
 function mapPropietarioBankFields<T extends Partial<PropietarioFormData>>(
   data: T,
 ): Omit<T, 'bankCode' | 'accountType' | 'accountNumber' | 'accountHolder'> & Record<string, unknown> {
-  const { bankCode, accountType, accountNumber, accountHolder, ...rest } = data;
+  const {
+    bankCode,
+    accountType,
+    accountNumber,
+    accountHolder,
+    accountHolderDocument,
+    accountHolderDocumentType,
+    department,
+    ...rest
+  } = data;
   const payload: Record<string, unknown> = { ...rest };
+
+  // Sólo cuando el formulario los manda: un PUT parcial (las notas solas) no
+  // debe tocar el titular ni el departamento. Vacío se manda como `null`,
+  // que en el back limpia el dato; un tipo sin documento no significa nada.
+  if (department !== undefined) {
+    payload.department = department.trim() || null;
+  }
+  if (accountHolderDocument !== undefined || accountHolderDocumentType !== undefined) {
+    const documento = (accountHolderDocument ?? '').trim();
+    payload.bankAccountHolderDocument = documento || null;
+    payload.bankAccountHolderDocumentType = documento && accountHolderDocumentType ? accountHolderDocumentType : null;
+  }
 
   if (bankCode) {
     payload.bankCode = mapBankCodeToWire(bankCode);
@@ -1143,7 +1179,7 @@ export const avaluosApi = {
       };
     }
 
-    throw new ApiError(0, 'No pudimos abrir el asistente de avalúo. Intentá de nuevo.');
+    throw new ApiError(0, 'No pudimos abrir el asistente de avalúo. Intenta de nuevo.');
   },
 };
 

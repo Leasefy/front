@@ -217,7 +217,7 @@ describe('gates del panel — lo que se muestra a todos se abre para todos', () 
       expect(
         /<AgencyRoleGuard[^>]*allowed="managers"/.test(fuente),
         `${href} se muestra a los 4 roles pero sólo abre para managers: declará ` +
-          `roles: [ADMIN, AGENTE] en arquitectura-del-panel.ts o aflojá el guard`,
+          `roles: [ADMIN, AGENTE] en arquitectura-del-panel.ts o afloja el guard`,
       ).toBe(false);
     },
   );

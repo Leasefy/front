@@ -33,7 +33,7 @@ const MAX_LLAMADAS = 100;
  * SÍ alcanzó a pasar antes del corte. Sin esto, el error de la llamada 3
  * tiraba a la basura el conteo de las dos primeras y la pantalla sólo podía
  * decir «no pudimos activar», cuando la verdad era «activamos 1.000 y el
- * resto espera: reintentá y sigue donde quedó» (el back no repite filas).
+ * resto espera: reintenta y sigue donde quedó» (el back no repite filas).
  */
 export class ActivacionInterrumpida extends Error {
   constructor(

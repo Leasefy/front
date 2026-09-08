@@ -238,7 +238,7 @@ export function PlanForm({
         {values.isDefault && otherDefaultExists && (
           <div className="card p-3 border-l-4 border-l-warn text-xs text-warn">
             Ya existe otro plan marcado como <strong>por defecto</strong>. El backend no fuerza
-            unicidad: revisá que a lo sumo uno quede como default.
+            unicidad: revisa que a lo sumo uno quede como default.
           </div>
         )}
       </fieldset>

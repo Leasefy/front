@@ -5,7 +5,7 @@
  * la pantalla arma sus claves por concatenación (`queSon_${tab}`,
  * `desc_${tab}`, y una columna por pestaña), y `t()` devuelve la clave cruda
  * cuando no la encuentra. Una clave que falta no explota: pinta
- * «Todavía no tenés inmobiliaria.facturacion.queSon_ventas» en la cara del
+ * «Todavía no tienes inmobiliaria.facturacion.queSon_ventas» en la cara del
  * usuario. El test de la página no lo ve porque mockea `t` para que devuelva
  * la clave — así que el diccionario se verifica acá, contra los dos idiomas.
  *
@@ -60,7 +60,7 @@ const CLAVES_EN_USO = [
   'm2BannerTitle',
   'm2BannerDesc',
   ...TABS.map((t) => `tab_${t}`),
-  // El vacío de cada pestaña: `queSon_*` arma el título («Todavía no tenés
+  // El vacío de cada pestaña: `queSon_*` arma el título («Todavía no tienes
   // facturas de venta») y `desc_*` es la descripción.
   ...TABS.map((t) => `queSon_${t}`),
   ...TABS.map((t) => `desc_${t}`),
@@ -91,7 +91,7 @@ describe('el encabezado no se repite', () => {
 
 describe('el vacío se lee como una frase', () => {
   it.each(TABS)('queSon_%s va en plural y en minúscula', (tab) => {
-    // `SinDatos` lo mete en «Todavía no tenés {queSon}»: si viene en mayúscula
+    // `SinDatos` lo mete en «Todavía no tienes {queSon}»: si viene en mayúscula
     // o en singular, la frase queda mal escrita en pantalla.
     const texto = leer(ES, `queSon_${tab}`) as string;
     expect(texto[0]).toBe(texto[0]?.toLowerCase());

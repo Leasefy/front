@@ -92,7 +92,7 @@ describe('clasificarFallo', () => {
 
 /**
  * El caso que este archivo existía para NO cubrir: un 401 que sí prueba que la
- * sesión murió. Antes todos caían en «Tu sesión sigue abierta; probá de nuevo»
+ * sesión murió. Antes todos caían en «Tu sesión sigue abierta; prueba de nuevo»
  * porque `_accessToken` conserva el último token —vencido, pero presente— así
  * que el chequeo por token respondía "hay sesión" justo cuando ya no la había.
  */

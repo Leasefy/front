@@ -1,6 +1,8 @@
 'use client'
 
 import { Controller, useForm, type FieldPath } from 'react-hook-form'
+import { formatearNitAlEscribir } from '@/lib/onboarding/nit'
+import { PhoneInput } from '@leasefy/cadence'
 import { ArrowRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +14,7 @@ import {
   AGENCY_STEP_DEFAULT_VALUES,
   agencyStepSchema,
   toAgencyRequest,
+  pistaDelTelefono,
   type AgencyStepFormValues,
 } from './agency-step-schema'
 
@@ -75,6 +78,9 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
       address: { ...AGENCY_STEP_DEFAULT_VALUES.address, ...prefill?.address },
     },
   })
+  // El país vive en el formulario (no en un `useState` aparte) para que el
+  // esquema valide el largo del número con él.
+  const paisDelTelefono = watch('primaryContactCountry') || 'CO'
 
   // Municipio options depend on the chosen departamento. Watching the field
   // re-renders the municipio combobox with the right list; changing the
@@ -135,7 +141,14 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
               ? 'font-mono tabular-nums bg-surface-muted text-fg-subtle cursor-not-allowed'
               : 'font-mono tabular-nums'
           }
-          {...register('nit')}
+          {...register('nit', {
+            // El guion lo pone el campo al noveno dígito; la persona sólo
+            // teclea números. `setValue` y no mutar el evento: RHF ya leyó.
+            onChange: (e) =>
+              setValue('nit', formatearNitAlEscribir(String(e.target.value)), {
+                shouldValidate: true,
+              }),
+          })}
         />
         {nitConfirmed ? <ConfirmedHint /> : <FieldError message={errors.nit?.message} />}
       </div>
@@ -235,14 +248,33 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
         <label htmlFor="primaryContactPhone" className="block text-sm font-medium text-fg mb-2">
           Teléfono de contacto principal <span className="text-danger">*</span>
         </label>
-        <Input
-          id="primaryContactPhone"
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-          {...register('primaryContactPhone')}
+        {/* Con selector de país y su indicativo (Nico, 2026-09-07). El valor
+            que viaja al back sigue siendo el número sin indicativo, igual que
+            antes; el país queda en el formulario y el esquema valida con él
+            cuántos dígitos tiene un número de ese país. */}
+        <Controller
+          control={control}
+          name="primaryContactPhone"
+          render={({ field }) => (
+            <PhoneInput
+              id="primaryContactPhone"
+              autoComplete="tel"
+              countryCode={paisDelTelefono}
+              onCountryChange={(codigo) =>
+                setValue('primaryContactCountry', codigo, { shouldValidate: false })
+              }
+              value={field.value ?? ''}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              invalid={Boolean(errors.primaryContactPhone)}
+            />
+          )}
         />
-        <FieldError message={errors.primaryContactPhone?.message} />
+        {errors.primaryContactPhone?.message ? (
+          <FieldError message={errors.primaryContactPhone.message} />
+        ) : (
+          <p className="mt-1.5 text-xs text-fg-subtle">{pistaDelTelefono(paisDelTelefono)}</p>
+        )}
       </div>
 
       {submitError && (

@@ -60,7 +60,7 @@ export function CouponInput({
       }
     } catch (err) {
       // Infrastructure failure (network down, 5xx) — distinct from "cupón inválido".
-      setError(err instanceof Error ? err.message : 'No pudimos verificar el cupón. Intentá de nuevo.');
+      setError(err instanceof Error ? err.message : 'No pudimos verificar el cupón. Intenta de nuevo.');
     } finally {
       setIsLoading(false);
     }

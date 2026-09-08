@@ -53,15 +53,12 @@ export type CodigoDeError =
   | 'FALTA_TIPO_DOCUMENTO'
   | 'TIPO_DOCUMENTO_DESCONOCIDO'
   | 'FALTA_DOCUMENTO'
+  /** El número no cumple la regla de SU tipo (largo, primer dígito, letras). */
   | 'DOCUMENTO_INVALIDO'
-  | 'FALTA_CORREO'
+  | 'NIT_DV_INVALIDO'
   | 'CORREO_INVALIDO'
-  | 'TELEFONO_INVALIDO'
-  | 'FALTA_BANCO'
-  | 'BANCO_DESCONOCIDO'
-  | 'FALTA_TIPO_CUENTA'
-  | 'TIPO_CUENTA_DESCONOCIDO'
-  | 'FALTA_NUMERO_CUENTA'
+  // Sin códigos de banco, tipo ni número de cuenta (2026-09-07): la cuenta
+  // bancaria no bloquea la fila; se completa después desde Propietarios.
   | 'DUPLICADO_EN_EL_LOTE'
   | 'CORREO_REPETIDO_EN_EL_LOTE'
   | 'YA_EXISTE_EN_LA_AGENCIA'
@@ -100,11 +97,15 @@ export interface ErrorDeFila {
 export const CLAVES_DE_FILA = [
   'tipoDocumento',
   'documento',
+  // Del NIT: se compara con el calculado (2026-09-07).
+  'digitoVerificacion',
   'nombre',
   'correo',
   'telefono',
   'direccion',
   'ciudad',
+  // Partido de «Caldas (Antioquia)» o en su propia columna (2026-09-07).
+  'departamento',
   'banco',
   'tipoCuenta',
   'numeroCuenta',
@@ -125,32 +126,14 @@ export type CampoDeFila = (typeof CLAVES_DE_FILA)[number];
 export type FilaTercero = Partial<Record<CampoDeFila, string>>;
 
 /**
- * `@MaxLength` de cada celda en `FilaTerceroDto`.
- *
- * Se copia acá para poder avisar ANTES de mandar. Una celda de 250 caracteres
- * en la fila 800 no devuelve «la fila 800 tiene el nombre muy largo»: devuelve
- * un 400 con las 1.200 filas adentro y sin decir cuál. Avisar antes es la
- * diferencia entre corregir una celda y abandonar la migración.
+ * 🔴 Sin tope de caracteres por celda (Nico, 2026-09-07): «no deberíamos
+ * tener límites de caracteres para ningún campo, para no limitar cómo lo
+ * tenga cada inmobiliaria». Acá vivía una copia de los `@MaxLength` del DTO
+ * para avisar antes de mandar; el archivo real traía «3103640479 / NELSON
+ * HERRERA - ESPOSO 3217834480» en el teléfono (47 caracteres contra 40) y la
+ * carga no pasaba de la pantalla de subida. El back ya no tiene `@MaxLength`
+ * y sus columnas son TEXT, así que no hay nada que replicar.
  */
-export const LARGO_MAXIMO_DE_CELDA: Record<CampoDeFila, number> = {
-  tipoDocumento: 30,
-  documento: 40,
-  nombre: 200,
-  correo: 255,
-  telefono: 40,
-  direccion: 300,
-  ciudad: 50,
-  banco: 100,
-  tipoCuenta: 40,
-  numeroCuenta: 60,
-  titularCuenta: 200,
-  responsableIva: 20,
-  agenteRetenedorRenta: 20,
-  agenteRetenedorIva: 20,
-  agenteRetenedorIca: 20,
-  notas: 1000,
-  externalId: 64,
-};
 
 /** `MAX_FILAS_POR_LOTE` en `MigracionTercerosService`. */
 export const MAX_FILAS_POR_LOTE = 5_000;
@@ -266,6 +249,12 @@ export interface ResumenDeAplicacion {
   invitados: number;
   /** Cuentas creadas sin invitación por el límite de correo del proveedor. Un back viejo no lo manda. */
   sinInvitar?: number;
+  /**
+   * Inquilinos aplicados SIN cuenta del portal porque la fila no traía correo:
+   * existen para la inmobiliaria con su documento; la cuenta nace cuando se
+   * les cargue el correo (2026-09-07). Un back viejo no lo manda.
+   */
+  sinCorreo?: number;
   resultados: ResultadoDeFila[];
   /**
    * Cuántas filas listas quedaron sin intentarse en esta llamada: mientras
@@ -306,7 +295,7 @@ function celda(valor: unknown): string {
  *
  * Las vacías se conservan como `''`. Es lo que hace falta al **corregir**: el
  * back mezcla `{...loQueHabía, ...campos}`, así que omitir una clave significa
- * «dejala como está» y sólo un `''` explícito la borra. Para **preparar** se
+ * «déjala como está» y sólo un `''` explícito la borra. Para **preparar** se
  * usa `filaDePlantilla()`, que sí las tira.
  */
 export function soloClavesDeFila(cruda: Record<string, unknown>): FilaTercero {
@@ -332,35 +321,6 @@ export function filaDePlantilla(cruda: Record<string, unknown>): FilaTercero {
     if (valor) salida[clave as CampoDeFila] = valor;
   }
   return salida;
-}
-
-/** Una celda que no cabe en su columna, con dónde está. */
-export interface CeldaDemasiadoLarga {
-  /** 1-based, como en el Excel. */
-  fila: number;
-  campo: CampoDeFila;
-  largo: number;
-  maximo: number;
-}
-
-/**
- * Las celdas que el back va a rechazar por largo, antes de mandarlas.
- *
- * No se truncan: recortar una cédula o una razón social en silencio es peor
- * que el 400. Se listan con su número de fila para que la persona sepa dónde
- * mirar en su propio archivo.
- */
-export function celdasDemasiadoLargas(filas: FilaTercero[]): CeldaDemasiadoLarga[] {
-  const problemas: CeldaDemasiadoLarga[] = [];
-  filas.forEach((fila, i) => {
-    for (const [clave, valor] of Object.entries(fila)) {
-      const maximo = LARGO_MAXIMO_DE_CELDA[clave as CampoDeFila];
-      if (valor && valor.length > maximo) {
-        problemas.push({ fila: i + 1, campo: clave as CampoDeFila, largo: valor.length, maximo });
-      }
-    }
-  });
-  return problemas;
 }
 
 // ══ HTTP ════════════════════════════════════════════════════════════════════
@@ -527,9 +487,19 @@ export const migracionTercerosApi = {
    * Un solo `GET /lotes` del back (un `groupBy`), no una derivación desde una
    * página de filas: derivarlo dejaba invisibles los lotes que no cabían en
    * las primeras 200 filas — con una carga real de 600 propietarios, la
-   * tarjeta de «tenés una carga sin terminar» no aparecía y la persona
+   * tarjeta de «tienes una carga sin terminar» no aparecía y la persona
    * resubía el archivo, duplicando a todo el mundo.
    */
+  /**
+   * Vuelve a pasar las filas del lote por las reglas ACTUALES del back. Barato
+   * cuando ya están al día. Existe porque una regla que cambia no debe dejar
+   * filas frenadas por un motivo que ya no existe (Nico, 2026-09-07: 798
+   * filas con el mensaje viejo hasta volver a subir el archivo).
+   */
+  async revisar(lote: string): Promise<{ revisadas: number; ahoraListas: number }> {
+    return apiClient.post<{ revisadas: number; ahoraListas: number }>(`${BASE}/revisar`, { lote });
+  },
+
   async lotesAbiertos(): Promise<LoteDeTerceros[]> {
     return apiClient.get<LoteDeTerceros[]>(`${BASE}/lotes`);
   },

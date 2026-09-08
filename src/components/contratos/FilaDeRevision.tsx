@@ -253,7 +253,7 @@ export function FilaDeRevision({
           data-testid="activada-sin-propietario"
         >
           Este contrato ya está activo y no tiene propietario: no genera cobros
-          hasta que el inmueble quede consignado. Elegilo acá, o seleccioná
+          hasta que el inmueble quede consignado. Elígelo acá, o selecciona
           varias filas y usá «Mismo propietario».
         </p>
       ) : null}

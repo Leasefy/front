@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { construirVistaPrevia, primerNombre } from './wa-preview'
 
 // Cuerpo REAL de `reminder_soft_co` (agent/src/whatsapp/templates.ts), recortado.
-const REMINDER_SOFT = 'Hola {{1}}, te saludamos de {{2}}.\n\nTu canon de {{3}} venció el {{4}} por COP {{5}}. Pagá acá: {{6}}'
+const REMINDER_SOFT = 'Hola {{1}}, te saludamos de {{2}}.\n\nTu canon de {{3}} venció el {{4}} por COP {{5}}. Paga acá: {{6}}'
 const REMINDER_VARS = [
   'debtor_first_name',
   'agency_name',
@@ -32,7 +32,7 @@ describe('construirVistaPrevia — sintaxis numerada ({{1}})', () => {
       },
     )
     expect(texto).toBe(
-      'Hola Nicolás, te saludamos de Leasefy.\n\nTu canon de julio venció el 5 de julio por COP 1.950.000. Pagá acá: https://pago.co/x',
+      'Hola Nicolás, te saludamos de Leasefy.\n\nTu canon de julio venció el 5 de julio por COP 1.950.000. Paga acá: https://pago.co/x',
     )
     expect(huecos).toEqual([])
   })

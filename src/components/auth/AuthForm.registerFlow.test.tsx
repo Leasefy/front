@@ -101,8 +101,10 @@ async function submitRegister(props: RenderProps = {}) {
   expect(confirm).not.toBeNull()
   await act(async () => {
     setInputValue(email, 'nuevo@example.com')
-    setInputValue(password, 'secreta123')
-    setInputValue(confirm, 'secreta123')
+    // «secreta123» ya no alcanza: está entre las más usadas y no tiene
+    // mayúscula ni símbolo (medidor de contraseña, 2026-09-07).
+    setInputValue(password, 'Secreta#2026')
+    setInputValue(confirm, 'Secreta#2026')
   })
   const form = container.querySelector('form')!
   await act(async () => {

@@ -118,7 +118,7 @@ export function validarPartidaDoble(lineas: readonly LineaDelFormulario[]): Vere
 }
 
 export const TEXTO_DE_ERROR_DE_LINEA: Record<ErrorDeLinea, string> = {
-  SIN_CUENTA: 'Elegí la cuenta.',
+  SIN_CUENTA: 'Elige la cuenta.',
   SIN_MONTO: 'Falta el monto: débito o crédito.',
   DOS_LADOS: 'Una línea va por un solo lado: débito o crédito, no los dos.',
   MONTO_INVALIDO: 'El monto va en pesos enteros, en positivo.',

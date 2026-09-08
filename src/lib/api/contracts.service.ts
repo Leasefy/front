@@ -623,7 +623,7 @@ export const contractsApi = {
       periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
       comisionPorcentaje?: number;
       /*
-       * El perfil tributario del inquilino. `null` es una acción —«volvé a no
+       * El perfil tributario del inquilino. `null` es una acción —«vuelve a no
        * saberlo»— y no lo mismo que no mandar el campo, que lo deja como está.
        */
       /**
@@ -869,7 +869,7 @@ export interface LoteAbierto {
   listos: number;
   /**
    * T-0035 (contract.md T-0035 §1) — misma proyección y misma razón de ser
-   * que `ResumenLote.activables`. La tarjeta "Tenés una migración sin
+   * que `ResumenLote.activables`. La tarjeta "Tienes una migración sin
    * terminar" debe leer ESTE campo para decidir qué mostrar, nunca `listos`
    * solo — mirar `listos` es exactamente el bug que dejaba invisible un
    * lote de 1.365 filas sin inmueble bajo el modo sparse.

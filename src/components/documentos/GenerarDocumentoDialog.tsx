@@ -299,7 +299,7 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
               options={opcionesDeTipo}
               value={codigo || undefined}
               onChange={(v) => setCodigo((v ?? '') as CodigoDeDocumentoLegal | '')}
-              placeholder={opcionesDeTipo.length ? 'Elegí qué generar' : 'Cargando…'}
+              placeholder={opcionesDeTipo.length ? 'Elige qué generar' : 'Cargando…'}
               searchPlaceholder="Contrato, acta, inventario, carta"
               disabled={opcionesDeTipo.length === 0}
               contentClassName="z-[400]"
@@ -443,7 +443,7 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
                             options={OPCIONES_DE_CIUDAD}
                             value={valor || undefined}
                             onChange={(v) => escribirCampo(campo.nombre, v ?? '')}
-                            placeholder="Elegí la ciudad"
+                            placeholder="Elige la ciudad"
                             searchPlaceholder="Ciudad o departamento"
                             invalid={vacio}
                             contentClassName="z-[400]"

@@ -141,14 +141,14 @@ function EditarContratoContent() {
     if (!rent || rent < 100_000) errors.monthlyRent = 'Mínimo 100.000 COP';
     if (form.deposit) {
       const dep = Number(form.deposit);
-      if (isNaN(dep) || dep < 0) errors.deposit = 'Ingresá un valor válido';
+      if (isNaN(dep) || dep < 0) errors.deposit = 'Ingresa un valor válido';
     }
     const day = Number(form.paymentDay);
     if (!day || day < 1 || day > 28) errors.paymentDay = 'Entre 1 y 28';
     const errorDePlazo = validarDiasDePlazo(form.diasDePlazo);
     if (errorDePlazo) errors.diasDePlazo = errorDePlazo;
     if (replacePdf && !form.pdfFile) {
-      errors.pdfFile = 'Subí el PDF nuevo o desactivá el reemplazo.';
+      errors.pdfFile = 'Sube el PDF nuevo o desactiva el reemplazo.';
     }
     return errors;
   }, [form, replacePdf]);
@@ -165,7 +165,7 @@ function EditarContratoContent() {
       if (replacePdf && form.pdfFile) {
         const uploaded = await actions.uploadPdf(form.pdfFile);
         if (!uploaded) {
-          setSubmitError('No se pudo subir el PDF. Intentá de nuevo.');
+          setSubmitError('No se pudo subir el PDF. Intenta de nuevo.');
           return;
         }
         uploadedPdfPath = uploaded.uploadedPdfPath;
@@ -185,12 +185,12 @@ function EditarContratoContent() {
 
       const updated = await actions.update(contractId, dto);
       if (!updated) {
-        setSubmitError('No se pudo actualizar el contrato. Verificá los datos e intentá de nuevo.');
+        setSubmitError('No se pudo actualizar el contrato. Verifica los datos e intenta de nuevo.');
         return;
       }
 
       /*
-       * 🔴 Acá decía «Firmalo para enviarlo al inquilino» y mandaba a
+       * 🔴 Acá decía «Fírmalo para enviarlo al inquilino» y mandaba a
        * `/firmar`, que respondía «Este contrato no está pendiente de tu
        * firma»: un callejón sin salida en dos clics.
        *
@@ -323,7 +323,7 @@ function EditarContratoContent() {
               <div>
                 <h2 className="text-base font-semibold text-foreground">PDF del contrato</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Reemplazá el PDF sólo si cambiaste el documento. Sino dejalo como está.
+                  Reemplaza el PDF sólo si cambiaste el documento. Sino déjalo como está.
                 </p>
               </div>
               <label className="inline-flex items-center gap-2 cursor-pointer">
@@ -372,7 +372,7 @@ function EditarContratoContent() {
                 >
                   <UploadSimple className="w-6 h-6 text-muted-foreground" />
                   <p className="text-sm text-foreground">
-                    <span className="font-medium">Hacé click para subir</span> o arrastrá un PDF aquí
+                    <span className="font-medium">Haz click para subir</span> o arrastra un PDF aquí
                   </p>
                   <p className="text-xs text-muted-foreground">Máx 10 MB</p>
                   <input

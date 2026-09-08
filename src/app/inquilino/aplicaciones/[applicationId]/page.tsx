@@ -477,7 +477,7 @@ export default function ApplicationDetailPage() {
                   );
                 }
 
-                // Pendiente firma del tenant → CTA principal (firmá primero — flow tenant-first).
+                // Pendiente firma del tenant → CTA principal (firma primero — flow tenant-first).
                 if (contractStatus === 'pending_tenant') {
                   return (
                     <div className="mt-6 p-4 rounded-xl bg-primary-soft border border-primary/30">
@@ -491,7 +491,7 @@ export default function ApplicationDetailPage() {
                           </p>
                           <p className="text-sm text-primary mt-1">
                             {locale === 'es'
-                              ? 'Revisá el contrato y firmá. Después el propietario firmará para cerrar el proceso.'
+                              ? 'Revisa el contrato y firma. Después el propietario firmará para cerrar el proceso.'
                               : 'Review the contract and sign. Then the landlord will sign to close the process.'}
                           </p>
                           <Link
@@ -574,7 +574,7 @@ export default function ApplicationDetailPage() {
                           </p>
                           <p className="text-sm text-warning mt-1">
                             {locale === 'es'
-                              ? 'Pediste modificaciones al contrato. Te avisamos cuando el propietario las aplique así podés revisarlo y firmar.'
+                              ? 'Pediste modificaciones al contrato. Te avisamos cuando el propietario las aplique así puedes revisarlo y firmar.'
                               : 'You requested modifications. We\'ll notify you once the landlord applies them so you can review and sign.'}
                           </p>
                           <Link
@@ -685,7 +685,7 @@ export default function ApplicationDetailPage() {
                       </p>
                       <p className="text-sm text-warning mt-1">
                         {locale === 'es'
-                          ? 'Revisá la sección de Acciones para completar lo que se te pidió y notificar a la inmobiliaria.'
+                          ? 'Revisa la sección de Acciones para completar lo que se te pidió y notificar a la inmobiliaria.'
                           : 'Check the Actions section to complete what was requested and notify the agency.'}
                       </p>
                       <Button
@@ -969,7 +969,7 @@ export default function ApplicationDetailPage() {
                     </p>
                     <p className="text-sm text-warning">
                       {locale === 'es'
-                        ? 'La inmobiliaria necesita más información para continuar con tu solicitud. Hacé clic en "Completar información" para responder.'
+                        ? 'La inmobiliaria necesita más información para continuar con tu solicitud. Haz clic en "Completar información" para responder.'
                         : 'The agency needs more information to proceed with your application. Click "Complete information" to respond.'}
                     </p>
                   </div>

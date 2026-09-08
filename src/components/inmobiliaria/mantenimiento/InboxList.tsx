@@ -33,7 +33,7 @@ interface InboxListProps {
    *
    * La página pinta el cartel del fallo arriba y después llamaba a esta lista
    * con `tickets = []`, que caía en el vacío «No hay tickets»: la pantalla
-   * afirmaba «falló» y «no tenés nada» al mismo tiempo, y lo segundo es una
+   * afirmaba «falló» y «no tienes nada» al mismo tiempo, y lo segundo es una
    * mentira tranquilizadora. Es el mismo orden que impone `EstadoDeDatos`
    * (carga → fallo → vacío → datos): el vacío va DESPUÉS del fallo, nunca al
    * lado.

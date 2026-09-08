@@ -111,7 +111,7 @@ export function LocationPicker({ value, onChange, city, className }: LocationPic
         </Map>
       </div>
       <p className="text-xs text-fg-muted">
-        Arrastrá el marcador o hacé clic en el mapa para ajustar la ubicación exacta.
+        Arrastra el marcador o haz clic en el mapa para ajustar la ubicación exacta.
       </p>
     </div>
   );

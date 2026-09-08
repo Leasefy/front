@@ -154,7 +154,7 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
       if (r === 'active') {
         succeed();
       } else if (r === 'failed') {
-        setError('El pago fue rechazado o no se completó. Podés intentar de nuevo.');
+        setError('El pago fue rechazado o no se completó. Puedes intentar de nuevo.');
         setState('error');
       } else if (r === 'error') {
         setPollError('No pudimos verificar el estado. Reintentando…');
@@ -198,7 +198,7 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
     setPollError('Verificando…');
     const r = await checkStatus();
     if (r === 'pending') {
-      setPollError('Todavía no vemos la confirmación. Esperá unos segundos y reintentá.');
+      setPollError('Todavía no vemos la confirmación. Esperá unos segundos y reintenta.');
     } else {
       applyStatus(r);
     }
@@ -237,7 +237,7 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
       const { charge } = await agencySubscriptionApi.selectPlan(planId);
       if (!charge) {
         payTab?.close();
-        setError('No se generó un cobro para este plan. Contactá a soporte.');
+        setError('No se generó un cobro para este plan. Contacta a soporte.');
         setState('error');
         return;
       }
@@ -272,7 +272,7 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
           succeed();
         } else {
           setError(
-            'Tu cargo pendiente ya se confirmó, pero todavía no vemos tu plan actualizado. Actualizá la página en unos segundos.',
+            'Tu cargo pendiente ya se confirmó, pero todavía no vemos tu plan actualizado. Actualiza la página en unos segundos.',
           );
           setState('error');
         }
@@ -284,7 +284,7 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
       // Nothing failed — this is transient, retrying shortly is correct.
       if (err instanceof ApiError && err.status === 503 && err.code === 'payment_verification_unavailable') {
         setError(
-          'No pudimos verificar tu cargo pendiente con la pasarela de pago en este momento. Intentá de nuevo en unos segundos.',
+          'No pudimos verificar tu cargo pendiente con la pasarela de pago en este momento. Intenta de nuevo en unos segundos.',
         );
         setState('error');
         return;

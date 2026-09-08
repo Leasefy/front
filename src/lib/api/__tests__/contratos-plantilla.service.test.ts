@@ -11,11 +11,11 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { post } = vi.hoisted(() => ({ post: vi.fn() }))
+const { post, get } = vi.hoisted(() => ({ post: vi.fn(), get: vi.fn() }))
 
 vi.mock('@/lib/api/client', async () => {
   const real = await vi.importActual<typeof import('@/lib/api/client')>('@/lib/api/client')
-  return { ...real, apiClient: { post } }
+  return { ...real, apiClient: { post, get } }
 })
 
 import { ApiError } from '@/lib/api/client'
@@ -30,6 +30,8 @@ import {
 beforeEach(() => {
   post.mockReset()
   post.mockResolvedValue({})
+  get.mockReset()
+  get.mockResolvedValue({ iaDisponible: true })
 })
 
 function cuerpoEnviado(): Record<string, unknown> {
@@ -170,5 +172,13 @@ describe('leer los errores del validador', () => {
     expect(esIaCaida(new ApiError(503, 'x', 'IA_NO_CONFIGURADA'))).toBe(true)
     expect(esIaCaida(new ApiError(503, 'x', 'IA_INALCANZABLE'))).toBe(true)
     expect(esIaCaida(new ApiError(400, 'x', 'CONTRATO_NO_VALIDO'))).toBe(false)
+  })
+})
+
+describe('iaDisponible', () => {
+  it('pregunta por GET /ia, sin borrador: es configuración, no depende de `preparar`', async () => {
+    const r = await contratosPlantillaApi.iaDisponible()
+    expect(get).toHaveBeenCalledWith('/inmobiliaria/contratos/plantilla/ia')
+    expect(r).toEqual({ iaDisponible: true })
   })
 })

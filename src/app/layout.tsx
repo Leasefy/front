@@ -144,7 +144,7 @@ export default function RootLayout({
                  así que todo toast emitido mientras el guard resuelve (o cuando el guard
                  no deja pasar) se perdía.
               Sonner pinta cada toast en TODOS los <Toaster> montados: debe haber uno solo.
-              Si agregás otro en un layout, los toasts se duplican. */}
+              Si agregas otro en un layout, los toasts se duplican. */}
           <Toaster position="top-right" />
         </ThemeProvider>
       </body>

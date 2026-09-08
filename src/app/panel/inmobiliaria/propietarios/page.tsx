@@ -207,7 +207,7 @@ function PropietariosContent() {
   const searchParams = useSearchParams();
   // ⚠️ Tomar SÓLO los datos era el defecto: `useApiData` captura el fallo en su
   // estado y no lo relanza, así que una petición muerta llegaba acá como lista
-  // vacía y la pantalla decía «todavía no tenés propietarios» — afirmando algo
+  // vacía y la pantalla decía «todavía no tienes propietarios» — afirmando algo
   // que nadie verificó. `errorCrudo` es el error entero, que es lo que
   // `FalloDeCarga` necesita para saber si reintentar sirve.
   const {
@@ -593,12 +593,12 @@ function PropietariosContent() {
             {propietarios.length === 0 ? (
               /* «Todavía no hay ninguno» es esto y sólo esto: la lista del
                  back llegó VACÍA. Antes se miraba el total ya filtrado, así
-                 que buscar algo que no está decía «Registrá al dueño de un
+                 que buscar algo que no está decía «Registra al dueño de un
                  inmueble» a quien tiene cuarenta. */
               /*
                  Y si está vacío PORQUE la migración quedó a medias, se dice:
                  84 contratos migrados sin propietario significan que nadie
-                 quedó registrado como dueño. Decirle «registrá al dueño» a
+                 quedó registrado como dueño. Decirle «registra al dueño» a
                  quien acaba de subir su cartera entera esconde la causa.
               */
               <SinDatos
@@ -607,7 +607,7 @@ function PropietariosContent() {
                 titulo={copyDeMigracion?.titulo}
                 descripcion={
                   copyDeMigracion?.detalle ??
-                  'Registrá al dueño de un inmueble para poder consignarlo y liquidarle sus pagos.'
+                  'Registra al dueño de un inmueble para poder consignarlo y liquidarle sus pagos.'
                 }
                 accion={
                   copyDeMigracion ? (

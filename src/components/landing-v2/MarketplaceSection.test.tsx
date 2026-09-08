@@ -97,7 +97,7 @@ describe('MarketplaceSection', () => {
     const texto = container.textContent ?? ''
     expect(texto).not.toContain('no hay')
     expect(texto).not.toContain('No hay')
-    expect(texto).not.toContain('Encontrá tu próximo arriendo')
+    expect(texto).not.toContain('Encuentra tu próximo arriendo')
   })
 
   it('sin inmuebles disponibles tampoco se pinta', async () => {

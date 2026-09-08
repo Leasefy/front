@@ -139,7 +139,7 @@ export default function AvaluoDetailPage() {
         queue.refetch()
       } else if (err instanceof ApiError && err.status === 422) {
         // The only 422 on signoff is an invalid signature image payload.
-        setSubmitError('La firma dibujada no es válida. Limpiala y volvé a dibujarla.')
+        setSubmitError('La firma dibujada no es válida. Limpiala y vuelve a dibujarla.')
       } else {
         setSubmitError(err instanceof ApiError ? err.message : 'Error de red')
       }
@@ -271,7 +271,7 @@ export default function AvaluoDetailPage() {
                 descripciones de fotos · {d?.photos.length}
               </div>
               <p className="text-xs text-fg-muted mb-4">
-                Corregí la prosa de anexo antes de firmar. Se congela al firmar.
+                Corrige la prosa de anexo antes de firmar. Se congela al firmar.
               </p>
               <PhotoDescriptionsEditor id={id} photos={d!.photos} />
             </div>
@@ -367,7 +367,7 @@ export default function AvaluoDetailPage() {
                   </span>
                   <textarea
                     className="textarea mt-2 min-h-[100px]"
-                    placeholder="Explicá por qué se rechaza el avalúo"
+                    placeholder="Explica por qué se rechaza el avalúo"
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                   />
@@ -378,7 +378,7 @@ export default function AvaluoDetailPage() {
                 <p className="text-sm text-bad mt-1">El motivo no puede superar 2 000 caracteres.</p>
               )}
               {rejectNeedsReason && (
-                <p className="text-sm text-warn mt-1">Indicá el motivo del rechazo antes de confirmar.</p>
+                <p className="text-sm text-warn mt-1">Indica el motivo del rechazo antes de confirmar.</p>
               )}
 
               {submitError && (

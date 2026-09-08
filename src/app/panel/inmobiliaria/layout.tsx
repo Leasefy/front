@@ -35,6 +35,7 @@ import { useMigracionesPendientes } from '@/lib/hooks/use-migraciones-pendientes
 import { usePilotoBadge } from '@/lib/hooks/piloto/use-piloto-badge';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { useAuth } from '@/lib/auth/use-auth';
+import { RecordatorioDeMigracion } from '@/components/migracion/RecordatorioDeMigracion';
 import { hexToHslTriplet } from '@/lib/utils/hex-to-hsl';
 
 /** Registers the global ⌘K keyboard shortcut for the command palette. */
@@ -270,6 +271,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           // quien no lo tiene lo expulsaba el `PageGuard` sin explicación.
           showInvite={puedeInvitarAlEquipo}
           onInvite={() => router.push('/panel/inmobiliaria/configuracion/equipo')}
+          // El recordatorio de migración: cómo va, «Migrar ahora» y una ✕
+          // (Nico, 2026-09-07). Lee el estado del muro por contexto.
+          footerCards={<RecordatorioDeMigracion />}
           showUpgrade={showUpgradeCta}
           // 🔴 A la pasarela de verdad, no a Configuración. Apuntaba a la raíz
           // de `/configuracion`, que es el PERFIL de la inmobiliaria: quien
@@ -335,7 +339,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
           <ProtectedRoute>/<AgencySubscriptionGuard>: acá adentro se perdía todo toast
-          emitido mientras los guards resuelven. No montés otro: sonner duplica el toast
+          emitido mientras los guards resuelven. No montes otro: sonner duplica el toast
           por cada Toaster montado. */}
     </div>
   );

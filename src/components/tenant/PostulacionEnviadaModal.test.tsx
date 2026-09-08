@@ -3,7 +3,7 @@
  * un identificador inventado se ve igual de bien que el de verdad.
  *
  * Antes de esto, esta pantalla mostraba `APP-` + `Math.random()`. La persona
- * leía "guardá este código para consultar el estado" y guardaba un número que
+ * leía "guarda este código para consultar el estado" y guardaba un número que
  * no correspondía a nada — en su panel la postulación aparecía con otro,
  * derivado del id. Los tests de acá fijan que el que se muestra es EL de la
  * postulación, y que es estable.

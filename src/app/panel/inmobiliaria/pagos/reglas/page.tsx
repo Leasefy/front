@@ -80,7 +80,7 @@ function PagosReglas() {
         <div className="space-y-0.5">
           <p className="text-sm font-medium text-fg">Vista previa de configuración</p>
           <p className="text-sm text-fg-muted leading-snug">
-            Podés ajustar las reglas para ver cómo quedarían. La persistencia de reglas estará disponible
+            Puedes ajustar las reglas para ver cómo quedarían. La persistencia de reglas estará disponible
             próximamente; por ahora los cambios no se guardan.
           </p>
         </div>
@@ -253,7 +253,7 @@ function PagosReglas() {
           />
         </div>
         <p className="text-xs text-fg-muted">
-          Los pagos que requieren tu aprobación los revisás en la{' '}
+          Los pagos que requieren tu aprobación los revisas en la{' '}
           <Link
             href="/panel/inmobiliaria/pagos/cola"
             className="text-primary underline-offset-4 hover:underline font-medium"

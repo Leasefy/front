@@ -85,7 +85,7 @@ export function rangoDelPreset(preset: PresetDePeriodo, hoy: Date = new Date()):
  * `null` cuando está bien.
  */
 export function validarRango(desde: string, hasta: string): string | null {
-  if (!esMes(desde) || !esMes(hasta)) return 'Elegí un mes de inicio y uno de fin.'
+  if (!esMes(desde) || !esMes(hasta)) return 'Elige un mes de inicio y uno de fin.'
   if (desde > hasta) return 'El mes de inicio tiene que ser anterior o igual al de fin.'
   const meses = mesesEntre(desde, hasta)
   if (meses > MAXIMO_DE_MESES) {

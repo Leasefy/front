@@ -6,7 +6,7 @@
  * 🔴 Cada motivo dice qué cláusula es ilegal y por qué artículo: «el depósito en
  * dinero está prohibido en vivienda urbana — Ley 820 de 2003, art. 16». Eso es
  * lo más valioso que devuelve el backend y es exactamente lo que se pierde al
- * resumirlo en «hubo un error, revisá los datos». Se muestran todos, con su
+ * resumirlo en «hubo un error, revisa los datos». Se muestran todos, con su
  * norma a la vista, sin recortar y sin traducir.
  *
  * Se usa en los dos lugares donde el validador habla: el `400

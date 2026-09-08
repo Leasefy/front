@@ -147,7 +147,7 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
       });
       window.location.href = url;
     } catch {
-      toast.error('No pudimos iniciar el pago. Intentá nuevamente.');
+      toast.error('No pudimos iniciar el pago. Intenta nuevamente.');
       setStep('confirm');
     }
   }, [paymentInfo, leaseId]);

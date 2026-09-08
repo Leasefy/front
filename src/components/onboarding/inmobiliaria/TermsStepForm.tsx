@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { TerminosContenido } from '@/components/legal/TerminosContenido'
 import { ArrowRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -32,6 +33,7 @@ export interface TermsStepFormProps {
  */
 export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStepFormProps) {
   const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [terminosAbiertos, setTerminosAbiertos] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,7 +47,7 @@ export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStep
         Para finalizar tu registro, lee y acepta los términos y condiciones de Leasefy.
       </p>
 
-      <label htmlFor="accept-terms" className="flex items-start gap-2.5 cursor-pointer">
+      <div className="flex items-start gap-2.5">
         <Checkbox
           id="accept-terms"
           data-testid="terms-accept"
@@ -55,18 +57,39 @@ export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStep
           className="mt-0.5 shrink-0"
         />
         <span className="text-sm text-fg-muted leading-snug">
-          He leído y acepto los{' '}
-          <Link
-            href="/terminos"
-            target="_blank"
-            rel="noopener noreferrer"
+          <label htmlFor="accept-terms" className="cursor-pointer">
+            He leído y acepto los
+          </label>{' '}
+          {/* Un cajón, no otra pestaña: leer los términos no debe sacar a la
+              persona del asistente (Nico, 2026-09-07). El botón va FUERA del
+              label para que abrir el cajón no marque la casilla. */}
+          <button
+            type="button"
+            onClick={() => setTerminosAbiertos(true)}
             className="text-primary underline underline-offset-2 hover:text-primary/80"
+            data-testid="abrir-terminos"
           >
             términos y condiciones
-          </Link>
+          </button>
           .
         </span>
-      </label>
+      </div>
+
+      <Sheet open={terminosAbiertos} onOpenChange={setTerminosAbiertos}>
+        <SheetContent side="right" className="flex w-full flex-col p-0 sm:max-w-2xl">
+          <SheetHeader className="shrink-0 border-b border-border px-6 py-4 text-left">
+            <SheetTitle>Términos y condiciones</SheetTitle>
+            <SheetDescription>Los mismos que en leasefy.co/terminos. Puedes cerrar y seguir donde estabas.</SheetDescription>
+          </SheetHeader>
+          <div
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5"
+            data-lenis-prevent
+            data-testid="terminos-en-cajon"
+          >
+            <TerminosContenido />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {submitError && (
         <div data-testid="terms-step-form-error" className="rounded-md bg-danger-soft border border-border p-3">

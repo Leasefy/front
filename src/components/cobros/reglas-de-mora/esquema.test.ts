@@ -48,9 +48,9 @@ describe('esquemaDeRegla', () => {
   });
 
   it('un valor vacío (NaN) es un error con mensaje, no un crash', () => {
-    expect(erroresDe(valores({ valor: Number.NaN }))).toMatchObject({ valor: 'Poné el valor.' });
+    expect(erroresDe(valores({ valor: Number.NaN }))).toMatchObject({ valor: 'Pon el valor.' });
     expect(erroresDe(valores({ disparadorDia: Number.NaN }))).toMatchObject({
-      disparadorDia: 'Poné el día.',
+      disparadorDia: 'Pon el día.',
     });
   });
 
@@ -68,7 +68,7 @@ describe('esquemaDeRegla', () => {
     expect(erroresDe(valores({ formula: 'INTERES_DIARIO', valor: 2 }))).toMatchObject({
       valor:
         'Una tasa DIARIA de 2% son 60.0% al mes. ' +
-        'Si querés esa cifra mensual, la diaria es ese número dividido 30.',
+        'Si quieres esa cifra mensual, la diaria es ese número dividido 30.',
     });
     expect(erroresDe(valores({ formula: 'INTERES_DIARIO', valor: 1 }))).toEqual({});
   });

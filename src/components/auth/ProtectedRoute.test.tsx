@@ -23,6 +23,7 @@ const { replaceMock, authState } = vi.hoisted(() => ({
     isLoading: false,
     mfaRequired: false,
     needsOnboarding: false,
+    perfilElegido: null as string | null,
     agencyRole: null as string | null,
     hasActiveAgencyMembership: false,
     agencyMembershipChecked: true,
@@ -51,6 +52,7 @@ beforeEach(() => {
   authState.isLoading = false
   authState.mfaRequired = false
   authState.needsOnboarding = false
+  authState.perfilElegido = null
   authState.agencyRole = null
   authState.hasActiveAgencyMembership = false
   authState.agencyMembershipChecked = true
@@ -158,6 +160,28 @@ describe('ProtectedRoute — invited NEW user (needsOnboarding)', () => {
 
     expect(replaceMock).toHaveBeenCalledWith('/onboarding/seleccionar-rol')
     expect(replaceMock).not.toHaveBeenCalledWith('/registro')
+  })
+
+  it('sin token pero con perfil ya elegido → retoma en el onboarding de ese perfil, no en el selector', async () => {
+    authState.user = null
+    authState.isAuthenticated = false
+    authState.needsOnboarding = true
+    authState.perfilElegido = 'agency'
+
+    await renderPanel()
+
+    expect(replaceMock).toHaveBeenCalledWith('/onboarding/inmobiliaria')
+    expect(replaceMock).not.toHaveBeenCalledWith('/onboarding/seleccionar-rol')
+  })
+
+  it('con registro pero onboarding sin terminar y perfil elegido → el onboarding de ese perfil', async () => {
+    authState.user = { role: 'tenant', onboardingCompleted: false }
+    authState.isAuthenticated = true
+    authState.perfilElegido = 'tenant'
+
+    await renderPanel()
+
+    expect(replaceMock).toHaveBeenCalledWith('/onboarding/inquilino')
   })
 })
 

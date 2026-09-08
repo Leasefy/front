@@ -42,6 +42,12 @@ import OnboardingInmobiliariaClient from './OnboardingInmobiliariaClient'
 import { OnboardingSessionError } from '@/lib/api/onboarding-session.service'
 import type { OnboardingSessionStepConflict } from '@/lib/api/generated/agency'
 
+// `CompleteStepForm` refresca la sesión antes de salir (arreglo del bucle del
+// 2026-09-07); sin este mock `useAuth()` revienta fuera del AuthProvider.
+vi.mock('@/lib/auth/use-auth', () => ({
+  useAuth: () => ({ refreshUser: async () => {}, user: null, isAuthenticated: false, isLoading: false }),
+}))
+
 let container: HTMLDivElement
 let root: Root
 
@@ -306,7 +312,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     })
   })
 
-  it('bloquea el envío cuando el NIT trae letras y lo dice sin jerga', () => {
+  it('el campo del NIT sólo deja dígitos, y con pocos bloquea el envío y lo dice sin jerga', () => {
     const provision = vi.fn()
     mockUseOnboardingProvisioning.mockReturnValue(
       baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
@@ -315,11 +321,26 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
 
     setInputValue(byId('ownerFullName'), 'Ana Pérez')
     setInputValue(byId('agencyName'), 'Inmobiliaria Andes SAS')
-    setInputValue(byId('agencyNit'), 'NIT 900.123')
+    // Las letras y los puntos no entran: el campo se queda con los dígitos.
+    // Cinco dígitos: desde el 2026-09-07 seis ya es un NIT válido (cédula vieja).
+    setInputValue(byId('agencyNit'), 'NIT 900.12')
+    expect(byId('agencyNit').value).toBe('90012')
     submitNameForm()
 
     expect(provision).not.toHaveBeenCalled()
-    expect(container.textContent).toContain('sólo números')
+    expect(container.textContent).toContain('Le faltan dígitos')
+  })
+
+  it('el guion lo pone el campo al décimo dígito, y no deja escribir de más', () => {
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ status: 'needs-info', sessionId: null, provision: vi.fn() }),
+    )
+    render()
+
+    setInputValue(byId('agencyNit'), '9001234568')
+    expect(byId('agencyNit').value).toBe('900123456-8')
+    setInputValue(byId('agencyNit'), '900000000000000000000')
+    expect(byId('agencyNit').value).toBe('9000000000-0')
   })
 
   it('rechaza un dígito de verificación que no corresponde y dice cuál es', () => {
@@ -464,6 +485,25 @@ describe('<OnboardingInmobiliariaClient>', () => {
     // members has a real form now — no placeholder for this step.
     expect(container.querySelector('[data-testid="members-step-form"]')).toBeTruthy()
     expect(container.querySelector('[data-testid="wizard-step-placeholder"]')).toBeFalsy()
+  })
+
+  it('clic en un paso hecho de la barra vuelve a ese paso (Nico, 2026-09-07)', () => {
+    mockUseOnboardingSession.mockReturnValue(baseHookResult({ currentStep: 'habeas_data' }))
+    render()
+    expect(container.querySelector('[data-testid="terms-step-form"]')).toBeTruthy()
+
+    const volverAAgencia = container.querySelector('[data-testid="wizard-step-link-agency"]') as HTMLButtonElement
+    expect(volverAAgencia).toBeTruthy()
+    act(() => {
+      volverAAgencia.click()
+    })
+
+    expect(container.querySelector('[data-testid="agency-step-form"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="terms-step-form"]')).toBeFalsy()
+    // Los pasos de más adelante siguen hechos: se puede volver a Habeas Data.
+    expect(container.querySelector('[data-testid="wizard-step-link-habeas_data"]')).toBeTruthy()
+    // El actual (Agencia) no es botón.
+    expect(container.querySelector('[data-testid="wizard-step-link-agency"]')).toBeFalsy()
   })
 
   it('mounts <TermsStepForm> on the habeas_data step (no upload form) and forwards acceptTerms on submit', async () => {

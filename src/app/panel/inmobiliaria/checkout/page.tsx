@@ -78,7 +78,7 @@ function AgencyCheckoutInner() {
           <WarningCircle className="w-10 h-10 text-danger mx-auto" />
           <h1 className="text-lg font-semibold text-fg">No encontramos ese plan</h1>
           <p className="text-sm text-fg-muted">
-            El plan que buscás no está disponible. Volvé a elegir uno.
+            El plan que buscas no está disponible. Vuelve a elegir uno.
           </p>
           <div className="pt-2 flex justify-center">
             <BackButton href="/panel/inmobiliaria/upgrade" label="Volver a los planes" />
@@ -203,7 +203,7 @@ function AgencyCheckoutInner() {
                   <p className="text-sm font-medium text-foreground">Esperando la confirmación de tu pago…</p>
                   <p className="text-xs text-muted-foreground">
                     {paymentUrl
-                      ? 'Completá el pago en la pestaña que abrimos. Esta pantalla se actualiza sola.'
+                      ? 'Completa el pago en la pestaña que abrimos. Esta pantalla se actualiza sola.'
                       : 'Estamos generando el enlace de pago.'}
                   </p>
                   {paymentUrl && (
@@ -214,7 +214,7 @@ function AgencyCheckoutInner() {
                       className="inline-flex items-center gap-1.5 text-xs font-medium text-primary underline underline-offset-2"
                     >
                       <ArrowSquareOut className="w-3.5 h-3.5" />
-                      {popupBlocked ? 'No se abrió la pestaña — abrí el pago acá' : '¿No ves la pestaña? Abrila de nuevo'}
+                      {popupBlocked ? 'No se abrió la pestaña — abre el pago acá' : '¿No ves la pestaña? Ábrela de nuevo'}
                     </a>
                   )}
                   {pollError && (

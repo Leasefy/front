@@ -16,7 +16,7 @@
  *   - no backend wired      → honest "backend not configured" notice
  *   - loading               → skeletons
  *   - error                 → <FalloDeCarga> con reintento (`refresh` del hook)
- *   - empty                 → "el asistente aprende a medida que lo usás"
+ *   - empty                 → "el asistente aprende a medida que lo usas"
  *   - enabled === false     → banner: certified lessons exist but aren't applied
  */
 
@@ -153,7 +153,7 @@ export function ChatLessonsPanel() {
       <EmptyState
         icon={Brain}
         title="Aún no hay lecciones"
-        description="El asistente aprende a medida que lo usás. Cuando detecte un patrón, lo verás aquí para certificarlo."
+        description="El asistente aprende a medida que lo usas. Cuando detecte un patrón, lo verás aquí para certificarlo."
       />
     )
   }

@@ -1,7 +1,7 @@
 /**
  * page.test.tsx — Facturación.
  *
- * Nico (2026-09-03): «esas tabs ¿por qué están fuera de la tabla? sabés que
+ * Nico (2026-09-03): «esas tabs ¿por qué están fuera de la tabla? sabes que
  * deben quedar dentro». Lo que fija esta prueba es la forma de la tarjeta:
  * las pestañas ADENTRO, el vacío en el cuerpo con los encabezados visibles, y
  * ningún control sin comportamiento (la leyenda de estados que no filtraba y

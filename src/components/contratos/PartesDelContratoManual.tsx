@@ -66,14 +66,14 @@ const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 /** Qué falta para poder crear. Vacío = se puede. */
 export function validarPartes(partes: PartesManuales): Record<string, string> {
   const errores: Record<string, string> = {}
-  if (!partes.propertyId) errores.propertyId = 'Elegí el inmueble.'
+  if (!partes.propertyId) errores.propertyId = 'Elige el inmueble.'
   const q = partes.inquilino
   if (q.modo === 'existente') {
-    if (!q.tenantId) errores.tenantId = 'Elegí al inquilino.'
+    if (!q.tenantId) errores.tenantId = 'Elige al inquilino.'
   } else {
-    if (q.nombre.trim().length < 2) errores.nombre = 'Escribí el nombre completo.'
-    if (q.documento.replace(/\D/g, '').length < 4) errores.documento = 'Escribí el documento.'
-    if (!CORREO.test(q.correo.trim())) errores.correo = 'Escribí un correo válido: ahí le llega la invitación.'
+    if (q.nombre.trim().length < 2) errores.nombre = 'Escribe el nombre completo.'
+    if (q.documento.replace(/\D/g, '').length < 4) errores.documento = 'Escribe el documento.'
+    if (!CORREO.test(q.correo.trim())) errores.correo = 'Escribe un correo válido: ahí le llega la invitación.'
   }
   return errores
 }
@@ -163,15 +163,15 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
         </label>
         {consignaciones !== null && elegibles.length === 0 && !errorInmuebles ? (
           <p className="rounded-md border border-dashed border-border bg-surface-muted px-3 py-2 text-sm text-fg-muted" data-testid="sin-inmuebles">
-            No hay inmuebles consignados libres. Consigná uno desde Inmuebles y volvé.
+            No hay inmuebles consignados libres. Consigna uno desde Inmuebles y vuelve.
           </p>
         ) : (
           <Combobox
             value={valor.propertyId || undefined}
             onChange={elegirInmueble}
             options={opcionesInmueble}
-            placeholder={consignaciones === null ? 'Cargando inmuebles…' : 'Buscá por código, título o dirección'}
-            searchPlaceholder="Escribí #código, título o dirección"
+            placeholder={consignaciones === null ? 'Cargando inmuebles…' : 'Busca por código, título o dirección'}
+            searchPlaceholder="Escribe #código, título o dirección"
             disabled={consignaciones === null}
             invalid={Boolean(errores.propertyId)}
             data-testid="inmueble-combobox"
@@ -205,7 +205,7 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
               value={valor.inquilino.tenantId || undefined}
               onChange={(id) => onCambio({ ...valor, inquilino: { modo: 'existente', tenantId: id ?? '' } })}
               options={opcionesInquilino}
-              placeholder={cargandoInquilinos ? 'Cargando inquilinos…' : 'Buscá por nombre, correo o teléfono'}
+              placeholder={cargandoInquilinos ? 'Cargando inquilinos…' : 'Busca por nombre, correo o teléfono'}
               searchPlaceholder="Nombre, correo o teléfono"
               disabled={cargandoInquilinos}
               invalid={Boolean(errores.tenantId)}
@@ -213,7 +213,7 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
             />
             {!cargandoInquilinos && inquilinos.length === 0 && (
               <p className="text-xs text-fg-muted" data-testid="sin-inquilinos">
-                Todavía no hay inquilinos con arriendos acá. Cargalo como nuevo.
+                Todavía no hay inquilinos con arriendos acá. Cárgalo como nuevo.
               </p>
             )}
             {errores.tenantId && <p className="text-xs text-danger">{errores.tenantId}</p>}

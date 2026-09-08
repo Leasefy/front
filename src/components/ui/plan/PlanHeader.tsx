@@ -869,7 +869,7 @@ export function PlanHeader({
                               setInviteSent(true);
                               void refetchTeam();
                             } catch {
-                              toast.error('No se pudo enviar la invitación. Intentá de nuevo.');
+                              toast.error('No se pudo enviar la invitación. Intenta de nuevo.');
                             } finally {
                               setInviteLoading(false);
                             }

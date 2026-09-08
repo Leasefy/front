@@ -189,6 +189,19 @@ export function PropietarioBankInfo({
             {bankAccount.accountHolder}
           </span>
         </div>
+
+        {/* Documento del titular: sólo existe cuando la cuenta es de otra persona. */}
+        {bankAccount.accountHolderDocument && (
+          <div
+            className="flex items-center justify-between py-2 border-t border-border-faint dark:border-border-strong"
+            data-testid="bank-info-titular-documento"
+          >
+            <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.propietario.bankInfo.holderDocument')}</span>
+            <span className="font-mono font-medium text-fg">
+              {[bankAccount.accountHolderDocumentType, bankAccount.accountHolderDocument].filter(Boolean).join(' ')}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Acá había un sello «Datos verificados» permanente. Nadie verifica

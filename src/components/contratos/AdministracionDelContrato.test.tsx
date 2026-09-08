@@ -10,7 +10,7 @@
  *  1. Vacío significa HEREDAR, y la pantalla dice qué está heredando. Sin esa
  *     línea, «vacío» obliga a ir a buscar la ficha del propietario.
  *  2. Guardar manda el campo con la semántica de tres estados: `null` es
- *     «volvé a heredar», que NO es lo mismo que `false`.
+ *     «vuelve a heredar», que NO es lo mismo que `false`.
  */
 
 import * as React from 'react'
@@ -172,7 +172,7 @@ describe('la perilla del arrendador', () => {
     expect(document.body.textContent).toContain('el cobro NO lleva IVA')
   })
 
-  it('guardar manda el campo: sin definir viaja como null («volvé a heredar»)', async () => {
+  it('guardar manda el campo: sin definir viaja como null («vuelve a heredar»)', async () => {
     actualizar.mockResolvedValue(contrato())
     render(contrato())
     editar()

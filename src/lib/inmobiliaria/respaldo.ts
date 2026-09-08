@@ -54,7 +54,7 @@ export function validarRespaldo(r: Partial<Respaldo>): ErroresDeRespaldo {
   const errores: ErroresDeRespaldo = {}
 
   if (!r.aseguradora?.trim()) {
-    errores.aseguradora = 'Decí qué aseguradora aprobó'
+    errores.aseguradora = 'Di qué aseguradora aprobó'
   }
   if (!r.identificador?.trim()) {
     errores.identificador = 'Sin el número no se le puede reclamar a nadie'

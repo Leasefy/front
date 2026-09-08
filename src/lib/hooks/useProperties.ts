@@ -12,9 +12,9 @@ import { esNoExiste } from '@/lib/errores/clasificar';
  *
  * `error` se aplasta a string con `err.message`, y ahí se pierde el status
  * HTTP. Sin status, `clasificarFallo` no puede distinguir un 404 —«esto no
- * existe», sin reintentar— de un 500 o un fallo de red —«probá de nuevo»—, así
+ * existe», sin reintentar— de un 500 o un fallo de red —«prueba de nuevo»—, así
  * que las cuatro estados colapsan a uno. Medido: un 404 salía como «problema
- * nuestro, probá de nuevo», mandando a reintentar algo que nunca va a existir.
+ * nuestro, prueba de nuevo», mandando a reintentar algo que nunca va a existir.
  *
  * Se agrega en vez de cambiar el tipo de `error`: 77 consumidores lo pintan
  * como string y seguirían funcionando igual.
@@ -166,7 +166,7 @@ export function useMyProperties() {
  * antes se trataban igual. Cada pedido llevaba un `.catch(() => null)`, así que
  * `Promise.all` no podía rechazar nunca: `errorCrudo` era código muerto. Con la
  * red caída los cinco pedidos morían, la lista quedaba en `[]` y la pantalla
- * decía **«No tenés propiedades guardadas»** — a alguien que sí las tiene.
+ * decía **«No tienes propiedades guardadas»** — a alguien que sí las tiene.
  *
  * Ahora se mira POR QUÉ falló cada uno:
  *   404      → el inmueble se bajó. Se descuenta y se cuenta aparte.

@@ -62,7 +62,7 @@ export function AvisoModoSimulado({ activo, className }: AvisoModoSimuladoProps)
       <Flask weight="fill" className="h-4 w-4 shrink-0 mt-px" aria-hidden="true" />
       <span>
         <strong className="font-semibold">Modo simulado.</strong> Los datos de
-        esta pantalla son inventados: no son de tu inmobiliaria. Apagá{' '}
+        esta pantalla son inventados: no son de tu inmobiliaria. Apaga{' '}
         <code className="font-mono">NEXT_PUBLIC_USE_MOCK_API</code> para ver los
         reales.
       </span>

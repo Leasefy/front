@@ -3,7 +3,7 @@
  *
  * El back devuelve la mayoría de las listas PELADAS (`[...]`) y unas pocas
  * envueltas (`{ data: [...] }`). El front hacía `res.data` en las catorce, así
- * que en las peladas leía `undefined` y la pantalla decía «todavía no tenés
+ * que en las peladas leía `undefined` y la pantalla decía «todavía no tienes
  * nada» con los datos ahí. Cinco tablas del panel.
  *
  * Ninguna se cayó nunca: se veía igual que la verdad.

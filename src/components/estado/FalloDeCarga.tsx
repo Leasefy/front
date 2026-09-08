@@ -99,7 +99,7 @@ export function FalloDeCarga({
   const [reintentando, setReintentando] = useState(false)
 
   // ── La referencia que el copy promete ──────────────────────────────────
-  // La descripcion dice «escribinos con la referencia de abajo» y no habia
+  // La descripcion dice «escríbenos con la referencia de abajo» y no habia
   // ninguna: se le pedia a la persona un dato que nunca le mostramos. Esto es
   // lo que le sirve a soporte para encontrar el evento en los logs —status y
   // hora—, sin filtrar el mensaje crudo del backend, que sigue viviendo solo

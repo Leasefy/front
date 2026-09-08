@@ -3,7 +3,7 @@
  *
  * Lo que se prueba es lo que sostiene el producto:
  *   · que los motivos del validador se pinten COMPLETOS, con su norma — no
- *     resumidos en «hubo un error, revisá los datos»;
+ *     resumidos en «hubo un error, revisa los datos»;
  *   · que una cláusula que propuso la IA se pueda QUITAR antes de generar, y
  *     que al generar ya no viaje;
  *   · que un PDF armado deje de valer cuando cambia algo que va impreso.
@@ -362,7 +362,7 @@ describe('la propuesta de la IA', () => {
       return Promise.reject(
         new ApiError(
           503,
-          'No se pudo consultar el asistente de redacción. Probá de nuevo o armá el contrato con las cláusulas del catálogo.',
+          'No se pudo consultar el asistente de redacción. Prueba de nuevo o arma el contrato con las cláusulas del catálogo.',
           'IA_INALCANZABLE',
         ),
       )
@@ -382,7 +382,7 @@ describe('la propuesta de la IA', () => {
     })
 
     expect(porTestId('plantilla-error-ia')?.textContent).toContain(
-      'armá el contrato con las cláusulas del catálogo',
+      'arma el contrato con las cláusulas del catálogo',
     )
     expect(porTestId('plantilla-revision-propuesta')).toBeNull()
   })

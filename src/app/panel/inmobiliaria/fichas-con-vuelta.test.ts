@@ -69,7 +69,7 @@ describe('fichas de detalle del panel (hoy todas viven dentro de un workspace de
       const tieneSalida = SALIDAS.some((re) => re.test(fuente))
       expect(
         tieneSalida,
-        'Ninguna forma de volver a la lista. Agregá ' +
+        'Ninguna forma de volver a la lista. Agrega ' +
           '<VolverALaLista href="…" label={t("inmobiliaria.ai.volverA.…")} /> ' +
           'arriba del <h1>.',
       ).toBe(true)

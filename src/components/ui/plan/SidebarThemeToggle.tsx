@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
  * Segmentado de dos opciones en vez de un switch: el switch obliga a leer la
  * etiqueta para saber qué lado es cuál, y acá no hay etiqueta. Con sol y luna
  * visibles a la vez, el estado actual se ve sin interpretar nada, y cada opción
- * es un destino directo — no un "invertí lo que haya".
+ * es un destino directo — no un "invierte lo que haya".
  *
  * Persistencia y clase `.dark` las maneja next-themes (ThemeProvider, attribute
  * class + defaultTheme system). Acá solo se elige explícitamente entre los dos,

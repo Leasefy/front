@@ -8,7 +8,7 @@
  * Se muestra mientras un lote sigue `ENCOLADO`/`PROCESANDO`
  * (`use-estado-de-lote.ts`, contrato §3.2.A2). El sondeo que alimenta esto
  * es una CONVENIENCIA mientras la pestaña sigue abierta — nunca el
- * mecanismo de finalización, así que el mensaje de "podés cerrar esta
+ * mecanismo de finalización, así que el mensaje de "puedes cerrar esta
  * pestaña" no es cosmético: es la garantía real (el lote es durable
  * server-side, WU-2, y la notificación llega igual — contrato §3.2.C).
  */
@@ -48,8 +48,8 @@ export function ProgresoDeLote({
           {estado.error ?? "No pudimos preparar la migración."}
         </p>
         <p className="text-sm text-muted-foreground">
-          Ningún contrato se creó. Tu archivo no se modifica: corregí lo que
-          diga el error de arriba y volvé a subirlo.
+          Ningún contrato se creó. Tu archivo no se modifica: corrige lo que
+          diga el error de arriba y vuelve a subirlo.
         </p>
         {onVolverAEmpezar ? (
           <Button
@@ -105,7 +105,7 @@ export function ProgresoDeLote({
       ) : null}
 
       <p className="text-sm text-muted-foreground">
-        Podés cerrar esta pestaña — seguimos trabajando igual, y te avisamos con
+        Puedes cerrar esta pestaña — seguimos trabajando igual, y te avisamos con
         una notificación cuando termine.
       </p>
 

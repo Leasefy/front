@@ -169,7 +169,7 @@ export function PlantillasDeMensajePopover({ locale, datos, onElegir, className 
             <div className="py-4 text-center" data-testid="plantillas-vacio">
               <p className="text-sm text-fg-muted">
                 {es
-                  ? 'Todavía no tenés plantillas guardadas.'
+                  ? 'Todavía no tienes plantillas guardadas.'
                   : 'You have no saved templates yet.'}
               </p>
               {/* `hideArrow`: el primary del DS agrega una ↗ automática y acá el

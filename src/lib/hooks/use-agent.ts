@@ -207,7 +207,7 @@ export function useAgentExecution() {
               // marked FAILED. Stop polling and surface the error so the user can
               // retry manually via recheckScoring. Do NOT mark as FAILED.
               clearBgPoll();
-              setError('Servicio temporalmente no disponible. Reintentá en unos minutos.');
+              setError('Servicio temporalmente no disponible. Reintenta en unos minutos.');
               return;
             }
             // Other transient network errors — swallow and retry next tick.

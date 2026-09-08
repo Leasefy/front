@@ -176,7 +176,7 @@ export function ListaDeLotes() {
             description={
               lotes.length === 0
                 ? 'Cuando armes el primero va a aparecer acá, con su estado y su total.'
-                : 'Probá con otro estado.'
+                : 'Prueba con otro estado.'
             }
             action={
               lotes.length === 0

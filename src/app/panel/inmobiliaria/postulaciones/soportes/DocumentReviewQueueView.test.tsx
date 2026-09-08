@@ -184,7 +184,7 @@ describe('<DocumentReviewQueueView>', () => {
 
   it('un 404 no ofrece reintentar: el error entero llega hasta el cartel', () => {
     // Con `error: string` esto era imposible: sin el status, todo caía en
-    // «fue un problema nuestro, probá de nuevo» — incluso sobre algo que no
+    // «fue un problema nuestro, prueba de nuevo» — incluso sobre algo que no
     // existe y por más que reintentes nunca va a aparecer.
     render({ ...baseProps(), error: new ApiError(404, 'not found') });
     expect(
@@ -195,7 +195,7 @@ describe('<DocumentReviewQueueView>', () => {
 
   it('con la consulta caída los contadores no muestran ceros', () => {
     // Cinco tarjetas en 0 sobre un dato que nadie trajo tranquilizan con una
-    // afirmación falsa: «no tenés nada pendiente».
+    // afirmación falsa: «no tienes nada pendiente».
     render({ ...baseProps(), error: new ApiError(500, 'boom') });
     expect(container.querySelector('[data-testid="count-pending"]')?.textContent).toContain('—');
   });

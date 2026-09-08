@@ -63,7 +63,7 @@ export function SignaturePad({ onChange, signerName, disabled = false, className
       <div className="flex items-center justify-between">
         <label className="text-xs font-medium text-fg inline-flex items-center gap-1.5">
           <PencilSimple className="w-3.5 h-3.5 text-primary" />
-          Dibujá tu firma {signerName && <span className="text-fg-muted">({signerName})</span>}
+          Dibuja tu firma {signerName && <span className="text-fg-muted">({signerName})</span>}
         </label>
         <Button
           type="button"
@@ -110,7 +110,7 @@ export function SignaturePad({ onChange, signerName, disabled = false, className
         {isEmpty && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <p className="text-xs text-fg-muted select-none">
-              Firmá acá con el mouse, dedo o stylus
+              Firma acá con el mouse, dedo o stylus
             </p>
           </div>
         )}

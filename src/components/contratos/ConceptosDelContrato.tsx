@@ -185,7 +185,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
       ) : conceptos.length === 0 && !agregando ? (
         <p className="text-sm text-muted-foreground">
           Sólo el canon. Si este contrato cobra administración, parqueadero o
-          alguna cuota, agregala acá: los recurrentes entran en el cobro de
+          alguna cuota, agrégala acá: los recurrentes entran en el cobro de
           cada mes con su IVA y sus retenciones, y salen en la cuenta de cobro.
         </p>
       ) : null}
@@ -239,7 +239,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
             <label className="text-xs text-muted-foreground">Concepto</label>
             <Select value={elegido} onValueChange={setElegido}>
               <SelectTrigger>
-                <SelectValue placeholder="Elegí del catálogo" />
+                <SelectValue placeholder="Elige del catálogo" />
               </SelectTrigger>
               <SelectContent className="max-h-72">
                 {CONCEPTOS.map((c) => (
@@ -274,7 +274,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
             <span>
               Se cobra todos los meses
               <span className="block text-xs text-muted-foreground">
-                Desmarcá si es por una sola vez, como una reparación.
+                Desmarca si es por una sola vez, como una reparación.
               </span>
             </span>
           </label>
@@ -394,7 +394,7 @@ function ConceptoEnLista({
             <p className="flex items-start gap-1.5 text-xs text-warning">
               <Warning className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
               No se puede liquidar: falta el uso del inmueble, que es lo que
-              decide si hay IVA. Definilo arriba, en Administración.
+              decide si hay IVA. Defínelo arriba, en Administración.
             </p>
           ) : liquidacion ? (
             <>

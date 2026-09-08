@@ -7,9 +7,9 @@ import { FormField, FormLabel, FormControl, FormError, FormHint } from '@leasefy
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
-import { LeasefyLogo } from '@/components/brand'
+import { LeasefyLogotype } from '@/components/brand'
 import { SalirDelRegistro } from '@/components/onboarding/SalirDelRegistro'
-import { revisarNit } from '@/lib/onboarding/nit'
+import { formatearNitAlEscribir, revisarNit, LARGO_MAXIMO_AL_ESCRIBIR } from '@/lib/onboarding/nit'
 import {
   revisarNombreCompleto,
   revisarRazonSocial,
@@ -100,7 +100,8 @@ export function OwnerNameStepForm({
   return (
     <div className="min-h-screen bg-bg">
       <header className="flex items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
-        <LeasefyLogo className="h-6 w-auto" />
+        {/* El logotipo de la marca, el mismo del selector y del resto del asistente: el cuadrado azul no es la marca (Nico, 2026-09-07). */}
+        <LeasefyLogotype className="h-6 w-auto" title="Leasefy" />
         <SalirDelRegistro />
       </header>
 
@@ -183,11 +184,14 @@ export function OwnerNameStepForm({
                   autoComplete="off"
                   className="font-mono tabular-nums"
                   placeholder="Ej: 900123456-8"
+                  maxLength={LARGO_MAXIMO_AL_ESCRIBIR}
                   value={nit}
                   invalid={!!errorDe('nit')}
                   valid={revisados.nit && !!revision.nitBueno}
                   onBlur={() => marcarRevisado('nit')}
-                  onChange={(event) => setNit(event.target.value)}
+                  // El guion lo pone el campo; la persona sólo teclea números y
+                  // no puede pasarse del largo (ver `formatearNitAlEscribir`).
+                  onChange={(event) => setNit(formatearNitAlEscribir(event.target.value))}
                 />
               </FormControl>
               {errorDe('nit') ? (
@@ -198,7 +202,7 @@ export function OwnerNameStepForm({
                   <span className="font-mono tabular-nums">{revision.nitBueno.bonito}</span>
                 </FormHint>
               ) : (
-                <FormHint>9 dígitos y el dígito de verificación. Si no lo sabes, lo calculamos.</FormHint>
+                <FormHint>9 dígitos en una empresa; si es tu cédula, escríbela tal cual (de 6 a 10). El dígito de verificación se pone solo y, si no lo sabes, lo calculamos.</FormHint>
               )}
             </FormField>
 

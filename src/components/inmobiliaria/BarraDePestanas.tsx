@@ -42,7 +42,7 @@ export interface PestanaDeBarra {
   href: string;
   label: string;
   icon: Icon;
-  /** Resaltada (coincidencia por prefijo: en una ficha seguís «dentro»). */
+  /** Resaltada (coincidencia por prefijo: en una ficha sigues «dentro»). */
   active: boolean;
   /** `aria-current="page"` sólo en la coincidencia EXACTA. */
   current: boolean;

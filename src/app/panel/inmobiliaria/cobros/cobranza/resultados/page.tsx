@@ -340,7 +340,7 @@ function ResultadosContent() {
       aria-label="Ver el detalle"
       className="rounded-lg border border-border bg-card p-5 space-y-3 max-w-2xl"
     >
-      <h2 className="text-base font-semibold text-fg">¿Querés el detalle?</h2>
+      <h2 className="text-base font-semibold text-fg">¿Quieres el detalle?</h2>
       <p className="text-sm text-fg-muted">
         Esta vista es el resumen ejecutivo. El detalle por etapa, objeciones,
         cadencia y costo vive en la analítica; el corte operativo del día, en el

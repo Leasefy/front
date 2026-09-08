@@ -218,7 +218,7 @@ export function EventoAgendaDrawer({ evento: entrante, onOpenChange, onCambio, o
                 esas agendas»). */}
             <div className="mt-6 border-t border-border pt-4">
               <p className="mb-2 text-caption font-medium uppercase tracking-[0.08em] text-fg-subtle">
-                {esVisita ? 'Qué hacés con esta visita' : 'Qué hacés con esta tarea'}
+                {esVisita ? 'Qué haces con esta visita' : 'Qué haces con esta tarea'}
               </p>
               <div className="flex flex-wrap items-center justify-end gap-2" data-testid="evento-acciones">
               {evento.tipo === 'tarea' && evento.estadoRaw === 'PENDIENTE' && (

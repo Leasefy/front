@@ -74,7 +74,7 @@ export function StepDocuments() {
     <div className="flex items-start gap-2 p-3 bg-warning-soft border border-warning/30 rounded-sm">
       <Warning className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
       <p className="text-xs text-warning">
-        Volvé a adjuntar este archivo — se desconectó al recargar la página
+        Vuelve a adjuntar este archivo — se desconectó al recargar la página
       </p>
     </div>
   );

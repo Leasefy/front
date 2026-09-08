@@ -63,7 +63,7 @@ function FirmarContratoContent() {
       } else if (isPermissionError(actions.lastError)) {
         toast.error('No tienes permisos para esta acción.');
       } else {
-        toast.error('No se pudo firmar el contrato. Intentá de nuevo.');
+        toast.error('No se pudo firmar el contrato. Intenta de nuevo.');
       }
     }
 
@@ -122,7 +122,7 @@ function FirmarContratoContent() {
           data-testid="firmar-no-pendiente"
         >
           Está en <strong>{CONTRACT_STATUS_LABELS[contract.status] ?? contract.status}</strong>.
-          {contract.status === 'pending_tenant' && ' Cuando el inquilino firme, te avisamos y volvés acá.'}
+          {contract.status === 'pending_tenant' && ' Cuando el inquilino firme, te avisamos y vuelves acá.'}
           {contract.status === 'signed' && ' Ya firmaron las dos partes.'}
         </AlertaAccionable>
       </div>
@@ -181,7 +181,7 @@ function FirmarContratoContent() {
         {/* La inmobiliaria firma ÚLTIMA (el back exige la firma del inquilino
             antes), así que firmar acá no «envía» nada: cierra el contrato. */}
         <p className="text-sm text-muted-foreground mt-1 line-clamp-2 max-w-2xl">
-          El inquilino ya firmó. Revisá el documento y firmá para cerrar el contrato.
+          El inquilino ya firmó. Revisa el documento y firma para cerrar el contrato.
         </p>
       </div>
 
@@ -196,7 +196,7 @@ function FirmarContratoContent() {
               <Info className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
               <p className="text-xs text-warning">
                 Este PDF ya incluye la <strong>firma del inquilino</strong> y un certificado parcial.
-                Revisalo antes de firmar.
+                Revísalo antes de firmar.
               </p>
             </div>
           )}

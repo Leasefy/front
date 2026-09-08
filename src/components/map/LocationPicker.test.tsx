@@ -136,6 +136,6 @@ describe('<LocationPicker>', () => {
     act(() => {
       root.render(<LocationPicker value={null} onChange={vi.fn()} />);
     });
-    expect(container.textContent).toContain('Arrastrá el marcador');
+    expect(container.textContent).toContain('Arrastra el marcador');
   });
 });

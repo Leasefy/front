@@ -1,5 +1,5 @@
 /**
- * lotesParaRetomar.test.ts — la tarjeta de «tenés una importación sin
+ * lotesParaRetomar.test.ts — la tarjeta de «tienes una importación sin
  * terminar» del asistente de inmuebles: qué se ofrece y en qué orden.
  */
 

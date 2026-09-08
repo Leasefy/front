@@ -135,7 +135,7 @@ export function AcuerdoAcceptPanel({ planId, onAccepted, className }: AcuerdoAcc
           err instanceof Error
             ? err.message
             : es
-              ? 'No pudimos registrar tu aceptación. Intentá de nuevo.'
+              ? 'No pudimos registrar tu aceptación. Intenta de nuevo.'
               : 'We could not register your acceptance. Try again.';
         toast.error(msg);
       }
@@ -192,7 +192,7 @@ export function AcuerdoAcceptPanel({ planId, onAccepted, className }: AcuerdoAcc
         <div className="rounded-xl border border-primary/20 bg-primary-soft p-4">
           <p className="text-sm text-fg dark:text-white">
             {es
-              ? 'Este acuerdo ya fue aprobado por tu inmobiliaria. Al firmar, confirmás que lo aceptás.'
+              ? 'Este acuerdo ya fue aprobado por tu inmobiliaria. Al firmar, confirmas que lo aceptas.'
               : 'This agreement was already approved by your agency. By signing, you confirm that you accept it.'}
           </p>
         </div>
@@ -244,7 +244,7 @@ export function AcuerdoAcceptPanel({ planId, onAccepted, className }: AcuerdoAcc
           ) : !signatureData ? (
             <>
               <FileText className="w-4 h-4" aria-hidden="true" />
-              {es ? 'Dibujá tu firma para continuar' : 'Draw your signature to continue'}
+              {es ? 'Dibuja tu firma para continuar' : 'Draw your signature to continue'}
             </>
           ) : (
             <>

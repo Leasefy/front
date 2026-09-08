@@ -109,7 +109,7 @@ export function useAgencySubscription(enabled = true) {
   // tier NAME. When the plan can't be resolved yet, this is false — but the
   // guard treats catalog loading/errors as `indeterminate` (below), so a
   // transient failure never bounces a paying agency. Used for upsell UI (e.g.
-  // the "subí de plan" CTA), NOT for panel access.
+  // the "sube de plan" CTA), NOT for panel access.
   const isPaidPlan = currentPlan ? !currentPlan.isDefault : false;
 
   // Panel access is governed by CAPS (backend), not by paid-vs-free: any active

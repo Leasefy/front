@@ -9,7 +9,7 @@ import type { BankCode, AccountType } from './payment-accounts';
 // Propietario (Property Owner/Client)
 // ============================================================================
 
-export type DocumentType = 'CC' | 'CE' | 'NIT' | 'PASSPORT';
+export type DocumentType = 'CC' | 'CE' | 'TI' | 'NIT' | 'PASSPORT';
 
 export interface PropietarioBankAccount {
   bank: BankCode;
@@ -23,6 +23,13 @@ export interface PropietarioBankAccount {
   accountType: AccountType;
   accountNumber: string;
   accountHolder: string;
+  /**
+   * Documento del titular cuando la cuenta NO es del propietario (2026-09-07).
+   * Bancolombia lo exige en el archivo de dispersión; sin él el lote usa el
+   * documento del propietario. Sólo vienen cuando existen.
+   */
+  accountHolderDocument?: string;
+  accountHolderDocumentType?: DocumentType;
 }
 
 export interface Propietario {
@@ -36,6 +43,8 @@ export interface Propietario {
   documentNumber: string;
   address?: string;
   city?: string;
+  /** Departamento, aparte de la ciudad; lo parte la migración y lo edita el formulario. */
+  department?: string | null;
   bankAccount: PropietarioBankAccount;
   propertyCount: number;
   activeLeases: number;
@@ -88,10 +97,14 @@ export interface PropietarioFormData {
   documentNumber: string;
   address?: string;
   city?: string;
+  department?: string;
   bankCode: BankCode | '';
   accountType: AccountType | '';
   accountNumber: string;
   accountHolder: string;
+  /** Documento del titular de la cuenta si no es el propietario; vacío = es el propietario. */
+  accountHolderDocumentType?: DocumentType | '';
+  accountHolderDocument?: string;
   notes?: string;
   /** Perfil tributario; `null` = sin definir. Van al back tal cual. */
   responsableIva?: boolean | null;
@@ -108,7 +121,7 @@ export type AgenteRole = 'agent' | 'coordinator' | 'director';
 // `invited` = lo invitaste y todavía no aceptó. No sale de `GET /agentes` (ese
 // endpoint sólo devuelve miembros ACTIVE con usuario vinculado): es una fila de
 // `agency_members` en INVITED, sin usuario todavía. Sin este estado la persona
-// que acabás de invitar no existe en ninguna pantalla del módulo.
+// que acabas de invitar no existe en ninguna pantalla del módulo.
 // Ver `useEquipo` en src/lib/hooks/useInmobiliaria.ts.
 export type AgenteStatus = 'active' | 'inactive' | 'on_leave' | 'invited';
 

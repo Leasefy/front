@@ -3,7 +3,7 @@
  *
  * Lo que se fija acá:
  *  · cada opción es un destino explícito (`setTheme('light'|'dark')`), no un
- *    "invertí lo que haya" — así el botón hace lo que dice aunque el tema
+ *    "invierte lo que haya" — así el botón hace lo que dice aunque el tema
  *    venga de `system`;
  *  · `system` se resuelve al valor real vía `resolvedTheme`;
  *  · el rail colapsado sí alterna, porque solo hay lugar para un botón.

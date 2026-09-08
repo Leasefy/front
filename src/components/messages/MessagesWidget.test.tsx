@@ -742,7 +742,7 @@ describe('<MessagesWidget> — plantillas (pedido 4)', () => {
     expect(container.querySelector('[data-testid="plantilla"]')).toBeTruthy();
   });
 
-  it('🔴 un endpoint que todavía no existe NO se lee como «no tenés plantillas»', async () => {
+  it('🔴 un endpoint que todavía no existe NO se lee como «no tienes plantillas»', async () => {
     listarPlantillasMock.mockRejectedValue(new ApiError(404, 'Not Found'));
     conversationsState = [makeConversation()];
     render('landlord');

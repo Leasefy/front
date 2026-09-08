@@ -283,7 +283,7 @@ describe('<DetalleDelLote> — aprobación', () => {
     await render(vista(lote({ estado: 'ESPERANDO_APROBACION', codigoHash: 'hash', codigoExpiraAt: '2026-09-01T15:10:00.000Z' })));
 
     expect(boton('Aprobar').disabled).toBe(true);
-    expect(container.textContent).toContain('Vos armaste este lote');
+    expect(container.textContent).toContain('Tú armaste este lote');
   });
 
   it('otra persona aprueba con el código, y el cuerpo lleva lo que escribió', async () => {
@@ -455,7 +455,7 @@ describe('<DetalleDelLote> — el archivo', () => {
   it('el error del back al generar llega tal cual', async () => {
     await render(vista(lote({ estado: 'APROBADO' })));
     vi.mocked(lotesDeDispersionApi.generarArchivo).mockRejectedValue(
-      new Error('Ninguno de los 3 pagos del lote puede ir en el archivo. Revisá los motivos de exclusión.'),
+      new Error('Ninguno de los 3 pagos del lote puede ir en el archivo. Revisa los motivos de exclusión.'),
     );
 
     await clic('Generar archivo');

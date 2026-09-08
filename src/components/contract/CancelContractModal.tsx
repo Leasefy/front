@@ -76,7 +76,7 @@ export function CancelContractModal({
         <div className="rounded-lg border border-danger/30 bg-danger-soft p-3">
           <p className="text-sm text-danger">
             Al cancelar, el contrato termina y la aplicación asociada queda cerrada.
-            Si querés volver a intentar con el mismo {otherParty}, vas a tener que crear una aplicación nueva.
+            Si quieres volver a intentar con el mismo {otherParty}, vas a tener que crear una aplicación nueva.
           </p>
         </div>
 

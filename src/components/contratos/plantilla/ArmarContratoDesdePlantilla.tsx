@@ -85,11 +85,11 @@ export function ArmarContratoDesdePlantilla({ modo, estado }: Props) {
     >
       <div>
         <h2 className="text-base font-semibold text-fg">
-          {conIa ? 'Describí el acuerdo' : 'Contrato desde la plantilla'}
+          {conIa ? 'Describe el acuerdo' : 'Contrato desde la plantilla'}
         </h2>
         <p className="text-caption text-fg-muted mt-0.5">
           {conIa
-            ? 'El asistente elige cláusulas de un catálogo cerrado y llena datos. No redacta texto legal, y lo que proponga lo revisás vos antes de generar nada.'
+            ? 'El asistente elige cláusulas de un catálogo cerrado y llena datos. No redacta texto legal, y lo que proponga lo revisas tú antes de generar nada.'
             : 'El texto sale de la plantilla legal del sistema. Las cláusulas opcionales son fijas y cada una trae la norma que la sostiene.'}
         </p>
       </div>
@@ -234,7 +234,7 @@ function BloqueDeIa({ estado }: { estado: EstadoDelContratoDesdePlantilla }) {
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="plantilla-instrucciones">Contá qué querés pactar</Label>
+      <Label htmlFor="plantilla-instrucciones">Cuenta qué quieres pactar</Label>
       <Textarea
         id="plantilla-instrucciones"
         data-testid="plantilla-instrucciones"
@@ -248,7 +248,7 @@ function BloqueDeIa({ estado }: { estado: EstadoDelContratoDesdePlantilla }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-caption text-fg-muted">
           {escritos < MINIMO_DE_INSTRUCCIONES
-            ? `Escribí al menos ${MINIMO_DE_INSTRUCCIONES} caracteres.`
+            ? `Escribe al menos ${MINIMO_DE_INSTRUCCIONES} caracteres.`
             : 'El asistente sólo elige de las cláusulas ya escritas y revisadas; nunca redacta una nueva.'}
         </p>
         <Button
@@ -326,7 +326,7 @@ function RevisionDeLaPropuesta({
         <div>
           <p className="text-body-sm font-medium text-fg">Lo que propuso el asistente</p>
           <p className="text-caption text-fg-muted mt-0.5">
-            Revisalo antes de generar. Podés quitar cualquier cláusula y corregir
+            Revísalo antes de generar. Puedes quitar cualquier cláusula y corregir
             cualquier dato: nada de esto se emite hasta que lo apruebes.
           </p>
         </div>
@@ -705,7 +705,7 @@ function ContratoListo({
         >
           <ArrowClockwise aria-hidden="true" className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <span>
-            Cambiaste algo después de armar el contrato. Volvé a generarlo para que el
+            Cambiaste algo después de armar el contrato. Vuelve a generarlo para que el
             PDF diga lo mismo que el formulario.
           </span>
         </p>

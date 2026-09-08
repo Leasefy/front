@@ -1,5 +1,5 @@
 /**
- * «Completá esto para poder crearlo» no puede desaparecer mientras se escribe.
+ * «Completa esto para poder crearlo» no puede desaparecer mientras se escribe.
  * Nico (2026-09-02): «pone una letra ahí en ese de error y de una lo quita y
  * queda siempre con una sola letra». La sección pintaba SÓLO lo que faltaba,
  * y «Barrio» deja de faltar con la primera letra → el input se desmontaba.
@@ -100,7 +100,7 @@ describe('AISuggestionCard — completar lo que falta', () => {
   it('cuando ya no falta nada la sección lo dice en verde, y si se borra vuelve a reclamar', () => {
     const vista = montar(base({ propertyZone: '' }))
     const seccion = () => container.querySelector('[data-testid="completar-0"]')!
-    expect(seccion().textContent).toContain('Completá esto para poder crearlo')
+    expect(seccion().textContent).toContain('Completa esto para poder crearlo')
 
     escribir(campoBarrio()!, 'Sabanilla')
     expect(vista.property.hasErrors).toBe(false)
@@ -108,7 +108,7 @@ describe('AISuggestionCard — completar lo que falta', () => {
     expect(seccion().getAttribute('data-completo')).toBe('true')
 
     escribir(campoBarrio()!, '')
-    expect(seccion().textContent).toContain('Completá esto para poder crearlo')
+    expect(seccion().textContent).toContain('Completa esto para poder crearlo')
     expect(campoBarrio()!.getAttribute('aria-invalid')).toBe('true')
   })
 

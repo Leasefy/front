@@ -39,7 +39,7 @@ export const documentReviewApi = {
     dto: ReviewDocumentDto,
   ): Promise<void> {
     if (dto.status === 'REJECTED' && !dto.rejectionReason?.trim()) {
-      throw new ApiError(400, 'Debés indicar el motivo del rechazo.');
+      throw new ApiError(400, 'Debes indicar el motivo del rechazo.');
     }
     await apiClient.patch<void>(
       `/applications/${applicationId}/documents/${documentId}/review`,

@@ -759,7 +759,7 @@ function PropietarioDetailContent() {
               />
               <FilaDeContacto
                 etiqueta={t('inmobiliaria.propietarios.detail.address')}
-                valor={[propietario.address, propietario.city].filter(Boolean).join(', ') || null}
+                valor={[propietario.address, propietario.city, propietario.department].filter(Boolean).join(', ') || null}
               />
               {propietario.externalId ? (
                 <FilaDeContacto etiqueta={t('inmobiliaria.propietarios.detail.refExterna')} valor={propietario.externalId} mono />

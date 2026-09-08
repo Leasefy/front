@@ -210,7 +210,7 @@ export function SubidaDeFotos({
         )}
         data-testid="subida-fotos-grande"
         data-arrastrando={arrastrando || undefined}
-        aria-label={`Subir fotos: arrastralas acá o elegilas desde tu computador (hasta ${maximo})`}
+        aria-label={`Subir fotos: arrastralas acá o elígelas desde tu computador (hasta ${maximo})`}
       >
         <div
           className={cn(
@@ -229,12 +229,12 @@ export function SubidaDeFotos({
         </div>
         <div className="space-y-1">
           <p className="text-base font-semibold text-fg">
-            {arrastrando ? 'Soltá las fotos acá' : 'Arrastrá las fotos acá'}
+            {arrastrando ? 'Suelta las fotos acá' : 'Arrastra las fotos acá'}
           </p>
           <p className="text-sm text-fg-muted">
             o{' '}
             <span className="font-medium text-primary underline-offset-2 group-hover:underline">
-              elegilas desde tu computador
+              elígelas desde tu computador
             </span>
             {aceptarPegado && <>, o pegalas con Ctrl+V</>}
           </p>

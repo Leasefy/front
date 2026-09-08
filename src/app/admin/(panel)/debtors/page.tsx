@@ -142,7 +142,7 @@ export default function DebtorsPage() {
       {!committedQ ? (
         <div className="card p-8 text-center">
           <p className="text-sm text-fg-muted">
-            Ingresá un término para encontrar deudores.
+            Ingresa un término para encontrar deudores.
           </p>
           <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mt-2">
             sin búsqueda · sin filas · sin auditoría
@@ -163,7 +163,7 @@ export default function DebtorsPage() {
             isLoading={debtors.isLoading}
             error={debtors.error}
             emptyTitle={`Sin resultados para "${committedQ}"`}
-            emptyHint="Revisá la cédula o intentá con otro nombre."
+            emptyHint="Revisa la cédula o intenta con otro nombre."
           />
         </>
       )}

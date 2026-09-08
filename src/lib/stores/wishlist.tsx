@@ -79,7 +79,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       {
         description:
           i18n?.t('wishlist.toast.guardadoLocalDetalle') ??
-          'Iniciá sesión como inquilino para tenerlo en tus guardados.',
+          'Inicia sesión como inquilino para tenerlo en tus guardados.',
       },
     );
   }, [i18n, isTenant]);

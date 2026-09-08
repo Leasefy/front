@@ -99,7 +99,7 @@ function ResultadoDeLaCorrida({ corrida }: { corrida: Corrida | null }) {
     corrida.estado === 'corriendo'
       ? 'Corrida en marcha: el agente está cruzando tus movimientos contra los cobros.'
       : corrida.estado === 'sinCambios'
-        ? 'La corrida sigue procesando: todavía no cambió nada en el resumen. Volvé en un rato o mirá la cola.'
+        ? 'La corrida sigue procesando: todavía no cambió nada en el resumen. Vuelve en un rato o mirá la cola.'
         : [
             corrida.conciliados > 0
               ? `${corrida.conciliados} ${corrida.conciliados === 1 ? 'movimiento conciliado' : 'movimientos conciliados'}`
@@ -282,7 +282,7 @@ function ConciliacionSala() {
               data-testid="conciliacion-run-cta"
               title={
                 sinMovimientos
-                  ? 'Todavía no hay movimientos cargados: subí el extracto del banco primero.'
+                  ? 'Todavía no hay movimientos cargados: sube el extracto del banco primero.'
                   : undefined
               }
             >

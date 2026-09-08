@@ -9,6 +9,12 @@ import { CompleteStepForm, RUTA_DEL_PANEL, resumenDelRegistro } from './Complete
 import { OnboardingSessionError } from '@/lib/api/onboarding-session.service'
 import type { OnboardingSessionStepConflict } from '@/lib/api/generated/agency'
 
+// `CompleteStepForm` refresca la sesión antes de salir (arreglo del bucle del
+// 2026-09-07); sin este mock `useAuth()` revienta fuera del AuthProvider.
+vi.mock('@/lib/auth/use-auth', () => ({
+  useAuth: () => ({ refreshUser: async () => {}, user: null, isAuthenticated: false, isLoading: false }),
+}))
+
 /**
  * El paso ya no navega a la URL ABSOLUTA que devuelve el servidor
  * (`dashboardUrl`): navega a una ruta propia con el router. Ver el comentario

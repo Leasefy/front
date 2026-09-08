@@ -37,12 +37,12 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
   inmueble_codigo: {
     titulo: "El código del inmueble no existe",
     porque:
-      "El archivo trae un código de inmueble que no está en tu portafolio — probablemente es el del sistema anterior. Elegí el inmueble por la dirección, o crealo.",
+      "El archivo trae un código de inmueble que no está en tu portafolio — probablemente es el del sistema anterior. Elige el inmueble por la dirección, o créalo.",
   },
   inmueble_ambiguo: {
     titulo: "Hay más de un inmueble con esa dirección",
     porque:
-      "Elegir por vos pegaría el contrato al inmueble equivocado, y quedaría perfecto.",
+      "Elegir por ti pegaría el contrato al inmueble equivocado, y quedaría perfecto.",
   },
   inmueble_ocupado: {
     titulo: "Ese inmueble ya tiene un contrato vigente",
@@ -63,7 +63,7 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
   inquilino_documento_ajeno: {
     titulo: "Ese documento es de una cuenta que no es de inquilino",
     porque:
-      "Coincide con un agente o un propietario con cuenta en el portal. No se le cuelga un arriendo a esa persona: corregí el documento, o vacialo para que el contrato se resuelva por el correo.",
+      "Coincide con un agente o un propietario con cuenta en el portal. No se le cuelga un arriendo a esa persona: corrige el documento, o vacialo para que el contrato se resuelva por el correo.",
   },
   fechas: {
     titulo: "Las fechas no cuadran",
@@ -250,7 +250,7 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
                 }
               >
                 <SelectTrigger className="max-w-xs">
-                  <SelectValue placeholder="Elegí el uso" />
+                  <SelectValue placeholder="Elige el uso" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="VIVIENDA">Vivienda</SelectItem>
@@ -324,7 +324,7 @@ function ElegirInmueble({
        */}
       <p className="text-xs text-muted-foreground">
         Sin inmueble el contrato no se activa: no tendría consignación ni
-        generaría cobros. Elegí uno de los candidatos o crealo desde la
+        generaría cobros. Elige uno de los candidatos o créalo desde la
         dirección del archivo.
       </p>
       {fila.candidatos.length > 0 ? (
@@ -543,8 +543,8 @@ function RegistrarPropietario({
       </div>
       {fallaLaBusqueda ? (
         <p className="text-xs text-warning" data-testid="busqueda-fallida">
-          No pudimos buscar entre los que ya existen. Probá de nuevo en un
-          momento — si escribís el documento a mano, igual se enlaza al que ya
+          No pudimos buscar entre los que ya existen. Prueba de nuevo en un
+          momento — si escribes el documento a mano, igual se enlaza al que ya
           está en vez de duplicarlo.
         </p>
       ) : null}

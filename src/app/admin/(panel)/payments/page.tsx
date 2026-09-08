@@ -243,7 +243,7 @@ export default function PaymentsPage() {
         isLoading={result.isLoading}
         error={result.error}
         emptyTitle="Sin pagos"
-        emptyHint="Ajustá los filtros."
+        emptyHint="Ajusta los filtros."
       />
 
       {result.data && (

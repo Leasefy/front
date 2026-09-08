@@ -565,7 +565,7 @@ export function DispersionWizard({
                 <p className="text-muted-foreground">
                   {yaGenerados > 0
                     ? `Las ${yaGenerados} dispersiones de ${formatMonth(state.month)} ya existen. Buscalas en la lista.`
-                    : `No hay cobros pagados en ${formatMonth(state.month)}. Elegí otro mes o esperá a que se registren pagos.`}
+                    : `No hay cobros pagados en ${formatMonth(state.month)}. Elige otro mes o esperá a que se registren pagos.`}
                 </p>
               </div>
             ) : null}
@@ -750,7 +750,7 @@ export function DispersionWizard({
                 ¿A quién le generás este mes?
               </h3>
               <p className="text-sm text-muted-foreground">
-                Están todos marcados. Destildá a quien quieras dejar para
+                Están todos marcados. Destilda a quien quieras dejar para
                 después — un pago que todavía no acredita, una cuenta sin
                 confirmar.
               </p>

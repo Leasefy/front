@@ -83,7 +83,7 @@ export function TypingIndicator({ historyCount = 0, snapshot, className }: Typin
   return (
     <div className={cn('flex items-start gap-3', className)}>
       {/* El orbe se alinea por ARRIBA con el título, no por el centro (Nico,
-          2026-08-27: «dejá el título pegado al tope de arriba del orbe, mirá
+          2026-08-27: «deja el título pegado al tope de arriba del orbe, mirá
           que está como en el centro»). Es la misma geometría que el avatar de
           una respuesta: la marca arranca donde arranca el texto.
 

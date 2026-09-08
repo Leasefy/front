@@ -387,7 +387,7 @@ export function StepConfirmImport({
       setError(
         e instanceof Error && e.message
           ? e.message
-          : "No pudimos preparar los datos del archivo. Intentá de nuevo.",
+          : "No pudimos preparar los datos del archivo. Intenta de nuevo.",
       );
       return;
     } finally {
@@ -1036,7 +1036,7 @@ export function StepConfirmImport({
             <p className="text-body-sm text-fg-muted mt-0.5">
               Les falta {motivosBloqueo.join(", ")}. Vuelve a{" "}
               <span className="font-medium text-fg">Revisión</span> con
-              «Anterior» y completalos ahí en cada inmueble; el resto se importa
+              «Anterior» y complétalos ahí en cada inmueble; el resto se importa
               igual.
             </p>
           </div>

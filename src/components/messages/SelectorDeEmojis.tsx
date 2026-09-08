@@ -69,7 +69,7 @@ export function SelectorDeEmojis({ locale, onElegir, className }: Props) {
       {panel.abierto && (
         <div
           role="dialog"
-          aria-label={es ? 'Elegí un emoji' : 'Pick an emoji'}
+          aria-label={es ? 'Elige un emoji' : 'Pick an emoji'}
           data-testid="panel-emojis"
           /* `bottom-full` porque el compositor vive abajo de todo: un panel que
              se abre hacia abajo queda fuera de la pantalla. */

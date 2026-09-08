@@ -38,12 +38,12 @@ export const NOMBRE_DEL_ESTADO: Record<EstadoDelLote, string> = {
 /** Qué significa el estado y qué sigue, para quien abre el lote. */
 export const QUE_SIGUE: Record<EstadoDelLote, string> = {
   BORRADOR:
-    'El lote está armado con las dispersiones pendientes del mes. Revisá los excluidos y mandalo a aprobación.',
+    'El lote está armado con las dispersiones pendientes del mes. Revisa los excluidos y mándalo a aprobación.',
   ESPERANDO_APROBACION:
     'Lo tiene que aprobar otra persona con permiso sobre dispersiones. Si el monto lo exige, el código de 6 dígitos le llegó por correo.',
   APROBADO: 'Ya se puede generar el archivo plano para subirlo al banco.',
   ARCHIVO_GENERADO:
-    'Descargá el archivo y subilo al banco. Cuando el banco confirme el pago, marcá el lote como pagado con la referencia.',
+    'Descarga el archivo y súbelo al banco. Cuando el banco confirme el pago, marca el lote como pagado con la referencia.',
   PAGADO: 'La plata salió. Un lote pagado no se anula: un pago hecho se corrige con una contrapartida.',
   ANULADO: 'Las dispersiones de este lote volvieron a quedar libres para entrar en otro.',
 };

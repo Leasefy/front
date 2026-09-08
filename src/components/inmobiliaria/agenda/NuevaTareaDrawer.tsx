@@ -56,8 +56,8 @@ export const TAREA_VACIA: TareaForm = {
 /** Qué falta. Vacío = se puede guardar. */
 export function validarTarea(f: TareaForm): Record<string, string> {
   const e: Record<string, string> = {};
-  if (f.titulo.trim().length < 2) e.titulo = 'Escribí qué hay que hacer.';
-  if (!f.fecha) e.fecha = 'Elegí el día.';
+  if (f.titulo.trim().length < 2) e.titulo = 'Escribe qué hay que hacer.';
+  if (!f.fecha) e.fecha = 'Elige el día.';
   return e;
 }
 
@@ -145,7 +145,7 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
                 value={fechaLocal(form.fecha)}
                 onChange={(d) => set('fecha', aFechaIso(d))}
                 minDate={hoyLocal()}
-                placeholder="Elegí el día"
+                placeholder="Elige el día"
                 className="w-full"
               />
             </Campo>
@@ -159,8 +159,8 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
               value={form.consignacionId || undefined}
               onChange={(v) => set('consignacionId', v ?? '')}
               options={inmuebles}
-              placeholder="Buscá por código, título o dirección"
-              searchPlaceholder="Escribí #código, título o dirección"
+              placeholder="Busca por código, título o dirección"
+              searchPlaceholder="Escribe #código, título o dirección"
               contentClassName="z-[400]"
             />
           </Campo>
@@ -170,7 +170,7 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
               value={form.responsableUserId || undefined}
               onChange={(v) => set('responsableUserId', v ?? '')}
               options={responsables}
-              placeholder={responsables.length ? 'Elegí a alguien del equipo' : 'Sin agentes con cuenta'}
+              placeholder={responsables.length ? 'Elige a alguien del equipo' : 'Sin agentes con cuenta'}
               searchPlaceholder="Nombre"
               disabled={responsables.length === 0}
               contentClassName="z-[400]"

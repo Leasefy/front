@@ -517,7 +517,7 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
                 </div>
                 <p className="text-sm font-medium text-primary">
                   {locale === 'es'
-                    ? 'Revisá el contrato y firmá. El propietario firmará después para cerrar el proceso.'
+                    ? 'Revisa el contrato y firma. El propietario firmará después para cerrar el proceso.'
                     : 'Review the contract and sign. The landlord will sign next to close the process.'}
                 </p>
               </div>

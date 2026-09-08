@@ -2,11 +2,11 @@
 
 /**
  * RecorridoMapa — los 11 pasos del recorrido, en dos tramos: lo que hace el
- * inquilino (1–6) y lo que te toca a vos (7–11), con el corte donde cambia de
+ * inquilino (1–6) y lo que te toca a ti (7–11), con el corte donde cambia de
  * manos dibujado entre los dos.
  *
  * Antes era una lista vertical de once filas con riel: correcta, pero larga y
- * fea como presentación («esto está horrible… mejorá muchísimo eso a nivel
+ * fea como presentación («esto está horrible… mejora muchísimo eso a nivel
  * UI», Nico, 2026-09-03). Ahora cada paso es una card chica en una grilla por
  * tramo: se ve de un vistazo quién hace qué y dónde entra la inmobiliaria.
  *

@@ -63,7 +63,7 @@ export function BlogArticle({ post, related }: BlogArticleProps) {
         <section className="landing-ba__related" data-testid="article-related">
           <div className="landing-ba__wrap">
             <div className="landing-ba__related-head">
-              <h2>Seguí leyendo</h2>
+              <h2>Sigue leyendo</h2>
               <Link href="/blog">Todos los artículos →</Link>
             </div>
             <div className="landing-bp__grid">

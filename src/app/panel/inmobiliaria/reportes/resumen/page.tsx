@@ -272,14 +272,14 @@ export default function InmobiliariaDashboardPage() {
 
 /**
  * Un bloque que no se puede mostrar porque el rol no lo alcanza. Dice eso,
- * en vez de dibujar un cero: «0 agentes activos» y «no tenés acceso a
+ * en vez de dibujar un cero: «0 agentes activos» y «no tienes acceso a
  * agentes» se ven igual y significan cosas opuestas.
  */
 function SinAcceso({ que }: { que: string }) {
   return (
     <div className="rounded-lg border border-border bg-surface px-4 py-6 text-center">
       <p className="text-sm text-fg-muted">
-        Tu rol no incluye {que}. Pedile a un administrador de la inmobiliaria que te lo habilite.
+        Tu rol no incluye {que}. Pídele a un administrador de la inmobiliaria que te lo habilite.
       </p>
     </div>
   );
@@ -512,7 +512,7 @@ function ResumenDelNegocio() {
             <EmptyState
               icon={UserCircle}
               title="Todavía no hay agentes activos"
-              description="Invitá a alguien del equipo desde Configuración › Equipo y acá vas a ver su carga y sus cierres."
+              description="Invita a alguien del equipo desde Configuración › Equipo y acá vas a ver su carga y sus cierres."
             />
           ) : (
             <div className="space-y-4">

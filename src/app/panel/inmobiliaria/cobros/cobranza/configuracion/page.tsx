@@ -209,7 +209,7 @@ function avisosDelAcuerdo(d: NegotiationDraft): string[] {
 
   if (d.maxPlanMonths < 1 && planes.length > 0) {
     avisos.push(
-      `El plazo máximo está en ${d.maxPlanMonths}, así que el agente no puede armar ningún cronograma —aunque abajo estén marcados ${planes.join(', ')} meses. Subilo a ${mayor} para que los plazos marcados sirvan.`,
+      `El plazo máximo está en ${d.maxPlanMonths}, así que el agente no puede armar ningún cronograma —aunque abajo estén marcados ${planes.join(', ')} meses. Súbelo a ${mayor} para que los plazos marcados sirvan.`,
     )
   } else if (mayor !== undefined && d.maxPlanMonths > 0 && mayor > d.maxPlanMonths) {
     avisos.push(
@@ -450,7 +450,7 @@ function CobranzaConfiguracionContent() {
       <div>
         {/* Vuelta al origen. Se llega acá desde «Ajustar» en Acuerdos de pago y
             no había cómo volver: el flujo quedaba cortado en una pantalla de
-            configuración larga. El enlace sólo aparece si de verdad venís de
+            configuración larga. El enlace sólo aparece si de verdad vienes de
             ahí (`?volver=acuerdos`), para no inventar una vuelta que no existe
             cuando entraste por el menú. */}
         {volverA === 'acuerdos' && (
@@ -880,7 +880,7 @@ function CobranzaConfiguracionContent() {
  *
  * Vivía acá como §Negociación y el enlace desde Acuerdos traía hasta esta
  * pantalla. Pero el marco general —«si el deudor cabe en estas condiciones,
- * cerralo»— no es un ajuste del sistema: es el acuerdo más importante que tiene
+ * ciérralo»— no es un ajuste del sistema: es el acuerdo más importante que tiene
  * la inmobiliaria, y se arma junto a los acuerdos puntuales. Ahora se edita en
  * `AcuerdosGeneralesCard`, plegado hasta que hace falta, con el acuerdo dicho
  * en una frase arriba. Acá queda un puntero para quien lo busque en el lugar

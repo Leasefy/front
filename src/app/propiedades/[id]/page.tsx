@@ -24,7 +24,7 @@ interface PropertyDetailPageProps {
  *
  * El pie también es el de la landing. Cerraba con `FooterCompact` —uno corto
  * con redes— y era el único pie distinto que quedaba en el sitio público
- * (Nico, 2026-09-05: «poné el de la landing ahí también»).
+ * (Nico, 2026-09-05: «pon el de la landing ahí también»).
  */
 export default function PropertyDetailPage({ params }: PropertyDetailPageProps) {
   const resolvedParams = params instanceof Promise ? use(params) : params;

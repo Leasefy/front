@@ -18,7 +18,7 @@
  * 1. Al cambiar un filtro, la página vuelve a 1. Sin esto, filtrar estando en
  *    la página 4 deja la tabla vacía sobre un resultado que sí tiene filas, y
  *    se lee como «no hay nada» cuando lo que pasa es que te fuiste del rango.
- *    Pasale una `resetKey` con lo que dependa del filtro.
+ *    Pásale una `resetKey` con lo que dependa del filtro.
  *
  * 2. Si el total encoge por debajo de la página actual (llegó un refresh con
  *    menos filas), la página se ajusta sola al último rango con datos.
@@ -34,7 +34,7 @@ export interface UseTablePaginationOptions {
   /** Tamaño inicial de página. */
   initialPageSize?: number
   /**
-   * Cambia cuando cambian los filtros → vuelve a la página 1. Serializá acá
+   * Cambia cuando cambian los filtros → vuelve a la página 1. Serializa acá
    * todo lo que altere el conjunto de filas (p. ej. `${estado}|${canal}`).
    */
   resetKey?: string

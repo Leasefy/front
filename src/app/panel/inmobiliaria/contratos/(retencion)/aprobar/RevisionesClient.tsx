@@ -320,7 +320,7 @@ export default function RevisionesClient() {
         <EmptyState
           icon={Gavel}
           title="No hay decisiones en este filtro."
-          description="Probá con otra pestaña, con otro tipo de decisión o cambiá lo que escribiste en la búsqueda."
+          description="Prueba con otra pestaña, con otro tipo de decisión o cambia lo que escribiste en la búsqueda."
         />
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border">

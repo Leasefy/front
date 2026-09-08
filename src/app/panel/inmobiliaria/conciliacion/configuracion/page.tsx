@@ -177,7 +177,7 @@ function PoliticaAutoMatch() {
           Auto-match por dominio
         </h2>
         <p className="text-sm text-fg-muted max-w-2xl">
-          Activá la conciliación automática solo donde quieras que el sistema confirme coincidencias
+          Activa la conciliación automática solo donde quieras que el sistema confirme coincidencias
           sin intervención humana. Mientras un dominio esté apagado, el sistema solo SUGIERE
           (modo sombra) y toda coincidencia pasa por la cola de revisión.
         </p>
@@ -302,7 +302,7 @@ function PoliticaAutoMatch() {
       {/* CTA principal — guardar (abre confirmación) */}
       <div className="flex items-center justify-between gap-3 pt-1">
         <span className="text-xs text-warning">
-          {isDirty ? 'Tenés cambios sin guardar.' : ''}
+          {isDirty ? 'Tienes cambios sin guardar.' : ''}
         </span>
         <Button
           hideArrow

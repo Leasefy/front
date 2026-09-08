@@ -295,7 +295,7 @@ function NuevoContratoContent() {
   const validation = useMemo(() => {
     const errors: Record<string, string> = {};
     if (form.mode === 'upload' && !form.pdfFile) {
-      errors.pdfFile = 'Subí el PDF del contrato.';
+      errors.pdfFile = 'Sube el PDF del contrato.';
     }
     /*
      * 🔴 Con el PDF armado por el sistema, «no hay contrato» y «el contrato
@@ -303,10 +303,10 @@ function NuevoContratoContent() {
      * sería un documento firmado que no coincide con la cuenta.
      */
     if (armadoPorElSistema && !plantilla.generado) {
-      errors.contratoArmado = 'Armá el contrato antes de crearlo.';
+      errors.contratoArmado = 'Arma el contrato antes de crearlo.';
     }
     if (armadoPorElSistema && plantilla.generadoQuedoViejo) {
-      errors.contratoArmado = 'Volvé a armar el contrato: cambiaste datos después de generarlo.';
+      errors.contratoArmado = 'Vuelve a armar el contrato: cambiaste datos después de generarlo.';
     }
     if (!form.startDate) errors.startDate = 'Requerido';
     if (!form.endDate) errors.endDate = 'Requerido';
@@ -316,7 +316,7 @@ function NuevoContratoContent() {
     const rent = Number(form.monthlyRent);
     if (!rent || rent < 100_000) errors.monthlyRent = 'Mínimo 100.000 COP';
     const dep = Number(form.deposit);
-    if (isNaN(dep) || dep < 0) errors.deposit = 'Ingresá un valor válido';
+    if (isNaN(dep) || dep < 0) errors.deposit = 'Ingresa un valor válido';
     const day = Number(form.paymentDay);
     if (!day || day < 1 || day > 28) errors.paymentDay = 'Entre 1 y 28';
     const errorDePlazo = validarDiasDePlazo(form.diasDePlazo);
@@ -359,7 +359,7 @@ function NuevoContratoContent() {
       if (form.mode === 'upload' && form.pdfFile) {
         const uploaded = await actions.uploadPdf(form.pdfFile);
         if (!uploaded) {
-          setSubmitError('No se pudo subir el PDF. Intentá de nuevo.');
+          setSubmitError('No se pudo subir el PDF. Intenta de nuevo.');
           return;
         }
         uploadedPdfPath = uploaded.uploadedPdfPath;
@@ -375,7 +375,7 @@ function NuevoContratoContent() {
        */
       if (armadoPorElSistema) {
         if (!plantilla.generado || plantilla.generadoQuedoViejo) {
-          setSubmitError('Armá el contrato antes de crearlo.');
+          setSubmitError('Arma el contrato antes de crearlo.');
           return;
         }
         uploadedPdfPath = plantilla.generado.uploadedPdfPath;
@@ -420,7 +420,7 @@ function NuevoContratoContent() {
         if (!creado) {
           setSubmitError(
             actions.lastError?.message
-              ?? 'No se pudo crear el contrato. Verificá los datos e intentá de nuevo.'
+              ?? 'No se pudo crear el contrato. Verifica los datos e intenta de nuevo.'
           );
           return;
         }
@@ -449,7 +449,7 @@ function NuevoContratoContent() {
         }
         setSubmitError(
           actions.lastError?.message
-            ?? 'No se pudo crear el contrato. Verificá los datos e intentá de nuevo.'
+            ?? 'No se pudo crear el contrato. Verifica los datos e intenta de nuevo.'
         );
         return;
       }
@@ -499,7 +499,7 @@ function NuevoContratoContent() {
         <h1 className="text-h2 text-fg">Crear contrato</h1>
         {esManual ? (
           <p className="text-sm text-muted-foreground mt-1 line-clamp-2 max-w-2xl" data-testid="nuevo-contrato-manual">
-            Sin postulación: elegís el inmueble y el inquilino, y el resto es igual que cualquier contrato.
+            Sin postulación: eliges el inmueble y el inquilino, y el resto es igual que cualquier contrato.
             {inmuebleElegido && (
               <> · Inmueble: <span className="font-medium text-foreground">{inmuebleElegido}</span></>
             )}
@@ -570,9 +570,9 @@ function NuevoContratoContent() {
               title="Generar con IA"
               desc={
                 plantilla.iaDisponible === true
-                  ? 'Contás qué querés pactar y el asistente propone las cláusulas.'
+                  ? 'Cuentas qué quieres pactar y el asistente propone las cláusulas.'
                   : plantilla.iaDisponible === false
-                    ? 'No está configurada en tu cuenta. Armalo con la plantilla.'
+                    ? 'No está configurada en tu cuenta. Ármalo con la plantilla.'
                     : 'Comprobando si está disponible en tu cuenta…'
               }
               icon={Sparkle}
@@ -593,7 +593,7 @@ function NuevoContratoContent() {
                 onValueChange={(v) => setUso(v as UsoDelInmueble)}
               >
                 <SelectTrigger id="contrato-uso" data-testid="contrato-uso">
-                  <SelectValue placeholder="Elegí vivienda o comercial" />
+                  <SelectValue placeholder="Elige vivienda o comercial" />
                 </SelectTrigger>
                 <SelectContent className="z-[400]">
                   <SelectItem value="VIVIENDA">Vivienda urbana (Ley 820 de 2003)</SelectItem>
@@ -652,7 +652,7 @@ function NuevoContratoContent() {
               >
                 <UploadSimple className="w-8 h-8 text-muted-foreground" />
                 <p className="text-sm text-foreground">
-                  <span className="font-medium">Hacé click para subir</span> o arrastrá un PDF aquí
+                  <span className="font-medium">Haz click para subir</span> o arrastra un PDF aquí
                 </p>
                 <p className="text-xs text-muted-foreground">Máx 10 MB</p>
                 <input

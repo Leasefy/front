@@ -175,7 +175,7 @@ export function MigrarAsientos({
       setError(
         mensajeDeContabilidad(
           e,
-          "No pudimos revisar el archivo. Intentá de nuevo.",
+          "No pudimos revisar el archivo. Intenta de nuevo.",
         ),
       );
     } finally {
@@ -379,7 +379,7 @@ export function MigrarAsientos({
               <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
               <p className="text-sm text-fg">
                 Son {armados.length} asientos y un lote admite hasta{" "}
-                {MAX_ASIENTOS_POR_LOTE}. Partí el archivo (por año, por ejemplo)
+                {MAX_ASIENTOS_POR_LOTE}. Parte el archivo (por año, por ejemplo)
                 y súbelo en tandas.
               </p>
             </div>
@@ -466,7 +466,7 @@ function Revision({
       <section className="rounded-lg border border-border bg-surface p-6 shadow-sm">
         <h2 className="font-medium text-fg">Revisión de «{revision.lote}»</h2>
         <p className="mt-1 text-sm text-fg-muted">
-          Nada se escribió todavía. Esto es lo que pasaría si aplicás el lote.
+          Nada se escribió todavía. Esto es lo que pasaría si aplicas el lote.
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-4">
           <Dato etiqueta="En el archivo" valor={revision.total} />

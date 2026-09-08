@@ -5,7 +5,7 @@
  * DESDE Acuerdos de pago.
  *
  * Un acuerdo puntual se arma para una persona. El acuerdo GENERAL es la regla:
- * «si el deudor cabe en estas condiciones, tomalo y no me preguntes». Vive en
+ * «si el deudor cabe en estas condiciones, tómalo y no me preguntes». Vive en
  * la política de la agencia (`GET/PATCH /api/agency/:id/policy`) y el agente ya
  * la lee en cada negociación.
  *

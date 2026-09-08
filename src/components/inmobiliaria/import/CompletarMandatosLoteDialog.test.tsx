@@ -381,7 +381,7 @@ describe('<CompletarMandatosLoteDialog> — modo «Uno por uno»', () => {
     // propietario. Complétalos desde el portafolio» — reintentar era inútil.
     const { toast } = await import('@/components/ui/toast');
     createConsignacionMock.mockRejectedValue(
-      new ApiError(402, 'Alcanzaste el límite de propiedades de tu plan. Subí de plan para agregar más.'),
+      new ApiError(402, 'Alcanzaste el límite de propiedades de tu plan. Sube de plan para agregar más.'),
     );
     renderDialog([
       makeInmueble({ propertyId: 'a', propertyTitle: 'Depto A' }),
@@ -395,7 +395,7 @@ describe('<CompletarMandatosLoteDialog> — modo «Uno por uno»', () => {
 
     expect(toast.error).toHaveBeenCalledWith(
       'inmobiliaria.import.confirm.mandateBatch.toasts.allFailedTitle',
-      { description: 'Alcanzaste el límite de propiedades de tu plan. Subí de plan para agregar más.' },
+      { description: 'Alcanzaste el límite de propiedades de tu plan. Sube de plan para agregar más.' },
     );
   });
 

@@ -298,14 +298,14 @@ describe('<MigrarContratos> — la compuerta de lo esencial', () => {
     }
     // Y dice qué hacer: el archivo no las trae, no es que haya que elegirlas.
     expect(texto).toContain('Tu archivo no trae ninguna columna de canon')
-    expect(texto).toContain('volvé a subirlo')
+    expect(texto).toContain('vuelve a subirlo')
   })
 
   it('cuando la columna existe pero no se reconoció, manda al desplegable', async () => {
     render()
     await esperar()
     // «Corte facturación» no se reconoce, pero habla de un corte de cobro:
-    // hay una columna que elegir, así que el consejo no es «volvé a subirlo».
+    // hay una columna que elegir, así que el consejo no es «vuelve a subirlo».
     await subirArchivo(
       [...ENCABEZADOS_MINIMOS.filter((h) => h !== 'Día de pago'), 'Corte facturación'],
       [{ ...filaMinima(), 'Corte facturación': '5' }],
@@ -314,9 +314,9 @@ describe('<MigrarContratos> — la compuerta de lo esencial', () => {
     const texto =
       container.querySelector('[data-testid="faltan-esenciales"]')?.textContent ?? ''
     expect(texto).toContain(
-      'Elegí en el desplegable la columna de tu archivo que trae el día de pago',
+      'Elige en el desplegable la columna de tu archivo que trae el día de pago',
     )
-    expect(texto).not.toContain('volvé a subirlo')
+    expect(texto).not.toContain('vuelve a subirlo')
     expect(botonRevisar()?.disabled).toBe(true)
     // La columna sigue estando, con su desplegable, para elegirla.
     expect(
@@ -676,7 +676,7 @@ describe('<MigrarContratos> — activables, el botón de activar (T-0035)', () =
 })
 
 /**
- * T-0035 — la tarjeta "Tenés una migración sin terminar" tenía la misma
+ * T-0035 — la tarjeta "Tienes una migración sin terminar" tenía la misma
  * ceguera: leía `l.listos` para decidir si mostrar "N para activar".
  */
 describe('<MigrarContratos> — lotesAbiertos usa activables, no listos (T-0035)', () => {
@@ -898,7 +898,7 @@ describe('<MigrarContratos> — descartar un lote entero (T-0036 §3.2.C)', () =
  * la quiero continuar». El botón de T-0036 vive adentro de `ListaDeTrabajo`,
  * que sólo se monta DESPUÉS de apretar "Retomar" — para descartar un lote
  * que no se quiere continuar había que abrirlo primero. Estos tests cubren
- * la tarjeta "Tenés una migración sin terminar" ofreciendo "Descartar" junto
+ * la tarjeta "Tienes una migración sin terminar" ofreciendo "Descartar" junto
  * a "Retomar", sin entrar al lote.
  */
 describe('<MigrarContratos> — descartar un lote sin abrirlo primero (T-0039)', () => {

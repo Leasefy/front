@@ -121,7 +121,7 @@ export function DisputaDetailPanel({
       <div className="flex flex-col items-center justify-center h-full py-24 px-6 text-center gap-3">
         <Scales className="w-8 h-8 text-fg-muted" weight="duotone" aria-hidden="true" />
         <p className="text-sm text-fg-muted max-w-xs">
-          Elegí una disputa de la lista para leer el motivo y resolverla.
+          Elige una disputa de la lista para leer el motivo y resolverla.
         </p>
       </div>
     )
@@ -224,7 +224,7 @@ export function DisputaDetailPanel({
               onValueChange={(v) => setOutcome(v as DisputeOutcome)}
             >
               <SelectTrigger id="resolver-outcome">
-                <SelectValue placeholder="Elegí un resultado" />
+                <SelectValue placeholder="Elige un resultado" />
               </SelectTrigger>
               <SelectContent>
                 {OUTCOME_OPCIONES.map((o) => (
@@ -249,7 +249,7 @@ export function DisputaDetailPanel({
               onChange={(e) => setNote(e.target.value)}
               rows={4}
               maxLength={NOTE_MAX + 50}
-              placeholder="Justificá la decisión y los próximos pasos."
+              placeholder="Justifica la decisión y los próximos pasos."
               className="leading-relaxed"
             />
             <div className="flex items-center justify-end text-xs text-fg-muted tabular-nums">

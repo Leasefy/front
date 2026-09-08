@@ -9,6 +9,9 @@ import { getSupabase } from '@/lib/supabase/client';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
 import { apiClient, ApiError } from '@/lib/api/client';
 import { Input } from '@/components/ui/input';
+import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena';
+import { normalizarCorreo, validarCorreo } from '@/lib/auth/correo';
+import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
 import type { InvitationInfo } from '@/lib/types/inmobiliaria';
 
 const PENDING_INVITATION_KEY = 'pending-invitation-token';
@@ -124,7 +127,7 @@ function RegistroContent() {
         setInvitationError(
           dead
             ? 'Esta invitación ya no es válida: expiró o ya fue aceptada.'
-            : 'No pudimos validar la invitación. Revisá tu conexión e intentá de nuevo.'
+            : 'No pudimos validar la invitación. Revisa tu conexión e intenta de nuevo.'
         );
       })
       .finally(() => setLoadingInvitation(false));
@@ -159,7 +162,7 @@ function RegistroContent() {
     const doComplete = async () => {
       if (needsOnboarding) {
         // NEW invited user (defense-in-depth; in practice handled by the manual
-        // "Completá tu perfil" form). ONE transactional call: passing
+        // "Completa tu perfil" form). ONE transactional call: passing
         // invitationToken makes /users/me/onboarding create the profile AND
         // accept the invitation atomically (membership ACTIVE on return,
         // response { user, agencyMemberId, agencyId, onboardingStep:
@@ -191,7 +194,7 @@ function RegistroContent() {
       setFormError(
         err instanceof Error && err.message
           ? err.message
-          : 'No se pudo completar el registro. Intentá de nuevo.',
+          : 'No se pudo completar el registro. Intenta de nuevo.',
       );
     });
   }, [isAuthenticated, needsOnboarding, user, token, invitation]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -209,18 +212,20 @@ function RegistroContent() {
       // Redirect back to this same page so the ?code= exchange happens client-side
       // and the invitationToken stays in the URL for the auto-accept effect.
       const redirectTo = window.location.href;
-      const result = await signUpWithEmail(data.email, data.password, redirectTo);
+      // Normalizado (minúsculas, sin espacios): es lo que después se escribe al entrar.
+      const correo = normalizarCorreo(data.email);
+      const result = await signUpWithEmail(correo, data.password, redirectTo);
       if (result?.requiresConfirmation) {
         setConfirmed(true);
         return;
       }
-      await signInWithEmail(data.email, data.password);
+      await signInWithEmail(correo, data.password);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (msg.includes('already registered') || msg.includes('User already registered')) {
         setFormError('Este email ya tiene una cuenta. Usá "Ya tengo cuenta" para ingresar.');
       } else {
-        setFormError('Error al crear la cuenta. Intentá de nuevo.');
+        setFormError('Error al crear la cuenta. Intenta de nuevo.');
       }
     } finally {
       setIsSubmitting(false);
@@ -259,7 +264,7 @@ function RegistroContent() {
       setFormError(
         err instanceof Error && err.message
           ? err.message
-          : 'No se pudo completar el registro. Intentá de nuevo.',
+          : 'No se pudo completar el registro. Intenta de nuevo.',
       );
     } finally {
       setIsSubmitting(false);
@@ -299,7 +304,7 @@ function RegistroContent() {
           <p className="text-sm text-muted-foreground">{invitationError}</p>
           {invitationDead && (
             <p className="text-xs text-muted-foreground mt-2">
-              Si ya sos miembro, entrá a tu panel. Si no, pedile al administrador que te reenvíe la invitación.
+              Si ya eres miembro, entra a tu panel. Si no, pídele al administrador que te reenvíe la invitación.
             </p>
           )}
           {isAuthenticated && (
@@ -359,7 +364,7 @@ function RegistroContent() {
           {isExpired && (
             <div className="mt-3 p-3 rounded-xl bg-warning-soft border border-warning/30 flex items-center gap-2">
               <WarningCircle className="w-4 h-4 text-warning shrink-0" />
-              <p className="text-xs text-warning">Esta invitación expiró. Pedile al administrador que la reenvíe.</p>
+              <p className="text-xs text-warning">Esta invitación expiró. Pídele al administrador que la reenvíe.</p>
             </div>
           )}
         </div>
@@ -371,7 +376,7 @@ function RegistroContent() {
             {needsOnboarding ? (
               <>
                 <div className="mb-4">
-                  <h2 className="text-[16px] font-semibold text-foreground">Completá tu perfil</h2>
+                  <h2 className="text-[16px] font-semibold text-foreground">Completa tu perfil</h2>
                   <p className="text-[13px] text-muted-foreground mt-1">
                     Tu cuenta fue creada. Solo necesitamos tus datos.
                   </p>
@@ -465,18 +470,18 @@ function RegistroContent() {
                       <Envelope className="w-7 h-7 text-success" />
                     </div>
                     <div>
-                      <p className="text-[15px] font-semibold text-foreground">Revisá tu email</p>
+                      <p className="text-[15px] font-semibold text-foreground">Revisa tu email</p>
                       <p className="text-[13px] text-muted-foreground mt-1">
-                        Te enviamos un link de confirmación. Hacé clic en él y te vamos a redirigir automáticamente al panel.
+                        Te enviamos un link de confirmación. Haz clic en él y te vamos a redirigir automáticamente al panel.
                       </p>
                     </div>
-                    <p className="text-[12px] text-muted-foreground">Podés cerrar esta pestaña.</p>
+                    <p className="text-[12px] text-muted-foreground">Puedes cerrar esta pestaña.</p>
                   </div>
                 ) : (
                   <form onSubmit={authForm.handleSubmit(handleRegister)} className="space-y-4">
                     <div className="mb-5">
                       <h2 className="text-[16px] font-semibold text-foreground">Crear cuenta</h2>
-                      <p className="text-[13px] text-muted-foreground mt-1">Completá tus datos para unirte a <strong>{invitation?.agencyName}</strong>.</p>
+                      <p className="text-[13px] text-muted-foreground mt-1">Completa tus datos para unirte a <strong>{invitation?.agencyName}</strong>.</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
@@ -509,7 +514,7 @@ function RegistroContent() {
                       <div className="relative">
                         <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
-                          {...authForm.register('email', { required: 'Requerido', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Email inválido' } })}
+                          {...authForm.register('email', { required: 'Requerido', validate: (v: string) => { const r = validarCorreo(v); return r.ok || r.motivo; } })}
                           type="email"
                           placeholder="tu@email.com"
                           // The invitation is bound to a specific email; the invitee must
@@ -534,12 +539,23 @@ function RegistroContent() {
                       <div className="relative">
                         <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
-                          {...authForm.register('password', { required: 'Requerido', minLength: { value: 6, message: 'Mínimo 6 caracteres' } })}
+                          {...authForm.register('password', {
+                            required: 'Requerido',
+                            // El mismo mínimo que /auth (medidor de contraseña, 2026-09-07).
+                            validate: (v: string) =>
+                              fortalezaDeContrasena(v, { correo: authForm.getValues('email') }).cumpleMinimo ||
+                              'Todavía es débil: sigue el consejo de abajo.',
+                          })}
                           type="password"
-                          placeholder="Mínimo 6 caracteres"
+                          placeholder="Mínimo 8 caracteres"
                           className="w-full pl-9"
                         />
                       </div>
+                      <MedidorDeContrasena
+                        contrasena={authForm.watch('password') ?? ''}
+                        correo={authForm.watch('email')}
+                        className="mt-2"
+                      />
                       {authForm.formState.errors.password && (
                         <p className="text-xs text-destructive mt-1">{authForm.formState.errors.password.message}</p>
                       )}

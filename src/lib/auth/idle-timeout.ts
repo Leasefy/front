@@ -19,7 +19,7 @@
  * ── Por qué la marca vive en localStorage ───────────────────────────────────
  *
  * Porque si no, cada pestaña cuenta su propia inactividad y la que quedó de
- * fondo cierra la sesión mientras trabajás en otra. `localStorage` es del
+ * fondo cierra la sesión mientras trabajas en otra. `localStorage` es del
  * origen, no de la pestaña: escribir ahí es lo que hace que "estoy activo" en
  * una valga para todas.
  */

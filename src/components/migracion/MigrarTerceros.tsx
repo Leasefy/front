@@ -60,7 +60,6 @@ import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parse
 import {
   migracionTercerosApi,
   CODIGO_FILA_DESACTUALIZADA,
-  celdasDemasiadoLargas,
   MAX_FILAS_POR_LOTE,
   type FilaDeStaging,
   type FilaTercero,
@@ -72,11 +71,16 @@ import {
 } from '@/lib/api/migracion-terceros.service';
 import {
   armarFila,
+  columnasDelNombrePorPartes,
   columnasNoSoportadas,
+  ETIQUETA_DE_PARTE,
   mapearColumnas,
   nombreDeLoteSugerido,
   obligatoriasSinMapear,
+  PARTES_DEL_NOMBRE,
   remapear,
+  VALOR_A_NOTAS,
+  valorDeParte,
   type MapeoDeColumna,
 } from '@/lib/migracion/columnas-de-tercero';
 import { descargarPlantillaDeTerceros } from '@/lib/migracion/plantilla-de-terceros';
@@ -187,8 +191,8 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
   /*
    * `useMemo` y no `plantilla?.columnas ?? []` suelto: ese `[]` es un array
    * nuevo en cada render, así que TODO lo que depende de `columnas` se
-   * recalcula siempre — incluido `celdasDemasiadoLargas` sobre las 5.000 filas
-   * del archivo, en cada tecla del nombre del lote.
+   * recalcula siempre — incluido `armarFila` sobre las 5.000 filas del
+   * archivo, en cada tecla del nombre del lote.
    */
   const columnas = useMemo(() => plantilla?.columnas ?? [], [plantilla]);
 
@@ -289,7 +293,6 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     () => filas.map((fila) => armarFila(fila, mapeo)),
     [filas, mapeo],
   );
-  const celdasLargas = useMemo(() => celdasDemasiadoLargas(aMigrar), [aMigrar]);
   const noSoportadas = useMemo(() => columnasNoSoportadas(columnas), [columnas]);
   const faltanObligatorias = useMemo(
     () => obligatoriasSinMapear(columnas, mapeo),
@@ -297,6 +300,14 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
   );
 
   const refrescar = useCallback(async (elLote: string, pag = 1) => {
+    // Las reglas del back cambian; las filas guardadas no. Antes de listar se
+    // les pide al back que las vuelva a mirar con las reglas de hoy (no hace
+    // nada si ya están al día). Si falla, se lista igual.
+    try {
+      await migracionTercerosApi.revisar(elLote);
+    } catch {
+      // Se lista igual.
+    }
     const [r, p] = await Promise.all([
       migracionTercerosApi.resumen(elLote),
       migracionTercerosApi.filas({
@@ -383,7 +394,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
       try {
         await refrescar(l.lote);
       } catch (e) {
-        setError(mensaje(e, 'No pudimos abrir esa carga. Reintentá.'));
+        setError(mensaje(e, 'No pudimos abrir esa carga. Reintenta.'));
       }
     },
     [refrescar],
@@ -564,7 +575,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           (hechas > 0
             ? `Alcanzaron a crearse ${hechas}: quedaron creadas. `
             : 'Lo que alcanzó a crearse quedó creado. ') +
-          'Reintentá con el mismo botón y la carga sigue donde quedó, sin duplicar a nadie.',
+          'Reintenta con el mismo botón y la carga sigue donde quedó, sin duplicar a nadie.',
       );
       // Mejor esfuerzo: que los contadores muestren lo que el back SÍ hizo.
       try {
@@ -661,7 +672,6 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
   const puedePreparar =
     filas.length > 0 &&
     !demasiadasFilas &&
-    celdasLargas.length === 0 &&
     lote.trim().length > 0 &&
     !cargando;
 
@@ -684,7 +694,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
             <p className="text-sm text-fg">
               No pudimos verificar si tienes una carga sin terminar. Puedes seguir igual — pero si
-              dejaste una a medias, reintentá primero: volver a subir el mismo archivo duplica a
+              dejaste una a medias, reintenta primero: volver a subir el mismo archivo duplica a
               las personas.
             </p>
           </div>
@@ -804,7 +814,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             onClick={() =>
               plantilla &&
               void descargarPlantillaDeTerceros(tipo, columnas).catch(() =>
-                setError('No pudimos generar la plantilla para descargar. Reintentá.'),
+                setError('No pudimos generar la plantilla para descargar. Reintenta.'),
               )
             }
           >
@@ -858,7 +868,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               {plantilla
                 ? nombreDeArchivo || 'Arrastra el archivo o haz clic para elegirlo'
                 : errorDePlantilla
-                  ? 'No se puede subir todavía — reintentá arriba la lectura de columnas.'
+                  ? 'No se puede subir todavía — reintenta arriba la lectura de columnas.'
                   : 'Preparando la pantalla: leyendo las columnas esperadas…'}
             </p>
             <p className="text-xs text-fg-subtle">
@@ -928,7 +938,9 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                     <TableCell className="font-medium">{m.columna || '(sin nombre)'}</TableCell>
                     <TableCell>
                       <Select
-                        value={m.campo ?? IGNORAR}
+                        value={
+                          m.campo ?? (m.parte ? valorDeParte(m.parte) : m.aNotas ? VALOR_A_NOTAS : IGNORAR)
+                        }
                         onValueChange={(v) =>
                           setMapeo((actual) =>
                             remapear(actual, m.columna, v === IGNORAR ? null : v),
@@ -948,6 +960,20 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                               {c.titulo}
                             </SelectItem>
                           ))}
+                          {/* El nombre partido como lo traen los sistemas
+                              viejos: se pega en «Nombre completo». */}
+                          {columnas.some((c) => c.campo === 'nombre')
+                            ? PARTES_DEL_NOMBRE.map((p) => (
+                                <SelectItem key={p} value={valorDeParte(p)}>
+                                  Nombre completo · {ETIQUETA_DE_PARTE[p]}
+                                </SelectItem>
+                              ))
+                            : null}
+                          {/* Lo que no tiene campo pero no se tira («Otro
+                              Teléfono»): se pega a las notas de la ficha. */}
+                          {columnas.some((c) => c.campo === 'notas') ? (
+                            <SelectItem value={VALOR_A_NOTAS}>Notas · agregar esta columna</SelectItem>
+                          ) : null}
                         </SelectContent>
                       </Select>
                     </TableCell>
@@ -985,22 +1011,23 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             </div>
           ) : null}
 
-          {celdasLargas.length > 0 ? (
-            <div className="flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3">
-              <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
+          {columnasDelNombrePorPartes(mapeo).length > 0 ? (
+            <div
+              className="flex items-start gap-2 rounded-md border border-border bg-info-soft p-3"
+              data-testid="nombre-por-partes"
+            >
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
               <div>
-                <p className="text-sm font-medium text-danger">
-                  {celdasLargas.length === 1
-                    ? 'Hay una celda más larga de lo que el sistema acepta'
-                    : `Hay ${celdasLargas.length} celdas más largas de lo que el sistema acepta`}
-                </p>
+                <p className="text-sm font-medium text-info">El nombre completo se arma con varias columnas</p>
                 <p className="mt-0.5 text-sm text-fg-muted">
-                  {celdasLargas
-                    .slice(0, 3)
-                    .map((c) => `fila ${c.fila}: ${c.campo} (${c.largo} de ${c.maximo})`)
-                    .join(' · ')}
-                  {celdasLargas.length > 3 ? ` y ${celdasLargas.length - 3} más` : ''}. Corregilas
-                  en el archivo y vuelve a subirlo — no las recortamos por ti.
+                  {columnasDelNombrePorPartes(mapeo)
+                    .map((c) => `«${c}»`)
+                    .join(' + ')}
+                  , nombres primero y apellidos después
+                  {mapeo.some((m) => m.campo === 'nombre')
+                    ? `, sólo en las filas que no traen «${mapeo.find((m) => m.campo === 'nombre')?.columna}»`
+                    : ''}
+                  .
                 </p>
               </div>
             </div>
@@ -1179,7 +1206,7 @@ function ListaDeTrabajo({
 
         {resumen.listos === 0 && resumen.requierenAtencion > 0 ? (
           <p className="text-sm text-fg-muted">
-            Todavía no hay ninguna lista. Resolvé lo de abajo y van pasando solas.
+            Todavía no hay ninguna lista. Resuelve lo de abajo y van pasando solas.
           </p>
         ) : null}
 
@@ -1224,7 +1251,21 @@ function ListaDeTrabajo({
                 invitación todavía
               </>
             ) : null}
+            {(aplicacion.sinCorreo ?? 0) > 0 ? (
+              <>
+                {' · '}
+                <span className="font-mono tabular-nums">{aplicacion.sinCorreo}</span> sin
+                correo
+              </>
+            ) : null}
           </p>
+          {(aplicacion.sinCorreo ?? 0) > 0 ? (
+            <p className="text-sm text-fg-muted" data-testid="sin-correo">
+              {aplicacion.sinCorreo === 1
+                ? 'Un inquilino venía sin correo: quedó creado con su documento, sin cuenta del portal. La cuenta nace cuando le cargues el correo desde su ficha.'
+                : `${aplicacion.sinCorreo} inquilinos venían sin correo: quedaron creados con su documento, sin cuenta del portal. La cuenta nace cuando les cargues el correo desde su ficha.`}
+            </p>
+          ) : null}
           {(aplicacion.sinInvitar ?? 0) > 0 ? (
             <p className="text-sm text-fg-muted" data-testid="sin-invitar">
               El proveedor de correo limitó los envíos: esas cuentas quedaron creadas y la
@@ -1290,7 +1331,7 @@ function ListaDeTrabajo({
             {tipo === 'INQUILINO'
               ? 'No se crearon todavía: son personas que ya existen en la plataforma —quizá las subiste en Propietarios o ya tenían cuenta— o filas a las que les falta un dato. '
               : 'No se crearon todavía: son personas que ya existen en la plataforma, filas repetidas en el archivo, o a las que les falta un dato. '}
-            Resolvé cada una acá, o marcá varias y resolvelas juntas: al decidir salen de esta
+            Resuelve cada una acá, o marca varias y resuélvelas juntas: al decidir salen de esta
             lista y quedan listas para crear con el botón de arriba.
           </p>
           {/* El caso de casi todas: ya existen. Una decisión, no ochenta y cinco. */}

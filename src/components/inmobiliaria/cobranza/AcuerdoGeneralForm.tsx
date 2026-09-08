@@ -221,7 +221,7 @@ export function AcuerdoGeneralForm({
         <div>
           <h2 className="text-sm font-semibold text-fg">Qué es</h2>
           <p className="text-xs text-fg-muted">
-            El nombre es para vos; la condición es lo que el agente le dice al deudor.
+            El nombre es para ti; la condición es lo que el agente le dice al deudor.
           </p>
         </div>
 
@@ -250,7 +250,7 @@ export function AcuerdoGeneralForm({
             onChange={(e) => set('conditionEs', e.target.value)}
           />
           <p className="text-xs text-fg-muted">
-            Se lo dice tal cual, en la llamada. Escribilo como se lo dirías vos.
+            Se lo dice tal cual, en la llamada. Escribilo como se lo dirías tú.
           </p>
         </div>
       </Card>

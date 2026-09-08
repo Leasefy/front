@@ -10,7 +10,7 @@
  * Credenciales (write-only, ALL-OR-NOTHING): `config_base_url` /
  * `config_username` / `config_password` viven SOLO en el form — nunca se
  * prellenan desde el backend (que jamás las devuelve). El micro re-encripta y
- * REEMPLAZA TODO el objeto `config` cuando se lo mandás; un `config` parcial
+ * REEMPLAZA TODO el objeto `config` cuando se lo mandas; un `config` parcial
  * borraría las claves no enviadas. Por eso:
  *   - si el usuario deja los tres campos vacíos → el body no lleva `config`
  *     (el backend preserva las credenciales ya guardadas);
@@ -76,7 +76,7 @@ export const carrierFormSchema = z
     const anyFilled = baseUrl !== '' || username !== '' || password !== ''
     const allFilled = baseUrl !== '' && username !== '' && password !== ''
     if (anyFilled && !allFilled) {
-      const message = 'Para cambiar las credenciales, completá los tres campos (se guardan como un bloque).'
+      const message = 'Para cambiar las credenciales, completa los tres campos (se guardan como un bloque).'
       if (baseUrl === '') ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['config_base_url'], message })
       if (username === '') ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['config_username'], message })
       if (password === '') ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['config_password'], message })

@@ -34,7 +34,7 @@ export default function SolicitudesPage() {
     return (
       <PortalPlaceholder
         title="Solicitudes"
-        subtitle="Pedí lo que necesites; tu inmobiliaria lo gestiona con debido proceso."
+        subtitle="Pide lo que necesites; tu inmobiliaria lo gestiona con debido proceso."
         icon={ChatCircleText}
         emptyDescription="Vas a poder abrir solicitudes operativas y seguir su estado en una línea de tiempo, con el debido proceso documentado. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
       />
@@ -46,7 +46,7 @@ export default function SolicitudesPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <PageHeader
           title="Solicitudes"
-          subtitle="Pedí lo que necesites; tu inmobiliaria lo gestiona con debido proceso."
+          subtitle="Pide lo que necesites; tu inmobiliaria lo gestiona con debido proceso."
           actions={
             <Button asChild hideArrow>
               <Link href="/panel/solicitudes/nueva">

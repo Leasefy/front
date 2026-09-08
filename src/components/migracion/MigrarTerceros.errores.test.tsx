@@ -100,7 +100,9 @@ const filaPendiente = (n: number): FilaDeStaging => ({
   tipo: 'INQUILINO',
   estado: 'REQUIERE_ATENCION',
   datos: { _fila: n, nombre: `Persona ${n}` },
-  errores: [{ codigo: 'FALTA_CORREO', campo: 'correo', mensaje: 'falta el correo' }],
+  // `FALTA_CORREO` ya no existe (2026-09-07): un inquilino sin correo entra igual.
+  // El error sigue señalando la celda del correo, que es donde tipean las pruebas.
+  errores: [{ codigo: 'CORREO_INVALIDO', campo: 'correo', mensaje: 'el correo «x» no es válido' }],
   propietarioId: null,
   userId: null,
   aplicadoAt: null,

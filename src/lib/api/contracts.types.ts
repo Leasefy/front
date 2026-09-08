@@ -61,7 +61,7 @@ export interface BackendContract {
    * que el back nunca manda `null`. El único caso de ausencia real es un
    * `front` desplegado por delante del `back` — build anterior a T-0040. La
    * degradación congelada para ese caso es **no renderizar nada**: ni `—`, ni
-   * `#0`, ni `#undefined`, ni el UUID en su lugar. Guardá siempre con
+   * `#0`, ni `#undefined`, ni el UUID en su lugar. Guarda siempre con
    * `!= null`.
    */
   code?: number;

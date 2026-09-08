@@ -30,7 +30,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import type { Agente } from '@/lib/types/inmobiliaria';
 
-/** Los tres roles reales de `AgenteRole`. Escribí otros y salía la llave cruda. */
+/** Los tres roles reales de `AgenteRole`. Escribe otros y salía la llave cruda. */
 const ROLE_LABELS: Record<string, string> = {
   agent: 'Agente',
   coordinator: 'Coordinador',
@@ -56,7 +56,7 @@ export function AsignarAgente({
 }: AsignarAgenteProps) {
   /* `errorCrudo` y no `error`: el status distingue «no hay agentes» de «no
      pudimos preguntar», y sólo uno de los dos se puede reintentar. Sin esto la
-     lista caída se pintaba como «No tenés agentes activos» — un vacío que
+     lista caída se pintaba como «No tienes agentes activos» — un vacío que
      miente y encima invita a irse a invitar gente que ya existe. */
   const { agentes, isLoading, errorCrudo, refetch } = useAgentes();
   const [guardando, setGuardando] = useState<string | null>(null);
@@ -73,7 +73,7 @@ export function AsignarAgente({
       // Sin `userId` no hay nada que mandar: el `id` del front es el del
       // miembro de la agencia y el back guarda el del usuario.
       toast.error('Ese agente no se puede asignar todavía', {
-        description: 'Su usuario no está enlazado. Pedile a soporte que lo revise.',
+        description: 'Su usuario no está enlazado. Pídele a soporte que lo revise.',
       });
       return;
     }
@@ -126,9 +126,9 @@ export function AsignarAgente({
               <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface text-fg-muted">
                 <Briefcase className="h-6 w-6" weight="duotone" aria-hidden="true" />
               </span>
-              <p className="text-sm font-medium text-fg">No tenés agentes activos</p>
+              <p className="text-sm font-medium text-fg">No tienes agentes activos</p>
               <p className="mt-1 text-xs text-fg-muted">
-                Invitá a alguien a tu equipo y después volvé a asignarlo acá.
+                Invita a alguien a tu equipo y después vuelve a asignarlo acá.
               </p>
               <Button asChild size="sm" className="mt-4" data-testid="asignar-agente-invitar">
                 <Link href="/panel/inmobiliaria/configuracion/equipo?invitar=1">Invitar a alguien</Link>

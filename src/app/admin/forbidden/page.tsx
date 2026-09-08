@@ -23,7 +23,7 @@ export default function AdminForbiddenPage() {
         <div className="section-label justify-center mb-3">acceso denegado</div>
         <h1 className="font-display text-display tracking-tight mb-2 text-fg">No estás en la allowlist</h1>
         <p className="text-sm text-fg-muted mb-8">
-          Tu email no está autorizado para el panel interno. Pedile a un admin que te agregue a
+          Tu email no está autorizado para el panel interno. Pídele a un admin que te agregue a
           <span className="font-mono"> ADMIN_EMAILS</span>.
         </p>
         <button onClick={signOut} className="btn">Cerrar sesión →</button>

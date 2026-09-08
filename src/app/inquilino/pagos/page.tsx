@@ -68,7 +68,7 @@ function PagosPageContent() {
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
 
   // `errorCrudo`: sin esto, una consulta muerta entraba como `[]` y la
-  // pantalla decía «Sin pagos por ahora» —y antes de eso, «no tenés arriendo
+  // pantalla decía «Sin pagos por ahora» —y antes de eso, «no tienes arriendo
   // activo»— a alguien que sí lo tiene. Dos afirmaciones falsas seguidas.
   const {
     getActive,
@@ -293,7 +293,7 @@ function PagosPageContent() {
   }
 
   // El fallo va ANTES de decidir si hay arriendo: `getActive()` devuelve `[]`
-  // cuando la consulta murió, y entonces la rama de abajo concluye «no tenés
+  // cuando la consulta murió, y entonces la rama de abajo concluye «no tienes
   // arriendo activo» sobre un dato que nunca llegó.
   if (errorArriendos || errorPagos) {
     return (

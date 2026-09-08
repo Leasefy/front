@@ -161,7 +161,7 @@ const TEXTO: Record<string, string> = {
   'cuentaDeCobro.sinDetalle':
     'Esta inmobiliaria no tiene el desglose por concepto: se separa lo que el cobro ya trae suelto.',
   'cuentaDeCobro.descuadre':
-    'Las líneas suman {{lineas}} y el cobro dice {{cobro}}. Revisalo antes de mandar este documento.',
+    'Las líneas suman {{lineas}} y el cobro dice {{cobro}}. Revísalo antes de mandar este documento.',
   'cuentaDeCobro.generada': 'Generada por Leasefy el {{fecha}}',
   'cuentaDeCobro.noEsFactura': 'Este documento no es factura electrónica.',
   'cuentaDeCobro.estado.pendiente': 'Pendiente',

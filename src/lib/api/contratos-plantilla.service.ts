@@ -53,7 +53,7 @@ export type QuienPagaElConcepto =
   | 'INMOBILIARIA'
   | 'TERCERO';
 
-export type TipoDeDocumentoDePersona = 'CC' | 'CE' | 'NIT' | 'PASSPORT';
+export type TipoDeDocumentoDePersona = 'CC' | 'CE' | 'TI' | 'NIT' | 'PASSPORT';
 
 /** `TipoDocumentoLegal`, acotado a las dos plantillas de contrato. */
 export type CodigoDePlantillaDeContrato = 'CONTRATO_VIVIENDA' | 'CONTRATO_COMERCIAL';
@@ -174,7 +174,7 @@ export interface ContratoGeneradoDesdePlantilla {
  *
  * 🔴 Esto se muestra COMPLETO y en su lenguaje. Es la parte más valiosa de la
  * respuesta: dice qué cláusula es ilegal y por qué artículo. Resumirlo a «hubo
- * un error, revisá los datos» tira a la basura lo único que le sirve a quien
+ * un error, revisa los datos» tira a la basura lo único que le sirve a quien
  * tiene que arreglarlo.
  */
 export interface MotivoDeRechazo {
@@ -330,6 +330,14 @@ export const contratosPlantillaApi = {
    * Puede fallar con `400 USO_INDETERMINADO` cuando ni el formulario ni el
    * tipo de inmueble dicen si es vivienda o comercial.
    */
+  /**
+   * ¿Está configurada la IA? Es configuración, no borrador: se pregunta al
+   * abrir la pantalla, sin esperar a que `preparar` salga bien.
+   */
+  async iaDisponible(): Promise<{ iaDisponible: boolean }> {
+    return apiClient.get<{ iaDisponible: boolean }>(`${BASE}/ia`);
+  },
+
   async preparar(params: {
     borrador: BorradorDeContrato;
     /** Lo que la persona ya escribió, para no perderlo. */

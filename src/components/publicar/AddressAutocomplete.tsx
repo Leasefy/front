@@ -149,12 +149,12 @@ export function AddressAutocomplete({
           {!isLoading && error && (
             <p className="px-4 py-3 text-sm text-error flex items-start gap-2">
               <WarningCircle className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
-              No pudimos buscar direcciones. Podés seguir escribiendo la dirección manualmente.
+              No pudimos buscar direcciones. Puedes seguir escribiendo la dirección manualmente.
             </p>
           )}
           {!isLoading && !error && suggestions.length === 0 && (
             <p className="px-4 py-3 text-sm text-fg-muted">
-              Sin resultados. Podés escribir la dirección manualmente.
+              Sin resultados. Puedes escribir la dirección manualmente.
             </p>
           )}
           {!isLoading &&

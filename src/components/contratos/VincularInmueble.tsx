@@ -157,7 +157,7 @@ export function VincularInmueble({ contract, puedeVincular, onActualizado }: Pro
                   // Volver a elegir el mismo devuelve `undefined`: se destilda.
                   onChange={(id) => setElegido(id ?? '')}
                   options={opciones}
-                  placeholder="Elegí el inmueble"
+                  placeholder="Elige el inmueble"
                   searchPlaceholder="Código, nombre o dirección…"
                   // El Dialog vive en z-[300]; la lista del DS abre en z-50 y
                   // quedaba DETRÁS del modal — se veía como si no abriera.

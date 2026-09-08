@@ -134,8 +134,8 @@ function PagosCobros() {
           <h1 className="text-h2 text-fg">Cobros a inquilinos</h1>
           <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             El ciclo de vida de cada cobro a inquilinos: canon, administración, servicios, estudios,
-            penalidades, saldos, acuerdos, parciales y depósitos. Filtrá por estado y, para operar
-            sobre la cartera, abrí la tabla de cobros.
+            penalidades, saldos, acuerdos, parciales y depósitos. Filtra por estado y, para operar
+            sobre la cartera, abre la tabla de cobros.
           </p>
         </div>
 
@@ -201,7 +201,7 @@ function PagosCobros() {
               <h2 className="text-base font-semibold text-fg">Tabla de cobros</h2>
               <p className="text-sm text-fg-muted max-w-xl">
                 La operación profunda —facturas, aging, registro de pagos y conciliación— vive en la
-                tabla de cobros. Desde ahí gestionás cada cobro de la cartera.
+                tabla de cobros. Desde ahí gestionas cada cobro de la cartera.
               </p>
             </div>
           </div>
@@ -231,8 +231,8 @@ function PagosCobros() {
             <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
               <p className="text-sm font-medium text-fg">El ejemplo no coincide con el filtro</p>
               <p className="text-sm text-fg-muted max-w-sm">
-                El cobro de ejemplo está en estado «{estadoPagoLabel(COBRO_EJEMPLO.estado)}». Ajustá o
-                limpiá los filtros para verlo.
+                El cobro de ejemplo está en estado «{estadoPagoLabel(COBRO_EJEMPLO.estado)}». Ajusta o
+                limpia los filtros para verlo.
               </p>
               <Button variant="link" hideArrow onClick={limpiarFiltros}>
                 Limpiar filtros

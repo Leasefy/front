@@ -47,12 +47,12 @@ function agentUrl(): string {
  * por status para que la persona entienda qué pasó.
  */
 async function lanzarError(res: Response, contexto: 'extract' | 'bill' | 'vendor' | 'read'): Promise<never> {
-  if (res.status === 401) throw new ApiError(401, 'Tu sesión expiró. Volvé a iniciar sesión.');
+  if (res.status === 401) throw new ApiError(401, 'Tu sesión expiró. Vuelve a iniciar sesión.');
   const body = (await res.json().catch(() => ({}))) as { error?: string };
   const delMicro = typeof body.error === 'string' ? body.error : '';
-  if (res.status === 403) throw new ApiError(403, 'No tenés permiso para registrar facturas en esta agencia.');
+  if (res.status === 403) throw new ApiError(403, 'No tienes permiso para registrar facturas en esta agencia.');
   if (res.status === 413) throw new ApiError(413, 'Los archivos son demasiado grandes (máximo 20 MB en total).');
-  if (res.status === 429) throw new ApiError(429, delMicro || 'Demasiadas solicitudes. Intentá de nuevo en un momento.');
+  if (res.status === 429) throw new ApiError(429, delMicro || 'Demasiadas solicitudes. Intenta de nuevo en un momento.');
   if (res.status === 409) {
     throw new ApiError(
       409,
@@ -66,9 +66,9 @@ async function lanzarError(res: Response, contexto: 'extract' | 'bill' | 'vendor
     if (contexto === 'bill' && /costCenterCode/i.test(delMicro)) {
       throw new ApiError(400, 'El centro de costo no es válido para esta agencia.');
     }
-    throw new ApiError(400, 'Revisá los datos: hay campos incompletos o inválidos.');
+    throw new ApiError(400, 'Revisa los datos: hay campos incompletos o inválidos.');
   }
-  if (res.status === 503) throw new ApiError(503, 'El servicio no está disponible en este momento. Intentá más tarde.');
+  if (res.status === 503) throw new ApiError(503, 'El servicio no está disponible en este momento. Intenta más tarde.');
   throw new ApiError(res.status, delMicro || `Error ${res.status}`);
 }
 

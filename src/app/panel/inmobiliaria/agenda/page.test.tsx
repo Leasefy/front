@@ -4,7 +4,7 @@
  * Antes la página guardaba el fallo como un booleano (`catch(() => setError(true))`),
  * así que una sesión vencida, un 500 y un corte de red se veían todos igual:
  * "No pudimos cargar la agenda. Reintenta." con un botón Reintentar. Sobre un
- * 401 ese botón no arregla nada — reintentás para siempre.
+ * 401 ese botón no arregla nada — reintentas para siempre.
  *
  * Nico lo reportó al revés, y con razón en el fondo: vio ese cartel en una
  * agencia SIN eventos y le pareció que era un vacío disfrazado de error.

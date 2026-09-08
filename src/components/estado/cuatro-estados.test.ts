@@ -16,7 +16,7 @@
  * por motivos que no son éste.
  *
  * Las listas de abajo son deuda conocida y **sólo pueden achicarse**. Si
- * agregás una pantalla nueva a alguna, el test falla — que es el punto.
+ * agregas una pantalla nueva a alguna, el test falla — que es el punto.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -79,7 +79,7 @@ const MIRA_EL_ERROR = /\berror\b|isError/
  * Pantallas que pintan un vacío sin haber mirado si la petición falló.
  * Un error se ve ahí como «no hay nada».
  *
- * Para sacar una de la lista: tomá `error` (y `isLoading`) del hook y envolvé
+ * Para sacar una de la lista: toma `error` (y `isLoading`) del hook y envolvé
  * el contenido en `<EstadoDeDatos>`. Ver `agenda/page.tsx` y
  * `portafolio/page.tsx`, que fueron las dos primeras.
  */
@@ -140,12 +140,12 @@ describe('un error no se pinta como un vacío', () => {
     expect(
       nuevas,
       'Esta pantalla pinta un vacío sin mirar si la petición falló. ' +
-        'Tomá `error` del hook y envolvé el contenido en <EstadoDeDatos>.',
+        'Toma `error` del hook y envolvé el contenido en <EstadoDeDatos>.',
     ).toEqual([])
   })
 
   it('las que ya estaban se van arreglando, no se quedan de adorno', () => {
-    // Si arreglás una, sacala de la lista. Este test te avisa.
+    // Si arreglas una, sácala de la lista. Este test te avisa.
     const yaArregladas = VACIO_SIN_MIRAR_EL_ERROR.filter((f) => {
       const src = readFileSync(join(RAIZ, f), 'utf8')
       return MIRA_EL_ERROR.test(src)

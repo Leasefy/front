@@ -205,7 +205,7 @@ export function IdleSessionGuard() {
           id="idle-title"
           className="text-lg font-semibold text-neutral-900 dark:text-neutral-100"
         >
-          ¿Seguís ahí?
+          ¿Sigues ahí?
         </h2>
         <p
           id="idle-desc"

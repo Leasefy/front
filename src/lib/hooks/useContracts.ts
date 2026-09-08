@@ -183,7 +183,7 @@ export function useContractPreview(id: string | null) {
  * el iframe del detalle con la versión más actualizada del contrato (incluye estampado
  * parcial/total según el estado).
  *
- * Usá `enabled` para evitar llamar al endpoint cuando sabés que no hay firmas todavía
+ * Usá `enabled` para evitar llamar al endpoint cuando sabes que no hay firmas todavía
  * (en DRAFT / PENDING_TENANT_SIGNATURE el `/preview` es más barato).
  */
 export function useSignedPdfUrl(id: string | null | undefined, { enabled }: { enabled: boolean }) {

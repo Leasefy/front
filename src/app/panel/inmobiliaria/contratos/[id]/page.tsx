@@ -120,7 +120,7 @@ function ContratoDetalleContent() {
         if (result) {
           await refetch();
         } else {
-          setActionError('La operación falló. Intentá de nuevo.');
+          setActionError('La operación falló. Intenta de nuevo.');
         }
       } catch (err) {
         setActionError(err instanceof Error ? err.message : 'Error inesperado');
@@ -160,7 +160,7 @@ function ContratoDetalleContent() {
       if (result) {
         setActionError(null);
       } else {
-        setActionError('Ya enviaste un recordatorio recientemente. Intentá de nuevo más tarde.');
+        setActionError('Ya enviaste un recordatorio recientemente. Intenta de nuevo más tarde.');
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error inesperado';
@@ -469,7 +469,7 @@ function ContratoDetalleContent() {
                       <Info className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
                       <p className="text-xs text-warning">
                         Este PDF ya incluye la <strong>firma del inquilino</strong> y un certificado parcial.
-                        Firmá abajo para completar el contrato.
+                        Firma abajo para completar el contrato.
                       </p>
                     </div>
                   )}
@@ -494,7 +494,7 @@ function ContratoDetalleContent() {
                   )}
                   <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                     <Info className="w-3.5 h-3.5" />
-                    Enlace válido por tiempo limitado. Si caduca, recargá la página.
+                    Enlace válido por tiempo limitado. Si caduca, recarga la página.
                   </p>
                 </div>
               ) : isLoadingPreview ? (
@@ -510,7 +510,7 @@ function ContratoDetalleContent() {
                   />
                   <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                     <Info className="w-3.5 h-3.5" />
-                    Enlace válido por tiempo limitado. Si caduca, recargá la página.
+                    Enlace válido por tiempo limitado. Si caduca, recarga la página.
                   </p>
                 </div>
               ) : preview?.origin === 'GENERATED' ? (
@@ -591,7 +591,7 @@ function ActionPanel({
     return (
       <ActionBar
         title="Contrato en borrador"
-        subtitle="Cuando lo envíes para firma, el inquilino firmará primero. Después te toca firmar a vos para cerrar."
+        subtitle="Cuando lo envíes para firma, el inquilino firmará primero. Después te toca firmar a ti para cerrar."
         cta={{
           label: 'Enviar al inquilino',
           icon: PaperPlaneTilt,
@@ -613,7 +613,7 @@ function ActionPanel({
     return (
       <ActionBar
         title="Esperando firma del inquilino"
-        subtitle="El inquilino recibió el contrato y tiene que firmar primero. Podés reenviarle un recordatorio si no lo hizo."
+        subtitle="El inquilino recibió el contrato y tiene que firmar primero. Puedes reenviarle un recordatorio si no lo hizo."
         cta={{
           label: 'Recordar firma',
           icon: Bell,
@@ -634,8 +634,8 @@ function ActionPanel({
   if (status === 'pending_landlord') {
     return (
       <ActionBar
-        title="El inquilino ya firmó — firmá para cerrar"
-        subtitle="Es tu turno. Firmá y el contrato queda listo para activar en la fecha pactada."
+        title="El inquilino ya firmó — firma para cerrar"
+        subtitle="Es tu turno. Firma y el contrato queda listo para activar en la fecha pactada."
         cta={{
           label: 'Firmar como propietario',
           icon: PencilSimpleLine,
@@ -675,7 +675,7 @@ function ActionPanel({
     return (
       <ActionBar
         title="Contrato firmado"
-        subtitle="Ambas partes firmaron. Activalo para iniciar el arrendamiento."
+        subtitle="Ambas partes firmaron. Actívalo para iniciar el arrendamiento."
         cta={{
           label: 'Activar contrato',
           icon: CheckCircle,
@@ -903,7 +903,7 @@ function FilaDelPropietario({ contract }: { contract: Contract }) {
         <span className="text-muted-foreground">Propietario</span>
         <span className="text-right text-xs text-muted-foreground" data-testid="propietario-sin-consignacion">
           {contract.propertyId
-            ? 'El inmueble no está consignado: registrá al propietario en Inmuebles.'
+            ? 'El inmueble no está consignado: registra al propietario en Inmuebles.'
             : 'Se vincula con el inmueble.'}
         </span>
       </div>

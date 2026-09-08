@@ -59,7 +59,7 @@ function LoginInner() {
                 magic link enviado
               </div>
               <p className="text-fg-muted">
-                Revisá tu inbox y hacé click en el link para entrar. Podés cerrar esta pestaña.
+                Revisa tu inbox y haz click en el link para entrar. Puedes cerrar esta pestaña.
               </p>
             </div>
           ) : (
@@ -114,7 +114,7 @@ function LoginForm({ error, nextPath }: { error?: string; nextPath?: string }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="input"
-          placeholder="vos@leasefy.com"
+          placeholder="tú@leasefy.com"
         />
       </label>
       {(error || localErr) && (

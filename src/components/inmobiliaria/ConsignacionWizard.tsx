@@ -345,7 +345,7 @@ export function ConsignacionWizard({
       const wizardType = formData.propertyType as PropertyType | undefined;
       if (!wizardType || !(wizardType in TYPE_TO_BACKEND)) {
         throw new Error(
-          `Tipo de inmueble no soportado: "${wizardType ?? ''}". Volvé al paso 2 y elegí un tipo válido.`,
+          `Tipo de inmueble no soportado: "${wizardType ?? ''}". Vuelve al paso 2 y elige un tipo válido.`,
         );
       }
 

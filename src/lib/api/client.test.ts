@@ -125,7 +125,7 @@ describe('401 durante la renovación del token', () => {
 
   it('un 401 de permisos NO se reintenta: el token sigue siendo el mismo', async () => {
     // Sin token nuevo no hay carrera que justificar. Reintentar a ciegas
-    // escondería un «no tenés acceso» detrás de dos peticiones iguales.
+    // escondería un «no tienes acceso» detrás de dos peticiones iguales.
     setAccessToken('token-abc')
     const fetchFalso = stubFetch(401, { message: 'Forbidden for this role' })
     vi.stubGlobal('fetch', fetchFalso)

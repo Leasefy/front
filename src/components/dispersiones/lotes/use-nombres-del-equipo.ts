@@ -48,7 +48,7 @@ export function useNombresDelEquipo() {
   const nombreDe = useCallback(
     (userId: string | null | undefined): string => {
       if (!userId) return '—';
-      if (yo === userId) return 'Vos';
+      if (yo === userId) return 'Tú';
       return porId[userId] ?? `Usuario ${userId.slice(0, 8)}`;
     },
     [porId, yo],

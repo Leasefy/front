@@ -186,7 +186,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
             Esta propiedad está en venta
           </h1>
           <p className="mt-2 text-muted-foreground">
-            No se puede postular a una propiedad en venta. Contactá a la inmobiliaria por chat o agendá una visita desde la ficha del inmueble.
+            No se puede postular a una propiedad en venta. Contacta a la inmobiliaria por chat o agenda una visita desde la ficha del inmueble.
           </p>
           <Link href={`/propiedades/${resolvedParams.propertyId}`}>
             <Button className="mt-6">
@@ -307,10 +307,10 @@ function AlreadyAppliedCard({
         </div>
         <div className="space-y-1">
           <h1 className="text-xl font-semibold text-foreground">
-            Ya tenés una postulación
+            Ya tienes una postulación
           </h1>
           <p className="text-sm text-muted-foreground">
-            Ya postulaste a esta propiedad. Podés ver el estado de tu postulación,
+            Ya postulaste a esta propiedad. Puedes ver el estado de tu postulación,
             o retirarla para volver a empezar.
           </p>
         </div>

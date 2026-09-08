@@ -1,14 +1,14 @@
 'use client'
 
 /**
- * El estado terminal de sesión: "esto ya no vuelve, salí a /auth".
+ * El estado terminal de sesión: "esto ya no vuelve, sal a /auth".
  *
  * ── El problema que resuelve ────────────────────────────────────────────────
  *
  * Todo el manejo de 401 del front está construido sobre una premisa correcta —
  * que casi siempre un 401 es la carrera de la renovación del token, no una
  * sesión muerta— y actúa en consecuencia: espera un token nuevo, reintenta, y
- * si no, muestra «No pudimos cargar esto. Probá de nuevo».
+ * si no, muestra «No pudimos cargar esto. Prueba de nuevo».
  *
  * Esa premisa se cae exactamente en un caso: cuando el refresh token murió.
  * Ahí no hay token nuevo que esperar, el reintento no puede funcionar, y el

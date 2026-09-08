@@ -30,11 +30,15 @@ import {
 } from '@/components/ui/select';
 import { useI18n } from '@/lib/i18n';
 import type { Propietario, PropietarioFormData, DocumentType } from '@/lib/types/inmobiliaria';
+import { COLOMBIAN_DEPARTMENTS } from '@/lib/types/inmobiliaria';
 import {
   COLOMBIAN_BANKS,
   type BankCode,
   type AccountType,
 } from '@/lib/types/payment-accounts';
+
+/** Un `SelectItem` no puede valer '' (Radix lo rechaza): esta es la opción que vacía el departamento. */
+const SIN_DEPARTAMENTO = '__sin_departamento__';
 
 interface PropietarioFormProps {
   initialData?: Propietario;
@@ -63,6 +67,7 @@ interface PropietarioFormProps {
 const DOCUMENT_TYPE_VALUES: { value: DocumentType; hint: string }[] = [
   { value: 'CC', hint: 'Ej: 80.123.456' },
   { value: 'CE', hint: 'Ej: 123456' },
+  { value: 'TI', hint: 'Ej: 1.023.456.789' },
   { value: 'NIT', hint: 'Ej: 900.456.789-1' },
   { value: 'PASSPORT', hint: 'Ej: AB123456' },
 ];
@@ -70,6 +75,7 @@ const DOCUMENT_TYPE_VALUES: { value: DocumentType; hint: string }[] = [
 const DOCUMENT_TYPE_LABEL_KEYS: Record<DocumentType, string> = {
   CC: 'inmobiliaria.propietario.form.docCC',
   CE: 'inmobiliaria.propietario.form.docCE',
+  TI: 'inmobiliaria.propietario.form.docTI',
   NIT: 'inmobiliaria.propietario.form.docNIT',
   PASSPORT: 'inmobiliaria.propietario.form.docPassport',
 };
@@ -143,13 +149,26 @@ export function PropietarioForm({
       documentNumber: initialData?.documentNumber ?? '',
       address: initialData?.address ?? '',
       city: initialData?.city ?? '',
+      department: initialData?.department ?? '',
       bankCode: initialData?.bankAccount.bank ?? '',
       accountType: initialData?.bankAccount.accountType ?? '',
       accountNumber: initialData?.bankAccount.accountNumber ?? '',
       accountHolder: initialData?.bankAccount.accountHolder ?? '',
+      accountHolderDocumentType: initialData?.bankAccount.accountHolderDocumentType ?? '',
+      accountHolderDocument: initialData?.bankAccount.accountHolderDocument ?? '',
       notes: initialData?.notes ?? '',
     },
   );
+
+  /*
+   * Un departamento migrado puede venir escrito de otra forma («ANTIOQUIA»,
+   * «Bogotá D.C.»): si no está en la lista se agrega arriba, o el select se
+   * vería vacío y al guardar se perdería lo que había.
+   */
+  const departamentos =
+    formData.department && !(COLOMBIAN_DEPARTMENTS as readonly string[]).includes(formData.department)
+      ? [formData.department, ...COLOMBIAN_DEPARTMENTS]
+      : [...COLOMBIAN_DEPARTMENTS];
 
   // Surface a persist error that happened outside this form (the wizard's
   // "Siguiente" 409) through the same error UI as a local validation error.
@@ -225,6 +244,10 @@ export function PropietarioForm({
     }
     if (!formData.accountHolder.trim()) {
       newErrors.accountHolder = t('inmobiliaria.propietario.form.errHolderRequired');
+    }
+    // Un documento del titular sin tipo no sirve para el archivo del banco.
+    if ((formData.accountHolderDocument ?? '').trim() && !formData.accountHolderDocumentType) {
+      newErrors.accountHolderDocumentType = t('inmobiliaria.propietario.form.errHolderDocTypeRequired');
     }
 
     setErrors(newErrors);
@@ -376,21 +399,21 @@ export function PropietarioForm({
           </InputWrapper>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Address */}
-          <InputWrapper label={t('inmobiliaria.propietario.form.address')} hint={t('inmobiliaria.propietario.form.optional')}>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
-              <Input
-                type="text"
-                value={formData.address}
-                onChange={(e) => updateField('address', e.target.value)}
-                placeholder="Cra 15 #93-45, Apto 802"
-                className="pl-10"
-              />
-            </div>
-          </InputWrapper>
+        {/* Address */}
+        <InputWrapper label={t('inmobiliaria.propietario.form.address')} hint={t('inmobiliaria.propietario.form.optional')}>
+          <div className="relative">
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
+            <Input
+              type="text"
+              value={formData.address}
+              onChange={(e) => updateField('address', e.target.value)}
+              placeholder="Cra 15 #93-45, Apto 802"
+              className="pl-10"
+            />
+          </div>
+        </InputWrapper>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* City */}
           <InputWrapper label={t('inmobiliaria.propietario.form.city')} hint={t('inmobiliaria.propietario.form.optional')}>
             <Input
@@ -399,6 +422,26 @@ export function PropietarioForm({
               onChange={(e) => updateField('city', e.target.value)}
               placeholder="Bogotá"
             />
+          </InputWrapper>
+
+          {/* Department — la misma lista que el wizard de consignación (COLOMBIAN_DEPARTMENTS). */}
+          <InputWrapper label={t('inmobiliaria.propietario.form.department')} hint={t('inmobiliaria.propietario.form.optional')}>
+            <Select
+              value={formData.department || undefined}
+              onValueChange={(value) => updateField('department', value === SIN_DEPARTAMENTO ? '' : value)}
+            >
+              <SelectTrigger data-testid="propietario-departamento">
+                <SelectValue placeholder={t('inmobiliaria.propietario.form.selectDepartment')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SIN_DEPARTAMENTO}>{t('inmobiliaria.propietario.form.noDepartment')}</SelectItem>
+                {departamentos.map((dept) => (
+                  <SelectItem key={dept} value={dept}>
+                    {dept}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </InputWrapper>
         </div>
       </div>
@@ -483,7 +526,6 @@ export function PropietarioForm({
             onChange={(e) => updateField('accountNumber', e.target.value.replace(/[^0-9]/g, ''))}
             onBlur={() => setTouched((prev) => ({ ...prev, accountNumber: true }))}
             placeholder="1234567890"
-            maxLength={20}
             className={cn(
               'font-mono',
               touched.accountNumber && errors.accountNumber && 'border-danger/30'
@@ -507,6 +549,51 @@ export function PropietarioForm({
             className={cn(touched.accountHolder && errors.accountHolder && 'border-danger/30')}
           />
         </InputWrapper>
+
+        {/*
+          Documento del titular, sólo cuando la cuenta es de otra persona
+          (2026-09-07). El archivo de dispersión de Bancolombia lo exige por
+          beneficiario; vacío, el lote usa el documento del propietario. Hasta
+          hoy sólo entraba por la migración de terceros.
+        */}
+        <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,180px)_1fr] gap-4">
+          <InputWrapper
+            label={t('inmobiliaria.propietario.form.holderDocumentType')}
+            error={touched.accountHolderDocumentType ? errors.accountHolderDocumentType : undefined}
+          >
+            <Select
+              value={formData.accountHolderDocumentType || undefined}
+              onValueChange={(value) => updateField('accountHolderDocumentType', value as DocumentType)}
+            >
+              <SelectTrigger
+                data-testid="titular-tipo-documento"
+                className={cn(touched.accountHolderDocumentType && errors.accountHolderDocumentType && 'border-danger/30')}
+              >
+                <SelectValue placeholder={t('inmobiliaria.propietario.form.holderDocumentTypePlaceholder')} />
+              </SelectTrigger>
+              <SelectContent>
+                {DOCUMENT_TYPE_VALUES.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.value === 'PASSPORT' ? t('inmobiliaria.propietario.form.docPassport') : type.value}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </InputWrapper>
+          <InputWrapper
+            label={t('inmobiliaria.propietario.form.holderDocument')}
+            hint={t('inmobiliaria.propietario.form.hintHolderDocument')}
+          >
+            <Input
+              type="text"
+              value={formData.accountHolderDocument ?? ''}
+              onChange={(e) => updateField('accountHolderDocument', e.target.value)}
+              placeholder="Solo si es otra persona"
+              className="font-mono"
+              data-testid="titular-documento"
+            />
+          </InputWrapper>
+        </div>
       </div>
 
       {/* Notes */}

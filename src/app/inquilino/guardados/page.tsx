@@ -111,7 +111,7 @@ export default function GuardadosPage() {
             porque la lista de guardados es local (localStorage) y los inmuebles
             vienen del backend:
 
-              wishlist vacía            → nunca guardaste nada  → salí a mirar
+              wishlist vacía            → nunca guardaste nada  → sal a mirar
               wishlist llena + fallo    → no se pudo traer      → reintentar
               wishlist llena + 404s     → las bajaron           → decilo así
 
@@ -159,7 +159,7 @@ export default function GuardadosPage() {
               description={
                 yaNoDisponibles > 0
                   ? locale === 'es'
-                    ? 'Se arrendaron o las quitaron del catálogo. Buscá otras y volvé a guardar las que te sirvan.'
+                    ? 'Se arrendaron o las quitaron del catálogo. Busca otras y vuelve a guardar las que te sirvan.'
                     : 'They were rented or removed from the catalog. Browse others and save the ones you like.'
                   : locale === 'es'
                     ? 'Toca el corazón en las propiedades que te interesen y las encuentras acá para compararlas.'

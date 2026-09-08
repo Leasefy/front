@@ -61,7 +61,7 @@ afterEach(async () => {
   vi.restoreAllMocks()
 })
 
-/** Monta la pantalla ya en el paso de «escaneá el QR y escribí el código». */
+/** Monta la pantalla ya en el paso de «escanea el QR y escribe el código». */
 async function montarEnVerificacion() {
   const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
     señales.push(init?.signal ?? undefined)

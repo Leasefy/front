@@ -1,6 +1,6 @@
 'use client'
 
-import { LeasefyLogo } from '@/components/brand';
+import { LeasefyLogotype } from '@/components/brand';
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth/use-auth'
@@ -170,7 +170,7 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             <BrandHomeLink className="flex items-center">
-              <LeasefyLogo size={28} tone="brand" />
+              <LeasefyLogotype className="h-7 w-auto" title="Leasefy" />
             </BrandHomeLink>
 
             {/* Progress - Mobile */}

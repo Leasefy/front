@@ -98,7 +98,7 @@ export function useMantenimientoTicket(ticketId: string): UseMantenimientoTicket
     if (!agentUrl) {
     // Sin agente configurado no hay de dónde traer nada. Antes esto era un
     // console.warn y `setIsLoading(false)`: la pantalla quedaba vacía sin decir
-    // por qué, y un vacío mudo se lee como «no tenés mantenimientos». Un error
+    // por qué, y un vacío mudo se lee como «no tienes mantenimientos». Un error
     // explícito manda a <FalloDeCarga>, que sí lo cuenta.
       setError(SIN_AGENTE_CONFIGURADO)
       setIsLoading(false)

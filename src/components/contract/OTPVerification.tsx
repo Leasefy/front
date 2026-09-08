@@ -135,7 +135,7 @@ export function OTPVerification({
       setCooldown(cooldownSeconds || 60);
       setStatus('idle');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'No se pudo enviar el código. Intentá de nuevo.';
+      const msg = err instanceof Error ? err.message : 'No se pudo enviar el código. Intenta de nuevo.';
       setSendError(msg);
       setStatus('error');
     }
@@ -348,7 +348,7 @@ export function OTPVerification({
                 </Button>
               ) : (
                 <p className="text-sm text-fg-muted">
-                  Podés reenviar el código en{' '}
+                  Puedes reenviar el código en{' '}
                   <span className="font-mono tabular-nums font-medium text-fg">{cooldown}s</span>
                 </p>
               )}
@@ -359,7 +359,7 @@ export function OTPVerification({
           <div className="rounded-[14px] bg-surface-muted p-3 text-xs text-fg-muted">
             <p>
               <strong>Nota:</strong> La verificación por código enviado a tu correo garantiza que
-              solo vos podés firmar este contrato. Este proceso cumple con la Ley 527/1999 sobre
+              solo tú puedes firmar este contrato. Este proceso cumple con la Ley 527/1999 sobre
               firmas electrónicas.
             </p>
           </div>

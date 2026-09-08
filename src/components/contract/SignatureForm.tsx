@@ -285,7 +285,7 @@ export function SignatureForm({
           ) : !signatureData ? (
             <>
               <FileText className="w-4 h-4" />
-              Dibujá tu firma para continuar
+              Dibuja tu firma para continuar
             </>
           ) : (
             <>

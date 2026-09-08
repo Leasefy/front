@@ -83,7 +83,7 @@ async function esperarRespuestaDeSesion(): Promise<void> {
  */
 /**
  * ⚠️ El tope es corto A PROPÓSITO. Este camino lo recorre TODO 401, incluido el
- * de «no tenés permiso», que es legítimo y tiene que llegar rápido a la
+ * de «no tienes permiso», que es legítimo y tiene que llegar rápido a la
  * pantalla. Con un tope de 4 s, cada 401 real tardaba cuatro segundos de más en
  * mostrarse — se veía en los tests, que pasaron a durar 4 s cada uno.
  *
@@ -132,6 +132,20 @@ const CODIGOS_DE_SESION_MUERTA = new Set([
 /** ¿Este `code` de un 401 significa que la sesión ya no vuelve? */
 export function esCodigoDeSesionMuerta(code: string | undefined): boolean {
   return code != null && CODIGOS_DE_SESION_MUERTA.has(code)
+}
+
+/**
+ * ¿Este 401 `SESSION_SUPERSEDED` responde a un token que ya no es el de esta
+ * pestaña? Entonces la sesión que lo desplazó es la NUESTRA, más nueva, y la
+ * respuesta no dice nada sobre ella: no hay que cerrar nada.
+ */
+export function esRespuestaDeUnTokenViejo(
+  code: string | undefined,
+  tokenUsado: string | null | undefined,
+): boolean {
+  if (code !== 'SESSION_SUPERSEDED' || !tokenUsado) return false
+  const tokenVigente = getAccessToken()
+  return tokenVigente != null && tokenVigente !== tokenUsado
 }
 
 // ============================================================================
@@ -245,7 +259,7 @@ async function request<T>(
   // navegando a /auth y cada petición que igual saliera sumaría un 401 más
   // —y un cartel de error más— sobre una pantalla que está por desaparecer.
   if (sesionTerminada()) {
-    throw new ApiError(401, 'Tu sesión expiró. Volvé a entrar.', 'SESSION_TERMINATED')
+    throw new ApiError(401, 'Tu sesión expiró. Vuelve a entrar.', 'SESSION_TERMINATED')
   }
 
   // Si el AuthProvider todavía no contestó, esperamos acá en vez de salir sin
@@ -272,8 +286,8 @@ async function request<T>(
     // from "backend returned 4xx/5xx".
     const raw = err instanceof Error ? err.message : String(err)
     const message = typeof navigator !== 'undefined' && !navigator.onLine
-      ? 'Sin conexión a internet. Verificá tu red e intentá de nuevo.'
-      : 'No pudimos conectarnos al servidor. Verificá tu conexión o intentá más tarde.'
+      ? 'Sin conexión a internet. Verifica tu red e intenta de nuevo.'
+      : 'No pudimos conectarnos al servidor. Verifica tu conexión o intenta más tarde.'
     throw new ApiError(0, `${message}${raw ? ` (${raw})` : ''}`)
   }
 
@@ -296,7 +310,16 @@ async function request<T>(
           return request<T>(method, path, body, tokenNuevo, true)
         }
       }
-      _onUnauthorized?.(code as string)
+      // Un SUPERSEDED para un token que YA no es el de esta pestaña es una
+      // respuesta vieja: fue la sesión nueva de este mismo navegador la que
+      // desplazó a la anterior (un enlace mágico o de invitación abierto con
+      // sesión previa; un reingreso en la misma pestaña). Cerrar sesión acá
+      // mataría la sesión nueva y la persona caería en /auth sin motivo —
+      // visto el 2026-09-07: la sonda de membresía con el token viejo llegaba
+      // al back después del claim del nuevo.
+      if (!esRespuestaDeUnTokenViejo(code, tokenUsado)) {
+        _onUnauthorized?.(code as string)
+      }
       throw new ApiError(401, errorBody.message || 'No autorizado', code)
     }
 
@@ -382,7 +405,7 @@ async function request<T>(
  *
  * 🔴 Renueva el token igual que `request`. No lo hacía: cualquier descarga que
  * saliera con el token recién vencido moría en un 401, y la pantalla —que no
- * distingue— culpaba al reporte («Probá de nuevo en un momento») cuando el
+ * distingue— culpaba al reporte («Prueba de nuevo en un momento») cuando el
  * problema era la sesión. Un GET normal en el mismo instante se recuperaba
  * solo; la descarga, no.
  *
@@ -400,8 +423,8 @@ async function requestBlob(path: string, token?: string, yaSeReintento = false):
   } catch (err) {
     const raw = err instanceof Error ? err.message : String(err)
     const message = typeof navigator !== 'undefined' && !navigator.onLine
-      ? 'Sin conexión a internet. Verificá tu red e intentá de nuevo.'
-      : 'No pudimos conectarnos al servidor. Verificá tu conexión o intentá más tarde.'
+      ? 'Sin conexión a internet. Verifica tu red e intenta de nuevo.'
+      : 'No pudimos conectarnos al servidor. Verifica tu conexión o intenta más tarde.'
     throw new ApiError(0, `${message}${raw ? ` (${raw})` : ''}`)
   }
 
@@ -414,7 +437,9 @@ async function requestBlob(path: string, token?: string, yaSeReintento = false):
         const tokenNuevo = await renovarTokenVencido(tokenUsado)
         if (tokenNuevo) return requestBlob(path, tokenNuevo, true)
       }
-      _onUnauthorized?.(code as string)
+      if (!esRespuestaDeUnTokenViejo(code, tokenUsado)) {
+        _onUnauthorized?.(code as string)
+      }
       throw new ApiError(401, errorBody.message || 'No autorizado', code)
     }
 

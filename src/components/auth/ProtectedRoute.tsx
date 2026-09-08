@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
+import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding'
 import { useAuth } from '@/lib/auth/use-auth'
 import { getRoleHomeRoute, isPanelRoleAllowed } from '@/lib/auth/role-routes'
 import type { AgencyMemberRole } from '@/lib/auth/types'
@@ -46,7 +47,7 @@ interface ProtectedRouteProps {
  * <ProtectedRoute allowedRoles={['landlord']}>{children}</ProtectedRoute>
  */
 export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, allowAgencyMembers }: ProtectedRouteProps) {
-  const { user, isAuthenticated, isLoading, mfaRequired, needsOnboarding, agencyRole, hasActiveAgencyMembership, agencyMembershipChecked } = useAuth()
+  const { user, isAuthenticated, isLoading, mfaRequired, needsOnboarding, perfilElegido, agencyRole, hasActiveAgencyMembership, agencyMembershipChecked } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const [isCheckingStorage, setIsCheckingStorage] = useState(true)
@@ -96,7 +97,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
       const pendingInvitation = (() => {
         try { return localStorage.getItem(PENDING_INVITATION_KEY) } catch { return null }
       })()
-      router.replace(pendingInvitation ? '/registro' : '/onboarding/seleccionar-rol')
+      router.replace(pendingInvitation ? '/registro' : rutaDeOnboarding(perfilElegido))
       return
     }
 
@@ -141,7 +142,8 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
       if (pendingInvitation) {
         router.replace('/registro')
       } else {
-        router.replace('/onboarding/seleccionar-rol')
+        // Retomar donde lo dejó: el onboarding del perfil elegido, o el selector.
+        router.replace(rutaDeOnboarding(perfilElegido))
       }
       return
     }
@@ -170,7 +172,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
       router.replace('/panel/inmobiliaria')
       return
     }
-  }, [isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, blockedAgencyRoles, allowAgencyMembers, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole, isAgencyUser, pathname, router, mfaRequired, user, needsOnboarding])
+  }, [isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, blockedAgencyRoles, allowAgencyMembers, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole, isAgencyUser, pathname, router, mfaRequired, user, needsOnboarding, perfilElegido])
 
   // Show loading state while checking auth
   if (isLoading || isCheckingStorage) {

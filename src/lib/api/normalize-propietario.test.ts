@@ -19,6 +19,32 @@ const base = {
 }
 
 describe('normalizePropietario', () => {
+  it('trae el documento del titular de la cuenta cuando existe, y no inventa claves cuando no (2026-09-07)', () => {
+    const conTitular = normalizePropietario({
+      ...base,
+      bankName: 'Bancolombia',
+      bankAccountNumber: '91234567890',
+      bankAccountHolder: 'CARLOS RESTREPO',
+      bankAccountHolderDocument: '71234567',
+      bankAccountHolderDocumentType: 'CC',
+      department: 'Antioquia',
+    })
+    expect(conTitular.bankAccount.accountHolderDocument).toBe('71234567')
+    expect(conTitular.bankAccount.accountHolderDocumentType).toBe('CC')
+    expect(conTitular.department).toBe('Antioquia')
+
+    const sinTitular = normalizePropietario({
+      ...base,
+      bankName: 'Bancolombia',
+      bankAccountNumber: '91234567890',
+      bankAccountHolder: 'JORGE RESTREPO',
+      bankAccountHolderDocument: null,
+      bankAccountHolderDocumentType: null,
+    })
+    expect('accountHolderDocument' in sinTitular.bankAccount).toBe(false)
+    expect('accountHolderDocumentType' in sinTitular.bankAccount).toBe(false)
+  })
+
   it('arma bankAccount desde los campos planos del back y trae los totales', () => {
     const p = normalizePropietario({
       ...base,

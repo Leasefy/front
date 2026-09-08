@@ -127,7 +127,7 @@ describe('toImportarInmuebleDto — listingType branch (C13, no premature valida
 
 /**
  * Nico, 2026-09-02: «si la migración ya trae el propietario, ¿para qué lo
- * volvés a pedir?». El propietario del archivo viaja al back para que el
+ * vuelves a pedir?». El propietario del archivo viaja al back para que el
  * inmueble nazca consignado; en blanco no viaja (el back no debe ver '').
  */
 describe('el propietario del archivo viaja al back', () => {

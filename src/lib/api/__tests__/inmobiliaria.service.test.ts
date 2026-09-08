@@ -383,6 +383,30 @@ describe('propietariosApi.create — maps front bank fields to the wire contract
     expect(body.accountHolder).toBeUndefined();
   });
 
+  it('manda el departamento y el documento del titular con los nombres del cable (2026-09-07)', async () => {
+    const fetchMock = mockFetchOnce({ id: 'prop-1' });
+    await propietariosApi.create({
+      ...BASE_PROPIETARIO,
+      department: 'Antioquia',
+      accountHolderDocumentType: 'CC',
+      accountHolderDocument: ' 71234567 ',
+    });
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.department).toBe('Antioquia');
+    expect(body.bankAccountHolderDocument).toBe('71234567');
+    expect(body.bankAccountHolderDocumentType).toBe('CC');
+    expect(body.accountHolderDocument).toBeUndefined();
+    expect(body.accountHolderDocumentType).toBeUndefined();
+  });
+
+  it('un tipo de documento del titular sin documento no se manda (no significa nada)', async () => {
+    const fetchMock = mockFetchOnce({ id: 'prop-1' });
+    await propietariosApi.create({ ...BASE_PROPIETARIO, accountHolderDocumentType: 'CC', accountHolderDocument: '' });
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.bankAccountHolderDocument).toBeNull();
+    expect(body.bankAccountHolderDocumentType).toBeNull();
+  });
+
   it('maps checking to CORRIENTE', async () => {
     const fetchMock = mockFetchOnce({ id: 'prop-1' });
     await propietariosApi.create({ ...BASE_PROPIETARIO, accountType: 'checking' });
@@ -474,6 +498,13 @@ describe('propietariosApi.update — applies the same wire mapping on a partial 
 
     const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
     expect(body).toEqual({ name: 'Nuevo Nombre', city: 'Medellin' });
+  });
+
+  it('vaciar el titular y el departamento manda null, que en el back limpia el dato', async () => {
+    const fetchMock = mockFetchOnce({ id: 'prop-1' });
+    await propietariosApi.update('prop-1', { department: '', accountHolderDocument: '', accountHolderDocumentType: '' });
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body).toEqual({ department: null, bankAccountHolderDocument: null, bankAccountHolderDocumentType: null });
   });
 
   it('throws instead of silently coercing an unmapped bank slug on update too', async () => {

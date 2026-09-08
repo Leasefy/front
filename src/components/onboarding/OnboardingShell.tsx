@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { LeasefyLogo } from '@/components/brand'
+import { LeasefyLogotype } from '@/components/brand'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth/use-auth'
@@ -102,7 +102,7 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <BrandHomeLink className="flex items-center gap-2.5">
-              <LeasefyLogo size={28} tone="brand" />
+              <LeasefyLogotype className="h-7 w-auto" title="Leasefy" />
             </BrandHomeLink>
 
             {/* Desktop: Step indicator + Skip */}

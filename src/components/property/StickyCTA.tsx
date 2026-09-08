@@ -172,7 +172,7 @@ function useCompartirInmueble(propertyId: string) {
         {
           description:
             i18n?.t('propiedad.compartir.falloAlCopiarDetalle') ??
-            'Copialo a mano desde la barra de direcciones del navegador.',
+            'Cópialo a mano desde la barra de direcciones del navegador.',
         },
       );
     }
@@ -186,11 +186,11 @@ function useCompartirInmueble(propertyId: string) {
 
 function getScheduleErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {
-    if (err.status === 409) return 'Este horario ya fue reservado. Elegí otro.';
-    if (err.status === 403) return 'No podés agendar una visita para tu propia propiedad.';
-    if (err.status === 400) return 'Formato de datos inválido. Recargá la página e intentá de nuevo.';
+    if (err.status === 409) return 'Este horario ya fue reservado. Elige otro.';
+    if (err.status === 403) return 'No puedes agendar una visita para tu propia propiedad.';
+    if (err.status === 400) return 'Formato de datos inválido. Recarga la página e intenta de nuevo.';
   }
-  return 'Ocurrió un error al agendar. Intentá de nuevo.';
+  return 'Ocurrió un error al agendar. Intenta de nuevo.';
 }
 
 // ============================================================================
@@ -281,7 +281,7 @@ export function StickyCTA({
       setContactError(
         error instanceof ApiError && error.messages
           ? error.messages.join(' · ')
-          : 'No pudimos iniciar la conversación. Intentá de nuevo.',
+          : 'No pudimos iniciar la conversación. Intenta de nuevo.',
       );
     } finally {
       setIsStartingChat(false);
@@ -459,7 +459,7 @@ export function StickyCTA({
               <div className="flex items-start gap-2.5 mb-4">
                 <ShareNetwork className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                 <p className="text-[13px] text-muted-foreground">
-                  Compartí esta propiedad con un interesado por el canal que prefieras.
+                  Comparte esta propiedad con un interesado por el canal que prefieras.
                 </p>
               </div>
 
@@ -495,7 +495,7 @@ export function StickyCTA({
               </Button>
 
               <p className="text-[11px] text-muted-foreground text-center mt-3">
-                Como inmobiliaria no aplicas ni agendas visitas — compartí el enlace con tus clientes.
+                Como inmobiliaria no aplicas ni agendas visitas — comparte el enlace con tus clientes.
               </p>
             </div>
           ) : (
@@ -540,10 +540,10 @@ export function StickyCTA({
               {isAuthenticated ? (
                 <>
                   <h3 className="text-[15px] font-heading font-semibold text-foreground mb-2">
-                    Chateá con la inmobiliaria
+                    Chatea con la inmobiliaria
                   </h3>
                   <p className="text-[13px] text-muted-foreground mb-4">
-                    Iniciá una conversación sobre esta propiedad. Si ya escribiste antes, te llevamos al mismo hilo.
+                    Inicia una conversación sobre esta propiedad. Si ya escribiste antes, te llevamos al mismo hilo.
                   </p>
                   <Button
                     type="button"
@@ -564,7 +564,7 @@ export function StickyCTA({
               ) : (
                 <>
                   <h3 className="text-[15px] font-heading font-semibold text-foreground mb-2">
-                    Iniciá sesión para contactar a la inmobiliaria
+                    Inicia sesión para contactar a la inmobiliaria
                   </h3>
                   <p className="text-[13px] text-muted-foreground mb-4">
                     Es rápido y te permite chatear sobre esta propiedad y agendar una visita.
@@ -712,7 +712,7 @@ export function StickyCTA({
               ) : availableDates.length === 0 ? (
                 <div className="text-center py-6">
                   <p className="text-[13px] text-muted-foreground">Sin disponibilidad en los próximos días.</p>
-                  <p className="text-[12px] text-muted-foreground/70 mt-1">Volvé a revisar pronto.</p>
+                  <p className="text-[12px] text-muted-foreground/70 mt-1">Vuelve a revisar pronto.</p>
                 </div>
               ) : (
                 <>

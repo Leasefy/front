@@ -46,7 +46,7 @@ export function UbicacionDelInmueble({ property, cargando, consignacion, onActua
   const { t } = useI18n();
   const permisos = usePermissionsContextSafe();
   // Mientras los permisos resuelven, `canAccess` en false es «todavía no sé»,
-  // no «no podés» (ver PermissionsContext). Mismo criterio que ReglasDeMora.
+  // no «no puedes» (ver PermissionsContext). Mismo criterio que ReglasDeMora.
   const puedeEditar = permisos ? permisos.isLoading || permisos.canAccess('portafolio', 'edit') : false;
   const [dialogoAbierto, setDialogoAbierto] = useState(false);
 

@@ -157,6 +157,12 @@ export interface PlanSidebarProps {
   showInvite?: boolean;
   /** Handler for the invite-card button. */
   onInvite?: () => void;
+  /**
+   * Tarjetas del pie, ANTES de la de invitar: el recordatorio de migración
+   * (Nico, 2026-09-07). Un slot y no props sueltas: la tarjeta sabe sola qué
+   * decir (lee el estado de la migración del contexto del panel).
+   */
+  footerCards?: React.ReactNode;
 }
 
 interface NavItemComponentProps {
@@ -372,6 +378,7 @@ interface SidebarContentProps {
   workspaceLogoUrl?: string;
   showInvite?: boolean;
   onInvite?: () => void;
+  footerCards?: React.ReactNode;
 }
 
 function SidebarContent({
@@ -394,6 +401,7 @@ function SidebarContent({
   workspaceLogoUrl,
   showInvite = false,
   onInvite,
+  footerCards,
 }: SidebarContentProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -651,6 +659,7 @@ function SidebarContent({
         </div>
       ) : (
         <div className="px-3 pb-3 space-y-2.5">
+          {footerCards}
           {showInvite && !inviteDismissed && (
             <div className="relative group/invite">
               <button
@@ -710,6 +719,7 @@ export function PlanSidebar({
   workspaceLogoUrl,
   showInvite = false,
   onInvite,
+  footerCards,
 }: PlanSidebarProps) {
   const { isCollapsed, toggle } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -754,6 +764,7 @@ export function PlanSidebar({
           workspaceLogoUrl={workspaceLogoUrl}
           showInvite={showInvite}
           onInvite={onInvite}
+          footerCards={footerCards}
         />
       </aside>
 

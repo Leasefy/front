@@ -46,7 +46,7 @@ const base: EstadoDeLote = {
  * Ítem 1 del brief WU-4: mostrar progreso mientras el usuario elige
  * esperar, y hacer explícito que irse es seguro (el lote es durable
  * server-side, WU-2). El sondeo es una conveniencia, nunca el mecanismo de
- * finalización — por eso el mensaje de "podés cerrar esta pestaña" es
+ * finalización — por eso el mensaje de "puedes cerrar esta pestaña" es
  * obligatorio, no cosmético.
  */
 describe('<ProgresoDeLote>', () => {

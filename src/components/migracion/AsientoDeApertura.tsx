@@ -73,7 +73,7 @@ const TEXTO_DEL_PROBLEMA: Record<ProblemaDeApertura, string> = {
   FUERA_DE_RANGO:
     "Un monto es demasiado grande para una sola línea: partilo en dos.",
   CUENTA_REPETIDA:
-    "La misma cuenta aparece dos veces: sumá los saldos en una línea.",
+    "La misma cuenta aparece dos veces: suma los saldos en una línea.",
   DESCUADRADO: "No cuadra: los débitos tienen que ser iguales a los créditos.",
 };
 
@@ -183,7 +183,7 @@ export function AsientoDeApertura({
         setError(
           mensajeDeContabilidad(
             e,
-            "No pudimos registrar el asiento. Intentá de nuevo.",
+            "No pudimos registrar el asiento. Intenta de nuevo.",
           ),
         );
       }

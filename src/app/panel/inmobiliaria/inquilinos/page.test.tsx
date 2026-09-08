@@ -8,8 +8,8 @@
  *    la llena es un contrato.
  *
  * 2. **Migrado y a medias** (2026-09-03, tarde): 91 contratos migrados, 89 sin
- *    inmueble ⇒ cero arriendos ⇒ esta lista vacía. Decir «traé los que ya
- *    tenés en otro sistema» es pedirle migrar a alguien que acaba de migrar.
+ *    inmueble ⇒ cero arriendos ⇒ esta lista vacía. Decir «trae los que ya
+ *    tienes en otro sistema» es pedirle migrar a alguien que acaba de migrar.
  *    Se dice el número real y el botón lleva a completar la migración.
  *
  * 3. **Uno solo** (2026-09-04): «*¿pero por qué crear contrato en inquilinos?
@@ -275,7 +275,7 @@ describe('/panel/inmobiliaria/inquilinos — el camino de cargar UNO solo', () =
      * diccionario porque la pantalla, en el test, rinde claves.
      */
     expect(es.inquilinos.subtitulo).not.toContain('nace de su contrato');
-    expect(es.inquilinos.subtitulo).toContain('Cargá uno acá');
+    expect(es.inquilinos.subtitulo).toContain('Carga uno acá');
     expect(en.inquilinos.subtitulo).not.toContain('comes from their lease');
   });
 });

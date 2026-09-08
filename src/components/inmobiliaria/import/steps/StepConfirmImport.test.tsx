@@ -641,7 +641,7 @@ describe('<StepConfirmImport> — el dueño de cada inmueble después de activar
   it('ADENTRO del muro no abre el diálogo de «mandato», y NO manda a rehacer lo que la importación ya hizo', async () => {
     // Ese diálogo pone UN propietario a todos los inmuebles del lote y habla
     // de «mandato», una palabra que la inmobiliaria no usa (Nico, 2026-09-01).
-    // 🔴 Y el texto que quedaba decía «el propietario y la comisión los asociás
+    // 🔴 Y el texto que quedaba decía «el propietario y la comisión los asocias
     // en el paso Contratos» sobre una importación que ACABA de asociarlos desde
     // el archivo (auditoría 2026-09-05): mandaba a repetir trabajo hecho.
     await activar({ onSalir: () => {} });

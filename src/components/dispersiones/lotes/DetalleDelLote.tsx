@@ -234,7 +234,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         </Banner>
       )}
       {lote.estado === 'ESPERANDO_APROBACION' && soyElCreador && !bloqueado && (
-        <Banner variant="info" title="Vos armaste este lote">
+        <Banner variant="info" title="Tú armaste este lote">
           La aprobación la tiene que dar otra persona con permiso de edición sobre dispersiones.
           Es el segundo par de ojos: quien arma un giro no lo aprueba.
         </Banner>
@@ -364,8 +364,8 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
       {excluidos.length > 0 && (
         <section className="space-y-3" data-testid="excluidos-del-lote">
           <Banner variant="warning" title={`${excluidos.length} ${excluidos.length === 1 ? 'pago no va' : 'pagos no van'} en el archivo`}>
-            Les falta un dato bancario o no cuadra con el formato. Corregí la ficha del propietario y
-            armá el lote de nuevo para que entren; este lote no los incluye.
+            Les falta un dato bancario o no cuadra con el formato. Corrige la ficha del propietario y
+            arma el lote de nuevo para que entren; este lote no los incluye.
           </Banner>
           <div className="overflow-x-auto rounded-lg border border-border">
             <Table>
@@ -959,7 +959,7 @@ function ArchivoDialog({
               {sinVerificar ? (
                 <div className="space-y-2">
                   <Banner variant="danger" title="Este layout no se verificó contra un archivo real del banco">
-                    Revisalo antes de subirlo. El nombre del archivo lleva{' '}
+                    Revísalo antes de subirlo. El nombre del archivo lleva{' '}
                     <span className="font-mono">SIN-VERIFICAR</span> para que el aviso viaje hasta el
                     escritorio.
                   </Banner>
@@ -1153,7 +1153,7 @@ function AnularDialog({
 
   const anular = async () => {
     if (!motivoValido(motivo)) {
-      setError('Decí por qué se anula, en 5 a 300 caracteres. Sin motivo no se anula.');
+      setError('Di por qué se anula, en 5 a 300 caracteres. Sin motivo no se anula.');
       return;
     }
     setEnviando(true);

@@ -62,7 +62,7 @@ const PREVIEW_TEMPLATES = [
     key:     'cartera.s2.payment_plan',
     lang:    'es',
     channel: 'whatsapp',
-    body:    'Te ofrecemos un plan: {{months}} cuotas de {{installment_cop}}. ¿Aceptás?',
+    body:    'Te ofrecemos un plan: {{months}} cuotas de {{installment_cop}}. ¿Aceptas?',
     status:  'approved',
   },
   {

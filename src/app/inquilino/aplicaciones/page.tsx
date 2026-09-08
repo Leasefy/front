@@ -114,7 +114,7 @@ function nextStepForApproved(contract: Contract | undefined, locale: string): st
         ? 'El propietario está preparando el contrato'
         : 'The landlord is preparing the contract';
     case 'pending_tenant':
-      return locale === 'es' ? 'Firmá el contrato (tu turno)' : 'Sign the contract (your turn)';
+      return locale === 'es' ? 'Firma el contrato (tu turno)' : 'Sign the contract (your turn)';
     case 'pending_landlord':
       return locale === 'es'
         ? 'Ya firmaste — esperando que el propietario firme'
@@ -537,7 +537,7 @@ export default function AplicacionesPage() {
                                         {application.status === 'under_review' && (locale === 'es' ? 'En evaluación de documentos' : 'Document evaluation')}
                                         {application.status === 'needs_info' && (locale === 'es' ? '⚠ Completar información solicitada' : '⚠ Complete requested information')}
                                         {application.status === 'approved' && nextStepForApproved(contractsByApp[application.id], locale)}
-                                        {application.status === 'rejected' && (locale === 'es' ? 'Proceso cerrado — explorá alternativas' : 'Process closed — explore alternatives')}
+                                        {application.status === 'rejected' && (locale === 'es' ? 'Proceso cerrado — explora alternativas' : 'Process closed — explore alternatives')}
                                         {application.status === 'withdrawn' && (locale === 'es' ? 'Postulación cerrada' : 'Application closed')}
                                         {application.status === 'contract_failed' && (locale === 'es' ? 'Contrato no prosperó — crear nueva postulación' : 'Contract didn\'t succeed — create a new application')}
                                       </p>

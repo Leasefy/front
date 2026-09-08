@@ -37,7 +37,7 @@ interface SoftwareItem {
   /**
    * Sitio del fabricante, para que la persona busque ahí cómo exportar.
    *
-   * Las instrucciones de exportación son GENÉRICAS para todos (buscá
+   * Las instrucciones de exportación son GENÉRICAS para todos (busca
    * Exportar/Descargar). Escribir el camino exacto de menú de cada sistema
    * sin haberlo visto sería mandar a la gente a buscar una opción que quizás
    * no existe. El link es lo único verificable que podemos dar hoy.

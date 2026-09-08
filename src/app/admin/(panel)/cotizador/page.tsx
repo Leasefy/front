@@ -172,7 +172,7 @@ export default function CotizadorPage() {
       <PageHeader
         label="31 · cotizador"
         title="Aseguradoras"
-        description="Registry de carriers del cotizador (empezando por Fianly). Configurá la ruta, el modo de integración y las credenciales — se guardan encriptadas y nunca se muestran de vuelta."
+        description="Registry de carriers del cotizador (empezando por Fianly). Configura la ruta, el modo de integración y las credenciales — se guardan encriptadas y nunca se muestran de vuelta."
         right={
           form.kind === 'none' ? (
             <button className="btn btn-primary" onClick={openCreate}>
@@ -209,7 +209,7 @@ export default function CotizadorPage() {
         isLoading={isLoading}
         error={error}
         emptyTitle="Sin carriers"
-        emptyHint='Creá el primero con "Nuevo carrier".'
+        emptyHint='Crea el primero con "Nuevo carrier".'
       />
 
       <div className="mt-8">

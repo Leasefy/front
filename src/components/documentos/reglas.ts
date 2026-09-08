@@ -124,10 +124,10 @@ export function puedePreparar(
 export function queFaltaElegir(
   plantilla: Pick<PlantillaLegalDelSistema, 'requiere'> | null,
 ): string {
-  if (!plantilla) return 'Elegí qué documento querés generar.';
+  if (!plantilla) return 'Elige qué documento quieres generar.';
   return plantilla.requiere === 'contrato'
-    ? 'Elegí el contrato sobre el que se genera.'
-    : 'Elegí un contrato o un inmueble.';
+    ? 'Elige el contrato sobre el que se genera.'
+    : 'Elige un contrato o un inmueble.';
 }
 
 // ─── Campos ──────────────────────────────────────────────────────────────────
@@ -176,7 +176,7 @@ export function avisoDelIncremento(
     return {
       bloquea: true,
       texto:
-        'El DANE todavía no publicó el IPC del año calendario anterior a esa fecha. Revisá la fecha de vigencia.',
+        'El DANE todavía no publicó el IPC del año calendario anterior a esa fecha. Revisa la fecha de vigencia.',
     };
   }
 
@@ -193,7 +193,7 @@ export function avisoDelIncremento(
   if (propuesto === null) {
     return {
       bloquea: true,
-      texto: `Escribí el incremento. El tope legal es ${tope}: el IPC de ${revision.ipcAno}.`,
+      texto: `Escribe el incremento. El tope legal es ${tope}: el IPC de ${revision.ipcAno}.`,
     };
   }
 

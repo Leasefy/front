@@ -239,11 +239,11 @@ export function CarrierForm({
         </div>
         <p className="text-[11px] text-fg-subtle">
           {isEdit
-            ? 'Por seguridad las credenciales no se muestran. Dejá estos campos vacíos para conservar las guardadas; completalos solo para reemplazarlas.'
+            ? 'Por seguridad las credenciales no se muestran. Deja estos campos vacíos para conservar las guardadas; complétalos solo para reemplazarlas.'
             : 'Se guardan encriptadas. Requeridas para que el carrier pueda cotizar en modo real.'}
         </p>
         <Help>
-          Las credenciales se guardan juntas: si cambiás una, reingresá las tres. Dejarlas vacías
+          Las credenciales se guardan juntas: si cambias una, reingresa las tres. Dejarlas vacías
           conserva las guardadas.
         </Help>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

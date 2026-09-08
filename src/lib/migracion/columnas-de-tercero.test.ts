@@ -22,7 +22,10 @@ import {
   obligatoriasSinMapear,
   columnasNoSoportadas,
   armarFila,
+  componerNombre,
   nombreDeLoteSugerido,
+  nombreSeArmaPorPartes,
+  valorDeParte,
 } from './columnas-de-tercero';
 import type { ColumnaDePlantilla } from '@/lib/api/migracion-terceros.service';
 
@@ -392,5 +395,55 @@ describe('mapearColumnas — el espejo del back con encabezados del mundo real',
     expect(resultado[0]).toMatchObject({ campo: 'documento', exacto: true });
     // «C.C.» quería documento pero ya está tomado: queda sin mapear, visible.
     expect(resultado[1].campo).toBeNull();
+  });
+});
+
+// ── El nombre en partes ──────────────────────────────────────────────────────
+
+describe('el nombre partido en columnas', () => {
+  it('«Nombres» + «Apellidos» se reconocen como partes y el nombre se arma con las dos', () => {
+    const mapeo = mapearColumnas(PLANTILLA_PROPIETARIO, ['Cédula', 'Nombres', 'Apellidos']);
+    expect(mapeo.find((m) => m.columna === 'Nombres')).toMatchObject({ campo: null, parte: 'nombres' });
+    expect(mapeo.find((m) => m.columna === 'Apellidos')).toMatchObject({ campo: null, parte: 'apellidos' });
+    expect(nombreSeArmaPorPartes(mapeo)).toBe(true);
+    expect(armarFila({ Cédula: '1', Nombres: ' Ana  María ', Apellidos: 'de la Hoz' }, mapeo).nombre).toBe(
+      'Ana María de la Hoz',
+    );
+    // No «falta» el nombre: se arma.
+    expect(obligatoriasSinMapear(PLANTILLA_PROPIETARIO, mapeo).map((c) => c.campo)).not.toContain('nombre');
+  });
+
+  it('«Nombre» solo, sin apellidos al lado, sigue siendo el nombre completo', () => {
+    const mapeo = mapearColumnas(PLANTILLA_PROPIETARIO, ['Nombre', 'Cédula']);
+    expect(mapeo.find((m) => m.columna === 'Nombre')).toMatchObject({ campo: 'nombre', exacto: true });
+    expect(mapeo.find((m) => m.columna === 'Nombre')?.parte).toBeUndefined();
+  });
+
+  it('una sola mitad («Primer Nombre» sin apellidos) no arma nada ni se roba `nombre`', () => {
+    const mapeo = mapearColumnas(PLANTILLA_PROPIETARIO, ['Primer Nombre', 'Segundo Nombre', 'Cédula']);
+    expect(nombreSeArmaPorPartes(mapeo)).toBe(false);
+    expect(armarFila({ 'Primer Nombre': 'MARIA', 'Segundo Nombre': 'F', Cédula: '1' }, mapeo).nombre).toBeUndefined();
+    expect(obligatoriasSinMapear(PLANTILLA_PROPIETARIO, mapeo).map((c) => c.campo)).toContain('nombre');
+  });
+
+  it('a mano: una columna se puede declarar parte, y quitarle la parte a la que la tenía', () => {
+    const base = mapearColumnas(PLANTILLA_PROPIETARIO, ['Cédula', 'Col A', 'Col B', 'Col C']);
+    const conA = remapear(base, 'Col A', valorDeParte('nombres'));
+    expect(conA.find((m) => m.columna === 'Col A')).toMatchObject({ campo: null, parte: 'nombres', isManual: true });
+    const conB = remapear(conA, 'Col B', valorDeParte('nombres'));
+    expect(conB.find((m) => m.columna === 'Col A')?.parte).toBeUndefined();
+    expect(conB.find((m) => m.columna === 'Col B')?.parte).toBe('nombres');
+    // Y de vuelta a un campo normal: la parte se va.
+    const otraVez = remapear(conB, 'Col B', 'correo');
+    expect(otraVez.find((m) => m.columna === 'Col B')).toMatchObject({ campo: 'correo' });
+    expect(otraVez.find((m) => m.columna === 'Col B')?.parte).toBeUndefined();
+  });
+
+  it('componerNombre: los numerados le ganan a los juntos y los vacíos no dejan hueco', () => {
+    expect(
+      componerNombre({ primerNombre: 'MARIA', segundoNombre: '', primerApellido: 'RUIZ', segundoApellido: 'GOMEZ' }),
+    ).toBe('MARIA RUIZ GOMEZ');
+    expect(componerNombre({ primerNombre: 'MARIA', nombres: 'IGNORADO', apellidos: 'RUIZ GOMEZ' })).toBe('MARIA RUIZ GOMEZ');
+    expect(componerNombre({})).toBe('');
   });
 });

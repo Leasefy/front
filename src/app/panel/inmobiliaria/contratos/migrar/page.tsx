@@ -23,7 +23,7 @@ import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda'
 export default function MigrarContratosPage() {
   /*
    * Guard por "view", no por "create". `canAccess(modulo, accion)` en false NO
-   * siempre significa "no tenés permiso": también es lo que devuelve mientras
+   * siempre significa "no tienes permiso": también es lo que devuelve mientras
    * el servicio de permisos del agente no contesta. Con `create`, esta pantalla
    * desaparecía para TODOS cada vez que ese servicio estaba caído — y el guard
    * además REDIRIGE, así que ni siquiera se veía por qué.
@@ -34,7 +34,7 @@ export default function MigrarContratosPage() {
   /*
    * El estado de la migración, cuando el muro ya bajó. Todas las alertas del
    * panel —Contratos, Inquilinos, Propietarios, Cobros— traen acá; si al
-   * llegar sólo se viera «subí un archivo», la persona no sabría qué le
+   * llegar sólo se viera «sube un archivo», la persona no sabría qué le
    * quedó pendiente de los 91 contratos que ya subió. Sin botón por línea:
    * ya está en la pantalla donde se resuelve.
    */
@@ -56,7 +56,7 @@ export default function MigrarContratosPage() {
             Migrar contratos
           </h1>
           <p className="max-w-2xl text-sm text-muted-foreground line-clamp-2">
-            Traé los contratos que ya tenés en otro sistema, con sus inquilinos
+            Trae los contratos que ya tienes en otro sistema, con sus inquilinos
             y su cartera. Entran vigentes y firmados: no hay que volver a
             firmarlos.{' '}
             <span className="text-foreground">

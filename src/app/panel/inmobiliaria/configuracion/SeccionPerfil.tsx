@@ -77,7 +77,7 @@ export function SeccionPerfil() {
         <VacioDeSeccion
           icono={Buildings}
           titulo="Todavía no pudimos leer tu inmobiliaria"
-          ayuda="Volvé a intentar en un momento. Si sigue igual, escribinos: la cuenta puede no tener una agencia asociada."
+          ayuda="Vuelve a intentar en un momento. Si sigue igual, escríbenos: la cuenta puede no tener una agencia asociada."
         />
       }
     >
@@ -87,7 +87,7 @@ export function SeccionPerfil() {
             <div className="flex items-start gap-2.5 rounded-lg border border-border bg-surface-muted px-4 py-3">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
               <p className="text-sm text-fg-muted">
-                Faltan datos de la empresa: {faltan.join(', ')}. Tocá «Editar» y completalos: se imprimen en los
+                Faltan datos de la empresa: {faltan.join(', ')}. Toca «Editar» y complétalos: se imprimen en los
                 contratos y en las cuentas de cobro.
               </p>
             </div>

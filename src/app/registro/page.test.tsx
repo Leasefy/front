@@ -8,7 +8,7 @@
  * user===null ⟹ isAuthenticated===false):
  *  - NEW invited user (needsOnboarding true, isAuthenticated false): the
  *    silent auto-accept effect early-returns; the user completes via the
- *    manual "Completá tu perfil" form → handleCompleteProfile makes ONE
+ *    manual "Completa tu perfil" form → handleCompleteProfile makes ONE
  *    transactional /users/me/onboarding call carrying invitationToken (backend
  *    joins the agency atomically) — NO separate acceptInvitation.
  *  - EXISTING account (needsOnboarding false, isAuthenticated true): the

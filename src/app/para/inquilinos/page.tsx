@@ -35,7 +35,7 @@ const testimonials = [
     image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face&q=80',
   },
   {
-    quote: 'La búsqueda con IA es increíble. Escribí lo que buscaba y me mostró exactamente lo que necesitaba. Firmé contrato en una semana.',
+    quote: 'La búsqueda con IA es increíble. Escribe lo que buscaba y me mostró exactamente lo que necesitaba. Firmé contrato en una semana.',
     author: 'María Fernanda López',
     role: 'Inquilina en Medellín',
     image: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',

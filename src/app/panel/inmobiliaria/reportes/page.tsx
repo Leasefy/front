@@ -399,7 +399,7 @@ function ReportesContent() {
         description:
           error instanceof ApiError && error.status === 403
             ? 'Tu rol no incluye descargar reportes.'
-            : 'Probá de nuevo en un momento.',
+            : 'Prueba de nuevo en un momento.',
       });
       return false;
     } finally {
@@ -477,7 +477,7 @@ function ReportesContent() {
         description:
           noBajables.length > 0
             ? `${noBajables.length} de los que ves todavía no se generan.`
-            : 'Ajustá los filtros para ver otros reportes.',
+            : 'Ajusta los filtros para ver otros reportes.',
       });
       return;
     }

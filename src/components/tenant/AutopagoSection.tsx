@@ -93,7 +93,7 @@ export function AutopagoSection({ leaseId }: AutopagoSectionProps) {
     } catch {
       toast.error(
         locale === 'es'
-          ? 'No pudimos activar el autopago. Intentá más tarde.'
+          ? 'No pudimos activar el autopago. Intenta más tarde.'
           : 'We could not enable autopay. Please try again later.',
       );
     } finally {
@@ -113,7 +113,7 @@ export function AutopagoSection({ leaseId }: AutopagoSectionProps) {
     } catch {
       toast.error(
         locale === 'es'
-          ? 'No pudimos cancelar el autopago. Intentá más tarde.'
+          ? 'No pudimos cancelar el autopago. Intenta más tarde.'
           : 'We could not cancel autopay. Please try again later.',
       );
     } finally {
@@ -123,7 +123,7 @@ export function AutopagoSection({ leaseId }: AutopagoSectionProps) {
 
   const description =
     locale === 'es'
-      ? 'Programá el débito automático del arriendo cada mes.'
+      ? 'Programa el débito automático del arriendo cada mes.'
       : 'Schedule your rent to be charged automatically each month.';
 
   return (
@@ -216,7 +216,7 @@ export function AutopagoSection({ leaseId }: AutopagoSectionProps) {
           title={locale === 'es' ? 'Próximamente' : 'Coming soon'}
           description={
             locale === 'es'
-              ? 'El débito automático del arriendo estará disponible pronto. Por ahora podés pagar cada mes desde esta página.'
+              ? 'El débito automático del arriendo estará disponible pronto. Por ahora puedes pagar cada mes desde esta página.'
               : 'Automatic rent debit will be available soon. For now you can pay each month from this page.'
           }
         />

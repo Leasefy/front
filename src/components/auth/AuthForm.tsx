@@ -9,12 +9,17 @@ import { Button } from '@/components/ui/button';
 import { AuthInput } from './AuthInput';
 import { useAuth } from '@/lib/auth/use-auth';
 import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
+import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
 import { SesionYaAbierta } from './SesionYaAbierta';
+import { MedidorDeContrasena } from './MedidorDeContrasena';
+import { normalizarCorreo, validarCorreo, webmailDelCorreo } from '@/lib/auth/correo';
+import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
 import {
   SpinnerGap,
   ArrowLeft,
+  ArrowSquareOut,
   CheckCircle,
 } from '@phosphor-icons/react';
 
@@ -44,15 +49,6 @@ interface AuthFormProps {
   returnUrl?: string;
 }
 
-// Role → onboarding entry point. The profile *picker* itself lives at
-// /onboarding/seleccionar-rol (the single selection surface); this map only
-// resolves the deep-link destination when a caller already knows the role.
-const roleHrefById: Record<'tenant' | 'landlord' | 'agency', string> = {
-  tenant: '/onboarding/inquilino',
-  landlord: '/onboarding/propietario',
-  agency: '/onboarding/inmobiliaria',
-};
-
 function GoogleIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none">
@@ -65,14 +61,14 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 /**
- * «Al continuar, aceptás…» — debajo del botón principal y no al pie de la
+ * «Al continuar, aceptas…» — debajo del botón principal y no al pie de la
  * pantalla (Nico, 2026-09-03): lo que uno acepta se lee junto a lo que uno
  * aprieta. Va en los dos formularios que crean o abren una sesión.
  */
 function NotaLegal() {
   return (
     <p className="mt-4 text-[11.5px] leading-relaxed text-fg-subtle" data-testid="auth-nota-legal">
-      Al continuar, aceptás nuestros{' '}
+      Al continuar, aceptas nuestros{' '}
       <Link href="/terminos" className="text-fg-muted underline-offset-2 hover:text-fg hover:underline">
         Términos
       </Link>{' '}
@@ -122,9 +118,9 @@ function GoogleButton({ onClick, disabled, isLoading, children }: { onClick: () 
  * desconocido (o inventado a mano en la URL) simplemente no muestra nada.
  */
 const AVISOS_DE_SESION: Record<string, string> = {
-  expirada: 'Tu sesión expiró. Volvé a entrar para seguir donde estabas.',
+  expirada: 'Tu sesión expiró. Vuelve a entrar para seguir donde estabas.',
   revocada: 'Cerramos esta sesión porque entraste desde otro dispositivo.',
-  inactividad: 'Cerramos tu sesión por inactividad. Volvé a entrar para continuar.',
+  inactividad: 'Cerramos tu sesión por inactividad. Vuelve a entrar para continuar.',
 };
 
 /**
@@ -159,16 +155,164 @@ function ErrorBanner({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** El enlace de texto azul de esta pantalla («Crear cuenta», «Inicia sesión»…). */
+const ENLACE = 'font-medium text-[#1A40FF] hover:underline underline-offset-2';
+
+/**
+ * «¿Quisiste decir nico@gmail.com?», debajo del campo de correo, cuando el
+ * dominio parece un error de dedo («gmail.con», «hotmial.com»). Tocarlo
+ * corrige el campo. En el registro además se ofrece «Está bien así», porque
+ * ahí la sugerencia bloquea el envío hasta que la persona decida: con un
+ * dominio equivocado el enlace de confirmación se va a ningún lado y nunca va
+ * a poder entrar. En el login sólo se ofrece, sin bloquear.
+ */
+function SugerenciaDeCorreo({
+  valor,
+  aceptado,
+  onUsar,
+  onAceptar,
+}: {
+  valor: string | undefined;
+  aceptado?: string | null;
+  onUsar: (correo: string) => void;
+  onAceptar?: () => void;
+}) {
+  const r = validarCorreo(valor ?? '');
+  if (!r.sugerencia || (aceptado && aceptado === r.correo)) return null;
+  const sugerencia = r.sugerencia;
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px]" data-testid="sugerencia-de-correo">
+      <button type="button" onClick={() => onUsar(sugerencia)} className="text-fg-muted transition-colors hover:text-fg">
+        ¿Quisiste decir <span className="font-medium text-[#1A40FF]">{sugerencia}</span>?
+      </button>
+      {onAceptar && (
+        <button
+          type="button"
+          onClick={onAceptar}
+          className="text-fg-subtle underline-offset-2 hover:text-fg hover:underline"
+          data-testid="correo-esta-bien-asi"
+        >
+          Está bien así
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Al salir del campo, el correo queda como se va a mandar: sin espacios y en
+ * minúsculas. La persona ve lo mismo que Supabase va a guardar, y lo que
+ * escriba después en el login coincide.
+ */
+function alSalirDelCorreo(leer: () => string, escribir: (correo: string) => void) {
+  const escrito = leer() ?? '';
+  const normalizado = normalizarCorreo(escrito);
+  if (normalizado !== escrito) escribir(normalizado);
+}
+
+/** La regla de correo del login y de la recuperación: dice qué está mal, no bloquea por una sugerencia. */
+const reglaDeCorreo = (valor: string) => {
+  const r = validarCorreo(valor);
+  return r.ok || r.motivo;
+};
+
+type EstadoDeReenvio = {
+  estado: 'listo' | 'enviando' | 'enviado';
+  /** Segundos hasta poder reenviar otra vez; Supabase limita a uno por minuto. */
+  espera: number;
+  error: string | null;
+};
+
+/**
+ * «¿No te llegó? Reenviar el enlace», con su espera y su error. Lo usan la
+ * pantalla de «Revisa tu correo» y el login cuando Supabase responde que el
+ * correo no está confirmado: ahí es donde llega quien abrió un enlace vencido
+ * (/auth/enlace lo manda a entrar), y sin esto no tenía cómo pedir otro.
+ */
+function ReenvioDeConfirmacion({
+  reenvio,
+  onReenviar,
+  onCorregir,
+}: {
+  reenvio: EstadoDeReenvio;
+  onReenviar: () => void;
+  onCorregir?: () => void;
+}) {
+  return (
+    <div className="space-y-1.5 text-[13px] text-fg-subtle" data-testid="reenvio-de-confirmacion">
+      {reenvio.estado === 'enviado' ? (
+        <p className="text-success" role="status">
+          Listo, te lo reenviamos. Dale un minuto y revisa también spam.
+        </p>
+      ) : (
+        <p>
+          ¿No te llegó?{' '}
+          <button
+            type="button"
+            onClick={onReenviar}
+            disabled={reenvio.estado === 'enviando' || reenvio.espera > 0}
+            className={cn(ENLACE, 'disabled:text-fg-subtle disabled:no-underline')}
+            data-testid="reenviar-confirmacion"
+          >
+            {reenvio.estado === 'enviando'
+              ? 'Reenviando…'
+              : reenvio.espera > 0
+                ? `Reenviar en ${reenvio.espera} s`
+                : 'Reenviar el enlace'}
+          </button>
+        </p>
+      )}
+      {reenvio.error && (
+        <p className="text-danger" role="alert">
+          {reenvio.error}
+        </p>
+      )}
+      {onCorregir && (
+        <p>
+          ¿Te equivocaste de correo?{' '}
+          <button type="button" onClick={onCorregir} className={ENLACE} data-testid="corregir-correo">
+            Corregirlo
+          </button>
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, mfaRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendSignUpEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, perfilElegido, mfaRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership } = useAuth();
 
   const [mode, setMode] = React.useState<AuthMode>('login');
   const [registerStep, setRegisterStep] = React.useState<RegisterStep>('credentials');
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [resetEmail, setResetEmail] = React.useState<string>('');
+  /*
+   * El correo que la persona confirmó «está bien así» aunque el dominio
+   * parezca un error de dedo. Va en ref además de en estado porque la regla
+   * de validación de react-hook-form lo lee en el momento de validar, y el
+   * estado todavía no cambió cuando se dispara `trigger`.
+   */
+  const [correoAceptado, setCorreoAceptado] = React.useState<string | null>(null);
+  const correoAceptadoRef = React.useRef<string | null>(null);
+  const aceptarCorreoTalCual = (correo: string | null) => {
+    correoAceptadoRef.current = correo;
+    setCorreoAceptado(correo);
+  };
+  /** A dónde vuelve el enlace de confirmación; el reenvío tiene que usar el mismo. */
+  const redirectDeConfirmacion = React.useRef<string | null>(null);
+  const [reenvio, setReenvio] = React.useState<EstadoDeReenvio>({ estado: 'listo', espera: 0, error: null });
+  /** El correo con el que intentó entrar y Supabase dijo «sin confirmar»: ahí se ofrece reenviar. */
+  const [correoSinConfirmar, setCorreoSinConfirmar] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (reenvio.espera <= 0) return;
+    const id = setTimeout(() => {
+      setReenvio((r) => ({ ...r, espera: r.espera - 1, estado: r.espera - 1 === 0 ? 'listo' : r.estado }));
+    }, 1000);
+    return () => clearTimeout(id);
+  }, [reenvio.espera]);
   // Only redirect when the user explicitly authenticated via THIS form in this session.
   // Without this guard, a pre-existing session would auto-redirect away from /auth,
   // preventing users from logging in as a different account.
@@ -236,15 +380,17 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       window.location.href = returnUrl;
       return;
     }
-    // JWT valid but backend has no user record yet → onboarding
+    // JWT valid but backend has no user record yet → onboarding. Si ya había
+    // elegido perfil antes de irse, directo a ese onboarding y no al selector.
     if (needsOnboarding) {
-      window.location.href = '/onboarding/seleccionar-rol';
+      window.location.href = rutaDeOnboarding(perfilElegido);
       return;
     }
     if (!isAuthenticated || !user) return;
-    // Si el onboarding no está completo, siempre ir a seleccionar rol
+    // Onboarding sin terminar: retomar donde lo dejó — el onboarding del
+    // perfil que eligió, o el selector si nunca eligió (Nico, 2026-09-07).
     if (!user.onboardingCompleted) {
-      window.location.href = '/onboarding/seleccionar-rol';
+      window.location.href = rutaDeOnboarding(perfilElegido);
       return;
     }
     if (returnUrl && returnUrl !== '/') {
@@ -259,7 +405,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     const isAgencyUser = user.role === 'agency' || hasActiveAgencyMembership;
     if (isAgencyUser && !agencyMembershipChecked && !probeWaitElapsed) return;
     window.location.href = getRoleHomeRoute(user.role, agencyRole);
-  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, mfaRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, probeWaitElapsed]);
+  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, perfilElegido, mfaRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, probeWaitElapsed]);
   // A caller may deep-link with the role already chosen — via the `defaultRole`
   // prop (e.g. the publish wizard) or a `?role=` query. When present, the
   // post-signup destination skips the picker and goes straight to that role's
@@ -267,6 +413,8 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   // single profile picker).
   const explicitRole = (defaultRole || searchParams.get('role')) as 'tenant' | 'landlord' | 'agency' | null;
   const initialMode = defaultMode || searchParams.get('mode') as AuthMode | null;
+  /** Para el botón «Abrir Gmail» de las pantallas de «Revisa tu correo»; null si el dominio no es conocido. */
+  const webmail = webmailDelCorreo(resetEmail);
 
   const loginForm = useForm<LoginFormData>({
     defaultValues: { email: '', password: '' },
@@ -280,6 +428,32 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     defaultValues: { email: '' },
   });
 
+  /*
+   * Los tres campos de correo se registran acá y no dentro del JSX porque cada
+   * uno envuelve el `onBlur` de react-hook-form con la normalización: hay que
+   * llamar a los dos, y para eso hace falta tener el registro a mano.
+   */
+  const correoDeLogin = loginForm.register('email', { validate: reglaDeCorreo });
+  const correoDeRegistro = registerForm.register('email', {
+    validate: (valor) => {
+      const r = validarCorreo(valor);
+      if (!r.ok) return r.motivo;
+      if (r.sugerencia && correoAceptadoRef.current !== r.correo) {
+        return `Revisa el dominio: parece que quisiste escribir ${r.sugerencia}.`;
+      }
+      return true;
+    },
+  });
+  const correoDeRecuperacion = forgotPasswordForm.register('email', { validate: reglaDeCorreo });
+  const contrasenaDeRegistro = registerForm.register('password', {
+    required: 'La contraseña es requerida',
+    validate: (valor) =>
+      fortalezaDeContrasena(valor, { correo: registerForm.getValues('email') }).cumpleMinimo ||
+      'Todavía es débil: sigue el consejo de abajo.',
+  });
+  const contrasenaEscrita = registerForm.watch('password') ?? '';
+  const correoEscritoEnRegistro = registerForm.watch('email') ?? '';
+
   React.useEffect(() => {
     if (initialMode === 'register' || explicitRole) {
       setMode('register');
@@ -290,13 +464,19 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     setMode(newMode);
     setRegisterStep('credentials');
     setError(null);
+    aceptarCorreoTalCual(null);
+    setReenvio({ estado: 'listo', espera: 0, error: null });
+    setCorreoSinConfirmar(null);
     loginForm.reset();
     registerForm.reset();
     forgotPasswordForm.reset();
   };
 
+  // Role → onboarding entry point (the map lives in perfil-de-onboarding.ts).
+  // The profile *picker* itself is /onboarding/seleccionar-rol; this only
+  // resolves the deep-link destination when a caller already knows the role.
   const getOnboardingHref = (role: 'tenant' | 'landlord' | 'agency') => {
-    const href = roleHrefById[role];
+    const href = rutaDeOnboarding(role);
     return returnUrl && returnUrl !== '/'
       ? `${href}?returnUrl=${encodeURIComponent(returnUrl)}`
       : href;
@@ -306,7 +486,16 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   // role's onboarding (carrying returnUrl forward); otherwise the single
   // profile picker at /onboarding/seleccionar-rol.
   const onboardingDest = () =>
-    explicitRole ? getOnboardingHref(explicitRole) : '/onboarding/seleccionar-rol';
+    explicitRole ? getOnboardingHref(explicitRole) : rutaDeOnboarding(null);
+
+  // Preserve context on the email-confirmation link so it returns through
+  // /auth/callback (which exchanges the code server-side and honors returnUrl)
+  // instead of Supabase's default Site URL (the root "/"), which would drop the
+  // invitation/onboarding context and land the user as a bare TENANT.
+  const enlaceDeConfirmacion = () => {
+    const dest = returnUrl && returnUrl !== '/' ? returnUrl : onboardingDest();
+    return `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(dest)}`;
+  };
 
   // Redirect to the correct dashboard based on user role
   const redirectAfterLogin = React.useCallback((role: string | undefined) => {
@@ -336,9 +525,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   const handleLoginSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setError(null);
+    setCorreoSinConfirmar(null);
+    const correo = normalizarCorreo(data.email);
     try {
       didAuthenticateInForm.current = true;
-      const userData = await signInWithEmail(data.email, data.password);
+      const userData = await signInWithEmail(correo, data.password);
       if (!userData) {
         // Supabase accepted the credentials but the profile bootstrap failed
         // WITHOUT throwing (e.g. 409 duplicate identity: fetchUser stored the
@@ -362,7 +553,13 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
         setError('Correo o contraseña incorrectos.');
       } else if (msg.includes('Email not confirmed')) {
-        setError('Debes confirmar tu correo antes de iniciar sesión. Revisa tu bandeja de entrada.');
+        // Acá llega quien abrió un enlace de confirmación vencido: /auth/enlace
+        // lo manda a entrar. Sin el reenvío no tenía cómo pedir otro.
+        setResetEmail(correo);
+        redirectDeConfirmacion.current = enlaceDeConfirmacion();
+        setReenvio({ estado: 'listo', espera: 0, error: null });
+        setCorreoSinConfirmar(correo);
+        setError('Tu correo todavía no está confirmado. Busca el enlace en tu bandeja (y en spam) o pide uno nuevo.');
       } else {
         setError('Error al iniciar sesión. Intenta de nuevo.');
       }
@@ -396,18 +593,19 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     setIsLoading(true);
     setError(null);
     try {
-      // Preserve context on the email-confirmation link so it returns through
-      // /auth/callback (which exchanges the code server-side and honors returnUrl)
-      // instead of Supabase's default Site URL (the root "/"), which would drop the
-      // invitation/onboarding context and land the user as a bare TENANT.
-      const dest = returnUrl && returnUrl !== '/' ? returnUrl : onboardingDest();
-      const emailRedirectTo = `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(dest)}`;
+      const emailRedirectTo = enlaceDeConfirmacion();
       // Persist the deep-linked role (if any) as intended_role on the Supabase
       // user. Without a deep-link the user picks their role at
       // /onboarding/seleccionar-rol, so this is `undefined` here.
-      const { requiresConfirmation } = await signUpWithEmail(data.email, data.password, emailRedirectTo, explicitRole ?? undefined);
+      // Lo que se registra es lo que después se escribe al entrar: sin
+      // espacios y en minúsculas, o «Nico@Gmail.com » y «nico@gmail.com» son
+      // dos personas para quien lo mira sin saber.
+      const correo = normalizarCorreo(data.email);
+      redirectDeConfirmacion.current = emailRedirectTo;
+      const { requiresConfirmation } = await signUpWithEmail(correo, data.password, emailRedirectTo, explicitRole ?? undefined);
       if (requiresConfirmation) {
-        setResetEmail(data.email);
+        setResetEmail(correo);
+        setReenvio({ estado: 'listo', espera: 0, error: null });
         setRegisterStep('confirm-email');
       } else {
         // Auto-confirmed — go straight to onboarding (or the deep-link role's onboarding)
@@ -427,13 +625,37 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     }
   };
 
+  /*
+   * «¿No te llegó? Reenviar»: la única salida que tenía la pantalla era «Ir a
+   * iniciar sesión», que con el correo sin confirmar sólo da error. Supabase
+   * acepta un reenvío por minuto; la espera se muestra en el propio enlace.
+   */
+  const reenviarConfirmacion = async () => {
+    setReenvio({ estado: 'enviando', espera: 0, error: null });
+    try {
+      await resendSignUpEmail(resetEmail, redirectDeConfirmacion.current ?? undefined);
+      setReenvio({ estado: 'enviado', espera: 60, error: null });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message.toLowerCase() : '';
+      const limite = msg.includes('rate') || msg.includes('over_email') || msg.includes('security purposes');
+      setReenvio({
+        estado: 'listo',
+        espera: limite ? 60 : 0,
+        error: limite
+          ? 'Ya se envió uno hace poco. Espera un minuto y revisa spam antes de pedir otro.'
+          : 'No se pudo reenviar. Intenta de nuevo en un momento.',
+      });
+    }
+  };
+
   // ── Forgot password ──────────────────────────────────────────────────────
   const handleForgotPasswordSubmit = async (data: ForgotPasswordFormData) => {
     setIsLoading(true);
     setError(null);
     try {
-      await sendPasswordReset(data.email);
-      setResetEmail(data.email);
+      const correo = normalizarCorreo(data.email);
+      await sendPasswordReset(correo);
+      setResetEmail(correo);
       setMode('reset-sent');
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
@@ -509,7 +731,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
           {mode === 'reset-sent' && 'Revisa tu correo'}
         </h1>
         <p className="mt-2 text-[14px] leading-relaxed text-fg-subtle">
-          {mode === 'login' && 'Ingresá a tu cuenta para continuar.'}
+          {mode === 'login' && 'Ingresa a tu cuenta para continuar.'}
           {mode === 'register' && registerStep === 'credentials' && 'Ingresa tus datos para continuar.'}
           {mode === 'register' && registerStep === 'confirm-email' && (
             <>Enviamos un enlace de confirmación a <span className="font-medium text-fg-muted">{resetEmail}</span>.</>
@@ -538,16 +760,26 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             <MonoDivider>o con email</MonoDivider>
 
             <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
-              <AuthInput
-                label="Email"
-                type="email"
-                placeholder="tu@email.com"
-                {...loginForm.register('email', {
-                  required: 'El email es requerido',
-                  pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Ingresa un email válido' },
-                })}
-                error={loginForm.formState.errors.email?.message}
-              />
+              <div className="space-y-1.5">
+                <AuthInput
+                  label="Email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  {...correoDeLogin}
+                  onBlur={(e) => {
+                    void correoDeLogin.onBlur(e);
+                    alSalirDelCorreo(
+                      () => loginForm.getValues('email'),
+                      (correo) => loginForm.setValue('email', correo, { shouldValidate: true }),
+                    );
+                  }}
+                  error={loginForm.formState.errors.email?.message}
+                />
+                <SugerenciaDeCorreo
+                  valor={loginForm.watch('email')}
+                  onUsar={(correo) => loginForm.setValue('email', correo, { shouldValidate: true })}
+                />
+              </div>
               <div className="space-y-1.5">
                 <AuthInput
                   label="Contraseña"
@@ -571,6 +803,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               </div>
               {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
+              {error && correoSinConfirmar && (
+                <ReenvioDeConfirmacion reenvio={reenvio} onReenviar={reenviarConfirmacion} />
+              )}
               <Button
                 type="submit"
                 disabled={isLoading}
@@ -590,7 +825,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             <NotaLegal />
 
             <p className="mt-6 border-t border-border/70 pt-5 text-[13px] text-fg-subtle">
-              ¿Todavía no tenés cuenta?{' '}
+              ¿Todavía no tienes cuenta?{' '}
               <button
                 type="button"
                 onClick={() => handleModeSwitch('register')}
@@ -618,27 +853,46 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             <MonoDivider>o con tu email</MonoDivider>
 
             <form onSubmit={registerForm.handleSubmit(handleRegisterSubmit)} className="space-y-4">
-              <AuthInput
-                label="Email"
-                type="email"
-                placeholder="tu@email.com"
-                {...registerForm.register('email', {
-                  required: 'El email es requerido',
-                  pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Ingresa un email válido' },
-                })}
-                error={registerForm.formState.errors.email?.message}
-              />
-              <AuthInput
-                label="Contraseña"
-                type="password"
-                isNewPassword
-                placeholder="Mínimo 6 caracteres"
-                {...registerForm.register('password', {
-                  required: 'La contraseña es requerida',
-                  minLength: { value: 6, message: 'Mínimo 6 caracteres' },
-                })}
-                error={registerForm.formState.errors.password?.message}
-              />
+              <div className="space-y-1.5">
+                <AuthInput
+                  label="Email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  {...correoDeRegistro}
+                  onBlur={(e) => {
+                    void correoDeRegistro.onBlur(e);
+                    alSalirDelCorreo(
+                      () => registerForm.getValues('email'),
+                      (correo) => registerForm.setValue('email', correo, { shouldValidate: true }),
+                    );
+                  }}
+                  error={registerForm.formState.errors.email?.message}
+                />
+                <SugerenciaDeCorreo
+                  valor={correoEscritoEnRegistro}
+                  aceptado={correoAceptado}
+                  onUsar={(correo) => {
+                    aceptarCorreoTalCual(null);
+                    registerForm.setValue('email', correo, { shouldValidate: true });
+                  }}
+                  onAceptar={() => {
+                    aceptarCorreoTalCual(validarCorreo(registerForm.getValues('email')).correo);
+                    void registerForm.trigger('email');
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <AuthInput
+                  label="Contraseña"
+                  type="password"
+                  isNewPassword
+                  placeholder="Mínimo 8 caracteres"
+                  {...contrasenaDeRegistro}
+                  error={registerForm.formState.errors.password?.message}
+                />
+                {/* Las cinco barras: rojo, naranja, verde (Nico, 2026-09-07). */}
+                <MedidorDeContrasena contrasena={contrasenaEscrita} correo={correoEscritoEnRegistro} />
+              </div>
               <AuthInput
                 label="Confirmar contraseña"
                 type="password"
@@ -682,19 +936,48 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             transition={{ duration: 0.15 }}
             className="space-y-5"
           >
+            {/*
+              Acá había «Vuelve aquí e inicia sesión» y un botón «Ir a iniciar
+              sesión» (Nico, 2026-09-07: «¿para qué, si debe ir al correo?»).
+              Estaba mal: el enlace del correo vuelve por /auth/callback ya
+              con la sesión abierta, así que el paso 3 no existe, y el botón
+              llevaba a un login que con el correo sin confirmar sólo puede dar
+              error. Lo que sí sirve: abrir el correo, reenviar el enlace si no
+              llegó y corregir la dirección si se escribió mal. «Inicia sesión»
+              queda abajo, chiquito, para quien confirmó desde el celular: en
+              ESTE navegador no quedó sesión y ahí sí toca entrar.
+            */}
             <div className="rounded-lg border border-border bg-surface p-4 space-y-2.5">
               <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
                 Próximos pasos
               </span>
               <ol className="text-[12.5px] text-fg-muted space-y-1.5 list-decimal list-inside">
-                <li>Revisa tu bandeja de entrada (y spam)</li>
-                <li>Haz clic en el enlace de confirmación</li>
-                <li>Vuelve aquí e inicia sesión</li>
+                <li>Abre el correo que te enviamos (revisa también spam)</li>
+                <li>Toca el enlace de confirmación: te trae de vuelta acá con la sesión ya abierta</li>
               </ol>
             </div>
-            <Button type="button" onClick={() => handleModeSwitch('login')} className="w-full h-11 rounded-full text-[14px]">
-              Ir a iniciar sesión
-            </Button>
+            {webmail && (
+              <Button asChild hideArrow className="w-full h-11 rounded-full text-[14px]">
+                <a href={webmail.url} target="_blank" rel="noopener noreferrer" data-testid="abrir-correo">
+                  Abrir {webmail.nombre}
+                  <ArrowSquareOut className="ml-2 h-4 w-4" weight="bold" aria-hidden="true" />
+                </a>
+              </Button>
+            )}
+            <ReenvioDeConfirmacion
+              reenvio={reenvio}
+              onReenviar={reenviarConfirmacion}
+              onCorregir={() => {
+                setError(null);
+                setRegisterStep('credentials');
+              }}
+            />
+            <p className="mt-6 border-t border-border/70 pt-5 text-[13px] text-fg-subtle">
+              ¿Ya confirmaste desde otro dispositivo?{' '}
+              <button type="button" onClick={() => handleModeSwitch('login')} className={ENLACE}>
+                Inicia sesión
+              </button>
+            </p>
           </motion.div>
         )}
 
@@ -709,16 +992,26 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             onSubmit={forgotPasswordForm.handleSubmit(handleForgotPasswordSubmit)}
             className="space-y-4"
           >
-            <AuthInput
-              label="Email"
-              type="email"
-              placeholder="tu@email.com"
-              {...forgotPasswordForm.register('email', {
-                required: 'El email es requerido',
-                pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Ingresa un email válido' },
-              })}
-              error={forgotPasswordForm.formState.errors.email?.message}
-            />
+            <div className="space-y-1.5">
+              <AuthInput
+                label="Email"
+                type="email"
+                placeholder="tu@email.com"
+                {...correoDeRecuperacion}
+                onBlur={(e) => {
+                  void correoDeRecuperacion.onBlur(e);
+                  alSalirDelCorreo(
+                    () => forgotPasswordForm.getValues('email'),
+                    (correo) => forgotPasswordForm.setValue('email', correo, { shouldValidate: true }),
+                  );
+                }}
+                error={forgotPasswordForm.formState.errors.email?.message}
+              />
+              <SugerenciaDeCorreo
+                valor={forgotPasswordForm.watch('email')}
+                onUsar={(correo) => forgotPasswordForm.setValue('email', correo, { shouldValidate: true })}
+              />
+            </div>
             {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
             <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-full text-[14px]">
@@ -745,14 +1038,22 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 Próximos pasos
               </span>
               <ol className="text-[12.5px] text-fg-muted space-y-1.5 list-decimal list-inside">
-                <li>Revisa tu bandeja de entrada (y spam)</li>
-                <li>Haz clic en el enlace del correo</li>
+                <li>Abre el correo que te enviamos (revisa también spam)</li>
+                <li>Toca el enlace del correo</li>
                 <li>Crea tu nueva contraseña</li>
               </ol>
             </div>
-            <Button type="button" onClick={() => handleModeSwitch('login')} className="w-full h-11 rounded-full text-[14px]">
-              Volver al inicio de sesión
-            </Button>
+            {/* Mismo criterio que en el registro: lo útil es abrir el correo,
+                no volver a un login al que todavía no se puede entrar. La
+                flecha de arriba ya lleva de vuelta. */}
+            {webmail && (
+              <Button asChild hideArrow className="w-full h-11 rounded-full text-[14px]">
+                <a href={webmail.url} target="_blank" rel="noopener noreferrer" data-testid="abrir-correo">
+                  Abrir {webmail.nombre}
+                  <ArrowSquareOut className="ml-2 h-4 w-4" weight="bold" aria-hidden="true" />
+                </a>
+              </Button>
+            )}
             <p className="text-[13px] text-fg-subtle">
               ¿No recibiste el correo?{' '}
               <button

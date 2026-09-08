@@ -6,7 +6,7 @@
  * Esta función armaba `/onboarding/invitacion/<rawToken>`, una ruta que NO
  * EXISTE — `curl` al enlace generado daba 404 — y el propio archivo lo
  * declaraba «PLACEHOLDER» desde el 2026-07-14. Encima, la pantalla decía
- * «Guardá estos links ahora, no se vuelven a mostrar», así que quien invitaba
+ * «Guarda estos links ahora, no se vuelven a mostrar», así que quien invitaba
  * a su equipo durante el registro repartía enlaces muertos y no podía
  * regenerarlos. Ninguna invitación hecha en el alta se podía aceptar.
  *

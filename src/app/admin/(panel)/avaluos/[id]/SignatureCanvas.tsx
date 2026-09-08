@@ -113,7 +113,7 @@ export function SignatureCanvas({
           'w-full max-w-[480px] rounded border border-bg-border bg-white touch-none ' +
           (disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-crosshair')
         }
-        aria-label="Panel de firma — dibujá tu firma con el mouse o el dedo"
+        aria-label="Panel de firma — dibuja tu firma con el mouse o el dedo"
       />
       <div className="flex items-center justify-between mt-2 max-w-[480px]">
         <span className="text-xs text-fg-muted">

@@ -29,7 +29,11 @@ describe('las versiones legales no se separan de lo publicado', () => {
   })
 
   it('la versión de los términos es la que muestra /terminos', () => {
-    expect(leer('src/app/terminos/page.tsx')).toContain(numero(VERSION_TERMINOS))
+    // El texto vive en `TerminosContenido` desde el 2026-09-07 (la página y el
+    // cajón del asistente lo comparten); la página sólo lo monta.
+    expect(leer('src/components/legal/TerminosContenido.tsx')).toContain(
+      numero(VERSION_TERMINOS),
+    )
   })
 
   it('nadie vuelve a clavar una versión a mano en el portal del inquilino', () => {

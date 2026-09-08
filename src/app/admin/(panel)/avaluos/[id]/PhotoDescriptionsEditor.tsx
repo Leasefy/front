@@ -81,14 +81,14 @@ export function PhotoDescriptionsEditor({ id, photos }: { id: string; photos: Ph
         const rejection = asRejection(err.body)
         if (rejection) {
           setViolations(Object.fromEntries(rejection.violations.map((v) => [v.key, v])))
-          setError('Algunas descripciones no cumplen la Ley 1673. Corregí las marcadas y volvé a guardar.')
+          setError('Algunas descripciones no cumplen la Ley 1673. Corrige las marcadas y vuelve a guardar.')
         } else {
           setError('Descripciones rechazadas por el validador.')
         }
       } else if (err instanceof ApiError && err.status === 409) {
         setError('Este avalúo ya no está en revisión — las descripciones quedaron congeladas al firmar.')
       } else if (err instanceof ApiError && err.status === 403) {
-        setError('El servicio de avalúos rechazó la edición (403). Refrescá la sesión e intentá de nuevo.')
+        setError('El servicio de avalúos rechazó la edición (403). Refresca la sesión e intenta de nuevo.')
       } else {
         setError(err instanceof ApiError ? err.message : 'Error de red al guardar.')
       }

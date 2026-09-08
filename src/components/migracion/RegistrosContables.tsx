@@ -151,7 +151,7 @@ export function RegistrosContables({
             <div className="flex min-w-0 items-start gap-2">
               <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
               <p className="text-sm text-fg">
-                No pudimos leer lo que ya está cargado. Reintentá antes de
+                No pudimos leer lo que ya está cargado. Reintenta antes de
                 registrar nada: sin esa lista podrías cargar dos veces la misma
                 apertura.
               </p>
@@ -241,7 +241,7 @@ export function RegistrosContables({
         </section>
       ) : cuentas.length === 0 ? null : (
         // La tercera pata del if: lectura caída y sin cuentas del último
-        // éxito. No sabemos si hay plan — ni «andá al paso 4» ni un selector
+        // éxito. No sabemos si hay plan — ni «ve al paso 4» ni un selector
         // de cuentas vacío; queda el cartel de arriba con su Reintentar.
         <>
           <div className="space-y-3">

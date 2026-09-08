@@ -67,8 +67,8 @@ export interface Inquilino {
   arriendos: ArriendoDeInquilino[];
 }
 
-/** Los cuatro tipos de `PropietarioDocumentType` en el back. No hay otros. */
-export type TipoDeDocumento = 'CC' | 'CE' | 'NIT' | 'PASSPORT';
+/** Los cinco tipos de `PropietarioDocumentType` en el back. No hay otros. */
+export type TipoDeDocumento = 'CC' | 'CE' | 'TI' | 'NIT' | 'PASSPORT';
 
 /**
  * Lo que se manda para crear UNO.

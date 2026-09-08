@@ -4,7 +4,7 @@
  * use-acuerdos-generales.ts — los acuerdos que el agente puede cerrar SOLO.
  *
  * Un acuerdo puntual se arma para una persona. El general es la regla: «si el
- * deudor cabe en estas condiciones, tomalo y no me preguntes».
+ * deudor cabe en estas condiciones, tómalo y no me preguntes».
  *
  * Ojo con el vecino: `use-agency-policy` NO es esto. Esa es la política —el
  * TECHO— que recorta todo acuerdo con Math.min antes de que el agente ofrezca

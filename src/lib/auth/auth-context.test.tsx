@@ -119,6 +119,13 @@ async function renderProviderAndEmitInitialSession() {
     await Promise.resolve()
     await Promise.resolve()
   })
+  // El chequeo de MFA (y con él, soltar el loader en INITIAL_SESSION) corre en
+  // un `setTimeout(0)`, después de que el callback devolvió y auth-js soltó su
+  // lock — ver `alSoltarElLock` en auth-context.tsx. Un tick de macrotarea.
+  await act(async () => {
+    if (vi.isFakeTimers()) await vi.advanceTimersByTimeAsync(0)
+    else await new Promise((resolve) => setTimeout(resolve, 0))
+  })
 }
 
 beforeEach(() => {

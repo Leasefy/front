@@ -163,7 +163,7 @@ describe('filterAgencyNav — fail-closed while permissions load', () => {
   });
 })
 
-describe('filterAgencyNav — el agente no contestó ≠ no tenés permiso', () => {
+describe('filterAgencyNav — el agente no contestó ≠ no tienes permiso', () => {
   // `cobranza` y `cotizador` fallan cerrado a propósito. Distinguimos las dos
   // razones por las que `canAccess` devuelve false: «el agente dijo que no»
   // (se oculta) y «no pudimos preguntar» (se muestra, y la pantalla explica).

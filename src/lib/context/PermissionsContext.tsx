@@ -31,7 +31,7 @@ interface PermissionsContextValue {
   isLoading: boolean;
   /**
    * Tri-estado. Mientras sea `resolviendo`, un `canAccess(...)` en false
-   * significa «todavía no sé», NO «no tenés permiso»: hay que esperar, no
+   * significa «todavía no sé», NO «no tienes permiso»: hay que esperar, no
    * negar. `sin-verificar` es «el agente no contestó»: tampoco se niega, se
    * dice que no pudimos verificar y se ofrece reintentar.
    */

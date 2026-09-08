@@ -214,7 +214,7 @@ export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEdit
               <label className="text-sm font-medium text-fg">Ciudad *</label>
               <Select value={form.city || undefined} onValueChange={(v) => update('city', v)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccioná una ciudad" />
+                  <SelectValue placeholder="Selecciona una ciudad" />
                 </SelectTrigger>
                 <SelectContent>
                   {COLOMBIAN_CITIES.map((c) => (

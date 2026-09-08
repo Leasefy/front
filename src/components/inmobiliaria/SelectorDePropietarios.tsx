@@ -3,7 +3,7 @@
 /**
  * SelectorDePropietarios — elegir UNO O VARIOS dueños para un inmueble.
  *
- * Nico (2026-09-03): «te pedí que se pudiera seleccionar más de un
+ * Nico (2026-09-03): «te pide que se pudiera seleccionar más de un
  * propietario para un inmueble, y que hicieras esto más grande porque ahí es
  * súper dificultoso poder seleccionar». El `PropietarioSelector` del wizard es
  * de UNO (tocar otro reemplaza) y escondía la opción de copropietarios detrás

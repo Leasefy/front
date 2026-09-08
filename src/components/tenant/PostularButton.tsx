@@ -314,8 +314,8 @@ const COPY: Record<MotivoBloqueo, { title: string; desc: string; cta: string; hr
    * Quien YA tiene cuenta entra por el enlace secundario del diálogo.
    */
   sin_sesion: {
-    title: '¿Ya tenés cuenta en Leasefy?',
-    desc: 'Si ya te aprobamos alguna vez, entrá y seguís desde donde ibas — no hay que estudiarte de nuevo. Si es tu primera vez, empezá por saber hasta cuánto te respaldan.',
+    title: '¿Ya tienes cuenta en Leasefy?',
+    desc: 'Si ya te aprobamos alguna vez, entra y sigues desde donde ibas — no hay que estudiarte de nuevo. Si es tu primera vez, empieza por saber hasta cuánto te respaldan.',
     cta: 'Es mi primera vez',
     href: '/aprobacion',
   },

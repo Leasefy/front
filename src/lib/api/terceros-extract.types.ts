@@ -15,7 +15,7 @@
 /** Pista opcional de qué es el PRIMER documento; el modelo detecta el resto. */
 export type TerceroDocKind = 'cedula' | 'rut';
 
-export type TerceroDocTipo = 'CC' | 'CE' | 'NIT' | 'PASSPORT';
+export type TerceroDocTipo = 'CC' | 'CE' | 'TI' | 'NIT' | 'PASSPORT';
 
 export type TerceroImageMediaType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif';
 

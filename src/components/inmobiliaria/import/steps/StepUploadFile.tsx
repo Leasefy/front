@@ -37,7 +37,7 @@ import type { ImportStepProps } from '../ImportWizard';
  *
  * `.ods`, `.fods`, `.txt` y `.tsv` se rechazaban aunque SheetJS los lee (ida y
  * vuelta verificada). Peor: los mensajes mandaban a la persona a convertir el
- * archivo a mano —«abrilo en LibreOffice y guardalo como .xlsx», «renombralo a
+ * archivo a mano —«ábrelo en LibreOffice y guárdalo como .xlsx», «renombralo a
  * .csv»— para hacer un trabajo que el parser ya hacía.
  */
 const SUPPORTED_EXTENSIONS = ['csv', 'tsv', 'txt', 'xlsx', 'xls', 'ods', 'fods'];

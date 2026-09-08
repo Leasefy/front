@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Users,
   Wallet,
+  ArrowsClockwise,
 } from '@phosphor-icons/react';
 
 /**
@@ -52,6 +53,7 @@ export type SeccionId =
   | 'permisos'
   | 'medios-de-pago'
   | 'integraciones'
+  | 'migracion'
   | 'notificaciones'
   | 'preferencias'
   | 'seguridad'
@@ -141,6 +143,15 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     labelKey: 'inmobiliaria.config.tabs.mediosDePago',
     descKey: 'inmobiliaria.config.tabs.mediosDePagoDesc',
     icon: Wallet,
+    gate: { tipo: 'admin' },
+  },
+  {
+    id: 'migracion',
+    grupo: 'inmobiliaria',
+    slug: 'migracion',
+    labelKey: 'inmobiliaria.config.tabs.migracion',
+    descKey: 'inmobiliaria.config.tabs.migracionDesc',
+    icon: ArrowsClockwise,
     gate: { tipo: 'admin' },
   },
   {

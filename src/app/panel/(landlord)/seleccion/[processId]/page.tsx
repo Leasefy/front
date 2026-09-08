@@ -27,7 +27,7 @@ export default function ComparacionPage() {
   if (unavailable || !comparacion) {
     return (
       <PortalPlaceholder
-        title="Compará y elegí"
+        title="Compará y elige"
         subtitle="Los postulados asegurables de tu inmueble, lado a lado."
         icon={UsersThree}
         emptyDescription="Acá vas a comparar los postulados asegurables y elegir con un clic. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."

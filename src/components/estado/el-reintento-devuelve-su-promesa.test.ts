@@ -78,7 +78,7 @@ describe('el botón de reintentar espera a lo que disparó', () => {
       infractores,
       'Estos reintentos descartan su promesa con `void`, así que el botón ' +
         'nunca refleja lo que está pasando y deja pasar el doble clic. ' +
-        'Pasá la función pelada: onReintentar={refetch}.',
+        'Pasa la función pelada: onReintentar={refetch}.',
     ).toEqual([])
   })
 })

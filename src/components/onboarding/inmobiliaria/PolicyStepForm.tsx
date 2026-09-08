@@ -59,7 +59,7 @@ export function PolicyStepForm({ isSubmitting, onSubmit, submitError }: PolicySt
   return (
     <form noValidate onSubmit={submit} className="space-y-5" data-testid="policy-step-form">
       <p className="text-body-sm text-fg-muted">
-        Este es un primer ajuste, opcional, de tu política de cobranza. El resto lo configurás
+        Este es un primer ajuste, opcional, de tu política de cobranza. El resto lo configuras
         después en el panel de tu agencia.
       </p>
 

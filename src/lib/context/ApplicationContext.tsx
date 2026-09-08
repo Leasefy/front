@@ -491,7 +491,7 @@ export function ApplicationProvider({
     // so we block the submit instead of sending a versionless true (backend 400).
     if (authorizeVerification && !authorizationVersion) {
       setSubmissionError(
-        'No pudimos cargar el texto de autorización de datos. Recargá la página e intentá de nuevo.',
+        'No pudimos cargar el texto de autorización de datos. Recarga la página e intenta de nuevo.',
       );
       return;
     }
@@ -518,7 +518,7 @@ export function ApplicationProvider({
       );
       if (hasStaleSlot) {
         setSubmissionError(
-          'Algunos documentos se desconectaron al recargar la página. Volvé al paso de documentos y adjuntalos de nuevo.',
+          'Algunos documentos se desconectaron al recargar la página. Vuelve al paso de documentos y adjuntalos de nuevo.',
         );
         return;
       }
@@ -710,7 +710,7 @@ export function ApplicationProvider({
       // reintento automático.
       if (err instanceof ApiError && err.code === 'IDENTIDAD_NO_COINCIDE') {
         setSubmissionError(
-          'Tu postulación debe presentarse con la identidad de tu estudio de arrendamiento vigente. Recargá la página para traer tus datos actualizados e intentá de nuevo.',
+          'Tu postulación debe presentarse con la identidad de tu estudio de arrendamiento vigente. Recarga la página para traer tus datos actualizados e intenta de nuevo.',
         );
       } else if (err instanceof ApiError && err.code === 'PROPIEDAD_EN_VENTA') {
         // contract.md T-0038 §3.3 (WU-2) — hits both POST /applications

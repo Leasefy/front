@@ -64,14 +64,21 @@ async function clickSubmit() {
 }
 
 describe('<TermsStepForm>', () => {
-  it('renders only the terms checkbox and a link to /terminos in a new tab — no file/identity fields', () => {
+  it('renders only the terms checkbox and a button that opens the terms in a drawer — no new tab, no file/identity fields', async () => {
     render()
 
     expect(byTestId('terms-accept')).toBeTruthy()
-    const link = container.querySelector('a[href="/terminos"]') as HTMLAnchorElement
-    expect(link).toBeTruthy()
-    expect(link.getAttribute('target')).toBe('_blank')
-    expect(link.textContent).toContain('términos y condiciones')
+    // Nada de otra pestaña: leer los términos no saca a la persona del
+    // asistente (Nico, 2026-09-07). El texto se abre en un cajón.
+    expect(container.querySelector('a[href="/terminos"]')).toBeNull()
+    const abrir = byTestId('abrir-terminos') as HTMLButtonElement
+    expect(abrir.textContent).toContain('términos y condiciones')
+    await act(async () => {
+      abrir.click()
+    })
+    expect(document.querySelector('[data-testid="terminos-en-cajon"]')).toBeTruthy()
+    // Abrir el cajón no marca la casilla (el botón vive dentro del label).
+    expect((byTestId('terms-accept') as HTMLElement).getAttribute('aria-checked')).not.toBe('true')
 
     // The old habeas-data upload fields must be gone from this step.
     expect(container.querySelector('[data-testid="habeas-data-file-input"]')).toBeFalsy()

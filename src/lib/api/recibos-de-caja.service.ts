@@ -14,7 +14,7 @@
  * 🔴 `invalidar('cobros')`: la ruta de estos endpoints es `recibos-de-caja`, así
  * que el aviso automático del cliente (`invalidar(recursoDe(path))`) despierta a
  * un recurso que nadie escucha. Lo que de verdad cambió es el cobro — y con él
- * la cartera y las dispersiones, por `TAMBIEN_TOCA`. Sin esta línea, emitís un
+ * la cartera y las dispersiones, por `TAMBIEN_TOCA`. Sin esta línea, emites un
  * recibo y la tabla de cobros sigue mostrando el saldo viejo.
  */
 

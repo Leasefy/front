@@ -335,7 +335,7 @@ describe('con búsqueda', () => {
     escribir('zzzz')
 
     expect(texto()).toContain('Sin resultados para “zzzz”')
-    expect(texto()).toContain('Probá con el código, el nombre o el documento.')
+    expect(texto()).toContain('Prueba con el código, el nombre o el documento.')
   })
 
   it('mientras carga no dice «sin resultados»', () => {

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Plan y facturación DE LEASEFY (no las facturas que emitís vos: eso es el
+ * Plan y facturación DE LEASEFY (no las facturas que emites tú: eso es el
  * módulo Facturación del menú).
  *
  * El plan, el precio y los límites salen de la suscripción real de la agencia

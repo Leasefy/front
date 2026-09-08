@@ -205,7 +205,7 @@ function PipelineContent() {
         description:
           error instanceof Error
             ? error.message
-            : 'La tarjeta volvió a su etapa anterior. Probá de nuevo.',
+            : 'La tarjeta volvió a su etapa anterior. Prueba de nuevo.',
       });
       // Relanzar: el tablero y el cajón NO deben cantar éxito.
       throw error;

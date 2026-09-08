@@ -217,7 +217,7 @@ describe('NuevoInquilinoDrawer', () => {
     crearMock.mockRejectedValue(
       new ApiError(
         409,
-        'Ya tenés a Carla Mesa con el documento 1020304050. Buscalo en la lista y hacele el contrato desde ahí.',
+        'Ya tienes a Carla Mesa con el documento 1020304050. Búscalo en la lista y hacele el contrato desde ahí.',
         'INQUILINO_YA_EXISTE',
       ),
     );

@@ -411,7 +411,7 @@ export default function DeudoresListClient() {
               {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
             </p>
             <p className="text-xs text-fg-muted max-w-sm">
-              Ningún caso cumple con los filtros puestos. Quitá alguno para ver
+              Ningún caso cumple con los filtros puestos. Quita alguno para ver
               el resto de la cartera.
             </p>
             <Button variant="outline" size="sm" hideArrow className="mt-2" onClick={clearFilters}>

@@ -9,7 +9,7 @@ import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholde
 
 /**
  * Elegir inquilino (F2) — lista de procesos. Loading→Spinner; portal no cableado→"Próximamente";
- * con agencyId pero sin procesos → estado legítimo "no tenés procesos"; con procesos → lista.
+ * con agencyId pero sin procesos → estado legítimo "no tienes procesos"; con procesos → lista.
  */
 export default function SeleccionPage() {
   const { procesos, isLoading, unavailable } = useOwnerProcesos();
@@ -26,7 +26,7 @@ export default function SeleccionPage() {
     return (
       <PortalPlaceholder
         title="Elegir inquilino"
-        subtitle="Compará los postulados asegurables y elegí vos quién vive en tu inmueble."
+        subtitle="Compará los postulados asegurables y elige tú quién vive en tu inmueble."
         icon={UsersThree}
         emptyDescription="Vas a poder comparar lado a lado los postulados asegurables de tu inmueble y elegir con un clic —tu elección se auto-valida. Se activa cuando tu inmobiliaria habilite el Portal del Propietario."
       />
@@ -38,13 +38,13 @@ export default function SeleccionPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <PageHeader
           title="Elegir inquilino"
-          subtitle="Compará los postulados asegurables y elegí vos quién vive en tu inmueble."
+          subtitle="Compará los postulados asegurables y elige tú quién vive en tu inmueble."
         />
 
         {procesos.length === 0 ? (
           <Card className="p-6 mt-8">
             <p className="text-sm text-fg-muted">
-              No tenés procesos de elección abiertos. Cuando tu inmobiliaria reúna postulados
+              No tienes procesos de elección abiertos. Cuando tu inmobiliaria reúna postulados
               asegurables para uno de tus inmuebles, aparecerá acá para que elijas.
             </p>
           </Card>

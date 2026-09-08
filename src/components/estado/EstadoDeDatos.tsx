@@ -15,7 +15,7 @@
  *   4. hay datos → los hijos
  *
  * Excepción deliberada — el refresco de fondo: si YA se mostró contenido, un
- * fallo posterior no debe borrarlo. Pasá `conservarContenido` para eso.
+ * fallo posterior no debe borrarlo. Pasa `conservarContenido` para eso.
  */
 
 import type { ReactNode } from 'react'

@@ -78,7 +78,7 @@ describe('modales del panel — una sola cabecera', () => {
       expect(
         /<(?:Responsive)?DialogHeader[\s>]/.test(fuente),
         'Este modal no usa <DialogHeader>, así que se queda sin el título de ' +
-          '16px, sin el filete y sin la ✕ del chip: se va a ver distinto al resto. Si de verdad no corresponde, agregalo a ' +
+          '16px, sin el filete y sin la ✕ del chip: se va a ver distinto al resto. Si de verdad no corresponde, agrégalo a ' +
           'SIN_CABECERA_JUSTIFICADO con el motivo.',
       ).toBe(true)
     },

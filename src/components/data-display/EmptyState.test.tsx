@@ -41,7 +41,7 @@ describe('EmptyState', () => {
         React.createElement(EmptyState, {
           icon: FakeIcon,
           title: 'No hay deudores aún',
-          description: 'Importá una cartera CSV o agregá manualmente.',
+          description: 'Importa una cartera CSV o agrega manualmente.',
         }),
       )
     })
@@ -51,7 +51,7 @@ describe('EmptyState', () => {
     expect(status?.getAttribute('aria-label')).toBe('No hay deudores aún')
 
     expect(container.textContent ?? '').toContain('No hay deudores aún')
-    expect(container.textContent ?? '').toContain('Importá una cartera CSV o agregá manualmente.')
+    expect(container.textContent ?? '').toContain('Importa una cartera CSV o agrega manualmente.')
 
     expect(container.querySelector('[data-testid="fake-icon"]')).not.toBeNull()
   })
@@ -80,7 +80,7 @@ describe('EmptyState', () => {
         React.createElement(EmptyState, {
           icon: FakeIcon,
           title: 'Sin suscriptores',
-          description: 'Agregá emails.',
+          description: 'Agrega emails.',
           primaryCta: { label: 'Agregar suscriptor', onClick: handle },
         }),
       )

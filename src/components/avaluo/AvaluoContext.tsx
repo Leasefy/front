@@ -196,7 +196,7 @@ export function AvaluoProvider({ children, initialEmail }: AvaluoProviderProps) 
       const friendlyMessage =
         err instanceof Error && err.message
           ? err.message
-          : 'No pudimos enviar tu solicitud. Intentá de nuevo.'
+          : 'No pudimos enviar tu solicitud. Intenta de nuevo.'
 
       setSubmitError(friendlyMessage)
     } finally {

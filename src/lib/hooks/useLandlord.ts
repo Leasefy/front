@@ -262,7 +262,7 @@ export function useLandlordProperty(propertyId: string | null | undefined) {
   const [error, setError] = useState<string | null>(null);
   // El error entero además del mensaje. Sin el status no se puede distinguir
   // «esta propiedad no existe» —donde reintentar es una promesa falsa— de «no
-  // se pudo traer»: la pantalla decía «no existe o no tenés acceso» para las
+  // se pudo traer»: la pantalla decía «no existe o no tienes acceso» para las
   // dos, acusando de un problema de permisos a un 500.
   const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
   const [intento, setIntento] = useState(0);

@@ -337,7 +337,7 @@ export function DocumentUpload({
           Prompt a re-attach so the user knows which document to add again. */}
       {isStale && state === 'idle' && !displayError && (
         <p className="text-xs text-warning">
-          Volvé a adjuntar “{value?.fileName}”: se desconectó al recargar la página.
+          Vuelve a adjuntar “{value?.fileName}”: se desconectó al recargar la página.
         </p>
       )}
 

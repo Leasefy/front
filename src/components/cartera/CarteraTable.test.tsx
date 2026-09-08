@@ -1,5 +1,5 @@
 /**
- * La tabla de cartera. Nico (2026-09-02): «esto sabés que debe tener una tabla
+ * La tabla de cartera. Nico (2026-09-02): «esto sabes que debe tener una tabla
  * como las que ya usamos, y hasta para los empty state, y cuando tenga datos
  * que tenga paginación».
  *

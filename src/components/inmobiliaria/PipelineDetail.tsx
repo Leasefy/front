@@ -608,7 +608,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
         <MotivoDialog
           abierto={pidiendoMotivo}
           titulo={`¿Marcar a ${item.candidateName} como perdido?`}
-          descripcion="Sale del embudo. Contá por qué se cayó: es lo que se lee después para saber qué falló."
+          descripcion="Sale del embudo. Cuenta por qué se cayó: es lo que se lee después para saber qué falló."
           etiquetaConfirmar="Marcar como perdido"
           enviando={isMarking}
           onCerrar={() => setPidiendoMotivo(false)}

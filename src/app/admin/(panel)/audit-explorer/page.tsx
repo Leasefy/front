@@ -185,7 +185,7 @@ export default function AuditExplorerPage() {
         isLoading={result.isLoading}
         error={result.error}
         emptyTitle="Sin resultados"
-        emptyHint="Ajustá los filtros."
+        emptyHint="Ajusta los filtros."
       />
 
       {result.data && (

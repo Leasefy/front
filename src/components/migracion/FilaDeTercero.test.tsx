@@ -264,6 +264,28 @@ describe('FilaDeTercero', () => {
     expect(boton('No traer esta fila')?.disabled).toBe(true);
   });
 
+  it('«No traer esta fila» gira y apaga las acciones hasta que el back contesta (Nico, 2026-09-07)', async () => {
+    let resolver: (r: { ok: boolean; mensaje: string | null }) => void = () => undefined;
+    const pendiente = new Promise<{ ok: boolean; mensaje: string | null }>((r) => {
+      resolver = r;
+    });
+    const onDescartar = vi.fn().mockReturnValue(pendiente);
+    await pintar({ onDescartar });
+
+    await click(boton('No traer esta fila')!);
+    expect(onDescartar).toHaveBeenCalledTimes(1);
+    const descartando = boton('No traer esta fila')!;
+    expect(descartando.disabled).toBe(true);
+    // `isLoading` del Button: gira y no recibe clics.
+    expect(descartando.className).toContain('opacity-70');
+    expect(boton('Guardar')?.disabled).toBe(true);
+
+    await act(async () => {
+      resolver({ ok: true, mensaje: null });
+    });
+    expect(boton('No traer esta fila')?.disabled).toBe(false);
+  });
+
   describe('cuando la acción falla', () => {
     const escribirDocumento = async (valor: string) => {
       const input = container.querySelector<HTMLInputElement>(

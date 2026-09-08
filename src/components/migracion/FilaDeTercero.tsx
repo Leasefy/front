@@ -202,6 +202,14 @@ export function FilaDeTercero({
    * manera más rápida de que alguien abandone una migración de 600 filas.
    */
   const [errorDeFila, setErrorDeFila] = useState<string | null>(null);
+  /*
+   * Qué acción de la fila está esperando al back. «No traer esta fila» y
+   * «Usar la ficha existente» no tenían estado de carga: se apretaba, no
+   * pasaba nada visible, y se volvía a apretar (Nico, 2026-09-07). Mientras
+   * una acción corre, las tres quedan apagadas y la que corre gira.
+   */
+  const [ocupadaEn, setOcupadaEn] = useState<'vincular' | 'descartar' | null>(null);
+  const ocupada = guardando || ocupadaEn !== null;
 
   const guardar = async () => {
     setErrorDeFila(null);
@@ -214,14 +222,24 @@ export function FilaDeTercero({
 
   const vincular = async () => {
     setErrorDeFila(null);
-    const r = await onVincular();
-    if (!r.ok && r.mensaje) setErrorDeFila(`${r.mensaje} Reintenta.`);
+    setOcupadaEn('vincular');
+    try {
+      const r = await onVincular();
+      if (!r.ok && r.mensaje) setErrorDeFila(`${r.mensaje} Reintenta.`);
+    } finally {
+      setOcupadaEn(null);
+    }
   };
 
   const descartar = async () => {
     setErrorDeFila(null);
-    const r = await onDescartar();
-    if (!r.ok && r.mensaje) setErrorDeFila(`${r.mensaje} Reintenta.`);
+    setOcupadaEn('descartar');
+    try {
+      const r = await onDescartar();
+      if (!r.ok && r.mensaje) setErrorDeFila(`${r.mensaje} Reintenta.`);
+    } finally {
+      setOcupadaEn(null);
+    }
   };
 
   const valorDe = (campo: string): string =>
@@ -285,7 +303,13 @@ export function FilaDeTercero({
             edita desde Propietarios. Si son dos personas distintas, corrige el documento acá abajo.
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" hideArrow disabled={guardando} onClick={() => void vincular()}>
+            <Button
+              size="sm"
+              hideArrow
+              disabled={ocupada}
+              isLoading={ocupadaEn === 'vincular'}
+              onClick={() => void vincular()}
+            >
               <LinkIcon className="mr-1.5 h-4 w-4" />
               Es la misma persona
             </Button>
@@ -319,7 +343,7 @@ export function FilaDeTercero({
         <Button
           size="sm"
           hideArrow
-          disabled={!hayCambios || guardando}
+          disabled={!hayCambios || ocupada}
           isLoading={guardando}
           onClick={() => void guardar()}
         >
@@ -344,7 +368,8 @@ export function FilaDeTercero({
           size="sm"
           variant="outline"
           hideArrow
-          disabled={guardando}
+          disabled={ocupada}
+          isLoading={ocupadaEn === 'descartar'}
           className="text-danger hover:bg-danger-soft hover:text-danger"
           onClick={() => void descartar()}
         >

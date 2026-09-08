@@ -1318,12 +1318,12 @@
         "languageDesc": "Platform language",
         "langChangedEs": "Idioma cambiado a Español",
         "langChangedEn": "Language changed to English",
-        "panelTour": "AI panel tour",
-        "panelTourDesc": "Guided 3-step walkthrough when entering the panel",
+        "panelTour": "Panel tour",
+        "panelTourDesc": "Guided walkthrough of the panel the first time you come in",
         "panelTourEnabled": "Tour enabled — it will show on your next visit",
         "panelTourDismissed": "Tour silenced on this device",
         "panelTourSyncing": "Syncing preference…",
-        "relaunchTour": "Start tour now",
+        "relaunchTour": "See the tour now",
         "relaunchTourDesc": "See the walkthrough again without changing your preference",
         "relaunchTourStarted": "Tour started — follow the hints on screen"
       },
@@ -9428,19 +9428,80 @@
       "saltar": "Skip",
       "atras": "Back",
       "siguiente": "Next",
-      "terminar": "Done",
+      "empezar": "Start",
+      "entendido": "Got it",
       "paso": "Step {{n}} of {{total}}",
-      "buscador": {
-        "titulo": "Search anything from here",
-        "cuerpo": "A property, a contract, a person or a panel screen. ⌘K opens it too, without leaving the keyboard."
+      "progreso": "Tour progress",
+      "cerrar": "Close the tour",
+      "bienvenida": {
+        "saludo": "Hi, {{nombre}}.",
+        "titulo": "This is the {{inmobiliaria}} panel",
+        "tuInmobiliaria": "your agency",
+        "cuerpo": "I'll show you {{total}} stops in the order the work happens: list a property, screen candidates, sign, collect and pay out. It takes a minute, and you can skip it at any point."
       },
-      "piloto": {
-        "titulo": "You decide how much the AI does alone",
-        "cuerpo": "Shadow watches and proposes. Copilot leaves each action ready for your approval. Automatic acts within the law and your limits. The mode changes here, for the whole fleet."
+      "cierre": {
+        "titulo": "That's it",
+        "punto1": "You start at «New listing» and follow the property through to the contract.",
+        "punto2": "Collections and Payouts are the two sides of the money: what comes in and what goes out.",
+        "punto3": "Search and chat take you anywhere without walking the menu.",
+        "volver": "You can see it again from Settings → Preferences."
       },
-      "agentes": {
-        "titulo": "Each agent lives inside its module",
-        "cuerpo": "There is no separate «AI» section: collections live in Payments, insurability in Applications. You go where the work is, not where the technology is."
+      "pasos": {
+        "buscador": {
+          "titulo": "Search anything from here",
+          "cuerpo": "A property, a contract, a person or a panel screen.",
+          "dato": "⌘K opens it too, without leaving the keyboard."
+        },
+        "nuevo": {
+          "titulo": "Everything new starts here",
+          "cuerpo": "«New listing» is the agreement with the owner to manage their property: you pick the owner, enter the property and the rent, and set the commission.",
+          "dato": "The caret next to it opens the other starting points: appraisal, insurability and contract."
+        },
+        "inmuebles": {
+          "titulo": "Properties is your portfolio",
+          "cuerpo": "Each property with its record, photos, owner and history. Listings and viewings come out of here.",
+          "dato": "Appraisals lives inside, to request a market value for one."
+        },
+        "postulaciones": {
+          "titulo": "Who wants to rent",
+          "cuerpo": "Incoming applications, with matching against your inventory, the candidate's documents and the insurability request to the carriers.",
+          "dato": "The number next to the name says how many are waiting on you."
+        },
+        "contratos": {
+          "titulo": "The contract is the account",
+          "cuerpo": "Rent, line items, guarantee and signature. Each contract produces the month's charges, and shows how they are being paid.",
+          "dato": "Renewals lives inside: what expires and the proposal to the tenant."
+        },
+        "cobros": {
+          "titulo": "The money coming in",
+          "cuerpo": "Receipts is what already arrived, Receivables what is missing, and Collections the agent that chases arrears within what the law allows.",
+          "dato": "Bank statement reconciliation matches payments against these charges."
+        },
+        "pagos": {
+          "titulo": "The money going out",
+          "cuerpo": "Settlements build each owner's net — rent minus commission and deductions — and Disbursements execute it against the bank.",
+          "dato": "Supplier invoices are deducted in the property's settlement."
+        },
+        "reportes": {
+          "titulo": "How the business is doing",
+          "cuerpo": "The month's summary, profitability per property and how the AI agents performed.",
+          "dato": "Every table in the panel exports to Excel or PDF."
+        },
+        "piloto": {
+          "titulo": "You decide how much the AI does alone",
+          "cuerpo": "Shadow watches and proposes. Copilot leaves each action ready for your approval. Automatic acts within the law and your limits.",
+          "dato": "This pill changes the mode for the whole fleet, or you can tune it agent by agent."
+        },
+        "chat": {
+          "titulo": "Ask the panel in plain words",
+          "cuerpo": "It answers with your agency's data: who owes, which properties are empty, how a contract is going.",
+          "dato": "Conversations are saved so you can pick them up again."
+        },
+        "perfil": {
+          "titulo": "Your account and settings",
+          "cuerpo": "Your profile, the agency configuration and the team with their permissions.",
+          "dato": "This same menu is where you replay this tour."
+        }
       }
     }
   },

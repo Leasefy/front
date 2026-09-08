@@ -1358,12 +1358,12 @@
         "languageDesc": "Idioma de la plataforma",
         "langChangedEs": "Idioma cambiado a Español",
         "langChangedEn": "Language changed to English",
-        "panelTour": "Tour del panel IA",
-        "panelTourDesc": "Recorrido guiado de 3 pasos al ingresar al panel",
+        "panelTour": "Recorrido del panel",
+        "panelTourDesc": "Recorrido guiado por el panel la primera vez que entras",
         "panelTourEnabled": "Tour activado — se mostrará en tu próximo ingreso",
         "panelTourDismissed": "Tour silenciado en este dispositivo",
         "panelTourSyncing": "Sincronizando preferencia…",
-        "relaunchTour": "Iniciar tour ahora",
+        "relaunchTour": "Ver el recorrido ahora",
         "relaunchTourDesc": "Vuelve a ver el recorrido sin cambiar tu preferencia",
         "relaunchTourStarted": "Tour iniciado — sigue las pistas en pantalla"
       },
@@ -9465,22 +9465,83 @@
       }
     },
     "tour": {
-      "saltar": "Saltar",
+      "saltar": "Omitir",
       "atras": "Atrás",
       "siguiente": "Siguiente",
-      "terminar": "Listo",
+      "empezar": "Empezar",
+      "entendido": "Entendido",
       "paso": "Paso {{n}} de {{total}}",
-      "buscador": {
-        "titulo": "Busca cualquier cosa desde acá",
-        "cuerpo": "Un inmueble, un contrato, una persona o una pantalla del panel. Se abre también con ⌘K, sin soltar el teclado."
+      "progreso": "Avance del recorrido",
+      "cerrar": "Cerrar el recorrido",
+      "bienvenida": {
+        "saludo": "Hola, {{nombre}}.",
+        "titulo": "Este es el panel de {{inmobiliaria}}",
+        "tuInmobiliaria": "tu inmobiliaria",
+        "cuerpo": "Te muestro {{total}} paradas en el orden en que se trabaja: captar un inmueble, estudiar candidatos, firmar, cobrar y pagar. Toma un minuto y puedes omitirlo cuando quieras."
       },
-      "piloto": {
-        "titulo": "Tú decides cuánto hace la IA sola",
-        "cuerpo": "Sombra mira y propone. Copiloto te deja cada acción lista para tu visto bueno. Automático actúa dentro de la ley y de tus topes. El modo lo cambias acá, y vale para toda la flota."
+      "cierre": {
+        "titulo": "Eso es todo",
+        "punto1": "Empiezas por «Nueva consignación» y sigues el inmueble hasta el contrato.",
+        "punto2": "Cobros y Pagos son las dos caras de la plata: lo que entra y lo que sale.",
+        "punto3": "El buscador y el chat te llevan a cualquier parte sin recorrer el menú.",
+        "volver": "Puedes volver a verlo desde Configuración → Preferencias."
       },
-      "agentes": {
-        "titulo": "Cada agente vive dentro de su módulo",
-        "cuerpo": "No hay una sección aparte de «IA»: la cobranza está en Cobros, la asegurabilidad en Postulaciones. Entras donde está el trabajo, no donde está la tecnología."
+      "pasos": {
+        "buscador": {
+          "titulo": "Busca cualquier cosa desde acá",
+          "cuerpo": "Un inmueble, un contrato, una persona o una pantalla del panel.",
+          "dato": "También se abre con ⌘K, sin soltar el teclado."
+        },
+        "nuevo": {
+          "titulo": "Acá empieza todo lo nuevo",
+          "cuerpo": "«Nueva consignación» es el acuerdo con el propietario para administrar su inmueble: eliges al propietario, cargas el inmueble y el canon, y defines la comisión.",
+          "dato": "El chevron de al lado abre los otros arranques: avalúo, asegurabilidad y contrato."
+        },
+        "inmuebles": {
+          "titulo": "Inmuebles es tu portafolio",
+          "cuerpo": "Cada inmueble con su ficha, sus fotos, su propietario y su historial. De acá salen las publicaciones y las visitas.",
+          "dato": "Adentro está Avalúos, para pedir el valor comercial de uno."
+        },
+        "postulaciones": {
+          "titulo": "Quién quiere arrendar",
+          "cuerpo": "Las postulaciones que llegan, con el matching contra tu inventario, los soportes del candidato y la consulta de asegurabilidad a las aseguradoras.",
+          "dato": "El número al lado del nombre dice cuántas están esperando gestión."
+        },
+        "contratos": {
+          "titulo": "El contrato es la cuenta del negocio",
+          "cuerpo": "Canon, conceptos, garantía y firma. De cada contrato salen los cobros del mes, y ahí mismo se ve cómo va pagando.",
+          "dato": "Renovaciones vive adentro: los que vencen y la propuesta al inquilino."
+        },
+        "cobros": {
+          "titulo": "La plata que entra",
+          "cuerpo": "Recaudo es lo que ya entró, Cartera lo que falta, y Cobranza el agente que persigue la mora dentro de lo que permite la ley.",
+          "dato": "La conciliación del extracto del banco cruza los pagos con estos cobros."
+        },
+        "pagos": {
+          "titulo": "La plata que sale",
+          "cuerpo": "Liquidaciones arma el neto de cada propietario —canon menos comisión y descuentos— y Dispersiones lo ejecuta contra el banco.",
+          "dato": "Las facturas de proveedores se descuentan en la liquidación del inmueble."
+        },
+        "reportes": {
+          "titulo": "Cómo va el negocio",
+          "cuerpo": "El resumen con los números del mes, la rentabilidad por inmueble y el desempeño de los agentes de IA.",
+          "dato": "Cada tabla del panel se puede exportar a Excel o PDF."
+        },
+        "piloto": {
+          "titulo": "Tú decides cuánto hace la IA sola",
+          "cuerpo": "Sombra mira y propone. Copiloto te deja cada acción lista para tu visto bueno. Automático actúa dentro de la ley y de tus topes.",
+          "dato": "Desde esta píldora cambias el modo de toda la flota, o lo ajustas agente por agente."
+        },
+        "chat": {
+          "titulo": "Pregúntale al panel en palabras",
+          "cuerpo": "Responde con los datos de tu inmobiliaria: quién debe, qué inmuebles están vacíos, cómo va un contrato.",
+          "dato": "Las conversaciones quedan guardadas para retomarlas."
+        },
+        "perfil": {
+          "titulo": "Tu cuenta y los ajustes",
+          "cuerpo": "Tu perfil, la configuración de la inmobiliaria y el equipo con sus permisos.",
+          "dato": "Desde este mismo menú vuelves a ver este recorrido."
+        }
       }
     }
   },

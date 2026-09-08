@@ -52,3 +52,24 @@ describe('ubicarTarjeta', () => {
     expect(top).toBeGreaterThanOrEqual(8)
   })
 })
+
+describe('ubicarTarjeta en pantalla angosta', () => {
+  const CHICA = { width: 390, height: 780 }
+
+  it('manda la tarjeta abajo, a lo ancho', () => {
+    const { top, left, ancho } = ubicarTarjeta({ top: 60, left: 12, width: 300, height: 40 }, CHICA, 220)
+    expect(left).toBe(8)
+    expect(ancho).toBe(390 - 16)
+    expect(top).toBe(780 - 220 - 8)
+  })
+
+  it('nunca la empuja fuera por arriba aunque sea más alta que la ventana', () => {
+    const { top } = ubicarTarjeta({ top: 10, left: 10, width: 100, height: 20 }, { width: 360, height: 200 }, 400)
+    expect(top).toBeGreaterThanOrEqual(8)
+  })
+
+  it('en escritorio la tarjeta conserva su ancho fijo', () => {
+    const { ancho } = ubicarTarjeta({ top: 100, left: 400, width: 200, height: 40 }, VENTANA, 200)
+    expect(ancho).toBe(340)
+  })
+})

@@ -190,7 +190,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // «Inicio» y eso lo escondía: nadie busca un chat bajo ese nombre, y el
     // inicio ahora es el Piloto. Se llama por lo que es (Nico, 2026-08-31).
     // `exact` para que no quede resaltado en cada subruta.
-    { label: t('inmobiliaria.nav.chat'),         href: '/panel/inmobiliaria',              icon: ChatsCircle,   exact: true, module: null },
+    { label: t('inmobiliaria.nav.chat'),         href: '/panel/inmobiliaria',              icon: ChatsCircle,   exact: true, module: null, dataTourTarget: 'sidebar-chat' },
 
     // ── LOS MÓDULOS ── por ciclo de vida del contrato.
     //

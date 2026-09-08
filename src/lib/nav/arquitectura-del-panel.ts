@@ -153,7 +153,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
     modulos: [
       { key: 'pipeline', labelKey: 'inmobiliaria.nav.pipelineCorto', href: r('/pipeline'), icon: Kanban, module: 'pipeline', scope: 'comercial' },
       {
-        key: 'inmuebles', labelKey: 'inmobiliaria.nav.inmuebles', href: r('/inmuebles'), icon: Buildings, module: 'portafolio', scope: 'comercial',
+        key: 'inmuebles', labelKey: 'inmobiliaria.nav.inmuebles', href: r('/inmuebles'), icon: Buildings, module: 'portafolio', scope: 'comercial', dataTourTarget: 'sidebar-inmuebles',
         pantallas: [
           // Avalúos (7º agente): workspace de sólo lectura, proxied por el agente.
           // Gate `avaluos` con el fallback ABSENT = ALLOWED (agent-module-access.ts).
@@ -161,7 +161,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         ],
       },
       {
-        key: 'postulaciones', labelKey: 'inmobiliaria.nav.postulaciones', href: r('/postulaciones'), icon: ClipboardText, module: null, scope: 'comercial', ia: true,
+        key: 'postulaciones', labelKey: 'inmobiliaria.nav.postulaciones', href: r('/postulaciones'), icon: ClipboardText, module: null, scope: 'comercial', ia: true, dataTourTarget: 'sidebar-postulaciones',
         // El flujo del candidato, en el orden en que se recorre. Las tres son
         // pantallas completas: se entran desde acá porque nadie hace matching o
         // asegurabilidad en abstracto —siempre es para una postulación—.
@@ -183,7 +183,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       },
       {
         // 'contratos' es su propia AGENCY_MODULES key (todos los roles la tienen).
-        key: 'contratos', labelKey: 'inmobiliaria.nav.contratos', href: r('/contratos'), icon: FilePlus, module: 'contratos', scope: 'administracion',
+        key: 'contratos', labelKey: 'inmobiliaria.nav.contratos', href: r('/contratos'), icon: FilePlus, module: 'contratos', scope: 'administracion', dataTourTarget: 'sidebar-contratos',
         pantallas: [
           { labelKey: 'inmobiliaria.nav.renovaciones', href: r('/contratos/renovaciones'), icon: ArrowsClockwise, module: 'operaciones' },
           // Retención (el agente Laura: tablero, riesgo de salida y decisiones
@@ -223,7 +223,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
     labelKey: 'inmobiliaria.nav.secDinero',
     modulos: [
       {
-        key: 'cobros', labelKey: 'inmobiliaria.nav.cobros', href: r('/cobros'), icon: HandCoins, module: 'cobros', scope: 'finanzas',
+        key: 'cobros', labelKey: 'inmobiliaria.nav.cobros', href: r('/cobros'), icon: HandCoins, module: 'cobros', scope: 'finanzas', dataTourTarget: 'sidebar-cobros',
         // Las tres son pantallas completas, hermanas del listado de cobros:
         // Recaudo (lo que entró) · Cartera (lo que queda) · Cobranza (el agente).
         pantallas: [
@@ -237,7 +237,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         // es la Tesorería de hoy (el neto por propietario) y Dispersiones la
         // ejecución bancaria. Las facturas de proveedor (CxP) cuelgan de
         // Liquidaciones: hoy no tienen listado propio, y no se inventa uno.
-        key: 'pagos', labelKey: 'inmobiliaria.ai.nav.pagos', href: r('/pagos'), icon: CurrencyDollar, module: null, roles: CONTADOR_ROLES, scope: 'finanzas', ia: true, agente: 'pagos',
+        key: 'pagos', labelKey: 'inmobiliaria.ai.nav.pagos', href: r('/pagos'), icon: CurrencyDollar, module: null, roles: CONTADOR_ROLES, scope: 'finanzas', ia: true, agente: 'pagos', dataTourTarget: 'sidebar-pagos',
         pantallas: [
           { labelKey: 'inmobiliaria.nav.liquidaciones', href: r('/pagos/liquidaciones'), icon: Wallet, module: null, roles: CONTADOR_ROLES },
           { labelKey: 'inmobiliaria.nav.dispersiones', href: r('/pagos/dispersiones'), icon: PaperPlaneTilt, module: 'dispersiones' },
@@ -268,7 +268,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
     labelKey: null,
     modulos: [
       {
-        key: 'reportes', labelKey: 'inmobiliaria.nav.reportes', href: r('/reportes'), icon: ChartLine, module: 'reportes', scope: 'general',
+        key: 'reportes', labelKey: 'inmobiliaria.nav.reportes', href: r('/reportes'), icon: ChartLine, module: 'reportes', scope: 'general', dataTourTarget: 'sidebar-reportes',
         pantallas: [
           // El «Dashboard» de siempre: KPIs del negocio. Es lectura, no portada
           // —la portada es Inicio—, así que vive con los reportes.

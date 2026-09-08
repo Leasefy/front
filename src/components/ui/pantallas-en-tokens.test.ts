@@ -139,6 +139,11 @@ const COBERTURA: string[] = [
   'components/inmobiliaria/InmuebleSinMandatoCard.tsx',
   'components/inmobiliaria/inmueble/SubidaDeFotos.tsx',
   'components/inmobiliaria/inmueble/VisorDeFotos.tsx',
+  // — recorrido guiado del panel (2026-09-08) ————————————————
+  // El onboarding pasó de 3 burbujas a un recorrido con bienvenida, once
+  // paradas y cierre. Es lo PRIMERO que ve una inmobiliaria nueva: entra
+  // a la cobertura para que nadie le clave un negro ni un `<button>` a mano.
+  'components/tour/TourDelPanel.tsx',
   // — mensajes ————————————————————————————————————————————————
   'components/messages/MessagesWidget.tsx',
   'components/messages/NuevoMensajeDrawer.tsx',

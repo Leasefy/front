@@ -19,10 +19,6 @@
  *     —el mismo del Piloto— con los modos disponibles. Subir de autonomía pide
  *     confirmación en un `AlertDialog`; bajar es un clic, como en la píldora
  *     del encabezado. El resultado se avisa por el toast de la casa.
- *
- * El enum del modo sigue siendo `sombra` en el wire; solo cambió cómo se
- * *lee* — la etiqueta visible es "Manual" en ambos locales (`i18n/locales/*.json`,
- * NS `inmobiliaria.ai.workspace.autonomia.modo.sombra`), no "Sombra".
  */
 
 import { useState } from 'react'

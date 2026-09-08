@@ -132,6 +132,16 @@ describe('AutonomiaPanel — modo como chip de lectura', () => {
     expect(t323.textContent).toContain('T-323/2024')
   })
 
+  it('pinta lo que cambia HOY con el modo (efectoReal del micro) y lo omite si no viene', () => {
+    render({ data: { ...DATA, efectoReal: 'Prepara las opciones y las deja en la cola esperando tu visto bueno.' } })
+    expect(container.querySelector('[data-testid="autonomia-efecto-real"]')!.textContent).toContain(
+      'esperando tu visto bueno',
+    )
+
+    render({ data: DATA })
+    expect(container.querySelector('[data-testid="autonomia-efecto-real"]')).toBeNull()
+  })
+
   it('omits the T-323 callout when t323 is false', () => {
     render({ data: { ...DATA, t323: false } })
     expect(container.querySelector('[data-testid="autonomia-t323"]')).toBeNull()

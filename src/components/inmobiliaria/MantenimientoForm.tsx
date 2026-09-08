@@ -292,7 +292,9 @@ function TypeSelector({ selected, onSelect, t }: TypeSelectorProps) {
       </label>
       <RadioCardGroup
         className="grid grid-cols-2 gap-3"
-        value={selected || undefined}
+        /* Siempre una cadena: con `undefined` el grupo arranca sin control y
+           al elegir pasa a controlado, y Radix lo avisa en consola. */
+        value={selected}
         onValueChange={(v) => onSelect(v as MantenimientoType)}
       >
         {MANTENIMIENTO_TYPES.map((type) => (
@@ -332,7 +334,9 @@ function PrioritySelector({ selected, onSelect, t }: PrioritySelectorProps) {
           palabra por palabra (Nico, 2026-09-03). */}
       <RadioCardGroup
         className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-        value={selected || undefined}
+        /* Siempre una cadena: con `undefined` el grupo arranca sin control y
+           al elegir pasa a controlado, y Radix lo avisa en consola. */
+        value={selected}
         onValueChange={(v) => onSelect(v as MantenimientoPriority)}
       >
         {PRIORITY_OPTIONS.map((priority) => (

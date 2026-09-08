@@ -106,9 +106,13 @@ export function useAgentAutonomia(agente: AgenteId): UseAgentAutonomiaResult {
         const modoServidor = res.data.modo
         setData((cur) => (cur ? { ...cur, modo: modoServidor } : cur))
       }
+      // Lo que cambia con el modo lo cuenta el micro (`efectoReal`, `origen`):
+      // se relee para no dejar en pantalla el efecto del modo anterior
+      // (pasaba a Autónomo y seguía diciendo «el correo lo autorizas tú»).
+      void fetchData()
       return { ok: true }
     },
-    [agencyId, agente, data?.modo],
+    [agencyId, agente, data?.modo, fetchData],
   )
 
   return { data, isLoading, error, notAvailable, busy, setModo, refetch: fetchData }

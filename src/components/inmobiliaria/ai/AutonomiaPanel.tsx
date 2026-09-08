@@ -215,6 +215,15 @@ export function AutonomiaPanel({
         </p>
       )}
 
+      {/* Qué cambia HOY con este modo para ESTE agente: lo dice el micro,
+          que es quien gobierna la ejecución. Sin esta línea la pantalla
+          insinuaba que el modo era decorativo. */}
+      {data.efectoReal && (
+        <p className="text-xs text-fg rounded-lg border border-border bg-surface px-3 py-2" data-testid="autonomia-efecto-real">
+          {data.efectoReal}
+        </p>
+      )}
+
       {/* Read-only nota */}
       {data.nota && (
         <p className="text-xs text-fg-muted rounded-lg bg-surface-muted/40 px-3 py-2" data-testid="autonomia-nota">

@@ -807,6 +807,18 @@ function CuerpoDelCandidato({ candidate, onClose, onAction }: CuerpoDelCandidato
                     ))}
                   </div>
                 )}
+                {/* A dónde van las opciones: el agente las deja en su cola o
+                    las manda solo, según el modo de Matching. Sin esta línea
+                    el usuario cree que el correo ya salió. */}
+                {matchingResults.results.length > 0 && (
+                  <p className="text-xs text-fg-muted" data-testid="matching-a-donde-van">
+                    Si hay al menos un calce del 70 %, Matching le prepara las opciones al candidato: en copiloto quedan en{' '}
+                    <Link href="/panel/inmobiliaria/postulaciones/matching/cola" className="font-medium text-fg underline-offset-2 hover:underline">
+                      su cola
+                    </Link>{' '}
+                    para tu visto bueno; en autónomo salen solas por correo.
+                  </p>
+                )}
               </>
             )}
 

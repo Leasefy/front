@@ -200,14 +200,15 @@ export function PrimaDistributionChart({
 
   return (
     <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-      <BarChart data={chartData} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
+      {/* Margen de abajo para que la leyenda no se monte sobre «Rango de canon». */}
+      <BarChart data={chartData} margin={{ top: 8, right: 8, bottom: 28, left: 0 }}>
         <XAxis
           dataKey="canonRange"
           tick={{ fontSize: 10, fill: EJE }}
           label={{
             value: t('inmobiliaria.ai.cotizador.insights.charts.primaDistribution.xAxisLabel'),
             position: 'insideBottom',
-            offset: -4,
+            offset: -12,
             fontSize: 10,
             fill: EJE,
           }}
@@ -232,7 +233,7 @@ export function PrimaDistributionChart({
             return [`$${(n / 1000).toFixed(0)}K`]
           }}
         />
-        <Legend wrapperStyle={{ fontSize: 11 }} />
+        <Legend wrapperStyle={{ fontSize: 11, paddingTop: 16 }} />
         {carriers.map((carrier, idx) => {
           const ShapeComponent = makeRangeBar(carrier)
           return (

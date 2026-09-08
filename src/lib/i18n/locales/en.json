@@ -5733,7 +5733,10 @@
             "states": {
               "active": "Active",
               "deprecated": "Deprecated",
-              "under_review": "Under review"
+              "under_review": "Under review",
+              "unvalidated": "Unvalidated",
+              "validated": "Validated",
+              "drift_detected": "Changed at the source"
             },
             "empty": "No assumption data"
           },
@@ -7528,7 +7531,9 @@
             "creado": "Created",
             "match_sugerido": "Match suggested",
             "match_confirmado": "Match confirmed",
-            "match_rechazado": "Match rejected"
+            "match_rechazado": "Match rejected",
+            "caso_creado": "Case created",
+            "caso_decidido": "Decided"
           }
         },
         "accionSugerida": {
@@ -7587,7 +7592,7 @@
           "comun": {
             "colaTitle": "To review",
             "configTitle": "Settings & autonomy",
-            "configDesc": "What the agent can do on its own and what always requires your approval. Read-only for now: today nothing is applied without your sign-off.",
+            "configDesc": "What the agent can do on its own and what always requires your approval. Below the mode it says what really changes today for this agent.",
             "analiticaTitle": "Analytics",
             "enCola": "Pending",
             "pendientes": "Pending",
@@ -7679,8 +7684,8 @@
           "matching": {
             "eyebrow": "Agent · Matching",
             "salaTitulo": "Matching",
-            "salaDesc": "It matches the candidates validated by Screening with your vacant properties and shows you how well each one fits, so you review and decide.",
-            "colaDesc": "The matches between validated candidates and vacant properties, with their fit factors. You review them and decide.",
+            "salaDesc": "When a candidate loses the property they applied to (or when you ask from their file), it matches their profile with your available properties and leaves the compatible options for you to decide whether we send them.",
+            "colaDesc": "Candidates with compatible properties waiting for your decision. You review the fit and choose whether to send them the options or dismiss the case.",
             "casoColaLabel": "Suggested candidates",
             "crossPregunta": "Is this candidate reliable?",
             "crossDestino": "Candidate evaluation",
@@ -7688,33 +7693,35 @@
             "colaLabel": "Suggested candidates",
             "queEs": "the Matching overview",
             "sinTrabajo": {
-              "title": "Matching is not working your portfolio yet",
-              "desc": "Once it is switched on for your agency, you will see here the matches between validated candidates and vacant properties."
+              "title": "Matching has no cases in your portfolio yet",
+              "desc": "When a candidate loses a property, or when you ask for compatible ones from their file, you will see here the options it found and decide whether to send them."
             },
             "comoFunciona": {
               "title": "How does it work?",
               "step1": {
-                "title": "A candidate validated by Screening",
-                "desc": "Only candidates who already passed screening come in."
+                "title": "A candidate loses a property",
+                "desc": "They were rejected, someone else got the property, or you asked for compatible ones from their file."
               },
               "step2": {
-                "title": "The agent matches them with your vacant properties",
-                "desc": "It calculates how well they fit each one."
+                "title": "The agent matches them with your available properties",
+                "desc": "It compares income, job tenure, budget and area with every property for rent."
               },
               "step3": {
-                "title": "You review the match and decide",
-                "desc": "With the fit factors in plain sight."
+                "title": "You decide whether to send the options",
+                "desc": "In copilot they wait in the queue for your go-ahead; in autonomous they go out by email on their own (at most one a day per candidate)."
               }
             },
             "estado": {
-              "detectado": "New match",
-              "sugerido": "Match proposed",
+              "detectado": "New case",
+              "sugerido": "Waiting for your decision",
               "en_revision": "In your review",
-              "aprobado": "Contact approved",
-              "ejecutando": "Reaching out",
-              "resuelto": "Connected",
+              "aprobado": "Sending approved",
+              "ejecutando": "Sending",
+              "resuelto": "Options sent",
               "rechazado": "Dismissed",
-              "fallo": "Issue detected"
+              "fallo": "Sending failed",
+              "caso_creado": "Case created",
+              "caso_decidido": "Decided"
             }
           },
           "pagos": {

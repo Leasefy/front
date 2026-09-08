@@ -100,8 +100,10 @@ export function ApprovalRateMonthlyChart({
   const chartData = pivotData(data)
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
-      <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
+    <ResponsiveContainer width="100%" height={300}>
+      {/* El margen de abajo le da sitio al rótulo del eje y a la leyenda: con 8 px
+          la leyenda se montaba sobre «Mes». */}
+      <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 28, left: 0 }}>
         <XAxis
           dataKey="month"
           tick={{ fontSize: 10, fill: EJE }}
@@ -109,7 +111,7 @@ export function ApprovalRateMonthlyChart({
           label={{
             value: t('inmobiliaria.ai.cotizador.insights.charts.approvalRateMonthly.xAxisLabel'),
             position: 'insideBottom',
-            offset: -4,
+            offset: -12,
             fontSize: 10,
             fill: EJE,
           }}
@@ -129,14 +131,18 @@ export function ApprovalRateMonthlyChart({
         <Tooltip
           formatter={(value: unknown) => [`${value}%`]}
         />
-        <Legend wrapperStyle={{ fontSize: 11 }} />
+        <Legend wrapperStyle={{ fontSize: 11, paddingTop: 16 }} />
+        {/* Rectas y con punto: la curva «monotone» dibujaba lomas entre dos
+            meses (0 % → 100 % → 0 %) que ningún dato respalda, y sin punto un
+            mes suelto no se veía. Un mes sin consulta queda como hueco. */}
         {carriers.map((carrier, idx) => (
           <Line
             key={carrier}
-            type="monotone"
+            type="linear"
             dataKey={carrier}
             stroke={CARRIER_COLORS[idx % CARRIER_COLORS.length]}
-            dot={false}
+            dot={{ r: 3 }}
+            connectNulls={false}
             strokeWidth={2}
           />
         ))}

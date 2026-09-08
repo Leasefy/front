@@ -7,15 +7,17 @@
  * actividad reciente», que se lee como «el agente trabaja y no encontró
  * nada». Estas pruebas fijan que:
  *
- * 1. Sin overview (404) y con overview sin KPIs se dice «todavía no está
- *    trabajando tu cartera», sin pipeline ni feed en cero y sin un botón que
+ * 1. Sin overview (404) y con overview sin KPIs se dice «todavía no tiene
+ *    casos en tu cartera», sin pipeline ni feed en cero y sin un botón que
  *    no haga nada.
- * 2. Con KPIs reales se pintan los números: el cableado sigue vivo para el
- *    día que el micro persista agencyId.
- * 3. «¿Cómo funciona?» tiene tres pasos y ninguno promete un contacto que el
- *    producto no hace.
- * 4. El namespace `pages.matching` tiene la misma forma en es y en, y las
- *    claves que prometían el contacto ya no existen.
+ * 2. Con KPIs reales se pintan los números (el micro los saca de
+ *    `matching_cases`).
+ * 3. «¿Cómo funciona?» tiene tres pasos y dice la verdad: el correo al
+ *    candidato lo gobierna el modo (copiloto = cola; autónomo = sale solo).
+ *    No vende «candidatos validados por el Estudio»: el agente entra cuando
+ *    un candidato se queda sin inmueble o cuando se lo piden desde su ficha.
+ * 4. El namespace `pages.matching` tiene la misma forma en es y en, y sin
+ *    cuarto paso.
  */
 
 import * as React from 'react'
@@ -106,14 +108,14 @@ afterEach(async () => {
 })
 
 describe('Resumen de Matching — el vacío honesto', () => {
-  it('sin overview (404): dice que todavía no trabaja tu cartera, sin pipeline, feed ni botón', async () => {
+  it('sin overview (404): dice que todavía no tiene casos, sin pipeline, feed ni botón', async () => {
     overviewMock.mockReturnValue({ ...overviewBase })
     const pantalla = await montar()
 
     const vacio = pantalla.querySelector('[data-testid="empty-state"]')
     expect(vacio).not.toBeNull()
-    expect(vacio!.textContent).toContain('Matching todavía no está trabajando tu cartera')
-    expect(vacio!.textContent).toContain('Cuando se encienda para tu inmobiliaria')
+    expect(vacio!.textContent).toContain('Matching todavía no tiene casos en tu cartera')
+    expect(vacio!.textContent).toContain('Cuando un candidato se quede sin inmueble')
     expect(vacio!.querySelector('a, button')).toBeNull()
 
     expect(pantalla.querySelector('[data-testid="matching-resumen-datos"]')).toBeNull()
@@ -136,7 +138,7 @@ describe('Resumen de Matching — el vacío honesto', () => {
     const pantalla = await montar()
 
     expect(pantalla.querySelector('[data-testid="empty-state"]')?.textContent).toContain(
-      'Matching todavía no está trabajando tu cartera',
+      'Matching todavía no tiene casos en tu cartera',
     )
     expect(pantalla.querySelector('[data-testid="matching-resumen-datos"]')).toBeNull()
   })
@@ -172,14 +174,16 @@ describe('Resumen de Matching — el vacío honesto', () => {
     )
   })
 
-  it('«¿Cómo funciona?» tiene tres pasos y no promete el contacto', async () => {
+  it('«¿Cómo funciona?» tiene tres pasos y cuenta que el envío lo gobierna el modo', async () => {
     overviewMock.mockReturnValue({ ...overviewBase })
     const pantalla = await montar()
 
     const pasos = pantalla.querySelectorAll('[data-testid="matching-como-funciona"] li')
     expect(pasos.length).toBe(3)
-    expect(pasos[2].textContent).toContain('Revisas la coincidencia y decides')
-    expect(pantalla.textContent).not.toMatch(/contacto|se envía|nada se hace sin ti/i)
+    expect(pasos[0].textContent).toContain('Un candidato se queda sin inmueble')
+    expect(pasos[2].textContent).toContain('Decides si se le mandan las opciones')
+    expect(pasos[2].textContent).toMatch(/copiloto.*cola.*autónomo/i)
+    expect(pantalla.textContent).not.toMatch(/validado por el Estudio|nada se hace sin ti/i)
   })
 })
 

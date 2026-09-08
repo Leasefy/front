@@ -55,7 +55,7 @@ function InboxRow({ item, tf }: { item: WorkItem; tf: (k: string, fb: string) =>
   return (
     <Link
       href={detailHref(item)}
-      className="group flex items-start justify-between gap-3 rounded-lg border border-border bg-card p-3.5 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring"
+      className="group flex items-start justify-between gap-3 rounded-lg border border-border bg-surface p-3.5 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring"
       data-testid={`cotizador-inbox-row-${item.id}`}
     >
       <div className="min-w-0 flex-1 space-y-1.5">
@@ -66,10 +66,10 @@ function InboxRow({ item, tf }: { item: WorkItem; tf: (k: string, fb: string) =>
           >
             {severidadLabel(t, item.severidad)}
           </MonoLabel>
-          <span className="inline-flex items-center text-[11px] text-muted-foreground px-2 py-0.5 rounded-full ring-1 ring-border bg-muted">
+          <span className="inline-flex items-center text-[11px] text-fg-muted px-2 py-0.5 rounded-full ring-1 ring-border bg-surface-muted">
             {estadoLabel(t, item.estado, 'cotizador')}
           </span>
-          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
+          <span className="inline-flex items-center gap-1 text-[11px] text-fg-muted tabular-nums">
             <Clock className="w-3 h-3" aria-hidden="true" />
             {relativeTime(item.createdAt, t)}
           </span>
@@ -152,7 +152,7 @@ export function CotizadorPriorityInbox() {
           ))}
         </div>
       ) : error ? (
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="rounded-lg border border-border bg-surface overflow-hidden">
           <FalloDeCarga
             error={errorCrudo ?? error}
             queEs="la cola de consultas"
@@ -161,7 +161,7 @@ export function CotizadorPriorityInbox() {
           />
         </div>
       ) : sorted.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="rounded-lg border border-border bg-surface overflow-hidden">
           <SinDatos
             queSon="consultas"
             icono={Tray}

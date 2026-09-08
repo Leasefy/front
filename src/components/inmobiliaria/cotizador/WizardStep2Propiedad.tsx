@@ -40,13 +40,13 @@ export function WizardStep2Propiedad({
 
   return (
     <div className="space-y-5">
-      <h2 className="text-base font-semibold text-foreground">
+      <h2 className="text-base font-semibold text-fg">
         {t('inmobiliaria.ai.cotizador.nueva.step2.heading')}
       </h2>
 
       {/* Canon mensual */}
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-foreground">
+        <label className="text-sm font-medium text-fg">
           {t('inmobiliaria.ai.cotizador.nueva.step2.canonLabel')}
         </label>
         <Input
@@ -72,7 +72,7 @@ export function WizardStep2Propiedad({
 
       {/* Tipo de inmueble — selector excluyente (UI-DS-CONTRACT §3) */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">
+        <label className="text-sm font-medium text-fg">
           {t('inmobiliaria.ai.cotizador.nueva.step2.tipoLabel')}
         </label>
         {/* value vacío → ningún segmento activo (preserva la validación canProceed) */}
@@ -93,7 +93,7 @@ export function WizardStep2Propiedad({
 
       {/* Codeudores */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">
+        <label className="text-sm font-medium text-fg">
           {t('inmobiliaria.ai.cotizador.nueva.step2.codeudoresLabel')}
         </label>
         <div className="flex items-center gap-3">
@@ -107,7 +107,7 @@ export function WizardStep2Propiedad({
           >
             <Minus size={16} />
           </Button>
-          <span className="min-w-[2rem] text-center text-base font-semibold text-foreground tabular-nums">
+          <span className="min-w-[2rem] text-center text-base font-semibold text-fg tabular-nums">
             {value.codeudoresCount}
           </span>
           <Button

@@ -22,6 +22,8 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { toast } from '@/components/ui/toast'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { SinDatos } from '@/components/estado/SinDatos'
 import {
   Clock,
   CheckCircle,
@@ -125,7 +127,7 @@ export const FLAG_META: Record<WorkItemFlag, { icon: typeof WarningCircle; cls: 
   },
   en_espera: {
     icon: Hourglass,
-    cls: 'bg-muted text-muted-foreground ring-border',
+    cls: 'bg-surface-muted text-fg-muted ring-border',
   },
 }
 
@@ -164,7 +166,14 @@ export const SEVERIDAD_TONE: Record<Severidad, SemanticTone> = {
 export interface ColaHumanaProps {
   items: WorkItem[]
   isLoading?: boolean
-  error?: string | null
+  /**
+   * El error ENTERO, no su mensaje: `FalloDeCarga` lo clasifica (404, 401,
+   * red, servidor) y decide solo si reintentar tiene sentido. Un `string`
+   * sigue sirviendo (los hooks viejos guardan `err.message`).
+   */
+  error?: unknown
+  /** Volver a pedir la cola cuando el fallo es de los que pueden cambiar. */
+  onReintentar?: () => void | Promise<unknown>
   /**
    * Agent id used to resolve per-agent estado overrides
    * (`inmobiliaria.ai.workspace.pages.{agente}.estado.*`) in all estado chips.
@@ -230,7 +239,7 @@ function WorkItemCard({
 
   return (
     <div
-      className="rounded-lg border border-border bg-card p-3 space-y-2"
+      className="rounded-lg border border-border bg-surface p-3 space-y-2"
       data-testid={`work-item-${item.id}`}
     >
       {/* Header: severidad + estado + flags + relative time */}
@@ -242,7 +251,7 @@ function WorkItemCard({
           >
             {severidadLabel(t, item.severidad)}
           </StatusBadge>
-          <span className="inline-flex items-center text-[11px] text-muted-foreground px-2 py-0.5 rounded-full ring-1 ring-border bg-muted">
+          <span className="inline-flex items-center text-[11px] text-fg-muted px-2 py-0.5 rounded-full ring-1 ring-border bg-surface-muted">
             {estadoLabel(t, item.estado, agente)}
           </span>
           {item.flags.map((flag) => {
@@ -261,7 +270,7 @@ function WorkItemCard({
             )
           })}
         </div>
-        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
+        <span className="inline-flex items-center gap-1 text-[11px] text-fg-muted tabular-nums">
           <Clock className="w-3 h-3" aria-hidden="true" />
           {relativeTime(item.createdAt, t)}
         </span>
@@ -278,32 +287,32 @@ function WorkItemCard({
         className="w-full text-left space-y-1.5 focus:outline-none focus:ring-2 focus:ring-primary rounded-md disabled:cursor-default"
         aria-label={t(`${WORKSPACE_NS}.acciones.abrir`, { titulo: item.titulo })}
       >
-        <p className="text-sm font-semibold text-foreground flex items-center gap-1">
+        <p className="text-sm font-semibold text-fg flex items-center gap-1">
           {item.titulo}
-          {onOpen && <CaretRight className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />}
+          {onOpen && <CaretRight className="w-3.5 h-3.5 text-fg-muted" aria-hidden="true" />}
         </p>
 
         {/* Suggested action — the heart of "how the agent's suggestion surfaces" */}
-        <div className="rounded-lg bg-muted/50 px-2.5 py-2 space-y-1">
+        <div className="rounded-lg bg-surface-muted/50 px-2.5 py-2 space-y-1">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-medium text-foreground">{item.accionSugerida.label}</p>
+            <p className="text-xs font-medium text-fg">{item.accionSugerida.label}</p>
             {typeof item.accionSugerida.confianza === 'number' && (
-              <span className="text-[11px] font-mono text-muted-foreground tabular-nums shrink-0">
+              <span className="text-[11px] font-mono text-fg-muted tabular-nums shrink-0">
                 {t(`${WORKSPACE_NS}.acciones.confianza`, {
                   pct: Math.round(item.accionSugerida.confianza * 100),
                 })}
               </span>
             )}
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-xs text-fg-muted leading-relaxed">
             {item.accionSugerida.razon}
           </p>
           {item.accionSugerida.evidencia && item.accionSugerida.evidencia.length > 0 && (
             <dl className="flex flex-wrap gap-x-4 gap-y-0.5 pt-0.5">
               {item.accionSugerida.evidencia.map((e, i) => (
                 <div key={`${e.label}-${i}`} className="flex items-center gap-1">
-                  <dt className="text-[11px] text-muted-foreground">{e.label}:</dt>
-                  <dd className="text-[11px] font-medium text-foreground tabular-nums">{e.value}</dd>
+                  <dt className="text-[11px] text-fg-muted">{e.label}:</dt>
+                  <dd className="text-[11px] font-medium text-fg tabular-nums">{e.value}</dd>
                 </div>
               ))}
             </dl>
@@ -314,7 +323,7 @@ function WorkItemCard({
       {/* Reason input (revealed by a requiresReason action) */}
       {pendingReasonAction && (
         <div className="space-y-1.5 rounded-lg border border-border p-2">
-          <label className="text-[11px] text-muted-foreground" htmlFor={`reason-${item.id}`}>
+          <label className="text-[11px] text-fg-muted" htmlFor={`reason-${item.id}`}>
             {t(`${WORKSPACE_NS}.acciones.motivoPara`, {
               accion: pendingReasonAction.label.toLowerCase(),
             })}
@@ -386,6 +395,7 @@ export function ColaHumana({
   items,
   isLoading,
   error,
+  onReintentar,
   agente,
   onAction,
   onOpen,
@@ -412,64 +422,63 @@ export function ColaHumana({
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(sorted, { resetKey: agente })
 
+  // Los cuatro estados, en el orden de la casa: cargando → falló → vacío →
+  // hay datos. La carga y el fallo van ANTES que el vacío para que la cola
+  // nunca diga «no hay casos» mientras todavía no sabe.
   if (isLoading) {
+    // Esqueleto con la forma de lo que llega: tarjetas apiladas, no una
+    // grilla. Un esqueleto que no respeta la forma salta peor que ninguno.
     return (
-      <div className="space-y-2" data-testid="cola-humana-loading">
+      <div
+        className="space-y-2"
+        role="status"
+        aria-label="Cargando"
+        data-testid="cola-humana-loading"
+      >
         {[0, 1, 2].map((i) => (
-          <div key={i} className="h-24 rounded-lg border border-border bg-muted/40 animate-pulse" />
+          <div
+            key={i}
+            className="h-24 rounded-lg border border-border bg-surface-muted/40 animate-pulse"
+            aria-hidden="true"
+          />
         ))}
+        <span className="sr-only">Cargando…</span>
       </div>
     )
   }
 
   if (error) {
+    // El cartel de la casa decide qué decir y si ofrecer reintentar: un 403 no
+    // se anuncia igual que una red caída, y sobre un 404 no se reintenta.
     return (
-      <div
-        className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
-        data-testid="cola-humana-error"
-      >
-        {t(`${WORKSPACE_NS}.cola.error`, { error })}
+      <div data-testid="cola-humana-error">
+        <FalloDeCarga error={error} queEs="la cola" onReintentar={onReintentar} />
       </div>
     )
   }
 
   if (sorted.length === 0) {
-    // Empty state limpio y MONOCROMO: chip neutro + ícono mudo + título +
-    // hint, y a lo sumo un CTA pill outlined (estilo ElevenLabs).
-    const emptyTitleText = emptyTitle ?? t(`${WORKSPACE_NS}.cola.vacia`)
+    // El vacío de la casa: círculo gris, título, una línea y, si la pantalla
+    // lo pide, una salida. `SinDatos` pinta la salida como el botón primario
+    // del DS —pill, foco cobalto— en vez del `<Link>` con clases a mano.
     return (
       <div
-        role="status"
-        aria-label={emptyTitleText}
-        className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
+        className="rounded-lg border border-border bg-surface overflow-hidden"
         data-testid="cola-humana-empty"
       >
-        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-surface-muted">
-          <CheckCircle
-            weight="duotone"
-            className="h-6 w-6 text-fg-subtle"
-            aria-hidden="true"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <p className="text-[15px] font-semibold text-fg">
-            {emptyTitleText}
-          </p>
-          <p className="text-sm text-fg-subtle max-w-sm leading-relaxed mx-auto">
-            {emptyHint ?? t(`${WORKSPACE_NS}.cola.vaciaHint`)}
-          </p>
-        </div>
-        {emptyAction && (
-          <div className="mt-1">
-            <Link
-              href={emptyAction.href}
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-surface text-fg border border-border hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-all duration-150"
-              data-testid="cola-humana-empty-action"
-            >
-              {emptyAction.label}
-            </Link>
-          </div>
-        )}
+        <SinDatos
+          queSon="casos"
+          icono={CheckCircle}
+          titulo={emptyTitle ?? t(`${WORKSPACE_NS}.cola.vacia`)}
+          descripcion={emptyHint ?? t(`${WORKSPACE_NS}.cola.vaciaHint`)}
+          accion={
+            emptyAction ? (
+              <Button asChild variant="outline" data-testid="cola-humana-empty-action">
+                <Link href={emptyAction.href}>{emptyAction.label}</Link>
+              </Button>
+            ) : undefined
+          }
+        />
       </div>
     )
   }

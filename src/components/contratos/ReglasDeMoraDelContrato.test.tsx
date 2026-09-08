@@ -21,6 +21,11 @@ vi.mock('next/link', () => ({
   default: ({ href, children, ...rest }: { href: string; children?: React.ReactNode }) =>
     React.createElement('a', { href, ...rest }, children),
 }))
+// La ficha del contrato desde la que se mira: los enlaces a las reglas de la
+// inmobiliaria la llevan en `?volver=` para poder devolver a la persona acá.
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/panel/inmobiliaria/contratos/c-1',
+}))
 
 import { reglasDeMoraApi } from '@/lib/api/reglas-de-mora.service'
 import type { ReglaDeMoraDelContrato } from '@/lib/api/reglas-de-mora.types'
@@ -171,7 +176,21 @@ describe('<ReglasDeMoraDelContrato>', () => {
 
     const vacio = container.querySelector('[data-testid="reglas-vacio"]')!
     expect(vacio.textContent).toContain('todavía no tiene reglas de mora')
-    expect(vacio.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/cobros/reglas-de-mora')
+    expect(vacio.querySelector('a')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/cobros/reglas-de-mora?volver=%2Fpanel%2Finmobiliaria%2Fcontratos%2Fc-1',
+    )
+  })
+
+  it('el botón de la cabecera lleva a las reglas de la inmobiliaria y dice de dónde se viene', async () => {
+    delContrato.mockResolvedValue([fila()])
+    await render()
+
+    const enlace = Array.from(container.querySelectorAll('a')).find((a) =>
+      a.textContent?.includes('Ver las de la inmobiliaria'),
+    )
+    expect(enlace?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/cobros/reglas-de-mora?volver=%2Fpanel%2Finmobiliaria%2Fcontratos%2Fc-1',
+    )
   })
 
   it('un fallo de carga NO se pinta como «sin reglas»: se dice y se reintenta', async () => {

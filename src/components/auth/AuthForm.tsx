@@ -522,6 +522,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     }
   };
 
+  // Con el `finally` de antes el botón volvía a quedar activo apenas Supabase
+  // contestaba, mientras el efecto de arriba todavía resolvía la sesión y
+  // redirigía: se veía «Iniciar sesión» otra vez y la gente volvía a apretar
+  // (Nico, 2026-09-08). Si salió bien, el spinner se queda hasta que la
+  // pantalla cambia; `isLoading` sólo se suelta cuando hay error que mostrar.
   const handleLoginSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setError(null);
@@ -543,12 +548,14 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
           if (message) sessionStorage.removeItem(AUTH_BOOTSTRAP_ERROR_KEY);
         } catch {}
         setError(message || 'Error al iniciar sesión. Intenta de nuevo.');
+        setIsLoading(false);
         return;
       }
       onSuccess?.();
       // El useEffect de arriba se encargará de la redirección al detectar el cambio de auth
     } catch (err: unknown) {
       didAuthenticateInForm.current = false;
+      setIsLoading(false);
       const msg = err instanceof Error ? err.message : '';
       if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
         setError('Correo o contraseña incorrectos.');
@@ -563,8 +570,6 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       } else {
         setError('Error al iniciar sesión. Intenta de nuevo.');
       }
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -604,14 +609,20 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       redirectDeConfirmacion.current = emailRedirectTo;
       const { requiresConfirmation } = await signUpWithEmail(correo, data.password, emailRedirectTo, explicitRole ?? undefined);
       if (requiresConfirmation) {
+        // El flujo termina en pantalla («Revisa tu correo»), no en un redirect:
+        // acá sí se suelta el spinner.
         setResetEmail(correo);
         setReenvio({ estado: 'listo', espera: 0, error: null });
         setRegisterStep('confirm-email');
+        setIsLoading(false);
       } else {
-        // Auto-confirmed — go straight to onboarding (or the deep-link role's onboarding)
+        // Auto-confirmed — go straight to onboarding (or the deep-link role's
+        // onboarding). «Creando cuenta…» se queda hasta que cambia la pantalla,
+        // igual que al entrar.
         router.push(onboardingDest());
       }
     } catch (err: unknown) {
+      setIsLoading(false);
       const msg = err instanceof Error ? err.message : '';
       if (msg.includes('already registered') || msg.includes('User already registered')) {
         setError('Este correo ya está registrado. Inicia sesión en su lugar.');
@@ -620,8 +631,6 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       } else {
         setError('Error al crear la cuenta. Intenta de nuevo.');
       }
-    } finally {
-      setIsLoading(false);
     }
   };
 

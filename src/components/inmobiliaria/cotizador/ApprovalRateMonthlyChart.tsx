@@ -9,20 +9,26 @@ import {
   Tooltip,
   Legend,
 } from 'recharts'
+import { ChartLineUp } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
-import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
+import { SinDatos } from '@/components/estado/SinDatos'
 import type { ApprovalRateMonthlyRow } from '@/lib/hooks/cotizador/use-insights'
 
 // ---------------------------------------------------------------------------
-// 5-color carrier palette (D-35-05 / UI-SPEC)
+// Paleta por aseguradora — tokens del tema, no hex. Cobalto para la primera
+// y los tonos de apoyo de `--chart-*` (definidos en globals.css con su
+// contraparte oscura) para las siguientes; recharts pinta atributos SVG y el
+// navegador resuelve `var(--…)` en ellos.
 // ---------------------------------------------------------------------------
 const CARRIER_COLORS = [
-  '#1A40FF', // cobalt (primary)
-  '#4A6BFF', // cobalt ramp 2
-  '#7B95FF', // cobalt ramp 3
-  '#ADBEFF', // cobalt ramp 4
-  '#D6DFFF', // cobalt ramp 5
+  'hsl(var(--primary))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
 ]
+
+const EJE = 'var(--fg-muted)'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -68,22 +74,25 @@ export function ApprovalRateMonthlyChart({
   // Loading skeleton
   if (isLoading && data === null) {
     return (
-      <div className="h-[280px] space-y-3 animate-pulse">
+      <div className="h-[280px] space-y-3 animate-pulse" role="status" aria-label="Cargando">
         <div className="h-4 w-32 bg-surface-muted rounded" />
         <div className="h-[240px] bg-surface-muted rounded-lg" />
+        <span className="sr-only">Cargando…</span>
       </div>
     )
   }
 
-  // Empty state
+  // El vacío de la casa, sin «Fase 35»: la persona no tiene por qué leer el
+  // nombre interno de una etapa del roadmap.
   if (!data || data.length === 0) {
     return (
-      <div className="h-[280px] flex items-center justify-center">
-        <NoDataYetBadge
-          reason={t('inmobiliaria.ai.cotizador.insights.approvalRateMonthlyTitle')}
-          phase={35}
-        />
-      </div>
+      <SinDatos
+        queSon="aprobaciones"
+        icono={ChartLineUp}
+        titulo="Todavía no hay tasa de aprobación"
+        descripcion="Cuando las aseguradoras respondan consultas de varios meses, la tasa por aseguradora se grafica acá."
+        className="py-10"
+      />
     )
   }
 
@@ -95,24 +104,26 @@ export function ApprovalRateMonthlyChart({
       <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
         <XAxis
           dataKey="month"
-          tick={{ fontSize: 10 }}
+          tick={{ fontSize: 10, fill: EJE }}
           tickFormatter={formatMonth}
           label={{
             value: t('inmobiliaria.ai.cotizador.insights.charts.approvalRateMonthly.xAxisLabel'),
             position: 'insideBottom',
             offset: -4,
             fontSize: 10,
+            fill: EJE,
           }}
         />
         <YAxis
           domain={[0, 100]}
           tickFormatter={(v: number) => `${v}%`}
-          tick={{ fontSize: 10 }}
+          tick={{ fontSize: 10, fill: EJE }}
           label={{
             value: t('inmobiliaria.ai.cotizador.insights.charts.approvalRateMonthly.yAxisLabel'),
             angle: -90,
             position: 'insideLeft',
             fontSize: 10,
+            fill: EJE,
           }}
         />
         <Tooltip

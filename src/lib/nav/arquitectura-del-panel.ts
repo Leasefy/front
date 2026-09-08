@@ -19,7 +19,7 @@ import {
   ChartLine,
   Scales,
   GitMerge,
-  ShieldCheck,
+  // ShieldCheck,  ← reactivar junto con «Evaluación de candidatos» (postulaciones/estudio)
   ListChecks,
   Umbrella,
   ArrowsClockwise,
@@ -162,12 +162,20 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       },
       {
         key: 'postulaciones', labelKey: 'inmobiliaria.nav.postulaciones', href: r('/postulaciones'), icon: ClipboardText, module: null, scope: 'comercial', ia: true,
-        // El flujo del candidato, en el orden en que se recorre. Las cuatro son
+        // El flujo del candidato, en el orden en que se recorre. Las tres son
         // pantallas completas: se entran desde acá porque nadie hace matching o
         // asegurabilidad en abstracto —siempre es para una postulación—.
         pantallas: [
           { labelKey: 'inmobiliaria.ai.nav.matching', href: r('/postulaciones/matching'), icon: GitMerge, module: 'matching', ia: true, agente: 'matching' },
-          { labelKey: 'inmobiliaria.ai.nav.estudio', href: r('/postulaciones/estudio'), icon: ShieldCheck, module: 'estudio', ia: true, agente: 'estudio' },
+          // Evaluación de candidatos (el agente `estudio`) está OCULTA por ahora
+          // (Nico, 2026-09-08: «esta sección de evaluación de candidatos ocúltala
+          // por ahora»). Iba acá, entre Matching y Soportes. Las páginas siguen
+          // vivas bajo `postulaciones/estudio/` y su `layout.tsx` devuelve a
+          // Postulaciones a quien entre por la URL. Para reactivarla: descomentar
+          // esta línea y el import de `ShieldCheck`, el workspace en
+          // `agentWorkspaceNav.ts`, la fila del buscador (`navigation-source.ts`)
+          // y borrar ese layout (el test exige las dos puertas).
+          // { labelKey: 'inmobiliaria.ai.nav.estudio', href: r('/postulaciones/estudio'), icon: ShieldCheck, module: 'estudio', ia: true, agente: 'estudio' },
           // Era una fila de Administración (la ve el CONTADOR); conserva ese encuadre.
           { labelKey: 'inmobiliaria.nav.soportesCorto', href: r('/postulaciones/soportes'), icon: ListChecks, module: 'documentos', scope: 'administracion', ia: true },
           { labelKey: 'inmobiliaria.ai.nav.cotizador', href: r('/postulaciones/asegurabilidad'), icon: Umbrella, module: 'cotizador', ia: true, agente: 'asegurabilidad', dataTourTarget: 'sidebar-cotizador' },

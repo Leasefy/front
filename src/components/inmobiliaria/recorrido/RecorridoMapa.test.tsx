@@ -121,7 +121,8 @@ describe('RecorridoMapa', () => {
     const el = montar(<RecorridoMapa />)
     const hrefs = [...el.querySelectorAll('a')].map((a) => a.getAttribute('href'))
     expect(hrefs).toContain('/panel/inmobiliaria/postulaciones')
-    expect(hrefs).toContain('/panel/inmobiliaria/postulaciones/estudio/cola')
+    // Evaluación de candidatos está oculta (2026-09-08): el paso lleva a Postulaciones.
+    expect(hrefs).toContain('/panel/inmobiliaria/postulaciones')
     expect(hrefs).toContain('/panel/inmobiliaria/contratos')
   })
 

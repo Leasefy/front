@@ -5581,7 +5581,7 @@
         },
         "configuracion": {
           "title": "Configuración y autonomía",
-          "subtitle": "Qué puede hacer el agente por su cuenta y qué requiere siempre tu aprobación. Por ahora solo lectura: hoy nada se aplica sin tu visto bueno."
+          "subtitle": "Qué puede hacer el agente por su cuenta y qué requiere siempre tu aprobación. El modo lo cambia un administrador; los límites los publica el agente."
         },
         "aseguradoras": {
           "pageTitle": "Aseguradoras",
@@ -7719,32 +7719,31 @@
           "matching": {
             "eyebrow": "Agente · Matching",
             "salaTitulo": "Matching",
-            "salaDesc": "Te encuentra inquilinos ya validados para tus propiedades vacantes. Revisas la mejor coincidencia y apruebas el contacto — nada se envía sin ti.",
-            "colaDesc": "Candidatos que el agente emparejó con propiedades compatibles. Revisa la mejor coincidencia y sus factores de calce, luego acciónala (para contactar) o descártala. Modo Copiloto: nada se hace sin ti.",
-            "colaEmptyHint": "Aún no hay coincidencias. El agente cruza los candidatos aprobados en Evaluación de candidatos con tus propiedades vacantes — los resultados aparecerán aquí.",
-            "casoColaLabel": "Cola de matching",
+            "salaDesc": "Cruza los candidatos validados por el Estudio con tus inmuebles vacantes y te muestra qué tan bien calza cada uno, para que revises y decidas.",
+            "colaDesc": "Las coincidencias entre candidatos validados e inmuebles vacantes, con sus factores de calce. Las revisas y decides.",
+            "casoColaLabel": "Candidatos sugeridos",
             "crossPregunta": "¿Es confiable este candidato?",
             "crossDestino": "Evaluación de candidatos",
-            "analiticaDesc": "Cuántas coincidencias propuso el agente, qué tan bien calzaron y cuántos candidatos terminaron contactados, día a día.",
             "colaTitle": "Candidatos sugeridos",
             "colaLabel": "Candidatos sugeridos",
+            "queEs": "el resumen de Matching",
+            "sinTrabajo": {
+              "title": "Matching todavía no está trabajando tu cartera",
+              "desc": "Cuando se encienda para tu inmobiliaria, acá verás las coincidencias entre candidatos validados e inmuebles vacantes."
+            },
             "comoFunciona": {
               "title": "¿Cómo funciona?",
               "step1": {
-                "title": "Un candidato pasa el Estudio",
-                "desc": "Solo entran candidatos ya validados."
+                "title": "Un candidato validado por el Estudio",
+                "desc": "Solo entran candidatos que ya pasaron la evaluación."
               },
               "step2": {
-                "title": "El agente lo cruza con tus propiedades vacantes",
-                "desc": "Calcula qué tan bien calza con cada una."
+                "title": "El agente lo cruza con tus inmuebles vacantes",
+                "desc": "Calcula qué tan bien calza con cada uno."
               },
               "step3": {
-                "title": "Revisas la mejor coincidencia y por qué calza",
+                "title": "Revisas la coincidencia y decides",
                 "desc": "Con los factores de calce a la vista."
-              },
-              "step4": {
-                "title": "Apruebas y el agente hace el contacto",
-                "desc": "Nada se envía sin tu visto bueno."
               }
             },
             "estado": {

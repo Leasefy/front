@@ -113,8 +113,8 @@ export type { ExportButtonProps, ExportFormat } from './ExportButton';
 // Operaciones - Renovaciones (Phase 9)
 export { RenovacionesTable } from './RenovacionesTable';
 
-// Operaciones - IPC & Workflow (Phase 9)
-export { IPCCalculator } from './IPCCalculator';
+// Operaciones - Workflow (Phase 9). La calculadora de IPC que vivía acá se
+// borró: el IPC se calcula dentro del cajón de cada renovación.
 export { RenovacionWorkflow } from './RenovacionWorkflow';
 
 // Operaciones - Mantenimiento (Phase 9)

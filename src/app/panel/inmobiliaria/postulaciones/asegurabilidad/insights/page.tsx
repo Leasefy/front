@@ -3,7 +3,6 @@
 // Permissions gate enforced by cotizador layout.tsx (Phase 29).
 // This page does NOT re-check canAccess — layout handles 403 before mount.
 
-import { Hourglass } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { useInsights } from '@/lib/hooks/cotizador/use-insights'
 import { ApprovalRateMonthlyChart } from '@/components/inmobiliaria/cotizador/ApprovalRateMonthlyChart'
@@ -11,32 +10,15 @@ import { PrimaDistributionChart } from '@/components/inmobiliaria/cotizador/Prim
 import { InsightsAssumptionTable } from '@/components/inmobiliaria/cotizador/InsightsAssumptionTable'
 import { InsightsMonthlyCostPreview } from '@/components/inmobiliaria/cotizador/InsightsMonthlyCostPreview'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
-import { Button } from '@/components/ui/button'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { SectionLabel } from '@/components/ui/section-label'
 
 /**
- * Placeholder "Disponible próximamente" para los widgets aún no activos.
- * Reemplaza al NoDataYetBadge aquí porque ese badge expone jerga de roadmap
- * interno ("Fase 28" / "Requiere Phase 28…") que no le dice nada al usuario.
- * Conserva `role="status"` + border-dashed (selector de los specs a11y 38-08).
+ * Cuatro widgets, los cuatro con dato detrás. Había dos más —«Calidad de
+ * match de cohorte» y «Reporte de drift»— que sólo decían «Disponible
+ * próximamente»: no leían de ningún endpoint. Lo que no va a producción no
+ * se promete; cuando tengan dato, vuelven con él.
  */
-function ProximamentePlaceholder() {
-  const { t } = useI18n()
-  return (
-    <div
-      role="status"
-      className="rounded-lg border-2 border-dashed border-border bg-surface-muted/40 px-6 py-8 flex flex-col items-center gap-3 text-center"
-    >
-      <Hourglass weight="duotone" className="h-8 w-8 text-fg-muted" />
-      <p className="text-sm font-semibold text-fg">
-        {t('inmobiliaria.ai.cotizador.noDataYet.heading')}
-      </p>
-      <span className="text-xs bg-surface-muted rounded-full px-2 py-0.5 text-fg-muted">
-        Disponible próximamente
-      </span>
-    </div>
-  )
-}
-
 export default function CotizadorInsightsPage() {
   const { t } = useI18n()
 
@@ -50,45 +32,35 @@ export default function CotizadorInsightsPage() {
     refetch,
   } = useInsights()
 
-  // Phase 38-05b: PageSkeleton replaces inline animate-pulse grid (D-38-04: skeleton only;
-  // NoDataYetBadge for Widgets 5+6 below is PRESERVED).
+  // Phase 38-05b: PageSkeleton replaces inline animate-pulse grid (D-38-04: skeleton only).
   if (isLoading && approvalRateMonthly.length === 0) return <PageSkeleton variant="dashboard" />
 
   return (
     <main className="p-6 lg:p-8 space-y-6">
-      {/* Page header */}
-      <header className="space-y-1">
+      {/* Encabezado de la casa */}
+      <header className="space-y-1.5">
+        <SectionLabel>{t('inmobiliaria.ai.nav.cotizador')}</SectionLabel>
         <h1 className="text-h2 text-fg">
           {t('inmobiliaria.ai.cotizador.insights.title')}
         </h1>
-        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
+        <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
           {t('inmobiliaria.ai.cotizador.insights.subtitle')}
         </p>
       </header>
 
-      {/* Error banner */}
-      {error && !isLoading && (
-        <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
-          <p className="text-sm text-danger">
-            {t('inmobiliaria.ai.cotizador.insights.errorLoading')}: {error}
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            hideArrow
-            onClick={() => void refetch()}
-            className="shrink-0"
-          >
-            {t('inmobiliaria.ai.cotizador.insights.retry')}
-          </Button>
-        </div>
-      )}
-
-      {/* 6-widget grid — shown once data arrives (even partial) */}
-      {(!isLoading || approvalRateMonthly.length > 0) && (
+      {/* El fallo reemplaza los datos, no se apila debajo de ellos: cuatro
+          gráficos vacíos con un cartel rojo arriba afirman y desmienten a la
+          vez. El cartel decide solo si reintentar tiene sentido. */}
+      {error && !isLoading ? (
+        <FalloDeCarga
+          error={error}
+          queEs="los insights de asegurabilidad"
+          onReintentar={refetch}
+        />
+      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Widget 1 — Approval Rate Monthly (full-row at md) */}
-          <section className="rounded-lg border border-border bg-card p-6 space-y-4 md:col-span-2">
+          <section className="rounded-lg border border-border bg-surface p-6 space-y-4 md:col-span-2">
             <h2 className="text-base font-semibold text-fg">
               {t('inmobiliaria.ai.cotizador.insights.sections.approvalRate')}
             </h2>
@@ -99,7 +71,7 @@ export default function CotizadorInsightsPage() {
           </section>
 
           {/* Widget 2 — Prima Distribution */}
-          <section className="rounded-lg border border-border bg-card p-6 space-y-4">
+          <section className="rounded-lg border border-border bg-surface p-6 space-y-4">
             <h2 className="text-base font-semibold text-fg">
               {t('inmobiliaria.ai.cotizador.insights.sections.primaDistribution')}
             </h2>
@@ -109,8 +81,9 @@ export default function CotizadorInsightsPage() {
             />
           </section>
 
-          {/* Widget 3 — Assumption Registry Table */}
-          <section className="rounded-lg border border-border bg-card p-6 space-y-4">
+          {/* Widget 3 — Assumption Registry Table (la tabla trae su propio
+              recuadro: no se anida en otro) */}
+          <section className="space-y-4">
             <h2 className="text-base font-semibold text-fg">
               {t('inmobiliaria.ai.cotizador.insights.sections.assumptions')}
             </h2>
@@ -121,7 +94,7 @@ export default function CotizadorInsightsPage() {
           </section>
 
           {/* Widget 4 — Monthly Cost Preview */}
-          <section className="rounded-lg border border-border bg-card p-6 space-y-4">
+          <section className="rounded-lg border border-border bg-surface p-6 space-y-4">
             <h2 className="text-base font-semibold text-fg">
               {t('inmobiliaria.ai.cotizador.insights.sections.costTrend')}
             </h2>
@@ -129,22 +102,6 @@ export default function CotizadorInsightsPage() {
               trend={monthlyCostTrend.length > 0 ? monthlyCostTrend : (isLoading ? null : [])}
               isLoading={isLoading && monthlyCostTrend.length === 0}
             />
-          </section>
-
-          {/* Widget 5 — Cohort Match Quality (aún sin datos) */}
-          <section className="rounded-lg border border-border bg-card p-6 space-y-4">
-            <h2 className="text-base font-semibold text-fg">
-              {t('inmobiliaria.ai.cotizador.insights.sections.cohortQuality')}
-            </h2>
-            <ProximamentePlaceholder />
-          </section>
-
-          {/* Widget 6 — Drift Report (aún sin datos) */}
-          <section className="rounded-lg border border-border bg-card p-6 space-y-4">
-            <h2 className="text-base font-semibold text-fg">
-              {t('inmobiliaria.ai.cotizador.insights.sections.driftReport')}
-            </h2>
-            <ProximamentePlaceholder />
           </section>
         </div>
       )}

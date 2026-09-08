@@ -81,6 +81,41 @@ export function controlesAMano(fuente: string): string[] {
 
 /** Rutas relativas a `src/`. Ver el encabezado para el criterio. */
 const COBERTURA: string[] = [
+  // — matching (2026-09-08) ——————————————————————————————————————
+  // Las tres pantallas pasaron a tokens y a primitivas al sacarles lo que
+  // prometía un contacto que el producto no hace.
+  'app/panel/inmobiliaria/postulaciones/matching/page.tsx',
+  'app/panel/inmobiliaria/postulaciones/matching/cola/page.tsx',
+  'app/panel/inmobiliaria/postulaciones/matching/configuracion/page.tsx',
+  // — asegurabilidad (2026-09-08) ———————————————————————————————
+  // Las siete pestañas que van a producción y lo que montan, pasadas a
+  // tokens y a la tabla/los vacíos de la casa. Las tres maquetas
+  // (comparar, ejecución, integraciones) redirigen y no entran.
+  'app/panel/inmobiliaria/postulaciones/asegurabilidad/page.tsx',
+  'app/panel/inmobiliaria/postulaciones/asegurabilidad/cola/page.tsx',
+  'app/panel/inmobiliaria/postulaciones/asegurabilidad/nueva/page.tsx',
+  'app/panel/inmobiliaria/postulaciones/asegurabilidad/aseguradoras/page.tsx',
+  'app/panel/inmobiliaria/postulaciones/asegurabilidad/insights/page.tsx',
+  'app/panel/inmobiliaria/postulaciones/asegurabilidad/costos/page.tsx',
+  'app/panel/inmobiliaria/postulaciones/asegurabilidad/configuracion/page.tsx',
+  'components/inmobiliaria/cotizador/CotizadorRecentQuotesFeed.tsx',
+  'components/inmobiliaria/cotizador/CotizadorPriorityInbox.tsx',
+  'components/inmobiliaria/cotizador/CotizadorCarriersStatus.tsx',
+  'components/inmobiliaria/cotizador/CarrierRegistryTable.tsx',
+  'components/inmobiliaria/cotizador/CarrierOverridePopover.tsx',
+  'components/inmobiliaria/cotizador/InsightsAssumptionTable.tsx',
+  'components/inmobiliaria/cotizador/ApprovalRateMonthlyChart.tsx',
+  'components/inmobiliaria/cotizador/PrimaDistributionChart.tsx',
+  'components/inmobiliaria/cotizador/InsightsMonthlyCostPreview.tsx',
+  'components/inmobiliaria/cotizador/MonthlyCostTrendChart.tsx',
+  'components/inmobiliaria/cotizador/CostSourcePieChart.tsx',
+  'components/inmobiliaria/cotizador/CostKpiStrip.tsx',
+  'components/inmobiliaria/cotizador/WizardStep1Candidato.tsx',
+  'components/inmobiliaria/cotizador/WizardStep2Propiedad.tsx',
+  'components/inmobiliaria/cotizador/WizardStep3Config.tsx',
+  'components/inmobiliaria/cotizador/WizardStep3Review.tsx',
+  'components/inmobiliaria/ai/ColaHumana.tsx',
+  'components/inmobiliaria/ai/AutonomiaPanel.tsx',
   // — contratos ————————————————————————————————————————————————
   'app/panel/inmobiliaria/contratos/(retencion)/layout.tsx',
   'app/panel/inmobiliaria/contratos/(retencion)/retencion/page.tsx',
@@ -266,6 +301,10 @@ const COLOR_CRUDO_JUSTIFICADO: Record<string, string> = {
  * verifica el test de abajo).
  */
 const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
+  'components/inmobiliaria/ai/ColaHumana.tsx':
+    'La tarjeta entera del caso es clickeable (abre el detalle): un `<button>` sin ' +
+    'apariencia de botón que envuelve título + acción sugerida + evidencia. Ya traía ' +
+    'su comentario ALLOWLIST y `type="button"`; las acciones de la tarjeta sí son `Button`.',
   'components/inmobiliaria/ConsignacionDetailSections.tsx':
     'Dos filas de documento clickeables enteras (`documento-contrato`, ' +
     '`documento-contrato-adjuntar`) + el `<input type="file">` escondido.',

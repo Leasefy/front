@@ -111,17 +111,17 @@ export function CarrierOverridePopover({
     <div className="w-72 p-4 space-y-4">
       {/* Header */}
       <div>
-        <p className="text-sm font-semibold text-fg dark:text-white capitalize">
+        <p className="text-sm font-semibold text-fg capitalize">
           {row.global.name}
         </p>
-        <p className="text-xs text-fg-muted dark:text-fg-subtle font-mono">
+        <p className="text-xs text-fg-muted font-mono">
           {row.global.route}
         </p>
       </div>
 
       {/* Enabled toggle */}
       <div className="flex items-center justify-between gap-3">
-        <label className="text-xs text-fg dark:text-fg-subtle">
+        <label className="text-xs text-fg">
           {t('inmobiliaria.ai.cotizador.aseguradoras.popover.enabledLabel')}
         </label>
         <Switch
@@ -134,7 +134,7 @@ export function CarrierOverridePopover({
 
       {/* Priority */}
       <div className="space-y-1">
-        <label className="text-xs text-fg dark:text-fg-subtle">
+        <label className="text-xs text-fg">
           {t('inmobiliaria.ai.cotizador.aseguradoras.popover.priorityLabel')}
         </label>
         <Input
@@ -156,7 +156,7 @@ export function CarrierOverridePopover({
 
       {/* Mode */}
       <div className="space-y-1">
-        <label className="text-xs text-fg dark:text-fg-subtle">
+        <label className="text-xs text-fg">
           {t('inmobiliaria.ai.cotizador.aseguradoras.popover.modeLabel')}
         </label>
         <Select
@@ -176,7 +176,7 @@ export function CarrierOverridePopover({
 
       {/* Max Canon COP */}
       <div className="space-y-1">
-        <label className="text-xs text-fg dark:text-fg-subtle">
+        <label className="text-xs text-fg">
           {t('inmobiliaria.ai.cotizador.aseguradoras.popover.maxCanonLabel')}
         </label>
         <Input

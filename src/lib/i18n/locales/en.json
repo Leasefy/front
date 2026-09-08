@@ -5541,7 +5541,7 @@
         },
         "configuracion": {
           "title": "Settings & autonomy",
-          "subtitle": "What the agent can do on its own and what always requires your approval. Read-only for now: today nothing is applied without your sign-off."
+          "subtitle": "What the agent can do on its own and what always requires your approval. An admin changes the mode; the limits are published by the agent."
         },
         "aseguradoras": {
           "pageTitle": "Carriers",
@@ -7679,32 +7679,31 @@
           "matching": {
             "eyebrow": "Agent · Matching",
             "salaTitulo": "Matching",
-            "salaDesc": "It finds you already-validated tenants for your vacant properties. You review the best match and approve the outreach — nothing is sent without you.",
-            "colaDesc": "Candidates the agent paired with compatible properties. Review the best match and its fit factors, then action it (to reach out) or discard it. Copilot mode: nothing happens without you.",
-            "colaEmptyHint": "No matches yet. The agent crosses candidates approved in Candidate evaluation with your vacant properties — results will appear here.",
-            "casoColaLabel": "Matching queue",
+            "salaDesc": "It matches the candidates validated by Screening with your vacant properties and shows you how well each one fits, so you review and decide.",
+            "colaDesc": "The matches between validated candidates and vacant properties, with their fit factors. You review them and decide.",
+            "casoColaLabel": "Suggested candidates",
             "crossPregunta": "Is this candidate reliable?",
             "crossDestino": "Candidate evaluation",
-            "analiticaDesc": "How many matches the agent proposed, how well they fit and how many candidates ended up contacted, day by day.",
             "colaTitle": "Suggested candidates",
             "colaLabel": "Suggested candidates",
+            "queEs": "the Matching overview",
+            "sinTrabajo": {
+              "title": "Matching is not working your portfolio yet",
+              "desc": "Once it is switched on for your agency, you will see here the matches between validated candidates and vacant properties."
+            },
             "comoFunciona": {
               "title": "How does it work?",
               "step1": {
-                "title": "A candidate passes Screening",
-                "desc": "Only already-validated candidates come in."
+                "title": "A candidate validated by Screening",
+                "desc": "Only candidates who already passed screening come in."
               },
               "step2": {
                 "title": "The agent matches them with your vacant properties",
                 "desc": "It calculates how well they fit each one."
               },
               "step3": {
-                "title": "You review the best match and why it fits",
+                "title": "You review the match and decide",
                 "desc": "With the fit factors in plain sight."
-              },
-              "step4": {
-                "title": "You approve and the agent reaches out",
-                "desc": "Nothing is sent without your sign-off."
               }
             },
             "estado": {

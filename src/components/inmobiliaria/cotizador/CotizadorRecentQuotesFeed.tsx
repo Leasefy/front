@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight } from '@phosphor-icons/react'
+import { ArrowRight, Tray } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
+import { SinDatos } from '@/components/estado/SinDatos'
 import type { CotizadorOverviewResponse } from '@/lib/hooks/cotizador/use-cotizador-overview'
 
 // ---------------------------------------------------------------------------
@@ -64,11 +65,17 @@ export function CotizadorRecentQuotesFeed({
 }: CotizadorRecentQuotesFeedProps) {
   const { t } = useI18n()
 
+  // El vacío va sin padding propio: `SinDatos` trae el suyo y es el mismo
+  // hueco que ocupa la lista.
+  const vacio = !isLoading && quotes.length === 0
+
   return (
-    <div className="rounded-lg border border-border bg-card p-5">
-      {/* Loading skeleton */}
+    <div
+      className={`rounded-lg border border-border bg-surface overflow-hidden ${vacio ? '' : 'p-5'}`}
+    >
+      {/* Esqueleto con la forma de la lista: título + referencia + chip. */}
       {isLoading && quotes.length === 0 ? (
-        <ul className="divide-y divide-border">
+        <ul className="divide-y divide-border" role="status" aria-label="Cargando">
           {[1, 2, 3].map((i) => (
             <li key={i} className="flex items-center justify-between py-3">
               <div className="space-y-1.5">
@@ -78,17 +85,17 @@ export function CotizadorRecentQuotesFeed({
               <div className="h-5 w-16 rounded-full bg-surface-muted animate-pulse" />
             </li>
           ))}
+          <span className="sr-only">Cargando…</span>
         </ul>
-      ) : quotes.length === 0 ? (
-        /* Empty state */
-        <div className="py-10 flex flex-col items-center gap-1.5 text-center">
-          <p className="text-sm font-medium text-fg">
-            {t('inmobiliaria.ai.cotizador.overview.recentQuotes.empty')}
-          </p>
-          <p className="text-xs text-fg-muted max-w-xs">
-            {t('inmobiliaria.ai.cotizador.overview.recentQuotes.emptyHelper')}
-          </p>
-        </div>
+      ) : vacio ? (
+        // El vacío de la casa: círculo gris, título, una línea. Antes era un
+        // par de <p> sueltos que no se parecían a ningún otro vacío del panel.
+        <SinDatos
+          queSon="cotizaciones"
+          icono={Tray}
+          titulo={t('inmobiliaria.ai.cotizador.overview.recentQuotes.empty')}
+          descripcion={t('inmobiliaria.ai.cotizador.overview.recentQuotes.emptyHelper')}
+        />
       ) : (
         /* Quotes list */
         <ul

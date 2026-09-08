@@ -23,7 +23,7 @@
 import { ApiError, getAccessToken, esCodigoDeSesionMuerta } from '@/lib/api/client'
 import { sesionTerminada } from '@/lib/auth/session-terminal'
 
-export type TipoDeFallo = 'noExiste' | 'sinPermiso' | 'sinSesion' | 'red' | 'servidor'
+export type TipoDeFallo = 'noExiste' | 'sinPermiso' | 'sinSesion' | 'red' | 'servidor' | 'limitado'
 
 export interface FalloDeCarga {
   tipo: TipoDeFallo
@@ -189,6 +189,22 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
       titulo: 'Tu sesión se venció',
       descripcion: 'Vuelve a entrar para seguir donde estabas.',
       sePuedeReintentar: false,
+      status,
+      mensajeOriginal,
+    }
+  }
+
+  // T-0076: un 429 (rate limit del gateway, `agents_limit` en NGINX) NO es
+  // «un problema nuestro» — es el sistema protegiéndose de un pico. Decirlo
+  // como un 500 genérico invita a machacar «Intentar de nuevo», que es
+  // exactamente lo que agravó el burst original (ver ledger de la tarea).
+  if (status === 429) {
+    return {
+      tipo: 'limitado',
+      titulo: 'Estamos recibiendo muchas solicitudes',
+      descripcion:
+        'Dale un momento y vuelve a intentar — no es un error, es el sistema poniéndose al día.',
+      sePuedeReintentar: true,
       status,
       mensajeOriginal,
     }

@@ -68,11 +68,11 @@ export function SesionYaAbierta({ destino, onCambiarDeCuenta }: Props) {
           Ya estás dentro
         </p>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          ¿Seguís con esta cuenta?
+          ¿Sigues con esta cuenta?
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Estás en Leasefy como <span className="font-medium text-foreground">{comoQuien}</span>.
-          Podés continuar así o entrar con otra cuenta.
+          Puedes continuar así o entrar con otra cuenta.
         </p>
       </div>
 

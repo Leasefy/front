@@ -196,7 +196,7 @@ describe('<InvitarInquilino>', () => {
 
   it('502 INVITACION_FALLIDA: muestra el mensaje y deja el botón — reintentar es seguro', async () => {
     invitarInquilino.mockRejectedValue(
-      new ApiError(502, 'No pudimos enviar la invitación. Probá de nuevo en un momento.', 'INVITACION_FALLIDA'),
+      new ApiError(502, 'No pudimos enviar la invitación. Prueba de nuevo en un momento.', 'INVITACION_FALLIDA'),
     )
     render({
       contract: contratoBase({ tenantEmail: 'ana@correo.co' }),

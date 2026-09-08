@@ -107,7 +107,7 @@ export default function InngestMonitorPage() {
           {/* All-silent warning: no cron has any observable side-effect */}
           {allSilent && (
             <div className="card p-4 border-l-4 border-l-warn mb-6 text-xs text-fg-muted">
-              Ningún cron tiene side-effect observable en Postgres — verificá que
+              Ningún cron tiene side-effect observable en Postgres — verifica que
               Inngest esté corriendo y las keys configuradas en el back.
             </div>
           )}

@@ -25,7 +25,7 @@ describe('PASOS_RECORRIDO', () => {
 
   it('el recorrido cambia de manos una sola vez, en el paso 7', () => {
     // Los pasos 1–6 son del inquilino y del 7 al 11 son de la inmobiliaria.
-    // Si esto se rompe, el stepper deja de poder decir "te toca a vos".
+    // Si esto se rompe, el stepper deja de poder decir "te toca a ti".
     const actores = PASOS_RECORRIDO.map((p) => p.actor)
     expect(actores.slice(0, 6).every((a) => a === 'inquilino')).toBe(true)
     expect(actores.slice(6).every((a) => a === 'inmobiliaria')).toBe(true)

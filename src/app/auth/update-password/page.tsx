@@ -28,7 +28,7 @@ async function updatePasswordDirect(newPassword: string): Promise<void> {
   const token = getAccessToken();
 
   if (!url || !anonKey) throw new Error('Supabase no está configurado.');
-  if (!token) throw new Error('No hay sesión activa. Pedí un nuevo enlace de recuperación.');
+  if (!token) throw new Error('No hay sesión activa. Pide un nuevo enlace de recuperación.');
 
   const res = await fetch(`${url}/auth/v1/user`, {
     method: 'PUT',
@@ -59,16 +59,16 @@ async function updatePasswordDirect(newPassword: string): Promise<void> {
 function enEspanol(mensaje: string): string {
   const m = mensaje.toLowerCase();
   if (m.includes('different from the old')) {
-    return 'Esa contraseña ya la usaste antes. Elegí otra.';
+    return 'Esa contraseña ya la usaste antes. Elige otra.';
   }
   if (m.includes('at least') || m.includes('should be at least')) {
     return 'La contraseña es muy corta: mínimo 8 caracteres.';
   }
   if (m.includes('weak') || m.includes('pwned')) {
-    return 'Esa contraseña es muy fácil de adivinar. Elegí una menos común.';
+    return 'Esa contraseña es muy fácil de adivinar. Elige una menos común.';
   }
   if (m.includes('expired') || m.includes('invalid') || m.includes('jwt')) {
-    return 'El enlace ya no sirve. Pedí que te lo reenvíen.';
+    return 'El enlace ya no sirve. Pide que te lo reenvíen.';
   }
   return mensaje;
 }
@@ -119,8 +119,8 @@ function UpdatePasswordContent() {
     if (!isAuthenticated) {
       setError(
         esPrimeraVez
-          ? 'El enlace de la invitación expiró. Pedile a tu inmobiliaria que te la reenvíe.'
-          : 'El enlace de recuperación expiró o no es válido. Pedí uno nuevo desde "¿Olvidaste tu contraseña?"',
+          ? 'El enlace de la invitación expiró. Pídele a tu inmobiliaria que te la reenvíe.'
+          : 'El enlace de recuperación expiró o no es válido. Pide uno nuevo desde "¿Olvidaste tu contraseña?"',
       );
       return;
     }
@@ -162,7 +162,7 @@ function UpdatePasswordContent() {
               </h1>
               <p className="text-sm text-fg-muted mb-6">
                 {esPrimeraVez
-                  ? 'Ya podés entrar con tu correo y esta contraseña. Te llevamos a tu arriendo…'
+                  ? 'Ya puedes entrar con tu correo y esta contraseña. Te llevamos a tu arriendo…'
                   : 'Tu contraseña fue cambiada exitosamente. Redirigiendo...'}
               </p>
               <Link href={destino}>
@@ -178,7 +178,7 @@ function UpdatePasswordContent() {
                   <Lock className="h-5 w-5 text-fg" />
                 </div>
                 <h1 className="text-2xl font-semibold text-fg mb-1">
-                  {esPrimeraVez ? 'Creá tu contraseña' : 'Nueva contraseña'}
+                  {esPrimeraVez ? 'Crea tu contraseña' : 'Nueva contraseña'}
                 </h1>
                 <p className="text-sm text-fg-muted">
                   {esPrimeraVez

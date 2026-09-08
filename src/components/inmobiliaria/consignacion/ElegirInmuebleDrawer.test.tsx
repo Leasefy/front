@@ -145,7 +145,7 @@ describe('<ElegirInmuebleDrawer>', () => {
     expect(onCrearNuevo).toHaveBeenCalledTimes(1)
   })
 
-  it('mientras carga no dice «no tenés inmuebles»', () => {
+  it('mientras carga no dice «no tienes inmuebles»', () => {
     montar({ inmuebles: [], cargando: true })
     expect(document.querySelector('[data-testid="elegir-inmueble-vacio"]')).toBeNull()
   })

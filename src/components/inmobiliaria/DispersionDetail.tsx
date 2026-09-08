@@ -454,7 +454,7 @@ export function DispersionDetail({
                   }}
                   data-testid="dispersion-sin-cuenta"
                 >
-                  Pedile al propietario banco, tipo, número y titular, y cargalos en su ficha. Hasta entonces
+                  Pídele al propietario banco, tipo, número y titular, y cargalos en su ficha. Hasta entonces
                   este giro queda esperando.
                 </AlertaAccionable>
               ) : (

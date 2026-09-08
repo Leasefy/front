@@ -61,14 +61,14 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 /**
- * «Al continuar, aceptás…» — debajo del botón principal y no al pie de la
+ * «Al continuar, aceptas…» — debajo del botón principal y no al pie de la
  * pantalla (Nico, 2026-09-03): lo que uno acepta se lee junto a lo que uno
  * aprieta. Va en los dos formularios que crean o abren una sesión.
  */
 function NotaLegal() {
   return (
     <p className="mt-4 text-[11.5px] leading-relaxed text-fg-subtle" data-testid="auth-nota-legal">
-      Al continuar, aceptás nuestros{' '}
+      Al continuar, aceptas nuestros{' '}
       <Link href="/terminos" className="text-fg-muted underline-offset-2 hover:text-fg hover:underline">
         Términos
       </Link>{' '}
@@ -118,9 +118,9 @@ function GoogleButton({ onClick, disabled, isLoading, children }: { onClick: () 
  * desconocido (o inventado a mano en la URL) simplemente no muestra nada.
  */
 const AVISOS_DE_SESION: Record<string, string> = {
-  expirada: 'Tu sesión expiró. Volvé a entrar para seguir donde estabas.',
+  expirada: 'Tu sesión expiró. Vuelve a entrar para seguir donde estabas.',
   revocada: 'Cerramos esta sesión porque entraste desde otro dispositivo.',
-  inactividad: 'Cerramos tu sesión por inactividad. Volvé a entrar para continuar.',
+  inactividad: 'Cerramos tu sesión por inactividad. Vuelve a entrar para continuar.',
 };
 
 /**
@@ -731,7 +731,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
           {mode === 'reset-sent' && 'Revisa tu correo'}
         </h1>
         <p className="mt-2 text-[14px] leading-relaxed text-fg-subtle">
-          {mode === 'login' && 'Ingresá a tu cuenta para continuar.'}
+          {mode === 'login' && 'Ingresa a tu cuenta para continuar.'}
           {mode === 'register' && registerStep === 'credentials' && 'Ingresa tus datos para continuar.'}
           {mode === 'register' && registerStep === 'confirm-email' && (
             <>Enviamos un enlace de confirmación a <span className="font-medium text-fg-muted">{resetEmail}</span>.</>
@@ -825,7 +825,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             <NotaLegal />
 
             <p className="mt-6 border-t border-border/70 pt-5 text-[13px] text-fg-subtle">
-              ¿Todavía no tenés cuenta?{' '}
+              ¿Todavía no tienes cuenta?{' '}
               <button
                 type="button"
                 onClick={() => handleModeSwitch('register')}

@@ -177,7 +177,7 @@ function RegistrarConexion({
           Registrar una conexión
         </h2>
         <p className="text-sm text-fg-muted max-w-2xl">
-          Conectá una fuente de movimientos para que la conciliación los atribuya a un origen con
+          Conecta una fuente de movimientos para que la conciliación los atribuya a un origen con
           nombre. No pedimos credenciales: solo una referencia segura a dónde están guardadas.
         </p>
       </div>
@@ -382,7 +382,7 @@ function ConciliacionConexiones() {
         <div className="space-y-2">
           <h1 className="text-h2 text-fg">Conexiones</h1>
           <p className="text-body text-fg-muted max-w-2xl">
-            Registrá y administrá las fuentes de movimientos (bancos, pasarelas y extractos) que
+            Registra y administra las fuentes de movimientos (bancos, pasarelas y extractos) que
             alimentan la conciliación. Nunca guardamos credenciales, solo una referencia segura.
           </p>
         </div>
@@ -404,8 +404,8 @@ function ConciliacionConexiones() {
           titulo="Las conexiones bancarias no están disponibles en tu cuenta todavía"
           data-testid="conexiones-backend-warning"
         >
-          Podés ver el formulario, pero no se puede registrar ni actualizar una conexión hasta que el
-          servicio esté activo. Mientras tanto, cargá el extracto del banco a mano desde Cobros.
+          Puedes ver el formulario, pero no se puede registrar ni actualizar una conexión hasta que el
+          servicio esté activo. Mientras tanto, carga el extracto del banco a mano desde Cobros.
         </AlertaAccionable>
       )}
 
@@ -447,7 +447,7 @@ function ConciliacionConexiones() {
                       queSon="conexiones"
                       icono={PlugsConnected}
                       titulo="Aún no hay conexiones"
-                      descripcion="Registrá tu primera fuente de movimientos en el formulario de arriba para empezar a conciliar."
+                      descripcion="Registra tu primera fuente de movimientos en el formulario de arriba para empezar a conciliar."
                     />
                   </TableCell>
                 </TableRow>

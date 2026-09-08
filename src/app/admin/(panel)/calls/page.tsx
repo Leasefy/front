@@ -109,7 +109,7 @@ export default function CallsPage() {
         isLoading={calls.isLoading}
         error={calls.error}
         emptyTitle="Sin llamadas"
-        emptyHint="Ajustá los filtros."
+        emptyHint="Ajusta los filtros."
         onRowClick={(r) => router.push(`/admin/calls/${r.id}`)}
       />
 

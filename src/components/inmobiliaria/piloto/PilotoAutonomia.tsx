@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * PilotoAutonomia — cuánto puede hacer cada agente sin vos.
+ * PilotoAutonomia — cuánto puede hacer cada agente sin ti.
  *
  * ── Por qué se rediseñó (2026-08-30) ───────────────────────────────────────
  * Era una card fija en la columna derecha con 7 filas × 3 botones = 21

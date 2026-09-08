@@ -42,7 +42,7 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
   inmueble_ambiguo: {
     titulo: "Hay más de un inmueble con esa dirección",
     porque:
-      "Elegir por vos pegaría el contrato al inmueble equivocado, y quedaría perfecto.",
+      "Elegir por ti pegaría el contrato al inmueble equivocado, y quedaría perfecto.",
   },
   inmueble_ocupado: {
     titulo: "Ese inmueble ya tiene un contrato vigente",
@@ -543,8 +543,8 @@ function RegistrarPropietario({
       </div>
       {fallaLaBusqueda ? (
         <p className="text-xs text-warning" data-testid="busqueda-fallida">
-          No pudimos buscar entre los que ya existen. Probá de nuevo en un
-          momento — si escribís el documento a mano, igual se enlaza al que ya
+          No pudimos buscar entre los que ya existen. Prueba de nuevo en un
+          momento — si escribes el documento a mano, igual se enlaza al que ya
           está en vez de duplicarlo.
         </p>
       ) : null}

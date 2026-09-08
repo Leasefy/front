@@ -14,7 +14,7 @@
  *   · Un inquilino o un propietario ve a sus inmobiliarias.
  *
  * La lista sale del mismo predicado del back que autoriza abrir el hilo, así
- * que nada de lo que aparece acá puede terminar en un «no tenés permiso».
+ * que nada de lo que aparece acá puede terminar en un «no tienes permiso».
  *
  * ── Quién filtra qué ───────────────────────────────────────────────────────
  * El BUSCADOR filtra en el back (`getDestinatariosDirectos(q)`, con rebote de
@@ -144,8 +144,8 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
       // es un problema.
       const mensaje =
         err instanceof ApiError && err.status === 403
-          ? 'Solo podés escribirle a alguien con quien tengas un inmueble o un contrato en común.'
-          : 'No pudimos abrir la conversación. Intentá de nuevo.';
+          ? 'Solo puedes escribirle a alguien con quien tengas un inmueble o un contrato en común.'
+          : 'No pudimos abrir la conversación. Intenta de nuevo.';
       toast.error(mensaje);
       setAbriendo(null);
     }
@@ -253,7 +253,7 @@ export function NuevoMensajeDrawer({ abierto, onCerrar, onHiloAbierto }: Props) 
               </p>
               <p className="max-w-xs text-sm text-fg-muted">
                 {busqueda
-                  ? 'Probá con otro nombre o con el correo.'
+                  ? 'Prueba con otro nombre o con el correo.'
                   : esLadoAgencia
                     ? 'Acá van a aparecer los propietarios y los inquilinos con un inmueble o un contrato en la inmobiliaria.'
                     : 'Vas a poder escribirle a tu inmobiliaria cuando tengas un inmueble o un contrato con ella.'}
@@ -323,8 +323,8 @@ function VacioDeLaPestana({
       <p className="mb-1 text-sm font-semibold text-fg">No hay {quienes} en esta lista</p>
       <p className="max-w-xs text-sm text-fg-muted">
         {hayBusqueda
-          ? `Tu búsqueda trajo ${personas}, pero ninguna es de este grupo. Mirá en «Todos» o buscá otra cosa.`
-          : `Podés escribirle a ${personas}, pero ninguna es de este grupo. Están en las otras pestañas.`}
+          ? `Tu búsqueda trajo ${personas}, pero ninguna es de este grupo. Mirá en «Todos» o busca otra cosa.`
+          : `Puedes escribirle a ${personas}, pero ninguna es de este grupo. Están en las otras pestañas.`}
       </p>
       <Button
         type="button"

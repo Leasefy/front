@@ -787,7 +787,7 @@ export default function DocumentosPage() {
                   </h2>
                   <p className="text-sm text-fg-muted dark:text-fg-subtle">
                     {locale === 'es'
-                      ? 'Autorizá el tratamiento de tus documentos del arriendo para poder consultarlos y descargarlos.'
+                      ? 'Autoriza el tratamiento de tus documentos del arriendo para poder consultarlos y descargarlos.'
                       : 'Authorize the processing of your lease documents so you can view and download them.'}
                   </p>
                 </div>
@@ -818,7 +818,7 @@ export default function DocumentosPage() {
                 {!consent.purposeDocAccess && (
                   <p className="text-xs text-warning pl-7">
                     {locale === 'es'
-                      ? 'Debés aceptar este consentimiento para ver o descargar tus documentos.'
+                      ? 'Debes aceptar este consentimiento para ver o descargar tus documentos.'
                       : 'You must accept this consent to view or download your documents.'}
                   </p>
                 )}
@@ -965,7 +965,7 @@ export default function DocumentosPage() {
                             hideArrow
                             onClick={() => handleView(doc)}
                             disabled={!canAccessDocs}
-                            title={!canAccessDocs ? (locale === 'es' ? 'Aceptá el consentimiento para ver' : 'Accept consent to view') : undefined}
+                            title={!canAccessDocs ? (locale === 'es' ? 'Acepta el consentimiento para ver' : 'Accept consent to view') : undefined}
                             className="flex-1 rounded-none py-3 text-sm font-medium text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-[#2a2a2c] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                           >
                             <Eye className="w-4 h-4" />
@@ -976,7 +976,7 @@ export default function DocumentosPage() {
                             type="button"
                             onClick={() => handleDownload(doc)}
                             disabled={!canAccessDocs}
-                            title={!canAccessDocs ? (locale === 'es' ? 'Aceptá el consentimiento para descargar' : 'Accept consent to download') : undefined}
+                            title={!canAccessDocs ? (locale === 'es' ? 'Acepta el consentimiento para descargar' : 'Accept consent to download') : undefined}
                             className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-[#2a2a2c] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                           >
                             <Download className="w-4 h-4" />

@@ -8,7 +8,7 @@ import { apiClient } from './client';
  * llaves dobles que se reemplazan con lo que ya sabe la conversación abierta.
  *
  * 🔴 Las variables se resuelven en el FRONT, no en el back: el back no sabe qué
- * conversación tenés abierta ni con qué datos se está pintando. Una variable
+ * conversación tienes abierta ni con qué datos se está pintando. Una variable
  * que no se puede resolver se deja tal cual y se avisa en pantalla — nunca se
  * manda un «Hola undefined».
  */

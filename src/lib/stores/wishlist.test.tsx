@@ -91,7 +91,7 @@ describe('favoritos — la señal al dar clic', () => {
     expect(toast.success).toHaveBeenCalledTimes(1)
     const [titulo, opciones] = toast.success.mock.calls[0]
     expect(String(titulo)).toContain('tus favoritos')
-    // Nada de «iniciá sesión»: ya la tiene.
+    // Nada de «inicia sesión»: ya la tiene.
     expect(opciones).toBeUndefined()
   })
 

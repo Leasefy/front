@@ -295,7 +295,7 @@ function celda(valor: unknown): string {
  *
  * Las vacías se conservan como `''`. Es lo que hace falta al **corregir**: el
  * back mezcla `{...loQueHabía, ...campos}`, así que omitir una clave significa
- * «dejala como está» y sólo un `''` explícito la borra. Para **preparar** se
+ * «déjala como está» y sólo un `''` explícito la borra. Para **preparar** se
  * usa `filaDePlantilla()`, que sí las tira.
  */
 export function soloClavesDeFila(cruda: Record<string, unknown>): FilaTercero {
@@ -487,7 +487,7 @@ export const migracionTercerosApi = {
    * Un solo `GET /lotes` del back (un `groupBy`), no una derivación desde una
    * página de filas: derivarlo dejaba invisibles los lotes que no cabían en
    * las primeras 200 filas — con una carga real de 600 propietarios, la
-   * tarjeta de «tenés una carga sin terminar» no aparecía y la persona
+   * tarjeta de «tienes una carga sin terminar» no aparecía y la persona
    * resubía el archivo, duplicando a todo el mundo.
    */
   /**

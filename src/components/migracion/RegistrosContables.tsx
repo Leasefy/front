@@ -151,7 +151,7 @@ export function RegistrosContables({
             <div className="flex min-w-0 items-start gap-2">
               <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
               <p className="text-sm text-fg">
-                No pudimos leer lo que ya está cargado. Reintentá antes de
+                No pudimos leer lo que ya está cargado. Reintenta antes de
                 registrar nada: sin esa lista podrías cargar dos veces la misma
                 apertura.
               </p>

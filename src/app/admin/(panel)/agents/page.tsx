@@ -79,7 +79,7 @@ export default function AgentsPage() {
       <PageHeader
         label="agentes"
         title="Vapi assistants"
-        description="Editá el system prompt de cada agente sin tocar el dashboard de Vapi."
+        description="Edita el system prompt de cada agente sin tocar el dashboard de Vapi."
       />
       <DataTable
         columns={columns}
@@ -88,7 +88,7 @@ export default function AgentsPage() {
         isLoading={agents.isLoading}
         error={agents.error}
         emptyTitle="Sin agentes"
-        emptyHint="Verificá VAPI_API_KEY en el backend."
+        emptyHint="Verifica VAPI_API_KEY en el backend."
         onRowClick={(r) => router.push(`/admin/agents/${r.id}`)}
       />
     </div>

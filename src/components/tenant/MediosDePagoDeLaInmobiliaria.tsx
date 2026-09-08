@@ -42,7 +42,7 @@ export function MediosDePagoDeLaInmobiliaria() {
           Cómo pagar
         </h2>
         <p className="text-sm text-fg-muted">
-          Los medios que acepta tu inmobiliaria. Guardá el comprobante: con él se emite tu recibo.
+          Los medios que acepta tu inmobiliaria. Guarda el comprobante: con él se emite tu recibo.
         </p>
       </div>
       {conMedios.map((bloque) => (

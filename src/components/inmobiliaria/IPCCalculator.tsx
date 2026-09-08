@@ -10,7 +10,7 @@
  * entiende» —doce óvalos sin eje, sin valores y sin meses.
  *
  * Ahora: dos columnas —a la izquierda lo que se calcula, a la derecha el dato
- * y su historia—, el resultado se actualiza mientras escribís (no hay botón
+ * y su historia—, el resultado se actualiza mientras escribes (no hay botón
  * que apretar ni estado «no pasó nada») y la tendencia es un gráfico con eje,
  * valores y meses. La tasa se puede personalizar; si supera la oficial se
  * avisa, porque la ley no lo permite (Ley 820 de 2003, art. 20).

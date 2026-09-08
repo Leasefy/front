@@ -173,7 +173,7 @@ export function PostulacionDirecta({
         setError(
           `Tu postulación quedó creada, pero no pudimos adjuntar ${faltan
             .map((t) => (NOMBRE_DE_DOCUMENTO[t] ?? t).toLowerCase())
-            .join(' ni ')}. Abrí el formulario para subirlo.`,
+            .join(' ni ')}. Abre el formulario para subirlo.`,
         )
         setEnviando(false)
         return
@@ -186,7 +186,7 @@ export function PostulacionDirecta({
       // sin diff de campos y sin reintento automático.
       if (e instanceof ApiError && e.code === 'IDENTIDAD_NO_COINCIDE') {
         setError(
-          'Tu postulación debe presentarse con la identidad de tu estudio de arrendamiento vigente. Recargá la página para traer tus datos actualizados e intentá de nuevo.',
+          'Tu postulación debe presentarse con la identidad de tu estudio de arrendamiento vigente. Recarga la página para traer tus datos actualizados e intenta de nuevo.',
         )
       } else if (e instanceof ApiError && e.code === 'PROPIEDAD_EN_VENTA') {
         // T-0038 §3.3 (WU-2) — a stale client (an old tab, or the listing
@@ -199,7 +199,7 @@ export function PostulacionDirecta({
         setError(e.message);
       } else {
         setError(
-          e instanceof Error ? e.message : 'No pudimos enviar tu postulación. Intentá de nuevo.',
+          e instanceof Error ? e.message : 'No pudimos enviar tu postulación. Intenta de nuevo.',
         )
       }
       setEnviando(false)
@@ -230,7 +230,7 @@ export function PostulacionDirecta({
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   Estás aprobado y este inmueble entra en tu tope. No hace falta que
-                  llenes nada otra vez: revisá lo que vamos a enviar y confirmá.
+                  llenes nada otra vez: revisa lo que vamos a enviar y confirma.
                 </p>
               </div>
             </div>
@@ -360,7 +360,7 @@ export function PostulacionDirecta({
 
             {!puedeAutorizar ? (
               <p className="text-xs text-muted-foreground">
-                No pudimos cargar el texto de autorización de datos. Recargá la página
+                No pudimos cargar el texto de autorización de datos. Recarga la página
                 para poder continuar.
               </p>
             ) : null}

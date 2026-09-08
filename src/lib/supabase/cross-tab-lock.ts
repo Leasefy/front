@@ -77,7 +77,7 @@ export const crossTabLock: LockFunc = async <R>(
   // mismo criterio que toma auth-js cuando el navegador no sigue la spec.
   if (!haylocks()) return fn()
 
-  // acquireTimeout === 0 significa "tomalo sólo si está libre AHORA, no
+  // acquireTimeout === 0 significa "tómalo sólo si está libre AHORA, no
   // esperes". Lo usa el tick de auto-refresh: si otra pestaña ya está
   // renovando, esta se saltea el turno — que es justo lo que queremos.
   if (acquireTimeout === 0) {

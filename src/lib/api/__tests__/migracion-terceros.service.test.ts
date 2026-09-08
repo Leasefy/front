@@ -305,7 +305,7 @@ describe('migracionTercerosApi.corregir', () => {
   it('una celda vaciada a propósito viaja como "" — omitirla la dejaría como estaba', async () => {
     /*
      * El back hace `{...aFilaCruda(previos), ...cambios.campos}`. Omitir una
-     * clave significa «dejala como está»; sólo un `''` explícito la borra. Si
+     * clave significa «déjala como está»; sólo un `''` explícito la borra. Si
      * el servicio filtrara los vacíos también acá, borrar un correo mal
      * escrito sería imposible desde la pantalla.
      */

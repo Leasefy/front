@@ -29,7 +29,7 @@ export function SeccionMediosDePago() {
         <VacioDeSeccion
           icono={Wallet}
           titulo="Todavía no pudimos leer tu inmobiliaria"
-          ayuda="Volvé a intentar en un momento: las cuentas y los enlaces de pago cuelgan de la agencia."
+          ayuda="Vuelve a intentar en un momento: las cuentas y los enlaces de pago cuelgan de la agencia."
         />
       }
     >

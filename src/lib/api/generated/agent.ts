@@ -10548,7 +10548,7 @@ export interface components {
             altasAlEmbudo: number;
             /** @description Filas con monto pero sin fecha de vencimiento legible. Se importó el deudor, pero no entra a cobranza: sin vencimiento no hay días de mora, y una fecha inventada dispararía llamadas y una carta con cifras falsas. */
             sinVencimiento: number;
-            /** @description Índices de filas cuyo teléfono ya pertenece a OTRO deudor del tenant con una cédula distinta. Se importaron como deudor nuevo a propósito: dos codeudores comparten teléfono, y fusionarlos dejaría a uno debiendo los dos cánones. Revisá si son la misma persona; para fusionarlas está scripts/normalizar-telefonos-deudores.ts. */
+            /** @description Índices de filas cuyo teléfono ya pertenece a OTRO deudor del tenant con una cédula distinta. Se importaron como deudor nuevo a propósito: dos codeudores comparten teléfono, y fusionarlos dejaría a uno debiendo los dos cánones. Revisa si son la misma persona; para fusionarlas está scripts/normalizar-telefonos-deudores.ts. */
             conflictosTelefono: number[];
             vencimiento: components["schemas"]["CarteraImportVencimiento"];
             generatedAt: string;

@@ -21,21 +21,21 @@ const HOW_IT_WORKS = [
     icon: FileText,
     title: "Solicitar",
     tagline: "EN MINUTOS, NO SEMANAS",
-    body: "Ingresá los datos del inmueble, subí unas fotos y aceptá las autorizaciones de datos. Sin papeleo físico.",
+    body: "Ingresa los datos del inmueble, sube unas fotos y acepta las autorizaciones de datos. Sin papeleo físico.",
   },
   {
     step: "02",
     icon: CreditCard,
     title: "Pagar",
     tagline: "PAGO SEGURO EN LÍNEA",
-    body: "Una vez revisada tu solicitud, recibís el link de pago. Tarjeta, PSE o transferencia bancaria.",
+    body: "Una vez revisada tu solicitud, recibes el link de pago. Tarjeta, PSE o transferencia bancaria.",
   },
   {
     step: "03",
     icon: Seal,
     title: "Recibir certificado",
     tagline: "INFORME FIRMADO POR VALUADOR",
-    body: "Descargá tu avalúo comercial certificado en PDF. Válido ante entidades financieras, notarías y juzgados.",
+    body: "Descarga tu avalúo comercial certificado en PDF. Válido ante entidades financieras, notarías y juzgados.",
   },
 ] as const;
 
@@ -74,7 +74,7 @@ export default function AvaluoPage() {
 
         {/* Trust micro-copy */}
         <p className="mt-5 text-xs text-fg-subtle font-mono tracking-wide uppercase">
-          Sin compromiso · Pago solo si aprobás · 100% en línea
+          Sin compromiso · Pago solo si apruebas · 100% en línea
         </p>
       </section>
 
@@ -124,7 +124,7 @@ export default function AvaluoPage() {
         {/* Salida alterna — el CTA vive una sola vez, en el hero */}
         <div className="mt-12 text-center">
           <p className="text-xs text-fg-muted">
-            También podés escribirnos a{" "}
+            También puedes escribirnos a{" "}
             <a
               href="mailto:avaluos@leasefy.co"
               className="underline underline-offset-2"

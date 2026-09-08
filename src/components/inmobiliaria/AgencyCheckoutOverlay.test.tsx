@@ -103,7 +103,7 @@ describe('<AgencyCheckoutOverlay> — awaiting subtitle never contradicts itself
   it('with a payment link: tells the owner to pay in the other tab, never "generando"', () => {
     render({ state: 'awaiting', paymentUrl: 'https://checkout.wompi.co/l/abc' });
     const text = allText();
-    expect(text).toContain('Completá el pago');
+    expect(text).toContain('Completa el pago');
     expect(text.toLowerCase()).not.toContain('generando');
   });
 

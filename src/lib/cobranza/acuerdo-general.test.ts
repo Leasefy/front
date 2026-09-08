@@ -64,7 +64,7 @@ describe('avisosDelAcuerdo', () => {
     const avisos = avisosDelAcuerdo({ ...base, maxPlanMonths: 0 })
     expect(avisos).toHaveLength(1)
     expect(avisos[0]).toContain('no puede armar ningún cronograma')
-    expect(avisos[0]).toContain('Subilo a 12')
+    expect(avisos[0]).toContain('Súbelo a 12')
   })
 
   it('avisa cuando un plazo marcado supera el tope', () => {

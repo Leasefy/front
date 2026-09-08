@@ -4,7 +4,7 @@
  * Quién abre y cierra el tray de procesos.
  *
  * Nico (2026-09-02): «mirá que el acceso a los procesos tapa la paginación,
- * deberíamos buscar otro lugar… dejalo mejor ahí arriba, que igual abra el
+ * deberíamos buscar otro lugar… déjalo mejor ahí arriba, que igual abra el
  * menú flotante y listo».
  *
  * El botón fijo abajo a la derecha se sentaba justo encima del paginador de

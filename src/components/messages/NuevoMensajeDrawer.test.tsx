@@ -2,7 +2,7 @@
  * El cajón de «Nuevo mensaje»: a quién puedo escribirle y qué pasa al elegir.
  *
  * Lo que importa acá es que la lista salga del back (no de una heurística del
- * front) y que un «no tenés relación» se cuente como lo que es —una regla— y no
+ * front) y que un «no tienes relación» se cuente como lo que es —una regla— y no
  * como un error genérico.
  *
  * Y desde las pestañas (Nico, 2026-09-04): que separar inquilinos de

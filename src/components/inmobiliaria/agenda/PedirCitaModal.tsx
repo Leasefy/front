@@ -61,7 +61,7 @@ export function PedirCitaModal({
   // Only properties that carry a real propertyId can host a PropertyVisit.
   // TODOS los del portafolio, en un Combobox con buscador: una inmobiliaria
   // con doscientos inmuebles no encuentra el suyo bajando un Select (Nico,
-  // 2026-09-03: «no aparecen todos y dejá un buscador ahí»).
+  // 2026-09-03: «no aparecen todos y deja un buscador ahí»).
   const { consignaciones } = useConsignaciones();
   const opcionesInmueble = useMemo<ComboboxOption[]>(
     () =>
@@ -176,7 +176,7 @@ export function PedirCitaModal({
                 onChange={(v) => setPropertyId(v ?? '')}
                 options={opcionesInmueble}
                 placeholder={t(k('citaSelectProperty'))}
-                searchPlaceholder="Escribí #código, título o dirección"
+                searchPlaceholder="Escribe #código, título o dirección"
                 contentClassName="z-[400]"
               />
             )}
@@ -231,7 +231,7 @@ export function PedirCitaModal({
                 value={fechaLocal(date)}
                 onChange={(d) => setDate(aFechaIso(d))}
                 minDate={hoyLocal()}
-                placeholder="Elegí el día"
+                placeholder="Elige el día"
                 className="w-full"
               />
             </div>

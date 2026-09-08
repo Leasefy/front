@@ -146,8 +146,8 @@ function construir(): readonly PasoInquilino[] {
     if (!d) {
       // Un paso nuevo en pasos.ts que nadie declaró acá.
       throw new Error(
-        `pasos-inquilino: falta declarar «${paso.key}». Agregalo a DECLARADO ` +
-          `(o ponelo en null si es de la inmobiliaria).`,
+        `pasos-inquilino: falta declarar «${paso.key}». Agrégalo a DECLARADO ` +
+          `(o ponlo en null si es de la inmobiliaria).`,
       )
     }
     propios.push({

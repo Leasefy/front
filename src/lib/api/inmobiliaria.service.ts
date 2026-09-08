@@ -71,10 +71,10 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:300
  * La lista, venga envuelta en `{ data }` o pelada.
  *
  * ⚠️ Esto NO es tolerancia por gusto: **cinco tablas del panel decían «todavía
- * no tenés nada» con los datos ahí**. El código hacía `res.data` sobre lo que
+ * no tienes nada» con los datos ahí**. El código hacía `res.data` sobre lo que
  * el back devuelve como array pelado, `[].data` es `undefined`, y el hook lo
  * pinta como lista vacía. Medido en el CRM de Propietarios: la respuesta traía
- * tres propietarios y la pantalla mostraba «Todavía no tenés propietarios».
+ * tres propietarios y la pantalla mostraba «Todavía no tienes propietarios».
  *
  * Es la tercera vez que la misma confusión de forma tumba una pantalla, y
  * ninguna de las tres se cayó: se veía como «no hay datos», que es indistinguible
@@ -155,7 +155,7 @@ function mapBankCodeToWire(code: BankCode): string {
   const wire = BANK_CODE_TO_WIRE[code];
   if (!wire) {
     throw new Error(
-      `Banco no soportado: "${code}". Este banco no tiene un código válido del backend — revisá BANK_CODE_TO_WIRE en inmobiliaria.service.ts.`,
+      `Banco no soportado: "${code}". Este banco no tiene un código válido del backend — revisa BANK_CODE_TO_WIRE en inmobiliaria.service.ts.`,
     );
   }
   return wire;
@@ -1179,7 +1179,7 @@ export const avaluosApi = {
       };
     }
 
-    throw new ApiError(0, 'No pudimos abrir el asistente de avalúo. Intentá de nuevo.');
+    throw new ApiError(0, 'No pudimos abrir el asistente de avalúo. Intenta de nuevo.');
   },
 };
 

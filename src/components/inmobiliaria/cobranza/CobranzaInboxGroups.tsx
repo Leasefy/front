@@ -291,7 +291,7 @@ export function InboxItemCard({
 
         {/*
           «Tomar control» = que el agente deje de contactar a este deudor
-          mientras vos te hacés cargo. Eso ES pausar el agente
+          mientras tú te haces cargo. Eso ES pausar el agente
           (POST /cobranza/debtors/:debtorId/pause), que ya funciona desde la
           ficha del deudor. Estuvo deshabilitado como «Próximamente» mientras
           el endpoint existía.
@@ -302,7 +302,7 @@ export function InboxItemCard({
             size="sm"
             hideArrow
             onClick={onTomarControl}
-            title="Pausar al agente en este deudor para atenderlo vos"
+            title="Pausar al agente en este deudor para atenderlo tú"
           >
             Tomar control
           </Button>

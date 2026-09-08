@@ -188,7 +188,7 @@ export function CobranzaImportCard({
               />
               <div>
                 <p className="text-sm font-medium text-warning">
-                  Revisá el formato de las fechas
+                  Revisa el formato de las fechas
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Leímos «{summary.vencimiento.columna}» como{' '}
@@ -197,7 +197,7 @@ export function CobranzaImportCard({
                     : 'mes/día/año'}
                   , pero ninguna fila lo confirma (todos los días son 12 o
                   menos). Si tu archivo usa el otro orden, los vencimientos
-                  quedaron corridos. Para evitarlo, escribí las fechas como
+                  quedaron corridos. Para evitarlo, escribe las fechas como
                   AAAA-MM-DD.
                 </p>
               </div>
@@ -222,7 +222,7 @@ export function CobranzaImportCard({
                     deudor, pero sin vencimiento no hay días de mora que
                     calcular, así que no{' '}
                     {summary.sinVencimiento === 1 ? 'pasa' : 'pasan'} a
-                    cobranza. Agregá la fecha y volvé a subir el archivo.
+                    cobranza. Agrega la fecha y vuelve a subir el archivo.
                   </p>
                 </div>
               </div>

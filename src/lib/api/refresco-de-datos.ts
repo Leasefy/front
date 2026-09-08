@@ -12,7 +12,7 @@
  * 2. **Después de una acción, la tabla no se entera.** Generar una dispersión,
  *    borrar un propietario, aprobar una cotización: el cambio ya está en la
  *    base y la pantalla sigue mostrando lo de antes hasta que alguien recarga.
- *    Decirle a la gente «recargá» es contarle un detalle de implementación.
+ *    Decirle a la gente «recarga» es contarle un detalle de implementación.
  *
  * Este módulo resuelve los dos con la misma pieza: el cliente HTTP es el único
  * lugar por donde pasa todo, así que ahí sabemos qué recurso se está leyendo y
@@ -80,8 +80,8 @@ const TAMBIEN_TOCA: Record<string, readonly string[]> = {
 const enVuelo = new Map<string, Promise<unknown>>();
 
 /**
- * Si ya hay un GET idéntico corriendo, devolvés ESE. Si no, arrancás uno y lo
- * dejás disponible mientras dure.
+ * Si ya hay un GET idéntico corriendo, devuelves ESE. Si no, arrancas uno y lo
+ * dejas disponible mientras dure.
  *
  * Se borra en el `finally`, con éxito o con error: un fallo compartido no
  * puede quedar pegado impidiendo el próximo intento.

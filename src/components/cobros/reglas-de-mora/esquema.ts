@@ -31,13 +31,13 @@ export const esquemaDeRegla = z
     concepto: z.enum(CONCEPTOS_DE_REGLA),
     disparador: z.enum(DISPARADORES_DE_REGLA),
     disparadorDia: z
-      .number({ invalid_type_error: 'Poné el día.', required_error: 'Poné el día.' })
+      .number({ invalid_type_error: 'Pon el día.', required_error: 'Pon el día.' })
       .int('Tiene que ser un número entero.')
       .min(0, 'No puede ser negativo.')
       .max(365, 'Como mucho 365.'),
     formula: z.enum(FORMULAS_DE_REGLA),
     valor: z
-      .number({ invalid_type_error: 'Poné el valor.', required_error: 'Poné el valor.' })
+      .number({ invalid_type_error: 'Pon el valor.', required_error: 'Pon el valor.' })
       .min(0, 'No puede ser negativo.'),
     base: z.enum(BASES_DE_CALCULO),
     topeCop: z
@@ -46,7 +46,7 @@ export const esquemaDeRegla = z
       .min(0, 'El tope no puede ser negativo.')
       .nullable(),
     orden: z
-      .number({ invalid_type_error: 'Poné el orden.', required_error: 'Poné el orden.' })
+      .number({ invalid_type_error: 'Pon el orden.', required_error: 'Pon el orden.' })
       .int('Tiene que ser un número entero.')
       .min(0, 'No puede ser negativo.')
       .max(100, 'Como mucho 100.'),
@@ -76,7 +76,7 @@ export const esquemaDeRegla = z
         path: ['valor'],
         message:
           `Una tasa DIARIA de ${v.valor}% son ${(v.valor * 30).toFixed(1)}% al mes. ` +
-          'Si querés esa cifra mensual, la diaria es ese número dividido 30.',
+          'Si quieres esa cifra mensual, la diaria es ese número dividido 30.',
       });
     }
     if (v.formula === 'PORCENTAJE_DE_LA_BASE' && v.valor > 100) {

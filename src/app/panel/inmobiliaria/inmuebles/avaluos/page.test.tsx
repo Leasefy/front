@@ -185,7 +185,7 @@ describe('Avalúos — la pantalla no se contradice', () => {
     // `sr-only` de diagnóstico que <FalloDeCarga> reserva para eso.
     //
     // La REFERENCIA sí se muestra, y es deliberado: cambió en develop DESPUÉS
-    // de escribirse este test. El copy del cartel dice «escribinos con la
+    // de escribirse este test. El copy del cartel dice «escríbenos con la
     // referencia» y no había ninguna en pantalla — pedirle a alguien un dato
     // que no le mostramos es mandarlo a buscar lo que no existe. Por eso esta
     // aserción hoy afirma lo contrario de lo que afirmaba antes: la referencia
@@ -217,7 +217,7 @@ describe('Avalúos — la pantalla no se contradice', () => {
     expect(aviso).toContain(t('inmobiliaria.ai.workspace.pages.avaluos.solicitarUnavailable'))
   })
 
-  it('(6) vacío con un filtro puesto ofrece quitarlo, no «creá el primero»', async () => {
+  it('(6) vacío con un filtro puesto ofrece quitarlo, no «crea el primero»', async () => {
     await montar()
 
     // Sin filtro: el vacío de verdad.

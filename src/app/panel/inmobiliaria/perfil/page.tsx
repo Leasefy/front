@@ -896,7 +896,7 @@ export default function InmobiliariaPerfilPage() {
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>
               {/* Lo que dice la copia canónica: hay 30 días para volver. Decir
-                  «irreversible» acá y «se recupera si iniciás sesión» dos
+                  «irreversible» acá y «se recupera si inicias sesión» dos
                   clics después es contarle dos cosas distintas a la misma
                   persona. */}
               <p className="text-sm text-fg-muted mb-4">{deletionCopy.recovery}</p>
@@ -959,7 +959,7 @@ export default function InmobiliariaPerfilPage() {
                     * `deletedAt`, y revoca tus sesiones. La inmobiliaria, sus
                     * inmuebles, sus contratos, sus cobros y sus mensajes
                     * siguen ahí — de hecho el backend te BLOQUEA la baja si
-                    * sos el único administrador, justamente para que nadie se
+                    * eres el único administrador, justamente para que nadie se
                     * quede sin dueño. Decirle a alguien que borra la operación
                     * de su agencia cuando lo único que pierde es su acceso es
                     * la peor clase de mentira: la que aterra.
@@ -1013,7 +1013,7 @@ export default function InmobiliariaPerfilPage() {
                     </div>
                     <p className="text-xs text-fg-muted">
                       {locale === 'es'
-                        ? 'No vas a poder darte de baja si tenés contratos de arriendo activos a tu nombre o si sos el único administrador de la inmobiliaria.'
+                        ? 'No vas a poder darte de baja si tienes contratos de arriendo activos a tu nombre o si eres el único administrador de la inmobiliaria.'
                         : 'You cannot delete your account while you have active leases in your name, or while you are the agency’s only administrator.'}
                     </p>
                   </div>

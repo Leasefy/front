@@ -160,7 +160,7 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
             <EmptyState
               icon={Receipt}
               title="Sin inmueble vinculado no hay cobros"
-              description="El cobro sale de la consignación del inmueble. Vinculalo en la tarjeta Propiedad."
+              description="El cobro sale de la consignación del inmueble. Vincúlalo en la tarjeta Propiedad."
             />
           ) : (
             <EmptyState

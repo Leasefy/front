@@ -155,7 +155,7 @@ export function AdministracionDelContrato({
         // `null` = volver a heredar los días de la inmobiliaria.
         diasDePlazo: plazo,
         prorratearPrimerMes: prorratear,
-        // `null` es una acción: «volvé a no saberlo». Distinto de no mandar el
+        // `null` es una acción: «vuelve a no saberlo». Distinto de no mandar el
         // campo, que lo deja como estaba.
         arrendadorResponsableIva: deTernario(arrendadorIva),
         inquilinoTipoPersona: tipoPersona === '' ? null : tipoPersona,
@@ -235,7 +235,7 @@ export function AdministracionDelContrato({
             <p className="text-xs text-foreground">
               El contrato dice <strong>{delContrato}%</strong> y la consignación{' '}
               <strong>{deConsignacion}%</strong>. Al propietario se le descuenta la
-              de la consignación. Corregí acá para dejar las dos iguales.
+              de la consignación. Corrige acá para dejar las dos iguales.
             </p>
           </div>
         ) : null}

@@ -83,7 +83,7 @@ function EnlaceContent() {
         let vigente = true
         const noSePudo = () =>
           setError(
-            'No pudimos abrir sesión desde este enlace. Pedí que te lo reenvíen, o entra con tu correo y contraseña si ya tienes una.',
+            'No pudimos abrir sesión desde este enlace. Pide que te lo reenvíen, o entra con tu correo y contraseña si ya tienes una.',
           )
         sb.auth
           .setSession({ access_token: accessToken, refresh_token: refreshToken })
@@ -114,7 +114,7 @@ function EnlaceContent() {
         // acá no hay sesión, pero la cuenta SÍ quedó confirmada: decirlo
         // evita que la persona pida otro enlace que va a fallar igual.
         setError(
-          'No pudimos abrir sesión desde este enlace. Si estabas confirmando tu correo desde otro dispositivo, la cuenta ya quedó confirmada: inicia sesión con tu contraseña. Si el enlace venció o ya se usó, pedí que te lo reenvíen.',
+          'No pudimos abrir sesión desde este enlace. Si estabas confirmando tu correo desde otro dispositivo, la cuenta ya quedó confirmada: inicia sesión con tu contraseña. Si el enlace venció o ya se usó, pide que te lo reenvíen.',
         )
       }
     }, 8000)

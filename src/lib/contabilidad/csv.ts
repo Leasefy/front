@@ -90,7 +90,7 @@ export function nombreDelCsv(desde: string, hasta: string, hoy: string): string 
 export class LibroDemasiadoGrande extends Error {
   constructor(public readonly total: number) {
     super(
-      `El rango tiene ${total.toLocaleString('es-CO')} asientos y el archivo admite hasta ${MAX_ASIENTOS_POR_CSV.toLocaleString('es-CO')}. Achicá el rango.`,
+      `El rango tiene ${total.toLocaleString('es-CO')} asientos y el archivo admite hasta ${MAX_ASIENTOS_POR_CSV.toLocaleString('es-CO')}. Achica el rango.`,
     );
     this.name = 'LibroDemasiadoGrande';
   }

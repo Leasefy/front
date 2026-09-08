@@ -333,7 +333,7 @@ function InboxContent() {
         <EmptyState
           icon={Tray}
           title="Aún no hay conversaciones en el inbox"
-          description="Cuando lleguen respuestas de tus inquilinos por WhatsApp, voz o correo, aparecerán aquí agrupadas por intención. Mientras tanto, encontrás las conversaciones en las llamadas y en el detalle de cada deudor."
+          description="Cuando lleguen respuestas de tus inquilinos por WhatsApp, voz o correo, aparecerán aquí agrupadas por intención. Mientras tanto, encuentras las conversaciones en las llamadas y en el detalle de cada deudor."
         />
       )}
 
@@ -376,7 +376,7 @@ function InboxContent() {
       {/* Nota honesta de alcance de la fuente */}
       <p className="text-xs text-fg-muted leading-relaxed max-w-2xl">
         Responder envía una plantilla aprobada por WhatsApp, y sale sólo porque
-        vos la elegiste. Los mensajes sin entender, las disputas y los que
+        tú la elegiste. Los mensajes sin entender, las disputas y los que
         requieren humano nunca se responden automáticamente. Un acuerdo siempre
         requiere tu aprobación explícita.
       </p>

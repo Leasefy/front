@@ -237,7 +237,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
     if (!/^\d{6,15}$/.test(legalId.trim())) errors.legalId = 'Entre 6 y 15 dígitos.';
     if (fullName.trim().length < 3) errors.fullName = 'Requerido (mínimo 3 caracteres).';
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) errors.email = 'Email inválido.';
-    if (!institutionCode) errors.institutionCode = 'Seleccioná un banco.';
+    if (!institutionCode) errors.institutionCode = 'Selecciona un banco.';
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   }, [legalId, fullName, email, institutionCode]);
@@ -408,7 +408,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                   <Field label="Banco" error={formErrors.institutionCode}>
                     <Select value={institutionCode} onValueChange={setInstitutionCode}>
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Seleccioná tu banco" />
+                        <SelectValue placeholder="Selecciona tu banco" />
                       </SelectTrigger>
                       <SelectContent>
                         {institutions.map((b) => (
@@ -501,7 +501,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                     </p>
                     <p className="text-xs text-fg-muted mt-1 max-w-xs">
                       {asyncUrl
-                        ? 'Completá el pago en la pestaña que abrimos con tu banco. Esta ventana se actualiza sola cuando el pago se confirme.'
+                        ? 'Completa el pago en la pestaña que abrimos con tu banco. Esta ventana se actualiza sola cuando el pago se confirme.'
                         : 'Estamos generando el enlace de pago con tu banco. No cierres esta ventana.'}
                     </p>
                   </div>
@@ -514,12 +514,12 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                     >
                       <ArrowSquareOut className="w-3.5 h-3.5" />
                       {popupBlocked
-                        ? 'No se abrió la pestaña — abrí el pago acá'
-                        : '¿No ves la pestaña? Abrila de nuevo'}
+                        ? 'No se abrió la pestaña — abre el pago acá'
+                        : '¿No ves la pestaña? Ábrela de nuevo'}
                     </a>
                   )}
                   <p className="text-[11px] text-fg-muted">
-                    Podés cerrar esta ventana — vas a ver la confirmación en tu historial.
+                    Puedes cerrar esta ventana — vas a ver la confirmación en tu historial.
                   </p>
                 </div>
               )}
@@ -679,7 +679,7 @@ function ResultPanel({
           <p className="text-sm text-fg-muted mt-1">{result.message}</p>
         </div>
         <p className="text-xs text-fg-muted">
-          Podés volver a intentarlo cuando quieras.
+          Puedes volver a intentarlo cuando quieras.
         </p>
       </div>
     );
@@ -696,7 +696,7 @@ function ResultPanel({
         <p className="text-sm text-danger mt-1">{result.message}</p>
       </div>
       <p className="text-xs text-fg-muted">
-        Podés intentar con otro banco o revisar los datos ingresados.
+        Puedes intentar con otro banco o revisar los datos ingresados.
       </p>
     </div>
   );

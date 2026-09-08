@@ -145,7 +145,7 @@ export function describirAlerta(
             clave: 'sin-asiento',
             severidad: 'warning',
             titulo: `${plural(alerta.total, 'movimiento', 'movimientos')} sin asiento${que ? `: ${que}` : ''}`,
-            detalle: `Faltan cuentas en ${plural(alerta.eventosSinCuenta.length, 'evento', 'eventos')} del mapeo. Completalo y después reprocesá desde el mapeo.`,
+            detalle: `Faltan cuentas en ${plural(alerta.eventosSinCuenta.length, 'evento', 'eventos')} del mapeo. Complétalo y después reprocesa desde el mapeo.`,
             accion: { tipo: 'ir', label: 'Completar el mapeo', href: `${BASE}/mapeo` },
           };
     }
@@ -164,7 +164,7 @@ export function describirAlerta(
         severidad: 'info',
         // `mesEnTitulo`, no `capitalize` de CSS: eso pondría «Agosto De 2026».
         titulo: `${mesEnTitulo(alerta.mes)} tiene ${plural(alerta.asientos, 'asiento', 'asientos')} y sigue abierto`,
-        detalle: `Cerralo hasta el ${diaLegible(alerta.hasta)} para que nada con fecha de ese mes se pueda asentar ni reversar adentro.`,
+        detalle: `Ciérralo hasta el ${diaLegible(alerta.hasta)} para que nada con fecha de ese mes se pueda asentar ni reversar adentro.`,
         accion: { tipo: 'cerrar-mes', label: 'Cerrar el mes', hasta: alerta.hasta },
       };
     }

@@ -19,7 +19,7 @@
  * respuesta con otra forma o una que tarda: todos terminan con el panel
  * abierto. Un cliente que paga no puede quedar afuera del producto porque
  * un endpoint se cayó. Eso vive en `normalizarEstado()` (muro-reglas.ts),
- * que es lo único que puede decir «sí, bloqueá».
+ * que es lo único que puede decir «sí, bloquea».
  */
 
 import { apiClient } from './client';

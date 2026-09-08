@@ -421,7 +421,7 @@ export function ConciliacionDelAgente() {
           <p className="mt-0.5 text-caption text-fg-muted">
             {tieneDatos
               ? `${total} ${total === 1 ? 'movimiento' : 'movimientos'} propios del agente, con su clasificación por caso. Confirmar acá no emite recibo de caja.`
-              : 'El agente todavía no tiene movimientos propios. Podés cargarle un CSV de Bancolombia o Davivienda para que los clasifique.'}
+              : 'El agente todavía no tiene movimientos propios. Puedes cargarle un CSV de Bancolombia o Davivienda para que los clasifique.'}
           </p>
         </div>
       </summary>

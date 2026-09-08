@@ -88,7 +88,7 @@ export function mensajeDeCobro(cobro: CobroPendienteDelHilo, nombre: string): st
         : `Lleva ${cobro.diasDeMora} días de mora.`,
     );
   }
-  partes.push('Cualquier cosa me contás.');
+  partes.push('Cualquier cosa me cuentas.');
   return partes.join(' ');
 }
 

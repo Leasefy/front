@@ -33,7 +33,7 @@ import type { LandlordCandidate } from '@/lib/api/applications.types'
 const MENSAJE_POR_DEFECTO =
   'Gracias por postularte. En esta oportunidad el inmueble se asignó a otra ' +
   'persona. Tu postulación queda registrada y te escribimos si aparece algo ' +
-  'que encaje con lo que buscás.'
+  'que encaje con lo que buscas.'
 
 type Resultado = 'pendiente' | 'enviando' | 'listo' | 'falló'
 
@@ -306,7 +306,7 @@ export function ModalAvisarNoElegidos({
         {yaSeIntentó && fallaron.length > 0 && (
           <p className={cn('px-6 pb-4 text-sm text-danger')}>
             A {fallaron.map((c) => c.tenantName).join(', ')} no le llegó el aviso.
-            Volvé a intentarlo — {elegido.tenantName} ya quedó aprobado, eso no
+            Vuelve a intentarlo — {elegido.tenantName} ya quedó aprobado, eso no
             se repite.
           </p>
         )}

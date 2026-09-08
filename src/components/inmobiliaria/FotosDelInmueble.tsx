@@ -232,7 +232,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
         >
           <div className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-fg shadow-md">
             <UploadSimple className="h-4 w-4" weight="bold" />
-            Soltá para subir {cupo === 1 ? 'la última foto' : `hasta ${cupo} fotos`}
+            Suelta para subir {cupo === 1 ? 'la última foto' : `hasta ${cupo} fotos`}
           </div>
         </div>
       )}
@@ -260,7 +260,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
         ) : imagenes.length === 0 && enCamino.length === 0 ? (
           <div className="space-y-4" data-testid="fotos-vacio">
             <p className="text-sm text-fg-muted">
-              Este inmueble todavía no tiene fotos. Sin fotos, en el portal se ve un espacio vacío: subí las de la
+              Este inmueble todavía no tiene fotos. Sin fotos, en el portal se ve un espacio vacío: sube las de la
               ficha o las que tomó el agente.
             </p>
             <SubidaDeFotos variante="grande" cupo={cupo} maximo={PROPERTY_PHOTO_MAX_COUNT} onArchivos={(a) => void subir(a)} aceptarPegado />
@@ -342,8 +342,8 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
         {!cargando && !error && imagenes.length > 0 && (
           <p className="text-xs text-fg-muted">
             {cupo > 0
-              ? `Caben ${cupo} ${cupo === 1 ? 'foto más' : 'fotos más'}. Arrastralas acá, elegilas o pegalas con Ctrl+V. La primera es la portada.`
-              : `Llegaste al máximo de ${PROPERTY_PHOTO_MAX_COUNT} fotos. Quitá una para subir otra.`}
+              ? `Caben ${cupo} ${cupo === 1 ? 'foto más' : 'fotos más'}. Arrastralas acá, elígelas o pegalas con Ctrl+V. La primera es la portada.`
+              : `Llegaste al máximo de ${PROPERTY_PHOTO_MAX_COUNT} fotos. Quita una para subir otra.`}
           </p>
         )}
       </div>

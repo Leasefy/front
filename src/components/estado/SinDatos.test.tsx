@@ -22,7 +22,7 @@ import { SinDatos } from './SinDatos'
 
 /**
  * Una lista sin filas significa DOS cosas opuestas, y la pantalla las decía
- * igual. Decirle «no tenés inmuebles» a quien tiene 200 y filtró mal es
+ * igual. Decirle «no tienes inmuebles» a quien tiene 200 y filtró mal es
  * afirmar algo falso, y además lo deja sin salida: el botón que necesita
  * —quitar el filtro— no estaba.
  */
@@ -63,7 +63,7 @@ describe('<SinDatos>', () => {
     expect(container.querySelector('[data-testid="limpiar-filtros"]')).toBeNull()
   })
 
-  it('con filtros: ofrece quitarlos y NO afirma que no tenés nada', () => {
+  it('con filtros: ofrece quitarlos y NO afirma que no tienes nada', () => {
     pintar({
       hayFiltros: true,
       queSon: 'inmuebles',
@@ -73,7 +73,7 @@ describe('<SinDatos>', () => {
 
     expect(caso()).toBe('filtros')
     expect(container.querySelector('[data-testid="limpiar-filtros"]')).not.toBeNull()
-    expect(container.textContent).not.toContain('Todavía no tenés inmuebles')
+    expect(container.textContent).not.toContain('Todavía no tienes inmuebles')
     // Y tampoco se ofrece crear: quien tiene 200 no necesita «el primero».
     expect(container.textContent).not.toContain('Importar inmuebles')
   })
@@ -87,7 +87,7 @@ describe('<SinDatos>', () => {
 
   it('el texto por defecto habla del dominio, no de «datos»', () => {
     pintar({ queSon: 'propietarios' })
-    expect(container.textContent).toContain('Todavía no tenés propietarios')
+    expect(container.textContent).toContain('Todavía no tienes propietarios')
   })
 
   it('el mensaje con filtros nombra lo que se buscaba en singular', () => {

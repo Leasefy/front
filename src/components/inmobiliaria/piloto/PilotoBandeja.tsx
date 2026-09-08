@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * PilotoBandeja — lo que los agentes necesitan de vos, en una sola lista.
+ * PilotoBandeja — lo que los agentes necesitan de ti, en una sola lista.
  *
  * ── Por qué se rediseñó (medido en pantalla el 2026-08-30) ─────────────────
  * La versión anterior pintaba 20 tarjetas de 161 px con el MISMO chip rojo

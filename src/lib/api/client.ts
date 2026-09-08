@@ -83,7 +83,7 @@ async function esperarRespuestaDeSesion(): Promise<void> {
  */
 /**
  * ⚠️ El tope es corto A PROPÓSITO. Este camino lo recorre TODO 401, incluido el
- * de «no tenés permiso», que es legítimo y tiene que llegar rápido a la
+ * de «no tienes permiso», que es legítimo y tiene que llegar rápido a la
  * pantalla. Con un tope de 4 s, cada 401 real tardaba cuatro segundos de más en
  * mostrarse — se veía en los tests, que pasaron a durar 4 s cada uno.
  *
@@ -259,7 +259,7 @@ async function request<T>(
   // navegando a /auth y cada petición que igual saliera sumaría un 401 más
   // —y un cartel de error más— sobre una pantalla que está por desaparecer.
   if (sesionTerminada()) {
-    throw new ApiError(401, 'Tu sesión expiró. Volvé a entrar.', 'SESSION_TERMINATED')
+    throw new ApiError(401, 'Tu sesión expiró. Vuelve a entrar.', 'SESSION_TERMINATED')
   }
 
   // Si el AuthProvider todavía no contestó, esperamos acá en vez de salir sin
@@ -286,8 +286,8 @@ async function request<T>(
     // from "backend returned 4xx/5xx".
     const raw = err instanceof Error ? err.message : String(err)
     const message = typeof navigator !== 'undefined' && !navigator.onLine
-      ? 'Sin conexión a internet. Verificá tu red e intentá de nuevo.'
-      : 'No pudimos conectarnos al servidor. Verificá tu conexión o intentá más tarde.'
+      ? 'Sin conexión a internet. Verifica tu red e intenta de nuevo.'
+      : 'No pudimos conectarnos al servidor. Verifica tu conexión o intenta más tarde.'
     throw new ApiError(0, `${message}${raw ? ` (${raw})` : ''}`)
   }
 
@@ -405,7 +405,7 @@ async function request<T>(
  *
  * 🔴 Renueva el token igual que `request`. No lo hacía: cualquier descarga que
  * saliera con el token recién vencido moría en un 401, y la pantalla —que no
- * distingue— culpaba al reporte («Probá de nuevo en un momento») cuando el
+ * distingue— culpaba al reporte («Prueba de nuevo en un momento») cuando el
  * problema era la sesión. Un GET normal en el mismo instante se recuperaba
  * solo; la descarga, no.
  *
@@ -423,8 +423,8 @@ async function requestBlob(path: string, token?: string, yaSeReintento = false):
   } catch (err) {
     const raw = err instanceof Error ? err.message : String(err)
     const message = typeof navigator !== 'undefined' && !navigator.onLine
-      ? 'Sin conexión a internet. Verificá tu red e intentá de nuevo.'
-      : 'No pudimos conectarnos al servidor. Verificá tu conexión o intentá más tarde.'
+      ? 'Sin conexión a internet. Verifica tu red e intenta de nuevo.'
+      : 'No pudimos conectarnos al servidor. Verifica tu conexión o intenta más tarde.'
     throw new ApiError(0, `${message}${raw ? ` (${raw})` : ''}`)
   }
 

@@ -242,7 +242,7 @@ describe('<TerceroIACapture> varios documentos', () => {
   });
 
   it('el mensaje del agente (400) se muestra tal cual en el error', async () => {
-    extractMock.mockRejectedValue(new Error('«rut.pdf» tiene 40 páginas; el máximo es 25. Subí sólo las páginas con los datos.'));
+    extractMock.mockRejectedValue(new Error('«rut.pdf» tiene 40 páginas; el máximo es 25. Sube sólo las páginas con los datos.'));
     await montar();
     await elegir([archivo('rut.pdf', 'application/pdf')]);
     await act(async () => {

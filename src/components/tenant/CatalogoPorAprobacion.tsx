@@ -9,7 +9,7 @@
  * (`hasVerifiedProfile`, el A/B/C/D) y muestra *"necesitamos conocer tu perfil,
  * completa una aplicación o solicita una evaluación"*. Para quien acaba de
  * aprobarse y crear su cuenta eso es exactamente al revés de lo que se le
- * prometió: se le dijo "entrás a ver tu catálogo" y se encontró con que no lo
+ * prometió: se le dijo "entras a ver tu catálogo" y se encontró con que no lo
  * conocemos. Además con vocabulario muerto ("aplicación", "evaluación").
  *
  * Son dos cosas distintas y por eso viven separadas:
@@ -17,7 +17,7 @@
  * - **Perfil de scoring** (A/B/C/D) → *probabilidad de que te acepten*. Es del
  *   motor de recomendaciones y sigue intacto para quien lo tenga.
  * - **Aprobación** → *hasta cuánto te respaldan las aseguradoras*. Es lo que
- *   dice qué podés **tomar**, y alcanza de sobra para armar un catálogo.
+ *   dice qué puedes **tomar**, y alcanza de sobra para armar un catálogo.
  *
  * Acá no se calcula compatibilidad ni probabilidad: se muestran las propiedades
  * que caben en el tope y se dice cuántas quedaron fuera. Ni más ni menos de lo

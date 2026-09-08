@@ -96,8 +96,8 @@ export function TerminosContenido() {
                 </h2>
                 <p className="mb-3">
                   Para usar la plataforma hay que crear una cuenta con información
-                  veraz y mantenerla al día. Sos responsable de lo que pase con tus
-                  credenciales; avisanos apenas sospeches un uso no autorizado.
+                  veraz y mantenerla al día. Eres responsable de lo que pase con tus
+                  credenciales; avísanos apenas sospeches un uso no autorizado.
                 </p>
                 <p>
                   Sólo puede abrir cuenta quien sea mayor de edad. Una cuenta admite
@@ -133,7 +133,7 @@ export function TerminosContenido() {
                   <li>Un cambio de precio se avisa con <strong className="text-foreground/85">treinta (30) días</strong> de anticipación y rige desde el siguiente período.</li>
                   <li>La facturación es mensual o anual, según lo contratado.</li>
                   <li>La mora puede llevar a suspender el servicio, previo aviso, sin perjuicio del cobro de lo adeudado.</li>
-                  <li><strong className="text-foreground/85">Podés cancelar cuando quieras</strong>, desde la configuración de la cuenta y sin penalidad. La cancelación surte efecto al final del período pagado.</li>
+                  <li><strong className="text-foreground/85">Puedes cancelar cuando quieras</strong>, desde la configuración de la cuenta y sin penalidad. La cancelación surte efecto al final del período pagado.</li>
                 </ul>
                 <p>
                   Al cancelar, mantenemos tu información disponible para descarga
@@ -146,17 +146,17 @@ export function TerminosContenido() {
                   7. Retracto y reversión del pago
                 </h2>
                 <p className="mb-3">
-                  Si contratás como consumidor, tenés{" "}
+                  Si contratas como consumidor, tienes{" "}
                   <strong className="text-foreground/90">cinco (5) días hábiles</strong> para
                   retractarte, contados desde la celebración del contrato, conforme al
-                  artículo 47 de la Ley 1480 de 2011. Escribinos a{" "}
+                  artículo 47 de la Ley 1480 de 2011. Escríbenos a{" "}
                   <span className="text-foreground/85 font-medium">hola@leasefy.co</span> y
                   devolvemos lo pagado dentro de los{" "}
                   <strong className="text-foreground/90">quince (15) días calendario</strong>{" "}
                   siguientes.
                 </p>
                 <p>
-                  También podés pedir la <strong className="text-foreground/90">reversión del pago</strong>{" "}
+                  También puedes pedir la <strong className="text-foreground/90">reversión del pago</strong>{" "}
                   cuando haya fraude, una operación que no solicitaste, o un servicio
                   no prestado o distinto del contratado (artículo 51 de la misma ley),
                   dentro de los cinco días hábiles siguientes a que te enteres,
@@ -414,7 +414,7 @@ export function TerminosContenido() {
                   17. Migración de información
                 </h2>
                 <p>
-                  Si traés información desde otro sistema, seguís siendo su
+                  Si traés información desde otro sistema, sigues siendo su
                   responsable: que sea veraz, que tengas derecho a usarla y que
                   cuentes con la autorización de los titulares. Nosotros la
                   importamos, mostramos qué quedó sin poder asociarse y no la
@@ -496,8 +496,8 @@ export function TerminosContenido() {
                   otorga el derecho a usarlos mientras dure la relación, y nada más.
                 </p>
                 <p>
-                  La información y los archivos que cargás siguen siendo tuyos. Nos
-                  autorizás a alojarlos, procesarlos y mostrarlos{" "}
+                  La información y los archivos que cargas siguen siendo tuyos. Nos
+                  autorizas a alojarlos, procesarlos y mostrarlos{" "}
                   <strong className="text-foreground/90">con el único fin de prestarte el servicio</strong>{" "}
                   y mientras dure la relación. No los usamos para otra cosa, no los
                   cedemos y no adquirimos ninguna licencia perpetua sobre ellos.
@@ -537,14 +537,14 @@ export function TerminosContenido() {
                   23. Suspensión y terminación
                 </h2>
                 <p className="mb-3">
-                  Podés terminar cuando quieras (§6). Nosotros podemos suspender o
+                  Puedes terminar cuando quieras (§6). Nosotros podemos suspender o
                   terminar la cuenta por mora en el pago, por un uso de los prohibidos
                   en la §20 o por orden de autoridad competente, siempre{" "}
                   <strong className="text-foreground/90">avisando antes y explicando el motivo</strong>,
                   salvo que la ley lo impida.
                 </p>
                 <p>
-                  En cualquier caso conservás sesenta (60) días para descargar tu
+                  En cualquier caso conservas sesenta (60) días para descargar tu
                   información.
                 </p>
               </section>
@@ -554,17 +554,17 @@ export function TerminosContenido() {
                   24. Peticiones, quejas y reclamos
                 </h2>
                 <p className="mb-3">
-                  Escribinos a{" "}
+                  Escríbenos a{" "}
                   <span className="text-foreground/85 font-medium">hola@leasefy.co</span>. Toda
                   solicitud recibe{" "}
                   <strong className="text-foreground/90">número de radicado con fecha y hora</strong>,
-                  y podés hacerle seguimiento. Respondemos dentro de los plazos legales.
+                  y puedes hacerle seguimiento. Respondemos dentro de los plazos legales.
                 </p>
                 <p>
                   Si el reclamo es sobre tus datos personales, el canal es{" "}
                   <span className="text-foreground/85 font-medium">privacidad@leasefy.co</span>{" "}
                   y los plazos están en la Política de tratamiento. Como consumidor
-                  podés acudir a la{" "}
+                  puedes acudir a la{" "}
                   <a href="https://www.sic.gov.co" className="text-foreground/90 underline underline-offset-2" target="_blank" rel="noopener noreferrer">
                     Superintendencia de Industria y Comercio
                   </a>.
@@ -578,7 +578,7 @@ export function TerminosContenido() {
                 <p>
                   Un cambio sustancial se publica acá con{" "}
                   <strong className="text-foreground/90">treinta (30) días</strong> de
-                  anticipación y se avisa por correo. Si no estás de acuerdo, podés
+                  anticipación y se avisa por correo. Si no estás de acuerdo, puedes
                   terminar sin penalidad antes de que entre a regir. Conservamos las
                   versiones anteriores.
                 </p>
@@ -590,8 +590,8 @@ export function TerminosContenido() {
                 </h2>
                 <p>
                   Estos términos se rigen por la ley colombiana. Las controversias se
-                  someten a los jueces de la República de Colombia. Si sos consumidor,
-                  conservás el derecho de acudir al juez de tu domicilio y a la
+                  someten a los jueces de la República de Colombia. Si eres consumidor,
+                  conservas el derecho de acudir al juez de tu domicilio y a la
                   Superintendencia de Industria y Comercio: nada de este documento te
                   obliga a litigar en otra ciudad ni a renunciar a esa opción.
                 </p>

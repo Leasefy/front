@@ -40,16 +40,16 @@ export function SeccionBranding() {
         <VacioDeSeccion
           icono={Palette}
           titulo="Todavía no pudimos leer tu inmobiliaria"
-          ayuda="Volvé a intentar en un momento: sin los datos de la agencia no hay logo ni colores que mostrar."
+          ayuda="Vuelve a intentar en un momento: sin los datos de la agencia no hay logo ni colores que mostrar."
         />
       }
     >
       {agency && (
         <ConfigBranding
           agency={agency}
-          onLogoUpdated={() => refrescar('El logo se guardó, pero no pudimos actualizar la vista. Recargá la página.')}
+          onLogoUpdated={() => refrescar('El logo se guardó, pero no pudimos actualizar la vista. Recarga la página.')}
           onBrandingUpdated={() =>
-            refrescar('Los colores se guardaron, pero no pudimos actualizar la vista. Recargá la página.')
+            refrescar('Los colores se guardaron, pero no pudimos actualizar la vista. Recarga la página.')
           }
           canEdit={agency.memberRole === 'ADMIN'}
         />

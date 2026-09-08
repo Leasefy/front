@@ -179,7 +179,7 @@ export function ResolucionMasiva({ ids, seleccionadas, onListo }: Props) {
             </label>
             <Select value={uso} onValueChange={(v) => setUso(v as 'VIVIENDA' | 'COMERCIAL')}>
               <SelectTrigger>
-                <SelectValue placeholder="Elegí el uso" />
+                <SelectValue placeholder="Elige el uso" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="VIVIENDA">Vivienda</SelectItem>

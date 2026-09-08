@@ -6,7 +6,7 @@ import { buildMemberInviteLink } from './invite-link'
 /**
  * 🔴 EL DEFECTO QUE CIERRA (auditoría 2026-09-05): el paso «Miembros» del alta
  * mostraba enlaces `/onboarding/invitacion/<rawToken>` — una ruta que no
- * existe (404) — y decía «guardá estos links ahora, no se vuelven a mostrar».
+ * existe (404) — y decía «guarda estos links ahora, no se vuelven a mostrar».
  * Ninguna invitación hecha en el registro se podía aceptar.
  *
  * Ahora se crean con el endpoint real del back, el mismo del panel.

@@ -151,7 +151,7 @@ export function ImportarCuentas({
       setError(
         mensajeDeContabilidad(
           e,
-          "No pudimos revisar el archivo. Intentá de nuevo.",
+          "No pudimos revisar el archivo. Intenta de nuevo.",
         ),
       );
     } finally {
@@ -210,7 +210,7 @@ export function ImportarCuentas({
               ? "Los asientos automáticos ya tienen su cuenta en tu plan."
               : `Tu plan no tiene ${resultado.mapeo.sinCuenta
                   .map((c) => c.codigo)
-                  .join(", ")}: asigná esas cuentas en «Cuentas de los asientos automáticos», más abajo.`}
+                  .join(", ")}: asigna esas cuentas en «Cuentas de los asientos automáticos», más abajo.`}
           </p>
         ) : null}
         {resultado.invalidas > 0 ? (
@@ -429,7 +429,7 @@ export function ImportarCuentas({
           {demasiadas ? (
             <Aviso tono="danger">
               Son {armadas.length} cuentas y una importación admite hasta{" "}
-              {MAX_CUENTAS_POR_IMPORTACION}. Partí el archivo y súbelo en
+              {MAX_CUENTAS_POR_IMPORTACION}. Parte el archivo y súbelo en
               tandas.
             </Aviso>
           ) : null}

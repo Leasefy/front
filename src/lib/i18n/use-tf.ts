@@ -17,7 +17,7 @@
  * ⚠️ **Usa `useOptionalI18n`, no `useI18n`.** Estos componentes también viven en
  * rutas públicas (`/aprobacion`, el catálogo) que están fuera del provider, y
  * `useI18n` **lanza** cuando no lo encuentra: la pantalla entera se cae en
- * blanco. Un helper cuyo trabajo es "traducí con respaldo" no puede ser la
+ * blanco. Un helper cuyo trabajo es "traduce con respaldo" no puede ser la
  * causa de una pantalla vacía — sin provider simplemente se lee el respaldo.
  */
 

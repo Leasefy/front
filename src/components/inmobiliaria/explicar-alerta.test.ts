@@ -79,7 +79,7 @@ describe('nombre que no coincide', () => {
     );
 
     expect(r?.texto).not.toContain('mismas palabras');
-    expect(r?.texto).toContain('Verificá');
+    expect(r?.texto).toContain('Verifica');
   });
 });
 

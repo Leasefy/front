@@ -179,7 +179,7 @@ export function CopropietariosField({
                 aria-label={`Copropietario ${i + 1}`}
                 className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg"
               >
-                <option value="">Elegí un propietario…</option>
+                <option value="">Elige un propietario…</option>
                 {elegibles.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}

@@ -245,7 +245,7 @@ function NuevoReporte({
         title={
           deudor
             ? 'Generar el borrador con la cartera del deudor'
-            : 'Elegí un deudor primero'
+            : 'Elige un deudor primero'
         }
       >
         {isGenerating ? <Spinner size="sm" variant="current" /> : null}
@@ -286,7 +286,7 @@ function ReportePreviewCard({ reporte }: { reporte: ReportePreview }) {
                 <span className="font-medium">{reporte.valor}</span>.
               </p>
               <p className="text-fg-muted">
-                Todavía no hay una narrativa redactada para este reporte. Volvé a
+                Todavía no hay una narrativa redactada para este reporte. Vuelve a
                 generarlo para que el agente componga el resumen de gestiones y la
                 recomendación con la información de cartera del deudor.
               </p>
@@ -422,7 +422,7 @@ function ReportesPropietariosContent() {
     if (!esReal || yaEnviado) return
     // Confirmación humana explícita antes de marcar como enviado al propietario.
     const ok = globalThis.confirm(
-      `¿Confirmás que revisaste este reporte y querés enviarlo a ${seleccionado.propietario}? Esta acción lo marca como enviado al propietario.`,
+      `¿Confirmas que revisaste este reporte y quieres enviarlo a ${seleccionado.propietario}? Esta acción lo marca como enviado al propietario.`,
     )
     if (!ok) return
     setActionMsg(null)
@@ -460,7 +460,7 @@ function ReportesPropietariosContent() {
 
       {generateError && (
         <p className="text-sm text-danger" role="alert">
-          No pudimos generar el reporte. Intentá de nuevo.
+          No pudimos generar el reporte. Intenta de nuevo.
         </p>
       )}
 
@@ -488,7 +488,7 @@ function ReportesPropietariosContent() {
         <EmptyState
           icon={FileText}
           title="Todavía no hay reportes de gestión"
-          description="Elegí un deudor arriba y generá el primero: el agente redacta el estado de mora, las gestiones hechas y una recomendación, para que lo revises y lo apruebes antes de enviárselo al propietario."
+          description="Elige un deudor arriba y generá el primero: el agente redacta el estado de mora, las gestiones hechas y una recomendación, para que lo revises y lo apruebes antes de enviárselo al propietario."
           primaryCta={{ label: 'Ver mis propietarios', href: PROPIETARIOS_HREF }}
         />
       ) : (
@@ -618,12 +618,12 @@ function ReportesPropietariosContent() {
               {pdfMsg && <p className="text-xs text-fg-muted">{pdfMsg}</p>}
               {approveError && (
                 <p className="text-xs text-danger">
-                  No se pudo aprobar el reporte. Intentá de nuevo.
+                  No se pudo aprobar el reporte. Intenta de nuevo.
                 </p>
               )}
               {generateError && (
                 <p className="text-xs text-danger">
-                  No se pudo generar el borrador. Intentá de nuevo.
+                  No se pudo generar el borrador. Intenta de nuevo.
                 </p>
               )}
 

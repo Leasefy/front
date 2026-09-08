@@ -90,9 +90,9 @@ export function SeccionEquipo() {
     const enlace = `${window.location.origin}/invitacion/${token}`;
     try {
       await navigator.clipboard.writeText(enlace);
-      toast.success('Enlace copiado', { description: `Pasáselo a ${email} por donde puedas. Vence en 7 días.` });
+      toast.success('Enlace copiado', { description: `Pásaselo a ${email} por donde puedas. Vence en 7 días.` });
     } catch {
-      toast.info('Copialo a mano', { description: enlace, duration: 30000 });
+      toast.info('Cópialo a mano', { description: enlace, duration: 30000 });
     }
   }, []);
 
@@ -116,8 +116,8 @@ export function SeccionEquipo() {
           // mismo camino roto: el consejo cambia.
           const descripcion =
             result.emailStatus === 'not_configured'
-              ? `${invite.name || invite.email} quedó invitado, pero el servidor todavía no manda correos. Pasale vos el enlace.`
-              : `${invite.name || invite.email} quedó invitado, pero el correo no salió. Pasale vos el enlace.`;
+              ? `${invite.name || invite.email} quedó invitado, pero el servidor todavía no manda correos. Pásale tú el enlace.`
+              : `${invite.name || invite.email} quedó invitado, pero el correo no salió. Pásale tú el enlace.`;
           toast.warning(t('inmobiliaria.config.toasts.inviteEmailNotDelivered'), {
             description: descripcion,
             action: accionDelCorreoCaido(result, invite.email),
@@ -178,8 +178,8 @@ export function SeccionEquipo() {
           toast.warning('Invitación regenerada, el correo no salió', {
             description:
               result.emailStatus === 'not_configured'
-                ? `El servidor todavía no tiene correo configurado. El enlace de ${email} es nuevo y sirve: pasáselo vos.`
-                : `El enlace de ${email} es nuevo y sirve. Pasáselo vos.`,
+                ? `El servidor todavía no tiene correo configurado. El enlace de ${email} es nuevo y sirve: pásaselo tú.`
+                : `El enlace de ${email} es nuevo y sirve. Pásaselo tú.`,
             action: accionDelCorreoCaido(result, user?.email ?? ''),
             duration: 12000,
           });

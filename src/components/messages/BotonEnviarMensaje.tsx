@@ -4,7 +4,7 @@
  * «Enviar mensaje» desde donde estés parado.
  *
  * El cajón de la bandeja sirve para buscar a alguien; esto es lo otro: ya
- * estás mirando la ficha de un inquilino o de un propietario y querés
+ * estás mirando la ficha de un inquilino o de un propietario y quieres
  * escribirle sin volver a buscarlo.
  *
  * Abre (o reabre) el hilo directo y navega a la bandeja con ese hilo
@@ -89,13 +89,13 @@ export function BotonEnviarMensaje({
 /** Cada motivo se cuenta como lo que es; ninguno como «algo salió mal». */
 function mensajeDeFallo(err: unknown): string {
   if (!(err instanceof ApiError)) {
-    return 'No pudimos abrir la conversación. Intentá de nuevo.';
+    return 'No pudimos abrir la conversación. Intenta de nuevo.';
   }
   if (err.status === 404) {
     return 'Esa persona todavía no tiene cuenta en Leasefy, así que no hay dónde escribirle.';
   }
   if (err.status === 403) {
-    return 'Solo podés escribirle a alguien con quien tengas un inmueble o un contrato en común.';
+    return 'Solo puedes escribirle a alguien con quien tengas un inmueble o un contrato en común.';
   }
-  return 'No pudimos abrir la conversación. Intentá de nuevo.';
+  return 'No pudimos abrir la conversación. Intenta de nuevo.';
 }

@@ -335,7 +335,7 @@ export function EstadoDeCuenta() {
                       <SinDatos
                         queSon="movimientos"
                         icono={UserList}
-                        titulo={!listo ? 'Elegí un tercero' : 'Sin movimientos en este rango'}
+                        titulo={!listo ? 'Elige un tercero' : 'Sin movimientos en este rango'}
                         descripcion={
                           !listo
                             ? 'El estado de cuenta junta todo lo que se asentó a su nombre, en todas las cuentas, con saldo corrido.'

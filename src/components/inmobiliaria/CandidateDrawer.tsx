@@ -274,7 +274,7 @@ function CuerpoDelCandidato({ candidate, onClose, onAction }: CuerpoDelCandidato
                 setIsLoadingAI(false);
                 stopPolling();
               } else if (r.status === 'failed') {
-                setAiError('El agente no pudo completar la evaluación. Intentá de nuevo.');
+                setAiError('El agente no pudo completar la evaluación. Intenta de nuevo.');
                 setIsLoadingAI(false);
                 stopPolling();
               }
@@ -466,7 +466,7 @@ function CuerpoDelCandidato({ candidate, onClose, onAction }: CuerpoDelCandidato
                 <div className="flex-1">
                   <p className="font-semibold text-sm text-foreground">Proceso de contrato cerrado</p>
                   <p className="text-xs text-fg-muted mt-0.5">
-                    El contrato se canceló o fue rechazado definitivamente. Para reintentar con este candidato, necesitás una nueva aplicación.
+                    El contrato se canceló o fue rechazado definitivamente. Para reintentar con este candidato, necesitas una nueva aplicación.
                   </p>
                 </div>
               </div>
@@ -902,7 +902,7 @@ function CuerpoDelCandidato({ candidate, onClose, onAction }: CuerpoDelCandidato
               <p className="flex items-start gap-2 text-xs text-danger">
                 <WarningCircle className="w-4 h-4 flex-shrink-0 mt-px" />
                 <span>
-                  El análisis marcó inconsistencias en los documentos. Revisá las alertas de
+                  El análisis marcó inconsistencias en los documentos. Revisa las alertas de
                   integridad antes de decidir.
                 </span>
               </p>
@@ -1203,8 +1203,8 @@ export function explicarAlerta(flag: IntegrityFlag): AlertaExplicada | null {
     const diferencia = pct.replace('.', ',');
     return {
       texto: umbral
-        ? `Las dos cifras se llevan un ${diferencia}%, y el tope aceptado es ${umbral.replace('.', ',')}%. Pedí el soporte que las concilie antes de decidir.`
-        : `Las dos cifras se llevan un ${diferencia}%. Pedí el soporte que las concilie antes de decidir.`,
+        ? `Las dos cifras se llevan un ${diferencia}%, y el tope aceptado es ${umbral.replace('.', ',')}%. Pide el soporte que las concilie antes de decidir.`
+        : `Las dos cifras se llevan un ${diferencia}%. Pide el soporte que las concilie antes de decidir.`,
       caraACara: {
         izqRotulo: rotA.trim(),
         izqValor: formatCurrency(numeroColombiano(montoA)),
@@ -1234,7 +1234,7 @@ export function explicarAlerta(flag: IntegrityFlag): AlertaExplicada | null {
     return {
       texto: mismasPalabras
         ? 'Son las mismas palabras en otro orden —apellidos primero—, no dos personas distintas. Suele pasar cuando la nómina se exporta del sistema de la empresa.'
-        : 'Los nombres no coinciden. Verificá que los documentos sean de la misma persona antes de decidir.',
+        : 'Los nombres no coinciden. Verifica que los documentos sean de la misma persona antes de decidir.',
       caraACara: {
         izqRotulo: fuenteA.trim(),
         izqValor: nombreA,

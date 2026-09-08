@@ -37,11 +37,11 @@ interface AgencyCheckoutOverlayProps {
  * be confirming a payment for a link that does not exist yet). */
 function awaitingSubtitle(paymentUrl: string | null, awaitingTimedOut: boolean): string {
   if (!paymentUrl) {
-    return 'No pudimos recuperar el enlace de pago. Podés salir e intentarlo de nuevo, o verificar si ya pagaste.';
+    return 'No pudimos recuperar el enlace de pago. Puedes salir e intentarlo de nuevo, o verificar si ya pagaste.';
   }
   return awaitingTimedOut
-    ? 'Si ya pagaste, puede demorar unos minutos más en confirmarse. Si no, podés salir e intentarlo de nuevo.'
-    : 'Completá el pago en la pestaña que abrimos. Esta pantalla se actualiza sola.';
+    ? 'Si ya pagaste, puede demorar unos minutos más en confirmarse. Si no, puedes salir e intentarlo de nuevo.'
+    : 'Completa el pago en la pestaña que abrimos. Esta pantalla se actualiza sola.';
 }
 
 /**
@@ -129,8 +129,8 @@ export function AgencyCheckoutOverlay({
               >
                 <ArrowSquareOut className="w-3.5 h-3.5" />
                 {popupBlocked
-                  ? 'No se abrió la pestaña — abrí el pago acá'
-                  : '¿No ves la pestaña? Abrila de nuevo'}
+                  ? 'No se abrió la pestaña — abre el pago acá'
+                  : '¿No ves la pestaña? Ábrela de nuevo'}
               </a>
             )}
             {pollError && <p className="text-xs text-fg-muted">{pollError}</p>}
@@ -170,7 +170,7 @@ export function AgencyCheckoutOverlay({
               No pudimos completar la operación
             </DialogTitle>
             <DialogDescription className="text-sm text-fg-muted">
-              {error ?? 'Ocurrió un error. Intentá de nuevo.'}
+              {error ?? 'Ocurrió un error. Intenta de nuevo.'}
             </DialogDescription>
             <Button variant="secondary" size="sm" hideArrow onClick={onClose} className="mt-1">
               Volver a los planes

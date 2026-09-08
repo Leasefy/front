@@ -118,7 +118,7 @@ export type ReglaDeMoraDelContratoCruda = Omit<
 
 /**
  * El cuerpo de `PUT /contracts/:id/reglas-de-mora/:reglaId`. `null` es una
- * acción («volvé a lo de la agencia»), distinta de no mandar la clave.
+ * acción («vuelve a lo de la agencia»), distinta de no mandar la clave.
  */
 export interface AjusteDeReglaDelContrato {
   aplica?: boolean;

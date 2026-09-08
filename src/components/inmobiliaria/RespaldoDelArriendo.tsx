@@ -138,7 +138,7 @@ export function RespaldoDelArriendo({
         <p className="flex items-start gap-2 rounded-md border border-border bg-surface-muted px-3 py-2.5 text-sm text-fg-muted">
           <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           El análisis de este inquilino no trajo la lista de aseguradoras.
-          Escribí a mano cuál aprobó.
+          Escribe a mano cuál aprobó.
         </p>
       )}
 

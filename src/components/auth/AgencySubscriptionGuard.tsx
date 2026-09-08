@@ -72,7 +72,7 @@ export function AgencySubscriptionGuard({ children }: { children: ReactNode }) {
       <div className="max-w-md mx-auto rounded-lg bg-surface-raised border border-border p-8 text-center space-y-4 shadow-sm">
         <h2 className="text-h2">Tu agencia no tiene un plan activo</h2>
         <p className="text-body-sm text-fg-secondary">
-          Contactá al administrador de tu agencia para activar una suscripción y
+          Contacta al administrador de tu agencia para activar una suscripción y
           volver a usar el panel.
         </p>
       </div>

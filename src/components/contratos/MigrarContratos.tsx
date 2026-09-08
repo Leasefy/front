@@ -515,7 +515,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
       // el paginador o recargar traen la lista fresca.
       await refrescar(elLote).catch(() => {
         toast.error(
-          "Se consignó, pero no pudimos refrescar la lista. Cambiá de página o recargá para verla al día.",
+          "Se consignó, pero no pudimos refrescar la lista. Cambia de página o recarga para verla al día.",
         );
       });
     },
@@ -820,7 +820,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
             setError(
               e instanceof Error
                 ? e.message
-                : "No pudimos traer esa página. Probá de nuevo.",
+                : "No pudimos traer esa página. Prueba de nuevo.",
             ),
           )
         }
@@ -838,7 +838,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
             setError(
               e instanceof Error
                 ? e.message
-                : "Se guardó, pero no pudimos refrescar la lista. Cambiá de página para verla al día.",
+                : "Se guardó, pero no pudimos refrescar la lista. Cambia de página para verla al día.",
             ),
           )
         }
@@ -975,7 +975,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
             );
           })}
           <p className="text-xs text-muted-foreground">
-            Si volvés a subir el mismo archivo, las filas se duplican.
+            Si vuelves a subir el mismo archivo, las filas se duplican.
           </p>
           {errorTarjeta ? (
             <p
@@ -1043,7 +1043,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
           <div>
             <p className="text-sm font-medium text-foreground">
               {isDragActive
-                ? "Soltá el archivo acá"
+                ? "Suelta el archivo acá"
                 : "Arrastra el archivo de contratos o haz clic para elegirlo"}
             </p>
             <p className="text-xs text-muted-foreground">
@@ -1068,7 +1068,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                 Así entendimos tus columnas
               </h2>
               <p className="text-xs text-muted-foreground">
-                {filas.length} contratos en el archivo. Revisá el mapeo antes de
+                {filas.length} contratos en el archivo. Revisa el mapeo antes de
                 seguir, y corrige a mano lo que haga falta: «arrendador» es el
                 propietario y «arrendatario» es el inquilino, y se parecen
                 demasiado.
@@ -1140,7 +1140,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                   : `${dudosas.length} columnas se entendieron por una palabra genérica`
               }
             >
-              Confirmá abajo que {dudosas.map((m) => `«${m.columna}»`).join(", ")}{" "}
+              Confirma abajo que {dudosas.map((m) => `«${m.columna}»`).join(", ")}{" "}
               {dudosas.length === 1 ? "es" : "son"} lo que dice el campo elegido.
             </AlertaAccionable>
           ) : null}
@@ -1319,7 +1319,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                   La columna «{comisionRara.columna}» trae valores como{" "}
                   {comisionRara.ejemplos.map((e) => `«${e}»`).join(" y ")}, que
                   no parecen un porcentaje ({comisionRara.cuantas} de{" "}
-                  {comisionRara.total} filas). Revisá el mapeo antes de seguir:
+                  {comisionRara.total} filas). Revisa el mapeo antes de seguir:
                   la comisión se guarda como porcentaje, así que esos valores
                   se van a perder.
                 </p>
@@ -1327,7 +1327,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
               {huecos.length > 0 ? (
                 <p className="mt-1">
                   Puedes seguir: esas filas van a pedir el dato una por una en
-                  la lista de trabajo. Si es un error del archivo, corregilo y
+                  la lista de trabajo. Si es un error del archivo, corrígelo y
                   vuelve a subirlo.
                 </p>
               ) : null}
@@ -1679,7 +1679,7 @@ function ListaDeTrabajo({
               <>
                 Asociamos {resumenAsociacion.hechas}{" "}
                 {resumenAsociacion.hechas === 1 ? "contrato" : "contratos"} con
-                el propietario que traía el archivo. Revisá abajo que cada uno
+                el propietario que traía el archivo. Revisa abajo que cada uno
                 haya quedado con el suyo.
               </>
             ) : (
@@ -1895,14 +1895,14 @@ function ListaDeTrabajo({
       <div>
         <h3 className="text-sm font-medium text-foreground">
           {resumen.activables > 0
-            ? `Revisá los ${resumen.total} ${
+            ? `Revisa los ${resumen.total} ${
                 resumen.total === 1 ? "contrato" : "contratos"
               } antes de activarlos`
             : "Los contratos de este archivo"}
         </h3>
         <p className="mt-0.5 text-sm text-muted-foreground">
           {resumen.activables > 0
-            ? "Cada uno con el propietario al que le vamos a consignar el inmueble y el porcentaje que le vamos a cobrar. Si alguno quedó con el propietario equivocado, cambialo acá — después de activar ya es un contrato y se edita desde el contrato."
+            ? "Cada uno con el propietario al que le vamos a consignar el inmueble y el porcentaje que le vamos a cobrar. Si alguno quedó con el propietario equivocado, cámbialo acá — después de activar ya es un contrato y se edita desde el contrato."
             : resumen.activadosSinPropietario
               ? "Ya están activos. Los que no tienen propietario se consignan acá mismo; todo lo demás se edita desde cada contrato."
               : "Ya están activos. De acá en adelante se editan desde cada contrato, no desde la migración."}
@@ -1964,7 +1964,7 @@ function ListaDeTrabajo({
       {falloPropietarios ? (
         <p className="text-xs text-warning" data-testid="fallo-propietarios">
           No pudimos traer la lista de propietarios, así que los selectores
-          quedaron apagados. Recargá la página — lo que ya está consignado no se
+          quedaron apagados. Recarga la página — lo que ya está consignado no se
           perdió.
         </p>
       ) : null}

@@ -183,7 +183,7 @@ export function AsientoDeApertura({
         setError(
           mensajeDeContabilidad(
             e,
-            "No pudimos registrar el asiento. Intentá de nuevo.",
+            "No pudimos registrar el asiento. Intenta de nuevo.",
           ),
         );
       }

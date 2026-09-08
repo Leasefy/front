@@ -553,7 +553,7 @@ function CandidatosContent() {
               <span className="font-medium tabular-nums">{paraComparar.size}</span>{' '}
               {paraComparar.size === 1 ? 'seleccionado' : 'seleccionados'}
               {paraComparar.size < MINIMO_A_COMPARAR && (
-                <span className="text-fg-muted"> · elegí al menos {MINIMO_A_COMPARAR}</span>
+                <span className="text-fg-muted"> · elige al menos {MINIMO_A_COMPARAR}</span>
               )}
               {paraComparar.size >= MAXIMO_A_COMPARAR && (
                 <span className="text-fg-muted"> · es el máximo</span>

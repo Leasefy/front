@@ -179,7 +179,7 @@ export function PostulacionEnviadaModal({
               <Paso
                 numero={1}
                 icono={EnvelopeSimple}
-                titulo="Revisá tu correo"
+                titulo="Revisa tu correo"
                 texto={
                   correoInvitado
                     ? `Te mandamos un enlace a ${correoInvitado} para crear tu cuenta y subir tus documentos.`
@@ -216,7 +216,7 @@ export function PostulacionEnviadaModal({
           <p className="flex items-start gap-2 text-sm text-muted-foreground">
             <Buildings className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <span>
-              Podés postularte a otros inmuebles sin volver a llenar nada: ya
+              Puedes postularte a otros inmuebles sin volver a llenar nada: ya
               tenemos tus datos y tus documentos.
             </span>
           </p>

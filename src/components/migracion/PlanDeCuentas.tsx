@@ -210,7 +210,7 @@ export function PlanDeCuentas({
       setSemilla(r);
       await cargar();
     } catch (e) {
-      const msg = mensajeDeContabilidad(e, 'No pudimos cargar el plan base. Intentá de nuevo.');
+      const msg = mensajeDeContabilidad(e, 'No pudimos cargar el plan base. Intenta de nuevo.');
       /*
        * La siembra escribe por niveles: un corte a la mitad deja clases y
        * grupos ya creados. Se relee ANTES de mostrar el error para que la

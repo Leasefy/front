@@ -90,7 +90,7 @@ function valoresDe(regla: ReglaDeMora): ValoresDeRegla {
 
 function mensajeDe(error: unknown): string {
   if (error instanceof Error && error.message) return error.message;
-  return 'No se pudo guardar la regla. Probá de nuevo.';
+  return 'No se pudo guardar la regla. Prueba de nuevo.';
 }
 
 export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar }: EditorDeReglaProps) {
@@ -406,7 +406,7 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar }: EditorDeR
               {vistaPrevia}
             </Banner>
           ) : (
-            <p className="text-xs text-fg-muted">Completá los campos para ver cómo queda la regla.</p>
+            <p className="text-xs text-fg-muted">Completa los campos para ver cómo queda la regla.</p>
           )}
 
           {errorDelBack && (

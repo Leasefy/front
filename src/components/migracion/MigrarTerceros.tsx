@@ -394,7 +394,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
       try {
         await refrescar(l.lote);
       } catch (e) {
-        setError(mensaje(e, 'No pudimos abrir esa carga. Reintentá.'));
+        setError(mensaje(e, 'No pudimos abrir esa carga. Reintenta.'));
       }
     },
     [refrescar],
@@ -575,7 +575,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           (hechas > 0
             ? `Alcanzaron a crearse ${hechas}: quedaron creadas. `
             : 'Lo que alcanzó a crearse quedó creado. ') +
-          'Reintentá con el mismo botón y la carga sigue donde quedó, sin duplicar a nadie.',
+          'Reintenta con el mismo botón y la carga sigue donde quedó, sin duplicar a nadie.',
       );
       // Mejor esfuerzo: que los contadores muestren lo que el back SÍ hizo.
       try {
@@ -694,7 +694,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
             <p className="text-sm text-fg">
               No pudimos verificar si tienes una carga sin terminar. Puedes seguir igual — pero si
-              dejaste una a medias, reintentá primero: volver a subir el mismo archivo duplica a
+              dejaste una a medias, reintenta primero: volver a subir el mismo archivo duplica a
               las personas.
             </p>
           </div>
@@ -814,7 +814,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             onClick={() =>
               plantilla &&
               void descargarPlantillaDeTerceros(tipo, columnas).catch(() =>
-                setError('No pudimos generar la plantilla para descargar. Reintentá.'),
+                setError('No pudimos generar la plantilla para descargar. Reintenta.'),
               )
             }
           >
@@ -868,7 +868,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               {plantilla
                 ? nombreDeArchivo || 'Arrastra el archivo o haz clic para elegirlo'
                 : errorDePlantilla
-                  ? 'No se puede subir todavía — reintentá arriba la lectura de columnas.'
+                  ? 'No se puede subir todavía — reintenta arriba la lectura de columnas.'
                   : 'Preparando la pantalla: leyendo las columnas esperadas…'}
             </p>
             <p className="text-xs text-fg-subtle">

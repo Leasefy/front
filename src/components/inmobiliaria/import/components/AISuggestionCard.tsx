@@ -469,7 +469,7 @@ export function AISuggestionCard({
                     faltaAlgo ? 'text-danger' : 'text-success'
                   )}
                 >
-                  {faltaAlgo ? 'Completá esto para poder crearlo' : 'Listo, ya se puede crear'}
+                  {faltaAlgo ? 'Completa esto para poder crearlo' : 'Listo, ya se puede crear'}
                 </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

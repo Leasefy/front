@@ -74,7 +74,7 @@ describe('separadores: no le pedimos a nadie que arregle su archivo', () => {
 
   it('tabulaciones en un .tsv', async () => {
     const { headers } = await parseSpreadsheetFile(
-      archivo('p.tsv', 'Direccion\tCiudad\nCalle 1\tBogotá\n'),
+      archivo('p.tsv', 'Direccion\tCiudad\nCalle 1\tbogota\n'),
     )
     expect(headers).toEqual(['Direccion', 'Ciudad'])
   })

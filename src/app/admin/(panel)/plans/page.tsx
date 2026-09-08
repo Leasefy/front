@@ -124,7 +124,7 @@ export default function PlansPage() {
       !window.confirm(
         `¿Desactivar el plan "${plan.name}"?\n\n` +
           'Se quita de /upgrade (los clientes ya no podrán elegirlo), pero NO se ' +
-          'borran datos ni se afectan las suscripciones actuales. Podés reactivarlo luego.',
+          'borran datos ni se afectan las suscripciones actuales. Puedes reactivarlo luego.',
       )
     )
       return
@@ -193,7 +193,7 @@ export default function PlansPage() {
       ) : error ? (
         <ErrorBlock error={error} />
       ) : plans.length === 0 ? (
-        <EmptyBlock title="Sin planes" hint="Creá el primer plan AGENCY con “Nuevo plan”." />
+        <EmptyBlock title="Sin planes" hint="Crea el primer plan AGENCY con “Nuevo plan”." />
       ) : (
         <>
           {/* Filtro — por defecto solo activos (lista limpia con los que se usan). */}
@@ -216,7 +216,7 @@ export default function PlansPage() {
           {visiblePlans.length === 0 ? (
             <EmptyBlock
               title="Sin planes activos"
-              hint="Todos los planes están inactivos. Activá “Mostrar inactivos” para verlos y reactivarlos."
+              hint="Todos los planes están inactivos. Activa “Mostrar inactivos” para verlos y reactivarlos."
             />
           ) : (
         <div className="card overflow-x-auto">

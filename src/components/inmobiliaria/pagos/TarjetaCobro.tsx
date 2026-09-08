@@ -163,7 +163,7 @@ export function TarjetaCobro({ cobro, esEjemplo = false, className }: TarjetaCob
         <div className="space-y-2 border-t border-border pt-4">
           <p className="text-xs text-fg-muted">
             Las acciones por cobro estarán disponibles cuando se conecte la bandeja del agente.
-            Hoy podés gestionarlas en la tabla de cobros.
+            Hoy puedes gestionarlas en la tabla de cobros.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             {ACCIONES_COBRO.map((accion) => {

@@ -41,7 +41,7 @@ function esPaso(v: unknown): v is PasoDeMigracion {
 }
 
 /**
- * 🔴 El único lugar del front que puede decir «bloqueá».
+ * 🔴 El único lugar del front que puede decir «bloquea».
  *
  * Recibe lo que sea que haya devuelto la red y devuelve `null` —es decir,
  * panel abierto— ante cualquier cosa que no sea, sin ambigüedad, un estado

@@ -174,7 +174,7 @@ export interface ContratoGeneradoDesdePlantilla {
  *
  * 🔴 Esto se muestra COMPLETO y en su lenguaje. Es la parte más valiosa de la
  * respuesta: dice qué cláusula es ilegal y por qué artículo. Resumirlo a «hubo
- * un error, revisá los datos» tira a la basura lo único que le sirve a quien
+ * un error, revisa los datos» tira a la basura lo único que le sirve a quien
  * tiene que arreglarlo.
  */
 export interface MotivoDeRechazo {

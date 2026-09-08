@@ -322,8 +322,9 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     setInputValue(byId('ownerFullName'), 'Ana Pérez')
     setInputValue(byId('agencyName'), 'Inmobiliaria Andes SAS')
     // Las letras y los puntos no entran: el campo se queda con los dígitos.
-    setInputValue(byId('agencyNit'), 'NIT 900.123')
-    expect(byId('agencyNit').value).toBe('900123')
+    // Cinco dígitos: desde el 2026-09-07 seis ya es un NIT válido (cédula vieja).
+    setInputValue(byId('agencyNit'), 'NIT 900.12')
+    expect(byId('agencyNit').value).toBe('90012')
     submitNameForm()
 
     expect(provision).not.toHaveBeenCalled()

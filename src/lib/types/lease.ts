@@ -31,7 +31,7 @@ export interface Lease {
   paymentDay: number; // Day of month (1-28)
 
   // ─── Campos legacy / no modelados en backend ────────
-  /** @deprecated backend no modela adminFee en lease. Si necesitás, viene de la property. */
+  /** @deprecated backend no modela adminFee en lease. Si necesitas, viene de la property. */
   adminFee?: number;
   /** @deprecated backend no modela garantías en lease todavía. */
   guaranteeType?: 'poliza' | 'codeudor';

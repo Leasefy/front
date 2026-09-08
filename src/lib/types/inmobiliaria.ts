@@ -121,7 +121,7 @@ export type AgenteRole = 'agent' | 'coordinator' | 'director';
 // `invited` = lo invitaste y todavía no aceptó. No sale de `GET /agentes` (ese
 // endpoint sólo devuelve miembros ACTIVE con usuario vinculado): es una fila de
 // `agency_members` en INVITED, sin usuario todavía. Sin este estado la persona
-// que acabás de invitar no existe en ninguna pantalla del módulo.
+// que acabas de invitar no existe en ninguna pantalla del módulo.
 // Ver `useEquipo` en src/lib/hooks/useInmobiliaria.ts.
 export type AgenteStatus = 'active' | 'inactive' | 'on_leave' | 'invited';
 

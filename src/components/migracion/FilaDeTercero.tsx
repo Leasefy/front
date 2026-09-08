@@ -208,20 +208,20 @@ export function FilaDeTercero({
     const r = await onCorregir(borrador as FilaTercero);
     if (r.ok) setBorrador({});
     else if (r.mensaje) {
-      setErrorDeFila(`${r.mensaje} Lo que escribiste sigue acá — reintentá Guardar.`);
+      setErrorDeFila(`${r.mensaje} Lo que escribiste sigue acá — reintenta Guardar.`);
     }
   };
 
   const vincular = async () => {
     setErrorDeFila(null);
     const r = await onVincular();
-    if (!r.ok && r.mensaje) setErrorDeFila(`${r.mensaje} Reintentá.`);
+    if (!r.ok && r.mensaje) setErrorDeFila(`${r.mensaje} Reintenta.`);
   };
 
   const descartar = async () => {
     setErrorDeFila(null);
     const r = await onDescartar();
-    if (!r.ok && r.mensaje) setErrorDeFila(`${r.mensaje} Reintentá.`);
+    if (!r.ok && r.mensaje) setErrorDeFila(`${r.mensaje} Reintenta.`);
   };
 
   const valorDe = (campo: string): string =>

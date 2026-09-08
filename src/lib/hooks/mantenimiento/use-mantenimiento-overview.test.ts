@@ -114,7 +114,7 @@ describe('useMantenimientoOverview', () => {
   /**
    * Con el simulado apagado y sin agente configurado, el hook no tiene de dónde
    * traer nada. Callarse deja la pantalla vacía, y un vacío mudo se lee como
-   * «no tenés mantenimientos» — que es afirmar algo que no sabemos. El error
+   * «no tienes mantenimientos» — que es afirmar algo que no sabemos. El error
    * explícito es lo que manda a <FalloDeCarga> a contar qué pasó.
    */
   it('sin agente configurado explica el vacío en vez de callarse', async () => {

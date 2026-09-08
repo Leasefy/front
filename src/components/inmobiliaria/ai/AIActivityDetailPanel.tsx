@@ -78,7 +78,7 @@ interface ErrorContext {
 function getErrorContext(activity: AgentActivity): ErrorContext | null {
   const loQuePaso =
     resultadoReal(activity) ??
-    'El agente no dejó escrito el detalle de esta escalación. Revisá la postulación para ver qué la disparó.';
+    'El agente no dejó escrito el detalle de esta escalación. Revisa la postulación para ver qué la disparó.';
 
   if (activity.type === 'escalation' && activity.title.includes('revisión humana')) {
     return {

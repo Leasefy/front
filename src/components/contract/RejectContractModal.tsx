@@ -104,7 +104,7 @@ export function RejectContractModal({
                       ? 'El propietario recibirá tu pedido y podrá corregir el contrato.'
                       : lockToType === 'DEFINITIVE'
                         ? 'Esta acción cierra el proceso definitivamente.'
-                        : 'Indicá cómo querés continuar el proceso'}
+                        : 'Indica cómo quieres continuar el proceso'}
                   </p>
                 </div>
               </div>

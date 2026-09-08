@@ -339,7 +339,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
           <ProtectedRoute>/<AgencySubscriptionGuard>: acá adentro se perdía todo toast
-          emitido mientras los guards resuelven. No montés otro: sonner duplica el toast
+          emitido mientras los guards resuelven. No montes otro: sonner duplica el toast
           por cada Toaster montado. */}
     </div>
   );

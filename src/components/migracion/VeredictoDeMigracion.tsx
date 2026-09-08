@@ -6,7 +6,7 @@
  * ── Por qué existe ────────────────────────────────────────────────────────
  *
  * Hasta acá el muro medía PASOS: subiste el archivo de contratos ⇒ paso
- * listo ⇒ «Tu operación ya está adentro» ⇒ entrás al panel. En la agencia de
+ * listo ⇒ «Tu operación ya está adentro» ⇒ entras al panel. En la agencia de
  * Nico eso dio: 91 contratos migrados, **89 sin inmueble y sin propietario**,
  * y el muro felicitando. Sin inmueble no hay consignación, sin consignación
  * no hay cobro, y sin cobro la pantalla de Inquilinos queda vacía y le pide

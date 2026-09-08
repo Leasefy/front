@@ -124,7 +124,9 @@ describe('vocabulario (docs/VOCABULARIO.md, audiencia = inquilino)', () => {
 
   it('tutea, como el resto del panel del inquilino', () => {
     // El panel dice "tienes", "puedes", "eliges". El voseo se coló sólo acá.
-    const VOSEO = /\b(pagá|elegí|buscá|escribí|tenés|podés|querés|revisá|mirá)\b/i
+    // (Las formas de vos, a propósito: el barrido a tuteo del 2026-09-07 no debe
+    // tocarlas, porque son lo que este test PROHÍBE.)
+    const VOSEO = /\b(pag\u00e1|eleg\u00ed|busc\u00e1|escrib\u00ed|ten\u00e9s|pod\u00e9s|quer\u00e9s|revis\u00e1|mir\u00e1)\b/i
     for (const p of PASOS_INQUILINO) {
       expect(`${p.label} ${p.desc}`).not.toMatch(VOSEO)
     }

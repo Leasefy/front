@@ -160,7 +160,7 @@ export interface ResponseAction {
   prompt?: string;
   /**
    * Sección de la app relacionada. Deja de ser lo que hace el botón y pasa a
-   * ser una salida SECUNDARIA, para cuando de verdad querés ir a la pantalla.
+   * ser una salida SECUNDARIA, para cuando de verdad quieres ir a la pantalla.
    */
   href?: string;
   /** Phosphor icon name */

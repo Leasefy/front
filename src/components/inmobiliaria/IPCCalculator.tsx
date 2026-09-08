@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   IPC_HISTORICAL,
+  URL_IPC_DANE,
   calculateNewRent,
   etiquetaDelMesIPC,
   formatearTasaIPC,
@@ -33,8 +34,9 @@ import {
 } from '@/lib/constants/inmobiliaria-data';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
-export const URL_IPC_DANE =
-  'https://www.dane.gov.co/index.php/estadisticas-por-tema/precios-y-costos/indice-de-precios-al-consumidor-ipc';
+// La URL vive con la tabla del IPC, en las constantes; acá se re-exporta para
+// quien ya la importaba de la calculadora.
+export { URL_IPC_DANE };
 
 // ============================================================================
 // Helpers puros (exportados para los tests)

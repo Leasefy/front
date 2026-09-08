@@ -313,17 +313,12 @@ function OperacionesContent() {
     );
   }, [refetchMantenimientos]);
 
-  const handleNotifyTenant = useCallback(async (renovacion: Renovacion) => {
-    try {
-      await renovacionesApi.updateStage(renovacion.id, { status: 'notified' });
-      await recargarRenovaciones();
-      toast.success(t('inmobiliaria.operaciones.toasts.notificationSent'), {
-        description: t('inmobiliaria.operaciones.toasts.notificationSentDesc', { name: renovacion.tenantName }),
-      });
-    } catch (error) {
-      toast.error('Error al notificar inquilino');
-    }
-  }, [t, recargarRenovaciones]);
+  // «Notificar» abre el cajón: la propuesta sale con el mensaje y por el canal
+  // que el inquilino tenga. Antes marcaba «notificado» sin mandar nada.
+  const handleNotifyTenant = useCallback((renovacion: Renovacion) => {
+    setSelectedRenovacion(renovacion);
+    setIsRenovacionWorkflowOpen(true);
+  }, []);
 
   const handleViewRenovacionDetails = useCallback((renovacion: Renovacion) => {
     setSelectedRenovacion(renovacion);
@@ -736,33 +731,56 @@ function OperacionesContent() {
           renovacion={selectedRenovacion}
           open={isRenovacionWorkflowOpen}
           onClose={handleRenovacionWorkflowClose}
-          onSendNotification={async (message, nr, naf) => {
-            await renovacionesApi.updateStage(selectedRenovacion.id, {
-              status: 'notified',
-              notificationMessage: message,
-              ...(nr ? { negotiatedRent: nr } : {}),
-              ...(naf ? { negotiatedAdminFee: naf } : {}),
-            });
+          onSendNotification={async (message, nr, naf, ipc) => {
+            try {
+              await renovacionesApi.updateStage(selectedRenovacion.id, {
+                status: 'notified',
+                notificationMessage: message,
+                ...(nr ? { negotiatedRent: nr } : {}),
+                ...(naf ? { negotiatedAdminFee: naf } : {}),
+                ...(ipc != null ? { ipcRate: ipc } : {}),
+              });
+            } catch (error) {
+              toast.error('No se pudo enviar la propuesta. Reintenta.');
+              throw error; // el cajón no avanza si no salió
+            }
             await recargarRenovaciones();
-            toast.success('Propuesta enviada al inquilino');
+            toast.success('Propuesta enviada');
+          }}
+          onSaveDraft={async ({ proposedRent, negotiatedAdminFee, ipcRate }) => {
+            try {
+              await renovacionesApi.updateStage(selectedRenovacion.id, {
+                status: 'pending',
+                proposedRent,
+                ...(negotiatedAdminFee ? { negotiatedAdminFee } : {}),
+                ...(ipcRate != null ? { ipcRate } : {}),
+              });
+            } catch (error) {
+              toast.error('No se pudo guardar el borrador. Reintenta.');
+              throw error;
+            }
+            await recargarRenovaciones();
+            toast.success('Borrador guardado');
           }}
           onUploadDocument={async (file) => {
             await renovacionesApi.uploadDocument(selectedRenovacion.id, file);
             await recargarRenovaciones();
             toast.success('Documento de renovación subido');
           }}
-          onStepComplete={async (newStatus, negotiatedRent, negotiatedAdminFee, notificationMessage) => {
+          onStepComplete={async (newStatus, negotiatedRent, negotiatedAdminFee, notificationMessage, historyNote) => {
             try {
               await renovacionesApi.updateStage(selectedRenovacion.id, {
                 status: newStatus,
                 ...(negotiatedRent ? { negotiatedRent } : {}),
                 ...(negotiatedAdminFee ? { negotiatedAdminFee } : {}),
                 ...(notificationMessage ? { notificationMessage } : {}),
+                ...(historyNote ? { historyNote } : {}),
               });
               await recargarRenovaciones();
               toast.success(t('inmobiliaria.operaciones.toasts.statusUpdated', { status: getRenovacionStatusLabel(newStatus) }));
             } catch (error) {
-              toast.error('Error al actualizar renovación');
+              toast.error('No se pudo actualizar la renovación. Reintenta.');
+              throw error;
             }
           }}
           onTerminate={async (reason) => {

@@ -1,91 +1,142 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import { useI18n } from '@/lib/i18n';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+/**
+ * El cajón de una renovación: cabecera con el inmueble, el estado y el
+ * vencimiento; los tres pasos (propuesta, aceptación, firma); a la derecha el
+ * contrato actual y la actividad; abajo la acción del paso.
+ *
+ * Lo que se protege acá:
+ * - «enviar» dice por dónde le llega al inquilino (panel, correo del contrato
+ *   o nada) y no promete un panel a quien no tiene cuenta;
+ * - el historial se lee del detalle (la lista no lo trae), así que ya no sale
+ *   vacío;
+ * - «Guardar borrador» guarda; antes «Guardar y salir» sólo cerraba.
+ */
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Stepper } from '@leasefy/cadence';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  ClipboardText,
-  Bell,
-  Handshake,
-  CheckCircle,
-  PenNib,
-  FlagCheckered,
   ArrowLeft,
   ArrowRight,
+  ArrowsClockwise,
+  FloppyDisk,
+  PaperPlaneTilt,
+  PenNib,
 } from '@phosphor-icons/react';
+import { useI18n } from '@/lib/i18n';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import type {
   Renovacion,
+  RenovacionHistoryItem,
   RenovacionStatus,
 } from '@/lib/types/inmobiliaria';
+import { getRenovacionStatusColor, getRenovacionStatusLabel } from '@/lib/types/inmobiliaria';
+import { agencyApi, renovacionesApi } from '@/lib/api/inmobiliaria.service';
 import {
-  WorkflowStepper,
-  StepNotification,
-  StepAceptacion,
-  StepSignature,
-  StepCompleted,
-  WorkflowSidebar,
+  PASOS_DE_RENOVACION,
+  canalDeEnvio,
+  mensajeSugerido,
+  pasoDelEstado,
+  renovacionAceptada,
+} from '@/lib/renovaciones/reglas';
+import {
+  ChipDeVencimiento,
+  DialogoNoRenovar,
+  PasoAceptacion,
+  PasoCompletada,
+  PasoFirma,
+  PasoNoRenovada,
+  PasoPropuesta,
+  RielDeActividad,
 } from './RenovacionWorkflowSteps';
-import type { WorkflowStep } from './RenovacionWorkflowSteps';
-import { agencyApi } from '@/lib/api/inmobiliaria.service';
 
 // ============================================================================
-// Types
+// Props
 // ============================================================================
 
-interface RenovacionWorkflowProps {
+export interface BorradorDeRenovacion {
+  proposedRent: number;
+  negotiatedAdminFee: number;
+  ipcRate: number | null;
+}
+
+export interface RenovacionWorkflowProps {
   renovacion: Renovacion;
-  onStepComplete?: (step: RenovacionStatus, negotiatedRent?: number, negotiatedAdminFee?: number, notificationMessage?: string) => void;
+  open?: boolean;
+  onClose?: () => void;
+  /** Manda la propuesta (el back la registra y se la hace llegar al inquilino). Debe rechazar si falló. */
   onSendNotification?: (
     message: string,
     newRent: number,
     newAdminFee: number,
     ipcRate?: number | null,
   ) => Promise<void>;
+  /** Guarda precio, IPC y administración sin enviar nada. */
+  onSaveDraft?: (borrador: BorradorDeRenovacion) => Promise<void>;
+  onStepComplete?: (
+    step: RenovacionStatus,
+    negotiatedRent?: number,
+    negotiatedAdminFee?: number,
+    notificationMessage?: string,
+    historyNote?: string,
+  ) => void | Promise<void>;
   onUploadDocument?: (file: File) => Promise<void>;
-  onTerminate?: (reason: string) => void;
-  onNoteAdd?: (note: string) => void;
-  onClose?: () => void;
-  open?: boolean;
+  onTerminate?: (reason: string) => void | Promise<void>;
+  onNoteAdd?: (note: string) => void | Promise<void>;
+  /** Qué día es hoy; sólo las pruebas lo fijan. Decide si el IPC de la tabla sigue vigente. */
+  hoy?: Date;
 }
 
+type Ocupado = 'enviar' | 'guardar' | 'aceptar' | 'continuar' | 'firmar' | 'terminar' | 'nota';
+
 // ============================================================================
-// Main Component
+// Cajón
 // ============================================================================
 
-export function RenovacionWorkflow({
+export function RenovacionWorkflow({ open = false, onClose, ...resto }: RenovacionWorkflowProps) {
+  return (
+    <Sheet open={open} onOpenChange={(abierto) => !abierto && onClose?.()}>
+      <SheetContent
+        side="right"
+        className="flex w-full flex-col gap-0 !p-0 sm:max-w-4xl"
+        aria-describedby={undefined}
+        data-testid="renovacion-cajon"
+      >
+        {/* El título accesible lo exige Radix; en pantalla lo pinta la cabecera del cuerpo. */}
+        <SheetTitle className="sr-only">Renovación · {resto.renovacion.propertyTitle}</SheetTitle>
+        <CuerpoDeRenovacion {...resto} onClose={onClose} />
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+/**
+ * Separado del `Sheet` a propósito: el test lo monta sin portal ni Radix y
+ * prueba lo que se ve. Radix desmonta esto al cerrar, así que cada apertura
+ * arranca limpia y vuelve a leer el detalle.
+ */
+export function CuerpoDeRenovacion({
   renovacion,
-  onStepComplete,
+  onClose,
   onSendNotification,
+  onSaveDraft,
+  onStepComplete,
   onUploadDocument,
   onTerminate,
   onNoteAdd,
-  onClose,
-  open = false,
-}: RenovacionWorkflowProps) {
-  const { t } = useI18n();
-  const [currentStep, setCurrentStep] = useState<RenovacionStatus>(renovacion.status);
+  hoy,
+}: Omit<RenovacionWorkflowProps, 'open'>) {
+  const { locale, formatCurrency } = useI18n();
+  const elHoy = useMemo(() => hoy ?? new Date(), [hoy]);
 
-  // The AGENCY sets the new values. Lifted to the workflow so the price
-  // chosen flows into the notification message and persists through the
-  // whole flow. Nada se prellena con un IPC inventado: arranca en lo que ya
-  // se negoció o propuso, y si no, en el canon actual.
+  const terminada = renovacion.status === 'terminated';
+  const completada = renovacion.status === 'completed';
+  const [paso, setPaso] = useState(() => Math.max(0, pasoDelEstado(renovacion.status)));
+
+  // La inmobiliaria pone los números. Arrancan en lo negociado o propuesto,
+  // y si no hay nada, en el canon actual: nunca en un IPC inventado.
   const [newRent, setNewRent] = useState<number>(
     renovacion.negotiatedRent || renovacion.proposedRent || renovacion.currentRent,
   );
@@ -94,15 +145,20 @@ export function RenovacionWorkflow({
   );
   const [ipcRate, setIpcRate] = useState<number | null>(renovacion.ipcRate ?? null);
 
-  // Con qué se firma el mensaje al inquilino: el nombre real de la agencia,
-  // no uno escrito en el código.
-  const [agencyName, setAgencyName] = useState('');
+  // Con qué se firma el mensaje y si el inquilino sin cuenta puede contestar
+  // el correo: el nombre y el correo reales de la inmobiliaria.
+  const [agencia, setAgencia] = useState<{ nombre: string; correo: string | null }>({
+    nombre: '',
+    correo: null,
+  });
   useEffect(() => {
     let vigente = true;
     agencyApi
       .getMyAgency()
       .then((a) => {
-        if (vigente) setAgencyName(a.razonSocial || a.name || '');
+        if (!vigente) return;
+        const datos = a as { razonSocial?: string | null; name?: string | null; email?: string | null };
+        setAgencia({ nombre: datos.razonSocial || datos.name || '', correo: datos.email || null });
       })
       .catch(() => {
         // Sin nombre, el mensaje sale sin firma: se ve, no se inventa.
@@ -112,179 +168,344 @@ export function RenovacionWorkflow({
     };
   }, []);
 
-  const WORKFLOW_STEPS: WorkflowStep[] = useMemo(() => [
-    {
-      status: 'pending' as RenovacionStatus,
-      label: 'Propuesta',
-      icon: <ClipboardText className="h-5 w-5" />,
-      description: 'La inmobiliaria define el precio y envía la propuesta',
-    },
-    {
-      status: 'notified' as RenovacionStatus,
-      label: 'Aceptación',
-      icon: <CheckCircle className="h-5 w-5" />,
-      description: 'El inquilino acepta la renovación',
-    },
-    {
-      status: 'signed' as RenovacionStatus,
-      label: 'Firma del contrato',
-      icon: <PenNib className="h-5 w-5" />,
-      description: 'Se firma el nuevo contrato',
-    },
-  ], []);
+  // El mensaje sigue a los datos mientras nadie lo haya tocado.
+  const sugerido = useMemo(
+    () =>
+      mensajeSugerido({
+        tenantName: renovacion.tenantName,
+        propertyAddress: renovacion.propertyAddress,
+        leaseEndDate: renovacion.leaseEndDate,
+        newRent,
+        agencyName: agencia.nombre,
+        locale,
+        formatCurrency,
+      }),
+    [
+      renovacion.tenantName,
+      renovacion.propertyAddress,
+      renovacion.leaseEndDate,
+      newRent,
+      agencia.nombre,
+      locale,
+      formatCurrency,
+    ],
+  );
+  const [mensajeEditado, setMensajeEditado] = useState<string | null>(null);
+  const message = mensajeEditado ?? sugerido;
 
-  const currentStepIndex = WORKFLOW_STEPS.findIndex((s) => s.status === currentStep);
-  const currentStepInfo = WORKFLOW_STEPS[currentStepIndex];
+  // El historial no viene en la lista: se lee del detalle, y se vuelve a leer
+  // cada vez que la página relee la fila (cambia `updatedAt`).
+  const [historial, setHistorial] = useState<RenovacionHistoryItem[] | null>(
+    renovacion.history?.length ? renovacion.history : null,
+  );
+  useEffect(() => {
+    let vivo = true;
+    renovacionesApi
+      .getById(renovacion.id)
+      .then((detalle) => {
+        if (vivo) setHistorial(detalle.history ?? []);
+      })
+      .catch(() => {
+        if (vivo) setHistorial((h) => h ?? []);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [renovacion.id, renovacion.updatedAt]);
 
-  const goToNextStep = (negotiatedRent?: number, negotiatedAdminFee?: number, notificationMessage?: string) => {
-    const nextIndex = currentStepIndex + 1;
-    if (nextIndex < WORKFLOW_STEPS.length) {
-      const nextStatus = WORKFLOW_STEPS[nextIndex].status;
-      setCurrentStep(nextStatus);
-      onStepComplete?.(nextStatus, negotiatedRent, negotiatedAdminFee, notificationMessage);
+  const [archivo, setArchivo] = useState<File | null>(null);
+  const [ocupado, setOcupado] = useState<Ocupado | null>(null);
+  const [terminarAbierto, setTerminarAbierto] = useState(false);
+
+  const canal = canalDeEnvio(renovacion);
+  const acepto = renovacionAceptada(renovacion);
+
+  const correr = useCallback(async (que: Ocupado, accion: () => Promise<void>) => {
+    setOcupado(que);
+    try {
+      await accion();
+    } catch {
+      // La página ya avisó con su toast; acá sólo se suelta el botón.
+    } finally {
+      setOcupado(null);
     }
+  }, []);
+
+  const enviar = () =>
+    correr('enviar', async () => {
+      await onSendNotification?.(message, newRent, newAdminFee, ipcRate);
+      setPaso(1);
+    });
+
+  const guardarBorrador = () =>
+    correr('guardar', async () => {
+      await onSaveDraft?.({ proposedRent: newRent, negotiatedAdminFee: newAdminFee, ipcRate });
+    });
+
+  const registrarAceptacion = () =>
+    correr('aceptar', async () => {
+      await onStepComplete?.(
+        'approved',
+        newRent,
+        newAdminFee,
+        undefined,
+        'El inquilino aceptó por fuera del panel; lo registró la inmobiliaria.',
+      );
+    });
+
+  const continuarALaFirma = () =>
+    correr('continuar', async () => {
+      await onStepComplete?.('signed', newRent, newAdminFee);
+      setPaso(2);
+    });
+
+  const registrarFirma = () =>
+    correr('firmar', async () => {
+      if (!archivo) return;
+      await onUploadDocument?.(archivo);
+      await onStepComplete?.('completed', newRent, newAdminFee);
+      setPaso(3);
+    });
+
+  const noRenovar = (motivo: string) =>
+    correr('terminar', async () => {
+      await onTerminate?.(motivo);
+      setTerminarAbierto(false);
+    });
+
+  const agregarNota = (nota: string) =>
+    correr('nota', async () => {
+      await onNoteAdd?.(nota);
+    });
+
+  const abrirDocumento = () => {
+    void renovacionesApi
+      .getDocumentUrl(renovacion.id)
+      .then(({ url }) => window.open(url, '_blank', 'noopener'))
+      .catch(() => {
+        // Sin URL firmada no hay nada que abrir; el botón sólo existe con documento.
+      });
   };
 
-  const goToPreviousStep = () => {
-    const prevIndex = currentStepIndex - 1;
-    if (prevIndex >= 0) {
-      setCurrentStep(WORKFLOW_STEPS[prevIndex].status);
-    }
-  };
+  const motivoDeCierre = useMemo(() => {
+    if (!terminada) return null;
+    const fila = [...(historial ?? [])]
+      .reverse()
+      .find((h) => h.action === 'RENOV_TERMINATED' && h.description);
+    return fila?.description ?? null;
+  }, [terminada, historial]);
 
-  const renderStepContent = () => {
-    switch (currentStep) {
-      // ── 1) PROPUESTA — the agency sets the price and sends it to the tenant ──
-      case 'pending':
-        return (
-          <StepNotification
-            renovacion={renovacion}
-            newRent={newRent}
-            newAdminFee={newAdminFee}
-            ipcRate={ipcRate}
-            agencyName={agencyName}
-            onNewRentChange={setNewRent}
-            onNewAdminFeeChange={setNewAdminFee}
-            onIpcRateChange={setIpcRate}
-            onNotify={async (channel, message) => {
-              if (channel === 'whatsapp') {
-                const phone = (renovacion.tenantPhone || '').replace(/\D/g, '');
-                const url = phone
-                  ? `https://wa.me/57${phone}?text=${encodeURIComponent(message)}`
-                  : `https://wa.me/?text=${encodeURIComponent(message)}`;
-                window.open(url, '_blank');
-              }
-              await onSendNotification?.(message, newRent, newAdminFee, ipcRate);
-              goToNextStep(newRent, newAdminFee);
-            }}
-          />
-        );
-      // ── 2) ACEPTACIÓN — read-only; the tenant accepts from their own panel ──
-      case 'notified':
-        return (
-          <StepAceptacion
-            renovacion={renovacion}
-            onContinue={() => goToNextStep(newRent, newAdminFee)}
-          />
-        );
-      // ── 3) FIRMA — upload the signed new contract, then complete ──
-      case 'signed':
-        return (
-          <StepSignature
-            renovacion={renovacion}
-            onSignatureComplete={async (file) => {
-              await onUploadDocument?.(file);
-              setCurrentStep('completed');
-              onStepComplete?.('completed', newRent, newAdminFee);
-            }}
-          />
-        );
-      case 'completed':
-        return <StepCompleted renovacion={renovacion} />;
-      default:
-        return null;
-    }
-  };
+  const puedeNoRenovar = !terminada && !completada && paso <= 1;
+  const etiquetaDeEnviar =
+    canal === 'ninguno'
+      ? 'Marcar como enviada'
+      : renovacion.status === 'pending'
+        ? 'Enviar propuesta'
+        : 'Enviar otra vez';
 
   return (
     <>
-      <Sheet open={open} onOpenChange={(o) => !o && onClose?.()}>
-        <SheetContent className="w-full sm:max-w-4xl overflow-y-auto">
-          <SheetHeader className="border-b pb-4">
-            <SheetTitle className="flex items-center gap-3 text-lg font-semibold text-fg">
-              <div className="p-2 rounded-md bg-success-soft">
-                <ArrowRight className="h-5 w-5 text-success" />
-              </div>
-              {t('inmobiliaria.operaciones.renovacion.sheetTitle')}
-            </SheetTitle>
-          </SheetHeader>
-
-          <div className="py-6">
-            {/* Stepper */}
-            <div className="mb-8">
-              <WorkflowStepper
-                currentStatus={currentStep}
-                onStepClick={setCurrentStep}
-                steps={WORKFLOW_STEPS}
-              />
+      {/* Cabecera: qué contrato es, en qué va y cuánto falta. */}
+      <div className="flex-none border-b border-border px-6 py-5">
+        <div className="flex items-start gap-3 pr-14">
+          <span
+            aria-hidden="true"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary"
+          >
+            <ArrowsClockwise className="h-5 w-5" weight="bold" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="truncate text-lg font-semibold text-fg">{renovacion.propertyTitle}</h2>
+              <Badge
+                className={getRenovacionStatusColor(renovacion.status)}
+                data-testid="renovacion-estado"
+              >
+                {getRenovacionStatusLabel(renovacion.status)}
+              </Badge>
             </div>
-
-            {/* Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Main Content */}
-              <div className="lg:col-span-2">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-md bg-primary-soft text-primary">
-                        {currentStepInfo?.icon}
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">{currentStepInfo?.label}</CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          {currentStepInfo?.description}
-                        </p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>{renderStepContent()}</CardContent>
-                </Card>
-
-                {/* Navigation */}
-                {currentStep !== 'completed' && (
-                  <div className="flex justify-between mt-4">
-                    <Button
-                      variant="outline"
-                      onClick={goToPreviousStep}
-                      disabled={currentStepIndex === 0}
-                    >
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      {t('inmobiliaria.operaciones.renovacion.navigation.previous')}
-                    </Button>
-                    <Button variant="outline" onClick={onClose}>
-                      {t('inmobiliaria.operaciones.renovacion.navigation.saveAndExit')}
-                    </Button>
-                  </div>
-                )}
-
-                {currentStep === 'completed' && (
-                  <Button className="w-full mt-4" onClick={onClose}>
-                    {t('inmobiliaria.operaciones.renovacion.navigation.close')}
-                  </Button>
-                )}
-              </div>
-
-              {/* Sidebar */}
-              <div className="lg:col-span-1">
-                <WorkflowSidebar
-                  renovacion={renovacion}
-                  onAddNote={(note) => onNoteAdd?.(note)}
-                />
-              </div>
-            </div>
+            <p className="mt-0.5 truncate text-sm text-fg-muted">
+              {renovacion.propertyAddress} · {renovacion.tenantName}
+            </p>
           </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+        <div className="mt-3.5 flex flex-wrap items-center gap-2">
+          <ChipDeVencimiento renovacion={renovacion} />
+        </div>
+        {!terminada ? (
+          <Stepper
+            className="mt-5"
+            steps={PASOS_DE_RENOVACION.map((p) => ({ id: p.id, label: p.label }))}
+            activeIndex={paso}
+            data-testid="renovacion-pasos"
+          />
+        ) : null}
+      </div>
+
+      {/* Cuerpo: el paso a la izquierda, el contrato y la actividad a la derecha. */}
+      <div
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5"
+        data-lenis-prevent
+      >
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_17.5rem] lg:gap-8">
+          <div className="min-w-0">
+            {terminada ? (
+              <PasoNoRenovada renovacion={renovacion} motivo={motivoDeCierre} />
+            ) : paso === 0 ? (
+              <PasoPropuesta
+                renovacion={renovacion}
+                newRent={newRent}
+                newAdminFee={newAdminFee}
+                ipcRate={ipcRate}
+                message={message}
+                editado={mensajeEditado !== null}
+                respondible={Boolean(agencia.correo)}
+                hoy={elHoy}
+                onNewRentChange={setNewRent}
+                onNewAdminFeeChange={setNewAdminFee}
+                onIpcRateChange={setIpcRate}
+                onMessageChange={setMensajeEditado}
+                onRestaurarMensaje={() => setMensajeEditado(null)}
+              />
+            ) : paso === 1 ? (
+              <PasoAceptacion
+                renovacion={renovacion}
+                newRent={newRent}
+                newAdminFee={newAdminFee}
+                registrando={ocupado === 'aceptar'}
+                onRegistrarAceptacion={registrarAceptacion}
+                onNoRenueva={() => setTerminarAbierto(true)}
+              />
+            ) : paso === 2 ? (
+              <PasoFirma
+                renovacion={renovacion}
+                newRent={newRent}
+                newAdminFee={newAdminFee}
+                archivo={archivo}
+                onArchivo={setArchivo}
+                onAbrirDocumento={abrirDocumento}
+              />
+            ) : (
+              <PasoCompletada renovacion={renovacion} onAbrirDocumento={abrirDocumento} />
+            )}
+          </div>
+          <div className="mt-8 lg:mt-0">
+            <RielDeActividad
+              renovacion={renovacion}
+              historial={historial}
+              agregandoNota={ocupado === 'nota'}
+              onAddNote={agregarNota}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Pie: lo que sigue, a la derecha; volver y no renovar, a la izquierda. */}
+      <div className="flex flex-none flex-wrap items-center justify-between gap-3 border-t border-border px-6 py-4">
+        <div className="flex items-center gap-1">
+          {!terminada && paso > 0 && paso < 3 ? (
+            <Button
+              type="button"
+              variant="ghost"
+              hideArrow
+              disabled={ocupado !== null}
+              onClick={() => setPaso(paso - 1)}
+              data-testid="renovacion-anterior"
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              Anterior
+            </Button>
+          ) : null}
+          {puedeNoRenovar ? (
+            <Button
+              type="button"
+              variant="ghost"
+              hideArrow
+              className="text-danger hover:text-danger"
+              disabled={ocupado !== null}
+              onClick={() => setTerminarAbierto(true)}
+              data-testid="renovacion-no-renovar"
+            >
+              No renovar
+            </Button>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-2">
+          {!terminada && paso === 0 ? (
+            <>
+              {renovacion.status === 'pending' ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  hideArrow
+                  isLoading={ocupado === 'guardar'}
+                  disabled={ocupado !== null || newRent <= 0}
+                  onClick={guardarBorrador}
+                  data-testid="renovacion-guardar"
+                >
+                  <FloppyDisk className="h-4 w-4" aria-hidden="true" />
+                  Guardar borrador
+                </Button>
+              ) : null}
+              <Button
+                type="button"
+                hideArrow
+                isLoading={ocupado === 'enviar'}
+                disabled={ocupado !== null || newRent <= 0 || !message.trim()}
+                onClick={enviar}
+                data-testid="renovacion-enviar"
+              >
+                <PaperPlaneTilt className="h-4 w-4" aria-hidden="true" />
+                {etiquetaDeEnviar}
+              </Button>
+            </>
+          ) : null}
+          {!terminada && paso === 1 ? (
+            <Button
+              type="button"
+              hideArrow
+              isLoading={ocupado === 'continuar'}
+              disabled={!acepto || ocupado !== null}
+              onClick={continuarALaFirma}
+              data-testid="renovacion-continuar"
+            >
+              Continuar a la firma
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          ) : null}
+          {!terminada && paso === 2 ? (
+            <Button
+              type="button"
+              hideArrow
+              isLoading={ocupado === 'firmar'}
+              disabled={!archivo || ocupado !== null}
+              onClick={registrarFirma}
+              data-testid="renovacion-registrar-firma"
+            >
+              <PenNib className="h-4 w-4" aria-hidden="true" />
+              Registrar firma
+            </Button>
+          ) : null}
+          {terminada || paso === 3 ? (
+            <Button
+              type="button"
+              variant="outline"
+              hideArrow
+              onClick={onClose}
+              data-testid="renovacion-cerrar"
+            >
+              Cerrar
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
+      <DialogoNoRenovar
+        abierto={terminarAbierto}
+        confirmando={ocupado === 'terminar'}
+        onCerrar={() => setTerminarAbierto(false)}
+        onConfirmar={noRenovar}
+      />
     </>
   );
 }

@@ -1484,10 +1484,6 @@ export const renovacionesApi = {
   async addNote(id: string, note: string): Promise<void> {
     await apiClient.post(`${BASE}/renovaciones/${id}/notes`, { note });
   },
-
-  async getIPC(): Promise<{ rate: number; year: number; month: number }> {
-    return apiClient.get(`${BASE}/renovaciones/ipc`);
-  },
 };
 
 // ============================================================================

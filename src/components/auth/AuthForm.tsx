@@ -10,6 +10,7 @@ import { AuthInput } from './AuthInput';
 import { useAuth } from '@/lib/auth/use-auth';
 import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
 import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding';
+import { tomarAvisoDeCierre, PARAM_MOTIVO, type MotivoDeCierre } from '@/lib/auth/session-terminal';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
 import { SesionYaAbierta } from './SesionYaAbierta';
@@ -334,11 +335,40 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
 
   /*
    * Por qué está acá sin haberlo pedido. `terminarSesion` (session-terminal.ts)
-   * manda el motivo en la URL al sacar a alguien de un panel que ya no puede
-   * cargar nada; sin este cartel, el usuario aparece en el login sin ninguna
-   * explicación y lo natural es pensar que la app se rompió.
+   * saca a alguien de un panel que ya no puede cargar nada; sin este cartel, el
+   * usuario aparece en el login sin ninguna explicación y lo natural es pensar
+   * que la app se rompió.
+   *
+   * 🔴 Pero el cartel se decidía SÓLO por `?reason=` en la URL, y una URL no
+   * caduca: quedaba en el historial, en un marcador y en la pestaña que el
+   * navegador restaura. Nico (2026-09-08) lo vio anunciando una expiración
+   * mientras ya estaba entrando de nuevo. Ahora el motivo lo entrega
+   * `tomarAvisoDeCierre`, que sólo lo devuelve si el cierre pasó de verdad
+   * —lo escribió `terminarSesion` hace menos de un minuto— y lo consume: una
+   * recarga no lo repite. El parámetro se limpia de la URL por lo mismo.
    */
-  const avisoDeSesion = AVISOS_DE_SESION[searchParams.get('reason') ?? ''] ?? null;
+  const [motivoDeCierre, setMotivoDeCierre] = React.useState<MotivoDeCierre | null>(null);
+  React.useEffect(() => {
+    const motivo = tomarAvisoDeCierre(searchParams.get(PARAM_MOTIVO));
+    setMotivoDeCierre(motivo);
+
+    if (typeof window === 'undefined') return;
+    if (!searchParams.get(PARAM_MOTIVO)) return;
+    // `replaceState` y no el router: cambiar la URL con `router.replace`
+    // remonta el árbol y con él este formulario, borrando lo que la persona
+    // esté tipeando. Acá sólo hay que sacar un parámetro de la barra.
+    const limpia = new URL(window.location.href);
+    limpia.searchParams.delete(PARAM_MOTIVO);
+    window.history.replaceState(window.history.state, '', `${limpia.pathname}${limpia.search}${limpia.hash}`);
+    // Sólo al montar: el aviso es de UNA vez y ya se consumió.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  /**
+   * En cuanto la persona vuelve a entrar, el aviso dejó de ser cierto: lo que
+   * está pasando ahora es el ingreso, no el cierre de hace un minuto.
+   */
+  const olvidarAviso = React.useCallback(() => setMotivoDeCierre(null), []);
+  const avisoDeSesion = motivoDeCierre ? AVISOS_DE_SESION[motivoDeCierre] ?? null : null;
   /*
    * Llegar acá con sesión abierta no es un error: pasa cada vez que alguien
    * toca «Postularme» y la puerta lo manda a entrar. Antes veía un formulario
@@ -510,6 +540,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError(null);
+    olvidarAviso();
     try {
       didAuthenticateInForm.current = true;
       await signInWithGoogle();
@@ -531,6 +562,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     setIsLoading(true);
     setError(null);
     setCorreoSinConfirmar(null);
+    olvidarAviso();
     const correo = normalizarCorreo(data.email);
     try {
       didAuthenticateInForm.current = true;
@@ -577,6 +609,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   const handleGoogleRegister = async () => {
     setIsLoading(true);
     setError(null);
+    olvidarAviso();
     try {
       didAuthenticateInForm.current = true;
       await signInWithGoogle();
@@ -597,6 +630,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
 
     setIsLoading(true);
     setError(null);
+    olvidarAviso();
     try {
       const emailRedirectTo = enlaceDeConfirmacion();
       // Persist the deep-linked role (if any) as intended_role on the Supabase
@@ -661,6 +695,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   const handleForgotPasswordSubmit = async (data: ForgotPasswordFormData) => {
     setIsLoading(true);
     setError(null);
+    olvidarAviso();
     try {
       const correo = normalizarCorreo(data.email);
       await sendPasswordReset(correo);

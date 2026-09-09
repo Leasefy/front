@@ -37,7 +37,7 @@
 
 import { getAccessToken, esCodigoDeSesionMuerta } from './client'
 import { agentAuthHeaders } from './agent-auth'
-import { sesionTerminada, terminarSesion } from '@/lib/auth/session-terminal'
+import { sesionTerminada, terminarSesionSiMurio } from '@/lib/auth/session-terminal'
 
 /**
  * Cuánto esperamos a que aparezca el token renovado antes de rendirnos.
@@ -111,7 +111,10 @@ export async function agentFetch(
   // (contrato: back/docs/contracts/30-auth-error-codes.md). Ahí no hay nada que
   // reintentar ni token que esperar: se cierra y se sale.
   if (esCodigoDeSesionMuerta(await codigoDe(res))) {
-    terminarSesion('expirada')
+    // Se confirma con el refresh token antes de cerrar: el micro puede estar
+    // validando contra otro proyecto de Supabase y decir «inválido» sobre una
+    // sesión que está perfecta.
+    void terminarSesionSiMurio('expirada')
     return res
   }
 

@@ -244,12 +244,86 @@ describe('FilaDeTercero', () => {
       expect(cb.onVincular).toHaveBeenCalledTimes(1);
     });
 
+    it('no cuenta el mismo choque dos veces: el aviso de arriba se va, queda el recuadro', async () => {
+      // El back manda su `mensaje` y la tarjeta lo pintaba arriba ADEMÁS del
+      // recuadro: el mismo problema dicho dos veces, y con textos distintos.
+      const cb = await pintar({ fila: duplicada });
+      void cb;
+      expect(container.textContent).not.toContain('Ya hay un propietario con este documento.');
+      expect(container.textContent).toContain('Ya existe «Jorge Restrepo Vélez» con este documento.');
+    });
+
     it('avisa que la ficha existente NO se sobrescribe', async () => {
       // Es la pregunta que se hace cualquiera antes de apretar: el back hace
       // `upsert` con `update: {}`, así que la ficha no se toca. Decirlo es lo
       // que hace que alguien se anime a usar el botón.
       await pintar({ fila: duplicada });
       expect(container.textContent).toContain('no le pisa ni un dato');
+    });
+  });
+
+  describe('cuando el choque es por CORREO (inquilinos)', () => {
+    /*
+     * 🔴 Nico, 2026-09-08, en el paso 2 del muro: «dice que ya hay una cuenta
+     * con esos correos, y eso que dices que es un correo ni es un correo —
+     * mira los inputs, los correos están bien». Dos cosas mal: el aviso ponía
+     * el NOMBRE de la cuenta donde se esperaba un correo, y el recuadro decía
+     * «con este documento» y «se edita desde Propietarios» aunque el choque
+     * fuera por correo y aunque se estuviera cargando inquilinos.
+     */
+    const porCorreo = fila({
+      tipo: 'INQUILINO',
+      datos: {
+        _fila: 17,
+        nombre: 'Juan Camilo Lopez Acevedo',
+        documento: '1026159836',
+        correo: 'juancamilolopezac@gmail.com',
+      },
+      errores: [
+        {
+          codigo: 'YA_EXISTE_EN_LA_AGENCIA',
+          campo: 'correo',
+          mensaje: 'ese correo ya tiene cuenta en Leasefy: es la de juan lopez',
+          referencia: { id: 'u-3', nombre: 'juan lopez' },
+        },
+      ],
+    });
+
+    it('dice que el choque es por el correo, y de quién es la cuenta', async () => {
+      await pintar({ fila: porCorreo, tipo: 'INQUILINO' });
+      expect(container.textContent).toContain(
+        'Ese correo ya tiene cuenta en Leasefy: es la de «juan lopez».',
+      );
+      // Y NO habla de documento: el documento de esta fila no chocó con nada.
+      expect(container.textContent).not.toContain('con este documento');
+    });
+
+    it('manda a corregir el correo, no el documento', async () => {
+      await pintar({ fila: porCorreo, tipo: 'INQUILINO' });
+      expect(container.textContent).toContain('corrige el correo acá abajo');
+    });
+
+    it('en el paso de inquilinos no manda a buscar la ficha en Propietarios', async () => {
+      await pintar({ fila: porCorreo, tipo: 'INQUILINO' });
+      expect(container.textContent).not.toContain('desde Propietarios');
+    });
+
+    it('un choque por documento en inquilinos manda a Inquilinos', async () => {
+      await pintar({
+        tipo: 'INQUILINO',
+        fila: fila({
+          tipo: 'INQUILINO',
+          errores: [
+            {
+              codigo: 'YA_EXISTE_EN_LA_AGENCIA',
+              campo: 'documento',
+              mensaje: 'ese documento ya está cargado',
+              referencia: { id: 'u-9', nombre: 'Diego Ruiz' },
+            },
+          ],
+        }),
+      });
+      expect(container.textContent).toContain('se edita desde Inquilinos');
     });
   });
 

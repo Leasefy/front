@@ -309,10 +309,14 @@ const COLOR_CRUDO_JUSTIFICADO: Record<string, string> = {
  * verifica el test de abajo).
  */
 const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
-  'components/inmobiliaria/ai/ColaHumana.tsx':
-    'La tarjeta entera del caso es clickeable (abre el detalle): un `<button>` sin ' +
-    'apariencia de botón que envuelve título + acción sugerida + evidencia. Ya traía ' +
-    'su comentario ALLOWLIST y `type="button"`; las acciones de la tarjeta sí son `Button`.',
+  // ColaHumana ya no está: la cola pasó de tarjetas a la tabla de la casa
+  // (2026-09-08), y la fila clickeable es un `<TableRow>` con `role="button"`,
+  // no un `<button>` a mano.
+  'components/inmobiliaria/ai/AutonomiaPanel.tsx':
+    'El modo de autonomía es un grupo de radio de TRES tarjetas (`role="radio"` + ' +
+    '`aria-checked`), una por postura, con su nombre y qué implica. Cadence no ' +
+    'tiene una primitiva de tarjeta seleccionable, y el `SegmentedControl` que ' +
+    'había obligaba a esconder dos de las tres explicaciones.',
   'components/inmobiliaria/ConsignacionDetailSections.tsx':
     'Dos filas de documento clickeables enteras (`documento-contrato`, ' +
     '`documento-contrato-adjuntar`) + el `<input type="file">` escondido.',

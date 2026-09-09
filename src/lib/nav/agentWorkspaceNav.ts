@@ -148,7 +148,12 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
     items: [
       { labelKey: 'inmobiliaria.ai.nav.cotizadorResumen', href: ASEGURABILIDAD, icon: SquaresFour, exact: true, module: 'cotizador' },
       { labelKey: 'inmobiliaria.ai.nav.cotizadorCola', href: `${ASEGURABILIDAD}/cola`, icon: ClipboardText, module: 'cotizador' },
-      { labelKey: 'inmobiliaria.ai.nav.cotizadorNueva', href: `${ASEGURABILIDAD}/nueva`, icon: Plus, module: 'cotizador' },
+      // OCULTA — «Nueva consulta». Nico (2026-09-08): «¿para qué tienes una
+      // sección de nueva consulta si tienes un CTA en Resumen? Deja lo de
+      // Resumen y ya». La pestaña duplicaba el botón primario del Resumen: dos
+      // puertas a la misma pantalla, y una de ellas ocupando lugar fijo en la
+      // barra. La RUTA sigue viva (`.../nueva`): es a donde lleva ese CTA.
+      // { labelKey: 'inmobiliaria.ai.nav.cotizadorNueva', href: `${ASEGURABILIDAD}/nueva`, icon: Plus, module: 'cotizador' },
       // OCULTOS — «Comparador», «Ejecución» e «Integraciones» (ver nota al pie del archivo).
       // { labelKey: 'inmobiliaria.ai.nav.cotizadorComparar', href: `${ASEGURABILIDAD}/comparar`, icon: Table, module: 'cotizador' },
       // { labelKey: 'inmobiliaria.ai.nav.cotizadorEjecucion', href: `${ASEGURABILIDAD}/ejecucion`, icon: Lightning, module: 'cotizador' },

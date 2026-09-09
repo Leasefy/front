@@ -28,8 +28,11 @@ function NuevaFacturaContent() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <nav>
+        {/* Se vuelve a donde se entró: Facturación → Compras, la sección
+            dedicada a facturas (Nico, 2026-09-08). Antes volvía a
+            Liquidaciones, que es donde vivía el botón que ya no está. */}
         <Link
-          href="/panel/inmobiliaria/pagos/liquidaciones"
+          href="/panel/inmobiliaria/facturacion"
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <CaretLeft className="w-4 h-4" />

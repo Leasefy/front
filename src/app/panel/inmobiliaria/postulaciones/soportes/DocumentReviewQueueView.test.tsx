@@ -121,12 +121,22 @@ describe('<DocumentReviewQueueView>', () => {
     expect(container.querySelector('[data-testid="count-rejected"]')?.textContent).toContain('0');
   });
 
-  it('groups documents per tenant and lists each doc', () => {
+  it('una fila por documento en la tabla de la casa, con el candidato como columna', () => {
+    // Antes eran tarjetas por candidato con un `<ul>` adentro (Nico,
+    // 2026-09-08: «esto tampoco está utilizando una tabla»). Ahora la lista es
+    // la misma tabla que Contratos y Postulaciones.
     render(baseProps());
-    expect(container.querySelectorAll('[data-testid="review-group"]').length).toBe(1);
+    expect(container.querySelector('table')).toBeTruthy();
     expect(container.querySelectorAll('[data-testid="review-doc"]').length).toBe(2);
     expect(container.textContent).toContain('Juan Pérez');
     expect(container.textContent).toContain('cedula.pdf');
+  });
+
+  it('el vacío deja ver los encabezados de columna: la tabla existe, los casos no', () => {
+    render({ ...baseProps(), items: [] });
+    expect(container.querySelector('table')).toBeTruthy();
+    expect(container.textContent).toContain('Candidato');
+    expect(container.textContent).toContain('Documento');
   });
 
   it('shows contextual actions per status when the user can review', () => {

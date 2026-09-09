@@ -38,7 +38,18 @@ export interface RequisitoFaltante {
   tipo: 'texto' | 'numero';
 }
 
-export const MINIMO_CANON = 100_000;
+/**
+ * El canon mínimo que el back acepta.
+ *
+ * 🔴 Bajó de $100.000 a $1.000 el 2026-09-09, con el archivo real en pantalla:
+ * dos celdas de parqueadero a **$60.000/mes** son inmuebles de verdad, con su
+ * canon de verdad, y el asistente las frenaba por «mínimo $100.000». Un piso
+ * pensado para apartamentos no puede decidir que un parqueadero no existe.
+ *
+ * Sigue habiendo un piso —y no es cero— porque un 0 tecleado o un `$0.00` del
+ * archivo no es un canon: es un dato que falta, y eso se muestra como falta.
+ */
+export const MINIMO_CANON = 1_000;
 /**
  * Los mínimos de `CreatePropertyDto` **cuando el dato viene**.
  *
@@ -50,8 +61,16 @@ export const MINIMO_CANON = 100_000;
  */
 export const MINIMO_AREA = 1;
 export const MINIMO_BANOS = 0;
-/** contract.md T-0038 §3.2.3 — mirrors CreatePropertyDto's `@Min(1_000_000)` on `salePrice`. */
-export const MINIMO_VENTA = 1_000_000;
+/**
+ * El precio de venta mínimo que el back acepta. Espeja `@Min` de
+ * `CreatePropertyDto.salePrice`.
+ *
+ * Bajó de $1.000.000 a $1.000 el 2026-09-09 por la misma razón que el canon:
+ * el archivo real trae una venta registrada en $700 y frenarla por el piso no
+ * arregla el dato, sólo esconde la fila. Un valor presente y absurdo se avisa
+ * (`avisosDeValor`), no se bloquea.
+ */
+export const MINIMO_VENTA = 1_000;
 
 /**
  * T-0038 §3.2.2/C13 — `ImportProperty.listingType` is raw free text as read
@@ -66,6 +85,38 @@ export function resolveImportListingType(raw: string | undefined): 'rent' | 'sal
   const normalized = (raw ?? '').trim().toLowerCase();
   if (normalized.includes('venta') || normalized.includes('sale')) return 'sale';
   return 'rent';
+}
+
+/**
+ * Qué operación es ESTE inmueble, mirando también los precios que trae.
+ *
+ * 🔴 Por qué no alcanza con `resolveImportListingType` (Nico, 2026-09-09:
+ * «hay propiedades que se tienen ahí para venta como otras para arrendar y
+ * están categorizadas»).
+ *
+ * La categoría del archivo dice qué se quiere hacer con el inmueble; el precio
+ * dice qué se puede guardar. Cuando las dos no coinciden, mandaba la categoría
+ * y la fila se frenaba pidiéndole justo el número que no tiene. En el archivo
+ * real de la inmobiliaria eso eran **10 filas de 2.895**: cuatro «Venta» que
+ * sólo traen canon, dos «Venta y Arriendo» igual, y dos «Arriendo» que sólo
+ * traen precio de venta.
+ *
+ * Acá la categoría sigue mandando **siempre que su precio esté**. Sólo cuando
+ * falta y el otro sí está, se usa el otro: la base guarda un precio por
+ * inmueble (`properties_listing_price_ck`), así que la alternativa real no es
+ * «guardarlo como venta», es no guardarlo.
+ *
+ * Nunca inventa: si no hay ningún precio, devuelve la categoría declarada y la
+ * fila sigue faltándole lo que le falta.
+ */
+export function tipoEfectivo(p: ImportProperty): 'rent' | 'sale' {
+  const declarado = resolveImportListingType(p.listingType);
+  const hayCanon = !!p.monthlyRent && p.monthlyRent >= MINIMO_CANON;
+  const hayVenta = !!p.salePrice && p.salePrice >= MINIMO_VENTA;
+
+  if (declarado === 'sale' && !hayVenta && hayCanon) return 'rent';
+  if (declarado === 'rent' && !hayCanon && hayVenta) return 'sale';
+  return declarado;
 }
 
 /**
@@ -147,7 +198,7 @@ export function faltantesParaElBack(p: ImportProperty): RequisitoFaltante[] {
   // constraint requires exactly one of the two per listingType). Mirrors
   // ImportWizard.isStepValid / StepColumnMapping's monthlyRent<->salePrice
   // alternative at the column-mapping gate, applied per-row here.
-  if (resolveImportListingType(p.listingType) === 'sale') {
+  if (tipoEfectivo(p) === 'sale') {
     if (!p.salePrice || p.salePrice < MINIMO_VENTA) faltan.push('salePrice');
   } else if (!p.monthlyRent || p.monthlyRent < MINIMO_CANON) {
     faltan.push('monthlyRent');

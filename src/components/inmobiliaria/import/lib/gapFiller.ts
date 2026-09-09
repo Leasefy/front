@@ -2,7 +2,7 @@
 // Mock AI gap-filling engine — deterministic heuristic rules, no real AI backend
 
 import type { ImportProperty, AISuggestion, ParsedRow, ColumnMapping } from './importTypes';
-import { resolveImportListingType } from './requisitosDelBack';
+import { tipoEfectivo } from './requisitosDelBack';
 import { cleanNumericValue } from './valorNumerico';
 import {
   documentoYNombre,
@@ -321,7 +321,7 @@ export function analyzeProperties(properties: ImportProperty[]): ImportProperty[
     // market data) — suggesting a rental estimate for a sale listing's price
     // would be a fabricated, wrong-field number, not a gap fill.
     if (
-      resolveImportListingType(prop.listingType) === 'rent' &&
+      tipoEfectivo(prop) === 'rent' &&
       (!prop.monthlyRent || prop.monthlyRent === 0 || isNaN(prop.monthlyRent))
     ) {
       const cityKey = getCityKey(effectiveCity);

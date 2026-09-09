@@ -42,7 +42,8 @@ export interface BackendProperty {
 
   // Location
   city: string;
-  neighborhood: string;
+  /** `null` desde el 2026-09-09: dejó de ser NOT NULL en la base. */
+  neighborhood: string | null;
   address: string;
   latitude: number | null;
   longitude: number | null;
@@ -95,9 +96,13 @@ export interface BackendProperty {
   consignedAt?: string | null;
 
   // Characteristics
-  bedrooms: number;
-  bathrooms: number;
-  area: number;
+  /*
+   * 🔴 `null` desde el 2026-09-09 (`20260909180000_inmueble_datos_que_pueden_faltar`).
+   * `null` = no lo sabemos; `0` sigue siendo cero de verdad.
+   */
+  bedrooms: number | null;
+  bathrooms: number | null;
+  area: number | null;
   floor: number | null;
   parkingSpaces: number | null;
   stratum: number | null;

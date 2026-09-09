@@ -40,7 +40,16 @@ export function formatNumber(value: number | null | undefined, locale?: 'es' | '
  * Formats area in square meters
  * @example formatArea(75) → "75 m²"
  */
-export function formatArea(area: number): string {
+export function formatArea(area: number | null | undefined): string {
+  /*
+   * 🔴 `null` = no sabemos cuánto mide (el archivo de la inmobiliaria no lo
+   * traía). `Property.area` es nullable desde el 2026-09-09.
+   *
+   * Devuelve una raya y no `'0 m²'` ni `'null m²'`: las dos afirman algo. Cero
+   * metros es un dato falso sobre el inmueble, y sale igual en la ficha, en el
+   * catálogo público y en el contrato.
+   */
+  if (area == null) return '—';
   return `${area} m²`;
 }
 

@@ -214,7 +214,9 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
     let result = [...apiProperties];
 
     if (selectedBedrooms === '4+') {
-      result = result.filter(p => p.bedrooms >= 4);
+      // Un inmueble sin dato de habitaciones NO entra: filtrar por «4 o más»
+      // y devolver uno del que no sabemos nada es responder otra pregunta.
+      result = result.filter(p => (p.bedrooms ?? 0) >= 4);
     }
 
     // T-0038 §3.2.2/§3.2.4 — the catalog mixes RENT and SALE listings (§3.7:

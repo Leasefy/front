@@ -39,8 +39,17 @@ export interface RequisitoFaltante {
 }
 
 export const MINIMO_CANON = 100_000;
-export const MINIMO_AREA = 10;
-export const MINIMO_BANOS = 1;
+/**
+ * Los mínimos de `CreatePropertyDto` **cuando el dato viene**.
+ *
+ * Bajaron el 2026-09-09 junto con volverlos opcionales: el área mínima era 10
+ * m² y los baños mínimos 1. Un depósito de 6 m² existe, y un lote con 0 baños
+ * también; con esos pisos, quien tenía el dato real tenía que falsearlo para
+ * poder cargarlo. Lo que sigue sin entrar es un área en 0 — eso saldría en el
+ * catálogo afirmando que el inmueble no mide nada.
+ */
+export const MINIMO_AREA = 1;
+export const MINIMO_BANOS = 0;
 /** contract.md T-0038 §3.2.3 — mirrors CreatePropertyDto's `@Min(1_000_000)` on `salePrice`. */
 export const MINIMO_VENTA = 1_000_000;
 
@@ -72,14 +81,11 @@ export const REQUISITOS: Record<CampoRequerido, Omit<RequisitoFaltante, 'campo'>
     ayuda: 'Sin dirección el inmueble no se puede crear.',
     tipo: 'texto',
   },
-  // El barrio lo exige la activación en el back (`revisar()` →
-  // `faltantes: ['barrio']`) igual que lo exige el asistente de consignación.
-  // Faltaba ACÁ: la revisión decía «3 listos» y el back devolvía uno
-  // pendiente por barrio — dos listas que dicen lo mismo terminan diciendo
-  // cosas distintas (2026-09-01, tres enlaces reales de Fincaraíz).
+  // Editable, ya no obligatorio (2026-09-09). El texto lo dice: pedirlo sin
+  // decir que se puede dejar vacío es cómo alguien inventa un barrio.
   propertyZone: {
     etiqueta: 'Barrio',
-    ayuda: 'El barrio o sector del inmueble.',
+    ayuda: 'Opcional. Si el archivo no lo trae, se deja en blanco.',
     tipo: 'texto',
   },
   salePrice: {
@@ -96,12 +102,12 @@ export const REQUISITOS: Record<CampoRequerido, Omit<RequisitoFaltante, 'campo'>
   },
   bathrooms: {
     etiqueta: 'Baños',
-    ayuda: `Mínimo ${MINIMO_BANOS}.`,
+    ayuda: 'Opcional. Déjalo vacío si no lo sabes.',
     tipo: 'numero',
   },
   propertyArea: {
     etiqueta: 'Área',
-    ayuda: `Mínimo ${MINIMO_AREA} m².`,
+    ayuda: 'Opcional. Déjala vacía si no la sabes.',
     sufijo: 'm²',
     tipo: 'numero',
   },
@@ -117,12 +123,25 @@ export function requisitoDe(campo: CampoRequerido): RequisitoFaltante {
  * ⚠️ Ninguno se puede inventar: el área de un inmueble es un dato, no una
  * suposición. Por eso esto NO rellena nada — sólo dice qué falta y con qué
  * regla, para que la persona lo complete.
+ *
+ * 🔴 Desde el 2026-09-09 la lista es más corta: barrio, baños y área salieron.
+ * Siguen siendo editables (`REQUISITOS` los describe y el formulario los
+ * ofrece), pero no impiden crear el inmueble. Lo que queda acá es lo que el
+ * back de verdad rechaza.
  */
 export function faltantesParaElBack(p: ImportProperty): RequisitoFaltante[] {
   const faltan: CampoRequerido[] = [];
 
   if (!p.propertyAddress?.trim()) faltan.push('propertyAddress');
-  if (!p.propertyZone?.trim()) faltan.push('propertyZone');
+
+  /*
+   * 🔴 El BARRIO ya no frena (2026-09-09). `Property.neighborhood` dejó de ser
+   * NOT NULL en la base y `CreatePropertyDto` lo acepta ausente. Además el
+   * back nunca lo pidió en su propia importación masiva: `revisar()` decía,
+   * desde el 2026-09-07, «frenar un inmueble por el barrio es una opinión, no
+   * un requisito». Acá se pedía igual, así que las dos listas decían cosas
+   * distintas sobre el mismo archivo.
+   */
 
   // T-0038 §3.2.4 — a SALE row needs salePrice, never monthlyRent (the CHECK
   // constraint requires exactly one of the two per listingType). Mirrors
@@ -134,10 +153,57 @@ export function faltantesParaElBack(p: ImportProperty): RequisitoFaltante[] {
     faltan.push('monthlyRent');
   }
 
-  if (!p.bathrooms || p.bathrooms < MINIMO_BANOS) faltan.push('bathrooms');
-  if (!p.propertyArea || p.propertyArea < MINIMO_AREA) faltan.push('propertyArea');
+  /*
+   * 🔴 Los BAÑOS y el ÁREA tampoco frenan (Nico, 2026-09-09, con el archivo
+   * real de una inmobiliaria en pantalla: «nosotros tenemos cosas obligatorias
+   * que las inmobiliarias tienen como opciones —el área, los baños— y ellos
+   * muchas veces no traen esto»).
+   *
+   * Las tres columnas son nullables desde
+   * `20260909180000_inmueble_datos_que_pueden_faltar`, así que ausente se
+   * guarda NULL —que es lo que sabemos— en vez de obligar a inventar un número
+   * para poder seguir. Antes el asistente mandaba `?? 0` y el back lo
+   * rechazaba por el mínimo; ahora la clave simplemente no viaja.
+   *
+   * Lo que SÍ sigue frenando es un valor presente y absurdo: eso se revisa en
+   * `avisosDeValor`, que advierte sin bloquear, porque un 0 tecleado es un
+   * error de la celda y no una decisión.
+   */
 
   return faltan.map(requisitoDe);
+}
+
+/**
+ * Un valor que SÍ vino, pero que el back va a rechazar.
+ *
+ * 🔴 Avisa, no bloquea, y la diferencia importa. Que un campo sea opcional
+ * significa «puedes dejarlo vacío», no «lo que escribas da igual»: un área en
+ * 0 tecleada por error saldría en el catálogo afirmando que el inmueble no
+ * mide nada. Pero tampoco puede frenar la fila —ya está el dato, sólo está
+ * mal— así que se muestra y la persona decide: lo corrige o lo borra.
+ *
+ * Vacío nunca avisa. Ése es el caso normal desde hoy.
+ */
+export function avisosDeValor(p: ImportProperty): string[] {
+  const avisos: string[] = [];
+
+  if (p.propertyArea != null && p.propertyArea < MINIMO_AREA) {
+    avisos.push(
+      `El área dice ${p.propertyArea} m². Corrígela o déjala vacía: así queda como «no la sabemos».`,
+    );
+  }
+  if (p.bathrooms != null && p.bathrooms < MINIMO_BANOS) {
+    avisos.push(
+      `Los baños dicen ${p.bathrooms}. Corrígelos o déjalos vacíos.`,
+    );
+  }
+  if (p.bedrooms != null && p.bedrooms < 0) {
+    avisos.push(
+      `Las habitaciones dicen ${p.bedrooms}. Corrígelas o déjalas vacías.`,
+    );
+  }
+
+  return avisos;
 }
 
 function formatearPesos(valor: number): string {

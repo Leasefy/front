@@ -22,6 +22,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth/use-auth'
 import { getAccessToken } from '@/lib/api/client'
 import { revokeSession } from '@/lib/api/session.service'
@@ -200,39 +201,46 @@ export function IdleSessionGuard() {
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
       data-lenis-prevent
     >
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 text-center shadow-xl dark:bg-neutral-900">
-        <h2
-          id="idle-title"
-          className="text-lg font-semibold text-neutral-900 dark:text-neutral-100"
-        >
+      <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 text-center shadow-xl">
+        <h2 id="idle-title" className="text-lg font-semibold text-fg">
           ¿Sigues ahí?
         </h2>
-        <p
-          id="idle-desc"
-          className="mt-2 text-sm text-neutral-600 dark:text-neutral-400"
-        >
+        <p id="idle-desc" className="mt-2 text-sm text-fg-muted">
           Por seguridad vamos a cerrar tu sesión por inactividad.
         </p>
 
         {/* aria-live para que un lector de pantalla anuncie la cuenta regresiva
             sin que el usuario tenga que ir a buscarla. */}
         <p
-          className="mt-4 text-4xl font-semibold tabular-nums text-neutral-900 dark:text-neutral-100"
+          className="mt-4 text-4xl font-semibold tabular-nums text-fg"
           aria-live="assertive"
         >
           {segundosRestantes}
         </p>
-        <p className="mt-1 text-xs text-neutral-500">segundos</p>
+        <p className="mt-1 text-xs text-fg-subtle">segundos</p>
 
-        <button
+        {/*
+          El `Button` de la casa, no un `<button>` con grises a mano (Nico,
+          2026-09-09: «el CTA es negro y debe ser azul primary, conectado todo
+          con cadence»).
+
+          No era sólo el botón: la tarjeta entera estaba escrita con
+          `bg-white` / `text-neutral-900` y su pareja `dark:`, o sea que en
+          modo oscuro se pintaba a mano lo que los tokens ya resuelven, y el
+          único botón que la persona ve cuando su sesión está por morir se veía
+          como un secundario cualquiera.
+        */}
+        <Button
           type="button"
           onClick={continuar}
           disabled={cerrando}
+          isLoading={cerrando}
           autoFocus
-          className="mt-5 w-full rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-800 disabled:opacity-60 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+          hideArrow
+          className="mt-5 w-full"
         >
           {cerrando ? 'Cerrando sesión…' : 'Continuar'}
-        </button>
+        </Button>
       </div>
     </div>
   )

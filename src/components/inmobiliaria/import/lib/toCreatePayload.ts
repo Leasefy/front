@@ -65,16 +65,29 @@ export function toCreatePayload(p: ImportProperty) {
     description: descripcionParaElBack(p),
     type: p.propertyType ?? 'apartment',
     city: p.propertyCity ?? '',
-    neighborhood: p.propertyZone ?? '',
+    // 🔴 La clave se OMITE si no hay barrio; no viaja `''`. Desde el
+    // 2026-09-09 la columna es nullable, y mandar una cadena vacía la
+    // guardaría como un barrio en blanco — indistinguible en pantalla de uno
+    // que sí se sabe y está vacío.
+    ...(p.propertyZone?.trim() ? { neighborhood: p.propertyZone.trim() } : {}),
     address: p.propertyAddress ?? '',
     ...(p.propertyDepartment ? { department: p.propertyDepartment } : {}),
     listingType: isSale ? ('sale' as const) : ('rent' as const),
     monthlyRent: isSale ? null : (p.monthlyRent ?? 0),
     salePrice: isSale ? (p.salePrice ?? null) : null,
     ...(p.consignedAt ? { consignedAt: p.consignedAt } : {}),
-    bedrooms: p.bedrooms ?? 0,
-    bathrooms: p.bathrooms ?? 0,
-    area: p.propertyArea ?? 0,
+    /*
+     * 🔴 Se OMITEN cuando no hay dato; ya no viajan como `0`.
+     *
+     * Ese `?? 0` es la razón por la que el asistente tenía que exigirlos: el
+     * back rechazaba el 0 por el mínimo, así que la única forma de que la
+     * fila pasara era que la persona escribiera un número. Ahora las tres
+     * columnas son nullables y la clave ausente se guarda NULL — «no lo
+     * sabemos», que es la verdad.
+     */
+    ...(p.bedrooms != null ? { bedrooms: p.bedrooms } : {}),
+    ...(p.bathrooms != null ? { bathrooms: p.bathrooms } : {}),
+    ...(p.propertyArea != null ? { area: p.propertyArea } : {}),
     ...(p.adminFee != null ? { adminFee: p.adminFee } : {}),
   };
 }

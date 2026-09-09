@@ -61,12 +61,15 @@ export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEdit
     description: property.description,
     type: property.type,
     city: property.city,
-    neighborhood: property.neighborhood,
+    // 🔴 Vacío cuando no se sabe. `String(null)` es la cadena «null», que se
+    // pinta tal cual adentro del input: los cuatro son nullables desde el
+    // 2026-09-09.
+    neighborhood: property.neighborhood ?? '',
     address: property.address,
     monthlyRent: String(property.monthlyRent),
-    bedrooms: String(property.bedrooms),
-    bathrooms: String(property.bathrooms),
-    area: String(property.area),
+    bedrooms: property.bedrooms == null ? '' : String(property.bedrooms),
+    bathrooms: property.bathrooms == null ? '' : String(property.bathrooms),
+    area: property.area == null ? '' : String(property.area),
   });
 
   const update = (field: string, value: string) =>
@@ -112,12 +115,14 @@ export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEdit
     !!form.title &&
     !!form.description &&
     !!form.city &&
-    !!form.neighborhood &&
     !!form.address &&
     Number(form.monthlyRent) > 0 &&
-    Number(form.bedrooms) >= 0 &&
-    Number(form.bathrooms) >= 0 &&
-    Number(form.area) > 0;
+    // Barrio, habitaciones, baños y área pueden quedar vacíos: no saberlos es
+    // un estado legítimo (2026-09-09). Lo que no se acepta es un número
+    // absurdo escrito a mano — vacío pasa, «-3» no.
+    (form.bedrooms === '' || Number(form.bedrooms) >= 0) &&
+    (form.bathrooms === '' || Number(form.bathrooms) >= 0) &&
+    (form.area === '' || Number(form.area) > 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,12 +135,14 @@ export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEdit
         description: form.description,
         type: form.type,
         city: form.city,
-        neighborhood: form.neighborhood,
+        // Vacío = «no lo sé», y se manda como tal. `Number('')` es 0, que en
+        // el catálogo se lee como un hecho del inmueble.
+        neighborhood: form.neighborhood.trim() || null,
         address: form.address,
         monthlyRent: Number(form.monthlyRent),
-        bedrooms: Number(form.bedrooms),
-        bathrooms: Number(form.bathrooms),
-        area: Number(form.area),
+        bedrooms: form.bedrooms === '' ? null : Number(form.bedrooms),
+        bathrooms: form.bathrooms === '' ? null : Number(form.bathrooms),
+        area: form.area === '' ? null : Number(form.area),
       });
 
       // The PATCH succeeded: photo failures must not read as a failed save.
@@ -224,7 +231,7 @@ export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEdit
               </Select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-fg">Barrio / Zona *</label>
+              <label className="text-sm font-medium text-fg">Barrio / Zona</label>
               <Input
                 type="text"
                 value={form.neighborhood}

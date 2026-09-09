@@ -86,7 +86,8 @@ export const propertiesApi = {
     description: string;
     type: string;
     city: string;
-    neighborhood: string;
+    /** `null` desde el 2026-09-09: dejó de ser NOT NULL en la base. */
+    neighborhood: string | null;
     address: string;
     /**
      * contract.md T-0038 §3.2.4 — `number | null`, was `number`. A SALE
@@ -95,9 +96,10 @@ export const propertiesApi = {
      * silently omitting it.
      */
     monthlyRent: number | null;
-    bedrooms: number;
-    bathrooms: number;
-    area: number;
+    /** Los tres, `null` desde el 2026-09-09: `null` = no lo sabemos. */
+    bedrooms: number | null;
+    bathrooms: number | null;
+    area: number | null;
     status?: string;
     latitude?: number;
     longitude?: number;

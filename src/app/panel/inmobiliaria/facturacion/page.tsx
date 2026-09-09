@@ -23,8 +23,11 @@
  */
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Info, Receipt } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { SectionLabel } from '@/components/ui/section-label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
@@ -94,7 +97,7 @@ function FacturacionContent() {
           className="rounded-lg border border-border bg-surface overflow-hidden"
           data-testid="facturacion-tarjeta"
         >
-          <div className="border-b border-border p-4">
+          <div className="border-b border-border p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <TabsList variant="segmented" aria-label={t(k('title'))} className="justify-start">
               {TABS.map((x) => (
                 <TabsTrigger key={x.key} value={x.key} className="whitespace-nowrap">
@@ -102,6 +105,23 @@ function FacturacionContent() {
                 </TabsTrigger>
               ))}
             </TabsList>
+
+            {/* La ÚNICA puerta para registrar una factura de proveedor.
+                Nico (2026-09-08): «¿por qué existe registrar factura si tenemos
+                una sección dedicada a facturación?». Estaba en dos pantallas de
+                Pagos —el encabezado del Resumen y Liquidaciones— y en ninguna
+                de las dos era el tema. La pantalla que abre (`pagos/cxp/nueva`,
+                lectura de la foto o el PDF con IA) no cambió: cambió de dónde
+                se entra. Sólo en «Compras»: en Ventas todavía no hay motor DIAN
+                que emita nada, y ofrecerlo ahí sería un botón que no cumple. */}
+            {active === 'compras' && (
+              <Button asChild hideArrow className="shrink-0" data-testid="facturacion-registrar-compra">
+                <Link href="/panel/inmobiliaria/pagos/cxp/nueva">
+                  <Receipt className="h-4 w-4" weight="bold" />
+                  {t(k('registrarCompra'))}
+                </Link>
+              </Button>
+            )}
           </div>
 
           {TABS.map((tab) => (
@@ -124,7 +144,11 @@ function FacturacionContent() {
                       <SinDatos
                         queSon={t(k(`queSon_${tab.key}`))}
                         icono={Receipt}
-                        descripcion={t(k(`desc_${tab.key}`))}
+                        descripcion={
+                          tab.key === 'compras'
+                            ? `${t(k('desc_compras'))} ${t(k('registrarCompraDesc'))}`
+                            : t(k(`desc_${tab.key}`))
+                        }
                       />
                     </TableCell>
                   </TableRow>
@@ -139,8 +163,12 @@ function FacturacionContent() {
 }
 
 export default function FacturacionPage() {
+  // Antes era `adminOnly`. Al mudar acá la única puerta para registrar una
+  // factura de proveedor, dejarla sólo para administradores le quitaba al
+  // CONTADOR algo que sí podía hacer desde Liquidaciones — y el contador es
+  // justamente quien factura. Mismo par de roles que /pagos.
   return (
-    <PageGuard adminOnly>
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
       <FacturacionContent />
     </PageGuard>
   );

@@ -4,23 +4,22 @@
  * /panel/inmobiliaria/postulaciones/matching/cola — Candidatos sugeridos.
  *
  * El endpoint unificado de work-items (?agente=matching) alimenta la
- * <ColaHumana> transversal; cada tarjeta abre el detalle en ./[id].
+ * <ColaHumana> transversal; cada fila abre el detalle en ./[id].
  *
- * ── El vacío dice la verdad ───────────────────────────────────────────────
- * Hoy el micro no corre Matching para ninguna inmobiliaria (las corridas no
- * guardan agencyId), así que esta cola vuelve vacía por diseño. El vacío de
- * <ColaHumana> es un «Cola vacía» con un check, que se lee como «el agente
- * revisó y no encontró nada». Por eso, sin casos, esta página pinta su propio
- * vacío —el canónico— y dice que Matching todavía no está trabajando tu
- * cartera. Cargando, fallo y lista con casos siguen siendo de <ColaHumana>.
+ * ── El vacío vive DENTRO de la tabla ──────────────────────────────────────
+ * Nico (2026-09-08): «acá no veo que estés usando la tabla como tenemos en la
+ * plataforma». Esta página pintaba su propio vacío a página completa cuando no
+ * había casos, así que sin trabajo no se veía tabla ninguna. Ahora el vacío es
+ * el de <ColaHumana> —dentro del cuerpo, con los encabezados de columna a la
+ * vista— y lo único que aporta la página son sus palabras: acá el vacío no es
+ * «el agente revisó y no encontró nada» sino «Matching todavía no está
+ * trabajando tu cartera».
  */
 
 import { useRouter } from 'next/navigation'
-import { GitMerge } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
-import { EmptyState } from '@/components/ui/empty-state'
 import { SectionLabel } from '@/components/ui/section-label'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { useI18n } from '@/lib/i18n'
@@ -31,8 +30,6 @@ function MatchingCola() {
   const router = useRouter()
   const { t } = useI18n()
   const { items, total, isLoading, error, runAction } = useAgentWorkItems('matching')
-
-  const sinCasos = !isLoading && !error && items.length === 0
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -53,24 +50,18 @@ function MatchingCola() {
         )}
       </header>
 
-      {sinCasos ? (
-        <EmptyState
-          icon={GitMerge}
-          title={t(`${PAGES_NS}.sinTrabajo.title`)}
-          description={t(`${PAGES_NS}.sinTrabajo.desc`)}
-        />
-      ) : (
-        <ColaHumana
-          agente="matching"
-          items={items}
-          isLoading={isLoading}
-          error={error}
-          onAction={(item, action, body) => runAction(item, action, body)}
-          onOpen={(item) =>
-            router.push(`/panel/inmobiliaria/postulaciones/matching/${encodeURIComponent(item.id)}`)
-          }
-        />
-      )}
+      <ColaHumana
+        agente="matching"
+        items={items}
+        isLoading={isLoading}
+        error={error}
+        emptyTitle={t(`${PAGES_NS}.sinTrabajo.title`)}
+        emptyHint={t(`${PAGES_NS}.sinTrabajo.desc`)}
+        onAction={(item, action, body) => runAction(item, action, body)}
+        onOpen={(item) =>
+          router.push(`/panel/inmobiliaria/postulaciones/matching/${encodeURIComponent(item.id)}`)
+        }
+      />
     </div>
   )
 }

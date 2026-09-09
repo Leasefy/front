@@ -7500,7 +7500,14 @@
         "cola": {
           "error": "Could not load the queue: {{error}}",
           "vacia": "Queue is empty",
-          "vaciaHint": "No cases pending review."
+          "vaciaHint": "No cases pending review.",
+          "columnas": {
+            "caso": "Case",
+            "severidad": "Severity",
+            "estado": "Status",
+            "antiguedad": "Age",
+            "acciones": "Actions"
+          }
         },
         "sala": {
           "eyebrow": "Agent · {{titulo}}",
@@ -7555,7 +7562,11 @@
             "copilotoHint": "Suggests; nothing is applied without a human",
             "autonomo": "Autonomous",
             "autonomoHint": "Executes within the approved limits"
-          }
+          },
+          "modoTitle": "How much the agent decides on its own",
+          "modoActivo": "Active mode",
+          "efectoTitle": "What this mode changes today",
+          "notaTitle": "Agent note"
         },
         "analitica": {
           "error": "Could not load analytics: {{error}}",
@@ -7598,7 +7609,12 @@
             "pendientes": "Pending",
             "detalleNoDisponibleTitle": "The detail view isn't available here yet",
             "detalleNoDisponibleBody": "You can manage this case from the queue or open it in its source module.",
-            "datosTecnicos": "Technical details"
+            "datosTecnicos": "Technical details",
+            "configDondeTitulo": "Where do you see this agent's work?",
+            "configVerCola": "Cases to review",
+            "configVerColaDesc": "What the agent left waiting for your decision.",
+            "configVerPiloto": "Pilot",
+            "configVerPilotoDesc": "The board for every agent, with its mode and activity."
           },
           "conciliacion": {
             "eyebrow": "Agent · Reconciliation",
@@ -8781,7 +8797,9 @@
       "empty_compras_title": "No purchase invoices yet",
       "empty_electronica_title": "No electronic documents yet",
       "empty_notas_title": "No credit/debit notes yet",
-      "emptyDesc": "They will connect automatically once the invoicing engine (M2) is active."
+      "emptyDesc": "They will connect automatically once the invoicing engine (M2) is active.",
+      "registrarCompra": "Record supplier invoice",
+      "registrarCompraDesc": "Upload the photo or PDF and the AI reads it: vendor, number, amounts and dates. You review before recording it."
     },
     "conciliacion": {
       "label": "Reconciliation",
@@ -8896,7 +8914,7 @@
         "label": "Accounts payable",
         "title": "Register supplier invoice",
         "subtitle": "Upload the invoice and the AI drafts the record. Review every field before saving: it stays pending approval.",
-        "back": "Back to settlements",
+        "back": "Back to Invoicing",
         "intro": "Upload the invoice (photo or PDF). An electronic invoice, a cuenta de cobro, a POS ticket or a technician's receipt all work.",
         "uploadTitle": "Upload the invoice (photo or PDF)",
         "uploadMore": "Upload another page",

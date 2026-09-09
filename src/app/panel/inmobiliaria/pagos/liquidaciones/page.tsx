@@ -19,7 +19,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Wallet, Receipt, Sparkle, ArrowClockwise, WarningCircle } from '@phosphor-icons/react';
+import { Wallet, ArrowClockwise, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -98,15 +98,13 @@ function TesoreriaContent() {
         </div>
         {/* Sin «Procesar en Dispersiones» acá ni en el vacío: «la gente ya sabe
             que dispersiones es para dispersar» (Nico, 2026-09-08). La bajada
-            sigue diciendo que el giro vive en Dispersiones. */}
-        <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
-          <Button asChild hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/cxp/nueva" data-testid="tesoreria-registrar-factura">
-              <Receipt className="w-4 h-4" weight="bold" />
-              {t(k('registrarFacturaCta'))}
-            </Link>
-          </Button>
-        </div>
+            sigue diciendo que el giro vive en Dispersiones.
+
+            Y sin «Registrar factura». Nico (2026-09-08): «¿por qué existe
+            registrar factura si tenemos una sección dedicada a facturación?».
+            Registrar la factura de un proveedor —incluida la lectura desde
+            foto— vive ahora en Facturación → Compras, que es esa sección.
+            Acá se lee el neto de cada propietario, no se crean documentos. */}
       </header>
 
       {error && (
@@ -125,25 +123,6 @@ function TesoreriaContent() {
           </Button>
         </div>
       )}
-
-      {/* Facturas de proveedores — captura desde foto/PDF con IA */}
-      <section className="rounded-lg border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-md bg-primary-soft flex items-center justify-center flex-shrink-0">
-            <Sparkle className="w-[18px] h-[18px] text-primary" weight="fill" />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold text-fg">{t(k('facturasCardTitle'))}</h2>
-            <p className="text-xs text-fg-muted mt-0.5 max-w-xl">{t(k('facturasCardDesc'))}</p>
-          </div>
-        </div>
-        <Button asChild variant="secondary" hideArrow className="flex-shrink-0">
-          <Link href="/panel/inmobiliaria/pagos/cxp/nueva">
-            <Receipt className="w-4 h-4" />
-            {t(k('facturasCardCta'))}
-          </Link>
-        </Button>
-      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* El mes en plata — sumas reales, no una fórmula de ejemplo */}

@@ -1,5 +1,17 @@
 'use client';
 
+/**
+ * Soportes de candidatos — la cola de revisión, en LA tabla de la casa.
+ *
+ * Nico (2026-09-08): «esto tampoco está utilizando una tabla, no es la que
+ * usamos nosotros». Lo que había eran tarjetas por candidato con una lista
+ * `<ul>` de documentos adentro: otra forma de mostrar una lista, distinta de
+ * Contratos, Postulaciones, Inquilinos y Agenda, que usan todas la misma
+ * tabla. Ahora es una fila por documento —el candidato es una columna— con el
+ * mismo contenedor, los mismos encabezados y el vacío DENTRO del cuerpo para
+ * que las columnas se sigan viendo.
+ */
+
 import {
   FileText,
   FolderOpen,
@@ -7,13 +19,21 @@ import {
   CheckCircle,
   XCircle,
   Eye,
-  User,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import Link from 'next/link';
-import { Badge, Button, Spinner } from '@/components/ui';
+import { Badge, Button } from '@/components/ui';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { SinDatos } from '@/components/estado/SinDatos';
+import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { getReviewStatusLabel, reviewStatusBadgeVariant } from '@/lib/documents/review-status';
 import type {
   ReviewQueueCounts,
@@ -43,6 +63,8 @@ function formatSize(bytes: number): string {
     ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
     : `${Math.round(bytes / 1024)} KB`;
 }
+
+const COLUMNAS = ['Candidato', 'Documento', 'Estado', ''] as const;
 
 export interface DocumentReviewQueueViewProps {
   counts: ReviewQueueCounts;
@@ -77,6 +99,12 @@ const COUNT_CARDS: CountCard[] = [
   { key: 'rejected', label: 'Rechazados', icon: XCircle },
 ];
 
+/** Una fila por documento: el candidato es una columna, no un encabezado. */
+interface Fila {
+  item: ReviewQueueItem;
+  doc: ReviewQueueDocument;
+}
+
 export function DocumentReviewQueueView({
   counts,
   items,
@@ -89,6 +117,8 @@ export function DocumentReviewQueueView({
   onReject,
   onRetry,
 }: DocumentReviewQueueViewProps) {
+  const filas: Fila[] = items.flatMap((item) => item.documents.map((doc) => ({ item, doc })));
+
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
@@ -133,92 +163,82 @@ export function DocumentReviewQueueView({
 
       {/* Body */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <Spinner size="lg" />
-        </div>
+        <EsqueletoTabla columnas={COLUMNAS.length} filas={5} />
       ) : error ? (
         <FalloDeCarga
           error={error}
           queEs="la cola de revisión"
           onReintentar={onRetry}
         />
-      ) : items.length === 0 ? (
-        /* Sin filtros en esta pantalla: acá el vacío es siempre «todavía no
-           llegó nada», nunca «filtraste mal». Y no se crea desde acá — los
-           soportes los sube quien se postula—, así que la salida útil es ir a
-           ver las postulaciones. */
-        <SinDatos
-          queSon="soportes por revisar"
-          icono={FolderOpen}
-          titulo="No hay soportes por revisar"
-          descripcion="Los soportes los adjunta el candidato al postularse. Apenas alguien mande los suyos, aparecen acá."
-          accion={
-            <Button asChild variant="outline">
-              <Link href="/panel/inmobiliaria/postulaciones">Ver postulaciones</Link>
-            </Button>
-          }
-        />
       ) : (
-        <div className="space-y-4">
-          {items.map((item) => (
-            <section
-              key={item.applicationId}
-              data-testid="review-group"
-              className="rounded-lg border border-border bg-card overflow-hidden"
-            >
-              {/* Tenant header */}
-              <header className="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-3">
-                <div className="w-8 h-8 rounded-full bg-surface-muted flex items-center justify-center flex-shrink-0">
-                  <User className="w-4 h-4 text-fg-muted" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-fg truncate">{item.tenant.title}</p>
-                  <p className="text-xs text-fg-muted tabular-nums">
-                    {item.documents.length}{' '}
-                    {item.documents.length === 1 ? 'documento' : 'documentos'}
-                  </p>
-                </div>
-              </header>
-
-              {/* Documents */}
-              <ul className="divide-y divide-border">
-                {item.documents.map((doc) => {
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {COLUMNAS.map((c, i) => (
+                  <TableHead
+                    key={c || `acciones-${i}`}
+                    className={c === '' ? 'whitespace-nowrap text-right' : 'whitespace-nowrap'}
+                  >
+                    {c}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filas.length === 0 ? (
+                /* Sin filtros en esta pantalla: acá el vacío es siempre «todavía no
+                   llegó nada», nunca «filtraste mal». Y no se crea desde acá — los
+                   soportes los sube quien se postula—, así que la salida útil es ir a
+                   ver las postulaciones. */
+                <TableRow>
+                  <TableCell colSpan={COLUMNAS.length} className="p-0">
+                    <SinDatos
+                      queSon="soportes por revisar"
+                      icono={FolderOpen}
+                      titulo="No hay soportes por revisar"
+                      descripcion="Los soportes los adjunta el candidato al postularse. Apenas alguien mande los suyos, aparecen acá."
+                      accion={
+                        <Button asChild variant="outline">
+                          <Link href="/panel/inmobiliaria/postulaciones">Ver postulaciones</Link>
+                        </Button>
+                      }
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filas.map(({ item, doc }) => {
                   const busy = pendingDocId === doc.id;
                   const showTake = doc.reviewStatus === 'PENDING';
                   const showApprove = doc.reviewStatus !== 'APPROVED';
                   const showReject = doc.reviewStatus !== 'REJECTED';
                   return (
-                    <li
-                      key={doc.id}
-                      data-testid="review-doc"
-                      className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div className="flex items-start gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-lg bg-surface-muted flex items-center justify-center flex-shrink-0">
-                          <FileText className="w-4 h-4 text-fg-muted" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-fg truncate">
-                            {docTypeLabel(doc.type)}
-                          </p>
-                          <p className="text-xs text-fg-muted truncate">
-                            {doc.originalName} · {formatSize(doc.size)}
-                          </p>
-                          {doc.reviewStatus === 'REJECTED' && doc.rejectionReason && (
-                            <p className="mt-1 text-xs text-danger break-words">
-                              Motivo: {doc.rejectionReason}
-                            </p>
-                          )}
-                        </div>
-                      </div>
+                    <TableRow key={doc.id} data-testid="review-doc">
+                      <TableCell className="align-top">
+                        <p className="font-medium text-fg truncate">{item.tenant.title}</p>
+                      </TableCell>
 
-                      <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+                      <TableCell className="max-w-[320px] align-top">
+                        <p className="text-fg truncate">{docTypeLabel(doc.type)}</p>
+                        <p className="text-xs text-fg-muted truncate">
+                          {doc.originalName} · {formatSize(doc.size)}
+                        </p>
+                      </TableCell>
+
+                      <TableCell className="align-top">
                         <Badge variant={reviewStatusBadgeVariant(doc.reviewStatus)}>
                           {getReviewStatusLabel(doc.reviewStatus)}
                         </Badge>
+                        {doc.reviewStatus === 'REJECTED' && doc.rejectionReason && (
+                          <p className="mt-1 text-xs text-danger break-words max-w-[280px]">
+                            Motivo: {doc.rejectionReason}
+                          </p>
+                        )}
+                      </TableCell>
 
+                      <TableCell className="align-top">
                         {canReview && (
-                          <>
+                          <div className="flex flex-wrap items-center justify-end gap-2">
                             {showTake && (
                               <Button
                                 size="sm"
@@ -252,15 +272,15 @@ export function DocumentReviewQueueView({
                                 Rechazar
                               </Button>
                             )}
-                          </>
+                          </div>
                         )}
-                      </div>
-                    </li>
+                      </TableCell>
+                    </TableRow>
                   );
-                })}
-              </ul>
-            </section>
-          ))}
+                })
+              )}
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

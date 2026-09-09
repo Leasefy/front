@@ -7540,7 +7540,14 @@
         "cola": {
           "error": "No se pudo cargar la cola: {{error}}",
           "vacia": "Cola vacía",
-          "vaciaHint": "No hay casos pendientes de revisión."
+          "vaciaHint": "No hay casos pendientes de revisión.",
+          "columnas": {
+            "caso": "Caso",
+            "severidad": "Severidad",
+            "estado": "Estado",
+            "antiguedad": "Antigüedad",
+            "acciones": "Acciones"
+          }
         },
         "sala": {
           "eyebrow": "Agente · {{titulo}}",
@@ -7595,7 +7602,11 @@
             "copilotoHint": "Sugiere; nada se aplica sin un humano",
             "autonomo": "Autónomo",
             "autonomoHint": "Ejecuta dentro de los límites aprobados"
-          }
+          },
+          "modoTitle": "Cuánto decide el agente por su cuenta",
+          "modoActivo": "Modo activo",
+          "efectoTitle": "Qué cambia hoy con este modo",
+          "notaTitle": "Nota del agente"
         },
         "analitica": {
           "error": "No se pudo cargar la analítica: {{error}}",
@@ -7638,7 +7649,12 @@
             "pendientes": "Pendientes",
             "detalleNoDisponibleTitle": "El detalle aún no está disponible aquí",
             "detalleNoDisponibleBody": "Puedes gestionar este caso desde la cola o abrirlo en su módulo de origen.",
-            "datosTecnicos": "Datos técnicos"
+            "datosTecnicos": "Datos técnicos",
+            "configDondeTitulo": "¿Dónde se ve el trabajo de este agente?",
+            "configVerCola": "Casos por revisar",
+            "configVerColaDesc": "Lo que el agente dejó esperando tu decisión.",
+            "configVerPiloto": "Piloto",
+            "configVerPilotoDesc": "El tablero de todos los agentes, con su modo y su actividad."
           },
           "conciliacion": {
             "eyebrow": "Agente · Conciliación",
@@ -8821,7 +8837,9 @@
       "empty_compras_title": "Sin facturas de compra aún",
       "empty_electronica_title": "Sin documentos electrónicos aún",
       "empty_notas_title": "Sin notas crédito/débito aún",
-      "emptyDesc": "Se conectarán automáticamente cuando el motor de facturación (M2) esté activo."
+      "emptyDesc": "Se conectarán automáticamente cuando el motor de facturación (M2) esté activo.",
+      "registrarCompra": "Registrar factura de proveedor",
+      "registrarCompraDesc": "Sube la foto o el PDF y la IA la lee: proveedor, número, montos y fechas. Tú revisas antes de registrarla."
     },
     "conciliacion": {
       "label": "Conciliación",
@@ -8936,7 +8954,7 @@
         "label": "Cuentas por pagar",
         "title": "Registrar factura de proveedor",
         "subtitle": "Sube la factura y la IA arma el registro. Revisa cada dato antes de guardar: queda pendiente de aprobación.",
-        "back": "Volver a liquidaciones",
+        "back": "Volver a Facturación",
         "intro": "Sube la factura (foto o PDF). Sirve una factura electrónica, una cuenta de cobro, un tiquete POS o el recibo de un técnico.",
         "uploadTitle": "Sube la factura (foto o PDF)",
         "uploadMore": "Subir otra página",

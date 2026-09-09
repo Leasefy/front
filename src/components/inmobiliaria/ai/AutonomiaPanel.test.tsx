@@ -168,15 +168,26 @@ describe('AutonomiaPanel — modo como chip de lectura', () => {
 })
 
 describe('AutonomiaPanel — modo como control real', () => {
-  it('con escritura y permiso: el control del DS con los modos disponibles', () => {
+  it('con escritura y permiso: una tarjeta por modo, sin emojis y con lo que implica cada uno', () => {
+    // Nico (2026-09-08): «esta UX está horrible y la UI TAMBIÉN». Era un
+    // control segmentado con 🌑 🤝 🚀 donde sólo se leía la frase del modo
+    // elegido; las otras dos posturas quedaban invisibles.
     render({ data: DATA, onCambiarModo: vi.fn(), puedeCambiar: true })
     const opciones = radios()
     expect(opciones).toHaveLength(3)
-    expect(opciones.map((r) => r.textContent?.trim())).toEqual([
-      '🌑 Sombra',
-      '🤝 Copiloto',
-      '🚀 Autónomo',
-    ])
+
+    const textos = opciones.map((r) => r.textContent ?? '')
+    expect(textos[0]).toContain('Sombra')
+    expect(textos[1]).toContain('Copiloto')
+    expect(textos[2]).toContain('Autónomo')
+    // Cada tarjeta explica su postura, no sólo la activa.
+    expect(textos[0]).toContain('Solo observa y sugiere en silencio')
+    expect(textos[2]).toContain('Ejecuta dentro de los límites aprobados')
+    // Sin emojis en ninguna.
+    expect(textos.join('')).not.toMatch(/[\u{1F300}-\u{1FAFF}]/u)
+    // La activa se marca por aria, no sólo por color.
+    expect(opciones[1].getAttribute('aria-checked')).toBe('true')
+
     expect(container.querySelector('[data-testid="autonomia-donde-se-cambia"]')).toBeNull()
   })
 
@@ -186,7 +197,11 @@ describe('AutonomiaPanel — modo como control real', () => {
       onCambiarModo: vi.fn(),
       puedeCambiar: true,
     })
-    expect(radios().map((r) => r.textContent?.trim())).toEqual(['🌑 Sombra', '🤝 Copiloto'])
+    const textos = radios().map((r) => r.textContent ?? '')
+    expect(textos).toHaveLength(2)
+    expect(textos[0]).toContain('Sombra')
+    expect(textos[1]).toContain('Copiloto')
+    expect(textos.join('')).not.toContain('Autónomo')
   })
 
   it('bajar de autonomía es un clic: llama a la escritura sin confirmar', async () => {

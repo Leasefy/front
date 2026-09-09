@@ -11223,6 +11223,7 @@
       },
       "siguiente": "Continue with {{paso}}",
       "ocupado": "This step is still creating records — wait for it to finish.",
+      "parar": "Stop the upload",
       "terminaEstePaso": "Once you finish this step you'll be able to continue.",
       "irAlPaso": "Go to {{paso}}",
       "pendiente": "Pending",

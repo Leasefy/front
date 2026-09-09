@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useContext, useEffect, useCallback } from "react";
+import {
+  useState,
+  useContext,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -122,6 +129,25 @@ export function StepConfirmImport({
 
   // ── Phase 1: geocode (client-side, unchanged from before) + preparar() ──
   const [geocodificando, setGeocodificando] = useState(false);
+  /*
+   * 🔴 PARAR LA BÚSQUEDA DE DIRECCIONES.
+   *
+   * Son 2.883 filas a 550 ms cada una: media hora larga con el pie del muro
+   * inerte (Nico, 2026-09-09: «le di cancelar o anterior y no deja»). Una
+   * espera así SIEMPRE tiene que poder abandonarse.
+   *
+   * `useRef` y no `useState` a propósito: el bucle ya está corriendo y lee la
+   * bandera en cada vuelta. Un `state` le quedaría congelado en el valor que
+   * tenía cuando arrancó —el clásico stale closure— y el botón no haría nada,
+   * que es justo el síntoma que venimos a arreglar.
+   */
+  const cancelarRef = useRef(false);
+  /* Cuándo arrancó la búsqueda: la estimación sale de lo que de verdad está
+   * tardando, no de multiplicar por la pausa entre filas —que ignora lo que
+   * demora cada consulta y da un número que no se cumple. */
+  const inicioGeoRef = useRef<number | null>(null);
+  const [cancelandoGeo, setCancelandoGeo] = useState(false);
+  const [geoCancelada, setGeoCancelada] = useState(false);
   const [geoProgress, setGeoProgress] = useState(0);
   const [geoCurrent, setGeoCurrent] = useState(0);
   const [preparando, setPreparando] = useState(false);
@@ -306,14 +332,54 @@ export function StepConfirmImport({
    * agotado nadie está mirando el job, y el muro no puede quedar clavado en
    * «ocupado» para siempre.
    */
+  /**
+   * Cuántos minutos faltan, medidos.
+   *
+   * Sale del ritmo REAL de esta corrida (tiempo transcurrido ÷ filas hechas),
+   * no de la pausa entre filas: la pausa ignora lo que demora cada consulta y
+   * daría un número que no se cumple. Se calla hasta la quinta fila —con dos
+   * o tres el promedio es ruido— y se calla también si da cero.
+   *
+   * Media hora de espera sin decir cuánto falta es la mitad de la razón por la
+   * que alguien busca el botón de cancelar.
+   */
+  const minutosQueFaltan = useMemo(() => {
+    if (!geocodificando || inicioGeoRef.current == null || geoCurrent < 5) {
+      return null;
+    }
+    const porFila = (Date.now() - inicioGeoRef.current) / geoCurrent;
+    const minutos = Math.ceil(
+      (Math.max(0, importCount - geoCurrent) * porFila) / 60_000,
+    );
+    return minutos > 0 ? minutos : null;
+  }, [geocodificando, geoCurrent, importCount]);
+
+  /**
+   * Pide parar. No corta a mitad de una fila: deja terminar la que está en
+   * vuelo y sale en la siguiente vuelta, así no queda una dirección a medias.
+   */
+  const cancelarGeocodificacion = useCallback(() => {
+    cancelarRef.current = true;
+    setCancelandoGeo(true);
+  }, []);
+
   const jobCorriendo =
     !agotado &&
     (estadoLote?.estado === 'ENCOLADO' || estadoLote?.estado === 'PROCESANDO');
   const hayOperacionEnVuelo =
     geocodificando || preparando || activando || descartandoLote || jobCorriendo;
   useEffect(() => {
-    onOcupado?.(hayOperacionEnVuelo);
-  }, [hayOperacionEnVuelo, onOcupado]);
+    /*
+     * Se manda también CÓMO parar. El muro pone `inert` sobre todo el
+     * contenido del paso mientras hay algo en vuelo, así que un botón dibujado
+     * acá adentro nace muerto: se ve normal y no responde. El único lugar
+     * desde donde se puede cancelar es el pie del muro, que queda afuera.
+     */
+    onOcupado?.(
+      hayOperacionEnVuelo,
+      geocodificando ? cancelarGeocodificacion : undefined,
+    );
+  }, [hayOperacionEnVuelo, geocodificando, cancelarGeocodificacion, onOcupado]);
   // Al desmontar (cambio de paso, «cancelar») el muro recupera sus botones.
   useEffect(() => () => onOcupado?.(false), [onOcupado]);
 
@@ -352,6 +418,12 @@ export function StepConfirmImport({
     setGeocodificando(true);
     setGeoProgress(0);
     setGeoCurrent(0);
+    // Cada intento arranca limpio: una cancelación vieja no puede matar la
+    // siguiente antes de la primera fila.
+    cancelarRef.current = false;
+    inicioGeoRef.current = Date.now();
+    setCancelandoGeo(false);
+    setGeoCancelada(false);
 
     // Geocodificación secuencial — respeta el límite de LocationIQ. Va antes
     // de `preparar()` porque el back de importación (WU-4) no geocodifica;
@@ -366,8 +438,16 @@ export function StepConfirmImport({
     // botón.
     const dtos: ImportarInmuebleDto[] = [];
     let sinUbicar = 0;
+    let cancelada = false;
     try {
       for (let i = 0; i < importables.length; i++) {
+        // La salida. Se mira ANTES de pedir la fila siguiente: lo que ya se
+        // buscó se descarta entero, así que no queda medio lote geocodificado
+        // esperando a que alguien adivine qué pasó con él.
+        if (cancelarRef.current) {
+          cancelada = true;
+          break;
+        }
         const p = importables[i];
         setGeoCurrent(i + 1);
         const coords = await geocodeImportRow(p);
@@ -394,6 +474,19 @@ export function StepConfirmImport({
       return;
     } finally {
       setGeocodificando(false);
+      setCancelandoGeo(false);
+    }
+
+    if (cancelada) {
+      /*
+       * Cortar acá, antes de `preparar()`: nada viajó al servidor todavía, así
+       * que no hay lote a medias ni fila que limpiar. La persona vuelve a
+       * tener sus botones y el paso queda exactamente como estaba.
+       */
+      setGeoProgress(0);
+      setGeoCurrent(0);
+      setGeoCancelada(true);
+      return;
     }
 
     setPreparando(true);
@@ -1017,12 +1110,56 @@ export function StepConfirmImport({
 
       {geocodificando && (
         <div className="space-y-2">
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">
-            Buscando las direcciones en el mapa — {geoCurrent} de {importCount}
-          </p>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <p className="text-sm text-fg-muted dark:text-fg-subtle">
+              Buscando las direcciones en el mapa — {geoCurrent} de{" "}
+              {importCount}
+              {minutosQueFaltan != null && !cancelandoGeo ? (
+                <span className="text-fg-subtle">
+                  {" "}
+                  · faltan unos {minutosQueFaltan} min
+                </span>
+              ) : null}
+            </p>
+            {/*
+             * Dentro del muro este botón NO se dibuja: el muro pone `inert`
+             * sobre todo el paso mientras hay algo en vuelo, así que acá
+             * nacería muerto —se ve normal y no responde— que es exactamente
+             * la queja que originó esto. Allá la salida vive en el pie del
+             * muro, que queda fuera del `inert`. Suelto (la página
+             * `/inmuebles/importar`) no hay muro ni `inert`, y acá sí es el
+             * lugar natural.
+             */}
+            {!onOcupado ? (
+              <Button
+                type="button"
+                variant="ghost"
+                hideArrow
+                onClick={cancelarGeocodificacion}
+                disabled={cancelandoGeo}
+                data-testid="geo-cancelar"
+              >
+                {cancelandoGeo ? "Deteniendo…" : "Cancelar"}
+              </Button>
+            ) : null}
+          </div>
           <Progress value={geoProgress} size="xs" />
           <p className="text-xs text-right font-mono text-fg-subtle dark:text-fg-muted">
             {geoProgress}%
+          </p>
+        </div>
+      )}
+
+      {geoCancelada && (
+        <div
+          className="rounded-md bg-surface-muted border border-border p-3"
+          data-testid="geo-cancelada"
+        >
+          <p className="text-sm font-medium text-fg">Se detuvo la búsqueda</p>
+          <p className="text-body-sm text-fg-muted mt-0.5">
+            No se importó nada y no quedó nada a medias en el servidor. Puedes
+            volver atrás, cambiar lo que necesites, y arrancar de nuevo cuando
+            quieras.
           </p>
         </div>
       )}

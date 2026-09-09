@@ -206,7 +206,7 @@ function duenosDe(
 
 export interface MigrarContratosProps {
   /** Aviso hacia el muro: `true` mientras se están ACTIVANDO los contratos. */
-  onOcupado?: (ocupado: boolean) => void;
+  onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 }
 
 export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {

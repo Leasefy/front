@@ -11262,7 +11262,8 @@
         }
       },
       "siguiente": "Seguir con {{paso}}",
-      "ocupado": "Se están creando los registros de este paso — esperá a que termine.",
+      "ocupado": "Se están creando los registros de este paso — espera a que termine.",
+      "parar": "Detener la carga",
       "terminaEstePaso": "Cuando termines este paso vas a poder seguir.",
       "irAlPaso": "Ir a {{paso}}",
       "pendiente": "Pendiente",

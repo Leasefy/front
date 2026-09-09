@@ -173,7 +173,13 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function render(state: ImportWizardState, props: { onSalir?: () => void } = {}) {
+function render(
+  state: ImportWizardState,
+  props: {
+    onSalir?: () => void;
+    onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
+  } = {},
+) {
   act(() => {
     root.render(
       React.createElement(
@@ -672,5 +678,85 @@ describe('<StepConfirmImport> — el dueño de cada inmueble después de activar
 
     const props = dialogoPropsMock.mock.calls.at(-1)?.[0] as { inmuebles: { propertyId: string }[] };
     expect(props.inmuebles.map((i) => i.propertyId)).toEqual(['p1']);
+  });
+});
+
+/**
+ * Detener la búsqueda de direcciones.
+ *
+ * 2.883 filas a 550 ms son media hora larga, y durante toda esa media hora el
+ * muro tapa el paso con `inert`: los botones se ven bien y no responden (Nico,
+ * 2026-09-09: «le di cancelar o anterior y no deja»). El paso ahora manda al
+ * muro CÓMO pararlo, y el muro dibuja esa salida en su pie, fuera del `inert`.
+ */
+describe('<StepConfirmImport> — se puede detener la búsqueda de direcciones', () => {
+  it('para el bucle, no manda nada al servidor y lo dice en pantalla', async () => {
+    let parar: (() => void) | undefined;
+    const ocupados: boolean[] = [];
+    const onOcupado = (ocupado: boolean, cancelar?: () => void) => {
+      ocupados.push(ocupado);
+      if (ocupado && cancelar) parar = cancelar;
+    };
+
+    let vueltas = 0;
+    geocodeImportRowMock.mockReset().mockImplementation(async () => {
+      vueltas += 1;
+      // Alguien toca «Detener la carga» apenas la salida existe.
+      parar?.();
+      return { lat: 4.6, lng: -74.1, source: 'geocoded' };
+    });
+
+    const muchas = Array.from({ length: 8 }, (_, i) =>
+      makeProperty({ _rowIndex: i, propertyAddress: `Cra 11 #94-4${i}` }),
+    );
+    render(baseState({ properties: muchas }), { onOcupado });
+
+    const btn = findButtonByText('inmobiliaria.import.confirm.importButton')!;
+    await act(async () => {
+      btn.click();
+    });
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    // Se detuvo antes de recorrerlas todas...
+    expect(vueltas).toBeGreaterThan(0);
+    expect(vueltas).toBeLessThan(muchas.length);
+    // ...nada viajó al servidor: no hay lote a medias que limpiar...
+    expect(inmueblesImportacionApiMock.preparar).not.toHaveBeenCalled();
+    // ...se dice en pantalla...
+    expect(container.querySelector('[data-testid="geo-cancelada"]')).toBeTruthy();
+    // ...y el muro recupera sus botones.
+    expect(ocupados.at(-1)).toBe(false);
+  });
+
+  it('sin muro (la página suelta) el botón de detener vive en el propio paso', async () => {
+    let vueltas = 0;
+    geocodeImportRowMock.mockReset().mockImplementation(async () => {
+      vueltas += 1;
+      const salir = container.querySelector<HTMLButtonElement>(
+        '[data-testid="geo-cancelar"]',
+      );
+      salir?.click();
+      return { lat: 4.6, lng: -74.1, source: 'geocoded' };
+    });
+
+    const muchas = Array.from({ length: 8 }, (_, i) =>
+      makeProperty({ _rowIndex: i, propertyAddress: `Cra 11 #94-4${i}` }),
+    );
+    // Sin `onOcupado`: no hay muro, no hay `inert`, y el botón sí se dibuja acá.
+    render(baseState({ properties: muchas }));
+
+    const btn = findButtonByText('inmobiliaria.import.confirm.importButton')!;
+    await act(async () => {
+      btn.click();
+    });
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    expect(vueltas).toBeLessThan(muchas.length);
+    expect(inmueblesImportacionApiMock.preparar).not.toHaveBeenCalled();
+    expect(container.querySelector('[data-testid="geo-cancelada"]')).toBeTruthy();
   });
 });

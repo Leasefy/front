@@ -112,7 +112,7 @@ export function DocumentosContables({
   onOcupado,
 }: {
   /** Aviso al muro mientras se lee o se escribe: el pie espera. */
-  onOcupado?: (ocupado: boolean) => void;
+  onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 } = {}) {
   const [fase, setFase] = useState<Fase>("elegir");
   const [nombreDeArchivo, setNombreDeArchivo] = useState("");

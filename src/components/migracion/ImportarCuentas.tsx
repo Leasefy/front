@@ -80,7 +80,7 @@ export function ImportarCuentas({
   onImportado: (resultado: ResultadoImportacionPuc) => void;
   onCerrar: () => void;
   /** Aviso al muro mientras se revisa o importa: el pie espera. */
-  onOcupado?: (ocupado: boolean) => void;
+  onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 }) {
   const [filas, setFilas] = useState<Record<string, unknown>[]>([]);
   const [encabezados, setEncabezados] = useState<string[]>([]);

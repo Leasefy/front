@@ -70,7 +70,7 @@ export interface ImportStepProps {
    * (geocodificar, preparar, activar). Sin esto, el pie del muro ofrecía
    * «Seguir con Contratos» con el «Activando…» todavía girando.
    */
-  onOcupado?: (ocupado: boolean) => void;
+  onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 }
 
 /**
@@ -89,7 +89,7 @@ export const RanuraDelPie = createContext<HTMLElement | null>(null);
 export function ImportWizard({
   onSalir,
   onOcupado,
-}: { onSalir?: () => void; onOcupado?: (ocupado: boolean) => void } = {}) {
+}: { onSalir?: () => void; onOcupado?: (ocupado: boolean, cancelar?: () => void) => void } = {}) {
   const router = useRouter();
   const { t } = useI18n();
   const [currentStep, setCurrentStep] = useState(1);

@@ -162,7 +162,7 @@ export interface MigrarTercerosProps {
    * Sin esto, el pie ofrecía «Seguir con Inquilinos» apenas el conteo del
    * estado pasaba de cero, con la creación todavía corriendo (Nico lo vio).
    */
-  onOcupado?: (ocupado: boolean) => void;
+  onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 }
 
 /**

@@ -153,6 +153,18 @@ export interface MigrarTercerosProps {
   onOcupado?: (ocupado: boolean) => void;
 }
 
+/**
+ * Cuándo se tocó por última vez una carga sin terminar, en palabras.
+ *
+ * El nombre del lote ya lleva la fecha (`inquilinos-2026-09-02-0230`), pero
+ * como slug no se lee: hay que decirlo aparte para que se note que es vieja.
+ */
+function fechaDeLote(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return 'desconocida';
+  return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long' });
+}
+
 export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTercerosProps = {}) {
   const [tipo, setTipo] = useState<TipoDeTercero>(tipoFijo ?? tipoInicial ?? 'PROPIETARIO');
   const [plantilla, setPlantilla] = useState<PlantillaDeTerceros | null>(null);
@@ -712,20 +724,30 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           <p className="text-sm font-medium text-fg">Tienes una carga sin terminar</p>
           {lotesVisibles.map((l) => (
             <div key={l.lote} className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm text-fg-muted">
-                <span className="text-fg">{l.lote}</span>
-                {' · '}
-                {l.tipo === 'PROPIETARIO' ? 'propietarios' : 'inquilinos'}
-                {' · '}
-                <span className="font-mono tabular-nums">{l.requierenAtencion}</span>{' '}
-                {l.requierenAtencion === 1 ? 'fila por revisar' : 'filas por revisar'}
-                {l.listos > 0 ? (
-                  <>
-                    {' · '}
-                    <span className="font-mono tabular-nums">{l.listos}</span> listas para crear
-                  </>
-                ) : null}
-              </p>
+              <div className="min-w-0">
+                <p className="text-sm text-fg-muted">
+                  <span className="text-fg">{l.lote}</span>
+                  {' · '}
+                  {l.tipo === 'PROPIETARIO' ? 'propietarios' : 'inquilinos'}
+                  {' · '}
+                  <span className="font-mono tabular-nums">{l.requierenAtencion}</span>{' '}
+                  {l.requierenAtencion === 1 ? 'fila por revisar' : 'filas por revisar'}
+                  {l.listos > 0 ? (
+                    <>
+                      {' · '}
+                      <span className="font-mono tabular-nums">{l.listos}</span> listas para crear
+                    </>
+                  ) : null}
+                </p>
+                {/* 🔴 Cuándo se tocó por última vez. Sin esto, una carga
+                    abandonada hace seis días se ofrece igual que la de hace un
+                    rato, y retomarla parece «seguir con lo mío»: Nico
+                    (2026-09-08) terminó revisando 170 filas de dos cargas del 2
+                    de septiembre cuyas personas ya había creado después. */}
+                <p className="text-xs text-fg-subtle">
+                  Última actividad: {fechaDeLote(l.actualizado)}
+                </p>
+              </div>
               <Button size="sm" hideArrow disabled={cargando} onClick={() => void retomar(l)}>
                 Retomar
               </Button>
@@ -1424,6 +1446,7 @@ function ListaDeTrabajo({
               fila={fila}
               columnas={columnas}
               guardando={cargando}
+              tipo={tipo}
               onCorregir={(campos) => onCorregir(fila.id, campos, fila.version)}
               onVincular={() => onVincular(fila.id, fila.version)}
               onDescartar={() => onDescartar(fila.id)}

@@ -1,346 +1,233 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+/**
+ * Los pasos del cajón de renovación y su riel de actividad.
+ *
+ * Cada paso pinta UNA cosa que la inmobiliaria tiene que hacer o esperar:
+ * proponer un precio y mandarlo, saber si el inquilino aceptó, subir el
+ * contrato firmado. Nada de tarjetas dentro de tarjetas ni de botones que no
+ * hacen nada: lo que se ve, funciona.
+ */
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { Avatar, Callout, KeyValueList } from '@leasefy/cadence';
+import {
+  CheckCircle,
+  Clock,
+  FileText,
+  FlagCheckered,
+  UploadSimple,
+  Warning,
+  WhatsappLogo,
+  XCircle,
+} from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { MoneyInput } from '@/components/ui/money-input';
 import {
-  Clock,
-  User,
-  House,
-  ChatCircle,
-  Warning,
-  Envelope,
-  WhatsappLogo,
-  Upload,
-  FileText,
-  TrendUp,
-  Check,
-  X,
-  ArrowRight,
-  CheckCircle,
-  PenNib,
-  FlagCheckered,
-} from '@phosphor-icons/react';
-import type {
-  Renovacion,
-  RenovacionStatus,
-} from '@/lib/types/inmobiliaria';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import type { Renovacion, RenovacionHistoryItem } from '@/lib/types/inmobiliaria';
+import { getUrgencyColor } from '@/lib/types/inmobiliaria';
+import { URL_IPC_DANE } from '@/lib/constants/inmobiliaria-data';
 import {
-  getRenovacionStatusColor,
-  getRenovacionStatusLabel,
-  formatCurrency,
-} from '@/lib/types/inmobiliaria';
-import { calculateNewRent } from '@/lib/constants/inmobiliaria-data';
+  type CanalDeEnvio,
+  canalDeEnvio,
+  enlaceDeWhatsapp,
+  etiquetaDeActividad,
+  fechaCorta,
+  fechaLarga,
+  formatearPct,
+  ipcSugerido,
+  nuevoVencimiento,
+  renovacionAceptada,
+  textoDeActividad,
+  topeConIpc,
+  variacionDelCanon,
+} from '@/lib/renovaciones/reglas';
 
 // ============================================================================
-// Types
+// Piezas chicas
 // ============================================================================
 
-export type WorkflowStep = {
-  status: RenovacionStatus;
-  label: string;
-  icon: React.ReactNode;
-  description: string;
-};
-
-// ============================================================================
-// Stepper Component
-// ============================================================================
-
-export function WorkflowStepper({
-  currentStatus,
-  onStepClick,
-  steps,
+function Campo({
+  id,
+  etiqueta,
+  ayuda,
+  children,
 }: {
-  currentStatus: RenovacionStatus;
-  onStepClick: (status: RenovacionStatus) => void;
-  steps: WorkflowStep[];
+  id: string;
+  etiqueta: string;
+  ayuda?: React.ReactNode;
+  children: React.ReactNode;
 }) {
-  const currentIndex = steps.findIndex((s) => s.status === currentStatus);
-
   return (
-    <div className="relative">
-      {/* Progress line */}
-      <div className="absolute top-5 left-0 right-0 h-0.5 bg-border" />
-      <div
-        className="absolute top-5 left-0 h-0.5 bg-success transition-all duration-300"
-        style={{ width: `${(currentIndex / (steps.length - 1)) * 100}%` }}
-      />
-
-      {/* Steps */}
-      <div className="relative flex justify-between">
-        {steps.map((step, index) => {
-          const isCompleted = index < currentIndex;
-          const isCurrent = index === currentIndex;
-          const isClickable = index <= currentIndex;
-
-          return (
-            // allowlist: clickable wizard step-navigator (icon-per-step circle + label-below,
-            // done/active/upcoming state). Cadence Stepper is display-only (non-clickable nav,
-            // numbered, side labels) — can't model this. Native kept, tokens cleaned (emerald→success).
-            <button
-              key={step.status}
-              onClick={() => isClickable && onStepClick(step.status)}
-              disabled={!isClickable}
-              className={`flex flex-col items-center gap-2 group ${
-                isClickable ? 'cursor-pointer' : 'cursor-default'
-              }`}
-            >
-              <div
-                className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                  isCompleted
-                    ? 'bg-success text-white'
-                    : isCurrent
-                    ? 'bg-success text-white ring-4 ring-success/30'
-                    : 'bg-surface-muted text-fg-muted'
-                }`}
-              >
-                {isCompleted ? <Check className="h-5 w-5" weight="bold" /> : step.icon}
-              </div>
-              <div className="text-center">
-                <p
-                  className={`text-xs font-medium ${
-                    isCurrent
-                      ? 'text-success'
-                      : 'text-muted-foreground'
-                  }`}
-                >
-                  {step.label}
-                </p>
-              </div>
-            </button>
-          );
-        })}
-      </div>
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="text-sm font-medium text-fg">
+        {etiqueta}
+      </Label>
+      {children}
+      {ayuda ? <p className="text-xs text-fg-muted">{ayuda}</p> : null}
     </div>
   );
 }
 
-// ============================================================================
-// Step Content Components
-// ============================================================================
+function Rotulo({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-muted">{children}</h3>
+  );
+}
 
-export function StepRevision({
+/** «Vence el 1 de octubre de 2026 · en 23 días», con el tono del cajón de urgencia. */
+export function ChipDeVencimiento({
   renovacion,
-  newRent,
-  newAdminFee,
-  onNewRentChange,
-  onNewAdminFeeChange,
-  onContinue,
 }: {
-  renovacion: Renovacion;
-  newRent: number;
-  newAdminFee: number;
-  onNewRentChange: (value: number) => void;
-  onNewAdminFeeChange: (value: number) => void;
-  onContinue: () => void;
+  renovacion: Pick<Renovacion, 'leaseEndDate' | 'daysUntilExpiry' | 'urgencyBucket'>;
 }) {
-  const { t, locale } = useI18n();
-  const parseMoney = (v: string) => parseInt(v.replace(/[^\d]/g, '')) || 0;
-  const fmtInput = (n: number) =>
-    n > 0 ? n.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US') : '';
-
+  const { locale } = useI18n();
+  const dias = renovacion.daysUntilExpiry;
+  const cuando = dias === 0 ? 'hoy' : dias === 1 ? 'mañana' : `en ${dias} días`;
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4">
-        {/* Property Info */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <House className="h-4 w-4" />
-              {t('inmobiliaria.operaciones.renovacion.revision.property')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="font-medium">{renovacion.propertyTitle}</p>
-            <p className="text-sm text-muted-foreground">{renovacion.propertyAddress}</p>
-          </CardContent>
-        </Card>
-
-        {/* Tenant Info */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <User className="h-4 w-4" />
-              {t('inmobiliaria.operaciones.renovacion.revision.tenant')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="font-medium">{renovacion.tenantName}</p>
-            <p className="text-sm text-muted-foreground">{renovacion.tenantPhone}</p>
-            <p className="text-sm text-muted-foreground">{renovacion.tenantEmail}</p>
-          </CardContent>
-        </Card>
-
-        {/* Contract Details */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              {t('inmobiliaria.operaciones.renovacion.revision.currentContract')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.revision.startDate')}</span>
-              <span>{new Date(renovacion.leaseStartDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.revision.expiryDate')}</span>
-              <span className="font-medium text-warning">
-                {new Date(renovacion.leaseEndDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US')}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.revision.currentRent')}</span>
-              <span className="font-medium">{formatCurrency(renovacion.currentRent)}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* New price — set by the AGENCY. IPC is only a suggestion. */}
-        <Card className="border-primary/30">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <TrendUp className="h-4 w-4" />
-              Propuesta de renovación (la define la inmobiliaria)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="revNewRent">Nuevo canon</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="revNewRent"
-                  value={fmtInput(newRent)}
-                  onChange={(e) => onNewRentChange(parseMoney(e.target.value))}
-                  placeholder={formatCurrency(renovacion.currentRent)}
-                  className="pl-8 text-lg font-semibold"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Actual: {formatCurrency(renovacion.currentRent)}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="revNewAdmin">Administración del conjunto</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  id="revNewAdmin"
-                  value={fmtInput(newAdminFee)}
-                  onChange={(e) => onNewAdminFeeChange(parseMoney(e.target.value))}
-                  placeholder="Sin administración"
-                  className="pl-8"
-                />
-              </div>
-              {(renovacion.currentAdminFee ?? 0) > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Actual: {formatCurrency(renovacion.currentAdminFee ?? 0)}
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Button onClick={onContinue} className="w-full" size="lg" disabled={newRent <= 0}>
-        {t('inmobiliaria.operaciones.renovacion.revision.continue')}
-        <ArrowRight className="h-4 w-4 ml-2" />
-      </Button>
-    </div>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium',
+        getUrgencyColor(renovacion.urgencyBucket),
+      )}
+      data-testid="renovacion-vence"
+    >
+      <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
+      Vence el {fechaLarga(renovacion.leaseEndDate, locale)} · {cuando}
+    </span>
   );
 }
 
-/** «31 de diciembre de 2026» leyendo la parte YYYY-MM-DD (DATE = medianoche UTC). */
-function fechaLarga(iso: string, locale: string): string {
-  const partes = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-  const d = partes
-    ? new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]))
-    : new Date(iso);
-  return d.toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+function AvisoDeCanal({
+  canal,
+  correo,
+  respondible,
+}: {
+  canal: CanalDeEnvio;
+  correo: string | null;
+  /** La inmobiliaria tiene correo: el inquilino sin cuenta puede contestar el suyo. */
+  respondible: boolean;
+}) {
+  if (canal === 'panel_y_correo') {
+    return (
+      <p className="text-xs text-fg-muted" data-testid="renovacion-canal">
+        Le llega a su panel de Leasefy{correo ? ` y a su correo (${correo})` : ''}. Desde el panel
+        puede aceptar.
+      </p>
+    );
+  }
+  if (canal === 'correo_del_contrato') {
+    return (
+      <p className="text-xs text-fg-muted" data-testid="renovacion-canal">
+        Este inquilino no tiene cuenta en Leasefy: la propuesta le llega al correo del contrato (
+        {correo}){respondible ? ' y te responde contestándolo' : ''}. Su respuesta la registras tú
+        en el paso siguiente.
+      </p>
+    );
+  }
+  return (
+    <p className="flex items-start gap-1.5 text-xs text-warning" data-testid="renovacion-canal">
+      <Warning className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+      Sin cuenta ni correo en el contrato: al enviar, la propuesta queda registrada acá. Hazla
+      llegar por WhatsApp o copia el mensaje.
+    </p>
+  );
 }
 
-export function StepNotification({
+// ============================================================================
+// Paso 1 — Propuesta
+// ============================================================================
+
+export function PasoPropuesta({
   renovacion,
   newRent,
   newAdminFee,
   ipcRate,
-  agencyName,
+  message,
+  editado,
+  respondible,
+  hoy,
   onNewRentChange,
   onNewAdminFeeChange,
   onIpcRateChange,
-  onNotify,
+  onMessageChange,
+  onRestaurarMensaje,
 }: {
   renovacion: Renovacion;
   newRent: number;
   newAdminFee: number;
-  /** El IPC lo ingresa la inmobiliaria (DANE, año anterior). null = no lo puso. */
+  /** El IPC lo escribe la inmobiliaria (DANE, año anterior). null = no lo puso. */
   ipcRate: number | null;
-  /** Con qué se firma el mensaje. Vacío mientras carga. */
-  agencyName: string;
+  message: string;
+  editado: boolean;
+  respondible: boolean;
+  /** Qué día es hoy: decide si el IPC de la tabla sigue siendo el del año pasado. */
+  hoy: Date;
   onNewRentChange: (value: number) => void;
   onNewAdminFeeChange: (value: number) => void;
   onIpcRateChange: (value: number | null) => void;
-  onNotify: (channel: 'email' | 'whatsapp', message: string) => void;
+  onMessageChange: (texto: string) => void;
+  onRestaurarMensaje: () => void;
 }) {
-  const { t, locale } = useI18n();
-  /*
-   * El IPC NO viene de una tabla escrita en el código (había una que
-   * terminaba en diciembre de 2024 y se mostraba como «sugerido» dos años
-   * después). El tope legal de aumento en vivienda es el IPC del año
-   * calendario anterior (Ley 820, art. 20); lo publica el DANE y lo escribe
-   * la inmobiliaria. Sin IPC no hay sugerencia: se dice, no se inventa.
-   */
-  const suggestedRent =
-    ipcRate != null && ipcRate > 0 ? calculateNewRent(renovacion.currentRent, ipcRate) : null;
-  const parseMoney = (v: string) => parseInt(v.replace(/[^\d]/g, '')) || 0;
-  const fmtInput = (n: number) =>
-    n > 0 ? n.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US') : '';
+  const { locale, formatCurrency, formatDate } = useI18n();
+  const sugerido = ipcSugerido(hoy);
+  const tope = ipcRate != null && ipcRate > 0 ? topeConIpc(renovacion.currentRent, ipcRate) : null;
+  const variacion = variacionDelCanon(renovacion.currentRent, newRent);
+  const superaElTope = tope != null && newRent > tope;
+  const canal = canalDeEnvio(renovacion);
+  const yaEnviada = renovacion.status !== 'pending' && Boolean(renovacion.notifiedAt);
+  const currentAdminFee = renovacion.currentAdminFee ?? 0;
 
-  const defaultMessage = `Estimado/a ${renovacion.tenantName},
-
-Le informamos que su contrato de arrendamiento del inmueble ubicado en ${renovacion.propertyAddress} vence el ${fechaLarga(renovacion.leaseEndDate, locale)}.
-
-El nuevo canon propuesto para la renovación es de ${formatCurrency(newRent)}.
-
-Por favor confirme si desea renovar el contrato.
-
-Atentamente,
-${agencyName || ''}`.trimEnd();
-
-  const [message, setMessage] = useState(defaultMessage);
-  const [editado, setEditado] = useState(false);
-  // El nombre de la inmobiliaria llega después y el canon se cambia arriba:
-  // mientras la persona no haya tocado el texto, el mensaje sigue al dato.
-  useEffect(() => {
-    if (!editado) setMessage(defaultMessage);
-  }, [defaultMessage, editado]);
+  const ayudaDelCanon = (() => {
+    const actual = `Actual ${formatCurrency(renovacion.currentRent)}`;
+    if (newRent <= 0 || variacion.pesos === 0) return `${actual} · sin cambio`;
+    const signo = variacion.pesos > 0 ? '+' : '−';
+    return `${actual} · ${signo}${formatCurrency(Math.abs(variacion.pesos))} (${signo}${formatearPct(Math.abs(variacion.pct), locale, 1)})`;
+  })();
 
   return (
-    <div className="space-y-4">
-      {/* Proposed price — set by the agency */}
-      <Card className="border-primary/30">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Propuesta (la define la inmobiliaria)</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="propIpc">IPC del año anterior (%)</Label>
-            <div className="flex items-center gap-2">
+    <section className="space-y-6" data-testid="paso-propuesta">
+      {yaEnviada ? (
+        <Callout
+          icon={<CheckCircle className="h-5 w-5 text-success" weight="fill" aria-hidden="true" />}
+          title="Propuesta enviada"
+          data-testid="propuesta-ya-enviada"
+        >
+          Salió el {formatDate(renovacion.notifiedAt as string)}. Si cambias el precio, envíala otra
+          vez y el inquilino recibe la nueva.
+        </Callout>
+      ) : null}
+
+      <div className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)]">
+          <Campo id="renovacion-canon" etiqueta="Nuevo canon" ayuda={ayudaDelCanon}>
+            <MoneyInput
+              id="renovacion-canon"
+              data-testid="renovacion-canon"
+              value={newRent > 0 ? newRent : ''}
+              onChange={(crudo) => onNewRentChange(Number(crudo) || 0)}
+              placeholder={formatCurrency(renovacion.currentRent)}
+              className="h-12 text-lg font-semibold"
+            />
+          </Campo>
+          <Campo id="renovacion-ipc" etiqueta="IPC del año anterior">
+            <div className="relative">
               <Input
-                id="propIpc"
+                id="renovacion-ipc"
+                data-testid="renovacion-ipc"
                 type="number"
                 inputMode="decimal"
                 step="0.01"
@@ -352,653 +239,635 @@ ${agencyName || ''}`.trimEnd();
                   onIpcRateChange(Number.isFinite(n) && n >= 0 ? n : null);
                 }}
                 placeholder="Según el DANE"
-                className="w-32"
-                data-testid="renovacion-ipc"
+                className="h-12 pr-8"
               />
-              {suggestedRent ? (
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-fg-subtle"
+              >
+                %
+              </span>
+            </div>
+          </Campo>
+        </div>
+
+        {/* El IPC dice hasta dónde se puede subir en vivienda. Se sugiere sólo
+            el del año pasado; si la tabla no lo tiene, se pide, no se inventa. */}
+        <div
+          className="rounded-lg border border-border bg-surface-muted/40 px-4 py-3 text-sm"
+          data-testid="renovacion-ipc-ayuda"
+        >
+          {tope != null && ipcRate != null ? (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {superaElTope ? (
+                <p className="flex items-start gap-1.5 text-warning">
+                  <Warning className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>
+                    Supera el tope del IPC ({formatearPct(ipcRate, locale)}) por{' '}
+                    {formatCurrency(newRent - tope)}. En vivienda el aumento no puede pasar del IPC
+                    del año anterior (Ley 820, art. 20).
+                  </span>
+                </p>
+              ) : (
+                <p className="text-fg-muted">
+                  Con IPC de {formatearPct(ipcRate, locale)} el canon queda en{' '}
+                  <strong className="font-semibold text-fg">{formatCurrency(tope)}</strong>, el tope
+                  legal en vivienda.
+                </p>
+              )}
+              {newRent !== tope ? (
                 <Button
                   type="button"
-                  variant="secondary"
                   size="sm"
+                  variant="secondary"
                   hideArrow
-                  onClick={() => onNewRentChange(suggestedRent)}
+                  onClick={() => onNewRentChange(tope)}
                   data-testid="renovacion-aplicar-ipc"
                 >
-                  Aplicar al canon: {formatCurrency(suggestedRent)}
+                  Aplicar {formatCurrency(tope)}
                 </Button>
               ) : null}
             </div>
-            <p className="text-xs text-muted-foreground">
-              El tope legal de aumento en vivienda es el IPC del año calendario
-              anterior. El sistema no lo trae solo: escribe el que publicó el DANE.
-            </p>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="propNewRent">Nuevo canon</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-              <Input
-                id="propNewRent"
-                value={fmtInput(newRent)}
-                onChange={(e) => onNewRentChange(parseMoney(e.target.value))}
-                placeholder={formatCurrency(renovacion.currentRent)}
-                className="pl-8 text-lg font-semibold"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Actual: {formatCurrency(renovacion.currentRent)}
-              {suggestedRent ? ` · Con IPC ${ipcRate}%: ${formatCurrency(suggestedRent)}` : ''}
-            </p>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="propNewAdmin">Administración del conjunto</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-              <Input
-                id="propNewAdmin"
-                value={fmtInput(newAdminFee)}
-                onChange={(e) => onNewAdminFeeChange(parseMoney(e.target.value))}
-                placeholder="Sin administración"
-                className="pl-8"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Recipient */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">{t('inmobiliaria.operaciones.renovacion.notification.recipient')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-surface-muted flex items-center justify-center">
-              <User className="h-5 w-5 text-fg-muted" />
-            </div>
-            <div>
-              <p className="font-medium">{renovacion.tenantName}</p>
-              <p className="text-sm text-muted-foreground">{renovacion.tenantEmail}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Editable Message */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">{t('inmobiliaria.operaciones.renovacion.notification.messagePreview')}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Textarea
-            value={message}
-            onChange={(e) => {
-              setEditado(true);
-              setMessage(e.target.value);
-            }}
-            rows={10}
-            className="text-sm"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              setEditado(false);
-              setMessage(defaultMessage);
-            }}
-            className="text-xs text-muted-foreground hover:text-fg underline-offset-2 hover:underline"
-          >
-            Restaurar mensaje sugerido
-          </button>
-        </CardContent>
-      </Card>
-
-      {/* Send Buttons */}
-      <div className="grid grid-cols-2 gap-3">
-        <Button
-          variant="outline"
-          onClick={() => onNotify('email', message)}
-          disabled={!message.trim()}
-          className="flex items-center gap-2"
-        >
-          <Envelope className="h-4 w-4" />
-          {t('inmobiliaria.operaciones.renovacion.notification.sendEmail')}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => onNotify('whatsapp', message)}
-          disabled={!message.trim()}
-          className="flex items-center gap-2 border-success/30 text-success hover:bg-success-soft"
-        >
-          <WhatsappLogo className="h-4 w-4" />
-          WhatsApp
-        </Button>
-      </div>
-
-      <p className="text-xs text-muted-foreground text-center">
-        Se enviará por email y a la página del inquilino. WhatsApp abre el chat con el mensaje listo.
-      </p>
-    </div>
-  );
-}
-
-export function StepAceptacion({
-  renovacion,
-  onContinue,
-}: {
-  renovacion: Renovacion;
-  onContinue: () => void;
-}) {
-  const accepted = !!renovacion.tenantAcceptedAt;
-  const finalRent = renovacion.negotiatedRent || renovacion.proposedRent || renovacion.currentRent;
-  return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Propuesta enviada al inquilino</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-1 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Inquilino</span>
-            <span className="font-medium">{renovacion.tenantName}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Nuevo canon</span>
-            <span className="font-semibold text-success">{formatCurrency(finalRent)}</span>
-          </div>
-        </CardContent>
-      </Card>
-      <Card className={accepted ? 'border-success/30 bg-success-soft' : ''}>
-        <CardContent className="pt-4">
-          {accepted ? (
-            <div className="flex items-center gap-2 text-success">
-              <CheckCircle className="h-5 w-5" weight="fill" />
-              <span className="font-medium">El inquilino aceptó la renovación</span>
+          ) : sugerido ? (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-fg-muted">
+                IPC de {sugerido.anio} según el DANE:{' '}
+                <strong className="font-semibold text-fg">{formatearPct(sugerido.rate, locale)}</strong>
+                . Es el tope legal de aumento en vivienda.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                hideArrow
+                onClick={() => onIpcRateChange(sugerido.rate)}
+                data-testid="renovacion-usar-ipc"
+              >
+                Usar {formatearPct(sugerido.rate, locale)}
+              </Button>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-fg-muted">
-              <Clock className="h-5 w-5" />
-              <span>Esperando que el inquilino acepte desde su panel…</span>
-            </div>
+            <p className="text-fg-muted">
+              El tope legal de aumento en vivienda es el IPC del año calendario anterior. Escribe el
+              que publicó el DANE.{' '}
+              <a
+                href={URL_IPC_DANE}
+                target="_blank"
+                rel="noreferrer"
+                className="underline underline-offset-2 hover:text-fg"
+              >
+                Ver en el DANE
+              </a>
+            </p>
           )}
-        </CardContent>
-      </Card>
-      <Button className="w-full" size="lg" disabled={!accepted} onClick={onContinue}>
-        <ArrowRight className="h-4 w-4 mr-2" />
-        Continuar a la firma del contrato
-      </Button>
-    </div>
+        </div>
+
+        <Campo
+          id="renovacion-admin"
+          etiqueta="Administración del conjunto"
+          ayuda={
+            currentAdminFee > 0
+              ? `Actual ${formatCurrency(currentAdminFee)}`
+              : 'Déjalo vacío si el inmueble no paga administración.'
+          }
+        >
+          <MoneyInput
+            id="renovacion-admin"
+            data-testid="renovacion-admin"
+            value={newAdminFee > 0 ? newAdminFee : ''}
+            onChange={(crudo) => onNewAdminFeeChange(Number(crudo) || 0)}
+            placeholder="Sin administración"
+          />
+        </Campo>
+      </div>
+
+      <div className="space-y-3 border-t border-border pt-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-fg">Mensaje al inquilino</h3>
+          <div className="flex items-center gap-1">
+            {editado ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                hideArrow
+                onClick={onRestaurarMensaje}
+                data-testid="renovacion-restaurar"
+              >
+                Restaurar el sugerido
+              </Button>
+            ) : null}
+            {renovacion.tenantPhone ? (
+              <Button type="button" size="sm" variant="outline" hideArrow asChild>
+                <a
+                  href={enlaceDeWhatsapp(renovacion.tenantPhone, message)}
+                  target="_blank"
+                  rel="noreferrer"
+                  data-testid="renovacion-whatsapp"
+                >
+                  <WhatsappLogo className="h-4 w-4" aria-hidden="true" />
+                  WhatsApp
+                </a>
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                hideArrow
+                disabled
+                title="El contrato no tiene teléfono del inquilino"
+                data-testid="renovacion-whatsapp"
+              >
+                <WhatsappLogo className="h-4 w-4" aria-hidden="true" />
+                WhatsApp
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-muted/40 px-3.5 py-2.5">
+          <Avatar name={renovacion.tenantName || '?'} size="sm" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-fg">{renovacion.tenantName}</p>
+            <p className="truncate text-xs text-fg-muted">
+              {[renovacion.tenantEmail, renovacion.tenantPhone].filter(Boolean).join(' · ') ||
+                'Sin correo ni teléfono en el contrato'}
+            </p>
+          </div>
+        </div>
+
+        <Textarea
+          data-testid="renovacion-mensaje"
+          value={message}
+          onChange={(e) => onMessageChange(e.target.value)}
+          rows={9}
+          className="text-sm leading-relaxed"
+        />
+        <AvisoDeCanal canal={canal} correo={renovacion.tenantEmail} respondible={respondible} />
+      </div>
+    </section>
   );
 }
 
-export function StepNegotiation({
+// ============================================================================
+// Paso 2 — Aceptación
+// ============================================================================
+
+export function PasoAceptacion({
   renovacion,
   newRent,
   newAdminFee,
-  onNewRentChange,
-  onNewAdminFeeChange,
-  onAccept,
-  onContinueNegotiation,
+  registrando,
+  onRegistrarAceptacion,
+  onNoRenueva,
 }: {
   renovacion: Renovacion;
   newRent: number;
   newAdminFee: number;
-  onNewRentChange: (value: number) => void;
-  onNewAdminFeeChange: (value: number) => void;
-  onAccept: () => void;
-  onContinueNegotiation: (note: string) => void;
+  registrando: boolean;
+  onRegistrarAceptacion: () => void;
+  onNoRenueva: () => void;
 }) {
-  const { t, locale } = useI18n();
-  const [note, setNote] = useState<string>('');
-  const currentAdminFee = renovacion.currentAdminFee ?? 0;
-  const parseMoney = (v: string) => parseInt(v.replace(/[^\d]/g, '')) || 0;
-  const fmtInput = (n: number) =>
-    n > 0 ? n.toLocaleString(locale === 'es' ? 'es-CO' : 'en-US') : '';
+  const { formatCurrency, formatDate } = useI18n();
+  const acepto = renovacionAceptada(renovacion);
+  const canal = canalDeEnvio(renovacion);
 
   return (
-    <div className="space-y-4">
-      {/* New rent — controlled by the workflow (set in Revisión, adjustable here) */}
-      <div className="space-y-2">
-        <Label htmlFor="negNewRent">Nuevo canon (lo define la inmobiliaria)</Label>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-          <Input
-            id="negNewRent"
-            value={fmtInput(newRent)}
-            onChange={(e) => onNewRentChange(parseMoney(e.target.value))}
-            placeholder={formatCurrency(renovacion.currentRent)}
-            className="pl-8 text-lg font-semibold"
-          />
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Actual: {formatCurrency(renovacion.currentRent)}
-        </p>
-      </div>
+    <section className="space-y-5" data-testid="paso-aceptacion">
+      <KeyValueList
+        compact
+        items={[
+          {
+            label: 'Propuesta enviada',
+            value: renovacion.notifiedAt ? formatDate(renovacion.notifiedAt) : '—',
+          },
+          { label: 'Nuevo canon', value: formatCurrency(newRent), valueColor: 'success' as const },
+          ...(newAdminFee > 0
+            ? [{ label: 'Administración', value: formatCurrency(newAdminFee) }]
+            : []),
+        ]}
+      />
 
-      {/* Building administration fee (administración del conjunto) */}
-      <div className="space-y-2">
-        <Label htmlFor="negNewAdmin">Administración del conjunto</Label>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-          <Input
-            id="negNewAdmin"
-            value={fmtInput(newAdminFee)}
-            onChange={(e) => onNewAdminFeeChange(parseMoney(e.target.value))}
-            placeholder="Sin administración"
-            className="pl-8"
-          />
+      {acepto ? (
+        <Callout
+          icon={<CheckCircle className="h-5 w-5 text-success" weight="fill" aria-hidden="true" />}
+          title="El inquilino aceptó"
+          data-testid="aceptacion-estado"
+        >
+          {renovacion.tenantAcceptedAt
+            ? `Desde su panel, el ${formatDate(renovacion.tenantAcceptedAt)}.`
+            : 'Quedó registrado desde acá.'}{' '}
+          Sigue la firma del contrato.
+        </Callout>
+      ) : canal === 'panel_y_correo' ? (
+        <Callout
+          icon={<Clock className="h-5 w-5" aria-hidden="true" />}
+          title="Esperando al inquilino"
+          data-testid="aceptacion-estado"
+        >
+          Puede aceptar desde su panel de Leasefy. Si te contestó por otro medio, regístralo acá.
+        </Callout>
+      ) : (
+        <Callout
+          icon={<Clock className="h-5 w-5" aria-hidden="true" />}
+          title="Esperando al inquilino"
+          data-testid="aceptacion-estado"
+        >
+          No tiene cuenta en Leasefy, así que no acepta desde ningún panel: cuando te conteste,
+          registra acá su respuesta.
+        </Callout>
+      )}
+
+      {!acepto ? (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            hideArrow
+            isLoading={registrando}
+            disabled={registrando}
+            onClick={onRegistrarAceptacion}
+            data-testid="aceptacion-acepto"
+          >
+            <CheckCircle className="h-4 w-4" aria-hidden="true" />
+            El inquilino aceptó
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            hideArrow
+            onClick={onNoRenueva}
+            data-testid="aceptacion-no-renueva"
+          >
+            No renueva
+          </Button>
         </div>
-        {currentAdminFee > 0 && (
-          <p className="text-xs text-muted-foreground">Actual: {formatCurrency(currentAdminFee)}</p>
+      ) : null}
+    </section>
+  );
+}
+
+// ============================================================================
+// Paso 3 — Firma
+// ============================================================================
+
+export function PasoFirma({
+  renovacion,
+  newRent,
+  newAdminFee,
+  archivo,
+  onArchivo,
+  onAbrirDocumento,
+}: {
+  renovacion: Renovacion;
+  newRent: number;
+  newAdminFee: number;
+  archivo: File | null;
+  onArchivo: (archivo: File | null) => void;
+  onAbrirDocumento: () => void;
+}) {
+  const { locale, formatCurrency } = useI18n();
+  const vence = fechaLarga(nuevoVencimiento(renovacion.leaseEndDate), locale);
+
+  return (
+    <section className="space-y-5" data-testid="paso-firma">
+      <KeyValueList
+        compact
+        items={[
+          { label: 'Nuevo canon', value: formatCurrency(newRent), valueColor: 'success' as const },
+          ...(newAdminFee > 0
+            ? [{ label: 'Administración', value: formatCurrency(newAdminFee) }]
+            : []),
+          { label: 'Nuevo vencimiento', value: vence },
+          { label: 'Inquilino', value: renovacion.tenantName },
+        ]}
+      />
+
+      {renovacion.documentName ? (
+        <Callout
+          icon={<FileText className="h-5 w-5" aria-hidden="true" />}
+          title="Contrato firmado subido"
+          data-testid="firma-documento"
+        >
+          <span className="flex flex-wrap items-center justify-between gap-2">
+            <span className="truncate">{renovacion.documentName}</span>
+            <Button type="button" size="sm" variant="ghost" hideArrow onClick={onAbrirDocumento}>
+              Abrir
+            </Button>
+          </span>
+        </Callout>
+      ) : null}
+
+      <label
+        className={cn(
+          'flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed px-6 py-8 text-center transition-colors',
+          archivo ? 'border-success/40 bg-success-soft' : 'border-border hover:border-fg-muted/40',
         )}
-      </div>
-
-      {/* Notes */}
-      <div className="space-y-2">
-        <Label htmlFor="negotiationNote">{t('inmobiliaria.operaciones.renovacion.negotiation.negotiationNotes')}</Label>
-        <Textarea
-          id="negotiationNote"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder={t('inmobiliaria.operaciones.renovacion.negotiation.negotiationPlaceholder')}
-          rows={3}
-        />
-      </div>
-
-      {/* Actions */}
-      <div className="grid grid-cols-2 gap-3">
-        <Button
-          variant="outline"
-          onClick={() => onContinueNegotiation(note)}
-          disabled={!note.trim()}
-        >
-          <ChatCircle className="h-4 w-4 mr-2" />
-          {t('inmobiliaria.operaciones.renovacion.negotiation.continueNegotiating')}
-        </Button>
-        <Button onClick={onAccept} disabled={newRent <= 0}>
-          <CheckCircle className="h-4 w-4 mr-2" />
-          {t('inmobiliaria.operaciones.renovacion.negotiation.acceptProposal')}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-export function StepApproval({
-  renovacion,
-  onOwnerApproved,
-  onTenantApproved,
-}: {
-  renovacion: Renovacion;
-  onOwnerApproved: () => void;
-  onTenantApproved: () => void;
-}) {
-  const { t } = useI18n();
-  const [ownerApproved, setOwnerApproved] = useState(false);
-  // The tenant acceptance is READ-ONLY here — it comes from the tenant's own
-  // panel. The agency cannot accept on the tenant's behalf.
-  const tenantApproved = !!renovacion.tenantAcceptedAt;
-  const finalRent = renovacion.negotiatedRent || renovacion.proposedRent || renovacion.currentRent;
-
-  return (
-    <div className="space-y-4">
-      {/* Final Terms Summary */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">{t('inmobiliaria.operaciones.renovacion.approval.finalTerms')}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.approval.newRent')}</span>
-            <span className="font-bold text-success">{formatCurrency(finalRent)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.approval.increase')}</span>
-            <span>+{formatCurrency(finalRent - renovacion.currentRent)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.approval.term')}</span>
-            <span>{t('inmobiliaria.operaciones.renovacion.approval.termMonths')}</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Approval Status */}
-      <div className="space-y-3">
-        <Card className={`transition-colors ${ownerApproved ? 'border-success/30 bg-success-soft' : ''}`}>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                  ownerApproved ? 'bg-success-soft' : 'bg-surface-muted'
-                }`}>
-                  <User className={`h-5 w-5 ${ownerApproved ? 'text-success' : 'text-fg-muted'}`} />
-                </div>
-                <div>
-                  <p className="font-medium">{renovacion.propietarioName}</p>
-                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.approval.ownerLabel')}</p>
-                </div>
-              </div>
-              {ownerApproved ? (
-                <Badge className="bg-success-soft text-success">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  {t('inmobiliaria.operaciones.renovacion.approval.approved')}
-                </Badge>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setOwnerApproved(true);
-                    onOwnerApproved();
-                  }}
-                >
-                  {t('inmobiliaria.operaciones.renovacion.approval.approve')}
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className={`transition-colors ${tenantApproved ? 'border-success/30 bg-success-soft' : ''}`}>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                  tenantApproved ? 'bg-success-soft' : 'bg-surface-muted'
-                }`}>
-                  <User className={`h-5 w-5 ${tenantApproved ? 'text-success' : 'text-fg-muted'}`} />
-                </div>
-                <div>
-                  <p className="font-medium">{renovacion.tenantName}</p>
-                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.approval.tenantLabel')}</p>
-                </div>
-              </div>
-              {tenantApproved ? (
-                <Badge className="bg-success-soft text-success">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  {t('inmobiliaria.operaciones.renovacion.approval.approved')}
-                </Badge>
-              ) : (
-                <Badge className="bg-surface-muted text-fg-muted">
-                  <Clock className="h-3 w-3 mr-1" />
-                  Esperando al inquilino
-                </Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {!tenantApproved && (
-        <p className="text-xs text-fg-muted text-center">
-          El inquilino debe aceptar la propuesta desde su panel para poder continuar.
-        </p>
-      )}
-
-      {ownerApproved && tenantApproved && (
-        <Button className="w-full" size="lg" onClick={onTenantApproved}>
-          <CheckCircle className="h-4 w-4 mr-2" />
-          Continuar a la firma
-        </Button>
-      )}
-    </div>
-  );
-}
-
-export function StepSignature({
-  renovacion,
-  onSignatureComplete,
-}: {
-  renovacion: Renovacion;
-  onSignatureComplete: (file: File) => void | Promise<void>;
-}) {
-  const { t } = useI18n();
-  const [signedFile, setSignedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [signatureDate, setSignatureDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
-
-  const handleComplete = async () => {
-    if (!signedFile) return;
-    setIsUploading(true);
-    try {
-      await onSignatureComplete(signedFile);
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      {/* Contract Preview */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            {t('inmobiliaria.operaciones.renovacion.signature.newContract')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="aspect-[8.5/11] bg-surface-muted/50 rounded-md flex items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">{t('inmobiliaria.operaciones.renovacion.signature.preview')}</p>
-              <Button variant="link" size="sm" className="mt-2">
-                {t('inmobiliaria.operaciones.renovacion.signature.downloadPdf')}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Upload Signed Document */}
-      <div className="space-y-2">
-        <Label>{t('inmobiliaria.operaciones.renovacion.signature.upload')}</Label>
-        <div
-          className={`border-2 border-dashed rounded-md p-6 text-center transition-colors ${
-            signedFile
-              ? 'border-success/30 bg-success-soft'
-              : 'border-border hover:border-fg-muted/40'
-          }`}
-        >
-          {signedFile ? (
-            <div className="flex items-center justify-center gap-2 text-success">
-              <CheckCircle className="h-5 w-5" weight="fill" />
-              <span className="font-medium">{signedFile.name}</span>
-            </div>
-          ) : (
-            <label className="cursor-pointer">
-              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                {t('inmobiliaria.operaciones.renovacion.signature.dragOrClick')}
-              </p>
-              {/* allowlist: hidden type=file behind a custom drag/click dropzone (playbook file-input allowlist) */}
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                className="hidden"
-                onChange={(e) => setSignedFile(e.target.files?.[0] || null)}
-              />
-            </label>
-          )}
-        </div>
-      </div>
-
-      {/* Signature Date */}
-      <div className="space-y-2">
-        <Label htmlFor="signatureDate">{t('inmobiliaria.operaciones.renovacion.signature.date')}</Label>
-        <Input
-          id="signatureDate"
-          type="date"
-          value={signatureDate}
-          onChange={(e) => setSignatureDate(e.target.value)}
-        />
-      </div>
-
-      {/* Complete Button */}
-      <Button
-        onClick={handleComplete}
-        className="w-full"
-        size="lg"
-        disabled={!signedFile || isUploading}
       >
-        <PenNib className="h-4 w-4 mr-2" />
-        {isUploading
-          ? 'Subiendo documento…'
-          : t('inmobiliaria.operaciones.renovacion.signature.register')}
-      </Button>
-    </div>
+        {archivo ? (
+          <>
+            <CheckCircle className="h-7 w-7 text-success" weight="fill" aria-hidden="true" />
+            <span className="text-sm font-medium text-success">{archivo.name}</span>
+            <span className="text-xs text-fg-muted">Toca para cambiarlo</span>
+          </>
+        ) : (
+          <>
+            <UploadSimple className="h-7 w-7 text-fg-muted" aria-hidden="true" />
+            <span className="text-sm text-fg-muted">
+              Arrastra el contrato firmado o toca para elegirlo
+            </span>
+            <span className="text-xs text-fg-subtle">PDF, JPG o PNG</span>
+          </>
+        )}
+        {/* allowlist: hidden type=file behind a custom drag/click dropzone (playbook file-input allowlist) */}
+        <input
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png"
+          className="hidden"
+          data-testid="firma-archivo"
+          onChange={(e) => onArchivo(e.target.files?.[0] ?? null)}
+        />
+      </label>
+
+      <p className="text-xs text-fg-muted">
+        Al registrar la firma, el contrato, la consignación y el inmueble quedan con el nuevo canon
+        y vencen el {vence}.
+      </p>
+    </section>
   );
 }
 
-export function StepCompleted({ renovacion }: { renovacion: Renovacion }) {
-  const { t } = useI18n();
+// ============================================================================
+// Cierres — completada y no renovada
+// ============================================================================
+
+export function PasoCompletada({
+  renovacion,
+  onAbrirDocumento,
+}: {
+  renovacion: Renovacion;
+  onAbrirDocumento: () => void;
+}) {
+  const { locale, formatCurrency } = useI18n();
   const finalRent = renovacion.negotiatedRent || renovacion.proposedRent || renovacion.currentRent;
+  const vence = fechaLarga(
+    renovacion.newLeaseEndDate ?? nuevoVencimiento(renovacion.leaseEndDate),
+    locale,
+  );
 
   return (
-    <div className="space-y-4 text-center">
-      <div className="py-8">
-        <div className="mx-auto w-20 h-20 rounded-full bg-success-soft flex items-center justify-center mb-4">
-          <FlagCheckered className="h-10 w-10 text-success" weight="fill" />
+    <section className="space-y-5" data-testid="paso-completada">
+      <div className="py-2 text-center">
+        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-success-soft">
+          <FlagCheckered className="h-8 w-8 text-success" weight="fill" aria-hidden="true" />
         </div>
-        <h3 className="text-xl font-bold mb-2">{t('inmobiliaria.operaciones.renovacion.completed.title')}</h3>
-        <p className="text-muted-foreground">
-          {t('inmobiliaria.operaciones.renovacion.completed.desc')}
+        <h3 className="text-lg font-semibold text-fg">Renovación completada</h3>
+        <p className="mt-1 text-sm text-fg-muted">
+          El contrato sigue hasta el {vence} con un canon de {formatCurrency(finalRent)}.
         </p>
       </div>
+      <KeyValueList
+        compact
+        items={[
+          { label: 'Inmueble', value: renovacion.propertyTitle },
+          { label: 'Inquilino', value: renovacion.tenantName },
+          { label: 'Nuevo canon', value: formatCurrency(finalRent), valueColor: 'success' as const },
+          { label: 'Vence', value: vence },
+        ]}
+      />
+      {renovacion.documentName ? (
+        <Button type="button" variant="outline" hideArrow onClick={onAbrirDocumento}>
+          <FileText className="h-4 w-4" aria-hidden="true" />
+          Ver contrato firmado
+        </Button>
+      ) : null}
+    </section>
+  );
+}
 
-      <Card>
-        <CardContent className="pt-4">
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.completed.property')}</span>
-              <span className="font-medium">{renovacion.propertyTitle}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.completed.tenant')}</span>
-              <span>{renovacion.tenantName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.completed.newRent')}</span>
-              <span className="font-bold text-success">{formatCurrency(finalRent)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.completed.term')}</span>
-              <span>{t('inmobiliaria.operaciones.renovacion.completed.termMonths')}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+export function PasoNoRenovada({
+  renovacion,
+  motivo,
+}: {
+  renovacion: Renovacion;
+  motivo: string | null;
+}) {
+  const { locale } = useI18n();
+  return (
+    <section className="space-y-5" data-testid="paso-no-renovada">
+      <Callout
+        icon={<XCircle className="h-5 w-5 text-danger" weight="fill" aria-hidden="true" />}
+        title="No se renueva"
+      >
+        {motivo ? `${motivo} ` : ''}El contrato actual sigue hasta el{' '}
+        {fechaLarga(renovacion.leaseEndDate, locale)}.
+      </Callout>
+    </section>
   );
 }
 
 // ============================================================================
-// Sidebar Timeline
+// Riel — contrato actual + actividad + notas
 // ============================================================================
 
-export function WorkflowSidebar({
+export function RielDeActividad({
   renovacion,
+  historial,
+  agregandoNota,
   onAddNote,
 }: {
   renovacion: Renovacion;
-  onAddNote: (note: string) => void;
+  /** null mientras se lee el detalle. */
+  historial: RenovacionHistoryItem[] | null;
+  agregandoNota: boolean;
+  onAddNote: (nota: string) => void | Promise<void>;
 }) {
-  const { t, locale } = useI18n();
-  const [note, setNote] = useState('');
-  const daysUntilExpiry = renovacion.daysUntilExpiry;
+  const { locale, formatCurrency, formatDate } = useI18n();
+  const [nota, setNota] = useState('');
+  const currentAdminFee = renovacion.currentAdminFee ?? 0;
+
+  const ordenado = [...(historial ?? [])].sort((a, b) => {
+    const ta = a.createdAt ? Date.parse(a.createdAt) : 0;
+    const tb = b.createdAt ? Date.parse(b.createdAt) : 0;
+    return tb - ta;
+  });
+
+  const enviar = async () => {
+    const texto = nota.trim();
+    if (!texto) return;
+    await onAddNote(texto);
+    setNota('');
+  };
 
   return (
-    <div className="space-y-4">
-      {/* Status Badge */}
-      <Card>
-        <CardContent className="pt-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.sidebar.status')}</span>
-            <Badge className={getRenovacionStatusColor(renovacion.status)}>
-              {getRenovacionStatusLabel(renovacion.status)}
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Countdown */}
-      <Card className={daysUntilExpiry <= 30 ? 'border-danger/30' : ''}>
-        <CardContent className="pt-4 text-center">
-          <Clock className={`h-8 w-8 mx-auto mb-2 ${
-            daysUntilExpiry <= 30 ? 'text-danger' : 'text-warning'
-          }`} />
-          <p className={`text-3xl font-bold ${
-            daysUntilExpiry <= 30 ? 'text-danger' : 'text-warning'
-          }`}>
-            {daysUntilExpiry}
+    <aside className="space-y-5" data-testid="renovacion-riel">
+      <div className="rounded-lg border border-border bg-surface-muted/40 p-4">
+        <div className="mb-2">
+          <Rotulo>Contrato actual</Rotulo>
+        </div>
+        <KeyValueList
+          compact
+          noDividers
+          items={[
+            { label: 'Canon', value: formatCurrency(renovacion.currentRent) },
+            ...(currentAdminFee > 0
+              ? [{ label: 'Administración', value: formatCurrency(currentAdminFee) }]
+              : []),
+            // Son DATE, no instantes: `formatDate` los corría un día en Bogotá.
+            { label: 'Inicio', value: fechaCorta(renovacion.leaseStartDate, locale) },
+            { label: 'Vence', value: fechaCorta(renovacion.leaseEndDate, locale) },
+          ]}
+        />
+        {/* Nombres y enlaces van como texto: en la lista de cifras el rótulo
+            salía cortado y el nombre en monoespaciada. */}
+        <div className="mt-3 space-y-1 border-t border-border pt-3 text-sm">
+          <p className="text-fg">
+            <span className="text-fg-muted">Propietario · </span>
+            {renovacion.propietarioName}
           </p>
-          <p className="text-sm text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.sidebar.daysUntilExpiry')}</p>
-        </CardContent>
-      </Card>
-
-      {/* Timeline */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">{t('inmobiliaria.operaciones.renovacion.sidebar.history')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {renovacion.history.map((item, index) => (
-              <div key={index} className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <div className="w-2 h-2 rounded-full bg-surface-muted" />
-                  {index < renovacion.history.length - 1 && (
-                    <div className="w-px h-full bg-surface-muted" />
-                  )}
-                </div>
-                <div className="pb-3">
-                  <p className="text-sm font-medium">{item.action}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(item.date).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US')} - {item.actor}
-                  </p>
-                  {item.notes && (
-                    <p className="text-xs text-muted-foreground mt-1 italic">
-                      {item.notes}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Add Note */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">{t('inmobiliaria.operaciones.renovacion.sidebar.addNote')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder={t('inmobiliaria.operaciones.renovacion.sidebar.notePlaceholder')}
-              rows={2}
-            />
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                if (note.trim()) {
-                  onAddNote(note);
-                  setNote('');
-                }
-              }}
-              disabled={!note.trim()}
+          {renovacion.contractId ? (
+            <Link
+              href={`/panel/inmobiliaria/contratos/${renovacion.contractId}`}
+              className="inline-flex items-center gap-1 font-medium text-primary underline-offset-2 hover:underline"
+              data-testid="riel-contrato"
             >
-              {t('inmobiliaria.operaciones.renovacion.sidebar.addNote')}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+              {renovacion.contractCode != null
+                ? `Ver el contrato #${renovacion.contractCode}`
+                : 'Ver el contrato'}
+            </Link>
+          ) : null}
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-3">
+          <Rotulo>Actividad</Rotulo>
+        </div>
+        {historial === null ? (
+          <p className="text-sm text-fg-muted">Cargando…</p>
+        ) : ordenado.length === 0 ? (
+          <p className="text-sm text-fg-muted" data-testid="riel-vacio">
+            Todavía no hay movimientos.
+          </p>
+        ) : (
+          <ol className="space-y-3" data-testid="riel-actividad">
+            {ordenado.map((item, i) => {
+              const texto = textoDeActividad(item.action, item.description);
+              return (
+                <li key={item.id ?? `${item.action}-${i}`} className="relative pl-5">
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-0 top-1.5 h-2 w-2 rounded-full bg-primary/70"
+                  />
+                  <p className="text-sm font-medium text-fg">{etiquetaDeActividad(item.action)}</p>
+                  <p className="text-xs text-fg-muted">
+                    {item.createdAt
+                      ? formatDate(item.createdAt, {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : ''}
+                    {item.actorName ? ` · ${item.actorName}` : ''}
+                  </p>
+                  {texto ? (
+                    <p className="mt-1 line-clamp-4 whitespace-pre-line text-xs text-fg-muted">
+                      {texto}
+                    </p>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ol>
+        )}
+
+        <form
+          className="mt-4 space-y-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void enviar();
+          }}
+        >
+          <Textarea
+            data-testid="riel-nota"
+            rows={2}
+            placeholder="Escribe una nota…"
+            value={nota}
+            onChange={(e) => setNota(e.target.value)}
+          />
+          <Button
+            type="submit"
+            size="sm"
+            variant="outline"
+            hideArrow
+            className="w-full"
+            disabled={!nota.trim() || agregandoNota}
+            isLoading={agregandoNota}
+            data-testid="riel-agregar-nota"
+          >
+            Agregar nota
+          </Button>
+        </form>
+      </div>
+    </aside>
+  );
+}
+
+// ============================================================================
+// Diálogo — no renovar
+// ============================================================================
+
+export function DialogoNoRenovar({
+  abierto,
+  confirmando,
+  onCerrar,
+  onConfirmar,
+}: {
+  abierto: boolean;
+  confirmando: boolean;
+  onCerrar: () => void;
+  onConfirmar: (motivo: string) => void;
+}) {
+  const [motivo, setMotivo] = useState('');
+  return (
+    <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
+      <DialogContent className="sm:max-w-md" data-testid="dialogo-no-renovar">
+        <DialogHeader>
+          <DialogTitle>No renovar este contrato</DialogTitle>
+          <DialogDescription>
+            La renovación queda cerrada con el motivo. El contrato actual sigue hasta su vencimiento.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-1.5">
+          <Label htmlFor="motivo-no-renovar">Motivo</Label>
+          <Textarea
+            id="motivo-no-renovar"
+            data-testid="no-renovar-motivo"
+            rows={3}
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            placeholder="Por ejemplo: el inquilino se muda en diciembre."
+          />
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="ghost" hideArrow onClick={onCerrar}>
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            hideArrow
+            disabled={!motivo.trim() || confirmando}
+            isLoading={confirmando}
+            onClick={() => onConfirmar(motivo.trim())}
+            data-testid="no-renovar-confirmar"
+          >
+            No renovar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

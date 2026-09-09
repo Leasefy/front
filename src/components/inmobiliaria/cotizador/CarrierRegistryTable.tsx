@@ -11,10 +11,14 @@
  *  - "Restablecer al global" opens shadcn AlertDialog — NEVER browser confirm()
  *  - All write controls disabled when canConfigure=false
  *  - All strings keyed via i18n
+ *
+ * La carga, el fallo y el vacío viven DENTRO del cuerpo de la tabla, como en
+ * el resto del panel (RenovacionesTable, Recaudo): la cabecera se queda y el
+ * hueco de las filas es el que cambia de estado.
  */
 
 import { useState } from 'react'
-import { DotsThreeVertical } from '@phosphor-icons/react'
+import { Buildings, DotsThreeVertical } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -49,6 +53,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { TablePagination } from '@/components/ui/pagination'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { SinDatos } from '@/components/estado/SinDatos'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import { useI18n } from '@/lib/i18n'
 
@@ -68,6 +74,11 @@ export interface MergedCarrierRow {
 
 export interface CarrierRegistryTableProps {
   rows: MergedCarrierRow[]
+  /** Primera carga: pinta filas esqueleto con la forma de la tabla. */
+  isLoading?: boolean
+  /** El error entero; `FalloDeCarga` decide qué decir y si se reintenta. */
+  error?: unknown
+  onReintentar?: () => void | Promise<unknown>
   canConfigure: boolean
   onSaveOverride: (name: string, route: string, fields: Partial<OverrideFields>) => Promise<void>
   onResetOverride: (name: string, route: string) => Promise<void>
@@ -82,6 +93,25 @@ const BREACH_BADGE_CLASS: Record<string, string> = {
   degraded: 'bg-warning-soft text-warning border-warning/30',
   breached: 'bg-danger-soft text-danger border-danger/30',
   unknown: '',
+}
+
+const COLUMNAS = 8
+
+/** Filas esqueleto con las mismas columnas que la tabla real. */
+function FilasDeCarga() {
+  return (
+    <>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <TableRow key={i} className="animate-pulse" aria-hidden="true">
+          {Array.from({ length: COLUMNAS }).map((__, j) => (
+            <TableCell key={j} className="px-4 py-3">
+              <div className="h-4 w-20 rounded bg-surface-muted" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
+  )
 }
 
 // =============================================================================
@@ -107,7 +137,6 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
 
   // Effective tenant priority/mode for display
   const tenantPriority = row.override?.priority
-  const tenantMode = row.override?.mode
 
   const hasConflict = tenantEnabled === true && globalEnabled === false
 
@@ -150,7 +179,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
         data-has-override={row.hasOverride ? 'true' : undefined}
       >
         {/* Name + Route — sticky first column */}
-        <TableCell className="px-4 py-3 text-sm sticky left-0 bg-card z-10">
+        <TableCell className="px-4 py-3 text-sm sticky left-0 bg-surface z-10">
           <div className="flex flex-col gap-0.5">
             <span className="font-medium text-fg capitalize">
               {row.global.name}
@@ -219,10 +248,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
 
         {/* Breach Status */}
         <TableCell className="px-4 py-3 text-sm">
-          <Badge
-            variant={row.global.breachStatus === 'unknown' ? 'outline' : 'outline'}
-            className={`text-xs ${breachClass}`}
-          >
+          <Badge variant="outline" className={`text-xs ${breachClass}`}>
             {row.global.breachStatus}
           </Badge>
         </TableCell>
@@ -274,7 +300,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
       {/* Conflict Alert — inline below row when tenantEnabled=true AND globalEnabled=false */}
       {hasConflict && (
         <TableRow>
-          <TableCell colSpan={8} className="px-4 pb-2">
+          <TableCell colSpan={COLUMNAS} className="px-4 pb-2">
             <div
               role="alert"
               data-testid="conflict-alert"
@@ -312,11 +338,6 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Mode muted */}
-      {tenantMode != null && tenantMode !== row.global.mode && (
-        <></>
-      )}
     </>
   )
 }
@@ -327,6 +348,9 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
 
 export function CarrierRegistryTable({
   rows,
+  isLoading = false,
+  error = null,
+  onReintentar,
   canConfigure,
   onSaveOverride,
   onResetOverride,
@@ -338,53 +362,80 @@ export function CarrierRegistryTable({
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(rows)
 
-  return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
-      <div className="overflow-x-auto">
-        <Table className="min-w-full divide-y divide-border">
-          <TableHeader className="bg-surface-muted/60">
-            <TableRow>
-              <TableHead className="px-4 py-3 text-left sticky left-0 bg-surface-muted z-10">
-                {t('inmobiliaria.ai.cotizador.aseguradoras.table.colName')}
-              </TableHead>
-              <TableHead className="px-4 py-3 text-left">
-                {t('inmobiliaria.ai.cotizador.aseguradoras.table.colMode')}
-              </TableHead>
-              <TableHead className="px-4 py-3 text-left">
-                {t('inmobiliaria.ai.cotizador.aseguradoras.table.colGlobalEnabled')}
-              </TableHead>
-              <TableHead className="px-4 py-3 text-left">
-                {t('inmobiliaria.ai.cotizador.aseguradoras.table.colTenantEnabled')}
-              </TableHead>
-              <TableHead className="px-4 py-3 text-left">
-                {t('inmobiliaria.ai.cotizador.aseguradoras.table.colGlobalPriority')}
-              </TableHead>
-              <TableHead className="px-4 py-3 text-left">
-                {t('inmobiliaria.ai.cotizador.aseguradoras.table.colTenantPriority')}
-              </TableHead>
-              <TableHead className="px-4 py-3 text-left">
-                {t('inmobiliaria.ai.cotizador.aseguradoras.table.colBreachStatus')}
-              </TableHead>
-              <TableHead className="px-4 py-3 text-left">
-                {t('inmobiliaria.ai.cotizador.aseguradoras.table.colActions')}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody className="divide-y divide-border">
-            {pageItems.map((row) => (
-              <CarrierTableRow
-                key={`${row.global.name}:${row.global.route}`}
-                row={row}
-                canConfigure={canConfigure}
-                onSaveOverride={onSaveOverride}
-                onResetOverride={onResetOverride}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+  // Los cuatro estados, en el orden de la casa: cargando → falló → vacío →
+  // filas. El vacío se evalúa al final para que la tabla nunca diga «no hay
+  // aseguradoras» mientras todavía no sabe.
+  const cuerpo = isLoading ? (
+    <FilasDeCarga />
+  ) : error ? (
+    <TableRow>
+      <TableCell colSpan={COLUMNAS} className="p-0">
+        <FalloDeCarga
+          error={error}
+          queEs="el listado de aseguradoras"
+          onReintentar={onReintentar}
+          enmarcado={false}
+        />
+      </TableCell>
+    </TableRow>
+  ) : rows.length === 0 ? (
+    <TableRow>
+      <TableCell colSpan={COLUMNAS} className="p-0">
+        <SinDatos
+          queSon="aseguradoras"
+          icono={Buildings}
+          titulo={t('inmobiliaria.ai.cotizador.aseguradoras.empty.title')}
+          descripcion={t('inmobiliaria.ai.cotizador.aseguradoras.empty.description')}
+        />
+      </TableCell>
+    </TableRow>
+  ) : (
+    pageItems.map((row) => (
+      <CarrierTableRow
+        key={`${row.global.name}:${row.global.route}`}
+        row={row}
+        canConfigure={canConfigure}
+        onSaveOverride={onSaveOverride}
+        onResetOverride={onResetOverride}
+      />
+    ))
+  )
 
-      {shouldPaginate && (
+  return (
+    <section className="overflow-hidden rounded-lg border border-border bg-surface">
+      <Table className="min-w-full divide-y divide-border">
+        <TableHeader className="bg-surface-muted/60">
+          <TableRow>
+            <TableHead className="px-4 py-3 text-left sticky left-0 bg-surface-muted z-10">
+              {t('inmobiliaria.ai.cotizador.aseguradoras.table.colName')}
+            </TableHead>
+            <TableHead className="px-4 py-3 text-left">
+              {t('inmobiliaria.ai.cotizador.aseguradoras.table.colMode')}
+            </TableHead>
+            <TableHead className="px-4 py-3 text-left">
+              {t('inmobiliaria.ai.cotizador.aseguradoras.table.colGlobalEnabled')}
+            </TableHead>
+            <TableHead className="px-4 py-3 text-left">
+              {t('inmobiliaria.ai.cotizador.aseguradoras.table.colTenantEnabled')}
+            </TableHead>
+            <TableHead className="px-4 py-3 text-left">
+              {t('inmobiliaria.ai.cotizador.aseguradoras.table.colGlobalPriority')}
+            </TableHead>
+            <TableHead className="px-4 py-3 text-left">
+              {t('inmobiliaria.ai.cotizador.aseguradoras.table.colTenantPriority')}
+            </TableHead>
+            <TableHead className="px-4 py-3 text-left">
+              {t('inmobiliaria.ai.cotizador.aseguradoras.table.colBreachStatus')}
+            </TableHead>
+            <TableHead className="px-4 py-3 text-left">
+              {t('inmobiliaria.ai.cotizador.aseguradoras.table.colActions')}
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody className="divide-y divide-border">{cuerpo}</TableBody>
+      </Table>
+
+      {shouldPaginate && !isLoading && !error && (
         <div className="border-t border-border px-4 py-3">
           <TablePagination
             total={total}
@@ -396,6 +447,6 @@ export function CarrierRegistryTable({
           />
         </div>
       )}
-    </div>
+    </section>
   )
 }

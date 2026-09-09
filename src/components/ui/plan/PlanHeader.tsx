@@ -1130,7 +1130,12 @@ export function PlanHeader({
           {/* User Account Container */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="flex items-center gap-2 py-1.5 pl-1.5 pr-2.5 rounded-lg bg-surface-muted hover:bg-border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+              <button
+                // Anclaje del recorrido guiado del panel (`TourDelPanel`): acá
+                // viven perfil, configuración y el enlace que vuelve a lanzarlo.
+                data-tour-target="perfil"
+                className="flex items-center gap-2 py-1.5 pl-1.5 pr-2.5 rounded-lg bg-surface-muted hover:bg-border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
                 {/* Avatar */}
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-ink flex items-center justify-center">
                   <span className="text-ink-fg font-medium text-sm">

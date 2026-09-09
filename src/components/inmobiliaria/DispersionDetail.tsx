@@ -27,12 +27,8 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { SheetTitle } from '@/components/ui/sheet';
+import { Cajon, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
@@ -349,442 +345,369 @@ export function DispersionDetail({
   /** Aprobada y esperando que OTRA persona anote la referencia del giro. */
   const esperaReferencia = dispersion.status === 'processing';
   const pideReferencia = esperaReferencia || isFailed;
+  const conReferencia = pideReferencia && (onProcess || onRetry);
+
+  /*
+   * Lo que va ENCIMA de los botones del pie: la referencia del giro —la
+   * escribe una persona, el sistema no transfiere; sin esto el back responde
+   * 400 y la pantalla festejaba igual— y el aviso de que falta el segundo par
+   * de ojos.
+   */
+  const ayudaDelPie =
+    conReferencia || esperaReferencia ? (
+      <div className="space-y-3">
+        {conReferencia && (
+          <div className="space-y-1.5">
+            <label
+              htmlFor="dispersion-referencia"
+              className="text-xs font-semibold text-foreground"
+            >
+              {t('inmobiliaria.dispersiones.detailView.referenciaLabel')}
+            </label>
+            <input
+              id="dispersion-referencia"
+              data-testid="dispersion-referencia"
+              value={referencia}
+              onChange={(e) => {
+                setReferencia(e.target.value);
+                if (errorDeReferencia) setErrorDeReferencia(null);
+              }}
+              placeholder={t('inmobiliaria.dispersiones.detailView.referenciaPlaceholder')}
+              className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              {t('inmobiliaria.dispersiones.detailView.referenciaAyuda')}
+            </p>
+            {errorDeReferencia && (
+              <p role="alert" className="text-[11px] text-danger">
+                {errorDeReferencia}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Aprobada: falta que OTRA persona cargue la referencia. */}
+        {esperaReferencia && (
+          <p className="text-[11px] text-muted-foreground">
+            {t('inmobiliaria.dispersiones.detailView.esperandoSegundoOjo')}
+          </p>
+        )}
+      </div>
+    ) : undefined;
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-0">
-        {/* Header */}
-        <SheetHeader className="p-6 pb-4 border-b border-border sticky top-0 bg-background z-10">
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <SheetTitle className="text-lg font-semibold text-foreground">
-                {dispersion.propietarioName}
-              </SheetTitle>
-              <p className="text-sm text-muted-foreground flex items-center gap-1.5 capitalize">
-                <Calendar className="w-4 h-4" />
-                {nombreDelMes(dispersion.month)}
-              </p>
-            </div>
-            <StatusBadge status={dispersion.status} label={t(`inmobiliaria.dispersiones.statusLabels.${dispersion.status}`)} />
+    <Cajon abierto={isOpen} onOpenChange={(open) => !open && onClose()} ancho="sm:max-w-lg">
+      {/* Cabecera fija. La insignia de estado va a la derecha del título,
+          por eso no usa `CajonCabecera`. */}
+      <div className="flex-none border-b border-border px-6 py-5 pr-14">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <SheetTitle className="text-lg font-semibold text-foreground">
+              {dispersion.propietarioName}
+            </SheetTitle>
+            <p className="text-sm text-muted-foreground flex items-center gap-1.5 capitalize">
+              <Calendar className="w-4 h-4" />
+              {nombreDelMes(dispersion.month)}
+            </p>
           </div>
-        </SheetHeader>
-
-        <div className="p-6 space-y-6">
-          {/* Propietario Section */}
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-3"
-          >
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <User className="w-4 h-4 text-primary" />
-              {t('inmobiliaria.dispersiones.detailView.propietario')}
-            </h3>
-            <div className="p-4 rounded-lg border border-border bg-muted/30 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center">
-                  <User className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">{dispersion.propietarioName}</p>
-                  {propietario && (
-                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <Envelope className="w-3.5 h-3.5" />
-                      <span>{propietario.email ?? '—'}</span>
-                      {propietario.email && (
-                        <CopyButton text={propietario.email} toastLabel={t('inmobiliaria.dispersiones.toasts.copiedToClipboard')} tooltip={t('inmobiliaria.dispersiones.detailView.copyTooltip')} />
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-              {propietario && (
-                <div className="flex flex-wrap gap-2">
-                  {propietario.phone && (
-                    <ContactAction
-                      icon={Phone}
-                      href={`tel:${propietario.phone}`}
-                      label={t('inmobiliaria.dispersiones.detailView.call')}
-                      className="bg-muted hover:bg-muted/80 text-foreground"
-                    />
-                  )}
-                  {propietario.phone && (
-                    <ContactAction
-                      icon={WhatsappLogo}
-                      href={`https://wa.me/${propietario.phone.replace(/\D/g, '')}`}
-                      label="WhatsApp"
-                      className="bg-success-soft hover:bg-success-soft text-success dark:bg-success/30 dark:hover:bg-success/50 dark:text-success"
-                    />
-                  )}
-                  {propietario.email && (
-                    <ContactAction
-                      icon={Envelope}
-                      href={`mailto:${propietario.email}`}
-                      label={t('inmobiliaria.dispersiones.detailView.email')}
-                      className="bg-primary-soft hover:bg-primary-soft text-primary dark:bg-primary/30 dark:hover:bg-primary/50 dark:text-primary"
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-          </motion.section>
-
-          {/* Bank Account Section */}
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="space-y-3"
-          >
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Bank className="w-4 h-4 text-primary" />
-              {t('inmobiliaria.dispersiones.detailView.bankAccount')}
-            </h3>
-            <div className="p-4 rounded-lg border border-border bg-muted/30">
-              {!dispersion.propietarioBankAccount ? (
-                /* Un propietario sin cuenta es normal y hay que decirlo: sin
-                   esto no se le puede girar, y en blanco parece un error de
-                   carga en vez de un dato que falta pedirle. */
-                <AlertaAccionable
-                  severidad="danger"
-                  titulo="Sin cuenta bancaria: no se le puede girar"
-                  accion={{
-                    label: 'Cargar cuenta bancaria',
-                    href: `/panel/inmobiliaria/propietarios/${dispersion.propietarioId}?volver=${encodeURIComponent('/panel/inmobiliaria/pagos/dispersiones')}`,
-                  }}
-                  data-testid="dispersion-sin-cuenta"
-                >
-                  Pídele al propietario banco, tipo, número y titular, y cargalos en su ficha. Hasta entonces
-                  este giro queda esperando.
-                </AlertaAccionable>
-              ) : (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.bank')}</p>
-                  <p className="text-sm font-medium text-foreground capitalize">
-                    {dispersion.propietarioBankAccount.bank.replace(/_/g, ' ')}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountType')}</p>
-                  <p className="text-sm font-medium text-foreground capitalize">
-                    {dispersion.propietarioBankAccount.accountType === 'savings' ? t('inmobiliaria.dispersiones.detailView.savings') : t('inmobiliaria.dispersiones.detailView.checking')}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountNumber')}</p>
-                  <div className="flex items-center gap-1">
-                    <p className="text-sm font-medium text-foreground font-mono">
-                      {dispersion.propietarioBankAccount.accountNumber}
-                    </p>
-                    <CopyButton text={dispersion.propietarioBankAccount.accountNumber} toastLabel={t('inmobiliaria.dispersiones.toasts.copiedToClipboard')} tooltip={t('inmobiliaria.dispersiones.detailView.copyTooltip')} />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountHolder')}</p>
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {dispersion.propietarioBankAccount.accountHolder}
-                  </p>
-                </div>
-              </div>
-              )}
-            </div>
-          </motion.section>
-
-          {/* Amount Summary Section */}
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="space-y-3"
-          >
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <CurrencyCircleDollar className="w-4 h-4 text-primary" />
-              {t('inmobiliaria.dispersiones.detailView.summaryTitle')}
-            </h3>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="p-4 rounded-lg bg-muted/50 text-center">
-                <p className="text-xs text-muted-foreground mb-1">{t('inmobiliaria.dispersiones.detailView.collected')}</p>
-                <p className="text-lg font-bold text-foreground">
-                  {formatCurrency(dispersion.totalCollected)}
-                </p>
-              </div>
-              <div className="p-4 rounded-lg bg-primary-soft text-center">
-                <p className="text-xs text-primary mb-1">{t('inmobiliaria.dispersiones.detailView.commission')}</p>
-                <p className="text-lg font-bold text-primary">
-                  {formatCurrency(dispersion.totalCommission)}
-                </p>
-              </div>
-              <div className="p-4 rounded-lg bg-success-soft text-center">
-                <p className="text-xs text-success mb-1">{t('inmobiliaria.dispersiones.detailView.net')}</p>
-                <p className="text-lg font-bold text-success">
-                  {formatCurrency(dispersion.netToPropietario)}
-                </p>
-              </div>
-            </div>
-          </motion.section>
-
-          {/* Commission Breakdown Section */}
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="space-y-3"
-          >
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Receipt className="w-4 h-4 text-primary" />
-              {t('inmobiliaria.dispersiones.detailView.propertyBreakdown')}
-            </h3>
-            <ComisionDesglose
-              items={dispersion.items}
-              variant="compact"
-              showPercentages={true}
-            />
-          </motion.section>
-
-          {/* Status Timeline Section */}
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-3"
-          >
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Clock className="w-4 h-4 text-primary" />
-              {t('inmobiliaria.dispersiones.detailView.history')}
-            </h3>
-            <div className="p-4 rounded-lg border border-border bg-muted/30">
-              <TimelineEvent
-                icon={Calendar}
-                title={t('inmobiliaria.dispersiones.detailView.created')}
-                date={dispersion.createdAt}
-                formattedDate={dispersion.createdAt ? formatDate(dispersion.createdAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined}
-              />
-              {dispersion.approvedAt && (
-                <TimelineEvent
-                  icon={Check}
-                  title={t('inmobiliaria.dispersiones.detailView.approved')}
-                  date={dispersion.approvedAt}
-                  formattedDate={dispersion.approvedAt ? formatDate(dispersion.approvedAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined}
-                  description={dispersion.approvedBy ? t('inmobiliaria.dispersiones.detailView.approvedBy', { name: dispersion.approvedBy }) : undefined}
-                />
-              )}
-              {dispersion.processedAt && (
-                <TimelineEvent
-                  icon={CheckCircle}
-                  title={t('inmobiliaria.dispersiones.detailView.processed')}
-                  date={dispersion.processedAt}
-                  formattedDate={dispersion.processedAt ? formatDate(dispersion.processedAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined}
-                  description={dispersion.transferReference ? t('inmobiliaria.dispersiones.detailView.transferRef', { ref: dispersion.transferReference }) : undefined}
-                  isActive={isCompleted}
-                />
-              )}
-              {isFailed && (
-                <TimelineEvent
-                  icon={XCircle}
-                  title={t('inmobiliaria.dispersiones.detailView.failedEvent')}
-                  date={dispersion.updatedAt}
-                  formattedDate={dispersion.updatedAt ? formatDate(dispersion.updatedAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined}
-                  description={dispersion.failureReason || t('inmobiliaria.dispersiones.detailView.defaultFailureReason')}
-                  isLast
-                  isError
-                />
-              )}
-              {isPending && (
-                <TimelineEvent
-                  icon={Clock}
-                  title={t('inmobiliaria.dispersiones.detailView.pendingProcessing')}
-                  isLast
-                />
-              )}
-              {isCompleted && !dispersion.processedAt && (
-                <TimelineEvent
-                  icon={CheckCircle}
-                  title={t('inmobiliaria.dispersiones.detailView.completedEvent')}
-                  date={dispersion.updatedAt}
-                  formattedDate={dispersion.updatedAt ? formatDate(dispersion.updatedAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined}
-                  isLast
-                  isActive
-                />
-              )}
-            </div>
-          </motion.section>
-
-          {/* Transfer Reference (if completed) */}
-          {isCompleted && dispersion.transferReference && (
-            <motion.section
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="p-4 rounded-lg bg-success-soft border border-success/30 dark:border-success/40"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-success font-medium">
-                    {t('inmobiliaria.dispersiones.detailView.transferReference')}
-                  </p>
-                  <p className="text-sm font-mono font-semibold text-success mt-0.5">
-                    {dispersion.transferReference}
-                  </p>
-                </div>
-                <CopyButton text={dispersion.transferReference} toastLabel={t('inmobiliaria.dispersiones.toasts.copiedToClipboard')} tooltip={t('inmobiliaria.dispersiones.detailView.copyTooltip')} />
-              </div>
-            </motion.section>
-          )}
-
-          {/* Error Message (if failed) */}
-          {isFailed && dispersion.failureReason && (
-            <motion.section
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="p-4 rounded-lg bg-danger-soft border border-danger/30 dark:border-danger/40"
-            >
-              <div className="flex items-start gap-3">
-                <Warning className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" weight="fill" />
-                <div>
-                  <p className="text-sm font-medium text-danger">
-                    {t('inmobiliaria.dispersiones.detailView.transferError')}
-                  </p>
-                  <p className="text-sm text-danger mt-1">
-                    {dispersion.failureReason}
-                  </p>
-                </div>
-              </div>
-            </motion.section>
-          )}
+          <StatusBadge status={dispersion.status} label={t(`inmobiliaria.dispersiones.statusLabels.${dispersion.status}`)} />
         </div>
+      </div>
 
-        {/* Actions Footer */}
-        <motion.div
+      <CajonCuerpo className="space-y-6">
+        {/* Propietario Section */}
+        <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="sticky bottom-0 p-6 border-t border-border bg-background space-y-3"
+          className="space-y-3"
         >
-          {/* La referencia del giro: la escribe una persona, el sistema no
-              transfiere. Sin esto el back responde 400 y la pantalla festejaba
-              igual. */}
-          {pideReferencia && (onProcess || onRetry) && (
-            <div className="space-y-1.5">
-              <label
-                htmlFor="dispersion-referencia"
-                className="text-xs font-semibold text-foreground"
-              >
-                {t('inmobiliaria.dispersiones.detailView.referenciaLabel')}
-              </label>
-              <input
-                id="dispersion-referencia"
-                data-testid="dispersion-referencia"
-                value={referencia}
-                onChange={(e) => {
-                  setReferencia(e.target.value);
-                  if (errorDeReferencia) setErrorDeReferencia(null);
-                }}
-                placeholder={t('inmobiliaria.dispersiones.detailView.referenciaPlaceholder')}
-                className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-              />
-              <p className="text-[11px] text-muted-foreground">
-                {t('inmobiliaria.dispersiones.detailView.referenciaAyuda')}
-              </p>
-              {errorDeReferencia && (
-                <p role="alert" className="text-[11px] text-danger">
-                  {errorDeReferencia}
-                </p>
-              )}
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <User className="w-4 h-4 text-primary" />
+            {t('inmobiliaria.dispersiones.detailView.propietario')}
+          </h3>
+          <div className="p-4 rounded-lg border border-border bg-muted/30 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center">
+                <User className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium text-foreground">{dispersion.propietarioName}</p>
+                {propietario && (
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Envelope className="w-3.5 h-3.5" />
+                    <span>{propietario.email ?? '—'}</span>
+                    {propietario.email && (
+                      <CopyButton text={propietario.email} toastLabel={t('inmobiliaria.dispersiones.toasts.copiedToClipboard')} tooltip={t('inmobiliaria.dispersiones.detailView.copyTooltip')} />
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-
-          {/* Aprobada: falta que OTRA persona cargue la referencia. */}
-          {esperaReferencia && (
-            <p className="text-[11px] text-muted-foreground">
-              {t('inmobiliaria.dispersiones.detailView.esperandoSegundoOjo')}
-            </p>
-          )}
-
-          <div className="flex gap-3">
-            {/* View extracto button (secondary - left) */}
-            {onViewExtracto && (
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={handleViewExtracto}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                {t('inmobiliaria.dispersiones.detailView.viewExtracto')}
-              </Button>
-            )}
-
-            {/* Aprobar — primer par de ojos (pendiente → en espera de giro) */}
-            {isPending && onApprove && (
-              <Button
-                className="flex-1 bg-primary hover:opacity-90 text-primary-fg"
-                onClick={handleApprove}
-                disabled={isProcessing}
-                data-testid="dispersion-aprobar"
-              >
-                {isProcessing ? (
-                  <span className="flex items-center gap-2">
-                    <Spinner size="sm" variant="current" />
-                    {t('inmobiliaria.dispersiones.detailView.aprobando')}
-                  </span>
-                ) : (
-                  <>
-                    <Lightning className="w-4 h-4 mr-2" weight="fill" />
-                    {t('inmobiliaria.dispersiones.detailView.aprobar')}
-                  </>
+            {propietario && (
+              <div className="flex flex-wrap gap-2">
+                {propietario.phone && (
+                  <ContactAction
+                    icon={Phone}
+                    href={`tel:${propietario.phone}`}
+                    label={t('inmobiliaria.dispersiones.detailView.call')}
+                    className="bg-muted hover:bg-muted/80 text-foreground"
+                  />
                 )}
-              </Button>
-            )}
-
-            {/* Marcar girada — segundo par de ojos, con referencia */}
-            {esperaReferencia && onProcess && (
-              <Button
-                className="flex-1 bg-primary hover:opacity-90 text-primary-fg"
-                onClick={handleProcess}
-                disabled={isProcessing}
-                data-testid="dispersion-marcar-girada"
-              >
-                {isProcessing ? (
-                  <span className="flex items-center gap-2">
-                    <Spinner size="sm" variant="current" />
-                    {t('inmobiliaria.dispersiones.detailView.marcando')}
-                  </span>
-                ) : (
-                  <>
-                    <Lightning className="w-4 h-4 mr-2" weight="fill" />
-                    {t('inmobiliaria.dispersiones.detailView.marcarGirada')}
-                  </>
+                {propietario.phone && (
+                  <ContactAction
+                    icon={WhatsappLogo}
+                    href={`https://wa.me/${propietario.phone.replace(/\D/g, '')}`}
+                    label="WhatsApp"
+                    className="bg-success-soft hover:bg-success-soft text-success dark:bg-success/30 dark:hover:bg-success/50 dark:text-success"
+                  />
                 )}
-              </Button>
-            )}
-
-            {/* Retry button (failed - right) */}
-            {isFailed && onRetry && (
-              <Button
-                className="flex-1 bg-warning hover:bg-warning text-white"
-                onClick={handleRetry}
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <span className="flex items-center gap-2">
-                    <Spinner size="sm" variant="current" />
-                    {t('inmobiliaria.dispersiones.detailView.retrying')}
-                  </span>
-                ) : (
-                  <>
-                    <ArrowClockwise className="w-4 h-4 mr-2" />
-                    {t('inmobiliaria.dispersiones.detailView.retry')}
-                  </>
+                {propietario.email && (
+                  <ContactAction
+                    icon={Envelope}
+                    href={`mailto:${propietario.email}`}
+                    label={t('inmobiliaria.dispersiones.detailView.email')}
+                    className="bg-primary-soft hover:bg-primary-soft text-primary dark:bg-primary/30 dark:hover:bg-primary/50 dark:text-primary"
+                  />
                 )}
-              </Button>
+              </div>
             )}
           </div>
+        </motion.section>
 
-          {/* Download PDF button */}
+        {/* Bank Account Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="space-y-3"
+        >
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Bank className="w-4 h-4 text-primary" />
+            {t('inmobiliaria.dispersiones.detailView.bankAccount')}
+          </h3>
+          <div className="p-4 rounded-lg border border-border bg-muted/30">
+            {!dispersion.propietarioBankAccount ? (
+              /* Un propietario sin cuenta es normal y hay que decirlo: sin
+                 esto no se le puede girar, y en blanco parece un error de
+                 carga en vez de un dato que falta pedirle. */
+              <AlertaAccionable
+                severidad="danger"
+                titulo="Sin cuenta bancaria: no se le puede girar"
+                accion={{
+                  label: 'Cargar cuenta bancaria',
+                  href: `/panel/inmobiliaria/propietarios/${dispersion.propietarioId}?volver=${encodeURIComponent('/panel/inmobiliaria/pagos/dispersiones')}`,
+                }}
+                data-testid="dispersion-sin-cuenta"
+              >
+                Pídele al propietario banco, tipo, número y titular, y cargalos en su ficha. Hasta entonces
+                este giro queda esperando.
+              </AlertaAccionable>
+            ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.bank')}</p>
+                <p className="text-sm font-medium text-foreground capitalize">
+                  {dispersion.propietarioBankAccount.bank.replace(/_/g, ' ')}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountType')}</p>
+                <p className="text-sm font-medium text-foreground capitalize">
+                  {dispersion.propietarioBankAccount.accountType === 'savings' ? t('inmobiliaria.dispersiones.detailView.savings') : t('inmobiliaria.dispersiones.detailView.checking')}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountNumber')}</p>
+                <div className="flex items-center gap-1">
+                  <p className="text-sm font-medium text-foreground font-mono">
+                    {dispersion.propietarioBankAccount.accountNumber}
+                  </p>
+                  <CopyButton text={dispersion.propietarioBankAccount.accountNumber} toastLabel={t('inmobiliaria.dispersiones.toasts.copiedToClipboard')} tooltip={t('inmobiliaria.dispersiones.detailView.copyTooltip')} />
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.accountHolder')}</p>
+                <p className="text-sm font-medium text-foreground truncate">
+                  {dispersion.propietarioBankAccount.accountHolder}
+                </p>
+              </div>
+            </div>
+            )}
+          </div>
+        </motion.section>
+
+        {/* Amount Summary Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="space-y-3"
+        >
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <CurrencyCircleDollar className="w-4 h-4 text-primary" />
+            {t('inmobiliaria.dispersiones.detailView.summaryTitle')}
+          </h3>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="p-4 rounded-lg bg-muted/50 text-center">
+              <p className="text-xs text-muted-foreground mb-1">{t('inmobiliaria.dispersiones.detailView.collected')}</p>
+              <p className="text-lg font-bold text-foreground">
+                {formatCurrency(dispersion.totalCollected)}
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-primary-soft text-center">
+              <p className="text-xs text-primary mb-1">{t('inmobiliaria.dispersiones.detailView.commission')}</p>
+              <p className="text-lg font-bold text-primary">
+                {formatCurrency(dispersion.totalCommission)}
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-success-soft text-center">
+              <p className="text-xs text-success mb-1">{t('inmobiliaria.dispersiones.detailView.net')}</p>
+              <p className="text-lg font-bold text-success">
+                {formatCurrency(dispersion.netToPropietario)}
+              </p>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Commission Breakdown Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="space-y-3"
+        >
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Receipt className="w-4 h-4 text-primary" />
+            {t('inmobiliaria.dispersiones.detailView.propertyBreakdown')}
+          </h3>
+          <ComisionDesglose
+            items={dispersion.items}
+            variant="compact"
+            showPercentages={true}
+          />
+        </motion.section>
+
+        {/* Status Timeline Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="space-y-3"
+        >
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Clock className="w-4 h-4 text-primary" />
+            {t('inmobiliaria.dispersiones.detailView.history')}
+          </h3>
+          <div className="p-4 rounded-lg border border-border bg-muted/30">
+            <TimelineEvent
+              icon={Calendar}
+              title={t('inmobiliaria.dispersiones.detailView.created')}
+              date={dispersion.createdAt}
+              formattedDate={dispersion.createdAt ? formatDate(dispersion.createdAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined}
+            />
+            {dispersion.approvedAt && (
+              <TimelineEvent
+                icon={Check}
+                title={t('inmobiliaria.dispersiones.detailView.approved')}
+                date={dispersion.approvedAt}
+                formattedDate={dispersion.approvedAt ? formatDate(dispersion.approvedAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined}
+                description={dispersion.approvedBy ? t('inmobiliaria.dispersiones.detailView.approvedBy', { name: dispersion.approvedBy }) : undefined}
+              />
+            )}
+            {dispersion.processedAt && (
+              <TimelineEvent
+                icon={CheckCircle}
+                title={t('inmobiliaria.dispersiones.detailView.processed')}
+                date={dispersion.processedAt}
+                formattedDate={dispersion.processedAt ? formatDate(dispersion.processedAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined}
+                description={dispersion.transferReference ? t('inmobiliaria.dispersiones.detailView.transferRef', { ref: dispersion.transferReference }) : undefined}
+                isActive={isCompleted}
+              />
+            )}
+            {isFailed && (
+              <TimelineEvent
+                icon={XCircle}
+                title={t('inmobiliaria.dispersiones.detailView.failedEvent')}
+                date={dispersion.updatedAt}
+                formattedDate={dispersion.updatedAt ? formatDate(dispersion.updatedAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined}
+                description={dispersion.failureReason || t('inmobiliaria.dispersiones.detailView.defaultFailureReason')}
+                isLast
+                isError
+              />
+            )}
+            {isPending && (
+              <TimelineEvent
+                icon={Clock}
+                title={t('inmobiliaria.dispersiones.detailView.pendingProcessing')}
+                isLast
+              />
+            )}
+            {isCompleted && !dispersion.processedAt && (
+              <TimelineEvent
+                icon={CheckCircle}
+                title={t('inmobiliaria.dispersiones.detailView.completedEvent')}
+                date={dispersion.updatedAt}
+                formattedDate={dispersion.updatedAt ? formatDate(dispersion.updatedAt, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : undefined}
+                isLast
+                isActive
+              />
+            )}
+          </div>
+        </motion.section>
+
+        {/* Transfer Reference (if completed) */}
+        {isCompleted && dispersion.transferReference && (
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="p-4 rounded-lg bg-success-soft border border-success/30 dark:border-success/40"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-success font-medium">
+                  {t('inmobiliaria.dispersiones.detailView.transferReference')}
+                </p>
+                <p className="text-sm font-mono font-semibold text-success mt-0.5">
+                  {dispersion.transferReference}
+                </p>
+              </div>
+              <CopyButton text={dispersion.transferReference} toastLabel={t('inmobiliaria.dispersiones.toasts.copiedToClipboard')} tooltip={t('inmobiliaria.dispersiones.detailView.copyTooltip')} />
+            </div>
+          </motion.section>
+        )}
+
+        {/* Error Message (if failed) */}
+        {isFailed && dispersion.failureReason && (
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="p-4 rounded-lg bg-danger-soft border border-danger/30 dark:border-danger/40"
+          >
+            <div className="flex items-start gap-3">
+              <Warning className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" weight="fill" />
+              <div>
+                <p className="text-sm font-medium text-danger">
+                  {t('inmobiliaria.dispersiones.detailView.transferError')}
+                </p>
+                <p className="text-sm text-danger mt-1">
+                  {dispersion.failureReason}
+                </p>
+              </div>
+            </div>
+          </motion.section>
+        )}
+      </CajonCuerpo>
+
+      {/* Pie fijo: bajar el extracto a la izquierda; ver el extracto y la
+          acción del giro (aprobar / marcar girada / reintentar) a la derecha. */}
+      <CajonPie
+        ayuda={ayudaDelPie}
+        izquierda={
           <Button
             variant="ghost"
-            className="w-full text-primary hover:text-primary dark:hover:text-primary hover:bg-primary-soft dark:hover:bg-primary/20"
+            className="text-primary hover:text-primary dark:hover:text-primary hover:bg-primary-soft dark:hover:bg-primary/20"
             onClick={handleDownloadPDF}
             disabled={isDownloadingPDF}
           >
@@ -800,9 +723,85 @@ export function DispersionDetail({
               </>
             )}
           </Button>
-        </motion.div>
-      </SheetContent>
-    </Sheet>
+        }
+      >
+        {/* View extracto button (secondary - left) */}
+        {onViewExtracto && (
+          <Button
+            variant="outline"
+            onClick={handleViewExtracto}
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            {t('inmobiliaria.dispersiones.detailView.viewExtracto')}
+          </Button>
+        )}
+
+        {/* Aprobar — primer par de ojos (pendiente → en espera de giro) */}
+        {isPending && onApprove && (
+          <Button
+            className="bg-primary hover:opacity-90 text-primary-fg"
+            onClick={handleApprove}
+            disabled={isProcessing}
+            data-testid="dispersion-aprobar"
+          >
+            {isProcessing ? (
+              <span className="flex items-center gap-2">
+                <Spinner size="sm" variant="current" />
+                {t('inmobiliaria.dispersiones.detailView.aprobando')}
+              </span>
+            ) : (
+              <>
+                <Lightning className="w-4 h-4 mr-2" weight="fill" />
+                {t('inmobiliaria.dispersiones.detailView.aprobar')}
+              </>
+            )}
+          </Button>
+        )}
+
+        {/* Marcar girada — segundo par de ojos, con referencia */}
+        {esperaReferencia && onProcess && (
+          <Button
+            className="bg-primary hover:opacity-90 text-primary-fg"
+            onClick={handleProcess}
+            disabled={isProcessing}
+            data-testid="dispersion-marcar-girada"
+          >
+            {isProcessing ? (
+              <span className="flex items-center gap-2">
+                <Spinner size="sm" variant="current" />
+                {t('inmobiliaria.dispersiones.detailView.marcando')}
+              </span>
+            ) : (
+              <>
+                <Lightning className="w-4 h-4 mr-2" weight="fill" />
+                {t('inmobiliaria.dispersiones.detailView.marcarGirada')}
+              </>
+            )}
+          </Button>
+        )}
+
+        {/* Retry button (failed - right) */}
+        {isFailed && onRetry && (
+          <Button
+            className="bg-warning hover:bg-warning text-white"
+            onClick={handleRetry}
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <span className="flex items-center gap-2">
+                <Spinner size="sm" variant="current" />
+                {t('inmobiliaria.dispersiones.detailView.retrying')}
+              </span>
+            ) : (
+              <>
+                <ArrowClockwise className="w-4 h-4 mr-2" />
+                {t('inmobiliaria.dispersiones.detailView.retry')}
+              </>
+            )}
+          </Button>
+        )}
+      </CajonPie>
+    </Cajon>
   );
 }
 

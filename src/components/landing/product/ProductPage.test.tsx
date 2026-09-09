@@ -4,7 +4,7 @@
  * `#productPage` + `__renderProduct`. Structure/wiring only per Strict
  * TDD: copy sourcing from `PRODUCTS[slug]`, CTA hrefs, vignette/story/
  * capability/snapshot/step/night-log counts, and the closing composition
- * (ClosingBanner + LandingFooter, no cloning, no final CTA block).
+ * (sin banner de cierre ni pie viejo —ya borrados—, no cloning, no final CTA block).
  */
 import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'

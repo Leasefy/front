@@ -9,9 +9,17 @@ import {
   YAxis,
   Tooltip,
 } from 'recharts'
+import { CurrencyDollar } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
-import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
+import { SinDatos } from '@/components/estado/SinDatos'
 import type { MonthlyCostTrendRow } from '@/lib/hooks/cotizador/use-insights'
+
+// Tokens del tema, no hex: recharts pinta atributos SVG y el navegador
+// resuelve `var(--…)` en ellos.
+const LINEA = 'hsl(var(--primary))'
+const EJE = 'var(--fg-muted)'
+
+const COSTOS_HREF = '/panel/inmobiliaria/postulaciones/asegurabilidad/costos'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -40,30 +48,29 @@ export function InsightsMonthlyCostPreview({
   // Loading skeleton
   if (isLoading && trend === null) {
     return (
-      <div className="space-y-3 animate-pulse">
+      <div className="space-y-3 animate-pulse" role="status" aria-label="Cargando">
         <div className="h-[160px] bg-surface-muted rounded-lg" />
         <div className="h-4 w-40 bg-surface-muted rounded" />
+        <span className="sr-only">Cargando…</span>
       </div>
     )
   }
 
-  // Empty / no data state
+  // El vacío de la casa, sin «Fase 35». La salida al detalle de costos se
+  // queda: es real aunque hoy no haya serie.
   if (!trend || trend.length === 0) {
     return (
-      <div className="space-y-4">
-        <NoDataYetBadge
-          reason={t('inmobiliaria.ai.cotizador.insights.costPreview.empty')}
-          phase={35}
-        />
-        <div className="text-center">
-          <Link
-            href="../costos"
-            className="text-xs text-primary underline-offset-4 hover:underline font-medium"
-          >
-            {t('inmobiliaria.ai.cotizador.insights.costPreview.viewAll')}
-          </Link>
-        </div>
-      </div>
+      <SinDatos
+        queSon="costos mensuales"
+        icono={CurrencyDollar}
+        titulo={t('inmobiliaria.ai.cotizador.insights.costPreview.empty')}
+        descripcion="Cuando haya consultas con costo en más de un mes, la tendencia se grafica acá."
+        crear={{
+          label: t('inmobiliaria.ai.cotizador.insights.costPreview.viewAll'),
+          href: COSTOS_HREF,
+        }}
+        className="py-10"
+      />
     )
   }
 
@@ -83,12 +90,12 @@ export function InsightsMonthlyCostPreview({
         <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
           <XAxis
             dataKey="month"
-            tick={{ fontSize: 9 }}
+            tick={{ fontSize: 9, fill: EJE }}
             tickFormatter={formatMonth}
           />
           <YAxis
             tickFormatter={(v: number) => `$${v.toFixed(2)}`}
-            tick={{ fontSize: 9 }}
+            tick={{ fontSize: 9, fill: EJE }}
             width={48}
           />
           <Tooltip
@@ -101,7 +108,7 @@ export function InsightsMonthlyCostPreview({
           <Line
             type="monotone"
             dataKey="total"
-            stroke="#1A40FF"
+            stroke={LINEA}
             dot={false}
             strokeWidth={2}
           />
@@ -110,7 +117,7 @@ export function InsightsMonthlyCostPreview({
 
       <div className="text-center">
         <Link
-          href="../costos"
+          href={COSTOS_HREF}
           className="text-xs text-primary underline-offset-4 hover:underline font-medium"
         >
           {t('inmobiliaria.ai.cotizador.insights.costPreview.viewAll')}

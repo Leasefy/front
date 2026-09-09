@@ -6,25 +6,29 @@
  * Recharts PieChart with cost-SUM-driven muting per D-35-06 + RESEARCH.md finding 4.
  *
  * Wedge muting is driven by actual cost SUM (not the populated flag):
- *   - anthropic: electric-blue (#1A40FF), always full opacity
- *   - carrier_api: blue-tint (#7B95FF), fillOpacity 0.4 when SUM === 0 else 1
+ *   - anthropic: cobalto (`--primary`), always full opacity
+ *   - carrier_api: cobalto, fillOpacity 0.4 when SUM === 0 else 1
  *   - sekure_commission: same as carrier_api
- *   - datacredito: neutral-300 (#d4d4d4), always muted (fillOpacity 0.4)
+ *   - datacredito: `--fg-subtle`, always muted (fillOpacity 0.4)
  *
- * When a wedge is muted (fillOpacity 0.4), the legend item shows a NoDataYetBadge
- * in a tooltip on click (custom Legend renderer).
+ * Los colores son tokens del tema, no hex: recharts pinta atributos SVG y el
+ * navegador resuelve `var(--…)` en ellos. Cuando una porción está atenuada,
+ * la leyenda explica por qué en un tooltip — con la nota que publica el
+ * micro para esa fuente, sin nombres internos de etapas del roadmap.
  */
 
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts'
-import { useI18n } from '@/lib/i18n'
 import {
   Tooltip as ShadcnTooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
 import type { CostSourceRow } from '@/lib/hooks/cotizador/use-costos'
+
+const COBALTO = 'hsl(var(--primary))'
+const APOYO = 'hsl(var(--chart-3))'
+const ATENUADO = 'var(--fg-subtle)'
 
 // =============================================================================
 // Types
@@ -56,11 +60,16 @@ interface PieDatum {
 // =============================================================================
 
 export function CostSourcePieChart({ sources, costSources, isLoading = false }: CostSourcePieChartProps) {
-  const { t } = useI18n()
 
   if (isLoading) {
     return (
-      <div className="h-[260px] w-full rounded bg-surface-muted dark:bg-ink animate-pulse" />
+      <div
+        className="h-[260px] w-full rounded bg-surface-muted animate-pulse"
+        role="status"
+        aria-label="Cargando"
+      >
+        <span className="sr-only">Cargando…</span>
+      </div>
     )
   }
 
@@ -87,7 +96,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
     {
       name: findLabel('anthropic'),
       value: totalSum === 0 ? 1 : anthropicTotal, // prevent empty pie
-      fill: '#1A40FF',   // electric-blue
+      fill: COBALTO,
       fillOpacity: 1,    // always active
       sourceKey: 'anthropic',
       isMuted: false,
@@ -96,7 +105,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
     {
       name: findLabel('carrier_api'),
       value: totalSum === 0 ? 0 : carrierApiTotal,
-      fill: '#7B95FF',   // blue-tint
+      fill: APOYO,
       fillOpacity: carrierApiTotal === 0 ? 0.4 : 1,  // muted when SUM=0
       sourceKey: 'carrier_api',
       isMuted: carrierApiTotal === 0,
@@ -105,7 +114,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
     {
       name: findLabel('sekure_commission'),
       value: totalSum === 0 ? 0 : sekureCommissionTotal,
-      fill: '#7B95FF',   // blue-tint
+      fill: APOYO,
       fillOpacity: sekureCommissionTotal === 0 ? 0.4 : 1,
       sourceKey: 'sekure_commission',
       isMuted: sekureCommissionTotal === 0,
@@ -114,7 +123,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
     {
       name: findLabel('datacredito'),
       value: totalSum === 0 ? 0 : datacreditoTotal,
-      fill: '#d4d4d4',   // neutral-300
+      fill: ATENUADO,
       fillOpacity: 0.4,  // always muted
       sourceKey: 'datacredito',
       isMuted: true,
@@ -122,7 +131,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
     },
   ].filter(d => totalSum === 0 ? d.sourceKey === 'anthropic' : d.value > 0 || d.isMuted)
 
-  // Custom legend renderer with NoDataYetBadge tooltip for muted entries
+  // Leyenda propia: las fuentes atenuadas explican por qué al pasar el mouse.
   const renderLegend = (props: { payload?: Array<{ value: string; color: string; payload: PieDatum }> }) => {
     const { payload = [] } = props
     return (
@@ -143,11 +152,8 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
                         {entry.value}
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent side="left" className="max-w-[240px] p-0 border-0 bg-transparent shadow-none">
-                      <NoDataYetBadge
-                        reason={datum.notes ?? t('inmobiliaria.ai.cotizador.costos.charts.costSourcePie.tooltip')}
-                        phase={27}
-                      />
+                    <TooltipContent side="left" className="max-w-[240px]">
+                      {datum.notes ?? 'Esta fuente todavía no registra gasto en el período.'}
                     </TooltipContent>
                   </ShadcnTooltip>
                 </TooltipProvider>
@@ -160,7 +166,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
                 className="inline-block h-2 w-2 rounded-full flex-shrink-0"
                 style={{ background: entry.color }}
               />
-              <span className="text-fg dark:text-fg-subtle">{entry.value}</span>
+              <span className="text-fg">{entry.value}</span>
             </li>
           )
         })}
@@ -189,13 +195,13 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
           ))}
         </Pie>
         <Tooltip
-          formatter={(value: any) => [`$${Number(value).toFixed(4)}`, '']}
+          formatter={(value: unknown) => [`$${Number(value).toFixed(4)}`, '']}
         />
         <Legend
           layout="vertical"
           align="right"
           verticalAlign="middle"
-          content={renderLegend as any}
+          content={renderLegend as never}
         />
       </PieChart>
     </ResponsiveContainer>

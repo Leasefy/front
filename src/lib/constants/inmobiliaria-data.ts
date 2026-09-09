@@ -22,6 +22,10 @@ import type { ReportDefinition } from '@/lib/types/inmobiliaria';
 // el boletín del DANE antes de producción (sólo afectan al gráfico de tendencia;
 // el cálculo del canon usa diciembre).
 
+/** Donde el DANE publica el IPC: el enlace que se le da a quien tiene que escribirlo. */
+export const URL_IPC_DANE =
+  'https://www.dane.gov.co/index.php/estadisticas-por-tema/precios-y-costos/indice-de-precios-al-consumidor-ipc';
+
 export interface IPCRecord {
   year: number;
   month: number; // 1-12

@@ -13,11 +13,35 @@ import type { ColumnMapping } from './importTypes';
  * "inmueble" could match propertyTitle.
  */
 export const COLUMN_KEYWORDS: Record<string, string[]> = {
-  propertyType:     ['tipo inmueble', 'tipo de inmueble', 'tipo propiedad', 'clase inmueble', 'tipo', 'clase', 'type'],
+  /*
+   * El «Código» del sistema viejo (Nico, 2026-09-08: «el más importante es el
+   * de ID (Código): así identifican las inmobiliarias el inmueble y con ese id
+   * lo identifican en el contrato»). Va a `Property.externalId` y es la llave
+   * con la que después se cruzan los contratos.
+   *
+   * 🔴 Hasta hoy `codigo`, `referencia` y `consecutivo` estaban BLOQUEADOS en
+   * `ENCABEZADOS_SIN_CAMPO` «porque el código lo asigna el servidor». Eso sigue
+   * siendo cierto para el consecutivo de Leasefy — y es OTRO número: éste es el
+   * del sistema del que se migra, y sin él el archivo real entraba con su
+   * columna más importante sin mapear.
+   */
+  externalId:       ['codigo del inmueble', 'codigo inmueble', 'codigo de la propiedad', 'codigo propiedad', 'id del inmueble', 'id inmueble', 'codigo', 'referencia', 'consecutivo', 'ref', 'cod', 'id'],
+  propertyType:     ['tipo inmueble', 'tipo de inmueble', 'tipo propiedad', 'clase inmueble', 'clase de inmueble', 'tipo', 'clase', 'type'],
   propertyTitle:    ['titulo', 'nombre propiedad', 'descripcion corta', 'nombre'],
   propertyAddress:  ['direccion del inmueble', 'direccion inmueble', 'direccion', 'address', 'ubicacion', 'calle', 'dir'],
   propertyCity:     ['ciudad', 'municipio', 'city'],
-  propertyZone:     ['barrio', 'zona', 'sector', 'localidad', 'urbanizacion', 'vecindario', 'comuna'],
+  // `urbanizacion` SALIÓ de acá: es su propia columna en el archivo real
+  // («Barrio» y «Urbanización» vienen juntas, 460 filas traen las dos) y
+  // dejarla como sinónimo de barrio hacía que una de las dos se perdiera en el
+  // dedup, sin decirlo.
+  propertyZone:     ['barrio', 'zona', 'sector', 'localidad', 'vecindario', 'comuna'],
+  urbanizacion:     ['urbanizacion', 'unidad residencial', 'conjunto residencial', 'conjunto cerrado', 'conjunto', 'edificio', 'torre'],
+  /** El estrato viene en PALABRAS («Tres», «No Estratificada»): lo lee `estratoDePalabras`. */
+  stratum:          ['estrato del inmueble', 'estrato de la propiedad', 'estrato propiedad', 'estrato', 'stratum'],
+  /** Dónde están las llaves. Informativo, va a la descripción del inmueble. */
+  llavesEn:         ['llaves en', 'ubicacion de las llaves', 'ubicacion de llaves', 'donde estan las llaves', 'llaves'],
+  /** Quién cargó el inmueble en el sistema viejo. Informativo. */
+  creadaPor:        ['creada por', 'creado por', 'usuario que creo', 'registrado por', 'creada'],
   // T-0038 §3.2.1 — the department (not the municipality/city). Kept
   // distinct from propertyCity's 'municipio'/'ciudad'.
   propertyDepartment: ['departamento del inmueble', 'departamento de la propiedad', 'departamento'],
@@ -25,7 +49,10 @@ export const COLUMN_KEYWORDS: Record<string, string[]> = {
   // blocked (ENCABEZADOS_SIN_CAMPO): Arriendo/Venta has a home now.
   // Keywords are longer than propertyType's generic 'tipo' (4 chars) so
   // tier1's max-score-wins comparison always prefers this field for them.
-  listingType:      ['tipo de negocio', 'tipo negocio', 'tipo de operacion', 'tipo operacion', 'arriendo o venta', 'renta o venta'],
+  // `servicio` es el encabezado del archivo real (valores: «Arriendo»,
+  // «Venta», «Venta y Arriendo»). Es genérico, así que «Servicios públicos» —
+  // el falso positivo obvio— queda bloqueado en ENCABEZADOS_SIN_CAMPO.
+  listingType:      ['tipo de negocio', 'tipo negocio', 'tipo de operacion', 'tipo operacion', 'arriendo o venta', 'renta o venta', 'tipo de servicio', 'servicio'],
   monthlyRent:      ['canon de arrendamiento', 'canon arrendamiento', 'valor del arriendo', 'canon mensual', 'valor arriendo', 'valor canon', 'renta mensual', 'arrendamiento', 'canon', 'arriendo', 'precio', 'alquiler', 'renta', 'mensual', 'rent'],
   // T-0038 §3.2.3 — kept strictly more specific than monthlyRent's generic
   // 'precio' so a bare "Precio" still degrades to monthlyRent (§3.2.2: an
@@ -45,13 +72,20 @@ export const COLUMN_KEYWORDS: Record<string, string[]> = {
   // variante «<algo> propietario» tiene que ser MÁS LARGA que 'propietario'
   // (11) o el teléfono termina en el campo del nombre. Pasó con
   // «Movil propietario»: 'propietario' (11) le ganaba a 'movil' (5).
-  ownerPhone:       ['telefono del propietario', 'whatsapp del propietario', 'celular del propietario', 'contacto del propietario', 'whatsapp propietario', 'telefono propietario', 'celular propietario', 'contacto propietario', 'telefono arrendador', 'celular arrendador', 'telefono del dueno', 'numero propietario', 'movil propietario', 'tel propietario', 'telefono', 'whatsapp', 'celular', 'movil', 'tel', 'phone'],
+  // «Teléfonos Propietario» (en plural, el encabezado del archivo real) NO
+  // contiene «telefono propietario»: el plural rompe la subcadena y
+  // 'propietario' (11) le ganaba, así que los teléfonos entraban en el NOMBRE
+  // del dueño. Por eso las variantes en plural están escritas aparte.
+  ownerPhone:       ['telefonos del propietario', 'telefono del propietario', 'whatsapp del propietario', 'celular del propietario', 'contacto del propietario', 'whatsapp propietario', 'telefonos propietario', 'telefono propietario', 'celulares propietario', 'celular propietario', 'contacto propietario', 'telefonos arrendador', 'telefono arrendador', 'celular arrendador', 'telefono del dueno', 'numero propietario', 'movil propietario', 'tel propietario', 'telefonos', 'telefono', 'whatsapp', 'celular', 'movil', 'tel', 'phone'],
   status:           ['estado del inmueble', 'estado', 'status', 'disponibilidad'],
   notes:            ['observaciones', 'observacion', 'notas', 'comentarios', 'descripcion', 'notes'],
   // T-0038 §3.2.6 (D5, R6) — property-level "fecha de consignación",
   // agency-only. Distinct from any mandate/contract date field (none of
   // which this importer maps today).
-  consignedAt:      ['fecha de consignacion', 'fecha consignacion', 'consignacion'],
+  // «Fecha Creación» del sistema viejo es cuándo se cargó el inmueble allá:
+  // es la consignación de esa ficha, y es el único dato de fecha que trae el
+  // archivo real. Va acá, no a un campo nuevo.
+  consignedAt:      ['fecha de consignacion', 'fecha consignacion', 'fecha de creacion', 'fecha creacion', 'fecha de alta', 'consignacion'],
 };
 
 /**
@@ -81,9 +115,13 @@ export const ENCABEZADOS_SIN_CAMPO = [
   // Personas que no son el propietario.
   'arrendatario', 'inquilino', 'codeudor', 'deudor solidario', 'fiador',
   // Datos del inmueble que la importación no guarda.
-  'estrato', 'matricula inmobiliaria', 'matricula', 'chip catastral',
-  // Identificadores internos del sistema de origen.
-  'codigo', 'referencia', 'consecutivo',
+  // «Estrato» salió de esta lista: hoy tiene campo (`stratum`) y el archivo
+  // real lo trae en las 2.894 filas.
+  'matricula inmobiliaria', 'matricula', 'chip catastral', 'referencia catastral',
+  // Identificadores que NO son el código del inmueble. «Código», «Referencia»
+  // y «Consecutivo» dejaron de estar bloqueados —son `externalId`— así que las
+  // dos columnas que se les parecen y no lo son se nombran acá.
+  'codigo postal', 'codigo catastral', 'servicios publicos',
   // No hay campo de correo en la importación. Sin bloquearlo,
   // «Correo propietario» caía en ownerName por el mismo problema de longitud.
   'correo', 'email', 'e-mail',
@@ -146,6 +184,29 @@ export function levenshteinDistance(a: string, b: string): number {
 }
 
 /**
+ * Un alias de 3 letras o menos («id», «ref», «cod», «tel», «hab», «dir», «m2»)
+ * NO se busca por subcadena: aparece dentro de palabras que no tienen nada que
+ * ver. «Ciudad» contiene «id», «Unidad» también, y con `id` como alias del
+ * código del inmueble eso mandaba la ciudad al identificador.
+ *
+ * Con la columna llamada así y punto («Id», «Cod.», «N° Hab») sí vale, así que
+ * la regla es palabra completa, no igualdad: es estrictamente más estricta que
+ * `includes` y no le quita nada a los alias largos.
+ */
+const LARGO_MINIMO_PARA_SUBCADENA = 4;
+
+function escaparRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function contieneAlias(normalizedHeader: string, normKeyword: string): boolean {
+  if (normKeyword.length >= LARGO_MINIMO_PARA_SUBCADENA) {
+    return normalizedHeader.includes(normKeyword);
+  }
+  return new RegExp(`(?<![a-z0-9])${escaparRegex(normKeyword)}(?![a-z0-9])`).test(normalizedHeader);
+}
+
+/**
  * Try Tier 1: keyword exact substring match.
  * Returns { targetField, confidence } or null if no match.
  */
@@ -157,7 +218,7 @@ function tier1Match(normalizedHeader: string): { targetField: string; confidence
   for (const [field, keywords] of Object.entries(COLUMN_KEYWORDS)) {
     for (const keyword of keywords) {
       const normKeyword = normalize(keyword);
-      const forwardMatch = normalizedHeader.includes(normKeyword);
+      const forwardMatch = contieneAlias(normalizedHeader, normKeyword);
       const reverseMatch = normKeyword.includes(normalizedHeader);
 
       if (forwardMatch) {

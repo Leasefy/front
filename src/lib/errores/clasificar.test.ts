@@ -236,4 +236,26 @@ describe('clasificarFallo — 401 de sesión muerta', () => {
 
     expect(fallo.sePuedeReintentar).toBe(false)
   })
+
+  /**
+   * T-0076: el 429 de `agents_limit` en NGINX (5 r/s, burst 10) caía en el
+   * cajón genérico de «servidor» — «fue un problema nuestro, no tuyo», el
+   * mismo mensaje que un 500. Un rate limit no es lo mismo: reintentar YA
+   * mismo va a fallar de nuevo, y decirlo distinto es lo honesto (ledger §5).
+   */
+  it('un 429 se distingue de un 500 genérico — es un límite, no un error nuestro', () => {
+    const fallo = clasificarFallo(new ApiError(429, 'Too Many Requests'))
+
+    expect(fallo.tipo).toBe('limitado')
+    expect(fallo.sePuedeReintentar).toBe(true)
+    expect(fallo.titulo).not.toBe('No pudimos cargar esto')
+  })
+
+  it('«429» como string (la forma que tiran los hooks del piloto) también se distingue', () => {
+    const fallo = clasificarFallo('429')
+
+    expect(fallo.status).toBe(429)
+    expect(fallo.tipo).toBe('limitado')
+    expect(fallo.sePuedeReintentar).toBe(true)
+  })
 })

@@ -21,7 +21,6 @@ import {
   // UsersThree,  ← reactivar junto con las pestañas «Equipo IA»
   SlidersHorizontal,
   Plus,
-  Table,
   Lightning,
   CurrencyDollar,
   GitMerge,
@@ -95,7 +94,7 @@ const COBRANZA = `${PANEL}/cobros/cobranza`;
 const ASEGURABILIDAD = `${PANEL}/postulaciones/asegurabilidad`;
 const AVALUOS = `${PANEL}/inmuebles/avaluos`;
 const CONCILIACION = `${PANEL}/conciliacion`;
-const ESTUDIO = `${PANEL}/postulaciones/estudio`;
+// const ESTUDIO = `${PANEL}/postulaciones/estudio`;  ← reactivar junto con el workspace «estudio» (oculto)
 const MATCHING = `${PANEL}/postulaciones/matching`;
 const PAGOS = `${PANEL}/pagos`;
 const CONTADOR_ROLES: AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR];
@@ -150,14 +149,15 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.cotizadorResumen', href: ASEGURABILIDAD, icon: SquaresFour, exact: true, module: 'cotizador' },
       { labelKey: 'inmobiliaria.ai.nav.cotizadorCola', href: `${ASEGURABILIDAD}/cola`, icon: ClipboardText, module: 'cotizador' },
       { labelKey: 'inmobiliaria.ai.nav.cotizadorNueva', href: `${ASEGURABILIDAD}/nueva`, icon: Plus, module: 'cotizador' },
-      { labelKey: 'inmobiliaria.ai.nav.cotizadorComparar', href: `${ASEGURABILIDAD}/comparar`, icon: Table, module: 'cotizador' },
-      { labelKey: 'inmobiliaria.ai.nav.cotizadorEjecucion', href: `${ASEGURABILIDAD}/ejecucion`, icon: Lightning, module: 'cotizador' },
+      // OCULTOS — «Comparador», «Ejecución» e «Integraciones» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.cotizadorComparar', href: `${ASEGURABILIDAD}/comparar`, icon: Table, module: 'cotizador' },
+      // { labelKey: 'inmobiliaria.ai.nav.cotizadorEjecucion', href: `${ASEGURABILIDAD}/ejecucion`, icon: Lightning, module: 'cotizador' },
       { labelKey: 'inmobiliaria.ai.cotizador.nav.aseguradoras', href: `${ASEGURABILIDAD}/aseguradoras`, icon: ShieldCheck, module: 'cotizador' },
       // OCULTO — «Equipo IA» (ver nota al pie del archivo).
       // { labelKey: 'inmobiliaria.ai.nav.cotizadorEquipo', href: `${ASEGURABILIDAD}/equipo`, icon: UsersThree, module: 'cotizador' },
       { labelKey: 'inmobiliaria.ai.cotizador.nav.insights', href: `${ASEGURABILIDAD}/insights`, icon: ChartLineUp, module: 'cotizador' },
       { labelKey: 'inmobiliaria.ai.cotizador.nav.costos', href: `${ASEGURABILIDAD}/costos`, icon: CurrencyDollar, module: 'cotizador' },
-      { labelKey: 'inmobiliaria.ai.nav.cotizadorIntegraciones', href: `${ASEGURABILIDAD}/integraciones`, icon: GitMerge, module: 'cotizador' },
+      // { labelKey: 'inmobiliaria.ai.nav.cotizadorIntegraciones', href: `${ASEGURABILIDAD}/integraciones`, icon: GitMerge, module: 'cotizador' },
       { labelKey: 'inmobiliaria.ai.cotizador.nav.configuracion', href: `${ASEGURABILIDAD}/configuracion`, icon: SlidersHorizontal, module: 'cotizador' },
     ],
   },
@@ -192,26 +192,33 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.conciliacionConfiguracion', href: `${CONCILIACION}/configuracion`, icon: SlidersHorizontal, module: null, roles: CONTADOR_ROLES },
     ],
   },
-  // ── Estudio del inquilino ─────────────────────────────────────────────────
-  {
-    slug: 'estudio',
-    basePath: ESTUDIO,
-    labelKey: 'inmobiliaria.ai.nav.estudio',
-    icon: ShieldCheck,
-    module: 'estudio',
-    items: [
-      { labelKey: 'inmobiliaria.ai.nav.estudioResumen', href: ESTUDIO, icon: SquaresFour, exact: true, module: 'estudio' },
-      { labelKey: 'inmobiliaria.ai.nav.estudioCasos', href: `${ESTUDIO}/estudios`, icon: Users, module: 'estudio' },
-      { labelKey: 'inmobiliaria.ai.nav.estudioCrear', href: `${ESTUDIO}/nuevo`, icon: Plus, module: 'estudio' },
-      { labelKey: 'inmobiliaria.ai.nav.estudioSolicitud', href: `${ESTUDIO}/solicitud`, icon: PaperPlaneTilt, module: 'estudio' },
-      { labelKey: 'inmobiliaria.ai.nav.estudioCola', href: `${ESTUDIO}/cola`, icon: ClipboardText, module: 'estudio' },
-      // OCULTO — «Equipo IA» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.estudioEquipo', href: `${ESTUDIO}/equipo`, icon: UsersThree, module: 'estudio' },
-      { labelKey: 'inmobiliaria.ai.nav.estudioAnalitica', href: `${ESTUDIO}/analitica`, icon: ChartLineUp, module: 'estudio' },
-      { labelKey: 'inmobiliaria.ai.nav.estudioReglas', href: `${ESTUDIO}/reglas`, icon: Scales, module: 'estudio' },
-      { labelKey: 'inmobiliaria.ai.nav.estudioConfiguracion', href: `${ESTUDIO}/configuracion`, icon: SlidersHorizontal, module: 'estudio' },
-    ],
-  },
+  // ── Estudio del inquilino (Evaluación de candidatos) — OCULTO ─────────────
+  // Nico, 2026-09-08: «esta sección de evaluación de candidatos ocúltala por
+  // ahora». Las páginas siguen en `postulaciones/estudio/*` y su layout
+  // devuelve a Postulaciones; para reactivarlo, descomentar este bloque, la
+  // constante `ESTUDIO` y la pantalla en `arquitectura-del-panel.ts` (el test
+  // exige las dos puertas). Sin workspace, el chat deja de ofrecer «ir a
+  // estudio» como pantalla (`targetTienePantalla`) y `salaHref('estudio')`
+  // cae en la vitrina de agentes: es lo que corresponde a una sección oculta.
+  //   {
+  //     slug: 'estudio',
+  //     basePath: ESTUDIO,
+  //     labelKey: 'inmobiliaria.ai.nav.estudio',
+  //     icon: ShieldCheck,
+  //     module: 'estudio',
+  //     items: [
+  //       { labelKey: 'inmobiliaria.ai.nav.estudioResumen', href: ESTUDIO, icon: SquaresFour, exact: true, module: 'estudio' },
+  //       { labelKey: 'inmobiliaria.ai.nav.estudioCasos', href: `${ESTUDIO}/estudios`, icon: Users, module: 'estudio' },
+  //       { labelKey: 'inmobiliaria.ai.nav.estudioCrear', href: `${ESTUDIO}/nuevo`, icon: Plus, module: 'estudio' },
+  //       { labelKey: 'inmobiliaria.ai.nav.estudioSolicitud', href: `${ESTUDIO}/solicitud`, icon: PaperPlaneTilt, module: 'estudio' },
+  //       { labelKey: 'inmobiliaria.ai.nav.estudioCola', href: `${ESTUDIO}/cola`, icon: ClipboardText, module: 'estudio' },
+  //       // OCULTO — «Equipo IA» (ver nota al pie del archivo).
+  //       // { labelKey: 'inmobiliaria.ai.nav.estudioEquipo', href: `${ESTUDIO}/equipo`, icon: UsersThree, module: 'estudio' },
+  //       { labelKey: 'inmobiliaria.ai.nav.estudioAnalitica', href: `${ESTUDIO}/analitica`, icon: ChartLineUp, module: 'estudio' },
+  //       { labelKey: 'inmobiliaria.ai.nav.estudioReglas', href: `${ESTUDIO}/reglas`, icon: Scales, module: 'estudio' },
+  //       { labelKey: 'inmobiliaria.ai.nav.estudioConfiguracion', href: `${ESTUDIO}/configuracion`, icon: SlidersHorizontal, module: 'estudio' },
+  //     ],
+  //   },
   // ── Matching ──────────────────────────────────────────────────────────────
   {
     slug: 'matching',
@@ -222,7 +229,7 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
     items: [
       { labelKey: 'inmobiliaria.ai.nav.resumen', href: MATCHING, icon: SquaresFour, exact: true, module: 'matching' },
       { labelKey: 'inmobiliaria.ai.nav.matchingCola', href: `${MATCHING}/cola`, icon: ClipboardText, module: 'matching' },
-      { labelKey: 'inmobiliaria.ai.nav.matchingAnalitica', href: `${MATCHING}/analitica`, icon: ChartLineUp, module: 'matching' },
+      // «Analítica» de Matching: el micro no publica ese endpoint y la tab era un error garantizado (2026-09-08). La ruta rebota al resumen.
       { labelKey: 'inmobiliaria.ai.nav.matchingConfiguracion', href: `${MATCHING}/configuracion`, icon: SlidersHorizontal, module: 'matching' },
     ],
   },
@@ -446,6 +453,23 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
  * `requires_action` a Pendientes. Mientras tanto, la ruta y su i18n se quedan
  * (sólo alcanzable escribiendo la URL) y el hook sigue cableado a los tres
  * endpoints reales del agente.
+ */
+
+/**
+ * NOTA — «Comparador», «Ejecución» e «Integraciones» de Asegurabilidad ocultas
+ * (2026-09-08).
+ *
+ * Las tres eran maquetas: el Comparador tenía los criterios escritos a mano y
+ * barras grises sin dato detrás; Ejecución mostraba doce estados y filas de
+ * «Aseguradora A…G» rotuladas «datos ilustrativos»; Integraciones ofrecía seis
+ * botones «Conectar» deshabilitados y diez métricas en «—». Nada de eso leía
+ * del micro, y un botón que no hace nada no se ofrece.
+ *
+ * Las rutas se conservan porque anduvieron enlazadas, pero ya no muestran la
+ * maqueta: redirigen al Resumen de la sección (`comparar/page.tsx`,
+ * `ejecucion/page.tsx`, `integraciones/page.tsx`). Las claves de i18n se
+ * quedan, como con «Equipo IA». Cuando la comparación en vivo, la ejecución en
+ * paralelo o las integraciones tengan endpoint, vuelven a la lista.
  */
 
 /** Find the agent workspace whose basePath contains `pathname` (or null). */

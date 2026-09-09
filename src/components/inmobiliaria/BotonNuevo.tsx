@@ -5,8 +5,8 @@
  *
  * El problema que resuelve: hay 156 rutas y ninguna dice "empieza acá". Para
  * abrir una consignación hay que saber que vive dentro de Consignaciones; para
- * evaluar a un candidato, que está bajo Evaluación de candidatos → Nueva
- * evaluación. El sidebar está agrupado por módulo de negocio, así que le
+ * pedir la asegurabilidad de un candidato, que está bajo Postulaciones →
+ * Asegurabilidad. El sidebar está agrupado por módulo de negocio, así que le
  * responde bien a quien ya sabe dónde va, y a nadie más.
  *
  * Dos decisiones que vale la pena dejar escritas:
@@ -184,6 +184,12 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
 
   return (
     <>
+      {/* El `div` es el ANCLAJE del recorrido guiado (`data-tour-target`): el
+          SplitButton del DS no reenvía atributos `data-*`, y sin una caja
+          propia el paso «por acá entra un inmueble» no tendría a qué apuntar.
+          Sólo existe cuando el botón existe (arriba: sin flujos, `null`), así
+          que el recorrido nunca señala un hueco. */}
+      <div data-tour-target="nuevo">
       <SplitButton
         variant="primary"
         size="sm"
@@ -269,6 +275,7 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
           </>
         }
       />
+      </div>
 
       <IntroDelFlujo
         flujo={porExplicar}

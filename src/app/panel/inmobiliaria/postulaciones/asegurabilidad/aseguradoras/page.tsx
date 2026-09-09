@@ -14,7 +14,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Buildings } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
 import {
@@ -24,9 +23,9 @@ import {
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { CarrierRegistryTable, type MergedCarrierRow } from '@/components/inmobiliaria/cotizador/CarrierRegistryTable'
 import type { OverrideFields } from '@/components/inmobiliaria/cotizador/CarrierOverridePopover'
-import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
-import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button } from '@/components/ui/button'
+import { SectionLabel } from '@/components/ui/section-label'
+import { toast } from '@/components/ui/toast'
 
 // =============================================================================
 // Page
@@ -40,7 +39,6 @@ export default function AseguradorasPage() {
 
   // Optimistic local override state — seeded from server data
   const [localOverrides, setLocalOverrides] = useState<TenantOverrideRow[]>([])
-  const [errorToast, setErrorToast] = useState<string | null>(null)
 
   // Seed localOverrides when server data first arrives
   useEffect(() => {
@@ -49,10 +47,18 @@ export default function AseguradorasPage() {
     }
   }, [data?.overrides])
 
-  const showErrorToast = useCallback((msg: string) => {
-    setErrorToast(msg)
-    setTimeout(() => setErrorToast(null), 4000)
-  }, [])
+  // El toast de la casa (sonner por el envoltorio), no un <div fixed> propio
+  // que se pintaba abajo a la derecha con otra cara y otro tiempo.
+  const avisarFallo = useCallback(
+    (err: unknown) => {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : t('inmobiliaria.ai.cotizador.aseguradoras.popover.saveError'),
+      )
+    },
+    [t],
+  )
 
   // Derive merged rows from server global data + optimistic local overrides
   const finalMergedRows = useMemo<MergedCarrierRow[]>(() => {
@@ -105,14 +111,10 @@ export default function AseguradorasPage() {
       } catch (err) {
         // Revert on error
         setLocalOverrides(snapshot)
-        showErrorToast(
-          err instanceof Error
-            ? err.message
-            : t('inmobiliaria.ai.cotizador.aseguradoras.popover.saveError'),
-        )
+        avisarFallo(err)
       }
     },
-    [localOverrides, saveOverride, showErrorToast, t],
+    [localOverrides, saveOverride, avisarFallo],
   )
 
   // Optimistic reset — immediately remove override from local state, revert on error
@@ -126,41 +128,22 @@ export default function AseguradorasPage() {
         await resetOverride(name, route)
       } catch (err) {
         setLocalOverrides(snapshot)
-        showErrorToast(
-          err instanceof Error
-            ? err.message
-            : t('inmobiliaria.ai.cotizador.aseguradoras.popover.saveError'),
-        )
+        avisarFallo(err)
       }
     },
-    [localOverrides, resetOverride, showErrorToast, t],
+    [localOverrides, resetOverride, avisarFallo],
   )
-
-  // Phase 38-05b: skeleton + EmptyState early returns (D-38-04: list page gets both)
-  if (isLoading && !data) return <PageSkeleton variant="list" />
-  if (!isLoading && data && finalMergedRows.length === 0) {
-    return (
-      <EmptyState
-        icon={Buildings}
-        title={t('inmobiliaria.ai.cotizador.aseguradoras.empty.title')}
-        description={t('inmobiliaria.ai.cotizador.aseguradoras.empty.description')}
-        primaryCta={{
-          label: t('inmobiliaria.ai.cotizador.aseguradoras.empty.cta.label'),
-          href: 'mailto:soporte@leasefy.co',
-        }}
-      />
-    )
-  }
 
   return (
     <main className="p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="space-y-1">
+      {/* Encabezado de la casa; la única acción de la pantalla, a la derecha. */}
+      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="space-y-1.5">
+          <SectionLabel>{t('inmobiliaria.ai.nav.cotizador')}</SectionLabel>
           <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.cotizador.aseguradoras.title')}
           </h1>
-          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
+          <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
             {t('inmobiliaria.ai.cotizador.aseguradoras.subtitle')}
           </p>
         </div>
@@ -175,38 +158,18 @@ export default function AseguradorasPage() {
         </Button>
       </header>
 
-      {/* Error banner */}
-      {error && !data && (
-        <div className="rounded-lg bg-danger-soft border border-danger/30 text-danger px-4 py-3 text-sm flex items-center justify-between gap-4">
-          <span>{t('inmobiliaria.ai.cotizador.aseguradoras.errorLoading')}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            hideArrow
-            onClick={() => void refetch()}
-            className="shrink-0"
-          >
-            {t('inmobiliaria.ai.cotizador.aseguradoras.retry')}
-          </Button>
-        </div>
-      )}
-
-      {/* Table */}
-      {data && finalMergedRows.length > 0 && (
-        <CarrierRegistryTable
-          rows={finalMergedRows}
-          canConfigure={canConfigure}
-          onSaveOverride={handleSave}
-          onResetOverride={handleReset}
-        />
-      )}
-
-      {/* Error toast — mutation failures */}
-      {errorToast && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-lg border border-danger/30 bg-danger-soft text-danger px-4 py-3 text-sm">
-          {errorToast}
-        </div>
-      )}
+      {/* La carga, el fallo y el vacío viven DENTRO de la tabla, como en el
+          resto del panel: antes cada uno reemplazaba la página entera y la
+          persona perdía el encabezado y el botón de actualizar. */}
+      <CarrierRegistryTable
+        rows={finalMergedRows}
+        isLoading={isLoading && !data}
+        error={data ? null : error}
+        onReintentar={refetch}
+        canConfigure={canConfigure}
+        onSaveOverride={handleSave}
+        onResetOverride={handleReset}
+      />
     </main>
   )
 }

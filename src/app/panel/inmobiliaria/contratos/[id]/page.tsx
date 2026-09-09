@@ -53,6 +53,7 @@ import { AdministracionDelContrato } from '@/components/contratos/Administracion
 import { ConceptosDelContrato } from '@/components/contratos/ConceptosDelContrato';
 import { CobrosDelContrato, type ResumenDeCobros } from '@/components/contratos/CobrosDelContrato';
 import { ReglasDeMoraDelContrato } from '@/components/contratos/ReglasDeMoraDelContrato';
+import { DocumentosContablesDelContrato } from '@/components/contratos/DocumentosContablesDelContrato';
 import { Stat, StatStrip } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { VincularInmueble } from '@/components/contratos/VincularInmueble';
@@ -451,6 +452,20 @@ function ContratoDetalleContent() {
                 contract={contract}
                 onResumen={setResumenDeCobros}
               />
+              {/*
+                La historia contable ANTERIOR a Leasefy: los comprobantes que
+                la inmobiliaria subió de su sistema viejo y que el back colgó
+                de este contrato. Va después de los cobros porque ése es el
+                orden real — arriba lo que se cobra hoy, abajo lo que quedó
+                registrado antes.
+
+                Sólo con el contrato ya firmado: la asociación del back exige
+                que el contrato estuviera VIGENTE en la fecha del comprobante,
+                así que uno que todavía se está firmando no puede tener
+                ninguno, y pedirlos sería una petición que siempre vuelve
+                vacía.
+              */}
+              <DocumentosContablesDelContrato contractId={contract.id} />
             </>
           )}
 

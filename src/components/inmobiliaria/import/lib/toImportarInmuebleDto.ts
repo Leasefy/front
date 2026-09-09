@@ -22,6 +22,14 @@ import type { ImportarInmuebleDto } from '@/lib/api/inmuebles-importacion.servic
 export function toImportarInmuebleDto(p: ImportProperty): ImportarInmuebleDto {
   const dto: ImportarInmuebleDto = {};
 
+  /*
+   * El código del sistema viejo. `ImportarInmuebleDto.externalId` ya existe en
+   * el back y se persiste en `Property.externalId`: es lo que después deja
+   * cruzar «el inmueble 2945 de allá» con el de acá, y lo que los contratos
+   * migrados nombran. Sin esto, el archivo real entraba con su columna más
+   * importante tirada a la basura.
+   */
+  if (p.externalId?.trim()) dto.externalId = p.externalId.trim();
   if (p.propertyTitle) dto.title = p.propertyTitle;
   if (p.propertyAddress) dto.address = p.propertyAddress;
   if (p.propertyCity) dto.city = p.propertyCity;
@@ -68,6 +76,28 @@ export function toImportarInmuebleDto(p: ImportProperty): ImportarInmuebleDto {
 
   if (p.adminFee != null) dto.adminFee = p.adminFee;
   if (p.consignedAt) dto.consignedAt = p.consignedAt;
+  // El back valida `@Min(0) @Max(6)`: `estratoDePalabras` ya devuelve
+  // `undefined` fuera de [1, 6], así que acá no hay nada que recortar.
+  if (p.stratum != null) dto.stratum = p.stratum;
+
+  /*
+   * ── Las cinco columnas del archivo real que ya tienen dónde ir ───────────
+   *
+   * `ImportarInmuebleDto` del back las declara desde el 2026-09-08, con estos
+   * nombres exactos. Los nombres importan más que de costumbre: el
+   * `ValidationPipe` global corre con `forbidNonWhitelisted: true`, así que
+   * una clave mal escrita no se ignora — devuelve 400 para el LOTE entero.
+   *
+   * Todas viajan CRUDAS. El estado («Activa», «Arrendada», «Inactiva») lo
+   * traduce el back a su propio vocabulario y lo que no reconoce deja el
+   * inmueble sin publicar; interpretarlo acá le quitaría al back la única
+   * forma que tiene de decir qué palabra no entendió.
+   */
+  if (p.urbanizacion?.trim()) dto.urbanizacion = p.urbanizacion.trim();
+  if (p.llavesEn?.trim()) dto.llavesEn = p.llavesEn.trim();
+  if (p.creadaPor?.trim()) dto.creadaPor = p.creadaPor.trim();
+  if (p.ownerPhone?.trim()) dto.propietarioTelefono = p.ownerPhone.trim();
+  if (p.status?.trim()) dto.estadoOrigen = p.status.trim();
 
   // El propietario del archivo viaja al back para que el inmueble nazca
   // consignado (Nico, 2026-09-02: «que tome el que viene desde la

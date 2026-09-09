@@ -90,13 +90,13 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
 
   return (
     <div className="space-y-6">
-      <h2 className="text-base font-semibold text-foreground">
+      <h2 className="text-base font-semibold text-fg">
         {tf(`${K}.titulo`, 'Configura la consulta')}
       </h2>
 
       {/* ── Aseguradoras ──────────────────────────────────────────────────── */}
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-foreground">
+        <legend className="text-sm font-medium text-fg">
           {tf(`${K}.aseguradoras.titulo`, '¿A qué aseguradoras consultamos?')}
         </legend>
         <RadioCardGroup
@@ -116,9 +116,9 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
 
         {/* Multi-select carrier list — only when "favoritas" is chosen */}
         {isFavoritas && (
-          <div className="mt-2 rounded-lg border border-border bg-card p-3">
+          <div className="mt-2 rounded-lg border border-border bg-surface p-3">
             {registry.isLoading ? (
-              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <p className="flex items-center gap-2 text-sm text-fg-muted">
                 <Spinner size="sm" variant="current" className="shrink-0" aria-hidden />
                 {tf(`${K}.aseguradoras.cargando`, 'Cargando aseguradoras…')}
               </p>
@@ -145,7 +145,7 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
                 </Button>
               </div>
             ) : carrierOptions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-fg-muted">
                 {tf(`${K}.aseguradoras.sinAseguradoras`, 'No hay aseguradoras disponibles. Usaremos las que Leasefy recomiende.')}
               </p>
             ) : (
@@ -179,7 +179,7 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
 
       {/* ── Prioridad ─────────────────────────────────────────────────────── */}
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-foreground">
+        <legend className="text-sm font-medium text-fg">
           {tf(`${K}.prioridad.titulo`, '¿Qué priorizamos?')}
         </legend>
         {/* Selector excluyente (UI-DS-CONTRACT §3) */}
@@ -197,7 +197,7 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
 
       {/* ── Modo ──────────────────────────────────────────────────────────── */}
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-foreground">
+        <legend className="text-sm font-medium text-fg">
           {tf(`${K}.modo.titulo`, 'Modo de ejecución')}
         </legend>
         <RadioCardGroup

@@ -186,6 +186,7 @@ export default function PilotoPage() {
           : {})}
         onAbrirItem={abrirItem}
         onAbrirAlerta={abrirAlerta}
+        onRefetch={pulso.refetch}
       />
 
       {/* Decidir (ancho) · lo que pasó (angosto) */}

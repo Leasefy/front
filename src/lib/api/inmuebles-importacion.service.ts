@@ -72,16 +72,25 @@ export interface InmuebleDuplicado {
  * `ImportarInmuebleDto` (contract-addendum-3.md §3.1.1).
  *
  * Every field is optional (C13: origin governs validation; completeness is
- * enforced at activation, not here). The back declares 23 fields; the seven
+ * enforced at activation, not here). The back declares 23 fields; the ones
  * it accepts that no import source can produce (`description`, `deposit`,
- * `floor`, `parkingSpaces`, `stratum`, `yearBuilt`, `amenities`) are
+ * `floor`, `parkingSpaces`, `yearBuilt`, `amenities`) are
  * deliberately absent — `ImportProperty` has no column for any of them, and
  * an unused field on a hand-mirrored boundary is surface without a consumer.
+ *
+ * `externalId` y `stratum` SÍ están: el archivo real de la inmobiliaria
+ * (Propiedades.csv) trae «Código» y «Estrato» en todas sus filas.
  *
  * A key NOT on the back's DTO is a 400 on the whole request
  * (`forbidNonWhitelisted: true`). There is no forgiving mode.
  */
 export interface ImportarInmuebleDto {
+  /**
+   * Su id en el sistema del que se migra («Código» en el archivo real). El
+   * back lo guarda en `Property.externalId` y es la llave con la que los
+   * contratos migrados nombran al inmueble.
+   */
+  externalId?: string;
   title?: string;
   address?: string;
   city?: string;
@@ -105,6 +114,8 @@ export interface ImportarInmuebleDto {
   salePrice?: number;
   adminFee?: number;
   consignedAt?: string;
+  /** 1 a 6. El archivo lo trae en palabras y el front lo lee antes de mandarlo. */
+  stratum?: number;
   /**
    * Front-computed (LocationIQ, `geocodeImportRow.ts`) — the durable backend
    * does not geocode, so without these every imported property lands on the
@@ -124,6 +135,29 @@ export interface ImportarInmuebleDto {
    */
   propietarioDocumento?: string;
   propietarioNombre?: string;
+  /**
+   * El teléfono del propietario tal como venga («Teléfonos Propietario»). Texto
+   * libre y sin tope: el archivo real trae dos números y un parentesco en la
+   * misma celda. El back lo escribe al CREAR la ficha, y en una que ya existe
+   * sólo si no tenía teléfono — un archivo viejo no pisa lo corregido a mano.
+   */
+  propietarioTelefono?: string;
+  /**
+   * El estado del inmueble en el sistema anterior («Activa», «Arrendada»,
+   * «Inactiva»), CRUDO. El back lo traduce a `PropertyStatus` y lo que no
+   * reconoce deja el inmueble como nacía antes: en borrador, sin publicar.
+   */
+  estadoOrigen?: string;
+  /** «Urbanización»: el conjunto. El back lo guarda dentro de `description`. */
+  urbanizacion?: string;
+  /** «Llaves en»: dónde están las llaves. Mismo destino que `urbanizacion`. */
+  llavesEn?: string;
+  /**
+   * «Creada Por»: quién cargó el inmueble en el sistema anterior. El back NO
+   * lo copia a `properties` —es un empleado de la otra empresa— pero sí lo
+   * guarda en el registro de lo que vino tal cual.
+   */
+  creadaPor?: string;
   /** % de comisión (administración en arriendo, venta en venta). */
   comisionPorcentaje?: number;
 }

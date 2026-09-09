@@ -4,6 +4,11 @@
 import type { ImportProperty, AISuggestion, ParsedRow, ColumnMapping } from './importTypes';
 import { resolveImportListingType } from './requisitosDelBack';
 import { cleanNumericValue } from './valorNumerico';
+import {
+  documentoYNombre,
+  estratoDePalabras,
+  fechaDeOrigen,
+} from '@/lib/migracion/valores-de-origen';
 
 // Reexport: los tests y cualquier consumidor viejo siguen importándolo de acá.
 export { cleanNumericValue } from './valorNumerico';
@@ -85,11 +90,31 @@ export const COLOMBIAN_CITIES = [
 // ============================================================================
 
 const TYPE_NORMALIZATIONS: Record<string, string> = {
+  /*
+   * 🔴 «Apartaestudio» va ARRIBA de «apt»: la búsqueda parcial recorre este
+   * objeto en orden y `'apartaestudio'.includes('apt')` es verdadero, así que
+   * los 293 apartaestudios del archivo real entraban como apartamentos. Un
+   * apartaestudio es un `studio` — es el tipo que existe para eso.
+   */
+  apartaestudio: 'studio',
+  'aparta estudio': 'studio',
+  'aparta-estudio': 'studio',
   apto: 'apartment',
   apartamento: 'apartment',
   apt: 'apartment',
   flat: 'apartment',
   casa: 'house',
+  // Una finca es una casa en el campo: `house` es el tipo más cercano que
+  // existe. «Casa Finca» ya caía acá por «casa».
+  finca: 'house',
+  'casa finca': 'house',
+  // «Cabaña» viene en el archivo real (con y sin tilde según quién la escribió).
+  // Lo que NO se fuerza a ningún tipo: «Lote», «Celda Parqueadero», «Edificio»
+  // y «Amoblados». No hay `PropertyType` que signifique eso, y elegir el más
+  // parecido guardaría una mentira que después nadie revisa: llegan crudos y
+  // el back los marca `faltante: tipo` con el valor original a la vista.
+  cabana: 'house',
+  'cabaña': 'house',
   vivienda: 'house',
   'casa-lote': 'house',
   casalote: 'house',
@@ -181,7 +206,18 @@ export function mapRowsToProperties(
       const rawValue = row[mapping.sourceColumn];
       const field = mapping.targetField;
 
-      if (numericFields.has(field)) {
+      if (field === 'stratum') {
+        // El archivo real trae el estrato en PALABRAS («Tres», «No
+        // Estratificada»). `cleanNumericValue` lo dejaría vacío siempre.
+        const estrato = estratoDePalabras(rawValue);
+        if (estrato !== undefined) prop.stratum = estrato;
+      } else if (field === 'consignedAt') {
+        // «2026-09-08 10:10:08» → «2026-09-08». Lo que no es una fecha queda
+        // vacío: el back valida el formato al revisar y una fecha inventada
+        // no da error, corre datos.
+        const fecha = fechaDeOrigen(rawValue);
+        if (fecha) prop.consignedAt = fecha;
+      } else if (numericFields.has(field)) {
         const num = cleanNumericValue(rawValue);
         if (num !== undefined) {
           (prop as unknown as Record<string, unknown>)[field] = num;
@@ -193,6 +229,25 @@ export function mapRowsToProperties(
         if (strVal && !MARCADORES_DE_VACIO.has(strVal.toLowerCase())) {
           (prop as unknown as Record<string, unknown>)[field] = strVal;
         }
+      }
+    }
+
+    /*
+     * El archivo real trae al propietario EMPAQUETADO en una celda:
+     * «901548190 - PORTOFINO PROPIEDAD RAIZ S.A.S». Sin partirlo, el inmueble
+     * se consignaba a nombre de «901548190 - PORTOFINO…» y su documento
+     * quedaba vacío — es decir, el back nunca podía resolver la ficha por
+     * documento y creaba un propietario nuevo por cada variante del texto.
+     *
+     * Sólo se parte cuando la izquierda tiene cara de documento y la fila no
+     * traía ya una columna propia de cédula: si el archivo la trae aparte, esa
+     * gana (es un dato, no una deducción).
+     */
+    if (prop.ownerName && !prop.ownerDocument) {
+      const { documento, nombre } = documentoYNombre(prop.ownerName);
+      if (documento) {
+        prop.ownerDocument = documento;
+        if (nombre) prop.ownerName = nombre;
       }
     }
 

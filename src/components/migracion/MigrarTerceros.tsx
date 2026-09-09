@@ -30,6 +30,7 @@ import {
   DownloadSimple,
   FileArrowUp,
   Info,
+  Trash,
   UserCircle,
   Users,
   Warning,
@@ -55,6 +56,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ApiError } from '@/lib/api/client';
 import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile';
 import {
@@ -429,6 +440,41 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     refrescarLotesAbiertos();
   }, [tipo, refrescarLotesAbiertos]);
 
+  /**
+   * Botar una carga sin terminar desde la propia lista, sin retomarla.
+   *
+   * 🔴 Nico (2026-09-08): «yo también debería poder eliminar esos de retomar
+   * uno por uno, si es que no quiero que me siga apareciendo eso». Antes la
+   * única salida era retomarla y resolver sus filas una por una; una carga
+   * abandonada se quedaba ofreciéndose para siempre, igual que la de hace un
+   * rato. Las filas ya aplicadas no se tocan — son el rastro de gente que
+   * existe— y por eso el aviso dice cuántas quedaron.
+   */
+  const [lotePorDescartar, setLotePorDescartar] = useState<LoteDeTerceros | null>(null);
+  const descartarLote = useCallback(
+    async (l: LoteDeTerceros) => {
+      setCargando(true);
+      setError(null);
+      try {
+        const r = await migracionTercerosApi.descartarLote(l.lote);
+        setAvisoMasivo(
+          r.aplicadasIntactas > 0
+            ? `Carga «${l.lote}» descartada: ${r.descartadas} ${r.descartadas === 1 ? 'fila salió' : 'filas salieron'} de la lista. Las ${r.aplicadasIntactas} que ya se habían creado quedan como están.`
+            : `Carga «${l.lote}» descartada: ${r.descartadas} ${r.descartadas === 1 ? 'fila salió' : 'filas salieron'} de la lista. No se creó ni se borró ninguna ficha.`,
+        );
+        // Si la carga botada era la que estaba abierta, se sale de ella.
+        if (loteAbierto === l.lote) volverAEmpezar();
+        else refrescarLotesAbiertos();
+      } catch (e) {
+        setError(mensaje(e, 'No pudimos descartar esa carga.'));
+      } finally {
+        setCargando(false);
+        setLotePorDescartar(null);
+      }
+    },
+    [loteAbierto, refrescarLotesAbiertos, volverAEmpezar],
+  );
+
   // ── Acciones sobre filas ──────────────────────────────────────────────────
 
   /** El aviso de cuando la acción SÍ pasó y lo que falló fue releer la lista. */
@@ -693,9 +739,24 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                   Última actividad: {fechaDeLote(l.actualizado)}
                 </p>
               </div>
-              <Button size="sm" hideArrow disabled={cargando} onClick={() => void retomar(l)}>
-                Retomar
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button size="sm" hideArrow disabled={cargando} onClick={() => void retomar(l)}>
+                  Retomar
+                </Button>
+                {/* La segunda salida, que no existía: botarla. Sin esto una
+                    carga a medias se quedaba ofreciéndose para siempre. */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  hideArrow
+                  disabled={cargando}
+                  onClick={() => setLotePorDescartar(l)}
+                  data-testid={`descartar-lote-${l.lote}`}
+                >
+                  <Trash className="h-4 w-4" />
+                  No la voy a seguir
+                </Button>
+              </div>
             </div>
           ))}
           <p className="text-xs text-fg-subtle">
@@ -704,6 +765,60 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           </p>
         </section>
       ) : null}
+
+      {/* Botar una carga es terminal: se confirma diciendo qué se lleva y qué
+          NO. Lo que ya se creó no se toca, y eso es justo lo que alguien
+          necesita saber antes de apretar. */}
+      <AlertDialog
+        open={lotePorDescartar !== null}
+        onOpenChange={(abierto) => {
+          if (!abierto) setLotePorDescartar(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {lotePorDescartar ? `¿Botar la carga «${lotePorDescartar.lote}»?` : 'Botar la carga'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {lotePorDescartar ? (
+                <>
+                  Salen de la lista{' '}
+                  <strong className="font-medium text-fg">
+                    {lotePorDescartar.borradores +
+                      lotePorDescartar.requierenAtencion +
+                      lotePorDescartar.listos}
+                  </strong>{' '}
+                  filas que todavía no se crearon.
+                  {lotePorDescartar.aplicados > 0 ? (
+                    <>
+                      {' '}
+                      Las{' '}
+                      <strong className="font-medium text-fg">{lotePorDescartar.aplicados}</strong>{' '}
+                      que ya se crearon NO se tocan: siguen en tu inmobiliaria.
+                    </>
+                  ) : (
+                    ' No se creó nada de esta carga, así que no se borra ninguna ficha.'
+                  )}{' '}
+                  Puedes volver a subir el archivo cuando quieras.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="confirmar-descartar-lote"
+              onClick={() => {
+                const l = lotePorDescartar;
+                if (l) void descartarLote(l);
+              }}
+            >
+              Sí, botarla
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <section className="space-y-4 rounded-lg border border-border bg-surface p-6 shadow-sm">
         {tipoFijo ? (

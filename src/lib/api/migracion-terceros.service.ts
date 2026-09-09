@@ -500,6 +500,21 @@ export const migracionTercerosApi = {
     return apiClient.post<{ revisadas: number; ahoraListas: number }>(`${BASE}/revisar`, { lote });
   },
 
+  /**
+   * Botar una carga sin terminar sin tener que retomarla.
+   *
+   * Nico (2026-09-08): «yo también debería poder eliminar esos de retomar uno
+   * por uno, si es que no quiero que me siga apareciendo eso». Descarta las
+   * filas vivas del lote; las ya aplicadas no se tocan (son el rastro de gente
+   * que existe) y por eso vuelve cuántas quedaron intactas.
+   */
+  async descartarLote(lote: string): Promise<{ descartadas: number; aplicadasIntactas: number }> {
+    return apiClient.post<{ descartadas: number; aplicadasIntactas: number }>(
+      `${BASE}/descartar-lote`,
+      { lote },
+    );
+  },
+
   async lotesAbiertos(): Promise<LoteDeTerceros[]> {
     return apiClient.get<LoteDeTerceros[]>(`${BASE}/lotes`);
   },

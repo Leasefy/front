@@ -337,7 +337,10 @@ export function FilaDeTercero({
                     chocaPorCorreo ? 'el mismo correo' : 'el mismo documento'
                   }.`
                 : chocaPorCorreo
-                  ? 'Ese correo ya está en el sistema.'
+                  ? // Sin nombre y por correo: el back no lo manda a propósito
+                    // cuando la cuenta NO es de esta inmobiliaria — decir de
+                    // quién es sería filtrar datos de un tercero.
+                    'Ese correo ya está tomado por una cuenta que no es de tu inmobiliaria.'
                   : 'Ese documento ya está en el sistema.'}
           </p>
           <p className="text-sm text-fg-muted">

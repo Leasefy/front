@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   faltantesParaElBack,
+  tipoEfectivo,
   recalcularEstado,
   escribirCampo,
   resolveImportListingType,
@@ -80,7 +81,7 @@ describe('faltantesParaElBack', () => {
     const [f] = faltantesParaElBack(inmueble({ monthlyRent: undefined }));
     // Sin etiqueta ni ayuda el campo no se puede dibujar: es lo que se muestra.
     expect(f.etiqueta).toBe('Canon mensual');
-    expect(f.ayuda).toContain('100.000');
+    expect(f.ayuda).toContain(MINIMO_CANON.toLocaleString('es-CO'));
     expect(f.sufijo).toBe('COP');
     expect(f.tipo).toBe('numero');
   });
@@ -161,7 +162,7 @@ describe('faltantesParaElBack — a SALE row needs salePrice, never monthlyRent'
     expect(faltan.map((f) => f.campo)).not.toContain('monthlyRent');
   });
 
-  it('respects the CreatePropertyDto minimum for salePrice (contract.md §3.2.3, @Min(1_000_000))', () => {
+  it('respeta el mínimo de salePrice de CreatePropertyDto (@Min, hoy $1.000)', () => {
     expect(faltantesParaElBack(inmuebleEnVenta({ salePrice: MINIMO_VENTA }))).toEqual([]);
     expect(faltantesParaElBack(inmuebleEnVenta({ salePrice: MINIMO_VENTA - 1 }))).toHaveLength(1);
   });
@@ -213,7 +214,7 @@ describe('recalcularEstado', () => {
   it('el mensaje dice qué falta y con qué regla', () => {
     const { errorMessages } = recalcularEstado(inmueble({ monthlyRent: undefined }));
     expect(errorMessages[0]).toContain('canon');
-    expect(errorMessages[0]).toContain('100.000');
+    expect(errorMessages[0]).toContain(MINIMO_CANON.toLocaleString('es-CO'));
   });
 });
 
@@ -298,5 +299,88 @@ describe('requisitoDe', () => {
       inmueble({ propertyAddress: '', monthlyRent: undefined }),
     );
     expect(faltan).toEqual([requisitoDe('propertyAddress'), requisitoDe('monthlyRent')]);
+  });
+});
+
+/**
+ * `tipoEfectivo` — la categoría del archivo manda, salvo que su precio no esté.
+ *
+ * Los casos salen del archivo real de la inmobiliaria (2.895 filas): cuatro
+ * «Venta» que sólo traen canon, dos «Venta y Arriendo» igual, y dos «Arriendo»
+ * que sólo traen precio de venta. Diez filas que se frenaban pidiéndoles
+ * exactamente el número que no tienen.
+ */
+describe('tipoEfectivo — el tipo sigue al precio que sí existe', () => {
+  it('la categoría manda cuando su precio está', () => {
+    expect(tipoEfectivo(inmueble({ listingType: 'Arriendo', monthlyRent: 1_900_000 }))).toBe('rent');
+    expect(
+      tipoEfectivo(
+        inmueble({ listingType: 'Venta', monthlyRent: undefined, salePrice: 350_000_000 }),
+      ),
+    ).toBe('sale');
+  });
+
+  it('«Venta» que sólo trae canon se crea como arriendo, y ya no le falta nada', () => {
+    const fila = inmueble({
+      listingType: 'Venta',
+      monthlyRent: 1_900_000,
+      salePrice: undefined,
+    });
+    expect(tipoEfectivo(fila)).toBe('rent');
+    expect(faltantesParaElBack(fila)).toEqual([]);
+  });
+
+  it('«Arriendo» que sólo trae precio de venta se crea como venta', () => {
+    const fila = inmueble({
+      listingType: 'Arriendo',
+      monthlyRent: undefined,
+      salePrice: 240_000_000,
+    });
+    expect(tipoEfectivo(fila)).toBe('sale');
+    expect(faltantesParaElBack(fila)).toEqual([]);
+  });
+
+  it('«Venta y Arriendo» con los dos precios NO cambia: la categoría manda', () => {
+    expect(
+      tipoEfectivo(
+        inmueble({
+          listingType: 'Venta y Arriendo',
+          monthlyRent: 1_900_000,
+          salePrice: 350_000_000,
+        }),
+      ),
+    ).toBe('sale');
+  });
+
+  it('sin ningún precio no inventa: devuelve lo declarado y la fila sigue incompleta', () => {
+    const sinNada = inmueble({
+      listingType: 'Arriendo',
+      monthlyRent: undefined,
+      salePrice: undefined,
+    });
+    expect(tipoEfectivo(sinNada)).toBe('rent');
+    expect(faltantesParaElBack(sinNada).map((f) => f.campo)).toEqual(['monthlyRent']);
+  });
+
+  it('un precio por DEBAJO del mínimo no cuenta como precio', () => {
+    const fila = inmueble({
+      listingType: 'Venta',
+      monthlyRent: MINIMO_CANON - 1,
+      salePrice: undefined,
+    });
+    expect(tipoEfectivo(fila)).toBe('sale');
+    expect(faltantesParaElBack(fila).map((f) => f.campo)).toEqual(['salePrice']);
+  });
+});
+
+describe('el mínimo del canon dejó de frenar inmuebles reales', () => {
+  it('una celda de parqueadero a $60.000/mes se puede crear', () => {
+    expect(faltantesParaElBack(inmueble({ monthlyRent: 60_000 }))).toEqual([]);
+  });
+
+  it('pero un canon en 0 sigue siendo un dato que falta, no un arriendo gratis', () => {
+    expect(faltantesParaElBack(inmueble({ monthlyRent: 0 })).map((f) => f.campo)).toEqual([
+      'monthlyRent',
+    ]);
   });
 });

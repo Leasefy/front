@@ -14,7 +14,7 @@
  */
 
 import type { ImportProperty } from './importTypes';
-import { resolveImportListingType } from './requisitosDelBack';
+import { tipoEfectivo } from './requisitosDelBack';
 import { TYPE_TO_BACKEND } from '@/lib/api/properties.mapper';
 import type { PropertyType } from '@/lib/types/property';
 import type { ImportarInmuebleDto } from '@/lib/api/inmuebles-importacion.service';
@@ -57,7 +57,19 @@ export function toImportarInmuebleDto(p: ImportProperty): ImportarInmuebleDto {
   // value degrades to 'rent' via `resolveImportListingType`'s own default,
   // same heuristic the review step already uses (requisitosDelBack.ts).
   if (p.listingType) {
-    const isSale = resolveImportListingType(p.listingType) === 'sale';
+    /*
+     * 🔴 `tipoEfectivo`, no `resolveImportListingType`. Éste es el camino que
+     * de verdad viaja al back, y acá se decidía por la CATEGORÍA sola: una
+     * fila «Venta» que sólo trae canon salía con `listingType: 'SALE'` y **sin
+     * ningún precio**, porque el `if (isSale)` sólo miraba `salePrice`. El
+     * back la recibía sin nada que guardar y la dejaba pendiente pidiendo un
+     * precio de venta que el archivo nunca tuvo.
+     *
+     * En el archivo real de la inmobiliaria eso eran 10 filas de 2.895. Con el
+     * tipo siguiendo al precio que sí existe, la fila viaja como arriendo con
+     * su canon —que es lo que el archivo dice— en vez de viajar vacía.
+     */
+    const isSale = tipoEfectivo(p) === 'sale';
     // UPPER_SNAKE on the wire (§3.4). The back matches case-insensitively
     // today, but one casing rule for the whole task is what stops the next
     // "which endpoint am I on?" ambiguity — that is what produced F-1.

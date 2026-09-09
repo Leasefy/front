@@ -18,7 +18,7 @@
  */
 
 import type { ImportProperty } from './importTypes';
-import { resolveImportListingType } from './requisitosDelBack';
+import { tipoEfectivo } from './requisitosDelBack';
 
 const TIPO_EN_ESPANOL: Record<string, string> = {
   apartment: 'Apartamento',
@@ -58,7 +58,13 @@ export function toCreatePayload(p: ImportProperty) {
   // contract.md T-0038 §3.2.2/§3.2.4 — a SALE row sends salePrice and
   // monthlyRent: null, never 0 (C6). A RENT row keeps the pre-existing
   // `?? 0` fallback for a missing/blank canon (unchanged behaviour).
-  const isSale = resolveImportListingType(p.listingType) === 'sale';
+  /*
+   * 🔴 `tipoEfectivo`, no `resolveImportListingType`: tiene que ser LA MISMA
+   * decisión que tomó la revisión. Si la revisión dejó pasar la fila porque el
+   * precio que sí trae la vuelve un arriendo, mandarla como venta la haría
+   * rebotar con un 400 después de decirle a la persona que estaba lista.
+   */
+  const isSale = tipoEfectivo(p) === 'sale';
 
   return {
     title: p.propertyTitle || p.propertyAddress || p.propertyCity || 'Propiedad importada',

@@ -219,3 +219,53 @@ describe('las columnas nuevas del archivo real viajan con el nombre del back', (
     expect(toImportarInmuebleDto(inmueble({ status: 'Lo que sea' })).estadoOrigen).toBe('Lo que sea');
   });
 });
+
+/**
+ * El tipo que viaja al back sigue al precio que el archivo SÍ trae.
+ *
+ * Antes se decidía por la categoría sola, y una fila «Venta» con sólo canon
+ * viajaba como SALE y sin ningún precio: el back la dejaba pendiente pidiendo
+ * un precio de venta que nunca existió. Diez filas del archivo real.
+ */
+describe('toImportarInmuebleDto — el tipo sigue al precio que existe', () => {
+  it('«Venta» con sólo canon viaja como RENT y CON su canon', () => {
+    const dto = toImportarInmuebleDto(
+      inmueble({ listingType: 'Venta', monthlyRent: 1_900_000, salePrice: undefined }),
+    );
+    expect(dto.listingType).toBe('RENT');
+    expect(dto.monthlyRent).toBe(1_900_000);
+    expect(dto.salePrice).toBeUndefined();
+  });
+
+  it('«Arriendo» con sólo precio de venta viaja como SALE y CON su precio', () => {
+    const dto = toImportarInmuebleDto(
+      inmueble({ listingType: 'Arriendo', monthlyRent: undefined, salePrice: 240_000_000 }),
+    );
+    expect(dto.listingType).toBe('SALE');
+    expect(dto.salePrice).toBe(240_000_000);
+    expect(dto.monthlyRent).toBeUndefined();
+  });
+
+  it('cuando la categoría y su precio coinciden, nada cambia', () => {
+    const venta = toImportarInmuebleDto(
+      inmueble({ listingType: 'Venta', monthlyRent: undefined, salePrice: 350_000_000 }),
+    );
+    expect(venta.listingType).toBe('SALE');
+    expect(venta.salePrice).toBe(350_000_000);
+
+    const arriendo = toImportarInmuebleDto(
+      inmueble({ listingType: 'Arriendo', monthlyRent: 1_900_000, salePrice: undefined }),
+    );
+    expect(arriendo.listingType).toBe('RENT');
+    expect(arriendo.monthlyRent).toBe(1_900_000);
+  });
+
+  it('sin ningún precio no inventa: viaja con la categoría declarada y sin precio', () => {
+    const dto = toImportarInmuebleDto(
+      inmueble({ listingType: 'Venta', monthlyRent: undefined, salePrice: undefined }),
+    );
+    expect(dto.listingType).toBe('SALE');
+    expect(dto.monthlyRent).toBeUndefined();
+    expect(dto.salePrice).toBeUndefined();
+  });
+});

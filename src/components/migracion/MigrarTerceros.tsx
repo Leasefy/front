@@ -30,10 +30,12 @@ import {
   DownloadSimple,
   FileArrowUp,
   Info,
+  Trash,
   UserCircle,
   Users,
   Warning,
 } from '@phosphor-icons/react';
+import Link from 'next/link';
 import { SegmentedControl } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
@@ -55,6 +57,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ApiError } from '@/lib/api/client';
 import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile';
 import {
@@ -429,6 +441,41 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     refrescarLotesAbiertos();
   }, [tipo, refrescarLotesAbiertos]);
 
+  /**
+   * Botar una carga sin terminar desde la propia lista, sin retomarla.
+   *
+   * 🔴 Nico (2026-09-08): «yo también debería poder eliminar esos de retomar
+   * uno por uno, si es que no quiero que me siga apareciendo eso». Antes la
+   * única salida era retomarla y resolver sus filas una por una; una carga
+   * abandonada se quedaba ofreciéndose para siempre, igual que la de hace un
+   * rato. Las filas ya aplicadas no se tocan — son el rastro de gente que
+   * existe— y por eso el aviso dice cuántas quedaron.
+   */
+  const [lotePorDescartar, setLotePorDescartar] = useState<LoteDeTerceros | null>(null);
+  const descartarLote = useCallback(
+    async (l: LoteDeTerceros) => {
+      setCargando(true);
+      setError(null);
+      try {
+        const r = await migracionTercerosApi.descartarLote(l.lote);
+        setAvisoMasivo(
+          r.aplicadasIntactas > 0
+            ? `Carga «${l.lote}» descartada: ${r.descartadas} ${r.descartadas === 1 ? 'fila salió' : 'filas salieron'} de la lista. Las ${r.aplicadasIntactas} que ya se habían creado quedan como están.`
+            : `Carga «${l.lote}» descartada: ${r.descartadas} ${r.descartadas === 1 ? 'fila salió' : 'filas salieron'} de la lista. No se creó ni se borró ninguna ficha.`,
+        );
+        // Si la carga botada era la que estaba abierta, se sale de ella.
+        if (loteAbierto === l.lote) volverAEmpezar();
+        else refrescarLotesAbiertos();
+      } catch (e) {
+        setError(mensaje(e, 'No pudimos descartar esa carga.'));
+      } finally {
+        setCargando(false);
+        setLotePorDescartar(null);
+      }
+    },
+    [loteAbierto, refrescarLotesAbiertos, volverAEmpezar],
+  );
+
   // ── Acciones sobre filas ──────────────────────────────────────────────────
 
   /** El aviso de cuando la acción SÍ pasó y lo que falló fue releer la lista. */
@@ -501,58 +548,19 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
   );
 
   /**
-   * «Le di crear inquilinos y siguió estando la lista, ¿para qué?» (Nico).
+   * ¿Se les manda la invitación al portal a los inquilinos, ahora?
    *
-   * Después de crear, lo que queda casi siempre es UNA sola cosa: filas de
-   * personas que ya existen en la plataforma. Pedirle que decida 85 veces lo
-   * mismo —fila por fila, o marcando 25 por página— es hacerle hacer a mano
-   * un bucle. Esto recorre TODO el lote, junta las que sólo tienen ese
-   * motivo, y las vincula en una sola masiva. Las que además tienen otro
-   * problema (un dato que falta, un repetido en el archivo) no se tocan:
-   * ésas sí necesitan una decisión.
+   * 🔴 Nico, 2026-09-09: «debemos crear la posibilidad también, si es que dice
+   * no a la hora de migrar, de enviar todos los correos de invitación de los
+   * inquilinos en ese momento; que lo pueda hacer en otro momento».
+   *
+   * Arranca en `true` porque es lo que la pantalla hacía hasta hoy y lo que
+   * espera quien migra para empezar a operar. Lo que cambia es que ahora se
+   * puede decir que no —son correos a personas de verdad y una invitación no
+   * se des-envía— sin perder a nadie: las cuentas quedan pendientes y se
+   * mandan desde Inquilinos cuando quiera.
    */
-  const vincularTodasLasExistentes = useCallback(async () => {
-    if (!loteAbierto) return;
-    setCargando(true);
-    setError(null);
-    try {
-      const ids: string[] = [];
-      for (let pag = 1; pag < 100; pag++) {
-        const p = await migracionTercerosApi.filas({
-          lote: loteAbierto,
-          estado: 'REQUIERE_ATENCION',
-          pagina: pag,
-          porPagina: 200,
-        });
-        for (const f of p.filas) {
-          const errores = f.errores ?? [];
-          if (errores.length > 0 && errores.every((e) => e.codigo === 'YA_EXISTE_EN_LA_AGENCIA')) {
-            ids.push(f.id);
-          }
-        }
-        if (p.filas.length < 200 || pag * 200 >= p.total) break;
-      }
-      if (ids.length === 0) {
-        setAvisoMasivo('No hay filas que sean sólo «ya existe»: las que quedan necesitan otra decisión.');
-        return;
-      }
-      const r = await migracionTercerosApi.resolverMasivo(ids, { vincularAExistente: true });
-      if (r.fallidas.length > 0) {
-        setSeleccion(new Set(r.fallidas.map((f) => f.id)));
-        setError(resumenDeFallidas(r));
-      } else {
-        setSeleccion(new Set());
-      }
-      setAvisoMasivo(
-        `${r.aplicadas} ${r.aplicadas === 1 ? 'fila vinculada' : 'filas vinculadas'} con las personas que ya existían: quedaron listas para crear con el botón de arriba.`,
-      );
-      await refrescar(loteAbierto, 1);
-    } catch (e) {
-      setError(mensaje(e, 'No pudimos vincular las filas que ya existen.'));
-    } finally {
-      setCargando(false);
-    }
-  }, [loteAbierto, refrescar]);
+  const [invitarAlCrear, setInvitarAlCrear] = useState(true);
 
   const aplicar = useCallback(async () => {
     if (!loteAbierto) return;
@@ -568,7 +576,8 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
        */
       const informe = await aplicarLoteDeTerceros(
         loteAbierto,
-        (l) => migracionTercerosApi.aplicar(l),
+        // Sólo pesa para inquilinos; en propietarios el back lo ignora.
+        (l) => migracionTercerosApi.aplicar(l, { invitar: invitarAlCrear }),
         setProgreso,
       );
       setAplicacion(informe);
@@ -599,7 +608,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
       setCargando(false);
       setProgreso(null);
     }
-  }, [loteAbierto, refrescar]);
+  }, [loteAbierto, refrescar, invitarAlCrear]);
 
   // ══ Lista de trabajo ══════════════════════════════════════════════════════
 
@@ -620,7 +629,6 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         cargando={cargando}
         error={error}
         avisoMasivo={avisoMasivo}
-        onVincularTodasLasExistentes={() => void vincularTodasLasExistentes()}
         onSeleccionCambia={setSeleccion}
         onPaginaCambia={(p) => void cambiarPagina(p)}
         onActualizar={() => void cambiarPagina(pagina)}
@@ -673,6 +681,8 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           }, 'No pudimos aplicar el cambio a las filas seleccionadas.')
         }
         onAplicar={() => void aplicar()}
+        invitarAlCrear={invitarAlCrear}
+        onCambiarInvitar={setInvitarAlCrear}
         onOtroArchivo={volverAEmpezar}
       />
     );
@@ -748,9 +758,24 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                   Última actividad: {fechaDeLote(l.actualizado)}
                 </p>
               </div>
-              <Button size="sm" hideArrow disabled={cargando} onClick={() => void retomar(l)}>
-                Retomar
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button size="sm" hideArrow disabled={cargando} onClick={() => void retomar(l)}>
+                  Retomar
+                </Button>
+                {/* La segunda salida, que no existía: botarla. Sin esto una
+                    carga a medias se quedaba ofreciéndose para siempre. */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  hideArrow
+                  disabled={cargando}
+                  onClick={() => setLotePorDescartar(l)}
+                  data-testid={`descartar-lote-${l.lote}`}
+                >
+                  <Trash className="h-4 w-4" />
+                  No la voy a seguir
+                </Button>
+              </div>
             </div>
           ))}
           <p className="text-xs text-fg-subtle">
@@ -759,6 +784,60 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           </p>
         </section>
       ) : null}
+
+      {/* Botar una carga es terminal: se confirma diciendo qué se lleva y qué
+          NO. Lo que ya se creó no se toca, y eso es justo lo que alguien
+          necesita saber antes de apretar. */}
+      <AlertDialog
+        open={lotePorDescartar !== null}
+        onOpenChange={(abierto) => {
+          if (!abierto) setLotePorDescartar(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {lotePorDescartar ? `¿Botar la carga «${lotePorDescartar.lote}»?` : 'Botar la carga'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {lotePorDescartar ? (
+                <>
+                  Salen de la lista{' '}
+                  <strong className="font-medium text-fg">
+                    {lotePorDescartar.borradores +
+                      lotePorDescartar.requierenAtencion +
+                      lotePorDescartar.listos}
+                  </strong>{' '}
+                  filas que todavía no se crearon.
+                  {lotePorDescartar.aplicados > 0 ? (
+                    <>
+                      {' '}
+                      Las{' '}
+                      <strong className="font-medium text-fg">{lotePorDescartar.aplicados}</strong>{' '}
+                      que ya se crearon NO se tocan: siguen en tu inmobiliaria.
+                    </>
+                  ) : (
+                    ' No se creó nada de esta carga, así que no se borra ninguna ficha.'
+                  )}{' '}
+                  Puedes volver a subir el archivo cuando quieras.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="confirmar-descartar-lote"
+              onClick={() => {
+                const l = lotePorDescartar;
+                if (l) void descartarLote(l);
+              }}
+            >
+              Sí, botarla
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <section className="space-y-4 rounded-lg border border-border bg-surface p-6 shadow-sm">
         {tipoFijo ? (
@@ -1117,7 +1196,6 @@ function ListaDeTrabajo({
   cargando,
   error,
   avisoMasivo = null,
-  onVincularTodasLasExistentes,
   onSeleccionCambia,
   onPaginaCambia,
   onActualizar,
@@ -1126,6 +1204,8 @@ function ListaDeTrabajo({
   onDescartar,
   onMasivo,
   onAplicar,
+  invitarAlCrear,
+  onCambiarInvitar,
   onOtroArchivo,
 }: {
   lote: string;
@@ -1144,7 +1224,6 @@ function ListaDeTrabajo({
   cargando: boolean;
   error: string | null;
   avisoMasivo?: string | null;
-  onVincularTodasLasExistentes?: () => void;
   onSeleccionCambia: (s: Set<string>) => void;
   onPaginaCambia: (p: number) => void;
   /** Reintenta la lectura de la página actual — la salida de un refresco caído. */
@@ -1166,6 +1245,9 @@ function ListaDeTrabajo({
     descartar?: boolean;
   }) => void;
   onAplicar: () => void;
+  /** Sólo pesa con `tipo === 'INQUILINO'`. */
+  invitarAlCrear: boolean;
+  onCambiarInvitar: (valor: boolean) => void;
   onOtroArchivo: () => void;
 }) {
   const todasMarcadas = pendientes.length > 0 && pendientes.every((f) => seleccion.has(f.id));
@@ -1187,6 +1269,39 @@ function ListaDeTrabajo({
 
         {resumen.listos > 0 ? (
           <>
+            {/*
+              * 🔴 La decisión de mandar 600 correos no puede ser un efecto
+              * secundario de apretar «Crear» (Nico, 2026-09-09). Va ANTES del
+              * botón porque después no sirve de nada: una invitación no se
+              * des-envía.
+              *
+              * Sólo para inquilinos: un propietario no recibe invitación por
+              * esta vía, y ofrecer la casilla ahí prometería algo que no pasa.
+              */}
+            {tipo === 'INQUILINO' ? (
+              <label
+                className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-surface-muted p-3"
+                data-testid="invitar-al-crear"
+              >
+                <Checkbox
+                  className="mt-0.5"
+                  checked={invitarAlCrear}
+                  disabled={cargando}
+                  onCheckedChange={(c) => onCambiarInvitar(c === true)}
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-fg">
+                    Mandarles la invitación al portal ahora
+                  </span>
+                  <span className="block text-xs text-fg-muted">
+                    {invitarAlCrear
+                      ? 'A cada inquilino con correo le llega el enlace para poner su contraseña. Sale por tandas, no todo de golpe.'
+                      : 'Las cuentas se crean igual, sin mandar nada. Las invitaciones quedan pendientes en Inquilinos y las mandas cuando quieras.'}
+                  </span>
+                </span>
+              </label>
+            ) : null}
+
             <Button hideArrow disabled={cargando} isLoading={cargando} onClick={onAplicar}>
               Crear {resumen.listos}{' '}
               {tipo === 'PROPIETARIO'
@@ -1197,6 +1312,7 @@ function ListaDeTrabajo({
                   ? 'inquilino'
                   : 'inquilinos'}
             </Button>
+
             {/*
              * El avance real mientras corre. Una rueda girando cinco minutos
              * sin un número es indistinguible de algo colgado: es cuando la
@@ -1217,11 +1333,7 @@ function ListaDeTrabajo({
             ) : null}
 
             <p className="text-xs text-fg-subtle">
-              {/* Decir de antemano qué pasa: el correo sale al aplicar, y una
-                  invitación no se puede des-enviar. */}
-              {tipo === 'INQUILINO'
-                ? 'Se crean sólo las que no les falta nada, y a cada inquilino le llega la invitación al portal por correo. Se manda por tandas, no todo de golpe.'
-                : 'Se crean sólo las que no les falta nada. Las demás quedan acá esperando.'}
+              Se crean sólo las que no les falta nada. Las demás quedan acá esperando.
             </p>
           </>
         ) : null}
@@ -1289,9 +1401,28 @@ function ListaDeTrabajo({
             </p>
           ) : null}
           {(aplicacion.sinInvitar ?? 0) > 0 ? (
+            /*
+             * 🔴 Dos cosas MUY distintas llegan con el mismo número, y decirlas
+             * igual manda a alguien a buscar un problema que no existe:
+             *
+             *   · destildó la casilla  → es su decisión, salió como pidió;
+             *   · la casilla iba puesta → el envío falló y hay algo que mirar.
+             *
+             * En los dos casos la salida es la misma pantalla, así que se
+             * nombra dónde está.
+             */
             <p className="text-sm text-fg-muted" data-testid="sin-invitar">
-              El proveedor de correo limitó los envíos: esas cuentas quedaron creadas y la
-              invitación se manda después. No hace falta volver a subir nada.
+              {invitarAlCrear
+                ? 'El correo no pudo salir para todas: esas cuentas quedaron creadas y la invitación se manda después. No hace falta volver a subir nada. '
+                : `${aplicacion.sinInvitar === 1 ? 'Esa cuenta quedó creada' : 'Esas cuentas quedaron creadas'} sin mandar ningún correo, como pediste. `}
+              Las tienes en{' '}
+              <Link
+                href="/panel/inmobiliaria/inquilinos"
+                className="text-primary underline underline-offset-2"
+              >
+                Inquilinos
+              </Link>
+              , para mandarlas cuando quieras.
             </p>
           ) : null}
           {/* El puente que faltaba: sin esta línea, «25 creadas» arriba y 85
@@ -1356,28 +1487,20 @@ function ListaDeTrabajo({
             Resuelve cada una acá, o marca varias y resuélvelas juntas: al decidir salen de esta
             lista y quedan listas para crear con el botón de arriba.
           </p>
-          {/* El caso de casi todas: ya existen. Una decisión, no ochenta y cinco. */}
-          {onVincularTodasLasExistentes &&
-          pendientes.some((f) =>
-            (f.errores ?? []).every((e) => e.codigo === 'YA_EXISTE_EN_LA_AGENCIA'),
-          ) ? (
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              <Button
-                size="sm"
-                hideArrow
-                disabled={cargando}
-                isLoading={cargando}
-                onClick={onVincularTodasLasExistentes}
-                data-testid="vincular-todas-las-existentes"
-              >
-                Son las mismas personas: vincular todas las que ya existen
-              </Button>
-              <p className="text-xs text-fg-muted">
-                Recorre todo el archivo, no sólo esta página. Las que además les falta un dato
-                se quedan acá para que las mires.
-              </p>
-            </div>
-          ) : null}
+          {/* 🔴 Acá había «Son las mismas personas: vincular todas las que ya
+              existen», que recorría el lote entero y las enganchaba de un
+              clic. Tenía sentido cuando «ya existe» se marcaba SIEMPRE que la
+              llave estuviera ocupada: casi todas eran la misma persona y
+              preguntarlo ochenta y cinco veces era hacerle un bucle a mano.
+
+              Desde el 2026-09-08 el back ya no pregunta cuando la identidad
+              está corroborada —mismo documento, o mismo nombre—: esas filas
+              entran solas. Las que SIGUEN marcadas son exactamente las que
+              parecen de OTRA persona (un correo que pertenece a otra cuenta,
+              un documento que cae sobre la ficha de otro dueño). Vincularlas
+              todas de un clic es justo el daño que este chequeo existe para
+              evitar, así que el botón se retira: se deciden de a una, o se
+              marcan las que uno mire y se resuelven con la barra de selección. */}
         </div>
       ) : null}
 

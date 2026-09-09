@@ -89,6 +89,7 @@ import {
   RUTA_DEL_CONTRATO_MANUAL,
 } from '@/components/inmobiliaria/InquilinosTable';
 import { InquilinoDrawer } from '@/components/inmobiliaria/InquilinoDrawer';
+import { InvitacionesPendientes } from '@/components/inmobiliaria/InvitacionesPendientes';
 import { NuevoInquilinoDrawer } from '@/components/inmobiliaria/NuevoInquilinoDrawer';
 import {
   RUTA_DE_LA_MIGRACION,
@@ -316,6 +317,12 @@ function ContenidoDeInquilinos() {
           </div>
         </div>
       )}
+
+      {/* Una cuenta creada no es una persona adentro. Este aviso es lo único
+          que separa «tiene portal» de «tiene cuenta y no puede entrar»: sin él,
+          la lista de abajo los muestra igual que a todos. Se pinta solo cuando
+          hay pendientes. */}
+      <InvitacionesPendientes />
 
       {/* Los tres números miden lo VIGENTE, no lo histórico: un canon que suma
           contratos terminados no es plata que entra este mes. */}

@@ -474,10 +474,25 @@ export const migracionTercerosApi = {
    * loop vive en `aplicarLoteCompleto`, para que una carga de 600 no viva
    * dentro de una sola petición HTTP que cualquier proxy puede cortar.
    */
-  async aplicar(lote: string, maximo?: number): Promise<ResumenDeAplicacion> {
+  async aplicar(
+    lote: string,
+    opciones: {
+      maximo?: number;
+      /**
+       * ¿Se les manda la invitación al portal a los inquilinos que se creen?
+       *
+       * 🔴 Ausente = `true` en el back, que es lo que hacía antes. Se manda
+       * explícito para que la pantalla no dependa del default del servidor:
+       * el día que allá cambie, acá se sigue haciendo lo que dice la casilla
+       * que la persona vio.
+       */
+      invitar?: boolean;
+    } = {},
+  ): Promise<ResumenDeAplicacion> {
     return apiClient.post<ResumenDeAplicacion>(`${BASE}/aplicar`, {
       lote,
-      ...(maximo === undefined ? {} : { maximo }),
+      ...(opciones.maximo === undefined ? {} : { maximo: opciones.maximo }),
+      ...(opciones.invitar === undefined ? {} : { invitar: opciones.invitar }),
     });
   },
 
@@ -498,6 +513,21 @@ export const migracionTercerosApi = {
    */
   async revisar(lote: string): Promise<{ revisadas: number; ahoraListas: number }> {
     return apiClient.post<{ revisadas: number; ahoraListas: number }>(`${BASE}/revisar`, { lote });
+  },
+
+  /**
+   * Botar una carga sin terminar sin tener que retomarla.
+   *
+   * Nico (2026-09-08): «yo también debería poder eliminar esos de retomar uno
+   * por uno, si es que no quiero que me siga apareciendo eso». Descarta las
+   * filas vivas del lote; las ya aplicadas no se tocan (son el rastro de gente
+   * que existe) y por eso vuelve cuántas quedaron intactas.
+   */
+  async descartarLote(lote: string): Promise<{ descartadas: number; aplicadasIntactas: number }> {
+    return apiClient.post<{ descartadas: number; aplicadasIntactas: number }>(
+      `${BASE}/descartar-lote`,
+      { lote },
+    );
   },
 
   async lotesAbiertos(): Promise<LoteDeTerceros[]> {

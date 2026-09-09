@@ -35,6 +35,7 @@ import {
   Users,
   Warning,
 } from '@phosphor-icons/react';
+import Link from 'next/link';
 import { SegmentedControl } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
@@ -546,6 +547,21 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     [loteAbierto, refrescar],
   );
 
+  /**
+   * ¿Se les manda la invitación al portal a los inquilinos, ahora?
+   *
+   * 🔴 Nico, 2026-09-09: «debemos crear la posibilidad también, si es que dice
+   * no a la hora de migrar, de enviar todos los correos de invitación de los
+   * inquilinos en ese momento; que lo pueda hacer en otro momento».
+   *
+   * Arranca en `true` porque es lo que la pantalla hacía hasta hoy y lo que
+   * espera quien migra para empezar a operar. Lo que cambia es que ahora se
+   * puede decir que no —son correos a personas de verdad y una invitación no
+   * se des-envía— sin perder a nadie: las cuentas quedan pendientes y se
+   * mandan desde Inquilinos cuando quiera.
+   */
+  const [invitarAlCrear, setInvitarAlCrear] = useState(true);
+
   const aplicar = useCallback(async () => {
     if (!loteAbierto) return;
     setCargando(true);
@@ -560,7 +576,8 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
        */
       const informe = await aplicarLoteDeTerceros(
         loteAbierto,
-        (l) => migracionTercerosApi.aplicar(l),
+        // Sólo pesa para inquilinos; en propietarios el back lo ignora.
+        (l) => migracionTercerosApi.aplicar(l, { invitar: invitarAlCrear }),
         setProgreso,
       );
       setAplicacion(informe);
@@ -591,7 +608,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
       setCargando(false);
       setProgreso(null);
     }
-  }, [loteAbierto, refrescar]);
+  }, [loteAbierto, refrescar, invitarAlCrear]);
 
   // ══ Lista de trabajo ══════════════════════════════════════════════════════
 
@@ -664,6 +681,8 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           }, 'No pudimos aplicar el cambio a las filas seleccionadas.')
         }
         onAplicar={() => void aplicar()}
+        invitarAlCrear={invitarAlCrear}
+        onCambiarInvitar={setInvitarAlCrear}
         onOtroArchivo={volverAEmpezar}
       />
     );
@@ -1185,6 +1204,8 @@ function ListaDeTrabajo({
   onDescartar,
   onMasivo,
   onAplicar,
+  invitarAlCrear,
+  onCambiarInvitar,
   onOtroArchivo,
 }: {
   lote: string;
@@ -1224,6 +1245,9 @@ function ListaDeTrabajo({
     descartar?: boolean;
   }) => void;
   onAplicar: () => void;
+  /** Sólo pesa con `tipo === 'INQUILINO'`. */
+  invitarAlCrear: boolean;
+  onCambiarInvitar: (valor: boolean) => void;
   onOtroArchivo: () => void;
 }) {
   const todasMarcadas = pendientes.length > 0 && pendientes.every((f) => seleccion.has(f.id));
@@ -1245,6 +1269,39 @@ function ListaDeTrabajo({
 
         {resumen.listos > 0 ? (
           <>
+            {/*
+              * 🔴 La decisión de mandar 600 correos no puede ser un efecto
+              * secundario de apretar «Crear» (Nico, 2026-09-09). Va ANTES del
+              * botón porque después no sirve de nada: una invitación no se
+              * des-envía.
+              *
+              * Sólo para inquilinos: un propietario no recibe invitación por
+              * esta vía, y ofrecer la casilla ahí prometería algo que no pasa.
+              */}
+            {tipo === 'INQUILINO' ? (
+              <label
+                className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-surface-muted p-3"
+                data-testid="invitar-al-crear"
+              >
+                <Checkbox
+                  className="mt-0.5"
+                  checked={invitarAlCrear}
+                  disabled={cargando}
+                  onCheckedChange={(c) => onCambiarInvitar(c === true)}
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-fg">
+                    Mandarles la invitación al portal ahora
+                  </span>
+                  <span className="block text-xs text-fg-muted">
+                    {invitarAlCrear
+                      ? 'A cada inquilino con correo le llega el enlace para poner su contraseña. Sale por tandas, no todo de golpe.'
+                      : 'Las cuentas se crean igual, sin mandar nada. Las invitaciones quedan pendientes en Inquilinos y las mandas cuando quieras.'}
+                  </span>
+                </span>
+              </label>
+            ) : null}
+
             <Button hideArrow disabled={cargando} isLoading={cargando} onClick={onAplicar}>
               Crear {resumen.listos}{' '}
               {tipo === 'PROPIETARIO'
@@ -1255,6 +1312,7 @@ function ListaDeTrabajo({
                   ? 'inquilino'
                   : 'inquilinos'}
             </Button>
+
             {/*
              * El avance real mientras corre. Una rueda girando cinco minutos
              * sin un número es indistinguible de algo colgado: es cuando la
@@ -1275,11 +1333,7 @@ function ListaDeTrabajo({
             ) : null}
 
             <p className="text-xs text-fg-subtle">
-              {/* Decir de antemano qué pasa: el correo sale al aplicar, y una
-                  invitación no se puede des-enviar. */}
-              {tipo === 'INQUILINO'
-                ? 'Se crean sólo las que no les falta nada, y a cada inquilino le llega la invitación al portal por correo. Se manda por tandas, no todo de golpe.'
-                : 'Se crean sólo las que no les falta nada. Las demás quedan acá esperando.'}
+              Se crean sólo las que no les falta nada. Las demás quedan acá esperando.
             </p>
           </>
         ) : null}
@@ -1347,9 +1401,28 @@ function ListaDeTrabajo({
             </p>
           ) : null}
           {(aplicacion.sinInvitar ?? 0) > 0 ? (
+            /*
+             * 🔴 Dos cosas MUY distintas llegan con el mismo número, y decirlas
+             * igual manda a alguien a buscar un problema que no existe:
+             *
+             *   · destildó la casilla  → es su decisión, salió como pidió;
+             *   · la casilla iba puesta → el envío falló y hay algo que mirar.
+             *
+             * En los dos casos la salida es la misma pantalla, así que se
+             * nombra dónde está.
+             */
             <p className="text-sm text-fg-muted" data-testid="sin-invitar">
-              El proveedor de correo limitó los envíos: esas cuentas quedaron creadas y la
-              invitación se manda después. No hace falta volver a subir nada.
+              {invitarAlCrear
+                ? 'El correo no pudo salir para todas: esas cuentas quedaron creadas y la invitación se manda después. No hace falta volver a subir nada. '
+                : `${aplicacion.sinInvitar === 1 ? 'Esa cuenta quedó creada' : 'Esas cuentas quedaron creadas'} sin mandar ningún correo, como pediste. `}
+              Las tienes en{' '}
+              <Link
+                href="/panel/inmobiliaria/inquilinos"
+                className="text-primary underline underline-offset-2"
+              >
+                Inquilinos
+              </Link>
+              , para mandarlas cuando quieras.
             </p>
           ) : null}
           {/* El puente que faltaba: sin esta línea, «25 creadas» arriba y 85

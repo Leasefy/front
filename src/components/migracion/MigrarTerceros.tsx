@@ -500,60 +500,6 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     [loteAbierto, refrescar],
   );
 
-  /**
-   * «Le di crear inquilinos y siguió estando la lista, ¿para qué?» (Nico).
-   *
-   * Después de crear, lo que queda casi siempre es UNA sola cosa: filas de
-   * personas que ya existen en la plataforma. Pedirle que decida 85 veces lo
-   * mismo —fila por fila, o marcando 25 por página— es hacerle hacer a mano
-   * un bucle. Esto recorre TODO el lote, junta las que sólo tienen ese
-   * motivo, y las vincula en una sola masiva. Las que además tienen otro
-   * problema (un dato que falta, un repetido en el archivo) no se tocan:
-   * ésas sí necesitan una decisión.
-   */
-  const vincularTodasLasExistentes = useCallback(async () => {
-    if (!loteAbierto) return;
-    setCargando(true);
-    setError(null);
-    try {
-      const ids: string[] = [];
-      for (let pag = 1; pag < 100; pag++) {
-        const p = await migracionTercerosApi.filas({
-          lote: loteAbierto,
-          estado: 'REQUIERE_ATENCION',
-          pagina: pag,
-          porPagina: 200,
-        });
-        for (const f of p.filas) {
-          const errores = f.errores ?? [];
-          if (errores.length > 0 && errores.every((e) => e.codigo === 'YA_EXISTE_EN_LA_AGENCIA')) {
-            ids.push(f.id);
-          }
-        }
-        if (p.filas.length < 200 || pag * 200 >= p.total) break;
-      }
-      if (ids.length === 0) {
-        setAvisoMasivo('No hay filas que sean sólo «ya existe»: las que quedan necesitan otra decisión.');
-        return;
-      }
-      const r = await migracionTercerosApi.resolverMasivo(ids, { vincularAExistente: true });
-      if (r.fallidas.length > 0) {
-        setSeleccion(new Set(r.fallidas.map((f) => f.id)));
-        setError(resumenDeFallidas(r));
-      } else {
-        setSeleccion(new Set());
-      }
-      setAvisoMasivo(
-        `${r.aplicadas} ${r.aplicadas === 1 ? 'fila vinculada' : 'filas vinculadas'} con las personas que ya existían: quedaron listas para crear con el botón de arriba.`,
-      );
-      await refrescar(loteAbierto, 1);
-    } catch (e) {
-      setError(mensaje(e, 'No pudimos vincular las filas que ya existen.'));
-    } finally {
-      setCargando(false);
-    }
-  }, [loteAbierto, refrescar]);
-
   const aplicar = useCallback(async () => {
     if (!loteAbierto) return;
     setCargando(true);
@@ -620,7 +566,6 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         cargando={cargando}
         error={error}
         avisoMasivo={avisoMasivo}
-        onVincularTodasLasExistentes={() => void vincularTodasLasExistentes()}
         onSeleccionCambia={setSeleccion}
         onPaginaCambia={(p) => void cambiarPagina(p)}
         onActualizar={() => void cambiarPagina(pagina)}
@@ -1117,7 +1062,6 @@ function ListaDeTrabajo({
   cargando,
   error,
   avisoMasivo = null,
-  onVincularTodasLasExistentes,
   onSeleccionCambia,
   onPaginaCambia,
   onActualizar,
@@ -1144,7 +1088,6 @@ function ListaDeTrabajo({
   cargando: boolean;
   error: string | null;
   avisoMasivo?: string | null;
-  onVincularTodasLasExistentes?: () => void;
   onSeleccionCambia: (s: Set<string>) => void;
   onPaginaCambia: (p: number) => void;
   /** Reintenta la lectura de la página actual — la salida de un refresco caído. */
@@ -1356,28 +1299,20 @@ function ListaDeTrabajo({
             Resuelve cada una acá, o marca varias y resuélvelas juntas: al decidir salen de esta
             lista y quedan listas para crear con el botón de arriba.
           </p>
-          {/* El caso de casi todas: ya existen. Una decisión, no ochenta y cinco. */}
-          {onVincularTodasLasExistentes &&
-          pendientes.some((f) =>
-            (f.errores ?? []).every((e) => e.codigo === 'YA_EXISTE_EN_LA_AGENCIA'),
-          ) ? (
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              <Button
-                size="sm"
-                hideArrow
-                disabled={cargando}
-                isLoading={cargando}
-                onClick={onVincularTodasLasExistentes}
-                data-testid="vincular-todas-las-existentes"
-              >
-                Son las mismas personas: vincular todas las que ya existen
-              </Button>
-              <p className="text-xs text-fg-muted">
-                Recorre todo el archivo, no sólo esta página. Las que además les falta un dato
-                se quedan acá para que las mires.
-              </p>
-            </div>
-          ) : null}
+          {/* 🔴 Acá había «Son las mismas personas: vincular todas las que ya
+              existen», que recorría el lote entero y las enganchaba de un
+              clic. Tenía sentido cuando «ya existe» se marcaba SIEMPRE que la
+              llave estuviera ocupada: casi todas eran la misma persona y
+              preguntarlo ochenta y cinco veces era hacerle un bucle a mano.
+
+              Desde el 2026-09-08 el back ya no pregunta cuando la identidad
+              está corroborada —mismo documento, o mismo nombre—: esas filas
+              entran solas. Las que SIGUEN marcadas son exactamente las que
+              parecen de OTRA persona (un correo que pertenece a otra cuenta,
+              un documento que cae sobre la ficha de otro dueño). Vincularlas
+              todas de un clic es justo el daño que este chequeo existe para
+              evitar, así que el botón se retira: se deciden de a una, o se
+              marcan las que uno mire y se resuelven con la barra de selección. */}
         </div>
       ) : null}
 

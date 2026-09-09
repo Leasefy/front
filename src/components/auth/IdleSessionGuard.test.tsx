@@ -104,6 +104,33 @@ describe('IdleSessionGuard', () => {
     expect(botonContinuar()).toBeTruthy()
   })
 
+  /**
+   * 🔴 Nico, 2026-09-09: «ese CTA es negro y debe ser azul primary, conectado
+   * todo con cadence».
+   *
+   * No era sólo el botón: la tarjeta entera estaba escrita a mano con
+   * `bg-white` / `text-neutral-900` y su pareja `dark:`. El botón que la
+   * persona ve cuando su sesión está por morir es el más importante de la
+   * pantalla, y se veía como un secundario cualquiera.
+   */
+  it('🔴 el CTA es el primario de la casa, no un botón gris a mano', async () => {
+    montar()
+    inactivoHace(9 * MIN)
+    await avanzar(1000)
+
+    const boton = botonContinuar()!
+    const clases = boton.className
+    // El `Button` del DS resuelve el fondo por token; lo que NO puede volver
+    // es un `bg-neutral-*` escrito a mano.
+    expect(clases).not.toMatch(/bg-neutral-|bg-white|bg-black/)
+    expect(clases).not.toMatch(/dark:bg-/)
+
+    // Y la tarjeta tampoco pinta los grises a mano: los resuelven los tokens.
+    const tarjeta = aviso()!.querySelector('div')!
+    expect(tarjeta.className).toMatch(/bg-card/)
+    expect(tarjeta.className).not.toMatch(/bg-white|dark:bg-neutral-/)
+  })
+
   it('la cuenta baja segundo a segundo', async () => {
     montar()
     inactivoHace(9 * MIN)

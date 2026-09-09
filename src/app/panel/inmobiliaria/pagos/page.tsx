@@ -160,18 +160,13 @@ function PagosHome() {
             {t('inmobiliaria.ai.pagos_home.subtitle')}
           </p>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {/* El CTA primary de la vista es «Generar los cobros de {mes}», y vive
-              en el panel de abajo, pegado al selector de mes: es la única forma
-              de que su alcance se lea sin abrir nada. Acá queda la acción
-              secundaria. */}
-          <Button asChild variant="secondary" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/cxp/nueva">
-              <Receipt className="h-4 w-4" />
-              {t('inmobiliaria.ai.pagos_home.resumen.nuevaFactura')}
-            </Link>
-          </Button>
-        </div>
+        {/* Sin «Nueva factura» acá. Nico (2026-09-08): «¿por qué hay facturas
+            si para eso tenemos una sección sólo de facturación?». Registrar una
+            factura de proveedor vive en Facturación → Compras, que es la
+            sección dedicada; esta pantalla es de cobros y giros. El CTA de la
+            vista es «Generar los cobros de {mes}», y vive en el panel de abajo,
+            pegado al selector de mes: es la única forma de que su alcance se
+            lea sin abrir nada. */}
       </header>
 
       {/* Qué necesita tu atención — SÓLO si hay algo.

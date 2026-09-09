@@ -35,6 +35,7 @@ import {
   type ColumnaDePlantilla,
   type FilaDeStaging,
   type FilaTercero,
+  type TipoDeTercero,
 } from '@/lib/api/migracion-terceros.service';
 import {
   ayudaDelNumeroDeDocumento,
@@ -154,6 +155,7 @@ export function FilaDeTercero({
   fila,
   columnas,
   guardando,
+  tipo = 'PROPIETARIO',
   onCorregir,
   onVincular,
   onDescartar,
@@ -161,6 +163,12 @@ export function FilaDeTercero({
   fila: FilaDeStaging;
   columnas: readonly ColumnaDePlantilla[];
   guardando: boolean;
+  /**
+   * Propietarios o inquilinos. Cambia DÓNDE se edita la ficha con la que se
+   * choca: decirle «se edita desde Propietarios» a alguien parado en el paso
+   * de Inquilinos lo manda a buscar a otra sección (Nico, 2026-09-08).
+   */
+  tipo?: TipoDeTercero;
   onCorregir: (campos: FilaTercero) => Promise<ResultadoDeAccion>;
   onVincular: () => Promise<ResultadoDeAccion>;
   onDescartar: () => Promise<ResultadoDeAccion>;
@@ -169,6 +177,35 @@ export function FilaDeTercero({
 
   const duplicado = useMemo(
     () => errores.find((e) => CODIGOS_DE_DUPLICADO.includes(e.codigo)),
+    [errores],
+  );
+
+  /**
+   * ── Por qué choca: por el correo o por el documento ───────────────────────
+   *
+   * 🔴 Nico (2026-09-08), en el paso de Inquilinos: «dice que ya hay una
+   * cuenta con esos correos, y eso que dices que es un correo ni es un correo
+   * — mira los inputs, los correos están bien». Tenía razón dos veces:
+   *
+   *  1. El aviso ponía el NOMBRE de la cuenta justo después de «con este
+   *     correo:», así que se leía como si «juan lopez» fuera el correo.
+   *  2. El recuadro decía SIEMPRE «con este documento» y «la ficha se edita
+   *     desde Propietarios», aunque el choque fuera por correo y aunque se
+   *     estuviera cargando inquilinos. En propietarios el duplicado se busca
+   *     por documento; en inquilinos, por correo (la cuenta del portal es el
+   *     correo) — el texto se quedó con el primer caso.
+   *
+   * Ahora el recuadro se arma con el campo que el back señala (`campo`), y el
+   * aviso repetido de la lista de arriba se saca: el mismo choque no se cuenta
+   * dos veces, una mal y otra bien.
+   */
+  const chocaPorCorreo = duplicado?.campo === 'correo';
+  const seccionDeLaFicha = tipo === 'INQUILINO' ? 'Inquilinos' : 'Propietarios';
+  const queCorregir = chocaPorCorreo ? 'el correo' : 'el documento';
+
+  /** Los avisos que NO son el duplicado: ese tiene su propio recuadro abajo. */
+  const avisos = useMemo(
+    () => errores.filter((e) => !CODIGOS_DE_DUPLICADO.includes(e.codigo)),
     [errores],
   );
 
@@ -280,7 +317,7 @@ export function FilaDeTercero({
       {/* Qué le falta, en las palabras del back. El código es el contrato; el
           mensaje es copy y viene listo para mostrar. */}
       <ul className="space-y-1">
-        {errores.map((e, i) => (
+        {avisos.map((e, i) => (
           <li key={`${e.codigo}-${i}`} className="flex items-start gap-2 text-sm text-fg-muted">
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
             <span>{e.mensaje}</span>
@@ -292,15 +329,38 @@ export function FilaDeTercero({
         <div className="space-y-2 rounded-md border border-border bg-warning-soft p-3">
           <p className="text-sm font-medium text-fg">
             {duplicado.referencia?.nombre
-              ? `Ya existe «${duplicado.referencia.nombre}» con este documento.`
+              ? chocaPorCorreo
+                ? `Ese correo ya tiene cuenta en Leasefy: es la de «${duplicado.referencia.nombre}».`
+                : `Ya existe «${duplicado.referencia.nombre}» con este documento.`
               : duplicado.referencia?.fila
-                ? `La fila ${duplicado.referencia.fila} de este archivo trae el mismo documento.`
-                : 'Este documento ya está en el sistema.'}
+                ? `La fila ${duplicado.referencia.fila} de este archivo trae ${
+                    chocaPorCorreo ? 'el mismo correo' : 'el mismo documento'
+                  }.`
+                : chocaPorCorreo
+                  ? 'Ese correo ya está en el sistema.'
+                  : 'Ese documento ya está en el sistema.'}
           </p>
           <p className="text-sm text-fg-muted">
-            Si es la misma persona, la fila se engancha a la ficha que ya está y
-            <strong className="font-medium text-fg"> no le pisa ni un dato</strong> — la ficha se
-            edita desde Propietarios. Si son dos personas distintas, corrige el documento acá abajo.
+            {duplicado.referencia?.fila ? (
+              <>
+                Si es la misma persona repetida en el archivo, deja una sola y no traigas ésta. Si
+                son dos personas distintas, corrige {queCorregir} acá abajo.
+              </>
+            ) : chocaPorCorreo ? (
+              <>
+                Si es la misma persona, la fila se engancha a esa cuenta y
+                <strong className="font-medium text-fg"> no le pisa ni un dato</strong>. Si son dos
+                personas distintas, corrige el correo acá abajo: la cuenta del portal se crea por
+                correo, así que con el mismo correo las dos entrarían a la misma cuenta.
+              </>
+            ) : (
+              <>
+                Si es la misma persona, la fila se engancha a la ficha que ya está y
+                <strong className="font-medium text-fg"> no le pisa ni un dato</strong> — la ficha
+                se edita desde {seccionDeLaFicha}. Si son dos personas distintas, corrige el
+                documento acá abajo.
+              </>
+            )}
           </p>
           <div className="flex flex-wrap gap-2">
             <Button

@@ -15,16 +15,31 @@
  *   · Sin `onCambiarModo` (o sin permiso): UN chip con el modo activo y una
  *     frase que dice dónde se cambia (el cajón «Autonomía» del Piloto, en el
  *     encabezado). Nada que parezca clickeable.
- *   · Con `onCambiarModo` y `puedeCambiar`: el `SegmentedControl` del DS
- *     —el mismo del Piloto— con los modos disponibles. Subir de autonomía pide
- *     confirmación en un `AlertDialog`; bajar es un clic, como en la píldora
- *     del encabezado. El resultado se avisa por el toast de la casa.
+ *   · Con `onCambiarModo` y `puedeCambiar`: TRES tarjetas, una por modo, con
+ *     su nombre y qué implica. Subir de autonomía pide confirmación en un
+ *     `AlertDialog`; bajar es un clic, como en la píldora del encabezado. El
+ *     resultado se avisa por el toast de la casa.
+ *
+ * ── El rediseño del 2026-09-08 ──────────────────────────────────────────────
+ * Nico, sobre la configuración de Matching: «esta UX está horrible y la UI
+ * TAMBIÉN». Lo que había:
+ *   · un control segmentado con emojis (🌑 🤝 🚀) que daban aire de borrador;
+ *   · el modo elegido explicado DOS veces en gris chico, una debajo de la otra
+ *     («Solo observa y sugiere en silencio» y, en un recuadro, la frase larga
+ *     del micro), sin decir cuál era cuál;
+ *   · «Límites del agente» con una sola fila donde la etiqueta quedaba pegada
+ *     a la izquierda y su valor —una frase entera— al borde derecho de la
+ *     pantalla, a mil píxeles de distancia. `justify-between` sirve para
+ *     «Máximo: $0», no para una oración.
+ * Ahora: una tarjeta por modo con lo que implica cada uno (así la pantalla
+ * enseña las tres posturas en vez de esconder dos), un bloque titulado para lo
+ * que el micro dice que cambia HOY, y los límites en dos columnas donde el
+ * valor largo baja de renglón en vez de irse al horizonte.
  */
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Scales } from '@phosphor-icons/react'
-import { SegmentedControl } from '@leasefy/cadence'
+import { Scales, CheckCircle } from '@phosphor-icons/react'
 
 import type { AgentAutonomiaResponse, AutonomiaModo } from '@/lib/api/agent-workspace'
 import { useI18n } from '@/lib/i18n'
@@ -46,13 +61,7 @@ import {
 
 const NS = 'inmobiliaria.ai.workspace.autonomia'
 
-/** Emoji per mode; label + hint text live under `${NS}.modo.*`. */
-const MODO_EMOJI: Record<AutonomiaModo, string> = {
-  sombra: '🌑',
-  copiloto: '🤝',
-  autonomo: '🚀',
-}
-
+/** Los tres modos, de menos a más autonomía. Label + hint bajo `${NS}.modo.*`. */
 const MODOS: AutonomiaModo[] = ['sombra', 'copiloto', 'autonomo']
 
 /** Orden de autonomía: subir pide confirmación, bajar no. */
@@ -143,7 +152,8 @@ export function AutonomiaPanel({
   const editable = Boolean(onCambiarModo) && puedeCambiar
   const opciones = MODOS.filter((m) => data.modosDisponibles.includes(m)).map((m) => ({
     value: m,
-    label: `${MODO_EMOJI[m]} ${t(`${NS}.modo.${m}`)}`,
+    label: t(`${NS}.modo.${m}`),
+    hint: hintDe(m),
   }))
 
   const aplicar = async (modo: AutonomiaModo) => {
@@ -168,18 +178,58 @@ export function AutonomiaPanel({
   }
 
   return (
-    <div className="space-y-4" data-testid="autonomia-panel">
+    <div className="space-y-6" data-testid="autonomia-panel">
       {editable ? (
-        <div className="space-y-2">
-          <SegmentedControl<AutonomiaModo>
-            options={opciones}
-            value={data.modo}
-            onChange={elegir}
-            disabled={busy}
-            size="sm"
+        // Una tarjeta por modo. Sigue siendo un grupo de radio (rol y teclado
+        // incluidos): lo que cambia es que cada opción dice qué implica, en vez
+        // de esconder esa frase detrás de la que esté elegida.
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-fg">{t(`${NS}.modoTitle`)}</h2>
+          <div
+            role="radiogroup"
             aria-label={t(`${NS}.grupoAria`)}
-          />
-        </div>
+            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            {opciones.map(({ value, label, hint }) => {
+              const activo = value === data.modo
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={activo}
+                  disabled={busy}
+                  onClick={() => elegir(value)}
+                  data-testid={`autonomia-modo-${value}`}
+                  className={`rounded-lg border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60 ${
+                    activo
+                      ? 'border-primary bg-primary-soft/50 ring-1 ring-primary/30'
+                      : 'border-border bg-surface hover:border-border-strong hover:bg-surface-muted/40'
+                  }`}
+                >
+                  <span className="flex items-start justify-between gap-2">
+                    <span className={`text-sm font-semibold ${activo ? 'text-primary' : 'text-fg'}`}>
+                      {label}
+                    </span>
+                    {activo && (
+                      <CheckCircle
+                        className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                        weight="fill"
+                        aria-hidden="true"
+                      />
+                    )}
+                  </span>
+                  {hint && <span className="mt-1.5 block text-xs leading-relaxed text-fg-muted">{hint}</span>}
+                  {activo && (
+                    <span className="mt-2 block text-[11px] font-medium uppercase tracking-wide text-primary">
+                      {t(`${NS}.modoActivo`)}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </section>
       ) : (
         // Un solo chip: el modo activo. No parece botón porque no lo es.
         <div className="flex flex-wrap items-center gap-3">
@@ -189,7 +239,6 @@ export function AutonomiaPanel({
             title={activeHint !== activeHintKey ? activeHint : undefined}
             className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1.5 text-xs font-medium text-primary ring-1 ring-primary/30"
           >
-            <span aria-hidden="true">{MODO_EMOJI[data.modo]}</span>
             {t(`${NS}.modo.${data.modo}`)}
           </span>
           <p className="text-xs text-fg-muted" data-testid="autonomia-donde-se-cambia">
@@ -208,8 +257,10 @@ export function AutonomiaPanel({
         </div>
       )}
 
-      {/* Active-mode hint, visible (tooltips don't exist on touch) */}
-      {activeHint !== activeHintKey && (
+      {/* La frase del modo activo, visible (los tooltips no existen al tocar).
+          Con las tarjetas ya está dicha en la que está elegida: acá sólo hace
+          falta cuando el modo es un chip de lectura. */}
+      {!editable && activeHint !== activeHintKey && (
         <p className="text-xs text-fg-muted" data-testid="autonomia-modo-hint">
           {activeHint}
         </p>
@@ -217,55 +268,65 @@ export function AutonomiaPanel({
 
       {/* Qué cambia HOY con este modo para ESTE agente: lo dice el micro,
           que es quien gobierna la ejecución. Sin esta línea la pantalla
-          insinuaba que el modo era decorativo. */}
+          insinuaba que el modo era decorativo. Con título, porque suelta y en
+          gris chico se confundía con la frase del modo. */}
       {data.efectoReal && (
-        <p className="text-xs text-fg rounded-lg border border-border bg-surface px-3 py-2" data-testid="autonomia-efecto-real">
-          {data.efectoReal}
-        </p>
+        <section className="rounded-lg border border-border bg-surface p-4" data-testid="autonomia-efecto-real">
+          <h2 className="text-sm font-semibold text-fg">{t(`${NS}.efectoTitle`)}</h2>
+          <p className="mt-1.5 text-sm leading-relaxed text-fg-muted">{data.efectoReal}</p>
+        </section>
       )}
 
-      {/* Read-only nota */}
+      {/* Nota de sólo lectura del agente */}
       {data.nota && (
-        <p className="text-xs text-fg-muted rounded-lg bg-surface-muted/40 px-3 py-2" data-testid="autonomia-nota">
-          {data.nota}
-        </p>
+        <section className="rounded-lg bg-surface-muted/40 p-4" data-testid="autonomia-nota">
+          <h2 className="text-sm font-semibold text-fg">{t(`${NS}.notaTitle`)}</h2>
+          <p className="mt-1.5 text-sm leading-relaxed text-fg-muted">{data.nota}</p>
+        </section>
       )}
 
       {/* T-323 callout */}
       {data.t323 && (
         <div
-          className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning"
+          className="rounded-lg border border-warning/30 bg-warning-soft px-4 py-3 text-xs text-warning"
           data-testid="autonomia-t323"
         >
           {t(`${NS}.t323`)}
         </div>
       )}
 
-      {/* Valla (guardrails) */}
-      <section className="rounded-lg border border-border bg-surface p-4 space-y-2" data-testid="autonomia-valla">
+      {/* Valla (guardrails).
+          Dos columnas, no `justify-between`: el micro publica tanto «Monto
+          máximo: $0» como frases enteras («toda acción queda registrada, con
+          quién la hizo y cuándo»), y empujando el valor al borde derecho la
+          frase quedaba a media pantalla de su etiqueta. Acá el valor arranca
+          en su columna y baja de renglón cuando no cabe. */}
+      <section className="rounded-lg border border-border bg-surface p-4" data-testid="autonomia-valla">
         <h2 className="text-sm font-semibold text-fg">{t(`${NS}.vallaTitle`)}</h2>
         {data.valla.length === 0 ? (
-          <p className="text-xs text-fg-muted">{t(`${NS}.vallaEmpty`)}</p>
+          <p className="mt-1.5 text-xs text-fg-muted">{t(`${NS}.vallaEmpty`)}</p>
         ) : (
-          <dl className="divide-y divide-border">
+          <dl className="mt-2 divide-y divide-border">
             {data.valla.map((regla) => (
               <div
                 key={regla.id}
-                className="py-2 first:pt-0 last:pb-0 flex items-center justify-between gap-3"
+                className="grid gap-x-6 gap-y-1 py-3 first:pt-1 last:pb-0 sm:grid-cols-[minmax(0,15rem)_1fr]"
                 data-testid={`autonomia-valla-${regla.id}`}
               >
-                <dt className="flex items-center gap-2 text-xs text-fg-muted min-w-0">
+                <dt className="flex items-start gap-2 text-xs text-fg-muted">
                   <span
-                    className={`w-2 h-2 rounded-full shrink-0 ${
+                    className={`mt-1 h-2 w-2 shrink-0 rounded-full ${
                       regla.estado === 'activo' ? 'bg-success' : 'bg-fg-subtle'
                     }`}
                     aria-hidden="true"
                   />
-                  <span className="truncate">{regla.label}</span>
+                  <span>{regla.label}</span>
                 </dt>
-                <dd className="text-xs font-medium text-fg tabular-nums shrink-0">
-                  {regla.value}
-                </dd>
+                {/* Sin `tabular-nums`: el micro publica tanto «$0 (apagado)» como
+                    frases enteras, y la cifra tabular ensancha también la COMA
+                    —es un separador numérico—, así que «registrada, con quién»
+                    se leía «registrada ,  con quién». */}
+                <dd className="text-xs font-medium leading-relaxed text-fg">{regla.value}</dd>
               </div>
             ))}
           </dl>

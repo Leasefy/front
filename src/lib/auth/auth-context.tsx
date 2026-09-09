@@ -9,6 +9,8 @@ import { getSupabase } from '@/lib/supabase/client'
 import { apiClient, ApiError, getAccessToken, setAccessToken, setUnauthorizedHandler, setTokenRefresher } from '@/lib/api/client'
 import {
   terminarSesion,
+  terminarSesionSiMurio,
+  registrarConfirmacionDeSesion,
   purgarSesionLocal,
   registrarCierreDeSesion,
   haySesionGuardada,
@@ -956,7 +958,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (!cerrandoRef.current) void signOut()
         return
       }
-      terminarSesion('expirada')
+      // No se cierra por lo que diga el 401: se cierra si el refresh token
+      // tampoco vive. Un back apuntando a otro proyecto de Supabase manda
+      // `AUTH_TOKEN_INVALID` con la sesión del usuario intacta, y antes eso
+      // lo sacaba del panel diciéndole que había expirado.
+      void terminarSesionSiMurio('expirada')
     })
     return () => setUnauthorizedHandler(null)
   }, [signOut])
@@ -974,6 +980,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return data.session.access_token
     })
     return () => setTokenRefresher(null)
+  }, [])
+
+  // Quién puede decir que la sesión murió DE VERDAD: el refresh token. Vive
+  // acá porque es el único lugar con el cliente de Supabase; `session-terminal`
+  // lo consulta antes de sacar a nadie del panel.
+  useEffect(() => {
+    registrarConfirmacionDeSesion(async () => {
+      const supabase = getSupabase()
+      // Sin cliente no hay forma de corroborar: se conserva el cierre.
+      if (!supabase) return true
+      const { data, error } = await supabase.auth.refreshSession()
+      if (error || !data.session) return true
+      // Renovó: la sesión está viva y este token es el bueno. Dejarlo puesto
+      // evita que la siguiente petición repita el 401 con el token viejo.
+      setAccessToken(data.session.access_token)
+      return false
+    })
+    return () => registrarConfirmacionDeSesion(null)
   }, [])
 
   // `terminarSesion` corre fuera de React (lo dispara apiClient). Le pasamos

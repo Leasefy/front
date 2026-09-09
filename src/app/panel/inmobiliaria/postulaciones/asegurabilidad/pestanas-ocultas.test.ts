@@ -49,15 +49,22 @@ describe('asegurabilidad — pestañas que eran maquetas', () => {
     expect(hrefs).not.toContain(`${RESUMEN}/comparar`)
     expect(hrefs).not.toContain(`${RESUMEN}/ejecucion`)
     expect(hrefs).not.toContain(`${RESUMEN}/integraciones`)
-    // Las siete que sí van a producción siguen ahí.
+    // Las seis que sí van a producción siguen ahí.
     expect(hrefs).toEqual([
       RESUMEN,
       `${RESUMEN}/cola`,
-      `${RESUMEN}/nueva`,
       `${RESUMEN}/aseguradoras`,
       `${RESUMEN}/insights`,
       `${RESUMEN}/costos`,
       `${RESUMEN}/configuracion`,
     ])
+  })
+
+  it('«Nueva consulta» ya no es pestaña, pero la ruta sigue viva', () => {
+    // Nico (2026-09-08): «¿para qué tienes una sección de nueva consulta si
+    // tienes un CTA en Resumen? Deja lo de Resumen y ya». La pestaña se va;
+    // la pantalla no, porque es a donde lleva ese CTA.
+    const ws = AGENT_WORKSPACES.find((w) => w.slug === 'asegurabilidad')
+    expect(ws!.items.map((i) => i.href)).not.toContain(`${RESUMEN}/nueva`)
   })
 })

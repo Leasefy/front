@@ -8,6 +8,9 @@ import {
   haySesionGuardada,
   registrarCierreDeSesion,
   resetSessionTerminal,
+  tomarAvisoDeCierre,
+  terminarSesionSiMurio,
+  registrarConfirmacionDeSesion,
 } from './session-terminal'
 import { TENANT_ONBOARDING_STORAGE_KEY } from '@/lib/onboarding/tenant-onboarding-status'
 
@@ -182,5 +185,120 @@ describe('haySesionGuardada', () => {
   it('no confunde otras claves con prefijo sb-', () => {
     localStorage.setItem('sb-algo-distinto', 'x')
     expect(haySesionGuardada()).toBe(false)
+  })
+})
+
+// ── El aviso de una sola vez ────────────────────────────────────────────────
+//
+// Nico (2026-09-08) vio «Tu sesión expiró» en /auth mientras ya estaba
+// entrando otra vez. La causa: el cartel se decidía por `?reason=expirada`, y
+// ese parámetro sobrevive a la recarga, al historial y a la pestaña que el
+// navegador restaura. Estos tests fijan la regla nueva: el cartel sale cuando
+// hubo un cierre real y reciente, y sale UNA vez.
+
+describe('tomarAvisoDeCierre', () => {
+  it('devuelve el motivo del cierre que acaba de ocurrir', () => {
+    terminarSesion('expirada')
+    expect(tomarAvisoDeCierre('expirada')).toBe('expirada')
+  })
+
+  it('lo consume: recargar /auth ya no lo repite', () => {
+    terminarSesion('inactividad')
+    expect(tomarAvisoDeCierre('inactividad')).toBe('inactividad')
+    // Segunda lectura = la recarga.
+    expect(tomarAvisoDeCierre('inactividad')).toBeNull()
+  })
+
+  it('con `?reason=` viejo en la URL y sin cierre real, no anuncia nada', () => {
+    // Marcador, historial o pestaña restaurada: la URL trae el motivo pero acá
+    // nunca se cerró ninguna sesión.
+    expect(tomarAvisoDeCierre('expirada')).toBeNull()
+  })
+
+  it('un aviso de hace más de un minuto ya no cuenta', () => {
+    terminarSesion('expirada')
+    const guardado = JSON.parse(sessionStorage.getItem('leasefy.aviso-de-cierre')!)
+    sessionStorage.setItem(
+      'leasefy.aviso-de-cierre',
+      JSON.stringify({ ...guardado, en: guardado.en - 61_000 }),
+    )
+    expect(tomarAvisoDeCierre('expirada')).toBeNull()
+  })
+
+  it('sin sessionStorage (modo privado) se cree en la URL: callar un cierre real es peor', () => {
+    const real = window.sessionStorage
+    Object.defineProperty(window, 'sessionStorage', {
+      value: {
+        getItem() {
+          throw new Error('acceso denegado')
+        },
+        setItem() {},
+        removeItem() {},
+      },
+      configurable: true,
+    })
+
+    expect(tomarAvisoDeCierre('revocada')).toBe('revocada')
+    // Y un motivo inventado a mano en la URL sigue sin pintar nada.
+    expect(tomarAvisoDeCierre('cualquier-cosa')).toBeNull()
+
+    Object.defineProperty(window, 'sessionStorage', { value: real, configurable: true })
+  })
+
+  it('no escribe el aviso cuando el cierre se dispara DESDE /auth (no hay a dónde llevarlo)', () => {
+    enRuta('/auth')
+    terminarSesion('expirada')
+    expect(sessionStorage.getItem('leasefy.aviso-de-cierre')).toBeNull()
+  })
+})
+
+// ── Confirmar la muerte antes de declararla ────────────────────────────────
+//
+// Un 401 con código de sesión muerta lo manda el SERVIDOR, y el servidor puede
+// estar equivocado sobre nosotros (otro proyecto de Supabase, secreto de JWT
+// rotado). La única prueba que no se discute es el refresh token.
+
+describe('terminarSesionSiMurio', () => {
+  it('NO cierra si el refresh token sigue vivo', async () => {
+    registrarConfirmacionDeSesion(async () => false)
+
+    const cerro = await terminarSesionSiMurio('expirada')
+
+    expect(cerro).toBe(false)
+    expect(sesionTerminada()).toBe(false)
+    expect(replace).not.toHaveBeenCalled()
+  })
+
+  it('cierra cuando renovar falla de verdad', async () => {
+    registrarConfirmacionDeSesion(async () => true)
+
+    const cerro = await terminarSesionSiMurio('expirada')
+
+    expect(cerro).toBe(true)
+    expect(sesionTerminada()).toBe(true)
+    expect(replace).toHaveBeenCalledOnce()
+  })
+
+  it('confirma UNA sola vez aunque fallen las ocho peticiones en vuelo', async () => {
+    const confirmar = vi.fn(async () => true)
+    registrarConfirmacionDeSesion(confirmar)
+
+    await Promise.all(Array.from({ length: 8 }, () => terminarSesionSiMurio('expirada')))
+
+    expect(confirmar).toHaveBeenCalledTimes(1)
+    expect(replace).toHaveBeenCalledOnce()
+  })
+
+  it('sin confirmador registrado se conserva el cierre de siempre', async () => {
+    await terminarSesionSiMurio('expirada')
+    expect(sesionTerminada()).toBe(true)
+  })
+
+  it('si confirmar revienta, se cierra: nadie queda encerrado en un panel sin sesión', async () => {
+    registrarConfirmacionDeSesion(async () => {
+      throw new Error('red caída')
+    })
+    await terminarSesionSiMurio('expirada')
+    expect(sesionTerminada()).toBe(true)
   })
 })

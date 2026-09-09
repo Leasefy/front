@@ -160,6 +160,153 @@ export function haySesionGuardada(): boolean {
 }
 
 /**
+ * ── El aviso de «tu sesión expiró» ─────────────────────────────────────────
+ *
+ * El cartel de /auth se decidía SÓLO por `?reason=expirada` en la URL, y una
+ * URL no caduca: quedaba en el historial, en un marcador, en la pestaña que el
+ * navegador restaura al abrirse. Nico (2026-09-08) lo vio anunciando una
+ * expiración mientras ya estaba entrando otra vez. Un cartel que aparece
+ * cuando no pasó nada enseña a ignorarlo, y entonces tampoco sirve el día que
+ * sí pasa.
+ *
+ * Por eso el aviso ahora es un objeto de un solo uso: lo escribe `terminarSesion`
+ * en el momento del cierre, /auth lo CONSUME al mostrarlo (se borra) y caduca
+ * solo. Sin ese objeto, el `?reason=` de la URL no alcanza para pintar nada.
+ *
+ * Vive en `sessionStorage` a propósito: es de ESTA pestaña y de este momento.
+ * En localStorage sobreviviría a la sesión siguiente y en otra pestaña
+ * anunciaría un cierre que allí no ocurrió.
+ */
+const CLAVE_DEL_AVISO = 'leasefy.aviso-de-cierre'
+
+/**
+ * Cuánto vale el aviso. Es la distancia entre el cierre y la carga de /auth:
+ * una navegación. Un minuto es holgado para una red lenta y corto para que un
+ * `sessionStorage` que sobrevivió a una pestaña abierta toda la tarde no
+ * reviva el cartel.
+ */
+const VIGENCIA_DEL_AVISO_MS = 60_000
+
+interface AvisoGuardado {
+  motivo: MotivoDeCierre
+  en: number
+}
+
+function guardarAviso(motivo: MotivoDeCierre): void {
+  if (typeof window === 'undefined') return
+  try {
+    const aviso: AvisoGuardado = { motivo, en: Date.now() }
+    window.sessionStorage.setItem(CLAVE_DEL_AVISO, JSON.stringify(aviso))
+  } catch {
+    // Modo privado o cuota llena: /auth cae al `?reason=` de la URL.
+  }
+}
+
+/**
+ * El motivo que /auth debe anunciar, UNA vez.
+ *
+ * Devuelve el motivo y lo borra: recargar la pantalla de login ya no lo repite.
+ * `motivoEnLaUrl` es la red de seguridad para cuando el almacenamiento no está
+ * disponible (modo privado): ahí no se puede corroborar nada y se prefiere
+ * avisar de más antes que callar un cierre real.
+ */
+export function tomarAvisoDeCierre(motivoEnLaUrl?: string | null): MotivoDeCierre | null {
+  if (typeof window === 'undefined') return null
+
+  let crudo: string | null
+  try {
+    crudo = window.sessionStorage.getItem(CLAVE_DEL_AVISO)
+  } catch {
+    // Sin almacenamiento no hay forma de saber si el `?reason=` es de ahora o
+    // de ayer: se cree en la URL.
+    return esMotivo(motivoEnLaUrl) ? motivoEnLaUrl : null
+  }
+
+  if (!crudo) return null
+
+  try {
+    window.sessionStorage.removeItem(CLAVE_DEL_AVISO)
+  } catch {
+    // Que no se pueda borrar no cambia lo que hay que mostrar ahora.
+  }
+
+  try {
+    const aviso = JSON.parse(crudo) as Partial<AvisoGuardado>
+    if (!esMotivo(aviso.motivo)) return null
+    if (typeof aviso.en !== 'number') return null
+    if (Date.now() - aviso.en > VIGENCIA_DEL_AVISO_MS) return null
+    return aviso.motivo
+  } catch {
+    return null
+  }
+}
+
+const MOTIVOS: readonly string[] = ['expirada', 'revocada', 'inactividad']
+
+function esMotivo(v: unknown): v is MotivoDeCierre {
+  return typeof v === 'string' && MOTIVOS.includes(v)
+}
+
+/**
+ * ── Confirmar la muerte antes de declararla ────────────────────────────────
+ *
+ * Un 401 con código de sesión muerta viene del SERVIDOR, y el servidor puede
+ * estar equivocado sobre nosotros: un back apuntando a otro proyecto de
+ * Supabase, un secreto de JWT rotado, el micro con otra configuración. En
+ * todos esos casos el token del usuario está perfecto y el back igual dice
+ * «inválido». Cerrar la sesión ahí saca a alguien que nunca la perdió, y
+ * encima le dice que expiró.
+ *
+ * La única prueba que no se puede discutir es el refresh token: si Supabase
+ * devuelve una sesión nueva, la sesión está viva. Este handler lo registra el
+ * AuthProvider (es el que tiene el cliente) y devuelve `true` sólo cuando
+ * renovar falló de verdad.
+ */
+export type ConfirmarMuerteDeSesion = () => Promise<boolean>
+
+let confirmarMuerte: ConfirmarMuerteDeSesion | null = null
+let confirmacionEnVuelo: Promise<boolean> | null = null
+
+export function registrarConfirmacionDeSesion(fn: ConfirmarMuerteDeSesion | null): void {
+  confirmarMuerte = fn
+}
+
+/**
+ * Cierra la sesión SÓLO si de verdad murió.
+ *
+ * Devuelve `true` si se cerró. Cuando el token muere fallan las ocho
+ * peticiones que la pantalla tenía en vuelo: la confirmación es una sola para
+ * todas (`confirmacionEnVuelo`), no ocho renovaciones compitiendo.
+ *
+ * Si no hay quien confirme —el módulo se carga antes que el AuthProvider— se
+ * conserva el comportamiento de siempre: se cierra. Un cierre de más es
+ * molesto; quedarse adentro sin sesión es un panel que no carga nada.
+ */
+export async function terminarSesionSiMurio(motivo: MotivoDeCierre): Promise<boolean> {
+  if (cerrada) return true
+
+  const confirmar = confirmarMuerte
+  if (!confirmar) {
+    terminarSesion(motivo)
+    return true
+  }
+
+  if (!confirmacionEnVuelo) {
+    confirmacionEnVuelo = confirmar().finally(() => {
+      confirmacionEnVuelo = null
+    })
+  }
+
+  // Un fallo al confirmar (red caída, cliente roto) se lee como muerte: es el
+  // comportamiento anterior, y no deja a nadie encerrado.
+  const murio = await confirmacionEnVuelo.catch(() => true)
+  if (!murio) return false
+
+  terminarSesion(motivo)
+  return true
+}
+
+/**
  * Declarar la sesión muerta y salir a /auth.
  *
  * **Idempotente por diseño.** Cuando un token muere, no falla una petición:
@@ -194,6 +341,10 @@ export function terminarSesion(motivo: MotivoDeCierre): void {
   const { pathname, search } = window.location
   if (RUTAS_DE_SALIDA.some((ruta) => pathname.startsWith(ruta))) return
 
+  // El aviso que /auth va a consumir. Se escribe ANTES de navegar: después de
+  // `location.replace` este código ya no corre.
+  guardarAviso(motivo)
+
   const destino = new URL(RUTA_AUTH, window.location.origin)
   destino.searchParams.set('returnUrl', `${pathname}${search}`)
   destino.searchParams.set(PARAM_MOTIVO, motivo)
@@ -208,4 +359,11 @@ export function resetSessionTerminal(): void {
   cerrada = false
   motivoDeCierre = null
   alCerrar = null
+  confirmarMuerte = null
+  confirmacionEnVuelo = null
+  try {
+    window?.sessionStorage?.removeItem(CLAVE_DEL_AVISO)
+  } catch {
+    // Sin almacenamiento no hay nada que limpiar.
+  }
 }

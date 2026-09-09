@@ -70,7 +70,8 @@ export interface Property {
 
   // Location
   city: string;
-  neighborhood: string;
+  /** `null` desde el 2026-09-09: dejó de ser NOT NULL en la base. */
+  neighborhood: string | null;
   address: string;
   /**
    * `null` cuando el inmueble no está geocodificado (contrato del back,
@@ -110,9 +111,22 @@ export interface Property {
   consignedAt?: string | null;
 
   // Features
-  bedrooms: number;
-  bathrooms: number;
-  area: number; // m²
+  /*
+   * 🔴 Los tres pueden ser `null` desde el 2026-09-09 — CAMBIO DE CONTRATO
+   * del back (`20260909180000_inmueble_datos_que_pueden_faltar`).
+   *
+   * Nico, con el archivo real de una inmobiliaria: «nosotros tenemos cosas
+   * obligatorias que las inmobiliarias tienen como opciones —el área, los
+   * baños— y ellos muchas veces no traen esto». `null` = no lo sabemos, y es
+   * distinto de `0`, que es cero de verdad. Antes `bedrooms`/`bathrooms`
+   * llegaban con un `1` que había puesto el default de la columna.
+   *
+   * Todo lo que los pinte tiene que decir «—» o esconder la línea, nunca
+   * escribir «0» ni «null».
+   */
+  bedrooms: number | null;
+  bathrooms: number | null;
+  area: number | null; // m²
   floor?: number;
   parkingSpaces?: number;
   stratum?: number;

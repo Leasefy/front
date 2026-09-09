@@ -69,9 +69,12 @@ function precioTarjeta(p: Property): string {
 /** «2 hab · 2 baños · 72 m²», saltando lo que no venga. */
 function ficha(p: Property): string {
   const partes: string[] = []
-  if (p.bedrooms > 0) partes.push(`${p.bedrooms} hab`)
-  if (p.bathrooms > 0) partes.push(`${p.bathrooms} ${p.bathrooms === 1 ? 'baño' : 'baños'}`)
-  if (p.area > 0) partes.push(`${p.area} m²`)
+  // `null` es «no lo sabemos» y `0` es cero: los dos se saltan igual acá,
+  // porque «0 hab» en una tarjeta del catálogo no le dice nada a nadie.
+  if ((p.bedrooms ?? 0) > 0) partes.push(`${p.bedrooms} hab`)
+  if ((p.bathrooms ?? 0) > 0)
+    partes.push(`${p.bathrooms} ${p.bathrooms === 1 ? 'baño' : 'baños'}`)
+  if ((p.area ?? 0) > 0) partes.push(`${p.area} m²`)
   return partes.join(' · ')
 }
 

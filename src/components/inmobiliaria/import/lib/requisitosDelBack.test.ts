@@ -5,6 +5,7 @@ import {
   escribirCampo,
   resolveImportListingType,
   requisitoDe,
+  avisosDeValor,
   MINIMO_CANON,
   MINIMO_AREA,
   MINIMO_VENTA,
@@ -35,36 +36,85 @@ describe('faltantesParaElBack', () => {
 
   it.each([
     ['propertyAddress', { propertyAddress: '' }],
-    ['propertyZone', { propertyZone: '' }],
     ['monthlyRent', { monthlyRent: undefined }],
-    ['bathrooms', { bathrooms: undefined }],
-    ['propertyArea', { propertyArea: undefined }],
   ] as const)('reclama %s cuando falta', (campo, parcial) => {
     const faltan = faltantesParaElBack(inmueble(parcial));
     expect(faltan.map((f) => f.campo)).toContain(campo);
   });
 
-  it('un cero NO cuenta como dato: el back rechaza baños 0 y área 0', () => {
-    const faltan = faltantesParaElBack(inmueble({ bathrooms: 0, propertyArea: 0 }));
-    expect(faltan.map((f) => f.campo)).toEqual(
-      expect.arrayContaining(['bathrooms', 'propertyArea']),
-    );
+  /**
+   * 🔴 Nico, 2026-09-09, con el archivo real de una inmobiliaria en pantalla:
+   * «nosotros tenemos cosas obligatorias que las inmobiliarias tienen como
+   * opciones —el área, los baños— y ellos muchas veces no traen esto».
+   *
+   * Las tres columnas son nullables en la base desde
+   * `20260909180000_inmueble_datos_que_pueden_faltar`, así que ausente ya no
+   * es inválido: se guarda NULL, que es lo que sabemos.
+   */
+  it.each([
+    ['el barrio', { propertyZone: '' }],
+    ['los baños', { bathrooms: undefined }],
+    ['el área', { propertyArea: undefined }],
+    ['los tres juntos', { propertyZone: '', bathrooms: undefined, propertyArea: undefined }],
+  ] as const)('🔴 sin %s el inmueble se crea igual', (_caso, parcial) => {
+    expect(faltantesParaElBack(inmueble(parcial))).toEqual([]);
   });
 
-  it('respeta los mínimos exactos del DTO', () => {
+  it('lo que SÍ sigue frenando es la dirección y el precio', () => {
+    // Sin dirección no hay inmueble que identificar, y sin canon no se le
+    // puede cobrar a nadie: ésos no son «datos que la inmobiliaria a veces no
+    // tiene», son la razón de ser de la ficha.
+    expect(
+      faltantesParaElBack(inmueble({ propertyAddress: '', monthlyRent: undefined })).map(
+        (f) => f.campo,
+      ),
+    ).toEqual(['propertyAddress', 'monthlyRent']);
+  });
+
+  it('respeta el mínimo de canon del DTO', () => {
     expect(faltantesParaElBack(inmueble({ monthlyRent: MINIMO_CANON }))).toEqual([]);
     expect(faltantesParaElBack(inmueble({ monthlyRent: MINIMO_CANON - 1 }))).toHaveLength(1);
-    expect(faltantesParaElBack(inmueble({ propertyArea: MINIMO_AREA }))).toEqual([]);
-    expect(faltantesParaElBack(inmueble({ propertyArea: MINIMO_AREA - 1 }))).toHaveLength(1);
   });
 
   it('cada faltante trae con qué completarlo', () => {
-    const [f] = faltantesParaElBack(inmueble({ propertyArea: undefined }));
+    const [f] = faltantesParaElBack(inmueble({ monthlyRent: undefined }));
     // Sin etiqueta ni ayuda el campo no se puede dibujar: es lo que se muestra.
-    expect(f.etiqueta).toBe('Área');
-    expect(f.ayuda).toContain('10');
-    expect(f.sufijo).toBe('m²');
+    expect(f.etiqueta).toBe('Canon mensual');
+    expect(f.ayuda).toContain('100.000');
+    expect(f.sufijo).toBe('COP');
     expect(f.tipo).toBe('numero');
+  });
+});
+
+/**
+ * Opcional no es «da igual lo que escribas».
+ *
+ * Un área en 0 tecleada por error saldría en el catálogo afirmando que el
+ * inmueble no mide nada. Pero tampoco puede frenar la fila —ya está el dato,
+ * sólo está mal—, así que se avisa y la persona decide.
+ */
+describe('avisosDeValor', () => {
+  it('vacío nunca avisa: es el caso normal desde hoy', () => {
+    expect(
+      avisosDeValor(inmueble({ propertyArea: undefined, bathrooms: undefined })),
+    ).toEqual([]);
+  });
+
+  it('un área en 0 avisa, pero no frena', () => {
+    const p = inmueble({ propertyArea: 0 });
+    expect(avisosDeValor(p)).toHaveLength(1);
+    expect(avisosDeValor(p)[0]).toContain('0 m²');
+    // Lo importante: sigue siendo creable.
+    expect(faltantesParaElBack(p)).toEqual([]);
+  });
+
+  it('cero baños NO avisa: un lote o un depósito puede no tener ninguno', () => {
+    expect(avisosDeValor(inmueble({ bathrooms: 0 }))).toEqual([]);
+  });
+
+  it('un negativo sí, en cualquiera de los tres', () => {
+    expect(avisosDeValor(inmueble({ bathrooms: -1 }))).toHaveLength(1);
+    expect(avisosDeValor(inmueble({ bedrooms: -2 }))).toHaveLength(1);
   });
 });
 
@@ -140,19 +190,30 @@ describe('recalcularEstado', () => {
   });
 
   it('deselecciona lo que no se puede crear y vuelve a seleccionarlo al completarlo', () => {
-    const sinArea = recalcularEstado(inmueble({ propertyArea: undefined }));
-    expect(sinArea.hasErrors).toBe(true);
-    expect(sinArea.selected).toBe(false);
+    const sinCanon = recalcularEstado(inmueble({ monthlyRent: undefined }));
+    expect(sinCanon.hasErrors).toBe(true);
+    expect(sinCanon.selected).toBe(false);
 
-    const completo = recalcularEstado({ ...sinArea, propertyArea: 35 });
+    const completo = recalcularEstado({ ...sinCanon, monthlyRent: 1_900_000 });
     expect(completo.hasErrors).toBe(false);
     expect(completo.selected).toBe(true);
   });
 
+  it('🔴 un inmueble sin área NI baños NI barrio nace seleccionado', () => {
+    // Es el caso del archivo real de Nico: dirección, ciudad y canon, nada
+    // más. Antes nacía deseleccionado y con dos errores rojos.
+    const p = recalcularEstado(
+      inmueble({ propertyZone: '', bathrooms: undefined, propertyArea: undefined }),
+    );
+    expect(p.hasErrors).toBe(false);
+    expect(p.errorMessages).toEqual([]);
+    expect(p.selected).toBe(true);
+  });
+
   it('el mensaje dice qué falta y con qué regla', () => {
-    const { errorMessages } = recalcularEstado(inmueble({ bathrooms: 0 }));
-    expect(errorMessages[0]).toContain('baños');
-    expect(errorMessages[0]).toContain('1');
+    const { errorMessages } = recalcularEstado(inmueble({ monthlyRent: undefined }));
+    expect(errorMessages[0]).toContain('canon');
+    expect(errorMessages[0]).toContain('100.000');
   });
 });
 
@@ -162,21 +223,28 @@ describe('escribirCampo', () => {
     // que el inmueble se viera completo con un dato que nadie dio.
     const p = escribirCampo(inmueble(), 'bathrooms', '');
     expect(p.bathrooms).toBeUndefined();
-    expect(p.hasErrors).toBe(true);
+    // Y desde el 2026-09-09 vaciarlo NO rompe nada: «no sé» es válido.
+    expect(p.hasErrors).toBe(false);
   });
 
   it('acepta el canon con puntos y símbolos, como se escribe de verdad', () => {
     expect(escribirCampo(inmueble(), 'monthlyRent', '$ 1.850.000').monthlyRent).toBe(1_850_000);
   });
 
-  it('escribir el área que faltaba desbloquea el inmueble', () => {
-    const bloqueado = recalcularEstado(inmueble({ propertyArea: undefined }));
+  it('escribir el canon que faltaba desbloquea el inmueble', () => {
+    const bloqueado = recalcularEstado(inmueble({ monthlyRent: undefined }));
     expect(bloqueado.hasErrors).toBe(true);
 
-    const arreglado = escribirCampo(bloqueado, 'propertyArea', '48');
-    expect(arreglado.propertyArea).toBe(48);
+    const arreglado = escribirCampo(bloqueado, 'monthlyRent', '1.900.000');
+    expect(arreglado.monthlyRent).toBe(1_900_000);
     expect(arreglado.hasErrors).toBe(false);
     expect(arreglado.selected).toBe(true);
+  });
+
+  it('el área se sigue pudiendo escribir aunque ya no sea obligatoria', () => {
+    // Opcional no quiere decir que desaparezca del formulario: quien SÍ tiene
+    // el dato tiene que poder cargarlo.
+    expect(escribirCampo(inmueble(), 'propertyArea', '48').propertyArea).toBe(48);
   });
 
   it('un texto se guarda tal cual', () => {
@@ -217,12 +285,18 @@ describe('escribirCampo — el input de reparación entiende los mismos formatos
 describe('requisitoDe', () => {
   it('describe un campo aunque ya esté completo — lo necesita el input que se queda', () => {
     const r = requisitoDe('propertyZone');
-    expect(r).toEqual({ campo: 'propertyZone', etiqueta: 'Barrio', ayuda: 'El barrio o sector del inmueble.', tipo: 'texto' });
+    expect(r.campo).toBe('propertyZone');
+    expect(r.etiqueta).toBe('Barrio');
+    // El texto dice que se puede dejar vacío: pedirlo sin decirlo es cómo
+    // alguien inventa un barrio.
+    expect(r.ayuda).toContain('Opcional');
     expect(requisitoDe('monthlyRent').sufijo).toBe('COP');
   });
 
   it('faltantesParaElBack devuelve exactamente lo que dice el catálogo', () => {
-    const faltan = faltantesParaElBack(inmueble({ propertyZone: '', propertyArea: undefined }));
-    expect(faltan).toEqual([requisitoDe('propertyZone'), requisitoDe('propertyArea')]);
+    const faltan = faltantesParaElBack(
+      inmueble({ propertyAddress: '', monthlyRent: undefined }),
+    );
+    expect(faltan).toEqual([requisitoDe('propertyAddress'), requisitoDe('monthlyRent')]);
   });
 });

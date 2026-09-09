@@ -29,7 +29,7 @@ function matchesQuery(item: AgencyProperty, q: string): boolean {
   return (
     norm(item.title).includes(n) ||
     norm(item.address).includes(n) ||
-    norm(item.neighborhood).includes(n) ||
+    norm(item.neighborhood ?? '').includes(n) ||
     norm(item.city).includes(n)
   );
 }

@@ -164,3 +164,58 @@ describe('el propietario del archivo viaja al back', () => {
     expect(dto).not.toHaveProperty('comisionPorcentaje');
   });
 });
+
+/**
+ * Las cinco columnas que `ImportarInmuebleDto` empezó a declarar el
+ * 2026-09-08. El nombre del lado del cable NO es el del modelo del front:
+ * `ownerPhone` viaja como `propietarioTelefono` y `status` como
+ * `estadoOrigen`. Con `forbidNonWhitelisted: true`, equivocarse de nombre es
+ * un 400 del lote entero, no un campo ignorado.
+ */
+describe('las columnas nuevas del archivo real viajan con el nombre del back', () => {
+  it('traduce ownerPhone → propietarioTelefono y status → estadoOrigen', () => {
+    const dto = toImportarInmuebleDto(
+      inmueble({
+        ownerPhone: ' 3205234056 ',
+        status: ' Arrendada ',
+        urbanizacion: ' ARAGUA ',
+        llavesEn: ' Portería torre 2 ',
+        creadaPor: ' ANA MARIA ECHAVARRIA ',
+      }),
+    );
+    expect(dto).toMatchObject({
+      propietarioTelefono: '3205234056',
+      estadoOrigen: 'Arrendada',
+      urbanizacion: 'ARAGUA',
+      llavesEn: 'Portería torre 2',
+      creadaPor: 'ANA MARIA ECHAVARRIA',
+    });
+    expect(dto).not.toHaveProperty('ownerPhone');
+    expect(dto).not.toHaveProperty('status');
+  });
+
+  it('en blanco no viajan — el back no debe ver una cadena vacía', () => {
+    const dto = toImportarInmuebleDto(
+      inmueble({ ownerPhone: '   ', status: '', urbanizacion: '', llavesEn: '  ', creadaPor: '' }),
+    );
+    for (const clave of [
+      'propietarioTelefono',
+      'estadoOrigen',
+      'urbanizacion',
+      'llavesEn',
+      'creadaPor',
+    ]) {
+      expect(dto, clave).not.toHaveProperty(clave);
+    }
+  });
+
+  /*
+   * El estado viaja CRUDO. Traducirlo acá («Arrendada» → `RENTED`) le quitaría
+   * al back la única forma de decir qué palabra no reconoció, y dejaría dos
+   * tablas de traducción viviendo en repos distintos (C19).
+   */
+  it('el estado no se traduce: llega tal como lo escribió la inmobiliaria', () => {
+    expect(toImportarInmuebleDto(inmueble({ status: 'Inactiva' })).estadoOrigen).toBe('Inactiva');
+    expect(toImportarInmuebleDto(inmueble({ status: 'Lo que sea' })).estadoOrigen).toBe('Lo que sea');
+  });
+});

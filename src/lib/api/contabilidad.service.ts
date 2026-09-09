@@ -151,6 +151,19 @@ export interface CuentaImportada {
   nombre: string;
   naturaleza?: string;
   imputable?: string | boolean;
+  /**
+   * Las cuatro banderas del export real de la inmobiliaria
+   * (`Control de Terceros;Caja o Banco;Último Nivel;Habilitado`, con SI/NO).
+   *
+   * `ultimoNivel` decide `imputable` y `habilitado` decide `activa`; las otras
+   * dos el back las recibe y las IGNORA a propósito (`CuentaPuc` no tiene
+   * dónde guardarlas) y lo dice en la revisión. Se mandan igual: que el
+   * archivo no pierda columnas en el camino es lo que permite decirlo.
+   */
+  ultimoNivel?: boolean;
+  habilitado?: boolean;
+  controlDeTerceros?: boolean;
+  cajaOBanco?: boolean;
 }
 
 export type VeredictoDeCuenta = 'NUEVA' | 'YA_EXISTE' | 'INVALIDA';
@@ -167,6 +180,16 @@ export interface CuentaRevisada {
   veredicto: VeredictoDeCuenta;
   motivo?: string;
   nombreActual?: string;
+  /**
+   * De la columna «Habilitado» del archivo. Un back viejo no lo manda:
+   * `undefined` ⇒ no se afirma nada, nunca un `false` que dibuje media lista
+   * de cuentas como deshabilitada.
+   */
+  activa?: boolean;
+  /** El mismo veredicto en el vocabulario de las otras migraciones. */
+  estado?: EstadoDeFilaMigrada | 'YA_EXISTE';
+  /** La fila del archivo, 1-based, cuando el back la manda. */
+  fila?: number;
 }
 
 export interface RevisionDeImportacionPuc {
@@ -582,6 +605,138 @@ function conQuery(path: string, params: Record<string, string | undefined>): str
   return s ? `${path}?${s}` : path;
 }
 
+
+// ── Documentos contables migrados ──────────────────────────────────────────
+
+/**
+ * `MAX_DOCUMENTOS_POR_LOTE` del back. El archivo real tiene 116.469 filas: son
+ * 24 llamadas. Un lote más grande es 400 y, peor, un proceso que nadie puede
+ * reintentar porque no sabe dónde se quedó.
+ */
+export const MAX_DOCUMENTOS_POR_LOTE = 5_000;
+
+/**
+ * Un comprobante como sale del sistema contable viejo (`DocumentoMigradoDto`).
+ *
+ * 🔴 Los montos y las banderas viajan CRUDOS («$5,561,832.00», «SI»/«NO»,
+ * «26,766»): el DTO los declara `@Allow()` y el back los normaliza junto al
+ * texto original, que es lo que le permite decir «el monto "1.2.3" no se pudo
+ * leer» en vez de poner un cero. Interpretarlos acá le quitaría esa frase.
+ */
+export interface DocumentoMigrado {
+  prefijo: string;
+  fecha: string;
+  consecutivo?: unknown;
+  tipo?: string;
+  concepto?: string;
+  debitos?: unknown;
+  creditos?: unknown;
+  balance?: unknown;
+  descuadrado?: unknown;
+  anulado?: unknown;
+  esAnticipo?: unknown;
+  terceroAnticipo?: string;
+  anticipoAplicado?: unknown;
+  valorRestanteAnticipo?: unknown;
+  creadoPor?: string;
+  fechaCreacionOrigen?: string;
+}
+
+export type EstadoDeDocumento = 'LISTO' | 'YA_MIGRADO' | 'RECHAZADO';
+
+/** Cómo se resolvió el contrato de un comprobante. `ninguno` = no se resolvió. */
+export type AsociadoPor = 'documento' | 'nombre' | 'ninguno';
+
+export interface AsociacionDeDocumento {
+  contractId?: string;
+  terceroDocumento?: string;
+  terceroNombre?: string;
+  asociadoPor: AsociadoPor;
+}
+
+export interface FilaDeDocumento {
+  /** 1-based, la fila del archivo del contador. */
+  fila: number;
+  prefijo: string;
+  /** `null` cuando no se pudo leer. */
+  consecutivo: number | null;
+  estado: EstadoDeDocumento;
+  motivo?: string;
+  asociacion: AsociacionDeDocumento;
+}
+
+export interface RevisionDeDocumentos {
+  total: number;
+  listos: number;
+  yaMigrados: number;
+  rechazados: number;
+  /** Cuántos quedaron colgados de un contrato, y por qué camino. */
+  asociados: { porDocumento: number; porNombre: number; sinContrato: number };
+  /** Los motivos agrupados: 40.000 filas iguales son UNA línea del informe. */
+  motivos: { motivo: string; filas: number[] }[];
+  filas: FilaDeDocumento[];
+}
+
+export interface InformeDeDocumentos extends RevisionDeDocumentos {
+  /** Cuántos se escribieron de verdad en esta corrida. */
+  migrados: number;
+  fallasAlEscribir: { fila: number; motivo: string }[];
+}
+
+/** Un comprobante ya migrado, como lo lista la ficha del contrato. */
+export interface DocumentoMigradoVista {
+  id: string;
+  prefijo: string;
+  consecutivo: number;
+  tipo: string;
+  fecha: string;
+  concepto: string;
+  debitos: number | null;
+  creditos: number | null;
+  balance: number | null;
+  descuadrado: boolean;
+  anulado: boolean;
+  esAnticipo: boolean;
+  terceroAnticipo: string | null;
+  anticipoAplicado: boolean;
+  valorRestanteAnticipo: number | null;
+  creadoPor: string | null;
+  fechaCreacionOrigen: string | null;
+  terceroDocumento: string | null;
+  terceroNombre: string | null;
+  contractId: string | null;
+  propertyId: string | null;
+  asociadoPor: AsociadoPor;
+}
+
+export interface PaginaDeDocumentosMigrados {
+  documentos: DocumentoMigradoVista[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/**
+ * `GET .../documentos/por-contrato/:contractId` — lo que lista la ficha del
+ * contrato.
+ *
+ * No pagina: trae los más recientes hasta `tope` y dice cuántos hay en
+ * `total`. Los dos números importan y NO son el mismo: con 1.842 comprobantes
+ * llegan 500, y una tabla que dibuja 500 filas sin decirlo afirma que ésos son
+ * todos. `mostrados` es `documentos.length`, y viene del back para no tener
+ * que deducirlo.
+ */
+export interface DocumentosDeUnContrato {
+  contractId: string;
+  /** Cuántos tiene el contrato en total. */
+  total: number;
+  /** Cuántos vienen en esta respuesta. */
+  mostrados: number;
+  /** El techo del back. Cuando `total > tope`, hay que decirlo. */
+  tope: number;
+  documentos: DocumentoMigradoVista[];
+}
+
 // ── Mapeo contable (asientos automáticos) ──────────────────────────────────
 
 /** `EventoContable` en `schema.prisma`: los nueve movimientos que el sistema asienta solo. */
@@ -860,6 +1015,56 @@ export const contabilidadApi = {
     /** Mismo cuerpo que `revisar`. Idempotente por fila (`YA_MIGRADA`). */
     async aplicar(lote: LoteDeAsientos): Promise<InformeDeMigracion> {
       return apiClient.post<InformeDeMigracion>(`${BASE}/migracion/aplicar`, cuerpoDeLote(lote));
+    },
+
+    /**
+     * Los comprobantes del sistema viejo — encabezados, sin líneas por cuenta.
+     *
+     * 🔴 NO son asientos y no entran al libro diario: viven en
+     * `documentos_contables_migrados` y se cuelgan del contrato del tercero
+     * que nombra el concepto. Ver `documentos-migrados.service.ts` en el back.
+     */
+    documentos: {
+      /** No escribe nada: dice fila por fila qué entra y a qué contrato queda. */
+      async revisar(documentos: DocumentoMigrado[]): Promise<RevisionDeDocumentos> {
+        return apiClient.post<RevisionDeDocumentos>(
+          `${BASE}/migracion/documentos/revisar`,
+          { documentos },
+        );
+      },
+
+      /** Escribe el lote. Idempotente: reenviarlo devuelve `YA_MIGRADO`, no duplica. */
+      async migrar(documentos: DocumentoMigrado[]): Promise<InformeDeDocumentos> {
+        return apiClient.post<InformeDeDocumentos>(`${BASE}/migracion/documentos`, {
+          documentos,
+        });
+      },
+
+      async listar(
+        filtros: { contractId?: string; page?: number; pageSize?: number } = {},
+      ): Promise<PaginaDeDocumentosMigrados> {
+        return apiClient.get<PaginaDeDocumentosMigrados>(
+          conQuery(`${BASE}/migracion/documentos`, {
+            contractId: filtros.contractId,
+            page: filtros.page === undefined ? undefined : String(filtros.page),
+            pageSize: filtros.pageSize === undefined ? undefined : String(filtros.pageSize),
+          }),
+        );
+      },
+
+      /**
+       * Lo que lista la ficha del contrato.
+       *
+       * 🔴 NO devuelve un arreglo: devuelve el sobre completo, con `total` y
+       * `tope`. Es lo que permite decir «mostramos 500 de 1.842» en vez de
+       * dibujar 500 filas como si fueran todas — un contrato viejo de una
+       * inmobiliaria con seis años de historia pasa el tope sin esfuerzo.
+       */
+      async porContrato(contractId: string): Promise<DocumentosDeUnContrato> {
+        return apiClient.get<DocumentosDeUnContrato>(
+          `${BASE}/migracion/documentos/por-contrato/${encodeURIComponent(contractId)}`,
+        );
+      },
     },
   },
 };

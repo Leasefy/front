@@ -413,3 +413,57 @@ describe('<FilaDeRevision> — una fila ya activada', () => {
     expect($('[role="checkbox"]')).toBeNull()
   })
 })
+
+/**
+ * Por qué camino quedó pegado el inmueble (back `48e30bb`).
+ *
+ * Un `propertyId` es un uuid: no dice si el contrato quedó pegado por el
+ * código exacto de la inmobiliaria o porque dos direcciones se parecían. Al
+ * revisar, esas dos cosas no merecen la misma atención — y la segunda es
+ * justamente la que hay que mirar.
+ */
+describe('<FilaDeRevision> — cómo quedó pegado el inmueble', () => {
+  const asociacion = (
+    asociadoPor: 'codigo' | 'direccion' | 'manual' | 'ninguno',
+    codigo: string | null = null,
+  ): FilaDeMigracion['asociacion'] => ({
+    inmueble: { asociadoPor, codigo, direccion: 'Calle 75 # 57-31', propertyId: 'prop-1' },
+    propietario: { asociadoPor: 'ninguno', documento: null, nombre: null, id: null, cuantos: 0 },
+    inquilino: { asociadoPor: 'documento', documento: '71211270', nombre: 'X', id: null, cuantos: 1 },
+    escenario: [],
+    historico: false,
+  })
+
+  it('por código lo dice, con el código', () => {
+    montar({ asociacion: asociacion('codigo', '2945') })
+    expect($('[data-testid="asociacion-codigo"]')?.textContent).toContain('2945')
+  })
+
+  it('por dirección avisa que es un parecido, no una certeza', () => {
+    montar({ asociacion: asociacion('direccion') })
+    expect($('[data-testid="asociacion-direccion"]')?.textContent).toContain(
+      'vale la pena mirarlo',
+    )
+  })
+
+  it('elegido a mano se distingue de los dos automáticos', () => {
+    montar({ asociacion: asociacion('manual') })
+    expect($('[data-testid="asociacion-manual"]')).toBeTruthy()
+  })
+
+  /*
+   * 🔴 Sin el dato (una fila preparada antes de que el back lo mandara) no se
+   * escribe nada: afirmar «ninguno» sería contestar por el back.
+   */
+  it('sin el dato del back no dibuja ninguna línea', () => {
+    montar()
+    for (const camino of ['codigo', 'direccion', 'manual', 'ninguno']) {
+      expect($(`[data-testid="asociacion-${camino}"]`), camino).toBeNull()
+    }
+  })
+
+  it('«ninguno» tampoco escribe una línea: lo dicen los faltantes de abajo', () => {
+    montar({ asociacion: asociacion('ninguno') })
+    expect($('[data-testid="asociacion-ninguno"]')).toBeNull()
+  })
+})

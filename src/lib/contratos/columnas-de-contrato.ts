@@ -55,6 +55,28 @@ export type CampoDeContrato =
   | "direccionInmueble"
   | "codigoInmueble"
   | "ciudadInmueble"
+  /**
+   * ── Las columnas del export real (2026-09-08) ───────────────────────────
+   *
+   * El archivo de contratos de la inmobiliaria no trae «Dirección» y
+   * «Código» por separado: trae UNA columna «Propiedad» con las dos cosas
+   * pegadas («3 - CR 50 127 SUR 61 OF 502»). Y trae ocho columnas más que
+   * antes quedaban sin campo y se perdían enteras.
+   *
+   * Cada una es un campo propio, no un alias de otro: un campo se llena una
+   * sola vez, así que meter dos columnas del archivo en el mismo destino
+   * hacía que una de las dos desapareciera sin decirlo.
+   */
+  | "propiedadCodigoYDireccion"
+  | "consecutivoContrato"
+  | "estratoInmueble"
+  | "canonTotal"
+  | "escenario"
+  | "estadoContrato"
+  | "fechaTerminacion"
+  | "observaciones"
+  | "fechaCreacionOrigen"
+  | "creadoPor"
   | "inquilinoNombre"
   | "inquilinoCorreo"
   | "inquilinoTelefono"
@@ -285,12 +307,14 @@ export const SIN_CAMPO_EN_CONTRATO = [
   "administracion mensual",
   "matricula inmobiliaria",
   "chip catastral",
-  "estrato",
-  "consecutivo",
   "referencia interna",
-  "observaciones",
-  "notas",
   "fecha de nacimiento",
+  /*
+   * «Estrato», «Consecutivo» y «Observaciones» SALIERON de esta lista el
+   * 2026-09-08: las tres vienen en el archivo real y ahora tienen campo
+   * propio (`estratoInmueble`, `consecutivoContrato`, `observaciones`).
+   * Estaban acá porque no había dónde ponerlas, no porque estorbaran.
+   */
 ].map(canonizar);
 
 /* ── Campos de persona: rol × atributo ───────────────────────────────────── */
@@ -616,7 +640,99 @@ const DICCIONARIO: Array<{ campo: CampoDeContrato; terminos: string[] }> = [
       "address",
     ],
   },
+
+  /* ── Las columnas del export real ──────────────────────────────────────── */
+
+  {
+    /*
+     * «Propiedad» = «3 - CR 50 127 SUR 61 OF 502». Es el código del inmueble
+     * en el sistema viejo Y su dirección, en la misma celda. Se parte en
+     * `armar-fila.ts`; acá sólo se reconoce la columna.
+     *
+     * `propiedad`/`inmueble`/`predio` son TÉRMINOS SIN PERSONA (ver abajo):
+     * «Propietario de Propiedad» nombra a alguien y tiene que seguir siendo
+     * el propietario, no la dirección del inmueble.
+     */
+    campo: "propiedadCodigoYDireccion",
+    terminos: ["propiedad", "inmueble", "predio"],
+  },
+  {
+    campo: "consecutivoContrato",
+    terminos: [
+      "numero del contrato",
+      "numero contrato",
+      "codigo del contrato",
+      "id del contrato",
+      "consecutivo del contrato",
+      "consecutivo",
+    ],
+  },
+  {
+    /* Viene en PALABRAS («Tres»); lo lee `estratoDePalabras`. */
+    campo: "estratoInmueble",
+    terminos: [
+      "estrato de la propiedad",
+      "estrato del inmueble",
+      "estrato propiedad",
+      "estrato inmueble",
+      "estrato",
+    ],
+  },
+  {
+    /*
+     * «Canon Total» es el canon del contrato. «Valor Canon» es el MISMO
+     * canon repartido entre los propietarios («$451,000.00, $649,000.00» en
+     * los 41 contratos con dos dueños), así que no es un número que se pueda
+     * leer solo. Cuando el archivo trae las dos, manda ésta.
+     */
+    campo: "canonTotal",
+    terminos: ["canon total", "total del canon", "total canon", "valor total del canon"],
+  },
+  {
+    campo: "escenario",
+    terminos: ["escenario tributario", "escenario"],
+  },
+  {
+    campo: "estadoContrato",
+    terminos: ["estado del contrato", "estado contrato", "estado"],
+  },
+  {
+    /*
+     * La fecha en que el contrato SE TERMINÓ de verdad, que no es la misma
+     * que la fecha fin pactada: en el archivo real 1.103 de 1.850 filas
+     * traen las dos y son distintas. Ver `separarFinDeTerminacion`.
+     */
+    campo: "fechaTerminacion",
+    terminos: [
+      "fecha de terminacion anticipada",
+      "fecha de terminacion real",
+      "fecha de terminacion",
+      "fecha terminacion",
+    ],
+  },
+  {
+    campo: "observaciones",
+    terminos: ["observaciones", "observacion", "comentarios", "comentario", "notas", "nota"],
+  },
+  {
+    campo: "fechaCreacionOrigen",
+    terminos: ["fecha de creacion", "fecha creacion", "fecha de registro", "creado el"],
+  },
+  {
+    campo: "creadoPor",
+    terminos: ["creado por", "creada por", "usuario que creo", "registrado por"],
+  },
 ];
+
+/**
+ * Términos que sólo valen cuando el encabezado NO nombra a una persona.
+ *
+ * «Propiedad» sola es el inmueble; «Propietario de Propiedad» es el dueño. Sin
+ * esta regla el diccionario le ganaba al empate por persona (los dos empatan
+ * con una palabra, y en el empate manda el diccionario) y los propietarios del
+ * archivo real entraban como si fueran la dirección del inmueble.
+ */
+const TERMINOS_SIN_PERSONA = new Set(["propiedad", "inmueble", "predio"]);
 
 /**
  * Términos que por sí solos no alcanzan para estar seguros. Empatan igual
@@ -667,6 +783,26 @@ const DICCIONARIO_CANON = DICCIONARIO.map(({ campo, terminos }) => ({
   terminos: terminos.map((t) => ({ escrito: t, canon: canonizar(t) })),
 }));
 
+/** Cómo se llama el fin PACTADO del contrato, sin nombrar «terminación». */
+const TERMINOS_DE_FIN_PACTADO = [
+  "fecha fin",
+  "fecha de fin",
+  "fecha final",
+  "fecha de finalizacion",
+  "fecha de vencimiento",
+  "fecha vencimiento",
+  "vigencia hasta",
+  "fecha hasta",
+  "end date",
+].map(canonizar);
+
+/** Cómo se llama el día en que el contrato se terminó de verdad. */
+const TERMINOS_DE_TERMINACION = [
+  "fecha de terminacion",
+  "fecha terminacion",
+  "terminacion",
+].map(canonizar);
+
 /** Un empate normal siempre le gana a uno débil, empatara con lo que empatara. */
 function mejorQue(a: Empate, b: Empate | null): boolean {
   if (!b) return true;
@@ -674,10 +810,11 @@ function mejorQue(a: Empate, b: Empate | null): boolean {
   return a.puntaje > b.puntaje;
 }
 
-function empatePorDiccionario(canon: string): Empate | null {
+function empatePorDiccionario(canon: string, nombraPersona: boolean): Empate | null {
   let mejor: Empate | null = null;
   for (const { campo, terminos } of DICCIONARIO_CANON) {
     for (const termino of terminos) {
+      if (nombraPersona && TERMINOS_SIN_PERSONA.has(termino.escrito)) continue;
       if (!contienePalabras(canon, termino.canon)) continue;
       const debil = TERMINOS_DEBILES.has(termino.escrito);
       const candidato: Empate = {
@@ -711,11 +848,31 @@ function empatePorDiccionario(canon: string): Empate | null {
  * la persona sólo puede confiar o no confiar.
  */
 export function mapearColumnas(encabezados: string[]): MapeoDeColumna[] {
-  const candidatos = encabezados.map((columna): MapeoDeColumna & {
+  const canones = encabezados.map(canonizar);
+
+  /*
+   * ── «Fecha Fin» y «Fecha de Terminación» en el MISMO archivo ────────────
+   *
+   * Los dos encabezados hablan de terminar, y los dos empatan con `fechaFin`
+   * — así que uno de los dos quedaba sin mapear (gana el más específico) y el
+   * archivo perdía una fecha entera. En el export real las dos vienen y son
+   * DISTINTAS: 1.103 de 1.850 filas traen una fecha de terminación que no es
+   * la fecha fin pactada (el contrato se terminó antes).
+   *
+   * Cuando el archivo trae una columna de fin pactado, «terminación» es la
+   * OTRA fecha. Cuando trae sólo una de las dos, todo sigue como antes:
+   * «Fecha de terminación» es el fin del contrato, que es la lectura de
+   * siempre en un export.
+   */
+  const hayFinPactado = canones.some((c) =>
+    TERMINOS_DE_FIN_PACTADO.some((t) => contienePalabras(c, t)),
+  );
+
+  const candidatos = encabezados.map((columna, indice): MapeoDeColumna & {
     puntaje: number;
     debil: boolean;
   } => {
-    const canon = canonizar(columna);
+    const canon = canones[indice];
     const sinCampo: MapeoDeColumna & { puntaje: number; debil: boolean } = {
       columna,
       campo: null,
@@ -729,10 +886,25 @@ export function mapearColumnas(encabezados: string[]): MapeoDeColumna[] {
       return sinCampo;
     }
 
+    if (
+      hayFinPactado &&
+      !TERMINOS_DE_FIN_PACTADO.some((t) => contienePalabras(canon, t)) &&
+      TERMINOS_DE_TERMINACION.some((t) => contienePalabras(canon, t))
+    ) {
+      return {
+        columna,
+        campo: "fechaTerminacion",
+        porque: "terminación (el archivo trae la fecha fin aparte)",
+        certeza: "sinonimo",
+        puntaje: 3,
+        debil: false,
+      };
+    }
+
     const persona = empatePorPersona(canon);
     if (persona === false) return sinCampo;
 
-    const diccionario = empatePorDiccionario(canon);
+    const diccionario = empatePorDiccionario(canon, persona !== null);
     // Empate parejo → gana el diccionario: «Canon del arrendatario» es el
     // canon, no el nombre del inquilino por nombrar al arrendatario.
     const elegido =
@@ -864,7 +1036,10 @@ export const REQUISITOS_ESENCIALES: RequisitoEsencial[] = [
     clave: "inmueble",
     etiqueta: "la dirección o el código del inmueble",
     nombreCorto: "dirección ni código del inmueble",
-    campos: ["direccionInmueble", "codigoInmueble"],
+    // `propiedadCodigoYDireccion` cuenta: el export real trae las dos cosas en
+    // UNA columna («3 - CR 50 127 SUR 61») y `armar-fila` las separa. Sin esto
+    // la compuerta frenaba un archivo que sí traía la dirección.
+    campos: ["direccionInmueble", "codigoInmueble", "propiedadCodigoYDireccion"],
     pistas: ["direccion", "inmueble", "predio", "propiedad", "address"],
   },
   {
@@ -899,7 +1074,9 @@ export const REQUISITOS_ESENCIALES: RequisitoEsencial[] = [
     clave: "canon",
     etiqueta: "el canon",
     nombreCorto: "canon",
-    campos: ["canon"],
+    // «Canon Total» también sirve: es el canon del contrato cuando el archivo
+    // trae el reparto entre propietarios en la otra columna.
+    campos: ["canon", "canonTotal"],
     pistas: ["canon", "arriendo", "renta", "alquiler", "mensualidad"],
   },
   {
@@ -971,9 +1148,21 @@ export const CAMPOS_CLAVE: CampoDeContrato[] = [
  * la lista de trabajo (`FaltantesDeFila`) es donde se completan fila por
  * fila después.
  */
+/**
+ * Campos que otra columna ya satisface. El export real trae la dirección
+ * DENTRO de «Propiedad» y el canon dentro de «Canon Total»: avisar de que
+ * «falta la dirección» cuando está ahí es ruido que enseña a ignorar el aviso.
+ */
+const YA_CUBIERTO_POR: Partial<Record<CampoDeContrato, CampoDeContrato[]>> = {
+  direccionInmueble: ["propiedadCodigoYDireccion"],
+  canon: ["canonTotal"],
+};
+
 export function sinMapear(mapeo: MapeoDeColumna[]): CampoDeContrato[] {
   const mapeados = new Set(mapeo.map((m) => m.campo).filter(Boolean));
-  return CAMPOS_CLAVE.filter((c) => !mapeados.has(c));
+  return CAMPOS_CLAVE.filter(
+    (c) => !mapeados.has(c) && !(YA_CUBIERTO_POR[c] ?? []).some((alt) => mapeados.has(alt)),
+  );
 }
 
 /**

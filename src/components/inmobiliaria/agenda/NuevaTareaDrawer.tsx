@@ -1,28 +1,21 @@
 'use client';
 
 /**
- * NuevaTareaDrawer — una tarea propia en la agenda: título, día, hora
- * opcional, a qué inmueble se ata y quién la lleva.
+ * NuevaTareaDrawer — una tarea propia en la agenda: qué hay que hacer, día,
+ * hora opcional, a qué inmueble se ata y quién la lleva.
  *
  * Nico (2026-09-03): «le doy nueva tarea acá en agenda y no funciona nada».
- * Antes el botón avisaba que llegaría «con el motor (M1)». Ahora existe
- * `POST /inmobiliaria/agenda/tareas` y esto lo usa. Fecha y hora con los
- * pickers de cadence, no con inputs nativos.
+ * Nico (2026-09-08): «que sea un textarea porque la tarea puede ser larga; que
+ * día y hora usen los componentes de cadence y se sientan clicables». Va con
+ * el cajón de la casa: cabecera fija, cuerpo con scroll, pie fijo.
  */
 
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from '@/components/ui/toast';
 import { DatePicker, TimePicker } from '@leasefy/cadence';
 import { Button, Textarea } from '@/components/ui';
-import { Input } from '@/components/ui/input';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { useAgentes, useConsignaciones } from '@/lib/hooks/useInmobiliaria';
 import { ApiError } from '@/lib/api/client';
 import { agendaApi } from '@/lib/api/agenda.service';
@@ -53,13 +46,29 @@ export const TAREA_VACIA: TareaForm = {
   nota: '',
 };
 
+/** Tope del back (`CreateTareaDto.titulo`): lo largo va en la nota. */
+export const TITULO_MAX = 200;
+
 /** Qué falta. Vacío = se puede guardar. */
 export function validarTarea(f: TareaForm): Record<string, string> {
   const e: Record<string, string> = {};
   if (f.titulo.trim().length < 2) e.titulo = 'Escribe qué hay que hacer.';
+  else if (f.titulo.trim().length > TITULO_MAX) e.titulo = `Máximo ${TITULO_MAX} caracteres; el detalle va en la nota.`;
   if (!f.fecha) e.fecha = 'Elige el día.';
   return e;
 }
+
+/** «Te falta el día» / «Te falta qué hay que hacer y el día». */
+export function loQueFalta(errores: Record<string, string>): string | null {
+  const partes: string[] = [];
+  if (errores.titulo) partes.push('qué hay que hacer');
+  if (errores.fecha) partes.push('el día');
+  if (partes.length === 0) return null;
+  return `Te falta ${partes.join(' y ')}.`;
+}
+
+/** Los pickers de cadence con la altura y el radio de los demás campos del cajón. */
+const CAMPO_CLICABLE = 'h-11 w-full rounded-[12px] px-3.5';
 
 export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
   const [form, setForm] = useState<TareaForm>(TAREA_VACIA);
@@ -87,7 +96,8 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
   );
 
   const errores = validarTarea(form);
-  const valido = Object.keys(errores).length === 0 && !guardando;
+  const falta = loQueFalta(errores);
+  const valido = !falta && !guardando;
   const set = <K extends keyof TareaForm>(k: K, v: TareaForm[K]) => setForm((f) => ({ ...f, [k]: v }));
 
   const guardar = async () => {
@@ -119,85 +129,101 @@ export function NuevaTareaDrawer({ abierto, onOpenChange, onCreada }: Props) {
   };
 
   return (
-    <Sheet open={abierto} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto" data-lenis-prevent>
-        <SheetHeader className="space-y-1 border-b border-border pb-4">
-          <SheetTitle className="text-lg font-semibold text-fg">Nueva tarea</SheetTitle>
-          <SheetDescription className="text-sm text-fg-muted">
-            Algo que hay que hacer un día: queda en la agenda con su inmueble y su responsable.
-          </SheetDescription>
-        </SheetHeader>
-
-        <div className="mt-4 space-y-4" data-testid="nueva-tarea">
-          <Campo label="Qué hay que hacer" error={form.titulo && errores.titulo}>
-            <Input
-              value={form.titulo}
-              onChange={(e) => set('titulo', e.target.value)}
-              placeholder="Recoger llaves del 402"
-              maxLength={200}
-              data-testid="tarea-titulo"
-            />
-          </Campo>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Campo label="Día">
-              <DatePicker
-                value={fechaLocal(form.fecha)}
-                onChange={(d) => set('fecha', aFechaIso(d))}
-                minDate={hoyLocal()}
-                placeholder="Elige el día"
-                className="w-full"
+    <Cajon abierto={abierto} onOpenChange={onOpenChange} data-testid="nueva-tarea-cajon">
+      <CajonCabecera
+        titulo="Nueva tarea"
+        descripcion="Algo que hay que hacer un día: queda en la agenda con su inmueble y su responsable."
+      />
+      <form
+        className="contents"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void guardar();
+        }}
+        noValidate
+      >
+        <CajonCuerpo>
+          <div className="space-y-5" data-testid="nueva-tarea">
+            <Campo
+              label="Qué hay que hacer"
+              error={form.titulo && errores.titulo}
+              contador={`${form.titulo.length}/${TITULO_MAX}`}
+            >
+              <Textarea
+                value={form.titulo}
+                onChange={(e) => set('titulo', e.target.value)}
+                placeholder="Recoger las llaves del 402 y dejarlas en portería"
+                rows={2}
+                maxLength={TITULO_MAX}
+                data-testid="tarea-titulo"
               />
             </Campo>
-            <Campo label="Hora" hint="Opcional">
-              <TimePicker value={form.hora || undefined} onChange={(h) => set('hora', h)} placeholder="Sin hora" step={30} className="w-full" />
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)]">
+              <Campo label="Día">
+                <DatePicker
+                  value={fechaLocal(form.fecha)}
+                  onChange={(d) => set('fecha', aFechaIso(d))}
+                  minDate={hoyLocal()}
+                  placeholder="Elige el día"
+                  className={CAMPO_CLICABLE}
+                />
+              </Campo>
+              <Campo label="Hora" hint="Opcional">
+                <TimePicker
+                  value={form.hora || undefined}
+                  onChange={(h) => set('hora', h)}
+                  step={30}
+                  className={CAMPO_CLICABLE}
+                />
+              </Campo>
+            </div>
+
+            <Campo label="Inmueble" hint="Opcional">
+              <Combobox
+                value={form.consignacionId || undefined}
+                onChange={(v) => set('consignacionId', v ?? '')}
+                options={inmuebles}
+                placeholder="Busca por código, título o dirección"
+                searchPlaceholder="Escribe #código, título o dirección"
+                contentClassName="z-[400]"
+              />
+            </Campo>
+
+            <Campo label="Responsable" hint="Opcional">
+              <Combobox
+                value={form.responsableUserId || undefined}
+                onChange={(v) => set('responsableUserId', v ?? '')}
+                options={responsables}
+                placeholder={responsables.length ? 'Elige a alguien del equipo' : 'Sin agentes con cuenta'}
+                searchPlaceholder="Nombre"
+                disabled={responsables.length === 0}
+                contentClassName="z-[400]"
+              />
+            </Campo>
+
+            <Campo label="Nota" hint="Opcional">
+              <Textarea
+                value={form.nota}
+                onChange={(e) => set('nota', e.target.value)}
+                rows={3}
+                maxLength={1000}
+                placeholder="Detalles, a quién llamar, qué llevar…"
+              />
             </Campo>
           </div>
+        </CajonCuerpo>
 
-          <Campo label="Inmueble" hint="Opcional">
-            <Combobox
-              value={form.consignacionId || undefined}
-              onChange={(v) => set('consignacionId', v ?? '')}
-              options={inmuebles}
-              placeholder="Busca por código, título o dirección"
-              searchPlaceholder="Escribe #código, título o dirección"
-              contentClassName="z-[400]"
-            />
-          </Campo>
-
-          <Campo label="Responsable" hint="Opcional">
-            <Combobox
-              value={form.responsableUserId || undefined}
-              onChange={(v) => set('responsableUserId', v ?? '')}
-              options={responsables}
-              placeholder={responsables.length ? 'Elige a alguien del equipo' : 'Sin agentes con cuenta'}
-              searchPlaceholder="Nombre"
-              disabled={responsables.length === 0}
-              contentClassName="z-[400]"
-            />
-          </Campo>
-
-          <Campo label="Nota" hint="Opcional">
-            <Textarea
-              value={form.nota}
-              onChange={(e) => set('nota', e.target.value)}
-              rows={3}
-              maxLength={1000}
-              placeholder="Detalles, a quién llamar, qué llevar…"
-            />
-          </Campo>
-
-          <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
-            <Button type="button" variant="outline" size="sm" hideArrow onClick={() => onOpenChange(false)} disabled={guardando}>
-              Cancelar
-            </Button>
-            <Button type="button" size="sm" hideArrow onClick={() => void guardar()} disabled={!valido} data-testid="tarea-guardar">
-              Crear tarea
-            </Button>
-          </div>
-        </div>
-      </SheetContent>
-    </Sheet>
+        <CajonPie ayuda={falta ? <span data-testid="tarea-falta">{falta}</span> : null}>
+          <Button type="button" variant="outline" hideArrow onClick={() => onOpenChange(false)} disabled={guardando}>
+            Cancelar
+          </Button>
+          <Button type="submit" hideArrow disabled={!valido} isLoading={guardando} data-testid="tarea-guardar">
+            Crear tarea
+          </Button>
+        </CajonPie>
+      </form>
+    </Cajon>
   );
 }
 
@@ -205,16 +231,21 @@ function Campo({
   label,
   hint,
   error,
+  contador,
   children,
 }: {
   label: string;
   hint?: string;
   error?: string | false;
+  contador?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-medium text-fg">{label}</label>
+      <div className="flex items-baseline justify-between">
+        <label className="block text-sm font-medium text-fg">{label}</label>
+        {contador ? <span className="text-xs tabular-nums text-fg-muted">{contador}</span> : null}
+      </div>
       {children}
       {error ? (
         <p className="text-xs text-danger">{error}</p>

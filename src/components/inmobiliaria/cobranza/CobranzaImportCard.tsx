@@ -23,7 +23,8 @@
 import * as React from 'react'
 import { useRef, useState } from 'react'
 import { FileArrowUp, WarningCircle } from '@phosphor-icons/react'
-import { Button, Input } from '@/components/ui'
+import { Button } from '@/components/ui'
+import { cn } from '@/lib/utils'
 import {
   useCarteraImport,
   type CarteraImportSummary,
@@ -105,15 +106,35 @@ export function CobranzaImportCard({
 
       {/* Control de subida: input file + acción principal */}
       <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
-        <Input
-          ref={inputRef}
-          type="file"
-          accept={ACCEPT}
-          onChange={handlePick}
-          disabled={isUploading}
-          aria-label="Elegir archivo CSV de cartera"
-          className="py-2 text-fg-muted file:mr-3 file:rounded-md file:border file:border-border file:bg-surface-muted file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-fg hover:file:bg-surface"
-        />
+        {/* Un selector propio: el «Choose File / No file chosen» del navegador
+            sale en inglés y con su propio dibujo (Nico, 2026-09-08). */}
+        <label
+          className={cn(
+            'flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-md border border-dashed border-border bg-surface px-4 py-2.5 text-sm transition-colors hover:border-fg-muted/40',
+            isUploading && 'pointer-events-none opacity-60',
+          )}
+          data-testid="importar-cartera-archivo"
+        >
+          <FileArrowUp className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden="true" />
+          <span className="min-w-0 flex-1 truncate">
+            {file ? (
+              <span className="font-medium text-fg">{file.name}</span>
+            ) : (
+              <span className="text-fg-muted">Elige el archivo CSV de tu cartera</span>
+            )}
+          </span>
+          <span className="shrink-0 text-xs font-medium text-primary">{file ? 'Cambiar' : 'Buscar archivo'}</span>
+          {/* allowlist: hidden type=file behind a custom dropzone (playbook file-input allowlist) */}
+          <input
+            ref={inputRef}
+            type="file"
+            accept={ACCEPT}
+            onChange={handlePick}
+            disabled={isUploading}
+            aria-label="Elegir archivo CSV de cartera"
+            className="sr-only"
+          />
+        </label>
         <Button
           hideArrow
           onClick={handleImport}
@@ -127,7 +148,7 @@ export function CobranzaImportCard({
 
       {file && status === 'idle' && (
         <p className="mt-2 text-xs text-muted-foreground truncate">
-          Listo para subir: {file.name}
+          Listo para subir
         </p>
       )}
 

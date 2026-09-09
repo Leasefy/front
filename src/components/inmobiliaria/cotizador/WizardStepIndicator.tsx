@@ -17,7 +17,7 @@ export function WizardStepIndicator({ totalSteps, currentStep }: WizardStepIndic
         return (
           <span
             key={step}
-            className={`h-2 w-2 rounded-full ${isActive ? 'bg-primary' : 'bg-muted'}`}
+            className={`h-2 w-2 rounded-full ${isActive ? 'bg-primary' : 'bg-surface-muted'}`}
           />
         )
       })}

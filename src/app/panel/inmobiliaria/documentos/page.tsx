@@ -55,7 +55,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 import { ActaEntregaForm, ActaEntregaViewer } from '@/components/inmobiliaria';
 import type { ActaEntrega } from '@/lib/types/inmobiliaria';
 import { useActasEntrega, useConsignaciones, actasApi } from '@/lib/hooks/useInmobiliaria';
@@ -626,58 +626,56 @@ function DocumentosContent() {
       {/* Vista previa de la plantilla: el mismo HTML que se imprime, con sus
           variables sin reemplazar. Va en un iframe aislado para que el estilo
           del documento no se mezcle con el del panel. */}
-      <Sheet open={plantillaAbierta !== null} onOpenChange={(o) => !o && setPlantillaAbierta(null)}>
-        <SheetContent className="w-full sm:max-w-3xl">
-          <SheetHeader>
-            <SheetTitle className="text-lg">{plantillaVisible?.name ?? t(k('plantillaTitulo'))}</SheetTitle>
-          </SheetHeader>
-          {plantillaVisible && (
-            <div className="mt-4 flex h-[calc(100vh-8rem)] flex-col gap-3">
-              <p className="text-caption text-fg-muted">
-                {plantillaVisible.variables.length} variables · {t(k('colVersion'))}{' '}
-                {plantillaVisible.version}
-              </p>
-              {/* `bg-white` a propósito, NO `bg-surface`: esto no es una
-                  superficie del panel sino el PAPEL del documento. El srcDoc
-                  trae el HTML de la plantilla con su tinta oscura y sin fondo
-                  propio, así que con `bg-surface` (#0a0a0a en oscuro) la vista
-                  previa quedaría negro sobre negro. El papel es blanco en los
-                  dos temas porque es lo que se va a imprimir. */}
-              <iframe
-                title={plantillaVisible.name}
-                srcDoc={plantillaVisible.content}
-                className="h-full w-full rounded-lg border border-border bg-white"
-                sandbox=""
-              />
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
-
-      <Sheet open={nuevaActaAbierta} onOpenChange={setNuevaActaAbierta}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
-          <SheetHeader>
-            <SheetTitle className="text-lg">{t('inmobiliaria.documentos.newActa')}</SheetTitle>
-          </SheetHeader>
-          <div className="mt-6">
-            <ActaEntregaForm
-              initialData={{ type: 'entrega' }}
-              consignaciones={consignaciones.filter((c) => c.availability === 'rented')}
-              onSave={guardarActa}
-              onCancel={() => setNuevaActaAbierta(false)}
+      <Cajon
+        abierto={plantillaAbierta !== null}
+        onOpenChange={(o) => !o && setPlantillaAbierta(null)}
+        ancho="sm:max-w-3xl"
+      >
+        <CajonCabecera titulo={plantillaVisible?.name ?? t(k('plantillaTitulo'))} />
+        {plantillaVisible && (
+          /* El papel ocupa todo el cuerpo del cajón: la columna llena el alto
+             que queda debajo de la cabecera, sin calcular el viewport a mano. */
+          <CajonCuerpo className="flex flex-col gap-3">
+            <p className="flex-none text-caption text-fg-muted">
+              {plantillaVisible.variables.length} variables · {t(k('colVersion'))}{' '}
+              {plantillaVisible.version}
+            </p>
+            {/* `bg-white` a propósito, NO `bg-surface`: esto no es una
+                superficie del panel sino el PAPEL del documento. El srcDoc
+                trae el HTML de la plantilla con su tinta oscura y sin fondo
+                propio, así que con `bg-surface` (#0a0a0a en oscuro) la vista
+                previa quedaría negro sobre negro. El papel es blanco en los
+                dos temas porque es lo que se va a imprimir. */}
+            <iframe
+              title={plantillaVisible.name}
+              srcDoc={plantillaVisible.content}
+              className="min-h-0 w-full flex-1 rounded-lg border border-border bg-white"
+              sandbox=""
             />
-          </div>
-        </SheetContent>
-      </Sheet>
+          </CajonCuerpo>
+        )}
+      </Cajon>
 
-      <Sheet open={actaAbierta !== null} onOpenChange={(o) => !o && setActaAbierta(null)}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
-          <SheetHeader>
-            <SheetTitle className="text-lg">{t('inmobiliaria.documentos.actaDetail')}</SheetTitle>
-          </SheetHeader>
-          <div className="mt-6">{actaVisible && <ActaEntregaViewer acta={actaVisible} />}</div>
-        </SheetContent>
-      </Sheet>
+      <Cajon abierto={nuevaActaAbierta} onOpenChange={setNuevaActaAbierta} ancho="sm:max-w-2xl">
+        <CajonCabecera titulo={t('inmobiliaria.documentos.newActa')} />
+        <CajonCuerpo>
+          <ActaEntregaForm
+            initialData={{ type: 'entrega' }}
+            consignaciones={consignaciones.filter((c) => c.availability === 'rented')}
+            onSave={guardarActa}
+            onCancel={() => setNuevaActaAbierta(false)}
+          />
+        </CajonCuerpo>
+      </Cajon>
+
+      <Cajon
+        abierto={actaAbierta !== null}
+        onOpenChange={(o) => !o && setActaAbierta(null)}
+        ancho="sm:max-w-2xl"
+      >
+        <CajonCabecera titulo={t('inmobiliaria.documentos.actaDetail')} />
+        <CajonCuerpo>{actaVisible && <ActaEntregaViewer acta={actaVisible} />}</CajonCuerpo>
+      </Cajon>
     </div>
   );
 }

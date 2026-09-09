@@ -20,7 +20,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BookOpen, Scales, Warning } from "@phosphor-icons/react";
+import { ArrowRight, BookOpen, Receipt, Scales, Warning } from "@phosphor-icons/react";
 import { SegmentedControl } from "@leasefy/cadence";
 
 import { Button } from "@/components/ui/button";
@@ -32,12 +32,13 @@ import {
 import { formatDate } from "@/lib/format";
 
 import { AsientoDeApertura } from "./AsientoDeApertura";
+import { DocumentosContables } from "./DocumentosContables";
 import { MigrarAsientos } from "./MigrarAsientos";
 import { mensajeDeContabilidad } from "./contabilidad-errores";
 
 const RUTA_DEL_PASO_4 = "/panel/inmobiliaria/migracion/puc";
 
-type Camino = "apertura" | "historico";
+type Camino = "apertura" | "historico" | "documentos";
 
 interface ResumenDeCargado {
   total: number;
@@ -271,12 +272,27 @@ export function RegistrosContables({
                     </span>
                   ),
                 },
+                {
+                  // El tercer camino, y el que el archivo real de la
+                  // inmobiliaria necesita: comprobantes SIN líneas por cuenta.
+                  // Va aparte del libro diario a propósito — meterlos ahí
+                  // serían 116 mil asientos descuadrados.
+                  value: "documentos",
+                  label: (
+                    <span className="flex items-center gap-2">
+                      <Receipt className="h-4 w-4" />
+                      Subir los comprobantes
+                    </span>
+                  ),
+                },
               ]}
             />
             <p className="max-w-2xl text-sm text-fg-muted">
               {camino === "apertura"
                 ? "Lo más rápido: un asiento con los saldos a la fecha de corte y desde mañana operás acá. El detalle histórico queda en tu sistema anterior."
-                : "El libro diario exportado de tu sistema actual, en Excel o CSV. Más trabajo, pero cada movimiento viejo queda acá, con su comprobante."}
+                : camino === "historico"
+                  ? "El libro diario exportado de tu sistema actual, en Excel o CSV. Más trabajo, pero cada movimiento viejo queda acá, con su comprobante."
+                  : "El export de comprobantes: facturas, comprobantes de ingreso y de egreso, con su fecha y su concepto. No son asientos —no traen cuenta por línea— y por eso van a la ficha del contrato, no al libro diario."}
             </p>
           </div>
 
@@ -288,13 +304,15 @@ export function RegistrosContables({
               enElMuro={Boolean(onIrAlPuc)}
               onOcupado={onOcupado}
             />
-          ) : (
+          ) : camino === "historico" ? (
             <MigrarAsientos
               onAplicado={() => void cargar()}
               onIrAlPuc={onIrAlPuc}
               enElMuro={Boolean(onIrAlPuc)}
               onOcupado={onOcupado}
             />
+          ) : (
+            <DocumentosContables onOcupado={onOcupado} />
           )}
         </>
       )}

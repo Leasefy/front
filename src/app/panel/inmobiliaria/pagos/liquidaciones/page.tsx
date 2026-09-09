@@ -19,7 +19,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Wallet, PaperPlaneTilt, Receipt, Sparkle, ArrowClockwise, WarningCircle } from '@phosphor-icons/react';
+import { Wallet, Receipt, Sparkle, ArrowClockwise, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -96,13 +96,10 @@ function TesoreriaContent() {
           <h1 className="text-h2 text-fg">{t(k('title'))}</h1>
           <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">{t(k('subtitle'))}</p>
         </div>
+        {/* Sin «Procesar en Dispersiones» acá ni en el vacío: «la gente ya sabe
+            que dispersiones es para dispersar» (Nico, 2026-09-08). La bajada
+            sigue diciendo que el giro vive en Dispersiones. */}
         <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
-          <Button asChild variant="secondary" hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/dispersiones">
-              <PaperPlaneTilt className="w-4 h-4" />
-              {t(k('processCta'))}
-            </Link>
-          </Button>
           <Button asChild hideArrow>
             <Link href="/panel/inmobiliaria/pagos/cxp/nueva" data-testid="tesoreria-registrar-factura">
               <Receipt className="w-4 h-4" weight="bold" />
@@ -217,7 +214,6 @@ function TesoreriaContent() {
                         icon={Wallet}
                         title={t(k('emptyTitle'))}
                         description={t(k('emptyDesc'))}
-                        action={{ label: t(k('processCta')), href: '/panel/inmobiliaria/pagos/dispersiones' }}
                       />
                     </TableCell>
                   </TableRow>

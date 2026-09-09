@@ -74,8 +74,18 @@ describe('los campos del contrato', () => {
 
 describe('lo que NO se mapea', () => {
   it('deja sin campo lo que no tiene dónde ir, en vez de forzarlo', () => {
-    const m = mapearColumnas(['Matrícula inmobiliaria', 'Observaciones', 'Estrato'])
+    const m = mapearColumnas(['Matrícula inmobiliaria', 'Chip catastral', 'Fecha de nacimiento'])
     expect(m.every((x) => x.campo === null)).toBe(true)
+  })
+
+  /*
+   * 2026-09-08: «Observaciones» y «Estrato» dejaron de estar bloqueadas.
+   * Vienen en el archivo real y ahora tienen campo propio — estaban sin campo
+   * porque no había dónde ponerlas, no porque hubiera que tirarlas.
+   */
+  it('«Observaciones» y «Estrato» ya tienen campo', () => {
+    const m = mapearColumnas(['Observaciones', 'Estrato Propiedad'])
+    expect(m.map((x) => x.campo)).toEqual(['observaciones', 'estratoInmueble'])
   })
 
   it('un encabezado desconocido queda sin campo, no en el más parecido', () => {
@@ -143,10 +153,10 @@ describe('remapeo manual', () => {
   // distinto (bloquea palabras de inquilino que acá son justo lo que se
   // necesita).
   it('una columna que el auto-mapeo dejó "Sin usar" se puede asignar a mano', () => {
-    const auto = mapearColumnas(['Propiedad']) // excluida a propósito del auto-mapeo
+    const auto = mapearColumnas(['Zutano mengano']) // no empata con nada
     expect(auto[0].campo).toBeNull()
 
-    const manual = remapear(auto, 'Propiedad', 'direccionInmueble')
+    const manual = remapear(auto, 'Zutano mengano', 'direccionInmueble')
     expect(manual[0].campo).toBe('direccionInmueble')
     expect(manual[0].isManual).toBe(true)
   })
@@ -176,8 +186,8 @@ describe('remapeo manual', () => {
   })
 
   it('restablecer vuelve a correr el auto-mapeo desde los encabezados originales', () => {
-    const encabezados = ['Propiedad', 'Canon de arrendamiento']
-    const manual = remapear(mapearColumnas(encabezados), 'Propiedad', 'direccionInmueble')
+    const encabezados = ['Zutano mengano', 'Canon de arrendamiento']
+    const manual = remapear(mapearColumnas(encabezados), 'Zutano mengano', 'direccionInmueble')
     expect(manual[0].campo).toBe('direccionInmueble')
 
     const restablecido = mapearColumnas(encabezados)
@@ -246,7 +256,10 @@ describe('código y ciudad del inmueble', () => {
   it('«Código» a secas y «Código postal» NO son el código del inmueble', () => {
     expect(campoDe('Código')).toBeNull()
     expect(campoDe('Código postal')).toBeNull()
-    expect(campoDe('Código del contrato')).toBeNull()
+    // «Código del contrato» ES un dato, pero del contrato, no del inmueble:
+    // va al consecutivo de origen, que es la llave con la que se le cuelgan
+    // los documentos contables viejos.
+    expect(campoDe('Código del contrato')).toBe('consecutivoContrato')
   })
 
   it('«Ciudad» y «Municipio» son la ciudad del inmueble', () => {

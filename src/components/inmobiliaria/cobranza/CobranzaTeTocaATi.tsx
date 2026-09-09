@@ -44,6 +44,7 @@ import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui'
 import { usePendientes, type PendienteItem } from '@/lib/hooks/cobranza/use-pendientes'
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
+import { errorLegible } from '@/lib/cobranza/error-legible'
 
 const NS = 'inmobiliaria.ai.cobranza.pendientes'
 const PENDIENTES_HREF = '/panel/inmobiliaria/cobros/cobranza/pendientes'
@@ -220,7 +221,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
             {totalQueEspera > 0
               ? 'Puede que falte algo en este tablero: una de las fuentes no respondió.'
               : 'No pudimos cargar tus pendientes.'}{' '}
-            <span className="opacity-80">{error}</span>
+            <span className="opacity-80">{errorLegible(error)}</span>
           </div>
         )}
 

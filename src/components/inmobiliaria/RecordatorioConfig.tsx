@@ -21,13 +21,7 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Chip } from '@leasefy/cadence';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 
 // Available day options for pre-vencimiento
 const DAYS_BEFORE_OPTIONS = [1, 3, 5, 7] as const;
@@ -304,162 +298,154 @@ export function RecordatorioConfig({
   };
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader className="mb-6">
-          <SheetTitle className="flex items-center gap-2 text-lg font-semibold text-fg">
+    <Cajon abierto={isOpen} onOpenChange={(open) => !open && onClose()} ancho="sm:max-w-lg">
+      <CajonCabecera
+        titulo={
+          <span className="flex items-center gap-2">
             <Gear className="w-5 h-5 text-primary" />
             {t('inmobiliaria.cobros.recordatorioConfig.title')}
-          </SheetTitle>
-          <SheetDescription>
-            {t('inmobiliaria.cobros.recordatorioConfig.description')}
-          </SheetDescription>
-        </SheetHeader>
+          </span>
+        }
+        descripcion={t('inmobiliaria.cobros.recordatorioConfig.description')}
+      />
 
-        <div className="space-y-8">
-          {/* Pre-vencimiento Section */}
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="space-y-4"
-          >
-            <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <Calendar className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">
-                {t('inmobiliaria.cobros.recordatorioConfig.preExpiry')}
-              </h3>
-            </div>
-            <DaySelector
-              options={DAYS_BEFORE_OPTIONS}
-              selected={localConfig.daysBefore}
-              onChange={handleDaysBeforeChange}
-              label={t('inmobiliaria.cobros.recordatorioConfig.daysBefore')}
-            />
-          </motion.section>
+      <CajonCuerpo className="space-y-8">
+        {/* Pre-vencimiento Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="space-y-4"
+        >
+          <div className="flex items-center gap-2 pb-2 border-b border-border">
+            <Calendar className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">
+              {t('inmobiliaria.cobros.recordatorioConfig.preExpiry')}
+            </h3>
+          </div>
+          <DaySelector
+            options={DAYS_BEFORE_OPTIONS}
+            selected={localConfig.daysBefore}
+            onChange={handleDaysBeforeChange}
+            label={t('inmobiliaria.cobros.recordatorioConfig.daysBefore')}
+          />
+        </motion.section>
 
-          {/* Post-vencimiento Section */}
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-4"
-          >
-            <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <Warning className="w-4 h-4 text-warning" />
-              <h3 className="text-sm font-semibold text-foreground">
-                {t('inmobiliaria.cobros.recordatorioConfig.postExpiry')}
-              </h3>
-            </div>
-            <DaySelector
-              options={DAYS_AFTER_OPTIONS}
-              selected={localConfig.daysAfter}
-              onChange={handleDaysAfterChange}
-              label={t('inmobiliaria.cobros.recordatorioConfig.daysAfter')}
-            />
-          </motion.section>
+        {/* Post-vencimiento Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="space-y-4"
+        >
+          <div className="flex items-center gap-2 pb-2 border-b border-border">
+            <Warning className="w-4 h-4 text-warning" />
+            <h3 className="text-sm font-semibold text-foreground">
+              {t('inmobiliaria.cobros.recordatorioConfig.postExpiry')}
+            </h3>
+          </div>
+          <DaySelector
+            options={DAYS_AFTER_OPTIONS}
+            selected={localConfig.daysAfter}
+            onChange={handleDaysAfterChange}
+            label={t('inmobiliaria.cobros.recordatorioConfig.daysAfter')}
+          />
+        </motion.section>
 
-          {/* Notification Channels Section */}
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="space-y-4"
-          >
-            <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <Bell className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">
-                {t('inmobiliaria.cobros.recordatorioConfig.notificationChannels')}
-              </h3>
-            </div>
-            <div className="space-y-3">
-              {CHANNELS.map((channel) => (
-                <ChannelToggle
-                  key={channel.value}
-                  channel={channel}
-                  enabled={localConfig.channels.includes(channel.value)}
-                  onChange={(enabled) => handleChannelToggle(channel.value, enabled)}
-                />
-              ))}
-            </div>
-            {localConfig.channels.length === 0 && (
-              <p className="text-xs text-destructive flex items-center gap-1">
-                <Warning className="w-3.5 h-3.5" />
-                {t('inmobiliaria.cobros.recordatorioConfig.selectAtLeastOneChannel')}
-              </p>
-            )}
-            {/* El back guarda los DÍAS (`agency.reminderDaysBefore/After`) y no
-                tiene columna para los canales. Decirlo es preferible a que el
-                cartel de «guardado» abarque algo que no se guardó. */}
-            <p className="text-[11px] text-muted-foreground">
-              {t('inmobiliaria.cobros.recordatorioConfig.canalesNoSeGuardan')}
+        {/* Notification Channels Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="space-y-4"
+        >
+          <div className="flex items-center gap-2 pb-2 border-b border-border">
+            <Bell className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">
+              {t('inmobiliaria.cobros.recordatorioConfig.notificationChannels')}
+            </h3>
+          </div>
+          <div className="space-y-3">
+            {CHANNELS.map((channel) => (
+              <ChannelToggle
+                key={channel.value}
+                channel={channel}
+                enabled={localConfig.channels.includes(channel.value)}
+                onChange={(enabled) => handleChannelToggle(channel.value, enabled)}
+              />
+            ))}
+          </div>
+          {localConfig.channels.length === 0 && (
+            <p className="text-xs text-destructive flex items-center gap-1">
+              <Warning className="w-3.5 h-3.5" />
+              {t('inmobiliaria.cobros.recordatorioConfig.selectAtLeastOneChannel')}
             </p>
-          </motion.section>
+          )}
+          {/* El back guarda los DÍAS (`agency.reminderDaysBefore/After`) y no
+              tiene columna para los canales. Decirlo es preferible a que el
+              cartel de «guardado» abarque algo que no se guardó. */}
+          <p className="text-[11px] text-muted-foreground">
+            {t('inmobiliaria.cobros.recordatorioConfig.canalesNoSeGuardan')}
+          </p>
+        </motion.section>
 
-          {/* Message Templates Section */}
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="space-y-4"
-          >
-            <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <Envelope className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">
-                {t('inmobiliaria.cobros.recordatorioConfig.messageTemplates')}
-              </h3>
-            </div>
-            <MessagePreview
-              title={t('inmobiliaria.cobros.recordatorioConfig.preExpiryTemplate')}
-              template={PRE_VENCIMIENTO_TEMPLATE}
-            />
-            <MessagePreview
-              title={t('inmobiliaria.cobros.recordatorioConfig.overdueTemplate')}
-              template={MORA_TEMPLATE}
-            />
-            <p className="text-xs text-muted-foreground">
-              {t('inmobiliaria.cobros.recordatorioConfig.templateNote')}
-            </p>
-          </motion.section>
+        {/* Message Templates Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="space-y-4"
+        >
+          <div className="flex items-center gap-2 pb-2 border-b border-border">
+            <Envelope className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">
+              {t('inmobiliaria.cobros.recordatorioConfig.messageTemplates')}
+            </h3>
+          </div>
+          <MessagePreview
+            title={t('inmobiliaria.cobros.recordatorioConfig.preExpiryTemplate')}
+            template={PRE_VENCIMIENTO_TEMPLATE}
+          />
+          <MessagePreview
+            title={t('inmobiliaria.cobros.recordatorioConfig.overdueTemplate')}
+            template={MORA_TEMPLATE}
+          />
+          <p className="text-xs text-muted-foreground">
+            {t('inmobiliaria.cobros.recordatorioConfig.templateNote')}
+          </p>
+        </motion.section>
+      </CajonCuerpo>
 
-          {/* Actions */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="flex gap-3 pt-4 border-t border-border"
-          >
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={onClose}
-              disabled={isSaving}
-            >
-              {t('inmobiliaria.cobros.recordatorioConfig.cancel')}
-            </Button>
-            <Button
-              type="button"
-              className="flex-1 bg-primary hover:opacity-90 text-primary-fg"
-              onClick={handleSave}
-              disabled={!isValid || isSaving}
-            >
-              {isSaving ? (
-                <span className="flex items-center gap-2">
-                  <Spinner size="sm" variant="current" />
-                  {t('inmobiliaria.cobros.recordatorioConfig.saving')}
-                </span>
-              ) : (
-                <>
-                  <Check className="w-4 h-4 mr-2" />
-                  {t('inmobiliaria.cobros.recordatorioConfig.save')}
-                </>
-              )}
-            </Button>
-          </motion.div>
-        </div>
-      </SheetContent>
-    </Sheet>
+      {/* Acciones: en el pie fijo del cajón, la principal a la derecha. */}
+      <CajonPie>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onClose}
+          disabled={isSaving}
+        >
+          {t('inmobiliaria.cobros.recordatorioConfig.cancel')}
+        </Button>
+        <Button
+          type="button"
+          className="bg-primary hover:opacity-90 text-primary-fg"
+          onClick={handleSave}
+          disabled={!isValid || isSaving}
+        >
+          {isSaving ? (
+            <span className="flex items-center gap-2">
+              <Spinner size="sm" variant="current" />
+              {t('inmobiliaria.cobros.recordatorioConfig.saving')}
+            </span>
+          ) : (
+            <>
+              <Check className="w-4 h-4 mr-2" />
+              {t('inmobiliaria.cobros.recordatorioConfig.save')}
+            </>
+          )}
+        </Button>
+      </CajonPie>
+    </Cajon>
   );
 }
 

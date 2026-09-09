@@ -172,22 +172,26 @@ export function Recaudo() {
           </div>
         }
       >
-        {!resumen ? null : mesSinMovimiento(resumen) ? (
-          <div className="overflow-hidden rounded-lg border border-border bg-surface">
-            <SinDatos
-              queSon="movimientos"
-              icono={Coins}
-              titulo={`Nada que contar en ${nombreDelMes(month)}`}
-              descripcion="No hubo cobros, recibos ni giros con fecha en este mes. Si la plata entró, se registra con un recibo de caja desde Cobros."
-              accion={
-                <Button asChild hideArrow>
-                  <Link href="/panel/inmobiliaria/cobros">Ir a cobros</Link>
-                </Button>
-              }
-            />
-          </div>
-        ) : (
+        {/* Un mes sin movimiento NO esconde la pantalla: las cifras van en cero
+            y las tablas de la casa siguen ahí con su vacío adentro (Nico,
+            2026-09-08: «recaudo no tiene el tipo de tablas que manejamos»). Lo
+            único que cambia es una línea que lo dice. */}
+        {!resumen ? null : (
           <>
+            {mesSinMovimiento(resumen) && (
+              <p
+                className="flex flex-wrap items-center gap-x-2 rounded-lg border border-border bg-surface-muted/40 px-4 py-3 text-sm text-fg-muted"
+                data-testid="mes-sin-movimiento"
+              >
+                <span>
+                  Nada que contar en {nombreDelMes(month)}: no hubo cobros, recibos ni giros con fecha
+                  en este mes. Si la plata entró, se registra con un recibo de caja desde Cobros.
+                </span>
+                <Link href="/panel/inmobiliaria/cobros" className="font-medium text-primary underline-offset-2 hover:underline">
+                  Ir a cobros
+                </Link>
+              </p>
+            )}
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" data-testid="cifras">
               <Cifra
                 id="llego"

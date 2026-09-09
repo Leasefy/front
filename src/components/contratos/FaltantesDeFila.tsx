@@ -37,7 +37,7 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
   inmueble_codigo: {
     titulo: "El código del inmueble no existe",
     porque:
-      "El archivo trae un código de inmueble que no está en tu portafolio — probablemente es el del sistema anterior. Elige el inmueble por la dirección, o créalo.",
+      "El archivo señala un inmueble por su código y ningún inmueble tuyo lo tiene: o ese inmueble no se cargó, o se cargó sin su «Código». No lo pegamos por la dirección: un código que no existe suele ser el archivo corrido, y pegarlo igual lo dejaría en el inmueble equivocado. Elige el inmueble por la dirección, o créalo.",
   },
   inmueble_ambiguo: {
     titulo: "Hay más de un inmueble con esa dirección",
@@ -113,10 +113,13 @@ export function celdaDelFaltante(
     case 'inmueble':
     case 'inmueble_ambiguo':
       return texto(datos?.direccion);
+    // «código 999», no «#999»: el «#» es cómo Leasefy escribe SU consecutivo,
+    // y desde el 2026-09-08 lo que trae este campo es el código del sistema
+    // del que se migra. Escribirlo con almohadilla lo hace pasar por otra cosa.
     case 'inmueble_codigo':
       return texto(
         datos?.codigoInmueble != null
-          ? `#${String(datos.codigoInmueble)} · ${String(datos.direccion ?? '')}`
+          ? `código ${String(datos.codigoInmueble)} · ${String(datos.direccion ?? '')}`
           : datos?.direccion,
       );
     case 'inquilino_correo':

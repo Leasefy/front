@@ -167,10 +167,12 @@ describe('SeccionesDelModulo — cuándo NO se dibuja', () => {
   it('el AGENTE comercial sí ve las secciones de Postulaciones, sin las que no puede abrir', () => {
     permisos.isAdmin = false
     permisos.agencyRole = 'AGENTE'
+    // Tiene permiso de `estudio`, pero Evaluación de candidatos está oculta
+    // (Nico, 2026-09-08): con permiso y todo, la card no aparece.
     permisos.modulos = ['matching', 'estudio']
-    render('/panel/inmobiliaria/postulaciones/estudio')
+    render('/panel/inmobiliaria/postulaciones/matching')
     const lista = cards()
-    expect(lista.map((c) => c.label)).toEqual(['postulaciones', 'matching', 'estudio'])
-    expect(lista.filter((c) => c.activa).map((c) => c.label)).toEqual(['estudio'])
+    expect(lista.map((c) => c.label)).toEqual(['postulaciones', 'matching'])
+    expect(lista.filter((c) => c.activa).map((c) => c.label)).toEqual(['matching'])
   })
 })

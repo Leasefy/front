@@ -82,7 +82,7 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
       {cards.map(({ key, label, value, Icon, iconColor, caption }) => (
         <div
           key={key}
-          className="rounded-lg border border-border bg-card p-4"
+          className="rounded-lg border border-border bg-surface p-4"
         >
           <div className="flex items-center gap-2 mb-1">
             <Icon weight="duotone" className={`h-4 w-4 flex-shrink-0 ${iconColor}`} />

@@ -25,6 +25,44 @@ export const TIPO_DESCRIPCION: Record<PqrsTipo, string> = {
   SOLICITUD: 'Reparación, trámite o cambio sobre el inmueble.',
 }
 
+/**
+ * Asuntos que se repiten, por tipo: un clic los pone en el campo y quien
+ * radica los ajusta si hace falta. No son una lista cerrada.
+ */
+export const ASUNTOS_SUGERIDOS: Record<PqrsTipo, string[]> = {
+  PETICION: [
+    'Paz y salvo del contrato',
+    'Copia del contrato',
+    'Estado de cuenta',
+    'Certificado de ingresos por arriendo',
+    'Cambio de datos de contacto',
+  ],
+  QUEJA: [
+    'No contestan las llamadas ni los mensajes',
+    'Trato del personal',
+    'Demora en una respuesta',
+    'Visita sin aviso al inmueble',
+  ],
+  RECLAMO: [
+    'Cobro que no reconozco',
+    'Reparación que no se hizo',
+    'Devolución del depósito',
+    'Giro que no llegó',
+    'Incremento del canon mal aplicado',
+  ],
+  SOLICITUD: [
+    'Reparación en el inmueble',
+    'Cambio de fecha de pago',
+    'Terminación anticipada del contrato',
+    'Autorización para una mejora',
+    'Cambio de titular del contrato',
+  ],
+}
+
+/** Cómo se escribe un buen asunto: una línea, con el qué y el dónde. */
+export const AYUDA_DEL_ASUNTO =
+  'Una línea con el qué (y el dónde, si aplica): «Fuga en el baño del 402». El detalle va abajo.'
+
 export const SOLICITANTE_LABEL: Record<PqrsSolicitante, string> = {
   INQUILINO: 'Inquilino',
   PROPIETARIO: 'Propietario',

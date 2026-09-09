@@ -43,13 +43,13 @@ export function WizardStep1Candidato({
 
   return (
     <div className="space-y-5">
-      <h2 className="text-base font-semibold text-foreground">
+      <h2 className="text-base font-semibold text-fg">
         {t('inmobiliaria.ai.cotizador.nueva.step1.heading')}
       </h2>
 
       {/* Cédula */}
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-foreground">
+        <label className="text-sm font-medium text-fg">
           {t('inmobiliaria.ai.cotizador.nueva.step1.cedulaLabel')}
         </label>
         <Input
@@ -75,7 +75,7 @@ export function WizardStep1Candidato({
 
       {/* Nombre */}
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-foreground">
+        <label className="text-sm font-medium text-fg">
           {t('inmobiliaria.ai.cotizador.nueva.step1.nombreLabel')}
         </label>
         <Input
@@ -99,7 +99,7 @@ export function WizardStep1Candidato({
 
       {/* Ciudad */}
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-foreground">
+        <label className="text-sm font-medium text-fg">
           {t('inmobiliaria.ai.cotizador.nueva.step1.ciudadLabel')}
         </label>
         <Input

@@ -61,4 +61,11 @@ describe('navigationSource — chips', () => {
     );
     expect(filas.find((f) => f.title === 'Nueva consignación')).toBeUndefined();
   });
+
+  it('Evaluación de candidatos no sale: está oculta por ahora (Nico, 2026-09-08)', async () => {
+    // «candidatos» sigue encontrando Postulaciones; la sección oculta, no.
+    const filas = await buscar('candidatos');
+    expect(filas.length).toBeGreaterThan(0);
+    expect(filas.find((f) => f.title === 'Evaluación de candidatos')).toBeUndefined();
+  });
 });

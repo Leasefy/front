@@ -20,6 +20,7 @@ import {
   WifiSlash,
   WarningOctagon,
   ArrowLeft,
+  Timer,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
@@ -32,6 +33,9 @@ const ICONO: Record<TipoDeFallo, Icon> = {
   sinSesion: Lock,
   red: WifiSlash,
   servidor: WarningOctagon,
+  // T-0076: un 429 se pinta con un reloj, no con la octógono de alarma del
+  // «problema nuestro» — es un límite de ritmo, no una falla.
+  limitado: Timer,
 }
 
 export interface FalloDeCargaProps {

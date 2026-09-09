@@ -27,9 +27,10 @@ export interface UseTenantAcuerdosResult {
   refetch: () => Promise<void>;
 }
 
-export function useTenantAcuerdos(): UseTenantAcuerdosResult {
+export function useTenantAcuerdos(options?: { skip?: boolean }): UseTenantAcuerdosResult {
+  const skip = options?.skip ?? false;
   const [items, setItems] = useState<AcuerdoDetail[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!skip);
   const [error, setError] = useState<string | null>(null);
 
   const fetchAcuerdos = useCallback(async () => {
@@ -48,8 +49,12 @@ export function useTenantAcuerdos(): UseTenantAcuerdosResult {
   }, []);
 
   useEffect(() => {
+    if (skip) {
+      setIsLoading(false);
+      return;
+    }
     fetchAcuerdos();
-  }, [fetchAcuerdos]);
+  }, [fetchAcuerdos, skip]);
 
   return {
     items,

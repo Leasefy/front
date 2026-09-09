@@ -44,27 +44,54 @@ vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ t: (k: string) => k, locale: 'es' }),
 }));
 
-vi.mock('@leasefy/cadence', () => ({
-  // 🔴 El doble tiene que pasar `onClick`. El anterior sólo copiaba el
-  // `aria-label`, así que TODO IconButton del widget era —dentro del test— un
-  // botón muerto: el menú de los tres puntos no se podía abrir y sus renglones
-  // eran imposibles de probar. Justamente el defecto que Nico encontró en la
-  // carita de los emojis, escondido en el mock.
-  IconButton: ({ icon, variant, ...rest }: Record<string, unknown> & { icon?: React.ReactNode }) =>
-    React.createElement('button', { type: 'button', ...rest }, icon as React.ReactNode),
-  MonoLabel: ({ children }: { children?: React.ReactNode }) => React.createElement('span', null, children),
-  Input: React.forwardRef((props: Record<string, unknown>, ref: React.Ref<HTMLInputElement>) =>
-    React.createElement('input', { ...props, ref }),
-  ),
+// `importOriginal` keeps everything else from the real package: anything this
+// suite does not stub resolves to the real component instead of `undefined`.
+// The AlertDialog family is still taken from the local adapter mock below.
+vi.mock('@leasefy/cadence', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@leasefy/cadence')>();
+  // `react/display-name` can infer a name for a plain arrow-function property
+  // (IconButton/MonoLabel below) but not for one wrapped in `forwardRef` — the
+  // render function forwardRef sees is anonymous to the rule's static
+  // analysis. Naming these mocks and setting `.displayName` explicitly is the
+  // standard forwardRef fix rather than disabling the rule.
+  const MockInput = React.forwardRef(function MockInput(
+    props: Record<string, unknown>,
+    ref: React.Ref<HTMLInputElement>,
+  ) {
+    return React.createElement('input', { ...props, ref });
+  });
+  MockInput.displayName = 'Input';
   // El composer del piloto escribe en un Textarea (adaptador local sobre cadence).
-  Textarea: React.forwardRef((props: Record<string, unknown>, ref: React.Ref<HTMLTextAreaElement>) =>
-    React.createElement('textarea', { ...props, ref }),
-  ),
-  Button: React.forwardRef((props: Record<string, unknown> & { children?: React.ReactNode }, ref: React.Ref<HTMLButtonElement>) => {
+  const MockTextarea = React.forwardRef(function MockTextarea(
+    props: Record<string, unknown>,
+    ref: React.Ref<HTMLTextAreaElement>,
+  ) {
+    return React.createElement('textarea', { ...props, ref });
+  });
+  MockTextarea.displayName = 'Textarea';
+  const MockButton = React.forwardRef(function MockButton(
+    props: Record<string, unknown> & { children?: React.ReactNode },
+    ref: React.Ref<HTMLButtonElement>,
+  ) {
     const { children, ...rest } = props;
     return React.createElement('button', { ...rest, ref }, children);
-  }),
-}));
+  });
+  MockButton.displayName = 'Button';
+  return {
+    ...actual,
+    // 🔴 El doble tiene que pasar `onClick`. El anterior sólo copiaba el
+    // `aria-label`, así que TODO IconButton del widget era —dentro del test— un
+    // botón muerto: el menú de los tres puntos no se podía abrir y sus renglones
+    // eran imposibles de probar. Justamente el defecto que Nico encontró en la
+    // carita de los emojis, escondido en el mock.
+    IconButton: ({ icon, variant, ...rest }: Record<string, unknown> & { icon?: React.ReactNode }) =>
+      React.createElement('button', { type: 'button', ...rest }, icon as React.ReactNode),
+    MonoLabel: ({ children }: { children?: React.ReactNode }) => React.createElement('span', null, children),
+    Input: MockInput,
+    Textarea: MockTextarea,
+    Button: MockButton,
+  };
+});
 
 // El widget (desde el merge del piloto) confirma «reportar» con un AlertDialog
 // que el adaptador local re-exporta de cadence. El mock de cadence de arriba es

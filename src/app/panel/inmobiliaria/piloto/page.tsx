@@ -63,7 +63,6 @@ import { usePilotoPulso } from '@/lib/hooks/piloto/use-piloto-pulso'
 import { PilotoPulso } from '@/components/inmobiliaria/piloto/PilotoPulso'
 import { PilotoBandeja } from '@/components/inmobiliaria/piloto/PilotoBandeja'
 import { PilotoAutonomia } from '@/components/inmobiliaria/piloto/PilotoAutonomia'
-import { PilotoPreparacion } from '@/components/inmobiliaria/piloto/PilotoPreparacion'
 import { PilotoFeed } from '@/components/inmobiliaria/piloto/PilotoFeed'
 import {
   PilotoCajon,
@@ -161,7 +160,9 @@ export default function PilotoPage() {
         </div>
         {/* Configuración, no operación: las dos viven en el encabezado.
             «Procesos» es la ventana por la que se ve trabajar al Piloto
-            (process view, 2026-09-02): también va acá, no en el flujo diario. */}
+            (process view, 2026-09-02): también va acá, no en el flujo diario.
+            «Preparación» (T-0051) se sacó del render — hidden temporarily
+            as a product decision, not deleted; ver PilotoPreparacion.tsx. */}
         <div className="flex shrink-0 items-center gap-2">
           <Button asChild variant="outline" size="sm" hideArrow>
             <Link href="/panel/inmobiliaria/piloto/procesos" data-testid="piloto-ver-procesos">
@@ -169,7 +170,6 @@ export default function PilotoPage() {
               {t('inmobiliaria.piloto.procesos.titulo')}
             </Link>
           </Button>
-          <PilotoPreparacion />
           <PilotoAutonomia autonomia={autonomia} />
         </div>
       </header>
@@ -186,6 +186,7 @@ export default function PilotoPage() {
           : {})}
         onAbrirItem={abrirItem}
         onAbrirAlerta={abrirAlerta}
+        onRefetch={pulso.refetch}
       />
 
       {/* Decidir (ancho) · lo que pasó (angosto) */}

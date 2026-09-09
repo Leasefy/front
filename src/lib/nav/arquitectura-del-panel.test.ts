@@ -23,9 +23,8 @@
  * cuenta por regex de `una-sola-seccion-de-inmuebles.test.ts`.
  */
 
-import { existsSync, readdirSync } from 'node:fs';
-import { execSync } from 'node:child_process';
-import { join } from 'node:path';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join, sep } from 'node:path';
 
 import { describe, it, expect } from 'vitest';
 import { AirTrafficControl, ChatsCircle } from '@phosphor-icons/react';
@@ -98,11 +97,33 @@ describe('arquitectura del panel — rutas', () => {
 
   it('el código tampoco enlaza a /panel/inmobiliaria/ai (el namespace murió)', () => {
     // Los tipos generados del back tienen `/ai/analyze/...`: son rutas del BACK.
-    const salida = execSync(
-      "grep -rIl --include='*.ts' --include='*.tsx' --include='*.mjs' '/panel/inmobiliaria/ai\\b' src tests 2>/dev/null | grep -v 'src/lib/api/generated/' | grep -v 'arquitectura-del-panel.test.ts' || true",
-      { cwd: process.cwd(), encoding: 'utf8' },
-    );
-    expect(salida.trim().split('\n').filter(Boolean)).toEqual([]);
+    //
+    // Recorre `src` y `tests` en Node en vez de shellear a `grep`: el pipe
+    // `grep ... 2>/dev/null | grep -v ... | grep -v ... || true` original
+    // asume un shell POSIX y rompe bajo el `cmd.exe` que `execSync` usa por
+    // default en un checkout Windows nativo (el mismo tipo de fricción de
+    // shell que ya documentó el CRLF de `naira` — T-0060).
+    const PATRON = /\/panel\/inmobiliaria\/ai\b/;
+    const EXTENSIONES = new Set(['.ts', '.tsx', '.mjs']);
+    const encontrados: string[] = [];
+    const recorrer = (dir: string) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const ruta = join(dir, e.name);
+        if (e.isDirectory()) {
+          recorrer(ruta);
+          continue;
+        }
+        if (!EXTENSIONES.has(e.name.slice(e.name.lastIndexOf('.')))) continue;
+        const relativa = ruta.split(sep).join('/');
+        if (relativa.includes('src/lib/api/generated/')) continue;
+        if (relativa.endsWith('arquitectura-del-panel.test.ts')) continue;
+        if (PATRON.test(readFileSync(ruta, 'utf8'))) encontrados.push(relativa);
+      }
+    };
+    for (const raiz of ['src', 'tests']) {
+      if (existsSync(join(process.cwd(), raiz))) recorrer(join(process.cwd(), raiz));
+    }
+    expect(encontrados).toEqual([]);
   });
 
   it('toda ruta empieza por el prefijo del panel y no termina en barra', () => {

@@ -21,6 +21,7 @@
  */
 
 import { agentFetch } from './agent-fetch'
+import { conBackoff } from './fetch-with-backoff'
 import type { AgenteId } from './work-item'
 
 // ── Tipos del contrato (§4 — no inventar campos) ────────────────────────────
@@ -145,7 +146,10 @@ export interface PilotoFetchResult<T> {
 async function getJson<T>(path: string, signal?: AbortSignal): Promise<PilotoFetchResult<T>> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) throw new Error('not_configured')
-  const res = await agentFetch(`${agentUrl}${path}`, { signal })
+  // T-0076: un 429 de `agents_limit` (o el fallo de red que el mismo 429
+  // parece cuando NGINX no manda CORS en su página de error) se reintenta
+  // con backoff antes de rendirse — ver fetch-with-backoff.ts.
+  const res = await conBackoff(() => agentFetch(`${agentUrl}${path}`, { signal }), signal)
   if (res.status === 404) return { data: null, notAvailable: true }
   if (!res.ok) throw new Error(`${res.status}`)
   return { data: (await res.json()) as T, notAvailable: false }

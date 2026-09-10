@@ -478,9 +478,12 @@ export function ImportWizard({
 
         {/* Footer Navigation — hidden when import is complete */}
         {!(pasoActual === 5 && wizardState.importedCount > 0) && (
-          // El pie tiene fondo propio: sin `rounded-b-xl` pinta por encima de
-          // las esquinas del card y las dos de abajo quedan cuadradas.
-          <div className="px-6 py-4 rounded-b-xl border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-bg flex items-center justify-between">
+          // El pie tiene fondo propio, así que necesita el MISMO radio abajo
+          // que la tarjeta (`rounded-lg`, línea 460). Estuvo en `rounded-b-xl`
+          // —más redondo que la tarjeta— y en las dos esquinas de abajo asomaba
+          // el fondo: dos medias lunas blancas. Si el radio de la tarjeta
+          // cambia, éste cambia con ella.
+          <div className="px-6 py-4 rounded-b-lg border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-bg flex items-center justify-between">
             {/* Cancel Button */}
             <Button
               type="button"

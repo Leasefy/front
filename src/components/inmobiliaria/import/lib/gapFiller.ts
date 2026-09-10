@@ -3,6 +3,7 @@
 
 import type { ImportProperty, AISuggestion, ParsedRow, ColumnMapping } from './importTypes';
 import { tipoEfectivo } from './requisitosDelBack';
+import { tituloSugerido } from './tituloSugerido';
 import { cleanNumericValue } from './valorNumerico';
 import {
   documentoYNombre,
@@ -374,24 +375,21 @@ export function analyzeProperties(properties: ImportProperty[]): ImportProperty[
 
     // Rule 6: Missing propertyTitle
     if (!prop.propertyTitle) {
-      const zone = prop.propertyZone;
-      const city = effectiveCity;
-      const typeLabel =
-        effectiveType === 'apartment'
-          ? 'Apartamento'
-          : effectiveType === 'house'
-            ? 'Casa'
-            : effectiveType === 'studio'
-              ? 'Estudio'
-              : effectiveType === 'commercial'
-                ? 'Local comercial'
-                : effectiveType === 'office'
-                  ? 'Oficina'
-                  : 'Bodega';
-
-      const titleSuggestion = zone
-        ? `${typeLabel} en ${zone}`
-        : `${typeLabel} en ${city}`;
+      /*
+       * 🔴 El MUNICIPIO, no el barrio. Antes se prefería `propertyZone` y
+       * salían títulos como «Bodega en HOSPITAL» — el barrio de una celda de
+       * parqueadero. Y el tipo se traducía a siete etiquetas del enum, así que
+       * una «Casa Finca» salía como «Casa» y un «Lote» como «Bodega».
+       *
+       * `tituloSugerido` es el MISMO cálculo que el back usa para guardar
+       * (`src/properties/titulo.ts`): lo que se propone acá es literalmente lo
+       * que queda si la persona no escribe otro.
+       */
+      const titleSuggestion = tituloSugerido(
+        effectiveType,
+        effectiveCity,
+        prop.propertyZone,
+      );
 
       suggestions.push({
         field: 'propertyTitle',

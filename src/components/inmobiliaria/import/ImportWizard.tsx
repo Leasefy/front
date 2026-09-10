@@ -82,6 +82,20 @@ export interface ImportStepProps {
 export const RanuraDelPie = createContext<HTMLElement | null>(null);
 
 /**
+ * Una SEGUNDA ranura, a la IZQUIERDA de la navegación, para una acción que
+ * acompaña a «Siguiente» sin competir con ella.
+ *
+ * Existe por el título (Nico, 2026-09-10): quien sube 2.864 inmuebles no los
+ * va a nombrar uno por uno, y el botón para ponerles título a todas tiene que
+ * estar donde está mirando — «al lado del de siguiente y arriba también»—, no
+ * escondido en el cuerpo del paso.
+ *
+ * A diferencia de `RanuraDelPie`, ésta vive en TODOS los pasos: el paso decide
+ * si la usa.
+ */
+export const RanuraDelPieSecundaria = createContext<HTMLElement | null>(null);
+
+/**
  * `onSalir`: adentro del muro de migración no hay portafolio al que volver —
  * el muro tapa todo hasta que la migración termine. El muro pasa un callback
  * que reinicia el asistente; sin él (la ruta suelta) se navega como siempre.
@@ -95,6 +109,8 @@ export function ImportWizard({
   const [currentStep, setCurrentStep] = useState(1);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [ranuraDelPie, setRanuraDelPie] = useState<HTMLDivElement | null>(null);
+  const [ranuraSecundaria, setRanuraSecundaria] =
+    useState<HTMLDivElement | null>(null);
   const [wizardState, setWizardState] = useState<ImportWizardState>(INITIAL_STATE);
 
   const updateState = useCallback((partial: Partial<ImportWizardState>) => {
@@ -451,9 +467,11 @@ export function ImportWizard({
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
             >
+              <RanuraDelPieSecundaria.Provider value={ranuraSecundaria}>
               <RanuraDelPie.Provider value={ranuraDelPie}>
                 {renderStepContent()}
               </RanuraDelPie.Provider>
+              </RanuraDelPieSecundaria.Provider>
             </motion.div>
           </AnimatePresence>
         </div>
@@ -475,6 +493,8 @@ export function ImportWizard({
 
             {/* Navigation Buttons */}
             <div className="flex items-center gap-3">
+              {/* Acción que acompaña a «Siguiente» — la llena el paso. */}
+              <div ref={setRanuraSecundaria} className="flex items-center" />
               {currentStep > 1 && (
                 <Button
                   type="button"

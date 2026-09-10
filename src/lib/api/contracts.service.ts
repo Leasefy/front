@@ -754,6 +754,8 @@ export interface FilaAMigrar {
   ciudad?: string;
   inquilino: { nombre: string; correo: string; telefono?: string; documento?: string };
   startDate?: string;
+  /** Desde cuándo se COBRA. Ausente = se usa `startDate`. */
+  fechaDeCartera?: string;
   endDate?: string;
   monthlyRent?: number;
   deposit?: number;

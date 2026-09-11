@@ -25,6 +25,11 @@ import {
   type FilaDeMigracion,
 } from "@/lib/api/contracts.service";
 import { propietariosApi } from "@/lib/api/inmobiliaria.service";
+import {
+  SelectorDeInmueble,
+  olvidarPortafolio,
+  usePortafolioDeLaAgencia,
+} from "./SelectorDeInmueble";
 import type { Propietario } from "@/lib/types/inmobiliaria";
 
 /** El nombre humano de cada faltante, y por qué importa. */
@@ -315,6 +320,11 @@ function ElegirInmueble({
   const [creando, setCreando] = useState(false);
   const [ciudad, setCiudad] = useState("");
   const direccion = fila.datos.direccion ?? "";
+  /*
+   * El portafolio entero, para elegir a mano. Se pide una vez y lo comparten
+   * todas las filas de la pantalla (ver `usePortafolioDeLaAgencia`).
+   */
+  const portafolio = usePortafolioDeLaAgencia(true);
 
   return (
     <div className="space-y-3">
@@ -362,6 +372,43 @@ function ElegirInmueble({
         </div>
       ) : null}
 
+      {/*
+       * Buscar en TODO el portafolio.
+       *
+       * Los «parecidos» de arriba salen del resolutor y son cinco como mucho,
+       * elegidos por los números de la dirección. Cuando ninguno sirve —el
+       * caso más común: el archivo trae un código que existe en el sistema
+       * viejo pero cuyo inmueble todavía no se cargó— la única salida era
+       * crear el inmueble otra vez, duplicándolo. Esto abre la lista entera.
+       */}
+      <div className="space-y-1.5">
+        <p className="text-xs text-muted-foreground">
+          {fila.candidatos.length > 0
+            ? "¿Ninguno es? Búscalo entre todos tus inmuebles:"
+            : "Búscalo entre todos tus inmuebles:"}
+        </p>
+        <SelectorDeInmueble
+          inmuebles={portafolio.inmuebles}
+          disabled={ocupado || portafolio.cargando}
+          testId={`selector-inmueble-${fila.id}`}
+          onElegir={(i) =>
+            void correr(() =>
+              contractsApi.migracion.resolver(fila.id, { propertyId: i.id }),
+            )
+          }
+        />
+        {portafolio.error ? (
+          <p className="text-xs text-destructive">
+            {portafolio.error} Puedes crearlo desde la dirección del archivo.
+          </p>
+        ) : null}
+        {portafolio.recortado ? (
+          <p className="text-xs text-muted-foreground">
+            La lista muestra los {portafolio.inmuebles.length} más recientes.
+          </p>
+        ) : null}
+      </div>
+
       {creando ? (
         <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-[180px] flex-1">
@@ -380,12 +427,16 @@ function ElegirInmueble({
               const el = document.getElementById(
                 `dir-${fila.id}`,
               ) as HTMLInputElement | null;
-              void correr(() =>
-                contractsApi.migracion.crearInmueble(fila.id, {
+              void correr(async () => {
+                const r = await contractsApi.migracion.crearInmueble(fila.id, {
                   address: el?.value?.trim() || direccion,
                   city: ciudad.trim(),
-                }),
-              );
+                });
+                // El recién creado tiene que aparecer en el desplegable de las
+                // OTRAS filas; si no, alguien lo crearía por segunda vez.
+                olvidarPortafolio();
+                return r;
+              });
             }}
           >
             Crear inmueble

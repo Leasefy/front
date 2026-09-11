@@ -386,6 +386,30 @@ export const contractsApi = {
       return apiClient.patch<FilaDeMigracion>(`/contracts/migrar/filas/${id}`, cambios);
     },
 
+    /**
+     * El portafolio de la agencia, para elegir el inmueble A MANO.
+     *
+     * Las dos vías automáticas —código exacto y dirección exacta— fallan
+     * juntas cuando la inmobiliaria todavía no cargó ESE inmueble. Medido
+     * sobre el archivo real el 2026-09-10: de 1.851 contratos, 1.212 sin
+     * inmueble, y 1.211 apuntaban a un código que SÍ estaba en su archivo de
+     * inmuebles pero que nunca entró (sólo entraron 1.512 de 2.895).
+     *
+     * Se pide UNA vez por pantalla y se filtra local, igual que los
+     * propietarios: veinticinco filas comparten una sola petición.
+     */
+    async buscarInmuebles(
+      q = '',
+      limite = 500,
+    ): Promise<InmuebleCandidato[]> {
+      const params = new URLSearchParams();
+      if (q.trim()) params.set('q', q.trim());
+      params.set('limite', String(limite));
+      return apiClient.get<InmuebleCandidato[]>(
+        `/contracts/migrar/inmuebles?${params.toString()}`,
+      );
+    },
+
     /** Crear el inmueble que el contrato dice tener y no está cargado. */
     async crearInmueble(
       id: string,
@@ -843,6 +867,12 @@ export interface InmuebleCandidato {
   address: string;
   city: string | null;
   ocupado?: boolean;
+  /** El «Código» del sistema anterior. Lo llena el buscador manual. */
+  externalId?: string | null;
+  /** El «#144» de Inmuebles. Lo llena el buscador manual. */
+  code?: number | null;
+  /** «Apartamento en Sabaneta». Lo llena el buscador manual. */
+  title?: string | null;
 }
 
 /**

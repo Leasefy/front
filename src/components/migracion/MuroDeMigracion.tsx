@@ -116,8 +116,6 @@ import {
   type ContextoDeMigracion,
 } from "./migracion-context";
 
-import { RanuraVivaContext } from "./ranura-viva";
-
 export { MigracionContext, useMigracion } from "./migracion-context";
 export { useRanuraViva } from "./ranura-viva";
 export type { ContextoDeMigracion } from "./migracion-context";
@@ -1099,8 +1097,13 @@ function PasoEnFoco({
    * resto está `inert`. Va en estado y no en un ref: el paso sólo puede
    * portalizar cuando el nodo ya existe, y un ref no vuelve a renderizar.
    */
-  const [ranuraViva, setRanuraViva] = useState<HTMLElement | null>(null);
   const paso = pasos[indice];
+  /*
+   * El importador de inmuebles pone su propio `inert`, adentro de su tarjeta,
+   * dejando viva la barra de progreso con su botón de parar. Los demás pasos
+   * no tienen esperas con salida, así que los congela el muro entero.
+   */
+  const seCongelaSolo = paso.id === "propiedades";
   const hecho = paso.estado === "listo";
   const disponible = esExigible(paso);
   const habilitado = pasoHabilitado(pasos, indice);
@@ -1191,32 +1194,35 @@ function PasoEnFoco({
             {t("migracion.muro.sinPermiso")}
           </Aviso>
         ) : (
-          <RanuraVivaContext.Provider value={ranuraViva}>
-            <div
-              data-testid="muro-contenido"
-              data-paso={paso.id}
-              data-ocupado={ocupado ? "" : undefined}
-              aria-busy={ocupado || undefined}
-              // `inert` crudo por la misma razón que en el muro: React 18 no lo
-              // tipa como booleano (ver `inerte` arriba). Congela clicks, foco y
-              // teclado de TODO el paso; el spinner y el conteo siguen vivos.
-              {...(ocupado ? ({ inert: "" } as unknown as Record<string, string>) : {})}
-              className={ocupado ? "cursor-progress" : undefined}
-            >
-              <ContenidoDelPaso id={paso.id} pasos={pasos} onIr={onIr} onOcupado={onOcupado} />
-            </div>
-            {/*
-             * 🔴 FUERA del `inert`, y pegado al contenido.
+          <div
+            data-testid="muro-contenido"
+            data-paso={paso.id}
+            data-ocupado={ocupado ? "" : undefined}
+            aria-busy={ocupado || undefined}
+            /*
+             * `inert` crudo por la misma razón que arriba: React 18 no lo tipa
+             * como booleano. Congela clicks, foco y teclado de TODO el paso.
              *
-             * Acá el paso portaliza lo que tiene que seguir vivo mientras todo
-             * lo demás está congelado — hoy, la barra de progreso de la
-             * geocodificación con su botón de parar. Antes ese botón vivía en
-             * el pie del muro, a dos secciones de la barra que controlaba, por
-             * la única razón de que el pie queda fuera del `inert`. Ver
-             * `ranura-viva.ts`.
-             */}
-            <div ref={setRanuraViva} data-testid="muro-ranura-viva" />
-          </RanuraVivaContext.Provider>
+             * 🔴 Salvo cuando el paso se congela SOLO. `inert` no se puede
+             * desactivar en un descendiente, así que un paso con una espera
+             * larga —el importador de inmuebles, 53 minutos geocodificando
+             * 2.864 direcciones— no puede tener su botón de parar adentro: la
+             * única forma de que viva EN SU SITIO es que el `inert` lo ponga
+             * quien conoce la tarjeta. Ver `seCongelaSolo`.
+             */
+            {...(ocupado && !seCongelaSolo
+              ? ({ inert: "" } as unknown as Record<string, string>)
+              : {})}
+            className={ocupado && !seCongelaSolo ? "cursor-progress" : undefined}
+          >
+            <ContenidoDelPaso
+              id={paso.id}
+              pasos={pasos}
+              onIr={onIr}
+              onOcupado={onOcupado}
+              congelado={ocupado}
+            />
+          </div>
         )}
       </div>
     </section>
@@ -1229,11 +1235,14 @@ function ContenidoDelPaso({
   pasos,
   onIr,
   onOcupado,
+  congelado,
 }: {
   id: IdDePasoDeMigracion;
   pasos: PasoDeMigracion[];
   onIr: (i: number) => void;
   onOcupado: (ocupado: boolean, cancelar?: () => void) => void;
+  /** Sólo lo usa el importador de inmuebles: ver `seCongelaSolo`. */
+  congelado: boolean;
 }) {
   // Para reiniciar el asistente de inmuebles cuando la persona «cancela»:
   // adentro del muro no hay portafolio al que volver.
@@ -1269,6 +1278,7 @@ function ContenidoDelPaso({
           key={vueltaDeInmuebles}
           onSalir={() => setVueltaDeInmuebles((n) => n + 1)}
           onOcupado={onOcupado}
+          congelado={congelado}
         />
       );
     case "contratos":

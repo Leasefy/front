@@ -23,6 +23,7 @@ import { StepUploadFile } from './steps/StepUploadFile';
 import { StepColumnMapping } from './steps/StepColumnMapping';
 import { StepAIReview } from './steps/StepAIReview';
 import { StepConfirmImport } from './steps/StepConfirmImport';
+import { RanuraVivaContext } from '@/components/migracion/ranura-viva';
 import { StepSoftwareMigration } from './steps/StepSoftwareMigration';
 import { StepPortalImport } from './steps/StepPortalImport';
 import { StepPasteLinks } from './steps/StepPasteLinks';
@@ -103,7 +104,19 @@ export const RanuraDelPieSecundaria = createContext<HTMLElement | null>(null);
 export function ImportWizard({
   onSalir,
   onOcupado,
-}: { onSalir?: () => void; onOcupado?: (ocupado: boolean, cancelar?: () => void) => void } = {}) {
+  congelado = false,
+}: {
+  onSalir?: () => void;
+  onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
+  /**
+   * El muro dice que hay una operación larga en vuelo y que hay que congelar.
+   *
+   * Lo aplica el asistente y NO el muro porque el `inert` tiene que dejar
+   * afuera la barra de progreso, y sólo acá se sabe dónde está esa barra
+   * dentro de la tarjeta. Ver el `inert` de abajo.
+   */
+  congelado?: boolean;
+} = {}) {
   const router = useRouter();
   const { t } = useI18n();
   const [currentStep, setCurrentStep] = useState(1);
@@ -111,6 +124,11 @@ export function ImportWizard({
   const [ranuraDelPie, setRanuraDelPie] = useState<HTMLDivElement | null>(null);
   const [ranuraSecundaria, setRanuraSecundaria] =
     useState<HTMLDivElement | null>(null);
+  /*
+   * El nodo VIVO de la tarjeta: adentro, encima del pie, y fuera del `inert`.
+   * Estado y no ref porque el paso sólo puede portalizar cuando ya existe.
+   */
+  const [ranuraViva, setRanuraViva] = useState<HTMLDivElement | null>(null);
   const [wizardState, setWizardState] = useState<ImportWizardState>(INITIAL_STATE);
 
   const updateState = useCallback((partial: Partial<ImportWizardState>) => {
@@ -458,23 +476,57 @@ export function ImportWizard({
 
       {/* Step Content */}
       <div className="bg-surface dark:bg-bg rounded-lg border border-border dark:border-border-strong">
-        <div className="p-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
+        <RanuraVivaContext.Provider value={ranuraViva}>
+          <div className="p-6 space-y-6">
+            {/*
+             * 🔴 El `inert` va ACÁ, no en el muro.
+             *
+             * El muro lo ponía sobre TODO el paso, y como `inert` no se puede
+             * desactivar en un descendiente, la barra de progreso de la
+             * geocodificación se quedaba sin botón para parar —53 minutos sobre
+             * 2.864 inmuebles—. La primera salida fue mandar el botón al pie
+             * del muro; la segunda, sacar la barra entera a un nodo de afuera.
+             * Las dos funcionaban y las dos se veían mal: el control lejos de
+             * lo que controla, o la barra flotando fuera de la tarjeta (Nico,
+             * 2026-09-10: «ahí afuera se ve horrible»).
+             *
+             * Acá adentro el asistente conoce su propia tarjeta, así que puede
+             * congelar el cuerpo del paso y dejar viva —EN SU SITIO, encima del
+             * pie— la ranura de abajo.
+             */}
+            <div
+              data-testid="paso-congelado"
+              {...(congelado
+                ? ({ inert: "" } as unknown as Record<string, string>)
+                : {})}
+              className={congelado ? "cursor-progress" : undefined}
             >
-              <RanuraDelPieSecundaria.Provider value={ranuraSecundaria}>
-              <RanuraDelPie.Provider value={ranuraDelPie}>
-                {renderStepContent()}
-              </RanuraDelPie.Provider>
-              </RanuraDelPieSecundaria.Provider>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentStep}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <RanuraDelPieSecundaria.Provider value={ranuraSecundaria}>
+                  <RanuraDelPie.Provider value={ranuraDelPie}>
+                    {renderStepContent()}
+                  </RanuraDelPie.Provider>
+                  </RanuraDelPieSecundaria.Provider>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/*
+             * La ranura viva: dentro de la tarjeta, encima del pie, y FUERA del
+             * `inert` de arriba. Acá el paso portaliza lo que tiene que seguir
+             * funcionando mientras todo lo demás está congelado — hoy, la barra
+             * de la geocodificación con su botón de parar.
+             */}
+            <div ref={setRanuraViva} data-testid="ranura-viva" />
+          </div>
+        </RanuraVivaContext.Provider>
 
         {/* Footer Navigation — hidden when import is complete */}
         {!(pasoActual === 5 && wizardState.importedCount > 0) && (

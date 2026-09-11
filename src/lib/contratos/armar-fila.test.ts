@@ -348,9 +348,17 @@ describe('diaDelMesDe — el día de pago viene como fecha en los exports reales
     expect(diaDelMesDe('2024-07-15')).toBe(15)
   })
 
-  it('del formato con barras toma el día, no el mes', () => {
+  it('acepta CUALQUIER formato que acepte el resto del archivo', () => {
+    // En Colombia el día va primero, siempre.
     expect(diaDelMesDe('05/08/2022')).toBe(5)
+    expect(diaDelMesDe('05-08-2022')).toBe(5)
+    expect(diaDelMesDe('05.08.2022')).toBe(5)
     expect(diaDelMesDe('2022/08/05')).toBe(5)
+    expect(diaDelMesDe(new Date('2024-03-17T00:00:00Z'))).toBe(17)
+  })
+
+  it('una fecha que no existe no da día: 31 de febrero no es un día de pago', () => {
+    expect(diaDelMesDe('31/02/2024')).toBeUndefined()
   })
 
   it('un número sigue siendo el día', () => {

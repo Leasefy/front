@@ -112,24 +112,37 @@ export function armarFilaAMigrar(
  * El día del mes en que se paga — venga como número o como FECHA.
  *
  * 🔴 Los exports reales llenan esa columna con una fecha completa
- * («2022-08-01»), no con un «1» (Nico, 2026-09-10, con el archivo en pantalla:
- * 1.851 de 1.851 filas con valor y las 1.851 rechazadas). `comoEntero` de un
- * «2022-08-01» no da un día del 1 al 28, así que el dato se tiraba entero y la
- * pantalla decía «quedan sin día de pago» sobre un archivo que sí lo traía.
+ * («2022-08-01»), no con un «1» (Nico, 2026-09-10: 1.851 de 1.851 filas con
+ * valor y las 1.851 rechazadas). `comoEntero` de un «2022-08-01» no da un día
+ * del 1 al 28, así que el dato se tiraba entero.
  *
- * De una fecha se toma el DÍA, que es lo que la columna significa. De un
- * número, el número. Cualquier otra cosa, `undefined` — que es «no lo sé», no
- * un día inventado.
+ * 🔴 La fecha se lee con `comoFecha`, el MISMO parser que el resto del
+ * archivo: acepta `dd/mm/aaaa` con barras, puntos o guiones, `aaaa-mm-dd` y
+ * objetos Date, y además valida que la fecha exista (un 31 de febrero no pasa).
+ * Reutilizarlo —en vez de traer reglas propias— es lo que hace que cualquier
+ * formato nuevo se resuelva en un solo lugar (Nico: «deberías poder recibir
+ * cualquier tipo de formato de fecha»).
+ *
+ * Un número suelto se lee como día antes de intentar la fecha: «15» es el 15,
+ * no un año. Y lo que no es ni fecha ni número queda `undefined` — «no lo sé»,
+ * nunca un día inventado.
  */
 export function diaDelMesDe(valor: unknown): number | undefined {
   const texto = String(valor ?? '').trim()
   if (!texto) return undefined
 
-  // ISO («2022-08-01») y el formato con barras («01/08/2022» o «2022/08/01»).
-  const iso = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/.exec(texto)
-  if (iso) return Number(iso[3])
-  const barras = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/.exec(texto)
-  if (barras) return Number(barras[1])
+  // Un número suelto (1-31) es el día, no una fecha.
+  if (/^\d{1,2}$/.test(texto)) return comoEntero(texto)
+
+  const fecha = comoFecha(valor)
+  if (fecha) return Number(fecha.slice(8, 10))
+
+  /*
+   * Si TIENE forma de fecha pero `comoFecha` la rechazó, es una fecha que no
+   * existe (un 31 de febrero). No cae al entero: `comoEntero('31/02/2024')`
+   * barre los separadores y devuelve 31022024, que no es un día de nada.
+   */
+  if (/[/.-]/.test(texto)) return undefined
 
   return comoEntero(texto)
 }

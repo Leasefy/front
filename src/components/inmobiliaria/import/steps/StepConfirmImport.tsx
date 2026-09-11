@@ -584,9 +584,10 @@ export function StepConfirmImport({
   };
 
   /**
-   * `POST .../activar` es resumible — 500 filas por llamada. El loop vive
-   * en `activarLoteCompleto` (testeable aparte); acá sólo se orquesta el
-   * estado de pantalla mientras corre.
+   * `POST .../activar` es resumible: el back devuelve lo que alcanzó a hacer
+   * en su presupuesto de tiempo y cuántas filas quedan. El loop vive en
+   * `activarLoteCompleto` (testeable aparte); acá sólo se orquesta el estado
+   * de pantalla mientras corre.
    */
   const handleActivar = async () => {
     if (!lote) return;
@@ -603,11 +604,15 @@ export function StepConfirmImport({
        * vivas en el lote. Se refresca el resumen (las tandas que sí pasaron
        * cuentan) y se ofrece seguir — reintentar continúa donde quedó.
        */
-      if (resultado.detenidoPorLimite) {
+      if (resultado.detenidoPorLimite || resultado.detenidoSinAvance) {
         await refrescarRevision(lote, pagina);
         setError(
-          `Se activaron ${resultado.activados} inmuebles y quedaron más por activar. ` +
-            `Nada se repite ni se duplica: toca «Activar» de nuevo para seguir donde quedó.`,
+          resultado.detenidoSinAvance
+            ? `Se activaron ${resultado.activados} inmuebles y el lote dejó de avanzar: ` +
+              `la última tanda no movió ninguna fila. Nada se repite ni se duplica — ` +
+              `revisa lo que quedó pendiente abajo y vuelve a tocar «Activar».`
+            : `Se activaron ${resultado.activados} inmuebles y quedaron más por activar. ` +
+              `Nada se repite ni se duplica: toca «Activar» de nuevo para seguir donde quedó.`,
         );
         return;
       }

@@ -227,6 +227,12 @@ export interface FilaOmitida {
 export interface ResumenActivacionInmuebles {
   lote: string;
   activados: number;
+  /**
+   * Filas que ya tenían su `Property` (mismo «Código») y se re-apuntaron en
+   * vez de duplicarlo. Cuentan como AVANCE: una llamada que sólo reusa sí
+   * movió el lote, y sin este número el loop la leería como estancada.
+   */
+  reusados?: number;
   omitidas: FilaOmitida[];
   restantes: number;
 }

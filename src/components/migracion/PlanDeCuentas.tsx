@@ -150,7 +150,7 @@ export function PlanDeCuentas({
   onContinuar?: () => void;
   sinPaso5?: boolean;
   /** Aviso al muro mientras se siembra el plan base: el pie espera. */
-  onOcupado?: (ocupado: boolean) => void;
+  onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 } = {}) {
   const [arbol, setArbol] = useState<CuentaEnArbol[] | null>(null);
   const [pendientes, setPendientes] = useState<CuentaSemilla[]>([]);

@@ -82,6 +82,7 @@ export type CampoDeContrato =
   | "inquilinoTelefono"
   | "inquilinoDocumento"
   | "fechaInicio"
+  | "fechaDeCartera"
   | "fechaFin"
   | "canon"
   | "deposito"
@@ -449,6 +450,29 @@ function empatePorPersona(canon: string): Empate | null | false {
  * sólo desempata entre términos del mismo largo.
  */
 const DICCIONARIO: Array<{ campo: CampoDeContrato; terminos: string[] }> = [
+  {
+    /*
+     * 🔴 Desde cuándo se COBRA, que no es desde cuándo empieza el contrato
+     * (Nico, 2026-09-10: «hay dos fechas de contrato, fecha de inicio del
+     * contrato y fecha de cartera; el prorrateo inicia a partir de la fecha de
+     * cartera»). Un contrato puede firmarse el 1 y entregarse el 10.
+     *
+     * Va ANTES de `fechaInicio` en el diccionario: el desempate es por número
+     * de palabras, pero si algún día empatan, gana la más específica.
+     */
+    campo: "fechaDeCartera",
+    terminos: [
+      "fecha de inicio de cartera",
+      "fecha de cartera",
+      "fecha inicio cartera",
+      "inicio de cartera",
+      "fecha de corte",
+      "inicio cartera",
+      "fecha cartera",
+      "cartera desde",
+      "fecha corte",
+    ],
+  },
   {
     campo: "fechaInicio",
     terminos: [

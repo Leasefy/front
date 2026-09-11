@@ -84,8 +84,25 @@ vi.mock('canvas-confetti', () => ({
   default: Object.assign(vi.fn(), { reset: vi.fn() }),
 }));
 
+/*
+ * El importador se congela SOLO: pone su propio `inert` adentro de la tarjeta
+ * para dejar viva la barra de progreso con su botón de parar. El doble expone
+ * `congelado` para poder afirmar que el muro se lo pasa en vez de congelarlo
+ * él desde afuera.
+ */
 vi.mock('@/components/inmobiliaria/import/ImportWizard', () => ({
-  ImportWizard: () => <div data-testid="contenido-propiedades" />,
+  ImportWizard: ({
+    onOcupado,
+    congelado,
+  }: {
+    onOcupado?: (o: boolean) => void;
+    congelado?: boolean;
+  }) => (
+    <div data-testid="contenido-propiedades" data-congelado={congelado ? '' : undefined}>
+      <button type="button" data-testid="paso-ocupado-on" onClick={() => onOcupado?.(true)} />
+      <button type="button" data-testid="paso-ocupado-off" onClick={() => onOcupado?.(false)} />
+    </div>
+  ),
 }));
 vi.mock('@/components/contratos/MigrarContratos', () => ({
   MigrarContratos: () => <div data-testid="contenido-contratos" />,
@@ -610,6 +627,52 @@ describe('el pie espera a que el paso termine de crear', () => {
     expect((q('muro-ir-inquilinos') as HTMLButtonElement).disabled).toBe(false);
     await click('muro-ir-inquilinos');
     expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('inquilinos');
+  });
+
+  /*
+   * 🔴 LA RANURA VIVA.
+   *
+   * `inert` congela TODO el subárbol y no se puede desactivar en un
+   * descendiente: no hay `inert="false"`, y un portal tampoco escapa porque
+   * `inert` es del DOM, no de React. Por eso el botón de parar la
+   * geocodificación —una espera de 53 minutos sobre 2.864 inmuebles— vivía en
+   * el pie del muro, a dos secciones de la barra que controlaba. Nico,
+   * 2026-09-10: «está súper mal ubicado, debería hacer parte de la progress
+   * bar».
+   *
+   * La ranura invierte la solución: el paso manda el bloque entero a un nodo
+   * que el muro dibuja FUERA del `inert`, pegado al contenido.
+   *
+   * Lo que esta prueba congela es la única propiedad que hace que funcione:
+   * la ranura NO puede quedar dentro del nodo inerte. Si alguien la mueve
+   * adentro, todo seguiría viéndose igual y el botón volvería a nacer muerto.
+   */
+  it('el paso de INMUEBLES no lo congela el muro: se congela solo, para que su barra siga viva', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [
+        paso('propietarios', 'listo', 60, '60 propietarios'),
+        paso('inquilinos', 'listo', 30, '30 inquilinos'),
+        ...RECIEN_LLEGADA.slice(2),
+      ],
+    });
+
+    await pintar();
+    await click('muro-ir-propiedades');
+    await click('paso-ocupado-on');
+
+    const contenido = q('muro-contenido')!;
+    expect(contenido.getAttribute('data-paso')).toBe('propiedades');
+    // El muro avisa que está ocupado —el pie espera, la navegación no— pero NO
+    // congela: el `inert` lo pone el asistente adentro de su tarjeta, dejando
+    // viva la barra de progreso. Si el muro lo pusiera acá, `inert` bajaría a
+    // TODO el subárbol y el botón de parar volvería a nacer muerto.
+    expect(contenido.hasAttribute('inert')).toBe(false);
+    expect(contenido.getAttribute('aria-busy')).toBe('true');
+    expect((q('muro-ir-inquilinos') as HTMLButtonElement).disabled).toBe(true);
+    // Y SÍ recibe la señal: el asistente es quien congela, no el muro.
+    expect(q('contenido-propiedades')?.hasAttribute('data-congelado')).toBe(true);
   });
 });
 

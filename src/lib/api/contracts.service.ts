@@ -386,6 +386,30 @@ export const contractsApi = {
       return apiClient.patch<FilaDeMigracion>(`/contracts/migrar/filas/${id}`, cambios);
     },
 
+    /**
+     * El portafolio de la agencia, para elegir el inmueble A MANO.
+     *
+     * Las dos vías automáticas —código exacto y dirección exacta— fallan
+     * juntas cuando la inmobiliaria todavía no cargó ESE inmueble. Medido
+     * sobre el archivo real el 2026-09-10: de 1.851 contratos, 1.212 sin
+     * inmueble, y 1.211 apuntaban a un código que SÍ estaba en su archivo de
+     * inmuebles pero que nunca entró (sólo entraron 1.512 de 2.895).
+     *
+     * Se pide UNA vez por pantalla y se filtra local, igual que los
+     * propietarios: veinticinco filas comparten una sola petición.
+     */
+    async buscarInmuebles(
+      q = '',
+      limite = 500,
+    ): Promise<InmuebleCandidato[]> {
+      const params = new URLSearchParams();
+      if (q.trim()) params.set('q', q.trim());
+      params.set('limite', String(limite));
+      return apiClient.get<InmuebleCandidato[]>(
+        `/contracts/migrar/inmuebles?${params.toString()}`,
+      );
+    },
+
     /** Crear el inmueble que el contrato dice tener y no está cargado. */
     async crearInmueble(
       id: string,
@@ -481,6 +505,22 @@ export const contractsApi = {
       return apiClient.post<ResumenActivacion>('/contracts/migrar/activar', {
         lote,
         invitar,
+      });
+    },
+
+    /**
+     * 2d. Volver a cruzar las filas PENDIENTES del lote contra lo que los
+     * otros pasos ya cargaron: el inmueble por código o por dirección, el
+     * propietario de terceros, el inquilino por documento.
+     *
+     * Por tandas: el back mira lo que alcanza en ~15 s y devuelve un cursor
+     * (`ultimaFila`) y `terminado`. `reconciliarLoteCompleto` da la vuelta
+     * entera. Desde el 2026-09-11 `activar` ya NO lo corre adentro.
+     */
+    async reconciliar(lote: string, desdeFila = 0): Promise<ResultadoReconciliacion> {
+      return apiClient.post<ResultadoReconciliacion>('/contracts/migrar/reconciliar', {
+        lote,
+        desdeFila,
       });
     },
   },
@@ -754,6 +794,8 @@ export interface FilaAMigrar {
   ciudad?: string;
   inquilino: { nombre: string; correo: string; telefono?: string; documento?: string };
   startDate?: string;
+  /** Desde cuándo se COBRA. Ausente = se usa `startDate`. */
+  fechaDeCartera?: string;
   endDate?: string;
   monthlyRent?: number;
   deposit?: number;
@@ -841,6 +883,12 @@ export interface InmuebleCandidato {
   address: string;
   city: string | null;
   ocupado?: boolean;
+  /** El «Código» del sistema anterior. Lo llena el buscador manual. */
+  externalId?: string | null;
+  /** El «#144» de Inmuebles. Lo llena el buscador manual. */
+  code?: number | null;
+  /** «Apartamento en Sabaneta». Lo llena el buscador manual. */
+  title?: string | null;
 }
 
 /**
@@ -1192,6 +1240,23 @@ export interface ResultadoDeFila {
    * contrato quedó sin inquilino a propósito (no cuenta como «por invitar»).
    */
   inquilinoDocumentoAjeno?: boolean;
+}
+
+/** Lo que devuelve una llamada a `POST migrar/reconciliar` (una tanda). */
+export interface ResultadoReconciliacion {
+  /** Filas miradas en ESTA llamada. */
+  revisadas: number;
+  /** Cursor para la siguiente llamada (`desdeFila`). `null` = no miró ninguna. */
+  ultimaFila: number | null;
+  /** No queda nada pendiente después de `ultimaFila`: la vuelta terminó. */
+  terminado: boolean;
+  inmueblesVinculados: number;
+  propietariosVinculados: number;
+  inquilinosVinculados: number;
+  listas: number;
+  pendientes: number;
+  porMotivo: Record<string, number>;
+  fallidas: Array<{ id: string; fila: number; motivo: string }>;
 }
 
 export interface ResumenActivacion {

@@ -2959,7 +2959,9 @@
           "studio": "Apartaestudio",
           "commercial": "Local",
           "office": "Oficina",
-          "warehouse": "Bodega"
+          "warehouse": "Bodega",
+          "parking": "Parqueadero",
+          "land": "Lote"
         },
         "owner": "Propietario",
         "agent": "Agente",
@@ -3248,7 +3250,9 @@
         "studio": "Apartaestudio",
         "commercial": "Local Comercial",
         "office": "Oficina",
-        "warehouse": "Bodega"
+        "warehouse": "Bodega",
+        "parking": "Parqueadero",
+        "land": "Lote"
       },
       "availability": {
         "available": "Disponible",
@@ -3346,6 +3350,8 @@
         "commercial": "Local",
         "office": "Oficina",
         "warehouse": "Bodega",
+        "parking": "Parqueadero",
+        "land": "Lote",
         "agentLabel": "Agente",
         "ownerLabel": "Propietario",
         "cityLabel": "Ciudad",
@@ -11263,7 +11269,8 @@
         }
       },
       "siguiente": "Seguir con {{paso}}",
-      "ocupado": "Se están creando los registros de este paso — esperá a que termine.",
+      "ocupado": "Se están creando los registros de este paso — espera a que termine.",
+      "parar": "Detener la carga",
       "terminaEstePaso": "Cuando termines este paso vas a poder seguir.",
       "irAlPaso": "Ir a {{paso}}",
       "pendiente": "Pendiente",

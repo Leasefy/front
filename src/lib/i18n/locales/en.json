@@ -2919,7 +2919,9 @@
           "studio": "Studio",
           "commercial": "Commercial",
           "office": "Office",
-          "warehouse": "Warehouse"
+          "warehouse": "Warehouse",
+          "parking": "Parking space",
+          "land": "Lot"
         },
         "owner": "Owner",
         "agent": "Agent",
@@ -3208,7 +3210,9 @@
         "studio": "Studio",
         "commercial": "Commercial Space",
         "office": "Office",
-        "warehouse": "Warehouse"
+        "warehouse": "Warehouse",
+        "parking": "Parking space",
+        "land": "Lot"
       },
       "availability": {
         "available": "Available",
@@ -3306,6 +3310,8 @@
         "commercial": "Commercial",
         "office": "Office",
         "warehouse": "Warehouse",
+        "parking": "Parking space",
+        "land": "Lot",
         "agentLabel": "Agent",
         "ownerLabel": "Owner",
         "cityLabel": "City",
@@ -11224,6 +11230,7 @@
       },
       "siguiente": "Continue with {{paso}}",
       "ocupado": "This step is still creating records — wait for it to finish.",
+      "parar": "Stop the upload",
       "terminaEstePaso": "Once you finish this step you'll be able to continue.",
       "irAlPaso": "Go to {{paso}}",
       "pendiente": "Pending",

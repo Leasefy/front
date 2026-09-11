@@ -23,6 +23,8 @@ export const TYPE_MAP: Record<string, PropertyType> = {
   COMMERCIAL: 'commercial',
   OFFICE: 'office',
   WAREHOUSE: 'warehouse',
+  PARKING: 'parking',
+  LAND: 'land',
 };
 
 const STATUS_MAP: Record<string, PropertyStatus> = {
@@ -41,6 +43,8 @@ export const TYPE_TO_BACKEND: Record<PropertyType, string> = {
   commercial: 'COMMERCIAL',
   office: 'OFFICE',
   warehouse: 'WAREHOUSE',
+  parking: 'PARKING',
+  land: 'LAND',
 };
 
 /**

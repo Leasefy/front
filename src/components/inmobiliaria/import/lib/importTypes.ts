@@ -7,11 +7,25 @@ export interface ParsedRow {
   [columnName: string]: unknown;
 }
 
+/**
+ * Una columna que trae DOS datos en cada celda y se parte en dos campos:
+ * «3 - CR 50 127 SUR 61» (código + dirección), «[1] 901548190 - PORTOFINO
+ * S.A.S» (documento + nombre). La izquierda es siempre el dato corto (código
+ * o documento) y la derecha el texto; la celda que no tenga esa forma va
+ * entera a la derecha. Ver `columnaCompuesta.ts`.
+ */
+export interface DivisionDeColumna {
+  /** [izquierda, derecha] → campo de destino de cada parte, o null = se ignora. */
+  destinos: [string | null, string | null];
+}
+
 export interface ColumnMapping {
   sourceColumn: string;       // Header from file, e.g. "Canon mensual"
   targetField: string | null; // Leasefy field, e.g. "monthlyRent"
   confidence: number;         // 0-1 from heuristic
   isManual: boolean;          // User overrode the suggestion
+  /** Presente cuando la columna se parte en dos; entonces `targetField` es null. */
+  partes?: DivisionDeColumna;
 }
 
 export interface AISuggestion {

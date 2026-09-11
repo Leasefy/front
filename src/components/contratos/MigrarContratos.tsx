@@ -99,11 +99,18 @@ import type { Propietario } from "@/lib/types/inmobiliaria";
 import { ResolucionMasiva } from "./ResolucionMasiva";
 import { CrearInmueblesFaltantes } from "./CrearInmueblesFaltantes";
 import { AlertaAccionable } from "@/components/ui/alerta-accionable";
+import { TarjetaDeArchivo } from "@/components/migracion/TarjetaDeArchivo";
+import { InmueblesSinActivar } from "./InmueblesSinActivar";
+import {
+  reconciliarLoteCompleto,
+  type ProgresoDeReconciliacion,
+} from "./reconciliarLoteCompleto";
 import { ProgresoDeLote } from "./ProgresoDeLote";
 import { TablePagination } from "@/components/ui/pagination";
 
 const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   direccionInmueble: "Dirección del inmueble",
+  fechaDeCartera: "Fecha de cartera",
   codigoInmueble: "Código del inmueble (#)",
   ciudadInmueble: "Ciudad del inmueble",
   inquilinoNombre: "Nombre del inquilino",
@@ -206,10 +213,18 @@ function duenosDe(
 
 export interface MigrarContratosProps {
   /** Aviso hacia el muro: `true` mientras se están ACTIVANDO los contratos. */
-  onOcupado?: (ocupado: boolean) => void;
+  onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 }
 
 export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
+  /**
+   * El archivo tal cual, no sólo lo que salió de leerlo. La tarjeta necesita
+   * nombre y peso, y `null` es lo que distingue «todavía no hay archivo» de
+   * «hay uno y no se pudo leer» — el segundo caso también merece su tarjeta,
+   * con «Descartar» a la mano.
+   */
+  const [archivo, setArchivo] = useState<File | null>(null);
+  const [leyendo, setLeyendo] = useState(false);
   const [filas, setFilas] = useState<Fila[]>([]);
   const [encabezados, setEncabezados] = useState<string[]>([]);
   /**
@@ -231,6 +246,10 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
   const [pagina, setPagina] = useState(1);
   const [seleccion, setSeleccion] = useState<Set<string>>(new Set());
   const [activacion, setActivacion] = useState<ResumenActivacion | null>(null);
+  /* «Volver a cruzar con lo ya cargado»: corre por tandas y se muestra. */
+  const [reconciliando, setReconciliando] = useState(false);
+  const [progresoReconciliacion, setProgresoReconciliacion] =
+    useState<ProgresoDeReconciliacion | null>(null);
   // T-0036 §3.2.C — descartar el lote entero, no fila por fila.
   const [descartandoLote, setDescartandoLote] = useState(false);
 
@@ -372,6 +391,8 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
 
   /** Vuelve al cargador con el archivo actual soltado. Nada del server. */
   const limpiarArchivo = useCallback(() => {
+    setArchivo(null);
+    setLeyendo(false);
     setFilas([]);
     setEncabezados([]);
     setMapeo([]);
@@ -383,6 +404,8 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
   const leerArchivo = useCallback(async (archivo: File) => {
     setError(null);
     setActivacion(null);
+    setArchivo(archivo);
+    setLeyendo(true);
     try {
       /*
        * Dónde están los encabezados de verdad. Un export real no siempre
@@ -415,10 +438,12 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
       setFilas([]);
       setEncabezados([]);
       setMapeo([]);
+    } finally {
+      setLeyendo(false);
     }
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop: (aceptados) => {
       const archivo = aceptados[0];
       if (archivo) void leerArchivo(archivo);
@@ -607,6 +632,59 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
     }
   }, [filas, mapeo, idempotencyKey]);
 
+  /*
+   * Volver a cruzar las filas pendientes contra lo que los otros pasos ya
+   * cargaron: el inmueble por código o por dirección, el propietario de
+   * terceros, el inquilino por documento. Por tandas y con progreso a la
+   * vista — con 1.851 filas son varios minutos. Desde el 2026-09-11 el back
+   * ya NO lo hace adentro de `activar` (eran ~15 minutos dentro de un solo
+   * request, sin que nadie viera nada).
+   */
+  const cruzarConLoCargado = useCallback(async () => {
+    if (!lote) return null;
+    setReconciliando(true);
+    setProgresoReconciliacion(null);
+    try {
+      return await reconciliarLoteCompleto(
+        lote,
+        (l, desdeFila) => contractsApi.migracion.reconciliar(l, desdeFila),
+        setProgresoReconciliacion,
+      );
+    } finally {
+      setReconciliando(false);
+      setProgresoReconciliacion(null);
+    }
+  }, [lote]);
+
+  const reconciliar = useCallback(async () => {
+    if (!lote) return;
+    setError(null);
+    try {
+      const r = await cruzarConLoCargado();
+      await refrescar(lote);
+      if (!r) return;
+      if (r.detenidoSinAvance || r.detenidoPorLimite) {
+        setError(
+          `Cruzamos ${r.revisadas} filas (${r.inmueblesVinculados} encontraron su inmueble), ` +
+            "pero no pudimos terminar la vuelta. Vuelve a intentarlo: lo cruzado no se pierde.",
+        );
+      } else {
+        toast.success(
+          r.inmueblesVinculados > 0
+            ? `${r.inmueblesVinculados} ${r.inmueblesVinculados === 1 ? "contrato encontró" : "contratos encontraron"} su inmueble`
+            : "Nada nuevo que cruzar",
+          {
+            description: `${r.revisadas} ${r.revisadas === 1 ? "fila revisada" : "filas revisadas"} · ${r.listas} ${r.listas === 1 ? "quedó lista" : "quedaron listas"}.`,
+          },
+        );
+      }
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "No pudimos volver a cruzar el lote.",
+      );
+    }
+  }, [lote, cruzarConLoCargado, refrescar]);
+
   const activar = useCallback(async () => {
     if (!lote) return;
     setCargando(true);
@@ -615,6 +693,8 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
     // `hayOperacionEnVuelo` (cargando ⊃ activar), junto con preparar, el job
     // y la consignación — que antes quedaban afuera.
     try {
+      // Asociar ANTES de activar (2026-09-04), ahora a la vista y por tandas.
+      await cruzarConLoCargado();
       setActivacion(await contractsApi.migracion.activar(lote, invitar));
       await refrescar(lote);
     } catch (e) {
@@ -622,7 +702,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
     } finally {
       setCargando(false);
     }
-  }, [lote, invitar, refrescar]);
+  }, [lote, invitar, refrescar, cruzarConLoCargado]);
 
   /**
    * El sondeo llegó a su techo (10 min) y la persona quedó mirando la
@@ -854,6 +934,9 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
         cargando={cargando}
         error={error}
         onActivar={() => void activar()}
+        reconciliando={reconciliando}
+        progresoReconciliacion={progresoReconciliacion}
+        onReconciliar={() => void reconciliar()}
         descartando={descartandoLote}
         onDescartarLote={descartarLote}
         // 🔴 `.catch` y no `void` pelado: un refresco que falla con `void`
@@ -1071,30 +1154,50 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
          * nombre) sigue disparando la lectura — que es lo que el reset
          * manual de antes garantizaba a mano.
          */}
-        <div
-          {...getRootProps()}
-          className={`flex cursor-pointer flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center transition-colors ${
-            isDragActive
-              ? "border-primary bg-primary/10"
-              : "border-border hover:bg-muted/40"
-          }`}
-          data-testid="dropzone-contratos"
-        >
-          {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
-          {/* El `data-testid` va aparte: `DropzoneInputProps` no lo tipa. */}
-          <input {...getInputProps()} data-testid="archivo-contratos" />
-          <FileArrowUp className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <p className="text-sm font-medium text-foreground">
-              {isDragActive
-                ? "Suelta el archivo acá"
-                : "Arrastra el archivo de contratos o haz clic para elegirlo"}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Excel o CSV exportado de tu sistema actual
-            </p>
+        {archivo ? (
+          <TarjetaDeArchivo
+            nombre={archivo.name}
+            peso={archivo.size}
+            detalle={
+              leyendo
+                ? "leyendo\u2026"
+                : filas.length > 0
+                  ? `${filas.length.toLocaleString("es-CO")} ${filas.length === 1 ? "contrato" : "contratos"}`
+                  : undefined
+            }
+            inputProps={getInputProps()}
+            inputTestid="archivo-contratos"
+            onSubirOtro={open}
+            onDescartar={limpiarArchivo}
+            ocupado={leyendo || cargando}
+            testid="archivo-de-contratos"
+          />
+        ) : (
+          <div
+            {...getRootProps()}
+            className={`flex cursor-pointer flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center transition-colors ${
+              isDragActive
+                ? "border-primary bg-primary/10"
+                : "border-border hover:bg-muted/40"
+            }`}
+            data-testid="dropzone-contratos"
+          >
+            {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
+            {/* El `data-testid` va aparte: `DropzoneInputProps` no lo tipa. */}
+            <input {...getInputProps()} data-testid="archivo-contratos" />
+            <FileArrowUp className="h-8 w-8 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                {isDragActive
+                  ? "Suelta el archivo acá"
+                  : "Arrastra el archivo de contratos o haz clic para elegirlo"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Excel o CSV exportado de tu sistema actual
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
         {error ? (
           <div className="mt-4 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
@@ -1543,6 +1646,9 @@ function ListaDeTrabajo({
   cargando,
   error,
   onActivar,
+  reconciliando,
+  progresoReconciliacion,
+  onReconciliar,
   descartando,
   onDescartarLote,
   onFilaActualizada,
@@ -1567,6 +1673,9 @@ function ListaDeTrabajo({
   cargando: boolean;
   error: string | null;
   onActivar: () => void;
+  reconciliando: boolean;
+  progresoReconciliacion: ProgresoDeReconciliacion | null;
+  onReconciliar: () => void;
   /** T-0036 §3.2.C — nunca rechaza: los errores se reflejan en `error`. */
   descartando: boolean;
   onDescartarLote: () => Promise<void>;
@@ -1720,6 +1829,17 @@ function ListaDeTrabajo({
          * la agencia — acá no se calcula nada.
          */}
         <AsociacionDelLoteResumen asociacion={resumen.asociacion} total={resumen.total} />
+
+        {/*
+         * 🔴 La causa real de «el código del inmueble no existe», cuando el
+         * inmueble SÍ está en el archivo de la inmobiliaria: se quedó en la
+         * importación, listo y sin activar. Va justo debajo del resumen de
+         * asociación porque es donde se ve el número que duele. Ver
+         * `InmueblesSinActivar`.
+         */}
+        <InmueblesSinActivar
+          contratosSinInmueble={resumen.asociacion?.sinInmueble}
+        />
 
         {/*
          * Qué está pasando, en palabras. El paso hace un trabajo real —buscar
@@ -2108,6 +2228,36 @@ function ListaDeTrabajo({
        */}
       {resumen.activables > 0 || resumen.pendientes > 0 ? (
       <Card className="space-y-4 p-6" data-testid="bloque-de-activacion">
+        {/*
+         * El re-cruce. El archivo de contratos se sube ANTES que el de
+         * inmuebles y el de terceros, así que las filas guardaron «ese
+         * inmueble no existe» aunque hoy sí exista. Sin este botón la única
+         * salida era subir el archivo otra vez.
+         */}
+        {resumen.pendientes > 0 ? (
+          <div
+            className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3"
+            data-testid="bloque-de-cruce"
+          >
+            <p className="min-w-0 flex-1 text-sm text-muted-foreground">
+              {progresoReconciliacion
+                ? `Cruzando… ${progresoReconciliacion.revisadas} filas miradas · ${progresoReconciliacion.inmueblesVinculados} encontraron su inmueble`
+                : "¿Cargaste inmuebles o terceros después de este archivo? Vuelve a cruzar: las filas que pedían un inmueble o un propietario que ya existe se arman solas."}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              hideArrow
+              onClick={onReconciliar}
+              disabled={reconciliando || cargando}
+              isLoading={reconciliando}
+              data-testid="volver-a-cruzar"
+            >
+              {reconciliando ? "Cruzando…" : "Volver a cruzar con lo ya cargado"}
+            </Button>
+          </div>
+        ) : null}
         {resumen.activables > 0 ? (
           <>
             <label className="flex cursor-pointer items-start gap-3">
@@ -2190,7 +2340,7 @@ function ListaDeTrabajo({
 
                 <Button
                   onClick={onActivar}
-                  disabled={cargando}
+                  disabled={cargando || reconciliando}
                   isLoading={cargando}
                   hideArrow
                 >

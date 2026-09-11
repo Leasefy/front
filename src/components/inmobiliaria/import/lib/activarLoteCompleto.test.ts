@@ -52,13 +52,70 @@ describe('activarLoteCompleto — the restantes loop', () => {
 
   it('stops at the safety ceiling instead of looping forever on a backend bug', async () => {
     // Never resolves restantes to 0 — simulates a broken back always
-    // reporting more work.
+    // reporting more work, pero SÍ avanzando (si no avanzara, cortaría antes
+    // por `detenidoSinAvance`, que es la salida buena).
     const activar = vi.fn().mockResolvedValue(resumen({ activados: 1, restantes: 1 }));
 
     const result = await activarLoteCompleto('lote-1', activar);
 
     expect(result.detenidoPorLimite).toBe(true);
-    expect(activar).toHaveBeenCalledTimes(100);
+    expect(activar).toHaveBeenCalledTimes(1_000);
+  });
+
+  /*
+   * 🔴 El techo de llamadas subió de 100 a 1.000 el 2026-09-10, y eso solo
+   * habría hecho que una importación rota colgara la pestaña diez veces más.
+   *
+   * El corte de verdad es éste: una llamada que vuelve con filas pendientes
+   * sin haber movido NINGUNA. La siguiente haría exactamente lo mismo.
+   *
+   * El incidente: la agencia subió 2.864 inmuebles, entraron 1.381 y 1.240
+   * quedaron en LISTO sin activarse nunca — cada llamada tardaba 11,6 minutos
+   * (500 filas × 1,39 s) y la cuarta nunca volvió. El back ahora corta por
+   * tiempo, así que las llamadas son muchas y cortas: sin esta guarda, un lote
+   * atascado daría 1.000 vueltas antes de decir nada.
+   */
+  it('corta en cuanto una tanda no mueve ninguna fila: insistir no sirve', async () => {
+    const activar = vi
+      .fn()
+      .mockResolvedValueOnce(resumen({ activados: 11, restantes: 300 }))
+      .mockResolvedValue(resumen({ activados: 0, restantes: 300 }));
+
+    const result = await activarLoteCompleto('lote-1', activar);
+
+    expect(result.detenidoSinAvance).toBe(true);
+    expect(result.detenidoPorLimite).toBe(false);
+    expect(result.activados).toBe(11);
+    // Dos: la que avanzó y la que no. No mil.
+    expect(activar).toHaveBeenCalledTimes(2);
+  });
+
+  it('reusar un inmueble que ya existe SÍ es avance: el lote se movió', async () => {
+    const activar = vi
+      .fn()
+      .mockResolvedValueOnce(resumen({ activados: 0, reusados: 8, restantes: 10 }))
+      .mockResolvedValueOnce(resumen({ activados: 10, restantes: 0 }));
+
+    const result = await activarLoteCompleto('lote-1', activar);
+
+    expect(result.detenidoSinAvance).toBe(false);
+    expect(result.activados).toBe(10);
+    expect(activar).toHaveBeenCalledTimes(2);
+  });
+
+  it('omitir filas también es avance: salieron de LISTO', async () => {
+    const activar = vi
+      .fn()
+      .mockResolvedValueOnce(
+        resumen({ activados: 0, restantes: 5, omitidas: [{ id: 'f1', fila: 9, faltantes: ['canon'] }] }),
+      )
+      .mockResolvedValueOnce(resumen({ activados: 5, restantes: 0 }));
+
+    const result = await activarLoteCompleto('lote-1', activar);
+
+    expect(result.detenidoSinAvance).toBe(false);
+    expect(result.omitidas).toHaveLength(1);
+    expect(activar).toHaveBeenCalledTimes(2);
   });
 
   it('propagates a rejected activar() call instead of swallowing it', async () => {

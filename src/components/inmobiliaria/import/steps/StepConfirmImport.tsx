@@ -37,6 +37,7 @@ import { generarIdempotencyKey } from "../lib/idempotencia";
 import {
   activarLoteCompleto,
   ActivacionInterrumpida,
+  type ProgresoDeActivacion,
 } from "../lib/activarLoteCompleto";
 import { revisarLoteCompleto, type ProgresoDeRevision } from "../lib/revisarLoteCompleto";
 import { emparejarFilasConFotos, subirFotosDelLote } from "../lib/subirFotosDelLote";
@@ -231,6 +232,8 @@ export function StepConfirmImport({
   const [pagina, setPagina] = useState(1);
   const [filaBusy, setFilaBusy] = useState<string | null>(null);
   const [descartandoLote, setDescartandoLote] = useState(false);
+  /* «Actualizar la lista» en vuelo: el botón gira en vez de verse muerto. */
+  const [refrescando, setRefrescando] = useState(false);
 
   // ── Phase 3: activation ──────────────────────────────────────────────
   const [activando, setActivando] = useState(false);
@@ -247,6 +250,24 @@ export function StepConfirmImport({
     omitidas: FilaOmitida[];
   } | null>(null);
   const [isComplete, setIsComplete] = useState(false);
+  /*
+   * 🔴 Lo que va pasando mientras se activa. El 2026-09-11 Nico miró
+   * «Activando…» girando cinco minutos y preguntó si se había dañado: iban
+   * 1.809 de 2.824 a 40 por minuto, y un lote de inmuebles nuevos tarda
+   * ~1,5 s por fila contra la base remota. Sin un número, 40 minutos de
+   * espera son idénticos a un cuelgue. Con el número, la persona sabe que
+   * avanza, cuánto falta, y que puede parar.
+   */
+  const [progresoDeActivacion, setProgresoDeActivacion] =
+    useState<ProgresoDeActivacion | null>(null);
+  /* Cuántas filas LISTO había al tocar «Activar»: el «de N» de la barra. */
+  const totalAActivarRef = useRef(0);
+  /* Cuándo arrancó: la estimación sale del ritmo real, no de una constante. */
+  const inicioActivacionRef = useRef<number | null>(null);
+  /* La salida. En un ref porque el bucle la lee entre llamadas; en estado
+     sólo para que el botón diga «Deteniendo…». */
+  const detenerActivacionRef = useRef(false);
+  const [deteniendoActivacion, setDeteniendoActivacion] = useState(false);
 
   /**
    * Las fotos de los inmuebles traídos por ENLACE se suben después de que el
@@ -380,6 +401,59 @@ export function StepConfirmImport({
     return minutos > 0 ? minutos : null;
   }, [geocodificando, geoCurrent, totalAEnviar]);
 
+  /*
+   * ── Cuánto va y cuánto falta de la activación ──────────────────────────
+   *
+   * Mismo criterio que la geocodificación: el ritmo REAL de esta corrida, no
+   * una constante. Y acá importa más, porque el ritmo cambia solo: las filas
+   * cuyo inmueble YA existe se re-apuntan a ~170/min, y las que crean uno
+   * nuevo van a ~40/min (13 idas y vueltas a la base por fila). Una
+   * estimación hecha con los primeros segundos prometería diez minutos para
+   * una espera de cuarenta.
+   */
+  const hechasEnActivacion = progresoDeActivacion
+    ? progresoDeActivacion.activados +
+      progresoDeActivacion.reusados +
+      progresoDeActivacion.omitidas
+    : 0;
+  /* El total es lo que HAY que hacer: lo hecho más lo que el back dice que
+     queda. Sale del propio servidor en cada vuelta, así que una fila que
+     aparece o se va no desincroniza la barra. El `listos` del arranque es el
+     respaldo para la primera llamada, cuando todavía no hay respuesta. */
+  const totalDeActivacion = progresoDeActivacion
+    ? hechasEnActivacion + progresoDeActivacion.restantes
+    : totalAActivarRef.current;
+  const porcentajeDeActivacion =
+    totalDeActivacion > 0
+      ? Math.min(100, Math.round((hechasEnActivacion / totalDeActivacion) * 100))
+      : 0;
+  const minutosDeActivacion = useMemo(() => {
+    if (
+      !activando ||
+      inicioActivacionRef.current == null ||
+      hechasEnActivacion < 5 ||
+      totalDeActivacion <= hechasEnActivacion
+    ) {
+      return null;
+    }
+    const porFila = (Date.now() - inicioActivacionRef.current) / hechasEnActivacion;
+    const minutos = Math.ceil(
+      ((totalDeActivacion - hechasEnActivacion) * porFila) / 60_000,
+    );
+    return minutos > 0 ? minutos : null;
+  }, [activando, hechasEnActivacion, totalDeActivacion]);
+
+  /**
+   * Pide parar la activación. No corta a mitad de una tanda: la que está en
+   * vuelo termina y el bucle sale en la siguiente vuelta. Lo que esa tanda
+   * activó queda activado — el back no deshace filas— y volver a tocar
+   * «Activar» sigue exactamente donde quedó.
+   */
+  const detenerActivacion = useCallback(() => {
+    detenerActivacionRef.current = true;
+    setDeteniendoActivacion(true);
+  }, []);
+
   /**
    * Pide parar. No corta a mitad de una fila: deja terminar la que está en
    * vuelo y sale en la siguiente vuelta, así no queda una dirección a medias.
@@ -423,6 +497,26 @@ export function StepConfirmImport({
   ]);
   // Al desmontar (cambio de paso, «cancelar») el muro recupera sus botones.
   useEffect(() => () => onOcupado?.(false), [onOcupado]);
+  /*
+   * 🔴 Irse del paso PARA los bucles.
+   *
+   * El 2026-09-11 quedó un lote fantasma de 2.864 filas sin título: la
+   * persona tocó «Preparar», se fue del paso («Anterior», puso los títulos,
+   * volvió) y tocó «Preparar» otra vez. El primer bucle de geocodificación
+   * siguió corriendo detrás, en un componente que ya no existía, y 26
+   * minutos después llamó a `preparar()` con los datos viejos: dos lotes con
+   * 0,2 s de diferencia, uno de ellos entero por corregir. Un bucle que
+   * nadie ve no puede seguir mandando cosas al servidor. Lo mismo para
+   * activar y revisar: se cortan en la siguiente vuelta, sin deshacer nada.
+   */
+  useEffect(
+    () => () => {
+      cancelarRef.current = true;
+      detenerRevisionRef.current = true;
+      detenerActivacionRef.current = true;
+    },
+    [],
+  );
 
   const refrescarRevision = useCallback(async (elLote: string, pag = 1) => {
     try {
@@ -438,6 +532,17 @@ export function StepConfirmImport({
       setPendientes(p.filas);
       setTotalPendientes(p.total);
       setPagina(p.pagina);
+      /*
+       * 🔴 Borrar el aviso viejo. Nico, 2026-09-11: «le doy ahí a actualizar
+       * lista y no funciona». Sí funcionaba —la consulta salía y volvía— pero
+       * el cartel rojo se quedaba puesto porque nadie lo bajaba nunca, así
+       * que en pantalla el botón no hacía absolutamente nada. Un error que
+       * sobrevive a su propia solución es un error que miente.
+       *
+       * Va al final a propósito: si algo de arriba falla, el `catch` pone el
+       * mensaje nuevo y este `null` no llega a correr.
+       */
+      setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No pudimos abrir ese lote.");
     }
@@ -713,15 +818,77 @@ export function StepConfirmImport({
     </div>
   );
 
+  /*
+   * ── La barra de la activación ───────────────────────────────────────────
+   *
+   * 🔴 Nico, 2026-09-11: «¿es normal que lleve activando más de 5 min?».
+   * Sí lo era —2.824 filas, ~40 por minuto cuando el inmueble es nuevo— pero
+   * la pantalla no tenía forma de decirlo: un botón con «Activando…» y un
+   * spinner. La cara visible de una espera larga son tres cosas, las mismas
+   * que ya tiene la geocodificación: en qué va, cuánto falta, y cómo salir.
+   *
+   * Sale por la ranura viva igual que las otras dos: mientras se activa, el
+   * muro pone `inert` sobre el paso entero y un «Detener» adentro se vería
+   * vivo y estaría muerto (costó media hora el 2026-09-10).
+   */
+  const barraDeActivacion = (
+    <div className="space-y-2" data-testid="activacion-progreso" aria-live="polite">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <p className="text-sm text-fg-muted dark:text-fg-subtle">
+          Creando los inmuebles — {hechasEnActivacion} de {totalDeActivacion}
+          {minutosDeActivacion != null && !deteniendoActivacion ? (
+            <span className="text-fg-subtle"> · faltan unos {minutosDeActivacion} min</span>
+          ) : null}
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          hideArrow
+          onClick={detenerActivacion}
+          disabled={deteniendoActivacion}
+          data-testid="activacion-detener"
+        >
+          {deteniendoActivacion ? "Deteniendo…" : "Detener"}
+        </Button>
+      </div>
+      <Progress value={porcentajeDeActivacion} size="xs" />
+      {/* Por qué tarda, en una línea. Sin esto, «40 min» parece un error del
+          sistema y no el costo real de crear 2.800 inmuebles uno por uno. */}
+      <p className="text-xs text-fg-subtle dark:text-fg-muted">
+        Cada inmueble se crea con su dueño y su mandato, así que un archivo
+        grande tarda. Puedes detenerlo: lo creado no se pierde ni se duplica.
+      </p>
+    </div>
+  );
+
   const handleActivar = async () => {
     if (!lote) return;
     setActivando(true);
     setError(null);
+    setProgresoDeActivacion(null);
+    totalAActivarRef.current = resumenLote?.listos ?? 0;
+    inicioActivacionRef.current = Date.now();
+    detenerActivacionRef.current = false;
+    setDeteniendoActivacion(false);
     try {
       const resultado = await activarLoteCompleto(
         lote,
         inmueblesImportacionApi.activar,
+        setProgresoDeActivacion,
+        { debeParar: () => detenerActivacionRef.current },
       );
+      /*
+       * «Detener» a mitad: lo que pasó, pasó — el back no deshace tandas— y
+       * la lista se refresca para que las tarjetas cuenten lo activado.
+       * Tocar «Activar» de nuevo sigue donde quedó, sin repetir nada.
+       */
+      if (resultado.detenidoPorPersona) {
+        await refrescarRevision(lote, pagina);
+        toast.info("Activación detenida", {
+          description: `Se activaron ${resultado.activados} inmuebles y quedaron otros por activar. Nada se pierde ni se duplica: toca «Activar» para seguir donde quedó.`,
+        });
+        return;
+      }
       /*
        * El techo de llamadas NO es éxito: quedan filas sin activar. Decir
        * «¡Importación completada!» acá le mentiría a la persona con filas
@@ -781,6 +948,9 @@ export function StepConfirmImport({
       }
     } finally {
       setActivando(false);
+      setProgresoDeActivacion(null);
+      setDeteniendoActivacion(false);
+      inicioActivacionRef.current = null;
     }
   };
 
@@ -1099,14 +1269,40 @@ export function StepConfirmImport({
               size="sm"
               variant="outline"
               hideArrow
-              disabled={filaBusy !== null || activando || descartandoLote}
-              onClick={() => void refrescarRevision(lote, pagina)}
+              disabled={
+                filaBusy !== null || activando || descartandoLote || refrescando
+              }
+              /* Gira mientras consulta: sin esto, un back que tarda dos
+                 segundos se ve igual que un botón muerto. */
+              isLoading={refrescando}
+              onClick={async () => {
+                setRefrescando(true);
+                try {
+                  await refrescarRevision(lote, pagina);
+                } finally {
+                  setRefrescando(false);
+                }
+              }}
               data-testid="revision-actualizar"
             >
               Actualizar la lista
             </Button>
           </div>
         )}
+
+        {/*
+          La barra de la activación. Con muro sale por la ranura viva (fuera
+          del `inert`, con su «Detener» vivo); sin muro vive acá mismo, pegada
+          a los botones que controla.
+        */}
+        {activando && !ranuraViva ? barraDeActivacion : null}
+        {activando && ranuraViva
+          ? createPortal(barraDeActivacion, ranuraViva)
+          : null}
+        {revisando && !ranuraViva ? barraDeRevision : null}
+        {revisando && ranuraViva
+          ? createPortal(barraDeRevision, ranuraViva)
+          : null}
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
@@ -1157,7 +1353,12 @@ export function StepConfirmImport({
             onClick={handleActivar}
           >
             {activando
-              ? "Activando..."
+              ? /* El botón también cuenta: es lo que la persona mira mientras
+                   espera, y «Activando...» a secas fue exactamente lo que la
+                   dejó sin saber si seguía vivo (Nico, 2026-09-11). */
+                totalDeActivacion > 0
+                ? `Activando… ${hechasEnActivacion} de ${totalDeActivacion}`
+                : "Activando…"
               : `Activar ${resumenLote?.listos ?? 0} ${resumenLote?.listos === 1 ? "inmueble" : "inmuebles"}`}
           </Button>
         </div>
@@ -1322,9 +1523,14 @@ export function StepConfirmImport({
       {/*
         Con muro, la barra sale por la ranura viva: fuera del `inert`, pegada
         al contenido y con su botón de parar VIVO.
+
+        🔴 Acá NO va la barra de la re-revisión, aunque vivió acá hasta el
+        2026-09-11. Este `return` es el resumen PREVIO a preparar: sólo se
+        llega con `lote === null`, y revisar exige un lote (`handleRevisarDeNuevo`
+        sale si no hay). Era código muerto: mientras Nico miraba «Revisando…»
+        en el botón, la barra con su conteo y su «Detener» no se dibujaba en
+        ninguna parte. Vive con la de activación, dentro del `if (lote)`.
       */}
-      {revisando && !ranuraViva ? barraDeRevision : null}
-      {revisando && ranuraViva ? createPortal(barraDeRevision, ranuraViva) : null}
       {geocodificando && ranuraViva
         ? createPortal(barraDeGeocodificacion, ranuraViva)
         : null}

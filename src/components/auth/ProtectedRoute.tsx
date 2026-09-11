@@ -47,7 +47,7 @@ interface ProtectedRouteProps {
  * <ProtectedRoute allowedRoles={['landlord']}>{children}</ProtectedRoute>
  */
 export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, allowAgencyMembers }: ProtectedRouteProps) {
-  const { user, isAuthenticated, isLoading, mfaRequired, needsOnboarding, perfilElegido, agencyRole, hasActiveAgencyMembership, agencyMembershipChecked } = useAuth()
+  const { user, isAuthenticated, isLoading, mfaRequired, needsOnboarding, perfilElegido, agencyRole, hasActiveAgencyMembership, agencyMembershipChecked, refreshUser } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const [isCheckingStorage, setIsCheckingStorage] = useState(true)
@@ -156,6 +156,23 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
 
     // Check role restriction
     if (allowedRoles && effectiveUser && !isPanelRoleAllowed(effectiveUser.role, allowedRoles, { allowAgencyMembers, hasActiveAgencyMembership })) {
+      /*
+       * 🔴 Un perfil DEGRADADO no expulsa a nadie.
+       *
+       * Nico, 2026-09-11: «¿por qué me envió para inquilinos y no para
+       * inmobiliaria?». Se le había caído el back. Con `/users/me` sin
+       * responder, auth-context fabrica un usuario a partir de la sesión de
+       * Supabase (`profileSource: 'session'`), y ese usuario trae un rol que
+       * NADIE confirmó. Esta guarda lo leía como un hecho y lo sacaba del
+       * panel de la inmobiliaria hacia el portal del inquilino.
+       *
+       * Redirigir es destructivo: se pierde la pantalla en la que estaba y no
+       * hay forma de saber por qué. Quedarse no lo es — el panel no es la
+       * frontera de seguridad (cada llamada va con el JWT y el back decide),
+       * así que lo peor que pasa es que las tarjetas no carguen. Entonces se
+       * espera, se dice que no se pudo confirmar, y se ofrece reintentar.
+       */
+      if (user?.profileSource === 'session') return
       // On an agency-member route, do NOT bounce a personal-role user until the
       // membership probe has settled — a dual-context member would otherwise be
       // redirected mid-probe. The render guard keeps a spinner up meanwhile.
@@ -249,6 +266,33 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
     // access denied). The hold shows the neutral auth-loading copy; only a real
     // redirect shows "Redirigiendo...".
     const holdingForMembership = allowAgencyMembers && !agencyMembershipChecked
+    /*
+     * Perfil degradado: el efecto de arriba NO redirige (un rol que nadie
+     * confirmó no puede expulsar), así que acá tampoco se puede dejar un
+     * «Redirigiendo...» que no va a llegar nunca. Se dice la verdad —no
+     * pudimos confirmar la sesión— y se ofrece la salida.
+     */
+    if (user?.profileSource === 'session') {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-muted p-6">
+          <div className="flex max-w-sm flex-col items-center gap-4 text-center">
+            <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
+            <p className="text-sm text-muted-foreground">
+              No pudimos confirmar tu sesión con el servidor. Estamos
+              reintentando — no cierres la pestaña.
+            </p>
+            <button
+              type="button"
+              className="text-sm underline underline-offset-4"
+              onClick={() => { void refreshUser() }}
+              data-testid="reintentar-perfil"
+            >
+              Reintentar ahora
+            </button>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">

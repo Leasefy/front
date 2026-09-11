@@ -54,6 +54,7 @@ const { inmueblesImportacionApiMock } = vi.hoisted(() => ({
     descartarFila: vi.fn(),
     descartarLote: vi.fn(),
     activar: vi.fn(),
+    revisarDeNuevo: vi.fn(),
     estadoDeLote: vi.fn(),
     lotesAbiertos: vi.fn(),
   },
@@ -427,6 +428,151 @@ describe('<StepConfirmImport> — the review screen once LISTO', () => {
     expect(container.textContent).toContain('quedaron más por activar');
   });
 
+  /*
+   * 🔴 Nico, 2026-09-11: «¿es normal que lleve activando más de 5 min?».
+   * Lo era —2.824 filas a ~40 por minuto— pero la pantalla sólo decía
+   * «Activando...» con un spinner. Una espera larga necesita tres cosas: en
+   * qué va, cuánto falta, y cómo salir.
+   */
+  it('mientras activa muestra en qué va, y el conteo sale del propio servidor', async () => {
+    inmueblesImportacionApiMock.resumen.mockResolvedValue({
+      lote: 'lote-1', total: 100, pendientes: 0, listos: 100, activados: 0, descartados: 0,
+    });
+    let soltar: (() => void) | null = null;
+    inmueblesImportacionApiMock.activar
+      .mockResolvedValueOnce({ lote: 'lote-1', activados: 30, omitidas: [], restantes: 70 })
+      .mockImplementationOnce(
+        () => new Promise((resolve) => { soltar = () => resolve({ lote: 'lote-1', activados: 70, omitidas: [], restantes: 0 }); }),
+      );
+
+    render(baseState());
+    await act(async () => { await Promise.resolve(); });
+
+    await act(async () => {
+      findButtonByText('Activar')!.click();
+      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    });
+
+    // La barra existe, dice 30 de 100 y trae su salida.
+    const barra = container.querySelector('[data-testid="activacion-progreso"]');
+    expect(barra).toBeTruthy();
+    expect(barra!.textContent).toContain('30 de 100');
+    expect(container.querySelector('[data-testid="activacion-detener"]')).toBeTruthy();
+    // Y el botón cuenta también: es lo que la persona mira.
+    expect(findButtonByText('Activando')!.textContent).toContain('30 de 100');
+
+    await act(async () => {
+      soltar!();
+      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    });
+  });
+
+  it('«Detener» corta después de la tanda en curso y dice que no se duplica', async () => {
+    inmueblesImportacionApiMock.resumen.mockResolvedValue({
+      lote: 'lote-1', total: 100, pendientes: 0, listos: 100, activados: 0, descartados: 0,
+    });
+    let soltarPrimera: (() => void) | null = null;
+    inmueblesImportacionApiMock.activar
+      .mockImplementationOnce(
+        () => new Promise((resolve) => {
+          soltarPrimera = () => resolve({ lote: 'lote-1', activados: 10, omitidas: [], restantes: 90 });
+        }),
+      )
+      .mockResolvedValue({ lote: 'lote-1', activados: 10, omitidas: [], restantes: 80 });
+
+    render(baseState());
+    await act(async () => { await Promise.resolve(); });
+
+    await act(async () => {
+      findButtonByText('Activar')!.click();
+      await Promise.resolve(); await Promise.resolve();
+    });
+
+    // Con la primera tanda todavía en vuelo, la persona toca «Detener».
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="activacion-detener"]')!.click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      soltarPrimera!();
+      for (let i = 0; i < 8; i++) await Promise.resolve();
+    });
+
+    // La tanda en vuelo terminó; la SIGUIENTE nunca salió.
+    expect(inmueblesImportacionApiMock.activar).toHaveBeenCalledTimes(1);
+    expect(container.textContent).not.toContain('¡Importación completada!');
+    expect(toastMock.info).toHaveBeenCalledWith(
+      'Activación detenida',
+      expect.objectContaining({ description: expect.stringContaining('ni se duplica') }),
+    );
+  });
+
+  it('con muro, la barra de activación sale por la ranura viva — no adentro del `inert`', async () => {
+    const ranura = document.createElement('div');
+    document.body.appendChild(ranura);
+    inmueblesImportacionApiMock.resumen.mockResolvedValue({
+      lote: 'lote-1', total: 100, pendientes: 0, listos: 100, activados: 0, descartados: 0,
+    });
+    let soltar: (() => void) | null = null;
+    inmueblesImportacionApiMock.activar
+      .mockResolvedValueOnce({ lote: 'lote-1', activados: 30, omitidas: [], restantes: 70 })
+      .mockImplementationOnce(
+        () => new Promise((resolve) => { soltar = () => resolve({ lote: 'lote-1', activados: 70, omitidas: [], restantes: 0 }); }),
+      );
+
+    render(baseState(), { onOcupado: () => {}, ranuraViva: ranura });
+    await act(async () => { await Promise.resolve(); });
+
+    await act(async () => {
+      findButtonByText('Activar')!.click();
+      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    });
+
+    expect(container.querySelector('[data-testid="activacion-progreso"]')).toBeNull();
+    expect(ranura.querySelector('[data-testid="activacion-progreso"]')).toBeTruthy();
+    expect(ranura.querySelector('[data-testid="activacion-detener"]')).toBeTruthy();
+
+    await act(async () => {
+      soltar!();
+      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    });
+    ranura.remove();
+  });
+
+  /*
+   * 🔴 La barra de la re-revisión vivía en el `return` del resumen previo,
+   * al que sólo se llega SIN lote — y revisar exige un lote. Era código
+   * muerto: el botón decía «Revisando…» y la barra no se dibujaba en ningún
+   * lado. Esta prueba fija que sí aparece en la pantalla donde se usa.
+   */
+  it('la barra de la re-revisión se dibuja en la pantalla del lote, no en la de antes', async () => {
+    inmueblesImportacionApiMock.resumen.mockResolvedValue({
+      lote: 'lote-1', total: 10, pendientes: 10, listos: 0, activados: 0, descartados: 0,
+    });
+    let soltar: (() => void) | null = null;
+    inmueblesImportacionApiMock.revisarDeNuevo.mockImplementationOnce(
+      () => new Promise((resolve) => {
+        soltar = () => resolve({ lote: 'lote-1', revisadas: 4, liberadas: 2, restantes: 8, ultimaFila: 4, terminado: true });
+      }),
+    );
+
+    render(baseState());
+    await act(async () => { await Promise.resolve(); });
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="revisar-de-nuevo"]')!.click();
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('[data-testid="revision-progreso"]')).toBeTruthy();
+    expect(container.querySelector('[data-testid="revision-detener"]')).toBeTruthy();
+
+    await act(async () => {
+      soltar!();
+      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    });
+  });
+
   it('un 409 FILA_YA_ACTIVADA refresca la lista — la fila fantasma se va sola', async () => {
     inmueblesImportacionApiMock.filas.mockResolvedValue({
       filas: [
@@ -455,6 +601,62 @@ describe('<StepConfirmImport> — the review screen once LISTO', () => {
 
     expect(toastMock.error).toHaveBeenCalled();
     expect(inmueblesImportacionApiMock.filas.mock.calls.length).toBeGreaterThan(llamadasAntes);
+  });
+
+  /*
+   * 🔴 Nico, 2026-09-11: «le doy ahí a actualizar lista y no funciona».
+   * La consulta sí salía; lo que no pasaba nunca era que el cartel rojo se
+   * bajara, así que en pantalla el botón no hacía nada. Un aviso que
+   * sobrevive a su propia solución es un aviso que miente.
+   */
+  it('«Actualizar la lista» baja el aviso cuando la consulta vuelve bien', async () => {
+    inmueblesImportacionApiMock.resumen.mockResolvedValue({
+      lote: 'lote-1', total: 1, pendientes: 0, listos: 1, activados: 0, descartados: 0,
+    });
+    // La activación falla: aparece el cartel con su botón.
+    inmueblesImportacionApiMock.activar.mockRejectedValueOnce(
+      new ApiError(0, 'No pudimos conectarnos al servidor. (Failed to fetch)'),
+    );
+
+    render(baseState());
+    await act(async () => { await Promise.resolve(); });
+
+    await act(async () => {
+      findButtonByText('Activar')!.click();
+      for (let i = 0; i < 6; i++) await Promise.resolve();
+    });
+    expect(container.querySelector('[role="alert"]')).toBeTruthy();
+
+    // El back vuelve; se toca «Actualizar la lista».
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="revision-actualizar"]')!.click();
+      for (let i = 0; i < 6; i++) await Promise.resolve();
+    });
+
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it('si al actualizar el servidor sigue caído, el aviso se queda y lo dice', async () => {
+    inmueblesImportacionApiMock.resumen
+      .mockResolvedValueOnce({ lote: 'lote-1', total: 1, pendientes: 0, listos: 1, activados: 0, descartados: 0 })
+      .mockRejectedValue(new ApiError(0, 'No pudimos conectarnos al servidor. (Failed to fetch)'));
+    inmueblesImportacionApiMock.activar.mockRejectedValueOnce(new Error('se cayó la red'));
+
+    render(baseState());
+    await act(async () => { await Promise.resolve(); });
+
+    await act(async () => {
+      findButtonByText('Activar')!.click();
+      for (let i = 0; i < 6; i++) await Promise.resolve();
+    });
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="revision-actualizar"]')!.click();
+      for (let i = 0; i < 6; i++) await Promise.resolve();
+    });
+
+    const aviso = container.querySelector('[role="alert"]');
+    expect(aviso).toBeTruthy();
+    expect(aviso!.textContent).toContain('No pudimos conectarnos al servidor');
   });
 
   it('descartar lote surfaces 409 LOTE_EN_PROCESO as "wait", never retries silently or navigates away', async () => {

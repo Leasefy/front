@@ -210,6 +210,83 @@ describe('AuthProvider — degraded backend (5xx) still falls back to the sessio
   })
 })
 
+/*
+ * 🔴 Nico, 2026-09-11: se le cayó el back mientras trabajaba en el panel de la
+ * inmobiliaria y la app lo mandó al portal del INQUILINO. La cadena empieza
+ * acá: sin `/users/me`, este fallback fijaba `role: 'tenant'` para todo el
+ * mundo, y ese rol inventado viajaba hasta el gate de navegación.
+ */
+describe('AuthProvider — el perfil degradado no inventa un rol', () => {
+  it('usa el perfil que la persona eligió al registrarse, no «tenant» a la fuerza', async () => {
+    getMock.mockRejectedValue(new ApiError(503, 'Service unavailable'))
+    const sesionDeAgencia = {
+      ...fakeSession,
+      user: { ...fakeSession.user, user_metadata: { full_name: 'Ana Pérez', intended_role: 'agency' } },
+    }
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('INITIAL_SESSION', sesionDeAgencia)
+    })
+    await act(async () => {
+      await Promise.resolve(); await Promise.resolve(); await Promise.resolve()
+    })
+
+    expect(captured!.user!.profileSource).toBe('session')
+    expect(captured!.user!.role).toBe('agency')
+  })
+
+  it('sin perfil elegido sigue cayendo en «tenant» (comportamiento de siempre)', async () => {
+    getMock.mockRejectedValue(new ApiError(503, 'Service unavailable'))
+    await renderProviderAndEmitInitialSession()
+
+    expect(captured!.user!.role).toBe('tenant')
+  })
+
+  it('cuando el back vuelve, el perfil degradado se cura solo', async () => {
+    vi.useFakeTimers()
+    try {
+      // Primero cae; después responde el perfil real de agencia.
+      getMock.mockImplementation((path: string) => {
+        if (path === '/inmobiliaria/agency') return Promise.reject(new ApiError(404, 'no membership'))
+        return Promise.reject(new ApiError(503, 'Service unavailable'))
+      })
+      await act(async () => {
+        root.render(
+          <AuthProvider>
+            <Probe />
+          </AuthProvider>,
+        )
+      })
+      await act(async () => {
+        await authCallbacks[authCallbacks.length - 1]('INITIAL_SESSION', fakeSession)
+      })
+      await act(async () => { await Promise.resolve(); await Promise.resolve() })
+      expect(captured!.user!.profileSource).toBe('session')
+
+      // El back vuelve.
+      getMock.mockImplementation((path: string) => {
+        if (path === '/inmobiliaria/agency') return Promise.reject(new ApiError(404, 'no membership'))
+        return Promise.resolve({
+          id: 'u1', email: 'ana@example.com', firstName: 'Ana', role: 'AGENT',
+          onboardingCompletedAt: '2026-01-01T00:00:00.000Z',
+        })
+      })
+      await act(async () => { await vi.advanceTimersByTimeAsync(50) })
+
+      expect(captured!.user!.profileSource).toBe('backend')
+      expect(captured!.user!.role).toBe('agency')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
 describe('AuthProvider — agency membership detection (personal-role coexistence)', () => {
   const TENANT = {
     id: 'u1',

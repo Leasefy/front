@@ -10,6 +10,7 @@ import {
   estratoDePalabras,
   fechaDeOrigen,
 } from '@/lib/migracion/valores-de-origen';
+import { normalizarParte, partirCelda } from './columnaCompuesta';
 
 // Reexport: los tests y cualquier consumidor viejo siguen importándolo de acá.
 export { cleanNumericValue } from './valorNumerico';
@@ -213,12 +214,7 @@ export function mapRowsToProperties(
       errorMessages: [],
     };
 
-    for (const mapping of columnMappings) {
-      if (!mapping.targetField || !(mapping.sourceColumn in row)) continue;
-
-      const rawValue = row[mapping.sourceColumn];
-      const field = mapping.targetField;
-
+    const asignar = (field: string, rawValue: unknown) => {
       if (field === 'stratum') {
         // El archivo real trae el estrato en PALABRAS («Tres», «No
         // Estratificada»). `cleanNumericValue` lo dejaría vacío siempre.
@@ -243,6 +239,28 @@ export function mapRowsToProperties(
           (prop as unknown as Record<string, unknown>)[field] = strVal;
         }
       }
+    };
+
+    for (const mapping of columnMappings) {
+      if (!(mapping.sourceColumn in row)) continue;
+      const rawValue = row[mapping.sourceColumn];
+
+      if (mapping.partes) {
+        // Dos datos en la celda: cada parte a su campo. La celda que no tenga
+        // la forma «dato - texto» va entera al campo de la derecha (el texto).
+        const [aIzquierda, aDerecha] = mapping.partes.destinos;
+        const partida = partirCelda(rawValue);
+        if (partida) {
+          if (aIzquierda) asignar(aIzquierda, normalizarParte(aIzquierda, partida.izquierda));
+          if (aDerecha) asignar(aDerecha, normalizarParte(aDerecha, partida.derecha));
+        } else if (aDerecha) {
+          asignar(aDerecha, rawValue);
+        }
+        continue;
+      }
+
+      if (!mapping.targetField) continue;
+      asignar(mapping.targetField, rawValue);
     }
 
     /*

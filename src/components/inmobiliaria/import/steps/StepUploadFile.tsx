@@ -82,7 +82,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
         setRowWarning(`Tu archivo tiene ${result.rows.length.toLocaleString()} filas. El proceso puede tardar más de lo usual.`);
       }
 
-      const columnMappings = autoMapColumns(result.headers);
+      const columnMappings = autoMapColumns(result.headers, result.rows);
 
       updateState({
         file,

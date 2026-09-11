@@ -30,6 +30,7 @@ import { StepPasteLinks } from './steps/StepPasteLinks';
 import { TARGET_FIELDS } from './lib/importTypes';
 import type { ImportWizardState } from './lib/importTypes';
 import { lotesParaRetomar } from './lib/lotesParaRetomar';
+import { destinosDe } from './lib/columnaCompuesta';
 import {
   inmueblesImportacionApi,
   type EstadoDeLoteInmuebles,
@@ -240,7 +241,8 @@ export function ImportWizard({
         // alternatives (at least one mapped) is what makes a sale-only
         // import possible; every other required field stays mandatory.
         const mappings = wizardState.columnMappings;
-        const isMapped = (key: string) => mappings.some((m) => m.targetField === key);
+        // Una columna partida en dos cuenta por sus dos partes.
+        const isMapped = (key: string) => mappings.some((m) => destinosDe(m).includes(key));
         const requiredKeys = TARGET_FIELDS.filter((f) => f.required).map((f) => f.key);
         const priceAlternativeOk = isMapped('monthlyRent') || isMapped('salePrice');
         return (

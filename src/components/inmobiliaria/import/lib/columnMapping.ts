@@ -1,7 +1,8 @@
 // src/components/inmobiliaria/import/lib/columnMapping.ts
 // Heuristic column matcher: Tier 1 keyword dictionary + Tier 2 Levenshtein distance
 
-import type { ColumnMapping } from './importTypes';
+import type { ColumnMapping, ParsedRow } from './importTypes';
+import { dividirLasCompuestas } from './columnaCompuesta';
 
 /**
  * Keyword dictionary for Tier 1 exact substring matching.
@@ -286,7 +287,7 @@ function tier2Match(normalizedHeader: string): { targetField: string; confidence
  * - No match: targetField null, confidence 0
  * - Deduplication: if two headers map to same targetField, keep the higher-confidence one
  */
-export function autoMapColumns(headers: string[]): ColumnMapping[] {
+export function autoMapColumns(headers: string[], rawRows: ParsedRow[] = []): ColumnMapping[] {
   // First pass: score each header
   const results: ColumnMapping[] = headers.map((header) => {
     const normalized = normalize(header);
@@ -355,7 +356,10 @@ export function autoMapColumns(headers: string[]): ColumnMapping[] {
     }
   }
 
-  return results;
+  // Las columnas que traen dos datos en la celda («3 - CR 50 127 SUR 61») se
+  // parten de una: el código es la llave con la que los contratos encuentran
+  // el inmueble, y dejarlo pegado a la dirección lo perdía.
+  return rawRows.length > 0 ? dividirLasCompuestas(results, rawRows) : results;
 }
 
 export type { ColumnMapping };

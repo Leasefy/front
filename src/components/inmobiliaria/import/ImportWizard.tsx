@@ -31,6 +31,17 @@ import { TARGET_FIELDS } from './lib/importTypes';
 import type { ImportWizardState } from './lib/importTypes';
 import { lotesParaRetomar } from './lib/lotesParaRetomar';
 import { destinosDe } from './lib/columnaCompuesta';
+import { ponerTitulosATodas, sinTitulo } from './lib/ponerTitulos';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   inmueblesImportacionApi,
   type EstadoDeLoteInmuebles,
@@ -261,12 +272,41 @@ export function ImportWizard({
     }
   }, [pasoActual, wizardState]);
 
+  /*
+   * Títulos que faltan al salir de la revisión. El título es obligatorio y es
+   * lo primero que se ve en el marketplace: sin él cada fila entra PENDIENTE.
+   * Mientras falte en alguna, «Ponerles título» es la acción primaria del pie
+   * y «Siguiente» pregunta antes de seguir (Nico, 2026-09-11: «debemos dejar
+   * claro que debería aceptar la sugerencia de los títulos»).
+   */
+  const titulosPendientes = pasoActual === 4 ? sinTitulo(wizardState.properties) : 0;
+  const [preguntarPorTitulos, setPreguntarPorTitulos] = useState(false);
+
   // Navigation handlers
-  const goToNextStep = useCallback(() => {
+  const avanzar = useCallback(() => {
     if (currentStep < visibleSteps.length && isStepValid) {
       setCurrentStep((prev) => prev + 1);
     }
   }, [currentStep, isStepValid, visibleSteps.length]);
+
+  const goToNextStep = useCallback(() => {
+    if (titulosPendientes > 0) {
+      setPreguntarPorTitulos(true);
+      return;
+    }
+    avanzar();
+  }, [titulosPendientes, avanzar]);
+
+  const seguirConTitulos = useCallback(() => {
+    updateState({ properties: ponerTitulosATodas(wizardState.properties) });
+    setPreguntarPorTitulos(false);
+    avanzar();
+  }, [wizardState.properties, updateState, avanzar]);
+
+  const seguirSinTitulos = useCallback(() => {
+    setPreguntarPorTitulos(false);
+    avanzar();
+  }, [avanzar]);
 
   // Salir de la revisión hacia atrás descarta el análisis para que se rehaga
   // con lo que la persona vaya a cambiar. Con «Desde enlaces» NO: ahí las
@@ -579,9 +619,14 @@ export function ImportWizard({
                 <Button
                   type="button"
                   hideArrow
+                  // Con títulos pendientes la acción primaria es ponérselos
+                  // (el paso la pone en la ranura de al lado): «Siguiente»
+                  // cede el color.
+                  variant={titulosPendientes > 0 ? 'outline' : undefined}
                   onClick={goToNextStep}
                   disabled={!isStepValid}
                   className="gap-2"
+                  data-testid="wizard-siguiente"
                 >
                   {t('inmobiliaria.import.wizard.next')}
                   <CaretRight className="w-4 h-4" />
@@ -649,6 +694,43 @@ export function ImportWizard({
           </motion.div>
         )}
       </AnimatePresence>
+      <AlertDialog open={preguntarPorTitulos} onOpenChange={setPreguntarPorTitulos}>
+        <AlertDialogContent data-testid="dialogo-titulos">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {titulosPendientes === 1
+                ? '1 inmueble sin título'
+                : `${titulosPendientes.toLocaleString('es-CO')} inmuebles sin título`}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-left">
+              <span className="block">
+                El título es obligatorio y es lo primero que se ve en el marketplace. Sin él,{' '}
+                {titulosPendientes === 1 ? 'esa fila entra pendiente' : 'esas filas entran pendientes'} y
+                hay que escribirlo una por una.
+              </span>
+              <span className="block">
+                El sugerido se arma con clase + barrio + municipio («Apartamento en Sierra Morena,
+                La Estrella») y lo puedes editar después, en cada inmueble.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Volver</AlertDialogCancel>
+            <Button type="button" variant="outline" hideArrow onClick={seguirSinTitulos} data-testid="seguir-sin-titulo">
+              Seguir sin título
+            </Button>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                seguirConTitulos();
+              }}
+              data-testid="poner-titulos-y-seguir"
+            >
+              Ponerles título y seguir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

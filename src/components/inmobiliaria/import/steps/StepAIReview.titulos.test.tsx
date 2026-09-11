@@ -76,6 +76,20 @@ const boton = () =>
   container.querySelector<HTMLButtonElement>('[data-testid="titulos-a-todas"]');
 
 describe('StepAIReview — ponerles título a todas', () => {
+  it('dice por qué: recomendado, obligatorio, marketplace — y cuántas entran pendientes sin él', () => {
+    render([inmueble(), inmueble({ _rowIndex: 1 }), inmueble({ _rowIndex: 2, propertyTitle: 'Ya tiene' })]);
+    const porQue = container.querySelector('[data-testid="titulos-por-que"]');
+    expect(porQue).not.toBeNull();
+    expect(porQue!.textContent).toContain('Recomendado');
+    expect(porQue!.textContent).toContain('marketplace');
+    expect(porQue!.textContent).toContain('esas 2 entran pendientes');
+  });
+
+  it('con todas tituladas no hay nada que recomendar', () => {
+    render([inmueble({ propertyTitle: 'Apartamento en Sierra Morena, Sabaneta' })]);
+    expect(container.querySelector('[data-testid="titulos-por-que"]')).toBeNull();
+  });
+
   it('el botón dice cuántas van a recibir título', () => {
     render([
       inmueble({ _rowIndex: 0 }),

@@ -14,7 +14,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { analyzeProperties, mapRowsToProperties } from '../lib/gapFiller';
 import { recalcularEstado, escribirCampo } from '../lib/requisitosDelBack';
-import { tituloSugerido } from '../lib/tituloSugerido';
+import { ponerTitulosATodas, sinTitulo as contarSinTitulo } from '../lib/ponerTitulos';
 import { AISuggestionCard } from '../components/AISuggestionCard';
 import { RanuraDelPieSecundaria } from '../ImportWizard';
 import type { ImportStepProps } from '../ImportWizard';
@@ -219,36 +219,24 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
    * Y sólo donde falta: un título que la persona ya escribió no se pisa.
    */
   const ranuraDelPie = useContext(RanuraDelPieSecundaria);
-  const sinTitulo = properties.filter((p) => !p.propertyTitle?.trim()).length;
+  const sinTitulo = contarSinTitulo(properties);
 
   const handlePonerTitulosATodas = () => {
-    updateState({
-      properties: properties.map((p) => {
-        if (p.propertyTitle?.trim()) return p;
-        const titulo = tituloSugerido(
-          p.propertyType,
-          p.propertyCity,
-          p.propertyZone,
-        );
-        return recalcularEstado({
-          ...p,
-          propertyTitle: titulo,
-          suggestions: p.suggestions.map((s) =>
-            s.field === 'propertyTitle' && s.accepted === null
-              ? { ...s, accepted: true }
-              : s,
-          ),
-        });
-      }),
-    });
+    updateState({ properties: ponerTitulosATodas(properties) });
   };
 
+  /*
+   * Botón PRIMARIO, no secundario (Nico, 2026-09-11: «debemos dejar claro
+   * que debería aceptar la sugerencia de los títulos»): el título es
+   * obligatorio y es lo primero que se ve en el marketplace, así que mientras
+   * falte en alguna fila ésta es LA acción del paso, y «Siguiente» pasa a
+   * secundario (ver `ImportWizard`).
+   */
   const botonDeTitulos =
     sinTitulo > 0 ? (
       <Button
         type="button"
         size="sm"
-        variant="outline"
         hideArrow
         onClick={handlePonerTitulosATodas}
         data-testid="titulos-a-todas"
@@ -410,6 +398,18 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
         )}
         </div>
       </div>
+
+      {sinTitulo > 0 ? (
+        <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="titulos-por-que">
+          <span className="font-medium text-fg dark:text-white">Recomendado:</span> el título es
+          obligatorio y es lo primero que se ve en el marketplace. Sin él,{' '}
+          {sinTitulo === 1
+            ? 'esa fila entra pendiente'
+            : `esas ${sinTitulo.toLocaleString('es-CO')} entran pendientes`}{' '}
+          y hay que escribirlo una por una. El sugerido se arma con clase + barrio + municipio
+          («Apartamento en Sierra Morena, La Estrella») y lo puedes editar después.
+        </p>
+      ) : null}
 
       {/* Empty state */}
       {properties.length === 0 && (

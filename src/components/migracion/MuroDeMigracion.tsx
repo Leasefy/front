@@ -1150,11 +1150,19 @@ function PasoEnFoco({
           </p>
         ) : paso.estado === "pendiente" && paso.detalle ? (
           /*
-           * El back ya dice qué le falta al paso («99 cuentas · faltan cuentas
-           * para 3 asientos automáticos»). Antes ese detalle sólo se pintaba
-           * cuando el paso estaba hecho: pendiente, la persona veía «Ahora» y
-           * nada más — Nico se quedó en el paso 5 sin saber por qué no
-           * avanzaba (2026-09-02 12:42).
+           * El back ya dice qué le falta al paso. Antes este detalle sólo se
+           * pintaba cuando el paso estaba hecho: pendiente, la persona veía
+           * «Ahora» y nada más — Nico se quedó en el paso 5 sin saber por qué
+           * no avanzaba (2026-09-02 12:42).
+           *
+           * 🔴 El rótulo dice «Queda por hacer», no «Falta». Nico,
+           * 2026-09-11, en la pantalla de subir un archivo nuevo: «eso que
+           * dice a la izquierda es mentira, no hay nada». Leía
+           * «Falta: 2145 inmuebles · 3270 preparados sin activar…», y 2.145 es
+           * lo que la agencia YA TIENE. Dos arreglos, uno de cada lado: el
+           * back dejó de encabezar el pendiente con un conteo de logro (ahora
+           * va al final, «2145 ya cargados»), y este rótulo dejó de afirmar
+           * que todo lo que sigue es un faltante.
            */
           <p
             className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1.5 font-mono text-xs tabular-nums text-warning"

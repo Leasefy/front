@@ -450,7 +450,7 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
         paso('inquilinos', 'listo', 90, '90 inquilinos'),
         paso('propiedades', 'listo', 3, '3 inmuebles'),
         paso('contratos', 'listo', 90, '90 contratos · 90 sin inmueble'),
-        paso('puc', 'pendiente', 99, '99 cuentas · faltan cuentas para 3 asientos automáticos'),
+        paso('puc', 'pendiente', 99, 'faltan cuentas para 3 asientos automáticos · 99 cuentas ya cargadas'),
         paso('contables', 'pendiente'),
       ],
     });
@@ -460,6 +460,57 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
     expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('puc');
     expect(q('muro-paso-listo')).toBeNull();
     expect(q('muro-paso-falta')?.textContent).toContain('faltan cuentas para 3 asientos automáticos');
+  });
+
+  /*
+   * 🔴 Nico, 2026-09-11, en la pantalla de subir un archivo nuevo: «eso que
+   * dice a la izquierda es mentira, apenas voy a volver a subir otro archivo,
+   * no hay nada». Leía «Falta: 2145 inmuebles · 3270 preparados sin activar ·
+   * 4660 con datos por corregir» — y 2.145 es lo que la agencia YA TIENE.
+   *
+   * El rótulo no puede afirmar que todo lo que sigue es un faltante.
+   */
+  it('el rótulo del paso pendiente no llama «falta» a lo que ya está cargado', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [
+        paso('propietarios', 'listo', 60, '60 propietarios'),
+        paso('inquilinos', 'listo', 90, '90 inquilinos'),
+        paso(
+          'propiedades',
+          'pendiente',
+          2_145,
+          '3270 preparados sin activar · 4660 con datos por corregir · 2145 ya cargados',
+        ),
+        paso('contratos', 'pendiente'),
+        paso('puc', 'pendiente'),
+        paso('contables', 'pendiente'),
+      ],
+    });
+
+    await pintar();
+
+    const rotulo = q('muro-paso-falta')?.textContent ?? '';
+    // Lo ya hecho no encabeza la frase, y va con la palabra que lo explica.
+    expect(rotulo).toContain('ya cargados');
+    expect(rotulo.indexOf('preparados sin activar')).toBeLessThan(
+      rotulo.indexOf('ya cargados'),
+    );
+
+    /*
+     * El rótulo lo pone la traducción, y acá `t` está mockeado. Se lee el
+     * archivo real: es LO ÚNICO que prueba que la pantalla no vuelve a decir
+     * «Falta:» sobre una frase que empieza por lo que ya está hecho.
+     */
+    const es = (await import('@/lib/i18n/locales/es.json')).default as Record<
+      string,
+      unknown
+    >;
+    const muro = (
+      (es.migracion as Record<string, unknown>).muro as Record<string, string>
+    );
+    expect(muro.falta).toBe('Queda por hacer: {{detalle}}');
   });
 
   it('el paso 6 (registros contables) espera al 5 (plan de cuentas)', async () => {

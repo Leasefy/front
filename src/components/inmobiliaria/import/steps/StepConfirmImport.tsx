@@ -223,6 +223,7 @@ export function StepConfirmImport({
 
   // ── Phase 3: activation ──────────────────────────────────────────────
   const [activando, setActivando] = useState(false);
+  const [revisando, setRevisando] = useState(false);
   const [resultadoActivacion, setResultadoActivacion] = useState<{
     activados: number;
     omitidas: FilaOmitida[];
@@ -374,7 +375,12 @@ export function StepConfirmImport({
     !agotado &&
     (estadoLote?.estado === 'ENCOLADO' || estadoLote?.estado === 'PROCESANDO');
   const hayOperacionEnVuelo =
-    geocodificando || preparando || activando || descartandoLote || jobCorriendo;
+    geocodificando ||
+    preparando ||
+    activando ||
+    revisando ||
+    descartandoLote ||
+    jobCorriendo;
   useEffect(() => {
     /*
      * Se manda también CÓMO parar — pero SÓLO como respaldo.
@@ -606,6 +612,39 @@ export function StepConfirmImport({
    * `activarLoteCompleto` (testeable aparte); acá sólo se orquesta el estado
    * de pantalla mientras corre.
    */
+  /**
+   * Volver a revisar lo pendiente. Reanudable igual que activar: se llama
+   * mientras el servidor diga que quedan filas y siga liberando alguna.
+   */
+  const handleRevisarDeNuevo = async () => {
+    if (!lote) return;
+    setRevisando(true);
+    setError(null);
+    try {
+      let liberadas = 0;
+      for (let vuelta = 0; vuelta < 1_000; vuelta += 1) {
+        const r = await inmueblesImportacionApi.revisarDeNuevo(lote);
+        liberadas += r.liberadas;
+        // Una tanda que no mira ninguna fila es una tanda que no va a cambiar
+        // nada en la siguiente: se corta, igual que en la activación.
+        if (r.restantes <= 0 || r.revisadas === 0) break;
+      }
+      await refrescarRevision(lote, pagina);
+      if (liberadas === 0) {
+        setError(
+          "Volvimos a revisar y no se liberó ninguna: lo que queda pendiente " +
+            "necesita que corrijas algo o que decidas.",
+        );
+      }
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "No pudimos volver a revisar el lote.",
+      );
+    } finally {
+      setRevisando(false);
+    }
+  };
+
   const handleActivar = async () => {
     if (!lote) return;
     setActivando(true);
@@ -1001,21 +1040,44 @@ export function StepConfirmImport({
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              hideArrow
+              disabled={descartandoLote}
+              isLoading={descartandoLote}
+              onClick={handleDescartarLote}
+            >
+              Descartar lote completo
+            </Button>
+            {/*
+             * Volver a revisar lo pendiente con las reglas de HOY.
+             *
+             * `faltantes` se calcula al preparar y se GUARDA, así que una fila
+             * frenada por un motivo que ya no existe se quedaba frenada, y la
+             * única salida era resubir el archivo: 53 minutos de
+             * geocodificación para 2.864 inmuebles.
+             */}
+            {(resumenLote?.pendientes ?? 0) > 0 ? (
+              <Button
+                type="button"
+                variant="ghost"
+                hideArrow
+                disabled={revisando || activando || descartandoLote}
+                isLoading={revisando}
+                onClick={handleRevisarDeNuevo}
+                data-testid="revisar-de-nuevo"
+              >
+                {revisando ? "Revisando…" : "Volver a revisar lo pendiente"}
+              </Button>
+            ) : null}
+          </div>
           <Button
             type="button"
-            variant="outline"
             hideArrow
-            disabled={descartandoLote}
-            isLoading={descartandoLote}
-            onClick={handleDescartarLote}
-          >
-            Descartar lote completo
-          </Button>
-          <Button
-            type="button"
-            hideArrow
-            disabled={!puedeActivar || activando}
+            disabled={!puedeActivar || activando || revisando}
             isLoading={activando}
             onClick={handleActivar}
           >

@@ -39,9 +39,10 @@
  *    que alguien reconoce su propio inmueble.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+import { ApiError } from "@/lib/api/client";
 import {
   contractsApi,
   type InmuebleCandidato,
@@ -163,6 +164,28 @@ export interface PortafolioDeLaAgencia {
   /** `true` si el back devolvió justo el tope: la lista puede estar recortada. */
   recortado: boolean;
   error: string | null;
+  /** Volver a intentar. La lista fallida no queda cacheada. */
+  reintentar: () => void;
+}
+
+/**
+ * Qué se le dice a la persona cuando no se pudo traer la lista.
+ *
+ * 🔴 NUNCA el texto crudo del servidor. Nico vio en pantalla, en rojo:
+ * «Cannot GET /contracts/migrar/inmuebles?limite=3000 Puedes crearlo desde la
+ * dirección del archivo» — el 404 de Nest, que trae la ruta en `message`, se
+ * imprimía tal cual. Eso no es una frase, es un volcado: no dice qué pasó ni
+ * qué hacer, y parece que el producto se rompió.
+ *
+ * El mensaje del back SÍ sirve cuando habla de la persona —401 y 403 explican
+ * sesión y permisos—. Todo lo demás (ruta que no existe, servidor caído, red)
+ * es problema de la máquina y se resume en una frase con salida.
+ */
+export function mensajeDelPortafolio(e: unknown): string {
+  if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
+    return e.message;
+  }
+  return "No pudimos traer tus inmuebles.";
 }
 
 export function usePortafolioDeLaAgencia(
@@ -171,6 +194,13 @@ export function usePortafolioDeLaAgencia(
   const [inmuebles, setInmuebles] = useState<InmuebleCandidato[]>([]);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Cambia para forzar otro intento; `olvidarPortafolio` limpia la caché. */
+  const [intento, setIntento] = useState(0);
+
+  const reintentar = useCallback(() => {
+    olvidarPortafolio();
+    setIntento((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     if (!activo) return;
@@ -189,9 +219,9 @@ export function usePortafolioDeLaAgencia(
          * persona crearía uno que ya existe. Se dice que falló, y los
          * parecidos y el botón de crear siguen ahí.
          */
-        setError(
-          e instanceof Error ? e.message : "No pudimos traer tus inmuebles.",
-        );
+        setError(mensajeDelPortafolio(e));
+        // El detalle técnico no se pierde, sólo deja de ser lo que se lee.
+        console.error("No se pudo traer el portafolio de la agencia", e);
       })
       .finally(() => {
         if (vigente) setCargando(false);
@@ -199,12 +229,13 @@ export function usePortafolioDeLaAgencia(
     return () => {
       vigente = false;
     };
-  }, [activo]);
+  }, [activo, intento]);
 
   return {
     inmuebles,
     cargando,
     recortado: inmuebles.length >= TOPE,
     error,
+    reintentar,
   };
 }

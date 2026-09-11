@@ -398,8 +398,24 @@ function ElegirInmueble({
           }
         />
         {portafolio.error ? (
-          <p className="text-xs text-destructive">
-            {portafolio.error} Puedes crearlo desde la dirección del archivo.
+          <p
+            className="flex flex-wrap items-center gap-2 text-xs text-destructive"
+            data-testid={`portafolio-fallo-${fila.id}`}
+          >
+            {portafolio.error}
+            <Button
+              variant="ghost"
+              size="sm"
+              hideArrow
+              disabled={ocupado || portafolio.cargando}
+              onClick={portafolio.reintentar}
+              data-testid={`portafolio-reintentar-${fila.id}`}
+            >
+              Reintentar
+            </Button>
+            <span className="text-muted-foreground">
+              O créalo desde la dirección del archivo.
+            </span>
           </p>
         ) : null}
         {portafolio.recortado ? (

@@ -35,10 +35,12 @@ vi.mock('@/lib/api/contracts.service', async () => {
   };
 });
 
+import { ApiError } from '@/lib/api/client';
 import type { InmuebleCandidato } from '@/lib/api/contracts.service';
 import {
   SelectorDeInmueble,
   etiquetaDeInmueble,
+  mensajeDelPortafolio,
   olvidarPortafolio,
   usePortafolioDeLaAgencia,
 } from './SelectorDeInmueble';
@@ -113,6 +115,45 @@ describe('<SelectorDeInmueble>', () => {
   });
 });
 
+/*
+ * 🔴 Nico vio esto en pantalla, en rojo, el 2026-09-10:
+ *
+ *   «Cannot GET /contracts/migrar/inmuebles?limite=3000 Puedes crearlo desde
+ *    la dirección del archivo.»
+ *
+ * El 404 de Nest trae la ruta en `message` y el front lo imprimía tal cual.
+ * No es una frase: no dice qué pasó ni qué hacer, y parece que el producto se
+ * rompió. (La causa fue un back viejo todavía en pie; el texto habría salido
+ * igual en cualquier despliegue a medias.)
+ */
+describe('mensajeDelPortafolio', () => {
+  it('un 404 de ruta NUNCA se muestra crudo', () => {
+    const e = new ApiError(404, 'Cannot GET /contracts/migrar/inmuebles?limite=3000');
+    expect(mensajeDelPortafolio(e)).toBe('No pudimos traer tus inmuebles.');
+  });
+
+  it('un 500 tampoco: el volcado del servidor no es una frase', () => {
+    expect(mensajeDelPortafolio(new ApiError(500, 'Internal server error'))).toBe(
+      'No pudimos traer tus inmuebles.',
+    );
+  });
+
+  it('un error de red se resume igual', () => {
+    expect(mensajeDelPortafolio(new Error('Failed to fetch'))).toBe(
+      'No pudimos traer tus inmuebles.',
+    );
+  });
+
+  it('401 y 403 SÍ pasan: hablan de la persona, no de la máquina', () => {
+    expect(mensajeDelPortafolio(new ApiError(401, 'Tu sesión venció'))).toBe(
+      'Tu sesión venció',
+    );
+    expect(
+      mensajeDelPortafolio(new ApiError(403, 'No tienes permiso sobre contratos')),
+    ).toBe('No tienes permiso sobre contratos');
+  });
+});
+
 describe('usePortafolioDeLaAgencia', () => {
   function Sonda({ activo = true }: { activo?: boolean }) {
     const p = usePortafolioDeLaAgencia(activo);
@@ -140,7 +181,7 @@ describe('usePortafolioDeLaAgencia', () => {
     await pintar(<Sonda />);
     await act(async () => {});
     const sonda = container.querySelector('[data-testid="sonda"]')!;
-    expect(sonda.getAttribute('data-error')).toBe('red caída');
+    expect(sonda.getAttribute('data-error')).toBe('No pudimos traer tus inmuebles.');
     expect(sonda.textContent).toBe('0');
   });
 
@@ -158,5 +199,30 @@ describe('usePortafolioDeLaAgencia', () => {
   it('inactivo no pide nada', async () => {
     await pintar(<Sonda activo={false} />);
     expect(api.buscarInmuebles).not.toHaveBeenCalled();
+  });
+
+  it('«Reintentar» vuelve a pedir y limpia el fallo', async () => {
+    api.buscarInmuebles.mockRejectedValueOnce(new ApiError(404, 'Cannot GET /x'));
+    function ConBoton() {
+      const p = usePortafolioDeLaAgencia(true);
+      return (
+        <button data-testid="b" data-error={p.error ?? ''} onClick={p.reintentar}>
+          {p.inmuebles.length}
+        </button>
+      );
+    }
+    await pintar(<ConBoton />);
+    await act(async () => {});
+    const b = container.querySelector('[data-testid="b"]')!;
+    expect(b.getAttribute('data-error')).toBe('No pudimos traer tus inmuebles.');
+
+    api.buscarInmuebles.mockResolvedValue([UNO]);
+    await act(async () => {
+      b.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    await act(async () => {});
+    const otra = container.querySelector('[data-testid="b"]')!;
+    expect(otra.getAttribute('data-error')).toBe('');
+    expect(otra.textContent).toBe('1');
   });
 });

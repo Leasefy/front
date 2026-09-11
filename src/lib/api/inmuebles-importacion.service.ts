@@ -230,8 +230,18 @@ export interface ResumenRevisionInmuebles {
   revisadas: number;
   /** De ésas, cuántas dejaron de tener faltantes y pasaron a LISTO. */
   liberadas: number;
-  /** Cuántas siguen pendientes en el lote. `> 0` = volver a llamar. */
+  /** Cuántas siguen pendientes en el lote — para la pantalla, no para el bucle. */
   restantes: number;
+  /**
+   * Cursor: la última fila mirada; se manda como `desdeFila` en la siguiente
+   * llamada. `null` = esta llamada no miró ninguna.
+   */
+  ultimaFila: number | null;
+  /**
+   * No queda nada pendiente después de `ultimaFila`: la vuelta terminó. Es
+   * ESTO lo que corta el bucle, no `restantes > 0` (ver `revisarLoteCompleto`).
+   */
+  terminado: boolean;
 }
 
 export interface ResumenActivacionInmuebles {
@@ -376,7 +386,7 @@ export const inmueblesImportacionApi = {
    * única salida era resubir el archivo — 53 minutos de geocodificación para
    * 2.864 inmuebles. Reanudable: se llama mientras `restantes > 0`.
    */
-  async revisarDeNuevo(lote: string): Promise<ResumenRevisionInmuebles> {
-    return apiClient.post<ResumenRevisionInmuebles>(`${BASE}/revisar`, { lote });
+  async revisarDeNuevo(lote: string, desdeFila = 0): Promise<ResumenRevisionInmuebles> {
+    return apiClient.post<ResumenRevisionInmuebles>(`${BASE}/revisar`, { lote, desdeFila });
   },
 };

@@ -38,6 +38,7 @@ import {
   activarLoteCompleto,
   ActivacionInterrumpida,
 } from "../lib/activarLoteCompleto";
+import { revisarLoteCompleto, type ProgresoDeRevision } from "../lib/revisarLoteCompleto";
 import { emparejarFilasConFotos, subirFotosDelLote } from "../lib/subirFotosDelLote";
 import { traerFotoComoArchivo } from "@/lib/inmuebles/enlaces.service";
 import { uploadPropertyPhotos } from "@/lib/api/property-photos";
@@ -224,6 +225,9 @@ export function StepConfirmImport({
   // ── Phase 3: activation ──────────────────────────────────────────────
   const [activando, setActivando] = useState(false);
   const [revisando, setRevisando] = useState(false);
+  /* Lo que va mirando «Volver a revisar»: con 1.654 pendientes son varios
+     minutos, y un botón que sólo gira no dice si avanza. */
+  const [progresoDeRevision, setProgresoDeRevision] = useState<ProgresoDeRevision | null>(null);
   const [resultadoActivacion, setResultadoActivacion] = useState<{
     activados: number;
     omitidas: FilaOmitida[];
@@ -619,18 +623,25 @@ export function StepConfirmImport({
   const handleRevisarDeNuevo = async () => {
     if (!lote) return;
     setRevisando(true);
+    setProgresoDeRevision(null);
     setError(null);
     try {
-      let liberadas = 0;
-      for (let vuelta = 0; vuelta < 1_000; vuelta += 1) {
-        const r = await inmueblesImportacionApi.revisarDeNuevo(lote);
-        liberadas += r.liberadas;
-        // Una tanda que no mira ninguna fila es una tanda que no va a cambiar
-        // nada en la siguiente: se corta, igual que en la activación.
-        if (r.restantes <= 0 || r.revisadas === 0) break;
-      }
+      // Una vuelta completa por cursor — NO «mientras restantes > 0»: una
+      // fila que sigue pendiente por un motivo real (un `tipo` que no mapea)
+      // cuenta en `restantes` para siempre y ese bucle no terminaba nunca
+      // (2026-09-11: 151 llamadas sobre una sola fila).
+      const r = await revisarLoteCompleto(
+        lote,
+        (l, desdeFila) => inmueblesImportacionApi.revisarDeNuevo(l, desdeFila),
+        setProgresoDeRevision,
+      );
       await refrescarRevision(lote, pagina);
-      if (liberadas === 0) {
+      if (r.detenidoSinAvance || r.detenidoPorLimite) {
+        setError(
+          `Miramos ${r.revisadas} filas y liberamos ${r.liberadas}, pero no ` +
+            "pudimos terminar la vuelta. Vuelve a intentarlo: lo liberado no se pierde.",
+        );
+      } else if (r.liberadas === 0) {
         setError(
           "Volvimos a revisar y no se liberó ninguna: lo que queda pendiente " +
             "necesita que corrijas algo o que decidas.",
@@ -642,6 +653,7 @@ export function StepConfirmImport({
       );
     } finally {
       setRevisando(false);
+      setProgresoDeRevision(null);
     }
   };
 
@@ -1070,7 +1082,11 @@ export function StepConfirmImport({
                 onClick={handleRevisarDeNuevo}
                 data-testid="revisar-de-nuevo"
               >
-                {revisando ? "Revisando…" : "Volver a revisar lo pendiente"}
+                {revisando
+                  ? progresoDeRevision
+                    ? `Revisando… ${progresoDeRevision.revisadas} miradas · ${progresoDeRevision.liberadas} liberadas`
+                    : "Revisando…"
+                  : "Volver a revisar lo pendiente"}
               </Button>
             ) : null}
           </div>

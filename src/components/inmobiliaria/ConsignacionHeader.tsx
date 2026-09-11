@@ -19,6 +19,8 @@ import {
   CheckCircle,
   Timer,
   Images,
+  Car,
+  Mountains,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -74,6 +76,8 @@ const PROPERTY_TYPE_ICONS: Record<Consignacion['propertyType'], React.ElementTyp
   commercial: Storefront,
   office: Briefcase,
   warehouse: Warehouse,
+  parking: Car,
+  land: Mountains,
 };
 
 // Availability status colors (labels resolved via i18n in component)

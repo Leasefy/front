@@ -149,6 +149,9 @@ function valorLegible(
       return f.inquilino.documento ?? null
     case 'fechaInicio':
       return f.startDate ?? null
+    // Desde cuándo se COBRA. Sin ella el motor usa la de inicio.
+    case 'fechaDeCartera':
+      return f.fechaDeCartera ?? null
     case 'fechaFin':
       return f.endDate ?? null
     case 'canon':

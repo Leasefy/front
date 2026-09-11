@@ -58,7 +58,7 @@ export function RegistrosContables({
 }: {
   onIrAlPuc?: () => void;
   /** Aviso al muro mientras se aplican los asientos: el pie espera. */
-  onOcupado?: (ocupado: boolean) => void;
+  onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 } = {}) {
   const [camino, setCamino] = useState<Camino>("apertura");
   const [cuentas, setCuentas] = useState<CuentaPuc[] | null>(null);

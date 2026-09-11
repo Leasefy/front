@@ -37,6 +37,11 @@ vi.mock('@/lib/api/contracts.service', async () => {
         resolver: vi.fn(),
         crearInmueble: vi.fn(),
         registrarPropietario: vi.fn(),
+        // El buscador manual del inmueble: `<ElegirInmueble>` lo pide al
+        // montar para llenar el desplegable de «búscalo entre todos tus
+        // inmuebles». Sin él acá, el mock devolvería `undefined` y la fila
+        // entera reventaría en el render.
+        buscarInmuebles: vi.fn().mockResolvedValue([]),
       },
     },
   }

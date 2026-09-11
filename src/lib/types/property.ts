@@ -16,7 +16,9 @@ export type PropertyType =
   | 'room'
   | 'commercial'
   | 'office'
-  | 'warehouse';
+  | 'warehouse'
+  | 'parking'
+  | 'land';
 
 /**
  * contract.md T-0038 §3.2.2. Front-lowercase pair; wire is UPPER_SNAKE — see

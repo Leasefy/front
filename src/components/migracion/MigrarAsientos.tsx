@@ -23,6 +23,7 @@ import {
 } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
+import { TarjetaDeArchivo } from "@/components/migracion/TarjetaDeArchivo";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -84,8 +85,11 @@ export function MigrarAsientos({
   /** Adentro del muro no se ofrece «volver a la secuencia»: el muro es la secuencia. */
   enElMuro?: boolean;
   /** Aviso al muro mientras se revisa o aplica el lote: el pie espera. */
-  onOcupado?: (ocupado: boolean) => void;
+  onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 }) {
+  /** El archivo tal cual. `null` = no hay nada subido; ver TarjetaDeArchivo. */
+  const [archivo, setArchivo] = useState<File | null>(null);
+  const [leyendo, setLeyendo] = useState(false);
   const [filas, setFilas] = useState<Record<string, unknown>[]>([]);
   const [encabezados, setEncabezados] = useState<string[]>([]);
   const [mapeo, setMapeo] = useState<MapeoDeColumna[]>([]);
@@ -106,6 +110,8 @@ export function MigrarAsientos({
   useEffect(() => () => onOcupado?.(false), [onOcupado]);
 
   const volverAEmpezar = () => {
+    setArchivo(null);
+    setLeyendo(false);
     setFilas([]);
     setEncabezados([]);
     setMapeo([]);
@@ -123,23 +129,34 @@ export function MigrarAsientos({
     setError(null);
     setRevision(null);
     setInforme(null);
+    // 🔴 `asientos` también. Sin esta línea, subir un segundo archivo dejaba
+    // el resumen del PRIMERO en pantalla — Nico lo vio el 2026-09-10: el
+    // feedback no se reiniciaba al cambiar de archivo.
+    setAsientos([]);
+    setArchivo(archivo);
+    setNombreDeArchivo(archivo.name);
+    setLeyendo(true);
     try {
       const r = await parseSpreadsheetFile(archivo);
       setFilas(r.rows as Record<string, unknown>[]);
       setEncabezados(r.headers);
       setMapeo(mapearColumnas(COLUMNAS_DE_ASIENTO, r.headers));
-      setNombreDeArchivo(archivo.name);
       setLote(nombreDeLoteDeAsientos());
     } catch (e) {
+      setFilas([]);
+      setEncabezados([]);
+      setMapeo([]);
       setError(
         e instanceof Error && e.message
           ? e.message
           : "No pudimos leer el archivo. ¿Es Excel o CSV?",
       );
+    } finally {
+      setLeyendo(false);
     }
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     maxFiles: 1,
     multiple: false,
@@ -246,28 +263,48 @@ export function MigrarAsientos({
           revisa todo; recién después se escribe.
         </p>
 
-        <div
-          {...getRootProps()}
-          className={`mt-4 flex cursor-pointer flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center transition-colors ${
-            isDragActive
-              ? "border-primary bg-primary-soft"
-              : "border-border hover:bg-surface-muted"
-          }`}
-          data-testid="dropzone-asientos"
-        >
-          {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
-          <input {...getInputProps()} />
-          <FileArrowUp className="h-8 w-8 text-fg-muted" />
-          <div>
-            <p className="text-sm font-medium text-fg">
-              {nombreDeArchivo ||
-                "Arrastra el archivo o haz clic para elegirlo"}
-            </p>
-            <p className="text-xs text-fg-subtle">
-              Excel o CSV. Nada se crea todavía.
-            </p>
+        {archivo ? (
+          <div className="mt-4">
+            <TarjetaDeArchivo
+              nombre={archivo.name}
+              peso={archivo.size}
+              detalle={
+                leyendo
+                  ? "leyendo\u2026"
+                  : filas.length > 0
+                    ? `${filas.length.toLocaleString("es-CO")} ${filas.length === 1 ? "fila" : "filas"}`
+                    : undefined
+              }
+              inputProps={getInputProps()}
+              onSubirOtro={open}
+              onDescartar={volverAEmpezar}
+              ocupado={leyendo || cargando}
+              testid="archivo-de-asientos"
+            />
           </div>
-        </div>
+        ) : (
+          <div
+            {...getRootProps()}
+            className={`mt-4 flex cursor-pointer flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center transition-colors ${
+              isDragActive
+                ? "border-primary bg-primary-soft"
+                : "border-border hover:bg-surface-muted"
+            }`}
+            data-testid="dropzone-asientos"
+          >
+            {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
+            <input {...getInputProps()} />
+            <FileArrowUp className="h-8 w-8 text-fg-muted" />
+            <div>
+              <p className="text-sm font-medium text-fg">
+                Arrastra el archivo o haz clic para elegirlo
+              </p>
+              <p className="text-xs text-fg-subtle">
+                Excel o CSV. Nada se crea todavía.
+              </p>
+            </div>
+          </div>
+        )}
 
         {error ? (
           <div

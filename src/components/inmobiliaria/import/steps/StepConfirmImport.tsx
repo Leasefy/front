@@ -1,7 +1,15 @@
 "use client";
 
-import { useState, useContext, useEffect, useCallback } from "react";
+import {
+  useState,
+  useContext,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { createPortal } from "react-dom";
+import { useRanuraViva } from "@/components/migracion/ranura-viva";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   CheckCircle,
@@ -30,6 +38,7 @@ import {
   activarLoteCompleto,
   ActivacionInterrumpida,
 } from "../lib/activarLoteCompleto";
+import { revisarLoteCompleto, type ProgresoDeRevision } from "../lib/revisarLoteCompleto";
 import { emparejarFilasConFotos, subirFotosDelLote } from "../lib/subirFotosDelLote";
 import { traerFotoComoArchivo } from "@/lib/inmuebles/enlaces.service";
 import { uploadPropertyPhotos } from "@/lib/api/property-photos";
@@ -119,9 +128,44 @@ export function StepConfirmImport({
     ),
   ];
   const importCount = importables.length;
+  /*
+   * TODO lo seleccionado viaja al back, también lo que le falta algo. Antes
+   * las «bloqueadas» se separaban acá y no se mandaban: 31 filas del archivo
+   * real (sin precio) desaparecían en silencio del lote, y 10 contratos se
+   * quedaron apuntando a inmuebles que nunca entraron. El staging existe
+   * justo para eso: entran PENDIENTES con su faltante a la vista, se
+   * completan fila por fila, y nada del archivo se pierde.
+   */
+  const aEnviar = [...importables, ...bloqueadas.map((x) => x.p)];
+  const totalAEnviar = aEnviar.length;
+
+  /*
+   * El nodo del muro que queda FUERA del `inert`. `null` en la página suelta
+   * `/inmuebles/importar`, donde no hay muro y nada se congela.
+   */
+  const ranuraViva = useRanuraViva();
 
   // ── Phase 1: geocode (client-side, unchanged from before) + preparar() ──
   const [geocodificando, setGeocodificando] = useState(false);
+  /*
+   * 🔴 PARAR LA BÚSQUEDA DE DIRECCIONES.
+   *
+   * Son 2.883 filas a 550 ms cada una: media hora larga con el pie del muro
+   * inerte (Nico, 2026-09-09: «le di cancelar o anterior y no deja»). Una
+   * espera así SIEMPRE tiene que poder abandonarse.
+   *
+   * `useRef` y no `useState` a propósito: el bucle ya está corriendo y lee la
+   * bandera en cada vuelta. Un `state` le quedaría congelado en el valor que
+   * tenía cuando arrancó —el clásico stale closure— y el botón no haría nada,
+   * que es justo el síntoma que venimos a arreglar.
+   */
+  const cancelarRef = useRef(false);
+  /* Cuándo arrancó la búsqueda: la estimación sale de lo que de verdad está
+   * tardando, no de multiplicar por la pausa entre filas —que ignora lo que
+   * demora cada consulta y da un número que no se cumple. */
+  const inicioGeoRef = useRef<number | null>(null);
+  const [cancelandoGeo, setCancelandoGeo] = useState(false);
+  const [geoCancelada, setGeoCancelada] = useState(false);
   const [geoProgress, setGeoProgress] = useState(0);
   const [geoCurrent, setGeoCurrent] = useState(0);
   const [preparando, setPreparando] = useState(false);
@@ -190,6 +234,14 @@ export function StepConfirmImport({
 
   // ── Phase 3: activation ──────────────────────────────────────────────
   const [activando, setActivando] = useState(false);
+  const [revisando, setRevisando] = useState(false);
+  /* Lo que va mirando «Volver a revisar»: con 1.654 pendientes son varios
+     minutos, y un botón que sólo gira no dice si avanza. */
+  const [progresoDeRevision, setProgresoDeRevision] = useState<ProgresoDeRevision | null>(null);
+  /* La salida de la re-revisión. Vive en un ref porque el bucle la lee entre
+     llamadas, y en estado sólo para que el botón diga «Deteniendo…». */
+  const detenerRevisionRef = useRef(false);
+  const [deteniendoRevision, setDeteniendoRevision] = useState(false);
   const [resultadoActivacion, setResultadoActivacion] = useState<{
     activados: number;
     omitidas: FilaOmitida[];
@@ -306,14 +358,69 @@ export function StepConfirmImport({
    * agotado nadie está mirando el job, y el muro no puede quedar clavado en
    * «ocupado» para siempre.
    */
+  /**
+   * Cuántos minutos faltan, medidos.
+   *
+   * Sale del ritmo REAL de esta corrida (tiempo transcurrido ÷ filas hechas),
+   * no de la pausa entre filas: la pausa ignora lo que demora cada consulta y
+   * daría un número que no se cumple. Se calla hasta la quinta fila —con dos
+   * o tres el promedio es ruido— y se calla también si da cero.
+   *
+   * Media hora de espera sin decir cuánto falta es la mitad de la razón por la
+   * que alguien busca el botón de cancelar.
+   */
+  const minutosQueFaltan = useMemo(() => {
+    if (!geocodificando || inicioGeoRef.current == null || geoCurrent < 5) {
+      return null;
+    }
+    const porFila = (Date.now() - inicioGeoRef.current) / geoCurrent;
+    const minutos = Math.ceil(
+      (Math.max(0, totalAEnviar - geoCurrent) * porFila) / 60_000,
+    );
+    return minutos > 0 ? minutos : null;
+  }, [geocodificando, geoCurrent, totalAEnviar]);
+
+  /**
+   * Pide parar. No corta a mitad de una fila: deja terminar la que está en
+   * vuelo y sale en la siguiente vuelta, así no queda una dirección a medias.
+   */
+  const cancelarGeocodificacion = useCallback(() => {
+    cancelarRef.current = true;
+    setCancelandoGeo(true);
+  }, []);
+
   const jobCorriendo =
     !agotado &&
     (estadoLote?.estado === 'ENCOLADO' || estadoLote?.estado === 'PROCESANDO');
   const hayOperacionEnVuelo =
-    geocodificando || preparando || activando || descartandoLote || jobCorriendo;
+    geocodificando ||
+    preparando ||
+    activando ||
+    revisando ||
+    descartandoLote ||
+    jobCorriendo;
   useEffect(() => {
-    onOcupado?.(hayOperacionEnVuelo);
-  }, [hayOperacionEnVuelo, onOcupado]);
+    /*
+     * Se manda también CÓMO parar — pero SÓLO como respaldo.
+     *
+     * Desde el 2026-09-10 la barra sale por la ranura viva del muro, con su
+     * botón al lado y fuera del `inert`, así que el del pie sobra y tener dos
+     * botones para lo mismo a dos secciones de distancia es peor que tener
+     * uno. El respaldo cubre el primer render —cuando la ranura todavía no
+     * existe— y cualquier caso en que el muro no la ofrezca: una espera de
+     * 53 minutos no se puede quedar sin salida por un detalle de montaje.
+     */
+    onOcupado?.(
+      hayOperacionEnVuelo,
+      geocodificando && !ranuraViva ? cancelarGeocodificacion : undefined,
+    );
+  }, [
+    hayOperacionEnVuelo,
+    geocodificando,
+    ranuraViva,
+    cancelarGeocodificacion,
+    onOcupado,
+  ]);
   // Al desmontar (cambio de paso, «cancelar») el muro recupera sus botones.
   useEffect(() => () => onOcupado?.(false), [onOcupado]);
 
@@ -347,11 +454,17 @@ export function StepConfirmImport({
   }, [lote, estadoLote?.estado, refrescarRevision]);
 
   const handlePreparar = async () => {
-    if (importCount === 0) return;
+    if (totalAEnviar === 0) return;
     setError(null);
     setGeocodificando(true);
     setGeoProgress(0);
     setGeoCurrent(0);
+    // Cada intento arranca limpio: una cancelación vieja no puede matar la
+    // siguiente antes de la primera fila.
+    cancelarRef.current = false;
+    inicioGeoRef.current = Date.now();
+    setCancelandoGeo(false);
+    setGeoCancelada(false);
 
     // Geocodificación secuencial — respeta el límite de LocationIQ. Va antes
     // de `preparar()` porque el back de importación (WU-4) no geocodifica;
@@ -366,9 +479,17 @@ export function StepConfirmImport({
     // botón.
     const dtos: ImportarInmuebleDto[] = [];
     let sinUbicar = 0;
+    let cancelada = false;
     try {
-      for (let i = 0; i < importables.length; i++) {
-        const p = importables[i];
+      for (let i = 0; i < aEnviar.length; i++) {
+        // La salida. Se mira ANTES de pedir la fila siguiente: lo que ya se
+        // buscó se descarta entero, así que no queda medio lote geocodificado
+        // esperando a que alguien adivine qué pasó con él.
+        if (cancelarRef.current) {
+          cancelada = true;
+          break;
+        }
+        const p = aEnviar[i];
         setGeoCurrent(i + 1);
         const coords = await geocodeImportRow(p);
         if (coords.source !== "geocoded") sinUbicar += 1;
@@ -378,8 +499,8 @@ export function StepConfirmImport({
             ? { latitude: coords.lat, longitude: coords.lng }
             : {}),
         });
-        setGeoProgress(Math.round(((i + 1) / importables.length) * 100));
-        if (i < importables.length - 1) {
+        setGeoProgress(Math.round(((i + 1) / aEnviar.length) * 100));
+        if (i < aEnviar.length - 1) {
           await new Promise((resolve) =>
             setTimeout(resolve, GEOCODE_ROW_DELAY_MS),
           );
@@ -394,6 +515,19 @@ export function StepConfirmImport({
       return;
     } finally {
       setGeocodificando(false);
+      setCancelandoGeo(false);
+    }
+
+    if (cancelada) {
+      /*
+       * Cortar acá, antes de `preparar()`: nada viajó al servidor todavía, así
+       * que no hay lote a medias ni fila que limpiar. La persona vuelve a
+       * tener sus botones y el paso queda exactamente como estaba.
+       */
+      setGeoProgress(0);
+      setGeoCurrent(0);
+      setGeoCancelada(true);
+      return;
     }
 
     setPreparando(true);
@@ -491,10 +625,94 @@ export function StepConfirmImport({
   };
 
   /**
-   * `POST .../activar` es resumible — 500 filas por llamada. El loop vive
-   * en `activarLoteCompleto` (testeable aparte); acá sólo se orquesta el
-   * estado de pantalla mientras corre.
+   * `POST .../activar` es resumible: el back devuelve lo que alcanzó a hacer
+   * en su presupuesto de tiempo y cuántas filas quedan. El loop vive en
+   * `activarLoteCompleto` (testeable aparte); acá sólo se orquesta el estado
+   * de pantalla mientras corre.
    */
+  /**
+   * Volver a revisar lo pendiente. Reanudable igual que activar: se llama
+   * mientras el servidor diga que quedan filas y siga liberando alguna.
+   */
+  const handleRevisarDeNuevo = async () => {
+    if (!lote) return;
+    setRevisando(true);
+    setProgresoDeRevision(null);
+    detenerRevisionRef.current = false;
+    setDeteniendoRevision(false);
+    setError(null);
+    try {
+      // Una vuelta completa por cursor — NO «mientras restantes > 0»: una
+      // fila que sigue pendiente por un motivo real (un `tipo` que no mapea)
+      // cuenta en `restantes` para siempre y ese bucle no terminaba nunca
+      // (2026-09-11: 151 llamadas sobre una sola fila).
+      const r = await revisarLoteCompleto(
+        lote,
+        (l, desdeFila) => inmueblesImportacionApi.revisarDeNuevo(l, desdeFila),
+        setProgresoDeRevision,
+        { debeParar: () => detenerRevisionRef.current },
+      );
+      await refrescarRevision(lote, pagina);
+      if (r.detenidoPorPersona) {
+        toast.info("Revisión detenida", {
+          description: `Miramos ${r.revisadas} filas y liberamos ${r.liberadas}; lo liberado no se pierde.`,
+        });
+      } else if (r.detenidoSinAvance || r.detenidoPorLimite) {
+        setError(
+          `Miramos ${r.revisadas} filas y liberamos ${r.liberadas}, pero no ` +
+            "pudimos terminar la vuelta. Vuelve a intentarlo: lo liberado no se pierde.",
+        );
+      } else if (r.liberadas === 0) {
+        setError(
+          "Volvimos a revisar y no se liberó ninguna: lo que queda pendiente " +
+            "necesita que corrijas algo o que decidas.",
+        );
+      }
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "No pudimos volver a revisar el lote.",
+      );
+    } finally {
+      setRevisando(false);
+      setProgresoDeRevision(null);
+      setDeteniendoRevision(false);
+    }
+  };
+
+  /*
+   * La barra de la re-revisión, con su salida. Sale por la ranura viva del
+   * muro (fuera del `inert`) por la misma razón que la de geocodificación:
+   * mientras se revisa, el paso entero está congelado y un «Detener» adentro
+   * se vería vivo y estaría muerto.
+   */
+  const barraDeRevision = (
+    <div
+      className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1"
+      data-testid="revision-progreso"
+      aria-live="polite"
+    >
+      <p className="text-sm text-fg-muted dark:text-fg-subtle">
+        Volviendo a revisar lo pendiente
+        {progresoDeRevision
+          ? ` — ${progresoDeRevision.revisadas} miradas · ${progresoDeRevision.liberadas} liberadas · quedan ${progresoDeRevision.restantes}`
+          : "…"}
+      </p>
+      <Button
+        type="button"
+        variant="ghost"
+        hideArrow
+        onClick={() => {
+          detenerRevisionRef.current = true;
+          setDeteniendoRevision(true);
+        }}
+        disabled={deteniendoRevision}
+        data-testid="revision-detener"
+      >
+        {deteniendoRevision ? "Deteniendo…" : "Detener"}
+      </Button>
+    </div>
+  );
+
   const handleActivar = async () => {
     if (!lote) return;
     setActivando(true);
@@ -510,11 +728,15 @@ export function StepConfirmImport({
        * vivas en el lote. Se refresca el resumen (las tandas que sí pasaron
        * cuentan) y se ofrece seguir — reintentar continúa donde quedó.
        */
-      if (resultado.detenidoPorLimite) {
+      if (resultado.detenidoPorLimite || resultado.detenidoSinAvance) {
         await refrescarRevision(lote, pagina);
         setError(
-          `Se activaron ${resultado.activados} inmuebles y quedaron más por activar. ` +
-            `Nada se repite ni se duplica: toca «Activar» de nuevo para seguir donde quedó.`,
+          resultado.detenidoSinAvance
+            ? `Se activaron ${resultado.activados} inmuebles y el lote dejó de avanzar: ` +
+              `la última tanda no movió ninguna fila. Nada se repite ni se duplica — ` +
+              `revisa lo que quedó pendiente abajo y vuelve a tocar «Activar».`
+            : `Se activaron ${resultado.activados} inmuebles y quedaron más por activar. ` +
+              `Nada se repite ni se duplica: toca «Activar» de nuevo para seguir donde quedó.`,
         );
         return;
       }
@@ -567,13 +789,13 @@ export function StepConfirmImport({
       type="button"
       hideArrow
       onClick={handlePreparar}
-      disabled={importCount === 0 || geocodificando || preparando}
+      disabled={totalAEnviar === 0 || geocodificando || preparando}
       className="gap-2"
     >
       <FileArrowUp className="w-4 h-4" />
       {geocodificando || preparando
         ? "Preparando..."
-        : t("inmobiliaria.import.confirm.importButton", { count: importCount })}
+        : t("inmobiliaria.import.confirm.importButton", { count: totalAEnviar })}
     </Button>
   );
 
@@ -886,21 +1108,51 @@ export function StepConfirmImport({
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              hideArrow
+              // Congelado se ve congelado: mientras se revisa o se activa el
+              // paso entero está `inert`, y un botón que se ve vivo y está
+              // muerto cuesta media hora de clics.
+              disabled={descartandoLote || revisando || activando}
+              isLoading={descartandoLote}
+              onClick={handleDescartarLote}
+            >
+              Descartar lote completo
+            </Button>
+            {/*
+             * Volver a revisar lo pendiente con las reglas de HOY.
+             *
+             * `faltantes` se calcula al preparar y se GUARDA, así que una fila
+             * frenada por un motivo que ya no existe se quedaba frenada, y la
+             * única salida era resubir el archivo: 53 minutos de
+             * geocodificación para 2.864 inmuebles.
+             */}
+            {(resumenLote?.pendientes ?? 0) > 0 ? (
+              <Button
+                type="button"
+                variant="ghost"
+                hideArrow
+                disabled={revisando || activando || descartandoLote}
+                isLoading={revisando}
+                onClick={handleRevisarDeNuevo}
+                data-testid="revisar-de-nuevo"
+              >
+                {revisando
+                  ? progresoDeRevision
+                    ? `Revisando… ${progresoDeRevision.revisadas} miradas · ${progresoDeRevision.liberadas} liberadas`
+                    : "Revisando…"
+                  : "Volver a revisar lo pendiente"}
+              </Button>
+            ) : null}
+          </div>
           <Button
             type="button"
-            variant="outline"
             hideArrow
-            disabled={descartandoLote}
-            isLoading={descartandoLote}
-            onClick={handleDescartarLote}
-          >
-            Descartar lote completo
-          </Button>
-          <Button
-            type="button"
-            hideArrow
-            disabled={!puedeActivar || activando}
+            disabled={!puedeActivar || activando || revisando}
             isLoading={activando}
             onClick={handleActivar}
           >
@@ -912,6 +1164,53 @@ export function StepConfirmImport({
       </div>
     );
   }
+
+  /*
+   * ── La barra de la geocodificación, y por qué se define acá ──────────────
+   *
+   * Buscar 2.864 direcciones en el mapa toma ~53 minutos, así que la barra
+   * necesita un botón para parar. Dentro del muro ese botón nacía MUERTO: el
+   * muro pone `inert` sobre todo el paso mientras hay algo en vuelo, y `inert`
+   * no se puede desactivar en un descendiente. Por eso la salida vivía en el
+   * pie del muro — el único sitio fuera del `inert`— a dos secciones de la
+   * barra que controlaba. Nico, 2026-09-10: «ese detener carga está súper mal
+   * ubicado, debería estar mucho más cerca de la progress bar y quizás hacer
+   * parte de la progress bar».
+   *
+   * La ranura viva invierte la solución: en vez de mandar el botón lejos, se
+   * manda el BLOQUE ENTERO a un nodo que el muro dibuja fuera del `inert`,
+   * pegado al contenido. Barra, conteo, minutos y botón viajan juntos y los
+   * dos quedan vivos. Ver `migracion/ranura-viva.ts`.
+   */
+  const barraDeGeocodificacion = (
+    <div className="space-y-2" data-testid="geo-progreso">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <p className="text-sm text-fg-muted dark:text-fg-subtle">
+          Buscando las direcciones en el mapa — {geoCurrent} de {totalAEnviar}
+          {minutosQueFaltan != null && !cancelandoGeo ? (
+            <span className="text-fg-subtle">
+              {" "}
+              · faltan unos {minutosQueFaltan} min
+            </span>
+          ) : null}
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          hideArrow
+          onClick={cancelarGeocodificacion}
+          disabled={cancelandoGeo}
+          data-testid="geo-cancelar"
+        >
+          {cancelandoGeo ? "Deteniendo…" : "Detener la carga"}
+        </Button>
+      </div>
+      <Progress value={geoProgress} size="xs" />
+      <p className="text-xs text-right font-mono text-fg-subtle dark:text-fg-muted">
+        {geoProgress}%
+      </p>
+    </div>
+  );
 
   // ── Pre-import summary (no lote yet) ─────────────────────────────────
   return (
@@ -1015,14 +1314,31 @@ export function StepConfirmImport({
         </div>
       </div>
 
-      {geocodificando && (
-        <div className="space-y-2">
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">
-            Buscando las direcciones en el mapa — {geoCurrent} de {importCount}
-          </p>
-          <Progress value={geoProgress} size="xs" />
-          <p className="text-xs text-right font-mono text-fg-subtle dark:text-fg-muted">
-            {geoProgress}%
+      {/*
+        La barra vive acá sólo cuando NO hay muro. Dentro del muro sale por la
+        ranura viva — ver `barraDeGeocodificacion` arriba.
+      */}
+      {geocodificando && !ranuraViva ? barraDeGeocodificacion : null}
+      {/*
+        Con muro, la barra sale por la ranura viva: fuera del `inert`, pegada
+        al contenido y con su botón de parar VIVO.
+      */}
+      {revisando && !ranuraViva ? barraDeRevision : null}
+      {revisando && ranuraViva ? createPortal(barraDeRevision, ranuraViva) : null}
+      {geocodificando && ranuraViva
+        ? createPortal(barraDeGeocodificacion, ranuraViva)
+        : null}
+
+      {geoCancelada && (
+        <div
+          className="rounded-md bg-surface-muted border border-border p-3"
+          data-testid="geo-cancelada"
+        >
+          <p className="text-sm font-medium text-fg">Se detuvo la búsqueda</p>
+          <p className="text-body-sm text-fg-muted mt-0.5">
+            No se importó nada y no quedó nada a medias en el servidor. Puedes
+            volver atrás, cambiar lo que necesites, y arrancar de nuevo cuando
+            quieras.
           </p>
         </div>
       )}
@@ -1039,14 +1355,15 @@ export function StepConfirmImport({
           <div className="min-w-0">
             <p className="text-sm font-medium text-warning">
               {bloqueadas.length === 1
-                ? "1 inmueble no se puede importar"
-                : `${bloqueadas.length} inmuebles no se pueden importar`}
+                ? "1 inmueble entra pendiente"
+                : `${bloqueadas.length} inmuebles entran pendientes`}
             </p>
             <p className="text-body-sm text-fg-muted mt-0.5">
-              Les falta {motivosBloqueo.join(", ")}. Vuelve a{" "}
+              Les falta {motivosBloqueo.join(", ")}. Entran igual, marcados con
+              lo que les falta, y los completas en el paso siguiente fila por
+              fila — o antes, en{" "}
               <span className="font-medium text-fg">Revisión</span> con
-              «Anterior» y complétalos ahí en cada inmueble; el resto se importa
-              igual.
+              «Anterior». Nada del archivo se queda por fuera.
             </p>
           </div>
         </div>

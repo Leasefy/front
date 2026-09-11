@@ -75,6 +75,26 @@ describe('agencySubscriptionApi.selectPlan', () => {
   });
 });
 
+describe('agencySubscriptionApi.abandonCharge', () => {
+  it('POSTs an empty body to the charge abandon path and returns fresh state', async () => {
+    const fetchMock = mockFetchOnce({
+      subscription: { id: 's1', agencyId: 'a1', planTier: 'STARTER', status: 'ACTIVE' },
+      openCharge: null,
+      status: 'ACTIVE',
+      canOfferRentals: true,
+    });
+    globalThis.fetch = fetchMock as typeof globalThis.fetch;
+
+    const res = await agencySubscriptionApi.abandonCharge('c1');
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(`${BASE}/inmobiliaria/subscription/charges/c1/abandon`);
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual({});
+    expect(res.openCharge).toBeNull();
+  });
+});
+
 describe('agencySubscriptionApi.chargePseCheckout', () => {
   const dto: ChargePseCheckoutDto = {
     userType: 'NATURAL',

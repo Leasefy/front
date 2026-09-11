@@ -27,6 +27,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 import { agencySubscriptionApi } from '@/lib/api/agency-subscription.service';
 import { ApiError } from '@/lib/api/client';
 
@@ -86,8 +87,18 @@ export interface UseAgencyCheckout {
   resume: (chargeId: string, targetPlanTier: string) => void;
   /**
    * Reset back to idle — e.g. to close the overlay after an error, or to let
-   * the owner leave an abandoned `awaiting` session. The server-side charge
-   * stays `PENDING`; that is correct and this hook does not touch it.
+   * the owner leave an abandoned `awaiting` session ("Salir sin pagar").
+   * Clears local state synchronously and immediately — the overlay closing
+   * must never wait on a network call. If a charge is currently tracked
+   * (set by `pay()`/`resume()`), also fires `abandonCharge(chargeId)`
+   * server-side, WITHOUT awaiting it, so the charge does not linger
+   * `PENDING` for up to 24h and resurrect the overlay on reload (T-0083).
+   * No tracked charge → no network call. A network error or `503
+   * payment_verification_unavailable` surfaces as a non-blocking toast — the
+   * overlay stays closed. A `409 PENDING_CHARGE_ALREADY_PAID` runs the same
+   * recovery `pay()`'s catch performs for that code, which may legitimately
+   * re-open the overlay in a success/error state (a confirmed payment must
+   * never be hidden just because the owner clicked "Salir sin pagar").
    */
   reset: () => void;
 }
@@ -115,10 +126,18 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
   // the agency's free starter plan is ACTIVE from the very first millisecond.
   const targetTierRef = useRef<string | null>(null);
 
+  // The currently-open charge's id, tracked so `reset()` ("Salir sin pagar")
+  // has something to abandon server-side. Set alongside `targetTierRef` by
+  // `pay()` (from the created charge) and `resume()` (the charge it resumes);
+  // cleared by `reset()` and on success — a confirmed charge needs no
+  // abandoning (T-0083).
+  const chargeIdRef = useRef<string | null>(null);
+
   // Enter success, then fire onSuccess after a short delay so the caller shows
   // the success state before navigating.
   const succeed = useCallback(() => {
     setState('success');
+    chargeIdRef.current = null;
     setTimeout(() => onSuccessRef.current(), SUCCESS_REDIRECT_DELAY_MS);
   }, []);
 
@@ -220,6 +239,30 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
     [succeed],
   );
 
+  // Shared recovery for `PENDING_CHARGE_ALREADY_PAID` (409): the back found an
+  // open charge already APPROVED at Wompi, confirmed it server-side, and
+  // refused the mutating call that triggered this. The money was already
+  // honoured — re-read fresh state and only claim success once the tier has
+  // ACTUALLY advanced (`checkStatus` is the same predicate `awaiting` polls
+  // with). Shared by `pay()`'s catch (select-plan) and `reset()`'s catch
+  // (abandon) — same code, same meaning, regardless of which call triggered
+  // it (T-0083).
+  const recoverAlreadyPaidCharge = useCallback(
+    async (targetPlanTier: string) => {
+      targetTierRef.current = targetPlanTier;
+      const r = await checkStatus();
+      if (r === 'active') {
+        succeed();
+      } else {
+        setError(
+          'Tu cargo pendiente ya se confirmó, pero todavía no vemos tu plan actualizado. Actualiza la página en unos segundos.',
+        );
+        setState('error');
+      }
+    },
+    [checkStatus, succeed],
+  );
+
   // Paid FLAT plan — select plan (→ PENDING charge) then open the hosted Wompi
   // payment link in a separate tab (avaluo-style; payer picks card/PSE/Nequi).
   const pay = useCallback(async (planId: string) => {
@@ -244,6 +287,7 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
       // Capture the tier this charge unlocks on confirmation — falls back to
       // the requested planId if the back ever omits it (should not happen).
       targetTierRef.current = charge.targetPlanTier ?? planId;
+      chargeIdRef.current = charge.id;
       const { url } = await agencySubscriptionApi.chargePaymentLink(charge.id);
       setPaymentUrl(url);
       if (payTab && !payTab.closed) {
@@ -266,16 +310,7 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
       // predicate `awaiting` polls with — a real tier advance is still
       // required, never assumed from the status code alone.
       if (err instanceof ApiError && err.status === 409 && err.code === 'PENDING_CHARGE_ALREADY_PAID') {
-        targetTierRef.current = planId;
-        const r = await checkStatus();
-        if (r === 'active') {
-          succeed();
-        } else {
-          setError(
-            'Tu cargo pendiente ya se confirmó, pero todavía no vemos tu plan actualizado. Actualiza la página en unos segundos.',
-          );
-          setState('error');
-        }
+        await recoverAlreadyPaidCharge(planId);
         return;
       }
 
@@ -293,7 +328,7 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
       setError(err instanceof Error ? err.message : 'No se pudo iniciar el pago.');
       setState('error');
     }
-  }, [checkStatus, succeed]);
+  }, [recoverAlreadyPaidCharge]);
 
   // Resume awaiting for a charge that was already PENDING before mount — e.g.
   // the user left `/upgrade` before the webhook confirmed and came back.
@@ -307,6 +342,7 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
     (chargeId: string, targetPlanTier: string) => {
       if (state !== 'idle') return;
       targetTierRef.current = targetPlanTier;
+      chargeIdRef.current = chargeId;
       setError(null);
       setPaymentUrl(null);
       setPopupBlocked(false);
@@ -335,6 +371,12 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
   );
 
   const reset = useCallback(() => {
+    // Capture what we're about to clear — reset() itself must stay
+    // synchronous, so the abandon call (and its 409 recovery, which needs
+    // the target tier) runs in a fire-and-forget block below.
+    const chargeId = chargeIdRef.current;
+    const targetPlanTier = targetTierRef.current;
+
     setState('idle');
     setError(null);
     setPaymentUrl(null);
@@ -343,7 +385,27 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
     setResuming(false);
     setAwaitingTimedOut(false);
     targetTierRef.current = null;
-  }, []);
+    chargeIdRef.current = null;
+
+    if (!chargeId) return;
+
+    void (async () => {
+      try {
+        await agencySubscriptionApi.abandonCharge(chargeId);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 409 && err.code === 'PENDING_CHARGE_ALREADY_PAID') {
+          await recoverAlreadyPaidCharge(targetPlanTier ?? '');
+          return;
+        }
+        // Network error, or 503 `payment_verification_unavailable` — the back
+        // refused to void a charge it could not verify with Wompi (fail
+        // closed, same principle as `supersedeOpenCharge`). Non-blocking:
+        // the overlay is already closed, and the 24h reaper eventually
+        // cleans up the still-PENDING charge, same as before this task.
+        toast.error('No pudimos cancelar el cobro pendiente en este momento.');
+      }
+    })();
+  }, [recoverAlreadyPaidCharge]);
 
   return {
     state,

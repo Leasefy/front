@@ -42,14 +42,19 @@ void React; // jsx-preserve
 const mockSelectPlan = vi.fn();
 const mockChargePaymentLink = vi.fn();
 const mockVerify = vi.fn();
+const mockAbandonCharge = vi.fn();
 
 vi.mock('@/lib/api/agency-subscription.service', () => ({
   agencySubscriptionApi: {
     selectPlan: (...a: unknown[]) => mockSelectPlan(...a),
     chargePaymentLink: (...a: unknown[]) => mockChargePaymentLink(...a),
     verify: (...a: unknown[]) => mockVerify(...a),
+    abandonCharge: (...a: unknown[]) => mockAbandonCharge(...a),
   },
 }));
+
+const mockToastError = vi.fn();
+vi.mock('sonner', () => ({ toast: { error: (...a: unknown[]) => mockToastError(...a) } }));
 
 import { useAgencyCheckout, type UseAgencyCheckout } from './useAgencyCheckout';
 
@@ -95,6 +100,11 @@ async function payToAwaiting(planId = 'pro') {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockAbandonCharge.mockResolvedValue({
+    subscription: { planTier: 'starter', status: 'ACTIVE' },
+    openCharge: null,
+    status: 'ACTIVE',
+  });
   onSuccess = vi.fn();
   container = document.createElement('div');
   document.body.appendChild(container);
@@ -645,5 +655,232 @@ describe('useAgencyCheckout — verifyNow', () => {
 
     expect(hook.pollError).toContain('Todavía no vemos');
     expect(hook.state).toBe('idle');
+  });
+});
+
+describe('useAgencyCheckout — reset() abandons the tracked charge server-side (T-0083)', () => {
+  it('reset() calls abandonCharge with the id captured from pay()', async () => {
+    await mount();
+    await payToAwaiting('pro');
+    expect(hook.state).toBe('awaiting');
+
+    act(() => {
+      hook.reset();
+    });
+
+    expect(hook.state).toBe('idle');
+    expect(mockAbandonCharge).toHaveBeenCalledWith('ch_1');
+  });
+
+  it('reset() calls abandonCharge with the id captured from resume()', async () => {
+    await mount();
+    mockChargePaymentLink.mockResolvedValue({ url: 'https://checkout.wompi.co/l/resumed' });
+
+    act(() => {
+      hook.resume('ch_resumed', 'pro');
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(hook.state).toBe('awaiting');
+
+    act(() => {
+      hook.reset();
+    });
+
+    expect(mockAbandonCharge).toHaveBeenCalledWith('ch_resumed');
+  });
+
+  it('does not call abandonCharge when no charge is tracked', async () => {
+    await mount();
+
+    act(() => {
+      hook.reset();
+    });
+
+    expect(hook.state).toBe('idle');
+    expect(mockAbandonCharge).not.toHaveBeenCalled();
+  });
+
+  it('clears local state synchronously — before the abandonCharge promise settles', async () => {
+    await mount();
+    await payToAwaiting('pro');
+    let resolveAbandon: (v: unknown) => void = () => {};
+    mockAbandonCharge.mockReturnValue(new Promise((r) => { resolveAbandon = r; }));
+
+    act(() => {
+      hook.reset();
+    });
+
+    // State cleared immediately — reset() never awaits the network call.
+    expect(hook.state).toBe('idle');
+    expect(hook.error).toBeNull();
+
+    resolveAbandon({ subscription: null, openCharge: null, status: null });
+    await flush();
+  });
+
+  it('a second reset() does not fire a second abandonCharge call', async () => {
+    await mount();
+    await payToAwaiting('pro');
+
+    act(() => {
+      hook.reset();
+    });
+    expect(mockAbandonCharge).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      hook.reset();
+    });
+    expect(mockAbandonCharge).toHaveBeenCalledTimes(1);
+  });
+
+  it('503 payment_verification_unavailable — non-blocking toast, overlay stays closed', async () => {
+    await mount();
+    await payToAwaiting('pro');
+    mockAbandonCharge.mockRejectedValue(
+      new ApiError(503, 'No se pudo verificar el estado del cargo', 'payment_verification_unavailable'),
+    );
+
+    act(() => {
+      hook.reset();
+    });
+    expect(hook.state).toBe('idle');
+
+    await flush();
+
+    expect(hook.state).toBe('idle');
+    expect(mockToastError).toHaveBeenCalledTimes(1);
+  });
+
+  it('network error — non-blocking toast, overlay stays closed', async () => {
+    await mount();
+    await payToAwaiting('pro');
+    mockAbandonCharge.mockRejectedValue(new Error('network'));
+
+    act(() => {
+      hook.reset();
+    });
+    expect(hook.state).toBe('idle');
+
+    await flush();
+
+    expect(hook.state).toBe('idle');
+    expect(mockToastError).toHaveBeenCalledTimes(1);
+  });
+
+  it('409 PENDING_CHARGE_ALREADY_PAID — reaches success once the refetched tier actually advanced', async () => {
+    vi.useFakeTimers();
+    await mount();
+    // Still genuinely open/unpaid while payToAwaiting's own awaiting-poll runs
+    // its first check — must NOT resolve to success/failure before reset()
+    // even runs, or it would clear chargeIdRef early and this test would
+    // never exercise reset()'s 409 recovery at all.
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: { id: 'ch_1', status: 'PENDING', targetPlanTier: 'pro', gatewayStatus: null },
+      status: 'ACTIVE',
+    });
+    await payToAwaiting('pro');
+    expect(hook.state).toBe('awaiting');
+
+    mockAbandonCharge.mockRejectedValue(
+      new ApiError(409, 'El cargo pendiente ya había sido pagado', 'PENDING_CHARGE_ALREADY_PAID'),
+    );
+    // NOW the tier genuinely advances — set right before reset() so it only
+    // affects the abandon-triggered recovery check, not the awaiting-poll's
+    // earlier run.
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'ACTIVE' },
+      openCharge: null,
+      status: 'ACTIVE',
+    });
+
+    act(() => {
+      hook.reset();
+    });
+    // reset() itself is still synchronous-idle right away…
+    expect(hook.state).toBe('idle');
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // …but the 409 recovery re-opens the overlay on a confirmed payment.
+    expect(hook.state).toBe('success');
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('409 PENDING_CHARGE_ALREADY_PAID — shows the existing error copy when the tier has NOT advanced', async () => {
+    await mount();
+    // Same guard as above: keep the awaiting-poll's first check genuinely
+    // pending so it cannot resolve early and clear chargeIdRef before
+    // reset() runs.
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: { id: 'ch_1', status: 'PENDING', targetPlanTier: 'pro', gatewayStatus: null },
+      status: 'ACTIVE',
+    });
+    await payToAwaiting('pro');
+    expect(hook.state).toBe('awaiting');
+
+    mockAbandonCharge.mockRejectedValue(
+      new ApiError(409, 'El cargo pendiente ya había sido pagado', 'PENDING_CHARGE_ALREADY_PAID'),
+    );
+    // The refetch still shows the OLD tier — the recovery must not claim
+    // success just because the back said 409.
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: null,
+      status: 'ACTIVE',
+    });
+
+    act(() => {
+      hook.reset();
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(hook.state).toBe('error');
+    expect(hook.error).not.toContain('rechazado');
+  });
+
+  it('clears the tracked charge id on success — a later reset() does not re-abandon it', async () => {
+    vi.useFakeTimers();
+    await mount();
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'ACTIVE' },
+      openCharge: null,
+      status: 'ACTIVE',
+    });
+
+    await payToAwaiting('pro');
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(hook.state).toBe('success');
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+
+    act(() => {
+      hook.reset();
+    });
+    expect(mockAbandonCharge).not.toHaveBeenCalled();
   });
 });

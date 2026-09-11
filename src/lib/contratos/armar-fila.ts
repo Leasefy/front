@@ -108,6 +108,32 @@ export function armarFilaAMigrar(
  * Lee una fila COMPLETA: lo que viaja al back y lo que el archivo trae y
  * todavía no tiene dónde ir.
  */
+/**
+ * El día del mes en que se paga — venga como número o como FECHA.
+ *
+ * 🔴 Los exports reales llenan esa columna con una fecha completa
+ * («2022-08-01»), no con un «1» (Nico, 2026-09-10, con el archivo en pantalla:
+ * 1.851 de 1.851 filas con valor y las 1.851 rechazadas). `comoEntero` de un
+ * «2022-08-01» no da un día del 1 al 28, así que el dato se tiraba entero y la
+ * pantalla decía «quedan sin día de pago» sobre un archivo que sí lo traía.
+ *
+ * De una fecha se toma el DÍA, que es lo que la columna significa. De un
+ * número, el número. Cualquier otra cosa, `undefined` — que es «no lo sé», no
+ * un día inventado.
+ */
+export function diaDelMesDe(valor: unknown): number | undefined {
+  const texto = String(valor ?? '').trim()
+  if (!texto) return undefined
+
+  // ISO («2022-08-01») y el formato con barras («01/08/2022» o «2022/08/01»).
+  const iso = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/.exec(texto)
+  if (iso) return Number(iso[3])
+  const barras = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/.exec(texto)
+  if (barras) return Number(barras[1])
+
+  return comoEntero(texto)
+}
+
 export function leerFilaDelArchivo(
   fila: Record<string, unknown>,
   mapeo: MapeoDeColumna[],
@@ -120,7 +146,7 @@ export function leerFilaDelArchivo(
   const rawDia = v('diaDePago')
   const rawUso = v('uso')
 
-  const dia = hayValor(rawDia) ? comoEntero(rawDia) : undefined
+  const dia = hayValor(rawDia) ? diaDelMesDe(rawDia) : undefined
 
   /*
    * «Propiedad» = «3 - CR 50 127 SUR 61 OF 502». Una sola celda con el código

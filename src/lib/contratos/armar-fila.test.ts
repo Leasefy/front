@@ -11,7 +11,7 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { armarFilaAMigrar } from './armar-fila'
+import { armarFilaAMigrar, diaDelMesDe } from './armar-fila'
 import { mapearColumnas } from './columnas-de-contrato'
 
 describe('un archivo cuyas columnas no mapean nada', () => {
@@ -332,5 +332,35 @@ describe('código y ciudad del inmueble', () => {
   it('sin columna de ciudad no manda ciudad (el back cae a la de la inmobiliaria)', () => {
     const mapeo = mapearColumnas(['Dirección'])
     expect(armarFilaAMigrar({ Dirección: 'x' }, mapeo).ciudad).toBeUndefined()
+  })
+})
+
+/**
+ * El día de pago que viene como FECHA.
+ *
+ * Nico, 2026-09-10, con `Contracts Payment CSV (2).csv`: la columna «Día de
+ * pago» trae «2022-08-01» en las 1.851 filas, y las 1.851 salían «sin día de
+ * pago». `comoEntero` de una fecha no da un día del 1 al 28.
+ */
+describe('diaDelMesDe — el día de pago viene como fecha en los exports reales', () => {
+  it('de una fecha ISO toma el día', () => {
+    expect(diaDelMesDe('2022-08-01')).toBe(1)
+    expect(diaDelMesDe('2024-07-15')).toBe(15)
+  })
+
+  it('del formato con barras toma el día, no el mes', () => {
+    expect(diaDelMesDe('05/08/2022')).toBe(5)
+    expect(diaDelMesDe('2022/08/05')).toBe(5)
+  })
+
+  it('un número sigue siendo el día', () => {
+    expect(diaDelMesDe('15')).toBe(15)
+    expect(diaDelMesDe(15)).toBe(15)
+  })
+
+  it('lo que no es ni fecha ni número es «no lo sé», nunca un día inventado', () => {
+    expect(diaDelMesDe('')).toBeUndefined()
+    expect(diaDelMesDe('   ')).toBeUndefined()
+    expect(diaDelMesDe('mensual')).toBeUndefined()
   })
 })

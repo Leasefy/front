@@ -34,6 +34,18 @@ export interface ProgresoDeActivacion {
 
 export interface ResultadoActivacionCompleta {
   activados: number;
+  /**
+   * 🔴 Filas cuyo inmueble YA EXISTÍA (mismo «Código») y se re-apuntaron en
+   * vez de duplicarlo.
+   *
+   * Cuenta aparte de `activados`, y tiene que llegar hasta la pantalla. Nico,
+   * 2026-09-11: «¿por qué dices que se importaron 679 propiedades si le subí
+   * 2800 y algo?». Porque 2.145 de esas 2.824 filas ya tenían su inmueble —de
+   * la carga anterior— y sólo 679 eran nuevas. Las dos cosas son ciertas y
+   * decir sólo la primera hace ver una importación de 2.824 como un fracaso
+   * de 679.
+   */
+  reusados: number;
   omitidas: FilaOmitida[];
   /** How many `activar()` calls this took — surfaced for diagnostics, never
    * used to decide correctness (that's `restantes === 0` alone). */
@@ -133,6 +145,7 @@ export async function activarLoteCompleto(
     if (r.restantes <= 0) {
       return {
         activados,
+        reusados,
         omitidas,
         llamadas,
         detenidoPorLimite: false,
@@ -146,6 +159,7 @@ export async function activarLoteCompleto(
     if (opciones.debeParar?.() === true) {
       return {
         activados,
+        reusados,
         omitidas,
         llamadas,
         detenidoPorLimite: false,
@@ -167,6 +181,7 @@ export async function activarLoteCompleto(
     if (!avanzo) {
       return {
         activados,
+        reusados,
         omitidas,
         llamadas,
         detenidoPorLimite: false,
@@ -178,6 +193,7 @@ export async function activarLoteCompleto(
     if (llamadas >= MAX_LLAMADAS) {
       return {
         activados,
+        reusados,
         omitidas,
         llamadas,
         detenidoPorLimite: true,

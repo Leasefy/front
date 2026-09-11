@@ -92,6 +92,16 @@ import {
 
 const POR_PAGINA = 25;
 
+/**
+ * Cuántas llamadas mira la estimación de tiempo de la activación.
+ *
+ * Cada llamada del back gasta hasta 15 s, así que seis muestras son ~90 s de
+ * historia: suficiente para que el número no salte con cada tanda, y corto
+ * para que siga el cambio de ritmo cuando el lote pasa de re-apuntar
+ * inmuebles que ya existen (~170/min) a crearlos (~40/min).
+ */
+const MUESTRAS_DE_RITMO = 6;
+
 export function StepConfirmImport({
   state,
   updateState,
@@ -247,6 +257,9 @@ export function StepConfirmImport({
   const [deteniendoRevision, setDeteniendoRevision] = useState(false);
   const [resultadoActivacion, setResultadoActivacion] = useState<{
     activados: number;
+    /* Los que ya existían por «Código» y se re-apuntaron. La pantalla final
+       los cuenta: ver el mensaje de «Importación completada». */
+    reusados: number;
     omitidas: FilaOmitida[];
   } | null>(null);
   const [isComplete, setIsComplete] = useState(false);
@@ -262,8 +275,23 @@ export function StepConfirmImport({
     useState<ProgresoDeActivacion | null>(null);
   /* Cuántas filas LISTO había al tocar «Activar»: el «de N» de la barra. */
   const totalAActivarRef = useRef(0);
-  /* Cuándo arrancó: la estimación sale del ritmo real, no de una constante. */
-  const inicioActivacionRef = useRef<number | null>(null);
+  /*
+   * 🔴 LAS ÚLTIMAS MEDICIONES, NO EL PROMEDIO DE TODA LA CORRIDA.
+   *
+   * Nico, 2026-09-11: «eso no está calculando bien el tiempo que se demora».
+   * La barra decía «faltan unos 3 min» con 2.585 de 2.824 hechas, y tardó 8.
+   *
+   * El promedio desde el arranque mentía porque el ritmo CAMBIA solo dentro
+   * de la misma corrida: las filas cuyo inmueble ya existe se re-apuntan a
+   * ~170/min y las que crean uno nuevo van a ~40/min. Un archivo re-subido
+   * empieza volando y termina arrastrándose, así que el promedio queda
+   * anclado a la parte rápida y promete siempre de menos — justo al final,
+   * que es cuando la persona mira el número.
+   *
+   * Con una ventana de las últimas llamadas, la estimación sigue al ritmo de
+   * AHORA.
+   */
+  const muestrasDeActivacionRef = useRef<{ t: number; hechas: number }[]>([]);
   /* La salida. En un ref porque el bucle la lee entre llamadas; en estado
      sólo para que el botón diga «Deteniendo…». */
   const detenerActivacionRef = useRef(false);
@@ -428,20 +456,35 @@ export function StepConfirmImport({
       ? Math.min(100, Math.round((hechasEnActivacion / totalDeActivacion) * 100))
       : 0;
   const minutosDeActivacion = useMemo(() => {
-    if (
-      !activando ||
-      inicioActivacionRef.current == null ||
-      hechasEnActivacion < 5 ||
-      totalDeActivacion <= hechasEnActivacion
-    ) {
+    const muestras = muestrasDeActivacionRef.current;
+    if (!activando || muestras.length < 2 || totalDeActivacion <= hechasEnActivacion) {
       return null;
     }
-    const porFila = (Date.now() - inicioActivacionRef.current) / hechasEnActivacion;
+    const primera = muestras[0];
+    const ultima = muestras[muestras.length - 1];
+    const filas = ultima.hechas - primera.hechas;
+    const ms = ultima.t - primera.t;
+    // Sin avance medible en la ventana no se inventa un número: la barra dice
+    // en qué va y se calla lo que no sabe.
+    if (filas <= 0 || ms <= 0) return null;
     const minutos = Math.ceil(
-      ((totalDeActivacion - hechasEnActivacion) * porFila) / 60_000,
+      ((totalDeActivacion - hechasEnActivacion) * (ms / filas)) / 60_000,
     );
     return minutos > 0 ? minutos : null;
   }, [activando, hechasEnActivacion, totalDeActivacion]);
+
+  /**
+   * Anota la muestra y actualiza la pantalla. Las muestras viven en un `ref`
+   * porque sólo alimentan un cálculo: el re-render lo dispara el `setState`.
+   */
+  const anotarProgresoDeActivacion = useCallback((p: ProgresoDeActivacion) => {
+    const hechas = p.activados + p.reusados + p.omitidas;
+    muestrasDeActivacionRef.current = [
+      ...muestrasDeActivacionRef.current,
+      { t: Date.now(), hechas },
+    ].slice(-MUESTRAS_DE_RITMO);
+    setProgresoDeActivacion(p);
+  }, []);
 
   /**
    * Pide parar la activación. No corta a mitad de una tanda: la que está en
@@ -852,11 +895,13 @@ export function StepConfirmImport({
         </Button>
       </div>
       <Progress value={porcentajeDeActivacion} size="xs" />
-      {/* Por qué tarda, en una línea. Sin esto, «40 min» parece un error del
-          sistema y no el costo real de crear 2.800 inmuebles uno por uno. */}
-      <p className="text-xs text-fg-subtle dark:text-fg-muted">
-        Cada inmueble se crea con su dueño y su mandato, así que un archivo
-        grande tarda. Puedes detenerlo: lo creado no se pierde ni se duplica.
+      {/* El porcentaje, pedido por Nico el 2026-09-11: la barra sola no se
+          lee, y «2585 de 2824» obliga a hacer la división de cabeza. */}
+      <p
+        className="text-xs text-right font-mono tabular-nums text-fg-subtle dark:text-fg-muted"
+        data-testid="activacion-porcentaje"
+      >
+        {porcentajeDeActivacion}%
       </p>
     </div>
   );
@@ -867,14 +912,14 @@ export function StepConfirmImport({
     setError(null);
     setProgresoDeActivacion(null);
     totalAActivarRef.current = resumenLote?.listos ?? 0;
-    inicioActivacionRef.current = Date.now();
+    muestrasDeActivacionRef.current = [];
     detenerActivacionRef.current = false;
     setDeteniendoActivacion(false);
     try {
       const resultado = await activarLoteCompleto(
         lote,
         inmueblesImportacionApi.activar,
-        setProgresoDeActivacion,
+        anotarProgresoDeActivacion,
         { debeParar: () => detenerActivacionRef.current },
       );
       /*
@@ -950,7 +995,7 @@ export function StepConfirmImport({
       setActivando(false);
       setProgresoDeActivacion(null);
       setDeteniendoActivacion(false);
-      inicioActivacionRef.current = null;
+      muestrasDeActivacionRef.current = [];
     }
   };
 
@@ -983,13 +1028,43 @@ export function StepConfirmImport({
           <h2 className="text-2xl font-semibold text-fg dark:text-white">
             ¡Importación completada!
           </h2>
-          <p className="text-fg-muted dark:text-fg-subtle">
-            Se importaron{" "}
-            <span className="font-semibold text-fg dark:text-white">
-              {state.importedCount} propiedades
-            </span>{" "}
-            a tu portafolio
-          </p>
+          {/*
+           * 🔴 LA VERDAD COMPLETA, NO LA MITAD.
+           *
+           * Nico, 2026-09-11: «¿por qué dices que se importaron 679
+           * propiedades si le subí 2800 y algo y dijo que estaban listas como
+           * 2700 y algo?». Porque 679 eran NUEVAS y 2.145 ya tenían su
+           * inmueble —mismo «Código», de la carga anterior— así que se
+           * re-apuntaron en vez de duplicarse. Las 2.824 filas de su archivo
+           * entraron; decir sólo las nuevas hacía ver una importación
+           * completa como un fracaso de 679.
+           */}
+          {resultadoActivacion && resultadoActivacion.reusados > 0 ? (
+            <>
+              <p className="text-fg-muted dark:text-fg-subtle">
+                <span className="font-semibold text-fg dark:text-white">
+                  {resultadoActivacion.activados + resultadoActivacion.reusados}{" "}
+                  inmuebles
+                </span>{" "}
+                de este archivo están en tu portafolio
+              </p>
+              <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="detalle-reusados">
+                {resultadoActivacion.activados}{" "}
+                {resultadoActivacion.activados === 1 ? "nuevo" : "nuevos"} ·{" "}
+                {resultadoActivacion.reusados} ya
+                {resultadoActivacion.reusados === 1 ? " estaba" : " estaban"} cargados de
+                antes, así que se reusaron en vez de duplicarse.
+              </p>
+            </>
+          ) : (
+            <p className="text-fg-muted dark:text-fg-subtle">
+              Se importaron{" "}
+              <span className="font-semibold text-fg dark:text-white">
+                {state.importedCount} propiedades
+              </span>{" "}
+              a tu portafolio
+            </p>
+          )}
           {fotosProgreso && (
             <p className="text-sm text-fg-muted" data-testid="fotos-progreso" aria-live="polite">
               Subiendo las fotos de las fichas… {fotosProgreso.hechos} de {fotosProgreso.total}{" "}
@@ -1069,9 +1144,10 @@ export function StepConfirmImport({
           )}
           <Button
             type="button"
-            variant="outline"
+            variant={onSalir ? undefined : "outline"}
             size="lg"
             hideArrow
+            data-testid="importar-mas"
             onClick={() => {
               updateState({
                 method: null,
@@ -1087,10 +1163,26 @@ export function StepConfirmImport({
                 importProgress: 0,
                 importedCount: 0,
               });
-              router.push("/panel/inmobiliaria/inmuebles/importar");
+              /*
+               * 🔴 ADENTRO DEL MURO ESTE BOTÓN NO ERA UN BOTÓN.
+               *
+               * Nico, 2026-09-11: «no aparece nada para continuar, ningún
+               * cta o algo, se queda ahí». Éste era el único control de la
+               * pantalla de éxito, y hacía `router.push` a
+               * `/inmuebles/importar` — una ruta que el muro TAPA. La
+               * navegación ocurría, la pantalla no cambiaba, y no había
+               * ninguna otra salida: un callejón sin salida al final de una
+               * importación de 40 minutos.
+               *
+               * `onSalir` es justamente el camino de vuelta del muro (remonta
+               * el asistente, que al arrancar lista las cargas sin terminar).
+               * Existía y este botón no lo usaba.
+               */
+              if (onSalir) onSalir();
+              else router.push("/panel/inmobiliaria/inmuebles/importar");
             }}
           >
-            Importar más
+            {onSalir ? "Seguir con las demás cargas" : "Importar más"}
           </Button>
         </div>
       </div>

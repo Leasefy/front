@@ -467,6 +467,115 @@ describe('<StepConfirmImport> — the review screen once LISTO', () => {
     });
   });
 
+  it('la barra muestra el porcentaje, no sólo «N de M»', async () => {
+    inmueblesImportacionApiMock.resumen.mockResolvedValue({
+      lote: 'lote-1', total: 100, pendientes: 0, listos: 100, activados: 0, descartados: 0,
+    });
+    let soltar: (() => void) | null = null;
+    inmueblesImportacionApiMock.activar
+      .mockResolvedValueOnce({ lote: 'lote-1', activados: 25, omitidas: [], restantes: 75 })
+      .mockImplementationOnce(
+        () => new Promise((resolve) => { soltar = () => resolve({ lote: 'lote-1', activados: 75, omitidas: [], restantes: 0 }); }),
+      );
+
+    render(baseState());
+    await act(async () => { await Promise.resolve(); });
+    await act(async () => {
+      findButtonByText('Activar')!.click();
+      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    });
+
+    expect(container.querySelector('[data-testid="activacion-porcentaje"]')?.textContent).toBe('25%');
+
+    await act(async () => {
+      soltar!();
+      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    });
+  });
+
+  /*
+   * 🔴 Nico, 2026-09-11: «¿por qué dices que se importaron 679 propiedades si
+   * le subí 2800 y algo?». 679 eran nuevas; 2.145 ya tenían su inmueble de la
+   * carga anterior y se re-apuntaron. Decir sólo las nuevas hacía ver una
+   * importación completa como un fracaso.
+   */
+  it('al terminar dice cuántas entraron EN TOTAL, no sólo las nuevas', async () => {
+    inmueblesImportacionApiMock.resumen.mockResolvedValue({
+      lote: 'lote-1', total: 2_824, pendientes: 0, listos: 2_824, activados: 0, descartados: 0,
+    });
+    inmueblesImportacionApiMock.activar.mockResolvedValue({
+      lote: 'lote-1', activados: 679, reusados: 2_145, omitidas: [], restantes: 0,
+    });
+
+    render(baseState());
+    await act(async () => { await Promise.resolve(); });
+    await act(async () => {
+      findButtonByText('Activar')!.click();
+      for (let i = 0; i < 8; i++) await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain('2824 inmuebles');
+    const detalle = container.querySelector('[data-testid="detalle-reusados"]')?.textContent ?? '';
+    expect(detalle).toContain('679');
+    expect(detalle).toContain('2145');
+  });
+
+  /*
+   * 🔴 Nico, 2026-09-11: «no aparece nada para continuar, ningún cta o algo,
+   * se queda ahí». Adentro del muro el único botón de la pantalla de éxito
+   * navegaba a una ruta que el muro TAPA: la navegación pasaba y la pantalla
+   * no cambiaba. Un callejón sin salida al final de 40 minutos.
+   */
+  it('adentro del muro el botón del final llama a onSalir, no navega a una ruta tapada', async () => {
+    const onSalir = vi.fn();
+    inmueblesImportacionApiMock.resumen.mockResolvedValue({
+      lote: 'lote-1', total: 3, pendientes: 0, listos: 3, activados: 0, descartados: 0,
+    });
+    inmueblesImportacionApiMock.activar.mockResolvedValue({
+      lote: 'lote-1', activados: 3, omitidas: [], restantes: 0,
+    });
+
+    render(baseState(), { onSalir });
+    await act(async () => { await Promise.resolve(); });
+    await act(async () => {
+      findButtonByText('Activar')!.click();
+      for (let i = 0; i < 8; i++) await Promise.resolve();
+    });
+
+    pushMock.mockClear();
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="importar-mas"]')!.click();
+      await Promise.resolve();
+    });
+
+    expect(onSalir).toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it('FUERA del muro sigue navegando al asistente, como siempre', async () => {
+    inmueblesImportacionApiMock.resumen.mockResolvedValue({
+      lote: 'lote-1', total: 3, pendientes: 0, listos: 3, activados: 0, descartados: 0,
+    });
+    inmueblesImportacionApiMock.activar.mockResolvedValue({
+      lote: 'lote-1', activados: 3, omitidas: [], restantes: 0,
+    });
+
+    render(baseState());
+    await act(async () => { await Promise.resolve(); });
+    await act(async () => {
+      findButtonByText('Activar')!.click();
+      for (let i = 0; i < 8; i++) await Promise.resolve();
+    });
+
+    pushMock.mockClear();
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="importar-mas"]')!.click();
+      await Promise.resolve();
+    });
+
+    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles/importar');
+  });
+
   it('«Detener» corta después de la tanda en curso y dice que no se duplica', async () => {
     inmueblesImportacionApiMock.resumen.mockResolvedValue({
       lote: 'lote-1', total: 100, pendientes: 0, listos: 100, activados: 0, descartados: 0,

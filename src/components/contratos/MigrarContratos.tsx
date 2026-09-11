@@ -100,6 +100,7 @@ import { ResolucionMasiva } from "./ResolucionMasiva";
 import { CrearInmueblesFaltantes } from "./CrearInmueblesFaltantes";
 import { AlertaAccionable } from "@/components/ui/alerta-accionable";
 import { TarjetaDeArchivo } from "@/components/migracion/TarjetaDeArchivo";
+import { InmueblesSinActivar } from "./InmueblesSinActivar";
 import { ProgresoDeLote } from "./ProgresoDeLote";
 import { TablePagination } from "@/components/ui/pagination";
 
@@ -1756,6 +1757,17 @@ function ListaDeTrabajo({
          * la agencia — acá no se calcula nada.
          */}
         <AsociacionDelLoteResumen asociacion={resumen.asociacion} total={resumen.total} />
+
+        {/*
+         * 🔴 La causa real de «el código del inmueble no existe», cuando el
+         * inmueble SÍ está en el archivo de la inmobiliaria: se quedó en la
+         * importación, listo y sin activar. Va justo debajo del resumen de
+         * asociación porque es donde se ve el número que duele. Ver
+         * `InmueblesSinActivar`.
+         */}
+        <InmueblesSinActivar
+          contratosSinInmueble={resumen.asociacion?.sinInmueble}
+        />
 
         {/*
          * Qué está pasando, en palabras. El paso hace un trabajo real —buscar

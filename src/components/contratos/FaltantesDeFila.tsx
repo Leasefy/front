@@ -40,9 +40,21 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
       "La dirección del archivo no coincide con ninguno de tu portafolio. Sin inmueble el contrato no se activa: no tendría consignación ni cobros.",
   },
   inmueble_codigo: {
-    titulo: "El código del inmueble no existe",
+    titulo: "Ese inmueble todavía no está en Leasefy",
+    /*
+     * 🔴 Este texto decía «un código que no existe suele ser el archivo
+     * corrido». Era falso y costó cuatro rondas: Nico abría su Excel, veía el
+     * inmueble con ese código y esa dirección, y el producto le decía que su
+     * archivo estaba mal. Su inmueble de código 3 estaba en la fila 2862 de su
+     * importación, LISTO y sin faltantes — sólo que sin activar.
+     *
+     * La causa más común de verdad es ésa: el inmueble está cargado a medias
+     * (preparado, sin activar) o no se cargó. El aviso de arriba
+     * (`InmueblesSinActivar`) cuenta cuántos son y lleva al botón. Acá se
+     * nombra la causa sin acusar al archivo.
+     */
     porque:
-      "El archivo señala un inmueble por su código y ningún inmueble tuyo lo tiene: o ese inmueble no se cargó, o se cargó sin su «Código». No lo pegamos por la dirección: un código que no existe suele ser el archivo corrido, y pegarlo igual lo dejaría en el inmueble equivocado. Elige el inmueble por la dirección, o créalo.",
+      "El archivo señala el inmueble por su código y ningún inmueble tuyo lo tiene todavía. Casi siempre es que la importación de inmuebles quedó a medias: el inmueble está preparado pero sin activar, o no se subió. No lo pegamos por la dirección cuando el código no existe — pegarlo por parecido lo dejaría en el inmueble equivocado. Actívalo desde Inmuebles, elígelo acá abajo, o créalo.",
   },
   inmueble_ambiguo: {
     titulo: "Hay más de un inmueble con esa dirección",

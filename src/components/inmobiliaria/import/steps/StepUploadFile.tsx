@@ -4,13 +4,13 @@ import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import {
   UploadSimple,
-  FileXls,
   DownloadSimple,
   WarningCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
+import { TarjetaDeArchivo } from '@/components/migracion/TarjetaDeArchivo';
 import { Spinner } from '@/components/ui/spinner';
 import { MonoLabel } from '@leasefy/cadence';
 import {
@@ -58,12 +58,6 @@ const UNSUPPORTED_MESSAGES: Record<string, string> = {
 };
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const ROW_COUNT_WARNING_THRESHOLD = 5000;
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 export function StepUploadFile({ state, updateState }: ImportStepProps) {
   const { t } = useI18n();
@@ -138,12 +132,36 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
     processFile(file);
   }, [processFile]);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop: onDropWithValidation,
     maxFiles: 1,
     multiple: false,
     disabled: isParsing,
   });
+
+  /**
+   * Suelta el archivo y TODO lo que salió de él.
+   *
+   * `properties` y `aiAnalyzed` incluidos: sin eso, descartar el archivo
+   * dejaba las filas revisadas del anterior colgando en los pasos siguientes
+   * — el mismo síntoma que Nico vio en contabilidad («el resumen queda pegado
+   * al archivo anterior»).
+   */
+  const soltarArchivo = useCallback(() => {
+    setParseError(null);
+    setRowWarning(null);
+    updateState({
+      file: null,
+      fileName: '',
+      rawRows: [],
+      headers: [],
+      sheetNames: [],
+      selectedSheet: '',
+      columnMappings: [],
+      properties: [],
+      aiAnalyzed: false,
+    });
+  }, [updateState]);
 
   const handleSheetChange = (newSheet: string) => {
     if (state.file) {
@@ -184,48 +202,46 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
         </div>
       )}
 
-      {/* Drop Zone */}
-      <div
-        {...getRootProps()}
-        className={cn(
-          'border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-all duration-200',
-          isParsing
-            ? 'border-border dark:border-border-strong cursor-not-allowed'
-            : isDragActive
-              ? 'border-primary/30 bg-primary-soft'
-              : hasFile
-                ? 'border-success/30 bg-success-soft'
-                : 'border-border dark:border-border-strong hover:border-primary/30 dark:hover:border-primary/30 hover:bg-surface-muted dark:hover:bg-ink'
-        )}
-      >
-        {/* allowlist: react-dropzone hidden file input (canonical dropzone mechanism) */}
-        <input {...getInputProps()} />
-
-        {isParsing ? (
-          <div className="flex flex-col items-center gap-3">
-            <Spinner size="2xl" />
+      {/*
+        Con archivo: una tarjeta, no la zona de arrastre. La zona dejaba el
+        archivo puesto sin forma de quitarlo — sólo de reemplazarlo, y sólo si
+        adivinabas que seguía viva (Nico, 2026-09-10).
+      */}
+      {hasFile || isParsing ? (
+        isParsing ? (
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-muted/60 p-3">
+            {/* allowlist: react-dropzone hidden file input (canonical dropzone mechanism) */}
+            <input {...getInputProps()} />
+            <Spinner size="lg" />
             <p className="text-sm text-fg-muted dark:text-fg-subtle">
               {t('inmobiliaria.import.upload.parsing')}
             </p>
           </div>
-        ) : hasFile ? (
-          <div className="flex flex-col items-center gap-3">
-            <FileXls className="w-16 h-16 text-success" />
-            <div>
-              <p className="font-medium text-fg dark:text-white">
-                {state.fileName}
-              </p>
-              {state.file && (
-                <p className="text-sm text-fg-muted dark:text-fg-subtle mt-1">
-                  {formatFileSize(state.file.size)} &middot; {t('inmobiliaria.import.upload.rowsDetected', { count: state.rawRows.length })}
-                </p>
-              )}
-            </div>
-            <p className="text-xs text-fg-subtle">
-              Haz clic o arrastra un archivo para reemplazar
-            </p>
-          </div>
         ) : (
+          <TarjetaDeArchivo
+            nombre={state.fileName}
+            peso={state.file?.size}
+            detalle={t('inmobiliaria.import.upload.rowsDetected', {
+              count: state.rawRows.length,
+            })}
+            inputProps={getInputProps()}
+            onSubirOtro={open}
+            onDescartar={soltarArchivo}
+            testid="archivo-de-inmuebles"
+          />
+        )
+      ) : (
+        <div
+          {...getRootProps()}
+          className={cn(
+            'border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-all duration-200',
+            isDragActive
+              ? 'border-primary/30 bg-primary-soft'
+              : 'border-border dark:border-border-strong hover:border-primary/30 dark:hover:border-primary/30 hover:bg-surface-muted dark:hover:bg-ink'
+          )}
+        >
+          {/* allowlist: react-dropzone hidden file input (canonical dropzone mechanism) */}
+          <input {...getInputProps()} />
           <div className="flex flex-col items-center gap-3">
             <UploadSimple className="w-16 h-16 text-fg-subtle" />
             <div>
@@ -237,8 +253,8 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
               </p>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Parse Error */}
       {parseError && (

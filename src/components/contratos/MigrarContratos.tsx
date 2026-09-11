@@ -99,6 +99,7 @@ import type { Propietario } from "@/lib/types/inmobiliaria";
 import { ResolucionMasiva } from "./ResolucionMasiva";
 import { CrearInmueblesFaltantes } from "./CrearInmueblesFaltantes";
 import { AlertaAccionable } from "@/components/ui/alerta-accionable";
+import { TarjetaDeArchivo } from "@/components/migracion/TarjetaDeArchivo";
 import { ProgresoDeLote } from "./ProgresoDeLote";
 import { TablePagination } from "@/components/ui/pagination";
 
@@ -211,6 +212,14 @@ export interface MigrarContratosProps {
 }
 
 export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
+  /**
+   * El archivo tal cual, no sólo lo que salió de leerlo. La tarjeta necesita
+   * nombre y peso, y `null` es lo que distingue «todavía no hay archivo» de
+   * «hay uno y no se pudo leer» — el segundo caso también merece su tarjeta,
+   * con «Descartar» a la mano.
+   */
+  const [archivo, setArchivo] = useState<File | null>(null);
+  const [leyendo, setLeyendo] = useState(false);
   const [filas, setFilas] = useState<Fila[]>([]);
   const [encabezados, setEncabezados] = useState<string[]>([]);
   /**
@@ -373,6 +382,8 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
 
   /** Vuelve al cargador con el archivo actual soltado. Nada del server. */
   const limpiarArchivo = useCallback(() => {
+    setArchivo(null);
+    setLeyendo(false);
     setFilas([]);
     setEncabezados([]);
     setMapeo([]);
@@ -384,6 +395,8 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
   const leerArchivo = useCallback(async (archivo: File) => {
     setError(null);
     setActivacion(null);
+    setArchivo(archivo);
+    setLeyendo(true);
     try {
       /*
        * Dónde están los encabezados de verdad. Un export real no siempre
@@ -416,10 +429,12 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
       setFilas([]);
       setEncabezados([]);
       setMapeo([]);
+    } finally {
+      setLeyendo(false);
     }
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop: (aceptados) => {
       const archivo = aceptados[0];
       if (archivo) void leerArchivo(archivo);
@@ -1072,30 +1087,50 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
          * nombre) sigue disparando la lectura — que es lo que el reset
          * manual de antes garantizaba a mano.
          */}
-        <div
-          {...getRootProps()}
-          className={`flex cursor-pointer flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center transition-colors ${
-            isDragActive
-              ? "border-primary bg-primary/10"
-              : "border-border hover:bg-muted/40"
-          }`}
-          data-testid="dropzone-contratos"
-        >
-          {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
-          {/* El `data-testid` va aparte: `DropzoneInputProps` no lo tipa. */}
-          <input {...getInputProps()} data-testid="archivo-contratos" />
-          <FileArrowUp className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <p className="text-sm font-medium text-foreground">
-              {isDragActive
-                ? "Suelta el archivo acá"
-                : "Arrastra el archivo de contratos o haz clic para elegirlo"}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Excel o CSV exportado de tu sistema actual
-            </p>
+        {archivo ? (
+          <TarjetaDeArchivo
+            nombre={archivo.name}
+            peso={archivo.size}
+            detalle={
+              leyendo
+                ? "leyendo\u2026"
+                : filas.length > 0
+                  ? `${filas.length.toLocaleString("es-CO")} ${filas.length === 1 ? "contrato" : "contratos"}`
+                  : undefined
+            }
+            inputProps={getInputProps()}
+            inputTestid="archivo-contratos"
+            onSubirOtro={open}
+            onDescartar={limpiarArchivo}
+            ocupado={leyendo || cargando}
+            testid="archivo-de-contratos"
+          />
+        ) : (
+          <div
+            {...getRootProps()}
+            className={`flex cursor-pointer flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center transition-colors ${
+              isDragActive
+                ? "border-primary bg-primary/10"
+                : "border-border hover:bg-muted/40"
+            }`}
+            data-testid="dropzone-contratos"
+          >
+            {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
+            {/* El `data-testid` va aparte: `DropzoneInputProps` no lo tipa. */}
+            <input {...getInputProps()} data-testid="archivo-contratos" />
+            <FileArrowUp className="h-8 w-8 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                {isDragActive
+                  ? "Suelta el archivo acá"
+                  : "Arrastra el archivo de contratos o haz clic para elegirlo"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Excel o CSV exportado de tu sistema actual
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
         {error ? (
           <div className="mt-4 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">

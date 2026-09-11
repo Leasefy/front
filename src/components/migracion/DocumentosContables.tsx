@@ -33,6 +33,7 @@ import { useDropzone } from "react-dropzone";
 import { CheckCircle, FileArrowUp, Info, Warning } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
+import { TarjetaDeArchivo } from "@/components/migracion/TarjetaDeArchivo";
 import {
   Table,
   TableBody,
@@ -210,11 +211,24 @@ export function DocumentosContables({
     [recorrer],
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     maxFiles: 1,
     multiple: false,
   });
+
+  /** Suelta el archivo y TODO lo que salió de él: lo que corre «Descartar». */
+  const soltarArchivo = useCallback(() => {
+    cancelar.current = true;
+    setArchivo(null);
+    setNombreDeArchivo("");
+    setEncabezados([]);
+    setMapeo([]);
+    setLeidas(0);
+    setAcumulado(null);
+    setError(null);
+    setFase("elegir");
+  }, []);
 
   return (
     <section className="space-y-5" data-testid="documentos-contables">
@@ -242,26 +256,46 @@ export function DocumentosContables({
         </div>
       </div>
 
-      <div
-        {...getRootProps()}
-        className={`flex cursor-pointer flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center transition-colors ${
-          isDragActive ? "border-primary bg-primary-soft" : "border-border hover:bg-surface-muted"
-        }`}
-        data-testid="dropzone-documentos"
-      >
-        {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
-        <input {...getInputProps()} data-testid="archivo-documentos" />
-        <FileArrowUp className="h-8 w-8 text-fg-muted" />
-        <div>
-          <p className="text-sm font-medium text-fg">
-            {nombreDeArchivo || "Arrastra el CSV de comprobantes o haz clic para elegirlo"}
-          </p>
-          <p className="text-xs text-fg-subtle">
-            Se lee por partes, así que un archivo de decenas de miles de filas
-            no congela la pantalla. Nada se escribe hasta que lo pidas.
-          </p>
+      {archivo ? (
+        <TarjetaDeArchivo
+          nombre={nombreDeArchivo || archivo.name}
+          peso={archivo.size}
+          detalle={
+            ocupado
+              ? `leyendo\u2026 ${leidas.toLocaleString("es-CO")} filas`
+              : leidas > 0
+                ? `${leidas.toLocaleString("es-CO")} ${leidas === 1 ? "fila" : "filas"}`
+                : undefined
+          }
+          inputProps={getInputProps()}
+          inputTestid="archivo-documentos"
+          onSubirOtro={open}
+          onDescartar={soltarArchivo}
+          ocupado={ocupado}
+          testid="archivo-de-documentos"
+        />
+      ) : (
+        <div
+          {...getRootProps()}
+          className={`flex cursor-pointer flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center transition-colors ${
+            isDragActive ? "border-primary bg-primary-soft" : "border-border hover:bg-surface-muted"
+          }`}
+          data-testid="dropzone-documentos"
+        >
+          {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
+          <input {...getInputProps()} data-testid="archivo-documentos" />
+          <FileArrowUp className="h-8 w-8 text-fg-muted" />
+          <div>
+            <p className="text-sm font-medium text-fg">
+              Arrastra el CSV de comprobantes o haz clic para elegirlo
+            </p>
+            <p className="text-xs text-fg-subtle">
+              Se lee por partes, así que un archivo de decenas de miles de filas
+              no congela la pantalla. Nada se escribe hasta que lo pidas.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {error ? (
         <div

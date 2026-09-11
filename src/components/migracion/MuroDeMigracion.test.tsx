@@ -611,6 +611,50 @@ describe('el pie espera a que el paso termine de crear', () => {
     await click('muro-ir-inquilinos');
     expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('inquilinos');
   });
+
+  /*
+   * 🔴 LA RANURA VIVA.
+   *
+   * `inert` congela TODO el subárbol y no se puede desactivar en un
+   * descendiente: no hay `inert="false"`, y un portal tampoco escapa porque
+   * `inert` es del DOM, no de React. Por eso el botón de parar la
+   * geocodificación —una espera de 53 minutos sobre 2.864 inmuebles— vivía en
+   * el pie del muro, a dos secciones de la barra que controlaba. Nico,
+   * 2026-09-10: «está súper mal ubicado, debería hacer parte de la progress
+   * bar».
+   *
+   * La ranura invierte la solución: el paso manda el bloque entero a un nodo
+   * que el muro dibuja FUERA del `inert`, pegado al contenido.
+   *
+   * Lo que esta prueba congela es la única propiedad que hace que funcione:
+   * la ranura NO puede quedar dentro del nodo inerte. Si alguien la mueve
+   * adentro, todo seguiría viéndose igual y el botón volvería a nacer muerto.
+   */
+  it('la ranura viva existe y queda FUERA del nodo inerte, incluso con el paso ocupado', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [paso('propietarios', 'listo', 60, '60 propietarios'), ...RECIEN_LLEGADA.slice(1)],
+    });
+
+    await pintar();
+    await click('muro-ir-propietarios');
+    await click('paso-ocupado-on');
+
+    const contenido = q('muro-contenido')!;
+    const ranura = q('muro-ranura-viva');
+
+    expect(ranura).not.toBeNull();
+    expect(contenido.hasAttribute('inert')).toBe(true);
+    // Lo que importa: la ranura NO cuelga del nodo congelado.
+    expect(contenido.contains(ranura)).toBe(false);
+    // Y tampoco hay un `inert` en su camino hacia arriba.
+    let nodo: HTMLElement | null = ranura as HTMLElement;
+    while (nodo && nodo !== document.body) {
+      expect(nodo.hasAttribute('inert')).toBe(false);
+      nodo = nodo.parentElement;
+    }
+  });
 });
 
 /*

@@ -9,6 +9,7 @@ import {
   useRef,
 } from "react";
 import { createPortal } from "react-dom";
+import { useRanuraViva } from "@/components/migracion/ranura-viva";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   CheckCircle,
@@ -126,6 +127,12 @@ export function StepConfirmImport({
     ),
   ];
   const importCount = importables.length;
+
+  /*
+   * El nodo del muro que queda FUERA del `inert`. `null` en la página suelta
+   * `/inmuebles/importar`, donde no hay muro y nada se congela.
+   */
+  const ranuraViva = useRanuraViva();
 
   // ── Phase 1: geocode (client-side, unchanged from before) + preparar() ──
   const [geocodificando, setGeocodificando] = useState(false);
@@ -370,16 +377,26 @@ export function StepConfirmImport({
     geocodificando || preparando || activando || descartandoLote || jobCorriendo;
   useEffect(() => {
     /*
-     * Se manda también CÓMO parar. El muro pone `inert` sobre todo el
-     * contenido del paso mientras hay algo en vuelo, así que un botón dibujado
-     * acá adentro nace muerto: se ve normal y no responde. El único lugar
-     * desde donde se puede cancelar es el pie del muro, que queda afuera.
+     * Se manda también CÓMO parar — pero SÓLO como respaldo.
+     *
+     * Desde el 2026-09-10 la barra sale por la ranura viva del muro, con su
+     * botón al lado y fuera del `inert`, así que el del pie sobra y tener dos
+     * botones para lo mismo a dos secciones de distancia es peor que tener
+     * uno. El respaldo cubre el primer render —cuando la ranura todavía no
+     * existe— y cualquier caso en que el muro no la ofrezca: una espera de
+     * 53 minutos no se puede quedar sin salida por un detalle de montaje.
      */
     onOcupado?.(
       hayOperacionEnVuelo,
-      geocodificando ? cancelarGeocodificacion : undefined,
+      geocodificando && !ranuraViva ? cancelarGeocodificacion : undefined,
     );
-  }, [hayOperacionEnVuelo, geocodificando, cancelarGeocodificacion, onOcupado]);
+  }, [
+    hayOperacionEnVuelo,
+    geocodificando,
+    ranuraViva,
+    cancelarGeocodificacion,
+    onOcupado,
+  ]);
   // Al desmontar (cambio de paso, «cancelar») el muro recupera sus botones.
   useEffect(() => () => onOcupado?.(false), [onOcupado]);
 
@@ -1011,6 +1028,53 @@ export function StepConfirmImport({
     );
   }
 
+  /*
+   * ── La barra de la geocodificación, y por qué se define acá ──────────────
+   *
+   * Buscar 2.864 direcciones en el mapa toma ~53 minutos, así que la barra
+   * necesita un botón para parar. Dentro del muro ese botón nacía MUERTO: el
+   * muro pone `inert` sobre todo el paso mientras hay algo en vuelo, y `inert`
+   * no se puede desactivar en un descendiente. Por eso la salida vivía en el
+   * pie del muro — el único sitio fuera del `inert`— a dos secciones de la
+   * barra que controlaba. Nico, 2026-09-10: «ese detener carga está súper mal
+   * ubicado, debería estar mucho más cerca de la progress bar y quizás hacer
+   * parte de la progress bar».
+   *
+   * La ranura viva invierte la solución: en vez de mandar el botón lejos, se
+   * manda el BLOQUE ENTERO a un nodo que el muro dibuja fuera del `inert`,
+   * pegado al contenido. Barra, conteo, minutos y botón viajan juntos y los
+   * dos quedan vivos. Ver `migracion/ranura-viva.ts`.
+   */
+  const barraDeGeocodificacion = (
+    <div className="space-y-2" data-testid="geo-progreso">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <p className="text-sm text-fg-muted dark:text-fg-subtle">
+          Buscando las direcciones en el mapa — {geoCurrent} de {importCount}
+          {minutosQueFaltan != null && !cancelandoGeo ? (
+            <span className="text-fg-subtle">
+              {" "}
+              · faltan unos {minutosQueFaltan} min
+            </span>
+          ) : null}
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          hideArrow
+          onClick={cancelarGeocodificacion}
+          disabled={cancelandoGeo}
+          data-testid="geo-cancelar"
+        >
+          {cancelandoGeo ? "Deteniendo…" : "Detener la carga"}
+        </Button>
+      </div>
+      <Progress value={geoProgress} size="xs" />
+      <p className="text-xs text-right font-mono text-fg-subtle dark:text-fg-muted">
+        {geoProgress}%
+      </p>
+    </div>
+  );
+
   // ── Pre-import summary (no lote yet) ─────────────────────────────────
   return (
     <div className="space-y-6">
@@ -1113,47 +1177,18 @@ export function StepConfirmImport({
         </div>
       </div>
 
-      {geocodificando && (
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <p className="text-sm text-fg-muted dark:text-fg-subtle">
-              Buscando las direcciones en el mapa — {geoCurrent} de{" "}
-              {importCount}
-              {minutosQueFaltan != null && !cancelandoGeo ? (
-                <span className="text-fg-subtle">
-                  {" "}
-                  · faltan unos {minutosQueFaltan} min
-                </span>
-              ) : null}
-            </p>
-            {/*
-             * Dentro del muro este botón NO se dibuja: el muro pone `inert`
-             * sobre todo el paso mientras hay algo en vuelo, así que acá
-             * nacería muerto —se ve normal y no responde— que es exactamente
-             * la queja que originó esto. Allá la salida vive en el pie del
-             * muro, que queda fuera del `inert`. Suelto (la página
-             * `/inmuebles/importar`) no hay muro ni `inert`, y acá sí es el
-             * lugar natural.
-             */}
-            {!onOcupado ? (
-              <Button
-                type="button"
-                variant="ghost"
-                hideArrow
-                onClick={cancelarGeocodificacion}
-                disabled={cancelandoGeo}
-                data-testid="geo-cancelar"
-              >
-                {cancelandoGeo ? "Deteniendo…" : "Cancelar"}
-              </Button>
-            ) : null}
-          </div>
-          <Progress value={geoProgress} size="xs" />
-          <p className="text-xs text-right font-mono text-fg-subtle dark:text-fg-muted">
-            {geoProgress}%
-          </p>
-        </div>
-      )}
+      {/*
+        La barra vive acá sólo cuando NO hay muro. Dentro del muro sale por la
+        ranura viva — ver `barraDeGeocodificacion` arriba.
+      */}
+      {geocodificando && !ranuraViva ? barraDeGeocodificacion : null}
+      {/*
+        Con muro, la barra sale por la ranura viva: fuera del `inert`, pegada
+        al contenido y con su botón de parar VIVO.
+      */}
+      {geocodificando && ranuraViva
+        ? createPortal(barraDeGeocodificacion, ranuraViva)
+        : null}
 
       {geoCancelada && (
         <div

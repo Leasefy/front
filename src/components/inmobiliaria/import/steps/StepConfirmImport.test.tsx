@@ -99,6 +99,7 @@ vi.mock('@/lib/hooks/use-estado-de-lote-inmuebles', () => ({
 }));
 
 import { StepConfirmImport } from './StepConfirmImport';
+import { RanuraVivaContext } from '@/components/migracion/ranura-viva';
 import { RanuraDelPie } from '../ImportWizard';
 import { ApiError } from '@/lib/api/client';
 import type { ImportProperty } from '../lib/importTypes';
@@ -178,14 +179,21 @@ function render(
   props: {
     onSalir?: () => void;
     onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
+    /** El nodo que el muro dibuja FUERA del `inert`. `null` = sin muro. */
+    ranuraViva?: HTMLElement | null;
   } = {},
 ) {
+  const { ranuraViva = null, ...delPaso } = props;
   act(() => {
     root.render(
       React.createElement(
         RanuraDelPie.Provider,
         { value: null },
-        React.createElement(StepConfirmImport, { state, updateState, ...props }),
+        React.createElement(
+          RanuraVivaContext.Provider,
+          { value: ranuraViva },
+          React.createElement(StepConfirmImport, { state, updateState, ...delPaso }),
+        ),
       ),
     );
   });
@@ -728,6 +736,85 @@ describe('<StepConfirmImport> — se puede detener la búsqueda de direcciones',
     expect(container.querySelector('[data-testid="geo-cancelada"]')).toBeTruthy();
     // ...y el muro recupera sus botones.
     expect(ocupados.at(-1)).toBe(false);
+  });
+
+  /*
+   * 🔴 Dentro del muro, la barra sale por la RANURA VIVA.
+   *
+   * El muro pone `inert` sobre todo el paso mientras hay algo en vuelo, y
+   * `inert` no se puede desactivar en un descendiente. Antes eso obligaba a
+   * mandar el botón de parar al pie del muro, a dos secciones de la barra que
+   * controlaba (Nico, 2026-09-10: «está súper mal ubicado»). Ahora el bloque
+   * ENTERO —barra, conteo, minutos y botón— se portaliza a un nodo que el muro
+   * dibuja fuera del `inert`.
+   */
+  it('con muro, la barra y su botón salen por la ranura viva — y el botón detiene de verdad', async () => {
+    const ranura = document.createElement('div');
+    document.body.appendChild(ranura);
+
+    let vueltas = 0;
+    geocodeImportRowMock.mockReset().mockImplementation(async () => {
+      vueltas += 1;
+      // El botón se busca en la RANURA, no en el paso: es ahí donde vive.
+      ranura
+        .querySelector<HTMLButtonElement>('[data-testid="geo-cancelar"]')
+        ?.click();
+      return { lat: 4.6, lng: -74.1, source: 'geocoded' };
+    });
+
+    const muchas = Array.from({ length: 8 }, (_, i) =>
+      makeProperty({ _rowIndex: i, propertyAddress: `Cra 11 #94-4${i}` }),
+    );
+    render(baseState({ properties: muchas }), {
+      onOcupado: () => {},
+      ranuraViva: ranura,
+    });
+
+    const btn = findButtonByText('inmobiliaria.import.confirm.importButton')!;
+    await act(async () => {
+      btn.click();
+    });
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    // La barra NO quedó dentro del paso (que es lo que el muro congela)...
+    expect(container.querySelector('[data-testid="geo-progreso"]')).toBeNull();
+    // ...y el botón detuvo de verdad: no recorrió las ocho.
+    expect(vueltas).toBeGreaterThan(0);
+    expect(vueltas).toBeLessThan(muchas.length);
+    expect(inmueblesImportacionApiMock.preparar).not.toHaveBeenCalled();
+    expect(container.querySelector('[data-testid="geo-cancelada"]')).toBeTruthy();
+
+    ranura.remove();
+  });
+
+  /*
+   * El respaldo. Si la ranura todavía no existe —primer render— el muro sigue
+   * recibiendo el `cancelar` para su pie: una espera de 53 minutos no se puede
+   * quedar sin salida por un detalle de montaje.
+   */
+  it('sin ranura, el muro sigue recibiendo CÓMO parar para su pie', async () => {
+    const recibidos: Array<() => void | undefined> = [];
+    const muchas = Array.from({ length: 6 }, (_, i) =>
+      makeProperty({ _rowIndex: i, propertyAddress: `Cra 12 #94-4${i}` }),
+    );
+    render(baseState({ properties: muchas }), {
+      onOcupado: (_ocupado, cancelar) => {
+        if (cancelar) recibidos.push(cancelar);
+      },
+      ranuraViva: null,
+    });
+
+    const btn = findButtonByText('inmobiliaria.import.confirm.importButton')!;
+    await act(async () => {
+      btn.click();
+    });
+
+    expect(recibidos.length).toBeGreaterThan(0);
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
   });
 
   it('sin muro (la página suelta) el botón de detener vive en el propio paso', async () => {

@@ -116,7 +116,10 @@ import {
   type ContextoDeMigracion,
 } from "./migracion-context";
 
+import { RanuraVivaContext } from "./ranura-viva";
+
 export { MigracionContext, useMigracion } from "./migracion-context";
+export { useRanuraViva } from "./ranura-viva";
 export type { ContextoDeMigracion } from "./migracion-context";
 
 /**
@@ -1091,6 +1094,12 @@ function PasoEnFoco({
 }) {
   const { t } = useI18n();
   const { canAccess, isLoading } = usePermissions();
+  /*
+   * El nodo donde el paso portaliza lo que tiene que seguir VIVO mientras el
+   * resto está `inert`. Va en estado y no en un ref: el paso sólo puede
+   * portalizar cuando el nodo ya existe, y un ref no vuelve a renderizar.
+   */
+  const [ranuraViva, setRanuraViva] = useState<HTMLElement | null>(null);
   const paso = pasos[indice];
   const hecho = paso.estado === "listo";
   const disponible = esExigible(paso);
@@ -1182,19 +1191,32 @@ function PasoEnFoco({
             {t("migracion.muro.sinPermiso")}
           </Aviso>
         ) : (
-          <div
-            data-testid="muro-contenido"
-            data-paso={paso.id}
-            data-ocupado={ocupado ? "" : undefined}
-            aria-busy={ocupado || undefined}
-            // `inert` crudo por la misma razón que en el muro: React 18 no lo
-            // tipa como booleano (ver `inerte` arriba). Congela clicks, foco y
-            // teclado de TODO el paso; el spinner y el conteo siguen vivos.
-            {...(ocupado ? ({ inert: "" } as unknown as Record<string, string>) : {})}
-            className={ocupado ? "cursor-progress" : undefined}
-          >
-            <ContenidoDelPaso id={paso.id} pasos={pasos} onIr={onIr} onOcupado={onOcupado} />
-          </div>
+          <RanuraVivaContext.Provider value={ranuraViva}>
+            <div
+              data-testid="muro-contenido"
+              data-paso={paso.id}
+              data-ocupado={ocupado ? "" : undefined}
+              aria-busy={ocupado || undefined}
+              // `inert` crudo por la misma razón que en el muro: React 18 no lo
+              // tipa como booleano (ver `inerte` arriba). Congela clicks, foco y
+              // teclado de TODO el paso; el spinner y el conteo siguen vivos.
+              {...(ocupado ? ({ inert: "" } as unknown as Record<string, string>) : {})}
+              className={ocupado ? "cursor-progress" : undefined}
+            >
+              <ContenidoDelPaso id={paso.id} pasos={pasos} onIr={onIr} onOcupado={onOcupado} />
+            </div>
+            {/*
+             * 🔴 FUERA del `inert`, y pegado al contenido.
+             *
+             * Acá el paso portaliza lo que tiene que seguir vivo mientras todo
+             * lo demás está congelado — hoy, la barra de progreso de la
+             * geocodificación con su botón de parar. Antes ese botón vivía en
+             * el pie del muro, a dos secciones de la barra que controlaba, por
+             * la única razón de que el pie queda fuera del `inert`. Ver
+             * `ranura-viva.ts`.
+             */}
+            <div ref={setRanuraViva} data-testid="muro-ranura-viva" />
+          </RanuraVivaContext.Provider>
         )}
       </div>
     </section>

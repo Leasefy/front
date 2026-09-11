@@ -21,6 +21,8 @@ import {
   Users,
   Trash,
   WarningCircle,
+  Car,
+  Mountains,
 } from '@phosphor-icons/react';
 import { IconButton } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
@@ -95,6 +97,8 @@ const PROPERTY_TYPE_ICONS: Record<Consignacion['propertyType'], React.ElementTyp
   commercial: Storefront,
   office: Briefcase,
   warehouse: Warehouse,
+  parking: Car,
+  land: Mountains,
 };
 
 /**

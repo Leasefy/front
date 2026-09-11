@@ -507,6 +507,22 @@ export const contractsApi = {
         invitar,
       });
     },
+
+    /**
+     * 2d. Volver a cruzar las filas PENDIENTES del lote contra lo que los
+     * otros pasos ya cargaron: el inmueble por código o por dirección, el
+     * propietario de terceros, el inquilino por documento.
+     *
+     * Por tandas: el back mira lo que alcanza en ~15 s y devuelve un cursor
+     * (`ultimaFila`) y `terminado`. `reconciliarLoteCompleto` da la vuelta
+     * entera. Desde el 2026-09-11 `activar` ya NO lo corre adentro.
+     */
+    async reconciliar(lote: string, desdeFila = 0): Promise<ResultadoReconciliacion> {
+      return apiClient.post<ResultadoReconciliacion>('/contracts/migrar/reconciliar', {
+        lote,
+        desdeFila,
+      });
+    },
   },
 
   async create(dto: CreateContractDto): Promise<Contract> {
@@ -1224,6 +1240,23 @@ export interface ResultadoDeFila {
    * contrato quedó sin inquilino a propósito (no cuenta como «por invitar»).
    */
   inquilinoDocumentoAjeno?: boolean;
+}
+
+/** Lo que devuelve una llamada a `POST migrar/reconciliar` (una tanda). */
+export interface ResultadoReconciliacion {
+  /** Filas miradas en ESTA llamada. */
+  revisadas: number;
+  /** Cursor para la siguiente llamada (`desdeFila`). `null` = no miró ninguna. */
+  ultimaFila: number | null;
+  /** No queda nada pendiente después de `ultimaFila`: la vuelta terminó. */
+  terminado: boolean;
+  inmueblesVinculados: number;
+  propietariosVinculados: number;
+  inquilinosVinculados: number;
+  listas: number;
+  pendientes: number;
+  porMotivo: Record<string, number>;
+  fallidas: Array<{ id: string; fila: number; motivo: string }>;
 }
 
 export interface ResumenActivacion {

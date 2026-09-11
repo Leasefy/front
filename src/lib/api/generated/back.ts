@@ -9951,7 +9951,7 @@ export interface components {
              * @description Type of property
              * @enum {string}
              */
-            propertyType?: "APARTMENT" | "HOUSE" | "STUDIO" | "COMMERCIAL" | "OFFICE" | "WAREHOUSE";
+            propertyType?: "APARTMENT" | "HOUSE" | "STUDIO" | "COMMERCIAL" | "OFFICE" | "WAREHOUSE" | "PARKING" | "LAND";
             /** @description Thumbnail image URL */
             propertyThumbnail?: string;
             /** @description Monthly rent amount in COP */
@@ -9989,7 +9989,7 @@ export interface components {
              * @description Type of property
              * @enum {string}
              */
-            propertyType?: "APARTMENT" | "HOUSE" | "STUDIO" | "COMMERCIAL" | "OFFICE" | "WAREHOUSE";
+            propertyType?: "APARTMENT" | "HOUSE" | "STUDIO" | "COMMERCIAL" | "OFFICE" | "WAREHOUSE" | "PARKING" | "LAND";
             /** @description Thumbnail image URL */
             propertyThumbnail?: string;
             /** @description Monthly rent amount in COP */

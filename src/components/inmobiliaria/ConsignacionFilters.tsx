@@ -9,6 +9,8 @@ import {
   Storefront,
   Warehouse,
   Briefcase,
+  Car,
+  Mountains,
 } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
@@ -55,6 +57,8 @@ const PROPERTY_TYPE_OPTIONS: { value: Consignacion['propertyType'] | 'all'; labe
   { value: 'commercial', labelKey: 'inmobiliaria.consignaciones.filters.commercial', icon: Storefront },
   { value: 'office', labelKey: 'inmobiliaria.consignaciones.filters.office', icon: Briefcase },
   { value: 'warehouse', labelKey: 'inmobiliaria.consignaciones.filters.warehouse', icon: Warehouse },
+  { value: 'parking', labelKey: 'inmobiliaria.consignaciones.filters.parking', icon: Car },
+  { value: 'land', labelKey: 'inmobiliaria.consignaciones.filters.land', icon: Mountains },
 ];
 
 /**

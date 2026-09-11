@@ -2958,7 +2958,9 @@
           "studio": "Apartaestudio",
           "commercial": "Local",
           "office": "Oficina",
-          "warehouse": "Bodega"
+          "warehouse": "Bodega",
+          "parking": "Parqueadero",
+          "land": "Lote"
         },
         "owner": "Propietario",
         "agent": "Agente",
@@ -3247,7 +3249,9 @@
         "studio": "Apartaestudio",
         "commercial": "Local Comercial",
         "office": "Oficina",
-        "warehouse": "Bodega"
+        "warehouse": "Bodega",
+        "parking": "Parqueadero",
+        "land": "Lote"
       },
       "availability": {
         "available": "Disponible",
@@ -3345,6 +3349,8 @@
         "commercial": "Local",
         "office": "Oficina",
         "warehouse": "Bodega",
+        "parking": "Parqueadero",
+        "land": "Lote",
         "agentLabel": "Agente",
         "ownerLabel": "Propietario",
         "cityLabel": "Ciudad",

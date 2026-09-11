@@ -110,15 +110,27 @@ const TYPE_NORMALIZATIONS: Record<string, string> = {
   finca: 'house',
   'casa finca': 'house',
   // «Cabaña» viene en el archivo real (con y sin tilde según quién la escribió).
-  // Lo que NO se fuerza a ningún tipo: «Lote», «Celda Parqueadero», «Edificio»
-  // y «Amoblados». No hay `PropertyType` que signifique eso, y elegir el más
-  // parecido guardaría una mentira que después nadie revisa: llegan crudos y
-  // el back los marca `faltante: tipo` con el valor original a la vista.
+  // Lo que NO se fuerza a ningún tipo: «Edificio» y «Amoblados». No hay
+  // `PropertyType` que signifique eso, y elegir el más parecido guardaría una
+  // mentira que después nadie revisa: llegan crudos y el back los marca
+  // `faltante: tipo` con el valor original a la vista. «Celda Parqueadero»
+  // (51 filas del archivo real) y «Lote» (11) SÍ tienen tipo desde el
+  // 2026-09-11: `parking` y `land`. El back tiene el mismo mapa.
   cabana: 'house',
   'cabaña': 'house',
   vivienda: 'house',
   'casa-lote': 'house',
   casalote: 'house',
+  'celda parqueadero': 'parking',
+  'celda de parqueadero': 'parking',
+  'celda de parqueo': 'parking',
+  parqueadero: 'parking',
+  garaje: 'parking',
+  parking: 'parking',
+  lote: 'land',
+  terreno: 'land',
+  solar: 'land',
+  land: 'land',
   local: 'commercial',
   comercial: 'commercial',
   'local comercial': 'commercial',

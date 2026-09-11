@@ -34,6 +34,8 @@ export interface ResultadoRevisionCompleta extends ProgresoDeRevision {
    * así que se corta y se dice.
    */
   detenidoSinAvance: boolean;
+  /** La persona tocó «Detener»: se paró después de la llamada en curso. */
+  detenidoPorPersona: boolean;
 }
 
 /** Mismo techo que la activación: ~11 filas por llamada contra la base remota. */
@@ -43,6 +45,7 @@ export async function revisarLoteCompleto(
   lote: string,
   revisar: (lote: string, desdeFila: number) => Promise<ResumenRevisionInmuebles>,
   onProgreso?: (progreso: ProgresoDeRevision) => void,
+  opciones: { debeParar?: () => boolean } = {},
 ): Promise<ResultadoRevisionCompleta> {
   let desdeFila = 0;
   let revisadas = 0;
@@ -59,20 +62,26 @@ export async function revisarLoteCompleto(
     const progreso = { revisadas, liberadas, restantes, llamadas };
     onProgreso?.(progreso);
 
+    // La persona pidió parar: se respeta después de la llamada en curso (una
+    // llamada no se puede deshacer, y lo que liberó ya está liberado).
+    if (opciones.debeParar?.() === true) {
+      return { ...progreso, detenidoPorLimite: false, detenidoSinAvance: false, detenidoPorPersona: true };
+    }
+
     // La vuelta terminó: el back no tiene nada pendiente después del cursor.
     // `revisadas === 0` es lo mismo dicho por un back que no miró ninguna.
     if (r.terminado === true || r.revisadas === 0) {
-      return { ...progreso, detenidoPorLimite: false, detenidoSinAvance: false };
+      return { ...progreso, detenidoPorLimite: false, detenidoSinAvance: false, detenidoPorPersona: false };
     }
 
     // Sin un cursor que avance no hay siguiente llamada distinta de ésta.
     if (typeof r.ultimaFila !== 'number' || r.ultimaFila <= desdeFila) {
-      return { ...progreso, detenidoPorLimite: false, detenidoSinAvance: true };
+      return { ...progreso, detenidoPorLimite: false, detenidoSinAvance: true, detenidoPorPersona: false };
     }
     desdeFila = r.ultimaFila;
 
     if (llamadas >= MAX_LLAMADAS) {
-      return { ...progreso, detenidoPorLimite: true, detenidoSinAvance: false };
+      return { ...progreso, detenidoPorLimite: true, detenidoSinAvance: false, detenidoPorPersona: false };
     }
   }
 }

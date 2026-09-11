@@ -39,6 +39,7 @@ describe('revisarLoteCompleto — una vuelta completa, ni una más', () => {
       llamadas: 1,
       detenidoPorLimite: false,
       detenidoSinAvance: false,
+      detenidoPorPersona: false,
     });
   });
 
@@ -124,6 +125,23 @@ describe('revisarLoteCompleto — una vuelta completa, ni una más', () => {
       { revisadas: 10, liberadas: 9, restantes: 30, llamadas: 1 },
       { revisadas: 20, liberadas: 19, restantes: 20, llamadas: 2 },
     ]);
+  });
+
+  it('«Detener» para después de la llamada en curso y conserva lo liberado', async () => {
+    const revisar = vi
+      .fn()
+      .mockResolvedValueOnce(respuesta({ revisadas: 40, liberadas: 38, restantes: 200, ultimaFila: 40, terminado: false }))
+      .mockResolvedValueOnce(respuesta({ revisadas: 40, liberadas: 40, restantes: 160, ultimaFila: 91, terminado: false }));
+    let parar = false;
+    const onProgreso = vi.fn(() => {
+      parar = true; // la persona toca «Detener» mientras corre la primera llamada
+    });
+
+    const r = await revisarLoteCompleto('lote-1', revisar, onProgreso, { debeParar: () => parar });
+
+    expect(revisar).toHaveBeenCalledTimes(1);
+    expect(r.detenidoPorPersona).toBe(true);
+    expect(r.liberadas).toBe(38);
   });
 
   it('un error a mitad de camino sube tal cual: la pantalla decide qué decir', async () => {

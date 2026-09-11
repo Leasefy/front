@@ -2918,7 +2918,9 @@
           "studio": "Studio",
           "commercial": "Commercial",
           "office": "Office",
-          "warehouse": "Warehouse"
+          "warehouse": "Warehouse",
+          "parking": "Parking space",
+          "land": "Lot"
         },
         "owner": "Owner",
         "agent": "Agent",
@@ -3207,7 +3209,9 @@
         "studio": "Studio",
         "commercial": "Commercial Space",
         "office": "Office",
-        "warehouse": "Warehouse"
+        "warehouse": "Warehouse",
+        "parking": "Parking space",
+        "land": "Lot"
       },
       "availability": {
         "available": "Available",
@@ -3305,6 +3309,8 @@
         "commercial": "Commercial",
         "office": "Office",
         "warehouse": "Warehouse",
+        "parking": "Parking space",
+        "land": "Lot",
         "agentLabel": "Agent",
         "ownerLabel": "Owner",
         "cityLabel": "City",

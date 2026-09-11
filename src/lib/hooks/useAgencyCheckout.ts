@@ -133,6 +133,14 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
   // abandoning (T-0083).
   const chargeIdRef = useRef<string | null>(null);
 
+  // Monotonically bumped every time `pay()`/`resume()` starts tracking a NEW
+  // charge. `reset()`'s abandon call is fire-and-forget, so its 409 recovery
+  // can land after the user has already started a second, independent
+  // pay()/resume() flow — the recovery must not run against a generation
+  // that is no longer current, or it clobbers the newer flow's state/refs
+  // (T-0083 fix round 1, verify §4.1: a real, reproduced race).
+  const chargeGenerationRef = useRef(0);
+
   // Enter success, then fire onSuccess after a short delay so the caller shows
   // the success state before navigating.
   const succeed = useCallback(() => {
@@ -288,6 +296,7 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
       // the requested planId if the back ever omits it (should not happen).
       targetTierRef.current = charge.targetPlanTier ?? planId;
       chargeIdRef.current = charge.id;
+      chargeGenerationRef.current += 1;
       const { url } = await agencySubscriptionApi.chargePaymentLink(charge.id);
       setPaymentUrl(url);
       if (payTab && !payTab.closed) {
@@ -343,6 +352,7 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
       if (state !== 'idle') return;
       targetTierRef.current = targetPlanTier;
       chargeIdRef.current = chargeId;
+      chargeGenerationRef.current += 1;
       setError(null);
       setPaymentUrl(null);
       setPopupBlocked(false);
@@ -373,9 +383,13 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
   const reset = useCallback(() => {
     // Capture what we're about to clear — reset() itself must stay
     // synchronous, so the abandon call (and its 409 recovery, which needs
-    // the target tier) runs in a fire-and-forget block below.
+    // the target tier) runs in a fire-and-forget block below. Also capture
+    // the current generation: if a newer pay()/resume() bumps it before this
+    // abandon's 409 recovery would run, that recovery is stale and must be
+    // skipped rather than clobbering the newer flow (fix round 1, §4.1).
     const chargeId = chargeIdRef.current;
     const targetPlanTier = targetTierRef.current;
+    const abandonedGeneration = chargeGenerationRef.current;
 
     setState('idle');
     setError(null);
@@ -394,6 +408,17 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
         await agencySubscriptionApi.abandonCharge(chargeId);
       } catch (err) {
         if (err instanceof ApiError && err.status === 409 && err.code === 'PENDING_CHARGE_ALREADY_PAID') {
+          // Stale-recovery guard: if a newer pay()/resume() has started
+          // tracking a different charge since this abandon fired, THIS
+          // charge's late 409 must not touch shared refs/state anymore —
+          // the money for the abandoned charge is already confirmed
+          // server-side regardless, and the periodic subscription refetch
+          // will reflect it; running the recovery now would instead
+          // overwrite the newer flow's target tier and could force it into
+          // a false success/error, silently dropping its own tracked
+          // charge id (fix round 1, §4.1 — the exact bug this task exists
+          // to close, reintroduced for the newer charge).
+          if (chargeGenerationRef.current !== abandonedGeneration) return;
           await recoverAlreadyPaidCharge(targetPlanTier ?? '');
           return;
         }

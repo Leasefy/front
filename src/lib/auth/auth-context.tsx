@@ -271,6 +271,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const huboSesionRef = useRef(sesionGuardadaAlCargar)
 
   /**
+   * Session generation counter (T-0082 WU-1 remediation round 2,
+   * verify-3.md CRITICAL). Bumped on `SIGNED_OUT`, in `signOut()`, and at the
+   * start of every NEW `INITIAL_SESSION`/`SIGNED_IN` bootstrap.
+   *
+   * Round 1 cleared `agencyProbeInFlightRef`/`enVuelo` on sign-out, which
+   * stops a NEW caller from joining an OLD promise — but it does nothing
+   * about a coroutine that is ALREADY running: `apiClient` has no
+   * `AbortController` (a pre-existing, documented fact), so an in-flight
+   * `probeAgencyMembership`/`fetchUser` call for the session that just ended
+   * keeps executing in the background and, when it finally settles, used to
+   * write its result into shared `AuthProvider` state UNCONDITIONALLY —
+   * mixing identity A's stale data into identity B's session the moment A's
+   * orphaned call lands, even though the ref/map were cleared the instant B
+   * signed in. Proven reachable via the shipped `SesionYaAbierta` "cambiar de
+   * cuenta" flow (`await signOut()` then the login form, same tab, no
+   * reload) and via a forced sign-out (`SessionRevocationHandler`) racing an
+   * in-flight bootstrap.
+   *
+   * The fix: every fire-and-forget async path that writes shared state after
+   * an `await` captures this counter at its own start and re-checks it right
+   * before each write; a mismatch means the session moved on while the call
+   * was in flight, and the write is dropped silently instead of clobbering
+   * the CURRENT session's state. This is NOT solved by adding
+   * `AbortController` plumbing to `apiClient` — even an aborted/cancelled
+   * request still races the state write on the client side (the async
+   * function's `await` settles and its continuation runs regardless of
+   * whether the underlying request was told to cancel), so an epoch check is
+   * required either way and is sufficient on its own.
+   */
+  const sessionGenerationRef = useRef(0)
+
+  /**
    * Fetch the user profile from the backend.
    * Returns one of three states:
    *  - { user: User }            → authenticated, profile loaded
@@ -396,13 +428,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const probeAgencyMembership = useCallback(async (token?: string): Promise<AgencyFetchResult> => {
     const enVuelo = agencyProbeInFlightRef.current
     if (enVuelo) return enVuelo
+    // Captured NOW, before the fetch even starts — this is the identity of
+    // "which session asked for this." See `sessionGenerationRef`'s doc
+    // comment: an uncancellable probe that outlives its own session must not
+    // write into whatever session is current by the time it settles.
+    const miGeneracion = sessionGenerationRef.current
     const promesa = (async () => {
       try {
         const result = await fetchAgencyWithTimeout(fetchAgency, token)
-        applyAgencyFetchResult(result)
+        if (sessionGenerationRef.current === miGeneracion) {
+          applyAgencyFetchResult(result)
+        }
         return result
       } finally {
-        setAgencyMembershipChecked(true)
+        // Same guard on the "checked" flag: a stale probe settling after
+        // sign-out must not touch the NEW session's gate state either.
+        if (sessionGenerationRef.current === miGeneracion) {
+          setAgencyMembershipChecked(true)
+        }
       }
     })()
     agencyProbeInFlightRef.current = promesa
@@ -436,8 +479,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
    *  refresh). */
   const scheduleAgencySelfHeal = useCallback(() => {
     if (agencySelfHealTimeoutRef.current) return
+    const miGeneracion = sessionGenerationRef.current
     agencySelfHealTimeoutRef.current = setTimeout(() => {
       agencySelfHealTimeoutRef.current = null
+      // Don't even fire the retry for a session that has since ended —
+      // `probeAgencyMembership` would gate its own write anyway, but there's
+      // no reason to spend a network call on an abandoned session.
+      if (sessionGenerationRef.current !== miGeneracion) return
       void probeAgencyMembership()
     }, AGENCY_SELF_HEAL_RETRY_DELAY_MS)
   }, [probeAgencyMembership])
@@ -475,7 +523,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Use the already-stored token to avoid an extra getSession() lock acquisition.
     // If the stored token is still valid the backend will respond; if not, fetchUser
     // handles the 401 gracefully.
+    const miGeneracion = sessionGenerationRef.current
     const { user: userData, needsOnboarding: needsOnb } = await fetchUser()
+    // The session that asked for this refresh may have ended (sign-out, a
+    // new sign-in) while `fetchUser` was in flight — never let a stale
+    // refresh write over whatever session is current now.
+    if (sessionGenerationRef.current !== miGeneracion) return
     setUser(userData)
     setNeedsOnboarding(needsOnb)
     // Probe agency membership for EVERY authenticated user (personal-role
@@ -485,12 +538,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [fetchUser, probeAgencyMembership])
 
-  /** Check MFA assurance level and update mfaRequired state */
-  const checkMfaLevel = useCallback(async () => {
+  /** Check MFA assurance level and update mfaRequired state.
+   *  `miGeneracion`, when passed, gates the write: a deferred MFA check
+   *  (see `alSoltarElLock` below) that settles after the session has moved
+   *  on must not flip `mfaRequired` for whoever is signed in NOW. */
+  const checkMfaLevel = useCallback(async (miGeneracion?: number) => {
     const supabase = getSupabase()
     if (!supabase) return
     try {
       const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (miGeneracion !== undefined && sessionGenerationRef.current !== miGeneracion) return
       if (aal?.nextLevel === 'aal2' && aal?.currentLevel === 'aal1') {
         setMfaRequired(true)
       } else if (aal?.currentLevel === 'aal2') {
@@ -553,7 +610,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * (matches signOut's timeout-race style). A `superseded` result means this
    * device just displaced another one — tell the user.
    */
-  const claimActiveSession = useCallback(async (token: string) => {
+  const claimActiveSession = useCallback(async (token: string, miGeneracion?: number) => {
     // El id de ESTE navegador. Sin él, el back sólo sabe que había una sesión
     // anterior y la reporta como «otro dispositivo» aunque fuera la de este
     // mismo navegador — el cartel salía en cada login.
@@ -561,6 +618,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       claimSession(token, { deviceId: getDeviceId() }).catch(() => null),
       new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
     ])
+    // Session-generation guard (see `sessionGenerationRef`'s doc comment): a
+    // claim started for a session that has since ended must not show ITS
+    // "cerramos tu sesión en otro dispositivo" toast over whatever session is
+    // current now — that would be as wrong as writing stale identity data.
+    if (miGeneracion !== undefined && sessionGenerationRef.current !== miGeneracion) return
     if (result?.superseded) {
       toast('Cerramos tu sesión en otro dispositivo')
     }
@@ -651,11 +713,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setAccessToken(null)
           }
           if (session) {
+            // A NEW bootstrap starts: bump the session generation before
+            // anything async runs, and capture it now. Every write below that
+            // follows an `await` re-checks this — if a SIGNED_OUT (or another
+            // sign-in) lands while this bootstrap is still in flight, this
+            // generation no longer matches the current one and the stale
+            // write is dropped instead of clobbering whatever session is
+            // current by the time it lands. See `sessionGenerationRef`'s doc
+            // comment.
+            sessionGenerationRef.current += 1
+            const miGeneracion = sessionGenerationRef.current
             huboSesionRef.current = true
             setAccessToken(session.access_token)
             // Claim the active session BEFORE any other authenticated request.
-            await claimActiveSession(session.access_token)
+            await claimActiveSession(session.access_token, miGeneracion)
+            if (sessionGenerationRef.current !== miGeneracion) return
             const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
+            if (sessionGenerationRef.current !== miGeneracion) return
             if (userData) userData.hasPassword = getHasPassword(session)
             setUser(userData)
             setNeedsOnboarding(needsOnb)
@@ -671,7 +745,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             // quiso), pero fuera del callback — ver `alSoltarElLock`.
             const yaHizoOnboarding = userData?.onboardingCompleted === true
             alSoltarElLock(async () => {
-              await checkMfaLevel()
+              await checkMfaLevel(miGeneracion)
+              if (sessionGenerationRef.current !== miGeneracion) return
               setIsLoading(false)
               if (yaHizoOnboarding) {
                 requestNotificationPermission().catch(() => {})
@@ -681,11 +756,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
           setIsLoading(false)
         } else if (event === 'SIGNED_IN' && session) {
+          // Same reasoning as INITIAL_SESSION above: a NEW bootstrap, a new
+          // generation. See `sessionGenerationRef`'s doc comment.
+          sessionGenerationRef.current += 1
+          const miGeneracion = sessionGenerationRef.current
           huboSesionRef.current = true
           setAccessToken(session.access_token)
           // Claim the active session BEFORE any other authenticated request.
-          await claimActiveSession(session.access_token)
+          await claimActiveSession(session.access_token, miGeneracion)
+          if (sessionGenerationRef.current !== miGeneracion) return
           const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
+          if (sessionGenerationRef.current !== miGeneracion) return
           if (userData) userData.hasPassword = getHasPassword(session)
           setUser(userData)
           setNeedsOnboarding(needsOnb)
@@ -700,7 +781,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // /auth/enlace, el canje del código): el MFA se chequea al soltarlo.
           const yaHizoOnboarding = userData?.onboardingCompleted === true
           alSoltarElLock(async () => {
-            await checkMfaLevel()
+            await checkMfaLevel(miGeneracion)
+            // NOTE: the waiter handoff to `signInWithEmail` below is
+            // intentionally NOT gated on the generation — it resolves a
+            // promise local to the specific sign-in call that armed it (not
+            // shared `AuthProvider` state), so a caller still awaiting it
+            // must not be left hanging forever. `checkMfaLevel` itself
+            // already dropped its own stale write above.
             if (yaHizoOnboarding) {
               requestNotificationPermission().catch(() => {})
             }
@@ -712,6 +799,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
             signInBootstrapWaiterRef.current = null
           })
         } else if (event === 'SIGNED_OUT') {
+          // Bump FIRST, before anything else in this branch: every in-flight
+          // coroutine for the session that just ended (an un-awaited
+          // `fetchUser`/`probeAgencyMembership`, a deferred `checkMfaLevel`
+          // via `alSoltarElLock`, a pending `claimActiveSession`) captured the
+          // OLD generation and will find a mismatch — and drop its write
+          // silently — whenever it eventually settles. See
+          // `sessionGenerationRef`'s doc comment.
+          sessionGenerationRef.current += 1
           // auth-js emite SIGNED_OUT cuando descarta una sesión que no pudo
           // renovar (`_removeSession`). Si NO fue el usuario el que se fue y
           // había alguien adentro, esto es la muerte del refresh token: hay que
@@ -750,15 +845,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // usuario nuevo en la misma sesión: releer los metadatos acá.
           setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
         } else if (event === 'TOKEN_REFRESHED' && session) {
+          // A refresh is NOT a new session — do NOT bump the generation here.
+          // Just capture the CURRENT one: if a sign-out/sign-in genuinely
+          // races this refresh's `fetchUser` call, that other event bumps the
+          // generation itself and this stale write is dropped below same as
+          // any other path; if nothing races it (the common case), the
+          // generation is unchanged and this legitimate in-flight result is
+          // still applied. See `sessionGenerationRef`'s doc comment.
+          const miGeneracion = sessionGenerationRef.current
           huboSesionRef.current = true
           setAccessToken(session.access_token)
           const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
+          if (sessionGenerationRef.current !== miGeneracion) return
           if (userData) userData.hasPassword = getHasPassword(session)
           setUser(userData)
           setNeedsOnboarding(needsOnb)
           setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
           // El refresco corre adentro del lock de auth-js: el MFA se chequea al soltarlo.
-          alSoltarElLock(checkMfaLevel)
+          alSoltarElLock(() => checkMfaLevel(miGeneracion))
           // Probe agency membership for every authenticated user (coexistence).
           // Fire-and-forget so the global loader isn't blocked by agency latency
           // (the agency-route gate still waits on agencyMembershipChecked).
@@ -930,6 +1034,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // llamada, no de un token muerto: marcarlo evita el cartel "tu sesión
     // expiró" sobre una salida que el usuario pidió.
     cierreVoluntarioRef.current = true
+    // Bump the session generation NOW, synchronously, before any of the
+    // async work below — this invalidates every in-flight bootstrap/probe/
+    // refresh for the session that's ending, so an uncancellable coroutine
+    // that outlives it drops its write instead of applying it to whatever
+    // session starts next in this tab. See `sessionGenerationRef`'s doc
+    // comment. (The `SIGNED_OUT` event this triggers bumps it again — that's
+    // fine, we only ever compare for equality, never for a specific delta.)
+    sessionGenerationRef.current += 1
     // Best-effort FCM cleanup with the token still in memory.
     // Awaited but with a hard timeout so a slow backend can't stall logout.
     //

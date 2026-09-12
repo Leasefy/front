@@ -467,3 +467,160 @@ describe('AuthProvider — agencyProbeInFlightRef is cleared on SIGNED_OUT', () 
     container.remove()
   })
 })
+
+/**
+ * T-0082 WU-1 remediation round 2 (verify-3.md CRITICAL) — clearing
+ * `agencyProbeInFlightRef` on SIGNED_OUT (round 1, above) stops a NEW caller
+ * from joining an OLD promise, but does nothing about the OLD coroutine
+ * itself: `probeAgencyMembership`'s async IIFE keeps running in the
+ * background (no `AbortController` in this client) and, when it finally
+ * settles, used to call `applyAgencyFetchResult` UNCONDITIONALLY — mixing
+ * identity A's stale agency data into identity B's already-correct session
+ * state the moment A's orphaned probe landed. Same for a stale `/users/me`
+ * write. `sessionGenerationRef` closes this: every fire-and-forget async path
+ * captures the generation at its own start and drops its write silently if
+ * the generation has moved on by the time it would write.
+ */
+describe('AuthProvider — session generation guard (verify-3.md CRITICAL)', () => {
+  afterEach(() => resetSessionTerminal())
+
+  it("an orphaned agency probe for the PREVIOUS session must not clobber the NEXT session's agency state when it finally resolves late", async () => {
+    // User A's probe never resolves until we explicitly settle it below —
+    // simulating a real late network response landing after the tab has
+    // already moved on to a different signed-in user.
+    let resolveA!: (v: unknown) => void
+    fetchAgencyProfileMock.mockImplementationOnce(
+      () => new Promise((resolve) => { resolveA = resolve }),
+    )
+
+    const { ref, root, container } = mountHarness()
+    await fireInitialSession()
+    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(1)
+    expect(ref.current?.agency).toBeNull()
+
+    await act(async () => {
+      await capturedHandler?.('SIGNED_OUT', null)
+    })
+
+    // User B signs in, in the same tab, while A's probe is still pending.
+    fetchUserGetMock.mockResolvedValue({ ...AGENT_USER_BACKEND, id: 'user-2', email: 'b@test.com' })
+    fetchAgencyProfileMock.mockResolvedValueOnce({
+      agency: { id: 'AGY-B', name: 'Agencia de B' },
+      role: 'ADMIN',
+      memberStatus: 'ACTIVE',
+      confirmedNoMembership: false,
+      transientFailure: false,
+    })
+    await act(async () => {
+      await capturedHandler?.('SIGNED_IN', { ...SESSION, access_token: 'token-de-B' })
+    })
+    await flushPromises()
+    expect(ref.current?.agency).toEqual({ id: 'AGY-B', name: 'Agencia de B' })
+
+    // NOW A's orphaned probe finally resolves, late, with A's real data.
+    await act(async () => {
+      resolveA({
+        agency: { id: 'AGY-A', name: 'Agencia de A' },
+        role: 'VIEWER',
+        memberStatus: 'ACTIVE',
+        confirmedNoMembership: false,
+        transientFailure: false,
+      })
+      await flushPromises()
+    })
+
+    // B's already-correct agency state must remain untouched by A's stale,
+    // late-arriving result — this is the exact scenario verify-3.md proved
+    // reachable with a scratch test against the un-fixed code.
+    expect(ref.current?.agency).toEqual({ id: 'AGY-B', name: 'Agencia de B' })
+    expect(ref.current?.agencyRole).toBe('ADMIN')
+
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  it("an orphaned refreshUser() call from the PREVIOUS session must not clobber the NEXT session's user when its /users/me resolves late", async () => {
+    // A signs in normally first.
+    fetchAgencyProfileMock.mockResolvedValue({
+      agency: null,
+      role: null,
+      memberStatus: null,
+      confirmedNoMembership: false,
+      transientFailure: false,
+    })
+    const { ref, root, container } = mountHarness()
+    await fireInitialSession()
+    expect(ref.current?.user?.id).toBe('user-1')
+
+    // A calls refreshUser() (e.g. after saving a profile edit) — its
+    // /users/me resolves LATE, after A has since signed out and B has signed
+    // in in the same tab. Nothing in this client can cancel the request, so
+    // this is a realistic race, not a contrived one.
+    let resolveA!: (v: unknown) => void
+    fetchUserGetMock.mockImplementationOnce(() => new Promise((resolve) => { resolveA = resolve }))
+    let refreshSettled = false
+    const refreshPromise = ref.current!.refreshUser().then(() => {
+      refreshSettled = true
+    })
+    await flushPromises()
+    expect(refreshSettled).toBe(false)
+
+    // A signs out, then B signs in — while A's refreshUser() is still pending.
+    await act(async () => {
+      await capturedHandler?.('SIGNED_OUT', null)
+    })
+    fetchUserGetMock.mockResolvedValueOnce({ ...AGENT_USER_BACKEND, id: 'user-2', email: 'b@test.com' })
+    await act(async () => {
+      await capturedHandler?.('SIGNED_IN', { ...SESSION, access_token: 'token-de-B' })
+    })
+    await flushPromises()
+    expect(ref.current?.user?.id).toBe('user-2')
+
+    // NOW A's orphaned refreshUser() call finally resolves with A's stale data.
+    await act(async () => {
+      resolveA(AGENT_USER_BACKEND) // id: 'user-1'
+      await refreshPromise
+      await flushPromises()
+    })
+
+    // B's user must remain untouched by A's stale, late-arriving result.
+    expect(ref.current?.user?.id).toBe('user-2')
+
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  it('a same-user TOKEN_REFRESHED does NOT bump the generation — its in-flight /users/me result is still applied normally', async () => {
+    // TOKEN_REFRESHED also fires a fire-and-forget agency probe — give it a
+    // resolvable mock so it doesn't throw on an unmocked `undefined` return.
+    fetchAgencyProfileMock.mockResolvedValue({
+      agency: null,
+      role: null,
+      memberStatus: null,
+      confirmedNoMembership: false,
+      transientFailure: false,
+    })
+    const { ref, root, container } = mountHarness()
+    await fireInitialSession()
+    expect(ref.current?.user?.id).toBe('user-1')
+
+    let resolveRefresh!: (v: unknown) => void
+    fetchUserGetMock.mockImplementationOnce(() => new Promise((resolve) => { resolveRefresh = resolve }))
+
+    const refreshedHandlerPromise = capturedHandler?.('TOKEN_REFRESHED', { ...SESSION, access_token: 'rotated-token' })
+
+    // Nothing else happens meanwhile — same session, just a token rotation.
+    // A refresh must NOT be treated as a new generation, or this legitimate
+    // in-flight result would be wrongly dropped.
+    await act(async () => {
+      resolveRefresh({ ...AGENT_USER_BACKEND, firstName: 'ActualizadoPorRefresh' })
+      await refreshedHandlerPromise
+      await flushPromises()
+    })
+
+    expect(ref.current?.user?.firstName).toBe('ActualizadoPorRefresh')
+
+    act(() => root.unmount())
+    container.remove()
+  })
+})

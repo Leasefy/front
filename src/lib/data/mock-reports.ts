@@ -9,7 +9,13 @@
 // ============================================================================
 
 export interface OccupancySummary {
+  /**
+   * 🔴 Los inmuebles EN CATÁLOGO: el denominador de la ocupación, no el
+   * portafolio entero (Nico, 2026-09-12 — ver `lib/ocupacion.ts`).
+   */
   totalProperties: number;
+  /** Los que quedaron fuera del catálogo y por eso no se miden. */
+  outOfCatalog: number;
   rented: number;
   vacant: number;
   /**
@@ -38,7 +44,10 @@ export interface OccupancyProperty {
 
 export interface OccupancyByZone {
   zone: string;
+  /** Los de la zona que están en catálogo. */
   total: number;
+  /** Los de la zona que quedaron fuera del catálogo. */
+  outOfCatalog: number;
   rented: number;
   vacant: number;
   /** `null` para una zona sin inmuebles cargados. */
@@ -175,6 +184,7 @@ export interface ExecutiveData {
 export const mockOccupancyData: OccupancyData = {
   summary: {
     totalProperties: 48,
+    outOfCatalog: 0,
     rented: 41,
     vacant: 7,
     vacancyRate: 14.6,
@@ -201,11 +211,11 @@ export const mockOccupancyData: OccupancyData = {
     { id: 'p18', title: 'Apto 202 Ed. Primavera', zone: 'Cedritos', status: 'vacant', daysVacant: 19, rentAmount: 2000000 },
   ],
   byZone: [
-    { zone: 'Chapinero', total: 12, rented: 11, vacant: 1, vacancyRate: 8.3 },
-    { zone: 'Usaquen', total: 10, rented: 8, vacant: 2, vacancyRate: 20.0 },
-    { zone: 'Suba', total: 11, rented: 8, vacant: 3, vacancyRate: 27.3 },
-    { zone: 'Cedritos', total: 8, rented: 7, vacant: 1, vacancyRate: 12.5 },
-    { zone: 'Laureles', total: 7, rented: 7, vacant: 0, vacancyRate: 0.0 },
+    { zone: 'Chapinero', total: 12, outOfCatalog: 0, rented: 11, vacant: 1, vacancyRate: 8.3 },
+    { zone: 'Usaquen', total: 10, outOfCatalog: 0, rented: 8, vacant: 2, vacancyRate: 20.0 },
+    { zone: 'Suba', total: 11, outOfCatalog: 0, rented: 8, vacant: 3, vacancyRate: 27.3 },
+    { zone: 'Cedritos', total: 8, outOfCatalog: 0, rented: 7, vacant: 1, vacancyRate: 12.5 },
+    { zone: 'Laureles', total: 7, outOfCatalog: 0, rented: 7, vacant: 0, vacancyRate: 0.0 },
   ],
   monthlyTrend: [
     { month: 'Abr 2025', occupancyRate: 89 },

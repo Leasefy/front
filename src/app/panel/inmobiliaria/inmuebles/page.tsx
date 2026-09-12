@@ -243,8 +243,22 @@ function PortafolioContent() {
     const mandatos = filteredConsignaciones.filter(
       (c): c is Extract<PortafolioRow, { kind: 'consignacion' }> => c.kind === 'consignacion',
     );
-    const available = mandatos.filter((c) => c.availability === 'available').length;
-    const rented = mandatos.filter((c) => c.availability === 'rented').length;
+    /*
+     * 🔴 «Arrendadas» lo dice el CONTRATO vigente (`arrendado`), no la
+     * disponibilidad del mandato — Nico, 2026-09-12: «no me está relacionando
+     * bien los inmuebles arrendados porque tengo 741 contratos activos pero me
+     * dice que solo tengo 674 inmuebles arrendados». En su base había 63
+     * contratos migrados sin `Lease`, así que el mandato seguía diciendo
+     * «disponible» sobre un inmueble ocupado. Si la fila viene de una
+     * respuesta vieja sin el campo, se cae a lo de antes en vez de contar 0.
+     * «Disponibles» es su complemento: en catálogo y sin contrato.
+     */
+    const estaArrendado = (c: Extract<PortafolioRow, { kind: 'consignacion' }>) =>
+      c.arrendado ?? c.availability === 'rented';
+    const rented = mandatos.filter(estaArrendado).length;
+    const available = mandatos.filter(
+      (c) => !estaArrendado(c) && c.availability === 'available',
+    ).length;
     const inProcess = mandatos.filter((c) => c.availability === 'in_process').length;
     const maintenance = mandatos.filter((c) => c.availability === 'maintenance').length;
     // contract-addendum-2.md §A.10 — a SALE mandate has `monthlyRent: null`

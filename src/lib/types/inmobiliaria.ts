@@ -262,6 +262,20 @@ export interface Consignacion {
    * has no linked `propertyId` (a migrated cartera row). Never fabricate.
    */
   propertyCode: number | null;
+  /**
+   * 🔴 El estado del inmueble detrás del mandato. Dice si está EN CATÁLOGO:
+   * `DRAFT` es lo único que significa «no publicado» y no entra al
+   * denominador de la ocupación (Nico, 2026-09-12 — ver `lib/ocupacion.ts`).
+   * `null` cuando el mandato no tiene inmueble (cartera migrada).
+   */
+  propertyStatus?: 'DRAFT' | 'AVAILABLE' | 'RENTED' | 'PENDING' | 'RESERVED' | null;
+  /**
+   * 🔴 Si el inmueble tiene un CONTRATO vigente. Es lo que decide «arrendado»
+   * en todo el panel, no `availability`: un contrato migrado sin `Lease`
+   * dejaba el mandato en «disponible» sobre un inmueble ocupado. `null` sin
+   * inmueble detrás.
+   */
+  arrendado?: boolean | null;
 
   // Consignment terms
   /**
@@ -985,6 +999,15 @@ export interface OcupacionPropertyItem {
   availability: string;
   tenantName?: string;
   monthlyRent: number;
+  /**
+   * 🔴 Si el inmueble tiene un CONTRATO vigente. Es lo que decide la insignia
+   * «Arrendado», no `availability` (Nico, 2026-09-12: «no me está relacionando
+   * bien los inmuebles arrendados»). Opcional sólo para no romper una
+   * respuesta vieja en caché; el back lo manda siempre.
+   */
+  arrendado?: boolean;
+  /** Si esta fila entró al denominador de la tasa. */
+  enCatalogo?: boolean;
 }
 
 export interface OcupacionTrendItem {
@@ -1029,9 +1052,12 @@ export interface CarteraMonthItem {
  */
 export interface OcupacionZone {
   zone: string;
+  /** Los inmuebles de la zona que están EN CATÁLOGO: el denominador. */
   total: number;
   occupied: number;
   vacant: number;
+  /** Los de la zona que quedaron fuera del catálogo y no se miden. */
+  outOfCatalog?: number;
   /** Porcentaje de ocupación de la zona, 0–100. */
   rate: number;
   /** Porcentaje de vacancia de la zona, 0–100. */
@@ -1039,7 +1065,16 @@ export interface OcupacionZone {
 }
 
 export interface OcupacionReport {
+  /**
+   * 🔴 El DENOMINADOR: los inmuebles EN CATÁLOGO, no todo el portafolio. Nico,
+   * 2026-09-12: «esa tasa de ocupación se debe medir contra el inmueble
+   * disponible, no contra el no disponible, porque ya está fuera del
+   * catálogo». Lo que quedó afuera viaja en `totalOutOfCatalog` para que la
+   * pantalla lo diga en vez de esconderlo.
+   */
   totalProperties: number;
+  /** Inmuebles del portafolio que NO entran a la tasa. */
+  totalOutOfCatalog?: number;
   totalOccupied: number;
   totalVacant: number;
   /** 0–100. El back ya lo devuelve en 0 cuando no hay inmuebles. */
@@ -1217,9 +1252,21 @@ export interface InmobiliariaDashboardKPIs {
   // Portfolio
   totalProperties: number;
   propertiesAvailable: number;
+  /**
+   * 🔴 Inmuebles del CATÁLOGO con un contrato vigente. Lo dice el contrato, no
+   * el estado del inmueble ni la disponibilidad del mandato — ver
+   * `lib/ocupacion.ts` para las dos reglas y las palabras de Nico.
+   */
   propertiesRented: number;
   propertiesInProcess: number;
+  /** `propertiesRented / propertiesInCatalog`, 0–100. */
   occupancyRate: number;
+  /** El DENOMINADOR de `occupancyRate`: lo que la inmobiliaria puede arrendar. */
+  propertiesInCatalog?: number;
+  /** Lo que quedó fuera del catálogo y por eso no se mide. */
+  propertiesOutOfCatalog?: number;
+  /** Arrendados que están fuera del catálogo: no entran ni arriba ni abajo. */
+  propertiesRentedOutOfCatalog?: number;
 
   // Financial (current month)
   expectedRevenue: number;

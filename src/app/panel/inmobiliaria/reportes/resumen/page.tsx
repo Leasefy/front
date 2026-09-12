@@ -315,7 +315,17 @@ function ResumenDelNegocio() {
    * Sin esto, una inmobiliaria sin un inmueble leía «0.0% de ocupación».
    */
   const tasaDeRecaudo = tasaMedida(kpis.collectedRevenue, kpis.expectedRevenue);
-  const tasaDeOcupacion = tasaMedida(kpis.propertiesRented, kpis.totalProperties);
+  /*
+   * 🔴 La ocupación se mide contra el CATÁLOGO, no contra todo el portafolio
+   * (Nico, 2026-09-12: «esa tasa de ocupación se debe medir contra el inmueble
+   * disponible, no contra el no disponible, porque ya está fuera del
+   * catálogo»). `propertiesInCatalog` es el denominador que manda el back; una
+   * respuesta vieja en caché no lo trae y ahí cae a `totalProperties`, que es
+   * lo que se venía usando.
+   */
+  const enCatalogo = kpis.propertiesInCatalog ?? kpis.totalProperties;
+  const fueraDelCatalogo = kpis.propertiesOutOfCatalog ?? 0;
+  const tasaDeOcupacion = tasaMedida(kpis.propertiesRented, enCatalogo);
 
   /*
    * La tendencia es un % contra el mes anterior, y ese mes anterior no viaja.
@@ -439,7 +449,12 @@ function ResumenDelNegocio() {
         <KPICard
           title={t('inmobiliaria.dashboard.kpi.occupancy')}
           value={textoDeTasa(tasaDeOcupacion)}
-          subtitle={t('inmobiliaria.dashboard.kpi.occupancyOf', { rented: kpis.propertiesRented, total: kpis.totalProperties })}
+          subtitle={
+            // El número dice QUÉ cuenta: nunca un porcentaje suelto.
+            fueraDelCatalogo > 0
+              ? `${t('inmobiliaria.dashboard.kpi.occupancyOf', { rented: kpis.propertiesRented, total: enCatalogo })} · ${t('inmobiliaria.dashboard.kpi.outOfCatalog', { count: fueraDelCatalogo })}`
+              : t('inmobiliaria.dashboard.kpi.occupancyOf', { rented: kpis.propertiesRented, total: enCatalogo })
+          }
           icon={House}
         />
       </div>

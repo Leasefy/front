@@ -29,6 +29,7 @@ import {
   AgregarCotizacionDialog,
   type MantenimientoFormData,
 } from '@/components/inmobiliaria';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 
@@ -136,6 +137,20 @@ function StatCard({
  */
 function MantenimientosContent() {
   const { t } = useI18n();
+  /*
+   * Quién puede MOVER una solicitud y quién sólo puede mirarla.
+   *
+   * `PageGuard module="operaciones"` deja entrar a todo el que tenga `view` —
+   * CONTADOR y VIEWER incluidos—, y para ellos arrastrar una tarjeta sería
+   * pedir permiso al back para que conteste 403 después del gesto. Sin `edit`
+   * el tablero queda de sólo lectura y no ofrece cotizar.
+   *
+   * `canAccess` falla CERRADO mientras resuelve, así que en el primer render
+   * nadie arrastra; cuando los permisos llegan, el tablero se vuelve
+   * arrastrable solo.
+   */
+  const { canAccess } = usePermissions();
+  const puedeEditar = canAccess('operaciones', 'edit');
 
   // API Hooks
   // `errorCrudo` y no `error`: el string es sólo el mensaje, y sin el status
@@ -541,7 +556,7 @@ function MantenimientosContent() {
                 <MantenimientoKanban
                   data={mantenimientos}
                   onViewDetails={handleViewMantenimiento}
-                  onStatusChange={handleMantenimientoStatusChange}
+                  onStatusChange={puedeEditar ? handleMantenimientoStatusChange : undefined}
                 />
               </motion.div>
             ) : (
@@ -558,9 +573,9 @@ function MantenimientosContent() {
                 <MantenimientoList
                   data={mantenimientos}
                   onViewDetails={handleViewMantenimiento}
-                  onAddQuote={(s) => handleRequestQuote(s.id)}
-                  onComplete={(s) => cambiarEstadoSinEsperar(s.id, 'completed')}
-                  onCancel={(s) => cambiarEstadoSinEsperar(s.id, 'cancelled')}
+                  onAddQuote={puedeEditar ? (s) => handleRequestQuote(s.id) : undefined}
+                  onComplete={puedeEditar ? (s) => cambiarEstadoSinEsperar(s.id, 'completed') : undefined}
+                  onCancel={puedeEditar ? (s) => cambiarEstadoSinEsperar(s.id, 'cancelled') : undefined}
                   minimal
                 />
               </motion.div>
@@ -576,9 +591,9 @@ function MantenimientosContent() {
         solicitud={selectedMantenimiento}
         isOpen={isMantenimientoViewerOpen}
         onClose={handleMantenimientoViewerClose}
-        onStatusChange={cambiarEstadoSinEsperar}
+        onStatusChange={puedeEditar ? cambiarEstadoSinEsperar : undefined}
         onApproveQuote={handleApproveQuote}
-        onRequestQuote={handleRequestQuote}
+        onRequestQuote={puedeEditar ? handleRequestQuote : undefined}
       />
 
       {/* Agregarle una cotización a una solicitud ya creada. Vive en la página

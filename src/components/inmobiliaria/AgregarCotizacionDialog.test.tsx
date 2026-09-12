@@ -110,7 +110,7 @@ function montar(props: Partial<React.ComponentProps<typeof AgregarCotizacionDial
       />,
     );
   });
-  return { onGuardar, onOpenChange };
+  return { onGuardar: onGuardar as ReturnType<typeof vi.fn>, onOpenChange };
 }
 
 function llenarTodo() {

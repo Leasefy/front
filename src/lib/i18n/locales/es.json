@@ -1077,7 +1077,7 @@
         "toastOk": "{{agente}} ahora en modo {{modo}}",
         "toastFail": "No se pudo cambiar el modo: {{error}}",
         "modo": {
-          "sombra": "Manual",
+          "sombra": "Sombra",
           "copiloto": "Copiloto",
           "autonomo": "Autónomo"
         },
@@ -7603,7 +7603,7 @@
           "vallaTitle": "Límites del agente",
           "vallaEmpty": "Aún no hay límites publicados para este agente.",
           "modo": {
-            "sombra": "Manual",
+            "sombra": "Sombra",
             "sombraHint": "Solo observa y sugiere en silencio",
             "copiloto": "Copiloto",
             "copilotoHint": "Sugiere; nada se aplica sin un humano",

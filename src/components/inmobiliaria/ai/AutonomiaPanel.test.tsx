@@ -177,11 +177,7 @@ describe('AutonomiaPanel — modo como control real', () => {
     expect(opciones).toHaveLength(3)
 
     const textos = opciones.map((r) => r.textContent ?? '')
-    // 🔴 «Manual», no «Sombra»: `develop` renombró la ETIQUETA el 2026-09-12 y
-    // la llave interna sigue siendo `sombra` (ver `modosDisponibles` abajo).
-    // Esta prueba venía de una rama anterior al cambio, así que el merge las
-    // dejó en desacuerdo sin conflicto: archivos distintos.
-    expect(textos[0]).toContain('Manual')
+    expect(textos[0]).toContain('Sombra')
     expect(textos[1]).toContain('Copiloto')
     expect(textos[2]).toContain('Autónomo')
     // Cada tarjeta explica su postura, no sólo la activa.
@@ -203,7 +199,7 @@ describe('AutonomiaPanel — modo como control real', () => {
     })
     const textos = radios().map((r) => r.textContent ?? '')
     expect(textos).toHaveLength(2)
-    expect(textos[0]).toContain('Manual')
+    expect(textos[0]).toContain('Sombra')
     expect(textos[1]).toContain('Copiloto')
     expect(textos.join('')).not.toContain('Autónomo')
   })
@@ -211,7 +207,7 @@ describe('AutonomiaPanel — modo como control real', () => {
   it('bajar de autonomía es un clic: llama a la escritura sin confirmar', async () => {
     const onCambiarModo = vi.fn(async () => ({ ok: true }))
     render({ data: DATA, onCambiarModo, puedeCambiar: true })
-    const sombra = radios().find((r) => r.textContent?.includes('Manual'))!
+    const sombra = radios().find((r) => r.textContent?.includes('Sombra'))!
     await act(async () => {
       sombra.click()
     })
@@ -243,7 +239,7 @@ describe('AutonomiaPanel — modo como control real', () => {
   it('si la escritura falla, avisa por el toast de error', async () => {
     const onCambiarModo = vi.fn(async () => ({ ok: false, error: '403' }))
     render({ data: DATA, onCambiarModo, puedeCambiar: true })
-    const sombra = radios().find((r) => r.textContent?.includes('Manual'))!
+    const sombra = radios().find((r) => r.textContent?.includes('Sombra'))!
     await act(async () => {
       sombra.click()
     })

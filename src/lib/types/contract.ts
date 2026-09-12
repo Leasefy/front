@@ -306,6 +306,14 @@ export interface Contract {
    * (nunca `—`, nunca `#0`). Guarda con `!= null`.
    */
   code?: number;
+  /**
+   * El número con el que la inmobiliaria conoce el contrato (su sistema
+   * anterior), guardado al migrar. Es el que se lee grande en un contrato
+   * migrado; `code` va al lado, nombrado como el de Leasefy. Ver
+   * `lib/contratos/numero-del-contrato.ts`. `null` = no hay número;
+   * `undefined` = el back no lo mandó.
+   */
+  externalId?: string | null;
   status: ContractStatus;
 
   // Snapshot fields (Opción A — capturados al crear el contrato, inmutables).

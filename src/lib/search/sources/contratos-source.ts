@@ -36,7 +36,11 @@ function matchesQuery(item: BackendContract, q: string): boolean {
     // contrato: escribir «14» encuentra el contrato #14. Es filtrado en
     // cliente sobre la respuesta que `GET /contracts` ya devuelve — sin
     // parámetro de query nuevo y sin costo en el back.
-    norm(String(item.code ?? '')).includes(n)
+    norm(String(item.code ?? '')).includes(n) ||
+    // 🔴 Nico, 2026-09-12: el número que la inmobiliaria conoce es el de SU
+    // sistema (`externalId`), no nuestro consecutivo. Buscar «1686» tiene que
+    // encontrar el contrato que en Leasefy es el #1839.
+    norm(item.externalId ?? '').includes(n)
   );
 }
 
@@ -112,9 +116,11 @@ export const contratosSource: SearchSource = {
          */
         title:
           item.tenantName ??
-          (item.code != null
-            ? `Contrato #${item.code}`
-            : `Contrato ${item.id.slice(0, 8)}`),
+          (item.externalId
+            ? `Contrato ${item.externalId}`
+            : item.code != null
+              ? `Contrato #${item.code}`
+              : `Contrato ${item.id.slice(0, 8)}`),
         subtitle: item.propertyAddress ?? item.propertyCity ?? '',
         badges: [
           {

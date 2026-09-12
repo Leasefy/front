@@ -100,6 +100,10 @@ export function mapBackendContract(bc: BackendContract): Contract {
     // tipo signifique algo, y un `0` coalescido sería un código válido a la
     // vista (los códigos arrancan en 1).
     code: bc.code,
+    // El número de la inmobiliaria (Nico, 2026-09-12). Passthrough por la
+    // misma razón que `code`: `undefined` = el back no lo mandó, `null` = no
+    // hay número, y las dos cosas se muestran distinto.
+    externalId: bc.externalId,
     // Deprecated: backend no modela template/type. Solo para compat del tipo.
     templateId: bc.templateId ?? '',
     type: (bc.type ? (CONTRACT_TYPE_MAP[bc.type] ?? bc.type) : 'custom') as ContractType,

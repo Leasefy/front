@@ -65,6 +65,20 @@ export interface BackendContract {
    * `!= null`.
    */
   code?: number;
+  /**
+   * El número con el que la INMOBILIARIA conoce el contrato: la columna
+   * «Consecutivo contrato» de su sistema anterior, guardada al migrar.
+   *
+   * 🔴 Nico, 2026-09-12: vio «#1839» en Leasefy, lo buscó en su sistema viejo
+   * y era otra persona con otro monto — creyó que los datos estaban
+   * tergiversados. No lo estaban: #1839 es `code` (nuestro consecutivo) y el
+   * suyo es éste (1686). Un contrato migrado se identifica por este número;
+   * `code` se muestra al lado diciendo que es el de Leasefy.
+   *
+   * `null` en un contrato nativo o migrado sin número; ausente (`undefined`)
+   * sólo contra un back anterior a esta rama.
+   */
+  externalId?: string | null;
   status: string;
 
   // ─── Snapshot fields (Opción A implementada 2026-04-20) ───────────────────

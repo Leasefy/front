@@ -13,7 +13,11 @@
  * CONTRACT_STATUS_COLORS already ship dark variants).
  */
 
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { MagnifyingGlass } from '@phosphor-icons/react';
+import { Input } from '@/components/ui/input';
+import { filtrarContratos } from '@/lib/contratos/filtrar-contratos';
 import { formatearVigencia } from '@/lib/contratos/fecha-de-vigencia';
 import { useRouter } from 'next/navigation';
 import { fmtCop } from './format';
@@ -120,6 +124,21 @@ function ContratosContent() {
    * inmobiliaria real tiene cientos de contratos. No hay filtros en esta
    * pantalla, así que no hace falta `resetKey`.
    */
+  /*
+   * 🔴 El buscador (Nico, 2026-09-12: «esta tabla ¿por qué no tiene
+   * buscador?»). Era la única de las cuatro del directorio sin uno, con 1.836
+   * contratos paginados de a 10: encontrar uno era pasar 184 páginas.
+   *
+   * Filtra la lista COMPLETA y recién después se pagina. Al revés —filtrando
+   * lo que ya se paginó— el buscador miente: contesta «no se encontró» sobre
+   * algo que está en la página 3. Ver `filtrar-contratos.ts`.
+   */
+  const [buscar, setBuscar] = useState('');
+  const contratosFiltrados = useMemo(
+    () => filtrarContratos(contracts, buscar),
+    [contracts, buscar],
+  );
+
   const {
     pageItems,
     total,
@@ -128,7 +147,7 @@ function ContratosContent() {
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(contracts);
+  } = useTablePagination(contratosFiltrados, { resetKey: buscar });
 
   const COLUMNS = [
     // T-0040 — el consecutivo, columna angosta y a la izquierda de todo, igual
@@ -305,7 +324,7 @@ function ContratosContent() {
 
       {/* Table */}
       <section className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-border">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-5 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-surface-muted flex items-center justify-center flex-shrink-0">
               <FileText className="w-[18px] h-[18px] text-fg-muted" weight="duotone" />
@@ -317,6 +336,33 @@ function ContratosContent() {
               </p>
             </div>
           </div>
+
+          {/*
+            El buscador va en la cabecera de la tabla, como en propietarios,
+            inquilinos e inmuebles: es el mismo gesto en las cuatro pantallas
+            del directorio. Sólo con algo que buscar — un campo sobre una lista
+            vacía no puede encontrar nada.
+          */}
+          {contracts.length > 0 && (
+            <div className="relative w-full max-w-xs">
+              <MagnifyingGlass
+                className="absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
+              <Input
+                type="search"
+                value={buscar}
+                onChange={(e) => setBuscar(e.target.value)}
+                placeholder={tx(
+                  'Buscar por inquilino, dirección o código…',
+                  'Search by tenant, address or code…',
+                )}
+                aria-label={tx('Buscar contratos', 'Search contracts')}
+                className="w-full pl-10"
+                data-testid="buscar-contratos"
+              />
+            </div>
+          )}
         </div>
 
         <Table>
@@ -332,12 +378,39 @@ function ContratosContent() {
           <TableBody>
             {isLoading && contracts.length === 0 && <TableSkeleton cells={COLUMNS.length} />}
 
+            {/*
+              🔴 Desde que hay buscador, un vacío ya NO significa siempre
+              «todavía no hay ninguno»: puede ser «tu búsqueda no encontró
+              nada», que es lo contrario — ahí lo útil no es crear un contrato
+              sino borrar lo escrito. Ofrecer «Nuevo contrato» sobre una
+              búsqueda fallida manda a crear algo que probablemente ya existe.
+            */}
+            {!isLoading && !error && contracts.length > 0 && contratosFiltrados.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={COLUMNS.length} className="p-0">
+                  <SinDatos
+                    queSon="contratos"
+                    icono={MagnifyingGlass}
+                    titulo={tx('Sin resultados', 'No results')}
+                    descripcion={tx(
+                      `Ningún contrato coincide con «${buscar}». Se buscó en los ${contracts.length} contratos, no sólo en esta página.`,
+                      `No contract matches “${buscar}”. All ${contracts.length} contracts were searched, not just this page.`,
+                    )}
+                    accion={
+                      <Button variant="secondary" hideArrow onClick={() => setBuscar('')}>
+                        {tx('Limpiar la búsqueda', 'Clear search')}
+                      </Button>
+                    }
+                  />
+                </TableCell>
+              </TableRow>
+            )}
+
             {!isLoading && !error && contracts.length === 0 && (
               <TableRow>
                 <TableCell colSpan={COLUMNS.length} className="p-0">
-                  {/* No hay filtros en esta pantalla: un vacío acá siempre
-                      significa «todavía no hay ninguno», y lo útil es poder
-                      crear el primero desde el mismo lugar donde falta. */}
+                  {/* Sin ninguno cargado, lo útil sí es crear el primero desde
+                      el mismo lugar donde falta. */}
                   <SinDatos
                     queSon="contratos"
                     icono={FileText}

@@ -73,8 +73,25 @@ vi.mock('@/lib/hooks/use-migracion-con-deuda', () => ({
 }))
 
 vi.mock('@/components/estado/SinDatos', () => ({
-  SinDatos: ({ titulo }: { titulo: string }) =>
-    React.createElement('div', { 'data-testid': 'sin-datos' }, titulo),
+  // 🔴 El mock pinta también `descripcion` y `accion`: desde que hay buscador,
+  // el vacío tiene DOS caras («todavía no hay ninguno» vs «tu búsqueda no
+  // encontró nada») y lo que las distingue vive ahí, no en el título.
+  SinDatos: ({
+    titulo,
+    descripcion,
+    accion,
+  }: {
+    titulo: string
+    descripcion?: string
+    accion?: React.ReactNode
+  }) =>
+    React.createElement(
+      'div',
+      null,
+      React.createElement('h3', null, titulo),
+      descripcion ? React.createElement('p', null, descripcion) : null,
+      accion ?? null,
+    ),
 }))
 
 vi.mock('@/components/ui/button', () => ({
@@ -94,6 +111,8 @@ vi.mock('@/components/ui/pagination', () => ({
 vi.mock('@leasefy/cadence', () => ({
   Eyebrow: ({ children }: { children?: React.ReactNode }) =>
     React.createElement('p', null, children),
+  // El buscador de la tabla (2026-09-12): acá sólo hace falta que exista.
+  Input: (props: Record<string, unknown>) => React.createElement('input', props),
   // Lo que usa `AlertaAccionable`: el vestido es del DS, acá sólo el contenido.
   Alert: ({ children, title, variant, icon, ...props }: Record<string, unknown> & { children?: React.ReactNode; title?: string }) => {
     void variant; void icon
@@ -301,3 +320,91 @@ describe('ContratosPage — contratos migrados que no cobran', () => {
     expect(container.querySelector('[data-testid="alerta-migrados-sin-cobrar"]')).toBeNull()
   })
 })
+
+/**
+ * 🔴 Nico, 2026-09-12: «esta tabla ¿por qué no tiene buscador?». Era la única
+ * de las cuatro del directorio sin uno, con 1.836 contratos de a 10 por
+ * página.
+ *
+ * Lo que se fija acá es la trampa que ya costó una vez en propietarios: un
+ * buscador que mira la PÁGINA en vez de la lista contesta «no se encontró»
+ * sobre algo que sí existe.
+ */
+describe('ContratosPage — el buscador', () => {
+  const TRES = [
+    contract({ id: 'a', code: 1981, tenantName: 'Juan Esteban Sanchez' }),
+    contract({ id: 'b', code: 1980, tenantName: 'Martínez Gómez', propertyAddress: 'CL 106B SUR' }),
+    contract({ id: 'c', code: 1979, tenantName: 'Sofia Colorado' }),
+  ]
+  const buscador = () =>
+    container.querySelector('[data-testid="buscar-contratos"]') as HTMLInputElement
+  const filas = () => Array.from(container.querySelectorAll('tbody tr'))
+
+  const escribir = async (v: string) => {
+    const i = buscador()
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(i, v)
+      i.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+
+  it('🔴 aparece cuando hay contratos, y no sobre una lista vacía', async () => {
+    withContracts([])
+    await renderPage()
+    expect(buscador()).toBeNull()
+
+    withContracts(TRES)
+    await renderPage()
+    expect(buscador()).not.toBeNull()
+  })
+
+  it('filtra por nombre del inquilino', async () => {
+    withContracts(TRES)
+    await renderPage()
+    await escribir('martinez')
+
+    expect(filas()).toHaveLength(1)
+    expect(container.textContent).toContain('Martínez Gómez')
+    expect(container.textContent).not.toContain('Sofia Colorado')
+  })
+
+  it('filtra por código, con o sin numeral', async () => {
+    withContracts(TRES)
+    await renderPage()
+    await escribir('#1979')
+
+    expect(filas()).toHaveLength(1)
+    expect(container.textContent).toContain('Sofia Colorado')
+  })
+
+  /*
+   * 🔴 Sin resultados NO se ofrece «Nuevo contrato»: ahí lo útil es borrar lo
+   * escrito, no crear algo que probablemente ya existe. Y se dice que se buscó
+   * en TODOS, que es lo que distingue este buscador del que miente.
+   */
+  it('sin resultados lo dice, aclara que buscó en todos, y deja limpiar', async () => {
+    withContracts(TRES)
+    await renderPage()
+    await escribir('no existe nadie así')
+
+    expect(filas()).toHaveLength(1)
+    expect(container.textContent).toContain('Sin resultados')
+    expect(container.textContent).toContain('los 3 contratos')
+    expect(container.textContent).not.toContain('Sin contratos aún')
+
+    const limpiar = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Limpiar la búsqueda'),
+    )!
+    await act(async () => limpiar.click())
+    expect(filas()).toHaveLength(3)
+  })
+
+  it('con la lista vacía de verdad sigue ofreciendo crear el primero', async () => {
+    withContracts([])
+    await renderPage()
+
+    expect(container.textContent).toContain('Sin contratos aún')
+    expect(container.textContent).not.toContain('Sin resultados')
+  })
+})
+

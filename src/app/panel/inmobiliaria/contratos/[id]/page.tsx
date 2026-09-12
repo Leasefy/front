@@ -58,6 +58,8 @@ import { Stat, StatStrip } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { VincularInmueble } from '@/components/contratos/VincularInmueble';
 import { InvitarInquilino } from '@/components/contratos/InvitarInquilino';
+import { InmuebleDelContrato } from '@/components/contratos/InmuebleDelContrato';
+import { numeroDelContrato, tituloDelContrato } from '@/lib/contratos/numero-del-contrato';
 
 const PRE_SIGNED_STATES: ContractStatus[] = ['draft', 'pending_landlord', 'pending_tenant', 'rejected_pending_modifications'];
 
@@ -249,6 +251,7 @@ function ContratoDetalleContent() {
 
   const statusVariant = CONTRACT_STATUS_BADGE[contract.status as ContractStatus] ?? 'neutral';
   const statusLabel = CONTRACT_STATUS_LABELS[contract.status as ContractStatus] ?? contract.status;
+  const numero = numeroDelContrato(contract);
   // Gate por permisos: contratos usa canAccess ('contratos' ya es módulo del backend).
   // Chat todavía usa el fallback por rol porque 'mensajes' no existe como módulo aún.
   const canCancel = canEditContracts && PRE_SIGNED_STATES.includes(contract.status as ContractStatus);
@@ -273,21 +276,37 @@ function ContratoDetalleContent() {
             </Link>
           </Button>
           {/*
-            T-0040 — el consecutivo es el nombre del contrato: va en el título,
-            no en una línea debajo de un título genérico. El UUID vuelve tal
-            cual cuando no hay código —sólo un `back` anterior a T-0040 lo
+            T-0040 — el número es el nombre del contrato: va en el título, no
+            en una línea debajo de un título genérico. El UUID vuelve tal cual
+            cuando no hay número —sólo un `back` anterior a T-0040 lo
             produce—. Sin `#0` ni `#undefined`: o el número, o el id.
+
+            🔴 Nico, 2026-09-12: para un contrato MIGRADO el número que se lee
+            es el de SU sistema anterior (1686), no nuestro consecutivo
+            (#1839) — lo buscó en su archivo y era otra persona. El nuestro va
+            debajo, nombrado, para que se sepa cuál es cuál
+            (`numero-del-contrato.ts`).
           */}
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-h2 text-fg">
-              {contract.code != null ? `Contrato #${contract.code}` : 'Contrato de arrendamiento'}
-            </h1>
+            <h1 className="text-h2 text-fg">{tituloDelContrato(contract)}</h1>
             <Badge variant={statusVariant}>
               {statusLabel}
             </Badge>
           </div>
-          {contract.code == null ? (
+          {numero.principal == null ? (
             <p className="text-sm text-muted-foreground mt-1">ID: {contract.id}</p>
+          ) : null}
+          {numero.esDeLaInmobiliaria ? (
+            <p className="text-sm text-muted-foreground mt-1" data-testid="numero-de-leasefy">
+              {numero.principal} es el número de tu sistema anterior
+              {numero.secundario ? (
+                <>
+                  {' · '}en Leasefy es el{' '}
+                  <span className="font-mono tabular-nums">{numero.secundario.replace('Leasefy ', '')}</span>
+                </>
+              ) : null}
+              .
+            </p>
           ) : null}
           {/* De qué contrato se trata, sin bajar a las tarjetas: inmueble e inquilino. */}
           <p className="text-sm text-muted-foreground mt-1">
@@ -585,6 +604,16 @@ function ContratoDetalleContent() {
               />
             </>
           )}
+
+          {/*
+            🔴 Nico, 2026-09-12: el inventario y el historial del inmueble se
+            ven también desde el contrato, no sólo desde la ficha del inmueble.
+            Sólo con inmueble: sin él no hay consignación, y la tarjeta
+            «Inmueble» de la izquierda ya ofrece vincularlo.
+          */}
+          {contract.propertyId ? (
+            <InmuebleDelContrato key={contract.propertyId} propertyId={contract.propertyId} />
+          ) : null}
         </div>
       </div>
     </div>

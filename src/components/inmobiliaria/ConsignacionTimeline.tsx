@@ -174,6 +174,12 @@ interface ConsignacionTimelineProps {
   consignacion: Consignacion;
   agenteName?: string;
   maxVisibleItems?: number;
+  /**
+   * El título de la tarjeta. Por defecto «Historial»; la ficha del contrato
+   * lo llama «Historial del inmueble» porque ahí ya hay otro historial (el
+   * de las firmas) y dos tarjetas con el mismo nombre no se distinguen.
+   */
+  titulo?: string;
 }
 
 /**
@@ -184,6 +190,7 @@ export function ConsignacionTimeline({
   consignacion,
   agenteName,
   maxVisibleItems = 5,
+  titulo,
 }: ConsignacionTimelineProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { t, formatDate: fmtDate, formatRelativeDate: fmtRelDate } = useI18n();
@@ -361,7 +368,7 @@ export function ConsignacionTimeline({
           <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
             <Clock className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
           </div>
-          <h3 className="font-semibold text-fg">{t('inmobiliaria.consignaciones.timeline.title')}</h3>
+          <h3 className="font-semibold text-fg">{titulo ?? t('inmobiliaria.consignaciones.timeline.title')}</h3>
           <span className="ml-auto text-sm text-fg-muted dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.timeline.eventsCount', { count: events.length })}
           </span>

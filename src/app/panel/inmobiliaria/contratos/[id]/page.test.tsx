@@ -130,6 +130,12 @@ vi.mock('@/components/contratos/VincularInmueble', () => ({
       ? React.createElement('button', { 'data-testid': 'vincular-inmueble' }, 'Vincular inmueble')
       : null,
 }))
+// El inventario y el historial del inmueble desde el contrato (2026-09-12):
+// acá sólo importa CUÁNDO se monta y con qué inmueble.
+vi.mock('@/components/contratos/InmuebleDelContrato', () => ({
+  InmuebleDelContrato: ({ propertyId }: { propertyId: string }) =>
+    React.createElement('div', { 'data-testid': 'inmueble-del-contrato' }, propertyId),
+}))
 
 // ── Import page AFTER mocks ───────────────────────────────────────────────
 import ContratoDetallePage from './page'
@@ -398,5 +404,55 @@ describe('ContratoDetallePage — el resumen de arriba', () => {
     await renderPage()
 
     expect(container.querySelector('[data-testid="resumen-del-contrato"]')!.textContent).toContain('vencido hace')
+  })
+})
+
+/*
+ * 🔴 Nico, 2026-09-12: «estás tergiversando los números de contrato». El
+ * #1839 que vio es NUESTRO consecutivo; el suyo es 1686. El título lee el
+ * suyo, y debajo dice cuál es el nuestro.
+ */
+describe('ContratoDetallePage — el número de la inmobiliaria en el título', () => {
+  it('un contrato migrado se titula con SU número y dice cuál es el de Leasefy', async () => {
+    withContract(contract({ code: 1839, externalId: '1686', contractOrigin: 'MIGRATED' }))
+
+    await renderPage()
+
+    expect(container.querySelector('h1')?.textContent).toBe('Contrato 1686')
+    const nota = container.querySelector('[data-testid="numero-de-leasefy"]')
+    expect(nota?.textContent).toContain('1686 es el número de tu sistema anterior')
+    expect(nota?.textContent).toContain('en Leasefy es el #1839')
+    expect(container.textContent).not.toContain('Contrato #1839')
+  })
+
+  it('un contrato nativo sigue titulándose con el nuestro, sin nota', async () => {
+    withContract(contract({ code: 14, externalId: null }))
+
+    await renderPage()
+
+    expect(container.querySelector('h1')?.textContent).toBe('Contrato #14')
+    expect(container.querySelector('[data-testid="numero-de-leasefy"]')).toBeNull()
+  })
+})
+
+/*
+ * Nico, 2026-09-12: «el historial que hoy vive en el inmueble debe asociarse
+ * al contrato» y «el inventario debe verse también desde el contrato».
+ */
+describe('ContratoDetallePage — inventario e historial del inmueble', () => {
+  it('con inmueble, se montan sobre ESE inmueble', async () => {
+    withContract(contract({ propertyId: 'prop-7' }))
+
+    await renderPage()
+
+    expect(container.querySelector('[data-testid="inmueble-del-contrato"]')?.textContent).toBe('prop-7')
+  })
+
+  it('sin inmueble no hay consignación que mirar: no se montan', async () => {
+    withContract(contract({ propertyId: null }))
+
+    await renderPage()
+
+    expect(container.querySelector('[data-testid="inmueble-del-contrato"]')).toBeNull()
   })
 })

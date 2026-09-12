@@ -23,12 +23,13 @@ void React // jsx-preserve
 
 type AuthEventCallback = (event: string, session: unknown) => Promise<void> | void
 
-const { getMock, postMock, supabaseSignOutMock, authCallbacks } = vi.hoisted(() => ({
+const { getMock, postMock, supabaseSignOutMock, signInWithPasswordMock, authCallbacks } = vi.hoisted(() => ({
   getMock: vi.fn(),
   // Resolves so the single-session claim (POST /auth/session/claim) in the
   // bootstrap path returns a promise (its .catch/await must not throw).
   postMock: vi.fn().mockResolvedValue({ superseded: false }),
   supabaseSignOutMock: vi.fn().mockResolvedValue({ error: null }),
+  signInWithPasswordMock: vi.fn(),
   authCallbacks: [] as AuthEventCallback[],
 }))
 
@@ -40,6 +41,7 @@ vi.mock('@/lib/supabase/client', () => ({
         return { data: { subscription: { unsubscribe: () => {} } } }
       },
       signOut: supabaseSignOutMock,
+      signInWithPassword: (...args: unknown[]) => signInWithPasswordMock(...args),
       mfa: {
         getAuthenticatorAssuranceLevel: vi.fn().mockResolvedValue({ data: null }),
       },
@@ -136,6 +138,7 @@ beforeEach(() => {
   getMock.mockReset()
   postMock.mockReset().mockResolvedValue({ superseded: false })
   supabaseSignOutMock.mockClear()
+  signInWithPasswordMock.mockReset()
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -522,5 +525,105 @@ describe('fetchAgencyWithTimeout', () => {
     )
     expect(result.agency?.id).toBe('ag-1')
     expect(result.memberStatus).toBe('ACTIVE')
+  })
+})
+
+/**
+ * T-0082 WU-1 (F1) — `signInWithEmail` used to run its own claim/fetchUser/MFA
+ * sequence IN ADDITION to the `onAuthStateChange` listener's SIGNED_IN
+ * handling of the very same sign-in, doubling `/users/me` (both calls used an
+ * explicit token, which bypassed `compartirGet`'s dedup — see client.ts). The
+ * listener is now the bootstrap's single owner; `signInWithEmail` only
+ * authenticates against Supabase and waits for the listener's own run.
+ */
+describe('AuthProvider — single bootstrap owner (signInWithEmail delegates to the SIGNED_IN listener)', () => {
+  it('one sign-in produces exactly one GET /users/me, one POST /auth/session/claim, and one GET /inmobiliaria/agency', async () => {
+    getMock.mockImplementation((path: string) => {
+      if (path === '/inmobiliaria/agency') {
+        return Promise.resolve({ id: 'ag-1', name: 'ABC', memberRole: 'AGENTE', memberStatus: 'ACTIVE' })
+      }
+      return Promise.resolve({
+        id: 'u1',
+        email: 'ana@example.com',
+        firstName: 'Ana',
+        lastName: 'Pérez',
+        role: 'TENANT',
+        onboardingCompletedAt: '2026-01-01T00:00:00.000Z',
+      })
+    })
+    // Mimics supabase-js: signInWithPassword notifies onAuthStateChange
+    // (SIGNED_IN) as part of establishing the session, before its own promise
+    // settles.
+    signInWithPasswordMock.mockImplementation(async () => {
+      const cb = authCallbacks[authCallbacks.length - 1]
+      await cb?.('SIGNED_IN', fakeSession)
+      return { data: { session: fakeSession }, error: null }
+    })
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    // No session yet — mirrors visiting /auth logged out.
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('INITIAL_SESSION', null)
+    })
+
+    let signInResult: Awaited<ReturnType<AuthContextType['signInWithEmail']>> = null
+    await act(async () => {
+      const pending = captured!.signInWithEmail('ana@example.com', 'secret')
+      // The SIGNED_IN handler's MFA check (and the waiter resolve after it)
+      // runs on a `setTimeout(0)` — see `alSoltarElLock` in auth-context.tsx.
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      signInResult = await pending
+    })
+
+    expect(signInResult).not.toBeNull()
+    expect(signInResult!.role).toBe('tenant')
+
+    const userMeCalls = getMock.mock.calls.filter((c) => c[0] === '/users/me')
+    const agencyCalls = getMock.mock.calls.filter((c) => c[0] === '/inmobiliaria/agency')
+    const claimCalls = postMock.mock.calls.filter((c) => c[0] === '/auth/session/claim')
+    expect(userMeCalls).toHaveLength(1)
+    expect(agencyCalls).toHaveLength(1)
+    expect(claimCalls).toHaveLength(1)
+  })
+
+  it('signInWithEmail still resolves null on the 409 duplicate-identity bootstrap failure, without calling fetchUser a second time', async () => {
+    const message = 'Ya existe una cuenta registrada con este correo. Inicia sesión con tu cuenta original.'
+    getMock.mockRejectedValue(new ApiError(409, message))
+    signInWithPasswordMock.mockImplementation(async () => {
+      const cb = authCallbacks[authCallbacks.length - 1]
+      await cb?.('SIGNED_IN', fakeSession)
+      return { data: { session: fakeSession }, error: null }
+    })
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('INITIAL_SESSION', null)
+    })
+
+    let signInResult: Awaited<ReturnType<AuthContextType['signInWithEmail']>> = null
+    await act(async () => {
+      const pending = captured!.signInWithEmail('ana@example.com', 'secret')
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      signInResult = await pending
+    })
+
+    expect(signInResult).toBeNull()
+    expect(sessionStorage.getItem(AUTH_BOOTSTRAP_ERROR_KEY)).toBe(message)
+    // Exactly one /users/me — the listener's, not a second one from
+    // signInWithEmail (which no longer calls fetchUser at all).
+    const userMeCalls = getMock.mock.calls.filter((c) => c[0] === '/users/me')
+    expect(userMeCalls).toHaveLength(1)
   })
 })

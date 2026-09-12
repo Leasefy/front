@@ -566,6 +566,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
+  /**
+   * T-0082 WU-1 (F1): `signInWithEmail` used to run its OWN
+   * claim→fetchUser→MFA sequence, in parallel with the `onAuthStateChange`
+   * listener's SIGNED_IN handling of the very same sign-in — doubling
+   * `/users/me` (and, via the explicit token, bypassing `compartirGet`'s
+   * dedup too — see client.ts). The listener's SIGNED_IN branch is now the
+   * ONLY place that runs the bootstrap; `signInWithEmail` arms this resolver
+   * before calling Supabase and awaits it instead, so it still returns the
+   * loaded user (or null) to its caller (`AuthForm`'s inline 409 handling)
+   * without ever calling `fetchUser`/`checkMfaLevel` itself. A SIGNED_IN
+   * triggered by something other than `signInWithEmail` (e.g. a magic-link
+   * session exchange) finds no waiter registered — resolving it is then a
+   * no-op.
+   */
+  const signInBootstrapWaiterRef = useRef<((user: User | null) => void) | null>(null)
+
   // Initialize auth on mount.
   // We rely exclusively on onAuthStateChange (which fires INITIAL_SESSION on setup)
   // to avoid calling getSession() in parallel, which triggers an AbortError from
@@ -688,6 +704,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
             if (yaHizoOnboarding) {
               requestNotificationPermission().catch(() => {})
             }
+            // Hand the bootstrap result back to `signInWithEmail`, if it's the
+            // one waiting on it (see the ref's doc comment above) — this is
+            // the same point at which `signInWithEmail` used to return,
+            // directly, before this became the bootstrap's single owner.
+            signInBootstrapWaiterRef.current?.(userData)
+            signInBootstrapWaiterRef.current = null
           })
         } else if (event === 'SIGNED_OUT') {
           // auth-js emite SIGNED_OUT cuando descarta una sesión que no pudo
@@ -761,26 +783,46 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
-  /** Sign in with email and password. Returns the loaded user so callers can redirect based on role. */
+  /**
+   * Sign in with email and password. Returns the loaded user so callers can
+   * redirect based on role (and so `AuthForm` can detect a bootstrap failure
+   * that resolves to `null` without throwing — e.g. the 409 duplicate-identity
+   * case in `fetchUser`).
+   *
+   * T-0082 WU-1 (F1): this used to call `fetchUser` + `checkMfaLevel` itself,
+   * IN ADDITION to the `onAuthStateChange` listener's SIGNED_IN handler doing
+   * the exact same thing for the exact same sign-in — `/users/me` fired
+   * twice on every login. The listener is now the bootstrap's single owner;
+   * this function only authenticates against Supabase and then waits for the
+   * listener's own run to settle.
+   */
   const signInWithEmail = useCallback(async (email: string, password: string) => {
     const supabase = getSupabase()
     if (!supabase) throw new Error('Supabase not initialized')
+
+    // Armed BEFORE calling signInWithPassword: supabase-js notifies
+    // onAuthStateChange (SIGNED_IN) as part of establishing the session,
+    // which can happen before signInWithPassword's own promise settles —
+    // arming the waiter afterward would risk missing that notification.
+    let resolveBootstrap!: (user: User | null) => void
+    const bootstrapPromise = new Promise<User | null>((resolve) => {
+      resolveBootstrap = resolve
+    })
+    signInBootstrapWaiterRef.current = resolveBootstrap
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
-    // Immediately set token and fetch user so the caller can use role info for redirect
-    if (data.session) {
-      setAccessToken(data.session.access_token)
-      const { user: userData, needsOnboarding: needsOnb } = await fetchUser(data.session)
-      setUser(userData)
-      setNeedsOnboarding(needsOnb)
-      setPerfilElegido(leerPerfilElegido(data.session.user?.user_metadata))
-      // Resolve the MFA gate before returning so callers (AuthForm) can short-circuit
-      // the panel redirect to /auth/mfa-verify when a second factor is required.
-      await checkMfaLevel()
-      return userData
+    if (error) {
+      signInBootstrapWaiterRef.current = null
+      throw error
     }
-    return null
-  }, [fetchUser, checkMfaLevel])
+    if (!data.session) {
+      // No session to bootstrap from — no SIGNED_IN event will fire for this
+      // attempt, so nothing will ever resolve the waiter above.
+      signInBootstrapWaiterRef.current = null
+      return null
+    }
+    return bootstrapPromise
+  }, [])
 
   /**
    * Sign up with email and password. Returns whether email confirmation is required.

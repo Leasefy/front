@@ -498,6 +498,11 @@ export function normalizeConsignacion(raw: RawConsignacion): Consignacion {
     // NO se fabrica `[{ propietarioId, 10000 }]` acá — sería inventar un dato
     // que el servidor no dijo, y taparía el día que el back deje de mandarlo.
     copropietarios: raw.copropietarios ?? [],
+    // Quién vive hoy en el inmueble. `null` contra un back anterior al
+    // 2026-09-12, que es lo mismo que «no hay inquilino» para la pantalla: en
+    // los dos casos cae a `currentTenantName`. NO se fabrica uno desde ese
+    // nombre — sería una tarjeta de contacto sin contacto.
+    inquilino: raw.inquilino ?? null,
   };
 }
 

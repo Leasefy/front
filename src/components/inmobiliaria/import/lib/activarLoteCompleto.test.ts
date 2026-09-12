@@ -159,3 +159,87 @@ describe('activarLoteCompleto — the restantes loop', () => {
     expect(e.message).toBe('No pudimos activar el lote.');
   });
 });
+
+/*
+ * 🔴 2026-09-11: Nico miró «Activando…» cinco minutos y preguntó si se había
+ * dañado. Iban 1.809 de 2.824. El loop tiene que CONTAR mientras corre y
+ * tiene que poder pararse — una espera de 40 minutos sin número ni salida es
+ * indistinguible de un cuelgue.
+ */
+/*
+ * 🔴 Nico, 2026-09-11: «¿por qué dices que se importaron 679 propiedades si
+ * le subí 2800 y algo?». Porque 2.145 filas ya tenían su inmueble de la carga
+ * anterior y se re-apuntaron. El resultado tiene que llevar ese número hasta
+ * la pantalla: sin él, una importación completa se ve como un fracaso.
+ */
+describe('activarLoteCompleto — los reusados llegan al resultado', () => {
+  it('suma los reusados de todas las tandas y los devuelve aparte de los creados', async () => {
+    const activar = vi
+      .fn()
+      .mockResolvedValueOnce(resumen({ activados: 200, reusados: 1_500, restantes: 1_124 }))
+      .mockResolvedValueOnce(resumen({ activados: 479, reusados: 645, restantes: 0 }));
+
+    const r = await activarLoteCompleto('lote-1', activar);
+
+    expect(r.activados).toBe(679);
+    expect(r.reusados).toBe(2_145);
+    // Las 2.824 filas del archivo: es el número que la pantalla tiene que dar.
+    expect(r.activados + r.reusados).toBe(2_824);
+  });
+
+  it('sin reusados el número queda en 0, no en undefined', async () => {
+    const activar = vi.fn().mockResolvedValue(resumen({ activados: 5, restantes: 0 }));
+    expect((await activarLoteCompleto('lote-1', activar)).reusados).toBe(0);
+  });
+});
+
+describe('activarLoteCompleto — el progreso y la salida', () => {
+  it('avisa después de CADA llamada con los acumulados y lo que queda', async () => {
+    const activar = vi
+      .fn()
+      .mockResolvedValueOnce(resumen({ activados: 10, reusados: 5, restantes: 20 }))
+      .mockResolvedValueOnce(
+        resumen({ activados: 8, restantes: 12, omitidas: [{ id: 'f1', fila: 4, faltantes: ['canon'] }] }),
+      )
+      .mockResolvedValueOnce(resumen({ activados: 12, restantes: 0 }));
+    const onProgreso = vi.fn();
+
+    await activarLoteCompleto('lote-1', activar, onProgreso);
+
+    expect(onProgreso.mock.calls.map(([p]) => p)).toEqual([
+      { activados: 10, reusados: 5, omitidas: 0, restantes: 20, llamadas: 1 },
+      { activados: 18, reusados: 5, omitidas: 1, restantes: 12, llamadas: 2 },
+      { activados: 30, reusados: 5, omitidas: 1, restantes: 0, llamadas: 3 },
+    ]);
+  });
+
+  it('«Detener» para DESPUÉS de la llamada en curso y lo dice: nada se deshace', async () => {
+    const activar = vi
+      .fn()
+      .mockResolvedValueOnce(resumen({ activados: 10, restantes: 90 }))
+      .mockResolvedValueOnce(resumen({ activados: 10, restantes: 80 }))
+      .mockResolvedValue(resumen({ activados: 10, restantes: 70 }));
+    let parar = false;
+    const onProgreso = vi.fn(({ llamadas }: { llamadas: number }) => {
+      if (llamadas === 2) parar = true;
+    });
+
+    const r = await activarLoteCompleto('lote-1', activar, onProgreso, { debeParar: () => parar });
+
+    expect(r.detenidoPorPersona).toBe(true);
+    expect(r.detenidoSinAvance).toBe(false);
+    expect(r.detenidoPorLimite).toBe(false);
+    // Las dos tandas que pasaron cuentan; la tercera nunca salió.
+    expect(r.activados).toBe(20);
+    expect(activar).toHaveBeenCalledTimes(2);
+  });
+
+  it('parar cuando ya no queda nada NO se reporta como detenido: terminó', async () => {
+    const activar = vi.fn().mockResolvedValue(resumen({ activados: 3, restantes: 0 }));
+
+    const r = await activarLoteCompleto('lote-1', activar, undefined, { debeParar: () => true });
+
+    expect(r.detenidoPorPersona).toBe(false);
+    expect(r.activados).toBe(3);
+  });
+});

@@ -123,7 +123,21 @@ function mapSupabaseUser(session: Session): User {
     lastName: meta.last_name || fullName.split(' ').slice(1).join(' ') || '',
     avatar: meta.avatar_url || meta.picture || undefined,
     emailConfirmedAt: supabaseUser.email_confirmed_at ?? undefined,
-    role: 'tenant',
+    /*
+     * 🔴 El perfil elegido al registrarse, y SÓLO si no hay, 'tenant'.
+     *
+     * Nico, 2026-09-11: se le cayó el back mientras trabajaba en el panel de
+     * la inmobiliaria y la app lo mandó al portal del INQUILINO. La cadena:
+     * `GET /users/me` no responde → este fallback → `role: 'tenant'` fijo →
+     * ProtectedRoute ve un rol que no puede entrar al panel y redirige.
+     *
+     * Un rol inventado no puede ser la base de una decisión de navegación.
+     * `intended_role` al menos es un dato REAL de la persona (lo escribió el
+     * registro). Y como red de verdad, quien lee esto tiene `profileSource:
+     * 'session'` para saber que NADA de acá es autoritativo — ver el gate de
+     * ProtectedRoute, que con un perfil degradado no expulsa a nadie.
+     */
+    role: leerPerfilElegido(meta) ?? 'tenant',
     profileSource: 'session',
     // When the backend is unreachable we have no way to confirm onboarding status.
     // Default to true so the user isn't incorrectly sent to the onboarding flow —
@@ -495,6 +509,68 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await probeAgencyMembership()
     }
   }, [fetchUser, probeAgencyMembership])
+
+  /* ------------------------------------------------------------------
+   * 🔴 Self-heal del PERFIL degradado.
+   *
+   * Cuando `/users/me` no responde, `fetchUser` devuelve un usuario armado
+   * con la sesión de Supabase (`profileSource: 'session'`). Ese estado no se
+   * reintentaba NUNCA: quedaba pegado hasta que algo disparara otro evento de
+   * auth. Nico, 2026-09-11: se le cayó el back, la app lo mandó al portal del
+   * inquilino, y volver a levantarlo no arreglaba nada porque nadie
+   * re-preguntaba quién era.
+   *
+   * Espejo exacto del backstop de la agencia, incluido el porqué de los
+   * plazos: 0s / 2s / 8s cubre un reinicio de back sin martillar al servidor.
+   * ------------------------------------------------------------------ */
+  const perfilSelfHealActivoRef = useRef(false)
+  const perfilSelfHealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const perfilSelfHealTokenRef = useRef(0)
+
+  useEffect(() => {
+    // Sólo un perfil DEGRADADO se reintenta. Uno real ('backend') es la
+    // verdad y no hay nada que curar.
+    if (!user || user.profileSource !== 'session') return
+    if (perfilSelfHealActivoRef.current) return
+    perfilSelfHealActivoRef.current = true
+    const miToken = ++perfilSelfHealTokenRef.current
+
+    const intentar = (indice: number) => {
+      perfilSelfHealTimeoutRef.current = setTimeout(async () => {
+        if (miToken !== perfilSelfHealTokenRef.current) return
+        console.warn(
+          `[Auth] profile self-heal retry ${indice + 1}/${AGENCY_SELF_HEAL_DELAYS_MS.length} (perfil degradado)`,
+        )
+        const { user: fresco } = await fetchUser()
+        if (miToken !== perfilSelfHealTokenRef.current) return
+        // Sólo se adopta un perfil REAL: otro degradado no es una mejora, y
+        // pisarlo reiniciaría el efecto en un bucle.
+        if (fresco?.profileSource === 'backend') {
+          setUser(fresco)
+          void probeAgencyMembership()
+          perfilSelfHealActivoRef.current = false
+          return
+        }
+        const siguiente = indice + 1
+        if (siguiente < AGENCY_SELF_HEAL_DELAYS_MS.length) {
+          intentar(siguiente)
+        } else {
+          console.warn('[Auth] profile self-heal agotado — queda el botón «Reintentar ahora»')
+          perfilSelfHealActivoRef.current = false
+        }
+      }, AGENCY_SELF_HEAL_DELAYS_MS[indice])
+    }
+    intentar(0)
+
+    return () => {
+      perfilSelfHealTokenRef.current += 1
+      if (perfilSelfHealTimeoutRef.current) {
+        clearTimeout(perfilSelfHealTimeoutRef.current)
+        perfilSelfHealTimeoutRef.current = null
+      }
+      perfilSelfHealActivoRef.current = false
+    }
+  }, [user, fetchUser, probeAgencyMembership])
 
   /** Check MFA assurance level and update mfaRequired state */
   const checkMfaLevel = useCallback(async () => {

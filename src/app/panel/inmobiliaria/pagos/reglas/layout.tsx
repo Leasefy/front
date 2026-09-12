@@ -19,7 +19,7 @@ export default function PagosReglasLayout({ children }: { children: React.ReactN
       <div className="px-4 pt-4 sm:px-6 lg:px-8">
         <AvisoDatosDeEjemplo
           queEsInventado="Los valores de las reglas (día de generación, días de recordatorio, monto de aprobación automática)"
-          queFalta="Son 14 useState con defaults escritos a mano: no se leen del back ni se guardan. La pantalla ya avisa que no persiste; lo que faltaba es decir que los valores tampoco son los tuyos."
+          queFalta="Todavía no se guardan en ningún lado ni se leen de tu configuración: son valores de ejemplo escritos a mano. La pantalla ya avisa que no persiste; lo que faltaba es decir que los valores tampoco son los tuyos."
         />
       </div>
       {children}

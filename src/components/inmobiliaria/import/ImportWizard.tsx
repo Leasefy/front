@@ -42,6 +42,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { toast } from '@/components/ui/toast';
+import { describirCargaAbierta } from './lib/describirCargaAbierta';
 import {
   inmueblesImportacionApi,
   type EstadoDeLoteInmuebles,
@@ -79,6 +81,17 @@ export interface ImportStepProps {
   /** Adentro del muro de migración: qué hacer en vez de navegar al portafolio. */
   onSalir?: () => void;
   /**
+   * Adentro del muro: pasar al paso de Contratos.
+   *
+   * 🔴 Nico, 2026-09-11, con el lote entero activado en pantalla: «no hay nada
+   * de cómo continuar, cómo pasar de ahí a contratos, no se muestra un cta».
+   * El asistente terminaba su trabajo y no tenía forma de decirlo hacia
+   * afuera: el único callback del muro era `onSalir`, que reinicia. Sin esto,
+   * la única salida era el pie del muro — que no ofrece nada mientras el paso
+   * siga «pendiente» por filas de OTRAS cargas.
+   */
+  onContinuar?: () => void;
+  /**
    * Aviso hacia el muro: `true` mientras corre una operación larga
    * (geocodificar, preparar, activar). Sin esto, el pie del muro ofrecía
    * «Seguir con Contratos» con el «Activando…» todavía girando.
@@ -115,10 +128,12 @@ export const RanuraDelPieSecundaria = createContext<HTMLElement | null>(null);
  */
 export function ImportWizard({
   onSalir,
+  onContinuar,
   onOcupado,
   congelado = false,
 }: {
   onSalir?: () => void;
+  onContinuar?: () => void;
   onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
   /**
    * El muro dice que hay una operación larga en vuelo y que hay que congelar.
@@ -166,6 +181,31 @@ export function ImportWizard({
     return () => {
       vigente = false;
     };
+  }, []);
+
+  /*
+   * Descartar una carga desde la tarjeta, sin entrar.
+   *
+   * El back rechaza con 409 `LOTE_EN_PROCESO` si el job todavía corre; eso NO
+   * es un fallo de la persona, es «esperá», y se dice tal cual en vez de
+   * reintentar en silencio (mismo criterio que `handleDescartarLote`).
+   */
+  const [descartando, setDescartando] = useState<string | null>(null);
+  const descartarLote = useCallback(async (lote: string) => {
+    setDescartando(lote);
+    try {
+      const r = await inmueblesImportacionApi.descartarLote(lote);
+      setLotesAbiertos((prev) => prev.filter((l) => l.lote !== lote));
+      toast.success('Carga descartada', {
+        description: `${r.descartadas} ${r.descartadas === 1 ? 'fila quedó fuera' : 'filas quedaron fuera'}. Los inmuebles que ya se habían creado no se tocan.`,
+      });
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : 'No pudimos descartar esa carga.',
+      );
+    } finally {
+      setDescartando(null);
+    }
   }, []);
 
   const retomarLote = useCallback(
@@ -362,6 +402,7 @@ export function ImportWizard({
       state: wizardState,
       updateState,
       onSalir,
+      onContinuar,
       onOcupado,
     };
 
@@ -392,34 +433,108 @@ export function ImportWizard({
           data-testid="lotes-inmuebles-abiertos"
         >
           <p className="text-sm font-medium text-fg">
-            Tienes una importación sin terminar
+            {lotesAbiertos.length === 1
+              ? 'Tienes una importación sin terminar'
+              : `Tienes ${lotesAbiertos.length} importaciones sin terminar`}
           </p>
-          {lotesAbiertos.map((l) => (
+          {/*
+           * 🔴 «¿Cuál de esos retomo?» (Nico, 2026-09-11, con cinco cargas en
+           * pantalla). No podía saberlo: las cinco eran del MISMO archivo, así
+           * que las cinco líneas empezaban con «2864 inmuebles» y se
+           * diferenciaban en dos conteos sin contexto.
+           *
+           * Ahora cada fila dice cuándo se subió, cuántos inmuebles entraron
+           * por ella, y —lo que de verdad decide— si frena el paso. Sólo las
+           * filas LISTO lo frenan: una carga con 2.864 «por revisar» y cero
+           * listas no frena nada, y hasta hoy se veía igual de alarmante que
+           * una que sí.
+           */}
+          {lotesAbiertos.map((l) => {
+            const d = describirCargaAbierta(l, new Date());
+            return (
             <div
               key={l.lote}
               className="flex flex-wrap items-center justify-between gap-2"
+              data-testid={`carga-${l.lote}`}
             >
-              <p className="text-sm text-fg-muted">
-                <span className="font-mono tabular-nums">{l.total}</span>{' '}
-                {l.total === 1 ? 'inmueble' : 'inmuebles'}
-                {l.estado === 'LISTO' ? (
-                  <>
-                    {' · '}
-                    <span className="font-mono tabular-nums">{l.pendientes}</span> por
-                    revisar
-                    {' · '}
-                    <span className="font-mono tabular-nums">{l.listos}</span> listos para
-                    activar
-                  </>
-                ) : (
-                  <> · todavía procesándose</>
-                )}
-              </p>
-              <Button size="sm" hideArrow onClick={() => retomarLote(l)}>
-                Retomar
-              </Button>
+              <div className="min-w-0">
+                <p className="text-sm text-fg">
+                  {d.cuando ? <span className="font-medium">{d.cuando}</span> : null}
+                  {d.cuando && d.yaEntraron > 0 ? ' · ' : null}
+                  {d.yaEntraron > 0 ? (
+                    <>
+                      <span className="font-mono tabular-nums">{d.yaEntraron}</span> ya
+                      en tu portafolio
+                    </>
+                  ) : null}
+                </p>
+                <p className="text-sm text-fg-muted">
+                  {d.queHacer === 'procesando' ? (
+                    'Todavía procesándose'
+                  ) : d.queHacer === 'frena' ? (
+                    <>
+                      <span className="font-mono tabular-nums">{d.frena}</span> listos
+                      sin activar — <span className="text-warning">frenan este paso</span>
+                      {d.porRevisar > 0 ? (
+                        <>
+                          {' · '}
+                          <span className="font-mono tabular-nums">{d.porRevisar}</span>{' '}
+                          por revisar
+                        </>
+                      ) : null}
+                    </>
+                  ) : d.queHacer === 'terminada' ? (
+                    <>
+                      Sin nada que activar
+                      {d.porRevisar > 0 ? (
+                        <>
+                          {' · '}
+                          <span className="font-mono tabular-nums">{d.porRevisar}</span>{' '}
+                          por revisar, no frenan
+                        </>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-mono tabular-nums">{d.porRevisar}</span> por
+                      revisar · no frenan este paso
+                    </>
+                  )}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {/*
+                 * 🔴 DESCARTAR SIN TENER QUE ENTRAR.
+                 *
+                 * Una carga abandonada frena el paso entero del muro
+                 * —cualquier fila LISTO lo deja «pendiente»— y hasta hoy la
+                 * única forma de sacarla del medio era retomarla, esperar a
+                 * que cargara la revisión y buscar «Descartar lote completo»
+                 * adentro. Con cuatro cargas viejas encima, eso son cuatro
+                 * viajes para tirar algo que ya se decidió tirar (Nico,
+                 * 2026-09-11).
+                 *
+                 * Va en `ghost` y a la izquierda del primario: descartar es
+                 * destructivo y no puede competir por el clic con «Retomar».
+                 */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  hideArrow
+                  disabled={descartando === l.lote || l.estado !== 'LISTO'}
+                  isLoading={descartando === l.lote}
+                  data-testid={`descartar-${l.lote}`}
+                  onClick={() => void descartarLote(l.lote)}
+                >
+                  Descartar
+                </Button>
+                <Button size="sm" hideArrow onClick={() => retomarLote(l)}>
+                  Retomar
+                </Button>
+              </div>
             </div>
-          ))}
+            );
+          })}
           <p className="text-xs text-fg-subtle">
             Si en cambio subes el mismo archivo de nuevo, los inmuebles se duplican.
           </p>

@@ -19,6 +19,7 @@ import { agencySubscriptionApi } from '@/lib/api/agency-subscription.service';
 import { subscriptionsApi } from '@/lib/api/subscriptions.service';
 import type { AgencySubscriptionState } from '@/lib/api/agency-subscription.types';
 import type { BackendSubscriptionPlan } from '@/lib/api/subscriptions.types';
+import { consumeAgencySubscriptionSeed } from '@/lib/auth/bootstrap-seed';
 
 // slug libre admin-creatable, ver contrato 29
 type AgencyPlanIdLower = string;
@@ -49,6 +50,17 @@ export function useAgencySubscription(enabled = true) {
     // Only hit /inmobiliaria/subscription in the agency context — landlord/tenant
     // callers pass enabled=false so they don't fire a 401/403 request.
     if (!enabled) {
+      setIsLoading(false);
+      return;
+    }
+    // T-0082 WU-2b: on the FIRST mount, if the login bootstrap already
+    // resolved this agency's subscription (contract.md §3.2), consume that
+    // seed instead of firing GET /inmobiliaria/subscription again. One-shot
+    // (`bootstrap-seed.ts`) — `refetch()` (manual retry) always goes live.
+    const seeded = consumeAgencySubscriptionSeed();
+    if (seeded) {
+      setState(seeded);
+      setError(null);
       setIsLoading(false);
       return;
     }

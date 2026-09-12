@@ -12,6 +12,7 @@ import {
 import { apiClient, getAccessToken } from '@/lib/api/client';
 import type { MemberPermissionsResponse } from '@/lib/api/inmobiliaria.service';
 import { useAuth } from '@/lib/auth';
+import { consumePermissionsSeed } from '@/lib/auth/bootstrap-seed';
 import {
   isAgentModule,
   resolveAgentModuleAccess,
@@ -126,14 +127,25 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
     try {
+      // T-0082 WU-2b, contract.md §3.2: the login bootstrap may have already
+      // resolved `agency.permissions` for this member. Consume that seed
+      // instead of firing GET /inmobiliaria/agency/my-permissions again —
+      // one-shot (`bootstrap-seed.ts`): a manual `refetch()` or a mount after
+      // the seed was already consumed always goes live, per the contract's
+      // fallback rule ("permissions: null → keeps my-permissions as the
+      // fallback"). The agent-side call below is UNCHANGED — it stays
+      // unconditional per contract.md §5/§8, never folded into the bootstrap.
+      const seededPermissions = consumePermissionsSeed();
       // Decouple the two fetches: a monolith outage must NOT reject the whole
       // Promise.all and null out agent permissions (cobranza/cotizador access),
       // and an agent-service outage must not block the legacy modules. Each
       // call fails independently to null.
       const [legacy, agent] = await Promise.all([
-        apiClient
-          .get<MemberPermissionsResponse>('/inmobiliaria/agency/my-permissions')
-          .catch(() => null),
+        seededPermissions !== null
+          ? Promise.resolve(seededPermissions)
+          : apiClient
+              .get<MemberPermissionsResponse>('/inmobiliaria/agency/my-permissions')
+              .catch(() => null),
         agencyId ? fetchAgentPermissions(agencyId).catch(() => null) : Promise.resolve(null),
       ]);
       setPermissions(legacy);

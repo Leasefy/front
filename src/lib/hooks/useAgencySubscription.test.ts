@@ -27,6 +27,7 @@ vi.mock('@/lib/api/subscriptions.service', () => ({
 
 import { useAgencySubscription } from './useAgencySubscription';
 import type { BackendSubscriptionPlan } from '@/lib/api/subscriptions.types';
+import { setBootstrapSeed, clearBootstrapSeed } from '@/lib/auth/bootstrap-seed';
 
 function backendPlan(o: Partial<BackendSubscriptionPlan>): BackendSubscriptionPlan {
   return {
@@ -143,6 +144,52 @@ describe('useAgencySubscription — isPaidPlan derives from isDefault (no tier-n
 
     expect(hook.get().currentPlanId).toBe('starter');
     expect(hook.get().isPaidPlan).toBe(false);
+  });
+});
+
+describe('useAgencySubscription — bootstrap seed (T-0082 WU-2b)', () => {
+  afterEach(() => clearBootstrapSeed());
+
+  it('uses the seeded agency subscription on first mount — never calls agencySubscriptionApi.get', async () => {
+    setBootstrapSeed({ agencySubscription: activeState('PRO-PLUS') as never });
+    mockGetPlans.mockResolvedValueOnce([backendPlan({ tier: 'pro-plus', isDefault: false })]);
+
+    const hook = renderHook();
+    await act(async () => {});
+
+    expect(hook.get().currentPlanId).toBe('pro-plus');
+    expect(mockGet).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the live fetch when nothing was seeded', async () => {
+    mockGet.mockResolvedValueOnce(activeState('starter'));
+    mockGetPlans.mockResolvedValueOnce([backendPlan({ tier: 'starter', isDefault: true })]);
+
+    const hook = renderHook();
+    await act(async () => {});
+
+    expect(hook.get().currentPlanId).toBe('starter');
+    expect(mockGet).toHaveBeenCalledTimes(1);
+  });
+
+  it('a seed is consumed once — refetch() always goes live', async () => {
+    setBootstrapSeed({ agencySubscription: activeState('PRO-PLUS') as never });
+    mockGetPlans.mockResolvedValue([
+      backendPlan({ tier: 'pro-plus', isDefault: false }),
+      backendPlan({ tier: 'starter', isDefault: true }),
+    ]);
+    mockGet.mockResolvedValueOnce(activeState('starter'));
+
+    const hook = renderHook();
+    await act(async () => {});
+    expect(mockGet).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await hook.get().refetch();
+    });
+
+    expect(mockGet).toHaveBeenCalledTimes(1);
+    expect(hook.get().currentPlanId).toBe('starter');
   });
 });
 

@@ -13,9 +13,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  aplicarAsientosCompleto,
-  type ProgresoDeAsientos,
-} from "./aplicarAsientosCompleto";
+  aplicarPorTandas,
+  revisarPorTandas,
+  tandasDe,
+  type ProgresoDeTandas,
+} from "./asientosPorTandas";
 import { BarraDeTrabajo } from "./BarraDeTrabajo";
 import Link from "next/link";
 import { useDropzone } from "react-dropzone";
@@ -105,8 +107,14 @@ export function MigrarAsientos({
   const [informe, setInforme] = useState<InformeDeMigracion | null>(null);
   const [cargando, setCargando] = useState(false);
   /* 🔴 La barra de los asientos (Nico, 2026-09-12). El archivo real trae
-     116.469 filas: sin esto, «Aplicar» es media hora de spinner. */
-  const [progreso, setProgreso] = useState<ProgresoDeAsientos | null>(null);
+     116.469 filas: sin esto, «Aplicar» es media hora de spinner. Desde el
+     mismo día mide también la REVISIÓN, que con 24 tandas dejó de ser
+     instantánea. */
+  const [progreso, setProgreso] = useState<ProgresoDeTandas | null>(null);
+  /** Qué se está haciendo: la barra dice «Revisando…» o «Escribiendo…». */
+  const [faena, setFaena] = useState<"revisando" | "aplicando" | null>(null);
+  /** Rechazadas que no caben en la tabla (ver `TOPE_DE_RECHAZADAS`). */
+  const [rechazadasNoListadas, setRechazadasNoListadas] = useState(0);
   const detenerRef = useRef(false);
   const [deteniendo, setDeteniendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -180,24 +188,51 @@ export function MigrarAsientos({
     () => (filas.length ? armarAsientos(filas, mapeo) : []),
     [filas, mapeo],
   );
-  const demasiados = armados.length > MAX_ASIENTOS_POR_LOTE;
+  /*
+   * 🔴 Un archivo grande YA NO se rechaza: se parte solo.
+   *
+   * Nico, 2026-09-12, con 116.262 asientos y el cartel que le pedía partir el
+   * Excel por año: «debemos ampliar lo del lote porque mira que pueden llegar
+   * a ser muchos». El tope del back se queda donde está —el body-parser está
+   * en 15 MB y 116.000 asientos no caben en un request pase lo que pase—; lo
+   * que cambia es quién parte el archivo. Ver `asientosPorTandas`.
+   */
+  const cuantasTandas = tandasDe(armados.length);
   const puedeRevisar =
     armados.length > 0 &&
     sinMapear.length === 0 &&
-    !demasiados &&
     lote.trim().length > 0 &&
     !cargando;
 
   const revisar = async () => {
     setCargando(true);
     setError(null);
+    setProgreso(null);
+    setFaena("revisando");
+    detenerRef.current = false;
+    setDeteniendo(false);
     try {
-      const r = await contabilidadApi.migracion.revisar({
-        lote: lote.trim(),
-        asientos: armados,
-      });
+      /*
+       * Por tandas de 5.000: el tope del back es por REQUEST, y 116.000
+       * asientos no caben en uno. Todas las tandas van con el mismo nombre de
+       * lote, así que para el back es un solo lote y reenviarlo es seguro.
+       */
+      const vuelta = await revisarPorTandas(
+        lote.trim(),
+        armados,
+        (cuerpo) => contabilidadApi.migracion.revisar(cuerpo),
+        setProgreso,
+        { debeParar: () => detenerRef.current },
+      );
       setAsientos(armados);
-      setRevision(r);
+      setRevision(vuelta.revision);
+      setRechazadasNoListadas(vuelta.rechazadasNoListadas);
+      if (vuelta.detenidoPorPersona) {
+        setError(
+          `Se revisaron ${vuelta.revision.total} de ${armados.length} asientos. ` +
+            "Nada se escribió: vuelve a revisar cuando quieras y empieza de cero.",
+        );
+      }
     } catch (e) {
       setError(
         mensajeDeContabilidad(
@@ -207,6 +242,9 @@ export function MigrarAsientos({
       );
     } finally {
       setCargando(false);
+      setProgreso(null);
+      setFaena(null);
+      setDeteniendo(false);
     }
   };
 
@@ -214,31 +252,35 @@ export function MigrarAsientos({
     setCargando(true);
     setError(null);
     setProgreso(null);
+    setFaena("aplicando");
     detenerRef.current = false;
     setDeteniendo(false);
     try {
       /*
-       * Por tandas: el back corta a los 15 s y dice cuántos quedan. Reenviar
-       * el mismo lote es seguro —la idempotencia es por `(lote, clave)`— así
-       * que cada vuelta escribe sólo lo que falta.
+       * DOS particiones anidadas, y ninguna reemplaza a la otra: por tamaño
+       * de request afuera (5.000 por llamada, el body-parser está en 15 MB) y
+       * por reloj adentro (el back corta a los 15 s y dice cuántos quedan).
+       * Sin la de afuera el request no cabe; sin la de adentro no vuelve.
+       * Reenviar es seguro: la idempotencia es por `(lote, clave)`.
        */
-      const vuelta = await aplicarAsientosCompleto(
-        () =>
-          contabilidadApi.migracion.aplicar({ lote: lote.trim(), asientos }),
-        setProgreso,
+      const vuelta = await aplicarPorTandas(
+        lote.trim(),
+        asientos,
+        (cuerpo) => contabilidadApi.migracion.aplicar(cuerpo),
+        ({ dentroDeLaTanda: _dentro, ...p }) => setProgreso(p),
         { debeParar: () => detenerRef.current },
       );
-      const r = vuelta.ultimo;
+      const r = vuelta.informe;
       setInforme(r);
       onAplicado(r);
       if (vuelta.detenidoPorPersona) {
         setError(
-          `Se aplicaron ${vuelta.aplicados} asientos y quedaron ${vuelta.restantes}. ` +
+          `Se aplicaron ${r.aplicados} asientos y quedaron ${asientos.length - r.total}. ` +
             "Nada se duplica: vuelve a aplicar el mismo lote y sigue donde quedó.",
         );
-      } else if (vuelta.detenidoSinAvance || vuelta.detenidoPorLimite) {
+      } else if (vuelta.detenidoSinAvance) {
         setError(
-          `Se aplicaron ${vuelta.aplicados} asientos y el lote dejó de avanzar: ` +
+          `Se aplicaron ${r.aplicados} asientos y el lote dejó de avanzar: ` +
             "la última vuelta no escribió ninguno. Revisa el informe de abajo.",
         );
       }
@@ -255,6 +297,7 @@ export function MigrarAsientos({
     } finally {
       setCargando(false);
       setProgreso(null);
+      setFaena(null);
       setDeteniendo(false);
     }
   };
@@ -276,6 +319,7 @@ export function MigrarAsientos({
     return (
       <Revision
         revision={revision}
+        rechazadasNoListadas={rechazadasNoListadas}
         cargando={cargando}
         error={error}
         onRevisarDeNuevo={revisar}
@@ -451,13 +495,17 @@ export function MigrarAsientos({
             </div>
           ) : null}
 
-          {demasiados ? (
-            <div className="mt-4 flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3">
-              <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
-              <p className="text-sm text-fg">
-                Son {armados.length} asientos y un lote admite hasta{" "}
-                {MAX_ASIENTOS_POR_LOTE}. Parte el archivo (por año, por ejemplo)
-                y súbelo en tandas.
+          {cuantasTandas > 1 ? (
+            <div
+              className="mt-4 flex items-start gap-2 rounded-md border border-border bg-info-soft p-3"
+              data-testid="asientos-en-tandas"
+            >
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
+              <p className="text-sm text-fg-muted">
+                Son {armados.length} asientos: van en {cuantasTandas} tandas de
+                hasta {MAX_ASIENTOS_POR_LOTE}, con este mismo nombre de lote.
+                No tienes que partir el archivo; puedes detener a mitad y
+                seguir después sin duplicar nada.
               </p>
             </div>
           ) : null}
@@ -502,6 +550,31 @@ export function MigrarAsientos({
               Revisar {armados.length} asientos
             </Button>
           </div>
+
+          {/* Revisar también se volvió una espera larga en cuanto dejó de ser
+              una sola llamada: 24 tandas contra la base son minutos. Misma
+              barra, mismo «Detener» — revisar no escribe nada, así que cortar
+              a mitad no deja nada a medias. */}
+          {faena === "revisando" && progreso ? (
+            <div className="mt-4">
+              <BarraDeTrabajo
+                testid="revision-asientos"
+                titulo="Revisando el archivo"
+                hechas={progreso.hechos}
+                total={progreso.total}
+                onDetener={() => {
+                  detenerRef.current = true;
+                  setDeteniendo(true);
+                }}
+                deteniendo={deteniendo}
+                nota={
+                  progreso.tandas > 1
+                    ? `Tanda ${progreso.tanda} de ${progreso.tandas}. Todavía no se escribe nada.`
+                    : undefined
+                }
+              />
+            </div>
+          ) : null}
         </section>
       ) : null}
     </div>
@@ -512,6 +585,7 @@ export function MigrarAsientos({
 
 function Revision({
   revision,
+  rechazadasNoListadas,
   cargando,
   error,
   onRevisarDeNuevo,
@@ -523,13 +597,16 @@ function Revision({
   onOtroArchivo,
 }: {
   revision: RevisionDeLote;
+  /** Rechazadas que no caben en la tabla. Se DICEN: truncar en silencio es
+   *  cómo alguien concluye que ya las revisó todas. */
+  rechazadasNoListadas: number;
   cargando: boolean;
   error: string | null;
   onRevisarDeNuevo: () => void;
   onIrAlPuc?: () => void;
   onAplicar: () => void;
   /** Lo que va pasando mientras se escriben los asientos. `null` = quieto. */
-  progreso: ProgresoDeAsientos | null;
+  progreso: ProgresoDeTandas | null;
   deteniendo: boolean;
   onDetener: () => void;
   onOtroArchivo: () => void;
@@ -644,6 +721,18 @@ function Revision({
               </li>
             ))}
           </ul>
+          {/* 🔴 Lo que no se lista se DICE. Con 116.000 asientos, guardar
+              TODAS las filas rechazadas es una segunda copia del archivo en
+              memoria, así que se guardan hasta un tope (`TOPE_DE_RECHAZADAS`).
+              Un corte silencioso es cómo alguien concluye que ya las vio
+              todas. Los motivos de arriba sí las cuentan a todas. */}
+          {rechazadasNoListadas > 0 ? (
+            <p className="mt-4 text-sm text-fg-muted" data-testid="rechazadas-no-listadas">
+              Se listan {rechazadas.length} de {revision.rechazadas}. Las otras{" "}
+              {rechazadasNoListadas} están contadas arriba por motivo; corrige
+              el archivo y vuelve a revisar para verlas.
+            </p>
+          ) : null}
           {rechazadas.length > 0 ? (
             <div className="mt-4 overflow-hidden rounded-lg border border-border">
               <div className="overflow-x-auto">
@@ -708,21 +797,27 @@ function Revision({
           data-testid="aplicar-asientos"
         >
           {progreso
-            ? `Aplicando… ${progreso.aplicados} de ${progreso.aplicados + progreso.restantes}`
+            ? `Aplicando… ${progreso.hechos} de ${progreso.total}`
             : `Aplicar ${revision.listas} ${revision.listas === 1 ? "asiento" : "asientos"}`}
         </Button>
         {/* 🔴 La barra (Nico, 2026-09-12): 116.469 filas sin un dato de avance
-            eran media hora de spinner. El total sale del servidor en cada
-            vuelta (aplicados + restantes). */}
+            eran media hora de spinner. El total es el del ARCHIVO, no el de la
+            tanda: con 24 tandas, una barra que se reinicia en cada una no dice
+            cuánto falta, dice cuánto falta de un pedazo que nadie eligió. */}
         {progreso ? (
           <div className="w-full">
             <BarraDeTrabajo
               testid="asientos"
               titulo="Escribiendo los asientos"
-              hechas={progreso.aplicados}
-              total={progreso.aplicados + progreso.restantes}
+              hechas={progreso.hechos}
+              total={progreso.total}
               onDetener={onDetener}
               deteniendo={deteniendo}
+              nota={
+                progreso.tandas > 1
+                  ? `Tanda ${progreso.tanda} de ${progreso.tandas}. Puedes detener y seguir después: nada se duplica.`
+                  : undefined
+              }
             />
           </div>
         ) : null}

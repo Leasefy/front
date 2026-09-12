@@ -42,6 +42,33 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
       gestureOrientation: "vertical",
       smoothWheel: true,
       touchMultiplier: 2,
+      /*
+       * 🔴 Sin esto, NINGÚN contenedor con scroll propio scrollea con la rueda.
+       *
+       * Lenis escucha la rueda en `window` y la consume para mover la página,
+       * así que una lista interna se queda quieta aunque tenga
+       * `overflow-y: auto`. Nico, 2026-09-12, en el selector de cuenta del
+       * paso 5 con 2.790 cuentas: «dentro del listado no deja hacer scroll,
+       * revisa que el resto también funcionen bien».
+       *
+       * Tenía razón en lo segundo: era TODO combobox, select y menú del
+       * producto, no esa pantalla. El parche que existía —`data-lenis-prevent`
+       * a mano— sólo cubre los cinco lugares donde alguien se acordó de
+       * ponerlo, y no alcanza a nada que viva adentro de `@leasefy/cadence`,
+       * que es donde están los primitivos.
+       *
+       * `allowNestedScroll` es la respuesta del propio Lenis: por cada nodo
+       * del camino del evento mira si de verdad puede scrollear —overflow
+       * real, contenido más alto que la caja, y sin haber llegado a su tope en
+       * la dirección del gesto— y sólo entonces le suelta la rueda. Un nodo
+       * que no scrollea devuelve `false` y la página sigue con su scroll
+       * suave, así que no cambia nada en el resto del producto. El resultado
+       * está cacheado 2 s por nodo.
+       *
+       * Los `data-lenis-prevent` que ya están siguen valiendo (se evalúan con
+       * un OR) y son más estrictos: nunca le devuelven la rueda a la página.
+       */
+      allowNestedScroll: true,
     });
 
     lenisRef.current = lenis;

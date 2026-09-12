@@ -635,6 +635,8 @@ export function StepConfirmImport({
     };
   }, [sinNadaQueActivar, lote]);
 
+  /** ¿Ya sabemos qué hay en las otras cargas? `null` = la consulta no volvió. */
+  const sabemosDeOtrasCargas = otrasCargas !== null;
   /** Filas LISTO que viven en OTRO lote: son las que frenan el paso del muro. */
   const listosEnOtrasCargas = (otrasCargas ?? [])
     .filter((l) => l.lote !== lote)
@@ -1468,7 +1470,22 @@ export function StepConfirmImport({
                 seguir.
               </p>
             )}
-            {listosEnOtrasCargas > 0 ? (
+            {/*
+             * 🔴 NADA DE ACCIÓN HASTA SABER CUÁL ES.
+             *
+             * Nico, 2026-09-11: «me apareció el cta, dizque seguir con
+             * contratos, y luego pasó a decir eso de ver las otras cargas».
+             * `otrasCargas` arranca en `null` y el conteo derivado daba 0,
+             * así que el bloque dibujaba «Seguir con Contratos» y lo cambiaba
+             * por otro botón distinto cuando volvía la consulta. Un botón que
+             * cambia de identidad debajo del dedo no se puede usar: se espera
+             * a saber y recién ahí se ofrece algo.
+             */}
+            {!sabemosDeOtrasCargas ? (
+              <p className="mt-3 text-sm text-fg-subtle" data-testid="mirando-otras-cargas">
+                Revisando si queda algo pendiente en otras cargas…
+              </p>
+            ) : listosEnOtrasCargas > 0 ? (
               <>
                 <p className="mt-3 text-sm text-fg-muted dark:text-fg-subtle">
                   Antes de seguir: {cuantasOtrasCargas}{" "}
@@ -1476,7 +1493,8 @@ export function StepConfirmImport({
                   {cuantasOtrasCargas === 1 ? "tiene" : "tienen"}{" "}
                   {listosEnOtrasCargas} filas listas sin activar. Mientras
                   existan, este paso no se da por terminado — actívalas o
-                  descártalas.
+                  descártalas. Al terminar con ellas aparece «Seguir con
+                  Contratos».
                 </p>
                 {onSalir && (
                   <Button
@@ -1486,7 +1504,9 @@ export function StepConfirmImport({
                     data-testid="ir-a-otras-cargas"
                     onClick={() => onSalir()}
                   >
-                    Ver las otras cargas
+                    {cuantasOtrasCargas === 1
+                      ? "Ver y descartar esa carga"
+                      : "Ver y descartar las otras cargas"}
                   </Button>
                 )}
               </>

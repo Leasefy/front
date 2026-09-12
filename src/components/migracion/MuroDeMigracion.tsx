@@ -145,6 +145,23 @@ export const CADA_CUANTO_SE_REFRESCA_MS = 60_000;
 // La compuerta: envuelve el panel entero y decide.
 // ══════════════════════════════════════════════════════════════════════════
 
+/**
+ * Pasos que NO llevan la píldora de «Queda por hacer» arriba.
+ *
+ * 🔴 La píldora existe desde el 2026-09-02, cuando Nico se quedó en el paso 5
+ * sin saber por qué no avanzaba: el back ya decía qué faltaba y la pantalla lo
+ * callaba. Sigue siendo necesaria donde el paso no se explica solo.
+ *
+ * `propiedades` dejó de necesitarla el 2026-09-11: el propio paso dibuja un
+ * bloque que dice cuántos inmuebles entraron, qué queda pendiente, QUÉ lo
+ * frena y con qué botón se resuelve. La píldora repetía los mismos cuatro
+ * números arriba a la izquierda, sin acción y sin contexto — «Queda por
+ * hacer: 3270 preparados sin activar · 4700 con datos por corregir · en 5
+ * cargas sin terminar · 2824 ya cargados»— y Nico pidió sacarla dos veces.
+ * Decir lo mismo en dos lugares, uno de ellos sin salida, no informa: satura.
+ */
+const SE_EXPLICAN_SOLOS: IdDePasoDeMigracion[] = ["propiedades"];
+
 export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   const [estado, setEstado] = useState<EstadoDeMigracion | null>(null);
   // Lo que el back contestó, bloquee o no: alimenta el recordatorio del
@@ -1148,7 +1165,9 @@ function PasoEnFoco({
             <Check className="h-3.5 w-3.5" weight="bold" />
             {paso.detalle ?? t("migracion.muro.hecho")}
           </p>
-        ) : paso.estado === "pendiente" && paso.detalle ? (
+        ) : paso.estado === "pendiente" &&
+          paso.detalle &&
+          !SE_EXPLICAN_SOLOS.includes(paso.id) ? (
           /*
            * El back ya dice qué le falta al paso. Antes este detalle sólo se
            * pintaba cuando el paso estaba hecho: pendiente, la persona veía

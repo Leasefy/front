@@ -477,14 +477,14 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
       pasos: [
         paso('propietarios', 'listo', 60, '60 propietarios'),
         paso('inquilinos', 'listo', 90, '90 inquilinos'),
+        paso('propiedades', 'listo', 2_145, '2145 inmuebles'),
+        paso('contratos', 'listo', 90, '90 contratos'),
         paso(
-          'propiedades',
+          'puc',
           'pendiente',
-          2_145,
-          '3270 preparados sin activar · 4660 con datos por corregir · 2145 ya cargados',
+          140,
+          'faltan cuentas para 3 asientos automáticos · 140 cuentas ya cargadas',
         ),
-        paso('contratos', 'pendiente'),
-        paso('puc', 'pendiente'),
         paso('contables', 'pendiente'),
       ],
     });
@@ -493,9 +493,9 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
 
     const rotulo = q('muro-paso-falta')?.textContent ?? '';
     // Lo ya hecho no encabeza la frase, y va con la palabra que lo explica.
-    expect(rotulo).toContain('ya cargados');
-    expect(rotulo.indexOf('preparados sin activar')).toBeLessThan(
-      rotulo.indexOf('ya cargados'),
+    expect(rotulo).toContain('ya cargadas');
+    expect(rotulo.indexOf('faltan cuentas')).toBeLessThan(
+      rotulo.indexOf('ya cargadas'),
     );
 
     /*
@@ -511,6 +511,40 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
       (es.migracion as Record<string, unknown>).muro as Record<string, string>
     );
     expect(muro.falta).toBe('Queda por hacer: {{detalle}}');
+  });
+
+  /*
+   * 🔴 Nico, 2026-09-11, dos veces: «elimina esto», sobre la píldora del paso
+   * de inmuebles — «Queda por hacer: 3270 preparados sin activar · 4700 con
+   * datos por corregir · en 5 cargas sin terminar · 2824 ya cargados».
+   *
+   * El paso ya dibuja adentro un bloque que dice lo mismo Y trae el botón que
+   * lo resuelve. La píldora repetía los cuatro números arriba, sin acción.
+   * Decir lo mismo en dos lugares, uno sin salida, satura en vez de informar.
+   */
+  it('el paso de inmuebles NO lleva píldora: se explica solo adentro', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [
+        paso('propietarios', 'listo', 60, '60 propietarios'),
+        paso('inquilinos', 'listo', 90, '90 inquilinos'),
+        paso(
+          'propiedades',
+          'pendiente',
+          2_824,
+          '3270 preparados sin activar · 4700 con datos por corregir · en 5 cargas sin terminar · 2824 ya cargados',
+        ),
+        paso('contratos', 'pendiente'),
+        paso('puc', 'pendiente'),
+        paso('contables', 'pendiente'),
+      ],
+    });
+
+    await pintar();
+
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('propiedades');
+    expect(q('muro-paso-falta')).toBeNull();
   });
 
   it('el paso 6 (registros contables) espera al 5 (plan de cuentas)', async () => {

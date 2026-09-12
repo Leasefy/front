@@ -500,6 +500,40 @@ describe('<StepConfirmImport> — the review screen once LISTO', () => {
       expect(onContinuar).toHaveBeenCalled();
     });
 
+    /*
+     * 🔴 Nico, 2026-09-11: «me apareció el cta, dizque seguir con contratos, y
+     * luego pasó a decir eso de ver las otras cargas». El conteo derivado daba
+     * 0 mientras la consulta no volvía, así que el bloque ofrecía Contratos y
+     * después cambiaba el botón por otro distinto. Un botón que cambia de
+     * identidad debajo del dedo no se puede usar.
+     */
+    it('no ofrece NINGUNA acción hasta saber qué hay en las otras cargas', async () => {
+      loteTerminado();
+      let soltar: ((ls: unknown[]) => void) | null = null;
+      inmueblesImportacionApiMock.lotesAbiertos.mockImplementation(
+        () => new Promise((resolve) => { soltar = resolve as (ls: unknown[]) => void; }),
+      );
+
+      render(baseState(), { onSalir: () => {}, onContinuar: () => {} });
+      await act(async () => { for (let i = 0; i < 6; i++) await Promise.resolve(); });
+
+      // Mientras no se sabe: ni uno ni otro, y se dice que se está mirando.
+      expect(container.querySelector('[data-testid="seguir-con-contratos"]')).toBeNull();
+      expect(container.querySelector('[data-testid="ir-a-otras-cargas"]')).toBeNull();
+      expect(container.querySelector('[data-testid="mirando-otras-cargas"]')).toBeTruthy();
+
+      await act(async () => {
+        soltar!([
+          { lote: 'vieja', estado: 'LISTO', total: 2_864, procesadas: 2_864, pendientes: 0, listos: 679, activados: 0, descartados: 0, jobId: null, error: null, creadoEn: '' },
+        ]);
+        for (let i = 0; i < 6; i++) await Promise.resolve();
+      });
+
+      // Y recién ahora aparece el que corresponde, una sola vez.
+      expect(container.querySelector('[data-testid="ir-a-otras-cargas"]')).toBeTruthy();
+      expect(container.querySelector('[data-testid="seguir-con-contratos"]')).toBeNull();
+    });
+
     it('con filas listas en OTRAS cargas dice cuántas y manda a verlas, no a Contratos', async () => {
       loteTerminado();
       inmueblesImportacionApiMock.lotesAbiertos.mockResolvedValue([

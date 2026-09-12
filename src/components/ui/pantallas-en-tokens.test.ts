@@ -189,7 +189,7 @@ const COBERTURA: string[] = [
   'components/contract/CancelContractModal.tsx',
   // Nace en tokens (2026-09-08): entra acá el mismo día, para que no haya que
   // «pasarla» después.
-  'components/contratos/DocumentosContablesDelContrato.tsx',
+  'components/contabilidad/ComprobantesDelSistemaAnterior.tsx',
   // — listados diarios ————————————————————————————————————————
   'components/inmobiliaria/InquilinosTable.tsx',
   'components/inmobiliaria/InquilinoDrawer.tsx',

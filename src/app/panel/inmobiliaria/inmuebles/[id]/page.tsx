@@ -16,6 +16,7 @@ import { Button, EmptyState } from '@/components/ui';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FotosDelInmueble } from '@/components/inmobiliaria/FotosDelInmueble';
 import { VisitasDelInmueble } from '@/components/inmobiliaria/VisitasDelInmueble';
+import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/ComprobantesDelSistemaAnterior';
 import { VisorDeFotos } from '@/components/inmobiliaria/inmueble/VisorDeFotos';
 import { UbicacionDelInmueble } from '@/components/inmobiliaria/inmueble/UbicacionDelInmueble';
 import {
@@ -611,6 +612,19 @@ function ConsignacionDetailContent() {
             transition={{ delay: 0.25 }}
           >
             <CurrentLeaseSection consignacion={consignacion} />
+          </motion.div>
+
+          {/* La historia contable ANTERIOR a Leasefy de este inmueble: los
+              comprobantes del sistema viejo que el back colgó de sus
+              contratos, en tres pestañas (ingresos · egresos · facturas).
+              Después del contrato vigente porque ése es el orden real —
+              arriba lo de hoy, abajo lo que quedó registrado antes. */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.27 }}
+          >
+            <ComprobantesDelSistemaAnterior propertyId={consignacion.propertyId} />
           </motion.div>
 
           <motion.div

@@ -53,7 +53,7 @@ import { AdministracionDelContrato } from '@/components/contratos/Administracion
 import { ConceptosDelContrato } from '@/components/contratos/ConceptosDelContrato';
 import { CobrosDelContrato, type ResumenDeCobros } from '@/components/contratos/CobrosDelContrato';
 import { ReglasDeMoraDelContrato } from '@/components/contratos/ReglasDeMoraDelContrato';
-import { DocumentosContablesDelContrato } from '@/components/contratos/DocumentosContablesDelContrato';
+import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/ComprobantesDelSistemaAnterior';
 import { Stat, StatStrip } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { VincularInmueble } from '@/components/contratos/VincularInmueble';
@@ -513,8 +513,11 @@ function ContratoDetalleContent() {
                 así que uno que todavía se está firmando no puede tener
                 ninguno, y pedirlos sería una petición que siempre vuelve
                 vacía.
+
+                En tres pestañas —ingresos · egresos · facturas— porque una
+                sola lista mezclada no deja ver nada (Nico, 2026-09-12).
               */}
-              <DocumentosContablesDelContrato contractId={contract.id} />
+              <ComprobantesDelSistemaAnterior contractId={contract.id} />
             </>
           )}
 

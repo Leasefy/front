@@ -625,6 +625,10 @@ export function StepConfirmImport({
     // esta fase dejaba «Preparando…» girando para siempre, sin error y sin
     // botón.
     const dtos: ImportarInmuebleDto[] = [];
+    // Las tres suertes de una dirección, contadas por separado porque no son
+    // lo mismo y antes se decían iguales: «quedan en el centro de su ciudad»
+    // era falso para las que no quedaban en ningún lado.
+    let enElMunicipio = 0;
     let sinUbicar = 0;
     let cancelada = false;
     try {
@@ -639,7 +643,8 @@ export function StepConfirmImport({
         const p = aEnviar[i];
         setGeoCurrent(i + 1);
         const coords = await geocodeImportRow(p);
-        if (coords.source !== "geocoded") sinUbicar += 1;
+        if (coords.source === "city") enElMunicipio += 1;
+        else if (coords.source === "none") sinUbicar += 1;
         dtos.push({
           ...toImportarInmuebleDto(p),
           ...(coords.lat != null && coords.lng != null
@@ -685,10 +690,28 @@ export function StepConfirmImport({
       // Persistido en el estado del wizard: sobrevive a «Anterior» y a un
       // remount del paso. Sin esto, volver un paso perdía el lote.
       updateState({ loteRetomado: r.lote });
-      if (sinUbicar > 0) {
-        toast.info("Direcciones sin ubicar", {
-          description: `${sinUbicar} de ${dtos.length} direcciones no se encontraron en el mapa: esos inmuebles quedan en el centro de su ciudad y puedes ajustar el pin después, en cada ficha.`,
-        });
+      /*
+       * 🔴 Lo que NO se encontró se dice, y se dice distinto según en qué
+       * quedó. Antes esto decía «quedan en el centro de su ciudad» para
+       * todas, y era falso: las de municipios que no estaban en la tabla de
+       * 32 ciudades —1.442 en el portafolio de Nico— quedaban sin punto
+       * ninguno, y nadie se enteraba hasta abrir la ficha.
+       */
+      const notas = [
+        enElMunicipio > 0
+          ? `${enElMunicipio} quedan en el centro de su municipio, porque la dirección es una referencia («detrás de la escuela») o no apareció`
+          : null,
+        sinUbicar > 0
+          ? `${sinUbicar} quedan sin punto en el mapa: no pudimos ubicar ni su municipio`
+          : null,
+      ].filter(Boolean);
+      if (notas.length > 0) {
+        toast.info(
+          `${enElMunicipio + sinUbicar} de ${dtos.length} sin dirección exacta`,
+          {
+            description: `${notas.join(" · ")}. El pin se ajusta después en cada ficha.`,
+          },
+        );
       }
     } catch (e) {
       setError(

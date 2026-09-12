@@ -1,78 +1,78 @@
 /**
- * geocodeImportRow.test.ts — coordinate resolution for one imported row.
+ * geocodeImportRow — la ubicación de una fila del portafolio que se importa.
+ *
+ * La regla y su porqué viven en `ubicar-direccion.test.ts`. Acá sólo se fija
+ * la traducción: que la fila de importación llegue completa a la regla
+ * —incluido el departamento— y que la precisión vuelva con el vocabulario que
+ * `StepConfirmImport` usa para contar cuántas quedaron sin dirección exacta.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const autocompleteMock = vi.fn();
-
-vi.mock('@/lib/api/geocode.service', () => ({
-  geocodeApi: {
-    autocomplete: (...args: unknown[]) => autocompleteMock(...args),
-  },
-}));
+const { ubicarDireccion } = vi.hoisted(() => ({ ubicarDireccion: vi.fn() }));
+vi.mock('@/lib/inmuebles/ubicar-direccion', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/inmuebles/ubicar-direccion')>(
+    '@/lib/inmuebles/ubicar-direccion',
+  );
+  return { ...actual, ubicarDireccion };
+});
 
 import { geocodeImportRow } from './geocodeImportRow';
 
 beforeEach(() => {
-  autocompleteMock.mockReset();
+  ubicarDireccion.mockReset();
 });
 
 describe('geocodeImportRow', () => {
-  it('returns the first autocomplete result as geocoded coordinates', async () => {
-    autocompleteMock.mockResolvedValue([
-      { lat: 4.6, lon: -74.0, label: 'Calle 123, Bogotá', placeId: '1' },
-      { lat: 4.7, lon: -74.1, label: 'Calle 124, Bogotá', placeId: '2' },
-    ]);
+  /*
+   * 🔴 El departamento no es un adorno: el portafolio real tiene un Rionegro
+   * en Antioquia y otro en Santander. Sin él, la regla no puede verificar
+   * contra el municipio correcto.
+   */
+  it('le pasa a la regla la dirección, el municipio Y el departamento', async () => {
+    ubicarDireccion.mockResolvedValue({ lat: 6.09, lng: -75.63, precision: 'direccion' });
 
-    const result = await geocodeImportRow({ propertyAddress: 'Calle 123', propertyCity: 'Bogotá' });
+    await geocodeImportRow({
+      propertyAddress: 'CR 50 CL 138 SUR -22',
+      propertyCity: 'Caldas',
+      propertyDepartment: 'Antioquia',
+    });
 
-    expect(result).toEqual({ lat: 4.6, lng: -74.0, source: 'geocoded' });
-    expect(autocompleteMock).toHaveBeenCalledWith('Calle 123');
+    expect(ubicarDireccion).toHaveBeenCalledWith({
+      direccion: 'CR 50 CL 138 SUR -22',
+      ciudad: 'Caldas',
+      departamento: 'Antioquia',
+    });
   });
 
-  it('falls back to the city center when there are no autocomplete results', async () => {
-    autocompleteMock.mockResolvedValue([]);
+  it('una dirección verificada vuelve como «geocoded»', async () => {
+    ubicarDireccion.mockResolvedValue({
+      lat: 6.0925,
+      lng: -75.6361,
+      precision: 'direccion',
+      etiqueta: 'Madame Purita',
+    });
 
-    const result = await geocodeImportRow({ propertyAddress: 'Dirección rara', propertyCity: 'Medellín' });
-
-    expect(result).toEqual({ lat: 6.2442, lng: -75.5812, source: 'city' });
+    expect(
+      await geocodeImportRow({ propertyAddress: 'CRA 48 #128 SUR 14', propertyCity: 'Caldas' }),
+    ).toEqual({ lat: 6.0925, lng: -75.6361, source: 'geocoded' });
   });
 
-  it('falls back to the city center when the geocode call throws', async () => {
-    autocompleteMock.mockRejectedValue(new Error('geocoding_upstream_error'));
+  /* El centro del municipio es lo que `StepConfirmImport` cuenta como «sin
+     ubicar con precisión» para poder decirlo. */
+  it('el centro del municipio vuelve como «city»', async () => {
+    ubicarDireccion.mockResolvedValue({ lat: 6.0918, lng: -75.6356, precision: 'municipio' });
 
-    const result = await geocodeImportRow({ propertyAddress: 'Calle 1', propertyCity: 'Cali' });
-
-    expect(result).toEqual({ lat: 3.4516, lng: -76.532, source: 'city' });
+    expect(
+      await geocodeImportRow({ propertyAddress: 'DETRAS DE LA ESCUELA', propertyCity: 'Caldas' }),
+    ).toEqual({ lat: 6.0918, lng: -75.6356, source: 'city' });
   });
 
-  it('falls back to the city center without calling geocode when the address is empty', async () => {
-    const result = await geocodeImportRow({ propertyAddress: '', propertyCity: 'Cartagena' });
+  it('sin nada que ubicar vuelve como «none», sin coordenadas', async () => {
+    ubicarDireccion.mockResolvedValue({ precision: 'ninguna' });
 
-    expect(autocompleteMock).not.toHaveBeenCalled();
-    expect(result).toEqual({ lat: 10.391, lng: -75.4794, source: 'city' });
-  });
-
-  it('returns source "none" when neither the address nor the city resolve', async () => {
-    autocompleteMock.mockResolvedValue([]);
-
-    const result = await geocodeImportRow({ propertyAddress: 'Sin resultados', propertyCity: 'Ciudad Inexistente' });
-
-    expect(result).toEqual({ lat: undefined, lng: undefined, source: 'none' });
-  });
-
-  it('falls back to the Itagüí city center instead of dropping coordinates (T-0030 WU-3, real defect)', async () => {
-    // Live evidence: LocationIQ answered 200 with an empty `results` array
-    // for a real Itagüí address, and the city-center fallback had no entry
-    // for Itagüí either — both coordinates came back `undefined` and were
-    // silently omitted from the create payload.
-    autocompleteMock.mockResolvedValue([]);
-
-    const result = await geocodeImportRow({ propertyAddress: 'Calle 52 Sur # 48-30', propertyCity: 'Itagüí' });
-
-    expect(result.source).toBe('city');
-    expect(result.lat).not.toBeUndefined();
-    expect(result.lng).not.toBeUndefined();
+    expect(
+      await geocodeImportRow({ propertyAddress: '', propertyCity: 'Villa Que No Existe' }),
+    ).toEqual({ lat: undefined, lng: undefined, source: 'none' });
   });
 });

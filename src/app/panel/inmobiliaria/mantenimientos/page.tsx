@@ -10,7 +10,12 @@ import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { SegmentedControl } from '@leasefy/cadence';
 import { Cajon, CajonCabecera } from '@/components/ui/cajon';
-import type { SolicitudMantenimiento, MantenimientoStatus } from '@/lib/types/inmobiliaria';
+import type {
+  SolicitudMantenimiento,
+  MantenimientoStatus,
+  NuevaCotizacion,
+} from '@/lib/types/inmobiliaria';
+import { formatCurrency } from '@/lib/types/inmobiliaria';
 import {
   useMantenimientos,
   useConsignaciones,
@@ -21,6 +26,7 @@ import {
   MantenimientoKanban,
   MantenimientoForm,
   MantenimientoViewer,
+  AgregarCotizacionDialog,
   type MantenimientoFormData,
 } from '@/components/inmobiliaria';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -163,6 +169,11 @@ function MantenimientosContent() {
   const [isMantenimientoViewerOpen, setIsMantenimientoViewerOpen] = useState(false);
   const [isMantenimientoFormOpen, setIsMantenimientoFormOpen] = useState(false);
   const [isSubmittingMantenimiento, setIsSubmittingMantenimiento] = useState(false);
+  // El diálogo de cotización lleva su propia solicitud: se abre desde el
+  // tablero, desde la lista y desde el cajón del detalle, y no siempre hay un
+  // cajón abierto detrás.
+  const [solicitudACotizar, setSolicitudACotizar] = useState<SolicitudMantenimiento | null>(null);
+  const [isCotizacionDialogOpen, setIsCotizacionDialogOpen] = useState(false);
 
   // Calculate quick stats
   const stats = useMemo(() => getQuickStats(mantenimientos), [mantenimientos]);
@@ -234,28 +245,48 @@ function MantenimientosContent() {
     setTimeout(() => setSelectedMantenimiento(null), 300);
   }, []);
 
+  /**
+   * Mover una solicitud de estado — desde el cajón del detalle o arrastrando la
+   * tarjeta en el tablero.
+   *
+   * 🔴 Dos cosas que antes faltaban:
+   *
+   * 1. **El error se RELANZA.** El tablero espera esta promesa para saber si el
+   *    salto quedó; tragando el error acá, soltar una tarjeta en una columna
+   *    prohibida se veía igual que soltarla en una permitida.
+   * 2. **El aviso dice POR QUÉ.** El back manda un 400 con el motivo escrito
+   *    («Desde Reportada sólo puede pasar a Cotizada o Cancelada»), y eso es lo
+   *    que se muestra. Antes el cartel decía siempre «Error al actualizar
+   *    estado de mantenimiento», que no le sirve a nadie para saber qué hacer.
+   */
   const handleMantenimientoStatusChange = useCallback(
     async (solicitudId: string, newStatus: MantenimientoStatus) => {
+      const statusLabels: Record<MantenimientoStatus, string> = {
+        reported: t('inmobiliaria.operaciones.maintenance.status.pending'),
+        quoted: t('inmobiliaria.operaciones.toasts.statusQuoted'),
+        approved: t('inmobiliaria.operaciones.toasts.statusApproved'),
+        in_progress: t('inmobiliaria.operaciones.maintenance.status.inProgress'),
+        completed: t('inmobiliaria.operaciones.maintenance.status.completed'),
+        cancelled: t('inmobiliaria.operaciones.maintenance.status.cancelled'),
+      };
+
       try {
         await mantenimientoApi.updateStatus(solicitudId, newStatus);
-        await recargarMantenimientos();
-
-        const statusLabels: Record<MantenimientoStatus, string> = {
-          reported: t('inmobiliaria.operaciones.maintenance.status.pending'),
-          quoted: t('inmobiliaria.operaciones.toasts.statusQuoted'),
-          approved: t('inmobiliaria.operaciones.toasts.statusApproved'),
-          in_progress: t('inmobiliaria.operaciones.maintenance.status.inProgress'),
-          completed: t('inmobiliaria.operaciones.maintenance.status.completed'),
-          cancelled: t('inmobiliaria.operaciones.maintenance.status.cancelled'),
-        };
-
-        toast.success(t('inmobiliaria.operaciones.toasts.statusUpdated', { status: statusLabels[newStatus] }));
-
-        if (newStatus === 'cancelled' || newStatus === 'completed') {
-          handleMantenimientoViewerClose();
-        }
       } catch (error) {
-        toast.error('Error al actualizar estado de mantenimiento');
+        toast.error('No se pudo mover la solicitud', {
+          description: error instanceof Error ? error.message : undefined,
+        });
+        // Relanzar: quien arrastró la tarjeta tiene que enterarse de que no
+        // quedó, y el tablero ya no vuelve a festejar por su cuenta.
+        throw error;
+      }
+
+      await recargarMantenimientos();
+
+      toast.success(t('inmobiliaria.operaciones.toasts.statusUpdated', { status: statusLabels[newStatus] }));
+
+      if (newStatus === 'cancelled' || newStatus === 'completed') {
+        handleMantenimientoViewerClose();
       }
     },
     [t, recargarMantenimientos, handleMantenimientoViewerClose]
@@ -271,11 +302,73 @@ function MantenimientosContent() {
     }
   }, [t, recargarMantenimientos]);
 
-  const handleRequestQuote = useCallback((solicitudId: string) => {
-    toast.info(t('inmobiliaria.operaciones.toasts.featureInDevelopment'), {
-      description: t('inmobiliaria.operaciones.toasts.featureInDevelopmentDesc'),
-    });
-  }, []);
+  /**
+   * La misma transición, para quien NO espera la promesa (los botones del
+   * cajón y los tres puntos de la lista).
+   *
+   * `handleMantenimientoStatusChange` relanza el error para que el tablero se
+   * entere; un `onClick` que descarta esa promesa deja un rechazo sin atender
+   * en la consola. El aviso ya salió: acá sólo se absorbe.
+   */
+  const cambiarEstadoSinEsperar = useCallback(
+    (solicitudId: string, nuevoEstado: MantenimientoStatus) => {
+      void handleMantenimientoStatusChange(solicitudId, nuevoEstado).catch(() => {});
+    },
+    [handleMantenimientoStatusChange]
+  );
+
+  /**
+   * Abrir el diálogo para cotizar una solicitud.
+   *
+   * 🔴 Acá vivía la mitad visible del segundo pedido de Nico: esto era
+   * `toast.info('Función en desarrollo')`. El endpoint del back
+   * (`POST :id/quote`) existía desde el primer día y ninguna pantalla lo
+   * llamaba, así que los tres puntos de la lista y el «Nueva cotización» del
+   * comparador llevaban al mismo cartel gris.
+   *
+   * Recibe el id y no la solicitud entera porque el comparador sólo tiene el
+   * id; la fila se busca en la lista fresca, que es la que manda.
+   */
+  const handleRequestQuote = useCallback(
+    (solicitudId: string) => {
+      const solicitud = mantenimientos.find((m) => m.id === solicitudId) ?? null;
+      if (!solicitud) return;
+      setSolicitudACotizar(solicitud);
+      setIsCotizacionDialogOpen(true);
+    },
+    [mantenimientos]
+  );
+
+  /**
+   * Guardar la cotización.
+   *
+   * Después de guardar se relee del servidor en vez de empujar la cotización a
+   * mano en la lista: la primera cotización además mueve la solicitud a
+   * «Cotizada» del lado del back, y parchear acá dejaría la tarjeta en la
+   * columna vieja hasta la próxima recarga.
+   */
+  const handleGuardarCotizacion = useCallback(
+    async (solicitudId: string, cotizacion: NuevaCotizacion) => {
+      try {
+        await mantenimientoApi.addQuote(solicitudId, cotizacion);
+      } catch (error) {
+        toast.error('No se pudo guardar la cotización', {
+          description: error instanceof Error ? error.message : undefined,
+        });
+        throw error;
+      }
+
+      await recargarMantenimientos();
+
+      toast.success(t('inmobiliaria.mantenimiento.nuevaCotizacion.guardada'), {
+        description: t('inmobiliaria.mantenimiento.nuevaCotizacion.guardadaDesc', {
+          proveedor: cotizacion.providerName,
+          monto: formatCurrency(cotizacion.amount),
+        }),
+      });
+    },
+    [t, recargarMantenimientos]
+  );
 
   // Consignaciones for form (rented properties only)
   const rentedConsignaciones = useMemo(
@@ -448,6 +541,7 @@ function MantenimientosContent() {
                 <MantenimientoKanban
                   data={mantenimientos}
                   onViewDetails={handleViewMantenimiento}
+                  onStatusChange={handleMantenimientoStatusChange}
                 />
               </motion.div>
             ) : (
@@ -457,11 +551,16 @@ function MantenimientosContent() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
+                {/* `onAddQuote` faltaba, y la entrada «Agregar cotización» de
+                    los tres puntos de cada tarjeta sólo se dibuja si alguien la
+                    atiende: estaba escrita en `MantenimientoList` y no aparecía
+                    nunca. */}
                 <MantenimientoList
                   data={mantenimientos}
                   onViewDetails={handleViewMantenimiento}
-                  onComplete={(s) => handleMantenimientoStatusChange(s.id, 'completed')}
-                  onCancel={(s) => handleMantenimientoStatusChange(s.id, 'cancelled')}
+                  onAddQuote={(s) => handleRequestQuote(s.id)}
+                  onComplete={(s) => cambiarEstadoSinEsperar(s.id, 'completed')}
+                  onCancel={(s) => cambiarEstadoSinEsperar(s.id, 'cancelled')}
                   minimal
                 />
               </motion.div>
@@ -477,9 +576,20 @@ function MantenimientosContent() {
         solicitud={selectedMantenimiento}
         isOpen={isMantenimientoViewerOpen}
         onClose={handleMantenimientoViewerClose}
-        onStatusChange={handleMantenimientoStatusChange}
+        onStatusChange={cambiarEstadoSinEsperar}
         onApproveQuote={handleApproveQuote}
         onRequestQuote={handleRequestQuote}
+      />
+
+      {/* Agregarle una cotización a una solicitud ya creada. Vive en la página
+          —no dentro del cajón del detalle— porque las tres puertas que lo
+          abren (tablero, lista y los tres puntos del detalle) tienen que llegar
+          al mismo diálogo. */}
+      <AgregarCotizacionDialog
+        solicitud={solicitudACotizar}
+        abierto={isCotizacionDialogOpen}
+        onOpenChange={setIsCotizacionDialogOpen}
+        onGuardar={handleGuardarCotizacion}
       />
 
       {/* Mantenimiento Form Sheet */}

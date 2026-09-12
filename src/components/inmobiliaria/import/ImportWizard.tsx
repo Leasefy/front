@@ -43,6 +43,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from '@/components/ui/toast';
+import { describirCargaAbierta } from './lib/describirCargaAbierta';
 import {
   inmueblesImportacionApi,
   type EstadoDeLoteInmuebles,
@@ -436,27 +437,71 @@ export function ImportWizard({
               ? 'Tienes una importación sin terminar'
               : `Tienes ${lotesAbiertos.length} importaciones sin terminar`}
           </p>
-          {lotesAbiertos.map((l) => (
+          {/*
+           * 🔴 «¿Cuál de esos retomo?» (Nico, 2026-09-11, con cinco cargas en
+           * pantalla). No podía saberlo: las cinco eran del MISMO archivo, así
+           * que las cinco líneas empezaban con «2864 inmuebles» y se
+           * diferenciaban en dos conteos sin contexto.
+           *
+           * Ahora cada fila dice cuándo se subió, cuántos inmuebles entraron
+           * por ella, y —lo que de verdad decide— si frena el paso. Sólo las
+           * filas LISTO lo frenan: una carga con 2.864 «por revisar» y cero
+           * listas no frena nada, y hasta hoy se veía igual de alarmante que
+           * una que sí.
+           */}
+          {lotesAbiertos.map((l) => {
+            const d = describirCargaAbierta(l, new Date());
+            return (
             <div
               key={l.lote}
               className="flex flex-wrap items-center justify-between gap-2"
+              data-testid={`carga-${l.lote}`}
             >
-              <p className="text-sm text-fg-muted">
-                <span className="font-mono tabular-nums">{l.total}</span>{' '}
-                {l.total === 1 ? 'inmueble' : 'inmuebles'}
-                {l.estado === 'LISTO' ? (
-                  <>
-                    {' · '}
-                    <span className="font-mono tabular-nums">{l.pendientes}</span> por
-                    revisar
-                    {' · '}
-                    <span className="font-mono tabular-nums">{l.listos}</span> listos para
-                    activar
-                  </>
-                ) : (
-                  <> · todavía procesándose</>
-                )}
-              </p>
+              <div className="min-w-0">
+                <p className="text-sm text-fg">
+                  {d.cuando ? <span className="font-medium">{d.cuando}</span> : null}
+                  {d.cuando && d.yaEntraron > 0 ? ' · ' : null}
+                  {d.yaEntraron > 0 ? (
+                    <>
+                      <span className="font-mono tabular-nums">{d.yaEntraron}</span> ya
+                      en tu portafolio
+                    </>
+                  ) : null}
+                </p>
+                <p className="text-sm text-fg-muted">
+                  {d.queHacer === 'procesando' ? (
+                    'Todavía procesándose'
+                  ) : d.queHacer === 'frena' ? (
+                    <>
+                      <span className="font-mono tabular-nums">{d.frena}</span> listos
+                      sin activar — <span className="text-warning">frenan este paso</span>
+                      {d.porRevisar > 0 ? (
+                        <>
+                          {' · '}
+                          <span className="font-mono tabular-nums">{d.porRevisar}</span>{' '}
+                          por revisar
+                        </>
+                      ) : null}
+                    </>
+                  ) : d.queHacer === 'terminada' ? (
+                    <>
+                      Sin nada que activar
+                      {d.porRevisar > 0 ? (
+                        <>
+                          {' · '}
+                          <span className="font-mono tabular-nums">{d.porRevisar}</span>{' '}
+                          por revisar, no frenan
+                        </>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-mono tabular-nums">{d.porRevisar}</span> por
+                      revisar · no frenan este paso
+                    </>
+                  )}
+                </p>
+              </div>
               <div className="flex items-center gap-2">
                 {/*
                  * 🔴 DESCARTAR SIN TENER QUE ENTRAR.
@@ -488,7 +533,8 @@ export function ImportWizard({
                 </Button>
               </div>
             </div>
-          ))}
+            );
+          })}
           <p className="text-xs text-fg-subtle">
             Si en cambio subes el mismo archivo de nuevo, los inmuebles se duplican.
           </p>

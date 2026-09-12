@@ -131,6 +131,40 @@ describe('<ImportWizard> — las cargas sin terminar se pueden descartar desde l
     );
   });
 
+  /*
+   * 🔴 «¿Cuál de esos retomo?» — Nico, 2026-09-11, con cinco cargas del mismo
+   * archivo en pantalla, las cinco empezando por «2864 inmuebles».
+   */
+  it('cada carga se distingue: cuándo fue, cuántos entraron y si frena el paso', async () => {
+    const hoy = new Date();
+    const ayer = new Date(hoy.getTime() - 86_400_000);
+    apiMock.lotesAbiertos.mockResolvedValue([
+      // La buena: todo activado, nada que frene.
+      lote({ lote: 'buena', activados: 2_824, pendientes: 40, listos: 0, creadoEn: hoy.toISOString() }),
+      // La que frena: tiene filas listas sin activar.
+      lote({ lote: 'frena', activados: 2_145, pendientes: 40, listos: 679, creadoEn: hoy.toISOString() }),
+      // La fantasma: 2.864 por revisar y CERO listas — no frena nada.
+      lote({ lote: 'fantasma', activados: 0, pendientes: 2_864, listos: 0, creadoEn: ayer.toISOString() }),
+    ]);
+
+    await pintar();
+
+    const buena = q('carga-buena')!.textContent!;
+    expect(buena).toContain('hoy');
+    expect(buena).toContain('2824 ya en tu portafolio');
+    expect(buena).toContain('Sin nada que activar');
+    expect(buena).not.toContain('frenan este paso');
+
+    const frena = q('carga-frena')!.textContent!;
+    expect(frena).toContain('679 listos sin activar');
+    expect(frena).toContain('frenan este paso');
+
+    const fantasma = q('carga-fantasma')!.textContent!;
+    expect(fantasma).toContain('ayer');
+    expect(fantasma).toContain('2864 por revisar');
+    expect(fantasma).toContain('no frenan este paso');
+  });
+
   it('un 409 «todavía se está procesando» se dice tal cual y la carga NO se saca de la lista', async () => {
     apiMock.lotesAbiertos.mockResolvedValue([lote({ lote: 'vieja-a' })]);
     apiMock.descartarLote.mockRejectedValue(

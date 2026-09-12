@@ -96,7 +96,7 @@ export function AsientoDeApertura({
   /** Adentro del muro no se ofrece «volver a la secuencia»: el muro es la secuencia. */
   enElMuro?: boolean;
   /** Aviso al muro mientras el asiento viaja: el pie espera. */
-  onOcupado?: (ocupado: boolean) => void;
+  onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 }) {
   const [fecha, setFecha] = useState(hoyContable());
   const [descripcion, setDescripcion] = useState(() =>

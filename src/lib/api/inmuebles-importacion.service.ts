@@ -224,9 +224,35 @@ export interface FilaOmitida {
 
 /** `POST .../activar` — call again while `restantes > 0` (500 rows per
  * call, resumable, nothing repeats, wu-4-report.md §6). */
+export interface ResumenRevisionInmuebles {
+  lote: string;
+  /** Filas miradas en ESTA llamada (el presupuesto de tiempo la acota). */
+  revisadas: number;
+  /** De ésas, cuántas dejaron de tener faltantes y pasaron a LISTO. */
+  liberadas: number;
+  /** Cuántas siguen pendientes en el lote — para la pantalla, no para el bucle. */
+  restantes: number;
+  /**
+   * Cursor: la última fila mirada; se manda como `desdeFila` en la siguiente
+   * llamada. `null` = esta llamada no miró ninguna.
+   */
+  ultimaFila: number | null;
+  /**
+   * No queda nada pendiente después de `ultimaFila`: la vuelta terminó. Es
+   * ESTO lo que corta el bucle, no `restantes > 0` (ver `revisarLoteCompleto`).
+   */
+  terminado: boolean;
+}
+
 export interface ResumenActivacionInmuebles {
   lote: string;
   activados: number;
+  /**
+   * Filas que ya tenían su `Property` (mismo «Código») y se re-apuntaron en
+   * vez de duplicarlo. Cuentan como AVANCE: una llamada que sólo reusa sí
+   * movió el lote, y sin este número el loop la leería como estancada.
+   */
+  reusados?: number;
   omitidas: FilaOmitida[];
   restantes: number;
 }
@@ -350,5 +376,17 @@ export const inmueblesImportacionApi = {
    * while `restantes > 0`; resumable, nothing repeats. */
   async activar(lote: string): Promise<ResumenActivacionInmuebles> {
     return apiClient.post<ResumenActivacionInmuebles>(`${BASE}/activar`, { lote });
+  },
+
+  /**
+   * Volver a revisar lo pendiente con las reglas de HOY.
+   *
+   * `faltantes` se calcula al preparar y se GUARDA: cuando una regla cambia,
+   * las filas viejas siguen frenadas por un motivo que ya no existe, y la
+   * única salida era resubir el archivo — 53 minutos de geocodificación para
+   * 2.864 inmuebles. Reanudable: se llama mientras `restantes > 0`.
+   */
+  async revisarDeNuevo(lote: string, desdeFila = 0): Promise<ResumenRevisionInmuebles> {
+    return apiClient.post<ResumenRevisionInmuebles>(`${BASE}/revisar`, { lote, desdeFila });
   },
 };

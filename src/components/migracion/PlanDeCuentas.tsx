@@ -21,7 +21,7 @@
  * ser imputable) las aplica el back y acá sólo se explican.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -59,7 +59,10 @@ import {
   type ResultadoSemilla,
 } from '@/lib/api/contabilidad.service';
 
-import { MapeoContable } from '@/components/contabilidad/mapeo/MapeoContable';
+import {
+  MapeoContable,
+  type EstadoDelMapeo,
+} from '@/components/contabilidad/mapeo/MapeoContable';
 
 import { mensajeDeContabilidad } from './contabilidad-errores';
 import { ImportarCuentas } from './ImportarCuentas';
@@ -150,7 +153,7 @@ export function PlanDeCuentas({
   onContinuar?: () => void;
   sinPaso5?: boolean;
   /** Aviso al muro mientras se siembra el plan base: el pie espera. */
-  onOcupado?: (ocupado: boolean) => void;
+  onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 } = {}) {
   const [arbol, setArbol] = useState<CuentaEnArbol[] | null>(null);
   const [pendientes, setPendientes] = useState<CuentaSemilla[]>([]);
@@ -173,6 +176,20 @@ export function PlanDeCuentas({
    * semilla y con crear a mano — son tres puertas al mismo plan.
    */
   const [importando, setImportando] = useState(false);
+  /*
+   * 🔴 Cómo va el mapeo, que es lo que de verdad decide si el paso 5 terminó.
+   *
+   * Nico, 2026-09-12: «le di continuar al paso 6 y mira lo que aparece y no
+   * pasa al paso 6, se queda ahí». El pie ofrecía «Continuar al paso 6» con
+   * sólo tener cuentas, y el muro —que exige además que cada asiento
+   * automático tenga la suya— contestaba «primero termina Cuentas del PUC».
+   * Un botón que lleva a una puerta cerrada es peor que no tener botón.
+   *
+   * `null` = el mapeo todavía no contestó: no se afirma ni que falta ni que
+   * está listo, se espera.
+   */
+  const [mapeo, setMapeo] = useState<EstadoDelMapeo | null>(null);
+  const mapeoRef = useRef<HTMLElement | null>(null);
 
   const cargar = useCallback(async () => {
     const [a, p] = await Promise.allSettled([
@@ -363,7 +380,8 @@ export function PlanDeCuentas({
          * en el paso 5 sin saber por qué no avanzaba (2026-09-02 12:42).
          */
         <section
-          className="rounded-lg border border-border bg-surface p-6 shadow-sm"
+          ref={mapeoRef}
+          className="scroll-mt-6 rounded-lg border border-border bg-surface p-6 shadow-sm"
           aria-labelledby="puc-mapeo-titulo"
           data-testid="puc-mapeo"
         >
@@ -376,7 +394,7 @@ export function PlanDeCuentas({
               asienta solo.
             </p>
           </div>
-          <MapeoContable />
+          <MapeoContable onEstado={setMapeo} />
         </section>
       ) : null}
 
@@ -451,22 +469,65 @@ export function PlanDeCuentas({
       ) : null}
 
       {hayCuentas && !sinPaso5 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4">
-          <p className="text-sm text-fg-muted">
-            Cuando el plan esté como tu contador lo quiere, sigue con los registros contables.
-          </p>
-          {onContinuar ? (
-            <Button hideArrow onClick={onContinuar} data-testid="puc-continuar">
-              Continuar al paso 6
-              <ArrowRight className="ml-1.5 h-4 w-4" />
-            </Button>
+        /*
+         * 🔴 El pie dice lo que el MURO va a decidir, no lo que esta pantalla
+         * alcanza a ver.
+         *
+         * Tener cuentas no termina el paso 5: falta que cada asiento
+         * automático tenga la suya. Con 2.790 cuentas y 6 eventos sin asignar
+         * esto ofrecía «Continuar al paso 6» y el paso 6 respondía «primero
+         * termina Cuentas del PUC» — Nico se quedó ahí sin salida.
+         *
+         * Mientras el mapeo no contestó (`null`) no se afirma nada: se espera.
+         * Es la misma regla del 11 en el paso de inmuebles — un «todavía no
+         * sé» que colapsa a «no hay nada» dibuja el botón equivocado y después
+         * lo cambia debajo del dedo.
+         */
+        <div
+          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4"
+          data-testid="puc-pie"
+        >
+          {mapeo === null ? (
+            <p className="text-sm text-fg-muted">Mirando cómo va el mapeo…</p>
+          ) : mapeo.completo ? (
+            <>
+              <p className="text-sm text-fg-muted">
+                Cuando el plan esté como tu contador lo quiere, sigue con los registros contables.
+              </p>
+              {onContinuar ? (
+                <Button hideArrow onClick={onContinuar} data-testid="puc-continuar">
+                  Continuar al paso 6
+                  <ArrowRight className="ml-1.5 h-4 w-4" />
+                </Button>
+              ) : (
+                <Button asChild hideArrow>
+                  <Link href={RUTA_DEL_PASO_5} data-testid="puc-continuar">
+                    Continuar al paso 6
+                    <ArrowRight className="ml-1.5 h-4 w-4" />
+                  </Link>
+                </Button>
+              )}
+            </>
           ) : (
-            <Button asChild hideArrow>
-              <Link href={RUTA_DEL_PASO_5} data-testid="puc-continuar">
-                Continuar al paso 6
+            <>
+              <p className="text-sm text-fg-muted" data-testid="puc-falta-mapeo">
+                {mapeo.faltan === 1
+                  ? 'Falta 1 asiento automático sin cuenta'
+                  : `Faltan ${mapeo.faltan} asientos automáticos sin cuenta`}
+                {' '}de {mapeo.total}. Hasta que los asignes, el paso 6 sigue en espera.
+              </p>
+              <Button
+                variant="outline"
+                hideArrow
+                onClick={() =>
+                  mapeoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
+                data-testid="puc-ver-lo-que-falta"
+              >
+                Ver los que faltan
                 <ArrowRight className="ml-1.5 h-4 w-4" />
-              </Link>
-            </Button>
+              </Button>
+            </>
           )}
         </div>
       ) : null}

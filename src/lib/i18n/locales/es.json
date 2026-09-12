@@ -2242,7 +2242,7 @@
         "days": "{{count}} dias",
         "selectAtLeastOneDay": "Selecciona al menos un dia",
         "notificationChannels": "Canales de Notificacion",
-        "canalesNoSeGuardan": "Los días sí se guardan. La elección de canales todavía no: el back no tiene dónde guardarla y se manda por correo y WhatsApp según la configuración de la inmobiliaria.",
+        "canalesNoSeGuardan": "Los días sí se guardan. La elección de canales todavía no: por ahora se manda por correo y WhatsApp según la configuración de la inmobiliaria.",
         "guardarError": "No se pudo guardar la configuración",
         "selectAtLeastOneChannel": "Selecciona al menos un canal de notificacion",
         "messageTemplates": "Plantillas de Mensajes",
@@ -2959,7 +2959,9 @@
           "studio": "Apartaestudio",
           "commercial": "Local",
           "office": "Oficina",
-          "warehouse": "Bodega"
+          "warehouse": "Bodega",
+          "parking": "Parqueadero",
+          "land": "Lote"
         },
         "owner": "Propietario",
         "agent": "Agente",
@@ -3248,7 +3250,9 @@
         "studio": "Apartaestudio",
         "commercial": "Local Comercial",
         "office": "Oficina",
-        "warehouse": "Bodega"
+        "warehouse": "Bodega",
+        "parking": "Parqueadero",
+        "land": "Lote"
       },
       "availability": {
         "available": "Disponible",
@@ -3346,6 +3350,8 @@
         "commercial": "Local",
         "office": "Oficina",
         "warehouse": "Bodega",
+        "parking": "Parqueadero",
+        "land": "Lote",
         "agentLabel": "Agente",
         "ownerLabel": "Propietario",
         "cityLabel": "Ciudad",
@@ -11191,7 +11197,7 @@
       "subtitulo": "Todo pasa acá adentro: carga lo que ya tienes en tu sistema actual, en orden — cada paso necesita al anterior.",
       "progreso": "Progreso de la migración",
       "hecho": "Listo",
-      "falta": "Falta: {{detalle}}",
+      "falta": "Queda por hacer: {{detalle}}",
       "enEspera": "En espera",
       "noDisponible": "No disponible ahora. No te frena.",
       "primero": "Primero termina {{paso}}",
@@ -11263,7 +11269,8 @@
         }
       },
       "siguiente": "Seguir con {{paso}}",
-      "ocupado": "Se están creando los registros de este paso — esperá a que termine.",
+      "ocupado": "Se están creando los registros de este paso — espera a que termine.",
+      "parar": "Detener la carga",
       "terminaEstePaso": "Cuando termines este paso vas a poder seguir.",
       "irAlPaso": "Ir a {{paso}}",
       "pendiente": "Pendiente",

@@ -58,7 +58,7 @@ export function RegistrosContables({
 }: {
   onIrAlPuc?: () => void;
   /** Aviso al muro mientras se aplican los asientos: el pie espera. */
-  onOcupado?: (ocupado: boolean) => void;
+  onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 } = {}) {
   const [camino, setCamino] = useState<Camino>("apertura");
   const [cuentas, setCuentas] = useState<CuentaPuc[] | null>(null);
@@ -308,6 +308,9 @@ export function RegistrosContables({
             <MigrarAsientos
               onAplicado={() => void cargar()}
               onIrAlPuc={onIrAlPuc}
+              /* El archivo de comprobantes metido en el libro diario tiene su
+                 puerta acá al lado: el aviso la abre en vez de nombrarla. */
+              onIrAComprobantes={() => setCamino("documentos")}
               enElMuro={Boolean(onIrAlPuc)}
               onOcupado={onOcupado}
             />

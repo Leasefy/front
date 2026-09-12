@@ -235,7 +235,7 @@ export interface Consignacion {
   propertyAddress: string;
   propertyCity: string;
   propertyZone: string;
-  propertyType: 'apartment' | 'house' | 'studio' | 'commercial' | 'office' | 'warehouse';
+  propertyType: 'apartment' | 'house' | 'studio' | 'commercial' | 'office' | 'warehouse' | 'parking' | 'land';
   propertyThumbnail?: string;
   /**
    * contract-addendum-2.md §A.2/§A.4/§A.9.1 — `null` on a SALE mandate.

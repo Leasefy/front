@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { fechaRelativa } from './fecha-relativa';
 import type { Locale, I18nContextValue, TranslationParams, Translations } from './types';
 import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '@/lib/format';
 import es from './locales/es.json';
@@ -125,28 +126,15 @@ export function I18nProvider({ children, defaultLocale = DEFAULT_LOCALE }: I18nP
     [locale]
   );
 
-  // Format relative date (e.g., "in 5 days", "2 days ago")
+  /*
+   * «Hoy», «Ayer», «Hace 12 días», «Hace 4 años y 179 días».
+   *
+   * La regla vive en `fecha-relativa.ts`, pura y probada: acá adentro no se
+   * podía probar sin montar el proveedor entero, y un «hace 1639 días» sólo
+   * se ve cuando alguien mira una consignación de hace cuatro años.
+   */
   const formatRelativeDate = useCallback(
-    (date: Date | string): string => {
-      const dateObj = typeof date === 'string' ? new Date(date) : date;
-      const now = new Date();
-      const diffMs = dateObj.getTime() - now.getTime();
-      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-
-      if (diffDays === 0) {
-        return locale === 'es' ? 'Hoy' : 'Today';
-      }
-      if (diffDays === 1) {
-        return locale === 'es' ? 'Mañana' : 'Tomorrow';
-      }
-      if (diffDays === -1) {
-        return locale === 'es' ? 'Ayer' : 'Yesterday';
-      }
-      if (diffDays > 0) {
-        return locale === 'es' ? `En ${diffDays} días` : `In ${diffDays} days`;
-      }
-      return locale === 'es' ? `Hace ${Math.abs(diffDays)} días` : `${Math.abs(diffDays)} days ago`;
-    },
+    (date: Date | string): string => fechaRelativa(date, locale).texto,
     [locale]
   );
 

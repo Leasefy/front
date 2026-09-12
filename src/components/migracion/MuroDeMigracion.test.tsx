@@ -84,8 +84,25 @@ vi.mock('canvas-confetti', () => ({
   default: Object.assign(vi.fn(), { reset: vi.fn() }),
 }));
 
+/*
+ * El importador se congela SOLO: pone su propio `inert` adentro de la tarjeta
+ * para dejar viva la barra de progreso con su botón de parar. El doble expone
+ * `congelado` para poder afirmar que el muro se lo pasa en vez de congelarlo
+ * él desde afuera.
+ */
 vi.mock('@/components/inmobiliaria/import/ImportWizard', () => ({
-  ImportWizard: () => <div data-testid="contenido-propiedades" />,
+  ImportWizard: ({
+    onOcupado,
+    congelado,
+  }: {
+    onOcupado?: (o: boolean) => void;
+    congelado?: boolean;
+  }) => (
+    <div data-testid="contenido-propiedades" data-congelado={congelado ? '' : undefined}>
+      <button type="button" data-testid="paso-ocupado-on" onClick={() => onOcupado?.(true)} />
+      <button type="button" data-testid="paso-ocupado-off" onClick={() => onOcupado?.(false)} />
+    </div>
+  ),
 }));
 vi.mock('@/components/contratos/MigrarContratos', () => ({
   MigrarContratos: () => <div data-testid="contenido-contratos" />,
@@ -433,7 +450,7 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
         paso('inquilinos', 'listo', 90, '90 inquilinos'),
         paso('propiedades', 'listo', 3, '3 inmuebles'),
         paso('contratos', 'listo', 90, '90 contratos · 90 sin inmueble'),
-        paso('puc', 'pendiente', 99, '99 cuentas · faltan cuentas para 3 asientos automáticos'),
+        paso('puc', 'pendiente', 99, 'faltan cuentas para 3 asientos automáticos · 99 cuentas ya cargadas'),
         paso('contables', 'pendiente'),
       ],
     });
@@ -443,6 +460,122 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
     expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('puc');
     expect(q('muro-paso-listo')).toBeNull();
     expect(q('muro-paso-falta')?.textContent).toContain('faltan cuentas para 3 asientos automáticos');
+  });
+
+  /*
+   * 🔴 Nico, 2026-09-11, en la pantalla de subir un archivo nuevo: «eso que
+   * dice a la izquierda es mentira, apenas voy a volver a subir otro archivo,
+   * no hay nada». Leía «Falta: 2145 inmuebles · 3270 preparados sin activar ·
+   * 4660 con datos por corregir» — y 2.145 es lo que la agencia YA TIENE.
+   *
+   * El rótulo no puede afirmar que todo lo que sigue es un faltante.
+   */
+  it('el rótulo del paso pendiente no llama «falta» a lo que ya está cargado', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [
+        paso('propietarios', 'listo', 60, '60 propietarios'),
+        paso('inquilinos', 'listo', 90, '90 inquilinos'),
+        paso('propiedades', 'listo', 2_145, '2145 inmuebles'),
+        paso('contratos', 'listo', 90, '90 contratos'),
+        paso(
+          'puc',
+          'pendiente',
+          140,
+          'faltan cuentas para 3 asientos automáticos · 140 cuentas ya cargadas',
+        ),
+        paso('contables', 'pendiente'),
+      ],
+    });
+
+    await pintar();
+
+    const rotulo = q('muro-paso-falta')?.textContent ?? '';
+    // Lo ya hecho no encabeza la frase, y va con la palabra que lo explica.
+    expect(rotulo).toContain('ya cargadas');
+    expect(rotulo.indexOf('faltan cuentas')).toBeLessThan(
+      rotulo.indexOf('ya cargadas'),
+    );
+
+    /*
+     * El rótulo lo pone la traducción, y acá `t` está mockeado. Se lee el
+     * archivo real: es LO ÚNICO que prueba que la pantalla no vuelve a decir
+     * «Falta:» sobre una frase que empieza por lo que ya está hecho.
+     */
+    const es = (await import('@/lib/i18n/locales/es.json')).default as Record<
+      string,
+      unknown
+    >;
+    const muro = (
+      (es.migracion as Record<string, unknown>).muro as Record<string, string>
+    );
+    expect(muro.falta).toBe('Queda por hacer: {{detalle}}');
+  });
+
+  /*
+   * 🔴 Nico, 2026-09-11, dos veces: «elimina esto», sobre la píldora del paso
+   * de inmuebles — «Queda por hacer: 3270 preparados sin activar · 4700 con
+   * datos por corregir · en 5 cargas sin terminar · 2824 ya cargados».
+   *
+   * El paso ya dibuja adentro un bloque que dice lo mismo Y trae el botón que
+   * lo resuelve. La píldora repetía los cuatro números arriba, sin acción.
+   * Decir lo mismo en dos lugares, uno sin salida, satura en vez de informar.
+   */
+  it('el paso de inmuebles NO lleva píldora: se explica solo adentro', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [
+        paso('propietarios', 'listo', 60, '60 propietarios'),
+        paso('inquilinos', 'listo', 90, '90 inquilinos'),
+        paso(
+          'propiedades',
+          'pendiente',
+          2_824,
+          '3270 preparados sin activar · 4700 con datos por corregir · en 5 cargas sin terminar · 2824 ya cargados',
+        ),
+        paso('contratos', 'pendiente'),
+        paso('puc', 'pendiente'),
+        paso('contables', 'pendiente'),
+      ],
+    });
+
+    await pintar();
+
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('propiedades');
+    expect(q('muro-paso-falta')).toBeNull();
+  });
+
+  /*
+   * Lo mismo para contratos, desde el 2026-09-12 — el día en que ese paso
+   * dejó de darse por listo con filas sin activar y empezó a tener algo que
+   * decir. Su pantalla ya dice «Quedaron N sin activar», enlaza a verlas y
+   * trae el botón que las activa con su barra de avance.
+   */
+  it('el paso de contratos tampoco lleva píldora: se explica solo adentro', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [
+        paso('propietarios', 'listo', 60, '60 propietarios'),
+        paso('inquilinos', 'listo', 90, '90 inquilinos'),
+        paso('propiedades', 'listo', 2_824, '2824 inmuebles'),
+        paso(
+          'contratos',
+          'pendiente',
+          1_169,
+          '667 preparados sin activar · 15 con datos por corregir · 1169 ya cargados',
+        ),
+        paso('puc', 'pendiente'),
+        paso('contables', 'pendiente'),
+      ],
+    });
+
+    await pintar();
+
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('contratos');
+    expect(q('muro-paso-falta')).toBeNull();
   });
 
   it('el paso 6 (registros contables) espera al 5 (plan de cuentas)', async () => {
@@ -610,6 +743,52 @@ describe('el pie espera a que el paso termine de crear', () => {
     expect((q('muro-ir-inquilinos') as HTMLButtonElement).disabled).toBe(false);
     await click('muro-ir-inquilinos');
     expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('inquilinos');
+  });
+
+  /*
+   * 🔴 LA RANURA VIVA.
+   *
+   * `inert` congela TODO el subárbol y no se puede desactivar en un
+   * descendiente: no hay `inert="false"`, y un portal tampoco escapa porque
+   * `inert` es del DOM, no de React. Por eso el botón de parar la
+   * geocodificación —una espera de 53 minutos sobre 2.864 inmuebles— vivía en
+   * el pie del muro, a dos secciones de la barra que controlaba. Nico,
+   * 2026-09-10: «está súper mal ubicado, debería hacer parte de la progress
+   * bar».
+   *
+   * La ranura invierte la solución: el paso manda el bloque entero a un nodo
+   * que el muro dibuja FUERA del `inert`, pegado al contenido.
+   *
+   * Lo que esta prueba congela es la única propiedad que hace que funcione:
+   * la ranura NO puede quedar dentro del nodo inerte. Si alguien la mueve
+   * adentro, todo seguiría viéndose igual y el botón volvería a nacer muerto.
+   */
+  it('el paso de INMUEBLES no lo congela el muro: se congela solo, para que su barra siga viva', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [
+        paso('propietarios', 'listo', 60, '60 propietarios'),
+        paso('inquilinos', 'listo', 30, '30 inquilinos'),
+        ...RECIEN_LLEGADA.slice(2),
+      ],
+    });
+
+    await pintar();
+    await click('muro-ir-propiedades');
+    await click('paso-ocupado-on');
+
+    const contenido = q('muro-contenido')!;
+    expect(contenido.getAttribute('data-paso')).toBe('propiedades');
+    // El muro avisa que está ocupado —el pie espera, la navegación no— pero NO
+    // congela: el `inert` lo pone el asistente adentro de su tarjeta, dejando
+    // viva la barra de progreso. Si el muro lo pusiera acá, `inert` bajaría a
+    // TODO el subárbol y el botón de parar volvería a nacer muerto.
+    expect(contenido.hasAttribute('inert')).toBe(false);
+    expect(contenido.getAttribute('aria-busy')).toBe('true');
+    expect((q('muro-ir-inquilinos') as HTMLButtonElement).disabled).toBe(true);
+    // Y SÍ recibe la señal: el asistente es quien congela, no el muro.
+    expect(q('contenido-propiedades')?.hasAttribute('data-congelado')).toBe(true);
   });
 });
 

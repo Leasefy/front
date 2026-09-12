@@ -39,6 +39,7 @@ import Link from 'next/link';
 import { SegmentedControl } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
+import { TarjetaDeArchivo } from '@/components/migracion/TarjetaDeArchivo';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { TablePagination } from '@/components/ui/pagination';
@@ -162,7 +163,7 @@ export interface MigrarTercerosProps {
    * Sin esto, el pie ofrecía «Seguir con Inquilinos» apenas el conteo del
    * estado pasaba de cero, con la creación todavía corriendo (Nico lo vio).
    */
-  onOcupado?: (ocupado: boolean) => void;
+  onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 }
 
 /**
@@ -189,6 +190,9 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
   const [errorDePlantilla, setErrorDePlantilla] = useState<string | null>(null);
   const [intentoDePlantilla, setIntentoDePlantilla] = useState(0);
 
+  /** El archivo tal cual. `null` = no hay nada subido; ver TarjetaDeArchivo. */
+  const [archivo, setArchivo] = useState<File | null>(null);
+  const [leyendo, setLeyendo] = useState(false);
   const [filas, setFilas] = useState<Fila[]>([]);
   const [encabezados, setEncabezados] = useState<string[]>([]);
   const [mapeo, setMapeo] = useState<MapeoDeColumna[]>([]);
@@ -285,23 +289,42 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     async (archivo: File) => {
       setError(null);
       setAplicacion(null);
+      setArchivo(archivo);
+      setNombreDeArchivo(archivo.name);
+      setLeyendo(true);
       try {
         const { rows, headers } = await parseSpreadsheetFile(archivo);
         setFilas(rows as Fila[]);
         setEncabezados(headers);
         setMapeo(mapearColumnas(columnas, headers));
-        setNombreDeArchivo(archivo.name);
       } catch (e) {
         setError(mensaje(e, 'No pudimos leer el archivo.'));
         setFilas([]);
         setEncabezados([]);
         setMapeo([]);
+      } finally {
+        setLeyendo(false);
       }
     },
     [columnas],
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  /**
+   * Suelta el archivo y TODO lo que salió de él. Es el mismo camino que corre
+   * «Descartar» en la tarjeta: un solo lugar donde acordarse de limpiar.
+   */
+  const soltarArchivo = useCallback(() => {
+    setArchivo(null);
+    setLeyendo(false);
+    setNombreDeArchivo('');
+    setFilas([]);
+    setEncabezados([]);
+    setMapeo([]);
+    setAplicacion(null);
+    setError(null);
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop: (aceptados) => {
       const archivo = aceptados[0];
       if (archivo) void leerArchivo(archivo);
@@ -952,31 +975,50 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
       </section>
 
       <section className="rounded-lg border border-border bg-surface p-6 shadow-sm">
-        <div
-          {...getRootProps()}
-          className={`flex cursor-pointer flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center transition-colors ${
-            isDragActive ? 'border-primary bg-primary-soft' : 'border-border hover:bg-surface-muted'
-          }`}
-          data-testid="dropzone-terceros"
-        >
-          {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
-          <input {...getInputProps()} />
-          <FileArrowUp className="h-8 w-8 text-fg-muted" />
-          <div>
-            <p className="text-sm font-medium text-fg">
-              {/* Deshabilitado sin decir por qué = un dropzone que «no anda».
-                  La espera y el fallo de la plantilla se dicen acá mismo. */}
-              {plantilla
-                ? nombreDeArchivo || 'Arrastra el archivo o haz clic para elegirlo'
-                : errorDePlantilla
-                  ? 'No se puede subir todavía — reintenta arriba la lectura de columnas.'
-                  : 'Preparando la pantalla: leyendo las columnas esperadas…'}
-            </p>
-            <p className="text-xs text-fg-subtle">
-              Excel o CSV exportado de tu sistema actual. Nada se crea todavía.
-            </p>
+        {archivo ? (
+          <TarjetaDeArchivo
+            nombre={archivo.name}
+            peso={archivo.size}
+            detalle={
+              leyendo
+                ? 'leyendo\u2026'
+                : filas.length > 0
+                  ? `${filas.length.toLocaleString('es-CO')} ${filas.length === 1 ? 'fila' : 'filas'}`
+                  : undefined
+            }
+            inputProps={getInputProps()}
+            onSubirOtro={open}
+            onDescartar={soltarArchivo}
+            ocupado={leyendo || cargando}
+            testid="archivo-de-terceros"
+          />
+        ) : (
+          <div
+            {...getRootProps()}
+            className={`flex cursor-pointer flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center transition-colors ${
+              isDragActive ? 'border-primary bg-primary-soft' : 'border-border hover:bg-surface-muted'
+            }`}
+            data-testid="dropzone-terceros"
+          >
+            {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
+            <input {...getInputProps()} />
+            <FileArrowUp className="h-8 w-8 text-fg-muted" />
+            <div>
+              <p className="text-sm font-medium text-fg">
+                {/* Deshabilitado sin decir por qué = un dropzone que «no anda».
+                    La espera y el fallo de la plantilla se dicen acá mismo. */}
+                {plantilla
+                  ? 'Arrastra el archivo o haz clic para elegirlo'
+                  : errorDePlantilla
+                    ? 'No se puede subir todavía — reintenta arriba la lectura de columnas.'
+                    : 'Preparando la pantalla: leyendo las columnas esperadas…'}
+              </p>
+              <p className="text-xs text-fg-subtle">
+                Excel o CSV exportado de tu sistema actual. Nada se crea todavía.
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
         {error ? (
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-danger-soft p-3">

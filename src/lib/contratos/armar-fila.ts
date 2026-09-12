@@ -108,6 +108,45 @@ export function armarFilaAMigrar(
  * Lee una fila COMPLETA: lo que viaja al back y lo que el archivo trae y
  * todavía no tiene dónde ir.
  */
+/**
+ * El día del mes en que se paga — venga como número o como FECHA.
+ *
+ * 🔴 Los exports reales llenan esa columna con una fecha completa
+ * («2022-08-01»), no con un «1» (Nico, 2026-09-10: 1.851 de 1.851 filas con
+ * valor y las 1.851 rechazadas). `comoEntero` de un «2022-08-01» no da un día
+ * del 1 al 28, así que el dato se tiraba entero.
+ *
+ * 🔴 La fecha se lee con `comoFecha`, el MISMO parser que el resto del
+ * archivo: acepta `dd/mm/aaaa` con barras, puntos o guiones, `aaaa-mm-dd` y
+ * objetos Date, y además valida que la fecha exista (un 31 de febrero no pasa).
+ * Reutilizarlo —en vez de traer reglas propias— es lo que hace que cualquier
+ * formato nuevo se resuelva en un solo lugar (Nico: «deberías poder recibir
+ * cualquier tipo de formato de fecha»).
+ *
+ * Un número suelto se lee como día antes de intentar la fecha: «15» es el 15,
+ * no un año. Y lo que no es ni fecha ni número queda `undefined` — «no lo sé»,
+ * nunca un día inventado.
+ */
+export function diaDelMesDe(valor: unknown): number | undefined {
+  const texto = String(valor ?? '').trim()
+  if (!texto) return undefined
+
+  // Un número suelto (1-31) es el día, no una fecha.
+  if (/^\d{1,2}$/.test(texto)) return comoEntero(texto)
+
+  const fecha = comoFecha(valor)
+  if (fecha) return Number(fecha.slice(8, 10))
+
+  /*
+   * Si TIENE forma de fecha pero `comoFecha` la rechazó, es una fecha que no
+   * existe (un 31 de febrero). No cae al entero: `comoEntero('31/02/2024')`
+   * barre los separadores y devuelve 31022024, que no es un día de nada.
+   */
+  if (/[/.-]/.test(texto)) return undefined
+
+  return comoEntero(texto)
+}
+
 export function leerFilaDelArchivo(
   fila: Record<string, unknown>,
   mapeo: MapeoDeColumna[],
@@ -120,7 +159,7 @@ export function leerFilaDelArchivo(
   const rawDia = v('diaDePago')
   const rawUso = v('uso')
 
-  const dia = hayValor(rawDia) ? comoEntero(rawDia) : undefined
+  const dia = hayValor(rawDia) ? diaDelMesDe(rawDia) : undefined
 
   /*
    * «Propiedad» = «3 - CR 50 127 SUR 61 OF 502». Una sola celda con el código

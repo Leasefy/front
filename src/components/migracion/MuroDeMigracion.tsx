@@ -117,6 +117,7 @@ import {
 } from "./migracion-context";
 
 export { MigracionContext, useMigracion } from "./migracion-context";
+export { useRanuraViva } from "./ranura-viva";
 export type { ContextoDeMigracion } from "./migracion-context";
 
 /**
@@ -143,6 +144,28 @@ export const CADA_CUANTO_SE_REFRESCA_MS = 60_000;
 // ══════════════════════════════════════════════════════════════════════════
 // La compuerta: envuelve el panel entero y decide.
 // ══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Pasos que NO llevan la píldora de «Queda por hacer» arriba.
+ *
+ * 🔴 La píldora existe desde el 2026-09-02, cuando Nico se quedó en el paso 5
+ * sin saber por qué no avanzaba: el back ya decía qué faltaba y la pantalla lo
+ * callaba. Sigue siendo necesaria donde el paso no se explica solo.
+ *
+ * `propiedades` dejó de necesitarla el 2026-09-11: el propio paso dibuja un
+ * bloque que dice cuántos inmuebles entraron, qué queda pendiente, QUÉ lo
+ * frena y con qué botón se resuelve. La píldora repetía los mismos cuatro
+ * números arriba a la izquierda, sin acción y sin contexto — «Queda por
+ * hacer: 3270 preparados sin activar · 4700 con datos por corregir · en 5
+ * cargas sin terminar · 2824 ya cargados»— y Nico pidió sacarla dos veces.
+ * Decir lo mismo en dos lugares, uno de ellos sin salida, no informa: satura.
+ *
+ * `contratos` entra el 2026-09-12 por lo mismo, y desde el día en que el paso
+ * dejó de mentir: su pantalla ya dice «Quedaron N sin activar» con el enlace a
+ * verlas, la barra de avance y el botón que las activa. La píldora repetiría
+ * ese número arriba a la izquierda, otra vez sin acción.
+ */
+const SE_EXPLICAN_SOLOS: IdDePasoDeMigracion[] = ["propiedades", "contratos"];
 
 export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   const [estado, setEstado] = useState<EstadoDeMigracion | null>(null);
@@ -410,6 +433,29 @@ export function PanelDeMigracion({
    * pie espera a que el paso diga que terminó.
    */
   const [ocupado, setOcupado] = useState(false);
+  /*
+   * 🔴 CÓMO PARAR lo que el paso tiene en vuelo, cuando se puede parar.
+   *
+   * El muro tapa el contenido del paso con `inert` mientras hay una operación
+   * larga. Eso deja los botones del paso VIVOS a la vista y MUERTOS al tacto:
+   * Nico le dio a «Cancelar» y a «Anterior» durante media hora de búsqueda de
+   * direcciones y no pasaba nada. La salida tiene que vivir acá, en el pie,
+   * que es lo único que queda fuera del `inert`.
+   *
+   * `null` cuando la operación en curso no se puede abandonar a mitad (una
+   * activación por tandas, por ejemplo): entonces el pie sólo informa, que es
+   * lo honesto, en vez de ofrecer un botón que no cumple.
+   */
+  const [comoParar, setComoParar] = useState<(() => void) | null>(null);
+  const marcarOcupado = useCallback(
+    (esta: boolean, cancelar?: () => void) => {
+      setOcupado(esta);
+      // El `() =>` no es adorno: `useState` trata una función pasada directo
+      // como actualizador y llamaría a `cancelar` en vez de guardarla.
+      setComoParar(() => (esta && cancelar ? cancelar : null));
+    },
+    [],
+  );
   /*
    * 🔴 Lo que reemplaza al sondeo de 5 s: cuando un paso TERMINA de crear
    * (`ocupado` pasa de true a false) se pregunta el estado de una. Es el único
@@ -732,7 +778,7 @@ export function PanelDeMigracion({
                   pasos={pasos}
                   indice={indice}
                   onIr={irA}
-                  onOcupado={setOcupado}
+                  onOcupado={marcarOcupado}
                   ocupado={ocupado}
                 />
               ) : null}
@@ -776,9 +822,24 @@ export function PanelDeMigracion({
               )}
 
               {ocupado ? (
-                <p className="text-sm text-fg-subtle" data-testid="muro-ocupado">
-                  {t("migracion.muro.ocupado")}
-                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <p
+                    className="text-sm text-fg-subtle"
+                    data-testid="muro-ocupado"
+                  >
+                    {t("migracion.muro.ocupado")}
+                  </p>
+                  {comoParar ? (
+                    <Button
+                      variant="ghost"
+                      hideArrow
+                      onClick={() => comoParar()}
+                      data-testid="muro-parar"
+                    >
+                      {t("migracion.muro.parar")}
+                    </Button>
+                  ) : null}
+                </div>
               ) : listo && conDeuda ? (
                 /*
                  * 🔴 Con deuda el pie NO celebra. El principal lleva a
@@ -1041,7 +1102,7 @@ function PasoEnFoco({
   pasos: PasoDeMigracion[];
   indice: number;
   onIr: (i: number) => void;
-  onOcupado: (ocupado: boolean) => void;
+  onOcupado: (ocupado: boolean, cancelar?: () => void) => void;
   /**
    * Hay una operación larga en vuelo en este paso (activar, crear en masa,
    * sembrar el PUC…). Mientras dure, la pantalla queda EXACTAMENTE como la
@@ -1053,7 +1114,18 @@ function PasoEnFoco({
 }) {
   const { t } = useI18n();
   const { canAccess, isLoading } = usePermissions();
+  /*
+   * El nodo donde el paso portaliza lo que tiene que seguir VIVO mientras el
+   * resto está `inert`. Va en estado y no en un ref: el paso sólo puede
+   * portalizar cuando el nodo ya existe, y un ref no vuelve a renderizar.
+   */
   const paso = pasos[indice];
+  /*
+   * El importador de inmuebles pone su propio `inert`, adentro de su tarjeta,
+   * dejando viva la barra de progreso con su botón de parar. Los demás pasos
+   * no tienen esperas con salida, así que los congela el muro entero.
+   */
+  const seCongelaSolo = paso.id === "propiedades";
   const hecho = paso.estado === "listo";
   const disponible = esExigible(paso);
   const habilitado = pasoHabilitado(pasos, indice);
@@ -1098,13 +1170,23 @@ function PasoEnFoco({
             <Check className="h-3.5 w-3.5" weight="bold" />
             {paso.detalle ?? t("migracion.muro.hecho")}
           </p>
-        ) : paso.estado === "pendiente" && paso.detalle ? (
+        ) : paso.estado === "pendiente" &&
+          paso.detalle &&
+          !SE_EXPLICAN_SOLOS.includes(paso.id) ? (
           /*
-           * El back ya dice qué le falta al paso («99 cuentas · faltan cuentas
-           * para 3 asientos automáticos»). Antes ese detalle sólo se pintaba
-           * cuando el paso estaba hecho: pendiente, la persona veía «Ahora» y
-           * nada más — Nico se quedó en el paso 5 sin saber por qué no
-           * avanzaba (2026-09-02 12:42).
+           * El back ya dice qué le falta al paso. Antes este detalle sólo se
+           * pintaba cuando el paso estaba hecho: pendiente, la persona veía
+           * «Ahora» y nada más — Nico se quedó en el paso 5 sin saber por qué
+           * no avanzaba (2026-09-02 12:42).
+           *
+           * 🔴 El rótulo dice «Queda por hacer», no «Falta». Nico,
+           * 2026-09-11, en la pantalla de subir un archivo nuevo: «eso que
+           * dice a la izquierda es mentira, no hay nada». Leía
+           * «Falta: 2145 inmuebles · 3270 preparados sin activar…», y 2.145 es
+           * lo que la agencia YA TIENE. Dos arreglos, uno de cada lado: el
+           * back dejó de encabezar el pendiente con un conteo de logro (ahora
+           * va al final, «2145 ya cargados»), y este rótulo dejó de afirmar
+           * que todo lo que sigue es un faltante.
            */
           <p
             className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1.5 font-mono text-xs tabular-nums text-warning"
@@ -1149,13 +1231,29 @@ function PasoEnFoco({
             data-paso={paso.id}
             data-ocupado={ocupado ? "" : undefined}
             aria-busy={ocupado || undefined}
-            // `inert` crudo por la misma razón que en el muro: React 18 no lo
-            // tipa como booleano (ver `inerte` arriba). Congela clicks, foco y
-            // teclado de TODO el paso; el spinner y el conteo siguen vivos.
-            {...(ocupado ? ({ inert: "" } as unknown as Record<string, string>) : {})}
-            className={ocupado ? "cursor-progress" : undefined}
+            /*
+             * `inert` crudo por la misma razón que arriba: React 18 no lo tipa
+             * como booleano. Congela clicks, foco y teclado de TODO el paso.
+             *
+             * 🔴 Salvo cuando el paso se congela SOLO. `inert` no se puede
+             * desactivar en un descendiente, así que un paso con una espera
+             * larga —el importador de inmuebles, 53 minutos geocodificando
+             * 2.864 direcciones— no puede tener su botón de parar adentro: la
+             * única forma de que viva EN SU SITIO es que el `inert` lo ponga
+             * quien conoce la tarjeta. Ver `seCongelaSolo`.
+             */
+            {...(ocupado && !seCongelaSolo
+              ? ({ inert: "" } as unknown as Record<string, string>)
+              : {})}
+            className={ocupado && !seCongelaSolo ? "cursor-progress" : undefined}
           >
-            <ContenidoDelPaso id={paso.id} pasos={pasos} onIr={onIr} onOcupado={onOcupado} />
+            <ContenidoDelPaso
+              id={paso.id}
+              pasos={pasos}
+              onIr={onIr}
+              onOcupado={onOcupado}
+              congelado={ocupado}
+            />
           </div>
         )}
       </div>
@@ -1169,11 +1267,14 @@ function ContenidoDelPaso({
   pasos,
   onIr,
   onOcupado,
+  congelado,
 }: {
   id: IdDePasoDeMigracion;
   pasos: PasoDeMigracion[];
   onIr: (i: number) => void;
-  onOcupado: (ocupado: boolean) => void;
+  onOcupado: (ocupado: boolean, cancelar?: () => void) => void;
+  /** Sólo lo usa el importador de inmuebles: ver `seCongelaSolo`. */
+  congelado: boolean;
 }) {
   // Para reiniciar el asistente de inmuebles cuando la persona «cancela»:
   // adentro del muro no hay portafolio al que volver.
@@ -1208,7 +1309,19 @@ function ContenidoDelPaso({
         <ImportWizard
           key={vueltaDeInmuebles}
           onSalir={() => setVueltaDeInmuebles((n) => n + 1)}
+          /*
+           * 🔴 Cómo pasar a Contratos desde adentro del paso.
+           *
+           * Nico, 2026-09-11: «no hay nada de cómo continuar, cómo pasar de
+           * ahí a contratos, no se muestra un cta». El pie del muro sólo
+           * ofrece «Seguir con…» cuando el paso está LISTO, y el paso de
+           * inmuebles se queda «pendiente» mientras haya filas sin activar en
+           * CUALQUIER carga — incluidas las viejas que la persona abandonó.
+           * Terminado su lote, se quedaba mirando una pantalla sin salida.
+           */
+          onContinuar={irAOtro("contratos")}
           onOcupado={onOcupado}
+          congelado={congelado}
         />
       );
     case "contratos":

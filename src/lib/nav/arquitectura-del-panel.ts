@@ -146,7 +146,8 @@ export interface GrupoDelPanel {
 const r = (p: string) => `${PANEL}${p}`;
 
 export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
-  // ── CAPTACIÓN Y ARRIENDO ── conseguir inmuebles, estudiar candidatos, firmar.
+  // ── CAPTACIÓN Y ARRIENDO ── conseguir inmuebles y estudiar candidatos. El
+  // contrato que sale de acá ya se vive en Operación (Nico, 2026-09-12).
   {
     key: 'captacion',
     labelKey: 'inmobiliaria.nav.secCaptacion',
@@ -196,7 +197,20 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           { labelKey: 'inmobiliaria.ai.nav.cotizador', href: r('/postulaciones/asegurabilidad'), icon: Umbrella, module: 'cotizador', ia: true, agente: 'asegurabilidad', dataTourTarget: 'sidebar-cotizador' },
         ],
       },
+    ],
+  },
+
+  // ── OPERACIÓN ── el contrato firmado y todo lo que lo sostiene vivo.
+  {
+    key: 'operacion',
+    labelKey: 'inmobiliaria.nav.secOperacionDelContrato',
+    modulos: [
       {
+        // 🔴 Nico, 2026-09-12: «Contratos va dentro de OPERACIÓN». Vivía en
+        // Captación y arriendo porque ahí se firma; pero un contrato se OPERA
+        // —cobros, mantenimientos, renovación— mucho más tiempo del que se
+        // firma, y la fila va con lo que se opera. Conserva `module`, `roles`
+        // y `scope`: cambiar de grupo no abre ni cierra pantallas a nadie.
         // 'contratos' es su propia AGENCY_MODULES key (todos los roles la tienen).
         key: 'contratos', labelKey: 'inmobiliaria.nav.contratos', href: r('/contratos'), icon: FilePlus, module: 'contratos', scope: 'administracion', dataTourTarget: 'sidebar-contratos',
         pantallas: [
@@ -207,14 +221,6 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // `contratos/(retencion)/` y sólo se alcanzan escribiendo la URL.
         ],
       },
-    ],
-  },
-
-  // ── OPERACIÓN ── sostener el contrato vivo y atender al cliente.
-  {
-    key: 'operacion',
-    labelKey: 'inmobiliaria.nav.secOperacionDelContrato',
-    modulos: [
       // Sin `ia: true` ni la pantalla «Tickets»: el agente de mantenimiento
       // (bandeja de tickets, resumen, ficha) es mock-first y el micro no tiene
       // su endpoint (`/api/agency/:id/mantenimiento/inbox` no existe). Con

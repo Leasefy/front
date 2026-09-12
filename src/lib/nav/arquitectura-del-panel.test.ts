@@ -369,3 +369,31 @@ describe('secciones (cards debajo del header) — la píldora IA no repite el no
     expect(repetidas).toEqual([]);
   });
 });
+
+describe('arquitectura del panel — Contratos vive en Operación (Nico, 2026-09-12)', () => {
+  const grupoDe = (key: string) =>
+    ARQUITECTURA_DEL_PANEL.find((g) => g.modulos.some((m) => m.key === key))?.key ?? null;
+
+  it('🔴 «Contratos va dentro de OPERACIÓN»: ya no está en Captación y arriendo', () => {
+    expect(grupoDe('contratos')).toBe('operacion');
+  });
+
+  it('es la primera fila de Operación: lo que se opera es el contrato', () => {
+    const operacion = ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'operacion');
+    expect(operacion?.modulos[0]?.key).toBe('contratos');
+  });
+
+  it('cambiar de grupo no le cambió el permiso, el encuadre ni el ancla del tour', () => {
+    // Reordenar no abre ni cierra pantallas a nadie (`sidebar-del-panel.ts`).
+    const contratos = modulosDelPanel().find((m) => m.key === 'contratos');
+    expect(contratos?.module).toBe('contratos');
+    expect(contratos?.scope).toBe('administracion');
+    expect(contratos?.dataTourTarget).toBe('sidebar-contratos');
+    expect(contratos?.pantallas?.map((p) => p.href)).toEqual([`${PANEL}/contratos/renovaciones`]);
+  });
+
+  it('Captación sigue con al menos dos filas (R3) después de la mudanza', () => {
+    const captacion = ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'captacion');
+    expect(captacion?.modulos.map((m) => m.key)).toEqual(['pipeline', 'inmuebles', 'postulaciones']);
+  });
+});

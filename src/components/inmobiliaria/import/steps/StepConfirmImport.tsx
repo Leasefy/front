@@ -10,6 +10,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useRanuraViva } from "@/components/migracion/ranura-viva";
+import { BarraDeTrabajo } from "@/components/migracion/BarraDeTrabajo";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   CheckCircle,
@@ -93,17 +94,6 @@ import {
  */
 
 const POR_PAGINA = 25;
-
-/**
- * Cuántas llamadas mira la estimación de tiempo de la activación.
- *
- * Cada llamada del back gasta hasta 15 s, así que seis muestras son ~90 s de
- * historia: suficiente para que el número no salte con cada tanda, y corto
- * para que siga el cambio de ritmo cuando el lote pasa de re-apuntar
- * inmuebles que ya existen (~170/min) a crearlos (~40/min).
- */
-const MUESTRAS_DE_RITMO = 6;
-
 export function StepConfirmImport({
   state,
   updateState,
@@ -291,24 +281,6 @@ export function StepConfirmImport({
   const [progresoDeActivacion, setProgresoDeActivacion] =
     useState<ProgresoDeActivacion | null>(null);
   /* Cuántas filas LISTO había al tocar «Activar»: el «de N» de la barra. */
-  const totalAActivarRef = useRef(0);
-  /*
-   * 🔴 LAS ÚLTIMAS MEDICIONES, NO EL PROMEDIO DE TODA LA CORRIDA.
-   *
-   * Nico, 2026-09-11: «eso no está calculando bien el tiempo que se demora».
-   * La barra decía «faltan unos 3 min» con 2.585 de 2.824 hechas, y tardó 8.
-   *
-   * El promedio desde el arranque mentía porque el ritmo CAMBIA solo dentro
-   * de la misma corrida: las filas cuyo inmueble ya existe se re-apuntan a
-   * ~170/min y las que crean uno nuevo van a ~40/min. Un archivo re-subido
-   * empieza volando y termina arrastrándose, así que el promedio queda
-   * anclado a la parte rápida y promete siempre de menos — justo al final,
-   * que es cuando la persona mira el número.
-   *
-   * Con una ventana de las últimas llamadas, la estimación sigue al ritmo de
-   * AHORA.
-   */
-  const muestrasDeActivacionRef = useRef<{ t: number; hechas: number }[]>([]);
   /* La salida. En un ref porque el bucle la lee entre llamadas; en estado
      sólo para que el botón diga «Deteniendo…». */
   const detenerActivacionRef = useRef(false);
@@ -319,6 +291,9 @@ export function StepConfirmImport({
    * lote los creó (ver `subirFotosDelLote`). `fotosSubidas` guarda a qué
    * inmuebles ya se les subió, para no repetir en una segunda tanda.
    */
+  /* Cuántas filas LISTO había al tocar «Activar»: el «de N» de la barra
+     mientras la primera llamada todavía no volvió. */
+  const totalAActivarRef = useRef(0);
   const [fotosProgreso, setFotosProgreso] = useState<{ hechos: number; total: number } | null>(null);
   const [fotosSubidas] = useState(() => new Set<string>());
   const subirFotosDeLosActivados = useCallback(
@@ -468,40 +443,6 @@ export function StepConfirmImport({
   const totalDeActivacion = progresoDeActivacion
     ? hechasEnActivacion + progresoDeActivacion.restantes
     : totalAActivarRef.current;
-  const porcentajeDeActivacion =
-    totalDeActivacion > 0
-      ? Math.min(100, Math.round((hechasEnActivacion / totalDeActivacion) * 100))
-      : 0;
-  const minutosDeActivacion = useMemo(() => {
-    const muestras = muestrasDeActivacionRef.current;
-    if (!activando || muestras.length < 2 || totalDeActivacion <= hechasEnActivacion) {
-      return null;
-    }
-    const primera = muestras[0];
-    const ultima = muestras[muestras.length - 1];
-    const filas = ultima.hechas - primera.hechas;
-    const ms = ultima.t - primera.t;
-    // Sin avance medible en la ventana no se inventa un número: la barra dice
-    // en qué va y se calla lo que no sabe.
-    if (filas <= 0 || ms <= 0) return null;
-    const minutos = Math.ceil(
-      ((totalDeActivacion - hechasEnActivacion) * (ms / filas)) / 60_000,
-    );
-    return minutos > 0 ? minutos : null;
-  }, [activando, hechasEnActivacion, totalDeActivacion]);
-
-  /**
-   * Anota la muestra y actualiza la pantalla. Las muestras viven en un `ref`
-   * porque sólo alimentan un cálculo: el re-render lo dispara el `setState`.
-   */
-  const anotarProgresoDeActivacion = useCallback((p: ProgresoDeActivacion) => {
-    const hechas = p.activados + p.reusados + p.omitidas;
-    muestrasDeActivacionRef.current = [
-      ...muestrasDeActivacionRef.current,
-      { t: Date.now(), hechas },
-    ].slice(-MUESTRAS_DE_RITMO);
-    setProgresoDeActivacion(p);
-  }, []);
 
   /**
    * Pide parar la activación. No corta a mitad de una tanda: la que está en
@@ -933,53 +874,16 @@ export function StepConfirmImport({
    * vivo y estaría muerto (costó media hora el 2026-09-10).
    */
   const barraDeActivacion = (
-    <div className="space-y-2" data-testid="activacion-progreso" aria-live="polite">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <p className="text-sm text-fg-muted dark:text-fg-subtle">
-          Creando los inmuebles — {hechasEnActivacion} de {totalDeActivacion}
-          {minutosDeActivacion != null && !deteniendoActivacion ? (
-            <span className="text-fg-subtle"> · faltan unos {minutosDeActivacion} min</span>
-          ) : null}
-        </p>
-        <Button
-          type="button"
-          variant="ghost"
-          hideArrow
-          onClick={detenerActivacion}
-          disabled={deteniendoActivacion}
-          data-testid="activacion-detener"
-        >
-          {deteniendoActivacion ? "Deteniendo…" : "Detener"}
-        </Button>
-      </div>
-      <Progress value={porcentajeDeActivacion} size="xs" />
-      {/* El porcentaje, pedido por Nico el 2026-09-11: la barra sola no se
-          lee, y «2585 de 2824» obliga a hacer la división de cabeza. */}
-      <p
-        className="text-xs text-right font-mono tabular-nums text-fg-subtle dark:text-fg-muted"
-        data-testid="activacion-porcentaje"
-      >
-        {porcentajeDeActivacion}%
-      </p>
-    </div>
+    <BarraDeTrabajo
+      testid="activacion"
+      titulo="Creando los inmuebles"
+      hechas={hechasEnActivacion}
+      total={totalDeActivacion}
+      onDetener={detenerActivacion}
+      deteniendo={deteniendoActivacion}
+    />
   );
 
-  /*
-   * ── CARGA TERMINADA: EL AVISO Y LA SALIDA, SEPARADOS ────────────────────
-   *
-   * 🔴 Nico, 2026-09-12: «ese verde se ve horrible; mejor que el seguir
-   * contrato quede ahí donde está siempre el siguiente, al lado de anterior,
-   * y el mensaje encima de esa zona gris con posibilidad de cerrarlo».
-   *
-   * Tenía razón en las dos mitades. Un bloque verde a mitad del cuerpo
-   * compite con la lista y con los botones del paso, y mete la acción
-   * principal en un lugar donde no estuvo nunca: el primario vivió siempre al
-   * pie, a la derecha de «Anterior» (para eso existe `RanuraDelPie`). Y un
-   * aviso que no se puede cerrar se queda estorbando cuando ya se leyó.
-   *
-   * Entonces: el AVISO es un banner sobrio pegado al pie, con ✕; la ACCIÓN se
-   * va al pie por portal, donde la persona ya la busca.
-   */
   const avisoDeCargaTerminada = (
     <div
       className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4 dark:border-border-strong dark:bg-white/[0.02]"
@@ -1056,14 +960,13 @@ export function StepConfirmImport({
     setError(null);
     setProgresoDeActivacion(null);
     totalAActivarRef.current = resumenLote?.listos ?? 0;
-    muestrasDeActivacionRef.current = [];
     detenerActivacionRef.current = false;
     setDeteniendoActivacion(false);
     try {
       const resultado = await activarLoteCompleto(
         lote,
         inmueblesImportacionApi.activar,
-        anotarProgresoDeActivacion,
+        setProgresoDeActivacion,
         { debeParar: () => detenerActivacionRef.current },
       );
       /*
@@ -1139,8 +1042,7 @@ export function StepConfirmImport({
       setActivando(false);
       setProgresoDeActivacion(null);
       setDeteniendoActivacion(false);
-      muestrasDeActivacionRef.current = [];
-    }
+      }
   };
 
   const botonImportar = (

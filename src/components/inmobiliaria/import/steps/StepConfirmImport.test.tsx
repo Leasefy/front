@@ -179,6 +179,7 @@ function render(
   state: ImportWizardState,
   props: {
     onSalir?: () => void;
+    onContinuar?: () => void;
     onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
     /** El nodo que el muro dibuja FUERA del `inert`. `null` = sin muro. */
     ranuraViva?: HTMLElement | null;
@@ -464,6 +465,80 @@ describe('<StepConfirmImport> — the review screen once LISTO', () => {
     await act(async () => {
       soltar!();
       await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    });
+  });
+
+  /*
+   * 🔴 Nico, 2026-09-11, mirando 2.864 total · 40 pendientes · 0 listas ·
+   * 2.824 activadas: «no hay nada de cómo continuar, cómo pasar de ahí a
+   * contratos, no se muestra un cta». El pie del muro sólo ofrece «Seguir
+   * con…» cuando el paso está LISTO, y el paso se queda «pendiente» mientras
+   * exista UNA fila sin activar en CUALQUIER carga de la agencia.
+   */
+  describe('cuando el lote ya no tiene nada que activar', () => {
+    function loteTerminado() {
+      inmueblesImportacionApiMock.resumen.mockResolvedValue({
+        lote: 'lote-1', total: 2_864, pendientes: 40, listos: 0, activados: 2_824, descartados: 0,
+      });
+    }
+
+    it('sin nada pendiente en otras cargas, ofrece seguir con Contratos', async () => {
+      loteTerminado();
+      inmueblesImportacionApiMock.lotesAbiertos.mockResolvedValue([
+        { lote: 'lote-1', estado: 'LISTO', total: 2_864, procesadas: 2_864, pendientes: 40, listos: 0, activados: 2_824, descartados: 0, jobId: null, error: null, creadoEn: '' },
+      ]);
+      const onContinuar = vi.fn();
+
+      render(baseState(), { onSalir: () => {}, onContinuar });
+      await act(async () => { for (let i = 0; i < 6; i++) await Promise.resolve(); });
+
+      expect(container.querySelector('[data-testid="lote-terminado"]')).toBeTruthy();
+      await act(async () => {
+        container.querySelector<HTMLButtonElement>('[data-testid="seguir-con-contratos"]')!.click();
+        await Promise.resolve();
+      });
+      expect(onContinuar).toHaveBeenCalled();
+    });
+
+    it('con filas listas en OTRAS cargas dice cuántas y manda a verlas, no a Contratos', async () => {
+      loteTerminado();
+      inmueblesImportacionApiMock.lotesAbiertos.mockResolvedValue([
+        { lote: 'lote-1', estado: 'LISTO', total: 2_864, procesadas: 2_864, pendientes: 40, listos: 0, activados: 2_824, descartados: 0, jobId: null, error: null, creadoEn: '' },
+        { lote: 'vieja-a', estado: 'LISTO', total: 2_864, procesadas: 2_864, pendientes: 102, listos: 1_381, activados: 1_381, descartados: 0, jobId: null, error: null, creadoEn: '' },
+        { lote: 'vieja-b', estado: 'LISTO', total: 2_864, procesadas: 2_864, pendientes: 1_654, listos: 1_210, activados: 0, descartados: 0, jobId: null, error: null, creadoEn: '' },
+      ]);
+      const onSalir = vi.fn();
+      const onContinuar = vi.fn();
+
+      render(baseState(), { onSalir, onContinuar });
+      await act(async () => { for (let i = 0; i < 6; i++) await Promise.resolve(); });
+
+      const bloque = container.querySelector('[data-testid="lote-terminado"]')!;
+      // 1.381 + 1.210, y dos cargas: el número que frena el paso, dicho.
+      expect(bloque.textContent).toContain('2591');
+      expect(bloque.textContent).toContain('2 cargas anteriores');
+      // No se ofrece Contratos: llevaría a un paso que el muro tiene frenado.
+      expect(container.querySelector('[data-testid="seguir-con-contratos"]')).toBeNull();
+
+      await act(async () => {
+        container.querySelector<HTMLButtonElement>('[data-testid="ir-a-otras-cargas"]')!.click();
+        await Promise.resolve();
+      });
+      expect(onSalir).toHaveBeenCalled();
+      expect(onContinuar).not.toHaveBeenCalled();
+    });
+
+    it('con filas listas en ESTE lote todavía no aparece: hay trabajo acá', async () => {
+      inmueblesImportacionApiMock.resumen.mockResolvedValue({
+        lote: 'lote-1', total: 2_864, pendientes: 40, listos: 679, activados: 2_145, descartados: 0,
+      });
+      inmueblesImportacionApiMock.lotesAbiertos.mockResolvedValue([]);
+
+      render(baseState(), { onSalir: () => {}, onContinuar: () => {} });
+      await act(async () => { for (let i = 0; i < 6; i++) await Promise.resolve(); });
+
+      expect(container.querySelector('[data-testid="lote-terminado"]')).toBeNull();
+      expect(inmueblesImportacionApiMock.lotesAbiertos).not.toHaveBeenCalled();
     });
   });
 

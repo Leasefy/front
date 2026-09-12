@@ -1285,6 +1285,17 @@ function ContenidoDelPaso({
         <ImportWizard
           key={vueltaDeInmuebles}
           onSalir={() => setVueltaDeInmuebles((n) => n + 1)}
+          /*
+           * 🔴 Cómo pasar a Contratos desde adentro del paso.
+           *
+           * Nico, 2026-09-11: «no hay nada de cómo continuar, cómo pasar de
+           * ahí a contratos, no se muestra un cta». El pie del muro sólo
+           * ofrece «Seguir con…» cuando el paso está LISTO, y el paso de
+           * inmuebles se queda «pendiente» mientras haya filas sin activar en
+           * CUALQUIER carga — incluidas las viejas que la persona abandonó.
+           * Terminado su lote, se quedaba mirando una pantalla sin salida.
+           */
+          onContinuar={irAOtro("contratos")}
           onOcupado={onOcupado}
           congelado={congelado}
         />

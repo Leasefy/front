@@ -65,6 +65,7 @@ import {
   type ResumenLoteInmuebles,
   type FilaOmitida,
   type ImportarInmuebleDto,
+  type EstadoDeLoteInmuebles,
 } from "@/lib/api/inmuebles-importacion.service";
 
 /**
@@ -106,6 +107,7 @@ export function StepConfirmImport({
   state,
   updateState,
   onSalir,
+  onContinuar,
   onOcupado,
 }: ImportStepProps) {
   const router = useRouter();
@@ -244,6 +246,20 @@ export function StepConfirmImport({
   const [descartandoLote, setDescartandoLote] = useState(false);
   /* «Actualizar la lista» en vuelo: el botón gira en vez de verse muerto. */
   const [refrescando, setRefrescando] = useState(false);
+  /*
+   * 🔴 LAS OTRAS CARGAS, porque son las que deciden si se puede seguir.
+   *
+   * El paso de inmuebles del muro se queda «pendiente» mientras EXISTA una
+   * fila LISTO en CUALQUIER lote de la agencia, no sólo en el que se está
+   * mirando. Nico, 2026-09-11, con su lote entero activado (2.824 de 2.864, 0
+   * listas) en pantalla: «no hay nada de cómo continuar, cómo pasar de ahí a
+   * contratos». Lo frenaban 3.270 filas de cuatro cargas anteriores que ni
+   * siquiera se veían desde acá.
+   *
+   * Se consultan al terminar el lote para poder decir la verdad: o queda
+   * trabajo en otra parte —y se ofrece ir— o no queda nada y se ofrece seguir.
+   */
+  const [otrasCargas, setOtrasCargas] = useState<EstadoDeLoteInmuebles[] | null>(null);
 
   // ── Phase 3: activation ──────────────────────────────────────────────
   const [activando, setActivando] = useState(false);
@@ -590,6 +606,42 @@ export function StepConfirmImport({
       setError(e instanceof Error ? e.message : "No pudimos abrir ese lote.");
     }
   }, []);
+
+  /*
+   * Las otras cargas: se preguntan cuando ESTE lote ya no tiene nada que
+   * activar, que es justo cuando la pregunta importa («¿puedo seguir?»). No
+   * se sondean: `lotesAbiertos` recorre hasta 50 lotes y cuenta filas de cada
+   * uno, y la respuesta sólo cambia cuando alguien activa o descarta algo.
+   */
+  const sinNadaQueActivar =
+    resumenLote !== null && resumenLote.listos === 0 && resumenLote.activados > 0;
+  useEffect(() => {
+    if (!sinNadaQueActivar) {
+      setOtrasCargas(null);
+      return;
+    }
+    let vivo = true;
+    inmueblesImportacionApi
+      .lotesAbiertos()
+      .then((ls) => {
+        if (vivo) setOtrasCargas(ls);
+      })
+      // Un fallo acá no puede tapar la pantalla: se calla y no se afirma nada.
+      .catch(() => {
+        if (vivo) setOtrasCargas(null);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [sinNadaQueActivar, lote]);
+
+  /** Filas LISTO que viven en OTRO lote: son las que frenan el paso del muro. */
+  const listosEnOtrasCargas = (otrasCargas ?? [])
+    .filter((l) => l.lote !== lote)
+    .reduce((suma, l) => suma + l.listos, 0);
+  const cuantasOtrasCargas = (otrasCargas ?? []).filter(
+    (l) => l.lote !== lote && l.listos > 0,
+  ).length;
 
   // El lote pasó a LISTO (por el sondeo, o porque llegamos por el ?lote= de
   // la notificación con el batch ya terminado): recién ahí tiene sentido
@@ -1379,6 +1431,76 @@ export function StepConfirmImport({
             >
               Actualizar la lista
             </Button>
+          </div>
+        )}
+
+        {/*
+         * ── ESTE LOTE YA NO TIENE NADA QUE ACTIVAR ──────────────────────
+         *
+         * 🔴 Nico, 2026-09-11, mirando 2.864 total · 40 pendientes · 0 listas
+         * · 2.824 activadas: «no hay nada de cómo continuar, cómo pasar de
+         * ahí a contratos, no se muestra un cta».
+         *
+         * Tenía razón dos veces. La pantalla no ofrecía salida, y el pie del
+         * muro tampoco: sólo dibuja «Seguir con…» cuando el paso está LISTO,
+         * y el paso se queda «pendiente» mientras exista UNA fila sin activar
+         * en CUALQUIER carga de la agencia. Lo frenaban 3.270 filas de cuatro
+         * cargas viejas que ni se veían desde acá.
+         *
+         * Entonces se dice qué pasó y cuál es el siguiente paso REAL: si
+         * queda trabajo en otra carga se manda ahí; si no queda nada, se
+         * ofrece Contratos.
+         */}
+        {sinNadaQueActivar && (
+          <div
+            className="rounded-lg border border-success/30 bg-success-soft p-5"
+            data-testid="lote-terminado"
+          >
+            <p className="text-sm font-medium text-fg dark:text-white">
+              Esta carga ya está activada — {resumenLote?.activados}{" "}
+              {resumenLote?.activados === 1 ? "inmueble" : "inmuebles"} en tu
+              portafolio.
+            </p>
+            {(resumenLote?.pendientes ?? 0) > 0 && (
+              <p className="mt-1 text-sm text-fg-muted dark:text-fg-subtle">
+                Quedan {resumenLote?.pendientes} filas con datos por corregir.
+                No frenan nada: puedes arreglarlas acá o dejarlas fuera y
+                seguir.
+              </p>
+            )}
+            {listosEnOtrasCargas > 0 ? (
+              <>
+                <p className="mt-3 text-sm text-fg-muted dark:text-fg-subtle">
+                  Antes de seguir: {cuantasOtrasCargas}{" "}
+                  {cuantasOtrasCargas === 1 ? "carga anterior" : "cargas anteriores"}{" "}
+                  {cuantasOtrasCargas === 1 ? "tiene" : "tienen"}{" "}
+                  {listosEnOtrasCargas} filas listas sin activar. Mientras
+                  existan, este paso no se da por terminado — actívalas o
+                  descártalas.
+                </p>
+                {onSalir && (
+                  <Button
+                    type="button"
+                    className="mt-3"
+                    hideArrow
+                    data-testid="ir-a-otras-cargas"
+                    onClick={() => onSalir()}
+                  >
+                    Ver las otras cargas
+                  </Button>
+                )}
+              </>
+            ) : onContinuar ? (
+              <Button
+                type="button"
+                className="mt-3"
+                hideArrow
+                data-testid="seguir-con-contratos"
+                onClick={() => onContinuar()}
+              >
+                Seguir con Contratos
+              </Button>
+            ) : null}
           </div>
         )}
 

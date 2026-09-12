@@ -4735,6 +4735,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/ai-hub/agentes/autonomia": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto automático — postura de autonomía de TODA la flota, en una llamada */
+        get: operations["getAiHubAgentesAutonomiaRoster"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/ai-hub/retenidos/{decisionId}/aprobar": {
         parameters: {
             query?: never;
@@ -4986,6 +5003,46 @@ export interface paths {
         get: operations["getAgencyAiHubWorkItemDetail"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/matching/casos/{id}/enviar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Matching — mandarle al candidato las opciones de un caso de la cola
+         * @description Le pide al back que mande el correo con los inmuebles compatibles (el back vuelve a verificar consentimiento y enfriamiento). El caso pasa a `enviado`; si el correo no sale, responde 409 con el motivo en palabras y el caso se actualiza igual que cuando lo reporta el circuito automático.
+         */
+        post: operations["enviarAiHubMatchingCaso"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/matching/casos/{id}/descartar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Matching — sacar un caso de la cola sin mandar nada
+         * @description El caso pasa a `descartado` con quién lo decidió y el motivo (opcional). No se le manda nada al candidato. 409 si el caso ya no estaba en la cola.
+         */
+        post: operations["descartarAiHubMatchingCaso"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10873,7 +10930,7 @@ export interface components {
             altasAlEmbudo: number;
             /** @description Filas con monto pero sin fecha de vencimiento legible. Se importó el deudor, pero no entra a cobranza: sin vencimiento no hay días de mora, y una fecha inventada dispararía llamadas y una carta con cifras falsas. */
             sinVencimiento: number;
-            /** @description Índices de filas cuyo teléfono ya pertenece a OTRO deudor del tenant con una cédula distinta. Se importaron como deudor nuevo a propósito: dos codeudores comparten teléfono, y fusionarlos dejaría a uno debiendo los dos cánones. Revisa si son la misma persona; para fusionarlas está scripts/normalizar-telefonos-deudores.ts. */
+            /** @description Índices de filas cuyo teléfono ya pertenece a OTRO deudor del tenant con una cédula distinta. Se importaron como deudor nuevo a propósito: dos codeudores comparten teléfono, y fusionarlos dejaría a uno debiendo los dos cánones. Revisá si son la misma persona; para fusionarlas está scripts/normalizar-telefonos-deudores.ts. */
             conflictosTelefono: number[];
             vencimiento: components["schemas"]["CarteraImportVencimiento"];
             generatedAt: string;
@@ -11196,6 +11253,9 @@ export interface components {
             /** @enum {string} */
             modo: "sombra" | "copiloto" | "autonomo";
         };
+        AiHubAgentesAutonomiaResponse: {
+            agentes: components["schemas"]["AiHubAutonomiaResponse"][];
+        };
         AiHubRetenidoResultado: {
             /** @enum {boolean} */
             ok: true;
@@ -11502,6 +11562,32 @@ export interface components {
                 };
             }[];
             generatedAt: string;
+        };
+        AiHubMatchingEnviarOk: {
+            /** @enum {boolean} */
+            ok: true;
+            /** @enum {string} */
+            estado: "enviado";
+        };
+        AiHubMatchingNoEnviado: {
+            /** @enum {boolean} */
+            ok: false;
+            motivo: string;
+            mensaje: string;
+        };
+        AiHubMatchingNoDisponible: {
+            /** @enum {boolean} */
+            ok: false;
+            mensaje: string;
+        };
+        AiHubMatchingDescartarOk: {
+            /** @enum {boolean} */
+            ok: true;
+            /** @enum {string} */
+            estado: "descartado";
+        };
+        AiHubMatchingDescartarBody: {
+            reason?: string;
         };
         AiHubMetricsResponse: {
             scoring: {
@@ -21547,6 +21633,61 @@ export interface operations {
             };
         };
     };
+    getAiHubAgentesAutonomiaRoster: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Roster completo, un item por agente de AGENTES_CON_AUTONOMIA */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubAgentesAutonomiaResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
     aprobarRetenidoPiloto: {
         parameters: {
             query?: never;
@@ -22427,6 +22568,162 @@ export interface operations {
             };
             /** @description Unknown `agente`, or the case does not exist for this tenant */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    enviarAiHubMatchingCaso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Correo enviado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubMatchingEnviarOk"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant / rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description El caso no existe en esta agencia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description El caso ya no está en la cola, o el correo no salió (motivo en `mensaje`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubMatchingNoEnviado"];
+                };
+            };
+            /** @description El back no respondió o la base no está disponible — se puede reintentar */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubMatchingNoDisponible"];
+                };
+            };
+        };
+    };
+    descartarAiHubMatchingCaso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AiHubMatchingDescartarBody"];
+            };
+        };
+        responses: {
+            /** @description Caso descartado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubMatchingDescartarOk"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant / rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description El caso no existe en esta agencia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description El caso ya no estaba en la cola */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -207,7 +207,7 @@ describe('AutonomiaPanel — modo como control real', () => {
   it('bajar de autonomía es un clic: llama a la escritura sin confirmar', async () => {
     const onCambiarModo = vi.fn(async () => ({ ok: true }))
     render({ data: DATA, onCambiarModo, puedeCambiar: true })
-    const sombra = radios().find((r) => r.textContent?.includes('Sombra'))!
+    const sombra = radios().find((r) => r.textContent?.includes('Manual'))!
     await act(async () => {
       sombra.click()
     })
@@ -239,7 +239,7 @@ describe('AutonomiaPanel — modo como control real', () => {
   it('si la escritura falla, avisa por el toast de error', async () => {
     const onCambiarModo = vi.fn(async () => ({ ok: false, error: '403' }))
     render({ data: DATA, onCambiarModo, puedeCambiar: true })
-    const sombra = radios().find((r) => r.textContent?.includes('Sombra'))!
+    const sombra = radios().find((r) => r.textContent?.includes('Manual'))!
     await act(async () => {
       sombra.click()
     })

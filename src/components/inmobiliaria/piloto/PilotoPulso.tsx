@@ -54,6 +54,7 @@ import { ListRow, MonoLabel, Stat, StatStrip } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { formatCurrency } from '@/lib/format'
 import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import type { PulsoAlerta, PulsoEnCurso, PulsoEstado, PulsoResponse } from '@/lib/api/piloto'
 
 /**
@@ -132,6 +133,15 @@ export interface PilotoPulsoProps {
   onAbrirItem?: (itemId: string) => void
   /** Abre el cajón de una alerta (regla, no fila: no se pide al micro). */
   onAbrirAlerta?: (alerta: PulsoAlerta) => void
+  /**
+   * T-0076: antes un `error` hacía `return null` — el tablero vivo
+   * desaparecía en silencio, indistinguible de `notAvailable` (el endpoint
+   * que el micro todavía no publica). Un 429 del gateway (`agents_limit`) es
+   * justo ese caso: sin esto, la torre perdía «qué pasa ahora» sin ningún
+   * indicio de que algo falló. Ahora un error real se pinta como tal —y con
+   * retry, si el llamador lo da.
+   */
+  onRefetch?: () => Promise<void>
 }
 
 export function PilotoPulso({
@@ -143,6 +153,7 @@ export function PilotoPulso({
   recuperadoMesCop,
   onAbrirItem,
   onAbrirAlerta,
+  onRefetch,
 }: PilotoPulsoProps) {
   const { t } = useI18n()
 
@@ -156,8 +167,23 @@ export function PilotoPulso({
     )
   }
 
-  // Sin endpoint o con la fuente caída, la torre sigue: este panel no se pinta.
-  if (notAvailable || error || !data) return null
+  // Un fallo REAL se dice: silenciarlo (como `notAvailable`) es justo el bug
+  // de T-0076 — un 429 del gateway se leía como si el tablero nunca hubiera
+  // existido, sin ningún indicio de que algo se rompió.
+  if (error) {
+    return (
+      <FalloDeCarga
+        error={error}
+        queEs="el tablero"
+        {...(onRefetch ? { onReintentar: onRefetch } : {})}
+      />
+    )
+  }
+
+  // Sin endpoint (el micro todavía no lo publica) o sin datos, la torre
+  // sigue: este panel simplemente no se pinta. Esto SÍ es silencioso a
+  // propósito — no es un fallo, es una pieza que no existe todavía.
+  if (notAvailable || !data) return null
 
   // Un estado que no conocemos NO se pinta como éxito: se muestra neutro.
   // Degradar lo desconocido a verde es la forma más silenciosa de mentir.

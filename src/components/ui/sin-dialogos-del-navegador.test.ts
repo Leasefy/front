@@ -73,7 +73,17 @@ describe('el panel confirma con el sistema de diseño, no con el navegador', () 
       for (const [indice, linea] of fuente.split('\n').entries()) {
         // Los comentarios que nombran la regla («NUNCA window.confirm») no son
         // infracciones: son justamente lo que queremos que siga escrito.
-        const sinComentario = linea.replace(/\/\/.*$/, '').replace(/\/\*.*?\*\//g, '')
+        //
+        // El `\r` se saca ANTES de recortar el comentario, y no es cosmético.
+        // En JavaScript el retorno de carro es un LineTerminator, así que `.`
+        // nunca lo matchea: con CRLF en el disco, `//.*$` no llega al final de
+        // la línea, no matchea nada, el comentario queda entero y el guard se
+        // denuncia a sí mismo. En LF pasa (CI, Linux) y en Windows con
+        // `core.autocrlf=true` falla — un rojo que sólo ve quien desarrolla.
+        const sinComentario = linea
+          .replace(/\r$/, '')
+          .replace(/\/\/.*$/, '')
+          .replace(/\/\*.*?\*\//g, '')
         if (LLAMADA_NATIVA.test(sinComentario)) {
           infractores.push(`${nombre}:${indice + 1}`)
         }

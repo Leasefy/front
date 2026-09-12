@@ -54,11 +54,20 @@ vi.mock('@/components/ui/spinner', () => ({ Spinner: () => React.createElement('
 vi.mock('@/components/estado/FalloDeCarga', () => ({
   FalloDeCarga: () => React.createElement('div', { 'data-testid': 'fallo' }),
 }));
-vi.mock('@/components/ui/input', () => ({
-  Input: React.forwardRef((props: Record<string, unknown>, ref: React.Ref<HTMLInputElement>) =>
-    React.createElement('input', { ...props, ref }),
-  ),
-}));
+vi.mock('@/components/ui/input', () => {
+  // `react/display-name` cannot infer a name for a render function wrapped in
+  // `forwardRef` — it is anonymous to the rule's static analysis. Naming the
+  // mock and setting `.displayName` explicitly is the standard fix, and the
+  // same one `MessagesWidget.test.tsx` already uses.
+  const MockInput = React.forwardRef(function MockInput(
+    props: Record<string, unknown>,
+    ref: React.Ref<HTMLInputElement>,
+  ) {
+    return React.createElement('input', { ...props, ref });
+  });
+  MockInput.displayName = 'Input';
+  return { Input: MockInput };
+});
 vi.mock('@/components/ui/button', () => ({
   Button: ({ children, hideArrow: _h, ...rest }: Record<string, unknown> & { children?: React.ReactNode; hideArrow?: boolean }) =>
     React.createElement('button', rest, children as React.ReactNode),

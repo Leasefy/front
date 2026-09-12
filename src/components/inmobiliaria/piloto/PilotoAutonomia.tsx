@@ -23,6 +23,7 @@ import { ShieldCheck, SlidersHorizontal } from '@phosphor-icons/react'
 import { SegmentedControl, Switch } from '@leasefy/cadence'
 
 import { Button } from '@/components/ui/button'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import {
   Sheet,
   SheetContent,
@@ -34,7 +35,8 @@ import {
 import { useI18n } from '@/lib/i18n'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { workspaceVocab } from '@/components/inmobiliaria/ai/ColaHumana'
-import type { UsePilotoAutonomiaResult } from '@/lib/hooks/piloto/use-piloto-autonomia'
+import { cn } from '@/lib/utils'
+import type { AgentePiloto, UsePilotoAutonomiaResult } from '@/lib/hooks/piloto/use-piloto-autonomia'
 import type { AutonomiaModo } from '@/lib/api/piloto'
 import {
   fetchPilotoGobierno,
@@ -44,6 +46,17 @@ import {
 import { useAuth } from '@/lib/auth'
 
 const MODOS: AutonomiaModo[] = ['sombra', 'copiloto', 'autonomo']
+
+/**
+ * Agentes que hoy NO están disponibles en el Piloto — decisión de producto
+ * TEMPORAL (T-0051, 2026-09-02), no un estado que publique el micro. La
+ * tarjeta se sigue viendo (nunca se borra), pero muda y sin controles.
+ * Reactivar un agente es sacarlo de esta lista, nada más.
+ */
+export const AGENTES_NO_DISPONIBLES: ReadonlySet<AgentePiloto> = new Set<AgentePiloto>([
+  'retencion',
+  'prospectos',
+])
 
 /** Qué significa cada modo, en una línea. Es lo que faltaba para decidir. */
 const MODO_EXPLICACION: Record<AutonomiaModo, string> = {
@@ -67,7 +80,11 @@ export interface PilotoAutonomiaProps {
 
 export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
   const { t } = useI18n()
-  const { rows, totalRoster, isLoading, busyAgente, setModo } = autonomia
+  // T-0076: `error` se descartaba acá — un fallo real (un 429 del gateway,
+  // por ejemplo) se leía IGUAL que «ningún agente reporta autonomía todavía»
+  // (`rows.length === 0` con `error: null`), un estado vacío honesto que no
+  // es lo que pasó. Ahora un fallo real se dice como tal, con retry.
+  const { rows, totalRoster, isLoading, error, busyAgente, setModo, refetch } = autonomia
   const { isAdmin } = usePermissionsContext()
   const { agency } = useAuth()
   const [abierto, setAbierto] = useState(false)
@@ -176,8 +193,11 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
           ))}
         </dl>
 
-        {/* Honestidad: si algún agente no reportó, se dice — su modo no se sabe. */}
-        {mudos > 0 && !isLoading && (
+        {/* Honestidad: si algún agente no reportó, se dice — su modo no se sabe.
+            Con `error` ya se dice de otra forma más abajo (FalloDeCarga); las
+            dos juntas —«12 no reportaron» y «no pudimos cargar»— dirían lo
+            mismo dos veces. */}
+        {mudos > 0 && !isLoading && !error && (
           <p className="mt-3 text-caption text-fg-subtle">
             {t('inmobiliaria.piloto.autonomia.mudos', { n: String(mudos) })}
           </p>
@@ -200,7 +220,19 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
               />
             ))}
 
-          {!isLoading && rows.length === 0 && (
+          {/* Un fallo real primero: «vacía» es una respuesta correcta con
+              cero agentes, no lo que pasó cuando la petición ni siquiera
+              volvió (T-0076: antes esto se mostraba idéntico a un 404). */}
+          {!isLoading && error && rows.length === 0 && (
+            <FalloDeCarga
+              error={error}
+              queEs="la autonomía de los agentes"
+              onReintentar={refetch}
+              enmarcado={false}
+            />
+          )}
+
+          {!isLoading && !error && rows.length === 0 && (
             <p className="text-body-sm text-fg-muted">
               {t('inmobiliaria.piloto.autonomia.vacia')}
             </p>
@@ -213,23 +245,44 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
               label: t(`inmobiliaria.piloto.autonomia.modo.${m}`),
             }))
             const gob = gobierno.get(row.agente)
+            // T-0051: agente en pausa de producto — la tarjeta entera se lee
+            // como no disponible, sin importar lo que diga el gobierno real.
+            const noDisponible = AGENTES_NO_DISPONIBLES.has(row.agente)
+            const estadoTexto = noDisponible
+              ? t('inmobiliaria.piloto.gobierno.proximamente')
+              : gob
+                ? !gob.disponibleGlobal
+                  ? t('inmobiliaria.piloto.gobierno.apagadoServidor')
+                  : gob.corre
+                    ? t('inmobiliaria.piloto.gobierno.activo')
+                    : t('inmobiliaria.piloto.gobierno.inactivo')
+                : null
             return (
-              <div key={row.agente} className="space-y-1.5">
+              <div
+                key={row.agente}
+                className={cn('space-y-1.5', noDisponible && 'opacity-60')}
+                data-testid={`piloto-autonomia-fila-${row.agente}`}
+              >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-body-sm font-medium text-fg">{etiqueta}</p>
-                  {gob && (
+                  <p
+                    className={cn(
+                      'text-body-sm font-medium',
+                      noDisponible ? 'text-fg-muted' : 'text-fg',
+                    )}
+                  >
+                    {etiqueta}
+                  </p>
+                  {(gob || noDisponible) && (
                     <span className="flex items-center gap-1.5">
-                      <span className="text-caption text-fg-subtle">
-                        {!gob.disponibleGlobal
-                          ? t('inmobiliaria.piloto.gobierno.apagadoServidor')
-                          : gob.corre
-                            ? t('inmobiliaria.piloto.gobierno.activo')
-                            : t('inmobiliaria.piloto.gobierno.inactivo')}
-                      </span>
+                      {estadoTexto && (
+                        <span className="text-caption text-fg-subtle">{estadoTexto}</span>
+                      )}
                       {isAdmin && (
                         <Switch
-                          checked={gob.corre}
-                          disabled={!gob.disponibleGlobal || gobiernoBusy === row.agente}
+                          checked={noDisponible ? false : Boolean(gob?.corre)}
+                          disabled={
+                            noDisponible || !gob?.disponibleGlobal || gobiernoBusy === row.agente
+                          }
                           onCheckedChange={(v: boolean) => void cambiarCorre(row.agente, v)}
                           aria-label={t('inmobiliaria.piloto.gobierno.switchAria', { agente: etiqueta })}
                         />
@@ -242,7 +295,7 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
                     options={opciones}
                     value={row.modo}
                     onChange={(modo) => void cambiar(row.agente, modo)}
-                    disabled={busyAgente === row.agente}
+                    disabled={noDisponible || busyAgente === row.agente}
                     size="sm"
                     fullWidth
                     aria-label={t('inmobiliaria.piloto.autonomia.grupoAria', {

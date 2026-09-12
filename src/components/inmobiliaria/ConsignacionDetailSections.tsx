@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import Link from 'next/link';
 import { conRegreso } from '@/lib/nav/ruta-de-regreso';
 import { motion } from 'framer-motion';
@@ -311,6 +312,26 @@ export function PropietarioSection({
               <Phone className="w-4 h-4" />
               {t('inmobiliaria.consignaciones.detail.call')}
             </a>
+          )}
+          {/*
+           * 🔴 Escribirle por Leasefy, no sólo por fuera (Nico, 2026-09-12).
+           *
+           * El correo y el teléfono se van del producto: lo que se habla ahí
+           * no queda en ningún lado y el siguiente agente que abra esta ficha
+           * no sabe qué se dijo. El hilo directo sí queda, y lo ve cualquier
+           * miembro de la inmobiliaria.
+           *
+           * Necesita que el propietario tenga cuenta de portal
+           * (`cuentaDePortalId`): la ficha del propietario es comercial y no
+           * es un usuario. Sin cuenta no se dibuja — un botón que no puede
+           * hacer nada es peor que ninguno.
+           */}
+          {propietario.cuentaDePortalId && (
+            <BotonEnviarMensaje
+              counterpartId={propietario.cuentaDePortalId}
+              etiqueta="Mensaje"
+              className="flex-1 h-auto justify-center gap-2 rounded-lg border-0 bg-surface-muted px-4 py-2.5 text-sm font-medium text-fg dark:bg-ink dark:text-fg-subtle"
+            />
           )}
         </div>
       </div>

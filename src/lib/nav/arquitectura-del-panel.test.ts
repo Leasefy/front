@@ -204,6 +204,22 @@ describe('arquitectura del panel — sidebar', () => {
     expect(modulos).toHaveLength(17);
   });
 
+  it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {
+    // Nico, 2026-09-12: «Agenda interna: la sección de agenda la debemos llevar
+    // para la sección de captación y arriendo». Estaba en Operación. Va detrás
+    // de Pipeline porque lo que llena la agenda son las visitas del prospecto.
+    const captacion = ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'captacion');
+    const operacion = ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'operacion');
+    const claves = captacion!.modulos.map((m) => m.key);
+    expect(claves).toContain('agenda');
+    expect(claves.indexOf('agenda')).toBe(claves.indexOf('pipeline') + 1);
+    expect(operacion!.modulos.map((m) => m.key)).not.toContain('agenda');
+    // Cambiar de grupo no cambia quién la ve: mismo gate, mismo encuadre.
+    const agenda = captacion!.modulos.find((m) => m.key === 'agenda');
+    expect(agenda!.module).toBe('operaciones');
+    expect(agenda!.scope).toBe('administracion');
+  });
+
   it('Configuración NO es una fila del sidebar: se entra por el menú del perfil', () => {
     // Había dos puertas a lo mismo (la fila y el ítem del menú del perfil).
     // Quedó una. Las rutas siguen vivas —y son destino de redirecciones—, por

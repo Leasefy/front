@@ -49,6 +49,17 @@ describe('navigationSource — chips', () => {
     expect(cartera?.subtitle).toBe('Cobros');
   });
 
+  it('Agenda se busca bajo «Captación y arriendo», no bajo «Operación»', async () => {
+    // Nico, 2026-09-12: «Agenda interna: la sección de agenda la debemos llevar
+    // para la sección de captación y arriendo». El contexto que se pinta a la
+    // derecha es el grupo del sidebar, así que el buscador tiene que decir lo
+    // mismo que el menú — si no, la pantalla vive en dos sitios distintos.
+    const filas = await buscar('agenda');
+    const agenda = filas.find((f) => f.title === 'Agenda');
+    expect(agenda, 'la página Agenda tiene que estar en el catálogo').toBeDefined();
+    expect(agenda?.subtitle).toBe('Captación y arriendo');
+  });
+
   it('respeta canAccess: sin permiso de portafolio no sale la consignación', async () => {
     const sinPortafolio: SearchSourceContext = {
       agencyId: 'agency-1',

@@ -43,6 +43,11 @@ const NAV_CATALOG: NavEntry[] = [
 
   // ── Captación y arriendo ──────────────────────────────────────────────────
   { kind: 'page', title: 'Pipeline', context: 'Captación y arriendo', href: `${P}/pipeline`, keywords: 'prospeccion leads captacion kanban', permission: { module: 'pipeline', action: 'view' } },
+  // Agenda dejó de ser de Operación (Nico, 2026-09-12: «la sección de agenda la
+  // debemos llevar para la sección de captación y arriendo»). El `context` es
+  // el grupo del sidebar, así que se mueve con ella: el buscador tiene que
+  // decir lo mismo que el menú.
+  { kind: 'page', title: 'Agenda', context: 'Captación y arriendo', href: `${P}/agenda`, keywords: 'calendario citas visitas' },
   { kind: 'page', title: 'Inmuebles', context: 'Captación y arriendo', href: `${P}/inmuebles`, keywords: 'propiedades apartamentos casas portafolio consignaciones inventario', permission: { module: 'portafolio', action: 'view' } },
   // No hay "Nueva propiedad": una inmobiliaria nunca administra un inmueble sin
   // propietario, así que entrar uno es siempre una consignación.
@@ -69,7 +74,6 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'page', title: 'Mantenimientos', context: 'Operación', href: `${P}/mantenimientos`, keywords: 'reparaciones arreglos operaciones', permission: { module: 'operaciones', action: 'view' } },
   { kind: 'page', title: 'Solicitudes', context: 'Operación', href: `${P}/solicitudes`, keywords: 'pqrs peticiones quejas reclamos soporte' },
   { kind: 'page', title: 'Mensajes', context: 'Operación', href: `${P}/mensajes`, keywords: 'chat conversaciones inbox' },
-  { kind: 'page', title: 'Agenda', context: 'Operación', href: `${P}/agenda`, keywords: 'calendario citas visitas' },
 
   // ── Dinero ────────────────────────────────────────────────────────────────
   { kind: 'page', title: 'Cobros', context: 'Dinero', href: `${P}/cobros`, keywords: 'recaudo pagos recibir recibo de caja abono', permission: { module: 'cobros', action: 'view' } },

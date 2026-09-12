@@ -152,6 +152,21 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
     labelKey: 'inmobiliaria.nav.secCaptacion',
     modulos: [
       { key: 'pipeline', labelKey: 'inmobiliaria.nav.pipelineCorto', href: r('/pipeline'), icon: Kanban, module: 'pipeline', scope: 'comercial' },
+      // Agenda estaba en Operación y se mudó acá (Nico, 2026-09-12: «Agenda
+      // interna: la sección de agenda la debemos llevar para la sección de
+      // captación y arriendo»). Va detrás de Pipeline porque lo que llena la
+      // agenda son las VISITAS del prospecto —«Pedir cita» pide el nombre del
+      // prospecto y la propiedad—: primero el prospecto, después la cita, y
+      // recién ahí el inmueble que se le muestra y la postulación que firma.
+      // Conserva su `module: 'operaciones'` y su `scope: 'administracion'`:
+      // cambiar de grupo no le abre la pantalla a nadie que no la tuviera ni
+      // se la cierra a quien la tenía (ver la regla al principio del archivo).
+      // Efecto colateral asumido: la barra inferior del móvil muestra las 5
+      // primeras filas navegables (`MobileNavBar`), así que Agenda entra ahí y
+      // Postulaciones pasa al «más». Ninguna puerta se pierde —el sheet las
+      // lista todas— y mover la fila sin mover el móvil sería tener dos menús
+      // que no coinciden.
+      { key: 'agenda', labelKey: 'inmobiliaria.nav.agenda', href: r('/agenda'), icon: CalendarBlank, module: 'operaciones', scope: 'administracion' },
       {
         key: 'inmuebles', labelKey: 'inmobiliaria.nav.inmuebles', href: r('/inmuebles'), icon: Buildings, module: 'portafolio', scope: 'comercial', dataTourTarget: 'sidebar-inmuebles',
         pantallas: [
@@ -213,7 +228,6 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // `roles` y no `module`: no hay llave de AGENCY_MODULES para mensajes, y
       // la pantalla se cierra por rol (`AgencyRoleGuard allowed="managers"`).
       { key: 'mensajes', labelKey: 'inmobiliaria.nav.mensajes', href: r('/mensajes'), icon: Chat, module: null, roles: GESTION_ROLES, scope: 'administracion' },
-      { key: 'agenda', labelKey: 'inmobiliaria.nav.agenda', href: r('/agenda'), icon: CalendarBlank, module: 'operaciones', scope: 'administracion' },
     ],
   },
 

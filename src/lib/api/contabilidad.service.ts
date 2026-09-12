@@ -693,7 +693,24 @@ export interface InformeDeDocumentos extends RevisionDeDocumentos {
   fallasAlEscribir: { fila: number; motivo: string }[];
 }
 
-/** Un comprobante ya migrado, como lo lista la ficha del contrato. */
+/**
+ * Las pestañas de la ficha (Nico, 2026-09-12): «comprobantes de ingreso ·
+ * comprobantes de egreso · facturas generadas». `otro` es la cuarta que no
+ * pidió: lo que no es ninguna de las tres (notas crédito, gastos causados,
+ * nómina…), que no se esconde — se muestra sólo cuando tiene algo.
+ *
+ * La pestaña de cada comprobante la decide el BACK sobre el texto del tipo
+ * (`claseDeComprobante`), y con ella cuenta cada pestaña y filtra la lista:
+ * ninguna pantalla la re-deriva, para que el número de la pestaña y las filas
+ * de abajo salgan siempre de la misma decisión.
+ */
+export const CLASES_DE_COMPROBANTE = ['ingreso', 'egreso', 'factura', 'otro'] as const;
+export type ClaseDeComprobante = (typeof CLASES_DE_COMPROBANTE)[number];
+
+/** Cuántos comprobantes hay en cada pestaña. */
+export type ConteoPorClase = Record<ClaseDeComprobante, number>;
+
+/** Un comprobante ya migrado, como lo lista la ficha del contrato o la del inmueble. */
 export interface DocumentoMigradoVista {
   id: string;
   prefijo: string;
@@ -717,6 +734,8 @@ export interface DocumentoMigradoVista {
   contractId: string | null;
   propertyId: string | null;
   asociadoPor: AsociadoPor;
+  /** A qué pestaña va. Viene decidido del back. */
+  clase: ClaseDeComprobante;
 }
 
 export interface PaginaDeDocumentosMigrados {
@@ -724,26 +743,39 @@ export interface PaginaDeDocumentosMigrados {
   total: number;
   page: number;
   pageSize: number;
+  /** La pestaña pedida, o `todas`. */
+  clase: ClaseDeComprobante | 'todas';
+  /** Cuántos hay en cada pestaña, sin el filtro. */
+  porClase: ConteoPorClase;
 }
 
 /**
- * `GET .../documentos/por-contrato/:contractId` — lo que lista la ficha del
- * contrato.
+ * `GET .../documentos/por-contrato/:contractId` y `.../por-inmueble/:propertyId`
+ * — lo que listan las fichas del contrato y del inmueble.
  *
  * No pagina: trae los más recientes hasta `tope` y dice cuántos hay en
  * `total`. Los dos números importan y NO son el mismo: con 1.842 comprobantes
  * llegan 500, y una tabla que dibuja 500 filas sin decirlo afirma que ésos son
  * todos. `mostrados` es `documentos.length`, y viene del back para no tener
  * que deducirlo.
+ *
+ * Con `clase`, `total` y la lista son los de ESA pestaña (el tope es por
+ * pestaña); `porClase` cuenta cada pestaña sin el filtro, y su suma es cuántos
+ * comprobantes tiene el vínculo.
  */
-export interface DocumentosDeUnContrato {
-  contractId: string;
-  /** Cuántos tiene el contrato en total. */
+export interface HistoriaDeComprobantes {
+  contractId?: string;
+  propertyId?: string;
+  /** La pestaña pedida, o `todas`. */
+  clase: ClaseDeComprobante | 'todas';
+  /** Cuántos cumplen el filtro. */
   total: number;
   /** Cuántos vienen en esta respuesta. */
   mostrados: number;
   /** El techo del back. Cuando `total > tope`, hay que decirlo. */
   tope: number;
+  /** Lo que va en cada pestaña. */
+  porClase: ConteoPorClase;
   documentos: DocumentoMigradoVista[];
 }
 
@@ -1051,11 +1083,19 @@ export const contabilidadApi = {
       },
 
       async listar(
-        filtros: { contractId?: string; page?: number; pageSize?: number } = {},
+        filtros: {
+          contractId?: string;
+          propertyId?: string;
+          clase?: ClaseDeComprobante;
+          page?: number;
+          pageSize?: number;
+        } = {},
       ): Promise<PaginaDeDocumentosMigrados> {
         return apiClient.get<PaginaDeDocumentosMigrados>(
           conQuery(`${BASE}/migracion/documentos`, {
             contractId: filtros.contractId,
+            propertyId: filtros.propertyId,
+            clase: filtros.clase,
             page: filtros.page === undefined ? undefined : String(filtros.page),
             pageSize: filtros.pageSize === undefined ? undefined : String(filtros.pageSize),
           }),
@@ -1063,16 +1103,36 @@ export const contabilidadApi = {
       },
 
       /**
-       * Lo que lista la ficha del contrato.
+       * Lo que lista la ficha del contrato. Con `clase`, una sola pestaña.
        *
-       * 🔴 NO devuelve un arreglo: devuelve el sobre completo, con `total` y
-       * `tope`. Es lo que permite decir «mostramos 500 de 1.842» en vez de
-       * dibujar 500 filas como si fueran todas — un contrato viejo de una
-       * inmobiliaria con seis años de historia pasa el tope sin esfuerzo.
+       * 🔴 NO devuelve un arreglo: devuelve el sobre completo, con `total`,
+       * `tope` y `porClase`. Es lo que permite decir «mostramos 500 de 1.842»
+       * en vez de dibujar 500 filas como si fueran todas — un contrato viejo
+       * de una inmobiliaria con seis años de historia pasa el tope sin
+       * esfuerzo — y pintar el número de cada pestaña sin contar filas.
        */
-      async porContrato(contractId: string): Promise<DocumentosDeUnContrato> {
-        return apiClient.get<DocumentosDeUnContrato>(
-          `${BASE}/migracion/documentos/por-contrato/${encodeURIComponent(contractId)}`,
+      async porContrato(
+        contractId: string,
+        clase?: ClaseDeComprobante,
+      ): Promise<HistoriaDeComprobantes> {
+        return apiClient.get<HistoriaDeComprobantes>(
+          conQuery(
+            `${BASE}/migracion/documentos/por-contrato/${encodeURIComponent(contractId)}`,
+            { clase },
+          ),
+        );
+      },
+
+      /** Lo que lista la ficha del inmueble: la historia de todos sus contratos. */
+      async porInmueble(
+        propertyId: string,
+        clase?: ClaseDeComprobante,
+      ): Promise<HistoriaDeComprobantes> {
+        return apiClient.get<HistoriaDeComprobantes>(
+          conQuery(
+            `${BASE}/migracion/documentos/por-inmueble/${encodeURIComponent(propertyId)}`,
+            { clase },
+          ),
         );
       },
     },

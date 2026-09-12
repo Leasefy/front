@@ -216,6 +216,21 @@ async function click(testid: string) {
 }
 
 beforeEach(() => {
+  /*
+   * 🔴 Cada caso arranca sin bienvenida pendiente.
+   *
+   * Desde el 2026-09-12 el muro deja una marca en `localStorage` al bajar
+   * («terminó y no ha visto la bienvenida»), para que sobreviva a entrar al
+   * panel por el enlace del último paso. Sin borrarla, un caso que completa
+   * una migración le deja el saludo puesto al siguiente, y eso es lo que
+   * decían los tres que se caían: aparecía una bienvenida donde el caso no
+   * había terminado nada.
+   *
+   * Sólo esta clave y no `localStorage.clear()`: la decisión de migración la
+   * siembra cada describe por su cuenta y hoy varios se apoyan en la del
+   * anterior. Limpiar todo acá es un arreglo aparte, de 40 casos.
+   */
+  localStorage.removeItem('leasefy:migracion:bienvenida:agencia');
   rutaActual.valor = '/panel/inmobiliaria/reportes/resumen';
   permisos.puede = true;
   permisos.cargando = false;
@@ -1008,6 +1023,123 @@ describe('la bienvenida cuando el muro se levanta', () => {
 
     await pintar();
     expect(q('muro-migracion')).toBeNull();
+    expect(q('bienvenida-a-leasefy')).toBeNull();
+  });
+
+  /*
+   * ══════════════════════════════════════════════════════════════════════
+   * 🔴 EL defecto (Nico, 2026-09-12): «cuando finalicé la migración, con el
+   * link de ingresar al panel, no me mostró la bienvenida a Leasefy».
+   *
+   * La celebración estaba atada a la transición dentro de la MISMA pestaña.
+   * El último paso ofrece un enlace para entrar al panel; ese enlace navega,
+   * la pestaña nueva monta el muro ya bajado y no hay transición que
+   * detectar. Ahora la transición deja una marca que la sobrevive.
+   * ══════════════════════════════════════════════════════════════════════
+   */
+  const CLAVE = 'leasefy:migracion:bienvenida:agencia';
+
+  it('🔴 al levantarse deja anotado que falta verla, con lo que entró', async () => {
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: LISTOS })
+      .mockResolvedValue({ bloquea: false, resuelta: 'completada', pasos: LISTOS });
+
+    vi.useFakeTimers();
+    try {
+      await pintar();
+      expect(localStorage.getItem(CLAVE)).toBeNull();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(CADA_CUANTO_SE_REFRESCA_MS);
+      });
+
+      const anotado = JSON.parse(localStorage.getItem(CLAVE) ?? 'null');
+      expect(anotado?.resuelta).toBe('completada');
+      expect(anotado?.pasos).toHaveLength(LISTOS.length);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('🔴 quien entra por el enlace del último paso SÍ la ve, en la pestaña nueva', async () => {
+    // La pestaña nueva: el muro ya no bloquea y no hubo transición acá.
+    localStorage.setItem(
+      CLAVE,
+      JSON.stringify({ pasos: LISTOS, resuelta: 'completada' }),
+    );
+    estadoMock.estado.mockResolvedValue({ bloquea: false, resuelta: 'completada', pasos: LISTOS });
+
+    await pintar();
+
+    expect(q('muro-migracion')).toBeNull();
+    expect(q('bienvenida-a-leasefy')).not.toBeNull();
+    expect(q('bienvenida-resumen')?.textContent).toContain('7 propietarios');
+  });
+
+  it('🔴 UNA vez: entrar la borra y la siguiente recarga ya no saluda', async () => {
+    localStorage.setItem(
+      CLAVE,
+      JSON.stringify({ pasos: LISTOS, resuelta: 'completada' }),
+    );
+    estadoMock.estado.mockResolvedValue({ bloquea: false, resuelta: 'completada', pasos: LISTOS });
+
+    await pintar();
+    await act(async () => {
+      (q('bienvenida-entrar') as HTMLButtonElement).click();
+    });
+
+    expect(q('bienvenida-a-leasefy')).toBeNull();
+    expect(localStorage.getItem(CLAVE)).toBeNull();
+
+    // La recarga: mismo estado, sin marca.
+    await act(async () => root?.unmount());
+    root = null;
+    container?.remove();
+    await pintar();
+    expect(q('bienvenida-a-leasefy')).toBeNull();
+  });
+
+  /*
+   * Con el muro puesto la bienvenida taparía los pasos. Pasa de verdad: la
+   * migración se marca terminada, alguien vuelve a cargar un archivo y el
+   * muro sube otra vez con la marca todavía sin borrar.
+   */
+  it('con el muro puesto NO se muestra, aunque quede una marca sin ver', async () => {
+    localStorage.setItem(
+      CLAVE,
+      JSON.stringify({ pasos: LISTOS, resuelta: 'completada' }),
+    );
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+
+    await pintar();
+
+    expect(q('muro-migracion')).not.toBeNull();
+    expect(q('bienvenida-a-leasefy')).toBeNull();
+    // Y la marca sigue: se verá cuando el muro baje, no se pierde.
+    expect(localStorage.getItem(CLAVE)).not.toBeNull();
+  });
+
+  it('una marca corrupta no rompe el panel ni saluda a medias', async () => {
+    localStorage.setItem(CLAVE, '{no es json');
+    estadoMock.estado.mockResolvedValue({ bloquea: false, resuelta: 'completada', pasos: LISTOS });
+
+    await pintar();
+
+    expect(q('bienvenida-a-leasefy')).toBeNull();
+  });
+
+  /* Salir por decisión no es terminar: no se saluda ni se anota nada. */
+  it('cerrar con la ✕ no deja marca pendiente', async () => {
+    localStorage.setItem('leasefy:migracion:decision:agencia', 'ahora');
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA })
+      .mockResolvedValue({ bloquea: false, resuelta: 'omitida', pasos: RECIEN_LLEGADA });
+    estadoMock.omitir.mockResolvedValue(undefined);
+
+    await pintar();
+    await click('muro-cerrar');
+    await act(async () => {});
+
+    expect(localStorage.getItem(CLAVE)).toBeNull();
     expect(q('bienvenida-a-leasefy')).toBeNull();
   });
 });

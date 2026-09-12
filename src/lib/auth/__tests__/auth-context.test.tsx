@@ -94,6 +94,7 @@ import { AuthProvider } from '../auth-context'
 import { useAuth } from '../use-auth'
 import type { AuthContextType } from '../types'
 import { resetSessionTerminal } from '../session-terminal'
+import { consumePermissionsSeed, clearBootstrapSeed } from '../bootstrap-seed'
 
 interface HarnessRef {
   current: AuthContextType | null
@@ -709,6 +710,168 @@ describe('AuthProvider — session generation guard (verify-3.md CRITICAL)', () 
     })
 
     expect(ref.current?.user?.firstName).toBe('ActualizadoPorRefresh')
+
+    act(() => root.unmount())
+    container.remove()
+  })
+})
+
+/**
+ * T-0082 WU-2b remediation (verify-5.md §3 CRITICAL) — `fetchBootstrap`'s
+ * `setBootstrapSeed(...)` call was NOT generation-guarded, unlike every
+ * other write in this file. `bootstrap-seed.ts`'s `seed` is module-level
+ * singleton state (not React state), so a stale bootstrap for a session
+ * that has since ended could overwrite the CURRENT session's still-
+ * unconsumed seed with the WRONG identity's `agency.permissions`/
+ * `subscription` — a not-yet-mounted `PermissionsProvider`/
+ * `useAgencySubscription`/`useMySubscription` would then consume the wrong
+ * user's data on its first mount, with no self-correcting re-fetch. Fixed
+ * by threading `miGeneracion` into `fetchBootstrap` and gating the seed
+ * write exactly like every other write in this file.
+ */
+describe('AuthProvider — bootstrap seed generation guard (verify-5.md §3 CRITICAL)', () => {
+  afterEach(() => {
+    resetSessionTerminal()
+    clearBootstrapSeed()
+  })
+
+  const PERMS_A = {
+    memberId: 'member-A',
+    role: 'ADMIN',
+    isAdmin: true,
+    permissions: null,
+    effectivePermissions: 'FULL_ACCESS' as const,
+    usingDefaults: false,
+  }
+  const PERMS_B = {
+    memberId: 'member-B',
+    role: 'VIEWER',
+    isAdmin: false,
+    permissions: null,
+    effectivePermissions: null,
+    usingDefaults: true,
+  }
+
+  it("a stale bootstrap for A resolving after B signs in must NOT overwrite B's unconsumed permissions seed", async () => {
+    // Real timers — awaiting a hung mock under fake timers deadlocks (see
+    // verify-4.md §1b's documented technique).
+    vi.useRealTimers()
+    fetchAgencyProfileMock.mockResolvedValue({
+      agency: null, role: null, memberStatus: null, confirmedNoMembership: false, transientFailure: false,
+    })
+
+    // A signs in — A's bootstrap hangs until resolved explicitly below.
+    let resolveA!: (v: unknown) => void
+    fetchUserGetMock.mockImplementationOnce((path: string) =>
+      path === '/users/me/bootstrap'
+        ? new Promise((resolve) => { resolveA = resolve })
+        : Promise.resolve(AGENT_USER_BACKEND),
+    )
+    mountHarness()
+    // Fire WITHOUT awaiting — the handler itself awaits the hung bootstrap.
+    act(() => { void capturedHandler?.('INITIAL_SESSION', SESSION) })
+    await flushPromises()
+
+    // A signs out while their bootstrap is still pending.
+    await act(async () => {
+      await capturedHandler?.('SIGNED_OUT', null)
+    })
+
+    // B signs in, in the same tab, and B's bootstrap resolves immediately,
+    // seeding PERMS_B. B's PermissionsProvider has NOT mounted yet in this
+    // test (nothing calls consumePermissionsSeed) — exactly the real window
+    // verify-5.md describes (PermissionsProvider mounts deeper in the route
+    // tree than AuthProvider).
+    mockBootstrapAndUser(
+      { ...AGENT_USER_BACKEND, id: 'user-2', email: 'b@test.com' },
+      'AGENT',
+      { id: 'agy-b', name: 'Agencia B', memberRole: 'VIEWER', memberStatus: 'ACTIVE', permissions: PERMS_B },
+      [],
+    )
+    await act(async () => {
+      await capturedHandler?.('SIGNED_IN', { ...SESSION, access_token: 'token-de-B' })
+    })
+    await flushPromises()
+
+    // NOW A's orphaned bootstrap finally resolves, late, with A's real data.
+    await act(async () => {
+      resolveA({
+        user: AGENT_USER_BACKEND,
+        role: 'AGENT',
+        agency: { id: 'agy-a', name: 'Agencia A', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: PERMS_A },
+        subscription: null,
+        onboarding: null,
+        errors: [],
+      })
+      await flushPromises()
+    })
+
+    // B's still-unconsumed seed must hold B's data, never A's stale write.
+    expect(consumePermissionsSeed()).toEqual(PERMS_B)
+  })
+
+  it("an orphaned refreshUser() call from the PREVIOUS session must not overwrite the NEXT session's unconsumed permissions seed", async () => {
+    vi.useRealTimers()
+    fetchAgencyProfileMock.mockResolvedValue({
+      agency: null, role: null, memberStatus: null, confirmedNoMembership: false, transientFailure: false,
+    })
+
+    // A signs in normally, with agency.permissions seeded — consume it right
+    // away so the store starts clean for what follows.
+    mockBootstrapAndUser(
+      AGENT_USER_BACKEND,
+      'AGENT',
+      { id: 'agy-a', name: 'Agencia A', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: PERMS_A },
+      [],
+    )
+    const { ref, root, container } = mountHarness()
+    await fireInitialSession()
+    expect(ref.current?.user?.id).toBe('user-1')
+    expect(consumePermissionsSeed()).toEqual(PERMS_A)
+
+    // A calls refreshUser() — its bootstrap resolves LATE, after A has since
+    // signed out and B has signed in in the same tab.
+    let resolveA!: (v: unknown) => void
+    fetchUserGetMock.mockImplementationOnce((path: string) =>
+      path === '/users/me/bootstrap'
+        ? new Promise((resolve) => { resolveA = resolve })
+        : Promise.resolve(AGENT_USER_BACKEND),
+    )
+    const refreshPromise = ref.current!.refreshUser()
+    await flushPromises()
+
+    await act(async () => {
+      await capturedHandler?.('SIGNED_OUT', null)
+    })
+    mockBootstrapAndUser(
+      { ...AGENT_USER_BACKEND, id: 'user-2', email: 'b@test.com' },
+      'AGENT',
+      { id: 'agy-b', name: 'Agencia B', memberRole: 'VIEWER', memberStatus: 'ACTIVE', permissions: PERMS_B },
+      [],
+    )
+    await act(async () => {
+      await capturedHandler?.('SIGNED_IN', { ...SESSION, access_token: 'token-de-B' })
+    })
+    await flushPromises()
+    expect(ref.current?.user?.id).toBe('user-2')
+
+    // NOW A's orphaned refreshUser() bootstrap resolves late with A's stale data.
+    await act(async () => {
+      resolveA({
+        user: AGENT_USER_BACKEND,
+        role: 'AGENT',
+        agency: { id: 'agy-a', name: 'Agencia A', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: PERMS_A },
+        subscription: null,
+        onboarding: null,
+        errors: [],
+      })
+      await refreshPromise
+      await flushPromises()
+    })
+
+    // B's seed (set during B's own SIGNED_IN) must remain untouched by A's
+    // stale, late-arriving refreshUser() write.
+    expect(consumePermissionsSeed()).toEqual(PERMS_B)
 
     act(() => root.unmount())
     container.remove()

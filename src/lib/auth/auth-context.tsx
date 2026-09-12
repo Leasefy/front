@@ -402,9 +402,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * resolve — success, confirmed no-membership, or `agency_unavailable` — and
    * the caller applies it directly via `applyAgencyFetchResult`, with zero
    * extra network calls.
+   *
+   * `miGeneracion` (verify-5.md §3, CRITICAL, WU-2b remediation): every
+   * caller captures `sessionGenerationRef.current` before awaiting this
+   * function and re-checks it before writing `user`/`agency` state — but
+   * `bootstrap-seed.ts`'s `setBootstrapSeed` is module-level singleton
+   * state, not React state, and was being written UNCONDITIONALLY inside
+   * this function, before the caller's own generation check ever runs. A
+   * stale bootstrap for a session that has since ended (SIGNED_OUT, or
+   * another SIGNED_IN in the same tab) could overwrite the CURRENT session's
+   * still-unconsumed seed with the wrong identity's permissions/subscription
+   * — a not-yet-mounted `PermissionsProvider`/`useAgencySubscription`/
+   * `useMySubscription` would then consume the WRONG user's data on its
+   * first mount, with no self-correcting re-fetch. Required (not optional,
+   * unlike `checkMfaLevel`'s `miGeneracion?`) precisely so no call site can
+   * forget to pass it — this function itself decides nothing about which
+   * session it belongs to.
    */
   const fetchBootstrap = useCallback(async (
-    session?: Session | null,
+    session: Session | null | undefined,
+    miGeneracion: number,
   ): Promise<{ user: User | null; needsOnboarding: boolean; agencyResult: AgencyFetchResult | null }> => {
     const token = session?.access_token
     try {
@@ -425,13 +442,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Only ever seeds a field the bootstrap actually resolved — a null
       // section here means "do the standalone fallback", never a seeded
       // null (contract.md §3.2's degradation column; see bootstrap-seed.ts).
-      setBootstrapSeed({
-        permissions: data.agency?.permissions ?? null,
-        agencySubscription: data.role === 'AGENT' ? (data.subscription as AgencySubscriptionState | null) : null,
-        mySubscription: data.role !== 'AGENT'
-          ? mapBootstrapSubscription(data.subscription as BackendSubscriptionMeResponse | null)
-          : null,
-      })
+      // GATED on the generation (see this function's doc comment above) —
+      // a session that has since ended must never plant a seed for whatever
+      // session replaced it.
+      if (sessionGenerationRef.current === miGeneracion) {
+        setBootstrapSeed({
+          permissions: data.agency?.permissions ?? null,
+          agencySubscription: data.role === 'AGENT' ? (data.subscription as AgencySubscriptionState | null) : null,
+          mySubscription: data.role !== 'AGENT'
+            ? mapBootstrapSubscription(data.subscription as BackendSubscriptionMeResponse | null)
+            : null,
+        })
+      }
       return {
         user: mapBackendUser({ ...data.user, role: data.role }, session?.user?.email_confirmed_at ?? undefined),
         needsOnboarding: false,
@@ -621,7 +643,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // If the stored token is still valid the backend will respond; if not,
     // fetchBootstrap handles the 401 gracefully (same contract as fetchUser).
     const miGeneracion = sessionGenerationRef.current
-    const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap()
+    const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap(undefined, miGeneracion)
     // The session that asked for this refresh may have ended (sign-out, a
     // new sign-in) while the bootstrap was in flight — never let a stale
     // refresh write over whatever session is current now.
@@ -837,7 +859,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             if (sessionGenerationRef.current !== miGeneracion) return
             // T-0082 WU-2b: ONE call (GET /users/me/bootstrap) replaces
             // fetchUser + the separate agency probe below.
-            const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap(session)
+            const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap(session, miGeneracion)
             if (sessionGenerationRef.current !== miGeneracion) return
             if (userData) userData.hasPassword = getHasPassword(session)
             setUser(userData)
@@ -883,7 +905,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (sessionGenerationRef.current !== miGeneracion) return
           // T-0082 WU-2b: ONE call (GET /users/me/bootstrap) replaces
           // fetchUser + the separate agency probe below.
-          const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap(session)
+          const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap(session, miGeneracion)
           if (sessionGenerationRef.current !== miGeneracion) return
           if (userData) userData.hasPassword = getHasPassword(session)
           setUser(userData)

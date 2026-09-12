@@ -1,47 +1,62 @@
 'use client';
 
 /**
- * El formulario del RECIBO DE CAJA.
+ * El formulario del RECIBO DE CAJA — por CLIENTE, no por inmueble ni por mes.
  *
  * El componente conserva el nombre viejo porque es su único callsite y
- * renombrar el archivo no le cambia nada al usuario; lo que cambió es lo que se
- * lee en pantalla y a dónde va la petición: ya no es «registrar pago» contra
- * `POST /cobros/:id/payment`, es emitir un recibo de caja contra
- * `POST /inmobiliaria/recibos-de-caja`, y cada abono parcial queda como un
- * documento propio.
+ * renombrar el archivo no le cambia nada al usuario. Lo que cambió, el
+ * 2026-09-12, es a quién se le hace el recibo y quién decide a dónde va la
+ * plata. Palabras de Nico:
  *
- * Tres cosas que este formulario tiene que hacer bien o no sirve:
+ *   «El recibo de caja se le hace es a inquilinos. Al elegirlo quiero ver SU
+ *    cartera: lo que me debe en ese momento. Los campos son: qué día entró,
+ *    cómo pagó, cuánto va a pagar, emitir recibo y los saludos. Tener que
+ *    scrollear para elegir qué día entró me parece lento.»
  *
- * 1. 🔴 El desglose a la vista MIENTRAS se hace el recibo. Sin él, la persona de
- *    facturación acepta un abono parcial creyendo que el cliente quedó al día.
+ *   «Si Nico me debe 3 meses y este mes me ingresó 1 millón, ese ingreso va a
+ *    la deuda vieja, no a la nueva. Es más: ni siquiera me debe permitir
+ *    abonarle al mes actual.»
  *
- * 2. 🔴 El monto se lee con `CurrencyInput` de cadence, no con un `<input>` de
+ * Antes esta pantalla empezaba por el inmueble, ofrecía elegir contra cuál
+ * cobro iba el recibo y, si no había ninguno con saldo, crear el cobro del mes
+ * para poder recibir contra él. Las tres cosas se fueron: elegir el mes es
+ * exactamente lo que la regla de imputación no permite.
+ *
+ * Cuatro cosas que este formulario tiene que hacer bien o no sirve:
+ *
+ * 1. 🔴 La CARTERA a la vista apenas se elige al cliente. Sin ella, quien
+ *    recibe la plata no sabe si esa persona debe algo, que es lo primero que
+ *    Nico pidió ver.
+ *
+ * 2. 🔴 El PLAN a la vista mientras se escribe el monto: a qué meses y a qué
+ *    conceptos va. El destino no se elige, así que hay que poder verlo antes
+ *    de emitir — si no, el recibo es una caja negra.
+ *
+ * 3. 🔴 El monto se lee con `CurrencyInput` de cadence, no con un `<input>` de
  *    texto parseado a mano. El parser anterior hacía
- *    `parseFloat('1.800.000'.replace(',', '.'))` → **1.8**: el campo venía
- *    prellenado con el saldo formateado en es-CL (punto de miles), así que
- *    «pago total» registraba un peso con ochenta. `CurrencyInput` guarda el
- *    valor como entero y sólo formatea para mostrar.
+ *    `parseFloat('1.800.000'.replace(',', '.'))` → **1.8**.
  *
- * 3. 🔴 Los rechazos del back se muestran TAL CUAL, no como «hubo un error»:
- *    el 400 del sobrepago trae el máximo abonable y el 409 dice que hay plata
- *    vieja sin conciliar. Tragarlos deja al usuario sin saber qué hacer.
+ * 4. 🔴 Los rechazos del back se muestran TAL CUAL: el 400 del sobrepago trae
+ *    el máximo abonable y el 409 dice qué período tiene plata sin conciliar.
+ *
+ * ⚠️ Decisión de producto tomada al pie de la letra: el campo REFERENCIA salió
+ * del formulario. Nico enumeró los campos y cerró con «y nada más». El back lo
+ * sigue aceptando (lo usa la conciliación bancaria), así que devolverlo es
+ * agregar el input de vuelta; no hay nada más que deshacer.
  */
 
 import * as React from 'react';
 import { toast } from '@/components/ui/toast';
 import {
   Bank,
-  Buildings,
   Calendar,
   CreditCard,
   CurrencyCircleDollar,
   DotsThree,
   FileText,
-  MapPin,
   Money,
   Note,
   Receipt,
-  User,
   Wallet,
 } from '@phosphor-icons/react';
 
@@ -57,19 +72,27 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui';
+import { Spinner } from '@/components/ui/spinner';
 import { Banner, Chip, CurrencyInput } from '@leasefy/cadence';
 import { ApiError } from '@/lib/api/client';
-import type { Cobro, Consignacion } from '@/lib/types/inmobiliaria';
+import type { Cobro } from '@/lib/types/inmobiliaria';
 import type {
   ConciliacionDePagoAnterior,
-  NuevoReciboDeCaja,
+  NuevoReciboPorCliente,
   RespuestaDeRecibo,
+  RespuestaDeReciboPorCliente,
 } from '@/lib/api/recibos-de-caja.types';
-import { useDetalleDeCobro } from '@/lib/hooks/useDetalleDeCobro';
 import { useMediosDePago } from '@/lib/hooks/use-medios-de-pago';
 import { ICONO_DEL_TIPO } from './medios-de-pago/legible';
-import { DesgloseAdeudado } from './DesgloseAdeudado';
-import { ElegirCobroParaRecibo } from './ElegirCobroParaRecibo';
+import {
+  AvisoSinConciliar,
+  CarteraDelClientePanel,
+  ElegirCliente,
+  PlanDeImputacion,
+  periodosSinConciliar,
+  useCarteraDelCliente,
+  usePlanDeImputacion,
+} from './ReciboPorCliente';
 
 /**
  * Los medios de pago. `medio` viaja como `string` libre en el contrato del
@@ -89,6 +112,9 @@ const ORIGEN_MINIMO = 5;
 
 /** El DTO del back acepta `medio` como texto libre de hasta 40 caracteres. */
 const LARGO_MAXIMO_DEL_MEDIO = 40;
+
+/** Los «saludos» topan en 380: el back le agrega el detalle del reparto. */
+const LARGO_MAXIMO_DE_SALUDOS = 380;
 
 /**
  * Los medios configurados por la inmobiliaria (activos), como chips. Si no
@@ -116,25 +142,20 @@ const ID_FORM = 'form-recibo-de-caja';
 export interface RegistrarPagoModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /**
+   * Entrada desde la fila de un cobro. NO significa «el recibo va contra este
+   * cobro»: el back resuelve de quién es y devuelve TODA su cartera, porque la
+   * plata puede tener que ir a un mes más viejo. Sin cobro, se elige al
+   * cliente acá adentro.
+   */
   cobro: Cobro | null;
   /**
-   * Sin cobro preseleccionado se elige acá adentro EMPEZANDO POR EL INMUEBLE:
-   * los mandatos de la inmobiliaria, y de ahí dos caminos — un cobro con
-   * saldo de ese mandato, de cualquier mes, o crear el cobro de un mes que
-   * todavía no se cobró y recibir contra él (ver `ElegirCobroParaRecibo`).
+   * Emite el recibo del cliente.
+   * 🔴 Tiene que RELANZAR el error: el 400 del sobrepago y el 409 del período
+   * sin conciliar se resuelven acá adentro, no con un toast genérico afuera.
    */
-  consignaciones?: readonly Consignacion[];
-  /** 'YYYY-MM' del mes en curso: el centro de la ventana de meses que se pueden cobrar a mano. */
-  mesActual?: string;
-  /** Se creó un cobro desde el selector: la tabla de atrás tiene que releerse. */
-  onCobrosGenerados?: () => void;
-  /**
-   * Emite el recibo.
-   * 🔴 Tiene que RELANZAR el error: el 400 del sobrepago y el 409 del pago sin
-   * conciliar se resuelven acá adentro, no con un toast genérico afuera.
-   */
-  onSubmit: (datos: NuevoReciboDeCaja) => Promise<RespuestaDeRecibo>;
-  /** Concilia la plata vieja del cobro. También tiene que relanzar. */
+  onSubmit: (datos: NuevoReciboPorCliente) => Promise<RespuestaDeReciboPorCliente>;
+  /** Concilia la plata vieja de un cobro. También tiene que relanzar. */
   onConciliar?: (
     cobroId: string,
     datos: ConciliacionDePagoAnterior,
@@ -144,55 +165,48 @@ export interface RegistrarPagoModalProps {
 export function RegistrarPagoModal({
   isOpen,
   onClose,
-  cobro: cobroPreseleccionado,
-  consignaciones,
-  mesActual,
-  onCobrosGenerados,
+  cobro: cobroDeEntrada,
   onSubmit,
   onConciliar,
 }: RegistrarPagoModalProps) {
-  const { t, formatCurrency, formatDate } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const { medios: mediosConfigurados } = useMediosDePago({ enabled: isOpen });
   const opcionesDeMedio = React.useMemo(() => mediosParaElegir(mediosConfigurados), [mediosConfigurados]);
 
   const hoy = React.useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  // El cobro elegido desde el selector viene entero (con su saldo): no está
-  // en ninguna lista de la pantalla, porque puede ser de otro mes.
-  const [cobroElegido, setCobroElegido] = React.useState<Cobro | null>(null);
-  const cobro = cobroPreseleccionado ?? cobroElegido;
-
+  const [tenantId, setTenantId] = React.useState<string | null>(null);
   const [monto, setMonto] = React.useState<number>(NaN);
   const [medio, setMedio] = React.useState('');
   const [fecha, setFecha] = React.useState(hoy);
-  const [referencia, setReferencia] = React.useState('');
-  const [notas, setNotas] = React.useState('');
+  const [saludos, setSaludos] = React.useState('');
   const [enviando, setEnviando] = React.useState(false);
   const [errorDelBack, setErrorDelBack] = React.useState<string | null>(null);
   const [tocado, setTocado] = React.useState(false);
 
   // Conciliación: se enciende con el 409 y guarda el mensaje del back tal cual.
-  const [conciliando, setConciliando] = React.useState<string | null>(null);
+  const [conciliando, setConciliando] = React.useState<
+    { cobroId: string; mensaje: string } | null
+  >(null);
   const [origen, setOrigen] = React.useState('');
   const [enviandoConciliacion, setEnviandoConciliacion] = React.useState(false);
   const [errorDeConciliacion, setErrorDeConciliacion] = React.useState<string | null>(null);
 
-  const { detalle, conceptos, cargando, falloDesglose, recargar } = useDetalleDeCobro(
-    cobro?.id ?? null,
-    isOpen && cobro !== null,
+  const cobroId = cobroDeEntrada?.id ?? null;
+  const { cartera, cargando, error, recargar } = useCarteraDelCliente(
+    tenantId,
+    cobroId,
+    isOpen,
+  );
+  const plan = usePlanDeImputacion(cartera, monto);
+  const sinConciliar = React.useMemo(
+    () => periodosSinConciliar(cartera, plan),
+    [cartera, plan],
   );
 
-  /**
-   * El cobro fresco manda sobre la fila de la lista: si otro usuario abonó hace
-   * un minuto, el máximo abonable de la lista está viejo y el back rechazaría
-   * un monto que la pantalla dio por bueno.
-   */
-  const cobroVigente = detalle?.id === cobro?.id && detalle ? detalle : cobro;
-  const maximo = cobroVigente?.pendingAmount ?? 0;
-
+  const maximo = cartera?.total ?? 0;
   const montoValido = Number.isFinite(monto) && monto > 0;
   const seExcede = montoValido && monto > maximo;
-  const restante = montoValido ? Math.max(0, maximo - monto) : maximo;
 
   const errorDeMonto = !tocado
     ? null
@@ -204,29 +218,32 @@ export function RegistrarPagoModal({
           ? t('recibos.form.montoExcede', { monto: formatCurrency(maximo) })
           : null;
 
-  const puedeEnviar = montoValido && !seExcede && medio !== '' && fecha !== '';
+  const puedeEnviar =
+    cartera !== null && cartera.total > 0 && montoValido && !seExcede && medio !== '' && fecha !== '';
 
-  // Al cambiar de cobro, el formulario arranca de cero con el saldo del nuevo.
+  /**
+   * Al cambiar de cliente, el formulario arranca de cero con su deuda entera.
+   * Es el default correcto: lo normal es recibir el pago completo, y el que
+   * abona parcial escribe menos.
+   */
   React.useEffect(() => {
-    if (!cobro) return;
-    setMonto(cobro.pendingAmount > 0 ? cobro.pendingAmount : NaN);
+    if (!cartera) return;
+    setMonto(cartera.total > 0 ? cartera.total : NaN);
     setMedio('');
     setFecha(hoy);
-    setReferencia('');
-    setNotas('');
+    setSaludos('');
     setErrorDelBack(null);
     setTocado(false);
     setConciliando(null);
     setOrigen('');
     setErrorDeConciliacion(null);
-  }, [cobro?.id, hoy]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cartera?.tenantId, cartera?.total, hoy]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cerrar = React.useCallback(() => {
-    setCobroElegido(null);
+    setTenantId(null);
     setMonto(NaN);
     setMedio('');
-    setReferencia('');
-    setNotas('');
+    setSaludos('');
     setErrorDelBack(null);
     setTocado(false);
     setConciliando(null);
@@ -236,66 +253,80 @@ export function RegistrarPagoModal({
   }, [onClose]);
 
   const emitir = React.useCallback(async () => {
-    if (!cobro) return;
     setTocado(true);
     if (!puedeEnviar) return;
 
     setEnviando(true);
     setErrorDelBack(null);
     try {
+      /*
+       * De quién es el pago: el cobro de entrada si vino de una fila, si no la
+       * persona elegida. Uno de los dos, NUNCA los dos — el back 400ea si
+       * llegan juntos, y con razón: son dos formas de decir quién paga y
+       * podrían contradecirse.
+       */
       const res = await onSubmit({
-        cobroId: cobro.id,
+        ...(cobroId ? { cobroId } : { tenantId: tenantId! }),
         valorCop: Math.round(monto),
         fecha,
         medio,
-        ...(referencia.trim() ? { referencia: referencia.trim() } : {}),
-        ...(notas.trim() ? { notas: notas.trim() } : {}),
+        ...(saludos.trim() ? { notas: saludos.trim() } : {}),
       });
 
-      const saldo = res.cobro.pendingAmount;
-      toast.success(t('recibos.form.emitido', { numero: String(res.recibo.numero) }), {
-        description:
-          saldo > 0
-            ? t('recibos.form.emitidoQuedaSaldo', {
-                monto: formatCurrency(res.recibo.valorCop),
-                saldo: formatCurrency(saldo),
-              })
-            : t('recibos.form.emitidoSinSaldo', { monto: formatCurrency(res.recibo.valorCop) }),
-      });
+      const numeros = res.recibos.map((r) => String(r.numero)).join(', ');
+      toast.success(
+        res.recibos.length > 1
+          ? t('recibos.form.emitidoVarios', { numeros, count: res.recibos.length })
+          : t('recibos.form.emitido', { numero: numeros }),
+        {
+          description:
+            res.deudaRestante > 0
+              ? t('recibos.form.emitidoQuedaSaldo', {
+                  monto: formatCurrency(res.totalCop),
+                  saldo: formatCurrency(res.deudaRestante),
+                })
+              : t('recibos.form.emitidoSinSaldo', { monto: formatCurrency(res.totalCop) }),
+        },
+      );
       cerrar();
-    } catch (error) {
+    } catch (e) {
       /*
-       * 🔴 409 = el cobro tiene plata registrada que nunca pasó por un recibo.
-       * Le pasa a TODO cobro anterior al recibo de caja y a los de PSE, así que
-       * sin esta rama el módulo no sirve sobre la cartera viva: el usuario ve
-       * un error que no puede resolver desde ningún lado.
+       * 🔴 409 = un período tiene plata registrada que nunca pasó por un
+       * recibo. Le pasa a TODO cobro anterior al recibo de caja y a los de
+       * PSE, así que sin esta rama el módulo no sirve sobre la cartera viva.
+       * El back manda el `cobroId` del período trabado en el cuerpo.
        */
-      if (error instanceof ApiError && error.status === 409) {
-        setConciliando(error.message);
-        setErrorDelBack(null);
-      } else {
-        // El 400 del sobrepago trae el máximo: se muestra tal cual.
-        setErrorDelBack(error instanceof Error ? error.message : t('recibos.form.fallo'));
+      if (e instanceof ApiError && e.status === 409) {
+        const trabado =
+          typeof e.detalle?.cobroId === 'string' ? e.detalle.cobroId : sinConciliar[0]?.id;
+        if (trabado) {
+          setConciliando({ cobroId: trabado, mensaje: e.message });
+          setErrorDelBack(null);
+          return;
+        }
       }
+      // El 400 del sobrepago trae el máximo: se muestra tal cual.
+      setErrorDelBack(e instanceof Error ? e.message : t('recibos.form.fallo'));
     } finally {
       setEnviando(false);
     }
   }, [
     cerrar,
-    cobro,
+    cobroId,
     fecha,
     formatCurrency,
     medio,
     monto,
-    notas,
     onSubmit,
     puedeEnviar,
-    referencia,
+    saludos,
+    sinConciliar,
     t,
+    tenantId,
   ]);
 
   const conciliar = React.useCallback(async () => {
-    if (!cobro || !onConciliar) return;
+    if (!conciliando || !onConciliar) return;
     const limpio = origen.trim();
     if (limpio.length < ORIGEN_MINIMO) {
       setErrorDeConciliacion(t('recibos.conciliar.origenRequerido'));
@@ -304,31 +335,25 @@ export function RegistrarPagoModal({
     setEnviandoConciliacion(true);
     setErrorDeConciliacion(null);
     try {
-      const res = await onConciliar(cobro.id, { origen: limpio });
+      const res = await onConciliar(conciliando.cobroId, { origen: limpio });
       toast.success(t('recibos.conciliar.conciliado'), {
         description: t('recibos.conciliar.conciliadoDesc', {
           numero: String(res.recibo.numero),
         }),
       });
       // Vuelve al formulario: la conciliación no es el trámite, es el permiso
-      // para hacerlo. El saldo ya viene recompuesto en la respuesta.
+      // para hacerlo. La cartera se relee porque ese período cambió de saldo.
       setConciliando(null);
       setOrigen('');
-      setMonto(res.cobro.pendingAmount > 0 ? res.cobro.pendingAmount : NaN);
-      recargar();
-    } catch (error) {
-      setErrorDeConciliacion(
-        error instanceof Error ? error.message : t('recibos.conciliar.fallo'),
-      );
+      await recargar();
+    } catch (e) {
+      setErrorDeConciliacion(e instanceof Error ? e.message : t('recibos.conciliar.fallo'));
     } finally {
       setEnviandoConciliacion(false);
     }
-  }, [cobro, onConciliar, origen, recargar, t]);
+  }, [conciliando, onConciliar, origen, recargar, t]);
 
-  const mostrarSelector = !cobroPreseleccionado && !cobro && consignaciones !== undefined;
-  const mesDelSelector = mesActual ?? new Date().toISOString().slice(0, 7);
-
-  if (!cobro && !consignaciones) return null;
+  const hayCartera = cartera !== null && cartera.total > 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={(abierto) => !abierto && cerrar()}>
@@ -339,42 +364,44 @@ export function RegistrarPagoModal({
             {t('recibos.form.titulo')}
           </DialogTitle>
           <DialogDescription>
-            {cobro
-              ? `${cobro.propertyTitle} · ${cobro.tenantName}`
-              : t('recibos.form.elegirCobroAyuda')}
-            {/* Vino del selector: se puede volver a elegir sin cerrar. */}
-            {cobro && !cobroPreseleccionado && (
-              <>
-                {' · '}
-                <Button
-                  type="button"
-                  variant="link"
-                  size="sm"
-                  hideArrow
-                  className="h-auto p-0 text-xs"
-                  onClick={() => setCobroElegido(null)}
-                  data-testid="elegir-otro-cobro"
-                >
-                  {t('recibos.form.elegir.otro')}
-                </Button>
-              </>
-            )}
+            {cartera ? t('recibos.form.descripcion') : t('recibos.form.elegirClienteAyuda')}
           </DialogDescription>
         </DialogHeader>
 
-        {/* ── Elegir contra cuál cobro ─────────────────────────────────── */}
         <>
-          {mostrarSelector && (
-            <ElegirCobroParaRecibo
-              consignaciones={consignaciones ?? []}
-              mesActual={mesDelSelector}
-              onElegir={setCobroElegido}
-              onCobrosGenerados={onCobrosGenerados}
-            />
+          {/* 1. El cliente. Con cobro de entrada la persona ya está resuelta. */}
+          {!cobroId && conciliando === null && (
+            <ElegirCliente value={tenantId} onChange={setTenantId} />
           )}
 
-          {/* ── Conciliar la plata vieja (409) ───────────────────────────── */}
-          {cobro && conciliando !== null && (
+          {/* 2. Su cartera */}
+          {conciliando === null && cargando && (
+            <div className="flex items-center gap-2 py-3 text-sm text-fg-muted" data-testid="cartera-cargando">
+              <Spinner size="sm" variant="muted" />
+              {t('recibos.form.cartera.cargando')}
+            </div>
+          )}
+
+          {conciliando === null && !cargando && error !== null && (
+            <div className="space-y-2 rounded-lg border border-border p-4 text-sm">
+              <p className="text-destructive">{error || t('recibos.form.cartera.fallo')}</p>
+              <Button variant="secondary" size="sm" hideArrow onClick={() => void recargar()}>
+                {t('recibos.form.cartera.reintentar')}
+              </Button>
+            </div>
+          )}
+
+          {conciliando === null && !cargando && cartera !== null && !hayCartera && (
+            <div
+              className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-fg-muted"
+              data-testid="cliente-sin-deuda"
+            >
+              {t('recibos.form.cartera.sinDeuda', { nombre: cartera.nombre })}
+            </div>
+          )}
+
+          {/* Conciliar la plata vieja (409) */}
+          {conciliando !== null && (
             <div className="space-y-4" data-testid="panel-conciliacion">
               <Banner variant="warning" title={t('recibos.conciliar.titulo')}>
                 {t('recibos.conciliar.porQue')}
@@ -382,7 +409,7 @@ export function RegistrarPagoModal({
 
               {/* El mensaje del back, tal cual: trae la cifra que no cuadra. */}
               <p className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-foreground">
-                {conciliando}
+                {conciliando.mensaje}
               </p>
 
               <p className="text-sm text-fg-muted">{t('recibos.conciliar.queVaAPasar')}</p>
@@ -405,8 +432,8 @@ export function RegistrarPagoModal({
             </div>
           )}
 
-          {/* ── El recibo ────────────────────────────────────────────────── */}
-          {cobro && conciliando === null && (
+          {/* 3. El recibo */}
+          {conciliando === null && hayCartera && cartera && (
             <form
               id={ID_FORM}
               className="space-y-6"
@@ -415,41 +442,9 @@ export function RegistrarPagoModal({
                 void emitir();
               }}
             >
-              <p className="text-sm text-fg-muted">{t('recibos.form.descripcion')}</p>
+              <CarteraDelClientePanel cartera={cartera} />
 
-              {/* Inmueble e inquilino */}
-              <div className="flex gap-4 rounded-lg border border-border bg-muted/30 p-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted">
-                  <Buildings className="h-6 w-6 text-fg-muted" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h4 className="truncate text-sm font-medium text-foreground">
-                    {cobro.propertyTitle}
-                  </h4>
-                  <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-fg-muted">
-                    <MapPin className="h-3.5 w-3.5 shrink-0" />
-                    {cobro.propertyAddress}
-                  </p>
-                  <p className="mt-0.5 flex items-center gap-1.5 text-xs text-fg-muted">
-                    <User className="h-3.5 w-3.5 shrink-0" />
-                    {cobro.tenantName}
-                  </p>
-                  <p className="mt-0.5 text-xs text-fg-muted">
-                    {formatDate(new Date(cobro.dueDate), { day: 'numeric', month: 'short' })}
-                  </p>
-                </div>
-              </div>
-
-              {/* 🔴 El desglose acá adentro es el punto de todo el cambio. */}
-              <DesgloseAdeudado
-                cobro={cobroVigente ?? cobro}
-                conceptos={conceptos}
-                cargando={cargando}
-                fallo={falloDesglose}
-                onReintentar={recargar}
-              />
-
-              {/* Monto */}
+              {/* Cuánto va a pagar */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <label htmlFor="monto-recibo" className="text-sm font-medium text-foreground">
@@ -482,16 +477,11 @@ export function RegistrarPagoModal({
                 {errorDeMonto && <p className="text-xs text-destructive">{errorDeMonto}</p>}
               </div>
 
-              {/* Qué queda después de este abono */}
-              {montoValido && !seExcede && (
-                <Banner variant={restante > 0 ? 'warning' : 'success'}>
-                  {restante > 0
-                    ? t('recibos.form.quedaPendiente', { monto: formatCurrency(restante) })
-                    : t('recibos.form.quedaEnCero')}
-                </Banner>
-              )}
+              {/* 🔴 A dónde va la plata. El punto del cambio entero. */}
+              <PlanDeImputacion cartera={cartera} plan={plan} />
+              <AvisoSinConciliar periodos={sinConciliar} />
 
-              {/* Medio */}
+              {/* Cómo pagó */}
               <div className="space-y-2">
                 <span className="text-sm font-medium text-foreground">
                   {t('recibos.form.medioLabel')}
@@ -516,7 +506,7 @@ export function RegistrarPagoModal({
                 )}
               </div>
 
-              {/* Fecha */}
+              {/* Qué día entró */}
               <div className="space-y-2">
                 <label
                   htmlFor="fecha-recibo"
@@ -538,46 +528,25 @@ export function RegistrarPagoModal({
                 )}
               </div>
 
-              {/* Referencia */}
+              {/* Los saludos: el texto que sale impreso en el recibo */}
               <div className="space-y-2">
                 <label
-                  htmlFor="referencia-recibo"
-                  className="flex items-center gap-2 text-sm font-medium text-foreground"
-                >
-                  <Receipt className="h-4 w-4 text-fg-muted" />
-                  {t('recibos.form.referenciaLabel')}
-                  <span className="text-xs font-normal text-fg-muted">
-                    ({t('recibos.form.opcional')})
-                  </span>
-                </label>
-                <Input
-                  id="referencia-recibo"
-                  type="text"
-                  value={referencia}
-                  onChange={(e) => setReferencia(e.target.value)}
-                  placeholder={t('recibos.form.referenciaPlaceholder')}
-                  className="w-full"
-                />
-              </div>
-
-              {/* Notas */}
-              <div className="space-y-2">
-                <label
-                  htmlFor="notas-recibo"
+                  htmlFor="saludos-recibo"
                   className="flex items-center gap-2 text-sm font-medium text-foreground"
                 >
                   <Note className="h-4 w-4 text-fg-muted" />
-                  {t('recibos.form.notasLabel')}
+                  {t('recibos.form.saludosLabel')}
                   <span className="text-xs font-normal text-fg-muted">
                     ({t('recibos.form.opcional')})
                   </span>
                 </label>
                 <Textarea
-                  id="notas-recibo"
+                  id="saludos-recibo"
                   rows={2}
-                  value={notas}
-                  onChange={(e) => setNotas(e.target.value)}
-                  placeholder={t('recibos.form.notasPlaceholder')}
+                  maxLength={LARGO_MAXIMO_DE_SALUDOS}
+                  value={saludos}
+                  onChange={(e) => setSaludos(e.target.value)}
+                  placeholder={t('recibos.form.saludosPlaceholder')}
                   className="w-full resize-none"
                 />
               </div>
@@ -593,7 +562,7 @@ export function RegistrarPagoModal({
         </>
 
         {/* Pie fijo: en un modal alto los botones no se pueden ir con el scroll. */}
-        {cobro && (
+        {(hayCartera || conciliando !== null) && (
           <DialogFooter>
             {conciliando !== null ? (
               <>

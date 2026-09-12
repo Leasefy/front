@@ -37,7 +37,7 @@ import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
 import type {
   CobroConDesglose,
   ConciliacionDePagoAnterior,
-  NuevoReciboDeCaja,
+  NuevoReciboPorCliente,
 } from '@/lib/api/recibos-de-caja.types';
 import {
   CobroResumen,
@@ -285,12 +285,15 @@ function CobrosContent() {
    * —como estaba— dejaba al usuario apretando un botón que no hacía nada.
    */
   const emitirRecibo = useCallback(
-    async (datos: NuevoReciboDeCaja) => {
-      const res = await recibosDeCajaApi.crear(datos);
-      aplicarCobro(res.cobro);
+    async (datos: NuevoReciboPorCliente) => {
+      const res = await recibosDeCajaApi.crearPorCliente(datos);
+      // Un pago puede tocar VARIOS cobros (se reparte por antigüedad): se
+      // refrescan todos, no sólo el de la fila desde la que se abrió.
+      for (const cobro of res.cobros) aplicarCobro(cobro);
+      refetchCobros();
       return res;
     },
-    [aplicarCobro],
+    [aplicarCobro, refetchCobros],
   );
 
   /** Cuadrar la plata que el cobro ya registraba sin recibo (cartera vieja y PSE). */
@@ -641,12 +644,6 @@ function CobrosContent() {
         isOpen={isPaymentModalOpen}
         onClose={handlePaymentModalClose}
         cobro={paymentCobro}
-        consignaciones={consignaciones}
-        mesActual={getCurrentMonth()}
-        onCobrosGenerados={() => {
-          refetchCobros();
-          refetchSummary();
-        }}
         onSubmit={emitirRecibo}
         onConciliar={conciliarPagoAnterior}
       />

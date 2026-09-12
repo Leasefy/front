@@ -26,6 +26,14 @@ const CLAVES_NUEVO_RECIBO = ['cobroId', 'valorCop', 'fecha', 'medio', 'referenci
 const CLAVES_ANULAR = ['motivo'];
 /** `POST /inmobiliaria/recibos-de-caja/conciliar/:cobroId` */
 const CLAVES_CONCILIAR = ['origen', 'medio', 'referencia', 'notas'];
+/**
+ * `POST /inmobiliaria/recibos-de-caja/por-cliente`
+ *
+ * 🔴 NO hay `cobroId` *destino*: el back decide a qué período va la plata. Lo
+ * que sí puede ir es `cobroId` como forma de decir DE QUIÉN es el pago, y es
+ * excluyente con `tenantId` — el back 400ea si llegan los dos.
+ */
+const CLAVES_POR_CLIENTE = ['tenantId', 'cobroId', 'valorCop', 'fecha', 'medio', 'referencia', 'notas'];
 
 function mockFetchOnce(body: unknown, init: { ok?: boolean; status?: number } = {}) {
   const { ok = true, status = 200 } = init;
@@ -174,6 +182,132 @@ describe('recibosDeCajaApi.crear', () => {
 });
 
 // ── listar ───────────────────────────────────────────────────────────────────
+
+describe('recibosDeCajaApi.crearPorCliente', () => {
+  const RESPUESTA = {
+    recibos: [RECIBO],
+    cobros: [{ ...COBRO, status: 'PAID' }],
+    imputacion: [
+      {
+        cobroId: 'cobro-1',
+        month: '2026-06',
+        propertyTitle: 'Apto 101',
+        valorCop: 500_000,
+        aIntereses: 0,
+        aCapital: 500_000,
+        quedaPendiente: 0,
+      },
+    ],
+    totalCop: 500_000,
+    deudaRestante: 1_000_000,
+  };
+
+  it('POSTea a /inmobiliaria/recibos-de-caja/por-cliente', async () => {
+    const fetchMock = mockFetchOnce(RESPUESTA);
+
+    await recibosDeCajaApi.crearPorCliente({
+      tenantId: 'inq-1',
+      valorCop: 500_000,
+      medio: 'efectivo',
+    });
+
+    expect(urlDe(fetchMock).endsWith('/inmobiliaria/recibos-de-caja/por-cliente')).toBe(true);
+    expect(metodoDe(fetchMock)).toBe('POST');
+  });
+
+  it('no manda NINGUNA clave fuera del DTO del back (si no, 400)', async () => {
+    const fetchMock = mockFetchOnce(RESPUESTA);
+
+    await recibosDeCajaApi.crearPorCliente({
+      tenantId: 'inq-1',
+      valorCop: 500_000,
+      fecha: '2026-09-12',
+      medio: 'transferencia',
+      referencia: 'TRF-9',
+      notas: 'Gracias por tu pago.',
+    });
+
+    const cuerpo = cuerpoDe(fetchMock);
+    expect(Object.keys(cuerpo).filter((k) => !CLAVES_POR_CLIENTE.includes(k))).toEqual([]);
+    expect(cuerpo).toEqual({
+      tenantId: 'inq-1',
+      valorCop: 500_000,
+      fecha: '2026-09-12',
+      medio: 'transferencia',
+      referencia: 'TRF-9',
+      notas: 'Gracias por tu pago.',
+    });
+  });
+
+  it('omite los opcionales vacíos en vez de mandarlos en blanco', async () => {
+    const fetchMock = mockFetchOnce(RESPUESTA);
+
+    await recibosDeCajaApi.crearPorCliente({ cobroId: 'cobro-1', valorCop: 500_000, medio: 'efectivo' });
+
+    expect(cuerpoDe(fetchMock)).toEqual({
+      cobroId: 'cobro-1',
+      valorCop: 500_000,
+      medio: 'efectivo',
+    });
+  });
+
+  it('normaliza los cobros que vuelven: son varios, no uno', async () => {
+    mockFetchOnce({
+      ...RESPUESTA,
+      cobros: [
+        { ...COBRO, id: 'c-jun', status: 'PAID' },
+        { ...COBRO, id: 'c-jul', status: 'PARTIAL' },
+      ],
+    });
+
+    const res = await recibosDeCajaApi.crearPorCliente({
+      tenantId: 'inq-1',
+      valorCop: 1_500_000,
+      medio: 'efectivo',
+    });
+
+    expect(res.cobros.map((c) => c.status)).toEqual(['paid', 'partial']);
+    expect(res.deudaRestante).toBe(1_000_000);
+  });
+
+  it('deja pasar el 409 con su status, que es lo que dispara la conciliación', async () => {
+    mockFetchOnce(
+      { statusCode: 409, code: 'PLATA_SIN_RECIBO', message: 'hay plata sin recibo', cobroId: 'c-jun' },
+      { ok: false, status: 409 },
+    );
+
+    await expect(
+      recibosDeCajaApi.crearPorCliente({ tenantId: 'inq-1', valorCop: 1, medio: 'efectivo' }),
+    ).rejects.toMatchObject({ status: 409 });
+  });
+});
+
+describe('recibosDeCajaApi.cartera', () => {
+  const CARTERA = {
+    tenantId: 'inq-1',
+    nombre: 'Jose Lopez',
+    documento: '1020304050',
+    email: null,
+    inmuebles: 1,
+    total: 1_500_000,
+    cobros: [],
+  };
+
+  it('GETea a /cartera/:tenantId', async () => {
+    const fetchMock = mockFetchOnce(CARTERA);
+    await recibosDeCajaApi.cartera('inq-1');
+    expect(urlDe(fetchMock).endsWith('/inmobiliaria/recibos-de-caja/cartera/inq-1')).toBe(true);
+    expect(metodoDe(fetchMock)).toBe('GET');
+  });
+
+  it('GETea a /cartera-por-cobro/:cobroId cuando se entra desde un cobro', async () => {
+    const fetchMock = mockFetchOnce(CARTERA);
+    await recibosDeCajaApi.carteraPorCobro('cobro-1');
+    expect(
+      urlDe(fetchMock).endsWith('/inmobiliaria/recibos-de-caja/cartera-por-cobro/cobro-1'),
+    ).toBe(true);
+  });
+});
 
 describe('recibosDeCajaApi.listar', () => {
   it('GETea sin query cuando no hay filtros', async () => {

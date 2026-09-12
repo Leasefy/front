@@ -176,7 +176,7 @@ const COBERTURA: string[] = [
   'components/inmobiliaria/VencimientosTable.tsx',
   'components/inmobiliaria/DispersionCard.tsx',
   'components/inmobiliaria/CobroTable.tsx',
-  'components/inmobiliaria/ElegirCobroParaRecibo.tsx',
+  'components/inmobiliaria/ReciboPorCliente.tsx',
   'app/panel/inmobiliaria/inmuebles/[id]/acta/page.tsx',
   // — cobranza (tablas que dejaron de ser <table> a mano) ————————
   'components/inmobiliaria/cobranza/CobranzaDeudoresQuePesan.tsx',
@@ -392,8 +392,6 @@ const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
     'Cabecera desplegable de la tarjeta: el bloque entero abre y cierra.',
   'components/inmobiliaria/ComisionDesglose.tsx':
     'Dos cabeceras desplegables, mismo caso.',
-  'components/inmobiliaria/ElegirCobroParaRecibo.tsx':
-    'Fila de cobro clickeable entera (ya tenía su comentario de allowlist).',
   'components/inmobiliaria/InquilinosTable.tsx':
     'Disparador de orden en `<TableHead>`, y el nombre del inquilino: es el ÚNICO ' +
     'camino de teclado al cajón (un `<tr onClick>` no se tabula).',

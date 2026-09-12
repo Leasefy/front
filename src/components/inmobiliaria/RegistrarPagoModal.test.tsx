@@ -1,19 +1,23 @@
 /**
- * RegistrarPagoModal.test.tsx — el formulario del recibo de caja.
+ * RegistrarPagoModal.test.tsx — el recibo de caja por CLIENTE.
  *
- * Tres cosas que se rompieron o se pueden romper en silencio:
+ * Cuatro cosas que se rompieron o se pueden romper en silencio:
  *
- * 1. 🔴 El monto. El campo viene prellenado con el saldo, y el parser anterior
- *    convertía «1.800.000» en **1.8** (`parseFloat` sobre el formato es-CL, que
- *    usa el punto como separador de miles). Nada fallaba: el back recibía un
- *    recibo por un peso con ochenta. El primer test manda el monto prellenado
- *    sin tocarlo y comprueba la cifra que sale.
+ * 1. 🔴 La REGLA. El pago va a la deuda más vieja: si el cliente debe junio,
+ *    julio y agosto y entra un millón, la pantalla tiene que decir que va a
+ *    JUNIO. Un test que sólo mire que se emitió algo pasa en verde con la
+ *    plata en el mes equivocado, que es justo lo que Nico no quiere.
  *
- * 2. 🔴 El 409. Le pasa a TODO cobro anterior al recibo de caja y a los de PSE.
+ * 2. 🔴 El monto. El campo viene prellenado con la deuda entera, y el parser
+ *    anterior convertía «1.800.000» en **1.8** (`parseFloat` sobre el formato
+ *    es-CL, que usa el punto como separador de miles). Nada fallaba: el back
+ *    recibía un recibo por un peso con ochenta.
+ *
+ * 3. 🔴 El 409. Le pasa a TODO cobro anterior al recibo de caja y a los de PSE.
  *    Sin la salida a conciliar, el módulo no sirve sobre la cartera viva.
  *
- * 3. 🔴 El mensaje del back. El 400 del sobrepago trae el máximo abonable; si
- *    se cambia por un «hubo un error», el usuario no sabe cuánto puede abonar.
+ * 4. 🔴 El mensaje del back. El 400 del sobrepago trae el máximo; si se cambia
+ *    por un «hubo un error», el usuario no sabe cuánto puede recibir.
  */
 
 import * as React from 'react';
@@ -21,7 +25,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 import type { Cobro } from '@/lib/types/inmobiliaria';
-import type { RespuestaDeRecibo } from '@/lib/api/recibos-de-caja.types';
+import type {
+  CarteraDelCliente,
+  CobroEnCartera,
+  RespuestaDeReciboPorCliente,
+} from '@/lib/api/recibos-de-caja.types';
 
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -39,30 +47,30 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
-// El detalle se pide por HTTP; acá interesa el formulario, no la petición.
 let mediosConfigurados: { id: string; nombre: string; tipo: string; activo: boolean }[] = [];
 vi.mock('@/lib/hooks/use-medios-de-pago', () => ({
   useMediosDePago: () => ({ medios: mediosConfigurados, cargando: false, error: null, refrescar: vi.fn() }),
 }));
 
-vi.mock('@/lib/hooks/useDetalleDeCobro', () => ({
-  useDetalleDeCobro: () => ({
-    detalle: null,
-    conceptos: [],
-    recibos: [],
-    cargando: false,
-    falloDesglose: false,
-    falloRecibos: false,
-    recargar: vi.fn(),
-    aplicarRespuesta: vi.fn(),
-  }),
+/** La cartera llega por HTTP; acá interesa la pantalla, no la petición. */
+const carteraPorCobro = vi.fn<[string], Promise<CarteraDelCliente>>();
+const cartera = vi.fn<[string], Promise<CarteraDelCliente>>();
+vi.mock('@/lib/api/recibos-de-caja.service', () => ({
+  recibosDeCajaApi: {
+    carteraPorCobro: (id: string) => carteraPorCobro(id),
+    cartera: (id: string) => cartera(id),
+  },
+}));
+
+vi.mock('@/lib/api/inquilinos.service', () => ({
+  inquilinosApi: { listar: () => Promise.resolve([]) },
 }));
 
 import { ApiError } from '@/lib/api/client';
 import { RegistrarPagoModal } from './RegistrarPagoModal';
 
 const COBRO: Cobro = {
-  id: 'c1',
+  id: 'c-ago',
   leaseId: 'l1',
   consignacionId: 'cons1',
   propertyId: 'p1',
@@ -75,34 +83,95 @@ const COBRO: Cobro = {
   tenantEmail: null,
   tenantPhone: null,
   month: '2026-08',
-  rentAmount: 1_800_000,
-  adminAmount: 150_000,
-  totalAmount: 1_950_000,
-  lateFee: 50_000,
-  totalWithFees: 2_000_000,
+  rentAmount: 1_000_000,
+  adminAmount: 0,
+  totalAmount: 1_000_000,
+  lateFee: 0,
+  totalWithFees: 1_000_000,
   status: 'pending',
   dueDate: '2026-08-05',
   paidAmount: 0,
-  pendingAmount: 1_800_000,
+  pendingAmount: 1_000_000,
   daysLate: 0,
   remindersSent: 0,
   createdAt: '2026-08-01',
   updatedAt: '2026-08-01',
 };
 
-const RESPUESTA: RespuestaDeRecibo = {
-  recibo: {
-    id: 'rc-1',
-    numero: 'RC-0001',
-    valorCop: 1_800_000,
-    fecha: '2026-08-31',
-    medio: 'efectivo',
-    referencia: null,
-    notas: null,
-    registradoPorUserId: 'u-1',
-    anuladoAt: null,
-  },
-  cobro: { ...COBRO, paidAmount: 1_800_000, pendingAmount: 0, status: 'paid' },
+function periodo(
+  id: string,
+  month: string,
+  pendingAmount: number,
+  extra: Partial<CobroEnCartera> = {},
+): CobroEnCartera {
+  return {
+    id,
+    month,
+    dueDate: `${month}-05T00:00:00.000Z`,
+    createdAt: `${month}-01T00:00:00.000Z`,
+    consignacionId: 'cons1',
+    contractId: null,
+    leaseId: 'l1',
+    propertyTitle: 'Apto 101',
+    tenantName: 'Jose Lopez',
+    totalWithFees: pendingAmount,
+    paidAmount: 0,
+    pendingAmount,
+    status: 'PENDING',
+    daysLate: 0,
+    lateFee: 0,
+    sinRespaldo: 0,
+    conceptos: [],
+    ...extra,
+  };
+}
+
+/** Debe tres meses de un millón: junio, julio y agosto. */
+function debeTresMeses(extra: Partial<CarteraDelCliente> = {}): CarteraDelCliente {
+  return {
+    tenantId: 't1',
+    nombre: 'Jose Lopez',
+    documento: '1020304050',
+    email: null,
+    inmuebles: 1,
+    total: 3_000_000,
+    cobros: [
+      periodo('c-jun', '2026-06', 1_000_000),
+      periodo('c-jul', '2026-07', 1_000_000),
+      periodo('c-ago', '2026-08', 1_000_000),
+    ],
+    ...extra,
+  };
+}
+
+const RESPUESTA: RespuestaDeReciboPorCliente = {
+  recibos: [
+    {
+      id: 'rc-1',
+      numero: 'RC-0001',
+      valorCop: 1_000_000,
+      fecha: '2026-09-12',
+      medio: 'efectivo',
+      referencia: null,
+      notas: null,
+      registradoPorUserId: 'u-1',
+      anuladoAt: null,
+    },
+  ],
+  cobros: [],
+  imputacion: [
+    {
+      cobroId: 'c-jun',
+      month: '2026-06',
+      propertyTitle: 'Apto 101',
+      valorCop: 1_000_000,
+      aIntereses: 0,
+      aCapital: 1_000_000,
+      quedaPendiente: 0,
+    },
+  ],
+  totalCop: 1_000_000,
+  deudaRestante: 2_000_000,
 };
 
 let container: HTMLDivElement;
@@ -112,18 +181,21 @@ beforeEach(() => {
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
+  carteraPorCobro.mockResolvedValue(debeTresMeses());
+  cartera.mockResolvedValue(debeTresMeses());
 });
 
 afterEach(() => {
   act(() => root.unmount());
   container.remove();
   document.body.innerHTML = '';
-  vi.restoreAllMocks();
+  carteraPorCobro.mockReset();
+  cartera.mockReset();
 });
 
-function abrir(props: Partial<Parameters<typeof RegistrarPagoModal>[0]> = {}) {
+async function abrir(props: Partial<Parameters<typeof RegistrarPagoModal>[0]> = {}) {
   const onSubmit = props.onSubmit ?? vi.fn().mockResolvedValue(RESPUESTA);
-  act(() =>
+  await act(async () => {
     root.render(
       <RegistrarPagoModal
         isOpen
@@ -132,8 +204,8 @@ function abrir(props: Partial<Parameters<typeof RegistrarPagoModal>[0]> = {}) {
         onSubmit={onSubmit as never}
         {...props}
       />,
-    ),
-  );
+    );
+  });
   return onSubmit as ReturnType<typeof vi.fn>;
 }
 
@@ -170,34 +242,162 @@ function enviar() {
   });
 }
 
+describe('<RegistrarPagoModal> la cartera del cliente', () => {
+  it('🔴 al abrirse desde un cobro muestra TODA la cartera de esa persona', async () => {
+    await abrir();
+
+    // Se pide por el cobro: la persona la resuelve el back, no la pantalla.
+    expect(carteraPorCobro).toHaveBeenCalledWith('c-ago');
+    expect(document.body.querySelector('[data-testid="cartera-del-cliente"]')).toBeTruthy();
+    for (const mes of ['2026-06', '2026-07', '2026-08']) {
+      expect(document.body.querySelector(`[data-testid="cartera-periodo-${mes}"]`)).toBeTruthy();
+    }
+    expect(
+      document.body.querySelector('[data-testid="cartera-total"]')?.textContent,
+    ).toContain('3000000');
+  });
+
+  it('marca cuál es la deuda más vieja', async () => {
+    await abrir();
+    const junio = document.body.querySelector('[data-testid="cartera-periodo-2026-06"]');
+    expect(junio?.querySelector('[data-testid="cartera-mas-vieja"]')).toBeTruthy();
+    const agosto = document.body.querySelector('[data-testid="cartera-periodo-2026-08"]');
+    expect(agosto?.querySelector('[data-testid="cartera-mas-vieja"]')).toBeNull();
+  });
+
+  it('con varios inmuebles la cartera se ve JUNTA y dice de cuál es cada deuda', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({
+        inmuebles: 2,
+        total: 1_500_000,
+        cobros: [
+          periodo('c-loc', '2026-06', 500_000, {
+            consignacionId: 'cons2',
+            propertyTitle: 'Local 5',
+          }),
+          periodo('c-ago', '2026-08', 1_000_000),
+        ],
+      }),
+    );
+    await abrir();
+
+    expect(document.body.querySelector('[data-testid="cartera-varios-inmuebles"]')).toBeTruthy();
+    expect(
+      document.body.querySelector('[data-testid="cartera-periodo-2026-06"]')?.textContent,
+    ).toContain('Local 5');
+    expect(
+      document.body.querySelector('[data-testid="cartera-periodo-2026-08"]')?.textContent,
+    ).toContain('Apto 101');
+  });
+
+  it('un cliente que no debe nada no tiene formulario que llenar', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({ total: 0, cobros: [] }),
+    );
+    await abrir();
+
+    expect(document.body.querySelector('[data-testid="cliente-sin-deuda"]')).toBeTruthy();
+    expect(document.body.querySelector('#form-recibo-de-caja')).toBeNull();
+  });
+});
+
+describe('<RegistrarPagoModal> a dónde va la plata', () => {
+  it('🔴 «debe 3 meses y entra 1 millón»: el plan dice JUNIO, no agosto', async () => {
+    await abrir();
+    escribir('#monto-recibo', '1000000');
+
+    const plan = document.body.querySelector('[data-testid="plan-de-imputacion"]');
+    expect(plan).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="plan-parte-2026-06"]')).toBeTruthy();
+    // El mes actual NO recibe plata mientras haya deuda vieja.
+    expect(document.body.querySelector('[data-testid="plan-parte-2026-08"]')).toBeNull();
+    expect(
+      document.body.querySelector('[data-testid="plan-deuda-restante"]')?.textContent,
+    ).toContain('2000000');
+  });
+
+  it('un pago parcial deja el mes más viejo a medias y lo dice', async () => {
+    await abrir();
+    escribir('#monto-recibo', '400000');
+
+    expect(document.body.querySelector('[data-testid="plan-queda-2026-06"]')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="plan-parte-2026-07"]')).toBeNull();
+  });
+
+  it('un pago que pasa de un mes sigue en el siguiente', async () => {
+    await abrir();
+    escribir('#monto-recibo', '1500000');
+
+    expect(document.body.querySelector('[data-testid="plan-parte-2026-06"]')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="plan-parte-2026-07"]')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="plan-parte-2026-08"]')).toBeNull();
+  });
+
+  it('dice a qué conceptos va: primero los intereses de mora (art. 1653)', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({
+        total: 1_120_000,
+        cobros: [
+          periodo('c-jun', '2026-06', 1_120_000, {
+            lateFee: 120_000,
+            conceptos: [
+              { id: 'x1', tipo: 'CANON', nombre: 'Canon', valorCop: 1_000_000, resta: false, reglaId: null, orden: 1 },
+              { id: 'x2', tipo: 'INTERES_DE_MORA', nombre: 'Interés de mora', valorCop: 120_000, resta: false, reglaId: null, orden: 2 },
+            ],
+          }),
+        ],
+      }),
+    );
+    await abrir();
+    escribir('#monto-recibo', '200000');
+
+    const parte = document.body.querySelector('[data-testid="plan-parte-2026-06"]');
+    expect(parte?.textContent).toContain('recibos.form.plan.intereses');
+    expect(parte?.textContent).toContain('Canon');
+  });
+
+  it('avisa cuando un período tiene plata que ningún recibo respalda', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({
+        total: 600_000,
+        cobros: [periodo('c-jun', '2026-06', 600_000, { paidAmount: 400_000, sinRespaldo: 400_000 })],
+      }),
+    );
+    await abrir();
+
+    expect(document.body.querySelector('[data-testid="aviso-sin-conciliar"]')).toBeTruthy();
+  });
+});
+
 describe('<RegistrarPagoModal> el monto', () => {
-  it('🔴 manda el saldo COMPLETO cuando no se toca el campo prellenado', async () => {
-    const onSubmit = abrir();
+  it('🔴 manda TODA la deuda cuando no se toca el campo prellenado', async () => {
+    const onSubmit = await abrir();
     elegirMedio('efectivo');
     await enviar();
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
-    // El bug viejo mandaba 1.8 acá. Un peso con ochenta.
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
-      cobroId: 'c1',
-      valorCop: 1_800_000,
+      cobroId: 'c-ago',
+      valorCop: 3_000_000,
       medio: 'efectivo',
     });
+    // 🔴 NUNCA manda a qué cobro va la plata: eso lo decide el back.
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('tenantId');
   });
 
-  it('🔴 lee «1.800.000» como 1.800.000, no como 1,8', async () => {
-    const onSubmit = abrir();
+  it('🔴 lee «1.000.000» como 1.000.000, no como 1', async () => {
+    const onSubmit = await abrir();
     // Exactamente lo que el formato colombiano pone en el campo. El parser
-    // viejo (`parseFloat` tras cambiar la coma por punto) devolvía 1.8.
-    escribir('#monto-recibo', '$ 1.800.000');
+    // viejo (`parseFloat` tras cambiar la coma por punto) devolvía 1.
+    escribir('#monto-recibo', '$ 1.000.000');
     elegirMedio('efectivo');
     await enviar();
 
-    expect((onSubmit.mock.calls[0][0] as { valorCop: number }).valorCop).toBe(1_800_000);
+    expect((onSubmit.mock.calls[0][0] as { valorCop: number }).valorCop).toBe(1_000_000);
   });
 
-  it('el botón de emitir está enlazado al formulario que vive en el cuerpo', () => {
-    abrir();
+  it('el botón de emitir está enlazado al formulario que vive en el cuerpo', async () => {
+    await abrir();
     // El pie del modal es hermano del <form>, no su hijo: sin el atributo
     // `form` el botón de submit no dispara nada y el modal se ve muerto.
     const emitir = porTexto('recibos.form.emitir')[0];
@@ -206,125 +406,129 @@ describe('<RegistrarPagoModal> el monto', () => {
     expect(document.body.querySelector('#form-recibo-de-caja')).toBeTruthy();
   });
 
-  it('muestra el máximo abonable', () => {
-    abrir();
-    expect(document.body.textContent).toContain('recibos.form.maximo');
-  });
-
-  it('dice cuánto queda pendiente después de este abono', () => {
-    abrir();
-    escribir('#monto-recibo', '500000');
-
-    expect(document.body.textContent).toContain('recibos.form.quedaPendiente');
-    expect(document.body.textContent).not.toContain('recibos.form.quedaEnCero');
-  });
-
-  it('dice que el cobro queda en cero cuando se abona todo', () => {
-    abrir();
-    expect(document.body.textContent).toContain('recibos.form.quedaEnCero');
-  });
-
-  it('no deja emitir por encima del saldo y dice cuál es el máximo', () => {
-    abrir();
+  it('no deja emitir por encima de la deuda y dice cuál es el máximo', async () => {
+    await abrir();
     escribir('#monto-recibo', '9000000');
 
     expect(document.body.textContent).toContain('recibos.form.montoExcede');
-    const emitir = porTexto('recibos.form.emitir')[0];
-    expect(emitir.disabled).toBe(true);
+    expect(porTexto('recibos.form.emitir')[0].disabled).toBe(true);
   });
 
-  it('no manda las claves opcionales vacías', async () => {
-    const onSubmit = abrir();
+  it('no manda los saludos vacíos', async () => {
+    const onSubmit = await abrir();
     elegirMedio('transferencia');
     await enviar();
 
     const cuerpo = onSubmit.mock.calls[0][0] as Record<string, unknown>;
-    expect(cuerpo).not.toHaveProperty('referencia');
     expect(cuerpo).not.toHaveProperty('notas');
+    // La referencia salió del formulario: Nico enumeró los campos y cerró con
+    // «y nada más».
+    expect(cuerpo).not.toHaveProperty('referencia');
   });
 
-  it('exige elegir el medio antes de emitir', () => {
-    abrir();
-    const emitir = porTexto('recibos.form.emitir')[0];
-    expect(emitir.disabled).toBe(true);
+  it('los saludos que se escriben viajan como `notas`', async () => {
+    const onSubmit = await abrir();
+    escribir('#saludos-recibo', '  Gracias por tu pago.  ');
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ notas: 'Gracias por tu pago.' });
   });
+
+  it('exige elegir el medio antes de emitir', async () => {
+    await abrir();
+    expect(porTexto('recibos.form.emitir')[0].disabled).toBe(true);
+  });
+
+  /*
+   * 🔴 El caso que de verdad costaba plata. Con una deuda de SEIS cifras el
+   * campo prellenado tenía UN solo separador: `parseFloat('500.000')` da
+   * **500**, un entero perfectamente válido que el back aceptaba sin chistar.
+   * O sea: el error silencioso vivía justo en el rango de canon más común.
+   */
+  it.each([[85_000], [500_000], [950_000]])(
+    'una deuda de %i se paga COMPLETA, no en su milésima parte',
+    async (deuda) => {
+      carteraPorCobro.mockResolvedValue(
+        debeTresMeses({ total: deuda, cobros: [periodo('c-jun', '2026-06', deuda)] }),
+      );
+      const onSubmit = await abrir();
+      elegirMedio('efectivo');
+      await enviar();
+
+      const enviado = (onSubmit.mock.calls[0][0] as { valorCop: number }).valorCop;
+      expect(enviado).toBe(deuda);
+      expect(enviado).not.toBe(deuda / 1000);
+    },
+  );
 });
 
 describe('<RegistrarPagoModal> los rechazos del back', () => {
   it('🔴 muestra el mensaje del 400 del sobrepago TAL CUAL', async () => {
     const onSubmit = vi
       .fn()
-      .mockRejectedValue(new ApiError(400, 'El máximo abonable para este cobro es $1.800.000'));
-    abrir({ onSubmit: onSubmit as never });
+      .mockRejectedValue(new ApiError(400, 'El pago excede lo que Jose Lopez debe ($3.000.000)'));
+    await abrir({ onSubmit: onSubmit as never });
     elegirMedio('efectivo');
     await enviar();
 
-    expect(document.body.textContent).toContain(
-      'El máximo abonable para este cobro es $1.800.000',
-    );
+    expect(document.body.textContent).toContain('El pago excede lo que Jose Lopez debe ($3.000.000)');
     // Y NO se pasa a conciliar: un 400 no es un pago sin conciliar.
     expect(document.body.querySelector('[data-testid="panel-conciliacion"]')).toBeNull();
   });
 
-  it('🔴 el 409 abre la conciliación con el mensaje del back a la vista', async () => {
+  it('🔴 el 409 abre la conciliación del período que trabó el pago', async () => {
     const onSubmit = vi
       .fn()
       .mockRejectedValue(
-        new ApiError(409, 'El cobro registra $900.000 pagados y sólo $400.000 con recibo'),
+        new ApiError(409, 'El cobro de junio registra $400.000 pagados sin recibo', 'PLATA_SIN_RECIBO', {
+          cobroId: 'c-jun',
+        }),
       );
-    abrir({ onSubmit: onSubmit as never, onConciliar: vi.fn() as never });
+    const onConciliar = vi.fn();
+    await abrir({ onSubmit: onSubmit as never, onConciliar: onConciliar as never });
     elegirMedio('efectivo');
     await enviar();
 
     const panel = document.body.querySelector('[data-testid="panel-conciliacion"]');
     expect(panel).toBeTruthy();
-    expect(panel?.textContent).toContain(
-      'El cobro registra $900.000 pagados y sólo $400.000 con recibo',
-    );
-    // Y explica qué va a pasar si concilia.
+    expect(panel?.textContent).toContain('El cobro de junio registra $400.000 pagados sin recibo');
     expect(panel?.textContent).toContain('recibos.conciliar.queVaAPasar');
   });
 
-  it('la conciliación exige el origen (mínimo 5) antes de dejar confirmar', async () => {
-    const onSubmit = vi.fn().mockRejectedValue(new ApiError(409, 'sin conciliar'));
-    abrir({ onSubmit: onSubmit as never, onConciliar: vi.fn() as never });
+  it('la conciliación exige el origen (mínimo 5) y concilia el cobro que dijo el back', async () => {
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValue(new ApiError(409, 'sin conciliar', 'PLATA_SIN_RECIBO', { cobroId: 'c-jun' }));
+    const onConciliar = vi.fn().mockResolvedValue({
+      recibo: { ...RESPUESTA.recibos[0], numero: 'RC-0009', valorCop: 400_000 },
+      cobro: { ...COBRO, paidAmount: 400_000, pendingAmount: 600_000, status: 'partial' },
+    });
+    await abrir({ onSubmit: onSubmit as never, onConciliar: onConciliar as never });
     elegirMedio('efectivo');
     await enviar();
 
     const confirmar = () => porTexto('recibos.conciliar.confirmar')[0];
     expect(confirmar().disabled).toBe(true);
-
     escribir('#origen-conciliacion', 'PSE');
     expect(confirmar().disabled).toBe(true);
 
-    escribir('#origen-conciliacion', 'Pago por PSE del 3 de agosto');
-    expect(confirmar().disabled).toBe(false);
-  });
-
-  it('conciliar manda sólo el origen recortado y vuelve al formulario', async () => {
-    const onSubmit = vi.fn().mockRejectedValue(new ApiError(409, 'sin conciliar'));
-    const onConciliar = vi.fn().mockResolvedValue({
-      recibo: { ...RESPUESTA.recibo, numero: 'RC-0009', valorCop: 500_000 },
-      cobro: { ...COBRO, paidAmount: 500_000, pendingAmount: 1_300_000, status: 'partial' },
-    });
-    abrir({ onSubmit: onSubmit as never, onConciliar: onConciliar as never });
-    elegirMedio('efectivo');
-    await enviar();
-
     escribir('#origen-conciliacion', '  Consignación en Bancolombia  ');
     await act(async () => {
-      porTexto('recibos.conciliar.confirmar')[0].click();
+      confirmar().click();
     });
 
-    expect(onConciliar).toHaveBeenCalledWith('c1', { origen: 'Consignación en Bancolombia' });
+    expect(onConciliar).toHaveBeenCalledWith('c-jun', { origen: 'Consignación en Bancolombia' });
     // Conciliar no es el trámite: es el permiso. Se vuelve al recibo.
     expect(document.body.querySelector('[data-testid="panel-conciliacion"]')).toBeNull();
     expect(document.body.querySelector('#form-recibo-de-caja')).toBeTruthy();
   });
 
   it('sin onConciliar no ofrece un botón que no puede cumplir', async () => {
-    const onSubmit = vi.fn().mockRejectedValue(new ApiError(409, 'sin conciliar'));
-    abrir({ onSubmit: onSubmit as never });
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValue(new ApiError(409, 'sin conciliar', 'PLATA_SIN_RECIBO', { cobroId: 'c-jun' }));
+    await abrir({ onSubmit: onSubmit as never });
     elegirMedio('efectivo');
     await enviar();
 
@@ -333,49 +537,13 @@ describe('<RegistrarPagoModal> los rechazos del back', () => {
   });
 });
 
-describe('<RegistrarPagoModal> el desglose', () => {
-  it('🔴 el desglose está a la vista MIENTRAS se hace el recibo', () => {
-    abrir();
-    // Es el punto de todo el cambio: sin esto se acepta un abono parcial
-    // creyendo que el cliente quedó al día.
-    expect(document.body.querySelector('[data-testid="desglose-adeudado"]')).toBeTruthy();
-  });
-
-  /*
-   * 🔴 El caso que de verdad costaba plata, y que el test de «1.800.000 → 1.8»
-   * no cubre.
-   *
-   * Con un saldo de SEIS cifras el campo prellenado tenía UN solo separador:
-   * `parseFloat('500.000')` da **500**, que es un entero perfectamente válido.
-   * El back lo aceptaba sin chistar y registraba la milésima parte del pago.
-   * Con siete cifras el resultado era decimal y al menos rebotaba con un 400.
-   *
-   * O sea: el error silencioso vivía justo en el rango de canon más común.
-   */
-  it.each([[85_000], [500_000], [950_000]])(
-    'un saldo de %i se abona COMPLETO, no en su milésima parte',
-    async (saldo) => {
-      const onSubmit = abrir({
-        cobro: { ...COBRO, pendingAmount: saldo, totalWithFees: saldo },
-      });
-      elegirMedio('efectivo');
-      await enviar();
-
-      const enviado = (onSubmit.mock.calls[0][0] as { valorCop: number }).valorCop;
-      expect(enviado).toBe(saldo);
-      // Lo que fallaba: mandar 500 cuando el saldo eran 500.000.
-      expect(enviado).not.toBe(saldo / 1000);
-    },
-  );
-});
-
 describe('<RegistrarPagoModal> los medios configurados por la inmobiliaria', () => {
   afterEach(() => {
     mediosConfigurados = [];
   });
 
   it('sin medios configurados ofrece la lista fija y manda su valor histórico', async () => {
-    const onSubmit = abrir();
+    const onSubmit = await abrir();
     expect(porTexto('recibos.form.medios.transferencia')).toHaveLength(1);
     elegirMedio('transferencia');
     await enviar();
@@ -388,7 +556,7 @@ describe('<RegistrarPagoModal> los medios configurados por la inmobiliaria', () 
       { id: 'm2', nombre: 'Efectivo en la oficina', tipo: 'EFECTIVO', activo: true },
       { id: 'm3', nombre: 'Cuenta vieja', tipo: 'TRANSFERENCIA', activo: false },
     ];
-    const onSubmit = abrir();
+    const onSubmit = await abrir();
     expect(porTexto('recibos.form.medios.transferencia')).toHaveLength(0);
     expect(porTexto('Cuenta vieja')).toHaveLength(0);
     act(() => porTexto('Transferencia a Bancolombia')[0].click());
@@ -399,7 +567,7 @@ describe('<RegistrarPagoModal> los medios configurados por la inmobiliaria', () 
   it('un nombre más largo que el DTO viaja recortado a 40 caracteres', async () => {
     const largo = 'Transferencia a la cuenta de ahorros número dos de Bancolombia';
     mediosConfigurados = [{ id: 'm1', nombre: largo, tipo: 'TRANSFERENCIA', activo: true }];
-    const onSubmit = abrir();
+    const onSubmit = await abrir();
     act(() => porTexto(largo)[0].click());
     await enviar();
     const medio = (onSubmit.mock.calls[0][0] as { medio: string }).medio;

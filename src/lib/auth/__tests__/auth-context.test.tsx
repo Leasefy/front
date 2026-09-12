@@ -149,12 +149,22 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('AuthProvider — agency self-healing', () => {
-  it('retries automatically (no new auth event) when the initial agency fetch fails, and succeeds on a later attempt', async () => {
+/**
+ * T-0082 WU-1 (F3) rewrote this suite: the self-heal backstop used to retry
+ * with a 3-attempt backoff (`[0, 2000, 8000]` ms — up to 4 probes per
+ * session) whenever the user was agency-capable, REGARDLESS of whether the
+ * failure was transient or a confirmed "not a member". It now fires exactly
+ * ONE guarded retry (at `AGENCY_SELF_HEAL_RETRY_DELAY_MS` = 2s), and only
+ * when the previous probe result was `transientFailure: true` — for every
+ * role, agency-capable included. A confirmed no-membership result is
+ * terminal; `refreshAgency()` (the user's "Intentar de nuevo") is the only
+ * way back from there.
+ */
+describe('AuthProvider — agency self-healing (single guarded retry)', () => {
+  it('retries ONCE, after the retry delay, when the initial probe fails TRANSIENTLY — and adopts a later success', async () => {
     fetchAgencyProfileMock
-      .mockResolvedValueOnce({ agency: null, role: null }) // direct fetch inside INITIAL_SESSION handler
-      .mockResolvedValueOnce({ agency: null, role: null }) // self-heal attempt 0 (0s)
-      .mockResolvedValueOnce({ agency: { id: 'AGY-1', name: 'Test Agency' }, role: 'ADMIN' }) // self-heal attempt 1 (2s)
+      .mockResolvedValueOnce({ agency: null, role: null, memberStatus: null, confirmedNoMembership: false, transientFailure: true }) // direct fetch inside INITIAL_SESSION handler
+      .mockResolvedValueOnce({ agency: { id: 'AGY-1', name: 'Test Agency' }, role: 'ADMIN', memberStatus: 'ACTIVE', confirmedNoMembership: false, transientFailure: false }) // the single retry
 
     const { ref, root, container } = mountHarness()
     await fireInitialSession()
@@ -162,22 +172,13 @@ describe('AuthProvider — agency self-healing', () => {
     expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(1)
     expect(ref.current?.agency).toBeNull()
 
-    // Self-heal attempt 0 fires at +0ms — no new auth event dispatched.
-    await act(async () => {
-      vi.advanceTimersByTime(0)
-      await Promise.resolve()
-      await Promise.resolve()
-    })
-    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(2)
-    expect(ref.current?.agency).toBeNull()
-
-    // Self-heal attempt 1 fires at +2s
+    // The single retry fires after the retry delay (2s) — never at +0ms.
     await act(async () => {
       vi.advanceTimersByTime(2000)
       await Promise.resolve()
       await Promise.resolve()
     })
-    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(3)
+    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(2)
     expect(ref.current?.agency).toEqual({ id: 'AGY-1', name: 'Test Agency' })
     expect(ref.current?.agencyRole).toBe('ADMIN')
 
@@ -185,75 +186,90 @@ describe('AuthProvider — agency self-healing', () => {
     container.remove()
   })
 
-  it('stops retrying once the backoff schedule (0s/2s/8s) is exhausted — no infinite loop', async () => {
-    fetchAgencyProfileMock.mockResolvedValue({ agency: null, role: null })
+  it('does NOT retry a second time even if the single retry also fails transiently — no infinite loop', async () => {
+    fetchAgencyProfileMock.mockResolvedValue({ agency: null, role: null, memberStatus: null, confirmedNoMembership: false, transientFailure: true })
 
     const { ref, root, container } = mountHarness()
     await fireInitialSession()
     expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(1)
 
     await act(async () => {
-      vi.advanceTimersByTime(0)
-      await Promise.resolve()
-      await Promise.resolve()
-    })
-    await act(async () => {
       vi.advanceTimersByTime(2000)
       await Promise.resolve()
       await Promise.resolve()
     })
-    await act(async () => {
-      vi.advanceTimersByTime(8000)
-      await Promise.resolve()
-      await Promise.resolve()
-    })
-    // 1 direct + 3 self-heal attempts (0s, 2s, 8s) = 4
-    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(4)
+    // 1 direct + 1 single retry = 2 — no further attempt scheduled.
+    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(2)
     expect(ref.current?.agency).toBeNull()
 
-    // Advancing well past the schedule must not trigger further calls.
+    // Advancing well past the old (removed) 8s attempt must not trigger a
+    // third automatic call.
     await act(async () => {
       vi.advanceTimersByTime(60_000)
       await Promise.resolve()
       await Promise.resolve()
     })
-    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(4)
+    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(2)
 
     act(() => root.unmount())
     container.remove()
   })
 
-  it('refreshAgency() manually retries and re-arms the backstop after retries were exhausted', async () => {
-    fetchAgencyProfileMock.mockResolvedValue({ agency: null, role: null })
+  it('a CONFIRMED no-membership result on a pure-agency (AGENT) user is NOT retried either', async () => {
+    // Old behavior: an agency-capable role retried on ANY missing agency,
+    // including a confirmed 404/403/410 — this could storm a revoked or
+    // never-a-member AGENT indefinitely. That special case is gone: only
+    // `transientFailure` arms a retry, for every role.
+    fetchAgencyProfileMock.mockResolvedValue({ agency: null, role: null, memberStatus: null, confirmedNoMembership: true, transientFailure: false })
+
+    const { ref, root, container } = mountHarness()
+    await fireInitialSession()
+    const callsAfterInitial = fetchAgencyProfileMock.mock.calls.length
+    expect(callsAfterInitial).toBe(1)
+
+    await act(async () => {
+      vi.advanceTimersByTime(60_000)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(fetchAgencyProfileMock.mock.calls.length).toBe(callsAfterInitial)
+    expect(ref.current?.agency).toBeNull()
+
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  it('refreshAgency() reuses a fresh probe and re-arms one more guarded retry when the result is still transient', async () => {
+    fetchAgencyProfileMock.mockResolvedValue({ agency: null, role: null, memberStatus: null, confirmedNoMembership: false, transientFailure: true })
 
     const { ref, root, container } = mountHarness()
     await fireInitialSession()
 
-    // Exhaust the automatic backoff schedule.
-    await act(async () => {
-      vi.advanceTimersByTime(0)
-      await Promise.resolve()
-      await Promise.resolve()
-    })
+    // Exhaust the single automatic retry.
     await act(async () => {
       vi.advanceTimersByTime(2000)
       await Promise.resolve()
       await Promise.resolve()
     })
-    await act(async () => {
-      vi.advanceTimersByTime(8000)
-      await Promise.resolve()
-      await Promise.resolve()
-    })
-    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(4)
+    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(2)
 
-    // Manual refresh — succeeds immediately.
-    fetchAgencyProfileMock.mockResolvedValueOnce({ agency: { id: 'AGY-2', name: 'Recovered' }, role: 'VIEWER' })
+    // Manual refresh — still transient, so it re-arms one more retry.
     await act(async () => {
       await (ref.current as AuthContextType & { refreshAgency: () => Promise<void> }).refreshAgency()
     })
+    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(3)
+    expect(ref.current?.agency).toBeNull()
 
-    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(5)
+    // The re-armed retry succeeds.
+    fetchAgencyProfileMock.mockResolvedValueOnce({ agency: { id: 'AGY-2', name: 'Recovered' }, role: 'VIEWER', memberStatus: 'ACTIVE', confirmedNoMembership: false, transientFailure: false })
+    await act(async () => {
+      vi.advanceTimersByTime(2000)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(4)
     expect(ref.current?.agency).toEqual({ id: 'AGY-2', name: 'Recovered' })
 
     act(() => root.unmount())
@@ -296,7 +312,7 @@ describe('AuthProvider — dual-context TENANT self-heal (lastProbeTransient pat
     fetchAgencyProfileMock
       // INITIAL_SESSION probe → transient failure (arms lastProbeTransient)
       .mockResolvedValueOnce({ agency: null, role: null, memberStatus: null, confirmedNoMembership: false, transientFailure: true })
-      // self-heal attempt 0 → ACTIVE
+      // the single guarded retry → ACTIVE
       .mockResolvedValueOnce({ agency: { id: 'AGY-9', name: 'Recovered' }, role: 'AGENTE', memberStatus: 'ACTIVE', confirmedNoMembership: false, transientFailure: false })
 
     const { ref, root, container } = mountHarness()
@@ -307,9 +323,9 @@ describe('AuthProvider — dual-context TENANT self-heal (lastProbeTransient pat
     expect(ref.current?.user?.role).toBe('tenant')
     expect(ref.current?.agency).toBeNull()
 
-    // Self-heal attempt 0 fires at +0ms.
+    // The single retry fires after the retry delay (2s), not at +0ms.
     await act(async () => {
-      vi.advanceTimersByTime(0)
+      vi.advanceTimersByTime(2000)
       await Promise.resolve()
       await Promise.resolve()
       await Promise.resolve()
@@ -330,7 +346,7 @@ describe('AuthProvider — dual-context TENANT self-heal (lastProbeTransient pat
     await flushPromises()
     const callsAfterInitial = fetchAgencyProfileMock.mock.calls.length
 
-    // Advance well past the entire backoff schedule.
+    // Advance well past the single retry delay.
     await act(async () => {
       vi.advanceTimersByTime(60_000)
       await Promise.resolve()
@@ -341,6 +357,56 @@ describe('AuthProvider — dual-context TENANT self-heal (lastProbeTransient pat
     expect(fetchAgencyProfileMock.mock.calls.length).toBe(callsAfterInitial)
     expect(ref.current?.agency).toBeNull()
     expect(ref.current?.hasActiveAgencyMembership).toBe(false)
+
+    act(() => root.unmount())
+    container.remove()
+  })
+})
+
+/**
+ * T-0082 WU-1 (F3) — `refreshUser` used to always start its own
+ * `/inmobiliaria/agency` probe, even while an auth-event probe for the exact
+ * same session was still in flight (F3: up to 4 probes/session). Both now go
+ * through the same `probeAgencyMembership`, which shares its in-flight
+ * promise with any overlapping caller.
+ */
+describe('AuthProvider — probeAgencyMembership de-dup (refreshUser reuses an in-flight probe)', () => {
+  it('refreshUser reuses the INITIAL_SESSION probe instead of firing a second /inmobiliaria/agency request', async () => {
+    let resolveProbe!: (v: unknown) => void
+    fetchAgencyProfileMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveProbe = resolve
+        }),
+    )
+
+    const { ref, root, container } = mountHarness()
+
+    await act(async () => {
+      await capturedHandler?.('INITIAL_SESSION', SESSION)
+    })
+    // INITIAL_SESSION's probe is fire-and-forget — its own handling finishes
+    // without waiting on it, and the probe is still pending.
+    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(1)
+    expect(ref.current?.agencyMembershipChecked).toBe(false)
+
+    let refreshUserSettled = false
+    const refreshPromise = ref.current!.refreshUser().then(() => {
+      refreshUserSettled = true
+    })
+    await flushPromises()
+    // refreshUser's fetchUser() resolved and it called probeAgencyMembership,
+    // which found the INITIAL_SESSION probe still in flight — no second call.
+    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(1)
+    expect(refreshUserSettled).toBe(false)
+
+    await act(async () => {
+      resolveProbe({ agency: { id: 'AGY-1', name: 'X' }, role: 'ADMIN', memberStatus: 'ACTIVE', confirmedNoMembership: false, transientFailure: false })
+      await refreshPromise
+    })
+
+    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(1)
+    expect(ref.current?.agency).toEqual({ id: 'AGY-1', name: 'X' })
 
     act(() => root.unmount())
     container.remove()

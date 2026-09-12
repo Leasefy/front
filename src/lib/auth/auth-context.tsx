@@ -145,15 +145,12 @@ function isUserNotFoundError(err: unknown): boolean {
   return msg.includes('user not found')
 }
 
-/** Whether this user should have an agency membership fetched at all
- *  (AGENT/agency role). Tenants and landlords never call `/inmobiliaria/agency`. */
-function isAgencyCapable(u: User | null): boolean {
-  return !!u && (u.role === 'agency' || u.backendRole === 'AGENT')
-}
-
-/** Bounded backoff schedule (ms) for the agency self-heal backstop —
- *  see `AuthProvider`'s agency self-healing effect below. */
-const AGENCY_SELF_HEAL_DELAYS_MS = [0, 2000, 8000]
+/** Single delay (ms) for the agency self-heal backstop's ONE guarded retry —
+ *  see `AuthProvider`'s agency self-healing effect below. T-0082 WU-1 (F3)
+ *  collapsed the old 3-attempt backoff (`[0, 2000, 8000]`, up to 4 probes per
+ *  session) into a single re-probe, gated on the previous probe having failed
+ *  TRANSIENTLY (never after a definitive "not a member" result). */
+const AGENCY_SELF_HEAL_RETRY_DELAY_MS = 2000
 
 /** Hard ceiling for a single membership probe. apiClient has no
  *  AbortController, so we RACE the fetch against this timeout — a hung
@@ -381,15 +378,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setLastProbeTransient(!!result.transientFailure)
   }, [])
 
-  /** THE single membership-probe path used by every auth handler + refreshUser.
-   *  Bounds the fetch with a timeout and ALWAYS flips `agencyMembershipChecked`
-   *  in a `finally` — so a hung/slow/failed probe can never leave the agency
-   *  panel gate holding a spinner forever. */
-  const probeAgencyMembership = useCallback(async (token?: string) => {
+  /** In-flight `/inmobiliaria/agency` probe, shared by every caller — auth
+   *  events, the self-heal retry below, `refreshUser`, and `refreshAgency`.
+   *  T-0082 WU-1 (F3): the probe used to fire once per caller (up to 4x per
+   *  session — SIGNED_IN, `refreshUser`, and the old 3-attempt self-heal),
+   *  because each call started its own fetch. Sharing by this ref means an
+   *  overlapping trigger reuses the same in-flight request instead of racing
+   *  a parallel one. */
+  const agencyProbeInFlightRef = useRef<Promise<AgencyFetchResult> | null>(null)
+
+  /** THE single membership-probe path used by every auth handler + refreshUser
+   *  + refreshAgency + the self-heal retry. Bounds the fetch with a timeout,
+   *  ALWAYS flips `agencyMembershipChecked` in a `finally` — so a hung/slow/
+   *  failed probe can never leave the agency panel gate holding a spinner
+   *  forever — and returns the raw result so a caller can decide whether to
+   *  arm a retry (see `refreshAgency` below). */
+  const probeAgencyMembership = useCallback(async (token?: string): Promise<AgencyFetchResult> => {
+    const enVuelo = agencyProbeInFlightRef.current
+    if (enVuelo) return enVuelo
+    const promesa = (async () => {
+      try {
+        const result = await fetchAgencyWithTimeout(fetchAgency, token)
+        applyAgencyFetchResult(result)
+        return result
+      } finally {
+        setAgencyMembershipChecked(true)
+      }
+    })()
+    agencyProbeInFlightRef.current = promesa
     try {
-      applyAgencyFetchResult(await fetchAgencyWithTimeout(fetchAgency, token))
+      return await promesa
     } finally {
-      setAgencyMembershipChecked(true)
+      agencyProbeInFlightRef.current = null
     }
   }, [applyAgencyFetchResult, fetchAgency])
 
@@ -400,86 +420,55 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // per auth event. If that single shot failed (network blip, dev HMR partial
   // reload losing state), `agency` stayed null for the rest of the session
   // with nothing ever re-requesting it, silently breaking anything gated on
-  // `agency?.id` (useBetaChat, the postulaciones panel). The effect below
-  // retries with bounded backoff whenever `user` is agency-capable and
-  // `agency` is still null — no new Supabase auth event required.
+  // `agency?.id` (useBetaChat, the postulaciones panel).
+  //
+  // T-0082 WU-1 (F3): collapsed from a 3-attempt backoff (`[0, 2000, 8000]`)
+  // into a SINGLE guarded retry, fired only when the probe that just ran
+  // failed TRANSIENTLY (network/timeout) — never after a definitive "not a
+  // member" result (403/404/410), for ANY role. A retry that fails
+  // transiently again is not retried further automatically; from there the
+  // user's manual "Intentar de nuevo" (`refreshAgency`) is the path forward.
   // ---------------------------------------------------------------------
-  const agencySelfHealActiveRef = useRef(false)
   const agencySelfHealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const agencySelfHealTokenRef = useRef(0)
 
-  /** Starts (or no-ops if already running) a bounded retry chain for the
-   *  agency fetch: attempts at 0s / 2s / 8s, then gives up until either a
-   *  dependency change restarts it or `refreshAgency()` re-arms it. Guarded
-   *  by `agencySelfHealActiveRef` so overlapping effect runs / manual
-   *  refreshes never stack concurrent chains. */
-  const startAgencySelfHeal = useCallback(() => {
-    if (agencySelfHealActiveRef.current) return
-    agencySelfHealActiveRef.current = true
-    const localToken = ++agencySelfHealTokenRef.current
-
-    const attempt = (index: number) => {
-      agencySelfHealTimeoutRef.current = setTimeout(async () => {
-        if (localToken !== agencySelfHealTokenRef.current) return
-        console.warn(
-          `[Auth] agency self-heal retry attempt ${index + 1}/${AGENCY_SELF_HEAL_DELAYS_MS.length} (no agency loaded yet)`,
-        )
-        const result = await fetchAgencyWithTimeout(fetchAgency)
-        if (localToken !== agencySelfHealTokenRef.current) return
-        applyAgencyFetchResult(result)
-        // Stop on a RESOLVED outcome (success OR confirmed no-membership); only
-        // a TRANSIENT failure keeps retrying with backoff.
-        if (result.agency || result.confirmedNoMembership) {
-          agencySelfHealActiveRef.current = false
-          return
-        }
-        const next = index + 1
-        if (next < AGENCY_SELF_HEAL_DELAYS_MS.length) {
-          attempt(next)
-        } else {
-          console.warn('[Auth] agency self-heal retries exhausted — call refreshAgency() to retry manually')
-          agencySelfHealActiveRef.current = false
-        }
-      }, AGENCY_SELF_HEAL_DELAYS_MS[index])
-    }
-    attempt(0)
-  }, [fetchAgency, applyAgencyFetchResult])
+  /** Arms the single retry, unless one is already scheduled. No-ops instead of
+   *  stacking a second timer on an overlapping call (effect re-run, manual
+   *  refresh). */
+  const scheduleAgencySelfHeal = useCallback(() => {
+    if (agencySelfHealTimeoutRef.current) return
+    agencySelfHealTimeoutRef.current = setTimeout(() => {
+      agencySelfHealTimeoutRef.current = null
+      void probeAgencyMembership()
+    }, AGENCY_SELF_HEAL_RETRY_DELAY_MS)
+  }, [probeAgencyMembership])
 
   useEffect(() => {
-    // Retry when the agency is missing AND the user is either agency-capable
-    // (pure AGENT) OR the last probe was a TRANSIENT failure (covers dual-context
-    // TENANT/LANDLORD recovering from a blip). A CONFIRMED no-membership sets
-    // lastProbeTransient=false, so membership-less tenants never storm.
-    if (!user || agency || (!isAgencyCapable(user) && !lastProbeTransient)) return
-    startAgencySelfHeal()
+    // Only ever retries on a TRANSIENT failure — a confirmed no-membership
+    // result sets lastProbeTransient=false, so it's a terminal state here
+    // regardless of role (pure agency included: T-0082 dropped the old
+    // "always retry an agency-capable user" special case, which used to keep
+    // storming a revoked/never-a-member AGENT indefinitely).
+    if (!user || agency || !lastProbeTransient) return
+    scheduleAgencySelfHeal()
     return () => {
-      // Invalidate any pending/in-flight attempt from this chain and clear
-      // its timer — a fresh chain starts on the next effect run if still needed.
-      agencySelfHealTokenRef.current += 1
       if (agencySelfHealTimeoutRef.current) {
         clearTimeout(agencySelfHealTimeoutRef.current)
         agencySelfHealTimeoutRef.current = null
       }
-      agencySelfHealActiveRef.current = false
     }
-  }, [user, agency, lastProbeTransient, startAgencySelfHeal])
+  }, [user, agency, lastProbeTransient, scheduleAgencySelfHeal])
 
   /** Manually retry the agency fetch (e.g. a page's "Intentar de nuevo"
-   *  button). Always performs one direct fetch; if it also fails, re-arms
-   *  the automatic backstop above (even if it had already given up). */
+   *  button). Reuses an in-flight probe if one is already running
+   *  (`probeAgencyMembership`'s own dedup); if the fresh result is still
+   *  transient, arms one more guarded retry — mirrors the automatic path. */
   const refreshAgency = useCallback(async () => {
     console.warn('[Auth] agency manual refresh requested')
-    const result = await fetchAgency()
-    applyAgencyFetchResult(result)
-    if (!result.agency) {
-      agencySelfHealActiveRef.current = false
-      if (agencySelfHealTimeoutRef.current) {
-        clearTimeout(agencySelfHealTimeoutRef.current)
-        agencySelfHealTimeoutRef.current = null
-      }
-      startAgencySelfHeal()
+    const result = await probeAgencyMembership()
+    if (result.transientFailure) {
+      scheduleAgencySelfHeal()
     }
-  }, [fetchAgency, applyAgencyFetchResult, startAgencySelfHeal])
+  }, [probeAgencyMembership, scheduleAgencySelfHeal])
 
   /** Refresh user data from backend (e.g. after onboarding) */
   const refreshUser = useCallback(async () => {

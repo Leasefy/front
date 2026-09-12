@@ -353,6 +353,53 @@ describe('ApiError — `code` forwarding on the generic non-2xx branch', () => {
   })
 })
 
+/**
+ * T-0082 WU-1 (F1/F2) — an explicit `token` used to always bypass
+ * `compartirGet`'s in-flight dedup, so two concurrent explicit-token GETs to
+ * the same path (the login bootstrap's `fetchUser` + `fetchAgencyProfile`
+ * pattern) always hit the network twice. The token is per-session, not
+ * per-call, so sharing by path alone is safe.
+ */
+describe('apiClient.get — explicit-token GETs share the in-flight request', () => {
+  it('two concurrent calls with the same explicit token to the same path produce one network call', async () => {
+    const fetchFalso = vi.fn(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                status: 200,
+                ok: true,
+                json: async () => ({ id: 'u1' }),
+                text: async () => JSON.stringify({ id: 'u1' }),
+              } as unknown as Response),
+            10,
+          ),
+        ),
+    )
+    vi.stubGlobal('fetch', fetchFalso)
+
+    const [a, b] = await Promise.all([
+      apiClient.get('/users/me', 'token-de-sesion'),
+      apiClient.get('/users/me', 'token-de-sesion'),
+    ])
+
+    expect(fetchFalso).toHaveBeenCalledTimes(1)
+    expect(a).toEqual({ id: 'u1' })
+    expect(b).toEqual({ id: 'u1' })
+  })
+
+  it('is NOT a cache: once the shared promise settles, the next call goes out again', async () => {
+    const fetchFalso = stubFetch(200, { id: 'u1' })
+    vi.stubGlobal('fetch', fetchFalso)
+
+    await apiClient.get('/users/me', 'token-de-sesion')
+    await apiClient.get('/users/me', 'token-de-sesion')
+
+    expect(fetchFalso).toHaveBeenCalledTimes(2)
+  })
+})
+
 describe('esCodigoDeSesionMuerta', () => {
   it.each(['AUTH_TOKEN_EXPIRED', 'AUTH_TOKEN_INVALID', 'SESSION_SUPERSEDED'])(
     'reconoce %s',

@@ -466,14 +466,19 @@ export const apiClient = {
    * diez peticiones que arrancan en el mismo milisegundo y se hacen esperar
    * entre ellas. Ahora sale una.
    *
-   * No se comparte cuando viene un `token` explícito: esa forma se usa para
-   * pedir con una sesión distinta de la que hay en memoria, y mezclar dos
-   * identidades en una respuesta es el peor error posible acá.
+   * Un `token` explícito TAMBIÉN comparte, por `path` únicamente (el token no
+   * entra en la clave). El único uso real de esta forma es el bootstrap de
+   * login (`fetchUser` y `fetchAgencyProfile` en auth-context.tsx), y en ese
+   * momento el token explícito ES el de la sesión actual — el mismo valor que
+   * un llamado sin token leería de `_accessToken` un instante después. El
+   * token es por-sesión, no por-llamado: dos GET concurrentes al mismo path
+   * durante el mismo login nunca representan identidades distintas, así que
+   * compartirlos es seguro. (Antes esta rama SIEMPRE salía por la red aparte
+   * — F2/F1 del audit T-0082: era la causa de que `/users/me` y
+   * `/inmobiliaria/agency` salieran duplicados en cada login.)
    */
   get: <T>(path: string, token?: string) =>
-    token
-      ? request<T>('GET', path, undefined, token)
-      : compartirGet(path, () => request<T>('GET', path, undefined, undefined)),
+    compartirGet(path, () => request<T>('GET', path, undefined, token)),
   post: <T>(path: string, body?: unknown, token?: string) => request<T>('POST', path, body, token),
   put: <T>(path: string, body?: unknown, token?: string) => request<T>('PUT', path, body, token),
   patch: <T>(path: string, body?: unknown, token?: string) => request<T>('PATCH', path, body, token),

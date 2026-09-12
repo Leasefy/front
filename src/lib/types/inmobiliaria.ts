@@ -748,6 +748,23 @@ export interface MantenimientoQuote {
   createdAt: string;
 }
 
+/**
+ * Lo que se manda para agregarle una cotización a una solicitud ya creada.
+ *
+ * Es el modelo `MantenimientoQuote` del back MENOS lo que él genera (`id`,
+ * `createdAt`) y con el teléfono opcional, que es como está la columna
+ * (`provider_phone` es nullable). No hay adjunto ni vigencia porque el modelo no
+ * los guarda: un campo que la pantalla pide y la base tira es peor que no
+ * pedirlo.
+ */
+export interface NuevaCotizacion {
+  providerName: string;
+  providerPhone?: string;
+  amount: number;
+  description: string;
+  estimatedDays: number;
+}
+
 export interface SolicitudMantenimiento {
   id: string;
   consignacionId: string;

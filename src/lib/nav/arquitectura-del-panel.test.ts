@@ -392,8 +392,19 @@ describe('arquitectura del panel — Contratos vive en Operación (Nico, 2026-09
     expect(contratos?.pantallas?.map((p) => p.href)).toEqual([`${PANEL}/contratos/renovaciones`]);
   });
 
+  /*
+   * La lista era EXACTA (`['pipeline', 'inmuebles', 'postulaciones']`) y se
+   * puso roja el mismo día: otra tanda mudó la Agenda a Captación y este test
+   * no se enteró. Lo que hay que sostener es la REGLA R3 —un grupo no se queda
+   * con una sola fila— y que Contratos ya no esté acá; cuál es el resto del
+   * grupo es una decisión de navegación que cambia sola y no tiene por qué
+   * romper la mudanza de Contratos.
+   */
   it('Captación sigue con al menos dos filas (R3) después de la mudanza', () => {
     const captacion = ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'captacion');
-    expect(captacion?.modulos.map((m) => m.key)).toEqual(['pipeline', 'inmuebles', 'postulaciones']);
+    const claves = captacion?.modulos.map((m) => m.key) ?? [];
+    expect(claves.length).toBeGreaterThanOrEqual(2);
+    expect(claves).toEqual(expect.arrayContaining(['pipeline', 'inmuebles', 'postulaciones']));
+    expect(claves).not.toContain('contratos');
   });
 });

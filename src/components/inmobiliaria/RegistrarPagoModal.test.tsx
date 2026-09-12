@@ -53,8 +53,8 @@ vi.mock('@/lib/hooks/use-medios-de-pago', () => ({
 }));
 
 /** La cartera llega por HTTP; acá interesa la pantalla, no la petición. */
-const carteraPorCobro = vi.fn<[string], Promise<CarteraDelCliente>>();
-const cartera = vi.fn<[string], Promise<CarteraDelCliente>>();
+const carteraPorCobro = vi.fn<(id: string) => Promise<CarteraDelCliente>>();
+const cartera = vi.fn<(id: string) => Promise<CarteraDelCliente>>();
 vi.mock('@/lib/api/recibos-de-caja.service', () => ({
   recibosDeCajaApi: {
     carteraPorCobro: (id: string) => carteraPorCobro(id),

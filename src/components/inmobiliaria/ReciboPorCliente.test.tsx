@@ -24,7 +24,7 @@ vi.mock('@/lib/i18n', () => ({
   }),
 }));
 
-const listar = vi.fn<[unknown], Promise<Inquilino[]>>();
+const listar = vi.fn<(filtros: unknown) => Promise<Inquilino[]>>();
 vi.mock('@/lib/api/inquilinos.service', () => ({
   inquilinosApi: { listar: (f: unknown) => listar(f) },
 }));

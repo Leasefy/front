@@ -26,6 +26,7 @@ import {
   CheckCircle,
   FileArrowUp,
   Info,
+  Receipt,
   Warning,
 } from "@phosphor-icons/react";
 
@@ -67,6 +68,7 @@ import {
   remapear,
   type MapeoDeColumna,
 } from "@/lib/migracion/columnas-de-tercero";
+import { hayQueAvisarDeOtraPuerta } from "@/lib/migracion/que-archivo-contable-es";
 import {
   armarAsientos,
   COLUMNAS_DE_ASIENTO,
@@ -83,12 +85,19 @@ const RUTA_DEL_PASO_4 = "/panel/inmobiliaria/migracion/puc";
 export function MigrarAsientos({
   onAplicado,
   onIrAlPuc,
+  onIrAComprobantes,
   enElMuro = false,
   onOcupado,
 }: {
   onAplicado: (informe: InformeDeMigracion) => void;
   /** Adentro del muro: abrir el paso 4 en el mismo muro. Sin esto, enlace en pestaña nueva. */
   onIrAlPuc?: () => void;
+  /**
+   * Cambiar al camino de comprobantes, cuando el archivo que subieron es ése.
+   * Sin el callback el aviso se muestra igual —decir que está en la puerta
+   * equivocada vale por sí solo— pero sin el botón que la abre.
+   */
+  onIrAComprobantes?: () => void;
   /** Adentro del muro no se ofrece «volver a la secuencia»: el muro es la secuencia. */
   enElMuro?: boolean;
   /** Aviso al muro mientras se revisa o aplica el lote: el pie espera. */
@@ -183,6 +192,16 @@ export function MigrarAsientos({
   const sinMapear = useMemo(
     () => obligatoriasSinMapear(COLUMNAS_DE_ASIENTO, mapeo),
     [mapeo],
+  );
+  /*
+   * ¿El archivo que subieron es de esta puerta? Se mira sobre los ENCABEZADOS
+   * del archivo, no sobre el mapeo: el mapeo se puede corregir a mano y la
+   * pregunta acá es otra —qué archivo es—, que no cambia porque alguien mueva
+   * un desplegable.
+   */
+  const esOtroArchivo = useMemo(
+    () => hayQueAvisarDeOtraPuerta(encabezados, mapeo),
+    [encabezados, mapeo],
   );
   const armados = useMemo(
     () => (filas.length ? armarAsientos(filas, mapeo) : []),
@@ -481,17 +500,78 @@ export function MigrarAsientos({
             </Table>
           </div>
 
-          {sinMapear.length > 0 ? (
+          {/* 🔴 EL ARCHIVO EN LA PUERTA EQUIVOCADA, antes que cualquier otra
+              cosa. Nico, 2026-09-12: «¿qué es código de cuenta? ¿y por qué no
+              lo trae?». No lo traía porque su archivo era el export de
+              COMPROBANTES, que no puede traerlo — y la puerta correcta estaba
+              al lado, sin que nada se lo dijera. Un archivo en la puerta
+              equivocada no es un archivo con un error. */}
+          {esOtroArchivo ? (
+            <div
+              className="mt-4 rounded-md border border-warning bg-warning-soft p-4"
+              data-testid="asientos-archivo-de-comprobantes"
+            >
+              <div className="flex items-start gap-2">
+                <Receipt className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-fg">
+                    Este archivo son comprobantes, no el libro diario
+                  </p>
+                  <p className="text-sm text-fg-muted">
+                    Trae {esOtroArchivo.senales.slice(0, 3).map((c) => `«${c}»`).join(", ")}
+                    {esOtroArchivo.senales.length > 3
+                      ? ` y ${esOtroArchivo.senales.length - 3} columnas más`
+                      : ""}
+                    : son datos del comprobante entero, no de cada movimiento.
+                    Por eso no trae el código de cuenta — una fila es un
+                    documento con sus totales, y la cuenta vive en cada línea
+                    del asiento.
+                  </p>
+                  <p className="text-sm text-fg-muted">
+                    Tiene su propio lugar y ahí sí entra completo: los
+                    comprobantes se cuelgan de la ficha de cada contrato.
+                  </p>
+                  {onIrAComprobantes ? (
+                    <Button
+                      size="sm"
+                      hideArrow
+                      onClick={onIrAComprobantes}
+                      data-testid="ir-a-comprobantes"
+                    >
+                      Subir los comprobantes
+                      <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ) : sinMapear.length > 0 ? (
             <div
               className="mt-4 flex items-start gap-2 rounded-md border border-border bg-warning-soft p-3"
               data-testid="asientos-sin-mapear"
             >
               <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-              <p className="text-sm text-fg">
-                Falta decir qué columna es{" "}
-                {sinMapear.map((c) => `«${c.titulo}»`).join(", ")}. Sin eso el
-                back rechaza todas las filas.
-              </p>
+              {/* 🔴 Qué ES la columna y qué pasa si falta, en el idioma de
+                  quien migra. Antes decía «sin eso el back rechaza todas las
+                  filas»: «el back» no es nada para nadie fuera de acá, y
+                  «rechaza» no explica por qué. */}
+              <div className="space-y-1 text-sm">
+                <p className="text-fg">
+                  Falta decir qué columna de tu archivo es{" "}
+                  {sinMapear.map((c) => `«${c.titulo}»`).join(", ")}.
+                </p>
+                {sinMapear.map((c) => (
+                  <p key={c.titulo} className="text-fg-muted">
+                    <span className="font-medium">{c.titulo}</span>
+                    {c.ayuda ? `: ${c.ayuda}` : ""}
+                    {c.ejemplo ? ` Por ejemplo: ${c.ejemplo}.` : ""}
+                  </p>
+                ))}
+                <p className="text-fg-muted">
+                  Sin esa columna no podemos saber a qué cuenta va cada
+                  movimiento, así que no entraría ninguna fila.
+                </p>
+              </div>
             </div>
           ) : null}
 

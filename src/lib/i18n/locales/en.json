@@ -2201,7 +2201,7 @@
         "days": "{{count}} days",
         "selectAtLeastOneDay": "Select at least one day",
         "notificationChannels": "Notification Channels",
-        "canalesNoSeGuardan": "The days are saved. The channel choice is not yet: the backend has nowhere to store it and reminders go out by email and WhatsApp per the agency setup.",
+        "canalesNoSeGuardan": "The days are saved. The channel choice is not yet: for now reminders go out by email and WhatsApp per the agency setup.",
         "guardarError": "Could not save the configuration",
         "selectAtLeastOneChannel": "Select at least one notification channel",
         "messageTemplates": "Message Templates",

@@ -2241,7 +2241,7 @@
         "days": "{{count}} dias",
         "selectAtLeastOneDay": "Selecciona al menos un dia",
         "notificationChannels": "Canales de Notificacion",
-        "canalesNoSeGuardan": "Los días sí se guardan. La elección de canales todavía no: el back no tiene dónde guardarla y se manda por correo y WhatsApp según la configuración de la inmobiliaria.",
+        "canalesNoSeGuardan": "Los días sí se guardan. La elección de canales todavía no: por ahora se manda por correo y WhatsApp según la configuración de la inmobiliaria.",
         "guardarError": "No se pudo guardar la configuración",
         "selectAtLeastOneChannel": "Selecciona al menos un canal de notificacion",
         "messageTemplates": "Plantillas de Mensajes",

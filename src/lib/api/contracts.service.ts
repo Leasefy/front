@@ -806,6 +806,14 @@ export interface FilaAMigrar {
   paymentDay?: number;
   /** Sin esto no se puede liquidar: vivienda va sin IVA, comercial con IVA. */
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL';
+  /**
+   * «Prorrateado» del archivo. Con prorrateo el primer mes cobra sólo los
+   * días desde la fecha de cartera —y el último, los días ocupados—; sin él,
+   * el mes completo cada día de cartera. Ausente = sin prorrateo.
+   */
+  prorratearPrimerMes?: boolean;
+  /** «Días de Plazo»: gracia antes de la mora. Ausente = el de la agencia. */
+  diasDePlazo?: number;
   periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
   comisionPorcentaje?: number;
   /**

@@ -116,6 +116,8 @@ import { TablePagination } from "@/components/ui/pagination";
 const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   direccionInmueble: "Dirección del inmueble",
   fechaDeCartera: "Fecha de cartera",
+  prorrateado: "Prorrateado",
+  diasDePlazo: "Días de plazo",
   codigoInmueble: "Código del inmueble (#)",
   ciudadInmueble: "Ciudad del inmueble",
   inquilinoNombre: "Nombre del inquilino",

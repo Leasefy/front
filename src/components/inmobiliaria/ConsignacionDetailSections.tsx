@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
+import { InvitarAlPortal } from './InvitarAlPortal';
 import Link from 'next/link';
 import { conRegreso } from '@/lib/nav/ruta-de-regreso';
 import { motion } from 'framer-motion';
@@ -175,6 +176,18 @@ export function PropietarioSection({
   // Sólo cuando hay más de uno. Con un dueño al 100 % mostrar «100 %» al lado
   // del nombre es ruido: no informa nada que no se supiera.
   const variosDuenos = (copropietarios?.length ?? 0) > 1;
+  /*
+   * La cuenta que acaba de crear el botón «Invitar». Vive acá y no en el
+   * padre para que el mensaje aparezca en el acto: recargar la ficha entera
+   * para ver un botón que el servidor ya confirmó es hacer esperar de gusto.
+   * Se limpia sola al cambiar de propietario porque `propietario.id` entra en
+   * la comparación de abajo.
+   */
+  const [cuentaReciente, setCuentaReciente] = useState<string | null>(null);
+  const [paraQuien, setParaQuien] = useState<string | null>(null);
+  const cuenta =
+    propietario?.cuentaDePortalId ??
+    (paraQuien === propietario?.id ? cuentaReciente : null);
 
   if (!propietario) {
     return (
@@ -322,18 +335,33 @@ export function PropietarioSection({
            * miembro de la inmobiliaria.
            *
            * Necesita que el propietario tenga cuenta de portal
-           * (`cuentaDePortalId`): la ficha del propietario es comercial y no
-           * es un usuario. Sin cuenta no se dibuja — un botón que no puede
-           * hacer nada es peor que ninguno.
+           * (`cuentaDePortalId`). Cuando no la tiene, lo que va acá NO es un
+           * hueco —eso se lee como «falta la función»— sino el aviso con la
+           * salida: ver `InvitarAlPortal`, abajo.
            */}
-          {propietario.cuentaDePortalId && (
+          {cuenta && (
             <BotonEnviarMensaje
-              counterpartId={propietario.cuentaDePortalId}
+              counterpartId={cuenta}
               etiqueta="Mensaje"
               className="flex-1 h-auto justify-center gap-2 rounded-lg border-0 bg-surface-muted px-4 py-2.5 text-sm font-medium text-fg dark:bg-ink dark:text-fg-subtle"
             />
           )}
         </div>
+
+        {/*
+         * Sin cuenta: se dice y se ofrece resolverlo, en vez de esconder el
+         * botón. En la cartera real de Nico esto es el 97 % de las fichas.
+         */}
+        {!cuenta && (
+          <InvitarAlPortal
+            propietarioId={propietario.id}
+            correo={propietario.email}
+            onInvitado={(id) => {
+              setParaQuien(propietario.id);
+              setCuentaReciente(id);
+            }}
+          />
+        )}
       </div>
     </SectionCard>
   );
@@ -565,7 +593,6 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
                   {t('inmobiliaria.consignaciones.detail.call')}
                 </a>
               )}
-              {/* Sin cuenta de portal no se dibuja: no hay a quién escribirle. */}
               {inquilino.cuentaDePortalId && (
                 <BotonEnviarMensaje
                   counterpartId={inquilino.cuentaDePortalId}
@@ -574,6 +601,28 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
                 />
               )}
             </div>
+          ) : null}
+
+          {/*
+           * Sin cuenta no hay a quién escribirle, y eso se DICE. Esconder el
+           * botón se lee como «falta la función» (Nico, 2026-09-12). Acá no va
+           * un «Invitar» como en el propietario: al inquilino la cuenta se la
+           * crea la migración y las que faltan se reenvían por lote desde
+           * Inquilinos, que es donde están todas juntas. Son 16 de 730 en la
+           * cartera real.
+           */}
+          {inquilino && !inquilino.cuentaDePortalId ? (
+            <p
+              className="rounded-lg bg-surface-muted px-4 py-3 text-xs text-fg-muted dark:bg-ink dark:text-fg-subtle"
+              data-testid="inquilino-sin-cuenta"
+            >
+              Todavía no tiene cuenta en Leasefy, así que no se le puede
+              escribir por aquí. Su invitación se reenvía desde{' '}
+              <Link href="/panel/inmobiliaria/inquilinos" className="underline">
+                Inquilinos
+              </Link>
+              .
+            </p>
           ) : null}
 
           {/* Lease Details */}

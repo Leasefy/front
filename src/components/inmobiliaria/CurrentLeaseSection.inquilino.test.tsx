@@ -96,12 +96,27 @@ describe('<CurrentLeaseSection> — el inquilino', () => {
     expect(container.textContent).not.toContain('CC 1007102565');
   });
 
-  /* Sin cuenta de portal no se ofrece escribirle; el resto sigue. */
-  it('sin cuenta de portal no se dibuja el mensaje de Leasefy', async () => {
+  /*
+   * 🔴 Sin cuenta no se ofrece escribirle — y se DICE por qué. Un hueco se lee
+   * como «falta la función», que es exactamente lo que le pasó a Nico con la
+   * ficha del propietario el 2026-09-12. Son 16 de 730 en la cartera real.
+   */
+  it('sin cuenta de portal lo dice, y manda a donde se reenvía la invitación', async () => {
     await pintar(consignacion({ inquilino: { ...INQUILINO, cuentaDePortalId: null } }));
 
     expect(q('contacto-inquilino')?.textContent).not.toContain('Mensaje');
+    expect(q('inquilino-sin-cuenta')?.textContent).toContain('Todavía no tiene cuenta');
+    expect(
+      q('inquilino-sin-cuenta')?.querySelector('a[href="/panel/inmobiliaria/inquilinos"]'),
+    ).not.toBeNull();
+    // Y el correo y el teléfono siguen: se puede llamar igual.
     expect(container.querySelector('a[href^="mailto:"]')).not.toBeNull();
+  });
+
+  it('con cuenta no aparece ningún aviso: no hay nada que explicar', async () => {
+    await pintar(consignacion({ inquilino: INQUILINO }));
+
+    expect(q('inquilino-sin-cuenta')).toBeNull();
   });
 
   /*

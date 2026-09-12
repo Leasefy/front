@@ -11,7 +11,12 @@
  * una naturaleza y un lugar en el árbol, y eso lo decide el contador.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  aplicarAsientosCompleto,
+  type ProgresoDeAsientos,
+} from "./aplicarAsientosCompleto";
+import { BarraDeTrabajo } from "./BarraDeTrabajo";
 import Link from "next/link";
 import { useDropzone } from "react-dropzone";
 import {
@@ -99,6 +104,11 @@ export function MigrarAsientos({
   const [revision, setRevision] = useState<RevisionDeLote | null>(null);
   const [informe, setInforme] = useState<InformeDeMigracion | null>(null);
   const [cargando, setCargando] = useState(false);
+  /* 🔴 La barra de los asientos (Nico, 2026-09-12). El archivo real trae
+     116.469 filas: sin esto, «Aplicar» es media hora de spinner. */
+  const [progreso, setProgreso] = useState<ProgresoDeAsientos | null>(null);
+  const detenerRef = useRef(false);
+  const [deteniendo, setDeteniendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // El pie del muro espera mientras el lote se revisa o se aplica — la misma
@@ -203,13 +213,35 @@ export function MigrarAsientos({
   const aplicar = async () => {
     setCargando(true);
     setError(null);
+    setProgreso(null);
+    detenerRef.current = false;
+    setDeteniendo(false);
     try {
-      const r = await contabilidadApi.migracion.aplicar({
-        lote: lote.trim(),
-        asientos,
-      });
+      /*
+       * Por tandas: el back corta a los 15 s y dice cuántos quedan. Reenviar
+       * el mismo lote es seguro —la idempotencia es por `(lote, clave)`— así
+       * que cada vuelta escribe sólo lo que falta.
+       */
+      const vuelta = await aplicarAsientosCompleto(
+        () =>
+          contabilidadApi.migracion.aplicar({ lote: lote.trim(), asientos }),
+        setProgreso,
+        { debeParar: () => detenerRef.current },
+      );
+      const r = vuelta.ultimo;
       setInforme(r);
       onAplicado(r);
+      if (vuelta.detenidoPorPersona) {
+        setError(
+          `Se aplicaron ${vuelta.aplicados} asientos y quedaron ${vuelta.restantes}. ` +
+            "Nada se duplica: vuelve a aplicar el mismo lote y sigue donde quedó.",
+        );
+      } else if (vuelta.detenidoSinAvance || vuelta.detenidoPorLimite) {
+        setError(
+          `Se aplicaron ${vuelta.aplicados} asientos y el lote dejó de avanzar: ` +
+            "la última vuelta no escribió ninguno. Revisa el informe de abajo.",
+        );
+      }
     } catch (e) {
       setError(
         // La segunda frase es un hecho del back, no un consuelo: cada fila
@@ -222,6 +254,8 @@ export function MigrarAsientos({
       );
     } finally {
       setCargando(false);
+      setProgreso(null);
+      setDeteniendo(false);
     }
   };
 
@@ -247,6 +281,12 @@ export function MigrarAsientos({
         onRevisarDeNuevo={revisar}
         onIrAlPuc={onIrAlPuc}
         onAplicar={aplicar}
+        progreso={progreso}
+        deteniendo={deteniendo}
+        onDetener={() => {
+          detenerRef.current = true;
+          setDeteniendo(true);
+        }}
         onOtroArchivo={volverAEmpezar}
       />
     );
@@ -477,6 +517,9 @@ function Revision({
   onRevisarDeNuevo,
   onIrAlPuc,
   onAplicar,
+  progreso,
+  deteniendo,
+  onDetener,
   onOtroArchivo,
 }: {
   revision: RevisionDeLote;
@@ -485,6 +528,10 @@ function Revision({
   onRevisarDeNuevo: () => void;
   onIrAlPuc?: () => void;
   onAplicar: () => void;
+  /** Lo que va pasando mientras se escriben los asientos. `null` = quieto. */
+  progreso: ProgresoDeAsientos | null;
+  deteniendo: boolean;
+  onDetener: () => void;
   onOtroArchivo: () => void;
 }) {
   const rechazadas = revision.filas.filter((f) => f.estado === "RECHAZADA");
@@ -660,9 +707,25 @@ function Revision({
           hideArrow
           data-testid="aplicar-asientos"
         >
-          Aplicar {revision.listas}{" "}
-          {revision.listas === 1 ? "asiento" : "asientos"}
+          {progreso
+            ? `Aplicando… ${progreso.aplicados} de ${progreso.aplicados + progreso.restantes}`
+            : `Aplicar ${revision.listas} ${revision.listas === 1 ? "asiento" : "asientos"}`}
         </Button>
+        {/* 🔴 La barra (Nico, 2026-09-12): 116.469 filas sin un dato de avance
+            eran media hora de spinner. El total sale del servidor en cada
+            vuelta (aplicados + restantes). */}
+        {progreso ? (
+          <div className="w-full">
+            <BarraDeTrabajo
+              testid="asientos"
+              titulo="Escribiendo los asientos"
+              hechas={progreso.aplicados}
+              total={progreso.aplicados + progreso.restantes}
+              onDetener={onDetener}
+              deteniendo={deteniendo}
+            />
+          </div>
+        ) : null}
         {revision.rechazadas > 0 ? (
           <p className="text-sm text-fg-muted">
             Los {revision.rechazadas} con problemas quedan afuera; puedes

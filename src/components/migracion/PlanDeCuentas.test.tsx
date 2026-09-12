@@ -38,10 +38,24 @@ const { pucMock } = vi.hoisted(() => ({
 
 /*
  * El mapeo contable se monta adentro del paso (2026-09-02); es un componente
- * con su propia carga y sus propios tests. Acá sólo importa que esté.
+ * con su propia carga y sus propios tests. Acá importa que esté Y lo que le
+ * reporta al paso: desde el 2026-09-12 el pie del paso 5 depende de eso —
+ * tener cuentas no lo termina, falta que cada asiento automático tenga la suya.
  */
+const { estadoDelMapeo } = vi.hoisted(() => ({
+  estadoDelMapeo: { actual: null as null | { completo: boolean; faltan: number; total: number } },
+}));
 vi.mock('@/components/contabilidad/mapeo/MapeoContable', () => ({
-  MapeoContable: () => <div data-testid="mapeo-contable-embebido" />,
+  MapeoContable: ({
+    onEstado,
+  }: {
+    onEstado?: (e: { completo: boolean; faltan: number; total: number }) => void;
+  }) => {
+    React.useEffect(() => {
+      if (estadoDelMapeo.actual) onEstado?.(estadoDelMapeo.actual);
+    }, [onEstado]);
+    return <div data-testid="mapeo-contable-embebido" />;
+  },
 }));
 
 vi.mock('@/lib/api/contabilidad.service', async () => {
@@ -132,6 +146,9 @@ beforeEach(() => {
   pucMock.semillaPendientes.mockReset();
   pucMock.sembrar.mockReset();
   pucMock.semillaPendientes.mockResolvedValue(PENDIENTES);
+  // Por defecto el mapeo está completo: es la condición en la que el paso 5
+  // de verdad terminó, y la que el resto de las pruebas da por supuesta.
+  estadoDelMapeo.actual = { completo: true, faltan: 0, total: 9 };
 });
 
 afterEach(() => {
@@ -357,5 +374,66 @@ describe('editar dos cuentas seguidas', () => {
     const [id, cambios] = pucMock.actualizar.mock.calls[0] as [string, { nombre?: string }];
     expect(id).toBe(ARBOL_SEMBRADO[1].hijas[0].hijas[0].hijas[0].id);
     expect(cambios.nombre).toBe('GMF 4x1000');
+  });
+
+  /*
+   * 🔴 EL PIE DICE LO QUE EL MURO VA A DECIDIR.
+   *
+   * Nico, 2026-09-12: «le di continuar al paso 6 y mira lo que aparece y no
+   * pasa al paso 6, se queda ahí». Tenía 2.790 cuentas y 6 asientos
+   * automáticos sin cuenta: el pie miraba sólo las cuentas y ofrecía seguir;
+   * el muro, que además exige el mapeo, contestaba «primero termina Cuentas
+   * del PUC». Un botón que lleva a una puerta cerrada es peor que no tenerlo.
+   */
+  describe('el pie del paso', () => {
+    beforeEach(() => {
+      pucMock.arbol.mockResolvedValue(ARBOL_SEMBRADO);
+    });
+
+    it('con el mapeo incompleto NO ofrece continuar: dice cuántas faltan y dónde', async () => {
+      estadoDelMapeo.actual = { completo: false, faltan: 6, total: 9 };
+
+      await pintar();
+
+      expect(q('puc-continuar')).toBeNull();
+      const falta = q('puc-falta-mapeo');
+      expect(falta?.textContent).toContain('6 asientos automáticos sin cuenta');
+      expect(falta?.textContent).toContain('de 9');
+      // Y la salida es la tabla que los tiene, no un callejón.
+      expect(q('puc-ver-lo-que-falta')).not.toBeNull();
+    });
+
+    it('singulariza cuando falta una sola', async () => {
+      estadoDelMapeo.actual = { completo: false, faltan: 1, total: 9 };
+
+      await pintar();
+
+      expect(q('puc-falta-mapeo')?.textContent).toContain('Falta 1 asiento automático');
+    });
+
+    /*
+     * Mientras el mapeo no contestó no se afirma nada. Es la regla del 11 en
+     * el paso de inmuebles: un «todavía no sé» que colapsa al mismo valor que
+     * «no hay nada» dibuja el botón equivocado y después lo cambia debajo del
+     * dedo.
+     */
+    it('mientras el mapeo no contesta no dibuja ni el botón ni el reclamo', async () => {
+      estadoDelMapeo.actual = null;
+
+      await pintar();
+
+      expect(q('puc-continuar')).toBeNull();
+      expect(q('puc-falta-mapeo')).toBeNull();
+      expect(q('puc-pie')?.textContent).toContain('Mirando cómo va el mapeo');
+    });
+
+    it('con el mapeo completo sí ofrece continuar', async () => {
+      estadoDelMapeo.actual = { completo: true, faltan: 0, total: 9 };
+
+      await pintar();
+
+      expect(q('puc-continuar')).not.toBeNull();
+      expect(q('puc-falta-mapeo')).toBeNull();
+    });
   });
 });

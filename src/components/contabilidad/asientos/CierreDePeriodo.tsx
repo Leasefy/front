@@ -136,7 +136,7 @@ export function CierreDePeriodo({
             {cargando
               ? 'Consultando hasta dónde está cerrada…'
               : fallo
-                ? 'No se pudo consultar hasta dónde está cerrada. Cerrar sigue disponible: el back valida la frontera al recibir la fecha.'
+                ? 'No se pudo consultar hasta dónde está cerrada. Cerrar sigue disponible: la fecha se valida al recibirla, así que no se puede cerrar un periodo que ya estaba cerrado.'
                 : cerradaHasta
                 ? (
                     <>

@@ -22,6 +22,11 @@
  */
 
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import {
+  activarContratosCompleto,
+  type ProgresoDeContratos,
+} from "./activarContratosCompleto";
+import { BarraDeTrabajo } from "@/components/migracion/BarraDeTrabajo";
 import { useDropzone } from "react-dropzone";
 import {
   ArrowRight,
@@ -248,6 +253,17 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
   const [activacion, setActivacion] = useState<ResumenActivacion | null>(null);
   /* «Volver a cruzar con lo ya cargado»: corre por tandas y se muestra. */
   const [reconciliando, setReconciliando] = useState(false);
+  /*
+   * 🔴 Lo que va pasando mientras se activan los contratos, para la barra.
+   * Nico, 2026-09-12: «el activar contratos también puede tomar mucho tiempo,
+   * debemos colocar una progress bar real que muestre porcentaje y tiempo».
+   */
+  const [progresoDeActivacion, setProgresoDeActivacion] =
+    useState<ProgresoDeContratos | null>(null);
+  /* La salida. En un ref porque el bucle la lee entre llamadas; en estado
+     sólo para que el botón diga «Deteniendo…». */
+  const detenerActivacionRef = useRef(false);
+  const [deteniendoActivacion, setDeteniendoActivacion] = useState(false);
   const [progresoReconciliacion, setProgresoReconciliacion] =
     useState<ProgresoDeReconciliacion | null>(null);
   // T-0036 §3.2.C — descartar el lote entero, no fila por fila.
@@ -692,17 +708,53 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
     // `onOcupado` ya no se llama a mano acá: lo cubre el efecto derivado de
     // `hayOperacionEnVuelo` (cargando ⊃ activar), junto con preparar, el job
     // y la consignación — que antes quedaban afuera.
+    setProgresoDeActivacion(null);
+    detenerActivacionRef.current = false;
+    setDeteniendoActivacion(false);
     try {
       // Asociar ANTES de activar (2026-09-04), ahora a la vista y por tandas.
       await cruzarConLoCargado();
-      setActivacion(await contractsApi.migracion.activar(lote, invitar));
+      /*
+       * Por tandas, como inmuebles. El back corta por reloj y dice cuántas
+       * quedan; sin esto, 1.836 contratos eran un solo request de minutos,
+       * sin un dato de avance y a merced del timeout de un proxy.
+       */
+      const r = await activarContratosCompleto(
+        () => contractsApi.migracion.activar(lote, invitar),
+        setProgresoDeActivacion,
+        { debeParar: () => detenerActivacionRef.current },
+      );
+      setActivacion(r.ultimo);
       await refrescar(lote);
+      if (r.detenidoPorPersona) {
+        setError(
+          `Se activaron ${r.activadas} contratos y quedaron ${r.restantes} sin activar. ` +
+            "Nada se pierde ni se duplica: toca «Activar» para seguir donde quedó.",
+        );
+      } else if (r.detenidoSinAvance || r.detenidoPorLimite) {
+        setError(
+          `Se activaron ${r.activadas} contratos y el lote dejó de avanzar: la última ` +
+            "tanda no movió ninguna fila. Revisa lo que quedó pendiente abajo.",
+        );
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "No pudimos activar.");
     } finally {
       setCargando(false);
+      setProgresoDeActivacion(null);
+      setDeteniendoActivacion(false);
     }
   }, [lote, invitar, refrescar, cruzarConLoCargado]);
+
+  /**
+   * Pide parar la activación. No corta a mitad de una tanda: la que está en
+   * vuelo termina y el bucle sale en la siguiente vuelta. Lo que esa tanda
+   * creó queda creado — el back no deshace contratos.
+   */
+  const detenerActivacion = useCallback(() => {
+    detenerActivacionRef.current = true;
+    setDeteniendoActivacion(true);
+  }, []);
 
   /**
    * El sondeo llegó a su techo (10 min) y la persona quedó mirando la
@@ -934,6 +986,9 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
         cargando={cargando}
         error={error}
         onActivar={() => void activar()}
+        onDetenerActivacion={detenerActivacion}
+        progresoDeActivacion={progresoDeActivacion}
+        deteniendoActivacion={deteniendoActivacion}
         reconciliando={reconciliando}
         progresoReconciliacion={progresoReconciliacion}
         onReconciliar={() => void reconciliar()}
@@ -1646,6 +1701,9 @@ function ListaDeTrabajo({
   cargando,
   error,
   onActivar,
+  onDetenerActivacion,
+  progresoDeActivacion,
+  deteniendoActivacion,
   reconciliando,
   progresoReconciliacion,
   onReconciliar,
@@ -1673,6 +1731,11 @@ function ListaDeTrabajo({
   cargando: boolean;
   error: string | null;
   onActivar: () => void;
+  /** Parar la activación después de la tanda en curso. */
+  onDetenerActivacion: () => void;
+  /** Lo que va pasando mientras se activan los contratos. `null` = quieto. */
+  progresoDeActivacion: ProgresoDeContratos | null;
+  deteniendoActivacion: boolean;
   reconciliando: boolean;
   progresoReconciliacion: ProgresoDeReconciliacion | null;
   onReconciliar: () => void;
@@ -2344,8 +2407,32 @@ function ListaDeTrabajo({
                   isLoading={cargando}
                   hideArrow
                 >
-                  Activar {resumen.activables} contratos
+                  {progresoDeActivacion
+                    ? `Activando… ${progresoDeActivacion.hechas} de ${progresoDeActivacion.hechas + progresoDeActivacion.restantes}`
+                    : `Activar ${resumen.activables} contratos`}
                 </Button>
+
+                {/*
+                 * 🔴 La barra, pedida por Nico el 2026-09-12: «el activar
+                 * contratos también puede tomar mucho tiempo, debemos colocar
+                 * una progress bar real que muestre porcentaje y tiempo».
+                 *
+                 * El total sale del SERVIDOR en cada vuelta (hechas +
+                 * restantes), no de una foto del arranque: entre tandas
+                 * alguien puede resolver una fila y cambiar el denominador.
+                 */}
+                {progresoDeActivacion ? (
+                  <BarraDeTrabajo
+                    testid="activacion-contratos"
+                    titulo="Creando los contratos"
+                    hechas={progresoDeActivacion.hechas}
+                    total={
+                      progresoDeActivacion.hechas + progresoDeActivacion.restantes
+                    }
+                    onDetener={onDetenerActivacion}
+                    deteniendo={deteniendoActivacion}
+                  />
+                ) : null}
               </>
             ) : null}
           </>

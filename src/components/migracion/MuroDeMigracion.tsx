@@ -145,6 +145,28 @@ export const CADA_CUANTO_SE_REFRESCA_MS = 60_000;
 // La compuerta: envuelve el panel entero y decide.
 // ══════════════════════════════════════════════════════════════════════════
 
+/**
+ * Pasos que NO llevan la píldora de «Queda por hacer» arriba.
+ *
+ * 🔴 La píldora existe desde el 2026-09-02, cuando Nico se quedó en el paso 5
+ * sin saber por qué no avanzaba: el back ya decía qué faltaba y la pantalla lo
+ * callaba. Sigue siendo necesaria donde el paso no se explica solo.
+ *
+ * `propiedades` dejó de necesitarla el 2026-09-11: el propio paso dibuja un
+ * bloque que dice cuántos inmuebles entraron, qué queda pendiente, QUÉ lo
+ * frena y con qué botón se resuelve. La píldora repetía los mismos cuatro
+ * números arriba a la izquierda, sin acción y sin contexto — «Queda por
+ * hacer: 3270 preparados sin activar · 4700 con datos por corregir · en 5
+ * cargas sin terminar · 2824 ya cargados»— y Nico pidió sacarla dos veces.
+ * Decir lo mismo en dos lugares, uno de ellos sin salida, no informa: satura.
+ *
+ * `contratos` entra el 2026-09-12 por lo mismo, y desde el día en que el paso
+ * dejó de mentir: su pantalla ya dice «Quedaron N sin activar» con el enlace a
+ * verlas, la barra de avance y el botón que las activa. La píldora repetiría
+ * ese número arriba a la izquierda, otra vez sin acción.
+ */
+const SE_EXPLICAN_SOLOS: IdDePasoDeMigracion[] = ["propiedades", "contratos"];
+
 export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   const [estado, setEstado] = useState<EstadoDeMigracion | null>(null);
   // Lo que el back contestó, bloquee o no: alimenta el recordatorio del
@@ -1148,13 +1170,23 @@ function PasoEnFoco({
             <Check className="h-3.5 w-3.5" weight="bold" />
             {paso.detalle ?? t("migracion.muro.hecho")}
           </p>
-        ) : paso.estado === "pendiente" && paso.detalle ? (
+        ) : paso.estado === "pendiente" &&
+          paso.detalle &&
+          !SE_EXPLICAN_SOLOS.includes(paso.id) ? (
           /*
-           * El back ya dice qué le falta al paso («99 cuentas · faltan cuentas
-           * para 3 asientos automáticos»). Antes ese detalle sólo se pintaba
-           * cuando el paso estaba hecho: pendiente, la persona veía «Ahora» y
-           * nada más — Nico se quedó en el paso 5 sin saber por qué no
-           * avanzaba (2026-09-02 12:42).
+           * El back ya dice qué le falta al paso. Antes este detalle sólo se
+           * pintaba cuando el paso estaba hecho: pendiente, la persona veía
+           * «Ahora» y nada más — Nico se quedó en el paso 5 sin saber por qué
+           * no avanzaba (2026-09-02 12:42).
+           *
+           * 🔴 El rótulo dice «Queda por hacer», no «Falta». Nico,
+           * 2026-09-11, en la pantalla de subir un archivo nuevo: «eso que
+           * dice a la izquierda es mentira, no hay nada». Leía
+           * «Falta: 2145 inmuebles · 3270 preparados sin activar…», y 2.145 es
+           * lo que la agencia YA TIENE. Dos arreglos, uno de cada lado: el
+           * back dejó de encabezar el pendiente con un conteo de logro (ahora
+           * va al final, «2145 ya cargados»), y este rótulo dejó de afirmar
+           * que todo lo que sigue es un faltante.
            */
           <p
             className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1.5 font-mono text-xs tabular-nums text-warning"
@@ -1277,6 +1309,17 @@ function ContenidoDelPaso({
         <ImportWizard
           key={vueltaDeInmuebles}
           onSalir={() => setVueltaDeInmuebles((n) => n + 1)}
+          /*
+           * 🔴 Cómo pasar a Contratos desde adentro del paso.
+           *
+           * Nico, 2026-09-11: «no hay nada de cómo continuar, cómo pasar de
+           * ahí a contratos, no se muestra un cta». El pie del muro sólo
+           * ofrece «Seguir con…» cuando el paso está LISTO, y el paso de
+           * inmuebles se queda «pendiente» mientras haya filas sin activar en
+           * CUALQUIER carga — incluidas las viejas que la persona abandonó.
+           * Terminado su lote, se quedaba mirando una pantalla sin salida.
+           */
+          onContinuar={irAOtro("contratos")}
           onOcupado={onOcupado}
           congelado={congelado}
         />

@@ -11,8 +11,41 @@
 
 import type { ResumenActivacionInmuebles, FilaOmitida } from '@/lib/api/inmuebles-importacion.service';
 
+/**
+ * Lo que va pasando mientras corre el loop, llamada por llamada.
+ *
+ * 🔴 Existe porque el 2026-09-11 Nico miró «Activando…» girando durante
+ * cinco minutos y preguntó si se había dañado. No se había dañado: iban
+ * 1.809 de 2.824 a 40 por minuto. Pero un botón que sólo gira no puede
+ * decirlo, y una espera de 40 minutos sin un número es indistinguible de
+ * un cuelgue.
+ */
+export interface ProgresoDeActivacion {
+  /** Inmuebles creados hasta ahora, sumando las llamadas. */
+  activados: number;
+  /** Filas que ya tenían su inmueble y se re-apuntaron (cuentan como hechas). */
+  reusados: number;
+  /** Filas que en el momento de crear resultaron con algo pendiente. */
+  omitidas: number;
+  /** Cuántas siguen LISTO en el lote, según la última llamada. */
+  restantes: number;
+  llamadas: number;
+}
+
 export interface ResultadoActivacionCompleta {
   activados: number;
+  /**
+   * 🔴 Filas cuyo inmueble YA EXISTÍA (mismo «Código») y se re-apuntaron en
+   * vez de duplicarlo.
+   *
+   * Cuenta aparte de `activados`, y tiene que llegar hasta la pantalla. Nico,
+   * 2026-09-11: «¿por qué dices que se importaron 679 propiedades si le subí
+   * 2800 y algo?». Porque 2.145 de esas 2.824 filas ya tenían su inmueble —de
+   * la carga anterior— y sólo 679 eran nuevas. Las dos cosas son ciertas y
+   * decir sólo la primera hace ver una importación de 2.824 como un fracaso
+   * de 679.
+   */
+  reusados: number;
   omitidas: FilaOmitida[];
   /** How many `activar()` calls this took — surfaced for diagnostics, never
    * used to decide correctness (that's `restantes === 0` alone). */
@@ -28,6 +61,12 @@ export interface ResultadoActivacionCompleta {
    * la siguiente llamada haría exactamente lo mismo. Se corta y se dice.
    */
   detenidoSinAvance: boolean;
+  /**
+   * La persona tocó «Detener» (o se fue del paso): se paró DESPUÉS de la
+   * llamada en curso. Lo que esa llamada activó ya está activado — el back no
+   * deshace tandas— y volver a tocar «Activar» sigue donde quedó.
+   */
+  detenidoPorPersona: boolean;
 }
 
 /**
@@ -71,8 +110,11 @@ export class ActivacionInterrumpida extends Error {
 export async function activarLoteCompleto(
   lote: string,
   activar: (lote: string) => Promise<ResumenActivacionInmuebles>,
+  onProgreso?: (progreso: ProgresoDeActivacion) => void,
+  opciones: { debeParar?: () => boolean } = {},
 ): Promise<ResultadoActivacionCompleta> {
   let activados = 0;
+  let reusados = 0;
   const omitidas: FilaOmitida[] = [];
   let llamadas = 0;
 
@@ -90,15 +132,39 @@ export async function activarLoteCompleto(
     }
     llamadas += 1;
     activados += r.activados;
+    reusados += r.reusados ?? 0;
     omitidas.push(...r.omitidas);
+    onProgreso?.({
+      activados,
+      reusados,
+      omitidas: omitidas.length,
+      restantes: r.restantes,
+      llamadas,
+    });
 
     if (r.restantes <= 0) {
       return {
         activados,
+        reusados,
         omitidas,
         llamadas,
         detenidoPorLimite: false,
         detenidoSinAvance: false,
+        detenidoPorPersona: false,
+      };
+    }
+
+    // La persona pidió parar: se respeta después de la llamada en curso (una
+    // tanda no se deshace, y lo que activó ya está activado).
+    if (opciones.debeParar?.() === true) {
+      return {
+        activados,
+        reusados,
+        omitidas,
+        llamadas,
+        detenidoPorLimite: false,
+        detenidoSinAvance: false,
+        detenidoPorPersona: true,
       };
     }
 
@@ -115,20 +181,24 @@ export async function activarLoteCompleto(
     if (!avanzo) {
       return {
         activados,
+        reusados,
         omitidas,
         llamadas,
         detenidoPorLimite: false,
         detenidoSinAvance: true,
+        detenidoPorPersona: false,
       };
     }
 
     if (llamadas >= MAX_LLAMADAS) {
       return {
         activados,
+        reusados,
         omitidas,
         llamadas,
         detenidoPorLimite: true,
         detenidoSinAvance: false,
+        detenidoPorPersona: false,
       };
     }
   }

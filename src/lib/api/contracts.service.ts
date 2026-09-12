@@ -1260,7 +1260,17 @@ export interface ResultadoReconciliacion {
 }
 
 export interface ResumenActivacion {
+  /** Filas que ESTA llamada procesó. Con el corte por reloj ya no es «todas». */
   intentadas: number;
+  /**
+   * Cuántas quedaron sin procesar porque se acabó el presupuesto de la
+   * llamada. `0` = la vuelta terminó.
+   *
+   * Opcional a propósito: un back anterior al 2026-09-12 no lo manda, y
+   * ausente ⇒ 0 ⇒ una sola vuelta, que es el comportamiento de siempre. Nunca
+   * se asume que queda trabajo por un campo que no vino.
+   */
+  restantes?: number;
   activadas: number;
   fallidas: number;
   invitados: number;

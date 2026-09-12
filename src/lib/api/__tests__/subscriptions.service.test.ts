@@ -7,7 +7,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { subscriptionsApi } from '../subscriptions.service';
+import { subscriptionsApi, mapBootstrapSubscription } from '../subscriptions.service';
+import type { BackendSubscriptionMeResponse } from '../subscriptions.types';
 
 function mockFetchOnce(body: unknown, status = 200) {
   return vi.fn().mockResolvedValueOnce({
@@ -57,5 +58,20 @@ describe('subscriptionsApi.getMySubscription — tier slug is preserved', () => 
     const res = await subscriptionsApi.getMySubscription();
 
     expect(res.planId).toBe('starter');
+  });
+});
+
+describe('mapBootstrapSubscription — T-0082 WU-2b, reused by the login bootstrap seed', () => {
+  it('maps the same envelope shape getMySubscription maps, byte-identical', () => {
+    const result = mapBootstrapSubscription(meEnvelope('PRO-PLUS') as BackendSubscriptionMeResponse);
+    expect(result?.planId).toBe('pro-plus');
+  });
+
+  it('returns null for a null response — never invents FREE_SUBSCRIPTION', () => {
+    expect(mapBootstrapSubscription(null)).toBeNull();
+  });
+
+  it('returns null when the envelope has no subscription row (malformed/absent)', () => {
+    expect(mapBootstrapSubscription({ subscription: null })).toBeNull();
   });
 });

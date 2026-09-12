@@ -13,7 +13,13 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ApiError } from '@/lib/api/client'
-import { parseAgencyResponse, describeAgencyFetchFailure, fetchAgencyProfile } from '../agency-fetch'
+import {
+  parseAgencyResponse,
+  describeAgencyFetchFailure,
+  fetchAgencyProfile,
+  agencyResultFromBootstrap,
+} from '../agency-fetch'
+import type { BootstrapAgency } from '@/lib/api/bootstrap.service'
 
 function mockFetchOk(body: unknown) {
   return vi.fn().mockResolvedValueOnce({
@@ -145,5 +151,47 @@ describe('fetchAgencyProfile', () => {
       confirmedNoMembership: false, transientFailure: true,
     })
     expect(warnSpy).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('agencyResultFromBootstrap — T-0082 WU-2b, contract.md §3.2', () => {
+  it('agency present → success, memberRole/memberStatus/permissions split off like parseAgencyResponse', () => {
+    const agency: BootstrapAgency = {
+      id: 'agency-1',
+      name: 'Test',
+      memberRole: 'ADMIN',
+      memberStatus: 'ACTIVE',
+      permissions: { memberId: 'm1', role: 'ADMIN', isAdmin: true, permissions: null, effectivePermissions: 'FULL_ACCESS', usingDefaults: false },
+    }
+    const result = agencyResultFromBootstrap(agency, [])
+    expect(result).toEqual({
+      agency: { id: 'agency-1', name: 'Test' },
+      role: 'ADMIN',
+      memberStatus: 'ACTIVE',
+      confirmedNoMembership: false,
+      transientFailure: false,
+    })
+  })
+
+  it('agency: null, errors: [] → CONFIRMED no membership (resolved, no re-probe)', () => {
+    const result = agencyResultFromBootstrap(null, [])
+    expect(result).toEqual({
+      agency: null, role: null, memberStatus: null,
+      confirmedNoMembership: true, transientFailure: false,
+    })
+  })
+
+  it("agency: null, errors: ['agency_unavailable'] → TRANSIENT (arms the standalone self-heal)", () => {
+    const result = agencyResultFromBootstrap(null, ['agency_unavailable'])
+    expect(result).toEqual({
+      agency: null, role: null, memberStatus: null,
+      confirmedNoMembership: false, transientFailure: true,
+    })
+  })
+
+  it('an unrelated error code alongside a null agency does NOT count as agency_unavailable', () => {
+    const result = agencyResultFromBootstrap(null, ['subscription_unavailable'])
+    expect(result.confirmedNoMembership).toBe(true)
+    expect(result.transientFailure).toBe(false)
   })
 })

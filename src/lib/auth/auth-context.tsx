@@ -3,10 +3,15 @@
 import { createContext, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { User, AuthContextType, Agency, AgencyMemberRole, UserRole } from './types'
 import { toFrontendRole } from './types'
-import { fetchAgencyProfile, type AgencyFetchResult } from './agency-fetch'
+import { fetchAgencyProfile, agencyResultFromBootstrap, type AgencyFetchResult } from './agency-fetch'
 import { toast } from 'sonner'
 import { getSupabase } from '@/lib/supabase/client'
 import { apiClient, ApiError, getAccessToken, setAccessToken, setUnauthorizedHandler, setTokenRefresher, clearInFlightGets } from '@/lib/api/client'
+import { getBootstrap } from '@/lib/api/bootstrap.service'
+import { mapBootstrapSubscription } from '@/lib/api/subscriptions.service'
+import type { AgencySubscriptionState } from '@/lib/api/agency-subscription.types'
+import type { BackendSubscriptionMeResponse } from '@/lib/api/subscriptions.types'
+import { setBootstrapSeed, clearBootstrapSeed } from './bootstrap-seed'
 import {
   terminarSesion,
   terminarSesionSiMurio,
@@ -374,6 +379,93 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
+  /**
+   * T-0082 WU-2b: replaces `fetchUser` + the fire-and-forget agency probe for
+   * the login bootstrap — INITIAL_SESSION, SIGNED_IN, `refreshUser()` — with
+   * ONE call to `GET /users/me/bootstrap` (contract.md §3.2, Surface A).
+   * `TOKEN_REFRESHED` deliberately keeps calling `fetchUser` +
+   * `probeAgencyMembership` unchanged — it is a token rotation for an
+   * existing session, not a new bootstrap, and out of this unit's scope
+   * (wu-2b-front-brief.md §4).
+   *
+   * Same error contract as `fetchUser`, because the bootstrap's `user` row
+   * says so verbatim (contract.md §3.2): 401 user-not-found → onboarding, 409
+   * duplicate identity → sign out + sessionStorage message (never the
+   * degraded session fallback, which would loop), any other 401 → null,
+   * 5xx/network → the degraded Supabase-session fallback.
+   *
+   * `agencyResult: null` in the return means bootstrap never produced a
+   * membership verdict at all (any of the failure branches below, including
+   * the 5xx/network fallback) — the caller falls back to the standalone
+   * `probeAgencyMembership`, exactly like today's unconditional
+   * fire-and-forget probe. A non-null `agencyResult` means the bootstrap DID
+   * resolve — success, confirmed no-membership, or `agency_unavailable` — and
+   * the caller applies it directly via `applyAgencyFetchResult`, with zero
+   * extra network calls.
+   */
+  const fetchBootstrap = useCallback(async (
+    session?: Session | null,
+  ): Promise<{ user: User | null; needsOnboarding: boolean; agencyResult: AgencyFetchResult | null }> => {
+    const token = session?.access_token
+    try {
+      const data = await getBootstrap(token)
+      // Same PanelPrefsContext seed `fetchUser` already did for /users/me —
+      // see the comment there. The bootstrap's `user.preferences` is the
+      // exact same field, just nested one level deeper.
+      if (typeof window !== 'undefined') {
+        const prefs = data.user.preferences as Record<string, unknown> | undefined | null
+        const dismissed = prefs?.panel_tour_dismissed_v1 === true
+        window.dispatchEvent(
+          new CustomEvent('leasefy:preferences:loaded', {
+            detail: { panel_tour_dismissed_v1: dismissed },
+          }),
+        )
+      }
+      // Seed the hooks/contexts that would otherwise re-fetch this on mount.
+      // Only ever seeds a field the bootstrap actually resolved — a null
+      // section here means "do the standalone fallback", never a seeded
+      // null (contract.md §3.2's degradation column; see bootstrap-seed.ts).
+      setBootstrapSeed({
+        permissions: data.agency?.permissions ?? null,
+        agencySubscription: data.role === 'AGENT' ? (data.subscription as AgencySubscriptionState | null) : null,
+        mySubscription: data.role !== 'AGENT'
+          ? mapBootstrapSubscription(data.subscription as BackendSubscriptionMeResponse | null)
+          : null,
+      })
+      return {
+        user: mapBackendUser({ ...data.user, role: data.role }, session?.user?.email_confirmed_at ?? undefined),
+        needsOnboarding: false,
+        agencyResult: agencyResultFromBootstrap(data.agency, data.errors),
+      }
+    } catch (err) {
+      if (isUserNotFoundError(err)) {
+        return { user: null, needsOnboarding: true, agencyResult: null }
+      }
+      if (err instanceof ApiError && err.status === 409) {
+        const message =
+          err.message ||
+          'Ya existe una cuenta registrada con este correo. Inicia sesión con tu cuenta original.'
+        if (typeof window !== 'undefined') {
+          try {
+            window.sessionStorage.setItem(AUTH_BOOTSTRAP_ERROR_KEY, message)
+          } catch {}
+        }
+        try {
+          getSupabase()?.auth.signOut({ scope: 'local' }).catch(() => {})
+        } catch {}
+        return { user: null, needsOnboarding: false, agencyResult: null }
+      }
+      if (err instanceof ApiError && err.status === 401) {
+        return { user: null, needsOnboarding: false, agencyResult: null }
+      }
+      if (session) {
+        return { user: mapSupabaseUser(session), needsOnboarding: false, agencyResult: null }
+      }
+      console.error('[Auth] Error fetching bootstrap:', err)
+      return { user: null, needsOnboarding: false, agencyResult: null }
+    }
+  }, [])
+
   /** Set the agency and role in context (called after registration or when user loads) */
   const setAgency = useCallback((agencyData: Agency | null, role: AgencyMemberRole | null) => {
     setAgencyState(agencyData)
@@ -518,15 +610,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [probeAgencyMembership, scheduleAgencySelfHeal])
 
-  /** Refresh user data from backend (e.g. after onboarding) */
+  /** Refresh user data from backend (e.g. after onboarding).
+   *  T-0082 WU-2b: uses the SAME bootstrap `fetchBootstrap` (one call) the
+   *  login path uses, preserving this function's existing semantics — still
+   *  awaited (unlike the auth-event listener's fire-and-forget probe), still
+   *  gated on the session generation so a stale refresh from an ended session
+   *  can never clobber the session that replaced it. */
   const refreshUser = useCallback(async () => {
     // Use the already-stored token to avoid an extra getSession() lock acquisition.
-    // If the stored token is still valid the backend will respond; if not, fetchUser
-    // handles the 401 gracefully.
+    // If the stored token is still valid the backend will respond; if not,
+    // fetchBootstrap handles the 401 gracefully (same contract as fetchUser).
     const miGeneracion = sessionGenerationRef.current
-    const { user: userData, needsOnboarding: needsOnb } = await fetchUser()
+    const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap()
     // The session that asked for this refresh may have ended (sign-out, a
-    // new sign-in) while `fetchUser` was in flight — never let a stale
+    // new sign-in) while the bootstrap was in flight — never let a stale
     // refresh write over whatever session is current now.
     if (sessionGenerationRef.current !== miGeneracion) return
     setUser(userData)
@@ -534,9 +631,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Probe agency membership for EVERY authenticated user (personal-role
     // coexistence): a TENANT/LANDLORD may hold an agency membership.
     if (userData) {
-      await probeAgencyMembership()
+      if (agencyResult) {
+        // The bootstrap already resolved membership — apply directly, no
+        // extra network call.
+        applyAgencyFetchResult(agencyResult)
+        setAgencyMembershipChecked(true)
+      } else {
+        // The bootstrap failed wholesale (network/5xx) before it could
+        // produce a verdict — fall back to the standalone probe, exactly
+        // like this function did before WU-2b.
+        await probeAgencyMembership()
+      }
     }
-  }, [fetchUser, probeAgencyMembership])
+  }, [fetchBootstrap, probeAgencyMembership, applyAgencyFetchResult])
 
   /** Check MFA assurance level and update mfaRequired state.
    *  `miGeneracion`, when passed, gates the write: a deferred MFA check
@@ -728,18 +835,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
             // Claim the active session BEFORE any other authenticated request.
             await claimActiveSession(session.access_token, miGeneracion)
             if (sessionGenerationRef.current !== miGeneracion) return
-            const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
+            // T-0082 WU-2b: ONE call (GET /users/me/bootstrap) replaces
+            // fetchUser + the separate agency probe below.
+            const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap(session)
             if (sessionGenerationRef.current !== miGeneracion) return
             if (userData) userData.hasPassword = getHasPassword(session)
             setUser(userData)
             setNeedsOnboarding(needsOnb)
             setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
-            // Probe agency membership for every authenticated user (coexistence).
-            // Fire-and-forget: the global loader must NOT wait on
-            // /inmobiliaria/agency latency (only the agency-route gate waits, on
-            // agencyMembershipChecked). Matches SIGNED_IN's ordering.
+            // Apply the bootstrap's own membership verdict — no second
+            // request. Fire-and-forget ONLY as a fallback when the bootstrap
+            // failed wholesale (agencyResult null): the global loader must
+            // NOT wait on /inmobiliaria/agency latency (only the agency-route
+            // gate waits, on agencyMembershipChecked). Matches SIGNED_IN's
+            // ordering.
             if (userData) {
-              void probeAgencyMembership(session.access_token)
+              if (agencyResult) {
+                applyAgencyFetchResult(agencyResult)
+                setAgencyMembershipChecked(true)
+              } else {
+                void probeAgencyMembership(session.access_token)
+              }
             }
             // El loader se suelta recién con el MFA resuelto (como siempre se
             // quiso), pero fuera del callback — ver `alSoltarElLock`.
@@ -765,17 +881,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // Claim the active session BEFORE any other authenticated request.
           await claimActiveSession(session.access_token, miGeneracion)
           if (sessionGenerationRef.current !== miGeneracion) return
-          const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
+          // T-0082 WU-2b: ONE call (GET /users/me/bootstrap) replaces
+          // fetchUser + the separate agency probe below.
+          const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap(session)
           if (sessionGenerationRef.current !== miGeneracion) return
           if (userData) userData.hasPassword = getHasPassword(session)
           setUser(userData)
           setNeedsOnboarding(needsOnb)
           setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
           setIsLoading(false)
-          // Probe agency membership for every authenticated user (coexistence).
-          // Fire-and-forget (isLoading already released above).
+          // Apply the bootstrap's own membership verdict — no second request.
+          // Fire-and-forget ONLY as a fallback when the bootstrap failed
+          // wholesale (agencyResult null); isLoading already released above.
           if (userData) {
-            void probeAgencyMembership(session.access_token)
+            if (agencyResult) {
+              applyAgencyFetchResult(agencyResult)
+              setAgencyMembershipChecked(true)
+            } else {
+              void probeAgencyMembership(session.access_token)
+            }
           }
           // SIGNED_IN también puede venir de adentro del lock (`setSession` en
           // /auth/enlace, el canje del código): el MFA se chequea al soltarlo.
@@ -824,9 +948,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // into the NEXT session's own probe if left set. Clearing both refs
           // here — before the next SIGNED_IN can ever run — closes that gap
           // for the ref-level dedup and for `apiClient.get`'s implicit
-          // (no-token) GETs (`clearInFlightGets`, see `client.ts`).
+          // (no-token) GETs (`clearInFlightGets`, see `client.ts`). Same
+          // reasoning extends to the bootstrap seed (T-0082 WU-2b): a seed
+          // set for the session that just ended must never be handed to the
+          // next sign-in's first mount of PermissionsContext/
+          // useAgencySubscription/useMySubscription in the same tab.
           agencyProbeInFlightRef.current = null
           clearInFlightGets()
+          clearBootstrapSeed()
           setAccessToken(null)
           setUser(null)
           setAgencyState(null)
@@ -881,7 +1010,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       clearTimeout(safetyTimeout)
       subscription.unsubscribe()
     }
-  }, [fetchUser, checkMfaLevel, probeAgencyMembership, claimActiveSession])
+  }, [fetchUser, fetchBootstrap, checkMfaLevel, probeAgencyMembership, applyAgencyFetchResult, claimActiveSession])
 
   /** Sign in with Google OAuth via Supabase */
   const signInWithGoogle = useCallback(async () => {
@@ -1085,6 +1214,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // sign-in in the same tab.
     agencyProbeInFlightRef.current = null
     clearInFlightGets()
+    clearBootstrapSeed()
 
     setAccessToken(null)
     setUser(null)

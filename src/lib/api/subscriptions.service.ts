@@ -70,6 +70,35 @@ function mapSubscription(backend: BackendSubscription): DisplaySubscription {
   };
 }
 
+/**
+ * Maps a `GET /subscriptions/me`-shaped envelope to `DisplaySubscription`,
+ * WITHOUT the free-tier fallback `getMySubscription` applies for its own
+ * direct-fetch callers. Extracted so the login bootstrap (T-0082 WU-2b,
+ * contract.md §3.2 — "byte-identical to the existing endpoint's 200 body")
+ * can map the SAME envelope shape without a second, drifting copy of this
+ * logic (the exact back↔agent hand-duplication trap this workspace has
+ * already paid for once, `ARCHITECTURE.md` §5 — same failure shape, kept out
+ * of this file by reusing one mapper).
+ *
+ * Returns `null` when there's nothing to map (missing/malformed row) — the
+ * bootstrap seed setter (`bootstrap-seed.ts`) treats a `null` return as "seed
+ * nothing," so `useMySubscription` falls back to its own live
+ * `GET /subscriptions/me` call, per the contract's degradation rule. Never
+ * invents `FREE_SUBSCRIPTION` here — that fallback belongs to
+ * `getMySubscription`'s OWN 404 case, not to a bootstrap section that was
+ * simply absent (which may mean "real failure", not "no subscription").
+ */
+export function mapBootstrapSubscription(
+  response: BackendSubscriptionMeResponse | BackendSubscription | null,
+): DisplaySubscription | null {
+  if (!response) return null;
+  const sub = 'subscription' in response && response.subscription
+    ? response.subscription
+    : (response as BackendSubscription);
+  if (!sub || !sub.id) return null;
+  return mapSubscription(sub);
+}
+
 function mapCouponValidation(backend: BackendCouponValidationResult): CouponValidationResult {
   if (!backend.valid) {
     return {

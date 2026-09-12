@@ -1,4 +1,4 @@
-import { compartirGet, invalidar, recursoDe } from './refresco-de-datos'
+import { compartirGet, invalidar, recursoDe, descartarEnVuelo } from './refresco-de-datos'
 import { sesionTerminada } from '@/lib/auth/session-terminal'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'
@@ -458,6 +458,18 @@ async function requestBlob(path: string, token?: string, yaSeReintento = false):
   return res.blob()
 }
 
+/**
+ * Clave de `compartirGet` para un GET. Un token explícito entra en la clave
+ * (separado con un byte NUL, que no puede aparecer en una ruta ni en un JWT)
+ * para que dos identidades distintas jamás compartan la misma promesa — ver
+ * el comentario de `apiClient.get` abajo. Sin token, la clave es el `path` a
+ * secas, como siempre (llamado implícito: lee `_accessToken` al momento de
+ * la petición, una identidad a la vez por pestaña).
+ */
+function claveDeGet(path: string, token?: string): string {
+  return token ? `${path}\0${token}` : path
+}
+
 export const apiClient = {
   /**
    * Los GET idénticos que estén EN VUELO comparten una sola petición.
@@ -466,22 +478,55 @@ export const apiClient = {
    * diez peticiones que arrancan en el mismo milisegundo y se hacen esperar
    * entre ellas. Ahora sale una.
    *
-   * Un `token` explícito TAMBIÉN comparte, por `path` únicamente (el token no
-   * entra en la clave). El único uso real de esta forma es el bootstrap de
-   * login (`fetchUser` y `fetchAgencyProfile` en auth-context.tsx), y en ese
-   * momento el token explícito ES el de la sesión actual — el mismo valor que
-   * un llamado sin token leería de `_accessToken` un instante después. El
-   * token es por-sesión, no por-llamado: dos GET concurrentes al mismo path
-   * durante el mismo login nunca representan identidades distintas, así que
-   * compartirlos es seguro. (Antes esta rama SIEMPRE salía por la red aparte
-   * — F2/F1 del audit T-0082: era la causa de que `/users/me` y
-   * `/inmobiliaria/agency` salieran duplicados en cada login.)
+   * Un `token` explícito TAMBIÉN comparte — pero la clave incluye el token
+   * (`claveDeGet` abajo), nunca sólo el `path`. Mezclar dos identidades en una
+   * respuesta es el peor error posible acá: dos sesiones DISTINTAS pidiendo el
+   * mismo `path` con tokens distintos NUNCA comparten petición ni respuesta,
+   * ni siquiera si se solapan en el tiempo.
+   *
+   * Esto importa en un caso real, no hipotético: cerrar sesión e iniciar
+   * sesión con OTRA cuenta en la MISMA pestaña, sin recargar la página
+   * (`AuthForm.tsx`, el estado `quiereOtraCuenta`). Si el `GET /users/me` o
+   * `GET /inmobiliaria/agency` de la cuenta A todavía viaja cuando la cuenta B
+   * inicia sesión, la B tiene que salir por su cuenta — jamás heredar la
+   * respuesta de A (T-0082 WU-1 remediation, verify-1.md §2: el bug real que
+   * esto reemplaza compartía por `path` a secas, con o sin token).
+   *
+   * Dentro de UNA MISMA sesión, sí es seguro compartir un `token` explícito
+   * con otro llamado al mismo `path` con el MISMO token (el caso real:
+   * `fetchUser`/`fetchAgencyProfile` en el bootstrap de login) — el token es
+   * por-sesión, no por-llamado, así que dos llamados con el mismo token son,
+   * por definición, la misma identidad.
+   *
+   * Esta clave sólo cubre las llamadas con token EXPLÍCITO. Las implícitas
+   * (sin token, leen `_accessToken` al momento de la petición) siguen
+   * compartiendo por `path` a secas — por eso `clearInFlightGets()` (abajo)
+   * se llama SIEMPRE al cerrar sesión: una implícita que quedó en vuelo para
+   * la sesión anterior no puede quedar disponible para la que entra después.
    */
   get: <T>(path: string, token?: string) =>
-    compartirGet(path, () => request<T>('GET', path, undefined, token)),
+    compartirGet(claveDeGet(path, token), () => request<T>('GET', path, undefined, token)),
   post: <T>(path: string, body?: unknown, token?: string) => request<T>('POST', path, body, token),
   put: <T>(path: string, body?: unknown, token?: string) => request<T>('PUT', path, body, token),
   patch: <T>(path: string, body?: unknown, token?: string) => request<T>('PATCH', path, body, token),
   delete: <T>(path: string, token?: string) => request<T>('DELETE', path, undefined, token),
   getBlob: (path: string) => requestBlob(path),
 }
+
+/**
+ * Clear every shared in-flight GET (`enVuelo` in `refresco-de-datos.ts`).
+ *
+ * Called by `AuthProvider` on `SIGNED_OUT` (T-0082 WU-1 remediation,
+ * verify-1.md §2). `claveDeGet` above already keeps two DIFFERENT explicit
+ * tokens from ever sharing a promise, but an IMPLICIT GET (no token argument
+ * — `refreshUser()`/`refreshAgency()` call `apiClient.get` this way, reading
+ * `_accessToken` at request time) is keyed by `path` alone, with no identity
+ * in the key at all. Mixing two identities in one response is the worst
+ * possible error here: without this call, a `/users/me` still in flight for
+ * the session that just signed out could resolve into the very next
+ * `apiClient.get('/users/me')` the NEW session makes in the same tab
+ * (`AuthForm.tsx`'s `quiereOtraCuenta` — switch accounts without a reload).
+ * Clearing on every `SIGNED_OUT` closes that gap unconditionally, whether or
+ * not the next session's first implicit GET happens to race the old one.
+ */
+export const clearInFlightGets = descartarEnVuelo

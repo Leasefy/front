@@ -6,7 +6,7 @@ import { toFrontendRole } from './types'
 import { fetchAgencyProfile, type AgencyFetchResult } from './agency-fetch'
 import { toast } from 'sonner'
 import { getSupabase } from '@/lib/supabase/client'
-import { apiClient, ApiError, getAccessToken, setAccessToken, setUnauthorizedHandler, setTokenRefresher } from '@/lib/api/client'
+import { apiClient, ApiError, getAccessToken, setAccessToken, setUnauthorizedHandler, setTokenRefresher, clearInFlightGets } from '@/lib/api/client'
 import {
   terminarSesion,
   terminarSesionSiMurio,
@@ -721,6 +721,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (!cierreVoluntarioRef.current && huboSesionRef.current) {
             terminarSesion('expirada')
           }
+          // Mixing two identities in one response is the worst possible error
+          // here (T-0082 WU-1 remediation, verify-1.md §2): `agencyProbeInFlightRef`
+          // shares ONE in-flight `/inmobiliaria/agency` promise across every
+          // caller with no token/identity check at all, so a probe still
+          // pending for the session that just ended could resolve straight
+          // into the NEXT session's own probe if left set. Clearing both refs
+          // here — before the next SIGNED_IN can ever run — closes that gap
+          // for the ref-level dedup and for `apiClient.get`'s implicit
+          // (no-token) GETs (`clearInFlightGets`, see `client.ts`).
+          agencyProbeInFlightRef.current = null
+          clearInFlightGets()
           setAccessToken(null)
           setUser(null)
           setAgencyState(null)
@@ -951,6 +962,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Vive en session-terminal.ts porque el cierre por sesión vencida necesita
     // exactamente lo mismo: una sola definición de "qué es limpiar la sesión".
     purgarSesionLocal()
+
+    // Same reason as the `SIGNED_OUT` branch above in the auth-event listener
+    // (T-0082 WU-1 remediation, verify-1.md §2): mixing two identities in one
+    // response is the worst possible error here. This user-initiated path is
+    // the one `AuthForm.tsx`'s "cambiar de cuenta" actually exercises before
+    // the next sign-in can start, and it must not wait on the fire-and-forget
+    // `supabase.auth.signOut()` below (or its own async SIGNED_OUT event) to
+    // clear these — that could still lose the race against an immediate
+    // sign-in in the same tab.
+    agencyProbeInFlightRef.current = null
+    clearInFlightGets()
 
     setAccessToken(null)
     setUser(null)

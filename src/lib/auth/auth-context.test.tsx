@@ -70,6 +70,7 @@ vi.mock('@/lib/api/client', () => {
     setAccessToken: vi.fn(),
     setUnauthorizedHandler: vi.fn(),
     setTokenRefresher: vi.fn(),
+    clearInFlightGets: vi.fn(),
   }
 })
 

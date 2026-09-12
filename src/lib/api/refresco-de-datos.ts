@@ -102,6 +102,26 @@ export function _enVuelo(): number {
   return enVuelo.size;
 }
 
+/**
+ * Descarta cualquier GET compartido que siga en vuelo — llamado en producción
+ * al cerrar sesión (T-0082 WU-1 remediation, verify-1.md §2).
+ *
+ * Sin esto, una promesa que sigue viajando para la sesión que se acaba de
+ * cerrar puede quedar en `enVuelo` bajo una clave que la sesión SIGUIENTE, en
+ * la misma pestaña, vuelve a pedir sin token explícito (`quiereOtraCuenta` en
+ * `AuthForm.tsx`: cambiar de cuenta sin recargar la página). La clave por
+ * token (ver `client.ts`) ya evita que dos identidades compartan una petición
+ * EXPLÍCITA; esto cierra el mismo hueco para las peticiones IMPLÍCITAS (sin
+ * token, compartidas por `path` a secas, como siempre), que no tienen forma
+ * de llevar la identidad en la clave.
+ *
+ * No toca `oyentes`: quién escucha qué recurso no depende de la sesión, y los
+ * componentes que escuchaban ya se desmontaron con el cambio de sesión.
+ */
+export function descartarEnVuelo(): void {
+  enVuelo.clear();
+}
+
 // ── Avisos de cambio ────────────────────────────────────────────────────────
 
 type Oyente = () => void;

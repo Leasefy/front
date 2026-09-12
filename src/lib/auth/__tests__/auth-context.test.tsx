@@ -82,6 +82,7 @@ vi.mock('@/lib/firebase/messaging', () => ({
 import { AuthProvider } from '../auth-context'
 import { useAuth } from '../use-auth'
 import type { AuthContextType } from '../types'
+import { resetSessionTerminal } from '../session-terminal'
 
 interface HarnessRef {
   current: AuthContextType | null
@@ -407,6 +408,60 @@ describe('AuthProvider — probeAgencyMembership de-dup (refreshUser reuses an i
 
     expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(1)
     expect(ref.current?.agency).toEqual({ id: 'AGY-1', name: 'X' })
+
+    act(() => root.unmount())
+    container.remove()
+  })
+})
+
+/**
+ * T-0082 WU-1 remediation (verify-1.md §2 CRITICAL) — `agencyProbeInFlightRef`
+ * shares ONE in-flight `/inmobiliaria/agency` promise across every caller with
+ * NO token/identity check at all (unlike `apiClient.get`'s `compartirGet`,
+ * which is now keyed by path+token). Without clearing the ref on `SIGNED_OUT`,
+ * a probe still pending for the session that just ended would be handed,
+ * unchanged, to the NEXT session's own probe — mixing two identities in one
+ * response, the worst possible error here. `AuthProvider` now sets
+ * `agencyProbeInFlightRef.current = null` in its `SIGNED_OUT` handler.
+ */
+describe('AuthProvider — agencyProbeInFlightRef is cleared on SIGNED_OUT', () => {
+  afterEach(() => resetSessionTerminal())
+
+  it('a probe left pending by the previous session is discarded on SIGNED_OUT — the next session starts its OWN probe, not the stale one', async () => {
+    // User A's probe never resolves within this test — it stays "in flight"
+    // forever, exactly the scenario that must not leak into user B.
+    fetchAgencyProfileMock.mockImplementationOnce(() => new Promise(() => {}))
+
+    const { ref, root, container } = mountHarness()
+    await fireInitialSession()
+    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(1)
+    expect(ref.current?.agency).toBeNull()
+
+    await act(async () => {
+      await capturedHandler?.('SIGNED_OUT', null)
+    })
+
+    // User B signs in, in the same tab, while A's probe is still (forever)
+    // pending. Without the SIGNED_OUT clear, `probeAgencyMembership` would see
+    // `agencyProbeInFlightRef.current` still set to A's promise and return it
+    // directly — B would inherit A's null/never-resolving result and
+    // `fetchAgencyProfileMock` would NOT be called again.
+    fetchUserGetMock.mockResolvedValue({ ...AGENT_USER_BACKEND, id: 'user-2', email: 'otra@test.com' })
+    fetchAgencyProfileMock.mockResolvedValueOnce({
+      agency: { id: 'AGY-B', name: 'Otra Agencia' },
+      role: 'ADMIN',
+      memberStatus: 'ACTIVE',
+      confirmedNoMembership: false,
+      transientFailure: false,
+    })
+    await act(async () => {
+      await capturedHandler?.('SIGNED_IN', { ...SESSION, access_token: 'token-de-B' })
+    })
+    await flushPromises()
+
+    // A fresh probe fired for B — proves the stale ref was cleared, not reused.
+    expect(fetchAgencyProfileMock).toHaveBeenCalledTimes(2)
+    expect(ref.current?.agency).toEqual({ id: 'AGY-B', name: 'Otra Agencia' })
 
     act(() => root.unmount())
     container.remove()

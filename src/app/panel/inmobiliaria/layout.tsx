@@ -26,6 +26,7 @@ import { TourDelPanel } from '@/components/tour/TourDelPanel';
 import { PilotoDock } from '@/components/inmobiliaria/piloto/PilotoDock';
 import { PilotoDockProvider } from '@/lib/hooks/piloto/piloto-dock-context'
 import { PilotoFlotaProvider } from '@/lib/hooks/piloto/piloto-flota-context';
+import { PilotoInboxProvider } from '@/lib/hooks/piloto/piloto-inbox-context';
 import { AGENCY_HOME_ROUTE } from '@/lib/auth/role-routes';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { usePostulacionesPendientes } from '@/lib/hooks/use-postulaciones-pendientes';
@@ -364,7 +365,9 @@ export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps
                 <CommandPaletteProvider>
                   <PilotoDockProvider>
       <PilotoFlotaProvider>
+      <PilotoInboxProvider>
                     <InmobiliariaLayoutInner>{children}</InmobiliariaLayoutInner>
+                  </PilotoInboxProvider>
                   </PilotoFlotaProvider>
     </PilotoDockProvider>
                 </CommandPaletteProvider>

@@ -17,9 +17,13 @@ import { act } from 'react'
 void React // jsx-preserve
 
 const replaceMock = vi.fn()
+// La URL de la pantalla. Se llega acá desde la sección PQRS de un contrato con
+// `?pqrs=<id>&volver=<ficha>`: el test la cambia para probar ese camino.
+let query = ''
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: replaceMock }),
   usePathname: () => '/panel/inmobiliaria/solicitudes',
+  useSearchParams: () => new URLSearchParams(query),
 }))
 
 // Un AGENTE: NO es admin, y tiene `operaciones` como en AGENCY_ROLE_DEFAULTS.
@@ -48,8 +52,10 @@ vi.mock('@/lib/api/pqrs-agencia.service', () => ({
 vi.mock('@/components/inmobiliaria/pqrs/NuevaPqrsDrawer', () => ({
   NuevaPqrsDrawer: () => null,
 }))
+// El cajón del detalle: el test sólo necesita saber QUÉ solicitud se abrió.
 vi.mock('@/components/inmobiliaria/pqrs/PqrsDrawer', () => ({
-  PqrsDrawer: () => null,
+  PqrsDrawer: ({ pqrs }: { pqrs: { radicado: string } | null }) =>
+    pqrs ? React.createElement('p', null, `cajon:${pqrs.radicado}`) : null,
 }))
 
 import PqrsPage from './page'
@@ -58,6 +64,7 @@ let container: HTMLDivElement
 let root: Root
 
 beforeEach(() => {
+  query = ''
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -110,5 +117,81 @@ describe('solicitudes — el gate de la página es el mismo que el del sidebar',
     } finally {
       permisos.canAccess = antes
     }
+  })
+})
+
+/**
+ * El enlace que trae la sección PQRS de la ficha del contrato (Nico,
+ * 2026-09-12). Sin esto, «Ver la solicitud» dejaba a la persona buscando la
+ * fila a mano en la tabla de toda la agencia, y sin camino de vuelta.
+ */
+describe('solicitudes — se llega desde la ficha de un contrato', () => {
+  const UNA: Record<string, unknown> = {
+    id: 'p-1',
+    numero: 7,
+    radicado: 'PQRS-0007',
+    tipo: 'QUEJA',
+    solicitanteTipo: 'INQUILINO',
+    solicitanteNombre: 'Camila',
+    solicitanteContacto: null,
+    asunto: 'Fuga en el baño',
+    descripcion: null,
+    consignacionId: 'c-1',
+    inmuebleLabel: 'Apto 402',
+    asignadoAUserId: null,
+    asignadoANombre: null,
+    estado: 'EN_PROCESO',
+    slaVenceAt: '2026-03-20T10:00:00.000Z',
+    resueltaAt: null,
+    cerradaAt: null,
+    createdAt: '2026-03-01T10:00:00.000Z',
+    updatedAt: '2026-03-01T10:00:00.000Z',
+  }
+
+  it('`?pqrs=` abre ESA solicitud y `?volver=` ofrece la vuelta al contrato', async () => {
+    listarMock.mockResolvedValue({
+      resumen: {
+        total: 1,
+        recibidas: 0,
+        asignadas: 0,
+        enProceso: 1,
+        enCotizacion: 0,
+        resueltas: 0,
+        cerradas: 0,
+      },
+      solicitudes: [UNA],
+    })
+    query = 'pqrs=p-1&volver=%2Fpanel%2Finmobiliaria%2Fcontratos%2Fk-1'
+    await montar()
+
+    expect(container.textContent).toContain('cajon:PQRS-0007')
+    const volver = container.querySelector('[data-testid="pqrs-volver"]')
+    expect(volver?.getAttribute('href')).toBe('/panel/inmobiliaria/contratos/k-1')
+    expect(volver?.textContent).toContain('Volver al contrato')
+  })
+
+  it('un `volver` que sale del panel no se ofrece: sería un open redirect', async () => {
+    query = 'volver=https%3A%2F%2Fmalo.co'
+    await montar()
+
+    expect(container.querySelector('[data-testid="pqrs-volver"]')).toBeNull()
+  })
+
+  it('sin `?pqrs=` no se abre ningún cajón solo', async () => {
+    listarMock.mockResolvedValue({
+      resumen: {
+        total: 1,
+        recibidas: 0,
+        asignadas: 0,
+        enProceso: 1,
+        enCotizacion: 0,
+        resueltas: 0,
+        cerradas: 0,
+      },
+      solicitudes: [UNA],
+    })
+    await montar()
+
+    expect(container.textContent).not.toContain('cajon:')
   })
 })

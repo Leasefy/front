@@ -124,6 +124,11 @@ vi.mock('@/components/contratos/CobrosDelContrato', () => ({
   CobrosDelContrato: () =>
     React.createElement('div', { 'data-testid': 'cobros' }),
 }))
+// El seguimiento de PQRS del contrato (Nico, 2026-09-12). Acá sólo importa
+// que la sección esté montada: lo que muestra se prueba en su propio archivo.
+vi.mock('@/components/contratos/PqrsDelContrato', () => ({
+  PqrsDelContrato: () => React.createElement('div', { 'data-testid': 'pqrs-del-contrato' }),
+}))
 vi.mock('@/components/contratos/VincularInmueble', () => ({
   VincularInmueble: ({ puedeVincular }: { puedeVincular: boolean }) =>
     puedeVincular

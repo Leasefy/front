@@ -56,6 +56,7 @@ import { CobrosDelContrato, type ResumenDeCobros } from '@/components/contratos/
 import { ReglasDeMoraDelContrato } from '@/components/contratos/ReglasDeMoraDelContrato';
 import { RenovacionDelContrato } from '@/components/contratos/RenovacionDelContrato';
 import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/ComprobantesDelSistemaAnterior';
+import { PqrsDelContrato } from '@/components/contratos/PqrsDelContrato';
 import { Stat, StatStrip } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { VincularInmueble } from '@/components/contratos/VincularInmueble';
@@ -528,6 +529,8 @@ function ContratoDetalleContent() {
                 sola lista mezclada no deja ver nada (Nico, 2026-09-12).
               */}
               <ComprobantesDelSistemaAnterior contractId={contract.id} />
+              {/* El seguimiento de PQRS del contrato (Nico, 2026-09-12). */}
+              <PqrsDelContrato contractId={contract.id} />
             </>
           )}
 

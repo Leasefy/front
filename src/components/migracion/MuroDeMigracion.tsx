@@ -112,6 +112,11 @@ import { ImportWizard } from "@/components/inmobiliaria/import/ImportWizard";
 import { MigrarContratos } from "@/components/contratos/MigrarContratos";
 import { BienvenidaALeasefy } from "./BienvenidaALeasefy";
 import {
+  leerBienvenidaPendiente,
+  marcarBienvenidaPendiente,
+  olvidarBienvenidaPendiente,
+} from "@/lib/migracion/bienvenida-pendiente";
+import {
   MigracionContext,
   type ContextoDeMigracion,
 } from "./migracion-context";
@@ -182,6 +187,13 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   // puede ser lo que tumba el panel (mismo criterio que SalirDelRegistro).
   const agency = useContext(AuthContext)?.agency ?? null;
   const agencyId = agency?.id ?? null;
+  /*
+   * Espejo en ref porque `refrescar` es un `useCallback` con dependencias
+   * vacías —a propósito: se rearma solo el intervalo si cambiara— y necesita
+   * la agencia VIGENTE al anotar la bienvenida, no la del primer render.
+   */
+  const agencyIdRef = useRef(agencyId);
+  agencyIdRef.current = agencyId;
   const [decision, setDecision] = useState<DecisionDeMigracion | null>(null);
   const [decisionLeida, setDecisionLeida] = useState(false);
   useEffect(() => {
@@ -203,6 +215,8 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
     pasos: PasoDeMigracion[];
     resuelta: "completada" | "omitida";
   } | null>(null);
+  /** `false` hasta que la primera consulta vuelve. Ver `consultar`. */
+  const [consultado, setConsultado] = useState(false);
 
   const consultar = useCallback(async () => {
     try {
@@ -214,6 +228,11 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
     } catch {
       setConocido(null);
       setEstado(null);
+    } finally {
+      // Recién ahora se sabe si el muro va puesto. Antes de esto, `estado`
+      // vale null por «todavía no sé», no por «no bloquea» — y la bienvenida
+      // que espera abajo no puede confundir las dos cosas.
+      setConsultado(true);
     }
   }, []);
 
@@ -237,10 +256,21 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
         // no del último estado bloqueado: ése es de antes de terminar el
         // último paso, y el paso recién terminado saldría con 0.
         const pasos = Array.isArray(bruto.pasos) ? bruto.pasos : previo.pasos;
-        setBienvenida({
+        const recien = {
           pasos,
-          resuelta: bruto.resuelta === "omitida" ? "omitida" : "completada",
-        });
+          resuelta: (bruto.resuelta === "omitida" ? "omitida" : "completada") as
+            | "completada"
+            | "omitida",
+        };
+        setBienvenida(recien);
+        /*
+         * 🔴 Y se ANOTA, no sólo se muestra (Nico, 2026-09-12: «no me mostró
+         * la bienvenida»). El último paso ofrece un enlace para entrar al
+         * panel; ese enlace navega, la pestaña nueva monta el muro ya bajado
+         * y la transición que se celebra acá no vuelve a ocurrir. La marca
+         * sobrevive a la navegación y la borra `onEntrar`.
+         */
+        marcarBienvenidaPendiente(agencyIdRef.current, recien);
       }
       saltarBienvenida.current = false;
       setEstado(nuevo);
@@ -252,6 +282,25 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     void consultar();
   }, [consultar]);
+
+  /*
+   * La bienvenida que quedó pendiente de una sesión anterior.
+   *
+   * Sólo cuando la primera consulta ya volvió Y el muro NO va puesto: con el
+   * muro arriba la celebración taparía los pasos, y antes de la consulta
+   * `estado` vale null por «todavía no sé». `bienvenida` ya puesta (la
+   * transición recién ocurrida) manda: es la misma pantalla y volver a
+   * setearla la reiniciaría.
+   */
+  useEffect(() => {
+    if (!consultado || estado !== null || bienvenida !== null) return;
+    const pendiente = leerBienvenidaPendiente(agencyId);
+    if (pendiente) setBienvenida(pendiente);
+    // `agencyId` está en las dependencias a propósito: al montar todavía es
+    // null —la sesión no terminó de cargar— y la marca vive bajo la clave de
+    // la agencia. Sin esto, el efecto miraría una sola vez y en el lugar
+    // equivocado.
+  }, [consultado, estado, bienvenida, agencyId]);
 
   const puesto = estado !== null;
 
@@ -395,7 +444,11 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
         <BienvenidaALeasefy
           pasos={bienvenida.pasos}
           resuelta={bienvenida.resuelta}
-          onEntrar={() => setBienvenida(null)}
+          onEntrar={() => {
+            // Vista una vez, no vuelve: entrar es lo que la cierra.
+            olvidarBienvenidaPendiente(agencyId);
+            setBienvenida(null);
+          }}
         />
       ) : null}
     </MigracionContext.Provider>

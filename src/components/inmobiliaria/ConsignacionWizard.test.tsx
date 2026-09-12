@@ -39,6 +39,7 @@ const {
   uploadPropertyPhotosMock,
   stepFivePhotosHolder,
   stepTwoOverridesHolder,
+  ubicarDireccionMock,
 } = vi.hoisted(() => ({
     authState: {
       user: { id: 'user-1', email: 'user1@test.com', name: 'Test User' } as
@@ -70,7 +71,17 @@ const {
     // override step 2's self-filled defaults (listingType/salePrice)
     // without a per-test vi.mock (T-0038).
     stepTwoOverridesHolder: { overrides: {} as Record<string, unknown> },
+    ubicarDireccionMock: vi.fn(),
   }))
+
+/*
+ * 🔴 Crear el inmueble resuelve su ubicación (Nico, 2026-09-12). Mockeado acá
+ * porque es una llamada de red: sin esto cada caso del archivo saldría a
+ * buscar «Calle 1, Bogota» de verdad.
+ */
+vi.mock('@/lib/inmuebles/ubicar-direccion', () => ({
+  ubicarDireccion: ubicarDireccionMock,
+}))
 
 vi.mock('@/lib/i18n', () => ({
   // Params are appended (not truly interpolated) so a test can still assert
@@ -258,6 +269,9 @@ beforeEach(() => {
   uploadPropertyPhotosMock.mockReset().mockResolvedValue({ uploaded: 0, failed: [] })
   stepFivePhotosHolder.photos = []
   stepTwoOverridesHolder.overrides = {}
+  ubicarDireccionMock
+    .mockReset()
+    .mockResolvedValue({ lat: 4.6097, lng: -74.0817, precision: 'direccion' })
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -373,6 +387,84 @@ describe('<ConsignacionWizard> — agent assignment is optional', () => {
  *     already exist — same reasoning as the pre-existing mandate-failure
  *     catch).
  */
+/**
+ * 🔴 Nico, 2026-09-12: «que crear el inmueble resuelva su ubicación, en vez de
+ * un recorrido aparte que se puede saltar».
+ *
+ * El buscador del paso 2 sólo deja coordenadas si alguien ELIGE una
+ * sugerencia. Quien escribe la dirección de memoria y sigue de largo creaba el
+ * inmueble sin punto en el mapa, y el único lugar donde eso se veía era la
+ * ficha, después, detrás de un «Ubicar en el mapa» que nadie abre. Así
+ * quedaron 1.442 de los 2.824 inmuebles de la migración real.
+ */
+describe('<ConsignacionWizard> — crear el inmueble resuelve su ubicación', () => {
+  async function crear() {
+    await renderWizard(AGENTE_LIST)
+    for (let i = 0; i < 5; i++) {
+      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
+    }
+    await clickButton(
+      findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment'),
+    )
+  }
+
+  it('🔴 sin coordenadas del buscador, las resuelve con la dirección, la ciudad y el departamento', async () => {
+    await crear()
+
+    expect(ubicarDireccionMock).toHaveBeenCalledWith({
+      direccion: 'Calle 1',
+      ciudad: 'Bogota',
+      departamento: 'Cundinamarca',
+    })
+    const payload = propertiesApiMock.create.mock.calls[0][0]
+    expect(payload.latitude).toBe(4.6097)
+    expect(payload.longitude).toBe(-74.0817)
+  })
+
+  /* Lo que la persona eligió manda: no se vuelve a buscar lo ya resuelto. */
+  it('con coordenadas elegidas en el paso 2 NO vuelve a buscar', async () => {
+    stepTwoOverridesHolder.overrides = {
+      propertyLatitude: 6.2442,
+      propertyLongitude: -75.5812,
+    }
+
+    await crear()
+
+    expect(ubicarDireccionMock).not.toHaveBeenCalled()
+    const payload = propertiesApiMock.create.mock.calls[0][0]
+    expect(payload.latitude).toBe(6.2442)
+    expect(payload.longitude).toBe(-75.5812)
+  })
+
+  /*
+   * 🔴 Una dirección que no se pudo ubicar NO puede frenar la creación: el
+   * inmueble entra sin punto, que es como entraba antes de todo esto.
+   */
+  it('sin poder ubicarla, el inmueble se crea igual y sin coordenadas inventadas', async () => {
+    ubicarDireccionMock.mockResolvedValue({ precision: 'ninguna' })
+
+    await crear()
+
+    expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
+    const payload = propertiesApiMock.create.mock.calls[0][0]
+    expect(payload.latitude).toBeUndefined()
+    expect(payload.longitude).toBeUndefined()
+  })
+
+  it('el centro del municipio también sirve: mejor en su pueblo que en ningún lado', async () => {
+    ubicarDireccionMock.mockResolvedValue({
+      lat: 6.0918,
+      lng: -75.6356,
+      precision: 'municipio',
+    })
+
+    await crear()
+
+    const payload = propertiesApiMock.create.mock.calls[0][0]
+    expect(payload.latitude).toBe(6.0918)
+  })
+})
+
 describe('<ConsignacionWizard> — publishes the property after the mandate (T-0018)', () => {
   async function driveToStep6ThenSubmit() {
     await renderWizard(AGENTE_LIST)

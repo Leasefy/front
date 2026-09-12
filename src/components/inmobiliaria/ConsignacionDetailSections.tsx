@@ -1,6 +1,8 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
+import { InvitarAlPortal } from './InvitarAlPortal';
 import Link from 'next/link';
 import { conRegreso } from '@/lib/nav/ruta-de-regreso';
 import { motion } from 'framer-motion';
@@ -174,6 +176,18 @@ export function PropietarioSection({
   // Sólo cuando hay más de uno. Con un dueño al 100 % mostrar «100 %» al lado
   // del nombre es ruido: no informa nada que no se supiera.
   const variosDuenos = (copropietarios?.length ?? 0) > 1;
+  /*
+   * La cuenta que acaba de crear el botón «Invitar». Vive acá y no en el
+   * padre para que el mensaje aparezca en el acto: recargar la ficha entera
+   * para ver un botón que el servidor ya confirmó es hacer esperar de gusto.
+   * Se limpia sola al cambiar de propietario porque `propietario.id` entra en
+   * la comparación de abajo.
+   */
+  const [cuentaReciente, setCuentaReciente] = useState<string | null>(null);
+  const [paraQuien, setParaQuien] = useState<string | null>(null);
+  const cuenta =
+    propietario?.cuentaDePortalId ??
+    (paraQuien === propietario?.id ? cuentaReciente : null);
 
   if (!propietario) {
     return (
@@ -312,7 +326,42 @@ export function PropietarioSection({
               {t('inmobiliaria.consignaciones.detail.call')}
             </a>
           )}
+          {/*
+           * 🔴 Escribirle por Leasefy, no sólo por fuera (Nico, 2026-09-12).
+           *
+           * El correo y el teléfono se van del producto: lo que se habla ahí
+           * no queda en ningún lado y el siguiente agente que abra esta ficha
+           * no sabe qué se dijo. El hilo directo sí queda, y lo ve cualquier
+           * miembro de la inmobiliaria.
+           *
+           * Necesita que el propietario tenga cuenta de portal
+           * (`cuentaDePortalId`). Cuando no la tiene, lo que va acá NO es un
+           * hueco —eso se lee como «falta la función»— sino el aviso con la
+           * salida: ver `InvitarAlPortal`, abajo.
+           */}
+          {cuenta && (
+            <BotonEnviarMensaje
+              counterpartId={cuenta}
+              etiqueta="Mensaje"
+              className="flex-1 h-auto justify-center gap-2 rounded-lg border-0 bg-surface-muted px-4 py-2.5 text-sm font-medium text-fg dark:bg-ink dark:text-fg-subtle"
+            />
+          )}
         </div>
+
+        {/*
+         * Sin cuenta: se dice y se ofrece resolverlo, en vez de esconder el
+         * botón. En la cartera real de Nico esto es el 97 % de las fichas.
+         */}
+        {!cuenta && (
+          <InvitarAlPortal
+            propietarioId={propietario.id}
+            correo={propietario.email}
+            onInvitado={(id) => {
+              setParaQuien(propietario.id);
+              setCuentaReciente(id);
+            }}
+          />
+        )}
       </div>
     </SectionCard>
   );
@@ -471,9 +520,29 @@ interface CurrentLeaseSectionProps {
   consignacion: Consignacion;
 }
 
+/**
+ * 🔴 Nico, 2026-09-12: «no veo como información en el inmueble al inquilino,
+ * que también se debería de poder hablarle por mensajes de Leasefy».
+ *
+ * Hasta acá esta tarjeta mostraba un nombre y nada más —
+ * `currentTenantName`, un texto suelto que la activación copia — y el botón
+ * «Ver contrato» estaba apagado con un «próximamente». Ahora el back manda el
+ * inquilino del contrato vigente (`consignacion.inquilino`): quién es, cómo
+ * contactarlo, a qué cuenta escribirle y con qué contrato. De los 1.836
+ * contratos migrados de Nico, 1.799 tienen usuario asociado.
+ *
+ * El nombre suelto sigue siendo la caída: contra un back viejo, o contra una
+ * consignación marcada como arrendada sin contrato vigente detrás, la tarjeta
+ * muestra lo que siempre mostró en vez de desaparecer.
+ */
 export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) {
   const { t, formatDate } = useI18n();
-  const hasLease = consignacion.availability === 'rented' && consignacion.currentTenantName;
+  const inquilino = consignacion.inquilino ?? null;
+  const nombre = inquilino?.nombre ?? consignacion.currentTenantName;
+  // Con contrato vigente hay inquilino aunque la disponibilidad diga otra
+  // cosa: el contrato es el hecho, `availability` es una columna que alguien
+  // pudo dejar desactualizada.
+  const hasLease = inquilino !== null || (consignacion.availability === 'rented' && nombre);
 
   return (
     <SectionCard title={t('inmobiliaria.consignaciones.detail.currentLease')} icon={<HouseLine className="w-4 h-4" />}>
@@ -484,11 +553,77 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
             <div className="w-12 h-12 rounded-xl bg-success-soft flex items-center justify-center">
               <UserCircle className="w-6 h-6 text-success" />
             </div>
-            <div className="flex-1">
-              <h4 className="font-semibold text-fg">{consignacion.currentTenantName}</h4>
-              <p className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.detail.currentTenant')}</p>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-semibold text-fg" data-testid="inquilino-nombre">{nombre}</h4>
+              <p className="text-sm text-fg-muted dark:text-fg-subtle">
+                {/* «Documento» y no «CC»: ni `User.rut` ni
+                    `Contract.tenantDocument` guardan de qué tipo es, y en un
+                    inmueble arrendado a una empresa sería un NIT. Poner la
+                    sigla acá sería inventarla. */}
+                {inquilino?.documento
+                  ? `${t('inmobiliaria.consignaciones.detail.currentTenant')} · Documento ${inquilino.documento}`
+                  : t('inmobiliaria.consignaciones.detail.currentTenant')}
+              </p>
             </div>
           </div>
+
+          {/*
+           * Cómo hablarle. Los mismos tres caminos que el propietario, y por
+           * la misma razón: el correo y el teléfono se van del producto —lo
+           * que se habla ahí no queda en ningún lado— y el hilo de Leasefy
+           * queda y lo ve cualquier miembro de la inmobiliaria.
+           */}
+          {inquilino && (inquilino.correo || inquilino.telefono || inquilino.cuentaDePortalId) ? (
+            <div className="flex items-center gap-2" data-testid="contacto-inquilino">
+              {inquilino.correo && (
+                <a
+                  href={`mailto:${inquilino.correo}`}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+                >
+                  <Envelope className="w-4 h-4" />
+                  {t('inmobiliaria.consignaciones.detail.email')}
+                </a>
+              )}
+              {inquilino.telefono && (
+                <a
+                  href={`tel:${inquilino.telefono}`}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+                >
+                  <Phone className="w-4 h-4" />
+                  {t('inmobiliaria.consignaciones.detail.call')}
+                </a>
+              )}
+              {inquilino.cuentaDePortalId && (
+                <BotonEnviarMensaje
+                  counterpartId={inquilino.cuentaDePortalId}
+                  etiqueta="Mensaje"
+                  className="flex-1 h-auto justify-center gap-2 rounded-lg border-0 bg-surface-muted px-4 py-2.5 text-sm font-medium text-fg dark:bg-ink dark:text-fg-subtle"
+                />
+              )}
+            </div>
+          ) : null}
+
+          {/*
+           * Sin cuenta no hay a quién escribirle, y eso se DICE. Esconder el
+           * botón se lee como «falta la función» (Nico, 2026-09-12). Acá no va
+           * un «Invitar» como en el propietario: al inquilino la cuenta se la
+           * crea la migración y las que faltan se reenvían por lote desde
+           * Inquilinos, que es donde están todas juntas. Son 16 de 730 en la
+           * cartera real.
+           */}
+          {inquilino && !inquilino.cuentaDePortalId ? (
+            <p
+              className="rounded-lg bg-surface-muted px-4 py-3 text-xs text-fg-muted dark:bg-ink dark:text-fg-subtle"
+              data-testid="inquilino-sin-cuenta"
+            >
+              Todavía no tiene cuenta en Leasefy, así que no se le puede
+              escribir por aquí. Su invitación se reenvía desde{' '}
+              <Link href="/panel/inmobiliaria/inquilinos" className="underline">
+                Inquilinos
+              </Link>
+              .
+            </p>
+          ) : null}
 
           {/* Lease Details */}
           <div className="grid grid-cols-2 gap-3">
@@ -511,17 +646,37 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
             </div>
           </div>
 
-          {/* View Lease Link */}
-          <Button
-            variant="secondary"
-            hideArrow
-            disabled
-            title={t('inmobiliaria.consignaciones.header.comingSoon')}
-            className="w-full"
-          >
-            <FileText className="w-4 h-4" />
-            {t('inmobiliaria.consignaciones.detail.viewLeaseContract')}
-          </Button>
+          {/*
+           * Ver el contrato. Estuvo apagado con un «próximamente» desde que
+           * existe la tarjeta, no porque la pantalla faltara —
+           * `/panel/inmobiliaria/contratos/[id]` existe — sino porque acá no
+           * se sabía CUÁL contrato. Ahora el inquilino lo trae.
+           */}
+          {inquilino ? (
+            <Button asChild variant="secondary" hideArrow className="w-full">
+              <Link
+                href={conRegreso(
+                  `/panel/inmobiliaria/contratos/${inquilino.contractId}`,
+                  `/panel/inmobiliaria/inmuebles/${consignacion.id}`,
+                )}
+                data-testid="ver-contrato-del-inquilino"
+              >
+                <FileText className="w-4 h-4" />
+                {t('inmobiliaria.consignaciones.detail.viewLeaseContract')}
+              </Link>
+            </Button>
+          ) : (
+            <Button
+              variant="secondary"
+              hideArrow
+              disabled
+              title={t('inmobiliaria.consignaciones.header.comingSoon')}
+              className="w-full"
+            >
+              <FileText className="w-4 h-4" />
+              {t('inmobiliaria.consignaciones.detail.viewLeaseContract')}
+            </Button>
+          )}
         </div>
       ) : (
         <div className="text-center py-6">

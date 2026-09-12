@@ -1036,20 +1036,54 @@ describe('<StepConfirmImport> — recuperación de fallos del lote', () => {
     expect(inmueblesImportacionApiMock.resumen).toHaveBeenCalledWith('lote-1');
   });
 
-  it('las direcciones que cayeron al centro de la ciudad se avisan, no se callan', async () => {
-    geocodeImportRowMock.mockResolvedValue({ lat: 4.6, lng: -74.1, source: 'city' });
+  const prepararOk = () =>
     inmueblesImportacionApiMock.preparar.mockResolvedValue({
       lote: 'lote-1', estado: 'ENCOLADO', total: 1, procesadas: 0, pendientes: 0,
       listos: 0, activados: 0, descartados: 0, jobId: 'j', error: null, creadoEn: '2026-09-01T00:00:00.000Z',
     });
+
+  it('las direcciones que cayeron al centro del municipio se avisan, no se callan', async () => {
+    geocodeImportRowMock.mockResolvedValue({ lat: 4.6, lng: -74.1, source: 'city' });
+    prepararOk();
     render(baseState());
     await act(async () => { findButtonByText('inmobiliaria.import.confirm.importButton')!.click(); });
     await act(async () => { await vi.runAllTimersAsync(); });
 
     expect(toastMock.info).toHaveBeenCalledWith(
-      'Direcciones sin ubicar',
-      expect.objectContaining({ description: expect.stringContaining('1 de 1') }),
+      '1 de 1 sin dirección exacta',
+      expect.objectContaining({
+        description: expect.stringContaining('1 quedan en el centro de su municipio'),
+      }),
     );
+  });
+
+  /*
+   * 🔴 2026-09-12. Las dos suertes NO son la misma y antes se decían iguales:
+   * «quedan en el centro de su ciudad» era falso para las filas cuyo
+   * municipio no estaba en la tabla de 32 ciudades — 1.442 en el portafolio
+   * real de Nico quedaron sin punto ninguno y nadie se enteró hasta abrir la
+   * ficha.
+   */
+  it('las que quedaron SIN punto se dicen aparte, no como «en el centro»', async () => {
+    geocodeImportRowMock.mockResolvedValue({ lat: undefined, lng: undefined, source: 'none' });
+    prepararOk();
+    render(baseState());
+    await act(async () => { findButtonByText('inmobiliaria.import.confirm.importButton')!.click(); });
+    await act(async () => { await vi.runAllTimersAsync(); });
+
+    const [, opciones] = toastMock.info.mock.calls[0];
+    expect(opciones.description).toContain('1 quedan sin punto en el mapa');
+    expect(opciones.description).not.toContain('centro de su municipio');
+  });
+
+  it('con todas ubicadas no hay nada que avisar', async () => {
+    geocodeImportRowMock.mockResolvedValue({ lat: 4.6, lng: -74.1, source: 'geocoded' });
+    prepararOk();
+    render(baseState());
+    await act(async () => { findButtonByText('inmobiliaria.import.confirm.importButton')!.click(); });
+    await act(async () => { await vi.runAllTimersAsync(); });
+
+    expect(toastMock.info).not.toHaveBeenCalled();
   });
 });
 

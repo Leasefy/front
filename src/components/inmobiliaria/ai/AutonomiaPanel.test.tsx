@@ -177,7 +177,11 @@ describe('AutonomiaPanel — modo como control real', () => {
     expect(opciones).toHaveLength(3)
 
     const textos = opciones.map((r) => r.textContent ?? '')
-    expect(textos[0]).toContain('Sombra')
+    // 🔴 «Manual», no «Sombra»: `develop` renombró la ETIQUETA el 2026-09-12 y
+    // la llave interna sigue siendo `sombra` (ver `modosDisponibles` abajo).
+    // Esta prueba venía de una rama anterior al cambio, así que el merge las
+    // dejó en desacuerdo sin conflicto: archivos distintos.
+    expect(textos[0]).toContain('Manual')
     expect(textos[1]).toContain('Copiloto')
     expect(textos[2]).toContain('Autónomo')
     // Cada tarjeta explica su postura, no sólo la activa.
@@ -199,7 +203,7 @@ describe('AutonomiaPanel — modo como control real', () => {
     })
     const textos = radios().map((r) => r.textContent ?? '')
     expect(textos).toHaveLength(2)
-    expect(textos[0]).toContain('Sombra')
+    expect(textos[0]).toContain('Manual')
     expect(textos[1]).toContain('Copiloto')
     expect(textos.join('')).not.toContain('Autónomo')
   })

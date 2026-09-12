@@ -281,6 +281,18 @@ export interface Consignacion {
   availability: PropertyAvailability;
   currentLeaseId?: string;
   currentTenantName?: string;
+  /**
+   * Quién vive HOY en el inmueble, sacado de su contrato vigente.
+   *
+   * 🔴 Distinto de `currentTenantName`, que es un texto suelto copiado al
+   * activar: esto trae el contrato, el contacto y —lo que Nico pidió el
+   * 2026-09-12— la cuenta a la que se le escribe por Leasefy.
+   *
+   * `null` en un inmueble disponible, y también contra un back anterior al
+   * 2026-09-12 que todavía no manda el campo: en los dos casos la ficha cae a
+   * `currentTenantName`, que sigue existiendo.
+   */
+  inquilino?: InquilinoDeLaConsignacion | null;
   leaseEndDate?: string;
 
   // Documents
@@ -293,6 +305,21 @@ export interface Consignacion {
 
   createdAt: string;
   updatedAt: string;
+}
+
+/** El inquilino del contrato vigente, como lo manda el back. */
+export interface InquilinoDeLaConsignacion {
+  contractId: string;
+  nombre: string;
+  documento: string | null;
+  correo: string | null;
+  telefono: string | null;
+  /**
+   * Su cuenta del portal. `null` = el contrato guarda el nombre pero no quedó
+   * asociado a un usuario: se muestran los datos que haya y no se ofrece
+   * escribirle. Un botón que no puede hacer nada es peor que ninguno.
+   */
+  cuentaDePortalId: string | null;
 }
 
 export interface InventoryItem {

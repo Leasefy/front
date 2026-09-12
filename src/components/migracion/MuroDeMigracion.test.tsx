@@ -547,6 +547,37 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
     expect(q('muro-paso-falta')).toBeNull();
   });
 
+  /*
+   * Lo mismo para contratos, desde el 2026-09-12 — el día en que ese paso
+   * dejó de darse por listo con filas sin activar y empezó a tener algo que
+   * decir. Su pantalla ya dice «Quedaron N sin activar», enlaza a verlas y
+   * trae el botón que las activa con su barra de avance.
+   */
+  it('el paso de contratos tampoco lleva píldora: se explica solo adentro', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [
+        paso('propietarios', 'listo', 60, '60 propietarios'),
+        paso('inquilinos', 'listo', 90, '90 inquilinos'),
+        paso('propiedades', 'listo', 2_824, '2824 inmuebles'),
+        paso(
+          'contratos',
+          'pendiente',
+          1_169,
+          '667 preparados sin activar · 15 con datos por corregir · 1169 ya cargados',
+        ),
+        paso('puc', 'pendiente'),
+        paso('contables', 'pendiente'),
+      ],
+    });
+
+    await pintar();
+
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('contratos');
+    expect(q('muro-paso-falta')).toBeNull();
+  });
+
   it('el paso 6 (registros contables) espera al 5 (plan de cuentas)', async () => {
     estadoMock.estado.mockResolvedValue({
       bloquea: true,

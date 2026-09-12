@@ -159,8 +159,13 @@ export const CADA_CUANTO_SE_REFRESCA_MS = 60_000;
  * hacer: 3270 preparados sin activar · 4700 con datos por corregir · en 5
  * cargas sin terminar · 2824 ya cargados»— y Nico pidió sacarla dos veces.
  * Decir lo mismo en dos lugares, uno de ellos sin salida, no informa: satura.
+ *
+ * `contratos` entra el 2026-09-12 por lo mismo, y desde el día en que el paso
+ * dejó de mentir: su pantalla ya dice «Quedaron N sin activar» con el enlace a
+ * verlas, la barra de avance y el botón que las activa. La píldora repetiría
+ * ese número arriba a la izquierda, otra vez sin acción.
  */
-const SE_EXPLICAN_SOLOS: IdDePasoDeMigracion[] = ["propiedades"];
+const SE_EXPLICAN_SOLOS: IdDePasoDeMigracion[] = ["propiedades", "contratos"];
 
 export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   const [estado, setEstado] = useState<EstadoDeMigracion | null>(null);

@@ -16,6 +16,7 @@ import {
   FileArrowUp,
   UserCircle,
   WarningCircle,
+  X,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
@@ -635,6 +636,9 @@ export function StepConfirmImport({
     };
   }, [sinNadaQueActivar, lote]);
 
+  /* El aviso de «carga terminada» se puede cerrar (Nico, 2026-09-12). El
+     botón NO: vive al pie y es la salida del paso. */
+  const [avisoDeCargaCerrado, setAvisoDeCargaCerrado] = useState(false);
   /** ¿Ya sabemos qué hay en las otras cargas? `null` = la consulta no volvió. */
   const sabemosDeOtrasCargas = otrasCargas !== null;
   /** Filas LISTO que viven en OTRO lote: son las que frenan el paso del muro. */
@@ -959,6 +963,92 @@ export function StepConfirmImport({
       </p>
     </div>
   );
+
+  /*
+   * ── CARGA TERMINADA: EL AVISO Y LA SALIDA, SEPARADOS ────────────────────
+   *
+   * 🔴 Nico, 2026-09-12: «ese verde se ve horrible; mejor que el seguir
+   * contrato quede ahí donde está siempre el siguiente, al lado de anterior,
+   * y el mensaje encima de esa zona gris con posibilidad de cerrarlo».
+   *
+   * Tenía razón en las dos mitades. Un bloque verde a mitad del cuerpo
+   * compite con la lista y con los botones del paso, y mete la acción
+   * principal en un lugar donde no estuvo nunca: el primario vivió siempre al
+   * pie, a la derecha de «Anterior» (para eso existe `RanuraDelPie`). Y un
+   * aviso que no se puede cerrar se queda estorbando cuando ya se leyó.
+   *
+   * Entonces: el AVISO es un banner sobrio pegado al pie, con ✕; la ACCIÓN se
+   * va al pie por portal, donde la persona ya la busca.
+   */
+  const avisoDeCargaTerminada = (
+    <div
+      className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4 dark:border-border-strong dark:bg-white/[0.02]"
+      data-testid="lote-terminado"
+    >
+      <div className="min-w-0 flex-1 space-y-1">
+        <p className="text-sm font-medium text-fg dark:text-white">
+          Esta carga ya está activada — {resumenLote?.activados}{" "}
+          {resumenLote?.activados === 1 ? "inmueble" : "inmuebles"} en tu
+          portafolio.
+        </p>
+        {(resumenLote?.pendientes ?? 0) > 0 && (
+          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            Quedan {resumenLote?.pendientes} filas con datos por corregir. No
+            frenan nada: puedes arreglarlas acá o dejarlas fuera y seguir.
+          </p>
+        )}
+        {!sabemosDeOtrasCargas ? (
+          <p className="text-sm text-fg-subtle" data-testid="mirando-otras-cargas">
+            Revisando si queda algo pendiente en otras cargas…
+          </p>
+        ) : listosEnOtrasCargas > 0 ? (
+          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            Antes de seguir: {cuantasOtrasCargas}{" "}
+            {cuantasOtrasCargas === 1 ? "carga anterior tiene" : "cargas anteriores tienen"}{" "}
+            {listosEnOtrasCargas} inmuebles preparados que todavía no existen.
+            Mientras falten, este paso no se da por terminado.
+          </p>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        aria-label="Cerrar el aviso"
+        data-testid="cerrar-aviso-carga"
+        onClick={() => setAvisoDeCargaCerrado(true)}
+        className="rounded-sm p-1 text-fg-subtle transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+
+  /* La salida del paso, para el pie. `null` mientras no se sepa cuál es: un
+     botón que cambia de identidad debajo del dedo no se puede usar. */
+  const salidaDelPaso =
+    !sinNadaQueActivar || !sabemosDeOtrasCargas ? null : listosEnOtrasCargas >
+      0 ? (
+      onSalir ? (
+        <Button
+          type="button"
+          hideArrow
+          data-testid="ir-a-otras-cargas"
+          onClick={() => onSalir()}
+        >
+          {cuantasOtrasCargas === 1
+            ? "Ver y descartar esa carga"
+            : "Ver y descartar las otras cargas"}
+        </Button>
+      ) : null
+    ) : onContinuar ? (
+      <Button
+        type="button"
+        hideArrow
+        data-testid="seguir-con-contratos"
+        onClick={() => onContinuar()}
+      >
+        Seguir con Contratos
+      </Button>
+    ) : null;
 
   const handleActivar = async () => {
     if (!lote) return;
@@ -1453,76 +1543,6 @@ export function StepConfirmImport({
          * queda trabajo en otra carga se manda ahí; si no queda nada, se
          * ofrece Contratos.
          */}
-        {sinNadaQueActivar && (
-          <div
-            className="rounded-lg border border-success/30 bg-success-soft p-5"
-            data-testid="lote-terminado"
-          >
-            <p className="text-sm font-medium text-fg dark:text-white">
-              Esta carga ya está activada — {resumenLote?.activados}{" "}
-              {resumenLote?.activados === 1 ? "inmueble" : "inmuebles"} en tu
-              portafolio.
-            </p>
-            {(resumenLote?.pendientes ?? 0) > 0 && (
-              <p className="mt-1 text-sm text-fg-muted dark:text-fg-subtle">
-                Quedan {resumenLote?.pendientes} filas con datos por corregir.
-                No frenan nada: puedes arreglarlas acá o dejarlas fuera y
-                seguir.
-              </p>
-            )}
-            {/*
-             * 🔴 NADA DE ACCIÓN HASTA SABER CUÁL ES.
-             *
-             * Nico, 2026-09-11: «me apareció el cta, dizque seguir con
-             * contratos, y luego pasó a decir eso de ver las otras cargas».
-             * `otrasCargas` arranca en `null` y el conteo derivado daba 0,
-             * así que el bloque dibujaba «Seguir con Contratos» y lo cambiaba
-             * por otro botón distinto cuando volvía la consulta. Un botón que
-             * cambia de identidad debajo del dedo no se puede usar: se espera
-             * a saber y recién ahí se ofrece algo.
-             */}
-            {!sabemosDeOtrasCargas ? (
-              <p className="mt-3 text-sm text-fg-subtle" data-testid="mirando-otras-cargas">
-                Revisando si queda algo pendiente en otras cargas…
-              </p>
-            ) : listosEnOtrasCargas > 0 ? (
-              <>
-                <p className="mt-3 text-sm text-fg-muted dark:text-fg-subtle">
-                  Antes de seguir: {cuantasOtrasCargas}{" "}
-                  {cuantasOtrasCargas === 1 ? "carga anterior" : "cargas anteriores"}{" "}
-                  {cuantasOtrasCargas === 1 ? "tiene" : "tienen"}{" "}
-                  {listosEnOtrasCargas} filas listas sin activar. Mientras
-                  existan, este paso no se da por terminado — actívalas o
-                  descártalas. Al terminar con ellas aparece «Seguir con
-                  Contratos».
-                </p>
-                {onSalir && (
-                  <Button
-                    type="button"
-                    className="mt-3"
-                    hideArrow
-                    data-testid="ir-a-otras-cargas"
-                    onClick={() => onSalir()}
-                  >
-                    {cuantasOtrasCargas === 1
-                      ? "Ver y descartar esa carga"
-                      : "Ver y descartar las otras cargas"}
-                  </Button>
-                )}
-              </>
-            ) : onContinuar ? (
-              <Button
-                type="button"
-                className="mt-3"
-                hideArrow
-                data-testid="seguir-con-contratos"
-                onClick={() => onContinuar()}
-              >
-                Seguir con Contratos
-              </Button>
-            ) : null}
-          </div>
-        )}
 
         {/*
           La barra de la activación. Con muro sale por la ranura viva (fuera
@@ -1596,6 +1616,21 @@ export function StepConfirmImport({
               : `Activar ${resumenLote?.listos ?? 0} ${resumenLote?.listos === 1 ? "inmueble" : "inmuebles"}`}
           </Button>
         </div>
+
+        {/* El aviso, último del cuerpo: queda pegado al pie gris, que es donde
+            Nico lo pidió. Se cierra y no vuelve en esta visita al paso. */}
+        {sinNadaQueActivar && !avisoDeCargaCerrado ? avisoDeCargaTerminada : null}
+
+        {/* Y la acción, al pie, a la derecha de «Anterior» — donde vivió el
+            botón primario en todos los pasos anteriores. */}
+        {ranuraDelPie && salidaDelPaso
+          ? createPortal(salidaDelPaso, ranuraDelPie)
+          : null}
+        {/* Sin pie montado (primer render, o la página suelta) la salida no se
+            puede perder: se dibuja acá. */}
+        {!ranuraDelPie && salidaDelPaso ? (
+          <div className="flex justify-end">{salidaDelPaso}</div>
+        ) : null}
       </div>
     );
   }

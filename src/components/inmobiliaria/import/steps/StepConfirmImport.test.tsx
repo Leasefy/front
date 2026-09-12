@@ -183,14 +183,16 @@ function render(
     onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
     /** El nodo que el muro dibuja FUERA del `inert`. `null` = sin muro. */
     ranuraViva?: HTMLElement | null;
+    /** El pie del asistente, a la derecha de «Anterior». */
+    ranuraDelPie?: HTMLElement | null;
   } = {},
 ) {
-  const { ranuraViva = null, ...delPaso } = props;
+  const { ranuraViva = null, ranuraDelPie = null, ...delPaso } = props;
   act(() => {
     root.render(
       React.createElement(
         RanuraDelPie.Provider,
-        { value: null },
+        { value: ranuraDelPie },
         React.createElement(
           RanuraVivaContext.Provider,
           { value: ranuraViva },
@@ -481,6 +483,36 @@ describe('<StepConfirmImport> — the review screen once LISTO', () => {
         lote: 'lote-1', total: 2_864, pendientes: 40, listos: 0, activados: 2_824, descartados: 0,
       });
     }
+
+    /*
+     * 🔴 Nico, 2026-09-12: «ese verde se ve horrible; mejor que el seguir
+     * contrato quede ahí donde está siempre el siguiente, al lado de anterior,
+     * y el mensaje encima de esa zona gris con posibilidad de cerrarlo».
+     */
+    it('la acción se va al PIE y el aviso se puede cerrar', async () => {
+      loteTerminado();
+      inmueblesImportacionApiMock.lotesAbiertos.mockResolvedValue([]);
+      const pie = document.createElement('div');
+      document.body.appendChild(pie);
+
+      render(baseState(), { onSalir: () => {}, onContinuar: () => {}, ranuraDelPie: pie });
+      await act(async () => { for (let i = 0; i < 6; i++) await Promise.resolve(); });
+
+      // El botón NO está en el cuerpo del paso: está en el pie.
+      expect(container.querySelector('[data-testid="seguir-con-contratos"]')).toBeNull();
+      expect(pie.querySelector('[data-testid="seguir-con-contratos"]')).toBeTruthy();
+
+      // El aviso se cierra, y la salida del pie NO se va con él.
+      expect(container.querySelector('[data-testid="lote-terminado"]')).toBeTruthy();
+      await act(async () => {
+        container.querySelector<HTMLButtonElement>('[data-testid="cerrar-aviso-carga"]')!.click();
+        await Promise.resolve();
+      });
+      expect(container.querySelector('[data-testid="lote-terminado"]')).toBeNull();
+      expect(pie.querySelector('[data-testid="seguir-con-contratos"]')).toBeTruthy();
+
+      pie.remove();
+    });
 
     it('sin nada pendiente en otras cargas, ofrece seguir con Contratos', async () => {
       loteTerminado();

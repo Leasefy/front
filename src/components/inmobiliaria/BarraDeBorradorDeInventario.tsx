@@ -30,6 +30,10 @@ interface Props {
   onDescartar: () => void;
 }
 
+/**
+ * «9:19 p. m.» — el locale ya deja el punto final de «m.», así que la frase
+ * que la use NO lleva otro detrás: si no, queda «de las 9:19 p. m..».
+ */
 function hora(marca: number): string {
   return new Date(marca).toLocaleTimeString('es-CO', {
     hour: 'numeric',
@@ -52,9 +56,13 @@ export function BarraDeBorradorDeInventario({
 
   const sinSenal = senal === false;
 
+  // Se apila SIEMPRE, sin `sm:flex-row`: esta barra vive en la columna
+  // angosta de la ficha del inmueble (~300 px), y un breakpoint de VENTANA no
+  // sabe nada de eso — en pantalla grande ponía el texto y los dos botones en
+  // fila dentro de esa columna, y salía una palabra por renglón.
   return (
     <div
-      className={`rounded-md border border-border p-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between ${
+      className={`rounded-md border border-border p-3 flex flex-col gap-3 ${
         sinSenal ? 'bg-warning-soft' : 'bg-info-soft'
       }`}
       data-testid="borrador-de-inventario"
@@ -74,7 +82,7 @@ export function BarraDeBorradorDeInventario({
                 ? `Subiendo el inventario… ${avance.fotosSubidas} de ${avance.fotosTotales} fotos`
                 : 'Subiendo el inventario…'
               : actualizadoEn
-                ? `Tenés un inventario sin subir de este inmueble, de las ${hora(actualizadoEn)}.`
+                ? `Tenés un inventario sin subir de este inmueble, de las ${hora(actualizadoEn)}`
                 : 'Tenés un inventario sin subir de este inmueble.'}
           </p>
           <p className="text-body-sm text-fg-muted mt-0.5">
@@ -100,7 +108,7 @@ export function BarraDeBorradorDeInventario({
       </div>
 
       {!subiendo && (
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Button
             variant="ghost"
             size="sm"

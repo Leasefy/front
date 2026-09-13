@@ -56,8 +56,10 @@ interface Overrides {
   pollError?: string | null;
   awaitingTimedOut?: boolean;
   resuming?: boolean;
+  scheduled?: { pendingPlanTier: string; pendingPlanEffectiveAt: string | null } | null;
   onVerify?: () => void;
   onClose?: () => void;
+  onUndo?: () => void;
 }
 
 function render(overrides: Overrides = {}) {
@@ -75,7 +77,9 @@ function render(overrides: Overrides = {}) {
         pollError={overrides.pollError ?? null}
         awaitingTimedOut={overrides.awaitingTimedOut ?? false}
         resuming={overrides.resuming ?? false}
+        scheduled={overrides.scheduled ?? null}
         onVerify={onVerify}
+        onUndo={overrides.onUndo}
         onClose={onClose}
       />,
     );
@@ -172,5 +176,66 @@ describe('<AgencyCheckoutOverlay> — error keeps its existing exit', () => {
   it('renders "Volver a los planes"', () => {
     render({ state: 'error', error: 'El pago fue rechazado.' });
     expect(findButton('Volver a los planes')).toBeTruthy();
+  });
+});
+
+describe('<AgencyCheckoutOverlay> — scheduled / unchanged are not errors (T-0089)', () => {
+  it('scheduled: shows the target plan + effective date, never the error copy', () => {
+    render({
+      state: 'scheduled',
+      scheduled: { pendingPlanTier: 'pro', pendingPlanEffectiveAt: '2026-10-12T00:00:00.000Z' },
+    });
+    const text = allText();
+    expect(text).toContain('Pro');
+    expect(text).toMatch(/\d{1,2} de oct\.? de 2026/);
+    expect(text).not.toContain('No pudimos completar la operación');
+  });
+
+  it('scheduled: is dismissable via the explicit action, wired to onClose', () => {
+    const { onClose } = render({
+      state: 'scheduled',
+      scheduled: { pendingPlanTier: 'pro', pendingPlanEffectiveAt: '2026-10-12T00:00:00.000Z' },
+    });
+    const btn = findButton('Entendido');
+    expect(btn).toBeTruthy();
+    act(() => {
+      btn!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('scheduled: renders "Deshacer" only when onUndo is provided, and wires it', () => {
+    const onUndo = vi.fn();
+    render({
+      state: 'scheduled',
+      scheduled: { pendingPlanTier: 'pro', pendingPlanEffectiveAt: null },
+      onUndo,
+    });
+    const btn = findButton('Deshacer');
+    expect(btn).toBeTruthy();
+    act(() => {
+      btn!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(onUndo).toHaveBeenCalledTimes(1);
+  });
+
+  it('scheduled: no "Deshacer" action when onUndo is omitted', () => {
+    render({
+      state: 'scheduled',
+      scheduled: { pendingPlanTier: 'pro', pendingPlanEffectiveAt: null },
+    });
+    expect(findButton('Deshacer')).toBeFalsy();
+  });
+
+  it('unchanged: honest "no change" copy, dismissable via onClose', () => {
+    const { onClose } = render({ state: 'unchanged' });
+    const text = allText();
+    expect(text).toMatch(/ya tienes|no hicimos ningún cambio/i);
+    const btn = findButton('Cerrar');
+    expect(btn).toBeTruthy();
+    act(() => {
+      btn!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

@@ -95,6 +95,29 @@ describe('agencySubscriptionApi.abandonCharge', () => {
   });
 });
 
+describe('agencySubscriptionApi.cancelPendingChange', () => {
+  it('DELETEs the pending-change path and returns fresh state', async () => {
+    const fetchMock = mockFetchOnce({
+      subscription: { id: 's1', agencyId: 'a1', planTier: 'PRO', status: 'ACTIVE' },
+      openCharge: null,
+      status: 'ACTIVE',
+      canOfferRentals: true,
+      planTier: 'pro',
+      level: 1,
+      pendingPlanTier: null,
+      pendingPlanEffectiveAt: null,
+    });
+    globalThis.fetch = fetchMock as typeof globalThis.fetch;
+
+    const res = await agencySubscriptionApi.cancelPendingChange();
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(`${BASE}/inmobiliaria/subscription/pending-change`);
+    expect(init.method).toBe('DELETE');
+    expect(res.pendingPlanTier).toBeNull();
+  });
+});
+
 describe('agencySubscriptionApi.chargePseCheckout', () => {
   const dto: ChargePseCheckoutDto = {
     userType: 'NATURAL',

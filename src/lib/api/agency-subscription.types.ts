@@ -76,6 +76,20 @@ export interface AgencySubscriptionState {
   openCharge: AgencySubscriptionCharge | null;
   status: AgencySubscriptionStatus | null;
   canOfferRentals: boolean;
+  /** Current plan slug (R6: free-form lowercase-kebab, e.g. "pro"). Redundant
+   * with `subscription.planTier` but present at the top level on the wire
+   * (`AgencySubscriptionStateDto`) — null only for a brand-new agency with no
+   * subscription row yet. */
+  planTier: string | null;
+  /** Ladder level of the current plan; null = off-ladder (e.g. usage-based). */
+  level: number | null;
+  /** Tier a scheduled downgrade will switch to; null when nothing is scheduled
+   * (T-0089 — "Cancelar plan" is a scheduled downgrade to the catalog's
+   * default/free tier, detected here rather than via any "cancelled" flag). */
+  pendingPlanTier: string | null;
+  /** When the scheduled change takes effect (`currentPeriodEnd`); null when
+   * nothing is scheduled. */
+  pendingPlanEffectiveAt: string | null;
 }
 
 /**
@@ -100,6 +114,9 @@ export interface SelectPlanResponse {
   charge: AgencySubscriptionCharge | null;
   /** Optional: an old back predating T-0085 never sends it. */
   outcome?: SelectPlanOutcome;
+  /** When the scheduled downgrade takes effect. Present only for
+   * `SCHEDULED_DOWNGRADE` (T-0089); absent/null otherwise. */
+  effectiveAt?: string | null;
 }
 
 export interface ChargePseCheckoutDto {

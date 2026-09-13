@@ -77,4 +77,13 @@ export const agencySubscriptionApi = {
   abandonCharge(chargeId: string): Promise<AgencySubscriptionState> {
     return apiClient.post<AgencySubscriptionState>(`${BASE}/charges/${chargeId}/abandon`, {});
   },
+
+  /**
+   * DELETE /inmobiliaria/subscription/pending-change — cancel a scheduled plan
+   * change (a downgrade, including the T-0089 "Cancelar plan" scheduled to the
+   * default/free tier) and return fresh state. Requires `subscription:edit`.
+   */
+  cancelPendingChange(): Promise<AgencySubscriptionState> {
+    return apiClient.delete<AgencySubscriptionState>(`${BASE}/pending-change`);
+  },
 };

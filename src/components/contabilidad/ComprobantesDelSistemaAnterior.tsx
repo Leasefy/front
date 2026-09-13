@@ -279,40 +279,47 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
               `data-testid` va en el contenido —el DS no pasa props sueltas a
               cada segmento—, así que para clickearlo se sube al `<button>`
               con `closest`. */}
-          <SegmentedControl<ClaseDeComprobante>
-            aria-label="Ingresos, egresos y facturas"
-            value={clase}
-            onChange={setClase}
-            options={visibles.map((p) => ({
-              value: p.clase,
-              ariaLabel: `${p.etiqueta}: ${enPantalla[p.clase].toLocaleString('es-CO')}`,
-              label: (
-                <span
-                  className="flex items-center gap-1.5 whitespace-nowrap"
-                  data-testid={`pestana-${p.clase}`}
-                >
-                  {p.etiqueta}
-                  {/* Cada pestaña dice cuántos hay, y el número es del back:
-                      con el tope de 500 de por medio, contar las filas que se
-                      ven diría 500 para siempre.
-
-                      `opacity-60` y no una píldora con fondo: dentro de un
-                      segmentado el segmento activo es blanco y los demás
-                      dejan ver el riel gris, así que NINGÚN color de fondo
-                      fijo se ve en los dos estados —el que contrasta contra
-                      el blanco desaparece contra el gris—. Heredando el color
-                      del segmento, el número queda siempre un paso atrás del
-                      texto, activo o no, y también en modo oscuro. */}
+          {/* Cuatro segmentos no entran en 400 px de ancho. El `TabsList` que
+              había antes traía este scroll de fábrica en su shim; el
+              `SegmentedControl` del DS es `inline-flex` a secas, así que el
+              contenedor lo pone acá. Sin esto, en un teléfono «Otros» queda
+              fuera de la pantalla y no hay forma de llegar a él. */}
+          <div className="max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <SegmentedControl<ClaseDeComprobante>
+              aria-label="Ingresos, egresos y facturas"
+              value={clase}
+              onChange={setClase}
+              options={visibles.map((p) => ({
+                value: p.clase,
+                ariaLabel: `${p.etiqueta}: ${enPantalla[p.clase].toLocaleString('es-CO')}`,
+                label: (
                   <span
-                    className="tabular-nums opacity-60"
-                    data-testid={`conteo-${p.clase}`}
+                    className="flex items-center gap-1.5 whitespace-nowrap"
+                    data-testid={`pestana-${p.clase}`}
                   >
-                    {enPantalla[p.clase].toLocaleString('es-CO')}
+                    {p.etiqueta}
+                    {/* Cada pestaña dice cuántos hay, y el número es del
+                        back: con el tope de 500 de por medio, contar las
+                        filas que se ven diría 500 para siempre.
+
+                        `opacity-60` y no una píldora con fondo: dentro de un
+                        segmentado el segmento activo es blanco y los demás
+                        dejan ver el riel gris, así que NINGÚN color de fondo
+                        fijo se ve en los dos estados —el que contrasta contra
+                        el blanco desaparece contra el gris—. Heredando el
+                        color del segmento, el número queda siempre un paso
+                        atrás del texto, activo o no, y en modo oscuro. */}
+                    <span
+                      className="tabular-nums opacity-60"
+                      data-testid={`conteo-${p.clase}`}
+                    >
+                      {enPantalla[p.clase].toLocaleString('es-CO')}
+                    </span>
                   </span>
-                </span>
-              ),
-            }))}
-          />
+                ),
+              }))}
+            />
+          </div>
 
           <div className="space-y-3">
             <EstadoDeDatos

@@ -239,9 +239,17 @@ export function HistorialView({ historial }: { historial: HistorialDelInmueble }
           label="veces arrendado"
           value={contratos.vecesArrendado}
           hint={
-            contratos.rotacionPorAno === null
-              ? 'historia corta para medir rotación'
-              : `${contratos.rotacionPorAno} por año · dura ${contratos.duracionPromedioDias === null ? '—' : dias(contratos.duracionPromedioDias)}`
+            <>
+              {contratos.rotacionPorAno === null
+                ? 'historia corta para medir rotación'
+                : `${contratos.rotacionPorAno} por año · dura ${contratos.duracionPromedioDias === null ? '—' : dias(contratos.duracionPromedioDias)}`}
+              {contratos.renovaciones > 0 && (
+                <>
+                  {' · '}
+                  {contratos.renovaciones} renovación{contratos.renovaciones === 1 ? '' : 'es'}
+                </>
+              )}
+            </>
           }
         />
         <KpiCard

@@ -40,6 +40,7 @@ function historial(over: Partial<HistorialDelInmueble> = {}): HistorialDelInmueb
       cancelados: 0,
       sinArrancar: 0,
       vecesArrendado: 3,
+      renovaciones: 1,
       duracionPromedioDias: 200,
       rotacionPorAno: 1.5,
       lista: [
@@ -172,6 +173,8 @@ describe('HistorialView', () => {
 
     expect(texto).toContain('1 activo · 2 terminados')
     expect(texto).toContain('1.5 por año · dura 200 días')
+    // Renovar no es volver a arrendar: la ficha lo dice al lado de la rotación.
+    expect(texto).toContain('1 renovación')
     expect(texto).toContain('10.2 %')
     expect(texto).toContain('63 días de 620 días desde 2024-01-01')
     expect(texto).toContain('3 en 12 meses')
@@ -239,6 +242,7 @@ describe('HistorialView', () => {
           cancelados: 0,
           sinArrancar: 0,
           vecesArrendado: 0,
+          renovaciones: 0,
           duracionPromedioDias: null,
           rotacionPorAno: null,
           lista: [],

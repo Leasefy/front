@@ -123,7 +123,9 @@ export interface HistorialDelInmueble {
     terminados: number
     cancelados: number
     sinArrancar: number
+    /** Veces que se arrendó a alguien NUEVO: renovar no cuenta como arriendo nuevo. */
     vecesArrendado: number
+    renovaciones: number
     duracionPromedioDias: number | null
     rotacionPorAno: number | null
     lista: ContratoDelHistorial[]

@@ -108,6 +108,12 @@ afterEach(async () => {
 async function render(contratoId = 'lease-9') {
   await act(async () => {
     root.render(
+      // `Props.children` is required (not optional), so TypeScript rejects the
+      // args-form `createElement(Comp, props, child)` here: `props` alone
+      // never satisfies `Props` without `children` inside it. The prop-form
+      // below is the only one that both type-checks and matches the real
+      // (non-JSX) call site; `react/no-children-prop` targets JSX usage.
+      // eslint-disable-next-line react/no-children-prop
       React.createElement(ContratoSinSenal, {
         contratoId,
         children: React.createElement('p', { 'data-testid': 'fallo' }, 'No se pudo cargar el contrato'),

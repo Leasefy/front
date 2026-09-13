@@ -431,7 +431,17 @@ function ResumenDelNegocio() {
         <KPICard
           title={t('inmobiliaria.dashboard.kpi.totalProperties')}
           value={kpis.totalProperties}
-          subtitle={t('inmobiliaria.dashboard.kpi.rentedAndAvailable', { rented: kpis.propertiesRented, available: kpis.propertiesAvailable })}
+          subtitle={
+            /*
+             * `propertiesRented` y `propertiesAvailable` son del CATÁLOGO, y
+             * el total es el portafolio entero: sin decir cuántos quedaron
+             * fuera, «2.655 · 725 arrendadas · 74 disponibles» no cierra y
+             * parece un error de cuentas.
+             */
+            fueraDelCatalogo > 0
+              ? `${t('inmobiliaria.dashboard.kpi.rentedAndAvailable', { rented: kpis.propertiesRented, available: kpis.propertiesAvailable })} · ${t('inmobiliaria.dashboard.kpi.outOfCatalog', { count: fueraDelCatalogo })}`
+              : t('inmobiliaria.dashboard.kpi.rentedAndAvailable', { rented: kpis.propertiesRented, available: kpis.propertiesAvailable })
+          }
           icon={Buildings}
           href="/panel/inmobiliaria/inmuebles"
         />

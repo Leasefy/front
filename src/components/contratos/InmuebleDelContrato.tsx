@@ -1,45 +1,100 @@
 'use client';
 
 /**
- * El inventario y el historial del inmueble, vistos desde la ficha del
- * contrato.
+ * El inventario y el historial del inmueble, vistos —y cargados— desde la
+ * ficha del contrato.
  *
  * 🔴 Nico, 2026-09-12: «el historial que hoy vive en el inmueble debe
  * asociarse al contrato» y «el inventario debe verse también desde el
- * contrato, no sólo desde el inmueble». Hasta ahora las dos cosas sólo se
- * veían entrando a la ficha del inmueble: quien miraba un contrato tenía que
- * salir de él para saber qué se entregó y qué le pasó al inmueble.
+ * contrato, no sólo desde el inmueble».
  *
- * Son los MISMOS componentes de la ficha del inmueble (`ActaEntregaView`,
- * `ConsignacionTimeline`) sobre la misma consignación —resuelta por
- * `propertyId`, que es lo que el contrato tiene—, así que lo que se ve acá y
- * lo que se ve allá es una sola cosa. El inventario acá es de sólo lectura:
- * se edita donde vive, en la ficha del inmueble, y el enlace lo dice.
+ * 🔴 Nico, 2026-09-13: «desde el contrato también debería de agregar todo lo
+ * que se pueda agregar del inventario». Ayer esto mostraba el inventario en
+ * sólo lectura con un texto que mandaba a la ficha del inmueble a editarlo.
+ * Eso obligaba a salir del contrato justo cuando la persona está parada en el
+ * apartamento con el teléfono en la mano — que es el único momento en que se
+ * carga un inventario.
  *
- * Decisión conservadora (no está en la lista de Nico): NO se agrega ni se
- * quita inventario desde el contrato. Editarlo desde dos pantallas obliga a
- * mantener dos flujos iguales, y el de la ficha del inmueble ya existe.
+ * Ahora monta el MISMO componente que la ficha del inmueble
+ * (`InventarioDeLaConsignacion`) sobre la MISMA consignación —resuelta por
+ * `propertyId`, que es lo que el contrato tiene—, con todo lo que allá se
+ * puede hacer: agregar, editar y quitar ítems, foto con la cámara, imprimir el
+ * acta, el borrador que espera sin señal con su barra, y «Preparar para
+ * trabajar sin señal» (que acá guarda la página del CONTRATO, no la del
+ * inmueble: el worker guarda páginas). No hay dos inventarios: es una sola
+ * lista y un solo borrador, llaveados por la consignación.
  */
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Package, Warning } from '@phosphor-icons/react';
+import { Buildings, Warning } from '@phosphor-icons/react';
 import { useConsignacion } from '@/lib/hooks/useInmobiliaria';
-import { ActaEntregaView } from '@/components/inmobiliaria/ActaEntregaView';
+import { useCopiaDeInmueble } from '@/lib/hooks/use-copia-de-inmueble';
+import { usePuedeEditarInventario } from '@/lib/hooks/use-puede-editar-inventario';
+import { useSinSenal } from '@/lib/hooks/use-sin-senal';
+import { registrarServiceWorker } from '@/lib/inventario/sw-inventario';
+import { rutaDeLaFichaDelContrato } from '@/lib/inventario/copia-de-inmueble';
+import { InventarioDeLaConsignacion } from '@/components/inmobiliaria/InventarioDeLaConsignacion';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
+import type { Consignacion } from '@/lib/types/inmobiliaria';
 
 interface InmuebleDelContratoProps {
-  /** El inmueble del contrato. Sin él no hay consignación que mirar. */
-  propertyId: string;
+  /** El inmueble del contrato. `null` = el contrato no tiene inmueble todavía. */
+  propertyId: string | null;
+  /** El contrato desde el que se abrió. Viaja al borrador y a la copia local. */
+  contratoId: string;
   /** A dónde volver desde la ficha del inmueble («volver» de `ruta-de-regreso`). */
   volverA?: string;
 }
 
-export function InmuebleDelContrato({ propertyId, volverA }: InmuebleDelContratoProps) {
-  const router = useRouter();
-  const { consignacion, isLoading, error } = useConsignacion(propertyId);
+export function InmuebleDelContrato({
+  propertyId,
+  contratoId,
+  volverA,
+}: InmuebleDelContratoProps) {
+  const { consignacion: delBack, isLoading, error } = useConsignacion(propertyId ?? undefined);
+  // Lo que devolvió el back al subir el borrador gana sobre lo que se pidió al
+  // entrar: si no, quitar un ítem acá lo deja en pantalla hasta recargar.
+  const [reciente, setReciente] = useState<Consignacion | null>(null);
+  const consignacion = reciente ?? delBack;
 
-  if (isLoading) {
+  const puedeEditar = usePuedeEditarInventario();
+  const sinSenal = useSinSenal();
+  const copiaLocal = useCopiaDeInmueble(
+    consignacion?.id,
+    delBack ?? undefined,
+    rutaDeLaFichaDelContrato(contratoId),
+  );
+
+  // El worker es lo único que puede servir ESTA página sin señal. Se registra
+  // desde acá igual que desde la ficha del inmueble, y sólo en producción o
+  // con `NEXT_PUBLIC_SW_INVENTARIO=1` (ver `sw-inventario.ts`).
+  useEffect(() => {
+    void registrarServiceWorker();
+  }, []);
+
+  /* Sin inmueble no hay inventario: se dice, y no se ofrece cargar nada. La
+     tarjeta «Inmueble» de la izquierda es la que ofrece vincularlo. */
+  if (!propertyId) {
+    return (
+      <div
+        className="rounded-lg border border-border bg-card p-5 flex items-start gap-3"
+        data-testid="contrato-sin-inmueble"
+      >
+        <Buildings className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+        <div className="text-sm">
+          <p className="font-medium text-foreground">
+            Este contrato no tiene inmueble asociado.
+          </p>
+          <p className="text-muted-foreground mt-0.5">
+            El inventario es del inmueble: vinculá uno para poder cargarlo.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading && !consignacion) {
     return (
       <div className="space-y-6" data-testid="inmueble-del-contrato-cargando">
         {[0, 1].map((i) => (
@@ -53,7 +108,7 @@ export function InmuebleDelContrato({ propertyId, volverA }: InmuebleDelContrato
     );
   }
 
-  if (error || !consignacion) {
+  if (!consignacion) {
     /* «No se pudo traer» y «no existe» se dicen distinto: sobre algo que no
        existe, reintentar no tiene sentido. Sin consignación no hay inventario
        ni historial que mostrar, y se dice en vez de dejar un hueco. */
@@ -86,20 +141,23 @@ export function InmuebleDelContrato({ propertyId, volverA }: InmuebleDelContrato
   return (
     <div className="space-y-6" data-testid="inmueble-del-contrato">
       <div className="space-y-2">
-        <ActaEntregaView
-          inventoryItems={consignacion.inventoryItems}
-          contractDate={consignacion.contractDate}
-          onPrint={() => router.push(`/panel/inmobiliaria/inmuebles/${consignacion.id}/acta`)}
+        <InventarioDeLaConsignacion
+          consignacion={consignacion}
+          puedeEditar={puedeEditar}
+          contratoId={contratoId}
+          copiaLocal={copiaLocal}
+          sinSenal={sinSenal}
+          onActualizada={setReciente}
         />
-        <p className="text-xs text-muted-foreground flex items-center gap-1.5 px-1">
-          <Package className="w-3.5 h-3.5" aria-hidden />
-          El inventario se edita en la ficha del inmueble.{' '}
+        {/* El enlace queda, pero ya no manda a hacer el trabajo allá: es para
+            ver el resto del inmueble (fotos, propietario, visitas). */}
+        <p className="text-xs text-muted-foreground px-1">
           <Link
             href={fichaDelInmueble}
             className="font-medium text-primary hover:underline"
-            data-testid="editar-inventario-en-el-inmueble"
+            data-testid="ver-el-inmueble"
           >
-            Ir a la ficha →
+            Ver el inmueble →
           </Link>
         </p>
       </div>

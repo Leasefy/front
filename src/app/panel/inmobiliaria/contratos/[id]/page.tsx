@@ -240,7 +240,7 @@ function ContratoDetalleContent() {
         <FalloDeCarga
           error={error}
           queEs="este contrato"
-            onReintentar={refetch}
+          onReintentar={refetch}
           volverA={{ label: 'Contratos', href: '/panel/inmobiliaria/contratos' }}
         />
       </div>
@@ -660,12 +660,17 @@ function ContratoDetalleContent() {
           {/*
             🔴 Nico, 2026-09-12: el inventario y el historial del inmueble se
             ven también desde el contrato, no sólo desde la ficha del inmueble.
-            Sólo con inmueble: sin él no hay consignación, y la tarjeta
-            «Inmueble» de la izquierda ya ofrece vincularlo.
+            🔴 Nico, 2026-09-13: «desde el contrato también debería de agregar
+            todo lo que se pueda agregar del inventario» — el mismo componente
+            de la ficha del inmueble, sobre la misma consignación.
+            Sin inmueble se dice ahí mismo en vez de dejar un hueco: el
+            inventario es del inmueble y este contrato todavía no tiene uno.
           */}
-          {contract.propertyId ? (
-            <InmuebleDelContrato key={contract.propertyId} propertyId={contract.propertyId} />
-          ) : null}
+          <InmuebleDelContrato
+            key={contract.propertyId ?? 'sin-inmueble'}
+            propertyId={contract.propertyId}
+            contratoId={contract.id}
+          />
         </div>
       </div>
     </div>

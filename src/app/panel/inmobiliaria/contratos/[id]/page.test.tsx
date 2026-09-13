@@ -157,10 +157,14 @@ vi.mock('@/components/contratos/VincularInmueble', () => ({
       : null,
 }))
 // El inventario y el historial del inmueble desde el contrato (2026-09-12):
-// acá sólo importa CUÁNDO se monta y con qué inmueble.
+// acá sólo importa CUÁNDO se monta y con qué inmueble y contrato.
 vi.mock('@/components/contratos/InmuebleDelContrato', () => ({
-  InmuebleDelContrato: ({ propertyId }: { propertyId: string }) =>
-    React.createElement('div', { 'data-testid': 'inmueble-del-contrato' }, propertyId),
+  InmuebleDelContrato: ({ propertyId, contratoId }: { propertyId: string | null; contratoId: string }) =>
+    React.createElement(
+      'div',
+      { 'data-testid': 'inmueble-del-contrato', 'data-contrato': contratoId },
+      propertyId ?? 'sin-inmueble',
+    ),
 }))
 
 // ── Import page AFTER mocks ───────────────────────────────────────────────
@@ -472,22 +476,35 @@ describe('ContratoDetallePage — el número de la inmobiliaria en el título', 
 /*
  * Nico, 2026-09-12: «el historial que hoy vive en el inmueble debe asociarse
  * al contrato» y «el inventario debe verse también desde el contrato».
+ * Nico, 2026-09-13: «desde el contrato también debería de agregar todo lo que
+ * se pueda agregar del inventario» — y para eso el componente necesita saber
+ * DESDE QUÉ contrato se abrió: es lo que se guarda en el borrador y la página
+ * que se prepara para trabajar sin señal.
  */
 describe('ContratoDetallePage — inventario e historial del inmueble', () => {
-  it('con inmueble, se montan sobre ESE inmueble', async () => {
+  it('con inmueble, se montan sobre ESE inmueble y dicen desde qué contrato', async () => {
     withContract(contract({ propertyId: 'prop-7' }))
 
     await renderPage()
 
-    expect(container.querySelector('[data-testid="inmueble-del-contrato"]')?.textContent).toBe('prop-7')
+    const montado = container.querySelector('[data-testid="inmueble-del-contrato"]')
+    expect(montado?.textContent).toBe('prop-7')
+    expect(montado?.getAttribute('data-contrato')).toBe(CONTRACT_ID)
   })
 
-  it('sin inmueble no hay consignación que mirar: no se montan', async () => {
+  /*
+   * Antes no se montaba nada y el hueco no decía nada. Ahora se monta igual y
+   * es el componente el que dice «este contrato no tiene inmueble asociado»:
+   * un inventario sin inmueble no tiene dónde vivir, y eso hay que decirlo.
+   */
+  it('sin inmueble se monta igual, para poder decirlo', async () => {
     withContract(contract({ propertyId: null }))
 
     await renderPage()
 
-    expect(container.querySelector('[data-testid="inmueble-del-contrato"]')).toBeNull()
+    expect(container.querySelector('[data-testid="inmueble-del-contrato"]')?.textContent).toBe(
+      'sin-inmueble',
+    )
   })
 })
 

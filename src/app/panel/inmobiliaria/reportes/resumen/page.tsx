@@ -326,6 +326,9 @@ function ResumenDelNegocio() {
   const enCatalogo = kpis.propertiesInCatalog ?? kpis.totalProperties;
   const fueraDelCatalogo = kpis.propertiesOutOfCatalog ?? 0;
   const tasaDeOcupacion = tasaMedida(kpis.propertiesRented, enCatalogo);
+  // Con 1.944 inmuebles afuera, «1944» sin separador se lee mal en una
+  // subtítulo de tarjeta. El resto del panel ya formatea así.
+  const miles = (n: number) => n.toLocaleString('es-CO');
 
   /*
    * La tendencia es un % contra el mes anterior, y ese mes anterior no viaja.
@@ -439,8 +442,8 @@ function ResumenDelNegocio() {
              * parece un error de cuentas.
              */
             fueraDelCatalogo > 0
-              ? `${t('inmobiliaria.dashboard.kpi.rentedAndAvailable', { rented: kpis.propertiesRented, available: kpis.propertiesAvailable })} · ${t('inmobiliaria.dashboard.kpi.outOfCatalog', { count: fueraDelCatalogo })}`
-              : t('inmobiliaria.dashboard.kpi.rentedAndAvailable', { rented: kpis.propertiesRented, available: kpis.propertiesAvailable })
+              ? `${t('inmobiliaria.dashboard.kpi.rentedAndAvailable', { rented: miles(kpis.propertiesRented), available: miles(kpis.propertiesAvailable) })} · ${t('inmobiliaria.dashboard.kpi.outOfCatalog', { count: miles(fueraDelCatalogo) })}`
+              : t('inmobiliaria.dashboard.kpi.rentedAndAvailable', { rented: miles(kpis.propertiesRented), available: miles(kpis.propertiesAvailable) })
           }
           icon={Buildings}
           href="/panel/inmobiliaria/inmuebles"
@@ -462,8 +465,8 @@ function ResumenDelNegocio() {
           subtitle={
             // El número dice QUÉ cuenta: nunca un porcentaje suelto.
             fueraDelCatalogo > 0
-              ? `${t('inmobiliaria.dashboard.kpi.occupancyOf', { rented: kpis.propertiesRented, total: enCatalogo })} · ${t('inmobiliaria.dashboard.kpi.outOfCatalog', { count: fueraDelCatalogo })}`
-              : t('inmobiliaria.dashboard.kpi.occupancyOf', { rented: kpis.propertiesRented, total: enCatalogo })
+              ? `${t('inmobiliaria.dashboard.kpi.occupancyOf', { rented: miles(kpis.propertiesRented), total: miles(enCatalogo) })} · ${t('inmobiliaria.dashboard.kpi.outOfCatalog', { count: miles(fueraDelCatalogo) })}`
+              : t('inmobiliaria.dashboard.kpi.occupancyOf', { rented: miles(kpis.propertiesRented), total: miles(enCatalogo) })
           }
           icon={House}
         />

@@ -176,7 +176,7 @@ describe('Resumen del negocio — con operación de verdad', () => {
     const ocupacion = tarjeta('Ocupación').textContent ?? '';
     expect(ocupacion).toContain('83.0%');
     expect(ocupacion).toContain('730 arrendados de 880 en catálogo');
-    expect(ocupacion).toContain('1944 fuera del catálogo');
+    expect(ocupacion).toContain('1.944 fuera del catálogo');
     // La tasa NO se mide contra los 2.824.
     expect(ocupacion).not.toContain('25.');
   });

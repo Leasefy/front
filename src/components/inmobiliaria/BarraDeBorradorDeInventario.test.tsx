@@ -11,6 +11,7 @@ import { act } from 'react';
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 import { BarraDeBorradorDeInventario } from './BarraDeBorradorDeInventario';
+import type { AvanceDeSubida } from '@/lib/inventario/subir-borrador';
 
 const base = {
   hayPendientes: true,
@@ -18,8 +19,8 @@ const base = {
   fotosSinSubir: 0,
   senal: true as boolean | null,
   subiendo: false,
-  avance: null,
-  errorDeSubida: null,
+  avance: null as AvanceDeSubida | null,
+  errorDeSubida: null as string | null,
   onSubir: () => {},
   onDescartar: () => {},
 };

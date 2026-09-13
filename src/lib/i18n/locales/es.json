@@ -1831,6 +1831,8 @@
       "deleteWarningProperties": "Este propietario tiene {{count}} propiedad(es) consignadas.",
       "deleteBloqueado": {
         "titulo": "No se puede eliminar: tiene {{count}} inmueble(s) consignado(s)",
+        "tituloCopropietario": "No se puede eliminar: es copropietario en {{count}} inmueble(s)",
+        "detalleCopropietario": "Primero quitalo del reparto de esos mandatos desde la ficha del inmueble; después sí se puede borrar la ficha.",
         "detalle": "Primero retirá o reasigna esos mandatos desde el portafolio; después sí se puede borrar la ficha.",
         "accion": "Ir al portafolio"
       },
@@ -4818,6 +4820,7 @@
         "netToOwner": "Neto al propietario",
         "netToOwnerHint": "al mes, después de comisión",
         "ofTotalRented": "{{rentados}} de {{total}} arrendados",
+        "copropiedades": "{{n}} como copropietario",
         "sinPropiedades": "sin inmuebles",
         "lastPayment": "Último giro"
       },
@@ -4857,6 +4860,7 @@
         "rented": "arrendadas",
         "upToDate": "Al día",
         "viewDetail": "Ver detalle",
+        "copropiedades": "+{{n}} como copropietario",
         "edit": "Editar",
         "sendEmail": "Enviar email",
         "call": "Llamar",

@@ -46,7 +46,15 @@ export interface Propietario {
   /** Departamento, aparte de la ciudad; lo parte la migración y lo edita el formulario. */
   department?: string | null;
   bankAccount: PropietarioBankAccount;
+  /** Mandatos donde es el propietario PRINCIPAL (el de mayor participación). */
   propertyCount: number;
+  /**
+   * Mandatos donde es dueño con un porcentaje SIN ser el principal
+   * (2026-09-13). Va aparte de `propertyCount` para no contar dos veces el
+   * mismo inmueble. Opcional porque un back viejo no la manda; `normalizePropietario`
+   * la deja en 0 en ese caso.
+   */
+  copropiedadesCount?: number;
   activeLeases: number;
   totalMonthlyRent: number;
   /**

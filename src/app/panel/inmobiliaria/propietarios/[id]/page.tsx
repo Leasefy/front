@@ -657,6 +657,10 @@ function PropietarioDetailContent() {
                 propietario.propertyCount === 1
                   ? `1 ${t('inmobiliaria.propietario.stats.properties').toLowerCase().replace(/s$/, '')}`
                   : `${propietario.propertyCount} ${t('inmobiliaria.propietario.stats.properties').toLowerCase()}`,
+                // Sus copropiedades, aparte: el minoritario también es dueño.
+                (propietario.copropiedadesCount ?? 0) > 0
+                  ? t('inmobiliaria.propietario.stats.copropiedades', { n: propietario.copropiedadesCount })
+                  : null,
                 propietario.city || null,
                 t('inmobiliaria.propietarios.detail.desde', {
                   fecha: new Date(propietario.createdAt).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', { month: 'long', year: 'numeric' }),
@@ -997,11 +1001,23 @@ function PropietarioDetailContent() {
               {t('inmobiliaria.propietarios.deleteBloqueado.detalle')}
             </AlertaAccionable>
           )}
+          {/* Lo mismo si es COPROPIETARIO sin ser principal: la FK lo retiene
+              igual y el back responde 409 (antes era un 500). */}
+          {propietario.propertyCount === 0 && (propietario.copropiedadesCount ?? 0) > 0 && (
+            <AlertaAccionable
+              severidad="danger"
+              titulo={t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietario', { count: propietario.copropiedadesCount })}
+              accion={{ label: t('inmobiliaria.propietarios.deleteBloqueado.accion'), href: '/panel/inmobiliaria/inmuebles' }}
+              data-testid="borrar-bloqueado-copropietario"
+            >
+              {t('inmobiliaria.propietarios.deleteBloqueado.detalleCopropietario')}
+            </AlertaAccionable>
+          )}
           <div className="flex items-center gap-3 justify-end pt-4">
             <Button variant="secondary" hideArrow onClick={() => setShowDeleteModal(false)} disabled={isDeleting}>
               {t('inmobiliaria.common.cancel')}
             </Button>
-            {propietario.propertyCount === 0 && (
+            {propietario.propertyCount === 0 && (propietario.copropiedadesCount ?? 0) === 0 && (
               <Button variant="destructive" hideArrow onClick={handleDelete} isLoading={isDeleting} disabled={isDeleting}>
                 {t('inmobiliaria.common.delete')}
               </Button>

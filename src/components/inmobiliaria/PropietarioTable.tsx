@@ -288,6 +288,16 @@ export function PropietarioTable({
                       <span className="text-muted-foreground ml-1">
                         ({propietario.activeLeases} {t('inmobiliaria.propietario.table.rented')})
                       </span>
+                      {/* El minoritario existe: sus copropiedades van aparte
+                          del conteo de mandatos donde es principal. */}
+                      {(propietario.copropiedadesCount ?? 0) > 0 && (
+                        <span
+                          className="block text-xs text-muted-foreground tabular-nums"
+                          data-testid="copropiedades-del-propietario"
+                        >
+                          {t('inmobiliaria.propietario.table.copropiedades', { n: propietario.copropiedadesCount })}
+                        </span>
+                      )}
                     </div>
                   </TableCell>
 

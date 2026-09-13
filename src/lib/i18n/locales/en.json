@@ -1791,6 +1791,8 @@
       "deleteWarningProperties": "This owner has {{count}} consigned property(ies).",
       "deleteBloqueado": {
         "titulo": "Cannot delete: {{count}} consigned unit(s)",
+        "tituloCopropietario": "Cannot delete: co-owner of {{count}} unit(s)",
+        "detalleCopropietario": "Remove them from those mandates' split on the unit page first; then the record can be deleted.",
         "detalle": "Withdraw or reassign those mandates from the portfolio first; then the record can be deleted.",
         "accion": "Go to the portfolio"
       },
@@ -4778,6 +4780,7 @@
         "netToOwner": "Net to owner",
         "netToOwnerHint": "per month, after commission",
         "ofTotalRented": "{{rentados}} of {{total}} rented",
+        "copropiedades": "{{n}} as co-owner",
         "sinPropiedades": "no properties",
         "lastPayment": "Last payout"
       },
@@ -4817,6 +4820,7 @@
         "rented": "rented",
         "upToDate": "Up to date",
         "viewDetail": "View detail",
+        "copropiedades": "+{{n}} as co-owner",
         "edit": "Edit",
         "sendEmail": "Send email",
         "call": "Call",

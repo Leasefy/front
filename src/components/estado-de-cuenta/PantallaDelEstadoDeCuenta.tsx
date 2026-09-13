@@ -181,17 +181,6 @@ export function PantallaDelEstadoDeCuenta({
         </div>
       </div>
 
-      {!sinFiltros && doc && filtrado && doc.contratos.length > 0 && (
-        <FiltrosDelEstado
-          filtros={filtros}
-          onCambiar={setFiltros}
-          contratos={doc.contratos.map((c) => c.numero)}
-          hoy={hoy}
-          visibles={cuantasFilasDelDocumento(filtrado)}
-          total={cuantasFilasDelDocumento(doc)}
-        />
-      )}
-
       {cargando ? (
         <div className="space-y-4 rounded-lg border border-border bg-surface p-10">
           <Skeleton className="h-8 w-1/3" />
@@ -205,37 +194,54 @@ export function PantallaDelEstadoDeCuenta({
           onReintentar={pedir}
           volverA={regreso}
         />
-      ) : filtrado ? (
-        filtrado.contratos.length === 0 && conFiltros ? (
-          /* Filtrado a cero NO es «este cliente no tiene contratos»: decirlo
-             así sería afirmar algo falso sobre el cliente. */
-          <div
-            data-testid="estado-sin-resultados"
-            className="rounded-lg border border-border bg-surface px-6 py-16 text-center"
-          >
-            <p className="text-body font-medium text-fg">
-              {t('estadoDeCuenta.sinResultados')}
-            </p>
-            <p className="mt-1 text-body-sm text-fg-muted">
-              {t('estadoDeCuenta.sinResultadosDetalle')}
-            </p>
-            <Button
-              variant="secondary"
-              hideArrow
-              className="mt-4"
-              onClick={() => setFiltros(SIN_FILTROS)}
-            >
-              {t('estadoDeCuenta.limpiar')}
-            </Button>
-          </div>
-        ) : (
-          <EstadoDeCuentaDocumento
-            doc={filtrado}
-            hoy={hoy}
-            sinPaginar={imprimiendo}
-            nota={nota}
-          />
-        )
+      ) : doc && filtrado ? (
+        /* La misma tarjeta que las demás tablas del panel: la barra de filtros
+           arriba, con su borde, y el contenido debajo. El documento pierde su
+           propio marco para no quedar como una tarjeta dentro de otra. */
+        <section
+          data-estado-marco
+          className="overflow-hidden rounded-lg border border-border bg-surface shadow-sm"
+        >
+          {!sinFiltros && doc.contratos.length > 0 && (
+            <FiltrosDelEstado
+              filtros={filtros}
+              onCambiar={setFiltros}
+              contratos={doc.contratos.map((c) => c.numero)}
+              hoy={hoy}
+              visibles={cuantasFilasDelDocumento(filtrado)}
+              total={cuantasFilasDelDocumento(doc)}
+            />
+          )}
+
+          {filtrado.contratos.length === 0 && conFiltros ? (
+            /* Filtrado a cero NO es «este cliente no tiene contratos»: decirlo
+               así sería afirmar algo falso sobre el cliente. */
+            <div data-testid="estado-sin-resultados" className="px-6 py-16 text-center">
+              <p className="text-body font-medium text-fg">
+                {t('estadoDeCuenta.sinResultados')}
+              </p>
+              <p className="mt-1 text-body-sm text-fg-muted">
+                {t('estadoDeCuenta.sinResultadosDetalle')}
+              </p>
+              <Button
+                variant="secondary"
+                hideArrow
+                className="mt-4"
+                onClick={() => setFiltros(SIN_FILTROS)}
+              >
+                {t('estadoDeCuenta.limpiar')}
+              </Button>
+            </div>
+          ) : (
+            <EstadoDeCuentaDocumento
+              doc={filtrado}
+              hoy={hoy}
+              sinPaginar={imprimiendo}
+              nota={nota}
+              className="rounded-none border-0 shadow-none"
+            />
+          )}
+        </section>
       ) : null}
     </div>
   );

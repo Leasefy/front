@@ -101,11 +101,12 @@ export const TEXTO: Record<string, string> = {
   'estadoDeCuenta.proximosTresMeses': 'Próximos 3 meses',
   'estadoDeCuenta.esteAnio': 'Este año',
   'estadoDeCuenta.quitarPeriodo': 'Quitar el período',
+  'estadoDeCuenta.fechasExactas': 'Fechas exactas…',
   'estadoDeCuenta.desde': 'Desde',
   'estadoDeCuenta.hasta': 'Hasta',
   'estadoDeCuenta.todosLosContratos': 'Todos los contratos',
-  'estadoDeCuenta.limpiar': 'Quitar filtros',
-  'estadoDeCuenta.viendoFilas': 'Viendo {{visibles}} de {{total}} filas',
+  'estadoDeCuenta.limpiar': 'Limpiar',
+  'estadoDeCuenta.viendoFilas': '{{visibles}} de {{total}} filas',
   'estadoDeCuenta.filtrado':
     'Los totales son de lo que estás viendo, no de todo el contrato.',
 

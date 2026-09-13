@@ -20,7 +20,50 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+// El `Select` del panel monta su lista en un portal de Radix que happy-dom no
+// abre con un clic: se reemplaza por botones planos con `data-opcion`, igual
+// que en la prueba de la lista de contratos.
+vi.mock('@/components/ui/select', async () => {
+  const R = await import('react');
+  const Ctx = R.createContext<(v: string) => void>(() => {});
+  return {
+    Select: ({
+      value,
+      onValueChange,
+      children,
+    }: {
+      value: string;
+      onValueChange: (v: string) => void;
+      children?: React.ReactNode;
+    }) =>
+      R.createElement(
+        Ctx.Provider,
+        { value: onValueChange },
+        R.createElement('div', { 'data-select': value }, children),
+      ),
+    SelectTrigger: ({
+      children,
+      className,
+      ...props
+    }: Record<string, unknown> & { children?: React.ReactNode }) => {
+      void className;
+      return R.createElement('button', { type: 'button', ...props }, children);
+    },
+    SelectContent: ({ children }: { children?: React.ReactNode }) =>
+      R.createElement('div', null, children),
+    SelectItem: ({ value, children }: { value: string; children?: React.ReactNode }) => {
+      const elegir = R.useContext(Ctx);
+      return R.createElement(
+        'button',
+        { type: 'button', 'data-opcion': value, onClick: () => elegir(value) },
+        children,
+      );
+    },
+  };
+});
+
 import { PantallaDelEstadoDeCuenta } from './PantallaDelEstadoDeCuenta';
+import { cuantasFilas } from './filas';
 import { contrato, estadoDeCuenta } from './ejemplo-de-prueba';
 
 const HOY = '2026-09-13';
@@ -82,10 +125,11 @@ describe('PantallaDelEstadoDeCuenta', () => {
     const cargar = vi.fn().mockResolvedValue(estadoDeCuenta());
     await montar(<PantallaDelEstadoDeCuenta cargar={cargar} hoy={HOY} />);
 
-    // El par desde/hasta vive dentro del popover del período: se abre primero.
-    // Radix monta el contenido en un portal sobre `document.body`, no en `host`.
-    clic(host.querySelector('[data-testid="filtro-periodo"]'));
-    const desde = document.body.querySelector<HTMLInputElement>('[data-testid="filtro-desde"]');
+    // El par desde/hasta aparece al elegir «Fechas exactas…» en el desplegable
+    // del período: hasta entonces no está en pantalla.
+    expect(host.querySelector('[data-testid="filtro-desde"]')).toBeNull();
+    clic(host.querySelector('[data-testid="filtro-periodo"] ~ div [data-opcion="fechas"]'));
+    const desde = host.querySelector<HTMLInputElement>('[data-testid="filtro-desde"]');
     expect(desde).not.toBeNull();
     act(() => {
       const setter = Object.getOwnPropertyDescriptor(
@@ -99,26 +143,31 @@ describe('PantallaDelEstadoDeCuenta', () => {
     expect(host.querySelector('[data-testid="estado-sin-resultados"]')).not.toBeNull();
     expect(host.textContent).not.toContain('Este cliente no tiene contratos');
     // Y ofrece la salida: quitar los filtros.
-    expect(host.textContent).toContain('Quitar filtros');
+    expect(host.textContent).toContain('Limpiar');
   });
 
-  it('los atajos del período filtran por mes calendario y dicen cuántas filas quedan', async () => {
+  it('los atajos del período filtran por mes calendario y el conteo dice «N de M filas»', async () => {
     const cargar = vi.fn().mockResolvedValue(estadoDeCuenta({ contratos: [contrato()] }));
     await montar(<PantallaDelEstadoDeCuenta cargar={cargar} hoy={HOY} />);
+    // `tbody tr` cuenta también la línea del punto de quiebre: el total de
+    // FILAS es el del contrato.
     const total = host.querySelectorAll('tbody tr').length;
+    const filas = cuantasFilas(contrato());
+    const conteo = () => host.querySelector('[data-testid="filtro-conteo"]')?.textContent;
+    // El conteo está siempre, como en las demás tablas: sin filtro dice M de M.
+    expect(conteo()).toBe(`${filas} de ${filas} filas`);
 
-    clic(host.querySelector('[data-testid="filtro-periodo"]'));
-    clic(document.body.querySelector('[data-testid="periodo-esteMes"]'));
+    clic(host.querySelector('[data-testid="filtro-periodo"] ~ div [data-opcion="esteMes"]'));
 
-    // El popover se cierra solo al elegir un atajo y la píldora dice el rango.
-    expect(document.body.querySelector('[data-testid="filtro-desde"]')).toBeNull();
-    expect(host.textContent).toContain('1 sep 2026 – 30 sep 2026');
-    const conteo = host.querySelector('[data-testid="filtro-conteo"]');
-    expect(conteo?.textContent).toMatch(/^Viendo \d+ de \d+ filas$/);
+    // Un atajo NO abre desde/hasta: el desplegable dice el atajo y basta.
+    expect(host.querySelector('[data-testid="filtro-desde"]')).toBeNull();
+    expect(host.querySelector('[data-testid="filtro-periodo"]')?.textContent).toBe('Este mes');
+    expect(conteo()).toMatch(/^\d+ de \d+ filas$/);
     expect(host.querySelectorAll('tbody tr').length).toBeLessThan(total);
 
     clic(host.querySelector('[data-testid="filtro-limpiar"]'));
-    expect(host.querySelector('[data-testid="filtro-conteo"]')).toBeNull();
+    expect(host.querySelector('[data-testid="filtro-limpiar"]')).toBeNull();
+    expect(host.querySelector('[data-testid="filtro-periodo"]')?.textContent).toBe('Todo el período');
     expect(host.querySelectorAll('tbody tr').length).toBe(total);
   });
 

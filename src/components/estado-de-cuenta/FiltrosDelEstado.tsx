@@ -1,32 +1,32 @@
 'use client';
 
 /**
- * La barra de filtros del estado de cuenta: una fila de píldoras, no una
- * tarjeta con formularios.
+ * La barra de filtros del estado de cuenta, con el MISMO dibujo que las
+ * demás tablas del panel (`ContratoFilters`, `ConsignacionFilters`,
+ * `PropietarioTable`): dentro de la tarjeta, un control segmentado, los
+ * desplegables, «Limpiar» y el conteo «N de M» a la derecha.
  *
- * Nico (2026-09-13, sobre la primera versión): «eso de filtros arriba es
- * horrible». Lo horrible era un `Checkbox` y dos `<input type="date">` con
- * rótulos en mayúsculas metidos en su propia tarjeta encima del documento:
- * parecía un formulario que había que llenar antes de poder leer. Acá son tres
- * píldoras (§15 de DESIGN.md) que se leen como lo que son —qué mostrar, de
- * cuándo, de cuál contrato— y el período trae atajos, porque «este mes» y
- * «este año» son lo que de verdad se busca en un estado de cuenta; el par
- * desde/hasta queda para el caso raro, dentro del popover.
+ * Nico, 2026-09-13: «ya sabes que nuestras tablas tienen estas cosas
+ * unificadas». La primera versión tenía píldoras propias con un popover de
+ * fechas: bonitas, pero distintas de todo lo demás. Acá el período es un
+ * desplegable con los cuatro atajos por mes calendario y «Fechas exactas…» al
+ * final, que es exactamente lo que hizo Contratos con la vigencia; sólo al
+ * elegir eso aparecen desde/hasta.
  *
- * Los `data-testid` se conservan (`filtro-pendientes`, `filtro-desde`,
- * `filtro-hasta`, `filtro-contrato`, `filtro-limpiar`, `estado-filtros`): son
- * el contrato con las pruebas y con la impresión (`[data-estado-barra]` se
- * esconde en papel).
+ * Los `data-testid` se conservan (`estado-filtros`, `filtro-pendientes`,
+ * `filtro-periodo`, `filtro-desde`, `filtro-hasta`, `filtro-contrato`,
+ * `filtro-limpiar`, `filtro-conteo`): son el contrato con las pruebas y con
+ * la impresión (`[data-estado-barra]` se esconde en papel).
  */
 
 import * as React from 'react';
 import { SegmentedControl } from '@leasefy/cadence';
-import { CalendarBlank, CaretDown, FileText, X } from '@phosphor-icons/react';
+import { Funnel, X } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import {
   fechaLegible,
   hayFiltros,
@@ -37,11 +37,6 @@ import {
 } from './filas';
 import { useTextoDelEstado } from './textos';
 
-/** La píldora de filtro de DESIGN.md §15: borde, fondo de superficie, chevrón. */
-const PILDORA =
-  'inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 text-body-sm text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30';
-const PILDORA_ACTIVA = 'border-border-strong bg-surface-muted';
-
 const ATAJOS: PeriodoPreestablecido[] = [
   'esteMes',
   'ultimosTresMeses',
@@ -50,11 +45,25 @@ const ATAJOS: PeriodoPreestablecido[] = [
 ];
 
 type QueMostrar = 'todo' | 'pendiente';
+type OpcionDePeriodo = 'todo' | PeriodoPreestablecido | 'fechas';
+
+/** Qué opción del desplegable corresponde a las fechas puestas. */
+export function opcionDePeriodo(
+  filtros: FiltrosDelEstadoDeCuenta,
+  hoy: string,
+): OpcionDePeriodo {
+  if (!filtros.desde && !filtros.hasta) return 'todo';
+  const atajo = ATAJOS.find((a) => {
+    const r = rangoPreestablecido(a, hoy);
+    return r.desde === filtros.desde && r.hasta === filtros.hasta;
+  });
+  return atajo ?? 'fechas';
+}
 
 export interface FiltrosDelEstadoProps {
   filtros: FiltrosDelEstadoDeCuenta;
   onCambiar: (f: FiltrosDelEstadoDeCuenta) => void;
-  /** Los números de contrato del documento. Con uno solo no hay píldora. */
+  /** Los números de contrato del documento. Con uno solo no hay desplegable. */
   contratos: string[];
   /** `YYYY-MM-DD`: desde acá se cuentan los atajos del período. */
   hoy: string;
@@ -76,214 +85,159 @@ export function FiltrosDelEstado({
   const t = useTextoDelEstado();
   const activos = hayFiltros(filtros);
 
+  const opcion = opcionDePeriodo(filtros, hoy);
+  // «Fechas exactas…» recién elegida no tiene fechas todavía: los campos se
+  // muestran igual, y se quedan mientras las fechas no calcen con un atajo.
+  const [pidiendoFechas, setPidiendoFechas] = React.useState(false);
+  const conFechas = pidiendoFechas || opcion === 'fechas';
+
+  const elegirPeriodo = (v: OpcionDePeriodo) => {
+    if (v === 'fechas') {
+      setPidiendoFechas(true);
+      return;
+    }
+    setPidiendoFechas(false);
+    if (v === 'todo') {
+      onCambiar({ ...filtros, desde: '', hasta: '' });
+      return;
+    }
+    onCambiar({ ...filtros, ...rangoPreestablecido(v, hoy) });
+  };
+
+  const etiquetaDelPeriodo = (() => {
+    if (conFechas && opcion === 'fechas') {
+      if (filtros.desde && filtros.hasta) {
+        return `${fechaLegible(filtros.desde)} – ${fechaLegible(filtros.hasta)}`;
+      }
+      if (filtros.desde) return t('estadoDeCuenta.periodoDesde', { desde: fechaLegible(filtros.desde) });
+      if (filtros.hasta) return t('estadoDeCuenta.periodoHasta', { hasta: fechaLegible(filtros.hasta) });
+    }
+    if (conFechas) return t('estadoDeCuenta.fechasExactas');
+    return t(opcion === 'todo' ? 'estadoDeCuenta.periodoTodo' : `estadoDeCuenta.${opcion}`);
+  })();
+
   return (
     <div
       data-estado-barra
       data-testid="estado-filtros"
-      className={cn('flex flex-wrap items-center gap-2', className)}
+      className={cn('p-4 space-y-4 border-b border-border', className)}
     >
-      <SegmentedControl<QueMostrar>
-        aria-label={t('estadoDeCuenta.queMostrar')}
-        size="sm"
-        value={filtros.soloPendientes ? 'pendiente' : 'todo'}
-        onChange={(v) => onCambiar({ ...filtros, soloPendientes: v === 'pendiente' })}
-        options={[
-          {
-            value: 'todo',
-            ariaLabel: t('estadoDeCuenta.todo'),
-            label: <span data-testid="filtro-todo">{t('estadoDeCuenta.todo')}</span>,
-          },
-          {
-            value: 'pendiente',
-            ariaLabel: t('estadoDeCuenta.soloPendientes'),
-            label: (
-              <span data-testid="filtro-pendientes">{t('estadoDeCuenta.pendientes')}</span>
-            ),
-          },
-        ]}
-      />
+      <div className="flex flex-wrap items-center gap-3">
+        <SegmentedControl<QueMostrar>
+          aria-label={t('estadoDeCuenta.queMostrar')}
+          value={filtros.soloPendientes ? 'pendiente' : 'todo'}
+          onChange={(v) => onCambiar({ ...filtros, soloPendientes: v === 'pendiente' })}
+          options={[
+            {
+              value: 'todo',
+              ariaLabel: t('estadoDeCuenta.todo'),
+              label: <span data-testid="filtro-todo">{t('estadoDeCuenta.todo')}</span>,
+            },
+            {
+              value: 'pendiente',
+              ariaLabel: t('estadoDeCuenta.soloPendientes'),
+              label: (
+                <span data-testid="filtro-pendientes">{t('estadoDeCuenta.pendientes')}</span>
+              ),
+            },
+          ]}
+        />
 
-      <PildoraDePeriodo filtros={filtros} onCambiar={onCambiar} hoy={hoy} />
+        <div className="hidden sm:block w-px h-6 bg-border" />
 
-      {contratos.length > 1 && (
-        <PildoraDeContrato filtros={filtros} onCambiar={onCambiar} contratos={contratos} />
-      )}
-
-      {activos && (
-        <div className="ml-auto flex items-center gap-1">
-          <span
-            data-testid="filtro-conteo"
-            className="font-mono text-caption tabular-nums text-fg-muted"
-          >
-            {t('estadoDeCuenta.viendoFilas', { visibles, total })}
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            hideArrow
-            onClick={() => onCambiar(SIN_FILTROS)}
-            data-testid="filtro-limpiar"
-          >
-            <X className="h-3.5 w-3.5" aria-hidden="true" />
-            {t('estadoDeCuenta.limpiar')}
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** «1 sep 2026 – 30 sep 2026», «desde 1 sep 2026» o «hasta 30 sep 2026». */
-function periodoEnPalabras(
-  desde: string,
-  hasta: string,
-  t: ReturnType<typeof useTextoDelEstado>,
-): string {
-  if (desde && hasta) return `${fechaLegible(desde)} – ${fechaLegible(hasta)}`;
-  if (desde) return t('estadoDeCuenta.periodoDesde', { desde: fechaLegible(desde) });
-  return t('estadoDeCuenta.periodoHasta', { hasta: fechaLegible(hasta) });
-}
-
-function PildoraDePeriodo({
-  filtros,
-  onCambiar,
-  hoy,
-}: {
-  filtros: FiltrosDelEstadoDeCuenta;
-  onCambiar: (f: FiltrosDelEstadoDeCuenta) => void;
-  hoy: string;
-}) {
-  const t = useTextoDelEstado();
-  const [abierto, setAbierto] = React.useState(false);
-  const puesto = filtros.desde !== '' || filtros.hasta !== '';
-
-  return (
-    <Popover open={abierto} onOpenChange={setAbierto}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          data-testid="filtro-periodo"
-          className={cn(PILDORA, puesto && PILDORA_ACTIVA)}
+        <Select
+          value={conFechas ? 'fechas' : opcion}
+          onValueChange={(v) => elegirPeriodo(v as OpcionDePeriodo)}
         >
-          <CalendarBlank className="h-4 w-4 text-fg-muted" aria-hidden="true" />
-          {puesto ? (
-            <span className="font-mono text-caption tabular-nums">
-              {periodoEnPalabras(filtros.desde, filtros.hasta, t)}
-            </span>
-          ) : (
-            <span>{t('estadoDeCuenta.periodo')}</span>
-          )}
-          <CaretDown className="h-3.5 w-3.5 text-fg-muted" aria-hidden="true" />
-        </button>
-      </PopoverTrigger>
+          <SelectTrigger className="w-auto max-w-[220px] gap-2" data-testid="filtro-periodo">
+            <span className="truncate">{etiquetaDelPeriodo}</span>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todo">{t('estadoDeCuenta.periodoTodo')}</SelectItem>
+            {ATAJOS.map((a) => (
+              <SelectItem key={a} value={a}>
+                {t(`estadoDeCuenta.${a}`)}
+              </SelectItem>
+            ))}
+            <SelectItem value="fechas">{t('estadoDeCuenta.fechasExactas')}</SelectItem>
+          </SelectContent>
+        </Select>
 
-      <PopoverContent align="start" className="w-[21rem] p-3" data-lenis-prevent>
-        <div className="grid grid-cols-2 gap-1.5">
-          {ATAJOS.map((atajo) => {
-            const rango = rangoPreestablecido(atajo, hoy);
-            const activo = filtros.desde === rango.desde && filtros.hasta === rango.hasta;
-            return (
-              <button
-                key={atajo}
-                type="button"
-                data-testid={`periodo-${atajo}`}
-                aria-pressed={activo}
-                onClick={() => {
-                  onCambiar({ ...filtros, ...rango });
-                  setAbierto(false);
-                }}
-                className={cn(
-                  'h-8 whitespace-nowrap rounded-md border px-2.5 text-caption text-fg transition-colors hover:bg-surface-muted',
-                  activo ? 'border-border-strong bg-surface-muted' : 'border-border-faint',
-                )}
-              >
-                {t(`estadoDeCuenta.${atajo}`)}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border-faint pt-3">
-          <label className="flex flex-col gap-1">
-            <span className="text-label uppercase tracking-wide text-fg-subtle">
-              {t('estadoDeCuenta.desde')}
-            </span>
+        {conFechas && (
+          <>
             <Input
               type="date"
               value={filtros.desde}
               max={filtros.hasta || undefined}
               onChange={(e) => onCambiar({ ...filtros, desde: e.target.value })}
-              className="h-9"
+              aria-label={t('estadoDeCuenta.desde')}
+              className="w-[10.5rem]"
               data-testid="filtro-desde"
             />
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-label uppercase tracking-wide text-fg-subtle">
-              {t('estadoDeCuenta.hasta')}
+            <span className="text-sm text-muted-foreground" aria-hidden="true">
+              –
             </span>
             <Input
               type="date"
               value={filtros.hasta}
               min={filtros.desde || undefined}
               onChange={(e) => onCambiar({ ...filtros, hasta: e.target.value })}
-              className="h-9"
+              aria-label={t('estadoDeCuenta.hasta')}
+              className="w-[10.5rem]"
               data-testid="filtro-hasta"
             />
-          </label>
-        </div>
+          </>
+        )}
 
-        {puesto && (
+        {contratos.length > 1 && (
+          <Select
+            value={filtros.contrato || 'all'}
+            onValueChange={(v) => onCambiar({ ...filtros, contrato: v === 'all' ? '' : v })}
+          >
+            <SelectTrigger className="w-auto max-w-[200px] gap-2" data-testid="filtro-contrato">
+              <span className="truncate">
+                {filtros.contrato
+                  ? t('estadoDeCuenta.contrato', { numero: filtros.contrato })
+                  : t('estadoDeCuenta.todosLosContratos')}
+              </span>
+            </SelectTrigger>
+            <SelectContent className="max-h-72">
+              <SelectItem value="all">{t('estadoDeCuenta.todosLosContratos')}</SelectItem>
+              {contratos.map((n) => (
+                <SelectItem key={n} value={n}>
+                  {t('estadoDeCuenta.contrato', { numero: n })}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        {activos && (
           <Button
-            variant="ghost"
+            variant="link"
             size="sm"
             hideArrow
-            className="mt-2 w-full"
-            onClick={() => onCambiar({ ...filtros, desde: '', hasta: '' })}
-            data-testid="filtro-quitar-periodo"
+            onClick={() => {
+              setPidiendoFechas(false);
+              onCambiar(SIN_FILTROS);
+            }}
+            className="gap-1.5 text-warning"
+            data-testid="filtro-limpiar"
           >
-            {t('estadoDeCuenta.quitarPeriodo')}
+            <Funnel className="w-4 h-4" weight="fill" />
+            {t('estadoDeCuenta.limpiar')}
+            <X className="w-3.5 h-3.5" />
           </Button>
         )}
-      </PopoverContent>
-    </Popover>
-  );
-}
 
-function PildoraDeContrato({
-  filtros,
-  onCambiar,
-  contratos,
-}: {
-  filtros: FiltrosDelEstadoDeCuenta;
-  onCambiar: (f: FiltrosDelEstadoDeCuenta) => void;
-  contratos: string[];
-}) {
-  const t = useTextoDelEstado();
-  const puesto = filtros.contrato !== '';
-  return (
-    /* Un `<select>` nativo vestido de píldora, y no el del DS: hay un contrato
-       por opción y la lista puede tener quince; el nativo sabe buscar
-       escribiendo y no se pelea con la impresión. */
-    <label className={cn(PILDORA, 'relative cursor-pointer pr-9', puesto && PILDORA_ACTIVA)}>
-      <FileText className="h-4 w-4 text-fg-muted" aria-hidden="true" />
-      <select
-        value={filtros.contrato}
-        onChange={(e) => onCambiar({ ...filtros, contrato: e.target.value })}
-        aria-label={t('estadoDeCuenta.contratoPalabra')}
-        className="cursor-pointer appearance-none bg-transparent font-mono text-caption tabular-nums text-fg focus:outline-none"
-        data-testid="filtro-contrato"
-      >
-        <option value="">{t('estadoDeCuenta.todosLosContratos')}</option>
-        {contratos.map((n) => (
-          <option key={n} value={n}>
-            {t('estadoDeCuenta.contrato', { numero: n })}
-          </option>
-        ))}
-      </select>
-      <CaretDown
-        className="pointer-events-none absolute right-3.5 h-3.5 w-3.5 text-fg-muted"
-        aria-hidden="true"
-      />
-    </label>
+        {/* «N de M»: las filas que quedan contra las del documento entero. */}
+        <span
+          className="ml-auto text-sm text-muted-foreground tabular-nums"
+          data-testid="filtro-conteo"
+        >
+          {t('estadoDeCuenta.viendoFilas', { visibles, total })}
+        </span>
+      </div>
+    </div>
   );
 }

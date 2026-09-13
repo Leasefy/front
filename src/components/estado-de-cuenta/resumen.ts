@@ -57,6 +57,12 @@ export interface ResumenDelCliente {
   /** Días desde que venció `masVieja`. Cero si no hay mora. */
   diasDeMora: number;
   cuotasVencidas: number;
+  /**
+   * Lo vencido y no pagado, sumado de las FILAS. No se toma de
+   * `doc.totales.pendiente`: bajo un filtro los totales se recalculan sobre
+   * lo visible y ahí «pendiente» pasa a ser todo lo que se debe, vencido o no.
+   */
+  vencidoCop: number;
 }
 
 function todasLasFilas(doc: EstadoDeCuenta): { fila: FilaDelEstadoDeCuenta; contrato: string }[] {
@@ -117,6 +123,7 @@ export function resumirElCliente(
     enMora: vencidas.length > 0,
     diasDeMora: masVieja ? Math.max(0, diasEntre(masVieja.fecha, hoy)) : 0,
     cuotasVencidas: vencidas.length,
+    vencidoCop: vencidas.reduce((s, { fila }) => s + fila.valorNeto, 0),
   };
 }
 

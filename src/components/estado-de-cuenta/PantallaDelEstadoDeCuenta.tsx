@@ -1,29 +1,40 @@
 'use client';
 
 /**
- * La pantalla del estado de cuenta: carga, barra de acciones, filtros y el
+ * La pantalla del estado de cuenta: cabecera de página, filtros y el
  * documento.
  *
  * La usan CUATRO entradas —la ficha del inquilino, la del propietario, el
  * enlace público y los dos portales— y todas ven exactamente el mismo
  * documento. Lo que cambia entre ellas es qué se puede HACER con él, y eso
  * entra por `acciones`.
+ *
+ * ── La cabecera (Nico, 2026-09-13: «esa navegación quedó horrible») ─────────
+ * La primera versión tenía un «Volver» mudo flotando a la izquierda y dos
+ * botones sueltos a la derecha, sin título: no se sabía dónde estaba uno. Acá
+ * es una cabecera de página como la de la ficha del contrato: el enlace de
+ * regreso DICE a dónde vuelve («Volver al contrato», leído de la ruta con
+ * `lugarDeRegreso`), debajo el título de la pantalla con el cliente en una
+ * línea, y a la derecha las acciones, con «Compartir» como la primaria porque
+ * distribuir el documento es la mitad del pedido del CEO.
  */
 
 import * as React from 'react';
+import Link from 'next/link';
+import { CaretLeft, Printer } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { ArrowLeft, Printer } from '@phosphor-icons/react';
-import Link from 'next/link';
+import { lugarDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
 import { EstadoDeCuentaDocumento } from './EstadoDeCuentaDocumento';
+import { FiltrosDelEstado } from './FiltrosDelEstado';
 import {
   aplicarFiltros,
+  comoSeLlamaElRol,
+  cuantasFilasDelDocumento,
   hayFiltros,
   hoyLocal,
   SIN_FILTROS,
@@ -40,7 +51,11 @@ export interface PantallaProps {
    * y la nota, porque lo que se comparte es lo que se está viendo.
    */
   acciones?: (doc: EstadoDeCuenta, nota?: string) => React.ReactNode;
-  volverA?: { label: string; href: string };
+  /**
+   * A dónde vuelve el enlace de regreso. Sin `label`, la etiqueta se lee de la
+   * ruta («Volver al contrato», «Volver al propietario»…).
+   */
+  volverA?: { href: string; label?: string };
   /** `YYYY-MM-DD`. Inyectable para que las pruebas no dependan del reloj. */
   hoy?: string;
   /** Apaga la barra de filtros (el enlace público muestra el documento entero). */
@@ -65,7 +80,7 @@ export function PantallaDelEstadoDeCuenta({
   const [filtros, setFiltros] = React.useState<FiltrosDelEstadoDeCuenta>(SIN_FILTROS);
   /**
    * Al imprimir se apaga la paginación de las tablas. Sin esto la hoja sale con
-   * las 25 filas de la página en la que quedó la pantalla y el total del
+   * las doce filas de la página en la que quedó la pantalla y el total del
    * contrato no cuadra con lo impreso.
    */
   const [imprimiendo, setImprimiendo] = React.useState(false);
@@ -106,47 +121,79 @@ export function PantallaDelEstadoDeCuenta({
     });
   }, []);
 
+  const regreso = volverA
+    ? {
+        href: volverA.href,
+        label: volverA.label ?? t(`estadoDeCuenta.volver.${lugarDeRegreso(volverA.href)}`),
+      }
+    : undefined;
+
+  const lineaDelCliente = doc
+    ? [
+        doc.cliente.nombre,
+        comoSeLlamaElRol(doc.cliente.tipo),
+        doc.contratos.length === 1 ? '1 contrato' : `${doc.contratos.length} contratos`,
+      ].join(' · ')
+    : null;
+
   return (
-    <div className={cn('space-y-6 p-4 sm:p-6 lg:p-8', className)} data-estado-pagina>
-      <div
-        className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-        data-estado-barra
-      >
-        {volverA ? (
-          <Button asChild variant="ghost" hideArrow className="w-fit">
-            <Link href={volverA.href}>
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              {volverA.label}
-            </Link>
-          </Button>
-        ) : (
-          <span />
-        )}
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="secondary"
-            hideArrow
-            onClick={imprimir}
-            disabled={!filtrado}
-            data-testid="imprimir-estado"
+    <div
+      className={cn('mx-auto w-full max-w-[1200px] space-y-5 p-4 sm:p-6 lg:p-8', className)}
+      data-estado-pagina
+    >
+      <div data-estado-barra className="space-y-3">
+        {regreso && (
+          <Link
+            href={regreso.href}
+            data-testid="estado-volver"
+            className="inline-flex items-center gap-1 text-body-sm text-fg-muted transition-colors hover:text-fg"
           >
-            <Printer className="h-4 w-4" aria-hidden="true" />
-            {t('estadoDeCuenta.imprimir')}
-          </Button>
-          {filtrado && acciones ? acciones(filtrado, nota) : null}
+            <CaretLeft className="h-4 w-4" aria-hidden="true" />
+            {regreso.label}
+          </Link>
+        )}
+
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-h2 text-fg">{t('estadoDeCuenta.titulo')}</h1>
+            {lineaDelCliente ? (
+              <p className="mt-1 text-body-sm text-fg-muted" data-testid="estado-subtitulo">
+                {lineaDelCliente}
+              </p>
+            ) : cargando ? (
+              <Skeleton className="mt-2 h-4 w-72" />
+            ) : null}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="secondary"
+              hideArrow
+              onClick={imprimir}
+              disabled={!filtrado}
+              data-testid="imprimir-estado"
+            >
+              <Printer className="h-4 w-4" aria-hidden="true" />
+              {t('estadoDeCuenta.imprimir')}
+            </Button>
+            {filtrado && acciones ? acciones(filtrado, nota) : null}
+          </div>
         </div>
       </div>
 
-      {!sinFiltros && doc && doc.contratos.length > 0 && (
-        <Filtros
+      {!sinFiltros && doc && filtrado && doc.contratos.length > 0 && (
+        <FiltrosDelEstado
           filtros={filtros}
           onCambiar={setFiltros}
           contratos={doc.contratos.map((c) => c.numero)}
+          hoy={hoy}
+          visibles={cuantasFilasDelDocumento(filtrado)}
+          total={cuantasFilasDelDocumento(doc)}
         />
       )}
 
       {cargando ? (
-        <div className="mx-auto w-full max-w-[1200px] space-y-4 rounded-lg border border-border bg-surface p-10">
+        <div className="space-y-4 rounded-lg border border-border bg-surface p-10">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-14 w-1/2" />
           <Skeleton className="h-64 w-full" />
@@ -156,7 +203,7 @@ export function PantallaDelEstadoDeCuenta({
           error={error}
           queEs="el estado de cuenta"
           onReintentar={pedir}
-          volverA={volverA}
+          volverA={regreso}
         />
       ) : filtrado ? (
         filtrado.contratos.length === 0 && conFiltros ? (
@@ -164,7 +211,7 @@ export function PantallaDelEstadoDeCuenta({
              así sería afirmar algo falso sobre el cliente. */
           <div
             data-testid="estado-sin-resultados"
-            className="mx-auto w-full max-w-[1200px] rounded-lg border border-border bg-surface px-6 py-16 text-center"
+            className="rounded-lg border border-border bg-surface px-6 py-16 text-center"
           >
             <p className="text-body font-medium text-fg">
               {t('estadoDeCuenta.sinResultados')}
@@ -190,100 +237,6 @@ export function PantallaDelEstadoDeCuenta({
           />
         )
       ) : null}
-    </div>
-  );
-}
-
-function Filtros({
-  filtros,
-  onCambiar,
-  contratos,
-}: {
-  filtros: FiltrosDelEstadoDeCuenta;
-  onCambiar: (f: FiltrosDelEstadoDeCuenta) => void;
-  contratos: string[];
-}) {
-  const t = useTextoDelEstado();
-  const activos = hayFiltros(filtros);
-
-  return (
-    <div
-      data-estado-barra
-      data-testid="estado-filtros"
-      className="mx-auto flex w-full max-w-[1200px] flex-wrap items-end gap-x-6 gap-y-3 rounded-lg border border-border bg-surface px-4 py-3"
-    >
-      <label className="flex items-center gap-2 text-body-sm text-fg">
-        <Checkbox
-          checked={filtros.soloPendientes}
-          onCheckedChange={(v) =>
-            onCambiar({ ...filtros, soloPendientes: v === true })
-          }
-          data-testid="filtro-pendientes"
-        />
-        {t('estadoDeCuenta.soloPendientes')}
-      </label>
-
-      <label className="flex flex-col gap-1">
-        <span className="text-label uppercase tracking-wide text-fg-subtle">
-          {t('estadoDeCuenta.desde')}
-        </span>
-        <Input
-          type="date"
-          value={filtros.desde}
-          onChange={(e) => onCambiar({ ...filtros, desde: e.target.value })}
-          className="h-9 w-[11rem]"
-          data-testid="filtro-desde"
-        />
-      </label>
-
-      <label className="flex flex-col gap-1">
-        <span className="text-label uppercase tracking-wide text-fg-subtle">
-          {t('estadoDeCuenta.hasta')}
-        </span>
-        <Input
-          type="date"
-          value={filtros.hasta}
-          onChange={(e) => onCambiar({ ...filtros, hasta: e.target.value })}
-          className="h-9 w-[11rem]"
-          data-testid="filtro-hasta"
-        />
-      </label>
-
-      {contratos.length > 1 && (
-        <label className="flex flex-col gap-1">
-          <span className="text-label uppercase tracking-wide text-fg-subtle">
-            {t('estadoDeCuenta.contrato', { numero: '' }).trim()}
-          </span>
-          {/* Un `<select>` nativo y no el del DS: acá hay un contrato por
-              opción y la lista puede tener quince; el nativo ya sabe buscar
-              escribiendo y no se pelea con la impresión. */}
-          <select
-            value={filtros.contrato}
-            onChange={(e) => onCambiar({ ...filtros, contrato: e.target.value })}
-            className="h-9 rounded-md border border-border bg-surface px-3 font-mono text-body-sm tabular-nums text-fg"
-            data-testid="filtro-contrato"
-          >
-            <option value="">{t('estadoDeCuenta.todosLosContratos')}</option>
-            {contratos.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-
-      {activos && (
-        <Button
-          variant="ghost"
-          size="sm"
-          hideArrow
-          onClick={() => onCambiar(SIN_FILTROS)}
-          data-testid="filtro-limpiar"
-        >
-          {t('estadoDeCuenta.limpiar')}
-        </Button>
-      )}
     </div>
   );
 }

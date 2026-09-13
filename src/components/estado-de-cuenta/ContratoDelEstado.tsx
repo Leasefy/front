@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * Un contrato dentro del estado de cuenta: su encabezado, sus dos secciones
- * (Arriendos y Otros conceptos) y sus totales.
+ * Un contrato dentro del estado de cuenta: su encabezado, la barra de
+ * amortización, sus dos secciones (Arriendos y Otros conceptos) y su pie de
+ * totales.
  *
  * ── Qué NO se copia de Nui ──────────────────────────────────────────────────
  * 1. La banda azul del encabezado es una regla con el número en mono. El color
@@ -17,6 +18,16 @@
  * 4. Que una cuota pendiente ya esté vencida se dice con la PALABRA «vencida»
  *    en la columna «Vence», no cambiándole el color a la píldora: dos píldoras
  *    que dicen «Pendiente» y sólo se distinguen por el tono no se distinguen.
+ *
+ * ── Lo que cambió con el glow-up (Nico, 2026-09-13) ─────────────────────────
+ * 5. Las columnas van en el orden en que se LEE una cuota: qué es, cuándo
+ *    vence, en qué está, cuánto es, con qué se pagó. Antes «Estado» y «Fecha de
+ *    pago» iban entre el concepto y el valor y los ojos saltaban de ida y vuelta.
+ * 6. «Fecha de pago» y «Documento de pago» eran DOS columnas que en una cuota
+ *    sin pagar decían lo mismo dos veces («—» y «Sin pago»). Ahora es UNA
+ *    columna, «Pago»: la fecha y el recibo cuando lo hay, un guion cuando no.
+ * 7. La paginación entra a las 15 filas, de a 12 —el año de un contrato en una
+ *    página—, y no a las 24 de a 25.
  *
  * En móvil la tabla se vuelve tarjetas. Once columnas en 390 px no son una
  * tabla, son un scroll horizontal que nadie recorre.
@@ -35,10 +46,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
-import {
-  PAGE_SIZE_OPTIONS,
-  useTablePagination,
-} from '@/lib/hooks/use-table-pagination';
+import { useTablePagination } from '@/lib/hooks/use-table-pagination';
 import type {
   ContratoDelEstadoDeCuenta,
   FilaDelEstadoDeCuenta,
@@ -57,13 +65,15 @@ import {
   periodoLegible,
   pintaDelEstado,
   type ColumnaDeImpuesto,
-  type RenglonDelContrato,
 } from './filas';
 import { AmortizacionDelContrato } from './ResumenDelEstado';
 import { useTextoDelEstado } from './textos';
 
 /** Más de esto y la sección se pagina. Debajo, el contrato se lee de corrido. */
-export const FILAS_SIN_PAGINAR = 24;
+export const FILAS_SIN_PAGINAR = 15;
+/** De a cuántas filas se pagina: el año de un contrato en una página. */
+export const FILAS_POR_PAGINA = 12;
+const TAMANOS_DE_PAGINA = [12, 24, 48];
 
 interface Props {
   contrato: ContratoDelEstadoDeCuenta;
@@ -71,7 +81,7 @@ interface Props {
   hoy: string;
   /**
    * Apaga la paginación. Se prende al imprimir: si no, la hoja sale con las
-   * diez filas de la página en la que quedó la pantalla y el total no cuadra
+   * doce filas de la página en la que quedó la pantalla y el total no cuadra
    * con lo impreso.
    */
   sinPaginar?: boolean;
@@ -106,10 +116,11 @@ export function ContratoDelEstado({ contrato, hoy, sinPaginar = false }: Props) 
       data-testid={`contrato-${contrato.numero}`}
       className="estado-contrato space-y-5 break-inside-avoid"
     >
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-border pb-2">
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b border-border pb-3">
         <div className="min-w-0">
-          <h3 className="font-mono text-base font-medium tabular-nums text-fg">
-            {t('estadoDeCuenta.contrato', { numero: contrato.numero })}
+          <h3 className="text-subtitle text-fg">
+            {t('estadoDeCuenta.contratoPalabra')}{' '}
+            <span className="font-mono tabular-nums">{contrato.numero}</span>
           </h3>
           <p className="mt-0.5 text-body-sm text-fg-muted">
             {t(
@@ -122,7 +133,7 @@ export function ContratoDelEstado({ contrato, hoy, sinPaginar = false }: Props) 
         </div>
         <span
           className={cn(
-            'shrink-0 rounded-full px-2.5 py-0.5 text-caption',
+            'shrink-0 rounded-full px-2.5 py-0.5 text-caption font-medium',
             contrato.vigente
               ? 'bg-success-soft text-success'
               : 'bg-surface-muted text-fg-subtle',
@@ -169,18 +180,23 @@ export function ContratoDelEstado({ contrato, hoy, sinPaginar = false }: Props) 
         </p>
       )}
 
-      <div className="flex flex-wrap items-end justify-end gap-x-8 gap-y-2 border-t border-border pt-3">
-        <Cifra
-          etiqueta={t('estadoDeCuenta.cancelado')}
-          valor={contrato.totales.cancelado}
-          tono="apagado"
-        />
-        <Cifra
-          etiqueta={t('estadoDeCuenta.restaPorPagar')}
-          valor={contrato.totales.restaPorPagar}
-          tono={contrato.totales.restaPorPagar > 0 ? 'fuerte' : 'apagado'}
-          testid={`total-contrato-${contrato.numero}`}
-        />
+      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 rounded-md bg-surface-muted px-4 py-3">
+        <p className="text-label uppercase tracking-wide text-fg-subtle">
+          {t('estadoDeCuenta.totalDelContrato')}
+        </p>
+        <div className="flex flex-wrap items-baseline gap-x-8 gap-y-2">
+          <Cifra
+            etiqueta={t('estadoDeCuenta.cancelado')}
+            valor={contrato.totales.cancelado}
+            tono="apagado"
+          />
+          <Cifra
+            etiqueta={t('estadoDeCuenta.restaPorPagar')}
+            valor={contrato.totales.restaPorPagar}
+            tono={contrato.totales.restaPorPagar > 0 ? 'fuerte' : 'apagado'}
+            testid={`total-contrato-${contrato.numero}`}
+          />
+        </div>
       </div>
     </section>
   );
@@ -239,7 +255,7 @@ function SeccionDeFilas({
   const t = useTextoDelEstado();
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(filas, {
-      initialPageSize: PAGE_SIZE_OPTIONS[1] ?? 25,
+      initialPageSize: FILAS_POR_PAGINA,
       resetKey: `${testid}|${filas.length}`,
     });
 
@@ -251,10 +267,19 @@ function SeccionDeFilas({
 
   return (
     <div data-testid={testid} className="space-y-2">
-      <h4 className="text-label uppercase tracking-wide text-fg-subtle">{titulo}</h4>
+      <div className="flex items-baseline justify-between gap-3">
+        <h4 className="text-label uppercase tracking-wide text-fg-subtle">{titulo}</h4>
+        {filas.length > 0 && (
+          <span className="font-mono text-caption tabular-nums text-fg-subtle">
+            {filas.length === 1
+              ? t('estadoDeCuenta.unaFila')
+              : t('estadoDeCuenta.nFilas', { n: filas.length })}
+          </span>
+        )}
+      </div>
 
       {filas.length === 0 ? (
-        <p className="py-3 text-body-sm text-fg-muted">{vacio}</p>
+        <p className="py-2 text-body-sm text-fg-muted">{vacio}</p>
       ) : (
         <>
           {/* Escritorio: la tabla. `md:` y no `sm:` porque con las columnas de
@@ -266,18 +291,21 @@ function SeccionDeFilas({
               horizontal a 96 dpi mide ~1123 px pero el navegador la reporta
               según el zoom: sin esto, imprimir desde un portátil chico sacaba
               las tarjetas del móvil en el papel. */}
-          <div data-tabla className="hidden overflow-x-auto md:block">
+          <div
+            data-tabla
+            className="hidden overflow-x-auto rounded-md border border-border-faint md:block"
+          >
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="hover:bg-transparent">
                   <TableHead className="min-w-[220px]">
                     {t('estadoDeCuenta.colConcepto')}
                   </TableHead>
                   <TableHead className="whitespace-nowrap">
-                    {t('estadoDeCuenta.colEstado')}
+                    {t('estadoDeCuenta.colVence')}
                   </TableHead>
                   <TableHead className="whitespace-nowrap">
-                    {t('estadoDeCuenta.colPagado')}
+                    {t('estadoDeCuenta.colEstado')}
                   </TableHead>
                   <TableHead className="whitespace-nowrap text-right">
                     {t('estadoDeCuenta.colBruto')}
@@ -290,11 +318,8 @@ function SeccionDeFilas({
                   <TableHead className="whitespace-nowrap text-right">
                     {t('estadoDeCuenta.colNeto')}
                   </TableHead>
-                  <TableHead className="whitespace-nowrap">
-                    {t('estadoDeCuenta.colVence')}
-                  </TableHead>
-                  <TableHead className="min-w-[180px]">
-                    {t('estadoDeCuenta.colDocumento')}
+                  <TableHead className="min-w-[150px]">
+                    {t('estadoDeCuenta.colPago')}
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -346,7 +371,7 @@ function SeccionDeFilas({
                 total={total}
                 page={page}
                 pageSize={pageSize}
-                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                pageSizeOptions={TAMANOS_DE_PAGINA}
                 onPageChange={setPage}
                 onPageSizeChange={setPageSize}
               />
@@ -441,27 +466,44 @@ function Vence({ fila, hoy }: { fila: FilaDelEstadoDeCuenta; hoy: string }) {
   const t = useTextoDelEstado();
   const vencida = estaVencida(fila, hoy);
   return (
-    <span className="whitespace-nowrap font-mono text-caption tabular-nums">
+    <span
+      className={cn(
+        'whitespace-nowrap font-mono text-caption tabular-nums',
+        vencida && 'text-danger',
+      )}
+    >
       {fechaLegible(fila.fechaVencimiento)}
       {vencida && (
-        <span className="ml-1 font-sans text-danger">{t('estadoDeCuenta.vencida')}</span>
+        <span className="ml-1 font-sans">{t('estadoDeCuenta.vencida')}</span>
       )}
     </span>
   );
 }
 
-function Documento({ fila }: { fila: FilaDelEstadoDeCuenta }) {
-  const t = useTextoDelEstado();
-  if (!fila.documentoDePago) {
-    return <span className="text-caption text-fg-subtle">{t('estadoDeCuenta.sinPago')}</span>;
-  }
+/**
+ * Con qué se pagó la fila: la fecha y el comprobante. Un guion cuando no hay
+ * pago: «Sin pago» al lado de un «—» en otra columna decía lo mismo dos veces.
+ */
+function Pago({ fila }: { fila: FilaDelEstadoDeCuenta }) {
   const doc = fila.documentoDePago;
+  if (!doc && !fila.fechaDePago) {
+    return <span className="text-caption text-fg-subtle">—</span>;
+  }
   return (
     <>
-      <p className="font-mono text-caption tabular-nums text-fg">
-        {doc.numero} · {doc.tipo}
-      </p>
-      <p className="text-caption text-fg-muted">{doc.descripcion}</p>
+      {fila.fechaDePago && (
+        <p className="font-mono text-caption tabular-nums text-fg">
+          {fechaLegible(fila.fechaDePago)}
+        </p>
+      )}
+      {doc && (
+        <p
+          className="font-mono text-caption tabular-nums text-fg-muted"
+          title={doc.descripcion || undefined}
+        >
+          {doc.numero} · {doc.tipo}
+        </p>
+      )}
     </>
   );
 }
@@ -477,17 +519,17 @@ function FilaDeLaTabla({
   hoy: string;
   rol: RolEnElContrato;
 }) {
-  const anulada = fila.estado === 'ANULADA' || fila.estado === 'ANTERIOR';
+  const apagada = fila.estado === 'ANULADA' || fila.estado === 'ANTERIOR';
   return (
-    <TableRow className={anulada ? 'text-fg-subtle' : undefined}>
+    <TableRow className={apagada ? 'text-fg-subtle' : undefined}>
       <TableCell className="max-w-[320px] align-top">
         <Concepto fila={fila} />
       </TableCell>
       <TableCell className="align-top">
-        <Pildora fila={fila} rol={rol} />
+        <Vence fila={fila} hoy={hoy} />
       </TableCell>
-      <TableCell className="whitespace-nowrap align-top font-mono text-caption tabular-nums">
-        {fila.fechaDePago ? fechaLegible(fila.fechaDePago) : '—'}
+      <TableCell className="align-top">
+        <Pildora fila={fila} rol={rol} />
       </TableCell>
       <TableCell className="whitespace-nowrap text-right align-top font-mono tabular-nums">
         {formatCurrency(fila.valorBruto)}
@@ -503,11 +545,8 @@ function FilaDeLaTabla({
       <TableCell className="whitespace-nowrap text-right align-top font-mono font-medium tabular-nums">
         {formatCurrency(fila.valorNeto)}
       </TableCell>
-      <TableCell className="align-top">
-        <Vence fila={fila} hoy={hoy} />
-      </TableCell>
-      <TableCell className="max-w-[240px] align-top">
-        <Documento fila={fila} />
+      <TableCell className="max-w-[220px] align-top">
+        <Pago fila={fila} />
       </TableCell>
     </TableRow>
   );
@@ -526,7 +565,7 @@ function TarjetaDeFila({
 }) {
   const t = useTextoDelEstado();
   return (
-    <div className="rounded-sm border border-border-faint bg-surface p-3">
+    <div className="rounded-md border border-border-faint bg-surface p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Concepto fila={fila} />
@@ -544,6 +583,9 @@ function TarjetaDeFila({
       </div>
 
       <dl className="mt-2 space-y-0.5 border-t border-border-faint pt-2 text-caption">
+        <Dato etiqueta={t('estadoDeCuenta.colVence')}>
+          <Vence fila={fila} hoy={hoy} />
+        </Dato>
         <Dato etiqueta={t('estadoDeCuenta.colBruto')}>
           <span className="font-mono tabular-nums">{formatCurrency(fila.valorBruto)}</span>
         </Dato>
@@ -552,19 +594,12 @@ function TarjetaDeFila({
             <span className="font-mono tabular-nums">{formatCurrency(fila[c] ?? 0)}</span>
           </Dato>
         ))}
-        <Dato etiqueta={t('estadoDeCuenta.colVence')}>
-          <Vence fila={fila} hoy={hoy} />
+        <Dato etiqueta={t('estadoDeCuenta.colPago')}>
+          <span className="text-right">
+            <Pago fila={fila} />
+          </span>
         </Dato>
-        {fila.fechaDePago && (
-          <Dato etiqueta={t('estadoDeCuenta.colPagado')}>
-            <span className="font-mono tabular-nums">{fechaLegible(fila.fechaDePago)}</span>
-          </Dato>
-        )}
       </dl>
-
-      <div className="mt-2 border-t border-border-faint pt-2">
-        <Documento fila={fila} />
-      </div>
     </div>
   );
 }

@@ -12,7 +12,9 @@
  * contrato, sin total general.
  *
  * El color se gasta UNA vez: en el estado (al día verde / en mora rojo). El
- * número grande va en tinta — si todo grita, nada se oye.
+ * número grande va en tinta — si todo grita, nada se oye. Los tres datos van
+ * en una franja gris (`bg-surface-muted`) para que se lean como UN bloque —la
+ * respuesta— y no como tres tarjetas sueltas.
  */
 
 import * as React from 'react';
@@ -44,10 +46,7 @@ export function ResumenDelEstado({
   return (
     <section
       data-testid="estado-resumen"
-      className={cn(
-        'rounded-lg border border-border bg-surface p-6 shadow-sm sm:p-8',
-        className,
-      )}
+      className={cn('space-y-5', className)}
       aria-label={t('estadoDeCuenta.titulo')}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
@@ -65,20 +64,36 @@ export function ResumenDelEstado({
         </p>
       </div>
 
-      <div className="mt-6 grid gap-6 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-border">
-        <div className="sm:pr-6">
+      {/* La primera celda es más ancha que las otras dos: es la del número
+          grande, y «$ 189.000.000» a 36 px no entra en un tercio. Sin el
+          `whitespace-nowrap` el «$» se quedaba solo en una línea — el error
+          más visible que puede tener una cifra, según DESIGN.md §19. */}
+      <div className="grid gap-5 rounded-lg bg-surface-muted p-5 sm:grid-cols-[1.4fr_1fr_1fr] sm:gap-0 sm:divide-x sm:divide-border sm:p-6">
+        <div className="min-w-0 sm:pr-6">
           <p className="text-label uppercase tracking-wide text-fg-subtle">
             {t('estadoDeCuenta.restaPorPagar')}
           </p>
           <p
             data-testid="resta-por-pagar"
-            className="mt-1 font-mono text-[32px] font-medium leading-none tabular-nums text-fg sm:text-[40px]"
+            className="mt-1.5 whitespace-nowrap font-mono text-[28px] font-medium leading-none tabular-nums text-fg sm:text-[32px] lg:text-[36px]"
           >
             {formatCurrency(r.restaPorPagar)}
           </p>
-          <p className="mt-2 text-caption text-fg-muted">
+          <p className="mt-2.5 text-caption text-fg-muted">
             {t('estadoDeCuenta.cancelado')}{' '}
             <span className="font-mono tabular-nums">{formatCurrency(r.cancelado)}</span>
+            {r.vencidoCop > 0 && (
+              <>
+                {' · '}
+                {t('estadoDeCuenta.vencido')}{' '}
+                <span
+                  data-testid="vencido-del-cliente"
+                  className="font-mono tabular-nums text-danger"
+                >
+                  {formatCurrency(r.vencidoCop)}
+                </span>
+              </>
+            )}
           </p>
         </div>
 
@@ -90,7 +105,7 @@ export function ResumenDelEstado({
             <>
               <p
                 data-testid="proxima-cuota"
-                className="mt-1 font-mono text-lg font-medium tabular-nums text-fg"
+                className="mt-1.5 font-mono text-lg font-medium tabular-nums text-fg"
               >
                 {fechaLegible(r.proxima.fecha)}
               </p>
@@ -101,7 +116,7 @@ export function ResumenDelEstado({
           ) : (
             /* Sin cuota futura no se inventa una: o el contrato terminó, o todo
                lo que queda ya venció y eso lo dice la celda de al lado. */
-            <p className="mt-1 text-body-sm text-fg-muted">
+            <p className="mt-1.5 text-body-sm text-fg-muted">
               {t('estadoDeCuenta.sinProxima')}
             </p>
           )}
@@ -111,11 +126,11 @@ export function ResumenDelEstado({
           <p className="text-label uppercase tracking-wide text-fg-subtle">
             {t('estadoDeCuenta.estado')}
           </p>
-          <p className="mt-1">
+          <p className="mt-1.5">
             <span
               data-testid="estado-del-cliente"
               className={cn(
-                'inline-block rounded-full px-3 py-1 text-body-sm',
+                'inline-block rounded-full px-3 py-1 text-body-sm font-medium',
                 r.enMora
                   ? 'bg-danger-soft text-danger'
                   : 'bg-success-soft text-success',
@@ -140,12 +155,14 @@ export function ResumenDelEstado({
 }
 
 /**
- * La barra de amortización de un contrato: «14 de 24 cuotas».
+ * La barra de amortización de un contrato: «Pagadas 14 de 24 cuotas».
  *
  * Dos tramos, no uno. Verde: lo cancelado en nuestro sistema. Gris: lo que vino
  * del sistema anterior —ocurrió, pero no lo registramos nosotros—. Pintarlos
  * del mismo color diría que respondemos por un recaudo que no tenemos; sacar
  * el gris del total diría que el contrato tiene menos cuotas de las que tiene.
+ * Cuando hay tramo gris, la leyenda dice qué es cada color: una barra de dos
+ * tonos sin leyenda es un acertijo.
  */
 export function BarraDeAmortizacion({
   amortizacion,
@@ -161,10 +178,10 @@ export function BarraDeAmortizacion({
   if (a.total === 0) return null;
 
   return (
-    <div className={cn('space-y-1.5', className)} data-testid={testid}>
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="font-mono text-caption tabular-nums text-fg-muted">
-          {t('estadoDeCuenta.cuotasDe', { pagadas: a.pagadas, total: a.total })}
+    <div className={cn('space-y-2', className)} data-testid={testid}>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <span className="text-body-sm text-fg">
+          {t('estadoDeCuenta.pagadasDe', { pagadas: a.pagadas, total: a.total })}
           {a.anteriores > 0 && (
             <span className="text-fg-subtle">
               {' '}
@@ -173,11 +190,14 @@ export function BarraDeAmortizacion({
           )}
         </span>
         <span className="font-mono text-caption tabular-nums text-fg-muted">
-          {formatCurrency(a.pagadoCop)} / {formatCurrency(a.pactadoCop)}
+          {t('estadoDeCuenta.deLoPactado', {
+            pagado: formatCurrency(a.pagadoCop),
+            pactado: formatCurrency(a.pactadoCop),
+          })}
         </span>
       </div>
       <div
-        className="flex h-1.5 overflow-hidden rounded-full bg-surface-muted"
+        className="flex h-2 overflow-hidden rounded-full bg-surface-muted"
         role="img"
         aria-label={t('estadoDeCuenta.cuotasDe', {
           pagadas: a.pagadas,
@@ -196,6 +216,22 @@ export function BarraDeAmortizacion({
           />
         )}
       </div>
+      {a.anteriores > 0 && (
+        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-caption text-fg-muted" aria-hidden="true">
+          <li className="flex items-center gap-1.5">
+            <span className="inline-block h-2 w-2 rounded-full bg-success" />
+            {t('estadoDeCuenta.leyendaPagadas')}
+          </li>
+          <li className="flex items-center gap-1.5">
+            <span className="inline-block h-2 w-2 rounded-full bg-border-strong" />
+            {t('estadoDeCuenta.leyendaAnteriores')}
+          </li>
+          <li className="flex items-center gap-1.5">
+            <span className="inline-block h-2 w-2 rounded-full bg-surface-muted ring-1 ring-border" />
+            {t('estadoDeCuenta.leyendaPorPagar')}
+          </li>
+        </ul>
+      )}
     </div>
   );
 }

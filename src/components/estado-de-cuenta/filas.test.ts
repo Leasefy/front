@@ -16,13 +16,16 @@ import {
   comoSeLlamaElRol,
   conceptoLimpio,
   cuantasFilas,
+  cuantasFilasDelDocumento,
   estaVencida,
   fechaLegible,
   hayFiltros,
   hoyLocal,
   intercalarCortes,
+  periodoDeLaFila,
   periodoLegible,
   pintaDelEstado,
+  rangoPreestablecido,
   SIN_FILTROS,
   sumarTotales,
   totalesDeFilas,
@@ -33,6 +36,48 @@ import {
   estadoDeCuenta,
   fila,
 } from './ejemplo-de-prueba';
+
+describe('atajos del período', () => {
+  it('«este mes» es el mes calendario entero, no 30 días desde hoy', () => {
+    expect(rangoPreestablecido('esteMes', '2026-09-13')).toEqual({
+      desde: '2026-09-01',
+      hasta: '2026-09-30',
+    });
+    // Febrero termina donde termina, y el bisiesto también.
+    expect(rangoPreestablecido('esteMes', '2028-02-10')).toEqual({
+      desde: '2028-02-01',
+      hasta: '2028-02-29',
+    });
+  });
+
+  it('los tres meses cruzan el año sin corrimientos', () => {
+    expect(rangoPreestablecido('ultimosTresMeses', '2026-01-20')).toEqual({
+      desde: '2025-11-01',
+      hasta: '2026-01-31',
+    });
+    expect(rangoPreestablecido('proximosTresMeses', '2026-11-05')).toEqual({
+      desde: '2026-11-01',
+      hasta: '2027-01-31',
+    });
+  });
+
+  it('«este año» va del 1 de enero al 31 de diciembre', () => {
+    expect(rangoPreestablecido('esteAnio', '2026-09-13')).toEqual({
+      desde: '2026-01-01',
+      hasta: '2026-12-31',
+    });
+  });
+
+  it('un atajo aplicado deja filas que el filtro cuenta contra el total del documento', () => {
+    const doc = estadoDeCuenta({ contratos: [contrato()] });
+    const rango = rangoPreestablecido('esteAnio', '2024-06-01');
+    const filtrado = aplicarFiltros(doc, { ...SIN_FILTROS, ...rango });
+    expect(cuantasFilasDelDocumento(filtrado)).toBeLessThanOrEqual(
+      cuantasFilasDelDocumento(doc),
+    );
+    expect(cuantasFilasDelDocumento(doc)).toBe(cuantasFilas(contrato()));
+  });
+});
 
 describe('fechas', () => {
   it('lee la fecha del texto, sin construir un Date (en Bogotá se corría un día)', () => {
@@ -56,8 +101,10 @@ describe('fechas', () => {
     expect(periodoLegible(fila())).toBe('21 jun 2026 → 20 jul 2026');
   });
 
-  it('sin período no inventa un rango', () => {
-    expect(periodoLegible(fila({ periodoDesde: null, periodoHasta: null }))).toBeNull();
+  it('sin período suelto ni cola legible no inventa un rango', () => {
+    expect(
+      periodoLegible(fila({ concepto: 'Papelería', periodoDesde: null, periodoHasta: null })),
+    ).toBeNull();
   });
 });
 
@@ -66,9 +113,36 @@ describe('concepto', () => {
     expect(conceptoLimpio(fila())).toBe('Canon De Arrendamiento Personas Naturales');
   });
 
-  it('sin período suelto deja el concepto ENTERO: no se borra lo que no se puede volver a mostrar', () => {
-    const sinPeriodo = fila({ periodoDesde: null, periodoHasta: null });
-    expect(conceptoLimpio(sinPeriodo)).toBe(sinPeriodo.concepto);
+  it('sin período suelto, LEE la cola de Nui («De 05-Ago-2024 hasta 31-Ago-2024») y la pinta aparte', () => {
+    const sinPeriodo = fila({
+      concepto: 'Canon de arrendamiento. De 05-Ago-2024 hasta 31-Ago-2024',
+      periodoDesde: null,
+      periodoHasta: null,
+    });
+    expect(periodoDeLaFila(sinPeriodo)).toEqual({ desde: '2024-08-05', hasta: '2024-08-31' });
+    expect(periodoLegible(sinPeriodo)).toBe('5 ago 2024 → 31 ago 2024');
+    expect(conceptoLimpio(sinPeriodo)).toBe('Canon de arrendamiento');
+  });
+
+  it('la cola del back viene en ISO («De 2024-08-05 hasta 2024-08-31») y también se lee', () => {
+    const delBack = fila({
+      concepto: 'Canon de arrendamiento. De 2024-08-05 hasta 2024-08-31',
+      periodoDesde: null,
+      periodoHasta: null,
+    });
+    expect(periodoDeLaFila(delBack)).toEqual({ desde: '2024-08-05', hasta: '2024-08-31' });
+    expect(conceptoLimpio(delBack)).toBe('Canon de arrendamiento');
+  });
+
+  it('una cola que no se deja leer deja el concepto ENTERO: no se borra lo que no se puede volver a mostrar', () => {
+    const rara = fila({
+      concepto: 'Canon de arrendamiento. De ayer hasta mañana',
+      periodoDesde: null,
+      periodoHasta: null,
+    });
+    expect(periodoDeLaFila(rara)).toBeNull();
+    expect(periodoLegible(rara)).toBeNull();
+    expect(conceptoLimpio(rara)).toBe(rara.concepto);
   });
 
   it('un concepto sin cola no se toca', () => {

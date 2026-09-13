@@ -1,13 +1,18 @@
 'use client';
 
 /**
- * El estado de cuenta como documento: la cabecera de la inmobiliaria, el
+ * El estado de cuenta como documento: el membrete de la inmobiliaria, el
  * resumen del cliente, un bloque por contrato y el total general.
  *
  * Presentacional a propósito: recibe el documento ya cargado. Lo usan las tres
  * pantallas que lo muestran —la del panel, la página pública del enlace y los
  * dos portales— para que el inquilino vea EXACTAMENTE lo mismo que ve la
  * inmobiliaria.
+ *
+ * El membrete es chico a propósito. En la primera versión la razón social iba
+ * del tamaño de un título y «victor inmobiliaria8» se leía como si fuera el
+ * cliente; el documento es DEL cliente, la inmobiliaria firma en la esquina,
+ * como en cualquier extracto.
  *
  * El `<style>` de impresión vive acá y no en la página porque el documento es
  * lo que se imprime: quien lo monte en otra pantalla se lleva el print.
@@ -67,13 +72,14 @@ const CSS_DE_IMPRESION = `
     --border-faint: #eceae6;
     --border-strong: #d5d1ca;
   }
-  [data-estado-pagina] { padding: 0 !important; }
+  [data-estado-pagina] { padding: 0 !important; max-width: none !important; }
   [data-estado-hoja] {
     max-width: none !important;
     margin: 0 !important;
     border: 0 !important;
     box-shadow: none !important;
     border-radius: 0 !important;
+    padding: 0 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -83,7 +89,7 @@ const CSS_DE_IMPRESION = `
   }
   /* La tabla manda en papel; las tarjetas del móvil, nunca. Las clases \`md:\`
      dependen del ancho reportado de la hoja y ése cambia con el zoom. */
-  [data-estado-hoja] [data-tabla] { display: block !important; }
+  [data-estado-hoja] [data-tabla] { display: block !important; border: 0 !important; }
   [data-estado-hoja] [data-tarjetas] { display: none !important; }
   [data-estado-hoja] section.estado-contrato { break-inside: auto; }
   [data-estado-hoja] section.estado-contrato + section.estado-contrato {
@@ -122,7 +128,7 @@ export function EstadoDeCuentaDocumento({
       data-estado-hoja
       data-testid="estado-de-cuenta"
       className={cn(
-        'mx-auto w-full max-w-[1200px] rounded-lg border border-border bg-surface px-6 py-8 shadow-sm sm:px-10 sm:py-10',
+        'mx-auto w-full max-w-[1200px] rounded-lg border border-border bg-surface px-6 py-7 shadow-sm sm:px-10 sm:py-9',
         className,
       )}
       aria-label={t('estadoDeCuenta.titulo')}
@@ -131,21 +137,21 @@ export function EstadoDeCuentaDocumento({
 
       {/* Es un <div> a propósito: el print esconde todo <header> (el del
           shell), y un <header> propio se iría con él. */}
-      <div className="flex flex-wrap items-start justify-between gap-6 border-b border-border pb-6">
-        <div className="flex min-w-0 items-start gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4 border-b border-border pb-5">
+        <div className="flex min-w-0 items-center gap-3">
           {emisor.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={emisor.logoUrl}
               alt=""
-              className="h-14 w-14 shrink-0 rounded-md object-contain"
+              className="h-10 w-10 shrink-0 rounded-md object-contain"
             />
           ) : null}
           <div className="min-w-0">
-            <p className="text-h2 text-fg">
+            <p className="text-subtitle text-fg">
               {emisor.razonSocial || t('estadoDeCuenta.sinEmisor')}
             </p>
-            <p className="mt-1 font-mono text-caption tabular-nums text-fg-muted">
+            <p className="mt-0.5 font-mono text-caption tabular-nums text-fg-muted">
               {[
                 emisor.nit ? `${t('estadoDeCuenta.nit')} ${emisor.nit}` : null,
                 emisor.matricula
@@ -174,12 +180,17 @@ export function EstadoDeCuentaDocumento({
               : fechaLegible(doc.fecha)}
           </p>
           {nota && (
-            <p className="mt-1 max-w-[26ch] text-caption text-warning">{nota}</p>
+            <p
+              data-testid="estado-nota"
+              className="mt-2 inline-block max-w-[30ch] rounded-md bg-warning-soft px-2.5 py-1 text-left text-caption text-warning"
+            >
+              {nota}
+            </p>
           )}
         </div>
       </div>
 
-      <ResumenDelEstado doc={doc} hoy={hoy} className="mt-6 border-0 p-0 shadow-none" />
+      <ResumenDelEstado doc={doc} hoy={hoy} className="mt-6" />
 
       {doc.contratos.length === 0 ? (
         <p
@@ -193,7 +204,7 @@ export function EstadoDeCuentaDocumento({
           </span>
         </p>
       ) : (
-        <div className="mt-8 space-y-10">
+        <div className="mt-10 space-y-12">
           {doc.contratos.map((c) => (
             <ContratoDelEstado
               key={c.numero}

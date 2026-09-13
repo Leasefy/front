@@ -54,7 +54,7 @@ function Contenido() {
   return (
     <PantallaDelEstadoDeCuenta
       cargar={() => estadoDeCuentaApi.propietario(id)}
-      volverA={{ label: 'Volver', href: volver }}
+      volverA={{ href: volver }}
       acciones={(doc, nota) => (
         <CompartirEstadoDeCuenta
           doc={doc}

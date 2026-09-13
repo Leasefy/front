@@ -49,10 +49,67 @@ export function fechaLegible(iso: string | null | undefined): string {
   return `${Number(dia)} ${nombre} ${anio}`;
 }
 
+/** Los meses como los abrevia Nui dentro del concepto: «05-Ago-2024». */
+const MES_DE_NUI: Record<string, string> = {
+  ene: '01',
+  feb: '02',
+  mar: '03',
+  abr: '04',
+  may: '05',
+  jun: '06',
+  jul: '07',
+  ago: '08',
+  sep: '09',
+  sept: '09',
+  oct: '10',
+  nov: '11',
+  dic: '12',
+};
+
+/**
+ * La cola «. De 05-Ago-2024 hasta 31-Ago-2024» con la que Nui cierra cada
+ * concepto. El back, cuando arma el concepto él mismo, escribe las fechas en
+ * ISO («De 2024-08-05 hasta 2024-08-31»): se aceptan las dos.
+ */
+const COLA_DE_PERIODO = /\.?\s*De\s+(\S+)\s+hasta\s+(\S+)\s*$/i;
+const FECHA_DE_NUI = /^(\d{1,2})-([A-Za-zñ]{3,4})-(\d{4})$/;
+const FECHA_ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** «05-Ago-2024» o «2024-08-05» → `2024-08-05`; `null` si no es una fecha. */
+function fechaDeLaCola(texto: string): string | null {
+  if (FECHA_ISO.test(texto)) return texto;
+  const m = FECHA_DE_NUI.exec(texto);
+  if (!m) return null;
+  const mm = MES_DE_NUI[m[2]!.toLowerCase()];
+  return mm ? `${m[3]}-${mm}-${m[1]!.padStart(2, '0')}` : null;
+}
+
+/**
+ * El período que cubre la fila, como `YYYY-MM-DD`.
+ *
+ * Primero el que el back manda suelto (`periodoDesde`/`periodoHasta`). Si no
+ * viene, se LEE de la cola del concepto, que es donde Nui —y el back, cuando
+ * imita a Nui— lo escriben: «Canon de arrendamiento. De 05-Ago-2024 hasta
+ * 31-Ago-2024». Sin las dos fechas legibles, no hay período.
+ */
+export function periodoDeLaFila(
+  fila: FilaDelEstadoDeCuenta,
+): { desde: string; hasta: string } | null {
+  if (fila.periodoDesde && fila.periodoHasta) {
+    return { desde: fila.periodoDesde, hasta: fila.periodoHasta };
+  }
+  const m = COLA_DE_PERIODO.exec(fila.concepto);
+  if (!m) return null;
+  const desde = fechaDeLaCola(m[1]!);
+  const hasta = fechaDeLaCola(m[2]!);
+  return desde && hasta ? { desde, hasta } : null;
+}
+
 /** `2024-05-22` → `22 may 2024 → 21 jun 2024`, o `null` si no hay período. */
 export function periodoLegible(fila: FilaDelEstadoDeCuenta): string | null {
-  if (!fila.periodoDesde || !fila.periodoHasta) return null;
-  return `${fechaLegible(fila.periodoDesde)} → ${fechaLegible(fila.periodoHasta)}`;
+  const p = periodoDeLaFila(fila);
+  if (!p) return null;
+  return `${fechaLegible(p.desde)} → ${fechaLegible(p.hasta)}`;
 }
 
 /**
@@ -60,12 +117,13 @@ export function periodoLegible(fila: FilaDelEstadoDeCuenta): string | null {
  *
  * Nui escribe «Canon De Arrendamiento con IVA. De 22-May-2024 hasta
  * 21-Jun-2024» en CADA renglón: de los 60 caracteres, 40 se repiten. Cuando el
- * back manda el período suelto, la cola se recorta y el rango se pinta debajo,
- * en mono. Cuando no lo manda, el concepto se deja entero: nunca se borra
+ * período se puede mostrar aparte —porque el back lo manda suelto o porque se
+ * lee de la cola—, la cola se recorta y el rango se pinta debajo, en mono. Si
+ * la cola no se deja leer, el concepto se deja entero: nunca se borra
  * información que no se pueda volver a mostrar en otro lado.
  */
 export function conceptoLimpio(fila: FilaDelEstadoDeCuenta): string {
-  if (!fila.periodoDesde || !fila.periodoHasta) return fila.concepto;
+  if (!periodoDeLaFila(fila)) return fila.concepto;
   const sinCola = fila.concepto.replace(/\.?\s*De\s+\S+\s+hasta\s+\S+\s*$/i, '');
   const limpio = sinCola.trim().replace(/\.$/, '');
   return limpio.length > 0 ? limpio : fila.concepto;
@@ -205,6 +263,54 @@ export const SIN_FILTROS: FiltrosDelEstadoDeCuenta = {
 
 export function hayFiltros(f: FiltrosDelEstadoDeCuenta): boolean {
   return f.soloPendientes || f.desde !== '' || f.hasta !== '' || f.contrato !== '';
+}
+
+/**
+ * Los atajos del período. Son los cuatro que se piden de verdad sobre un
+ * estado de cuenta: qué vence este mes, qué pasó en el último trimestre, qué
+ * viene en el próximo, y el año para el cierre contable.
+ */
+export type PeriodoPreestablecido =
+  | 'esteMes'
+  | 'ultimosTresMeses'
+  | 'proximosTresMeses'
+  | 'esteAnio';
+
+/** `YYYY-MM-DD` a partir de un año, un mes (1–12) y un día. Sin zona horaria. */
+function fechaISO(anio: number, mes: number, dia: number): string {
+  // `Date.UTC` normaliza el desborde: (2026, 13, 1) es enero de 2027 y
+  // (2026, 2, 0) es el último día de febrero. Es lo único que se le pide.
+  const d = new Date(Date.UTC(anio, mes - 1, dia));
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * El rango `desde`–`hasta` de un atajo, contado desde `hoy` (`YYYY-MM-DD`).
+ *
+ * Los meses son calendario, no ventanas de 30 días: «este mes» el 13 de
+ * septiembre es del 1 al 30 de septiembre, porque las cuotas vencen en un día
+ * fijo del mes y así es como se las busca.
+ */
+export function rangoPreestablecido(
+  periodo: PeriodoPreestablecido,
+  hoy: string,
+): { desde: string; hasta: string } {
+  const [a, m] = hoy.slice(0, 10).split('-').map(Number) as [number, number];
+  switch (periodo) {
+    case 'esteMes':
+      return { desde: fechaISO(a, m, 1), hasta: fechaISO(a, m + 1, 0) };
+    case 'ultimosTresMeses':
+      return { desde: fechaISO(a, m - 2, 1), hasta: fechaISO(a, m + 1, 0) };
+    case 'proximosTresMeses':
+      return { desde: fechaISO(a, m, 1), hasta: fechaISO(a, m + 3, 0) };
+    case 'esteAnio':
+      return { desde: fechaISO(a, 1, 1), hasta: fechaISO(a, 12, 31) };
+  }
+}
+
+/** Cuántas filas tiene el documento entero. Para decir «viendo 20 de 26». */
+export function cuantasFilasDelDocumento(doc: EstadoDeCuenta): number {
+  return doc.contratos.reduce((s, c) => s + cuantasFilas(c), 0);
 }
 
 /**

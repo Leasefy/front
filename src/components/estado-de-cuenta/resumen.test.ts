@@ -66,6 +66,24 @@ describe('resumirElCliente', () => {
     expect(r.masVieja?.fecha).toBe('2026-06-13');
     expect(r.diasDeMora).toBe(92);
     expect(r.cuotasVencidas).toBe(2);
+    // Lo vencido se suma de las filas vencidas, no de `totales.pendiente`:
+    // bajo un filtro ese total pasa a ser todo lo que se debe, vencido o no.
+    expect(r.vencidoCop).toBe(fila().valorNeto * 2);
+  });
+
+  it('una cuota que vence mañana no cuenta como vencida ni suma a lo vencido', () => {
+    const c = contrato({
+      secciones: {
+        arriendos: [
+          fila({ estado: 'PENDIENTE', fechaVencimiento: '2026-09-14', valorNeto: 500 }),
+          fila({ estado: 'PENDIENTE', fechaVencimiento: '2026-09-01', valorNeto: 300 }),
+        ],
+        otrosConceptos: [],
+      },
+    });
+    const r = resumirElCliente(estadoDeCuenta({ contratos: [c] }), HOY);
+    expect(r.cuotasVencidas).toBe(1);
+    expect(r.vencidoCop).toBe(300);
   });
 
   it('sin nada vencido, está al día', () => {

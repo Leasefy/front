@@ -94,7 +94,7 @@ export function CompartirEstadoDeCuenta({
     <DropdownList>
       <DropdownListTrigger asChild>
         <Button
-          variant="secondary"
+          variant="default"
           hideArrow
           isLoading={ocupado !== null || armando}
           data-testid="compartir-estado"

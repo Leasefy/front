@@ -115,6 +115,19 @@ vi.mock('@/components/inmobiliaria/ActaEntregaView', () => ({
   ActaEntregaView: () => null,
 }));
 
+// El inventario entero (tarjeta, diálogo, barra del borrador) vive en su
+// propio componente desde que también se carga desde la ficha del contrato
+// (Nico, 2026-09-13). Acá no se prueba: tiene sus propias pruebas.
+vi.mock('@/components/inmobiliaria/InventarioDeLaConsignacion', () => ({
+  InventarioDeLaConsignacion: () => null,
+}));
+
+// El permiso pregunta por el PermissionsContext, que esta página no monta en
+// pruebas (el provider vive en el layout del panel).
+vi.mock('@/lib/hooks/use-puede-editar-inventario', () => ({
+  usePuedeEditarInventario: () => true,
+}));
+
 vi.mock('@/components/inmobiliaria/ConsignacionTimeline', () => ({
   ConsignacionTimeline: () => null,
 }));

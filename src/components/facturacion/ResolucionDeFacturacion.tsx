@@ -197,7 +197,7 @@ export function ResolucionDeFacturacion() {
         error={error}
         vacio={false}
         queEs="las resoluciones de facturación"
-        onReintentar={() => void cargar()}
+        onReintentar={cargar}
       >
         {datos && (
           <section

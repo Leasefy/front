@@ -21,6 +21,7 @@ vi.mock('./client', () => ({
 
 import {
   facturacionPorMesService,
+  fechaLegible,
   mesActual,
   mesLegible,
   mesesParaElegir,
@@ -28,6 +29,18 @@ import {
 
 /** Las claves de `GenerarFacturasDto`, escritas a mano contra el back. */
 const CLAVES_DEL_DTO = ['mes', 'claves']
+
+/** Las de `CrearResolucionDto`, igual: escritas a mano contra el back. */
+const CLAVES_DE_LA_RESOLUCION = [
+  'numero',
+  'fechaResolucion',
+  'prefijo',
+  'desde',
+  'hasta',
+  'vigenteDesde',
+  'vigenteHasta',
+  'ultimoNumeroUsado',
+]
 
 beforeEach(() => {
   getMock.mockReset().mockResolvedValue({})
@@ -83,5 +96,63 @@ describe('los meses', () => {
   it('un mes que no se entiende se devuelve tal cual, sin inventar', () => {
     expect(mesLegible('2026-13')).toBe('2026-13')
     expect(mesLegible('septiembre')).toBe('septiembre')
+  })
+})
+
+describe('la resolución de facturación', () => {
+  const datos = {
+    numero: '18764003394379',
+    fechaResolucion: '2026-01-15',
+    prefijo: 'FE',
+    desde: 1,
+    hasta: 5000,
+    vigenteDesde: '2026-01-15',
+    vigenteHasta: '2028-01-15',
+  }
+
+  it('listar pega en /resolucion', () => {
+    void facturacionPorMesService.resoluciones()
+    expect(getMock).toHaveBeenCalledWith('/inmobiliaria/facturacion/resolucion')
+  })
+
+  it('🔴 el cuerpo lleva sólo lo que el DTO declara', () => {
+    void facturacionPorMesService.crearResolucion(datos)
+    const [, cuerpo] = postMock.mock.calls[0] as [string, Record<string, unknown>]
+    expect(
+      Object.keys(cuerpo).every((k) => CLAVES_DE_LA_RESOLUCION.includes(k)),
+    ).toBe(true)
+    expect(cuerpo).toEqual(datos)
+  })
+
+  it('sin «último número usado» la clave NO viaja: el back la trata como ausente', () => {
+    void facturacionPorMesService.crearResolucion(datos)
+    expect(postMock.mock.calls[0]?.[1]).not.toHaveProperty('ultimoNumeroUsado')
+    void facturacionPorMesService.crearResolucion({
+      ...datos,
+      ultimoNumeroUsado: 1199,
+    })
+    expect(postMock.mock.calls[1]?.[1]).toHaveProperty('ultimoNumeroUsado', 1199)
+  })
+
+  it('anular pega en la ruta de la resolución, con cuerpo vacío', () => {
+    void facturacionPorMesService.anularResolucion('res-1')
+    expect(postMock).toHaveBeenCalledWith(
+      '/inmobiliaria/facturacion/resolucion/res-1/anular',
+      {},
+    )
+  })
+})
+
+describe('fechaLegible', () => {
+  it('🔴 lee el día del texto, sin construir un Date', () => {
+    // Un `@db.Date` llega como `...T00:00:00.000Z` y en Bogotá (UTC−5) un
+    // `new Date()` lo pinta el día anterior. Una vigencia que dice el día
+    // equivocado es el defecto que no se puede tener en una resolución.
+    expect(fechaLegible('2028-01-15T00:00:00.000Z')).toBe('15/01/2028')
+    expect(fechaLegible('2028-01-15')).toBe('15/01/2028')
+  })
+
+  it('sin fecha devuelve una raya, no «Invalid Date»', () => {
+    expect(fechaLegible(null)).toBe('—')
   })
 })

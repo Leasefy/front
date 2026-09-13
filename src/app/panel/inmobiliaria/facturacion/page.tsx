@@ -34,6 +34,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { NuevaFactura } from '@/components/facturacion/NuevaFactura';
+import { ResolucionDeFacturacion } from '@/components/facturacion/ResolucionDeFacturacion';
 import type { FacturacionTab } from '@/lib/api/facturacion.types';
 
 interface TabDef {
@@ -75,10 +76,18 @@ const TABS: readonly TabDef[] = [
  * describe cuatro listados de documentos ya emitidos). Esta pestaña no lista
  * documentos: calcula los que faltan por emitir.
  */
-type PestanaDeFacturacion = FacturacionTab | 'nueva';
+/**
+ * «Resolución» tampoco entra en `FacturacionTab`: no lista documentos, guarda
+ * el permiso de la DIAN con el que se numeran. Vive acá y no en Configuración →
+ * Facturación porque ésa es la suscripción a Leasefy (lo que la inmobiliaria
+ * nos paga) y ésta es la autorización con la que ella le factura a sus
+ * clientes: dos cosas que se llaman igual y no son lo mismo. Toda esta pantalla
+ * ya está detrás de ADMIN y CONTADOR, que son los dos roles que pueden tocarlo.
+ */
+type PestanaDeFacturacion = FacturacionTab | 'nueva' | 'resolucion';
 
 const esTab = (v: string): v is PestanaDeFacturacion =>
-  v === 'nueva' || TABS.some((x) => x.key === v);
+  v === 'nueva' || v === 'resolucion' || TABS.some((x) => x.key === v);
 
 function FacturacionContent() {
   const { t } = useI18n();
@@ -98,7 +107,7 @@ function FacturacionContent() {
           —lo que falta es el IVA y la numeración DIAN— y esa pestaña lo dice
           con sus propias palabras: dos avisos distintos sobre lo mismo, uno
           encima del otro, no los lee nadie. */}
-      {active !== 'nueva' && (
+      {active !== 'nueva' && active !== 'resolucion' && (
       <div className="rounded-lg bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
         <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
         <div>
@@ -129,6 +138,9 @@ function FacturacionContent() {
                   {t(k(`tab_${x.key}`))}
                 </TabsTrigger>
               ))}
+              <TabsTrigger value="resolucion" className="whitespace-nowrap">
+                {t(k('tab_resolucion'))}
+              </TabsTrigger>
             </TabsList>
 
             {/* La ÚNICA puerta para registrar una factura de proveedor.
@@ -152,6 +164,12 @@ function FacturacionContent() {
           <TabsContent value="nueva" className="mt-0">
             <div className="p-4">
               <NuevaFactura />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="resolucion" className="mt-0">
+            <div className="p-4">
+              <ResolucionDeFacturacion />
             </div>
           </TabsContent>
 

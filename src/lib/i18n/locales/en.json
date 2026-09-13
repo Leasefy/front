@@ -8785,6 +8785,7 @@
       "title": "Invoicing",
       "subtitle": "Sales and purchase invoices, DIAN electronic invoicing, and credit/debit notes — all in one place.",
       "tab_nueva": "New invoice",
+      "tab_resolucion": "Resolution",
       "new": "New invoice",
       "newSoon": "Invoice issuance is enabled with the DIAN engine (M2).",
       "m2BannerTitle": "Structure ready — the DIAN engine arrives in M2",

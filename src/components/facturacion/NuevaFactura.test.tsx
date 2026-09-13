@@ -60,12 +60,59 @@ function factura(over: Partial<FacturaDelMes> = {}): FacturaDelMes {
     ],
     subtotalCop: 1_800_000,
     descuentoCop: 0,
+    baseCop: 1_800_000,
+    // Por defecto, el contrato del que NADIE confirmó el escenario: sin
+    // impuestos y marcado. Es como sale hoy la inmensa mayoría de los
+    // contratos migrados de Nico.
+    ivaCop: 0,
+    retencionesCop: 0,
     totalCop: 1_800_000,
+    netoCop: 1_800_000,
+    impuestos: [],
+    impuestosSinConfirmar: true,
+    notasTributarias: ['Falta saber si el propietario es responsable de IVA.'],
+    escenario: null,
     estado: 'POR_EMITIR',
     numero: null,
+    numeroDian: null,
     diasFacturados: 30,
     diasDelMes: 30,
     deduccionAlEgresoCop: 0,
+    ...over,
+  };
+}
+
+/** Un lado del resumen, con los totales tributarios en cero. */
+function lado(over: Partial<FacturasPorGenerar['totales']['inquilinos']> = {}) {
+  return {
+    porEmitir: 0,
+    emitidas: 0,
+    totalCop: 0,
+    baseCop: 0,
+    ivaCop: 0,
+    retencionesCop: 0,
+    sinConfirmar: 0,
+    conIva: 0,
+    conRetenciones: 0,
+    ...over,
+  };
+}
+
+/** Una resolución vigente: sin ella el botón «Generar» está apagado. */
+function resolucionVigente(
+  over: Partial<FacturasPorGenerar['resolucion']> = {},
+): FacturasPorGenerar['resolucion'] {
+  return {
+    puedeNumerar: true,
+    motivo: null,
+    explicacion: null,
+    numero: '18764003394379',
+    prefijo: 'FE',
+    desde: 1,
+    hasta: 5000,
+    vigenteHasta: '2028-01-15',
+    disponibles: 5000,
+    siguiente: 'FE-1',
     ...over,
   };
 }
@@ -82,7 +129,9 @@ function respuesta(over: Partial<FacturasPorGenerar> = {}): FacturasPorGenerar {
         { tipo: 'COMISION', nombre: 'Comisión de administración (10 %)', valorCop: 180_000, resta: false },
       ],
       subtotalCop: 180_000,
+      baseCop: 180_000,
       totalCop: 180_000,
+      netoCop: 180_000,
     }),
   ];
   return {
@@ -92,9 +141,10 @@ function respuesta(over: Partial<FacturasPorGenerar> = {}): FacturasPorGenerar {
     omitidos: over.omitidos ?? [],
     totales: {
       contratosDelMes: 1,
-      inquilinos: { porEmitir: inquilinos.length, emitidas: 0, totalCop: 1_800_000 },
-      propietarios: { porEmitir: propietarios.length, emitidas: 0, totalCop: 180_000 },
+      inquilinos: lado({ porEmitir: inquilinos.length, totalCop: 1_800_000 }),
+      propietarios: lado({ porEmitir: propietarios.length, totalCop: 180_000 }),
     },
+    resolucion: resolucionVigente(),
     ...over,
   };
 }
@@ -147,11 +197,13 @@ describe('NuevaFactura', () => {
   it('lo ya emitido se ve con su número y sin casilla, en vez de esconderse', async () => {
     porGenerarMock.mockResolvedValue(
       respuesta({
-        inquilinos: [factura({ estado: 'EMITIDA', numero: 41 })],
+        inquilinos: [
+          factura({ estado: 'EMITIDA', numero: 41, numeroDian: 'FE-41' }),
+        ],
       }),
     );
     await montar();
-    expect(host.textContent).toContain('Emitida · N° 41');
+    expect(host.textContent).toContain('FE-41');
     // La suya queda deshabilitada; sigue habiendo una del propietario.
     const boton = q('[data-testid="facturacion-generar"]')!;
     expect(boton.textContent).toContain('Generar 1 factura');
@@ -225,8 +277,8 @@ describe('NuevaFactura', () => {
         propietarios: [],
         totales: {
           contratosDelMes: 0,
-          inquilinos: { porEmitir: 0, emitidas: 0, totalCop: 0 },
-          propietarios: { porEmitir: 0, emitidas: 0, totalCop: 0 },
+          inquilinos: lado(),
+          propietarios: lado(),
         },
       }),
     );
@@ -254,9 +306,126 @@ describe('NuevaFactura', () => {
     expect(bloque.textContent).toContain('El mandato no pactó comisión de administración.');
   });
 
-  it('🔴 dice que todavía no calcula impuestos ni numera ante la DIAN', async () => {
+  it('🔴 dice que un escenario sin confirmar se factura SIN impuestos', async () => {
     await montar();
-    expect(host.textContent).toContain('IVA ni retenciones');
-    expect(host.textContent).toContain('no una numeración');
+    expect(host.textContent).toContain('se factura SIN impuestos');
+    // Y que numerar no es transmitir: la factura electrónica no está.
+    expect(host.textContent).toContain('todavía no se transmite');
+  });
+
+  /**
+   * Lo tributario, que es el pedido del 12 a las 22:50. Lo que se protege:
+   * que la retención NO baje el total (baja el neto), que un cero y un «sin
+   * confirmar» se distingan, y que el botón se apague sin resolución vigente.
+   */
+  describe('IVA, retenciones y numeración DIAN', () => {
+    const conImpuestos = () =>
+      factura({
+        baseCop: 1_800_000,
+        ivaCop: 342_000,
+        retencionesCop: 63_000,
+        totalCop: 2_142_000,
+        netoCop: 2_079_000,
+        impuestosSinConfirmar: false,
+        notasTributarias: [],
+        escenario: { codigo: 'E9', nombre: 'Escenario 9', certeza: 'CONFIRMADO' },
+        impuestos: [
+          {
+            tipo: 'IVA',
+            sobre: 'ARRENDAMIENTO',
+            nombre: 'IVA sobre el canon',
+            porcentaje: 19,
+            baseCop: 1_800_000,
+            valorCop: 342_000,
+            suma: true,
+            loPractica: 'PROPIETARIO',
+            aCargoDe: 'INQUILINO',
+            explicacion: '',
+          },
+        ],
+      });
+
+    it('la fila muestra base, IVA, retención y total — y el neto aparte', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({ inquilinos: [conImpuestos()], propietarios: [] }),
+      );
+      await montar();
+      const fila = q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')!;
+      const texto = fila.textContent ?? '';
+      expect(texto).toContain('$ 1.800.000');
+      expect(texto).toContain('$ 342.000');
+      // 🔴 La retención resta del NETO, no del total: se ve con signo menos y
+      // el total sigue siendo base + IVA.
+      expect(texto).toContain('−$ 63.000');
+      expect(texto).toContain('$ 2.142.000');
+      expect(texto).toContain('Neto $ 2.079.000');
+    });
+
+    it('🔴 una factura con el escenario sin confirmar se marca, no dice «$0»', async () => {
+      await montar();
+      expect(q('[data-testid="sin-confirmar-ct-1|2026-09|INQUILINO"]')).not.toBeNull();
+    });
+
+    it('la emitida muestra el número DIAN y el consecutivo interno debajo', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({
+          inquilinos: [
+            factura({ estado: 'EMITIDA', numero: 41, numeroDian: 'FE-41' }),
+          ],
+        }),
+      );
+      await montar();
+      const fila = q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')!;
+      expect(fila.textContent).toContain('FE-41');
+      expect(fila.textContent).toContain('interna N° 41');
+    });
+
+    it('con resolución vigente dice con qué número sigue', async () => {
+      await montar();
+      const pie = q('[data-testid="facturacion-siguiente-numero"]')!;
+      expect(pie.textContent).toContain('FE-1');
+      expect(pie.textContent).toContain('18764003394379');
+      expect(pie.textContent).toContain('15/01/2028');
+    });
+
+    it('🔴 sin resolución vigente el botón se apaga y la pantalla dice por qué', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({
+          resolucion: resolucionVigente({
+            puedeNumerar: false,
+            motivo: 'SIN_RESOLUCION',
+            explicacion:
+              'La inmobiliaria no tiene una resolución de facturación cargada.',
+            siguiente: null,
+            numero: null,
+          }),
+        }),
+      );
+      await montar();
+      const aviso = q('[data-testid="facturacion-sin-resolucion"]')!;
+      expect(aviso.textContent).toContain('no tiene una resolución');
+      expect(
+        (q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled,
+      ).toBe(true);
+    });
+
+    it('si el rango no alcanzó, se avisa aparte del éxito', async () => {
+      generarMock.mockResolvedValue({
+        mes: '2026-09',
+        emitidas: 1,
+        yaEstaban: 0,
+        sinNumero: 1,
+        motivo: 'La resolución 999 sólo tiene 1 números disponibles.',
+        totalCop: 1_800_000,
+        facturas: [],
+      });
+      await montar();
+      await act(async () => {
+        (q('[data-testid="facturacion-generar"]') as HTMLButtonElement).click();
+      });
+      expect(toastErr).toHaveBeenCalledWith(
+        'La resolución 999 sólo tiene 1 números disponibles.',
+      );
+    });
   });
 });

@@ -23,13 +23,19 @@
  * lista que sólo trae lo pendiente no deja verificar que el mes esté completo,
  * que es justamente lo que la persona de facturación necesita saber.
  *
- * Y el aviso de impuestos: mientras el escenario tributario del contrato no
- * esté conectado, la factura sale con los valores del contrato sin IVA ni
- * retenciones. Eso se dice, no se deja adivinar por un total que no cuadra.
+ * Y lo tributario, que es el pedido del 12 a las 22:50: cada fila muestra su
+ * BASE, su IVA, lo que el cliente RETIENE y el TOTAL. 🔴 La retención no baja
+ * el total: baja el neto, porque la practica quien recibe la factura al pagar.
+ * Una fila cuyo escenario está deducido o sin definir sale sin impuestos y se
+ * marca «impuestos sin confirmar» — una factura sin IVA y una a la que se le
+ * olvidó el IVA se ven exactamente igual sin esa marca.
+ *
+ * Y el número: sale de la RESOLUCIÓN de la DIAN. Sin resolución vigente el back
+ * no emite, así que el botón se apaga y la pantalla dice por qué y a dónde ir.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Info, Receipt, Warning } from '@phosphor-icons/react'
+import { Info, Receipt, SealWarning, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -60,6 +66,7 @@ import { toast } from '@/components/ui/toast'
 import { formatCurrency } from '@/lib/format'
 import {
   facturacionPorMesService,
+  fechaLegible,
   mesActual,
   mesLegible,
   mesesParaElegir,
@@ -75,6 +82,28 @@ function conceptosLegibles(factura: FacturaDelMes): string {
   if (nombres.length === 0) return '—'
   if (nombres.length <= 2) return nombres.join(' · ')
   return `${nombres.slice(0, 2).join(' · ')} +${nombres.length - 2}`
+}
+
+/**
+ * 🔴 «Impuestos sin confirmar»: esta factura sale SIN impuestos porque el
+ * escenario tributario del contrato está DEDUCIDO o falta un dato. El motivo va
+ * en el `title`, con las palabras que da el back — nunca se factura un impuesto
+ * deducido, y esa decisión tiene que poder leerse sin salir de la tabla.
+ */
+function ImpuestosSinConfirmar({ factura }: { factura: FacturaDelMes }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-caption text-warning"
+      title={
+        factura.notasTributarias.join(' ') ||
+        'Falta confirmar el escenario tributario del contrato.'
+      }
+      data-testid={`sin-confirmar-${factura.clave}`}
+    >
+      <SealWarning className="h-3.5 w-3.5" weight="fill" />
+      Sin confirmar
+    </span>
+  )
 }
 
 interface TablaProps {
@@ -105,6 +134,7 @@ function TablaDeFacturas({
     () => filas.filter((f) => f.estado === 'POR_EMITIR').map((f) => f.clave),
     [filas],
   )
+  const sinConfirmar = filas.filter((f) => f.impuestosSinConfirmar).length
   const elegidas = porEmitir.filter((c) => seleccion.has(c))
   const todas = porEmitir.length > 0 && elegidas.length === porEmitir.length
   const algunas = elegidas.length > 0 && !todas
@@ -119,10 +149,18 @@ function TablaDeFacturas({
           <h3 className="text-body font-semibold text-fg">{titulo}</h3>
           <p className="text-caption text-fg-muted">{descripcion}</p>
         </div>
-        <p className="text-caption text-fg-muted tabular-nums whitespace-nowrap">
-          {total} {total === 1 ? 'factura' : 'facturas'} ·{' '}
-          {formatCurrency(filas.reduce((s, f) => s + f.totalCop, 0))}
-        </p>
+        <div className="text-caption text-fg-muted tabular-nums sm:text-right">
+          <p className="whitespace-nowrap">
+            {total} {total === 1 ? 'factura' : 'facturas'} ·{' '}
+            {formatCurrency(filas.reduce((s, f) => s + f.totalCop, 0))}
+          </p>
+          <p className="whitespace-nowrap">
+            IVA {formatCurrency(filas.reduce((s, f) => s + f.ivaCop, 0))} ·
+            retenciones{' '}
+            {formatCurrency(filas.reduce((s, f) => s + f.retencionesCop, 0))}
+            {sinConfirmar > 0 && ` · ${sinConfirmar} sin confirmar`}
+          </p>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -143,15 +181,20 @@ function TablaDeFacturas({
               <TableHead className="whitespace-nowrap">Tercero</TableHead>
               <TableHead className="whitespace-nowrap">Inmueble</TableHead>
               <TableHead className="whitespace-nowrap">Concepto</TableHead>
-              <TableHead className="whitespace-nowrap text-right">Período</TableHead>
-              <TableHead className="whitespace-nowrap text-right">Monto</TableHead>
+              <TableHead className="whitespace-nowrap text-right">Base</TableHead>
+              <TableHead className="whitespace-nowrap text-right">IVA</TableHead>
+              {/* La retención NO se resta del total: la practica quien recibe
+                  la factura al pagar. Por eso está en su propia columna y no
+                  metida en el total. */}
+              <TableHead className="whitespace-nowrap text-right">Retenciones</TableHead>
+              <TableHead className="whitespace-nowrap text-right">Total</TableHead>
               <TableHead className="whitespace-nowrap">Estado</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {pageItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="p-0">
+                <TableCell colSpan={10} className="p-0">
                   <SinDatos
                     queSon={`facturas de ${titulo.toLowerCase()} este mes`}
                     icono={Receipt}
@@ -206,6 +249,11 @@ function TablaDeFacturas({
                       <p className="truncate text-fg-muted">
                         {conceptosLegibles(factura)}
                       </p>
+                      <p className="truncate text-caption text-fg-muted">
+                        {factura.diasFacturados === factura.diasDelMes
+                          ? 'Mes completo'
+                          : `${factura.diasFacturados} de ${factura.diasDelMes} días`}
+                      </p>
                       {factura.deduccionAlEgresoCop > 0 && (
                         <p className="truncate text-caption text-fg-muted">
                           {formatCurrency(factura.deduccionAlEgresoCop)} van a
@@ -214,17 +262,53 @@ function TablaDeFacturas({
                       )}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-right tabular-nums text-fg-muted">
-                      {factura.diasFacturados === factura.diasDelMes
-                        ? 'Mes completo'
-                        : `${factura.diasFacturados} de ${factura.diasDelMes} días`}
+                      {formatCurrency(factura.baseCop)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-right tabular-nums text-fg-muted">
+                      {/* 🔴 Un cero y un «sin confirmar» no son lo mismo, y la
+                          columna tiene que distinguirlos: la factura sin IVA
+                          por escenario confirmado dice «—»; la que no lo pudo
+                          calcular lleva la marca. */}
+                      {factura.ivaCop > 0 ? (
+                        formatCurrency(factura.ivaCop)
+                      ) : factura.impuestosSinConfirmar ? (
+                        <ImpuestosSinConfirmar factura={factura} />
+                      ) : (
+                        '—'
+                      )}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-right tabular-nums text-fg-muted">
+                      {factura.retencionesCop > 0
+                        ? `−${formatCurrency(factura.retencionesCop)}`
+                        : '—'}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-right tabular-nums font-medium text-fg">
                       {formatCurrency(factura.totalCop)}
+                      {factura.retencionesCop > 0 && (
+                        <p className="text-caption font-normal text-fg-muted">
+                          Neto {formatCurrency(factura.netoCop)}
+                        </p>
+                      )}
+                      {factura.ivaCop > 0 &&
+                        factura.impuestosSinConfirmar === false &&
+                        factura.escenario && (
+                          <p className="text-caption font-normal text-fg-muted">
+                            {factura.escenario.codigo}
+                          </p>
+                        )}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       {emitida ? (
                         <span className="text-caption text-fg-muted">
-                          Emitida · N° {factura.numero}
+                          {/* El número que vale ante la DIAN es el autorizado
+                              por la resolución; el consecutivo interno queda
+                              debajo, para poder cruzarlo. */}
+                          {factura.numeroDian ?? `N° ${factura.numero}`}
+                          {factura.numeroDian && (
+                            <span className="block">
+                              interna N° {factura.numero}
+                            </span>
+                          )}
                         </span>
                       ) : (
                         <span className="text-caption text-primary">Por emitir</span>
@@ -335,6 +419,9 @@ export function NuevaFactura() {
       ]
       if (r.yaEstaban > 0) partes.push(`${r.yaEstaban} ya estaban emitidas`)
       toast.success(partes.join(' · '))
+      // El rango de la resolución no alcanzó para todas: se emitió lo que cabía
+      // y lo demás NO se numeró. Es un aviso aparte, no un renglón del éxito.
+      if (r.sinNumero > 0 && r.motivo) toast.error(r.motivo)
       await cargar(mes)
     } catch (e) {
       toast.error(
@@ -352,16 +439,38 @@ export function NuevaFactura() {
 
   return (
     <div className="space-y-4">
-      {/* 🔴 Lo que esta pantalla todavía NO hace. Se dice, no se deja adivinar
-          por un total que no cuadra con lo que el contador espera. */}
+      {/* 🔴 La resolución de la DIAN manda: sin una vigente el back no emite
+          nada, así que la pantalla lo dice ANTES de que alguien seleccione
+          ochocientas filas y apriete un botón que va a fallar. El texto es el
+          del back, con el motivo exacto (no cargada, vencida, anulada, rango
+          agotado): cada uno se arregla distinto. */}
+      {datos && !datos.resolucion.puedeNumerar && (
+        <div
+          className="rounded-lg bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5"
+          data-testid="facturacion-sin-resolucion"
+        >
+          <SealWarning
+            className="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
+            weight="fill"
+          />
+          <p className="text-caption text-fg">
+            {datos.resolucion.explicacion ??
+              'No hay una resolución de facturación vigente con la cual numerar.'}
+          </p>
+        </div>
+      )}
+
+      {/* Lo que esta pantalla todavía NO hace. Se dice, no se deja adivinar. */}
       <div className="rounded-lg bg-surface-muted border border-border p-3 flex items-start gap-2.5">
         <Info className="w-5 h-5 text-fg-muted flex-shrink-0 mt-0.5" weight="fill" />
         <p className="text-caption text-fg-muted">
-          Los montos salen del contrato: canon, administración, conceptos y la
-          comisión pactada. Todavía no se calculan IVA ni retenciones —eso llega
-          con el escenario tributario del contrato— y el número de la factura es
-          el consecutivo interno de la inmobiliaria, no una numeración
-          autorizada por la DIAN.
+          Los montos salen del contrato y los impuestos del escenario tributario
+          de cada uno. Un contrato cuyo escenario está deducido o sin confirmar
+          se factura SIN impuestos y se marca «sin confirmar»: nunca se factura
+          un impuesto que nadie confirmó. La factura se numera con la resolución
+          vigente de la DIAN, pero todavía no se transmite electrónicamente (sin
+          CUFE ni validación): eso necesita el proveedor tecnológico de la
+          inmobiliaria.
         </p>
       </div>
 
@@ -400,9 +509,27 @@ export function NuevaFactura() {
               {elegidas.length > 0 && ` · ${formatCurrency(totalElegido)} seleccionados`}
             </p>
           )}
+          {datos?.resolucion.puedeNumerar && (
+            <p
+              className="text-caption text-fg-muted tabular-nums"
+              data-testid="facturacion-siguiente-numero"
+            >
+              Resolución {datos.resolucion.numero} · sigue el{' '}
+              {datos.resolucion.siguiente} · {datos.resolucion.disponibles}{' '}
+              números disponibles hasta el{' '}
+              {fechaLegible(datos.resolucion.vigenteHasta)}
+            </p>
+          )}
           <Button
             hideArrow
-            disabled={elegidas.length === 0 || generando || cargando}
+            disabled={
+              elegidas.length === 0 ||
+              generando ||
+              cargando ||
+              // 🔴 Sin resolución vigente el back devuelve 400: apagar el botón
+              // dice lo mismo sin hacer perder la selección.
+              (datos !== null && !datos.resolucion.puedeNumerar)
+            }
             onClick={() => void generar()}
             data-testid="facturacion-generar"
           >

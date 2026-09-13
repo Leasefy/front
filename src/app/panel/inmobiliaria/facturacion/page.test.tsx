@@ -104,6 +104,9 @@ describe('/panel/inmobiliaria/facturacion', () => {
       `${K}tab_compras`,
       `${K}tab_electronica`,
       `${K}tab_notas`,
+      // La resolución de la DIAN: el permiso con el que se numera. Va última
+      // porque se toca una vez al año, no todos los meses.
+      `${K}tab_resolucion`,
     ]);
   });
 
@@ -139,8 +142,8 @@ describe('/panel/inmobiliaria/facturacion', () => {
     // La leyenda de estados no filtraba nada.
     expect(texto).not.toContain(`${K}estadosLabel`);
     expect(texto).not.toContain(`${K}estadoAceptada`);
-    // Los únicos botones son las cinco pestañas.
-    expect(qa('button')).toHaveLength(5);
+    // Los únicos botones son las seis pestañas.
+    expect(qa('button')).toHaveLength(6);
     expect(qa('button').every((b) => b.getAttribute('role') === 'tab')).toBe(true);
 
     expect(texto).toContain(`${K}m2BannerTitle`);

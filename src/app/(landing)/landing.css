@@ -20,12 +20,11 @@
  * (HANDOFF "reglas de oro": audit new short names against existing
  * globals before reusing them) — see the deviation note below.
  *
- * DEVIATION FROM DESIGN (#261 §0/§10 ADR-2): the design claims the
- * standalone's `--blue` (#1a40ff) "already matches" Cadence's `--primary`.
- * Verified against `src/app/globals.css`: `--primary` resolves to
- * `--indigo-500` (#5B5FEF), a different hue entirely. Using
- * `hsl(var(--primary))` here would visibly reskin the accent color away
- * from the ported design's intent. Scoping `--landing-blue: #1a40ff`
+ * NOTA (2026-09-13): cuando se portó la landing (#261 §0/§10 ADR-2),
+ * `--primary` resolvía a un índigo (#5B5FEF) distinto del `--blue` (#1a40ff)
+ * del standalone, y por eso se escopó `--landing-blue`. Hoy `--indigo-500`
+ * YA es #1A40FF, así que los dos coinciden; el token local se conserva
+ * sólo para no acoplar la landing al tema del panel. Scoping `--landing-blue: #1a40ff`
  * (the same pattern already used for `--night`, which also doesn't match
  * Cadence's `--ink`) preserves fidelity without introducing a
  * general-purpose parallel token system — only landing-specific,

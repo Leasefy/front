@@ -123,7 +123,9 @@ function Contenido({
                 <span className="text-sm font-medium text-foreground">
                   {i.nombre}
                 </span>
-                <span className="font-mono text-sm tabular-nums text-foreground">
+                {/* `shrink-0` + `whitespace-nowrap`: la columna izquierda de la
+                    ficha es angosta y sin esto «11 %» se parte en dos líneas. */}
+                <span className="shrink-0 whitespace-nowrap font-mono text-sm tabular-nums text-foreground">
                   {porcentaje(i.porcentaje)}
                 </span>
               </div>

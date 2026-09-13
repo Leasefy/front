@@ -297,33 +297,63 @@ describe('mantenimientoApi.approveQuote — matches backend @Put(:id/select-quot
   });
 });
 
-describe('mantenimientoApi.updateStatus — maps to real backend transitions (no generic /status route)', () => {
-  it("'approved' → PUT :id/approve", async () => {
-    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'APPROVED' });
-    await mantenimientoApi.updateStatus('sol-1', 'approved');
+/**
+ * 🔴 Este bloque se llamaba «maps to real backend transitions (no generic
+ * /status route)» y fijaba exactamente el defecto que Nico reportó el
+ * 2026-09-12: sin ruta genérica, `reported`, `quoted` e `in_progress` no se
+ * podían escribir por ningún camino y el cliente tiraba
+ * `Unsupported maintenance status transition`. Tres de las cinco columnas del
+ * tablero eran inalcanzables, y el Error moría dentro del navegador.
+ *
+ * El back ahora expone `PUT :id/status` (`CambiarEstadoDto`, `@IsEnum` sobre
+ * los seis estados) y todo destino sale por ahí, traducido al vocabulario del
+ * back. Los endpoints viejos siguen existiendo; este cliente ya no los usa.
+ */
+describe('mantenimientoApi.updateStatus — todo destino por PUT :id/status', () => {
+  it.each([
+    ['reported', 'REPORTED'],
+    ['quoted', 'QUOTED'],
+    ['approved', 'MAINT_APPROVED'],
+    ['in_progress', 'IN_PROGRESS'],
+    ['completed', 'MAINT_COMPLETED'],
+    ['cancelled', 'MAINT_CANCELLED'],
+  ])("'%s' → PUT :id/status con %s", async (front, back) => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: back });
+    await mantenimientoApi.updateStatus('sol-1', front);
     const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/approve')).toBe(true);
+    expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/status')).toBe(true);
     expect(opts.method).toBe('PUT');
+    expect(JSON.parse(opts.body as string)).toEqual({ status: back });
   });
 
-  it("'completed' → PUT :id/complete", async () => {
-    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'COMPLETED' });
-    await mantenimientoApi.updateStatus('sol-1', 'completed');
-    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/complete')).toBe(true);
-    expect(opts.method).toBe('PUT');
+  it('ya NO revienta con los tres estados que antes no tenían endpoint', async () => {
+    mockFetchOnce({ id: 'sol-1', status: 'IN_PROGRESS' });
+    await expect(mantenimientoApi.updateStatus('sol-1', 'in_progress')).resolves.toBeDefined();
   });
+});
 
-  it("'cancelled' → PUT :id/cancel", async () => {
-    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'CANCELLED' });
-    await mantenimientoApi.updateStatus('sol-1', 'cancelled');
+describe('mantenimientoApi.addQuote — matches backend @Post(:id/quote)', () => {
+  it('POSTs to /inmobiliaria/mantenimiento/:id/quote con los cinco campos del modelo', async () => {
+    const fetchMock = mockFetchOnce({ id: 'quote-1' });
+
+    await mantenimientoApi.addQuote('sol-1', {
+      providerName: 'Plomería El Rayo',
+      providerPhone: '3001234567',
+      amount: 350_000,
+      description: 'Cambio del sifón',
+      estimatedDays: 2,
+    });
+
     const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/cancel')).toBe(true);
-    expect(opts.method).toBe('PUT');
-  });
-
-  it('throws on a status with no backend transition (reported/quoted/in_progress)', async () => {
-    await expect(mantenimientoApi.updateStatus('sol-1', 'in_progress')).rejects.toThrow();
+    expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/quote')).toBe(true);
+    expect(opts.method).toBe('POST');
+    expect(JSON.parse(opts.body as string)).toEqual({
+      providerName: 'Plomería El Rayo',
+      providerPhone: '3001234567',
+      amount: 350_000,
+      description: 'Cambio del sifón',
+      estimatedDays: 2,
+    });
   });
 });
 

@@ -34,6 +34,8 @@ import {
   useAgentes,
 } from '@/lib/hooks/useInmobiliaria';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
+import { guardarCopia } from '@/lib/inventario/copia-de-inmueble';
+import { prepararRutaSinSenal } from '@/lib/inventario/sw-inventario';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +53,7 @@ import { formatCurrency, portafolioRowKey } from '@/lib/types/inmobiliaria';
 import { ConsignacionCard } from '@/components/inmobiliaria/ConsignacionCard';
 import { InmuebleSinMandatoCard } from '@/components/inmobiliaria/InmuebleSinMandatoCard';
 import { ConsignacionTable } from '@/components/inmobiliaria/ConsignacionTable';
+import { DisponiblesSinSenal } from '@/components/inmobiliaria/DisponiblesSinSenal';
 import { ConsignacionFilters, ConsignacionFiltersState } from '@/components/inmobiliaria/ConsignacionFilters';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
 import { CompletarMandatoDialog } from '@/components/inmobiliaria/CompletarMandatoDialog';
@@ -243,8 +246,22 @@ function PortafolioContent() {
     const mandatos = filteredConsignaciones.filter(
       (c): c is Extract<PortafolioRow, { kind: 'consignacion' }> => c.kind === 'consignacion',
     );
-    const available = mandatos.filter((c) => c.availability === 'available').length;
-    const rented = mandatos.filter((c) => c.availability === 'rented').length;
+    /*
+     * 🔴 «Arrendadas» lo dice el CONTRATO vigente (`arrendado`), no la
+     * disponibilidad del mandato — Nico, 2026-09-12: «no me está relacionando
+     * bien los inmuebles arrendados porque tengo 741 contratos activos pero me
+     * dice que solo tengo 674 inmuebles arrendados». En su base había 63
+     * contratos migrados sin `Lease`, así que el mandato seguía diciendo
+     * «disponible» sobre un inmueble ocupado. Si la fila viene de una
+     * respuesta vieja sin el campo, se cae a lo de antes en vez de contar 0.
+     * «Disponibles» es su complemento: en catálogo y sin contrato.
+     */
+    const estaArrendado = (c: Extract<PortafolioRow, { kind: 'consignacion' }>) =>
+      c.arrendado ?? c.availability === 'rented';
+    const rented = mandatos.filter(estaArrendado).length;
+    const available = mandatos.filter(
+      (c) => !estaArrendado(c) && c.availability === 'available',
+    ).length;
     const inProcess = mandatos.filter((c) => c.availability === 'in_process').length;
     const maintenance = mandatos.filter((c) => c.availability === 'maintenance').length;
     // contract-addendum-2.md §A.10 — a SALE mandate has `monthlyRent: null`
@@ -310,6 +327,40 @@ function PortafolioContent() {
   const handleAgendarCita = useCallback((consignacion: Consignacion) => {
     setCitaFor(consignacion);
   }, []);
+
+  /**
+   * 🔴 «Preparar para trabajar sin señal» desde la fila.
+   *
+   * Nico, 2026-09-12: «hay muchos apartamentos donde no hay señal; la persona
+   * que hace el inventario debería poder agregar todo sin señal». Acá se
+   * guardan las dos mitades: los DATOS del inmueble (IndexedDB) y la PÁGINA
+   * (el service worker). Con una sola no alcanza — sin página el navegador ni
+   * llega a la pantalla, y sin datos la pantalla llega vacía.
+   *
+   * El resultado se dice DENTRO de la lista «Disponibles sin señal», no con un
+   * toast: los toasts de este panel no se pintan (está documentado más abajo,
+   * en `motivoDelRechazo`), y un botón que parece no hacer nada es peor que
+   * no tenerlo — sobre todo éste, que se toca justamente para poder salir
+   * tranquilo a la calle.
+   */
+  const [avisoSinSenal, setAvisoSinSenal] = useState<{ ok: boolean; texto: string } | null>(null);
+
+  const handlePrepararSinSenal = useCallback(async (consignacion: Consignacion) => {
+    setAvisoSinSenal(null);
+    try {
+      await guardarCopia(consignacion);
+      const conPagina = await prepararRutaSinSenal(
+        `/panel/inmobiliaria/inmuebles/${consignacion.id}`,
+      );
+      setAvisoSinSenal(
+        conPagina
+          ? { ok: true, texto: t('inmobiliaria.sinSenal.listo') }
+          : { ok: false, texto: t('inmobiliaria.sinSenal.noSePudo') },
+      );
+    } catch {
+      setAvisoSinSenal({ ok: false, texto: t('inmobiliaria.sinSenal.noSePudo') });
+    }
+  }, [t]);
 
   // ── Lo que traía «Inmuebles · catálogo» ─────────────────────────────────
   // Al fusionar las dos listas estas tres acciones tenían que venirse con
@@ -410,6 +461,10 @@ function PortafolioContent() {
           </Button>
         </div>
       </div>
+
+      {/* Qué inmuebles puede abrir esta persona, en este teléfono, sin red.
+          No aparece hasta que hay al menos uno preparado. */}
+      <DisponiblesSinSenal aviso={avisoSinSenal} />
 
       {/*
         Aviso no bloqueante (contract.md T-0030 §3.3 — "Degrade, do not
@@ -613,6 +668,7 @@ function PortafolioContent() {
                     onAgendarCita={handleAgendarCita}
                     onCandidatos={handleCandidatos}
                     onVerAviso={handleVerAviso}
+                    onPrepararSinSenal={(c) => void handlePrepararSinSenal(c)}
                     onEliminar={abrirEliminar}
                     onCompletarMandato={setMandatoFor}
                   />

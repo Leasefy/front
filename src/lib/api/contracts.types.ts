@@ -3,7 +3,12 @@
  * Maps to /contracts controller in NestJS backend
  */
 
-import type { PerfilesDelContrato } from '@/lib/types/contract';
+import type {
+  EscenarioTributarioDelContrato,
+  PerfilesDelContrato,
+  PropietariosDelContrato,
+  InquilinoDelContrato,
+} from '@/lib/types/contract';
 
 export interface BackendSignature {
   signedAt: string;
@@ -65,6 +70,20 @@ export interface BackendContract {
    * `!= null`.
    */
   code?: number;
+  /**
+   * El número con el que la INMOBILIARIA conoce el contrato: la columna
+   * «Consecutivo contrato» de su sistema anterior, guardada al migrar.
+   *
+   * 🔴 Nico, 2026-09-12: vio «#1839» en Leasefy, lo buscó en su sistema viejo
+   * y era otra persona con otro monto — creyó que los datos estaban
+   * tergiversados. No lo estaban: #1839 es `code` (nuestro consecutivo) y el
+   * suyo es éste (1686). Un contrato migrado se identifica por este número;
+   * `code` se muestra al lado diciendo que es el de Leasefy.
+   *
+   * `null` en un contrato nativo o migrado sin número; ausente (`undefined`)
+   * sólo contra un back anterior a esta rama.
+   */
+  externalId?: string | null;
   status: string;
 
   // ─── Snapshot fields (Opción A implementada 2026-04-20) ───────────────────
@@ -119,6 +138,13 @@ export interface BackendContract {
     documentNumber: string;
   } | null;
   /**
+   * TODOS los dueños del inmueble con su porcentaje y su parte del canon, y
+   * todos los inquilinos con el principal marcado. Sólo los devuelven
+   * GET /:id y PATCH /:id/administracion — las dos con la MISMA forma.
+   */
+  propietariosDelContrato?: PropietariosDelContrato | null;
+  inquilinosDelContrato?: InquilinoDelContrato[] | null;
+  /**
    * Quién retiene qué, por parte. Sólo lo devuelven GET /:id y
    * PATCH /:id/administracion — las dos con la MISMA forma, a propósito: una
    * respuesta sin el campo se leería como «no hay perfiles» justo después de
@@ -131,6 +157,12 @@ export interface BackendContract {
    * segunda cuenta que un día no coincide con la que cobra.
    */
   regimenTributario?: RegimenTributarioDelContrato | null;
+  /**
+   * Cómo se LLAMA el escenario que forman las dos partes, y qué genera.
+   * Mismo trato que `regimenTributario`: lo resuelve el back, la pantalla lo
+   * muestra. Sólo lo devuelven GET /:id y PATCH /:id/administracion.
+   */
+  escenarioTributario?: EscenarioTributarioDelContrato | null;
   /** null = heredar de la ficha del propietario. */
   arrendadorResponsableIva?: boolean | null;
   /*

@@ -23,6 +23,7 @@ import {
   WarningCircle,
   Car,
   Mountains,
+  CloudArrowDown,
 } from '@phosphor-icons/react';
 import { IconButton } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
@@ -76,6 +77,13 @@ interface ConsignacionTableProps {
   onVerAviso?: (consignacion: Consignacion) => void;
   onCandidatos?: (consignacion: Consignacion) => void;
   onEliminar?: (consignacion: Consignacion) => void;
+  /**
+   * 🔴 «Preparar para trabajar sin señal» (Nico, 2026-09-12: «hay muchos
+   * apartamentos donde no hay señal»). Vive en el menú de la FILA porque es
+   * acá donde la persona arma su día antes de salir: tres inmuebles seguidos,
+   * sin entrar y volver de cada ficha.
+   */
+  onPrepararSinSenal?: (consignacion: Consignacion) => void;
   /**
    * R4 (T-0030): activar el alert de una fila sin mandato va DIRECTO a
    * llenarlo, prefiltrado con esta misma fila — nunca a una pantalla de
@@ -153,6 +161,7 @@ export function ConsignacionTable({
   onVerAviso,
   onCandidatos,
   onEliminar,
+  onPrepararSinSenal,
   onCompletarMandato,
 }: ConsignacionTableProps) {
   const { t } = useI18n();
@@ -594,6 +603,17 @@ export function ConsignacionTable({
                               <ArrowSquareOut className="w-4 h-4" />
                               <span className="text-sm">
                                 {t('inmobiliaria.inmuebles.acciones.verAviso')}
+                              </span>
+                            </DropdownListItem>
+                          )}
+                          {onPrepararSinSenal && (
+                            <DropdownListItem
+                              className="gap-3"
+                              onClick={() => onPrepararSinSenal(row)}
+                            >
+                              <CloudArrowDown className="w-4 h-4" />
+                              <span className="text-sm">
+                                {t('inmobiliaria.sinSenal.preparar')}
                               </span>
                             </DropdownListItem>
                           )}

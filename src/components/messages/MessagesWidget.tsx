@@ -32,6 +32,10 @@ import { useConversations, useChat } from '@/lib/hooks/useMessages';
 import { agentContactApi } from '@/lib/api/agent-contact.service';
 import type { ChatConversation } from '@/lib/api/messages.types';
 import { InsigniaDePerfil } from '@/components/messages/InsigniaDePerfil';
+import {
+  AvisoDeWhatsapp,
+  EstadoDeWhatsappEnMensaje,
+} from '@/components/messages/CanalDeWhatsappEnElHilo';
 /* `BotonNuevoMensaje` ya NO se importa: era la pastilla primary «Nuevo
    mensaje» que ocupaba una fila entera arriba del buscador. Nico: «podrías
    mejor hacer el buscador un poco más pequeño y colocar el primary un + y se
@@ -249,6 +253,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
     limpiarError,
     sendMessage,
     markAsRead,
+    canalDeWhatsapp,
   } = useChat(selectedConversationId);
 
   // Copy por actor (tenant ve "propietarios", landlord/agency ve "inquilinos").
@@ -868,6 +873,15 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                           </div>
                         </div>
                       )}
+                      {/*
+                        El puente con WhatsApp (2026-09-12). Lo que la
+                        inmobiliaria escriba acá también le llega al WhatsApp
+                        del tercero — o no, y entonces dice por qué. Sólo del
+                        lado de la inmobiliaria: el inquilino no decide esto.
+                      */}
+                      {enPanelDeInmobiliaria && canalDeWhatsapp && canalDeWhatsapp.motivo !== 'no_aplica' && (
+                        <AvisoDeWhatsapp canal={canalDeWhatsapp} locale={locale} />
+                      )}
                       <div className="flex-1 overflow-y-auto p-6 bg-muted/30">
                         {isLoadingMessages ? (
                           <MessagesSkeleton />
@@ -933,6 +947,14 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                         <Check className="w-3.5 h-3.5" />
                                       ))}
                                     </div>
+                                    {/* En qué quedó por WhatsApp. Sin valor no
+                                        se pinta nada: el mensaje sólo vivió en
+                                        la plataforma. */}
+                                    <EstadoDeWhatsappEnMensaje
+                                      estado={message.whatsappEstado}
+                                      error={message.whatsappError}
+                                      locale={locale}
+                                    />
                                   </div>
                                 </motion.div>
                               ))}

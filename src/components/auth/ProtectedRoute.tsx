@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding'
 import { useAuth } from '@/lib/auth/use-auth'
+import { useSinSenal } from '@/lib/hooks/use-sin-senal'
 import { getRoleHomeRoute, isPanelRoleAllowed } from '@/lib/auth/role-routes'
 import type { AgencyMemberRole } from '@/lib/auth/types'
 
@@ -50,6 +51,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
   const { user, isAuthenticated, isLoading, mfaRequired, needsOnboarding, perfilElegido, agencyRole, hasActiveAgencyMembership, agencyMembershipChecked, refreshUser } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
+  const sinSenal = useSinSenal()
   const [isCheckingStorage, setIsCheckingStorage] = useState(true)
   const [storageUser, setStorageUser] = useState<{ role: string } | null>(null)
 
@@ -272,6 +274,23 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
      * «Redirigiendo...» que no va a llegar nunca. Se dice la verdad —no
      * pudimos confirmar la sesión— y se ofrece la salida.
      */
+    /*
+     * 🔴 Sin señal el cartel de «reintentando» es una pared, no una ayuda.
+     *
+     * Nico, 2026-09-12: «hay muchos apartamentos donde no hay señal; la
+     * persona que hace el inventario debería poder agregar todo sin señal».
+     * Dentro del apartamento `GET /users/me` no vuelve nunca, así que el
+     * perfil queda degradado (`profileSource: 'session'`) y esta pantalla —que
+     * existe para el back caído, donde reintentar SÍ sirve— tapaba la ficha.
+     *
+     * Con la red abajo no hay nada que reintentar y tampoco nada que filtrar:
+     * lo único que se puede ver es la copia que este mismo dispositivo guardó
+     * con sesión válida. El efecto de arriba ya decidió no redirigir; acá se
+     * deja pasar, y en cuanto vuelve la señal el perfil se confirma solo.
+     */
+    if (user?.profileSource === 'session' && sinSenal) {
+      return <>{children}</>
+    }
     if (user?.profileSource === 'session') {
       return (
         <div className="min-h-screen flex items-center justify-center bg-muted p-6">

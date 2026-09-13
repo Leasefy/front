@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { contractsApi } from '@/lib/api/contracts.service';
+import { contractsApi, esContratoSinDocumento } from '@/lib/api/contracts.service';
 import type { Contract, ContractRejection } from '@/lib/types/contract';
 import type {
   CreateContractDto,
@@ -150,20 +150,38 @@ export function useContractByApplication(applicationId: string | null | undefine
 // useContractPreview - load the preview (HTML or signed PDF URL)
 // ============================================================================
 
+/**
+ * `sinDocumento` NO es un error: es el contrato migrado, que se cargó desde el
+ * archivo de la inmobiliaria y nunca tuvo documento en Leasefy. Va aparte de
+ * `error` para que la pantalla pueda contarlo en tono neutro en vez de pintar
+ * un cartel rojo (ver `esContratoSinDocumento`).
+ *
+ * `errorCrudo` es el error entero —no su texto— porque `<FalloDeCarga>`
+ * clasifica por status, no por mensaje. Mismo par que en `useContracts`.
+ */
 export function useContractPreview(id: string | null) {
   const [preview, setPreview] = useState<ContractPreview | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
+  const [sinDocumento, setSinDocumento] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
+    setSinDocumento(false);
     try {
       const p = await contractsApi.getPreview(id);
       setPreview(p);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo cargar el contrato');
+      if (esContratoSinDocumento(err)) {
+        setSinDocumento(true);
+      } else {
+        setErrorCrudo(err);
+        setError(err instanceof Error ? err.message : 'No se pudo cargar el contrato');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -171,7 +189,7 @@ export function useContractPreview(id: string | null) {
 
   useEffect(() => { load(); }, [load]);
 
-  return { preview, isLoading, error, refetch: load };
+  return { preview, isLoading, error, errorCrudo, sinDocumento, refetch: load };
 }
 
 // ============================================================================

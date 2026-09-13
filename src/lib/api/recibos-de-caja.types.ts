@@ -108,6 +108,100 @@ export interface NuevoReciboDeCaja {
   notas?: string;
 }
 
+/**
+ * Un período con saldo dentro de la cartera de una persona.
+ *
+ * Es el cobro, más `sinRespaldo`: plata que el cobro dice recibida y que ningún
+ * recibo respalda (un pago por PSE, cartera anterior al recibo de caja).
+ * Mientras eso sea > 0 el back no deja abonar ese período — hay que conciliarlo.
+ */
+export interface CobroEnCartera {
+  id: string;
+  /** 'YYYY-MM'. Ordena bien como texto, y es lo que define «más viejo». */
+  month: string;
+  dueDate: string;
+  createdAt: string;
+  consignacionId: string;
+  contractId: string | null;
+  leaseId: string | null;
+  /** De qué inmueble es esta deuda. Con varios inmuebles es lo que los separa. */
+  propertyTitle: string;
+  tenantName: string | null;
+  totalWithFees: number;
+  paidAmount: number;
+  pendingAmount: number;
+  status: string;
+  daysLate: number;
+  /** Intereses de mora acumulados del período. Se cobran ANTES que el capital. */
+  lateFee: number;
+  sinRespaldo: number;
+  conceptos: ConceptoDelCobro[];
+}
+
+/**
+ * Lo que debe UNA persona en este momento, del período más viejo al más nuevo.
+ *
+ * `GET /inmobiliaria/recibos-de-caja/cartera/:tenantId` y
+ * `.../cartera-por-cobro/:cobroId`. Nico (2026-09-12): «necesito ver si me
+ * debe algo en ese momento». Con varios inmuebles la cartera viene JUNTA y
+ * cada período dice de cuál es.
+ */
+export interface CarteraDelCliente {
+  tenantId: string | null;
+  nombre: string;
+  documento: string | null;
+  email: string | null;
+  /** Cuántos inmuebles distintos tienen saldo. */
+  inmuebles: number;
+  total: number;
+  cobros: CobroEnCartera[];
+}
+
+/**
+ * Cuerpo de `POST /inmobiliaria/recibos-de-caja/por-cliente`.
+ *
+ * 🔴 NO lleva «a qué cobro va la plata», y es a propósito: el destino lo decide
+ * la regla de imputación del back (la deuda más vieja primero). Se dice de
+ * QUIÉN es el pago con `tenantId` o con `cobroId` —uno de los dos, nunca los
+ * dos—, cuánto, qué día entró, cómo pagó y los saludos.
+ */
+export interface NuevoReciboPorCliente {
+  tenantId?: string;
+  cobroId?: string;
+  valorCop: number;
+  /** 'YYYY-MM-DD'. Si no va, el back pone hoy en Bogotá. */
+  fecha?: string;
+  medio: string;
+  referencia?: string;
+  /** Los «saludos»: el texto que sale impreso en el recibo. */
+  notas?: string;
+}
+
+/** A qué período fue una parte del pago, y cuánto de eso cubrió intereses. */
+export interface ParteDeLaImputacion {
+  cobroId: string;
+  month: string;
+  propertyTitle: string;
+  valorCop: number;
+  /** Código Civil, art. 1653: dentro de un período, primero los intereses. */
+  aIntereses: number;
+  aCapital: number;
+  quedaPendiente: number;
+}
+
+/**
+ * Lo que devuelve el recibo por cliente: UN recibo por cada período que el pago
+ * tocó, los cobros ya recompuestos, y el plan de imputación para mostrarlo.
+ */
+export interface RespuestaDeReciboPorCliente {
+  recibos: ReciboDeCaja[];
+  cobros: CobroConDesglose[];
+  imputacion: ParteDeLaImputacion[];
+  totalCop: number;
+  /** Lo que la persona sigue debiendo después de este pago. */
+  deudaRestante: number;
+}
+
 /** Filtros de `GET /inmobiliaria/recibos-de-caja`. */
 export interface FiltrosDeRecibos {
   desde?: string;

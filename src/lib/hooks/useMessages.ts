@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { messagesApi } from '@/lib/api/messages.service';
 import { useAuth } from '@/lib/auth';
 import type {
+  CanalDeWhatsapp,
   ChatConversation,
   ChatMessage,
   BackendChatMessage,
@@ -68,7 +69,11 @@ export function useConversations() {
 // resolve a conversation id they have no other use for.
 
 interface ThreadMessagesApi {
-  getMessages: (id: string) => Promise<{ messages: BackendChatMessage[] }>;
+  getMessages: (id: string) => Promise<{
+    messages: BackendChatMessage[];
+    /** Sólo la ruta nueva (`GET /conversations/:id`) lo trae; la legacy, no. */
+    whatsapp?: CanalDeWhatsapp;
+  }>;
   sendMessage: (id: string, content: string) => Promise<unknown>;
   markAsRead: (id: string) => Promise<unknown>;
 }
@@ -79,6 +84,10 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Si este hilo también llega al WhatsApp del tercero, o por qué no. Lo
+  // decide el back (teléfono utilizable + consentimiento): la pantalla no
+  // adivina nada.
+  const [canalDeWhatsapp, setCanalDeWhatsapp] = useState<CanalDeWhatsapp | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const userId = user?.id ?? '';
@@ -89,6 +98,7 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
       const res = await api.getMessages(id);
       const mapped = res.messages.map((m) => mapToMessage(m, userId));
       setMessages(mapped);
+      setCanalDeWhatsapp(res.whatsapp ?? null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error cargando mensajes';
       setError(message);
@@ -104,6 +114,7 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
   useEffect(() => {
     if (!id) {
       setMessages([]);
+      setCanalDeWhatsapp(null);
       return;
     }
     setIsLoading(true);
@@ -148,6 +159,10 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
           perfil: 'DESCONOCIDO',
           readAt: null,
           createdAt: new Date().toISOString(),
+          // El estado del puente con WhatsApp lo pone el back al encolar; en
+          // la burbuja optimista todavía no se sabe nada, y no se inventa.
+          whatsappEstado: null,
+          whatsappError: null,
         };
         setMessages((prev) => [...prev, optimistic]);
 
@@ -193,7 +208,17 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  return { messages, isLoading, isSending, error, limpiarError, sendMessage, markAsRead, refetch: fetchMessages };
+  return {
+    messages,
+    isLoading,
+    isSending,
+    error,
+    limpiarError,
+    sendMessage,
+    markAsRead,
+    canalDeWhatsapp,
+    refetch: fetchMessages,
+  };
 }
 
 /** Universal hook, keyed on `conversation.id`. Use this for anything that

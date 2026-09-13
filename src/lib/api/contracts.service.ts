@@ -24,7 +24,7 @@ import type {
 } from './contracts.types';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
-import type { Contract, ContractType, ContractStatus, SignatureStatus, ContractRejection } from '@/lib/types/contract';
+import type { Contract, ContractType, ContractStatus, SignatureStatus, ContractRejection, InquilinoDelContrato } from '@/lib/types/contract';
 import type { CobroConDesglose } from './recibos-de-caja.types';
 import { normalizeCobro } from './inmobiliaria.service';
 import type { ContractAuditEvent, ContractAuditEventType, ContractAuditEventMetadata } from '@/lib/types/contract';
@@ -100,6 +100,10 @@ export function mapBackendContract(bc: BackendContract): Contract {
     // tipo signifique algo, y un `0` coalescido sería un código válido a la
     // vista (los códigos arrancan en 1).
     code: bc.code,
+    // El número de la inmobiliaria (Nico, 2026-09-12). Passthrough por la
+    // misma razón que `code`: `undefined` = el back no lo mandó, `null` = no
+    // hay número, y las dos cosas se muestran distinto.
+    externalId: bc.externalId,
     // Deprecated: backend no modela template/type. Solo para compat del tipo.
     templateId: bc.templateId ?? '',
     type: (bc.type ? (CONTRACT_TYPE_MAP[bc.type] ?? bc.type) : 'custom') as ContractType,
@@ -129,12 +133,20 @@ export function mapBackendContract(bc: BackendContract): Contract {
     comisionPorcentaje: aNumero(bc.comisionPorcentaje),
     comisionDeConsignacion: aNumero(bc.comisionDeConsignacion),
     propietarioDeLaConsignacion: bc.propietarioDeLaConsignacion,
+    // Todos los dueños con su porcentaje y su parte del canon, y todos los
+    // inquilinos. Passthrough: `undefined` = el back no lo mandó (lista,
+    // respuesta vieja) y la ficha cae a lo que ya mostraba; `null` nunca.
+    propietariosDelContrato: bc.propietariosDelContrato ?? null,
+    inquilinosDelContrato: bc.inquilinosDelContrato ?? null,
     // Quién retiene qué. Puede faltar en respuestas viejas: null significa
     // «no vino», y la pantalla cae a los perfiles por defecto diciéndolo.
     perfilesTributarios: bc.perfilesTributarios ?? null,
     // Ya resuelto por el back, con el origen de cada valor. `null` = respuesta
     // vieja, y la pantalla lo dice en vez de inventar el efectivo.
     regimenTributario: bc.regimenTributario ?? null,
+    // El nombre del escenario. `null` = la respuesta no lo trajo, y la tarjeta
+    // lo dice en vez de inventar un escenario.
+    escenarioTributario: bc.escenarioTributario ?? null,
     arrendadorResponsableIva: bc.arrendadorResponsableIva ?? null,
     inquilinoTipoPersona: bc.inquilinoTipoPersona ?? null,
     inquilinoResponsableIva: bc.inquilinoResponsableIva ?? null,
@@ -187,6 +199,35 @@ export function mapBackendContract(bc: BackendContract): Contract {
     })),
     documentHash: bc.documentHash,
   };
+}
+
+// ============================================================================
+// Contratos sin documento — no es un fallo
+// ============================================================================
+
+/**
+ * ¿El `GET /contracts/:id/preview` falló porque ese contrato NO TIENE
+ * documento, o porque algo salió mal?
+ *
+ * Los contratos que entraron por migración se cargaron desde el archivo de la
+ * inmobiliaria: ya estaban firmados en papel y nunca tuvieron HTML ni PDF en
+ * Leasefy. El back responde a su preview con un 400 «Contract HTML not
+ * generated» (`contracts.service.ts#getPreview`), y la ficha lo pintaba como
+ * error: un cartel rojo cada vez que se abre un contrato migrado —o sea, en
+ * los 1.836 de Nico—. No tener documento es el estado NORMAL de esos
+ * contratos, y se cuenta en tono neutro.
+ *
+ * 🔴 Se decide por el TEXTO porque el back tira un `BadRequestException`
+ * pelado, sin `code`. Conviene que mande uno (p. ej. `CONTRATO_SIN_DOCUMENTO`)
+ * y que esto pase a leer sólo `err.code`: el texto es inglés de adentro del
+ * back y cualquiera lo reescribe sin saber que una pantalla depende de él. Si
+ * el 400 YA trae un `code`, se respeta: un código distinto es otro motivo, y
+ * ése sí es un error.
+ */
+export function esContratoSinDocumento(error: unknown): boolean {
+  if (!(error instanceof ApiError) || error.status !== 400) return false;
+  if (error.code) return error.code === 'CONTRATO_SIN_DOCUMENTO';
+  return /contract html not generated/i.test(error.message);
 }
 
 // ============================================================================
@@ -631,6 +672,34 @@ export const contractsApi = {
   },
 
   /**
+   * Los inquilinos del contrato: el principal primero y marcado, y detrás los
+   * coarrendatarios (Nico, 2026-09-12: «puede darse el caso» de varios).
+   *
+   * Las tres devuelven la LISTA COMPLETA, no la fila tocada: la pantalla se
+   * repinta con la respuesta y con una fila suelta tendría que adivinar cómo
+   * quedó el resto.
+   */
+  async inquilinos(id: string): Promise<InquilinoDelContrato[]> {
+    return apiClient.get<InquilinoDelContrato[]>(`/contracts/${id}/inquilinos`);
+  },
+
+  async agregarInquilino(
+    id: string,
+    dto: { nombre: string; documento: string; email?: string; telefono?: string },
+  ): Promise<InquilinoDelContrato[]> {
+    return apiClient.post<InquilinoDelContrato[]>(`/contracts/${id}/inquilinos`, dto);
+  },
+
+  async quitarInquilino(
+    id: string,
+    inquilinoId: string,
+  ): Promise<InquilinoDelContrato[]> {
+    return apiClient.delete<InquilinoDelContrato[]>(
+      `/contracts/${id}/inquilinos/${inquilinoId}`,
+    );
+  },
+
+  /**
    * GET /contracts/:id/cobros — los cobros que este contrato ha generado, con
    * su desglose (canon, administración, conceptos, impuestos, mora) y los
    * recibos de caja vivos. Más reciente primero.
@@ -802,6 +871,14 @@ export interface FilaAMigrar {
   paymentDay?: number;
   /** Sin esto no se puede liquidar: vivienda va sin IVA, comercial con IVA. */
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL';
+  /**
+   * «Prorrateado» del archivo. Con prorrateo el primer mes cobra sólo los
+   * días desde la fecha de cartera —y el último, los días ocupados—; sin él,
+   * el mes completo cada día de cartera. Ausente = sin prorrateo.
+   */
+  prorratearPrimerMes?: boolean;
+  /** «Días de Plazo»: gracia antes de la mora. Ausente = el de la agencia. */
+  diasDePlazo?: number;
   periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
   comisionPorcentaje?: number;
   /**

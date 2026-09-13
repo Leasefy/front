@@ -128,10 +128,13 @@ export { CotizacionComparator } from './CotizacionComparator';
 export type { CotizacionComparatorProps } from './CotizacionComparator';
 export { MantenimientoViewer } from './MantenimientoViewer';
 export type { MantenimientoViewerProps } from './MantenimientoViewer';
+export { AgregarCotizacionDialog } from './AgregarCotizacionDialog';
+export type { AgregarCotizacionDialogProps } from './AgregarCotizacionDialog';
 
 // Configuracion - Company Profile & Branding (Phase 10)
 export { ConfigPerfilAgencia } from './ConfigPerfilAgencia';
 export { ConfigExtractoMensual } from './ConfigExtractoMensual';
+export { ConfigRenovacionAutomatica } from './ConfigRenovacionAutomatica';
 export { ConfigBranding } from './ConfigBranding';
 
 // Configuracion - Users & Permissions (Phase 10 - Plan 02)

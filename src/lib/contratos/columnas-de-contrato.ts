@@ -84,6 +84,8 @@ export type CampoDeContrato =
   | "fechaInicio"
   | "fechaDeCartera"
   | "fechaFin"
+  | "prorrateado"
+  | "diasDePlazo"
   | "canon"
   | "deposito"
   | "diaDePago"
@@ -471,6 +473,42 @@ const DICCIONARIO: Array<{ campo: CampoDeContrato; terminos: string[] }> = [
       "fecha cartera",
       "cartera desde",
       "fecha corte",
+    ],
+  },
+  {
+    /*
+     * 🔴 «Prorrateado» (Nico, 2026-09-12: «la migración debe leer del archivo
+     * si está prorrateado»). En el archivo real son 1.843 «SI» y 68 «NO»:
+     * hasta acá la columna no tenía campo y TODO contrato migrado entraba sin
+     * prorrateo, o sea cobrando el primer mes completo desde la fecha de
+     * cartera. Con prorrateo el primer mes cobra sólo los días ocupados.
+     */
+    campo: "prorrateado",
+    terminos: [
+      "prorratear primer mes",
+      "prorrateo primer mes",
+      "prorratea el canon",
+      "prorrateado",
+      "prorrateada",
+      "prorrateo",
+      "prorratea",
+    ],
+  },
+  {
+    /*
+     * «Días de Plazo»: los días de gracia después del vencimiento antes de
+     * que corra la mora. NO es el «día de pago» —ése es un día del mes— y por
+     * eso es un campo aparte: en el archivo real conviven («Días de Plazo»
+     * tiene 2 ó 3 en 1.648 de 1.912 filas).
+     */
+    campo: "diasDePlazo",
+    terminos: [
+      "dias de plazo para pagar",
+      "dias de gracia",
+      "dias de plazo",
+      "plazo en dias",
+      "dias plazo",
+      "dias de mora",
     ],
   },
   {

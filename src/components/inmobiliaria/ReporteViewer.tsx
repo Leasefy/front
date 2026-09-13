@@ -206,10 +206,18 @@ function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, stri
 
       {/* Summary Cards */}
       <div className="grid grid-cols-4 gap-2">
+        {/* 🔴 El total es el CATÁLOGO: la ocupación se mide «contra el inmueble
+            disponible, no contra el no disponible» (Nico, 2026-09-12). Si hay
+            inmuebles fuera, se dicen acá mismo en vez de desaparecer. */}
         <div className="p-3 rounded-md bg-muted/50 text-center">
           <Buildings className="w-5 h-5 mx-auto text-fg-muted mb-1" />
           <p className="text-lg font-bold text-foreground">{data.totalProperties}</p>
-          <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.totalLabel')}</p>
+          <p className="text-xs text-muted-foreground">En catálogo</p>
+          {(data.totalOutOfCatalog ?? 0) > 0 && (
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              {(data.totalOutOfCatalog ?? 0).toLocaleString('es-CO')} fuera del catálogo
+            </p>
+          )}
         </div>
         <div className="p-3 rounded-md bg-success-soft text-center">
           <p className="text-lg font-bold text-success">

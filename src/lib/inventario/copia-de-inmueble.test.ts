@@ -4,8 +4,10 @@ import {
   aQuienesSacar,
   borrarCopia,
   copiaDeConsignacion,
+  anotarRuta,
   guardarCopia,
   leerCopia,
+  leerCopiaPorContrato,
   listarCopias,
   usarAlmacenDeCopias,
   MAXIMO_DE_COPIAS,
@@ -170,5 +172,69 @@ describe('a quiénes sacar', () => {
   it('si las que quedan están todas protegidas, no saca a nadie', () => {
     const copias = [copia('a', 1), copia('b', 2), copia('c', 3)];
     expect(aQuienesSacar(copias, ['a', 'b', 'c'], 1)).toEqual([]);
+  });
+});
+
+/*
+ * 🔴 Nico, 2026-09-13: «desde el contrato también debería de agregar todo lo
+ * que se pueda agregar del inventario». La copia de DATOS es una sola —el
+ * inventario es del inmueble— pero el service worker guarda PÁGINAS, y la
+ * ficha del contrato es otra página. Eso es lo que anota `rutas`, y es lo que
+ * la lista «Disponibles sin señal» promete.
+ */
+describe('desde qué páginas se abre una copia', () => {
+  beforeEach(() => {
+    usarAlmacenDeCopias(almacenEnMemoria());
+    usarAlmacenDeBorradores(almacenDeBorradoresEnMemoria());
+  });
+  afterEach(() => {
+    usarAlmacenDeCopias(null);
+    usarAlmacenDeBorradores(null);
+  });
+
+  it('una copia recién guardada no promete ninguna página', async () => {
+    const guardada = await guardarCopia(consignacion('c-1'), 1_000);
+    expect(guardada.rutas).toEqual([]);
+  });
+
+  it('anotar una página la deja en la copia, y anotarla dos veces no la duplica', async () => {
+    await guardarCopia(consignacion('c-1'), 1_000);
+    await anotarRuta('c-1', '/panel/inmobiliaria/contratos/lease-9');
+    await anotarRuta('c-1', '/panel/inmobiliaria/contratos/lease-9');
+
+    expect((await leerCopia('c-1'))?.rutas).toEqual(['/panel/inmobiliaria/contratos/lease-9']);
+  });
+
+  it('el refresco de datos NO borra las páginas ya preparadas', async () => {
+    await guardarCopia(consignacion('c-1'), 1_000);
+    await anotarRuta('c-1', '/panel/inmobiliaria/contratos/lease-9');
+
+    // La ficha vuelve a abrir con señal y la copia se refresca sola.
+    await guardarCopia(consignacion('c-1', { propertyTitle: 'Apto renombrado' }), 2_000);
+
+    const copia = await leerCopia('c-1');
+    expect(copia?.titulo).toBe('Apto renombrado');
+    expect(copia?.rutas).toEqual(['/panel/inmobiliaria/contratos/lease-9']);
+  });
+
+  it('sin copia guardada no se anota nada: la página sola no alcanza', async () => {
+    expect(await anotarRuta('c-fantasma', '/panel/inmobiliaria/contratos/lease-9')).toBeNull();
+  });
+
+  it('la ficha del contrato encuentra su copia por el contrato vigente', async () => {
+    await guardarCopia(
+      consignacion('c-1', { currentLeaseId: 'lease-9', currentTenantName: 'Marcela' }),
+      1_000,
+    );
+
+    expect((await leerCopiaPorContrato('lease-9'))?.consignacionId).toBe('c-1');
+    expect(await leerCopiaPorContrato('lease-otro')).toBeNull();
+  });
+
+  it('…y también por la página preparada, que es el caso del contrato en borrador', async () => {
+    await guardarCopia(consignacion('c-2'), 1_000);
+    await anotarRuta('c-2', '/panel/inmobiliaria/contratos/lease-borrador');
+
+    expect((await leerCopiaPorContrato('lease-borrador'))?.consignacionId).toBe('c-2');
   });
 });

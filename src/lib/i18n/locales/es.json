@@ -9610,6 +9610,9 @@
       "noSePudo": "No se pudo guardar todo. Probá de nuevo con mejor señal.",
       "listaTitulo": "Disponibles sin señal",
       "quitar": "Quitar de los disponibles sin señal",
+      "seAbreDesde": "Se abre desde:",
+      "elInmueble": "el inmueble",
+      "elContrato": "el contrato",
       "viendoCopia": "Estás sin señal. Estás viendo la copia guardada el {{cuando}}; lo que llenes se sube cuando vuelva la señal."
     }
   },

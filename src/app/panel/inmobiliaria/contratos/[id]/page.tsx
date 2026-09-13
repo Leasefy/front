@@ -62,6 +62,7 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { VincularInmueble } from '@/components/contratos/VincularInmueble';
 import { PartesDelContrato } from '@/components/contratos/PartesDelContrato';
 import { InmuebleDelContrato } from '@/components/contratos/InmuebleDelContrato';
+import { ContratoSinSenal } from '@/components/contratos/ContratoSinSenal';
 import { numeroDelContrato, tituloDelContrato } from '@/lib/contratos/numero-del-contrato';
 
 const PRE_SIGNED_STATES: ContractStatus[] = ['draft', 'pending_landlord', 'pending_tenant', 'rejected_pending_modifications'];
@@ -235,14 +236,23 @@ function ContratoDetalleContent() {
    * sentido. Las dos señales ya estaban por separado; se juntaban a mano.
    */
   if (error) {
+    /*
+     * 🔴 Sin señal, el contrato no se puede traer —vive en el back— pero el
+     * inventario del inmueble sí puede estar guardado en este teléfono, y es
+     * lo que la persona fue a hacer al apartamento. `ContratoSinSenal` deja el
+     * fallo con su reintentar y agrega abajo lo que SÍ se puede hacer; sin
+     * copia guardada muestra sólo el fallo, como antes.
+     */
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
-        <FalloDeCarga
-          error={error}
-          queEs="este contrato"
-          onReintentar={refetch}
-          volverA={{ label: 'Contratos', href: '/panel/inmobiliaria/contratos' }}
-        />
+        <ContratoSinSenal contratoId={id}>
+          <FalloDeCarga
+            error={error}
+            queEs="este contrato"
+            onReintentar={refetch}
+            volverA={{ label: 'Contratos', href: '/panel/inmobiliaria/contratos' }}
+          />
+        </ContratoSinSenal>
       </div>
     );
   }

@@ -50,6 +50,42 @@ export interface CopiaDeInmueble {
   consignacion: Consignacion;
   /** Cuándo se bajó, para poder decir «guardado el 12 de septiembre». */
   guardadoEn: number;
+  /**
+   * Desde qué PANTALLAS se puede abrir este inmueble sin señal: la ficha del
+   * inmueble, la del contrato, o las dos.
+   *
+   * 🔴 Nico, 2026-09-13: el inventario también se carga desde el contrato, así
+   * que «preparar» desde ahí guarda ESA página. La copia de datos es una sola
+   * —el inventario es del inmueble— pero el service worker guarda páginas, y
+   * una que no se guardó no se abre. Por eso la lista «Disponibles sin señal»
+   * lee esto para decir desde dónde, en vez de mandar a todos a la ficha del
+   * inmueble y que la persona se entere en el apartamento.
+   *
+   * Se anota SÓLO cuando el worker confirmó que guardó la página. Dice de
+   * menos —el worker también guarda al pasar por una pantalla— y nunca de más:
+   * una promesa de más es la que deja a alguien sin poder trabajar.
+   *
+   * Opcional: las copias guardadas antes de esto no lo tienen.
+   */
+  rutas?: string[];
+}
+
+/** La ficha del inmueble. La ruta de siempre. */
+export function rutaDeLaFichaDelInmueble(consignacionId: string): string {
+  return `/panel/inmobiliaria/inmuebles/${consignacionId}`;
+}
+
+/** La ficha del contrato, desde donde también se carga el inventario. */
+export function rutaDeLaFichaDelContrato(contratoId: string): string {
+  return `/panel/inmobiliaria/contratos/${contratoId}`;
+}
+
+export function esRutaDeInmueble(ruta: string): boolean {
+  return ruta.startsWith('/panel/inmobiliaria/inmuebles/');
+}
+
+export function esRutaDeContrato(ruta: string): boolean {
+  return ruta.startsWith('/panel/inmobiliaria/contratos/');
 }
 
 export interface AlmacenDeCopias {
@@ -149,6 +185,7 @@ function avisarCambio(): void {
 export function copiaDeConsignacion(
   consignacion: Consignacion,
   ahora = Date.now(),
+  rutas: string[] = [],
 ): CopiaDeInmueble {
   const inquilino = consignacion.inquilino;
   const contratoId = inquilino?.contractId ?? consignacion.currentLeaseId ?? null;
@@ -167,6 +204,7 @@ export function copiaDeConsignacion(
       : null,
     consignacion,
     guardadoEn: ahora,
+    rutas,
   };
 }
 
@@ -201,8 +239,12 @@ export async function guardarCopia(
   consignacion: Consignacion,
   ahora = Date.now(),
 ): Promise<CopiaDeInmueble> {
-  const copia = copiaDeConsignacion(consignacion, ahora);
   const deposito = almacenDeCopias();
+  // Las páginas ya preparadas se arrastran: el refresco de datos no puede
+  // borrar lo que el worker sí tiene guardado. Se guardan aparte —el worker
+  // no nos avisa cuando desaloja— pero olvidarlas acá sería mentir al revés.
+  const previa = await deposito.leer(consignacion.id).catch(() => null);
+  const copia = copiaDeConsignacion(consignacion, ahora, previa?.rutas ?? []);
   await deposito.guardar(copia);
 
   const borradores = await almacenDeBorradores()
@@ -234,4 +276,51 @@ export async function listarCopias(): Promise<CopiaDeInmueble[]> {
 export async function borrarCopia(consignacionId: string): Promise<void> {
   await almacenDeCopias().borrar(consignacionId);
   avisarCambio();
+}
+
+/**
+ * Anota que ESTA página quedó guardada para abrirse sin señal.
+ *
+ * La llama «Preparar para trabajar sin señal» cuando el worker contestó que
+ * sí, y sólo entonces: la lista «Disponibles sin señal» promete lo que se
+ * anota acá. Sin copia todavía no anota nada — la página sola no alcanza, sin
+ * los datos la pantalla se arma vacía.
+ */
+export async function anotarRuta(
+  consignacionId: string,
+  ruta: string,
+): Promise<CopiaDeInmueble | null> {
+  const deposito = almacenDeCopias();
+  const copia = await deposito.leer(consignacionId);
+  if (!copia) return null;
+  const rutas = copia.rutas ?? [];
+  if (rutas.includes(ruta)) return copia;
+  const conRuta = { ...copia, rutas: [...rutas, ruta] };
+  await deposito.guardar(conRuta);
+  avisarCambio();
+  return conRuta;
+}
+
+/**
+ * La copia del inmueble de un contrato, para armar su ficha sin señal.
+ *
+ * 🔴 Nico, 2026-09-13: el inventario también se carga desde el contrato. Sin
+ * red, la ficha del contrato no tiene contrato que mostrar —eso vive en el
+ * back— pero sí puede mostrar el inventario, que es lo que la persona fue a
+ * hacer al apartamento.
+ *
+ * Se busca por el contrato VIGENTE de la consignación y también por la ruta
+ * preparada: un contrato en borrador todavía no es el vigente de nadie, y aun
+ * así alguien pudo preparar su ficha a propósito.
+ */
+export async function leerCopiaPorContrato(
+  contratoId: string,
+): Promise<CopiaDeInmueble | null> {
+  const ruta = rutaDeLaFichaDelContrato(contratoId);
+  const copias = await almacenDeCopias().listar();
+  return (
+    copias.find(
+      (c) => c.contrato?.contratoId === contratoId || (c.rutas ?? []).includes(ruta),
+    ) ?? null
+  );
 }

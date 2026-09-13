@@ -24,8 +24,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  anotarRuta,
   guardarCopia,
   leerCopia,
+  rutaDeLaFichaDelInmueble,
   type CopiaDeInmueble,
 } from '@/lib/inventario/copia-de-inmueble';
 import { prepararRutaSinSenal } from '@/lib/inventario/sw-inventario';
@@ -49,6 +51,13 @@ export function useCopiaDeInmueble(
   consignacionId: string | undefined,
   /** Lo que trajo el back. `undefined` mientras carga o si no llegó. */
   delBack: Consignacion | undefined,
+  /**
+   * Qué PÁGINA se guarda al preparar. Por defecto la ficha del inmueble;
+   * la ficha del contrato pasa la suya, porque desde el 2026-09-13 el
+   * inventario también se carga desde ahí y el worker guarda páginas, no
+   * inmuebles.
+   */
+  ruta?: string,
 ): EstadoDeLaCopia {
   const [copia, setCopia] = useState<CopiaDeInmueble | null>(null);
   const [preparando, setPreparando] = useState(false);
@@ -94,13 +103,19 @@ export function useCopiaDeInmueble(
    */
   const preparar = useCallback(async () => {
     if (!consignacionId) return false;
+    const cual = ruta ?? rutaDeLaFichaDelInmueble(consignacionId);
     setPreparando(true);
     try {
       if (delBack) setCopia(await guardarCopia(delBack));
       const guardada = delBack ? true : Boolean(await leerCopia(consignacionId));
-      const conPagina = await prepararRutaSinSenal(
-        `/panel/inmobiliaria/inmuebles/${consignacionId}`,
-      );
+      const conPagina = await prepararRutaSinSenal(cual);
+      // La página se anota en la copia sólo si el worker dijo que la guardó:
+      // «se abre desde el contrato» sin la página es una promesa vacía, y la
+      // lista «Disponibles sin señal» la mostraría igual.
+      if (conPagina && guardada) {
+        const conRuta = await anotarRuta(consignacionId, cual);
+        if (conRuta) setCopia(conRuta);
+      }
       const listo = guardada && conPagina;
       setUltimaPreparacion(listo);
       return listo;
@@ -110,7 +125,7 @@ export function useCopiaDeInmueble(
     } finally {
       setPreparando(false);
     }
-  }, [consignacionId, delBack]);
+  }, [consignacionId, delBack, ruta]);
 
   return {
     copia,

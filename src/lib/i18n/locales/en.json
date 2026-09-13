@@ -9570,6 +9570,9 @@
       "noSePudo": "We could not save everything. Try again with better signal.",
       "listaTitulo": "Available without signal",
       "quitar": "Remove from available without signal",
+      "seAbreDesde": "Opens from:",
+      "elInmueble": "the property",
+      "elContrato": "the contract",
       "viendoCopia": "You are without signal. You are seeing the copy saved on {{cuando}}; whatever you fill in uploads when the signal returns."
     }
   },

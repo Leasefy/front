@@ -13,11 +13,12 @@
  *
  * Lo que hace, y NADA más que esto:
  *
- *  · La lista de inmuebles y la ficha de un inmueble se guardan al pasar por
- *    ellas (y a propósito, con «Preparar para trabajar sin señal»). Primero la
- *    red, y si la red no está, lo guardado. Primero la red y no al revés
- *    porque una ficha vieja servida con señal disponible sería una mentira:
- *    la copia es la RED DE SEGURIDAD, no la fuente.
+ *  · La lista de inmuebles, la ficha de un inmueble y la ficha de un contrato
+ *    —las tres pantallas desde las que se trabaja el inventario— se guardan al
+ *    pasar por ellas (y a propósito, con «Preparar para trabajar sin señal»).
+ *    Primero la red, y si la red no está, lo guardado. Primero la red y no al
+ *    revés porque una ficha vieja servida con señal disponible sería una
+ *    mentira: la copia es la RED DE SEGURIDAD, no la fuente.
  *  · Los archivos de `/_next/static/` (el código de la pantalla) se guardan al
  *    pedirlos. Llevan hash en el nombre, así que un despliegue nuevo pide URLs
  *    nuevas y las viejas quedan sin usarse: por eso se recorta la caja al
@@ -49,17 +50,41 @@ const TOPE_DE_ESTATICOS = 400;
 const LISTA = '/panel/inmobiliaria/inmuebles';
 
 /**
- * Sub-rutas de `/inmuebles/...` que NO son la ficha de un inmueble. Todas
- * necesitan el back para hacer algo, así que guardarlas sería prometer algo
- * que no se puede cumplir.
+ * La ficha del CONTRATO, desde donde también se carga el inventario.
+ *
+ * 🔴 Nico, 2026-09-13: «desde el contrato también debería de agregar todo lo
+ * que se pueda agregar del inventario». Si el worker no guarda esta página, el
+ * botón «Preparar para trabajar sin señal» de la ficha del contrato guarda los
+ * datos y la persona igual se queda afuera: sin HTML, el navegador muestra su
+ * pantalla de «sin conexión» antes de que corra una línea nuestra.
+ *
+ * La LISTA de contratos no se guarda, a diferencia de la de inmuebles: esa
+ * hospeda «Disponibles sin señal» —lo único que se puede hacer sin red— y la
+ * de contratos no tiene nada que mostrar sin el back.
  */
-const NO_SON_FICHAS = ['nuevo', 'importar', 'captura', 'avaluos'];
+const CONTRATOS = '/panel/inmobiliaria/contratos';
+
+/**
+ * Sub-rutas que NO son una ficha. Todas necesitan el back para hacer algo, así
+ * que guardarlas sería prometer algo que no se puede cumplir.
+ */
+const NO_SON_FICHAS = {
+  [LISTA]: ['nuevo', 'importar', 'captura', 'avaluos'],
+  [CONTRATOS]: ['nuevo', 'migrar', 'conceptos', 'renovaciones', 'aprobar', 'retencion', 'riesgo'],
+};
+
+/** `/base/algo` con `algo` que no esté en la lista negra de esa base. */
+function esFichaDe(base, pathname) {
+  if (!pathname.startsWith(base + '/')) return false;
+  const resto = pathname.slice(base.length + 1).split('/');
+  return (
+    resto.length === 1 && resto[0].length > 0 && NO_SON_FICHAS[base].indexOf(resto[0]) === -1
+  );
+}
 
 function esRutaGuardable(url) {
   if (url.pathname === LISTA) return true;
-  if (!url.pathname.startsWith(LISTA + '/')) return false;
-  const resto = url.pathname.slice(LISTA.length + 1).split('/');
-  return resto.length === 1 && resto[0].length > 0 && NO_SON_FICHAS.indexOf(resto[0]) === -1;
+  return esFichaDe(LISTA, url.pathname) || esFichaDe(CONTRATOS, url.pathname);
 }
 
 function esEstatico(url) {

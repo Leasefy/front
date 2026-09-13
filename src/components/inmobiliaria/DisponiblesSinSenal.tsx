@@ -24,9 +24,12 @@ import { CloudCheck, X } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import {
   borrarCopia,
+  esRutaDeContrato,
+  esRutaDeInmueble,
   EVENTO_DE_CAMBIO,
   listarCopias,
   MAXIMO_DE_COPIAS,
+  rutaDeLaFichaDelInmueble,
   type CopiaDeInmueble,
 } from '@/lib/inventario/copia-de-inmueble';
 
@@ -97,16 +100,32 @@ export function DisponiblesSinSenal({ aviso = null }: Props = {}) {
       )}
 
       <ul className="divide-y divide-border">
-        {copias.map((copia) => (
+        {copias.map((copia) => {
+          /*
+           * 🔴 Desde el 2026-09-13 el inventario también se carga desde la
+           * ficha del CONTRATO, y el service worker guarda PÁGINAS: preparar
+           * desde el contrato no deja lista la del inmueble ni al revés. Por
+           * eso el renglón dice desde dónde se abre —es la única forma de que
+           * la persona lo sepa antes de llegar al apartamento— y sólo nombra
+           * las páginas que el worker confirmó (ver `rutas` en la copia).
+           *
+           * Las copias guardadas antes de esto no tienen `rutas`: se las trata
+           * como lo que eran, la ficha del inmueble.
+           */
+          const rutas = copia.rutas ?? [];
+          const delInmueble =
+            rutas.find(esRutaDeInmueble) ??
+            (rutas.length === 0 ? rutaDeLaFichaDelInmueble(copia.consignacionId) : undefined);
+          const delContrato = rutas.find(esRutaDeContrato);
+          const principal = delInmueble ?? delContrato ?? rutaDeLaFichaDelInmueble(copia.consignacionId);
+          return (
           <li
             key={copia.consignacionId}
             className="py-2 flex items-center justify-between gap-3"
             data-testid="disponible-sin-senal"
           >
-            <Link
-              href={`/panel/inmobiliaria/inmuebles/${copia.consignacionId}`}
-              className="min-w-0 group"
-            >
+            <div className="min-w-0">
+            <Link href={principal} className="min-w-0 group block">
               <p className="text-sm text-fg truncate group-hover:text-primary transition-colors">
                 {copia.titulo}
               </p>
@@ -114,6 +133,21 @@ export function DisponiblesSinSenal({ aviso = null }: Props = {}) {
                 {copia.direccion} · {t('inmobiliaria.sinSenal.guardado', { cuando: cuando(copia.guardadoEn) })}
               </p>
             </Link>
+            <p className="text-xs text-fg-muted truncate" data-testid="se-abre-desde">
+              {t('inmobiliaria.sinSenal.seAbreDesde')}{' '}
+              {delInmueble && (
+                <Link href={delInmueble} className="hover:text-primary transition-colors underline">
+                  {t('inmobiliaria.sinSenal.elInmueble')}
+                </Link>
+              )}
+              {delInmueble && delContrato ? ' · ' : ''}
+              {delContrato && (
+                <Link href={delContrato} className="hover:text-primary transition-colors underline">
+                  {t('inmobiliaria.sinSenal.elContrato')}
+                </Link>
+              )}
+            </p>
+            </div>
             <button
               type="button"
               className="text-fg-muted hover:text-fg transition-colors shrink-0 p-1"
@@ -123,7 +157,8 @@ export function DisponiblesSinSenal({ aviso = null }: Props = {}) {
               <X className="w-4 h-4" />
             </button>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </div>
   );

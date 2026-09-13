@@ -163,16 +163,37 @@ describe('qué rutas se guardan', () => {
     expect(sw.esRutaGuardable(new URL(ORIGEN + '/panel/inmobiliaria/inmuebles/c-1'))).toBe(true);
   });
 
-  it('nada más del panel: cobros, contratos ni el resto', () => {
+  /*
+   * 🔴 Nico, 2026-09-13: «desde el contrato también debería de agregar todo lo
+   * que se pueda agregar del inventario». Si esta página no se guarda, el
+   * botón «Preparar para trabajar sin señal» de la ficha del contrato deja los
+   * datos listos y la persona igual se queda afuera.
+   */
+  it('la ficha de un contrato, que también carga inventario', () => {
+    expect(sw.esRutaGuardable(new URL(ORIGEN + '/panel/inmobiliaria/contratos/lease-1'))).toBe(true);
+  });
+
+  it('la LISTA de contratos no: sin el back no tiene nada que mostrar', () => {
+    expect(sw.esRutaGuardable(new URL(ORIGEN + '/panel/inmobiliaria/contratos'))).toBe(false);
+  });
+
+  it('nada más del panel: cobros y el resto', () => {
     expect(sw.esRutaGuardable(new URL(ORIGEN + '/panel/inmobiliaria/cobros'))).toBe(false);
     expect(sw.esRutaGuardable(new URL(ORIGEN + '/panel/inmobiliaria'))).toBe(false);
-    expect(sw.esRutaGuardable(new URL(ORIGEN + '/panel/inmobiliaria/contratos/c-1'))).toBe(false);
   });
 
   it('tampoco las sub-pantallas del inmueble que necesitan el back', () => {
     expect(sw.esRutaGuardable(new URL(ORIGEN + '/panel/inmobiliaria/inmuebles/nuevo'))).toBe(false);
     expect(sw.esRutaGuardable(new URL(ORIGEN + '/panel/inmobiliaria/inmuebles/importar'))).toBe(false);
     expect(sw.esRutaGuardable(new URL(ORIGEN + '/panel/inmobiliaria/inmuebles/c-1/acta'))).toBe(false);
+  });
+
+  it('ni las del contrato: migrar, renovaciones, firmar, editar', () => {
+    for (const r of ['nuevo', 'migrar', 'conceptos', 'renovaciones', 'aprobar', 'retencion', 'riesgo']) {
+      expect(sw.esRutaGuardable(new URL(ORIGEN + '/panel/inmobiliaria/contratos/' + r))).toBe(false);
+    }
+    expect(sw.esRutaGuardable(new URL(ORIGEN + '/panel/inmobiliaria/contratos/lease-1/firmar'))).toBe(false);
+    expect(sw.esRutaGuardable(new URL(ORIGEN + '/panel/inmobiliaria/contratos/lease-1/editar'))).toBe(false);
   });
 });
 

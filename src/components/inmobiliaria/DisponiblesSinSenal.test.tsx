@@ -19,6 +19,7 @@ void React;
 import { DisponiblesSinSenal } from './DisponiblesSinSenal';
 import {
   almacenEnMemoria,
+  anotarRuta,
   borrarCopia,
   guardarCopia,
   usarAlmacenDeCopias,
@@ -110,6 +111,49 @@ describe('<DisponiblesSinSenal>', () => {
     });
 
     expect(container.textContent).toContain('Apto recién preparado');
+  });
+
+  /*
+   * 🔴 Desde el 2026-09-13 el inventario también se carga desde la ficha del
+   * contrato, y el worker guarda PÁGINAS: preparar desde el contrato no deja
+   * lista la del inmueble. El renglón tiene que decirlo — enterarse en el
+   * apartamento es enterarse tarde.
+   */
+  it('dice desde qué pantallas se abre cada uno, y sólo las preparadas', async () => {
+    await guardarCopia(consignacion('c-1', 'Apto del contrato'), 1_000);
+    await anotarRuta('c-1', '/panel/inmobiliaria/contratos/lease-7');
+    await render();
+
+    const desde = container.querySelector('[data-testid="se-abre-desde"]')!;
+    const enlaces = [...desde.querySelectorAll('a')].map((a) => a.getAttribute('href'));
+    expect(enlaces).toEqual(['/panel/inmobiliaria/contratos/lease-7']);
+    // Nadie preparó la ficha del inmueble: no se nombra.
+    expect(desde.textContent).not.toContain('elInmueble');
+  });
+
+  it('preparadas las dos, las nombra a las dos', async () => {
+    await guardarCopia(consignacion('c-1', 'Apto preparado dos veces'), 1_000);
+    await anotarRuta('c-1', '/panel/inmobiliaria/inmuebles/c-1');
+    await anotarRuta('c-1', '/panel/inmobiliaria/contratos/lease-7');
+    await render();
+
+    const enlaces = [...container.querySelectorAll('[data-testid="se-abre-desde"] a')].map((a) =>
+      a.getAttribute('href'),
+    );
+    expect(enlaces).toEqual([
+      '/panel/inmobiliaria/inmuebles/c-1',
+      '/panel/inmobiliaria/contratos/lease-7',
+    ]);
+  });
+
+  it('una copia vieja, sin rutas anotadas, sigue siendo la ficha del inmueble', async () => {
+    await guardarCopia(consignacion('c-1', 'Apto de antes'), 1_000);
+    await render();
+
+    const enlaces = [...container.querySelectorAll('[data-testid="se-abre-desde"] a')].map((a) =>
+      a.getAttribute('href'),
+    );
+    expect(enlaces).toEqual(['/panel/inmobiliaria/inmuebles/c-1']);
   });
 
   it('quitar uno lo saca de la lista', async () => {

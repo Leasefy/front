@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Toaster } from '@/components/ui/toast';
-import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell } from '@phosphor-icons/react';
+import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell, Receipt } from '@phosphor-icons/react';
 // Sparkle import removed — re-add when AI Beta nav item is uncommented
 import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -55,6 +55,13 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
     label: 'Arriendos',
     href: '/panel/leases',
     icon: House,
+  },
+  // Lo que la inmobiliaria le ha girado y lo que le falta por girar, contrato
+  // por contrato. Es el papel que el propietario necesita para la exógena.
+  {
+    label: 'Estado de cuenta',
+    href: '/panel/estado-de-cuenta',
+    icon: Receipt,
   },
   {
     label: 'Mensajes',

@@ -11,9 +11,10 @@ import { getUserHomeRoute } from '@/lib/auth/role-routes';
 import { type ActiveContext } from '@/lib/auth/active-context';
 import { ContextSwitcher } from './ContextSwitcher';
 import { useI18n } from '@/lib/i18n';
-import { getPlanById, PLANS } from '@/lib/constants/subscription-plans';
-import { useMySubscription } from '@/lib/hooks/useSubscription';
+import { getPlanById, PLANS, agencyPlanToDisplayPlan } from '@/lib/constants/subscription-plans';
+import { useMySubscription, useAgencyPlans } from '@/lib/hooks/useSubscription';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
+import { Spinner } from '@/components/ui/spinner';
 import { useLandlordNotifications, useTenantNotifications } from '@/lib/hooks/useNotifications';
 import { useArcoAlerts } from '@/lib/hooks/cobranza/use-arco-alerts';
 import { ArcoDeadlineAlert } from '@/components/inmobiliaria/cobranza/ArcoDeadlineAlert';
@@ -183,9 +184,18 @@ export function PlanHeader({
   // payment actually activates) instead of the legacy per-user /subscriptions/me,
   // so the header reflects the plan the agency pays for. Landlord/tenant keep the
   // legacy source (hook disabled there → no wasted /inmobiliaria/subscription call).
-  const { currentPlanId: agencyPlanId, error: agencyError } =
-    useAgencySubscription(isInmobiliaria);
+  const {
+    currentPlanId: agencyPlanId,
+    error: agencyError,
+    refetch: agencySubscriptionRefetch,
+  } = useAgencySubscription(isInmobiliaria);
+  // The LIVE agency plan catalog — an admin-created tier (contrato 29, e.g.
+  // "pro-plus") only exists here, never in the static AGENCY_PLANS array.
+  // Same source `upgrade/page.tsx` and `ConfigFacturacion.tsx` resolve
+  // `currentPlan` against.
+  const { plans: agencyPlans, isLoading: agencyPlansLoading } = useAgencyPlans();
   const effectiveSubError = isInmobiliaria ? agencyError : subscriptionError;
+  const effectiveSubRefetch = isInmobiliaria ? agencySubscriptionRefetch : subscriptionRefetch;
 
   // Keep 'starter' as a silent fallback for avatar badge styling only.
   // Never use planId for plan-name display when the subscription failed to load.
@@ -194,7 +204,25 @@ export function PlanHeader({
       ? 'starter'
       : agencyPlanId ?? 'starter'
     : subscription?.planId ?? 'starter';
-  const currentPlan = getPlanById(planId);
+
+  // Resolve against the LIVE catalog in the agency context — `null` while the
+  // catalog hasn't loaded yet, or if the slug isn't in it (should not happen
+  // once loaded; `getPlanById` below is the safety net for that edge case).
+  const agencyLivePlan =
+    isInmobiliaria && !agencyError && agencyPlanId
+      ? agencyPlans.find((p) => p.id === agencyPlanId) ?? null
+      : null;
+
+  // While the agency catalog hasn't resolved yet, the popover must not flash
+  // a wrong plan name (e.g. "Starter" for a paying pro-plus agency) — show a
+  // loading state instead until the real plan can be resolved.
+  const isPlanCatalogLoading = isInmobiliaria && !effectiveSubError && agencyPlansLoading;
+
+  const currentPlan = isInmobiliaria
+    ? agencyLivePlan
+      ? agencyPlanToDisplayPlan(agencyLivePlan)
+      : getPlanById(planId)
+    : getPlanById(planId);
 
   // Tier helpers — false when error to avoid asserting a tier we didn't load.
   const isBaseTier = !effectiveSubError && planId === 'starter';
@@ -590,7 +618,7 @@ export function PlanHeader({
 
                   {/* Current Plan */}
                   <div className="p-5">
-                    {subscriptionError ? (
+                    {effectiveSubError ? (
                       /* Honest error state — do not assert a plan name we could not load */
                       <div className="flex flex-col items-center gap-3 py-2 text-center">
                         <p className="text-[13px] text-fg-muted">
@@ -598,11 +626,17 @@ export function PlanHeader({
                         </p>
                         <button
                           type="button"
-                          onClick={subscriptionRefetch}
+                          onClick={effectiveSubRefetch}
                           className="text-[12px] font-medium text-[#1A40FF] dark:text-[#5570FF] hover:underline"
                         >
                           Reintentar
                         </button>
+                      </div>
+                    ) : isPlanCatalogLoading ? (
+                      /* Catalog not resolved yet — never flash a wrong plan name (e.g.
+                         "Starter" for a paying agency) while it loads. */
+                      <div className="flex items-center justify-center py-6">
+                        <Spinner size="sm" variant="muted" />
                       </div>
                     ) : (
                       <>
@@ -624,7 +658,13 @@ export function PlanHeader({
                             <p className="text-[12px] text-plan-secondary">
                               {isBaseTier
                                 ? 'Funciones limitadas'
-                                : `Facturación ${subscription?.billingCycle === 'monthly' ? 'mensual' : 'anual'}`
+                                : isInmobiliaria
+                                  ? (agencyLivePlan?.pricingModel === 'percentage'
+                                      ? `${agencyLivePlan.canonPercentage ?? 1}% del canon administrado`
+                                      : agencyLivePlan?.pricingModel === 'custom'
+                                        ? 'Precio personalizado'
+                                        : 'Facturación mensual')
+                                  : `Facturación ${subscription?.billingCycle === 'monthly' ? 'mensual' : 'anual'}`
                               }
                             </p>
                           </div>
@@ -1147,6 +1187,15 @@ export function PlanHeader({
                   <AvatarSubscriptionIndicator
                     variant="landlord"
                     planId={planId}
+                    agencyPlan={
+                      isInmobiliaria && agencyLivePlan
+                        ? {
+                            name: agencyLivePlan.name,
+                            isDefault: agencyLivePlan.isDefault ?? false,
+                            level: agencyLivePlan.level ?? null,
+                          }
+                        : undefined
+                    }
                   />
                 ) : tenantSubscription ? (
                   <AvatarSubscriptionIndicator

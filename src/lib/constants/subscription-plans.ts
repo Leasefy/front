@@ -407,10 +407,42 @@ export const PLAN_COMPARISON: PlanComparisonRow[] = [
 // ============================================================================
 
 /**
+ * Map an `AgencyPlan` (static or live-catalog, see `useAgencyPlans()`) into the
+ * generic `Plan` shape the landlord-oriented UI (e.g. `PlanHeader`'s popover)
+ * already knows how to render. Every agency-plan feature bullet is presentation
+ * copy for something the plan grants, so it always maps to `included: true` —
+ * there is no "excluded" bullet in that list.
+ */
+export function agencyPlanToDisplayPlan(agencyPlan: AgencyPlan): Plan {
+  return {
+    id: agencyPlan.id as PlanId,
+    name: agencyPlan.name,
+    description: agencyPlan.description,
+    price: {
+      monthly: agencyPlan.price.monthly ?? 0,
+      yearly: agencyPlan.price.yearly ?? 0,
+    },
+    features: agencyPlan.features.map((f, i) => ({
+      id: `${agencyPlan.id}-feature-${i}`,
+      name: f,
+      description: '',
+      included: true,
+    })),
+    highlighted: agencyPlan.highlighted,
+    badge: agencyPlan.badge,
+  };
+}
+
+/**
  * Look up a plan by canonical tier id.
  * Searches landlord PLANS first; if not found (e.g. tier is 'starter' or 'flex'
- * coming from an agency subscription), falls back to AGENCY_PLANS mapped into
- * the Plan shape. Guarantees a return value for any known tier.
+ * coming from an agency subscription), falls back to the STATIC AGENCY_PLANS
+ * mapped into the Plan shape. Guarantees a return value for any known tier.
+ *
+ * This is a fallback for landlord/tenant contexts and for when the live agency
+ * catalog has not resolved yet. For the agency context, prefer resolving
+ * against the LIVE catalog (`useAgencyPlans()`) via `agencyPlanToDisplayPlan` —
+ * this static catalog does not know about admin-created tiers (contrato 29).
  */
 export function getPlanById(id: PlanId): Plan {
   const landlordPlan = PLANS.find((p) => p.id === id);
@@ -418,25 +450,7 @@ export function getPlanById(id: PlanId): Plan {
 
   // Fallback: agency tier — map AgencyPlan to a minimal Plan shape for UI
   const agencyPlan = AGENCY_PLANS.find((p) => p.id === id);
-  if (agencyPlan) {
-    return {
-      id: agencyPlan.id as PlanId,
-      name: agencyPlan.name,
-      description: agencyPlan.description,
-      price: {
-        monthly: agencyPlan.price.monthly ?? 0,
-        yearly: agencyPlan.price.yearly ?? 0,
-      },
-      features: agencyPlan.features.map((f, i) => ({
-        id: `${agencyPlan.id}-feature-${i}`,
-        name: f,
-        description: '',
-        included: true,
-      })),
-      highlighted: agencyPlan.highlighted,
-      badge: agencyPlan.badge,
-    };
-  }
+  if (agencyPlan) return agencyPlanToDisplayPlan(agencyPlan);
 
   return PLANS[0];
 }

@@ -79,6 +79,17 @@ import {
 } from '@/lib/cartera/conceptos'
 import { cn } from '@/lib/utils'
 
+/**
+ * La columna del saldo queda PEGADA al borde derecho.
+ *
+ * Con cinco o seis conceptos la tabla mide más que el ancho útil del panel y
+ * scrollea; medido en el navegador con los datos de QA, «Debe» —el número por
+ * el que se abre la pantalla— quedaba fuera de la vista. Pegada, el desglose
+ * se recorre y la respuesta nunca se va. Necesita fondo OPACO propio: si no,
+ * las columnas pasan por debajo y se leen encima.
+ */
+const FIJA = 'sticky right-0 z-10 border-l border-border';
+
 /** Un cero no se escribe `$0` en cada celda: la tabla se vuelve ilegible. */
 function Peso({ valor, className }: { valor: number; className?: string }) {
   if (valor === 0) {
@@ -91,6 +102,23 @@ function Peso({ valor, className }: { valor: number; className?: string }) {
   return (
     <span className={cn('font-mono tabular-nums', valor < 0 && 'text-fg-muted', className)}>
       {formatCurrency(valor)}
+    </span>
+  )
+}
+
+/**
+ * Lo abonado, debajo del saldo y no en columna propia.
+ *
+ * Es el mismo criterio de `CarteraTable`: un dato que explica a otro viaja
+ * dentro de su celda. Con once conceptos posibles, cada columna que se ahorra
+ * es una que no obliga a scrollear horizontalmente para llegar a lo que la
+ * pantalla vino a responder. Lo facturado del total está en la franja.
+ */
+function Abono({ valor }: { valor: number }) {
+  if (valor <= 0) return null;
+  return (
+    <span className="mt-0.5 block text-xs font-normal text-fg-muted">
+      abonó <span className="font-mono tabular-nums">{formatCurrency(valor)}</span>
     </span>
   )
 }
@@ -130,8 +158,8 @@ export function CarteraPorConcepto() {
     setSoloEnMora(false)
   }
 
-  /** Inquilino + conceptos + (sin desglose) + facturado + abonado + saldo. */
-  const columnas = conceptos.length + (haySinDesglose ? 5 : 4)
+  /** Inquilino + conceptos + (sin desglose) + «Debe». */
+  const columnas = conceptos.length + (haySinDesglose ? 3 : 2)
 
   return (
     <EstadoDeDatos
@@ -226,9 +254,9 @@ export function CarteraPorConcepto() {
                 {haySinDesglose ? (
                   <TableHead className="whitespace-nowrap text-right">Sin desglose</TableHead>
                 ) : null}
-                <TableHead className="whitespace-nowrap text-right">Facturado</TableHead>
-                <TableHead className="whitespace-nowrap text-right">Abonado</TableHead>
-                <TableHead className="whitespace-nowrap text-right">Debe</TableHead>
+                <TableHead className={cn('whitespace-nowrap text-right', FIJA, 'bg-bg dark:bg-surface-muted')}>
+                  Debe
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -312,7 +340,9 @@ function FilasDelInquilino({
   const Caret = abierto ? CaretDown : CaretRight
   return (
     <>
-      <TableRow data-testid="fila-inquilino">
+      {/* `group`: la celda fija tiene fondo propio y si no, no se entera del
+          hover de su fila y queda un rectángulo blanco al pasar el mouse. */}
+      <TableRow className="group" data-testid="fila-inquilino">
         <TableCell>
           <button
             type="button"
@@ -347,14 +377,14 @@ function FilasDelInquilino({
             <Peso valor={inquilino.totales.sinDesgloseCop} />
           </TableCell>
         ) : null}
-        <TableCell className="text-right text-fg-muted">
-          <Peso valor={inquilino.totales.facturadoCop} />
-        </TableCell>
-        <TableCell className="text-right text-fg-muted">
-          <Peso valor={inquilino.totales.abonadoCop} />
-        </TableCell>
-        <TableCell className="text-right font-medium text-fg">
+        <TableCell
+          className={cn(
+            'bg-surface text-right font-medium text-fg group-hover:bg-surface-muted',
+            FIJA,
+          )}
+        >
           <Peso valor={inquilino.totales.saldoCop} />
+          <Abono valor={inquilino.totales.abonadoCop} />
         </TableCell>
       </TableRow>
 
@@ -382,7 +412,7 @@ function FilaDelMes({
   haySinDesglose: boolean
 }) {
   return (
-    <TableRow className="bg-surface-muted/40" data-testid="fila-mes">
+    <TableRow className="bg-surface-muted" data-testid="fila-mes">
       <TableCell className="pl-10">
         <span className="block text-sm text-fg">{mesEnTitulo(fila.month)}</span>
         <span className="block text-xs text-fg-muted">
@@ -413,14 +443,9 @@ function FilaDelMes({
           <Peso valor={fila.sinDesgloseCop} />
         </TableCell>
       ) : null}
-      <TableCell className="text-right text-fg-muted">
-        <Peso valor={fila.facturadoCop} />
-      </TableCell>
-      <TableCell className="text-right text-fg-muted">
-        <Peso valor={fila.abonadoCop} />
-      </TableCell>
-      <TableCell className="text-right text-fg">
+      <TableCell className={cn('bg-surface-muted text-right text-fg', FIJA)}>
         <Peso valor={fila.saldoCop} />
+        <Abono valor={fila.abonadoCop} />
       </TableCell>
     </TableRow>
   )
@@ -466,14 +491,9 @@ function TotalesEnPie({
           <Peso valor={totales.sinDesgloseCop} />
         </TableCell>
       ) : null}
-      <TableCell className="text-right text-fg-muted">
-        <Peso valor={totales.facturadoCop} />
-      </TableCell>
-      <TableCell className="text-right text-fg-muted">
-        <Peso valor={totales.abonadoCop} />
-      </TableCell>
-      <TableCell className="text-right font-semibold text-fg">
+      <TableCell className={cn('text-right font-semibold text-fg', FIJA, 'bg-bg dark:bg-surface-muted')}>
         <Peso valor={totales.saldoCop} />
+        <Abono valor={totales.abonadoCop} />
       </TableCell>
     </TableRow>
   )

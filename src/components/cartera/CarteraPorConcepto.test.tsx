@@ -219,12 +219,15 @@ const $ = (sel: string) => {
 const todos = (sel: string) => Array.from(host.querySelectorAll<HTMLElement>(sel))
 const clic = (el: HTMLElement) => act(() => el.click())
 
-/** Los pesos de una fila, en orden. Un «—» es un cero de verdad. */
+/**
+ * La cifra de cada celda, en orden. Un «—» es un cero de verdad; la celda del
+ * saldo lleva además el abono debajo, y la que cuenta es la PRIMERA.
+ */
 function pesosDe(fila: HTMLElement): number[] {
   return Array.from(fila.querySelectorAll('td')).flatMap((td) => {
     const texto = (td.textContent ?? '').trim()
     if (texto === '—') return [0]
-    const m = /^\$(-?[\d.]+)$/.exec(texto)
+    const m = /\$(-?[\d.]+)/.exec(texto)
     return m ? [Number(m[1]!.replace(/\./g, ''))] : []
   })
 }
@@ -262,10 +265,9 @@ describe('CarteraPorConcepto', () => {
     expect(filas[0]!.textContent).toContain('Nicolás Rojas')
     expect(filas[0]!.textContent).toContain('3 meses')
 
-    // Canon · intereses · gasto administrativo · facturado · abonado · debe.
-    expect(pesosDe(filas[0]!)).toEqual([
-      6_300_000, 105_000, 373_200, 6_878_200, 100_000, 6_778_200,
-    ])
+    // Canon · intereses · gasto administrativo · debe (con el abono debajo).
+    expect(pesosDe(filas[0]!)).toEqual([6_300_000, 105_000, 373_200, 6_778_200])
+    expect(filas[0]!.textContent).toContain('abonó')
   })
 
   it('los números cierran: columnas = saldo de la fila, y meses = total del inquilino', () => {
@@ -273,7 +275,7 @@ describe('CarteraPorConcepto', () => {
     montar()
 
     const filaDeNicolas = todos('[data-testid="fila-inquilino"]')[0]!
-    const [canon, intereses, gasto, , , debe] = pesosDe(filaDeNicolas)
+    const [canon, intereses, gasto, debe] = pesosDe(filaDeNicolas)
     expect(canon! + intereses! + gasto!).toBe(debe)
 
     clic(filaDeNicolas.querySelector('button')!)
@@ -304,7 +306,8 @@ describe('CarteraPorConcepto', () => {
 
     const agosto = todos('[data-testid="fila-mes"]')[1]!
     expect(agosto.textContent).toContain('Agosto de 2026')
-    expect(pesosDe(agosto)).toEqual([2_100_000, 0, 163_200, 2_363_200, 100_000, 2_263_200])
+    expect(pesosDe(agosto)).toEqual([2_100_000, 0, 163_200, 2_263_200])
+    expect(agosto.textContent).toContain('abonó')
   })
 
   it('sin diferencias no hay columna «Sin desglose»', () => {

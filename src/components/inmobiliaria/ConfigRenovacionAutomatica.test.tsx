@@ -240,4 +240,43 @@ describe('ConfigRenovacionAutomatica — el pronóstico', () => {
     await render({ canEdit: false })
     expect(simularMock).not.toHaveBeenCalled()
   })
+
+  /*
+   * 🔴 Nico, 2026-09-13 00:44: Configuración → Perfil entera cambiada por
+   * «Esta sección se rompió · REFERENCIA TYPEERROR».
+   *
+   * Su `next dev` llevaba horas arriba y ya tenía cargado el módulo viejo de
+   * `renovacion-automatica.service` (la ficha del contrato lo usa desde antes),
+   * el de ANTES de que existiera `simular`. Cuando el Fast Refresh le metió
+   * este bloque nuevo al lado, `renovacionAutomaticaApi.simular` no era una
+   * función: el error salió del efecto —un `.catch()` sólo atrapa el rechazo de
+   * una promesa que nunca llegó a existir— y la frontera de error se llevó la
+   * sección.
+   *
+   * Reproducido en el navegador rebobinando ese archivo:
+   * `TypeError: …renovacionAutomaticaApi.simular is not a function`
+   * en `ConfigRenovacionAutomatica.tsx` dentro de `commitHookEffectListMount`.
+   *
+   * El pronóstico es información de más. Falle como falle, la sección se lee.
+   */
+  it('🔴 si `simular` NI SIQUIERA es una función, la sección se dibuja igual', async () => {
+    simularMock.mockImplementation(() => {
+      throw new TypeError('renovacionAutomaticaApi.simular is not a function')
+    })
+    await render()
+    expect(q('config-renovacion-automatica')).toBeTruthy()
+    expect(q('renovacion-automatica-switch')).toBeTruthy()
+    expect(q('renovacion-pronostico')).toBeNull()
+  })
+
+  it('🔴 si la simulación vuelve con otra forma, no se pinta «NaN propuestas»', async () => {
+    simularMock.mockResolvedValue(undefined)
+    await render()
+    expect(q('config-renovacion-automatica')).toBeTruthy()
+    expect(q('renovacion-pronostico')).toBeNull()
+
+    simularMock.mockResolvedValue({ propuestas: 'siete', renovadas: null })
+    await render()
+    expect(q('renovacion-pronostico')).toBeNull()
+  })
 })

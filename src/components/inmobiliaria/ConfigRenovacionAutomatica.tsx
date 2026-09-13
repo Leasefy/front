@@ -123,14 +123,34 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
   useEffect(() => {
     if (!canEdit) return;
     let vigente = true;
-    renovacionAutomaticaApi
-      .simular()
-      .then((r) => {
-        if (vigente) setPronostico({ propuestas: r.propuestas, renovadas: r.renovadas });
-      })
-      .catch(() => {
-        /* silencio: el pronóstico es información de más, no el estado */
-      });
+    /*
+     * 🔴 El pedido va DENTRO del `try`, no colgado de un `.catch()`.
+     *
+     * Un `.catch()` sólo atrapa el rechazo de la promesa. Si la llamada falla
+     * antes de que haya promesa —`simular` que todavía no existe porque el
+     * módulo del servicio quedó viejo en el dev server, un import a medio
+     * recargar— el error sale del efecto, y de un efecto va derecho a la
+     * frontera de error: la sección entera se cambia por «Esta sección se
+     * rompió · REFERENCIA TYPEERROR». Le pasó a Nico el 2026-09-13 a las
+     * 00:44 en Configuración → Perfil, con
+     * `renovacionAutomaticaApi.simular is not a function`.
+     *
+     * Este número es información de más —la sección se lee entera sin él—,
+     * así que no puede tumbar nada: pase lo que pase, se calla.
+     */
+    void (async () => {
+      try {
+        const r = await renovacionAutomaticaApi.simular();
+        // Y si la respuesta viniera con otra forma, tampoco se pinta: un
+        // «NaN propuestas» asusta más que no decir nada.
+        const propuestas = Number(r?.propuestas);
+        const renovadas = Number(r?.renovadas);
+        if (!Number.isFinite(propuestas) || !Number.isFinite(renovadas)) return;
+        if (vigente) setPronostico({ propuestas, renovadas });
+      } catch {
+        /* silencio: no saber cuántos son no es saber que no son ninguno */
+      }
+    })();
     return () => {
       vigente = false;
     };

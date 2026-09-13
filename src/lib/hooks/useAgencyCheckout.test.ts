@@ -99,7 +99,14 @@ async function payToAwaiting(planId = 'pro') {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  // resetAllMocks (not clearAllMocks): clearAllMocks only wipes call history,
+  // it leaves a mock's configured mockResolvedValue/mockRejectedValue
+  // implementation in place — so a value set by one test can silently leak
+  // into the next if the next test forgets to set its own (T-0083 fix round
+  // 1, verify §6: found a real order-dependence this way, `--sequence.shuffle`
+  // failed 2/35). resetAllMocks wipes implementations too, so every test is
+  // forced to arm exactly the mocks it needs.
+  vi.resetAllMocks();
   mockAbandonCharge.mockResolvedValue({
     subscription: { planTier: 'starter', status: 'ACTIVE' },
     openCharge: null,
@@ -882,5 +889,110 @@ describe('useAgencyCheckout — reset() abandons the tracked charge server-side 
       hook.reset();
     });
     expect(mockAbandonCharge).not.toHaveBeenCalled();
+  });
+
+  it('ignores a stale 409 recovery from an abandoned charge once a newer charge has been tracked (race guard, fix round 1)', async () => {
+    await mount();
+    // Charge A ("pro") reaches awaiting. Keep the poll's first check genuinely
+    // pending so it doesn't resolve early.
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: { id: 'ch_1', status: 'PENDING', targetPlanTier: 'pro', gatewayStatus: null },
+      status: 'ACTIVE',
+    });
+    await payToAwaiting('pro');
+    expect(hook.state).toBe('awaiting');
+
+    // Abandon A — control the abandon call's resolution manually so a second
+    // flow can be interleaved before it settles.
+    let rejectAbandonA: (e: unknown) => void = () => {};
+    mockAbandonCharge.mockReturnValueOnce(
+      new Promise((_resolve, reject) => {
+        rejectAbandonA = reject;
+      }),
+    );
+
+    act(() => {
+      hook.reset();
+    });
+    expect(hook.state).toBe('idle');
+
+    // Before A's abandon settles, the user immediately buys a DIFFERENT
+    // plan — charge B ("flex").
+    vi.spyOn(window, 'open').mockReturnValue(fakeTab() as unknown as Window);
+    mockSelectPlan.mockResolvedValue({ charge: { id: 'ch_2', targetPlanTier: 'flex' } });
+    mockChargePaymentLink.mockResolvedValue({ url: 'https://checkout.wompi.co/l/b' });
+    // B's own awaiting-poll must also stay genuinely pending.
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: { id: 'ch_2', status: 'PENDING', targetPlanTier: 'flex', gatewayStatus: null },
+      status: 'ACTIVE',
+    });
+    await act(async () => {
+      await hook.pay('flex');
+    });
+    expect(hook.state).toBe('awaiting');
+
+    // NOW A's abandon call resolves with the stale, legitimate-but-late 409.
+    rejectAbandonA(
+      new ApiError(409, 'El cargo pendiente ya había sido pagado', 'PENDING_CHARGE_ALREADY_PAID'),
+    );
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // B's flow must be completely untouched by A's stale recovery — no
+    // silent jump to success/error, no navigation.
+    expect(hook.state).toBe('awaiting');
+    expect(onSuccess).not.toHaveBeenCalled();
+
+    // And chargeIdRef must still point at B, not be wiped by A's stale
+    // recovery — proven by a later reset() abandoning B, not silently
+    // no-op'ing (which would be this exact bug's original symptom,
+    // reintroduced for B).
+    act(() => {
+      hook.reset();
+    });
+    expect(mockAbandonCharge).toHaveBeenLastCalledWith('ch_2');
+  });
+
+  it('409 recovery still runs when no newer charge has been tracked since (mirror of the race guard, fix round 1)', async () => {
+    vi.useFakeTimers();
+    await mount();
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: { id: 'ch_1', status: 'PENDING', targetPlanTier: 'pro', gatewayStatus: null },
+      status: 'ACTIVE',
+    });
+    await payToAwaiting('pro');
+    expect(hook.state).toBe('awaiting');
+
+    mockAbandonCharge.mockRejectedValue(
+      new ApiError(409, 'El cargo pendiente ya había sido pagado', 'PENDING_CHARGE_ALREADY_PAID'),
+    );
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'ACTIVE' },
+      openCharge: null,
+      status: 'ACTIVE',
+    });
+
+    act(() => {
+      hook.reset();
+    });
+    expect(hook.state).toBe('idle');
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(hook.state).toBe('success');
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+    expect(onSuccess).toHaveBeenCalledTimes(1);
   });
 });

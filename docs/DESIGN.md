@@ -701,6 +701,35 @@ All filters are pills with chevron-down. Active state: `border-border-strong bg-
 </button>
 ```
 
+### Switch tab — `SegmentedControl` (`@leasefy/cadence`)
+
+El control de dos a cuatro opciones que cambia **qué se mira dentro de un
+mismo bloque**: «Vista Kanban | Vista Lista» en Mantenimientos, «Ingresos |
+Egresos | Facturas» en la tarjeta de comprobantes migrados.
+
+```tsx
+import { SegmentedControl } from '@leasefy/cadence';
+
+<SegmentedControl<Clase>
+  aria-label="Ingresos, egresos y facturas"
+  value={clase}
+  onChange={setClase}
+  options={[{ value: 'ingreso', label: <span>Ingresos</span>, ariaLabel: 'Ingresos: 18' }]}
+/>
+```
+
+- **Segmentado vs. `Tabs`**: `Tabs` (subrayadas) son navegación de sección —
+  cambian el contenido de la página. El segmentado es un **filtro** de un
+  bloque que ya está: la tabla de abajo sigue siendo la misma tabla.
+- Los segmentos son `<button role="radio">` dentro de un `role="radiogroup"`;
+  el activo es la píldora blanca con `shadow-sm`. **No re-pintes el estado
+  activo** desde el call site.
+- `label` acepta un nodo (icono + texto, o texto + píldora de conteo). El DS no
+  pasa props sueltas a cada segmento: un `data-testid` va **dentro** del
+  `label`, y para clickearlo en un test se sube al botón con `.closest('button')`.
+- `ariaLabel` es obligatorio cuando `label` no es un string.
+- `fullWidth` sólo para el switch de login/crear cuenta (thumb deslizante).
+
 ---
 
 ## 16. Money & Numeric Formatting

@@ -15,6 +15,13 @@
  *  · El tope sale del dato del back (`total` vs `mostrados`), por pestaña.
  *  · Un monto que no se pudo leer (`null`) se muestra como «—», nunca como
  *    «$ 0» — que es lo que devuelve `formatCurrency(null)`.
+ *
+ * Y desde el 2026-09-13 («esa tabla debería tener paginación»):
+ *
+ *  · La tabla nunca dibuja más de una página: 10 filas, no las 18 ni las 500.
+ *  · El pie dice los tres números («Mostrando 1–10 de 18») y pasa de página.
+ *  · Cambiar de pestaña VUELVE a la página 1 — si no, saltar de la página 4
+ *    de Egresos a Facturas deja la tabla vacía sobre filas que sí existen.
  */
 
 import * as React from 'react'
@@ -149,12 +156,20 @@ async function montar(props: { contractId: string } | { propertyId: string } = {
   })
 }
 
-/** Radix Tabs cambia de pestaña en `mousedown`, no en `click`. */
+/**
+ * El `SegmentedControl` del DS no deja poner props sueltas en cada segmento:
+ * el `data-testid` vive en el contenido del `<button>`, así que para hacer
+ * clic hay que subir al botón.
+ */
+const botonDePestana = (clase: ClaseDeComprobante) =>
+  container
+    .querySelector(`[data-testid="pestana-${clase}"]`)
+    ?.closest('button') as HTMLButtonElement | null
+
 async function activarPestana(clase: ClaseDeComprobante) {
-  const el = container.querySelector(`[data-testid="pestana-${clase}"]`) as HTMLElement | null
+  const el = botonDePestana(clase)
   expect(el, `la pestaña ${clase} tendría que estar`).toBeTruthy()
   await act(async () => {
-    el!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
     el!.click()
     await new Promise((r) => setTimeout(r, 20))
   })
@@ -168,6 +183,29 @@ const pestana = (clase: ClaseDeComprobante) =>
 const conteo = (clase: ClaseDeComprobante) =>
   container.querySelector(`[data-testid="conteo-${clase}"]`)?.textContent ?? null
 const filas = () => container.querySelectorAll('[data-testid="comprobante-migrado"]')
+/** El pie de paginación del design system, dentro del marco de la tabla. */
+const pie = () =>
+  container.querySelector('[data-testid="comprobantes-paginacion"]')?.textContent ?? null
+const botonDePagina = (etiqueta: 'Página siguiente' | 'Página anterior') =>
+  container.querySelector<HTMLButtonElement>(`[aria-label="${etiqueta}"]`)
+/** Qué número de página está marcado como el actual. */
+const paginaActual = () =>
+  container.querySelector('[data-testid="comprobantes-paginacion"] [aria-current="page"]')
+    ?.textContent ?? null
+
+async function clic(el: HTMLElement | null | undefined) {
+  expect(el, 'el botón tendría que estar').toBeTruthy()
+  await act(async () => {
+    el!.click()
+    await new Promise((r) => setTimeout(r, 20))
+  })
+}
+
+/** N comprobantes distinguibles: CI-1, CI-2, … para poder afirmar cuál se ve. */
+const muchos = (cuantos: number, over: Partial<DocumentoMigradoVista> = {}) =>
+  Array.from({ length: cuantos }, (_, i) =>
+    comprobante({ id: `doc-${i + 1}`, prefijo: 'CI', consecutivo: i + 1, ...over }),
+  )
 
 describe('<ComprobantesDelSistemaAnterior>', () => {
   it('pide los ingresos de ESE contrato primero y cada pestaña dice cuántos hay', async () => {
@@ -250,7 +288,7 @@ describe('<ComprobantesDelSistemaAnterior>', () => {
     await montar()
 
     expect(porContrato).toHaveBeenCalledWith('c-1', 'egreso')
-    expect(pestana('egreso')?.getAttribute('data-state')).toBe('active')
+    expect(botonDePestana('egreso')?.getAttribute('aria-checked')).toBe('true')
     expect(texto()).toContain('CE-501')
   })
 
@@ -372,5 +410,114 @@ describe('<ComprobantesDelSistemaAnterior>', () => {
     expect(porContrato).not.toHaveBeenCalled()
     expect(conteo('egreso')).toBe('3')
     expect(filas()).toHaveLength(1)
+  })
+
+  // ── La paginación (Nico, 2026-09-13) ────────────────────────────────────
+
+  /*
+   * 🔴 La falla que estos tests existen para impedir: una tabla que dibuja
+   * las 18 filas (o las 500 del tope) de corrido.
+   */
+  it('nunca dibuja más de una página: 10 filas de 18, y el pie dice los tres números', async () => {
+    porContrato.mockResolvedValue(
+      respuesta({ documentos: muchos(18), porClase: { ingreso: 18 } }),
+    )
+    await montar()
+
+    expect(filas()).toHaveLength(10)
+    expect(pie()).toContain('1–10')
+    expect(pie()).toContain('18')
+    // La primera página son CI-1..CI-10: la 11 todavía no.
+    expect(filas()[0].textContent).toContain('CI-1')
+    expect(filas()[9].textContent).toContain('CI-10')
+    expect(texto()).not.toContain('CI-11')
+  })
+
+  it('la segunda página trae las 8 que faltaban', async () => {
+    porContrato.mockResolvedValue(
+      respuesta({ documentos: muchos(18), porClase: { ingreso: 18 } }),
+    )
+    await montar()
+
+    await clic(botonDePagina('Página siguiente'))
+
+    expect(filas()).toHaveLength(8)
+    expect(paginaActual()).toBe('2')
+    expect(pie()).toContain('11–18')
+    expect(filas()[0].textContent).toContain('CI-11')
+    expect(filas()[7].textContent).toContain('CI-18')
+  })
+
+  /*
+   * Estar en la página 4 de Egresos y saltar a Facturas —que tiene 12— dejaba
+   * la tabla vacía sobre filas que sí existen, y eso se lee como «no hay
+   * facturas». `resetKey` en `useTablePagination` es lo que lo evita.
+   */
+  it('cambiar de pestaña vuelve a la página 1', async () => {
+    porContrato.mockImplementation(async (_id: string, clase: ClaseDeComprobante) =>
+      clase === 'egreso'
+        ? respuesta({
+            clase: 'egreso',
+            documentos: Array.from({ length: 12 }, (_, i) =>
+              egreso({ id: `e-${i + 1}`, consecutivo: 500 + i + 1 }),
+            ),
+            porClase: { ingreso: 18, egreso: 12 },
+          })
+        : respuesta({ documentos: muchos(18), porClase: { ingreso: 18, egreso: 12 } }),
+    )
+    await montar()
+
+    await clic(botonDePagina('Página siguiente'))
+    expect(paginaActual()).toBe('2')
+
+    await activarPestana('egreso')
+    expect(paginaActual()).toBe('1')
+    expect(pie()).toContain('1–10')
+    expect(pie()).toContain('12')
+    expect(texto()).toContain('CE-501')
+    expect(texto()).not.toContain('CE-512')
+  })
+
+  /*
+   * Con una sola página el pie igual se monta: dice «Mostrando 1–3 de 3» y
+   * deja elegir cuántas filas ver. Es lo que hace que una tabla se lea como
+   * tabla (`use-table-pagination.ts`, decisión de Nico del 2026-09-02).
+   */
+  it('con pocas filas el pie sigue estando, y sin filas no', async () => {
+    porContrato.mockResolvedValue(
+      respuesta({ documentos: muchos(3), porClase: { ingreso: 3 } }),
+    )
+    await montar()
+    expect(pie()).toContain('1–3')
+    expect(pie()).toContain('3')
+
+    act(() => root.unmount())
+    root = createRoot(container)
+    porContrato.mockResolvedValue(respuesta({ documentos: [], total: 0, mostrados: 0 }))
+    await montar()
+    expect(container.querySelector('[data-testid="comprobantes-paginacion"]')).toBeNull()
+  })
+
+  /*
+   * Los dos números que conviven: la pestaña dice los 1.842 que HAY, el pie
+   * los 12 que llegaron, y el aviso de recorte es el puente. Ninguno miente.
+   */
+  it('con el tope alcanzado, la pestaña cuenta el total real y el pie lo que llegó', async () => {
+    porContrato.mockResolvedValue(
+      respuesta({
+        documentos: muchos(12),
+        total: 1842,
+        mostrados: 12,
+        porClase: { ingreso: 1842 },
+      }),
+    )
+    await montar()
+
+    expect(conteo('ingreso')).toBe('1.842')
+    expect(pie()).toContain('1–10')
+    expect(pie()).toContain('12')
+    expect(
+      container.querySelector('[data-testid="comprobantes-recortados"]')?.textContent,
+    ).toContain('1.842')
   })
 })

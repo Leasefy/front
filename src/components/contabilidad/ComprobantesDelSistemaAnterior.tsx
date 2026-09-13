@@ -20,10 +20,20 @@
  * muda. Acá es donde alguien la consulta, que es la única razón por la que se
  * migró.
  *
- * ── Las pestañas (Nico, 2026-09-12) ────────────────────────────────────────
+ * ── Las pestañas (Nico, 2026-09-12 y 2026-09-13) ───────────────────────────
  *
  * «Tres pestañas: comprobantes de ingreso · comprobantes de egreso · facturas
- * generadas. Hoy es una sola lista mezclada.»
+ * generadas. Hoy es una sola lista mezclada.» Y al día siguiente, mirando la
+ * tarjeta ya con las tres: «Ingresos, egresos y facturas debería ser un
+ * switch tab, y esa tabla que contiene toda esa información debería tener
+ * paginación.»
+ *
+ * El «switch tab» es el `SegmentedControl` del design system — el mismo
+ * control de «Vista Kanban | Vista Lista» en Mantenimientos
+ * (`app/panel/inmobiliaria/mantenimientos/page.tsx`). Antes eran `Tabs`
+ * subrayadas, que se leen como navegación de página y no como un selector de
+ * qué mirar dentro de una tarjeta; acá no se cambia de sección, se cambia el
+ * filtro de UNA tabla, y eso es exactamente lo que dibuja un segmentado.
  *
  * La pestaña de cada comprobante la decide el BACK sobre el texto del tipo, y
  * el número de cada pestaña viene del back, no de contar filas: con el tope
@@ -44,10 +54,28 @@
  * son todas — el mismo error que este producto persigue en la migración. Por
  * eso el aviso sale del dato del back (`total > mostrados`) y no de contar
  * filas.
+ *
+ * ── La paginación, y por qué es en el cliente ──────────────────────────────
+ *
+ * `useTablePagination` + `TablePagination`, el patrón de las demás tablas del
+ * panel: 10 filas por página, y el pie dice «Mostrando 1–10 de 18».
+ *
+ * Es paginación EN EL CLIENTE sobre lo que ya trajo la pestaña, no un
+ * `?page=` nuevo en el back. Lo que llega está acotado por el tope de 500 por
+ * pestaña —o sea, el peor caso son 500 filas en memoria, no 116.469—, y
+ * cuando ese tope se alcanza la pantalla lo dice con los dos números. Con esas
+ * dos cosas ciertas, un endpoint paginado sólo agregaría un viaje por página
+ * sin cambiar lo que ve nadie. Si algún día el tope sube, esto tiene que
+ * pasar al servidor.
+ *
+ * Dos números que NO son el mismo y conviven a propósito: el de la pestaña es
+ * el total REAL del back (1.842), el del pie es cuántas filas hay para pasar
+ * acá (500). El aviso de recorte es el puente entre los dos.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Receipt } from '@phosphor-icons/react'
+import { SegmentedControl } from '@leasefy/cadence'
 
 import {
   Table,
@@ -57,7 +85,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { TablePagination } from '@/components/ui/pagination'
+import {
+  useTablePagination,
+  PAGE_SIZE_OPTIONS,
+} from '@/lib/hooks/use-table-pagination'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { SinDatos } from '@/components/estado/SinDatos'
@@ -190,6 +222,12 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
   const documentos = historia?.documentos ?? []
   const recortado = Boolean(historia && historia.total > historia.mostrados)
 
+  // `resetKey: clase` es lo que hace que cambiar de pestaña vuelva a la
+  // página 1. Sin eso, mirar la página 4 de los egresos y saltar a Facturas
+  // —que tiene 12— deja la tabla vacía sobre un resultado que sí tiene filas,
+  // y se lee como «no hay facturas».
+  const pagina = useTablePagination(documentos, { resetKey: clase })
+
   return (
     <section
       className="rounded-lg border border-border bg-card p-5 space-y-3"
@@ -235,31 +273,48 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
           descripcion={`${contractId ? 'Este contrato' : 'Este inmueble'} no tiene comprobantes de la contabilidad vieja colgados. Aparecen acá cuando se sube el export de comprobantes en Migración → Registros contables y el concepto nombra al inquilino o al propietario.`}
         />
       ) : (
-        <Tabs value={clase} onValueChange={(v) => setClase(v as ClaseDeComprobante)}>
-          <TabsList variant="segmented" className="justify-start">
-            {visibles.map((p) => (
-              <TabsTrigger
-                key={p.clase}
-                value={p.clase}
-                className="gap-2 whitespace-nowrap"
-                data-testid={`pestana-${p.clase}`}
-              >
-                {p.etiqueta}
-                {/* Cada pestaña dice cuántos hay, y el número es del back. La
-                    píldora es la misma de las pestañas de Documentos
-                    (`documentos/page.tsx`), que ya resolvió cómo se ve un
-                    conteo dentro de una pestaña segmentada. */}
+        <div className="space-y-3">
+          {/* El switch tab de Nico: el mismo `SegmentedControl` del DS que
+              usa «Vista Kanban | Vista Lista» en Mantenimientos. El
+              `data-testid` va en el contenido —el DS no pasa props sueltas a
+              cada segmento—, así que para clickearlo se sube al `<button>`
+              con `closest`. */}
+          <SegmentedControl<ClaseDeComprobante>
+            aria-label="Ingresos, egresos y facturas"
+            value={clase}
+            onChange={setClase}
+            options={visibles.map((p) => ({
+              value: p.clase,
+              ariaLabel: `${p.etiqueta}: ${enPantalla[p.clase].toLocaleString('es-CO')}`,
+              label: (
                 <span
-                  className="ml-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full bg-surface-muted px-1.5 text-caption tabular-nums text-fg-muted"
-                  data-testid={`conteo-${p.clase}`}
+                  className="flex items-center gap-1.5 whitespace-nowrap"
+                  data-testid={`pestana-${p.clase}`}
                 >
-                  {enPantalla[p.clase].toLocaleString('es-CO')}
-                </span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
+                  {p.etiqueta}
+                  {/* Cada pestaña dice cuántos hay, y el número es del back:
+                      con el tope de 500 de por medio, contar las filas que se
+                      ven diría 500 para siempre.
 
-          <TabsContent value={clase} className="mt-3 space-y-3">
+                      `opacity-60` y no una píldora con fondo: dentro de un
+                      segmentado el segmento activo es blanco y los demás
+                      dejan ver el riel gris, así que NINGÚN color de fondo
+                      fijo se ve en los dos estados —el que contrasta contra
+                      el blanco desaparece contra el gris—. Heredando el color
+                      del segmento, el número queda siempre un paso atrás del
+                      texto, activo o no, y también en modo oscuro. */}
+                  <span
+                    className="tabular-nums opacity-60"
+                    data-testid={`conteo-${p.clase}`}
+                  >
+                    {enPantalla[p.clase].toLocaleString('es-CO')}
+                  </span>
+                </span>
+              ),
+            }))}
+          />
+
+          <div className="space-y-3">
             <EstadoDeDatos
               cargando={Boolean(de?.pidiendo)}
               error={de?.error ?? null}
@@ -279,7 +334,26 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
                 />
               }
             >
-              <TablaDeComprobantes documentos={documentos} />
+              <TablaDeComprobantes
+                documentos={pagina.pageItems}
+                pie={
+                  pagina.shouldPaginate ? (
+                    <div
+                      className="border-t border-border px-4 py-3"
+                      data-testid="comprobantes-paginacion"
+                    >
+                      <TablePagination
+                        total={pagina.total}
+                        page={pagina.page}
+                        pageSize={pagina.pageSize}
+                        pageSizeOptions={PAGE_SIZE_OPTIONS}
+                        onPageChange={pagina.setPage}
+                        onPageSizeChange={pagina.setPageSize}
+                      />
+                    </div>
+                  ) : null
+                }
+              />
             </EstadoDeDatos>
 
             {recortado ? (
@@ -289,14 +363,22 @@ export function ComprobantesDelSistemaAnterior(props: Props) {
                 guardados —no se perdió ninguno—, pero acá sólo caben estos.
               </p>
             ) : null}
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       )}
     </section>
   )
 }
 
-function TablaDeComprobantes({ documentos }: { documentos: DocumentoMigradoVista[] }) {
+function TablaDeComprobantes({
+  documentos,
+  pie,
+}: {
+  /** Sólo las filas de la página actual: el recorte lo hizo el paginador. */
+  documentos: DocumentoMigradoVista[]
+  /** El pie de paginación, dentro del mismo marco que la tabla. */
+  pie?: ReactNode
+}) {
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-surface">
       <Table>
@@ -355,6 +437,7 @@ function TablaDeComprobantes({ documentos }: { documentos: DocumentoMigradoVista
           ))}
         </TableBody>
       </Table>
+      {pie}
     </div>
   )
 }

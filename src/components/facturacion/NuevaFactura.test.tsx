@@ -159,7 +159,7 @@ describe('NuevaFactura', () => {
 
   it('destildar una fila baja la cuenta del botón', async () => {
     await montar();
-    const casilla = qa('[data-testid^="factura-"] button[role="checkbox"]')[0]!;
+    const casilla = qa('[data-testid^="factura-"] button[role="checkbox"]')[0] as HTMLButtonElement;
     await act(async () => {
       casilla.click();
     });

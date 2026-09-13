@@ -105,9 +105,19 @@ const VARIANTE_DEL_ESTADO: Record<string, 'warning' | 'default' | 'destructive' 
   paid: 'success',
 };
 
-/** El back manda los estados en mayúscula; la tabla los pinta en minúscula. */
-function estadoLegible(status: string): string {
-  return status.toLowerCase();
+/**
+ * El estado del cobro, en el vocabulario del front.
+ *
+ * 🔴 La cartera NO pasa por `normalizeCobro`: el back devuelve la fila con el
+ * enum de Prisma (`COBRO_PENDING`, `PARTIAL`, …) y bajarlo a minúscula no
+ * alcanza — `cobro_pending` no existe en el diccionario y la pantalla mostraba
+ * la clave cruda `inmobiliaria.cobros.status.cobro_pending` al lado del monto.
+ * Se lo vio en el navegador, no en ningún test: los fixtures ya venían con la
+ * forma del front. Es la MISMA traducción que hace `normalizeCobro`.
+ */
+export function estadoLegible(status: string): string {
+  const s = String(status ?? '').toLowerCase();
+  return s === 'cobro_pending' ? 'pending' : s;
 }
 
 // ── 1. Elegir al cliente ────────────────────────────────────────────────────

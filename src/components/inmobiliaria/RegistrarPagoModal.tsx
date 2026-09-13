@@ -173,7 +173,26 @@ export function RegistrarPagoModal({
   const { medios: mediosConfigurados } = useMediosDePago({ enabled: isOpen });
   const opcionesDeMedio = React.useMemo(() => mediosParaElegir(mediosConfigurados), [mediosConfigurados]);
 
-  const hoy = React.useMemo(() => new Date().toISOString().split('T')[0], []);
+  /**
+   * Hoy EN BOGOTÁ, no en UTC.
+   *
+   * 🔴 `new Date().toISOString().split('T')[0]` es la fecha UTC: a las 7 de la
+   * tarde en Colombia ya es el día siguiente en UTC, así que «qué día entró»
+   * venía prellenado con MAÑANA —y el `max` del campo dejaba elegirlo—. Visto
+   * en el navegador a las 19:03: el recibo salió fechado el 13 de septiembre.
+   * Es el mismo criterio de `mesActual` en `lib/recaudo/meses.ts` y el mismo
+   * que usa el back cuando no le mandan fecha.
+   */
+  const hoy = React.useMemo(
+    () =>
+      new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Bogota',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date()),
+    [],
+  );
 
   const [tenantId, setTenantId] = React.useState<string | null>(null);
   const [monto, setMonto] = React.useState<number>(NaN);

@@ -37,6 +37,7 @@ import {
   ElegirCliente,
   clientesParaRecibo,
   conceptosDelPeriodo,
+  estadoLegible,
   etiquetaDeCliente,
   periodosSinConciliar,
 } from './ReciboPorCliente';
@@ -111,6 +112,25 @@ describe('conceptosDelPeriodo', () => {
 
   it('sin motor de conceptos no inventa ninguno', () => {
     expect(conceptosDelPeriodo(periodo('c1'))).toEqual([]);
+  });
+});
+
+describe('estadoLegible', () => {
+  /*
+   * 🔴 Visto en el navegador, no acá: la cartera NO pasa por `normalizeCobro`,
+   * así que llega con el enum de Prisma. Bajar a minúscula no alcanza —
+   * `cobro_pending` no está en el diccionario y la pantalla mostraba la clave
+   * cruda `inmobiliaria.cobros.status.cobro_pending` al lado del monto.
+   */
+  it('COBRO_PENDING es «pending», que es lo que el diccionario conoce', () => {
+    expect(estadoLegible('COBRO_PENDING')).toBe('pending');
+  });
+
+  it('los demás sólo bajan a minúscula', () => {
+    expect(estadoLegible('PARTIAL')).toBe('partial');
+    expect(estadoLegible('LATE')).toBe('late');
+    expect(estadoLegible('DEFAULTED')).toBe('defaulted');
+    expect(estadoLegible('PAID')).toBe('paid');
   });
 });
 

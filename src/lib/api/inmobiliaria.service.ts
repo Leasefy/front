@@ -1080,10 +1080,17 @@ export const cobrosApi = {
   },
 
   /**
-   * El cobro de UN inmueble para UN mes. Es lo que pide el recibo de caja
-   * cuando el mes de ese inmueble todavía no se cobró: antes la única salida
-   * era `generate`, la corrida masiva (cien cobros para emitir uno).
-   * `creado: false` = ya existía; el cobro vuelve igual, con su saldo.
+   * El cobro de UN inmueble para UN mes, sin correr la generación de toda la
+   * inmobiliaria. `creado: false` = ya existía; el cobro vuelve igual, con su
+   * saldo.
+   *
+   * ⚠️ SIN CALLSITE desde el 2026-09-12. Lo pedía el recibo de caja cuando el
+   * mes de un inmueble todavía no se había cobrado, y ese camino se cayó: el
+   * recibo se le hace a un CLIENTE y la plata va a su deuda más vieja, así que
+   * crear el cobro del mes para poder recibir contra él es justo lo que Nico
+   * quiso sacar. Se deja porque el endpoint del back existe y «cobrar un mes
+   * suelto» es una operación legítima que va a volver a hacer falta; el día que
+   * se decida que no, se borran los dos lados juntos.
    */
   async generateOne(
     consignacionId: string,

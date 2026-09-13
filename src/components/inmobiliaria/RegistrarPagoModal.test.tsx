@@ -369,6 +369,35 @@ describe('<RegistrarPagoModal> a dónde va la plata', () => {
   });
 });
 
+describe('<RegistrarPagoModal> qué día entró', () => {
+  /*
+   * 🔴 Visto en el navegador a las 19:03 de Colombia: el recibo salió fechado
+   * el 13 de septiembre teniendo que ser el 12. `toISOString()` da la fecha
+   * UTC, y Colombia va cinco horas atrás — de las 7 de la tarde en adelante el
+   * campo venía prellenado con MAÑANA, y su `max` dejaba elegirlo.
+   */
+  it('prellena HOY en Bogotá, no la fecha UTC', async () => {
+    const real = Date;
+    // 2026-09-13T00:03Z = 2026-09-12, 19:03 en Bogotá.
+    vi.setSystemTime(new real('2026-09-13T00:03:00.000Z'));
+    await abrir();
+
+    const campo = document.body.querySelector<HTMLInputElement>('#fecha-recibo');
+    expect(campo?.value).toBe('2026-09-12');
+    expect(campo?.getAttribute('max')).toBe('2026-09-12');
+    vi.useRealTimers();
+  });
+
+  it('manda esa fecha, no la de UTC', async () => {
+    vi.setSystemTime(new Date('2026-09-13T00:03:00.000Z'));
+    const onSubmit = await abrir();
+    elegirMedio('efectivo');
+    await enviar();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ fecha: '2026-09-12' });
+    vi.useRealTimers();
+  });
+});
+
 describe('<RegistrarPagoModal> el monto', () => {
   it('🔴 manda TODA la deuda cuando no se toca el campo prellenado', async () => {
     const onSubmit = await abrir();

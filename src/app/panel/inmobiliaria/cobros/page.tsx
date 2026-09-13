@@ -164,14 +164,25 @@ function CobrosContent() {
       result = result.filter((c) => c.consignacionId === filters.consignacionId);
     }
 
-    // Filter by search (tenant name, property title, property address) - client-side only
+    /*
+     * Filter by search (tenant name, property title, property address).
+     *
+     * 🔴 `texto()` y no `c.tenantName.toLowerCase()`: los tres campos son
+     * `string` en el tipo y NO en la base — un cobro migrado a nombre de nadie
+     * llega con `tenantName: null`. Escribir una letra en el buscador tiraba
+     * un `Cannot read properties of undefined (reading 'toLowerCase')` que el
+     * límite de error convertía en «Esta sección se rompió»: la pantalla
+     * entera de Cobros, caída por UNA celda vacía. Visto en el navegador con
+     * la cuenta de QA, que tiene cuatro cobros así.
+     */
     if (filters.search) {
       const query = filters.search.toLowerCase();
+      const texto = (v: string | null | undefined) => (v ?? '').toLowerCase();
       result = result.filter(
         (c) =>
-          c.tenantName.toLowerCase().includes(query) ||
-          c.propertyTitle.toLowerCase().includes(query) ||
-          c.propertyAddress.toLowerCase().includes(query)
+          texto(c.tenantName).includes(query) ||
+          texto(c.propertyTitle).includes(query) ||
+          texto(c.propertyAddress).includes(query)
       );
     }
 

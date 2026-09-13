@@ -70,10 +70,36 @@ export interface PlanDelContrato {
   sinPlanPorque: SinPlanPorque | null;
 }
 
+/** Lo que haría (o hizo) una pasada de la renovación automática. */
+export interface ResumenDeLaCorrida {
+  agencias: number;
+  revisadas: number;
+  propuestas: number;
+  renovadas: number;
+  terminadas: number;
+  sinCambios: number;
+  fallidas: number;
+  /** `true` = no se tocó nada: es el pronóstico, no la corrida. */
+  simulado?: boolean;
+}
+
 export const renovacionAutomaticaApi = {
   /** Qué va a pasar con este contrato y cuándo. */
   async delContrato(contractId: string): Promise<PlanDelContrato> {
     return apiClient.get<PlanDelContrato>(`${BASE}/plan/${contractId}`);
+  },
+
+  /**
+   * 🔴 Contar sin hacer: cuántas propuestas saldrían y cuántos contratos se
+   * renovarían si el cron corriera ahora. No manda un correo ni escribe una
+   * fila, y a propósito no mira la perilla de la agencia — es el número que
+   * hay que ver ANTES de prenderla.
+   */
+  async simular(): Promise<ResumenDeLaCorrida> {
+    return apiClient.post<ResumenDeLaCorrida>(
+      `${BASE}/correr-automatica?simular=true`,
+      {},
+    );
   },
 
   /** Registra que una parte avisó que no renueva. */

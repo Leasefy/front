@@ -1,5 +1,6 @@
 import { apiClient, ApiError } from './client';
 import type {
+  CanalDeWhatsapp,
   BackendConversationsResponse,
   BackendConversationWithMessages,
   ConversationActionResult,
@@ -97,6 +98,25 @@ export const messagesApi = {
   getPendientes(conversationId: string) {
     return apiClient.get<PendientesDeLaConversacion>(
       `/conversations/${conversationId}/pendientes`,
+    );
+  },
+
+  /**
+   * GET /inmobiliaria/terceros/:personaId/whatsapp — qué número tenemos del
+   * tercero y si autorizó el canal. Es lo que pinta el interruptor de la ficha.
+   */
+  verCanalDeWhatsapp(personaId: string, agencyId?: string) {
+    const q = agencyId ? `?agencyId=${encodeURIComponent(agencyId)}` : '';
+    return apiClient.get<CanalDeWhatsapp>(
+      `/inmobiliaria/terceros/${personaId}/whatsapp${q}`,
+    );
+  },
+
+  /** PATCH /inmobiliaria/terceros/:personaId/whatsapp — prender o apagar el canal. */
+  cambiarCanalDeWhatsapp(personaId: string, acepta: boolean, agencyId?: string) {
+    return apiClient.patch<CanalDeWhatsapp>(
+      `/inmobiliaria/terceros/${personaId}/whatsapp`,
+      agencyId ? { acepta, agencyId } : { acepta },
     );
   },
 

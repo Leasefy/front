@@ -34,6 +34,7 @@ import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
+import { InterruptorDeWhatsapp } from '@/components/messages/InterruptorDeWhatsapp';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
 import { SegmentedControl, IconButton } from '@leasefy/cadence';
@@ -730,6 +731,10 @@ function PropietarioDetailContent() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Contact & Bank */}
         <div className="space-y-4">
+          {/* El permiso para escribirle por WhatsApp desde el chat
+              (2026-09-12). Sólo si tiene cuenta de portal: el hilo del chat es
+              con un `User`, y sin cuenta no hay a quién prendérselo. */}
+          <InterruptorDeWhatsapp personaId={propietario.cuentaDePortalId} />
           {/* Contacto en filas compactas, como la ficha del contrato: antes
               cada dato tenía su ícono en un cuadro de 40 px y la tarjeta
               ocupaba media pantalla para tres líneas. */}

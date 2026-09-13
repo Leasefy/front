@@ -24,6 +24,7 @@
  */
 
 import type { InventoryItem } from '@/lib/types/inmobiliaria';
+import { conDeposito, DEPOSITO_BORRADORES, hayIndexedDb } from './base-local';
 
 export interface BorradorDeInventario {
   /** El inmueble (la consignación). Es la llave: un borrador por inmueble. */
@@ -53,44 +54,20 @@ export interface AlmacenDeBorradores {
   listar(): Promise<BorradorDeInventario[]>;
 }
 
-export const BASE = 'leasefy-inventario';
-export const DEPOSITO = 'borradores';
-const VERSION = 1;
-
-function abrir(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const pedido = indexedDB.open(BASE, VERSION);
-    pedido.onupgradeneeded = () => {
-      const db = pedido.result;
-      if (!db.objectStoreNames.contains(DEPOSITO)) {
-        db.createObjectStore(DEPOSITO, { keyPath: 'consignacionId' });
-      }
-    };
-    pedido.onsuccess = () => resolve(pedido.result);
-    pedido.onerror = () => reject(pedido.error ?? new Error('IndexedDB no abrió'));
-  });
-}
-
-function esperar<T>(pedido: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    pedido.onsuccess = () => resolve(pedido.result);
-    pedido.onerror = () => reject(pedido.error ?? new Error('IndexedDB falló'));
-  });
-}
+/**
+ * La base y los depósitos viven en `base-local.ts`: la copia del inmueble
+ * usa la MISMA base y dos módulos abriéndola con versiones distintas se
+ * bloquean entre sí. Se re-exportan porque las pruebas y el resto del código
+ * ya los nombran desde acá.
+ */
+export { BASE, DEPOSITO_BORRADORES as DEPOSITO } from './base-local';
 
 /** El almacén real del navegador. */
 export function almacenIndexedDb(): AlmacenDeBorradores {
-  const con = async <T>(
+  const con = <T>(
     modo: IDBTransactionMode,
     fn: (deposito: IDBObjectStore) => IDBRequest<T>,
-  ): Promise<T> => {
-    const db = await abrir();
-    try {
-      return await esperar(fn(db.transaction(DEPOSITO, modo).objectStore(DEPOSITO)));
-    } finally {
-      db.close();
-    }
-  };
+  ): Promise<T> => conDeposito(DEPOSITO_BORRADORES, modo, fn);
 
   return {
     async leer(consignacionId) {
@@ -147,8 +124,7 @@ let almacen: AlmacenDeBorradores | null = null;
  */
 export function almacenDeBorradores(): AlmacenDeBorradores {
   if (almacen) return almacen;
-  const hayIdb = typeof indexedDB !== 'undefined';
-  almacen = hayIdb ? almacenIndexedDb() : almacenEnMemoria();
+  almacen = hayIndexedDb() ? almacenIndexedDb() : almacenEnMemoria();
   return almacen;
 }
 

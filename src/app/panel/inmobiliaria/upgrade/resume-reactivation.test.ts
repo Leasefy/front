@@ -1,18 +1,16 @@
 /**
- * upgrade/page — `shouldResumeReactivation` (T-0085).
+ * upgrade/resume-reactivation — `shouldResumeReactivation` (T-0085).
  *
- * The route has no pre-existing `page.test.tsx` (contract.md §8 / brief §4
- * explicitly allows substituting a hook-level test of the same logic when
- * that is the case). The predicate this task widens lives in the PAGE's
- * resume-trigger `useEffect`, not in `useAgencyCheckout`, so it is exported
- * standalone from `page.tsx` and unit-tested directly here — proving the
- * real production predicate without mounting the full page (heavy tree:
- * `PricingTable`, `AgencyCheckoutOverlay`, `useAgencyPlans`,
- * `useAgencySubscription`, `next/navigation`).
+ * Moved out of `page.tsx` (fix round 1, MEDIUM 1): a Next.js App Router page
+ * file may only export `default` and the documented config symbols, so a
+ * plain named export there fails `tsc --noEmit` once `.next/types` exists
+ * (`rm -rf .next && pnpm build && npx tsc --noEmit`). The predicate now lives
+ * in the sibling `resume-reactivation.ts` module and is imported by both
+ * `page.tsx` and this test file.
  */
 
 import { describe, it, expect } from 'vitest';
-import { shouldResumeReactivation } from './page';
+import { shouldResumeReactivation } from './resume-reactivation';
 import type { AgencySubscriptionCharge } from '@/lib/api/agency-subscription.types';
 
 function charge(overrides: Partial<AgencySubscriptionCharge> = {}): AgencySubscriptionCharge {

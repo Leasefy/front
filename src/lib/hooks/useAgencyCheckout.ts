@@ -76,10 +76,18 @@ export interface UseAgencyCheckout {
    * started (`subscriptionState.subscription?.status` at click time) — needed
    * so `checkStatus()` can tell a genuine reactivation (SUSPENDED/PAST_DUE →
    * ACTIVE) from "already ACTIVE" once `select-plan` answers
-   * `REACTIVATION_PENDING` (T-0085). Omit it for the ordinary purchase path;
-   * it is a no-op there.
+   * `REACTIVATION_PENDING` (T-0085). `baselinePlanTier` is the subscription's
+   * tier at that same moment — needed ONLY to classify a 409
+   * `PENDING_CHARGE_ALREADY_PAID` thrown by the initial `select-plan` call
+   * itself, before any `outcome` is ever read: that recovery must use the
+   * reactivation predicate (a real status transition) rather than the
+   * purchase tier-advance one when `planId` equals the baseline tier and the
+   * baseline was non-ACTIVE — otherwise "tier === tier" is trivially true for
+   * a same-tier reactivation and reports success without checking anything
+   * real (fix round 1, MEDIUM 2). Omit both for the ordinary purchase path;
+   * they are a no-op there.
    */
-  pay: (planId: string, baselineStatus?: string | null) => Promise<void>;
+  pay: (planId: string, baselineStatus?: string | null, baselinePlanTier?: string | null) => Promise<void>;
   /** Manual reconcile against Wompi if the webhook is slow. */
   verifyNow: () => Promise<void>;
   /**
@@ -334,7 +342,7 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
 
   // Paid FLAT plan — select plan (→ PENDING charge) then open the hosted Wompi
   // payment link in a separate tab (avaluo-style; payer picks card/PSE/Nequi).
-  const pay = useCallback(async (planId: string, baselineStatus?: string | null) => {
+  const pay = useCallback(async (planId: string, baselineStatus?: string | null, baselinePlanTier?: string | null) => {
     // Pre-open the tab SYNCHRONOUSLY inside the click gesture, then redirect it
     // once we have the link. Browsers block a window.open issued AFTER an await
     // (it's outside the user-gesture window), so opening it post-fetch would be
@@ -390,6 +398,23 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
       // predicate `awaiting` polls with — a real tier advance is still
       // required, never assumed from the status code alone.
       if (err instanceof ApiError && err.status === 409 && err.code === 'PENDING_CHARGE_ALREADY_PAID') {
+        // This 409 fires on the INITIAL `selectPlan` call, before any
+        // `outcome` is ever read — `checkoutKindRef` is still 'purchase'
+        // (reset unconditionally above). For a SUSPENDED/PAST_DUE owner
+        // re-selecting their CURRENT tier, that would make
+        // `recoverAlreadyPaidCharge` use the purchase tier-advance check,
+        // which is trivially true here (a RENEWAL charge never changes
+        // `planTier`) and would report success without checking anything
+        // real. Reclassify as 'reactivation' first so the recovery below
+        // checks the actual status transition instead (fix round 1, MEDIUM 2).
+        const isSameTierReactivation =
+          baselineStatusRef.current !== null &&
+          baselineStatusRef.current !== 'ACTIVE' &&
+          baselinePlanTier != null &&
+          baselinePlanTier.toLowerCase() === planId.toLowerCase();
+        if (isSameTierReactivation) {
+          checkoutKindRef.current = 'reactivation';
+        }
         await recoverAlreadyPaidCharge(planId);
         return;
       }

@@ -26,6 +26,24 @@ const { useContractMock, permisos } = vi.hoisted(() => ({
   permisos: { puede: false },
 }))
 
+/**
+ * El preview del contrato. Mutable porque la sección «Documento» tiene tres
+ * salidas distintas y hay que poder pararse en cada una: documento, contrato
+ * SIN documento (el migrado) y fallo de verdad.
+ */
+const { previewDelContrato } = vi.hoisted(() => ({
+  previewDelContrato: {
+    valor: {
+      preview: null as unknown,
+      isLoading: false,
+      error: null as string | null,
+      errorCrudo: null as unknown,
+      sinDocumento: false,
+      refetch: () => {},
+    },
+  },
+}))
+
 const { paramsDeBusqueda } = vi.hoisted(() => ({
   // Mutable para que un caso pueda entrar «desde» otra pantalla. Sin `volver`
   // el enlace de arriba sigue diciendo «Contratos», como siempre.
@@ -44,7 +62,7 @@ vi.mock('@/components/auth/PageGuard', () => ({
 
 vi.mock('@/lib/hooks/useContracts', () => ({
   useContract: () => useContractMock(),
-  useContractPreview: () => ({ preview: null, isLoading: false }),
+  useContractPreview: () => previewDelContrato.valor,
   useContractRejections: () => ({ rejections: [] }),
   useContractActions: () => ({ isSubmitting: false, lastError: null }),
   useSignedPdfUrl: () => ({ url: null, isLoading: false }),
@@ -101,8 +119,11 @@ vi.mock('@/components/contract/DownloadContractPdfButton', () => ({
   DownloadContractPdfButton: () =>
     React.createElement('div', { 'data-testid': 'download-pdf' }),
 }))
+// El `role="alert"` del cartel real va también en el doble: es lo que una
+// prueba puede mirar para decir «acá NO hay un error pintado».
 vi.mock('@/components/estado/FalloDeCarga', () => ({
-  FalloDeCarga: () => React.createElement('div', { 'data-testid': 'fallo-carga' }),
+  FalloDeCarga: () =>
+    React.createElement('div', { 'data-testid': 'fallo-carga', role: 'alert' }),
 }))
 vi.mock('@/components/contratos/AdministracionDelContrato', () => ({
   AdministracionDelContrato: () =>
@@ -183,6 +204,14 @@ beforeEach(() => {
   document.body.appendChild(container)
   root = createRoot(container)
   useContractMock.mockReset()
+  previewDelContrato.valor = {
+    preview: null,
+    isLoading: false,
+    error: null,
+    errorCrudo: null,
+    sinDocumento: false,
+    refetch: () => {},
+  }
 })
 
 afterEach(() => {
@@ -459,5 +488,45 @@ describe('ContratoDetallePage — inventario e historial del inmueble', () => {
     await renderPage()
 
     expect(container.querySelector('[data-testid="inmueble-del-contrato"]')).toBeNull()
+  })
+})
+
+/*
+ * 🔴 Pasada de QA del 2026-09-12: en TODA ficha de un contrato migrado salía
+ * un cartel rojo. `GET /contracts/:id/preview` responde 400 «Contract HTML not
+ * generated» porque esos contratos se cargaron desde el archivo de la
+ * inmobiliaria —ya firmados en papel— y nunca tuvieron documento en Leasefy.
+ * No tener documento no es un fallo; un 400 con otro motivo, o un 500, sí.
+ */
+describe('ContratoDetallePage — el documento de un contrato migrado', () => {
+  it('🔴 sin documento lo dice en tono neutro, sin pintar un error', async () => {
+    previewDelContrato.valor = {
+      ...previewDelContrato.valor,
+      sinDocumento: true,
+    }
+    withContract(contract({ contractOrigin: 'MIGRATED', externalId: '1686' }))
+
+    await renderPage()
+
+    expect(
+      container.querySelector('[data-testid="contrato-sin-documento"]')?.textContent,
+    ).toContain('Este contrato se cargó desde tu sistema anterior y no tiene documento generado en Leasefy')
+    // Ni cartel de fallo ni nada que se anuncie como alerta.
+    expect(container.querySelector('[data-testid="fallo-carga"]')).toBeNull()
+    expect(container.querySelector('[role="alert"]')).toBeNull()
+  })
+
+  it('un 400 con OTRO motivo, o un 500, sí se pinta como fallo', async () => {
+    previewDelContrato.valor = {
+      ...previewDelContrato.valor,
+      errorCrudo: new Error('Boom'),
+      error: 'Boom',
+    }
+    withContract(contract({ contractOrigin: 'MIGRATED' }))
+
+    await renderPage()
+
+    expect(container.querySelector('[data-testid="fallo-carga"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="contrato-sin-documento"]')).toBeNull()
   })
 })

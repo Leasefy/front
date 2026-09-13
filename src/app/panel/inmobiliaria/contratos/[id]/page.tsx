@@ -120,7 +120,16 @@ function ContratoDetalleContent() {
   // El respaldo vive en las cláusulas del contrato: es el campo real que
   // el backend persiste hoy. Ver src/lib/inmobiliaria/respaldo.ts.
   const respaldo = leerRespaldo(contract?.customClauses);
-  const { preview, isLoading: isLoadingPreview } = useContractPreview(id);
+  // `sinDocumento` es el contrato migrado —sin HTML ni PDF en Leasefy—, que
+  // NO es un fallo; `errorCrudo` es todo lo demás, y eso sí se pinta como
+  // error. Ver `esContratoSinDocumento` en contracts.service.ts.
+  const {
+    preview,
+    isLoading: isLoadingPreview,
+    errorCrudo: falloDelDocumento,
+    sinDocumento,
+    refetch: recargarDocumento,
+  } = useContractPreview(id);
   const { rejections } = useContractRejections(id);
   const actions = useContractActions();
 
@@ -598,11 +607,38 @@ function ContratoDetalleContent() {
                   className="prose prose-sm max-w-none dark:prose-invert"
                   {...sanitizeContractHtml(preview.html)}
                 />
+              ) : sinDocumento ? (
+                /*
+                  🔴 Nico, 2026-09-12: un contrato migrado NO tiene documento
+                  en Leasefy —se cargó desde el archivo de la inmobiliaria, ya
+                  firmado en papel— y el 400 del preview pintaba un cartel rojo
+                  en los 1.836 contratos de la migración. No es un fallo: se
+                  dice de frente y sin alarma.
+
+                  No hay acción que ofrecer hoy, y no se inventa ninguna:
+                  · adjuntar el PDF firmado lo rechaza el back («Solo se puede
+                    reemplazar el PDF en contratos con
+                    contractOrigin=UPLOADED_PDF»), y el PATCH además devuelve
+                    el contrato a PENDING_TENANT_SIGNATURE — sobre un contrato
+                    VIGENTE eso es romperlo;
+                  · armar desde plantilla sólo existe al CREAR
+                    (/contratos/nuevo), no sobre un contrato que ya existe.
+                  Cuando exista alguno de los dos caminos, el botón va acá.
+                */
+                <p className="text-sm text-muted-foreground py-2" data-testid="contrato-sin-documento">
+                  Este contrato se cargó desde tu sistema anterior y no tiene documento generado en Leasefy.
+                </p>
+              ) : falloDelDocumento ? (
+                /* Un 400 con OTRO motivo, o un 500: eso sí es un fallo. */
+                <FalloDeCarga
+                  error={falloDelDocumento}
+                  queEs="el documento del contrato"
+                  onReintentar={recargarDocumento}
+                  enmarcado={false}
+                />
               ) : (
                 <p className="text-sm text-muted-foreground py-2">
-                  {contract.contractOrigin === 'MIGRATED'
-                    ? 'Sin documento: este contrato entró por migración sin el PDF firmado.'
-                    : 'No hay vista previa disponible.'}
+                  Todavía no hay documento para este contrato.
                 </p>
               )}
             </div>

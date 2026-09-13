@@ -202,6 +202,35 @@ export function mapBackendContract(bc: BackendContract): Contract {
 }
 
 // ============================================================================
+// Contratos sin documento — no es un fallo
+// ============================================================================
+
+/**
+ * ¿El `GET /contracts/:id/preview` falló porque ese contrato NO TIENE
+ * documento, o porque algo salió mal?
+ *
+ * Los contratos que entraron por migración se cargaron desde el archivo de la
+ * inmobiliaria: ya estaban firmados en papel y nunca tuvieron HTML ni PDF en
+ * Leasefy. El back responde a su preview con un 400 «Contract HTML not
+ * generated» (`contracts.service.ts#getPreview`), y la ficha lo pintaba como
+ * error: un cartel rojo cada vez que se abre un contrato migrado —o sea, en
+ * los 1.836 de Nico—. No tener documento es el estado NORMAL de esos
+ * contratos, y se cuenta en tono neutro.
+ *
+ * 🔴 Se decide por el TEXTO porque el back tira un `BadRequestException`
+ * pelado, sin `code`. Conviene que mande uno (p. ej. `CONTRATO_SIN_DOCUMENTO`)
+ * y que esto pase a leer sólo `err.code`: el texto es inglés de adentro del
+ * back y cualquiera lo reescribe sin saber que una pantalla depende de él. Si
+ * el 400 YA trae un `code`, se respeta: un código distinto es otro motivo, y
+ * ése sí es un error.
+ */
+export function esContratoSinDocumento(error: unknown): boolean {
+  if (!(error instanceof ApiError) || error.status !== 400) return false;
+  if (error.code) return error.code === 'CONTRATO_SIN_DOCUMENTO';
+  return /contract html not generated/i.test(error.message);
+}
+
+// ============================================================================
 // Service
 // ============================================================================
 

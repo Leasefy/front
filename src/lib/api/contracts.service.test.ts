@@ -326,3 +326,50 @@ describe('mapBackendContract — code (T-0040)', () => {
     expect('consecutivo' in mapeado).toBe(false)
   })
 })
+
+/**
+ * 🔴 Pasada de QA del 2026-09-12: la ficha de TODO contrato migrado pintaba un
+ * cartel rojo. El preview de un contrato que entró por migración responde 400
+ * «Contract HTML not generated» —nunca tuvo documento en Leasefy—, y eso no es
+ * un fallo. Esta función es la que separa «no hay documento» de «algo salió
+ * mal», y separa por TEXTO porque el back manda un 400 sin `code`: si alguien
+ * reescribe ese mensaje en el back, acá se cae esta prueba y no la pantalla.
+ */
+describe('esContratoSinDocumento', () => {
+  it('el 400 del contrato migrado no es un error', async () => {
+    const { esContratoSinDocumento } = await import('./contracts.service')
+    const { ApiError } = await import('./client')
+
+    expect(esContratoSinDocumento(new ApiError(400, 'Contract HTML not generated'))).toBe(true)
+  })
+
+  it('un 400 con OTRO motivo sí es un error', async () => {
+    const { esContratoSinDocumento } = await import('./contracts.service')
+    const { ApiError } = await import('./client')
+
+    expect(esContratoSinDocumento(new ApiError(400, 'Uploaded PDF path is missing'))).toBe(false)
+  })
+
+  it('un 500, un 404 y cualquier cosa que no sea ApiError son errores', async () => {
+    const { esContratoSinDocumento } = await import('./contracts.service')
+    const { ApiError } = await import('./client')
+
+    expect(esContratoSinDocumento(new ApiError(500, 'Contract HTML not generated'))).toBe(false)
+    expect(esContratoSinDocumento(new ApiError(404, 'Contract not found'))).toBe(false)
+    expect(esContratoSinDocumento(new Error('Contract HTML not generated'))).toBe(false)
+    expect(esContratoSinDocumento(null)).toBe(false)
+  })
+
+  /* El día que el back mande un código, manda el código y no el texto. */
+  it('con `code` manda el código, no el mensaje', async () => {
+    const { esContratoSinDocumento } = await import('./contracts.service')
+    const { ApiError } = await import('./client')
+
+    expect(
+      esContratoSinDocumento(new ApiError(400, 'lo que sea', 'CONTRATO_SIN_DOCUMENTO')),
+    ).toBe(true)
+    expect(
+      esContratoSinDocumento(new ApiError(400, 'Contract HTML not generated', 'OTRA_COSA')),
+    ).toBe(false)
+  })
+})

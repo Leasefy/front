@@ -11,6 +11,35 @@ import { useAgencyPlans } from '@/lib/hooks/useSubscription';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { useAgencyCheckout } from '@/lib/hooks/useAgencyCheckout';
 import type { AgencyPlanId } from '@/lib/types/subscription';
+import type {
+  AgencySubscriptionCharge,
+  AgencySubscriptionStatus,
+} from '@/lib/api/agency-subscription.types';
+
+/**
+ * True when `openCharge` is a stuck, payable RENEWAL charge for a
+ * SUSPENDED/PAST_DUE subscription re-selecting its CURRENT tier (T-0085):
+ * `select-plan` answers `REACTIVATION_PENDING` for this case and the back's
+ * monthly-billing cron can also leave exactly this kind of charge behind
+ * before any select-plan call happens at all. `targetPlanTier` is always
+ * null for this charge kind — that is what distinguishes it from the
+ * pre-existing purchase-resume branch (a PENDING UPGRADE charge, which DOES
+ * carry a `targetPlanTier`). Exported standalone so it can be unit-tested
+ * without mounting the full page (no existing `page.test.tsx` for this
+ * route to extend).
+ */
+export function shouldResumeReactivation(
+  openCharge: AgencySubscriptionCharge | null | undefined,
+  subscriptionStatus: AgencySubscriptionStatus | null | undefined,
+): boolean {
+  if (!openCharge) return false;
+  return (
+    openCharge.status === 'PENDING' &&
+    !openCharge.targetPlanTier &&
+    openCharge.kind === 'RENEWAL' &&
+    subscriptionStatus !== 'ACTIVE'
+  );
+}
 
 /**
  * Upgrade page for agency users.
@@ -67,10 +96,21 @@ function AgencyUpgradeContent() {
   useEffect(() => {
     if (hasCheckedResumeRef.current || !subscriptionState) return;
     hasCheckedResumeRef.current = true;
+    if (state !== 'idle') return;
     const openCharge = subscriptionState.openCharge;
-    if (state === 'idle' && openCharge?.status === 'PENDING' && openCharge.targetPlanTier) {
+    const sub = subscriptionState.subscription;
+    if (openCharge?.status === 'PENDING' && openCharge.targetPlanTier) {
       setSelectedPlan(openCharge.targetPlanTier as AgencyPlanId);
       resume(openCharge.id, openCharge.targetPlanTier);
+    } else if (shouldResumeReactivation(openCharge, sub?.status)) {
+      // A SUSPENDED/PAST_DUE owner with a stuck, payable RENEWAL charge
+      // (T-0085) — resume onto their CURRENT tier, never the charge's
+      // `targetPlanTier` (always null here: passing it into `setSelectedPlan`
+      // would make `plans.find` return null and silently hide the checkout
+      // overlay, contract.md §8).
+      const currentTier = sub!.planTier as AgencyPlanId;
+      setSelectedPlan(currentTier);
+      resume(openCharge!.id, sub!.planTier, sub!.status);
     }
   }, [subscriptionState, state, resume]);
 
@@ -88,7 +128,11 @@ function AgencyUpgradeContent() {
     if (target.pricingModel === 'custom') {
       router.push(`/panel/inmobiliaria/checkout?plan=${planId}`);
     } else if (target.pricingModel === 'flat') {
-      void pay(planId);
+      // Capture the status BEFORE this checkout starts — `pay()` needs it to
+      // tell a genuine reactivation (SUSPENDED/PAST_DUE → ACTIVE) from
+      // "already ACTIVE" once `select-plan` answers `REACTIVATION_PENDING`
+      // (T-0085). A no-op for the ordinary purchase path.
+      void pay(planId, subscriptionState?.subscription?.status ?? null);
     } else {
       void activate(planId);
     }

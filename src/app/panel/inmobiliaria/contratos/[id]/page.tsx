@@ -53,6 +53,7 @@ import { AdministracionDelContrato } from '@/components/contratos/Administracion
 import { ConceptosDelContrato } from '@/components/contratos/ConceptosDelContrato';
 import { CobrosDelContrato, type ResumenDeCobros } from '@/components/contratos/CobrosDelContrato';
 import { ReglasDeMoraDelContrato } from '@/components/contratos/ReglasDeMoraDelContrato';
+import { RenovacionDelContrato } from '@/components/contratos/RenovacionDelContrato';
 import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/ComprobantesDelSistemaAnterior';
 import { Stat, StatStrip } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
@@ -491,6 +492,12 @@ function ContratoDetalleContent() {
               <ConceptosDelContrato contract={contract} puedeEditar={canEditContracts} />
               {/* Las reglas de mora de la inmobiliaria, y cuáles pisa este contrato. */}
               <ReglasDeMoraDelContrato contract={contract} puedeEditar={canEditContracts} />
+              {/*
+                🔴 Qué va a pasar cuando venza: se renueva sola por el mismo
+                término con el canon incrementado si nadie avisa tres meses
+                antes (Ley 820, arts. 20 y 22). Nico, 2026-09-12.
+              */}
+              <RenovacionDelContrato contract={contract} puedeEditar={canEditContracts} />
               <CobrosDelContrato
                 key={contract.propertyId ?? 'sin-inmueble'}
                 contract={contract}

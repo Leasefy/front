@@ -26,7 +26,6 @@
  */
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { Buildings, Warning } from '@phosphor-icons/react';
 import { useConsignacion } from '@/lib/hooks/useInmobiliaria';
 import { useCopiaDeInmueble } from '@/lib/hooks/use-copia-de-inmueble';
@@ -140,27 +139,18 @@ export function InmuebleDelContrato({
 
   return (
     <div className="space-y-6" data-testid="inmueble-del-contrato">
-      <div className="space-y-2">
-        <InventarioDeLaConsignacion
-          consignacion={consignacion}
-          puedeEditar={puedeEditar}
-          contratoId={contratoId}
-          copiaLocal={copiaLocal}
-          sinSenal={sinSenal}
-          onActualizada={setReciente}
-        />
-        {/* El enlace queda, pero ya no manda a hacer el trabajo allá: es para
-            ver el resto del inmueble (fotos, propietario, visitas). */}
-        <p className="text-xs text-muted-foreground px-1">
-          <Link
-            href={fichaDelInmueble}
-            className="font-medium text-primary hover:underline"
-            data-testid="ver-el-inmueble"
-          >
-            Ver el inmueble →
-          </Link>
-        </p>
-      </div>
+      {/* El enlace al inmueble va DENTRO de la tarjeta, al lado del título: ya
+          no manda a hacer el trabajo allá, es para ver el resto del inmueble
+          (fotos, propietario, visitas). Suelto debajo parecía de otra cosa. */}
+      <InventarioDeLaConsignacion
+        consignacion={consignacion}
+        puedeEditar={puedeEditar}
+        contratoId={contratoId}
+        copiaLocal={copiaLocal}
+        sinSenal={sinSenal}
+        onActualizada={setReciente}
+        enlaceAlInmueble={{ href: fichaDelInmueble, testid: 'ver-el-inmueble' }}
+      />
 
       <ConsignacionTimeline consignacion={consignacion} titulo="Historial del inmueble" />
     </div>

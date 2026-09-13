@@ -130,6 +130,39 @@ describe('codigoYDireccion', () => {
   it('vacío es vacío', () => {
     expect(codigoYDireccion('')).toEqual({});
   });
+
+  /*
+   * El guion pegado. Sale en archivos reales y es el mismo dato, pero
+   * aceptarlo a secas convertiría una dirección en un código: «55-51 CALLE
+   * 129» empieza por dígitos y guion sin serlo. La regla es qué viene DESPUÉS
+   * del guion — una letra (el nombre de la vía) o un número (más dirección).
+   */
+  it('acepta el guion sin espacios cuando sigue el nombre de la vía', () => {
+    expect(codigoYDireccion('100-CR 50 140 SUR 83')).toEqual({
+      codigo: '100',
+      direccion: 'CR 50 140 SUR 83',
+    });
+  });
+
+  it('NO parte «55-51 CALLE 129»: eso es la dirección entera, no un código', () => {
+    expect(codigoYDireccion('55-51 CALLE 129 SUR')).toEqual({
+      direccion: '55-51 CALLE 129 SUR',
+    });
+  });
+
+  it('con espacios a los dos lados se acepta aunque siga un número', () => {
+    expect(codigoYDireccion('218 - 126 SUR 42 - 37')).toEqual({
+      codigo: '218',
+      direccion: '126 SUR 42 - 37',
+    });
+  });
+
+  it('el guion medio de un Excel autocorregido es el mismo separador', () => {
+    expect(codigoYDireccion('2926 – CALLE 129 SUR')).toEqual({
+      codigo: '2926',
+      direccion: 'CALLE 129 SUR',
+    });
+  });
 });
 
 describe('fechaDeOrigen', () => {

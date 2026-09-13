@@ -15,20 +15,25 @@ void React
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { replaceMock, authState } = vi.hoisted(() => ({
-  replaceMock: vi.fn(),
-  authState: {
-    user: null as Record<string, unknown> | null,
-    isAuthenticated: true,
-    isLoading: false,
-    mfaRequired: false,
-    needsOnboarding: false,
-    perfilElegido: null as string | null,
-    agencyRole: null as string | null,
-    hasActiveAgencyMembership: false,
-    agencyMembershipChecked: true,
-  },
-}))
+const { replaceMock, refreshUserMock, authState } = vi.hoisted(() => {
+  const refreshUserMock = vi.fn().mockResolvedValue(undefined)
+  return {
+    replaceMock: vi.fn(),
+    refreshUserMock,
+    authState: {
+      user: null as Record<string, unknown> | null,
+      isAuthenticated: true,
+      isLoading: false,
+      mfaRequired: false,
+      needsOnboarding: false,
+      perfilElegido: null as string | null,
+      agencyRole: null as string | null,
+      hasActiveAgencyMembership: false,
+      agencyMembershipChecked: true,
+      refreshUser: refreshUserMock,
+    },
+  }
+})
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: replaceMock, push: vi.fn() }),
@@ -47,6 +52,7 @@ let root: Root
 beforeEach(() => {
   localStorage.clear()
   replaceMock.mockClear()
+  refreshUserMock.mockClear()
   authState.user = null
   authState.isAuthenticated = true
   authState.isLoading = false
@@ -133,6 +139,46 @@ describe('ProtectedRoute — agency panel (allowAgencyMembers)', () => {
 
     expect(childMounted()).toBe(true)
     expect(replaceMock).not.toHaveBeenCalled()
+  })
+})
+
+/*
+ * 🔴 Nico, 2026-09-11: «¿por qué me envió para inquilinos y no para
+ * inmobiliaria?». Se le había caído el back. Sin `/users/me`, auth-context
+ * fabrica un usuario de la sesión de Supabase con un rol que nadie confirmó
+ * (`profileSource: 'session'`), y este gate lo leía como un hecho.
+ */
+describe('ProtectedRoute — un perfil degradado NUNCA expulsa', () => {
+  it('con el back caído se queda en el panel: no redirige al portal del inquilino', async () => {
+    authState.user = { role: 'tenant', profileSource: 'session', onboardingCompleted: true }
+    authState.hasActiveAgencyMembership = false
+    authState.agencyMembershipChecked = true
+    await renderPanel()
+
+    expect(replaceMock).not.toHaveBeenCalled()
+    expect(childMounted()).toBe(false)
+    // Y dice la verdad en vez de un «Redirigiendo...» que no va a llegar.
+    expect(container.textContent).toContain('No pudimos confirmar tu sesión')
+    expect(container.querySelector('[data-testid="reintentar-perfil"]')).toBeTruthy()
+  })
+
+  it('«Reintentar ahora» vuelve a pedir el perfil', async () => {
+    authState.user = { role: 'tenant', profileSource: 'session', onboardingCompleted: true }
+    await renderPanel()
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="reintentar-perfil"]')!.click()
+      await Promise.resolve()
+    })
+    expect(refreshUserMock).toHaveBeenCalled()
+  })
+
+  it('un perfil REAL sin permiso sí se redirige — el arreglo no abre la puerta', async () => {
+    authState.user = { role: 'tenant', profileSource: 'backend', onboardingCompleted: true }
+    authState.agencyMembershipChecked = true
+    await renderPanel()
+
+    expect(replaceMock).toHaveBeenCalledWith('/inquilino')
   })
 })
 

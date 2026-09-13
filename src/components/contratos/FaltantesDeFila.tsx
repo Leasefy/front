@@ -25,6 +25,11 @@ import {
   type FilaDeMigracion,
 } from "@/lib/api/contracts.service";
 import { propietariosApi } from "@/lib/api/inmobiliaria.service";
+import {
+  SelectorDeInmueble,
+  olvidarPortafolio,
+  usePortafolioDeLaAgencia,
+} from "./SelectorDeInmueble";
 import type { Propietario } from "@/lib/types/inmobiliaria";
 
 /** El nombre humano de cada faltante, y por qué importa. */
@@ -35,9 +40,21 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
       "La dirección del archivo no coincide con ninguno de tu portafolio. Sin inmueble el contrato no se activa: no tendría consignación ni cobros.",
   },
   inmueble_codigo: {
-    titulo: "El código del inmueble no existe",
+    titulo: "Ese inmueble todavía no está en Leasefy",
+    /*
+     * 🔴 Este texto decía «un código que no existe suele ser el archivo
+     * corrido». Era falso y costó cuatro rondas: Nico abría su Excel, veía el
+     * inmueble con ese código y esa dirección, y el producto le decía que su
+     * archivo estaba mal. Su inmueble de código 3 estaba en la fila 2862 de su
+     * importación, LISTO y sin faltantes — sólo que sin activar.
+     *
+     * La causa más común de verdad es ésa: el inmueble está cargado a medias
+     * (preparado, sin activar) o no se cargó. El aviso de arriba
+     * (`InmueblesSinActivar`) cuenta cuántos son y lleva al botón. Acá se
+     * nombra la causa sin acusar al archivo.
+     */
     porque:
-      "El archivo señala un inmueble por su código y ningún inmueble tuyo lo tiene: o ese inmueble no se cargó, o se cargó sin su «Código». No lo pegamos por la dirección: un código que no existe suele ser el archivo corrido, y pegarlo igual lo dejaría en el inmueble equivocado. Elige el inmueble por la dirección, o créalo.",
+      "El archivo señala el inmueble por su código y ningún inmueble tuyo lo tiene todavía. Casi siempre es que la importación de inmuebles quedó a medias: el inmueble está preparado pero sin activar, o no se subió. No lo pegamos por la dirección cuando el código no existe — pegarlo por parecido lo dejaría en el inmueble equivocado. Actívalo desde Inmuebles, elígelo acá abajo, o créalo.",
   },
   inmueble_ambiguo: {
     titulo: "Hay más de un inmueble con esa dirección",
@@ -315,6 +332,11 @@ function ElegirInmueble({
   const [creando, setCreando] = useState(false);
   const [ciudad, setCiudad] = useState("");
   const direccion = fila.datos.direccion ?? "";
+  /*
+   * El portafolio entero, para elegir a mano. Se pide una vez y lo comparten
+   * todas las filas de la pantalla (ver `usePortafolioDeLaAgencia`).
+   */
+  const portafolio = usePortafolioDeLaAgencia(true);
 
   return (
     <div className="space-y-3">
@@ -362,6 +384,59 @@ function ElegirInmueble({
         </div>
       ) : null}
 
+      {/*
+       * Buscar en TODO el portafolio.
+       *
+       * Los «parecidos» de arriba salen del resolutor y son cinco como mucho,
+       * elegidos por los números de la dirección. Cuando ninguno sirve —el
+       * caso más común: el archivo trae un código que existe en el sistema
+       * viejo pero cuyo inmueble todavía no se cargó— la única salida era
+       * crear el inmueble otra vez, duplicándolo. Esto abre la lista entera.
+       */}
+      <div className="space-y-1.5">
+        <p className="text-xs text-muted-foreground">
+          {fila.candidatos.length > 0
+            ? "¿Ninguno es? Búscalo entre todos tus inmuebles:"
+            : "Búscalo entre todos tus inmuebles:"}
+        </p>
+        <SelectorDeInmueble
+          inmuebles={portafolio.inmuebles}
+          disabled={ocupado || portafolio.cargando}
+          testId={`selector-inmueble-${fila.id}`}
+          onElegir={(i) =>
+            void correr(() =>
+              contractsApi.migracion.resolver(fila.id, { propertyId: i.id }),
+            )
+          }
+        />
+        {portafolio.error ? (
+          <p
+            className="flex flex-wrap items-center gap-2 text-xs text-destructive"
+            data-testid={`portafolio-fallo-${fila.id}`}
+          >
+            {portafolio.error}
+            <Button
+              variant="ghost"
+              size="sm"
+              hideArrow
+              disabled={ocupado || portafolio.cargando}
+              onClick={portafolio.reintentar}
+              data-testid={`portafolio-reintentar-${fila.id}`}
+            >
+              Reintentar
+            </Button>
+            <span className="text-muted-foreground">
+              O créalo desde la dirección del archivo.
+            </span>
+          </p>
+        ) : null}
+        {portafolio.recortado ? (
+          <p className="text-xs text-muted-foreground">
+            La lista muestra los {portafolio.inmuebles.length} más recientes.
+          </p>
+        ) : null}
+      </div>
+
       {creando ? (
         <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-[180px] flex-1">
@@ -380,12 +455,16 @@ function ElegirInmueble({
               const el = document.getElementById(
                 `dir-${fila.id}`,
               ) as HTMLInputElement | null;
-              void correr(() =>
-                contractsApi.migracion.crearInmueble(fila.id, {
+              void correr(async () => {
+                const r = await contractsApi.migracion.crearInmueble(fila.id, {
                   address: el?.value?.trim() || direccion,
                   city: ciudad.trim(),
-                }),
-              );
+                });
+                // El recién creado tiene que aparecer en el desplegable de las
+                // OTRAS filas; si no, alguien lo crearía por segunda vez.
+                olvidarPortafolio();
+                return r;
+              });
             }}
           >
             Crear inmueble

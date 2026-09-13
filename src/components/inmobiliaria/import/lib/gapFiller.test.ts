@@ -191,3 +191,50 @@ describe('mapRowsToProperties — celdas con marcadores de vacío', () => {
     expect(p.monthlyRent).toBeUndefined();
   });
 });
+
+
+describe('mapRowsToProperties — una columna partida en dos (2026-09-11)', () => {
+  const partida = (destinos: [string | null, string | null]) => ({
+    sourceColumn: 'Propiedad',
+    targetField: null,
+    confidence: 1,
+    isManual: true,
+    partes: { destinos },
+  });
+
+  it('«3 - CR 50 127 SUR 61» manda el 3 a código y la dirección limpia a dirección', () => {
+    const [p] = mapRowsToProperties(
+      [{ _rowIndex: 1, Propiedad: '3 - CR 50 127 SUR 61 OF 502' }],
+      [partida(['externalId', 'propertyAddress'])],
+    );
+    expect(p.externalId).toBe('3');
+    expect(p.propertyAddress).toBe('CR 50 127 SUR 61 OF 502');
+  });
+
+  it('la celda que no tiene la forma «dato - texto» va entera a la derecha, sin inventar código', () => {
+    const [p] = mapRowsToProperties(
+      [{ _rowIndex: 1, Propiedad: 'CALLE 130 SUR 52 - 03' }],
+      [partida(['externalId', 'propertyAddress'])],
+    );
+    expect(p.externalId).toBeUndefined();
+    expect(p.propertyAddress).toBe('CALLE 130 SUR 52 - 03');
+  });
+
+  it('«[1] 1.026.148.652 - YISED CARDONA» deja el documento limpio y el nombre solo', () => {
+    const [p] = mapRowsToProperties(
+      [{ _rowIndex: 1, Propiedad: '[1] 1.026.148.652 - YISED CARDONA' }],
+      [{ ...partida(['ownerDocument', 'ownerName']), sourceColumn: 'Propiedad' }],
+    );
+    expect(p.ownerDocument).toBe('1026148652');
+    expect(p.ownerName).toBe('YISED CARDONA');
+  });
+
+  it('una parte sin destino se ignora', () => {
+    const [p] = mapRowsToProperties(
+      [{ _rowIndex: 1, Propiedad: '3 - CR 50 127' }],
+      [partida([null, 'propertyAddress'])],
+    );
+    expect(p.externalId).toBeUndefined();
+    expect(p.propertyAddress).toBe('CR 50 127');
+  });
+});

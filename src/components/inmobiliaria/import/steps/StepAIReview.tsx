@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   CheckCircle,
   Sparkle,
@@ -13,7 +14,9 @@ import { Spinner } from '@/components/ui/spinner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { analyzeProperties, mapRowsToProperties } from '../lib/gapFiller';
 import { recalcularEstado, escribirCampo } from '../lib/requisitosDelBack';
+import { ponerTitulosATodas, sinTitulo as contarSinTitulo } from '../lib/ponerTitulos';
 import { AISuggestionCard } from '../components/AISuggestionCard';
+import { RanuraDelPieSecundaria } from '../ImportWizard';
 import type { ImportStepProps } from '../ImportWizard';
 import type { ImportProperty } from '../lib/importTypes';
 
@@ -201,6 +204,51 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
     });
   };
 
+  /**
+   * Ponerle título a TODAS las que no tienen.
+   *
+   * Nico, 2026-09-10: quien sube 2.864 inmuebles no los va a nombrar uno por
+   * uno. Ninguna inmobiliaria guarda títulos en su sistema —de las 2.895 filas
+   * del archivo real, CERO traen uno—, así que el caso normal no es corregir
+   * un título: es no tener ninguno.
+   *
+   * Toca SÓLO el título. Las demás sugerencias siguen esperando su turno: una
+   * comisión o un canon estimado son otra decisión, y meterlos acá sería
+   * aceptar cosas que la persona no miró.
+   *
+   * Y sólo donde falta: un título que la persona ya escribió no se pisa.
+   */
+  const ranuraDelPie = useContext(RanuraDelPieSecundaria);
+  const sinTitulo = contarSinTitulo(properties);
+
+  const handlePonerTitulosATodas = () => {
+    updateState({ properties: ponerTitulosATodas(properties) });
+  };
+
+  /*
+   * Botón PRIMARIO, no secundario (Nico, 2026-09-11: «debemos dejar claro
+   * que debería aceptar la sugerencia de los títulos»): el título es
+   * obligatorio y es lo primero que se ve en el marketplace, así que mientras
+   * falte en alguna fila ésta es LA acción del paso, y «Siguiente» pasa a
+   * secundario (ver `ImportWizard`).
+   */
+  const botonDeTitulos =
+    sinTitulo > 0 ? (
+      <Button
+        type="button"
+        size="sm"
+        hideArrow
+        onClick={handlePonerTitulosATodas}
+        data-testid="titulos-a-todas"
+        className="gap-2"
+      >
+        <Sparkle className="w-3.5 h-3.5" />
+        {sinTitulo === 1
+          ? 'Ponerle título'
+          : `Ponerles título a las ${sinTitulo.toLocaleString('es-CO')}`}
+      </Button>
+    ) : null;
+
   const handleToggleSelectAll = () => {
     const selectAll = !allSelected;
     updateState({
@@ -324,6 +372,17 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
           </span>
         </div>
 
+        {/*
+          * El mismo botón va también al pie, al lado de «Siguiente». No es
+          * duplicarlo por gusto: en un archivo de 2.864 filas la barra de
+          * arriba queda a media hora de scroll del pie, y la acción tiene que
+          * estar donde la persona está mirando cuando decide seguir.
+          */}
+        {ranuraDelPie && botonDeTitulos
+          ? createPortal(botonDeTitulos, ranuraDelPie)
+          : null}
+        <div className="flex items-center gap-2">
+        {botonDeTitulos}
         {/* Accept all suggestions button */}
         {withSuggestions > 0 && (
           <Button
@@ -337,7 +396,20 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
             Aceptar todas las sugerencias
           </Button>
         )}
+        </div>
       </div>
+
+      {sinTitulo > 0 ? (
+        <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="titulos-por-que">
+          <span className="font-medium text-fg dark:text-white">Recomendado:</span> el título es
+          obligatorio y es lo primero que se ve en el marketplace. Sin él,{' '}
+          {sinTitulo === 1
+            ? 'esa fila entra pendiente'
+            : `esas ${sinTitulo.toLocaleString('es-CO')} entran pendientes`}{' '}
+          y hay que escribirlo una por una. El sugerido se arma con clase + barrio + municipio
+          («Apartamento en Sierra Morena, La Estrella») y lo puedes editar después.
+        </p>
+      ) : null}
 
       {/* Empty state */}
       {properties.length === 0 && (

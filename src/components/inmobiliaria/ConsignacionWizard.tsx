@@ -24,6 +24,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { uploadPropertyPhotos } from '@/lib/api/property-photos';
+import { ubicarDireccion } from '@/lib/inmuebles/ubicar-direccion';
 import { ApiError } from '@/lib/api/client';
 import { TYPE_TO_BACKEND } from '@/lib/api/properties.mapper';
 import { consignacionesApi, propietariosApi } from '@/lib/api/inmobiliaria.service';
@@ -356,6 +357,33 @@ export function ConsignacionWizard({
       // was a live C6 violation on this exact path.
       const isSaleListing = formData.listingType === 'sale';
 
+      /*
+       * 🔴 Nico, 2026-09-12: «que crear el inmueble resuelva su ubicación, en
+       * vez de un recorrido aparte que se puede saltar».
+       *
+       * El buscador de direcciones del paso 2 sólo deja coordenadas si la
+       * persona ELIGE una sugerencia. Quien escribe la dirección y sigue de
+       * largo —que es lo normal cuando ya la sabe de memoria— creaba el
+       * inmueble sin punto en el mapa, y el único lugar donde eso se veía era
+       * la ficha, después, con un «Ubicar en el mapa» que nadie abre.
+       *
+       * Así que se resuelve acá, al crear. Es una búsqueda, con la misma
+       * regla que la importación: si el punto no cae dentro del municipio no
+       * se acepta, y queda el centro del municipio. Nunca lanza y nunca
+       * bloquea la creación.
+       */
+      let latitud = formData.propertyLatitude;
+      let longitud = formData.propertyLongitude;
+      if (latitud == null || longitud == null) {
+        const u = await ubicarDireccion({
+          direccion: formData.propertyAddress,
+          ciudad: formData.propertyCity,
+          departamento: formData.department,
+        });
+        latitud = u.lat;
+        longitud = u.lng;
+      }
+
       const property = await propertiesApi.create({
         title:        formData.propertyTitle ?? '',
         description:  formData.propertyDescription ?? '',
@@ -363,8 +391,8 @@ export function ConsignacionWizard({
         city:         formData.propertyCity ?? '',
         neighborhood: formData.propertyZone ?? '',
         address:      formData.propertyAddress ?? '',
-        latitude:     formData.propertyLatitude,
-        longitude:    formData.propertyLongitude,
+        latitude:     latitud,
+        longitude:    longitud,
         department:   formData.department,
         listingType:  formData.listingType ?? 'rent',
         monthlyRent:  isSaleListing ? null : (formData.monthlyRent ?? 0),

@@ -16,6 +16,8 @@ import {
   CheckCircle,
   Timer,
   Wrench,
+  Car,
+  Mountains,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -37,6 +39,8 @@ const PROPERTY_TYPE_ICONS: Record<Consignacion['propertyType'], React.ElementTyp
   commercial: Storefront,
   office: Briefcase,
   warehouse: Warehouse,
+  parking: Car,
+  land: Mountains,
 };
 
 // Availability status config

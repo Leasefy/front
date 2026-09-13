@@ -53,7 +53,9 @@ function archivosDeCodigo(dir: string, encontrados: string[] = []): string[] {
   return encontrados
 }
 
-describe('la conciliación bancaria en un solo lugar', () => {
+// Lee todo `src` archivo por archivo: bajo la suite completa pasa de los 5 s por
+// defecto y caía «a veces» — en CI y en local. El tiempo no es la prueba.
+describe('la conciliación bancaria en un solo lugar', { timeout: 60_000 }, () => {
   it('nadie enlaza ya a /cobros/extracto-bancario', () => {
     const culpables = archivosDeCodigo(RAIZ)
       // Separadores a '/': `relative` devuelve '\' en Windows y la allowlist

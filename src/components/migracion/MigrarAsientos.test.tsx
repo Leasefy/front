@@ -69,12 +69,12 @@ const INFORME_CON_FALLAS: InformeDeMigracion = {
 let container: HTMLDivElement;
 let root: Root | null = null;
 
-async function pintar() {
+async function pintar(extra: { onIrAComprobantes?: () => void } = {}) {
   container = document.createElement('div');
   document.body.appendChild(container);
   await act(async () => {
     root = createRoot(container);
-    root.render(<MigrarAsientos onAplicado={() => undefined} />);
+    root.render(<MigrarAsientos onAplicado={() => undefined} {...extra} />);
   });
   await act(async () => {});
 }
@@ -96,13 +96,15 @@ async function click(el: Element | null | undefined) {
 }
 
 /** Sube un CSV mínimo por el input oculto del dropzone. */
-async function subirArchivo() {
+async function subirArchivo(
+  archivo?: { rows: Record<string, unknown>[]; headers: string[] },
+) {
   vi.mocked(parseSpreadsheetFile).mockResolvedValue({
-    rows: [
+    rows: archivo?.rows ?? [
       { Fecha: '2026-01-15', Descripcion: 'Apertura', Cuenta: '110505', Debito: '100' },
       { Fecha: '2026-01-15', Descripcion: 'Apertura', Cuenta: '310505', Credito: '100' },
     ],
-    headers: ['Fecha', 'Descripcion', 'Cuenta', 'Debito', 'Credito'],
+    headers: archivo?.headers ?? ['Fecha', 'Descripcion', 'Cuenta', 'Debito', 'Credito'],
     sheetNames: ['Hoja1'],
   } as never);
   const input = q('dropzone-asientos')?.querySelector('input') as HTMLInputElement;
@@ -193,5 +195,83 @@ describe('informe con filas que no se pudieron escribir', () => {
 
     expect(q('informe-asientos')).not.toBeNull();
     expect(q('reintentar-fallas')).toBeNull();
+  });
+});
+
+/*
+ * 🔴 Nico, 2026-09-12, con el export de comprobantes metido en «Subir el
+ * libro diario»: «primero eso no es un feedback de decir que si no el back
+ * rechaza todas las filas, los usuarios ni saben qué es el back; y segundo,
+ * ¿qué es código de cuenta? ¿y por qué no lo trae o qué pasa ahí con eso?».
+ *
+ * No lo traía porque su archivo no puede traerlo. Y la puerta correcta estaba
+ * al lado sin que nada se lo dijera.
+ */
+describe('el archivo en la puerta equivocada', () => {
+  /* Los encabezados REALES de su archivo, leídos de la captura. Las filas son
+     inventadas: el archivo tiene datos de personas de verdad. */
+  const COMPROBANTES = {
+    headers: [
+      'Prefijo', 'Consecutivo', 'Tipo Doc', 'Fecha', 'Concepto', 'Debitos',
+      'Creditos', 'Balance', 'Descuadrado', 'Anulado', '¿Es anticipo?',
+      'Nombre Tercero Anticipo', '¿anticipo aplicado?',
+      'Valor Restante del Anticipo', 'Creado por', 'Fecha creación',
+    ],
+    rows: [
+      { Prefijo: 'CE', Consecutivo: '1', Fecha: '2026-01-15', Concepto: 'Pago', Debitos: '100' },
+    ],
+  };
+
+  it('lo reconoce, explica POR QUÉ no trae código de cuenta, y abre la puerta correcta', async () => {
+    const irAComprobantes = vi.fn();
+
+    await pintar({ onIrAComprobantes: irAComprobantes });
+    await subirArchivo(COMPROBANTES);
+
+    const aviso = q('asientos-archivo-de-comprobantes');
+    expect(aviso).not.toBeNull();
+    expect(aviso!.textContent).toContain('son comprobantes, no el libro diario');
+    // El porqué, no sólo el veredicto.
+    expect(aviso!.textContent).toContain('la cuenta vive en cada línea del asiento');
+    // Y con qué columnas lo dedujo: un veredicto sin evidencia no se discute.
+    expect(aviso!.textContent).toContain('Prefijo');
+
+    await click(q('ir-a-comprobantes'));
+    expect(irAComprobantes).toHaveBeenCalledTimes(1);
+  });
+
+  it('con un libro diario de verdad no dice nada de esto', async () => {
+    await pintar();
+    await subirArchivo();
+
+    expect(q('asientos-archivo-de-comprobantes')).toBeNull();
+    expect(q('asientos-sin-mapear')).toBeNull();
+  });
+
+  /* Que deje de avisar cuando alguien mapea el código de cuenta a mano se
+     prueba sobre `hayQueAvisarDeOtraPuerta`, que es donde vive la decisión:
+     manejar el `Select` de Radix desde happy-dom probaría el mock, no la
+     regla. Ver `que-archivo-contable-es.test.ts`. */
+});
+
+describe('la columna que falta, en idioma de persona', () => {
+  it('🔴 no nombra «el back» y dice qué es la columna y qué pasa sin ella', async () => {
+    await pintar();
+    // Un libro diario al que le falta justo la cuenta.
+    await subirArchivo({
+      headers: ['Fecha', 'Descripcion', 'Debito', 'Credito'],
+      rows: [{ Fecha: '2026-01-15', Descripcion: 'Apertura', Debito: '100' }],
+    });
+
+    const aviso = q('asientos-sin-mapear');
+    expect(aviso).not.toBeNull();
+    const texto = aviso!.textContent!;
+
+    expect(texto).toContain('Código de cuenta');
+    // Qué ES la columna, con su ejemplo.
+    expect(texto).toContain('110505');
+    // Y qué pasa si falta, sin nombrar una pieza interna.
+    expect(texto).toContain('no entraría ninguna fila');
+    expect(texto).not.toContain('back');
   });
 });

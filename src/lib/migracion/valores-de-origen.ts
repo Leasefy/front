@@ -183,19 +183,52 @@ export interface InmuebleDeOrigen {
 /**
  * «3 - CR 50 127 SUR 61 OF 502 ED. PUNTO CENTRO» → código `3` + la dirección.
  *
- * 🔴 Se parte por el PRIMER « - » y nada más. Las direcciones traen guiones
+ * 🔴 Ese número NO es el consecutivo del contrato. Nico, 2026-09-10: «una cosa
+ * es el código que tiene el csv de inmuebles y otro es un consecutivo que tiene
+ * el contrato, que simplemente es el número creciente del archivo». En el
+ * export real las dos cosas viven en columnas distintas —«Consecutivo» va del 1
+ * al 1857 y «Propiedad» empieza por el código del inmueble— y se mapean a
+ * campos distintos (`consecutivoContrato` y `propiedadCodigoYDireccion`).
+ * Confundirlos pegaría cada contrato al inmueble de su número de fila.
+ *
+ * 🔴 Se parte por el PRIMER guion y nada más. Las direcciones traen guiones
  * («126 SUR 42 - 37 AP 504») y partir por el último, o por todos, deja el
  * inmueble en una dirección que no existe.
  *
  * El código tiene que ser sólo dígitos: «CR 50 - 127» no es «código CR 50».
+ *
+ * ── Con y sin espacios alrededor del guion ──────────────────────────────────
+ *
+ * «3 - CR 50» es la forma inequívoca y se acepta siempre. «100-CR 50» es el
+ * mismo dato pegado, y también sale en archivos reales, pero aceptarlo a secas
+ * rompería una dirección como «55-51 CALLE 129» —que empieza por dígitos y
+ * guion sin ser un código—. Por eso la forma pegada sólo cuenta cuando lo que
+ * sigue al guion **empieza por letra**: un código va seguido del nombre de la
+ * vía, nunca de otro número.
+ *
+ * Medido antes de aflojarlo (2026-09-10): la regla no cambia ninguna de las
+ * 1.851 filas del archivo real de contratos, y no inventa un código en ninguna
+ * de las 2.895 direcciones puras del archivo real de inmuebles.
  */
 export function codigoYDireccion(v: unknown): InmuebleDeOrigen {
   const texto = String(v ?? '').replace(/\s+/g, ' ').trim();
   if (!texto) return {};
-  const partido = texto.match(/^(\d+)\s+-\s+(.*)$/);
+
+  // El guion puede venir como «-» o como «–» (medio): un export de Excel
+  // autocorregido trae el segundo y es el mismo separador.
+  const partido = texto.match(/^(\d+)( ?)[-–]( ?)(.*)$/);
   if (!partido) return { direccion: texto };
-  const direccion = partido[2].trim();
-  return { codigo: partido[1], direccion: direccion || undefined };
+
+  const [, codigo, antes, despues, resto] = partido;
+  const conEspacios = antes === ' ' && despues === ' ';
+  if (!conEspacios && !/^[a-zA-ZÀ-ɏ]/.test(resto)) {
+    // «55-51 CALLE 129»: dígitos y guion, pero no es un código — es la
+    // dirección entera.
+    return { direccion: texto };
+  }
+
+  const direccion = resto.trim();
+  return { codigo, direccion: direccion || undefined };
 }
 
 // ── Fechas con hora ─────────────────────────────────────────────────────────

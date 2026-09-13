@@ -15,6 +15,8 @@ import {
   PencilSimple,
   Percent,
   CalendarPlus,
+  Car,
+  Mountains,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { IconButton } from '@leasefy/cadence';
@@ -43,6 +45,8 @@ const PROPERTY_TYPE_ICONS: Record<Consignacion['propertyType'], React.ElementTyp
   commercial: Storefront,
   office: Briefcase,
   warehouse: Warehouse,
+  parking: Car,
+  land: Mountains,
 };
 
 /**

@@ -545,6 +545,16 @@ export interface InformeDeMigracion {
   lote: string;
   total: number;
   aplicados: number;
+  /**
+   * Filas listas que quedaron sin escribir porque se acabó el presupuesto de
+   * la llamada. `0` = la vuelta terminó.
+   *
+   * Opcional: un back anterior al 2026-09-12 no lo manda, y ausente ⇒ 0 ⇒ una
+   * sola vuelta, que es el comportamiento de siempre. Reenviar el mismo lote
+   * es seguro: la idempotencia es por `(lote, clave)` y lo ya escrito vuelve
+   * como «ya migrado».
+   */
+  restantes?: number;
   omitidos: number;
   yaMigrados: number;
   primerNumero: number | null;

@@ -11,9 +11,9 @@
 // canAccess('mensajes', 'view').
 
 import { useState, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { leerRespaldo, etiquetaDeTipo } from '@/lib/inmobiliaria/respaldo';
-import { conRegreso } from '@/lib/nav/ruta-de-regreso';
+import { conRegreso, lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import Link from 'next/link';
 import {
   CaretLeft,
@@ -74,12 +74,42 @@ const CONTRACT_STATUS_BADGE: Record<ContractStatus, ContractBadgeVariant> = {
   cancelled: 'destructive',
 };
 
+/**
+ * A dónde vuelve quien abrió este contrato, y cómo se le dice.
+ *
+ * 🔴 El enlace de arriba decía «Contratos» siempre y llevaba al listado,
+ * viniera de donde viniera. Desde el 2026-09-12 la ficha del inmueble ofrece
+ * «Ver contrato» —el inquilino trae su `contractId`—, así que ese «Volver»
+ * dejaba a alguien parado en una lista de 1.836 filas buscando el inmueble
+ * del que acababa de salir. El origen viaja en `?volver=`, igual que en la
+ * ficha del propietario; `rutaDeRegreso` sólo lo acepta si apunta adentro del
+ * panel.
+ *
+ * En español a secas porque esta pantalla no pasa por i18n: no tiene una sola
+ * llamada a `t()`. Meter la primera acá, para un enlace, dejaría el archivo a
+ * medio camino entre dos convenciones.
+ */
+const LISTA_DE_CONTRATOS = '/panel/inmobiliaria/contratos';
+const VUELVE_A: Record<ReturnType<typeof lugarDeRegreso>, string> = {
+  lista: 'Contratos',
+  contrato: 'Volver al contrato',
+  inmueble: 'Volver al inmueble',
+  cobro: 'Volver a cobros',
+  propietario: 'Volver al propietario',
+  dispersiones: 'Volver a dispersiones',
+  otro: 'Volver',
+};
+
 // ─── Content ─────────────────────────────────────────────────────────────────
 
 function ContratoDetalleContent() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const id = params.id;
+
+  const rutaDeVuelta = rutaDeRegreso(searchParams.get('volver'), LISTA_DE_CONTRATOS);
+  const etiquetaDeVuelta = VUELVE_A[lugarDeRegreso(rutaDeVuelta)];
 
   const { contract, isLoading, error, refetch, setContract } = useContract(id);
   // El respaldo vive en las cláusulas del contrato: es el campo real que
@@ -238,8 +268,8 @@ function ContratoDetalleContent() {
             hideArrow
             className="mb-3 h-auto gap-1 px-0 text-muted-foreground hover:text-foreground hover:no-underline"
           >
-            <Link href="/panel/inmobiliaria/contratos">
-              <CaretLeft className="w-4 h-4" /> Contratos
+            <Link href={rutaDeVuelta}>
+              <CaretLeft className="w-4 h-4" /> {etiquetaDeVuelta}
             </Link>
           </Button>
           {/*

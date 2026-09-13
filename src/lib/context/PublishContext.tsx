@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useCallback, useMemo, useRef, Reac
 import { PropertyDraft, PUBLISH_STEPS, initialPropertyDraft } from '@/lib/types/publish';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { resolvePropertyCoordinates } from '@/lib/constants/map';
+import { ubicarDireccion } from '@/lib/inmuebles/ubicar-direccion';
 
 interface PublishContextTextT {
   // State
@@ -131,10 +132,28 @@ export function PublishProvider({ children }: { children: ReactNode }) {
     setIsSubmitting(true);
     setSubmissionError(null);
     try {
-      // 1. Create property via API
-      // Prefer real geocoded coordinates (AddressAutocomplete); fall back to
-      // the city-center table when the user never picked a suggestion.
-      const coords = resolvePropertyCoordinates(draft);
+      /*
+       * 1. Create property via API.
+       *
+       * 🔴 2026-09-12: acá también se resuelve la ubicación al crear, con la
+       * misma regla del panel (`ubicarDireccion`). Lo que había era la tabla
+       * de 32 ciudades, y es la razón por la que 1.442 inmuebles del
+       * portafolio migrado quedaron sin punto en el mapa: su municipio
+       * —Caldas, La Estrella, Amagá— no estaba en la lista, y no hay lista
+       * que cubra los 1.103 del país.
+       *
+       * Lo que la persona eligió en el buscador manda y ni se vuelve a
+       * buscar; `resolvePropertyCoordinates` sigue siendo eso. La búsqueda es
+       * sólo para quien escribió la dirección y siguió de largo.
+       */
+      const elegidas = resolvePropertyCoordinates(draft);
+      const coords =
+        elegidas.source === 'geocoded'
+          ? elegidas
+          : await ubicarDireccion({ direccion: draft.address, ciudad: draft.city }).then((u) => ({
+              lat: u.lat,
+              lng: u.lng,
+            }));
 
       const created = await propertiesApi.create({
         title: draft.title,

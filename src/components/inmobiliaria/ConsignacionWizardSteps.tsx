@@ -112,6 +112,8 @@ const PROPERTY_TYPES: { value: Consignacion['propertyType']; labelKey: string; i
   { value: 'commercial', labelKey: 'inmobiliaria.consignaciones.propertyType.commercial', icon: '🏪' },
   { value: 'office', labelKey: 'inmobiliaria.consignaciones.propertyType.office', icon: '🏬' },
   { value: 'warehouse', labelKey: 'inmobiliaria.consignaciones.propertyType.warehouse', icon: '🏭' },
+  { value: 'parking', labelKey: 'inmobiliaria.consignaciones.propertyType.parking', icon: '🅿️' },
+  { value: 'land', labelKey: 'inmobiliaria.consignaciones.propertyType.land', icon: '🌄' },
 ];
 
 const MINIMUM_TERMS: { value: number; labelKey: string }[] = [

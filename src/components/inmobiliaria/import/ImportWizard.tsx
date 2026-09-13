@@ -23,12 +23,27 @@ import { StepUploadFile } from './steps/StepUploadFile';
 import { StepColumnMapping } from './steps/StepColumnMapping';
 import { StepAIReview } from './steps/StepAIReview';
 import { StepConfirmImport } from './steps/StepConfirmImport';
+import { RanuraVivaContext } from '@/components/migracion/ranura-viva';
 import { StepSoftwareMigration } from './steps/StepSoftwareMigration';
 import { StepPortalImport } from './steps/StepPortalImport';
 import { StepPasteLinks } from './steps/StepPasteLinks';
 import { TARGET_FIELDS } from './lib/importTypes';
 import type { ImportWizardState } from './lib/importTypes';
 import { lotesParaRetomar } from './lib/lotesParaRetomar';
+import { destinosDe } from './lib/columnaCompuesta';
+import { ponerTitulosATodas, sinTitulo } from './lib/ponerTitulos';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from '@/components/ui/toast';
+import { describirCargaAbierta } from './lib/describirCargaAbierta';
 import {
   inmueblesImportacionApi,
   type EstadoDeLoteInmuebles,
@@ -66,11 +81,22 @@ export interface ImportStepProps {
   /** Adentro del muro de migración: qué hacer en vez de navegar al portafolio. */
   onSalir?: () => void;
   /**
+   * Adentro del muro: pasar al paso de Contratos.
+   *
+   * 🔴 Nico, 2026-09-11, con el lote entero activado en pantalla: «no hay nada
+   * de cómo continuar, cómo pasar de ahí a contratos, no se muestra un cta».
+   * El asistente terminaba su trabajo y no tenía forma de decirlo hacia
+   * afuera: el único callback del muro era `onSalir`, que reinicia. Sin esto,
+   * la única salida era el pie del muro — que no ofrece nada mientras el paso
+   * siga «pendiente» por filas de OTRAS cargas.
+   */
+  onContinuar?: () => void;
+  /**
    * Aviso hacia el muro: `true` mientras corre una operación larga
    * (geocodificar, preparar, activar). Sin esto, el pie del muro ofrecía
    * «Seguir con Contratos» con el «Activando…» todavía girando.
    */
-  onOcupado?: (ocupado: boolean) => void;
+  onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 }
 
 /**
@@ -82,19 +108,54 @@ export interface ImportStepProps {
 export const RanuraDelPie = createContext<HTMLElement | null>(null);
 
 /**
+ * Una SEGUNDA ranura, a la IZQUIERDA de la navegación, para una acción que
+ * acompaña a «Siguiente» sin competir con ella.
+ *
+ * Existe por el título (Nico, 2026-09-10): quien sube 2.864 inmuebles no los
+ * va a nombrar uno por uno, y el botón para ponerles título a todas tiene que
+ * estar donde está mirando — «al lado del de siguiente y arriba también»—, no
+ * escondido en el cuerpo del paso.
+ *
+ * A diferencia de `RanuraDelPie`, ésta vive en TODOS los pasos: el paso decide
+ * si la usa.
+ */
+export const RanuraDelPieSecundaria = createContext<HTMLElement | null>(null);
+
+/**
  * `onSalir`: adentro del muro de migración no hay portafolio al que volver —
  * el muro tapa todo hasta que la migración termine. El muro pasa un callback
  * que reinicia el asistente; sin él (la ruta suelta) se navega como siempre.
  */
 export function ImportWizard({
   onSalir,
+  onContinuar,
   onOcupado,
-}: { onSalir?: () => void; onOcupado?: (ocupado: boolean) => void } = {}) {
+  congelado = false,
+}: {
+  onSalir?: () => void;
+  onContinuar?: () => void;
+  onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
+  /**
+   * El muro dice que hay una operación larga en vuelo y que hay que congelar.
+   *
+   * Lo aplica el asistente y NO el muro porque el `inert` tiene que dejar
+   * afuera la barra de progreso, y sólo acá se sabe dónde está esa barra
+   * dentro de la tarjeta. Ver el `inert` de abajo.
+   */
+  congelado?: boolean;
+} = {}) {
   const router = useRouter();
   const { t } = useI18n();
   const [currentStep, setCurrentStep] = useState(1);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [ranuraDelPie, setRanuraDelPie] = useState<HTMLDivElement | null>(null);
+  const [ranuraSecundaria, setRanuraSecundaria] =
+    useState<HTMLDivElement | null>(null);
+  /*
+   * El nodo VIVO de la tarjeta: adentro, encima del pie, y fuera del `inert`.
+   * Estado y no ref porque el paso sólo puede portalizar cuando ya existe.
+   */
+  const [ranuraViva, setRanuraViva] = useState<HTMLDivElement | null>(null);
   const [wizardState, setWizardState] = useState<ImportWizardState>(INITIAL_STATE);
 
   const updateState = useCallback((partial: Partial<ImportWizardState>) => {
@@ -120,6 +181,31 @@ export function ImportWizard({
     return () => {
       vigente = false;
     };
+  }, []);
+
+  /*
+   * Descartar una carga desde la tarjeta, sin entrar.
+   *
+   * El back rechaza con 409 `LOTE_EN_PROCESO` si el job todavía corre; eso NO
+   * es un fallo de la persona, es «esperá», y se dice tal cual en vez de
+   * reintentar en silencio (mismo criterio que `handleDescartarLote`).
+   */
+  const [descartando, setDescartando] = useState<string | null>(null);
+  const descartarLote = useCallback(async (lote: string) => {
+    setDescartando(lote);
+    try {
+      const r = await inmueblesImportacionApi.descartarLote(lote);
+      setLotesAbiertos((prev) => prev.filter((l) => l.lote !== lote));
+      toast.success('Carga descartada', {
+        description: `${r.descartadas} ${r.descartadas === 1 ? 'fila quedó fuera' : 'filas quedaron fuera'}. Los inmuebles que ya se habían creado no se tocan.`,
+      });
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : 'No pudimos descartar esa carga.',
+      );
+    } finally {
+      setDescartando(null);
+    }
   }, []);
 
   const retomarLote = useCallback(
@@ -206,7 +292,8 @@ export function ImportWizard({
         // alternatives (at least one mapped) is what makes a sale-only
         // import possible; every other required field stays mandatory.
         const mappings = wizardState.columnMappings;
-        const isMapped = (key: string) => mappings.some((m) => m.targetField === key);
+        // Una columna partida en dos cuenta por sus dos partes.
+        const isMapped = (key: string) => mappings.some((m) => destinosDe(m).includes(key));
         const requiredKeys = TARGET_FIELDS.filter((f) => f.required).map((f) => f.key);
         const priceAlternativeOk = isMapped('monthlyRent') || isMapped('salePrice');
         return (
@@ -225,12 +312,41 @@ export function ImportWizard({
     }
   }, [pasoActual, wizardState]);
 
+  /*
+   * Títulos que faltan al salir de la revisión. El título es obligatorio y es
+   * lo primero que se ve en el marketplace: sin él cada fila entra PENDIENTE.
+   * Mientras falte en alguna, «Ponerles título» es la acción primaria del pie
+   * y «Siguiente» pregunta antes de seguir (Nico, 2026-09-11: «debemos dejar
+   * claro que debería aceptar la sugerencia de los títulos»).
+   */
+  const titulosPendientes = pasoActual === 4 ? sinTitulo(wizardState.properties) : 0;
+  const [preguntarPorTitulos, setPreguntarPorTitulos] = useState(false);
+
   // Navigation handlers
-  const goToNextStep = useCallback(() => {
+  const avanzar = useCallback(() => {
     if (currentStep < visibleSteps.length && isStepValid) {
       setCurrentStep((prev) => prev + 1);
     }
   }, [currentStep, isStepValid, visibleSteps.length]);
+
+  const goToNextStep = useCallback(() => {
+    if (titulosPendientes > 0) {
+      setPreguntarPorTitulos(true);
+      return;
+    }
+    avanzar();
+  }, [titulosPendientes, avanzar]);
+
+  const seguirConTitulos = useCallback(() => {
+    updateState({ properties: ponerTitulosATodas(wizardState.properties) });
+    setPreguntarPorTitulos(false);
+    avanzar();
+  }, [wizardState.properties, updateState, avanzar]);
+
+  const seguirSinTitulos = useCallback(() => {
+    setPreguntarPorTitulos(false);
+    avanzar();
+  }, [avanzar]);
 
   // Salir de la revisión hacia atrás descarta el análisis para que se rehaga
   // con lo que la persona vaya a cambiar. Con «Desde enlaces» NO: ahí las
@@ -286,6 +402,7 @@ export function ImportWizard({
       state: wizardState,
       updateState,
       onSalir,
+      onContinuar,
       onOcupado,
     };
 
@@ -316,34 +433,108 @@ export function ImportWizard({
           data-testid="lotes-inmuebles-abiertos"
         >
           <p className="text-sm font-medium text-fg">
-            Tienes una importación sin terminar
+            {lotesAbiertos.length === 1
+              ? 'Tienes una importación sin terminar'
+              : `Tienes ${lotesAbiertos.length} importaciones sin terminar`}
           </p>
-          {lotesAbiertos.map((l) => (
+          {/*
+           * 🔴 «¿Cuál de esos retomo?» (Nico, 2026-09-11, con cinco cargas en
+           * pantalla). No podía saberlo: las cinco eran del MISMO archivo, así
+           * que las cinco líneas empezaban con «2864 inmuebles» y se
+           * diferenciaban en dos conteos sin contexto.
+           *
+           * Ahora cada fila dice cuándo se subió, cuántos inmuebles entraron
+           * por ella, y —lo que de verdad decide— si frena el paso. Sólo las
+           * filas LISTO lo frenan: una carga con 2.864 «por revisar» y cero
+           * listas no frena nada, y hasta hoy se veía igual de alarmante que
+           * una que sí.
+           */}
+          {lotesAbiertos.map((l) => {
+            const d = describirCargaAbierta(l, new Date());
+            return (
             <div
               key={l.lote}
               className="flex flex-wrap items-center justify-between gap-2"
+              data-testid={`carga-${l.lote}`}
             >
-              <p className="text-sm text-fg-muted">
-                <span className="font-mono tabular-nums">{l.total}</span>{' '}
-                {l.total === 1 ? 'inmueble' : 'inmuebles'}
-                {l.estado === 'LISTO' ? (
-                  <>
-                    {' · '}
-                    <span className="font-mono tabular-nums">{l.pendientes}</span> por
-                    revisar
-                    {' · '}
-                    <span className="font-mono tabular-nums">{l.listos}</span> listos para
-                    activar
-                  </>
-                ) : (
-                  <> · todavía procesándose</>
-                )}
-              </p>
-              <Button size="sm" hideArrow onClick={() => retomarLote(l)}>
-                Retomar
-              </Button>
+              <div className="min-w-0">
+                <p className="text-sm text-fg">
+                  {d.cuando ? <span className="font-medium">{d.cuando}</span> : null}
+                  {d.cuando && d.yaEntraron > 0 ? ' · ' : null}
+                  {d.yaEntraron > 0 ? (
+                    <>
+                      <span className="font-mono tabular-nums">{d.yaEntraron}</span> ya
+                      en tu portafolio
+                    </>
+                  ) : null}
+                </p>
+                <p className="text-sm text-fg-muted">
+                  {d.queHacer === 'procesando' ? (
+                    'Todavía procesándose'
+                  ) : d.queHacer === 'frena' ? (
+                    <>
+                      <span className="font-mono tabular-nums">{d.frena}</span> listos
+                      sin activar — <span className="text-warning">frenan este paso</span>
+                      {d.porRevisar > 0 ? (
+                        <>
+                          {' · '}
+                          <span className="font-mono tabular-nums">{d.porRevisar}</span>{' '}
+                          por revisar
+                        </>
+                      ) : null}
+                    </>
+                  ) : d.queHacer === 'terminada' ? (
+                    <>
+                      Sin nada que activar
+                      {d.porRevisar > 0 ? (
+                        <>
+                          {' · '}
+                          <span className="font-mono tabular-nums">{d.porRevisar}</span>{' '}
+                          por revisar, no frenan
+                        </>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-mono tabular-nums">{d.porRevisar}</span> por
+                      revisar · no frenan este paso
+                    </>
+                  )}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {/*
+                 * 🔴 DESCARTAR SIN TENER QUE ENTRAR.
+                 *
+                 * Una carga abandonada frena el paso entero del muro
+                 * —cualquier fila LISTO lo deja «pendiente»— y hasta hoy la
+                 * única forma de sacarla del medio era retomarla, esperar a
+                 * que cargara la revisión y buscar «Descartar lote completo»
+                 * adentro. Con cuatro cargas viejas encima, eso son cuatro
+                 * viajes para tirar algo que ya se decidió tirar (Nico,
+                 * 2026-09-11).
+                 *
+                 * Va en `ghost` y a la izquierda del primario: descartar es
+                 * destructivo y no puede competir por el clic con «Retomar».
+                 */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  hideArrow
+                  disabled={descartando === l.lote || l.estado !== 'LISTO'}
+                  isLoading={descartando === l.lote}
+                  data-testid={`descartar-${l.lote}`}
+                  onClick={() => void descartarLote(l.lote)}
+                >
+                  Descartar
+                </Button>
+                <Button size="sm" hideArrow onClick={() => retomarLote(l)}>
+                  Retomar
+                </Button>
+              </div>
             </div>
-          ))}
+            );
+          })}
           <p className="text-xs text-fg-subtle">
             Si en cambio subes el mismo archivo de nuevo, los inmuebles se duplican.
           </p>
@@ -442,27 +633,66 @@ export function ImportWizard({
 
       {/* Step Content */}
       <div className="bg-surface dark:bg-bg rounded-lg border border-border dark:border-border-strong">
-        <div className="p-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
+        <RanuraVivaContext.Provider value={ranuraViva}>
+          <div className="p-6 space-y-6">
+            {/*
+             * 🔴 El `inert` va ACÁ, no en el muro.
+             *
+             * El muro lo ponía sobre TODO el paso, y como `inert` no se puede
+             * desactivar en un descendiente, la barra de progreso de la
+             * geocodificación se quedaba sin botón para parar —53 minutos sobre
+             * 2.864 inmuebles—. La primera salida fue mandar el botón al pie
+             * del muro; la segunda, sacar la barra entera a un nodo de afuera.
+             * Las dos funcionaban y las dos se veían mal: el control lejos de
+             * lo que controla, o la barra flotando fuera de la tarjeta (Nico,
+             * 2026-09-10: «ahí afuera se ve horrible»).
+             *
+             * Acá adentro el asistente conoce su propia tarjeta, así que puede
+             * congelar el cuerpo del paso y dejar viva —EN SU SITIO, encima del
+             * pie— la ranura de abajo.
+             */}
+            <div
+              data-testid="paso-congelado"
+              {...(congelado
+                ? ({ inert: "" } as unknown as Record<string, string>)
+                : {})}
+              className={congelado ? "cursor-progress" : undefined}
             >
-              <RanuraDelPie.Provider value={ranuraDelPie}>
-                {renderStepContent()}
-              </RanuraDelPie.Provider>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentStep}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <RanuraDelPieSecundaria.Provider value={ranuraSecundaria}>
+                  <RanuraDelPie.Provider value={ranuraDelPie}>
+                    {renderStepContent()}
+                  </RanuraDelPie.Provider>
+                  </RanuraDelPieSecundaria.Provider>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/*
+             * La ranura viva: dentro de la tarjeta, encima del pie, y FUERA del
+             * `inert` de arriba. Acá el paso portaliza lo que tiene que seguir
+             * funcionando mientras todo lo demás está congelado — hoy, la barra
+             * de la geocodificación con su botón de parar.
+             */}
+            <div ref={setRanuraViva} data-testid="ranura-viva" />
+          </div>
+        </RanuraVivaContext.Provider>
 
         {/* Footer Navigation — hidden when import is complete */}
         {!(pasoActual === 5 && wizardState.importedCount > 0) && (
-          // El pie tiene fondo propio: sin `rounded-b-xl` pinta por encima de
-          // las esquinas del card y las dos de abajo quedan cuadradas.
-          <div className="px-6 py-4 rounded-b-xl border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-bg flex items-center justify-between">
+          // El pie tiene fondo propio, así que necesita el MISMO radio abajo
+          // que la tarjeta (`rounded-lg`, línea 460). Estuvo en `rounded-b-xl`
+          // —más redondo que la tarjeta— y en las dos esquinas de abajo asomaba
+          // el fondo: dos medias lunas blancas. Si el radio de la tarjeta
+          // cambia, éste cambia con ella.
+          <div className="px-6 py-4 rounded-b-lg border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-bg flex items-center justify-between">
             {/* Cancel Button */}
             <Button
               type="button"
@@ -475,6 +705,8 @@ export function ImportWizard({
 
             {/* Navigation Buttons */}
             <div className="flex items-center gap-3">
+              {/* Acción que acompaña a «Siguiente» — la llena el paso. */}
+              <div ref={setRanuraSecundaria} className="flex items-center" />
               {currentStep > 1 && (
                 <Button
                   type="button"
@@ -502,9 +734,14 @@ export function ImportWizard({
                 <Button
                   type="button"
                   hideArrow
+                  // Con títulos pendientes la acción primaria es ponérselos
+                  // (el paso la pone en la ranura de al lado): «Siguiente»
+                  // cede el color.
+                  variant={titulosPendientes > 0 ? 'outline' : undefined}
                   onClick={goToNextStep}
                   disabled={!isStepValid}
                   className="gap-2"
+                  data-testid="wizard-siguiente"
                 >
                   {t('inmobiliaria.import.wizard.next')}
                   <CaretRight className="w-4 h-4" />
@@ -572,6 +809,43 @@ export function ImportWizard({
           </motion.div>
         )}
       </AnimatePresence>
+      <AlertDialog open={preguntarPorTitulos} onOpenChange={setPreguntarPorTitulos}>
+        <AlertDialogContent data-testid="dialogo-titulos">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {titulosPendientes === 1
+                ? '1 inmueble sin título'
+                : `${titulosPendientes.toLocaleString('es-CO')} inmuebles sin título`}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-left">
+              <span className="block">
+                El título es obligatorio y es lo primero que se ve en el marketplace. Sin él,{' '}
+                {titulosPendientes === 1 ? 'esa fila entra pendiente' : 'esas filas entran pendientes'} y
+                hay que escribirlo una por una.
+              </span>
+              <span className="block">
+                El sugerido se arma con clase + barrio + municipio («Apartamento en Sierra Morena,
+                La Estrella») y lo puedes editar después, en cada inmueble.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Volver</AlertDialogCancel>
+            <Button type="button" variant="outline" hideArrow onClick={seguirSinTitulos} data-testid="seguir-sin-titulo">
+              Seguir sin título
+            </Button>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                seguirConTitulos();
+              }}
+              data-testid="poner-titulos-y-seguir"
+            >
+              Ponerles título y seguir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

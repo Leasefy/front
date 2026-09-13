@@ -311,6 +311,8 @@ export interface ContractSignedPdf {
 /** PATCH /contracts/:id — landlord edits terms and/or swaps PDF. Any edit invalidates landlord signature. */
 export interface UpdateContractDto {
   startDate?: string;
+  /** Desde cuándo se COBRA. Ausente = se usa `startDate`. */
+  fechaDeCartera?: string;
   endDate?: string;
   monthlyRent?: number;
   deposit?: number;

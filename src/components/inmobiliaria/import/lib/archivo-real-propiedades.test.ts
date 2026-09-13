@@ -161,11 +161,20 @@ describe('Propiedades.csv: los valores', () => {
     expect(tipos).toEqual(['apartment', 'studio', 'commercial', 'house', 'house', 'house']);
   });
 
-  it('«Celda Parqueadero» no se fuerza a ningún tipo: llega cruda y la revisión la pide', () => {
-    const [celda] = analyzeProperties(
-      mapRowsToProperties([{ ...FILA_INVENTADA, Clase: 'Celda Parqueadero' }], mapeo),
+  it('«Celda Parqueadero» es un parqueadero y «Lote» un lote (tipos desde el 2026-09-11); «Edificio» sigue crudo y la revisión lo pide', () => {
+    const [celda, lote, edificio] = analyzeProperties(
+      mapRowsToProperties(
+        [
+          { ...FILA_INVENTADA, Clase: 'Celda Parqueadero' },
+          { ...FILA_INVENTADA, Clase: 'Lote' },
+          { ...FILA_INVENTADA, Clase: 'Edificio' },
+        ],
+        mapeo,
+      ),
     );
-    expect(celda.propertyType).toBe('Celda Parqueadero');
+    expect(celda.propertyType).toBe('parking');
+    expect(lote.propertyType).toBe('land');
+    expect(edificio.propertyType).toBe('Edificio');
   });
 
   it('un estrato que no es un número queda vacío, no en 1', () => {

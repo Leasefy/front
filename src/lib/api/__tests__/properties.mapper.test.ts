@@ -34,6 +34,8 @@ describe('TYPE_TO_BACKEND', () => {
       commercial: 'COMMERCIAL',
       office: 'OFFICE',
       warehouse: 'WAREHOUSE',
+      parking: 'PARKING',
+      land: 'LAND',
     });
   });
 

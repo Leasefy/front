@@ -76,7 +76,9 @@ function tienePagina(href: string): boolean {
   return buscar(APP, 0);
 }
 
-describe('arquitectura del panel — rutas', () => {
+// Recorre todo `src` (grep + readdir): bajo la suite completa pasa de los 5 s
+// por defecto y caía «a veces» — en CI y en local. El tiempo no es la prueba.
+describe('arquitectura del panel — rutas', { timeout: 60_000 }, () => {
   it.each(pantallas.map((p) => [p.href] as const))('%s tiene su page.tsx', (href) => {
     expect(tienePagina(href), `falta ${href.replace(PANEL, '')}/page.tsx`).toBe(true);
   });

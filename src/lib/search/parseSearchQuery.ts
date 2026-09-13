@@ -43,6 +43,8 @@ const typePatterns: Record<PropertyType, RegExp> = {
   commercial: /\b(local\s*comercial|local)\b/i,
   office: /\b(oficina)\b/i,
   warehouse: /\b(bodega)\b/i,
+  parking: /\b(parqueadero|garaje|celda)\b/i,
+  land: /\b(lote|terreno)\b/i,
 };
 
 // Amenity patterns mapping to amenity IDs
@@ -254,6 +256,8 @@ export function generateFilterDescription(filters: {
       commercial: 'Local comercial',
       office: 'Oficina',
       warehouse: 'Bodega',
+      parking: 'Parqueadero',
+      land: 'Lote',
     };
     parts.push(typeNames[filters.propertyType]);
   }

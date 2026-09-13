@@ -317,7 +317,13 @@ describe('tipoDeInmueble', () => {
   });
 
   it('devuelve undefined cuando no reconoce el tipo', () => {
-    expect(tipoDeInmueble('Lote en la vereda')).toBeUndefined();
+    // «Lote» fue el ejemplo hasta el 2026-09-11; hoy es un tipo real (`land`).
+    expect(tipoDeInmueble('Castillo en la vereda')).toBeUndefined();
+  });
+
+  it('un lote y un parqueadero sí se reconocen (2026-09-11)', () => {
+    expect(tipoDeInmueble('Lote en la vereda')).toBe('land');
+    expect(tipoDeInmueble('Parqueadero cubierto en El Poblado')).toBe('parking');
   });
 });
 

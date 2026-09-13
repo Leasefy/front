@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Banner } from '@leasefy/cadence';
-import { CheckCircle, Sparkle } from '@phosphor-icons/react';
+import { CheckCircle, Sparkle, Warning } from '@phosphor-icons/react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -37,9 +37,31 @@ import {
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { SelectorDeCuenta } from '../SelectorDeCuenta';
 import { useCuentas } from '../use-cuentas';
-import { NOMBRE_DEL_LADO, eventosSembrables, loQueNoSeAsienta } from './mapeo';
+import { NOMBRE_DEL_LADO, eventosSembrables, eventosSinCuenta, loQueNoSeAsienta } from './mapeo';
 
-export function MapeoContable() {
+/** Cómo va el mapeo, para quien lo tiene adentro. Ver `onEstado`. */
+export interface EstadoDelMapeo {
+  completo: boolean;
+  /** Eventos sin cuenta: lo que falta para que el paso 5 quede hecho. */
+  faltan: number;
+  /** Cuántos eventos hay en total, para poder decir «6 de 9». */
+  total: number;
+}
+
+export function MapeoContable({
+  onEstado,
+}: {
+  /**
+   * 🔴 Se avisa hacia afuera porque el PASO depende de esto, no sólo la tabla.
+   *
+   * El muro da el paso 5 por hecho cuando hay cuentas Y cada asiento
+   * automático tiene la suya. El bloque de «Continuar al paso 6» miraba sólo
+   * lo primero, así que con 2.790 cuentas y 6 eventos sin asignar ofrecía
+   * seguir — y el paso 6 contestaba «primero termina Cuentas del PUC». Nico,
+   * 2026-09-12: «le di continuar al paso 6 y no pasa al paso 6, se queda ahí».
+   */
+  onEstado?: (estado: EstadoDelMapeo) => void;
+} = {}) {
   const [mapeo, setMapeo] = useState<Mapeo | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<unknown>(null);
@@ -103,6 +125,19 @@ export function MapeoContable() {
 
   const sembrables = useMemo(() => (mapeo ? eventosSembrables(mapeo) : []), [mapeo]);
   const apagados = useMemo(() => (mapeo ? loQueNoSeAsienta(mapeo.faltantes) : []), [mapeo]);
+  const sinCuenta = useMemo(() => (mapeo ? eventosSinCuenta(mapeo) : []), [mapeo]);
+
+  // Cada vez que el mapeo cambia —al cargar, al guardar una fila, al sembrar—
+  // el de afuera se entera. Sin esto, el bloque de «Continuar» de la pantalla
+  // del PUC sólo se enteraría al recargar.
+  useEffect(() => {
+    if (!mapeo) return;
+    onEstado?.({
+      completo: mapeo.completo,
+      faltan: sinCuenta.length,
+      total: mapeo.eventos.length,
+    });
+  }, [mapeo, sinCuenta, onEstado]);
 
   // Los eventos son pocos y fijos, pero el pie va igual: dice cuántos son y
   // deja elegir cuántos ver, que es lo que hace que una tabla se lea como
@@ -177,8 +212,21 @@ export function MapeoContable() {
           pagados se asientan solos.
         </Banner>
       ) : (
-        <Banner variant="warning" title="Sin una cuenta en un evento, ese asiento no se genera">
+        <Banner
+          variant="warning"
+          title={
+            /* 🔴 «Hay que dar feedback porque no se entiende nada» (Nico,
+               2026-09-12). El título decía la consecuencia y nunca el trabajo:
+               cuántas faltan, de cuántas, y que de eso depende seguir. */
+            `Faltan ${sinCuenta.length} de ${mapeo.eventos.length}: sin cuenta, ese asiento no se genera`
+          }
+        >
           <div className="space-y-3">
+            <p data-testid="mapeo-que-hacer">
+              Elige una cuenta en cada fila que diga «Sin cuenta». Mientras
+              quede una sin asignar, el paso no queda hecho y los registros
+              contables siguen en espera.
+            </p>
             {apagados.length > 0 && (
               <p>
                 Hoy quedan sin asiento automático: {apagados.join('; ')}. Lo que se quede sin
@@ -261,9 +309,19 @@ export function MapeoContable() {
                       placeholder="Sin cuenta: este asiento no se genera"
                       className="w-full"
                     />
+                    {/* El estado de la fila se dice SIEMPRE, no sólo cuando
+                        está bien: nueve filas donde el único indicio de lo que
+                        falta era la ausencia de un check verde se leían como
+                        nueve filas iguales. */}
                     {e.cuenta ? (
                       <CheckCircle className="h-4 w-4 shrink-0 text-success" aria-label="Con cuenta" />
-                    ) : null}
+                    ) : (
+                      <Warning
+                        className="h-4 w-4 shrink-0 text-warning"
+                        aria-label="Falta la cuenta"
+                        data-testid={`falta-${e.evento}`}
+                      />
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>

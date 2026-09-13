@@ -41,6 +41,7 @@ import { cn } from '@/lib/utils';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { PROPERTY_PHOTO_MAX_COUNT } from '@/lib/api/property-photos';
 import { SubidaDeFotos, filtrarFotos } from '@/components/inmobiliaria/inmueble/SubidaDeFotos';
+import { FotosDesdeEnlace } from '@/components/inmobiliaria/inmueble/FotosDesdeEnlace';
 
 interface Imagen {
   id: string;
@@ -264,6 +265,12 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
               ficha o las que tomó el agente.
             </p>
             <SubidaDeFotos variante="grande" cupo={cupo} maximo={PROPERTY_PHOTO_MAX_COUNT} onArchivos={(a) => void subir(a)} aceptarPegado />
+            {/* 🔴 La tercera forma de traerlas, y la que menos trabajo cuesta
+                cuando el inmueble YA está publicado (Nico, 2026-09-12). Va
+                debajo de la zona de arrastre, no en vez de ella: la mayoría
+                de las veces las fotos están en el computador. */}
+            <SeparadorDeEnlace />
+            <FotosDesdeEnlace cupo={cupo} onArchivos={(a) => void subir(a)} disabled={subiendo} />
           </div>
         ) : (
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4" data-testid="fotos-galeria">
@@ -339,6 +346,15 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
           </ul>
         )}
 
+        {/* Con galería ya armada el enlace va debajo de la grilla: la
+            tarjeta de «Agregar fotos» es para una o dos sueltas, y traer un
+            aviso entero es otra intención. */}
+        {!cargando && !error && imagenes.length > 0 && cupo > 0 && (
+          <div className="mt-4">
+            <FotosDesdeEnlace cupo={cupo} onArchivos={(a) => void subir(a)} disabled={subiendo} />
+          </div>
+        )}
+
         {!cargando && !error && imagenes.length > 0 && (
           <p className="text-xs text-fg-muted">
             {cupo > 0
@@ -370,5 +386,18 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
         </AlertDialogContent>
       </AlertDialog>
     </section>
+  );
+}
+
+/** Un «o» entre las dos formas de traer fotos, para que no se lean como una. */
+function SeparadorDeEnlace() {
+  return (
+    <div className="flex items-center gap-3" aria-hidden>
+      <span className="h-px flex-1 bg-border-faint" />
+      <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-fg-subtle">
+        o tráelas del aviso
+      </span>
+      <span className="h-px flex-1 bg-border-faint" />
+    </div>
   );
 }

@@ -150,6 +150,8 @@ export const CASOS_REALES: Array<[string, CampoDeContrato | null]> = [
   ['Depósito de garantía', 'deposito'],
 
   // ── Cobro ────────────────────────────────────────────────────────────────
+  ['Fecha de Cartera', 'fechaDeCartera'],
+  ['Inicio de Cartera', 'fechaDeCartera'],
   ['Día de pago', 'diaDePago'],
   ['Dia pago', 'diaDePago'],
   ['DIA DE PAGO', 'diaDePago'],
@@ -267,6 +269,7 @@ describe('la tabla de encabezados reales', () => {
         'estadoContrato',
         'estratoInmueble',
         'fechaCreacionOrigen',
+        'fechaDeCartera',
         'fechaFin',
         'fechaInicio',
         'inquilinoCorreo',

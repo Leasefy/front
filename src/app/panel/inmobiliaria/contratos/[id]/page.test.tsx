@@ -26,9 +26,16 @@ const { useContractMock, permisos } = vi.hoisted(() => ({
   permisos: { puede: false },
 }))
 
+const { paramsDeBusqueda } = vi.hoisted(() => ({
+  // Mutable para que un caso pueda entrar «desde» otra pantalla. Sin `volver`
+  // el enlace de arriba sigue diciendo «Contratos», como siempre.
+  paramsDeBusqueda: { valor: new URLSearchParams() },
+}))
+
 vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'contract-1' }),
   useRouter: () => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }),
+  useSearchParams: () => paramsDeBusqueda.valor,
 }))
 
 vi.mock('@/components/auth/PageGuard', () => ({
@@ -178,6 +185,54 @@ async function renderPage() {
     root.render(React.createElement(ContratoDetallePage))
   })
 }
+
+/**
+ * 🔴 2026-09-12. La ficha del inmueble ahora ofrece «Ver contrato» —el
+ * inquilino trae su `contractId`—, así que a esta pantalla se llega desde dos
+ * lugares. El «Volver» de arriba decía «Contratos» y llevaba al listado
+ * viniera de donde viniera: quien entraba desde un inmueble quedaba parado en
+ * una lista de 1.836 filas buscando de dónde había salido.
+ */
+describe('ContratoDetallePage — a dónde vuelve', () => {
+  const enlaceDeVuelta = () =>
+    [...container.querySelectorAll('a')].find((a) =>
+      a.textContent?.trim().startsWith('Volver') || a.textContent?.trim() === 'Contratos',
+    )
+
+  it('sin «volver» sigue llevando al listado, como siempre', async () => {
+    paramsDeBusqueda.valor = new URLSearchParams()
+    withContract(contract({ code: 14 }))
+
+    await renderPage()
+
+    const a = enlaceDeVuelta()
+    expect(a?.getAttribute('href')).toBe('/panel/inmobiliaria/contratos')
+    expect(a?.textContent).toContain('Contratos')
+  })
+
+  it('🔴 quien vino del inmueble vuelve al inmueble, y el enlace lo dice', async () => {
+    paramsDeBusqueda.valor = new URLSearchParams({
+      volver: '/panel/inmobiliaria/inmuebles/consig-1',
+    })
+    withContract(contract({ code: 14 }))
+
+    await renderPage()
+
+    const a = enlaceDeVuelta()
+    expect(a?.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles/consig-1')
+    expect(a?.textContent).toContain('Volver al inmueble')
+  })
+
+  /* Un «volver» que sale del panel es un open redirect con otro nombre. */
+  it('un destino de afuera se ignora', async () => {
+    paramsDeBusqueda.valor = new URLSearchParams({ volver: 'https://otro-sitio.com' })
+    withContract(contract({ code: 14 }))
+
+    await renderPage()
+
+    expect(enlaceDeVuelta()?.getAttribute('href')).toBe('/panel/inmobiliaria/contratos')
+  })
+})
 
 describe('ContratoDetallePage — the header identifier', () => {
   /*

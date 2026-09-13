@@ -1,18 +1,29 @@
 /**
- * geocodeImportRow — resolves coordinates for one imported property row.
+ * geocodeImportRow — la ubicación de UNA fila del portafolio que se importa.
  *
- * Takes the FIRST LocationIQ autocomplete result for the row's address.
- * When the address is empty, the geocode call throws, or it returns no
- * results, falls back to the city center (resolvePropertyCoordinates) so a
- * single bad address never blocks the bulk import.
+ * Es una envoltura fina sobre `ubicarDireccion`, que es donde vive la regla y
+ * el porqué. Acá sólo se traduce el vocabulario de la importación
+ * (`propertyAddress`, `propertyCity`) y su forma de resultado.
+ *
+ * 🔴 Lo que había antes, y lo que costó (2026-09-12, sobre los 2.824
+ * inmuebles reales de Nico): esto mandaba la dirección CRUDA, se quedaba con
+ * el primer resultado y no miraba dónde había caído. 548 inmuebles quedaron
+ * pinchados en otro departamento —uno de Amagá en Santa Marta, a 618 km— y
+ * otros 1.442 sin punto, porque la red de seguridad era una tabla de 32
+ * ciudades y ninguno de sus municipios estaba en ella.
+ *
+ * La correspondencia con `Ubicacion` es directa, y el vocabulario viejo se
+ * mantiene porque `StepConfirmImport` cuenta con él para avisar cuántas filas
+ * quedaron sin dirección exacta:
+ *
+ *   `direccion` → 'geocoded' · `municipio` → 'city' · `ninguna` → 'none'
  */
 
-import { geocodeApi } from '@/lib/api/geocode.service';
-import { resolvePropertyCoordinates } from '@/lib/constants/map';
+import { ubicarDireccion, ESPERA_ENTRE_BUSQUEDAS_MS } from '@/lib/inmuebles/ubicar-direccion';
 import type { ImportProperty } from './importTypes';
 
-/** ~2 req/sec ceiling to stay within LocationIQ's rate limit during bulk import. */
-export const GEOCODE_ROW_DELAY_MS = 550;
+/** ~2 req/sec, el techo de LocationIQ. Vive con la regla, no acá. */
+export const GEOCODE_ROW_DELAY_MS = ESPERA_ENTRE_BUSQUEDAS_MS;
 
 export interface GeocodeRowResult {
   lat?: number;
@@ -21,23 +32,18 @@ export interface GeocodeRowResult {
 }
 
 export async function geocodeImportRow(
-  p: Pick<ImportProperty, 'propertyAddress' | 'propertyCity'>,
+  p: Pick<ImportProperty, 'propertyAddress' | 'propertyCity' | 'propertyDepartment'>,
 ): Promise<GeocodeRowResult> {
-  const address = p.propertyAddress?.trim();
+  const u = await ubicarDireccion({
+    direccion: p.propertyAddress,
+    ciudad: p.propertyCity,
+    // El departamento es lo que distingue a Rionegro (Antioquia) de Rionegro
+    // (Santander): el portafolio real tiene inmuebles en los dos.
+    departamento: p.propertyDepartment,
+  });
 
-  if (address) {
-    try {
-      const results = await geocodeApi.autocomplete(address);
-      const first = results[0];
-      if (first) {
-        return { lat: first.lat, lng: first.lon, source: 'geocoded' };
-      }
-    } catch {
-      // Fall through to the city-center fallback — a geocoding failure must
-      // never block the import.
-    }
-  }
+  const source =
+    u.precision === 'direccion' ? 'geocoded' : u.precision === 'municipio' ? 'city' : 'none';
 
-  const fallback = resolvePropertyCoordinates({ city: p.propertyCity ?? '' });
-  return { lat: fallback.lat, lng: fallback.lng, source: fallback.source };
+  return { lat: u.lat, lng: u.lng, source };
 }

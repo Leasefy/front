@@ -312,6 +312,8 @@ const TIPOS: { clave: string; terminos: string[] }[] = [
   { clave: 'commercial', terminos: ['local comercial', 'local', 'commercial'] },
   { clave: 'office', terminos: ['oficina', 'office', 'consultorio'] },
   { clave: 'warehouse', terminos: ['bodega', 'warehouse', 'galpon'] },
+  { clave: 'parking', terminos: ['parqueadero', 'garaje', 'parking'] },
+  { clave: 'land', terminos: ['lote', 'terreno', 'land'] },
 ];
 
 /**

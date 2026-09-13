@@ -45,6 +45,8 @@ const TIPOS = [
   { value: 'commercial', label: 'Local comercial' },
   { value: 'office', label: 'Oficina' },
   { value: 'warehouse', label: 'Bodega' },
+  { value: 'parking', label: 'Parqueadero' },
+  { value: 'land', label: 'Lote' },
 ];
 
 interface FilaImportacionRowProps {

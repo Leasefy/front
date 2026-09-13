@@ -3,12 +3,14 @@
 
 import type { ImportProperty, AISuggestion, ParsedRow, ColumnMapping } from './importTypes';
 import { tipoEfectivo } from './requisitosDelBack';
+import { tituloSugerido } from './tituloSugerido';
 import { cleanNumericValue } from './valorNumerico';
 import {
   documentoYNombre,
   estratoDePalabras,
   fechaDeOrigen,
 } from '@/lib/migracion/valores-de-origen';
+import { normalizarParte, partirCelda } from './columnaCompuesta';
 
 // Reexport: los tests y cualquier consumidor viejo siguen importándolo de acá.
 export { cleanNumericValue } from './valorNumerico';
@@ -109,15 +111,27 @@ const TYPE_NORMALIZATIONS: Record<string, string> = {
   finca: 'house',
   'casa finca': 'house',
   // «Cabaña» viene en el archivo real (con y sin tilde según quién la escribió).
-  // Lo que NO se fuerza a ningún tipo: «Lote», «Celda Parqueadero», «Edificio»
-  // y «Amoblados». No hay `PropertyType` que signifique eso, y elegir el más
-  // parecido guardaría una mentira que después nadie revisa: llegan crudos y
-  // el back los marca `faltante: tipo` con el valor original a la vista.
+  // Lo que NO se fuerza a ningún tipo: «Edificio» y «Amoblados». No hay
+  // `PropertyType` que signifique eso, y elegir el más parecido guardaría una
+  // mentira que después nadie revisa: llegan crudos y el back los marca
+  // `faltante: tipo` con el valor original a la vista. «Celda Parqueadero»
+  // (51 filas del archivo real) y «Lote» (11) SÍ tienen tipo desde el
+  // 2026-09-11: `parking` y `land`. El back tiene el mismo mapa.
   cabana: 'house',
   'cabaña': 'house',
   vivienda: 'house',
   'casa-lote': 'house',
   casalote: 'house',
+  'celda parqueadero': 'parking',
+  'celda de parqueadero': 'parking',
+  'celda de parqueo': 'parking',
+  parqueadero: 'parking',
+  garaje: 'parking',
+  parking: 'parking',
+  lote: 'land',
+  terreno: 'land',
+  solar: 'land',
+  land: 'land',
   local: 'commercial',
   comercial: 'commercial',
   'local comercial': 'commercial',
@@ -200,12 +214,7 @@ export function mapRowsToProperties(
       errorMessages: [],
     };
 
-    for (const mapping of columnMappings) {
-      if (!mapping.targetField || !(mapping.sourceColumn in row)) continue;
-
-      const rawValue = row[mapping.sourceColumn];
-      const field = mapping.targetField;
-
+    const asignar = (field: string, rawValue: unknown) => {
       if (field === 'stratum') {
         // El archivo real trae el estrato en PALABRAS («Tres», «No
         // Estratificada»). `cleanNumericValue` lo dejaría vacío siempre.
@@ -230,6 +239,28 @@ export function mapRowsToProperties(
           (prop as unknown as Record<string, unknown>)[field] = strVal;
         }
       }
+    };
+
+    for (const mapping of columnMappings) {
+      if (!(mapping.sourceColumn in row)) continue;
+      const rawValue = row[mapping.sourceColumn];
+
+      if (mapping.partes) {
+        // Dos datos en la celda: cada parte a su campo. La celda que no tenga
+        // la forma «dato - texto» va entera al campo de la derecha (el texto).
+        const [aIzquierda, aDerecha] = mapping.partes.destinos;
+        const partida = partirCelda(rawValue);
+        if (partida) {
+          if (aIzquierda) asignar(aIzquierda, normalizarParte(aIzquierda, partida.izquierda));
+          if (aDerecha) asignar(aDerecha, normalizarParte(aDerecha, partida.derecha));
+        } else if (aDerecha) {
+          asignar(aDerecha, rawValue);
+        }
+        continue;
+      }
+
+      if (!mapping.targetField) continue;
+      asignar(mapping.targetField, rawValue);
     }
 
     /*
@@ -374,24 +405,21 @@ export function analyzeProperties(properties: ImportProperty[]): ImportProperty[
 
     // Rule 6: Missing propertyTitle
     if (!prop.propertyTitle) {
-      const zone = prop.propertyZone;
-      const city = effectiveCity;
-      const typeLabel =
-        effectiveType === 'apartment'
-          ? 'Apartamento'
-          : effectiveType === 'house'
-            ? 'Casa'
-            : effectiveType === 'studio'
-              ? 'Estudio'
-              : effectiveType === 'commercial'
-                ? 'Local comercial'
-                : effectiveType === 'office'
-                  ? 'Oficina'
-                  : 'Bodega';
-
-      const titleSuggestion = zone
-        ? `${typeLabel} en ${zone}`
-        : `${typeLabel} en ${city}`;
+      /*
+       * 🔴 El MUNICIPIO, no el barrio. Antes se prefería `propertyZone` y
+       * salían títulos como «Bodega en HOSPITAL» — el barrio de una celda de
+       * parqueadero. Y el tipo se traducía a siete etiquetas del enum, así que
+       * una «Casa Finca» salía como «Casa» y un «Lote» como «Bodega».
+       *
+       * `tituloSugerido` es el MISMO cálculo que el back usa para guardar
+       * (`src/properties/titulo.ts`): lo que se propone acá es literalmente lo
+       * que queda si la persona no escribe otro.
+       */
+      const titleSuggestion = tituloSugerido(
+        effectiveType,
+        effectiveCity,
+        prop.propertyZone,
+      );
 
       suggestions.push({
         field: 'propertyTitle',

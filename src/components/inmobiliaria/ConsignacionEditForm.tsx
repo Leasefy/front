@@ -15,6 +15,8 @@ import {
   User,
   Info,
   FloppyDisk,
+  Car,
+  Mountains,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -45,6 +47,8 @@ const PROPERTY_TYPES: { value: Consignacion['propertyType']; labelKey: string; i
   { value: 'commercial', labelKey: 'inmobiliaria.consignaciones.propertyType.commercial', icon: Storefront },
   { value: 'office', labelKey: 'inmobiliaria.consignaciones.propertyType.office', icon: Briefcase },
   { value: 'warehouse', labelKey: 'inmobiliaria.consignaciones.propertyType.warehouse', icon: Warehouse },
+  { value: 'parking', labelKey: 'inmobiliaria.consignaciones.propertyType.parking', icon: Car },
+  { value: 'land', labelKey: 'inmobiliaria.consignaciones.propertyType.land', icon: Mountains },
 ];
 
 // Sugerencias de barrio, no la lista completa: son sólo de Bogotá y el campo

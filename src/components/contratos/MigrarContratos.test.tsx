@@ -32,6 +32,17 @@ vi.mock('@/components/inmobiliaria/import/lib/parseFile', () => ({
   leerPrimerasFilas: vi.fn(async () => [] as string[][]),
 }))
 
+/*
+ * El aviso «tienes N inmuebles preparados y sin activar» (`InmueblesSinActivar`)
+ * consulta los lotes de importación al montar. Sin este mock, cada test de
+ * esta pantalla dispara una petición REAL — que no rompe sola, pero resuelve
+ * después del teardown y revienta el render de otro test corriendo en
+ * paralelo. Ya pasó con `FaltantesDeFila` el mismo día.
+ */
+vi.mock('@/lib/api/inmuebles-importacion.service', () => ({
+  inmueblesImportacionApi: { lotesAbiertos: vi.fn(async () => []) },
+}))
+
 vi.mock('@/lib/api/contracts.service', () => ({
   contractsApi: {
     migracion: {
@@ -46,6 +57,18 @@ vi.mock('@/lib/api/contracts.service', () => ({
       descartar: vi.fn(),
       descartarLote: vi.fn(),
       activar: vi.fn(),
+      reconciliar: vi.fn().mockResolvedValue({
+        revisadas: 0,
+        ultimaFila: null,
+        terminado: true,
+        inmueblesVinculados: 0,
+        propietariosVinculados: 0,
+        inquilinosVinculados: 0,
+        listas: 0,
+        pendientes: 0,
+        porMotivo: {},
+        fallidas: [],
+      }),
       estadoDeLote: vi.fn(),
       idsDeFilas: vi.fn(),
       inmueblesFaltantes: vi.fn(),

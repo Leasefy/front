@@ -336,6 +336,26 @@ export const propietariosApi = {
     await apiClient.delete(`${BASE}/propietarios/${id}`);
   },
 
+  /**
+   * Invitar al propietario al portal de Leasefy.
+   *
+   * 🔴 Sin cuenta no se le puede escribir por Leasefy, y casi ninguno la tiene:
+   * la migración le crea cuenta al INQUILINO —que firma y usa el portal— y no
+   * al propietario, que es la ficha comercial de la inmobiliaria. En la
+   * cartera real de Nico: 1.733 propietarios, 832 con correo, 57 con cuenta.
+   *
+   * Devuelve el `cuentaDePortalId` aunque el correo no salga: la cuenta ya
+   * existe, así que el hilo de mensajes funciona igual. `enviada: false` con
+   * su `motivo` es lo que hay que decirle a quien apretó.
+   */
+  async invitarAlPortal(id: string): Promise<{
+    cuentaDePortalId: string | null;
+    enviada: boolean;
+    motivo?: string;
+  }> {
+    return apiClient.post(`${BASE}/propietarios/${id}/invitar-al-portal`, {});
+  },
+
   async getConsignaciones(id: string): Promise<Consignacion[]> {
     const res = await apiClient.get<{ data: Consignacion[] } | Consignacion[]>(`${BASE}/propietarios/${id}/consignaciones`);
     return lista(res);
@@ -498,6 +518,11 @@ export function normalizeConsignacion(raw: RawConsignacion): Consignacion {
     // NO se fabrica `[{ propietarioId, 10000 }]` acá — sería inventar un dato
     // que el servidor no dijo, y taparía el día que el back deje de mandarlo.
     copropietarios: raw.copropietarios ?? [],
+    // Quién vive hoy en el inmueble. `null` contra un back anterior al
+    // 2026-09-12, que es lo mismo que «no hay inquilino» para la pantalla: en
+    // los dos casos cae a `currentTenantName`. NO se fabrica uno desde ese
+    // nombre — sería una tarjeta de contacto sin contacto.
+    inquilino: raw.inquilino ?? null,
   };
 }
 

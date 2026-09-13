@@ -73,6 +73,7 @@ import {
   type FacturaDelMes,
   type FacturasPorGenerar,
 } from '@/lib/api/facturacion-por-mes.service'
+import { PorGenerarHasta } from './PorGenerarHasta'
 
 /** Lo que se lee de un renglón cuando la fila resume sus conceptos. */
 function conceptosLegibles(factura: FacturaDelMes): string {
@@ -544,6 +545,13 @@ export function NuevaFactura() {
           </Button>
         </div>
       </div>
+
+      {/* 🔴 «Ver por generar hasta <fecha>» va acá, pegado al selector de mes,
+          porque es la MISMA pregunta mirada más lejos — pero es una consulta,
+          no una emisión. CEO (2026-09-13): «Lo que NO se puede es enviarlas
+          todas en un solo mes.» Por eso el botón «Generar» de arriba sigue
+          siendo por mes y este bloque no tiene ninguno. */}
+      <PorGenerarHasta />
 
       <EstadoDeDatos
         cargando={cargando}

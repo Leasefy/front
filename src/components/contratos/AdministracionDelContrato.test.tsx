@@ -264,3 +264,106 @@ describe('los términos de cobro del contrato', () => {
     expect(document.body.textContent).toContain('entre 0 y 60')
   })
 })
+
+/**
+ * 🔴 Nico, 2026-09-12: «Naturaleza de impuestos: que señale la naturaleza que
+ * tenga el inquilino Y la del propietario. Está apareciendo en rojo las que no
+ * están y en azul las que sí están del inquilino, pero no aparece la del
+ * propietario. Es importante que no deje las que no aplican, para no generar
+ * ruido.»
+ */
+describe('la naturaleza tributaria de cada parte', () => {
+  const dueno = (over: Partial<import('@/lib/types/contract').PropietarioDelContrato> = {}) => ({
+    id: 'po-1',
+    name: 'Ana Gómez',
+    documentNumber: '900',
+    documentType: 'CC',
+    participacionBps: 10_000,
+    participacion: '100 %',
+    canonCop: 2_000_000,
+    esPrincipal: true,
+    responsableIva: null,
+    agenteRetenedorRenta: null,
+    agenteRetenedorIva: null,
+    agenteRetenedorIca: null,
+    ...over,
+  })
+
+  it('del inquilino muestra SÓLO lo que tiene: ni «no retiene» ni «sin definir»', () => {
+    render(
+      contrato({
+        inquilinoTipoPersona: 'JURIDICA',
+        inquilinoRetenedorRenta: true,
+        inquilinoRetenedorIva: false,
+        inquilinoRetenedorIca: null,
+        inquilinoResponsableIva: null,
+      }),
+    )
+    const fila = document.querySelector('[data-testid="naturaleza-inquilino"]')!
+    expect(fila.textContent).toContain('Empresa')
+    expect(fila.textContent).toContain('Retiene renta')
+    expect(fila.textContent).not.toContain('No retiene')
+    expect(fila.textContent).not.toContain('sin definir')
+  })
+
+  it('el propietario ahora TIENE su fila, con sus responsabilidades', () => {
+    render(
+      contrato({
+        propietariosDelContrato: {
+          sumaBps: 10_000,
+          sumanCien: true,
+          propietarios: [dueno({ documentType: 'NIT', responsableIva: true })],
+        },
+      }),
+    )
+    const filas = document.querySelectorAll('[data-testid="naturaleza-propietario"]')
+    expect(filas).toHaveLength(1)
+    expect(filas[0].textContent).toContain('Propietario')
+    expect(filas[0].textContent).toContain('Empresa')
+    expect(filas[0].textContent).toContain('Responsable de IVA')
+  })
+
+  it('con varios dueños va una fila por dueño, con su nombre', () => {
+    render(
+      contrato({
+        propietariosDelContrato: {
+          sumaBps: 10_000,
+          sumanCien: true,
+          propietarios: [
+            dueno({ id: 'a', name: 'Ana', responsableIva: true }),
+            dueno({ id: 'b', name: 'Beto', esPrincipal: false, responsableIva: false }),
+          ],
+        },
+      }),
+    )
+    const filas = document.querySelectorAll('[data-testid="naturaleza-propietario"]')
+    expect(filas).toHaveLength(2)
+    expect(filas[0].textContent).toContain('Ana')
+    expect(filas[0].textContent).toContain('Responsable de IVA')
+    // Beto dijo que NO: no se pinta, pero tampoco se le atribuye el sí de Ana.
+    expect(filas[1].textContent).toContain('Beto')
+    expect(filas[1].textContent).not.toContain('Responsable de IVA')
+  })
+
+  it('una parte sin ningún dato lo DICE — una fila vacía se lee como «no tiene nada»', () => {
+    render(
+      contrato({
+        inquilinoTipoPersona: null,
+        inquilinoRetenedorRenta: null,
+        inquilinoRetenedorIva: null,
+        inquilinoRetenedorIca: null,
+        inquilinoResponsableIva: null,
+      }),
+    )
+    const fila = document.querySelector('[data-testid="naturaleza-inquilino"]')!
+    expect(fila.textContent).toContain('Sin datos tributarios')
+  })
+
+  it('sin consignación dice de dónde sale el propietario, en vez de dejar el hueco', () => {
+    render(contrato({ propietariosDelContrato: null }))
+    expect(document.querySelector('[data-testid="naturaleza-propietario"]')).toBeNull()
+    expect(document.querySelector('[data-testid="impuestos"]')!.textContent).toContain(
+      'Sin consignación',
+    )
+  })
+})

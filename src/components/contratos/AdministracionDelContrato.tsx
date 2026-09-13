@@ -174,6 +174,14 @@ export function AdministracionDelContrato({
   }
 
   const regimen = contract.regimenTributario ?? null
+  /*
+   * Los dueños con sus datos tributarios CRUDOS (`null` = nadie lo afirmó).
+   * `perfilesTributarios.propietario` no sirve acá: ya viene mezclado con el
+   * default de su tipo de persona, así que un supuesto se pintaría con la
+   * misma cara que un hecho — y Nico pidió justamente ver «la naturaleza que
+   * TENGA» cada parte.
+   */
+  const propietarios = contract.propietariosDelContrato?.propietarios ?? []
   const ivaDelCanon = leerIvaDelCanon(contract)
 
   return (
@@ -242,81 +250,72 @@ export function AdministracionDelContrato({
       </div>
 
       {/*
-        Impuestos, resumidos: una línea para el IVA del canon (lo decide el
-        uso y el propietario) y una fila de chips para lo que retiene el
-        inquilino. Antes eran seis filas de texto largo que decían lo mismo
-        que estos chips, y el ojo no encontraba el que faltaba.
+        Impuestos, resumidos: una línea para el IVA del canon (lo decide el uso
+        y el propietario) y una fila de chips por parte con SU naturaleza
+        tributaria.
+
+        🔴 Nico, 2026-09-12: «Que señale la naturaleza que tenga el inquilino Y
+        la del propietario. Está apareciendo en rojo las que no están y en azul
+        las que sí están del inquilino, pero no aparece la del propietario. Es
+        importante que no deje las que no aplican, para no generar ruido.»
+
+        Dos cambios, entonces: se muestra SÓLO lo que la parte tiene (nada de
+        «sin definir» ni «no retiene» ocupando lugar), y el propietario tiene su
+        fila. Lo que falta se dice en UNA línea abajo, no en cuatro chips.
       */}
       <div className="space-y-2 border-t border-border pt-3" data-testid="impuestos">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Impuestos
         </p>
         <Fila etiqueta="IVA sobre el canon" valor={ivaDelCanon.valor} ausente={ivaDelCanon.ausente} />
-        <div className="flex items-start justify-between gap-3 text-sm">
-          <span className="text-muted-foreground">Inquilino</span>
-          <div className="flex flex-wrap justify-end gap-1.5">
-            <Chip
-              texto={
-                contract.inquilinoTipoPersona === 'JURIDICA'
-                  ? 'Empresa'
-                  : contract.inquilinoTipoPersona === 'NATURAL'
-                    ? 'Persona natural'
-                    : 'Tipo sin definir'
-              }
-              estado={contract.inquilinoTipoPersona ? 'si' : 'vacio'}
+
+        <NaturalezaDeLaParte
+          etiqueta="Inquilino"
+          tipoPersona={contract.inquilinoTipoPersona ?? null}
+          responsableIva={contract.inquilinoResponsableIva ?? null}
+          agenteRetenedorRenta={contract.inquilinoRetenedorRenta ?? null}
+          agenteRetenedorIva={contract.inquilinoRetenedorIva ?? null}
+          agenteRetenedorIca={contract.inquilinoRetenedorIca ?? null}
+          testId="naturaleza-inquilino"
+        />
+
+        {/*
+          El propietario. Sus datos tributarios viven en SU ficha, no en el
+          contrato, así que acá sólo se muestran; se corrigen en la ficha del
+          propietario, donde cada chip es un control. Con varios dueños va una
+          fila por dueño: dos copropietarios pueden ser uno responsable de IVA
+          y el otro no.
+        */}
+        {propietarios.length > 0 ? (
+          propietarios.map((p) => (
+            <NaturalezaDeLaParte
+              key={p.id}
+              etiqueta={propietarios.length > 1 ? p.name : 'Propietario'}
+              tipoPersona={p.documentType === 'NIT' ? 'JURIDICA' : 'NATURAL'}
+              responsableIva={p.responsableIva}
+              agenteRetenedorRenta={p.agenteRetenedorRenta}
+              agenteRetenedorIva={p.agenteRetenedorIva}
+              agenteRetenedorIca={p.agenteRetenedorIca}
+              testId="naturaleza-propietario"
             />
-            <Chip
-              texto={
-                contract.inquilinoRetenedorRenta == null
-                  ? 'Retefuente sin definir'
-                  : contract.inquilinoRetenedorRenta
-                    ? 'Retiene renta'
-                    : 'No retiene renta'
-              }
-              estado={aTernario(contract.inquilinoRetenedorRenta) || 'vacio'}
-              testId="chip-retefuente"
-            />
-            <Chip
-              texto={
-                contract.inquilinoRetenedorIva == null
-                  ? 'ReteIVA sin definir'
-                  : contract.inquilinoRetenedorIva
-                    ? 'Retiene IVA'
-                    : 'No retiene IVA'
-              }
-              estado={aTernario(contract.inquilinoRetenedorIva) || 'vacio'}
-              testId="chip-reteiva"
-            />
-            <Chip
-              texto={
-                contract.inquilinoRetenedorIca == null
-                  ? 'ReteICA sin definir'
-                  : contract.inquilinoRetenedorIca
-                    ? 'Retiene ICA'
-                    : 'No retiene ICA'
-              }
-              estado={aTernario(contract.inquilinoRetenedorIca) || 'vacio'}
-              testId="chip-reteica"
-            />
-            <Chip
-              texto={
-                contract.inquilinoResponsableIva == null
-                  ? 'IVA propio sin definir'
-                  : contract.inquilinoResponsableIva
-                    ? 'Responsable de IVA'
-                    : 'No responsable de IVA'
-              }
-              estado={aTernario(contract.inquilinoResponsableIva) || 'vacio'}
-            />
+          ))
+        ) : (
+          <div className="flex items-start justify-between gap-3 text-sm">
+            <span className="text-muted-foreground">Propietario</span>
+            <span className="text-right text-xs text-muted-foreground">
+              Sin consignación: el dueño y su naturaleza tributaria salen del mandato del
+              inmueble.
+            </span>
           </div>
-        </div>
+        )}
+
         {regimen &&
         (regimen.inquilinoRetenedorRenta.valor == null ||
           regimen.inquilinoRetenedorIva.valor == null ||
           regimen.inquilinoRetenedorIca.valor == null) ? (
           <p className="text-xs text-muted-foreground">
-            Lo que está sin definir no se descuenta en el cobro. Se corrige acá y
-            sale en el próximo.
+            Lo que no aparece no se descuenta en el cobro. Se corrige acá y sale en el
+            próximo.
           </p>
         ) : null}
       </div>
@@ -544,6 +543,68 @@ function leerIvaDelCanon(contract: Contract): { valor: string | null; ausente: s
   }
   if (propietario === false) return { valor: 'No lleva (el propietario no es responsable)', ausente: '' }
   return { valor: null, ausente: 'Sin definir si el propietario cobra IVA — el cobro sale sin IVA' }
+}
+
+/**
+ * La naturaleza tributaria de UNA parte: sólo lo que tiene.
+ *
+ * 🔴 Nico, 2026-09-12: «Es importante que no deje las que no aplican, para no
+ * generar ruido.» Así que un `false` («no retiene») y un `null` («nadie lo
+ * dijo») NO se pintan: el chip que está es el que aplica.
+ *
+ * Que el chip sea sólo informativo NO pierde la distinción entre las dos
+ * ausencias — la sigue diciendo la línea de abajo del bloque, sobre lo que no
+ * se descuenta, y el formulario del inquilino sigue teniendo sus tres estados.
+ * Lo que se quita es el ruido de pintarlas una por una.
+ *
+ * El tipo de persona SÍ se muestra siempre que se sepa: no es una
+ * responsabilidad que aplique o no, es quién es la parte.
+ */
+function NaturalezaDeLaParte({
+  etiqueta,
+  tipoPersona,
+  responsableIva,
+  agenteRetenedorRenta,
+  agenteRetenedorIva,
+  agenteRetenedorIca,
+  testId,
+}: {
+  etiqueta: string
+  tipoPersona: TipoPersona | null
+  responsableIva: boolean | null
+  agenteRetenedorRenta: boolean | null
+  agenteRetenedorIva: boolean | null
+  agenteRetenedorIca: boolean | null
+  testId: string
+}) {
+  const tiene: string[] = []
+  if (agenteRetenedorRenta === true) tiene.push('Retiene renta')
+  if (agenteRetenedorIva === true) tiene.push('Retiene IVA')
+  if (agenteRetenedorIca === true) tiene.push('Retiene ICA')
+  if (responsableIva === true) tiene.push('Responsable de IVA')
+
+  return (
+    <div className="flex items-start justify-between gap-3 text-sm" data-testid={testId}>
+      <span className="min-w-0 break-words text-muted-foreground">{etiqueta}</span>
+      <div className="flex flex-wrap justify-end gap-1.5">
+        {tipoPersona ? (
+          <Chip
+            texto={tipoPersona === 'JURIDICA' ? 'Empresa' : 'Persona natural'}
+            estado="si"
+            testId="chip-tipo-persona"
+          />
+        ) : null}
+        {tiene.map((t) => (
+          <Chip key={t} texto={t} estado="si" testId="chip-naturaleza" />
+        ))}
+        {tipoPersona === null && tiene.length === 0 ? (
+          /* Una fila vacía se lee como «no tiene ninguna responsabilidad», que
+             es una afirmación que nadie hizo. */
+          <span className="text-xs text-muted-foreground">Sin datos tributarios</span>
+        ) : null}
+      </div>
+    </div>
+  )
 }
 
 /** Un dato tributario en un chip: dicho que sí, dicho que no, o sin decir. */

@@ -35,7 +35,14 @@ export type BackendDispatchAgent =
   | 'matching'
   | 'avaluo'
   | 'conciliacion'
-  | 'pagos';
+  | 'pagos'
+  // El agente despacha además `reportes` (consultas a los datos) y
+  // `comunicacion` (el que PREPARA acciones para confirmar). Los dos ya existen
+  // en `AGENT_METADATA`, que es lo que importa: `turn-steps` hace
+  // `AGENT_METADATA[clave].label` sin guarda y una clave desconocida revienta
+  // el chat entero con un `undefined.label`.
+  | 'reportes'
+  | 'comunicacion';
 
 // ── Action Proposal contract (backend → front, F5) ────────────────────────────
 

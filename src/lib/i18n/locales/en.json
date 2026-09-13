@@ -10601,7 +10601,16 @@
       "dislike": "Unhelpful response",
       "feedbackUp": "Thanks — marked as helpful",
       "feedbackDown": "Thanks — marked as unhelpful",
-      "feedbackRemoved": "Rating removed"
+      "feedbackRemoved": "Rating removed",
+      "feedbackSaved": "Saved",
+      "feedbackLearned": "Saved — the chat will take it into account",
+      "feedbackError": "Could not save your rating. Please try again.",
+      "feedbackWhatTitle": "What did you expect?",
+      "feedbackWhatPlaceholder": "E.g.: it is 7 contracts, not 8",
+      "feedbackWrongNumber": "The figure is wrong",
+      "feedbackSend": "Send",
+      "feedbackSkip": "Not now",
+      "feedbackSending": "Sending…"
     },
     "tasks": {
       "thinking": "Thinking about your question…",

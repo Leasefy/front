@@ -10641,7 +10641,16 @@
       "dislike": "Respuesta poco útil",
       "feedbackUp": "Gracias — marcada como útil",
       "feedbackDown": "Gracias — marcada como poco útil",
-      "feedbackRemoved": "Valoración quitada"
+      "feedbackRemoved": "Valoración quitada",
+      "feedbackSaved": "Guardado",
+      "feedbackLearned": "Guardado — el chat lo va a tener en cuenta",
+      "feedbackError": "No pude guardar tu valoración. Intenta de nuevo.",
+      "feedbackWhatTitle": "¿Qué esperabas?",
+      "feedbackWhatPlaceholder": "Ej.: son 7 contratos, no 8",
+      "feedbackWrongNumber": "La cifra está mal",
+      "feedbackSend": "Enviar",
+      "feedbackSkip": "Ahora no",
+      "feedbackSending": "Enviando…"
     },
     "tasks": {
       "thinking": "Pensando en tu pregunta…",

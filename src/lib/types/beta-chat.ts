@@ -301,10 +301,24 @@ export interface ChatMessage {
    *
    * Se guarda en el mensaje —y por lo tanto sobrevive el localStorage, que
    * serializa el mensaje entero— para que el pulgar quede marcado al volver a
-   * la conversación. HOY NO SALE DE ACÁ: no existe endpoint de feedback, así
-   * que es memoria local, no una señal que llegue a nadie.
+   * la conversación. Desde el 13/09 además SALE: `rateMessage` lo manda a
+   * `POST /ai-hub/chat/feedback`, que lo guarda por inmobiliaria y, con
+   * comentario, lo convierte en una lección que el chat usa en la siguiente
+   * pregunta.
    */
   feedback?: 'up' | 'down' | null;
+  /**
+   * El backend confirmó la valoración. Es lo que hace que la pantalla pueda
+   * decir «guardado» sin mentir: el pulgar marcado y el pulgar GUARDADO son
+   * dos cosas distintas (la red puede fallar).
+   */
+  feedbackEnviado?: boolean;
+  /** Lo que el usuario escribió en «¿qué esperabas?» (pulgar abajo). */
+  feedbackComentario?: string;
+  /** Marcó «la cifra está mal». */
+  feedbackCifraMal?: boolean;
+  /** Se creó una lección con ese comentario (el chat aprendió algo). */
+  feedbackLeccion?: boolean;
 }
 
 export interface Conversation {

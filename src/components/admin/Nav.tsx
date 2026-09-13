@@ -40,6 +40,7 @@ export const NAV_ITEMS = [
   { href: '/admin/registration-profiles', label: 'Perfiles', hint: 'signup on/off', code: '29' },
   { href: '/admin/cotizador', label: 'Cotizador', hint: 'carriers · credenciales', code: '31' },
   { href: '/admin/inmuebles', label: 'Inmuebles', hint: 'riesgo · historial interno', code: '32' },
+  { href: '/admin/chat-feedback', label: 'Chat feedback', hint: 'pulgares · dónde falla', code: '33' },
 ] as const
 
 export function Nav({ userEmail }: { userEmail: string }) {

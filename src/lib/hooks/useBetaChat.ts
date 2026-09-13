@@ -42,6 +42,7 @@ import {
   propuestaVencida,
   type BackendAccionPropuesta,
 } from '@/lib/api/ai-hub-acciones';
+import { enviarFeedbackDeChat } from '@/lib/api/ai-hub-feedback';
 
 /**
  * Backend snapshot (has `generatedAt`) → the front `ChatSnapshot` (numeric KPIs
@@ -336,7 +337,15 @@ export interface UseBetaChatReturn {
 
   // Message actions (acciones bajo cada respuesta)
   regenerateResponse: (assistantMessageId: string) => void;
-  rateMessage: (messageId: string, rating: 'up' | 'down') => void;
+  /**
+   * Valora una respuesta y la MANDA (pulgar arriba/abajo). `comentario` y
+   * `cifraMal` sólo aplican al pulgar abajo. Devuelve si el backend confirmó.
+   */
+  rateMessage: (
+    messageId: string,
+    rating: 'up' | 'down',
+    opts?: { comentario?: string; cifraMal?: boolean }
+  ) => Promise<boolean>;
 
   // Conversation management
   conversations: Conversation[];
@@ -1509,19 +1518,105 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     [isThinking, isStreaming, isAgentsRunning, activeConversationId, conversations]
   );
 
-  /** Marca el pulgar. Volver a tocar el mismo pulgar lo quita. */
+  /**
+   * Marca el pulgar Y LO MANDA.
+   *
+   * Hasta el 13/09 esto sólo pintaba el ícono: la valoración moría en el
+   * `localStorage` y nadie la veía nunca. Ahora va a
+   * `POST /ai-hub/chat/feedback`, que la guarda por inmobiliaria y —con un
+   * comentario— la convierte en una lección que el chat usa en la siguiente
+   * pregunta.
+   *
+   * - Es IDEMPOTENTE por turno: la llave es el id del mensaje del asistente, y
+   *   el micro hace upsert. Cambiar de opinión corrige, no duplica.
+   * - Quitar el pulgar (tocar el mismo dos veces) se queda en el front: no hay
+   *   forma de "desvalorar" sin borrar, y borrar una señal que ya alimentó una
+   *   lección sería peor que dejarla.
+   * - La pregunta que viaja es el mensaje de USUARIO más cercano hacia atrás
+   *   (igual que `regenerateResponse`), no `idx - 1`: entre medio puede haber
+   *   bloques de sistema.
+   *
+   * Devuelve si el backend lo confirmó, para que la pantalla no diga «guardado»
+   * cuando la red falló.
+   */
   const rateMessage = useCallback(
-    (messageId: string, rating: 'up' | 'down') => {
+    async (
+      messageId: string,
+      rating: 'up' | 'down',
+      opts: { comentario?: string; cifraMal?: boolean } = {}
+    ): Promise<boolean> => {
+      const quitando =
+        conversations
+          .flatMap((c) => c.messages)
+          .find((m) => m.id === messageId)?.feedback === rating && !opts.comentario;
+
       setConversations((prev) =>
         prev.map((c) => ({
           ...c,
           messages: c.messages.map((m) =>
-            m.id === messageId ? { ...m, feedback: m.feedback === rating ? null : rating } : m
+            m.id === messageId
+              ? {
+                  ...m,
+                  feedback: quitando ? null : rating,
+                  ...(quitando ? { feedbackEnviado: false } : {}),
+                  ...(opts.comentario !== undefined
+                    ? { feedbackComentario: opts.comentario }
+                    : {}),
+                  ...(opts.cifraMal !== undefined ? { feedbackCifraMal: opts.cifraMal } : {}),
+                }
+              : m
           ),
         }))
       );
+
+      if (quitando || !agencyId || !isAgentConfigured()) return false;
+
+      // Pregunta + respuesta + especialistas, tal como los vio el usuario.
+      const conv = conversations.find((c) => c.messages.some((m) => m.id === messageId));
+      const idx = conv?.messages.findIndex((m) => m.id === messageId) ?? -1;
+      if (!conv || idx < 0) return false;
+      const respuesta = conv.messages[idx];
+      let u = idx - 1;
+      while (u >= 0 && conv.messages[u].role !== 'user') u -= 1;
+      const pregunta = u >= 0 ? conv.messages[u].content : '';
+      if (!pregunta.trim() || !respuesta.content.trim()) return false;
+
+      const herramientas = (respuesta.agentActivity?.agents ?? [])
+        .map((a) => a.agentType)
+        .filter(Boolean);
+
+      try {
+        const r = await enviarFeedbackDeChat({
+          agencyId,
+          feedback: {
+            turnId: messageId,
+            pregunta,
+            respuesta: respuesta.content,
+            veredicto: rating,
+            ...(opts.comentario?.trim() ? { comentario: opts.comentario.trim() } : {}),
+            ...(opts.cifraMal ? { cifraMal: true } : {}),
+            ...(herramientas.length > 0 ? { herramientas } : {}),
+          },
+        });
+        setConversations((prev) =>
+          prev.map((c) => ({
+            ...c,
+            messages: c.messages.map((m) =>
+              m.id === messageId
+                ? { ...m, feedbackEnviado: r.guardado, feedbackLeccion: Boolean(r.leccionId) }
+                : m
+            ),
+          }))
+        );
+        return r.guardado;
+      } catch {
+        // El pulgar queda marcado en pantalla pero SIN el «guardado»: la
+        // diferencia entre lo que el usuario eligió y lo que llegó al servidor
+        // tiene que verse.
+        return false;
+      }
     },
-    []
+    [conversations, agencyId]
   );
 
   useEffect(() => {

@@ -11,6 +11,7 @@ import { useAgencyPlans } from '@/lib/hooks/useSubscription';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { useAgencyCheckout } from '@/lib/hooks/useAgencyCheckout';
 import type { AgencyPlanId } from '@/lib/types/subscription';
+import { shouldResumeReactivation } from './resume-reactivation';
 
 /**
  * Upgrade page for agency users.
@@ -67,10 +68,21 @@ function AgencyUpgradeContent() {
   useEffect(() => {
     if (hasCheckedResumeRef.current || !subscriptionState) return;
     hasCheckedResumeRef.current = true;
+    if (state !== 'idle') return;
     const openCharge = subscriptionState.openCharge;
-    if (state === 'idle' && openCharge?.status === 'PENDING' && openCharge.targetPlanTier) {
+    const sub = subscriptionState.subscription;
+    if (openCharge?.status === 'PENDING' && openCharge.targetPlanTier) {
       setSelectedPlan(openCharge.targetPlanTier as AgencyPlanId);
       resume(openCharge.id, openCharge.targetPlanTier);
+    } else if (shouldResumeReactivation(openCharge, sub?.status)) {
+      // A SUSPENDED/PAST_DUE owner with a stuck, payable RENEWAL charge
+      // (T-0085) — resume onto their CURRENT tier, never the charge's
+      // `targetPlanTier` (always null here: passing it into `setSelectedPlan`
+      // would make `plans.find` return null and silently hide the checkout
+      // overlay, contract.md §8).
+      const currentTier = sub!.planTier as AgencyPlanId;
+      setSelectedPlan(currentTier);
+      resume(openCharge!.id, sub!.planTier, sub!.status);
     }
   }, [subscriptionState, state, resume]);
 
@@ -88,7 +100,18 @@ function AgencyUpgradeContent() {
     if (target.pricingModel === 'custom') {
       router.push(`/panel/inmobiliaria/checkout?plan=${planId}`);
     } else if (target.pricingModel === 'flat') {
-      void pay(planId);
+      // Capture the status + tier BEFORE this checkout starts. `pay()` needs
+      // the status to tell a genuine reactivation (SUSPENDED/PAST_DUE →
+      // ACTIVE) from "already ACTIVE" once `select-plan` answers
+      // `REACTIVATION_PENDING` (T-0085), and the tier to correctly classify a
+      // 409 `PENDING_CHARGE_ALREADY_PAID` thrown by `select-plan` itself,
+      // before any `outcome` is ever read (fix round 1, MEDIUM 2). A no-op
+      // for the ordinary purchase path.
+      void pay(
+        planId,
+        subscriptionState?.subscription?.status ?? null,
+        subscriptionState?.subscription?.planTier ?? null,
+      );
     } else {
       void activate(planId);
     }

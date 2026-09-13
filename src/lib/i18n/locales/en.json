@@ -1268,7 +1268,7 @@
       },
       "tabs": {
         "perfil": "Profile",
-        "perfilDesc": "Company details and the owner's monthly statement",
+        "perfilDesc": "Company details, the owner's monthly statement and automatic renewal",
         "branding": "Branding",
         "brandingDesc": "Logo, colors, and visual style",
         "equipo": "Members and roles",

@@ -1308,7 +1308,7 @@
       },
       "tabs": {
         "perfil": "Perfil",
-        "perfilDesc": "Datos de la empresa y el extracto mensual al propietario",
+        "perfilDesc": "Datos de la empresa, el extracto mensual al propietario y la renovación automática",
         "branding": "Branding",
         "brandingDesc": "Logo, colores y estilo visual",
         "equipo": "Miembros y roles",

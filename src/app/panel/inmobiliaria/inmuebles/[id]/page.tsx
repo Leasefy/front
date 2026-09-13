@@ -3,7 +3,7 @@ import { AsignarAgente } from '@/components/inmobiliaria/AsignarAgente';
 import { CandidatosDelInmueble } from '@/components/inmobiliaria/CandidatosDelInmueble';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -50,6 +50,7 @@ import {
 } from '@/components/inmobiliaria/ConsignacionDetailSections';
 import { CambiarPropietarioDialog } from '@/components/inmobiliaria/CambiarPropietarioDialog';
 import { ActaEntregaView } from '@/components/inmobiliaria/ActaEntregaView';
+import { BarraDeBorradorDeInventario } from '@/components/inmobiliaria/BarraDeBorradorDeInventario';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
 import { ConsignacionEditForm } from '@/components/inmobiliaria/ConsignacionEditForm';
 import {
@@ -57,6 +58,7 @@ import {
   type ItemDeInventarioBorrador,
 } from '@/components/inmobiliaria/InventarioItemDialog';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
+import { useBorradorDeInventario } from '@/lib/hooks/use-borrador-de-inventario';
 
 /** La forma de la ficha, sin datos: cabecera con foto y dos columnas. */
 function EsqueletoDeLaFicha() {
@@ -400,52 +402,71 @@ function ConsignacionDetailContent() {
   }, []);
 
   /**
-   * El inventario vive en la consignación como lista completa: agregar,
-   * editar y quitar son «mandar la lista nueva» (PUT …/inventario). Se carga
-   * desde que el inmueble entra a la agencia — sin contrato, entrega ni acta.
+   * El inventario vive en la consignación como lista completa (PUT
+   * …/inventario), y se carga desde que el inmueble entra a la agencia — sin
+   * contrato, entrega ni acta.
+   *
+   * 🔴 Nico, 2026-09-12: «la parte de agregar inventario debería de funcionar
+   * offline porque hay muchos apartamentos donde no hay señal… que ya después,
+   * cuando tenga señal, la cargue». Por eso cada cambio cae PRIMERO en el
+   * teléfono (`useBorradorDeInventario`, IndexedDB) y el back es el segundo
+   * paso: con señal la subida arranca sola y esto se siente igual que antes;
+   * sin ella, el borrador espera y la barra de arriba lo dice.
    */
-  const guardarInventario = useCallback(
-    async (items: InventoryItem[], mensaje: string) => {
-      if (!consignacion) return;
-      setGuardandoInventario(true);
-      try {
-        const updated = await consignacionesApi.actualizarInventario(consignacion.id, items);
-        setConsignacionData(updated);
-        setItemDeInventario(undefined);
-        toast.success(mensaje);
-      } catch (err) {
-        toast.error(t('inmobiliaria.acta.itemDialog.error'), {
-          description: err instanceof Error ? err.message : undefined,
-        });
-      } finally {
-        setGuardandoInventario(false);
-      }
-    },
-    [consignacion, t],
+  const inventario = useBorradorDeInventario({
+    consignacionId: consignacion?.id,
+    itemsDelBack: consignacion?.inventoryItems,
+    alSubir: setConsignacionData,
+  });
+
+  /**
+   * Una foto tomada sin señal todavía no tiene URL, así que la tabla la
+   * muestra desde el archivo local. Es sólo para mirar: lo que se guarda en
+   * el ítem sigue siendo la URL del back, nunca un `blob:` que muere al
+   * recargar.
+   */
+  const itemsDelInventario = useMemo(
+    () =>
+      inventario.items.map((i) =>
+        inventario.vistasPrevias[i.id]
+          ? { ...i, photoUrl: inventario.vistasPrevias[i.id] }
+          : i,
+      ),
+    [inventario.items, inventario.vistasPrevias],
   );
 
   const handleGuardarItem = useCallback(
-    (item: ItemDeInventarioBorrador) => {
-      const actuales = consignacion?.inventoryItems ?? [];
+    (item: ItemDeInventarioBorrador, foto?: Blob | null) => {
       const completo = { ...item, id: item.id ?? `it-${Date.now()}` } as InventoryItem;
-      const existe = actuales.some((i) => i.id === completo.id);
-      const siguientes = existe
-        ? actuales.map((i) => (i.id === completo.id ? completo : i))
-        : [...actuales, completo];
-      void guardarInventario(siguientes, t('inmobiliaria.acta.itemDialog.saved'));
+      setGuardandoInventario(true);
+      void inventario
+        .guardarItem(completo, foto)
+        .then(() => {
+          setItemDeInventario(undefined);
+          toast.success(t('inmobiliaria.acta.itemDialog.saved'));
+        })
+        .catch((err: unknown) => {
+          toast.error(t('inmobiliaria.acta.itemDialog.error'), {
+            description: err instanceof Error ? err.message : undefined,
+          });
+        })
+        .finally(() => setGuardandoInventario(false));
     },
-    [consignacion?.inventoryItems, guardarInventario, t],
+    [inventario, t],
   );
 
   const handleQuitarItem = useCallback(
     (item: InventoryItem) => {
-      const actuales = consignacion?.inventoryItems ?? [];
-      void guardarInventario(
-        actuales.filter((i) => i.id !== item.id),
-        t('inmobiliaria.acta.itemDialog.removed'),
-      );
+      void inventario
+        .quitarItem(item)
+        .then(() => toast.success(t('inmobiliaria.acta.itemDialog.removed')))
+        .catch((err: unknown) => {
+          toast.error(t('inmobiliaria.acta.itemDialog.error'), {
+            description: err instanceof Error ? err.message : undefined,
+          });
+        });
     },
-    [consignacion?.inventoryItems, guardarInventario, t],
+    [inventario, t],
   );
 
   // Mientras se pide, un esqueleto con la forma de la ficha. Antes esto
@@ -643,14 +664,27 @@ function ConsignacionDetailContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
           >
-            <ActaEntregaView
-              inventoryItems={consignacion.inventoryItems}
-              contractDate={consignacion.contractDate}
-              onPrint={() => router.push(`/panel/inmobiliaria/inmuebles/${consignacionId}/acta`)}
-              onAddItem={() => setItemDeInventario(null)}
-              onEditItem={(item) => setItemDeInventario(item)}
-              onDeleteItem={handleQuitarItem}
-            />
+            <div className="space-y-2">
+              <BarraDeBorradorDeInventario
+                hayPendientes={inventario.hayPendientes}
+                actualizadoEn={inventario.actualizadoEn}
+                fotosSinSubir={inventario.fotosSinSubir}
+                senal={inventario.senal}
+                subiendo={inventario.subiendo}
+                avance={inventario.avance}
+                errorDeSubida={inventario.errorDeSubida}
+                onSubir={() => void inventario.subir()}
+                onDescartar={() => void inventario.descartar()}
+              />
+              <ActaEntregaView
+                inventoryItems={itemsDelInventario}
+                contractDate={consignacion.contractDate}
+                onPrint={() => router.push(`/panel/inmobiliaria/inmuebles/${consignacionId}/acta`)}
+                onAddItem={() => setItemDeInventario(null)}
+                onEditItem={(item) => setItemDeInventario(item)}
+                onDeleteItem={handleQuitarItem}
+              />
+            </div>
           </motion.div>
 
           <motion.div
@@ -746,6 +780,9 @@ function ConsignacionDetailContent() {
         abierto={itemDeInventario !== undefined}
         item={itemDeInventario ?? null}
         guardando={guardandoInventario}
+        vistaPreviaDeLaFoto={
+          itemDeInventario ? inventario.vistasPrevias[itemDeInventario.id] : undefined
+        }
         onCerrar={() => setItemDeInventario(undefined)}
         onGuardar={handleGuardarItem}
       />

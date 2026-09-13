@@ -734,6 +734,48 @@ export const consignacionesApi = {
     return normalizeConsignacion(raw);
   },
 
+  /**
+   * POST /inmobiliaria/consignaciones/:id/inventario/foto — la foto de UN
+   * ítem (multipart `file` + `itemId`). Devuelve la URL con la que queda.
+   *
+   * Va aparte del PUT de la lista porque el inventario se llena sin señal: la
+   * persona recorre el apartamento, guarda todo en el teléfono y después sube
+   * foto por foto. El `itemId` es la llave de idempotencia — el back guarda
+   * cada foto en una ruta que depende sólo de él, así que reintentar una
+   * subida cortada pisa la misma foto en vez de dejar dos.
+   */
+  async subirFotoDeInventario(id: string, itemId: string, foto: Blob): Promise<string> {
+    const token = getAccessToken();
+    const formData = new FormData();
+    // El nombre del archivo no lo lee nadie (la ruta la arma el back con el
+    // `itemId`), pero un `Blob` sin nombre llega como `blob` y multer lo
+    // rechaza en algunos navegadores.
+    formData.append('file', foto, `${itemId}.jpg`);
+    formData.append('itemId', itemId);
+    let res: Response;
+    try {
+      res = await fetch(`${BACKEND_URL}${BASE}/consignaciones/${id}/inventario/foto`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+    } catch (err) {
+      throw new ApiError(
+        0,
+        `No pudimos conectarnos al servidor. ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { message?: unknown };
+      throw new ApiError(
+        res.status,
+        typeof body.message === 'string' ? body.message : 'No se pudo subir la foto',
+      );
+    }
+    const { photoUrl } = (await res.json()) as { photoUrl: string };
+    return photoUrl;
+  },
+
   async assignAgent(id: string, agenteUserId: string): Promise<Consignacion> {
     const raw = await apiClient.put<RawConsignacion>(
       `${BASE}/consignaciones/${id}/assign-agent`,

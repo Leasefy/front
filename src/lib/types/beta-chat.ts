@@ -258,6 +258,21 @@ export interface ChatSnapshot {
   enPrejuridico: number;
 }
 
+/**
+ * Una acción que el chat dejó PREPARADA en este mensaje y que espera el sí del
+ * operador. `estado` es el estado de la tarjeta en ESTE navegador; la verdad
+ * vive en el agente (la propuesta vence a los 10 minutos y su confirmación es
+ * idempotente), así que la tarjeta nunca ejecuta por su cuenta: manda el id.
+ */
+export interface AccionEnHilo {
+  propuesta: import('@/lib/api/ai-hub-acciones').BackendAccionPropuesta;
+  estado: 'pendiente' | 'confirmando' | 'ejecutada' | 'fallida' | 'cancelada' | 'vencida';
+  /** Lo que de verdad pasó al confirmar: cuántos salieron y quiénes no. */
+  resultado?: import('@/lib/api/ai-hub-acciones').ResultadoDeAccion | null;
+  /** Por qué no se pudo ni intentar (venció, la cancelaron, sin permiso). */
+  error?: string | null;
+}
+
 export interface ChatMessage {
   /** Unique identifier (crypto.randomUUID or fallback) */
   id: string;
@@ -273,6 +288,8 @@ export interface ChatMessage {
   agentActivity?: AgentActivityBlock;
   /** Pending decision attached to this assistant response */
   decision?: PendingDecision;
+  /** Acción preparada por el chat que espera confirmación (o su resultado). */
+  accion?: AccionEnHilo;
   /** Structured response metadata for rich card display */
   responseMeta?: ResponseMeta;
   /** Action proposals (F5) — one or more work items awaiting human confirmation */

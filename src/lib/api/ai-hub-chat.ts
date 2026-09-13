@@ -16,6 +16,7 @@
  */
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
+import type { BackendAccionPropuesta } from '@/lib/api/ai-hub-acciones';
 import { AGENT_WORKSPACES } from '@/lib/nav/agentWorkspaceNav';
 import type {
   AgentType,
@@ -120,6 +121,13 @@ export interface BackendChatResponse {
    * Opcional porque un backend viejo puede no mandarlas.
    */
   pendingApprovals?: BackendPendingApproval[];
+  /**
+   * Acciones que el chat PREPARÓ este turno y esperan confirmación (recordatorio
+   * de pago, mensaje, PQRS, mantenimiento). Nada se ejecutó: la tarjeta es la
+   * que pregunta, y el «Confirmar» va a `/ai-hub/chat/acciones/:id/confirmar`.
+   * Opcional porque un agente viejo no las manda.
+   */
+  accionesPropuestas?: BackendAccionPropuesta[];
   snapshot: BackendSnapshot | null;
   generatedAt: string;
 }
@@ -254,6 +262,12 @@ export interface ChatStreamHandlers {
    * enteraba de que había algo esperándolo.
    */
   onPendingApproval?: (approval: BackendPendingApproval) => void;
+  /**
+   * El chat dejó preparada una ACCIÓN que espera confirmación. Llega por su
+   * propio evento para que la tarjeta aparezca apenas existe, y otra vez dentro
+   * del `done` para que el front reconcilie igual que con las aprobaciones.
+   */
+  onAccionPropuesta?: (propuesta: BackendAccionPropuesta) => void;
   onDone?: (final: {
     responseText: string;
     suggestedActions: BackendSuggestedAction[];
@@ -325,6 +339,13 @@ export function handleSSEEvent(
       if (ap && typeof ap.id === 'string' && Array.isArray(ap.options) && ap.options.length > 0) {
         handlers.onPendingApproval?.(ap);
       }
+      break;
+    }
+    case 'accion_propuesta': {
+      const p = obj.propuesta as BackendAccionPropuesta | undefined;
+      // Una propuesta sin id no se puede confirmar: se ignora en vez de pintar
+      // una tarjeta con un botón que no lleva a ningún lado.
+      if (p && typeof p.id === 'string' && p.id) handlers.onAccionPropuesta?.(p);
       break;
     }
     case 'tool_step': {

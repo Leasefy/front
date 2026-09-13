@@ -17,6 +17,7 @@ import { AgentTaskThread } from './AgentTaskThread';
 import { AgentTaskProgress } from './AgentTaskProgress';
 import { ResponseCard } from './ResponseCard';
 import { WorkspaceView } from './WorkspaceView';
+import { AccionPropuestaCard } from './AccionPropuestaCard';
 import { DecisionCard } from './DecisionCard';
 import { ChatConversationBar } from './ChatConversationBar';
 
@@ -101,6 +102,8 @@ export function ChatContainer({ className }: ChatContainerProps) {
     turnSteps,
     retryAgent,
     selectDecisionOption,
+    confirmarAccionDelMensaje,
+    cancelarAccionDelMensaje,
   } = useBetaChatContext();
 
   const [workspaceMessageId, setWorkspaceMessageId] = useState<string | null>(null);
@@ -303,6 +306,16 @@ export function ChatContainer({ className }: ChatContainerProps) {
                           }
                         />
                       )}
+                      {message.accion && (
+                        <AccionPropuestaCard
+                          propuesta={message.accion.propuesta}
+                          estado={message.accion.estado}
+                          resultado={message.accion.resultado}
+                          error={message.accion.error}
+                          onConfirmar={() => confirmarAccionDelMensaje(message.id)}
+                          onCancelar={() => cancelarAccionDelMensaje(message.id)}
+                        />
+                      )}
                     </div>
                   );
                 }
@@ -332,6 +345,16 @@ export function ChatContainer({ className }: ChatContainerProps) {
                               ? (optionId) => selectDecisionOption(message.id, optionId)
                               : undefined
                           }
+                        />
+                      )}
+                      {message.accion && (
+                        <AccionPropuestaCard
+                          propuesta={message.accion.propuesta}
+                          estado={message.accion.estado}
+                          resultado={message.accion.resultado}
+                          error={message.accion.error}
+                          onConfirmar={() => confirmarAccionDelMensaje(message.id)}
+                          onCancelar={() => cancelarAccionDelMensaje(message.id)}
                         />
                       )}
                     </div>
@@ -387,6 +410,17 @@ export function ChatContainer({ className }: ChatContainerProps) {
                             ? (optionId) => selectDecisionOption(message.id, optionId)
                             : undefined
                         }
+                      />
+                    )}
+
+                    {message.accion && (
+                      <AccionPropuestaCard
+                        propuesta={message.accion.propuesta}
+                        estado={message.accion.estado}
+                        resultado={message.accion.resultado}
+                        error={message.accion.error}
+                        onConfirmar={() => confirmarAccionDelMensaje(message.id)}
+                        onCancelar={() => cancelarAccionDelMensaje(message.id)}
                       />
                     )}
 

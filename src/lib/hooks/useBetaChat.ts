@@ -35,6 +35,13 @@ import {
   type BackendPendingApproval,
   type BackendSnapshot,
 } from '@/lib/api/ai-hub-chat';
+import {
+  cancelarAccion,
+  confirmarAccion,
+  ErrorDeAccion,
+  propuestaVencida,
+  type BackendAccionPropuesta,
+} from '@/lib/api/ai-hub-acciones';
 
 /**
  * Backend snapshot (has `generatedAt`) → the front `ChatSnapshot` (numeric KPIs
@@ -360,6 +367,13 @@ export interface UseBetaChatReturn {
   // Action proposals (F5 — human-in-the-loop confirmations)
   confirmActionProposal: (messageId: string, workItemId: string, reason?: string) => Promise<void>;
   discardActionProposal: (messageId: string, workItemId: string) => void;
+
+  /**
+   * Acciones que el chat PREPARA y el operador confirma. Confirmar EJECUTA (es
+   * la única puerta entre el chat y un envío real); cancelar no ejecuta nada.
+   */
+  confirmarAccionDelMensaje: (messageId: string) => Promise<void>;
+  cancelarAccionDelMensaje: (messageId: string) => Promise<void>;
 }
 
 // ============================================================================
@@ -480,6 +494,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
 
   // Store pending decision to attach after streaming completes
   const pendingDecisionRef = useRef<import('@/lib/types/beta-chat').PendingDecision | null>(null);
+  // La acción que el chat dejó preparada en este turno. Se adjunta al mensaje
+  // cuando termina de escribirse, igual que la tarjeta de decisión.
+  const propuestaDeAccionRef = useRef<BackendAccionPropuesta | null>(null);
 
   // Store pending response meta to attach after streaming completes
   const pendingResponseMetaRef = useRef<import('@/lib/types/beta-chat').ResponseMeta | null>(null);
@@ -558,6 +575,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     streamingTargetRef.current = null;
     charIndexRef.current = 0;
     pendingDecisionRef.current = null;
+    propuestaDeAccionRef.current = null;
     pendingResponseMetaRef.current = null;
     setIsThinking(false);
     setIsStreaming(false);
@@ -638,6 +656,11 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           // Complete — attach pending decision and response meta
           const decision = pendingDecisionRef.current;
           pendingDecisionRef.current = null;
+          const propuesta = propuestaDeAccionRef.current;
+          propuestaDeAccionRef.current = null;
+          const accion: import('@/lib/types/beta-chat').AccionEnHilo | null = propuesta
+            ? { propuesta, estado: 'pendiente' }
+            : null;
           const responseMeta = pendingResponseMetaRef.current;
           pendingResponseMetaRef.current = null;
           setConversations((prev) =>
@@ -652,6 +675,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                         content: responseText,
                         status: 'complete' as MessageStatus,
                         ...(decision ? { decision } : {}),
+                        ...(accion ? { accion } : {}),
                         ...(responseMeta ? { responseMeta } : {}),
                       }
                     : m
@@ -929,6 +953,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
          * para que las dos rutas pinten la misma `<DecisionCard>`.
          */
         pendingApprovals?: BackendPendingApproval[];
+        accionesPropuestas?: BackendAccionPropuesta[];
       },
       assistantId: string,
       conversationId: string,
@@ -959,6 +984,12 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       const aprobacionPost = resp.pendingApprovals?.[0];
       if (!pendingDecisionRef.current && aprobacionPost) {
         pendingDecisionRef.current = aprobacionADecision(aprobacionPost);
+      }
+      // Mismo respaldo para la acción preparada: por el camino POST llega en la
+      // respuesta, no por un evento. Si el stream ya dejó una, ésa manda.
+      const accionPost = resp.accionesPropuestas?.[0];
+      if (!propuestaDeAccionRef.current && accionPost) {
+        propuestaDeAccionRef.current = accionPost;
       }
 
       const actions = resp.suggestedActions.map(suggestedActionToResponseAction);
@@ -1207,6 +1238,12 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           onPendingApproval: (approval: BackendPendingApproval) => {
             pendingDecisionRef.current = aprobacionADecision(approval);
           },
+          // El chat preparó una acción (recordatorio, mensaje, PQRS,
+          // mantenimiento). NO se ejecutó nada: se guarda para pintarla como
+          // tarjeta con «Confirmar» al cerrar el turno.
+          onAccionPropuesta: (propuesta: BackendAccionPropuesta) => {
+            propuestaDeAccionRef.current = propuesta;
+          },
           // F5: action_proposal events — append to the assistant message (D-42-03 fail-open).
           onActionProposal: (proposal: BackendActionProposal) => {
             try {
@@ -1331,6 +1368,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       setIsThinking(true);
       setStreamingContent('');
       pendingDecisionRef.current = null;
+      propuestaDeAccionRef.current = null;
       pendingResponseMetaRef.current = null;
 
       // Plan inicial del turno. Sólo dos pasos son ciertos ANTES de que el
@@ -1623,6 +1661,98 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     [activeConversationId, sendMessage, agencyId]
   );
 
+
+  // ========================================================================
+  // Acciones propuestas por el chat (confirmar = ejecutar de verdad)
+  // ========================================================================
+
+  /** Cambia el estado de la tarjeta de UN mensaje. Nada más toca la conversación. */
+  const parcharAccion = useCallback(
+    (messageId: string, parche: Partial<import('@/lib/types/beta-chat').AccionEnHilo>) => {
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== activeConversationId) return c;
+          return {
+            ...c,
+            messages: c.messages.map((m) =>
+              m.id === messageId && m.accion ? { ...m, accion: { ...m.accion, ...parche } } : m,
+            ),
+            updatedAt: new Date(),
+          };
+        }),
+      );
+    },
+    [activeConversationId],
+  );
+
+  /**
+   * Confirma la acción: ESTO EJECUTA. El front sólo manda el id de la propuesta;
+   * lo que sale es lo que quedó guardado cuando se armó la tarjeta.
+   *
+   * Los códigos se traducen a algo que el operador entienda: 410 es «venció»
+   * (la cartera ya cambió y hay que volver a pedirla), 409 «ya se resolvió»,
+   * 403 «tu cuenta no puede». Un error de red NO se cuenta como envío fallido
+   * inventado: se dice que no se pudo confirmar.
+   */
+  const confirmarAccionDelMensaje = useCallback(
+    async (messageId: string) => {
+      if (!agencyId || !activeConversationId) return;
+      const mensaje = conversations
+        .find((c) => c.id === activeConversationId)
+        ?.messages.find((m) => m.id === messageId);
+      const accion = mensaje?.accion;
+      if (!accion || accion.estado !== 'pendiente') return;
+      if (propuestaVencida(accion.propuesta)) {
+        parcharAccion(messageId, { estado: 'vencida' });
+        return;
+      }
+      parcharAccion(messageId, { estado: 'confirmando', error: null });
+      try {
+        const r = await confirmarAccion({ agencyId, propuestaId: accion.propuesta.id });
+        parcharAccion(messageId, {
+          estado: r.estado === 'ejecutada' ? 'ejecutada' : 'fallida',
+          resultado: r.resultado,
+        });
+      } catch (err) {
+        const status = err instanceof ErrorDeAccion ? err.status : 0;
+        const motivo =
+          status === 410
+            ? 'La propuesta venció. Pedímela de nuevo y la preparo con los números de ahora.'
+            : status === 409
+              ? 'Esa acción ya se resolvió.'
+              : status === 403
+                ? 'Tu cuenta no puede ejecutar esta acción.'
+                : 'No se pudo confirmar. Probá de nuevo en un momento.';
+        parcharAccion(messageId, {
+          estado: status === 410 ? 'vencida' : 'pendiente',
+          error: motivo,
+        });
+      }
+    },
+    [agencyId, activeConversationId, conversations, parcharAccion],
+  );
+
+  /** Descarta la acción. No ejecuta nada; deja el rastro de que se dijo que no. */
+  const cancelarAccionDelMensaje = useCallback(
+    async (messageId: string) => {
+      if (!agencyId || !activeConversationId) return;
+      const accion = conversations
+        .find((c) => c.id === activeConversationId)
+        ?.messages.find((m) => m.id === messageId)?.accion;
+      if (!accion || accion.estado !== 'pendiente') return;
+      // La tarjeta se cierra ya: el operador dijo que no y no tiene por qué
+      // esperar a que el registro viaje. Si el registro falla, no se ejecutó
+      // nada igual — el peor caso es una fila que queda pendiente y vence sola.
+      parcharAccion(messageId, { estado: 'cancelada' });
+      try {
+        await cancelarAccion({ agencyId, propuestaId: accion.propuesta.id });
+      } catch {
+        console.warn('[useBetaChat] no se pudo registrar la cancelación de la acción');
+      }
+    },
+    [agencyId, activeConversationId, conversations, parcharAccion],
+  );
+
   // ========================================================================
   // Decision aggregation (across all conversations)
   // ========================================================================
@@ -1884,5 +2014,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     // Action proposals (F5)
     confirmActionProposal,
     discardActionProposal,
+
+    // Acciones que el chat propone y el operador confirma (esto SÍ ejecuta)
+    confirmarAccionDelMensaje,
+    cancelarAccionDelMensaje,
   };
 }

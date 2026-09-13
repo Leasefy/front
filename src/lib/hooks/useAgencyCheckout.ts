@@ -70,8 +70,24 @@ export interface UseAgencyCheckout {
   awaitingTimedOut: boolean;
   /** Free / percentage (USAGE_CANON): activate without an upfront charge. */
   activate: (planId: string) => Promise<void>;
-  /** Paid FLAT: pre-open tab + selectPlan + payment link + redirect + poll. */
-  pay: (planId: string) => Promise<void>;
+  /**
+   * Paid FLAT: pre-open tab + selectPlan + payment link + redirect + poll.
+   * `baselineStatus` is the subscription's status BEFORE this checkout
+   * started (`subscriptionState.subscription?.status` at click time) — needed
+   * so `checkStatus()` can tell a genuine reactivation (SUSPENDED/PAST_DUE →
+   * ACTIVE) from "already ACTIVE" once `select-plan` answers
+   * `REACTIVATION_PENDING` (T-0085). `baselinePlanTier` is the subscription's
+   * tier at that same moment — needed ONLY to classify a 409
+   * `PENDING_CHARGE_ALREADY_PAID` thrown by the initial `select-plan` call
+   * itself, before any `outcome` is ever read: that recovery must use the
+   * reactivation predicate (a real status transition) rather than the
+   * purchase tier-advance one when `planId` equals the baseline tier and the
+   * baseline was non-ACTIVE — otherwise "tier === tier" is trivially true for
+   * a same-tier reactivation and reports success without checking anything
+   * real (fix round 1, MEDIUM 2). Omit both for the ordinary purchase path;
+   * they are a no-op there.
+   */
+  pay: (planId: string, baselineStatus?: string | null, baselinePlanTier?: string | null) => Promise<void>;
   /** Manual reconcile against Wompi if the webhook is slow. */
   verifyNow: () => Promise<void>;
   /**
@@ -84,7 +100,15 @@ export interface UseAgencyCheckout {
    * unless the current state is `idle` — never clobbers a flow already
    * started by `pay()`/`activate()`.
    */
-  resume: (chargeId: string, targetPlanTier: string) => void;
+  /**
+   * `baselineStatus`, when passed, marks this resumed charge as a
+   * reactivation (T-0085): a PENDING RENEWAL charge picked up while the
+   * subscription is SUSPENDED/PAST_DUE, resumed via `upgrade/page.tsx`'s
+   * widened trigger. Omit it for the pre-existing purchase resume (a PENDING
+   * UPGRADE charge with a real `targetPlanTier`) — behaviour there is
+   * unchanged.
+   */
+  resume: (chargeId: string, targetPlanTier: string, baselineStatus?: string | null) => void;
   /**
    * Reset back to idle — e.g. to close the overlay after an error, or to let
    * the owner leave an abandoned `awaiting` session ("Salir sin pagar").
@@ -141,6 +165,23 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
   // (T-0083 fix round 1, verify §4.1: a real, reproduced race).
   const chargeGenerationRef = useRef(0);
 
+  // Which success predicate `checkStatus` should apply (T-0085). 'purchase'
+  // (default) is the pre-existing tier-advance check. 'reactivation' is a
+  // SUSPENDED/PAST_DUE owner paying to lift the suspension on their CURRENT
+  // tier — the tier never changes, so the tier-advance check can never fire
+  // for it; success instead is the subscription actually leaving its
+  // non-ACTIVE baseline. Set by `pay()` (from the response's `outcome`) and
+  // `resume()` (when a `baselineStatus` is passed) — reset to 'purchase' at
+  // the top of every `pay()` call.
+  const checkoutKindRef = useRef<'purchase' | 'reactivation'>('purchase');
+
+  // The subscription status BEFORE this checkout started — only meaningful
+  // for 'reactivation'. Guards against reporting false success if the
+  // subscription was somehow already ACTIVE when the reactivation charge was
+  // created (should not happen given the back-side gate; costs nothing to
+  // guard).
+  const baselineStatusRef = useRef<string | null>(null);
+
   // Enter success, then fire onSuccess after a short delay so the caller shows
   // the success state before navigating.
   const succeed = useCallback(() => {
@@ -163,6 +204,34 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
     try {
       const s = await agencySubscriptionApi.verify();
       if (!s) return 'pending';
+
+      // Reactivation predicate — MUST run before the shared !openCharge →
+      // 'failed' fallback below, or a paid reactivation would misread as
+      // failure: a successful reactivation's charge goes SUCCESS and
+      // `openCharge` becomes null exactly like a cancelled one does (T-0085
+      // contract §8, predicate table). The tier never advances on a
+      // reactivation, so the purchase tier-advance check is skipped entirely
+      // for this kind rather than checked-and-skipped — it would never fire.
+      if (checkoutKindRef.current === 'reactivation') {
+        if (
+          s.subscription?.status === 'ACTIVE' &&
+          baselineStatusRef.current !== 'ACTIVE' &&
+          !s.openCharge
+        ) {
+          return 'active';
+        }
+        const gwReact = (s.openCharge?.gatewayStatus ?? '').toUpperCase();
+        if (gwReact === 'DECLINED' || gwReact === 'ERROR' || gwReact === 'VOIDED') return 'failed';
+        if (!s.openCharge) return 'failed';
+        return 'pending';
+      }
+
+      // Purchase predicate — unchanged. Success = the subscription tier
+      // actually advanced to the charge's targetPlanTier (the only signal
+      // `confirmChargeFromWebhook` ever writes on confirmation).
+      // `subscription.status === 'ACTIVE'` is NEVER read as a payment signal
+      // here — the agency's free starter plan is ACTIVE from the first
+      // millisecond.
       const target = targetTierRef.current;
       const advanced =
         !!target && s.subscription?.planTier?.toLowerCase() === target.toLowerCase();
@@ -273,7 +342,7 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
 
   // Paid FLAT plan — select plan (→ PENDING charge) then open the hosted Wompi
   // payment link in a separate tab (avaluo-style; payer picks card/PSE/Nequi).
-  const pay = useCallback(async (planId: string) => {
+  const pay = useCallback(async (planId: string, baselineStatus?: string | null, baselinePlanTier?: string | null) => {
     // Pre-open the tab SYNCHRONOUSLY inside the click gesture, then redirect it
     // once we have the link. Browsers block a window.open issued AFTER an await
     // (it's outside the user-gesture window), so opening it post-fetch would be
@@ -284,16 +353,26 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
     setPopupBlocked(false);
     setAwaitingTimedOut(false);
     setResuming(false);
+    // Reset the reactivation bookkeeping every call — a prior pay() attempt
+    // must never leak its kind/baseline into this one (T-0085).
+    checkoutKindRef.current = 'purchase';
+    baselineStatusRef.current = baselineStatus ?? null;
     try {
-      const { charge } = await agencySubscriptionApi.selectPlan(planId);
+      const { charge, outcome } = await agencySubscriptionApi.selectPlan(planId);
       if (!charge) {
         payTab?.close();
         setError('No se generó un cobro para este plan. Contacta a soporte.');
         setState('error');
         return;
       }
+      if (outcome === 'REACTIVATION_PENDING') {
+        checkoutKindRef.current = 'reactivation';
+      }
       // Capture the tier this charge unlocks on confirmation — falls back to
       // the requested planId if the back ever omits it (should not happen).
+      // For a reactivation, `charge.targetPlanTier` is null, so this falls
+      // back to `planId` (the current tier) — harmless, `checkStatus()`
+      // never reads `targetTierRef` for the 'reactivation' kind.
       targetTierRef.current = charge.targetPlanTier ?? planId;
       chargeIdRef.current = charge.id;
       chargeGenerationRef.current += 1;
@@ -319,6 +398,23 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
       // predicate `awaiting` polls with — a real tier advance is still
       // required, never assumed from the status code alone.
       if (err instanceof ApiError && err.status === 409 && err.code === 'PENDING_CHARGE_ALREADY_PAID') {
+        // This 409 fires on the INITIAL `selectPlan` call, before any
+        // `outcome` is ever read — `checkoutKindRef` is still 'purchase'
+        // (reset unconditionally above). For a SUSPENDED/PAST_DUE owner
+        // re-selecting their CURRENT tier, that would make
+        // `recoverAlreadyPaidCharge` use the purchase tier-advance check,
+        // which is trivially true here (a RENEWAL charge never changes
+        // `planTier`) and would report success without checking anything
+        // real. Reclassify as 'reactivation' first so the recovery below
+        // checks the actual status transition instead (fix round 1, MEDIUM 2).
+        const isSameTierReactivation =
+          baselineStatusRef.current !== null &&
+          baselineStatusRef.current !== 'ACTIVE' &&
+          baselinePlanTier != null &&
+          baselinePlanTier.toLowerCase() === planId.toLowerCase();
+        if (isSameTierReactivation) {
+          checkoutKindRef.current = 'reactivation';
+        }
         await recoverAlreadyPaidCharge(planId);
         return;
       }
@@ -348,11 +444,16 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
   // previous `resume()` — already started; fires the network call exactly
   // once per resume, never on the poll loop.
   const resume = useCallback(
-    (chargeId: string, targetPlanTier: string) => {
+    (chargeId: string, targetPlanTier: string, baselineStatus?: string | null) => {
       if (state !== 'idle') return;
       targetTierRef.current = targetPlanTier;
       chargeIdRef.current = chargeId;
       chargeGenerationRef.current += 1;
+      // A baselineStatus argument marks this as resuming a reactivation
+      // charge (T-0085) — the pre-existing purchase resume call site never
+      // passes one, so its behaviour is unchanged.
+      checkoutKindRef.current = baselineStatus !== undefined ? 'reactivation' : 'purchase';
+      baselineStatusRef.current = baselineStatus ?? null;
       setError(null);
       setPaymentUrl(null);
       setPopupBlocked(false);

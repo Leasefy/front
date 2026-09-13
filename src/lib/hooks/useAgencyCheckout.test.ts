@@ -98,6 +98,25 @@ async function payToAwaiting(planId = 'pro') {
   });
 }
 
+/**
+ * Start a `pay()` flow for a SUSPENDED/PAST_DUE owner re-selecting their
+ * current tier (T-0085): `select-plan` returns `outcome: 'REACTIVATION_PENDING'`
+ * and a RENEWAL charge with `targetPlanTier: null`. `baselineStatus` is the
+ * subscription status BEFORE this checkout started (passed to `pay()`'s new
+ * second argument, per contract.md §8).
+ */
+async function payReactivationToAwaiting(planId = 'pro', baselineStatus = 'SUSPENDED') {
+  vi.spyOn(window, 'open').mockReturnValue(fakeTab() as unknown as Window);
+  mockSelectPlan.mockResolvedValue({
+    outcome: 'REACTIVATION_PENDING',
+    charge: { id: 'ch_react', targetPlanTier: null, kind: 'RENEWAL' },
+  });
+  mockChargePaymentLink.mockResolvedValue({ url: 'https://checkout.wompi.co/l/react' });
+  await act(async () => {
+    await hook.pay(planId, baselineStatus);
+  });
+}
+
 beforeEach(() => {
   // resetAllMocks (not clearAllMocks): clearAllMocks only wipes call history,
   // it leaves a mock's configured mockResolvedValue/mockRejectedValue
@@ -644,6 +663,317 @@ describe('useAgencyCheckout — pay: unrelated select-plan errors (T-0012 WU-5 r
 
     expect(hook.state).toBe('awaiting');
     expect(onSuccess).not.toHaveBeenCalled();
+  });
+});
+
+describe('useAgencyCheckout — pay: reactivation (REACTIVATION_PENDING, T-0085)', () => {
+  // A SUSPENDED/PAST_DUE owner re-selects the SAME tier: back reuses/creates a
+  // PENDING RENEWAL charge (targetPlanTier: null) and returns
+  // `outcome: 'REACTIVATION_PENDING'`. Success is the subscription actually
+  // leaving its non-ACTIVE baseline for ACTIVE with no open charge left — the
+  // tier never advances on a reactivation, so the purchase predicate
+  // (tier-advance) would never fire for this outcome.
+
+  it('follows the same payment-link path as a purchase and enters awaiting', async () => {
+    await mount();
+    await payReactivationToAwaiting('pro', 'SUSPENDED');
+
+    expect(mockChargePaymentLink).toHaveBeenCalledWith('ch_react');
+    expect(hook.state).toBe('awaiting');
+    expect(hook.paymentUrl).toBe('https://checkout.wompi.co/l/react');
+  });
+
+  it('does NOT succeed on the first poll while the subscription is still SUSPENDED', async () => {
+    await mount();
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'SUSPENDED' },
+      openCharge: { id: 'ch_react', status: 'PENDING', kind: 'RENEWAL', targetPlanTier: null, gatewayStatus: null },
+      status: 'SUSPENDED',
+    });
+
+    await payReactivationToAwaiting('pro', 'SUSPENDED');
+    await flush();
+
+    expect(hook.state).toBe('awaiting');
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  it('reaches success once the subscription flips to ACTIVE with no open charge left, baseline non-ACTIVE', async () => {
+    vi.useFakeTimers();
+    await mount();
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'ACTIVE' },
+      openCharge: null,
+      status: 'ACTIVE',
+    });
+
+    await payReactivationToAwaiting('pro', 'SUSPENDED');
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(hook.state).toBe('success');
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT claim success if the baseline status was already ACTIVE (race guard)', async () => {
+    // Should not happen given the back-side gate (SAME+ACTIVE never emits
+    // REACTIVATION_PENDING) — costs nothing to guard against here too.
+    await mount();
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'ACTIVE' },
+      openCharge: null,
+      status: 'ACTIVE',
+    });
+
+    await payReactivationToAwaiting('pro', 'ACTIVE');
+    await flush();
+
+    // Falls through to the shared gateway-status-failure / !openCharge logic —
+    // never a silent false success.
+    expect(hook.state).toBe('error');
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  it.each(['DECLINED', 'ERROR', 'VOIDED'])(
+    'fails when the reactivation charge gets gateway status %s',
+    async (gatewayStatus) => {
+      await mount();
+      mockVerify.mockResolvedValue({
+        subscription: { planTier: 'pro', status: 'SUSPENDED' },
+        openCharge: { id: 'ch_react', status: 'PENDING', kind: 'RENEWAL', targetPlanTier: null, gatewayStatus },
+        status: 'SUSPENDED',
+      });
+
+      await payReactivationToAwaiting('pro', 'SUSPENDED');
+      await flush();
+
+      expect(hook.state).toBe('error');
+    },
+  );
+
+  it('regression: a plain purchase pay() (no outcome field) keeps the tier-advance predicate untouched', async () => {
+    // No `outcome` key at all — mirrors a back that has not shipped this
+    // outcome yet, or any of the three pre-existing outcomes.
+    await mount();
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: { id: 'ch_1', status: 'PENDING', targetPlanTier: 'pro', gatewayStatus: null },
+      status: 'ACTIVE',
+    });
+
+    await payToAwaiting('pro');
+    await flush();
+
+    // Old front / new-outcome-unaware path: stays awaiting, never a crash and
+    // never a false success from the reactivation branch leaking in.
+    expect(hook.state).toBe('awaiting');
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+});
+
+describe('useAgencyCheckout — resume: reactivation bookkeeping (T-0085)', () => {
+  it('resume() with a baseline status enters the reactivation predicate, not the tier-advance one', async () => {
+    vi.useFakeTimers();
+    await mount();
+    mockChargePaymentLink.mockResolvedValue({ url: 'https://checkout.wompi.co/l/resumed-react' });
+    // Still genuinely SUSPENDED/unpaid — the resumed session must not fake success.
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'SUSPENDED' },
+      openCharge: { id: 'ch_react', status: 'PENDING', kind: 'RENEWAL', targetPlanTier: null, gatewayStatus: null },
+      status: 'SUSPENDED',
+    });
+
+    act(() => {
+      hook.resume('ch_react', 'pro', 'SUSPENDED');
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(hook.state).toBe('awaiting');
+
+    // Now the subscription genuinely leaves its SUSPENDED baseline.
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'ACTIVE' },
+      openCharge: null,
+      status: 'ACTIVE',
+    });
+    await act(async () => {
+      await hook.verifyNow();
+    });
+    expect(hook.state).toBe('success');
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('resume() without a baseline status keeps the existing purchase behaviour (regression)', async () => {
+    // No third argument — the pre-existing resume() call site for an UPGRADE
+    // charge. Subscription reads ACTIVE on the OLD tier the whole time (the
+    // purchase predicate's classic false-success trap) — must stay awaiting.
+    await mount();
+    mockChargePaymentLink.mockResolvedValue({ url: 'https://checkout.wompi.co/l/x' });
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: { id: 'ch_1', status: 'PENDING', targetPlanTier: 'pro', gatewayStatus: null },
+      status: 'ACTIVE',
+    });
+
+    act(() => {
+      hook.resume('ch_1', 'pro');
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(hook.state).toBe('awaiting');
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  it("reset() abandons the reactivation charge id captured by resume()", async () => {
+    await mount();
+    mockChargePaymentLink.mockResolvedValue({ url: 'https://checkout.wompi.co/l/react' });
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'SUSPENDED' },
+      openCharge: { id: 'ch_react', status: 'PENDING', kind: 'RENEWAL', targetPlanTier: null, gatewayStatus: null },
+      status: 'SUSPENDED',
+    });
+
+    act(() => {
+      hook.resume('ch_react', 'pro', 'SUSPENDED');
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(hook.state).toBe('awaiting');
+
+    act(() => {
+      hook.reset();
+    });
+
+    expect(mockAbandonCharge).toHaveBeenCalledWith('ch_react');
+  });
+});
+
+describe("useAgencyCheckout — reset() abandons a reactivation charge tracked by pay() (T-0085 / T-0083)", () => {
+  it('reset() calls abandonCharge with the id captured from a reactivation pay()', async () => {
+    await mount();
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'SUSPENDED' },
+      openCharge: { id: 'ch_react', status: 'PENDING', kind: 'RENEWAL', targetPlanTier: null, gatewayStatus: null },
+      status: 'SUSPENDED',
+    });
+    await payReactivationToAwaiting('pro', 'SUSPENDED');
+    expect(hook.state).toBe('awaiting');
+
+    act(() => {
+      hook.reset();
+    });
+
+    expect(hook.state).toBe('idle');
+    expect(mockAbandonCharge).toHaveBeenCalledWith('ch_react');
+  });
+});
+
+describe('useAgencyCheckout — pay: pre-outcome 409 for a same-tier reactivation (T-0085 fix round 1)', () => {
+  // The INITIAL `selectPlan` call itself can 409 PENDING_CHARGE_ALREADY_PAID
+  // before any `outcome` is ever read — the mutating call threw, so pay()
+  // never got the chance to set `checkoutKindRef` from a response. For a
+  // SUSPENDED/PAST_DUE owner re-selecting their CURRENT tier, the recovery
+  // must still use the reactivation predicate (a real status transition),
+  // never the purchase tier-advance one — under the purchase predicate,
+  // `planId === subscription.planTier` is trivially true for a same-tier
+  // reactivation (a RENEWAL charge never changes `planTier`), so it would
+  // report success without checking anything real (verify round 1, MEDIUM 2).
+
+  it('recovers via the reactivation predicate: refetch shows ACTIVE + no open charge left → succeeds', async () => {
+    vi.useFakeTimers();
+    await mount();
+    vi.spyOn(window, 'open').mockReturnValue(fakeTab() as unknown as Window);
+    mockSelectPlan.mockRejectedValue(
+      new ApiError(409, 'El cargo pendiente ya había sido pagado', 'PENDING_CHARGE_ALREADY_PAID'),
+    );
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'ACTIVE' },
+      openCharge: null,
+      status: 'ACTIVE',
+    });
+
+    await act(async () => {
+      // Baseline: SUSPENDED on 'pro', re-selecting 'pro' — same-tier reactivation.
+      await hook.pay('pro', 'SUSPENDED', 'pro');
+    });
+    await flush();
+
+    expect(hook.state).toBe('success');
+    expect(hook.error).toBeNull();
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT claim success when the refetch still shows the subscription SUSPENDED', async () => {
+    await mount();
+    vi.spyOn(window, 'open').mockReturnValue(fakeTab() as unknown as Window);
+    mockSelectPlan.mockRejectedValue(
+      new ApiError(409, 'El cargo pendiente ya había sido pagado', 'PENDING_CHARGE_ALREADY_PAID'),
+    );
+    // Still genuinely suspended and unpaid — the recovery must not report
+    // success just because the back said 409.
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'SUSPENDED' },
+      openCharge: { id: 'ch_react', status: 'PENDING', kind: 'RENEWAL', targetPlanTier: null, gatewayStatus: null },
+      status: 'SUSPENDED',
+    });
+
+    await act(async () => {
+      await hook.pay('pro', 'SUSPENDED', 'pro');
+    });
+    await flush();
+
+    expect(hook.state).toBe('error');
+    expect(hook.error).not.toBeNull();
+    // The existing "confirmed but not showing yet" copy, not a rejection lie.
+    expect(hook.error).not.toContain('rechazado');
+  });
+
+  it('stays on the purchase predicate when the selected tier differs, even with a non-ACTIVE baseline (genuine upgrade attempt while suspended)', async () => {
+    await mount();
+    vi.spyOn(window, 'open').mockReturnValue(fakeTab() as unknown as Window);
+    mockSelectPlan.mockRejectedValue(
+      new ApiError(409, 'El cargo pendiente ya había sido pagado', 'PENDING_CHARGE_ALREADY_PAID'),
+    );
+    // Genuine upgrade: the tier DID advance to what was requested.
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'ACTIVE' },
+      openCharge: null,
+      status: 'ACTIVE',
+    });
+
+    await act(async () => {
+      // Baseline tier 'starter' (non-ACTIVE SUSPENDED owner), selecting 'pro'
+      // — a DIFFERENT tier, so this must NOT be treated as a same-tier
+      // reactivation despite the non-ACTIVE baseline.
+      await hook.pay('pro', 'SUSPENDED', 'starter');
+    });
+    await flush();
+
+    expect(hook.state).toBe('success');
   });
 });
 

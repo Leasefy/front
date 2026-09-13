@@ -3,7 +3,11 @@
  * Maps to /contracts controller in NestJS backend
  */
 
-import type { PerfilesDelContrato } from '@/lib/types/contract';
+import type {
+  PerfilesDelContrato,
+  PropietariosDelContrato,
+  InquilinoDelContrato,
+} from '@/lib/types/contract';
 
 export interface BackendSignature {
   signedAt: string;
@@ -132,6 +136,13 @@ export interface BackendContract {
     name: string;
     documentNumber: string;
   } | null;
+  /**
+   * TODOS los dueños del inmueble con su porcentaje y su parte del canon, y
+   * todos los inquilinos con el principal marcado. Sólo los devuelven
+   * GET /:id y PATCH /:id/administracion — las dos con la MISMA forma.
+   */
+  propietariosDelContrato?: PropietariosDelContrato | null;
+  inquilinosDelContrato?: InquilinoDelContrato[] | null;
   /**
    * Quién retiene qué, por parte. Sólo lo devuelven GET /:id y
    * PATCH /:id/administracion — las dos con la MISMA forma, a propósito: una

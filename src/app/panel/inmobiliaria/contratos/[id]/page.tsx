@@ -57,7 +57,7 @@ import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/Compro
 import { Stat, StatStrip } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { VincularInmueble } from '@/components/contratos/VincularInmueble';
-import { InvitarInquilino } from '@/components/contratos/InvitarInquilino';
+import { PartesDelContrato } from '@/components/contratos/PartesDelContrato';
 import { InmuebleDelContrato } from '@/components/contratos/InmuebleDelContrato';
 import { numeroDelContrato, tituloDelContrato } from '@/lib/contratos/numero-del-contrato';
 
@@ -386,20 +386,15 @@ function ContratoDetalleContent() {
         {/* Left — info cards */}
         <div className="lg:col-span-1 space-y-4">
           <InfoCard title="Partes" icon={User}>
-            <FilaDelPropietario contract={contract} />
-            <InfoRow label="Inquilino" value={contract.tenantName} />
-            {/* T-0036 §3.2.B6 — la salida de un contrato migrado sin
-                inquilino: se muestra sólo mientras tenantId siga null. */}
-            {contract.tenantId === null && (
-              <div className="pt-1">
-                <InvitarInquilino
-                  contract={contract}
-                  puedeInvitar={canInviteTenant}
-                  onActualizado={(c) => setContract(c)}
-                  onConflicto={() => void refetch()}
-                />
-              </div>
-            )}
+            {/* Todos los dueños con su porcentaje y su parte del canon, y
+                todos los inquilinos con su DOCUMENTO (Nico, 2026-09-12). */}
+            <PartesDelContrato
+              contract={contract}
+              puedeInvitar={canInviteTenant}
+              puedeEditar={canEditContracts}
+              onActualizado={(c) => setContract(c)}
+              onConflicto={() => void refetch()}
+            />
           </InfoCard>
 
           <InfoCard title="Inmueble" icon={Buildings}>
@@ -946,47 +941,6 @@ function InfoCard({
       <div className="space-y-2">{children}</div>
     </section>
   );
-}
-
-/**
- * El propietario es el de la consignación del inmueble — la ficha que la
- * inmobiliaria administra y a la que le dispersa. `landlordName` es otra
- * cosa: en un contrato migrado es el usuario que corrió la migración, y en
- * QA los 99 contratos decían «Propietario: victor ortiz». Sin consignación
- * no hay a quién mostrar: se dice, en vez de caer al nombre equivocado.
- */
-function FilaDelPropietario({ contract }: { contract: Contract }) {
-  const p = contract.propietarioDeLaConsignacion;
-  if (p) {
-    return (
-      <div className="flex items-start justify-between gap-3 text-sm">
-        <span className="text-muted-foreground">Propietario</span>
-        <span className="text-right">
-          <Link
-            href={conRegreso(`/panel/inmobiliaria/propietarios/${p.id}`, `/panel/inmobiliaria/contratos/${contract.id}`)}
-            className="font-medium text-foreground hover:underline"
-            data-testid="propietario-ficha"
-          >
-            {p.name}
-          </Link>
-          <span className="block text-xs text-muted-foreground">{p.documentNumber}</span>
-        </span>
-      </div>
-    );
-  }
-  if (contract.contractOrigin === 'MIGRATED') {
-    return (
-      <div className="flex items-start justify-between gap-3 text-sm">
-        <span className="text-muted-foreground">Propietario</span>
-        <span className="text-right text-xs text-muted-foreground" data-testid="propietario-sin-consignacion">
-          {contract.propertyId
-            ? 'El inmueble no está consignado: registra al propietario en Inmuebles.'
-            : 'Se vincula con el inmueble.'}
-        </span>
-      </div>
-    );
-  }
-  return <InfoRow label="Propietario" value={contract.landlordName} />;
 }
 
 function InfoRow({ label, value }: { label: string; value: string | number | null | undefined }) {

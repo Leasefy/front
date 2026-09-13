@@ -24,7 +24,7 @@ import type {
 } from './contracts.types';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
-import type { Contract, ContractType, ContractStatus, SignatureStatus, ContractRejection } from '@/lib/types/contract';
+import type { Contract, ContractType, ContractStatus, SignatureStatus, ContractRejection, InquilinoDelContrato } from '@/lib/types/contract';
 import type { CobroConDesglose } from './recibos-de-caja.types';
 import { normalizeCobro } from './inmobiliaria.service';
 import type { ContractAuditEvent, ContractAuditEventType, ContractAuditEventMetadata } from '@/lib/types/contract';
@@ -133,6 +133,11 @@ export function mapBackendContract(bc: BackendContract): Contract {
     comisionPorcentaje: aNumero(bc.comisionPorcentaje),
     comisionDeConsignacion: aNumero(bc.comisionDeConsignacion),
     propietarioDeLaConsignacion: bc.propietarioDeLaConsignacion,
+    // Todos los dueños con su porcentaje y su parte del canon, y todos los
+    // inquilinos. Passthrough: `undefined` = el back no lo mandó (lista,
+    // respuesta vieja) y la ficha cae a lo que ya mostraba; `null` nunca.
+    propietariosDelContrato: bc.propietariosDelContrato ?? null,
+    inquilinosDelContrato: bc.inquilinosDelContrato ?? null,
     // Quién retiene qué. Puede faltar en respuestas viejas: null significa
     // «no vino», y la pantalla cae a los perfiles por defecto diciéndolo.
     perfilesTributarios: bc.perfilesTributarios ?? null,
@@ -631,6 +636,34 @@ export const contractsApi = {
   async quitarConcepto(id: string, conceptoId: string): Promise<{ id: string }> {
     return apiClient.delete<{ id: string }>(
       `/contracts/${id}/conceptos/${conceptoId}`,
+    );
+  },
+
+  /**
+   * Los inquilinos del contrato: el principal primero y marcado, y detrás los
+   * coarrendatarios (Nico, 2026-09-12: «puede darse el caso» de varios).
+   *
+   * Las tres devuelven la LISTA COMPLETA, no la fila tocada: la pantalla se
+   * repinta con la respuesta y con una fila suelta tendría que adivinar cómo
+   * quedó el resto.
+   */
+  async inquilinos(id: string): Promise<InquilinoDelContrato[]> {
+    return apiClient.get<InquilinoDelContrato[]>(`/contracts/${id}/inquilinos`);
+  },
+
+  async agregarInquilino(
+    id: string,
+    dto: { nombre: string; documento: string; email?: string; telefono?: string },
+  ): Promise<InquilinoDelContrato[]> {
+    return apiClient.post<InquilinoDelContrato[]>(`/contracts/${id}/inquilinos`, dto);
+  },
+
+  async quitarInquilino(
+    id: string,
+    inquilinoId: string,
+  ): Promise<InquilinoDelContrato[]> {
+    return apiClient.delete<InquilinoDelContrato[]>(
+      `/contracts/${id}/inquilinos/${inquilinoId}`,
     );
   },
 

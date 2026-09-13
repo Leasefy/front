@@ -271,6 +271,64 @@ export interface PerfilesDelContrato {
   inmobiliaria: PerfilTributario;
 }
 
+/**
+ * Un dueño del inmueble, con su porcentaje y su parte del canon.
+ *
+ * 🔴 Nico, 2026-09-12: «Hay contratos que tienen tres propietarios y cada uno
+ * define cuál es el porcentaje de cada uno. Hay que dividir el canon entre los
+ * porcentajes que pidieron y tener la información de los tres propietarios.»
+ *
+ * El reparto lo hace el BACK con la misma función que la dispersión: si esta
+ * pantalla lo dividiera por su cuenta, el día que las dos cuentas difieran la
+ * ficha diría una cosa y el giro giraría otra.
+ *
+ * Los cuatro booleanos tributarios vienen CRUDOS (`null` = nadie lo afirmó),
+ * no mezclados con el default de su tipo de persona: la ficha muestra sólo lo
+ * que la persona TIENE, y para eso hay que distinguir «dijo que no» de «no
+ * dijo».
+ */
+export interface PropietarioDelContrato {
+  id: string;
+  name: string;
+  documentNumber: string;
+  documentType: string | null;
+  participacionBps: number;
+  /** Ya escrito: `60 %`, `33,33 %`. */
+  participacion: string;
+  /** `null` = no hay canon, o las participaciones no suman 100 %. */
+  canonCop: number | null;
+  esPrincipal: boolean;
+  responsableIva: boolean | null;
+  agenteRetenedorRenta: boolean | null;
+  agenteRetenedorIva: boolean | null;
+  agenteRetenedorIca: boolean | null;
+}
+
+export interface PropietariosDelContrato {
+  propietarios: PropietarioDelContrato[];
+  sumaBps: number;
+  /** `false` = hay que corregir el mandato; la ficha lo dice en voz alta. */
+  sumanCien: boolean;
+}
+
+/**
+ * Un inquilino del contrato. El principal es el titular (`Contract.tenantId`
+ * y su snapshot); los demás son coarrendatarios de `contrato_inquilinos`.
+ *
+ * Nico, 2026-09-12: «No se presentan tanto múltiples inquilinos, pero puede
+ * darse el caso: construirlo también para múltiples inquilinos.»
+ */
+export interface InquilinoDelContrato {
+  /** `null` en el principal: no tiene fila propia, vive en el contrato. */
+  id: string | null;
+  userId: string | null;
+  nombre: string;
+  documento: string;
+  email: string | null;
+  telefono: string | null;
+  esPrincipal: boolean;
+}
+
 // ============================================================================
 // Contract
 // ============================================================================
@@ -377,6 +435,16 @@ export interface Contract {
     name: string;
     documentNumber: string;
   } | null;
+
+  /**
+   * TODOS los dueños del inmueble, con su porcentaje y su parte del canon.
+   * Con un solo dueño es una lista de uno al 100 %; `undefined` = el back no
+   * lo mandó (lista, respuesta vieja) y la ficha cae a
+   * `propietarioDeLaConsignacion`.
+   */
+  propietariosDelContrato?: PropietariosDelContrato | null;
+  /** Todos los inquilinos, el principal primero y marcado. */
+  inquilinosDelContrato?: InquilinoDelContrato[] | null;
 
   /**
    * Quién retiene qué. La retención la practica **quien paga**, así que sin

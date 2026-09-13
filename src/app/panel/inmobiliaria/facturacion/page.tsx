@@ -33,6 +33,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SinDatos } from '@/components/estado/SinDatos';
+import { NuevaFactura } from '@/components/facturacion/NuevaFactura';
 import type { FacturacionTab } from '@/lib/api/facturacion.types';
 
 interface TabDef {
@@ -61,11 +62,27 @@ const TABS: readonly TabDef[] = [
   },
 ];
 
-const esTab = (v: string): v is FacturacionTab => TABS.some((x) => x.key === v);
+/**
+ * 🔴 «Nueva factura» es una pestaña más, y es la PRIMERA.
+ *
+ * Nico (2026-09-12): «En el módulo de facturación debe tener la pestaña de
+ * nueva factura y permitir seleccionar por mes de facturación.» Antes había un
+ * botón «Nueva factura» que sólo mostraba un toast «llega con M2»; se había
+ * ocultado justamente por eso. Ahora existe de verdad y no es un botón: es
+ * donde se factura el mes.
+ *
+ * NO entra en `FacturacionTab` (el contrato de tipos del motor DIAN, que
+ * describe cuatro listados de documentos ya emitidos). Esta pestaña no lista
+ * documentos: calcula los que faltan por emitir.
+ */
+type PestanaDeFacturacion = FacturacionTab | 'nueva';
+
+const esTab = (v: string): v is PestanaDeFacturacion =>
+  v === 'nueva' || TABS.some((x) => x.key === v);
 
 function FacturacionContent() {
   const { t } = useI18n();
-  const [active, setActive] = useState<FacturacionTab>('ventas');
+  const [active, setActive] = useState<PestanaDeFacturacion>('nueva');
   const k = (suffix: string) => `inmobiliaria.facturacion.${suffix}`;
 
   return (
@@ -77,7 +94,11 @@ function FacturacionContent() {
       </header>
 
       {/* Banner del M2, tal cual estaba: no es de esta pantalla decidir cuándo
-          llega el motor. */}
+          llega el motor. Se calla en «Nueva factura» porque ahí sí hay motor
+          —lo que falta es el IVA y la numeración DIAN— y esa pestaña lo dice
+          con sus propias palabras: dos avisos distintos sobre lo mismo, uno
+          encima del otro, no los lee nadie. */}
+      {active !== 'nueva' && (
       <div className="rounded-lg bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
         <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
         <div>
@@ -85,6 +106,7 @@ function FacturacionContent() {
           <p className="text-xs text-primary/90 mt-0.5">{t(k('m2BannerDesc'))}</p>
         </div>
       </div>
+      )}
 
       {/* UNA tarjeta: pestañas arriba, tabla debajo. Sin título encima. */}
       <Tabs
@@ -99,6 +121,9 @@ function FacturacionContent() {
         >
           <div className="border-b border-border p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <TabsList variant="segmented" aria-label={t(k('title'))} className="justify-start">
+              <TabsTrigger value="nueva" className="whitespace-nowrap">
+                {t(k('tab_nueva'))}
+              </TabsTrigger>
               {TABS.map((x) => (
                 <TabsTrigger key={x.key} value={x.key} className="whitespace-nowrap">
                   {t(k(`tab_${x.key}`))}
@@ -123,6 +148,12 @@ function FacturacionContent() {
               </Button>
             )}
           </div>
+
+          <TabsContent value="nueva" className="mt-0">
+            <div className="p-4">
+              <NuevaFactura />
+            </div>
+          </TabsContent>
 
           {TABS.map((tab) => (
             <TabsContent key={tab.key} value={tab.key} className="mt-0">

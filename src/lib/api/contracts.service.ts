@@ -144,6 +144,9 @@ export function mapBackendContract(bc: BackendContract): Contract {
     // Ya resuelto por el back, con el origen de cada valor. `null` = respuesta
     // vieja, y la pantalla lo dice en vez de inventar el efectivo.
     regimenTributario: bc.regimenTributario ?? null,
+    // El nombre del escenario. `null` = la respuesta no lo trajo, y la tarjeta
+    // lo dice en vez de inventar un escenario.
+    escenarioTributario: bc.escenarioTributario ?? null,
     arrendadorResponsableIva: bc.arrendadorResponsableIva ?? null,
     inquilinoTipoPersona: bc.inquilinoTipoPersona ?? null,
     inquilinoResponsableIva: bc.inquilinoResponsableIva ?? null,

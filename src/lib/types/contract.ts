@@ -329,6 +329,76 @@ export interface InquilinoDelContrato {
   esPrincipal: boolean;
 }
 
+/**
+ * El escenario tributario del contrato: cómo se LLAMA la situación que forman
+ * las dos partes, y qué genera.
+ *
+ * Nico, 2026-09-12: «Los contratos no están mostrando la información sobre el
+ * escenario que se da en ese contrato. Ejemplo: si el inquilino es persona
+ * natural y si el propietario es persona natural, el escenario de ese contrato
+ * sería contrato de arrendamiento entre personas naturales. Entonces ese no va
+ * a generar impuestos.»
+ *
+ * Los nueve códigos salen del catálogo que la inmobiliaria ya usaba en Nuby.
+ * Lo calcula el back con el mismo régimen que usa el motor de cobros: la
+ * pantalla lo muestra, no lo recalcula — una segunda cuenta es una cuenta que
+ * un día no coincide con la que cobra.
+ */
+export type CodigoDeEscenario =
+  | 'E1'
+  | 'E2'
+  | 'E3'
+  | 'E4'
+  | 'E5'
+  | 'E6'
+  | 'E7'
+  | 'E8'
+  | 'E9'
+  | 'SIN_DEFINIR';
+
+export interface ImpuestoDelEscenario {
+  tipo: 'IVA' | 'RETEFUENTE' | 'RETEIVA';
+  base: 'CANON' | 'COMISION';
+  nombre: string;
+  porcentaje: number;
+  loPractica: 'PROPIETARIO' | 'INQUILINO';
+  aCargoDe: 'INQUILINO' | 'PROPIETARIO' | 'INMOBILIARIA';
+  explicacion: string;
+}
+
+/**
+ * `AFIRMADO` = alguien lo dijo y el cobro lo practica. `DEDUCIDO` = salió del
+ * tipo de persona y el cobro NO lo practica hasta confirmarlo. La diferencia
+ * es plata, así que se muestra.
+ */
+export type OrigenDelEjeDelEscenario = 'AFIRMADO' | 'DEDUCIDO' | 'SIN_DEFINIR';
+
+export interface EjeDelEscenario {
+  valor: boolean | null;
+  origen: OrigenDelEjeDelEscenario;
+  porque: string;
+}
+
+export interface EscenarioTributarioDelContrato {
+  codigo: CodigoDeEscenario;
+  nombre: string;
+  /** El nombre literal del catálogo de Nuby, para poder cruzarlo. */
+  nombreEnNuby: string | null;
+  resumen: string;
+  impuestos: ImpuestoDelEscenario[];
+  sinImpuestos: boolean;
+  certeza: 'CONFIRMADO' | 'DEDUCIDO' | 'SIN_DEFINIR';
+  deducidos: string[];
+  faltan: string[];
+  ejes: {
+    ivaSobreElCanon: EjeDelEscenario;
+    retencionSobreElCanon: EjeDelEscenario;
+    reteIvaSobreElCanon: EjeDelEscenario;
+    retencionSobreLaComision: EjeDelEscenario;
+  };
+  fueraDelCatalogo: string[];
+}
+
 // ============================================================================
 // Contract
 // ============================================================================
@@ -458,6 +528,12 @@ export interface Contract {
   perfilesTributarios?: PerfilesDelContrato | null;
   /** El régimen ya resuelto por el back, con el origen de cada valor. */
   regimenTributario?: RegimenTributarioDelContrato | null;
+  /**
+   * Cómo se llama el escenario que forman las dos partes, y qué genera.
+   * Opcional porque no todos los cables del contrato lo traen (la lista, por
+   * ejemplo, sólo lo traería a costa de una consulta por fila).
+   */
+  escenarioTributario?: EscenarioTributarioDelContrato | null;
   /** null = heredar de la ficha del propietario. */
   arrendadorResponsableIva?: boolean | null;
 

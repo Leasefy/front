@@ -50,6 +50,7 @@ import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { AdministracionDelContrato } from '@/components/contratos/AdministracionDelContrato';
+import { EscenarioTributario } from '@/components/contratos/EscenarioTributario';
 import { ConceptosDelContrato } from '@/components/contratos/ConceptosDelContrato';
 import { CobrosDelContrato, type ResumenDeCobros } from '@/components/contratos/CobrosDelContrato';
 import { ReglasDeMoraDelContrato } from '@/components/contratos/ReglasDeMoraDelContrato';
@@ -445,6 +446,13 @@ function ContratoDetalleContent() {
             puedeEditar={canEditContracts}
             onActualizado={(c) => setContract(c)}
           />
+
+          {/* Cómo se llama la situación tributaria que forman las dos partes y
+              qué genera (Nico, 2026-09-12: «los contratos no están mostrando la
+              información sobre el escenario que se da en ese contrato»). Va
+              pegado a Administración porque los datos que lo definen —el uso
+              del inmueble y el perfil del inquilino— se corrigen justo arriba. */}
+          <EscenarioTributario contract={contract} />
 
           {/* Paso 11: quién respalda este arriendo. Si no está, se dice — un
               contrato sin respaldo registrado no es un contrato sin respaldo,

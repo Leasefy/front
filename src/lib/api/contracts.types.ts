@@ -4,6 +4,7 @@
  */
 
 import type {
+  EscenarioTributarioDelContrato,
   PerfilesDelContrato,
   PropietariosDelContrato,
   InquilinoDelContrato,
@@ -156,6 +157,12 @@ export interface BackendContract {
    * segunda cuenta que un día no coincide con la que cobra.
    */
   regimenTributario?: RegimenTributarioDelContrato | null;
+  /**
+   * Cómo se LLAMA el escenario que forman las dos partes, y qué genera.
+   * Mismo trato que `regimenTributario`: lo resuelve el back, la pantalla lo
+   * muestra. Sólo lo devuelven GET /:id y PATCH /:id/administracion.
+   */
+  escenarioTributario?: EscenarioTributarioDelContrato | null;
   /** null = heredar de la ficha del propietario. */
   arrendadorResponsableIva?: boolean | null;
   /*

@@ -15,6 +15,7 @@ import { getPlanById, PLANS, agencyPlanToDisplayPlan } from '@/lib/constants/sub
 import { useMySubscription, useAgencyPlans } from '@/lib/hooks/useSubscription';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { Spinner } from '@/components/ui/spinner';
+import { formatDate } from '@/lib/format';
 import { useLandlordNotifications, useTenantNotifications } from '@/lib/hooks/useNotifications';
 import { useArcoAlerts } from '@/lib/hooks/cobranza/use-arco-alerts';
 import { ArcoDeadlineAlert } from '@/components/inmobiliaria/cobranza/ArcoDeadlineAlert';
@@ -188,6 +189,7 @@ export function PlanHeader({
     currentPlanId: agencyPlanId,
     error: agencyError,
     refetch: agencySubscriptionRefetch,
+    state: agencySubscriptionState,
   } = useAgencySubscription(isInmobiliaria);
   // The LIVE agency plan catalog — an admin-created tier (contrato 29, e.g.
   // "pro-plus") only exists here, never in the static AGENCY_PLANS array.
@@ -223,6 +225,18 @@ export function PlanHeader({
       ? agencyPlanToDisplayPlan(agencyLivePlan)
       : getPlanById(planId)
     : getPlanById(planId);
+
+  // One-line echo of a pending scheduled change (T-0089) — e.g. "Cambia a
+  // Starter el 12 de octubre de 2026". Detecting a cancellation (target is the
+  // catalog default) is left to the fuller management block in
+  // ConfigFacturacion; here it is always "Cambia a X", whatever X is.
+  const pendingPlanTier = isInmobiliaria ? agencySubscriptionState?.pendingPlanTier ?? null : null;
+  const pendingPlanEffectiveAt = isInmobiliaria
+    ? agencySubscriptionState?.pendingPlanEffectiveAt ?? null
+    : null;
+  const pendingPlanDisplay = pendingPlanTier
+    ? agencyPlans.find((p) => p.id === pendingPlanTier) ?? null
+    : null;
 
   // Tier helpers — false when error to avoid asserting a tier we didn't load.
   const isBaseTier = !effectiveSubError && planId === 'starter';
@@ -690,6 +704,15 @@ export function PlanHeader({
                             </div>
                           ))}
                         </div>
+
+                        {/* Pending change echo (T-0089) — the fuller "Deshacer" action
+                            lives in ConfigFacturacion; this is a one-line heads-up. */}
+                        {pendingPlanTier && (
+                          <p className="text-[11px] text-warning mb-3">
+                            Cambia a {pendingPlanDisplay?.name ?? pendingPlanTier}
+                            {pendingPlanEffectiveAt ? ` el ${formatDate(pendingPlanEffectiveAt)}` : ''}
+                          </p>
+                        )}
 
                         {/* Upgrade CTA — hide only when already on the top tier */}
                         {!isTopTier && (

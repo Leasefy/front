@@ -66,7 +66,12 @@ vi.mock('@/lib/hooks/useSubscription', () => ({
 }));
 
 const agencySubState: {
-  value: { currentPlanId: string | undefined; error: Error | null; refetch: ReturnType<typeof vi.fn> };
+  value: {
+    currentPlanId: string | undefined;
+    error: Error | null;
+    refetch: ReturnType<typeof vi.fn>;
+    state?: { pendingPlanTier: string | null; pendingPlanEffectiveAt: string | null };
+  };
 } = {
   value: { currentPlanId: 'starter', error: null, refetch: vi.fn() },
 };
@@ -217,5 +222,33 @@ describe('PlanHeader — "Tu Suscripción" popover resolves the REAL agency plan
 
     const popover = container.querySelector('[data-testid="subscription-popover"]')!;
     expect(popover.textContent).toContain('No pudimos cargar tu plan');
+  });
+
+  it('echoes a pending scheduled change (T-0089)', () => {
+    agencySubState.value = {
+      currentPlanId: 'pro-plus',
+      error: null,
+      refetch: vi.fn(),
+      state: { pendingPlanTier: 'starter', pendingPlanEffectiveAt: '2026-10-12T00:00:00.000Z' },
+    };
+    agencyPlansState.value = { plans: PRO_PLUS_CATALOG, isLoading: false };
+    render();
+
+    const popover = container.querySelector('[data-testid="subscription-popover"]')!;
+    expect(popover.textContent).toContain('Cambia a Starter');
+  });
+
+  it('shows no pending-change echo when nothing is scheduled', () => {
+    agencySubState.value = {
+      currentPlanId: 'pro-plus',
+      error: null,
+      refetch: vi.fn(),
+      state: { pendingPlanTier: null, pendingPlanEffectiveAt: null },
+    };
+    agencyPlansState.value = { plans: PRO_PLUS_CATALOG, isLoading: false };
+    render();
+
+    const popover = container.querySelector('[data-testid="subscription-popover"]')!;
+    expect(popover.textContent).not.toContain('Cambia a');
   });
 });

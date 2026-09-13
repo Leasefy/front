@@ -1366,6 +1366,23 @@ export interface ResumenActivacion {
   sinInmueble?: number;
   /** El modo con el que corrió la activación — para leer `sinInmueble`. */
   sparse?: boolean;
+  /**
+   * Filas cuyo consecutivo YA existía como contrato: se enlazaron al que ya
+   * estaba, sin duplicar el histórico.
+   */
+  yaMigradas?: number;
+  /**
+   * 2026-09-13 — de esas `yaMigradas`, cuántas el archivo SÍ cambió. Es la
+   * respuesta a «¿sirvió de algo volver a subirlo?»: sin este número,
+   * re-subir el archivo se ve idéntico a no haber hecho nada. Ausente ⇒ no
+   * renderizar nada (un back anterior no puede afirmar un conteo que no tiene).
+   */
+  actualizadas?: number;
+  /**
+   * Contratos que el archivo quería cambiar y NO se cambiaron porque ya
+   * tienen cobros o facturas: hay que mirarlos a mano.
+   */
+  porRevisarAMano?: number;
   resultados: ResultadoDeFila[];
 }
 

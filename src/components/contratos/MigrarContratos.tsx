@@ -253,6 +253,16 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
   const [pagina, setPagina] = useState(1);
   const [seleccion, setSeleccion] = useState<Set<string>>(new Set());
   const [activacion, setActivacion] = useState<ResumenActivacion | null>(null);
+  /*
+   * 🔴 Lo que la corrida ACTUALIZÓ de contratos que ya estaban migrados, ya
+   * sumado a lo largo de todas las tandas. No sale de `activacion`, que es el
+   * resumen de la ÚLTIMA llamada: con 1.836 contratos son ~180 tandas y ese
+   * número diría «10» de 1.836.
+   */
+  const [actualizados, setActualizados] = useState<{
+    actualizadas: number;
+    porRevisarAMano: number;
+  } | null>(null);
   /* «Volver a cruzar con lo ya cargado»: corre por tandas y se muestra. */
   const [reconciliando, setReconciliando] = useState(false);
   /*
@@ -422,6 +432,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
   const leerArchivo = useCallback(async (archivo: File) => {
     setError(null);
     setActivacion(null);
+    setActualizados(null);
     setArchivo(archivo);
     setLeyendo(true);
     try {
@@ -727,6 +738,10 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
         { debeParar: () => detenerActivacionRef.current },
       );
       setActivacion(r.ultimo);
+      setActualizados({
+        actualizadas: r.actualizadas,
+        porRevisarAMano: r.porRevisarAMano,
+      });
       await refrescar(lote);
       if (r.detenidoPorPersona) {
         setError(
@@ -790,6 +805,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
     setEncabezados([]);
     setMapeo([]);
     setActivacion(null);
+    setActualizados(null);
     setIdempotencyKey("");
     setSeleccion(new Set());
     setError(null);
@@ -818,6 +834,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
       setResumen(null);
       setLote(null);
       setActivacion(null);
+    setActualizados(null);
       setSeleccion(new Set());
     } catch (e) {
       setError(
@@ -983,6 +1000,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
         pagina={pagina}
         seleccion={seleccion}
         activacion={activacion}
+        actualizados={actualizados}
         invitar={invitar}
         setInvitar={setInvitar}
         cargando={cargando}
@@ -1698,6 +1716,7 @@ function ListaDeTrabajo({
   pagina,
   seleccion,
   activacion,
+  actualizados,
   invitar,
   setInvitar,
   cargando,
@@ -1728,6 +1747,11 @@ function ListaDeTrabajo({
   pagina: number;
   seleccion: Set<string>;
   activacion: ResumenActivacion | null;
+  /**
+   * Lo que la corrida ACTUALIZÓ de contratos que ya estaban migrados, sumado
+   * a lo largo de todas las tandas. `null` = no se activó todavía.
+   */
+  actualizados: { actualizadas: number; porRevisarAMano: number } | null;
   invitar: boolean;
   setInvitar: (v: boolean) => void;
   cargando: boolean;
@@ -2080,6 +2104,41 @@ function ListaDeTrabajo({
            * línea, nunca "0 pendientes" (un back viejo que todavía no manda
            * el campo no puede afirmar un conteo que no tiene).
            */}
+          {/*
+           * 🔴 Re-subir el archivo ACTUALIZA lo que ya estaba migrado
+           * (2026-09-13). Sin esta línea, volver a subir el archivo bueno
+           * sobre una cartera migrada a medias se veía exactamente igual que
+           * no haber hecho nada: «0 contratos activados» y ni una palabra de
+           * los 1.836 que acababan de recibir su fecha de cartera.
+           */}
+          {actualizados && actualizados.actualizadas > 0 ? (
+            <p
+              className="text-sm text-muted-foreground"
+              data-testid="aviso-actualizados"
+            >
+              {actualizados.actualizadas}{" "}
+              {actualizados.actualizadas === 1
+                ? "contrato que ya estaba migrado quedó actualizado"
+                : "contratos que ya estaban migrados quedaron actualizados"}{" "}
+              con lo que traía el archivo (fecha de cartera, días de plazo,
+              prorrateo, fecha fin y estado). El canon, la comisión, el
+              inquilino y el inmueble no se tocan.
+            </p>
+          ) : null}
+          {actualizados && actualizados.porRevisarAMano > 0 ? (
+            <p
+              className="text-sm text-danger"
+              data-testid="aviso-revisar-a-mano"
+            >
+              {actualizados.porRevisarAMano}{" "}
+              {actualizados.porRevisarAMano === 1
+                ? "contrato quedó"
+                : "contratos quedaron"}{" "}
+              sin actualizar porque ya {actualizados.porRevisarAMano === 1 ? "tiene" : "tienen"} cobros o
+              facturas: cambiarles la fecha de cartera re-liquidaría lo ya
+              cobrado. Revísa{actualizados.porRevisarAMano === 1 ? "lo" : "los"} desde la ficha del contrato.
+            </p>
+          ) : null}
           {activacion.porInvitar ? (
             <p
               className="text-sm text-muted-foreground"

@@ -8,7 +8,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { CaretLeft, Buildings, X, CalendarPlus } from '@phosphor-icons/react';
+import { CaretLeft, Buildings, X, CalendarPlus, WifiSlash } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -59,6 +59,10 @@ import {
 } from '@/components/inmobiliaria/InventarioItemDialog';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
 import { useBorradorDeInventario } from '@/lib/hooks/use-borrador-de-inventario';
+import { useCopiaDeInmueble } from '@/lib/hooks/use-copia-de-inmueble';
+import { useSinSenal } from '@/lib/hooks/use-sin-senal';
+import { registrarServiceWorker } from '@/lib/inventario/sw-inventario';
+import { PrepararParaSinSenal, cuando as cuandoSeGuardo } from '@/components/inmobiliaria/PrepararParaSinSenal';
 
 /** La forma de la ficha, sin datos: cabecera con foto y dos columnas. */
 function EsqueletoDeLaFicha() {
@@ -242,8 +246,39 @@ function ConsignacionDetailContent() {
   const { consignacion: fetchedConsignacion, isLoading: cargandoConsignacion } =
     useConsignacion(consignacionId);
 
-  // Use local state for consignacion to allow updates after edit
-  const consignacion = consignacionData || fetchedConsignacion;
+  /*
+   * 🔴 Abrir la ficha YA estando sin señal.
+   *
+   * Nico, 2026-09-12: «hay muchos apartamentos donde no hay señal; la persona
+   * que hace el inventario debería poder agregar todo sin señal y, cuando
+   * tenga señal, cargarlo».
+   *
+   * Son dos piezas y hacen falta las dos. El service worker sirve el HTML de
+   * esta ruta —sin él el navegador ni llega acá— y esta copia le da los
+   * DATOS: sin ella la pantalla se arma vacía aunque el HTML sí llegue. La
+   * copia se refresca sola en cada visita con señal, y el botón de la columna
+   * derecha la baja a propósito antes de salir de la oficina.
+   */
+  const sinSenal = useSinSenal();
+  const copiaLocal = useCopiaDeInmueble(consignacionId, fetchedConsignacion ?? undefined);
+
+  // El worker se registra desde acá —no en el layout— porque es lo único que
+  // cachea, y sólo en producción o con `NEXT_PUBLIC_SW_INVENTARIO=1`.
+  useEffect(() => {
+    void registrarServiceWorker();
+  }, []);
+
+  /*
+   * El orden importa y es el mismo de siempre con un escalón más al final: lo
+   * que se acaba de editar gana sobre lo que trajo el back, y lo del back gana
+   * sobre la copia. La copia es la RED DE SEGURIDAD, nunca la fuente: en
+   * cuanto el back contesta, manda él.
+   */
+  const consignacion = consignacionData || fetchedConsignacion || copiaLocal.copia?.consignacion;
+  /** Se está mostrando lo guardado porque el back no contestó. */
+  const mostrandoCopia = Boolean(
+    !consignacionData && !fetchedConsignacion && copiaLocal.copia,
+  );
 
   // `?editar=1` (el «Editar» del kebab de la lista) abre el formulario apenas
   // hay datos, y se limpia la URL para que un refresh no lo vuelva a abrir.
@@ -482,10 +517,21 @@ function ConsignacionDetailContent() {
     return (
       <div className="p-4 md:p-6">
         <div className="max-w-lg mx-auto py-16">
+          {/* Sin señal y sin copia no es «no existe»: es «no lo preparaste».
+              Decir «Consignación no encontrada» ahí manda a buscar un
+              problema que no existe. */}
           <EmptyState
-            icon={Buildings}
-            title={t('inmobiliaria.portafolio.detail.notFound')}
-            description={t('inmobiliaria.portafolio.detail.notFoundDesc')}
+            icon={sinSenal ? WifiSlash : Buildings}
+            title={
+              sinSenal
+                ? t('inmobiliaria.sinSenal.sinCopia')
+                : t('inmobiliaria.portafolio.detail.notFound')
+            }
+            description={
+              sinSenal
+                ? t('inmobiliaria.sinSenal.explicacion')
+                : t('inmobiliaria.portafolio.detail.notFoundDesc')
+            }
             action={{
               label: t('inmobiliaria.portafolio.detail.backToPortfolio'),
               href: '/panel/inmobiliaria/inmuebles',
@@ -498,6 +544,22 @@ function ConsignacionDetailContent() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
+      {/* Sin señal la ficha se arma con lo guardado. Decirlo con la FECHA es
+          lo único honesto: las tarjetas que piden otras llamadas —fotos,
+          propietario, candidatos— van a salir vacías, y sin este cartel eso
+          se lee como «el inmueble no tiene nada». */}
+      {mostrandoCopia && copiaLocal.guardadoEn && (
+        <div
+          role="status"
+          className="rounded-md bg-warning-soft border border-border p-3 text-sm text-warning"
+          data-testid="viendo-copia-sin-senal"
+        >
+          {t('inmobiliaria.sinSenal.viendoCopia', {
+            cuando: cuandoSeGuardo(copiaLocal.guardadoEn),
+          })}
+        </div>
+      )}
+
       {/* Breadcrumb + agendar cita */}
       <div className="flex items-center justify-between gap-4">
         <nav className="flex items-center gap-2 text-sm min-w-0">
@@ -665,6 +727,13 @@ function ConsignacionDetailContent() {
             transition={{ delay: 0.35 }}
           >
             <div className="space-y-2">
+              <PrepararParaSinSenal
+                guardadoEn={copiaLocal.guardadoEn}
+                preparando={copiaLocal.preparando}
+                ultimaPreparacion={copiaLocal.ultimaPreparacion}
+                sinSenal={sinSenal}
+                onPreparar={() => void copiaLocal.preparar()}
+              />
               <BarraDeBorradorDeInventario
                 hayPendientes={inventario.hayPendientes}
                 actualizadoEn={inventario.actualizadoEn}

@@ -9557,6 +9557,19 @@
           "dato": "This same menu is where you replay this tour."
         }
       }
+    },
+    "sinSenal": {
+      "titulo": "Work without signal",
+      "explicacion": "Save this property on this phone so you can open it and fill the inventory where there is no signal.",
+      "guardado": "Saved on {{cuando}}",
+      "sinCopia": "This property is not saved on this phone.",
+      "preparar": "Prepare to work without signal",
+      "actualizar": "Update what is saved",
+      "listo": "Done. You can open this property without signal.",
+      "noSePudo": "We could not save everything. Try again with better signal.",
+      "listaTitulo": "Available without signal",
+      "quitar": "Remove from available without signal",
+      "viendoCopia": "You are without signal. You are seeing the copy saved on {{cuando}}; whatever you fill in uploads when the signal returns."
     }
   },
   "validation": {

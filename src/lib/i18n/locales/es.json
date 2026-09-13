@@ -9597,6 +9597,19 @@
           "dato": "Desde este mismo menú vuelves a ver este recorrido."
         }
       }
+    },
+    "sinSenal": {
+      "titulo": "Trabajar sin señal",
+      "explicacion": "Guardá este inmueble en el teléfono para poder abrirlo y llenar el inventario donde no hay señal.",
+      "guardado": "Guardado el {{cuando}}",
+      "sinCopia": "Este inmueble no está guardado en el teléfono.",
+      "preparar": "Preparar para trabajar sin señal",
+      "actualizar": "Actualizar lo guardado",
+      "listo": "Listo. Podés abrir este inmueble sin señal.",
+      "noSePudo": "No se pudo guardar todo. Probá de nuevo con mejor señal.",
+      "listaTitulo": "Disponibles sin señal",
+      "quitar": "Quitar de los disponibles sin señal",
+      "viendoCopia": "Estás sin señal. Estás viendo la copia guardada el {{cuando}}; lo que llenes se sube cuando vuelva la señal."
     }
   },
   "validation": {

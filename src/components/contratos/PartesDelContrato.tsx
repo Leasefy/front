@@ -28,14 +28,18 @@
  *
  * Los dueños y sus porcentajes viven en el MANDATO del inmueble
  * (`consignacion_propietarios`), no en el contrato: un inmueble tiene un
- * mandato y ese mandato tiene N dueños. Por eso esta pantalla los muestra y
- * manda a la ficha del inmueble a cambiarlos, en vez de abrir un segundo lugar
- * donde editar el mismo dato.
+ * mandato y ese mandato tiene N dueños. Por eso «Agregar» y «Editar» de esta
+ * tarjeta abren el MISMO diálogo que la ficha del inmueble
+ * (`EditarPropietariosDialog`) sobre el mandato resuelto por `propertyId`, y
+ * al guardar se relee el contrato para que el reparto que se pinta sea el que
+ * calculó el back. Nico, 2026-09-13: «un inmueble puede tener múltiples
+ * propietarios con diferentes % del canon» — y el propietario no tenía
+ * «+ Agregar» mientras el inquilino sí.
  */
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Plus, Trash, Warning } from '@phosphor-icons/react'
+import { PencilSimple, Plus, Trash, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -50,12 +54,15 @@ import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
 import { conRegreso } from '@/lib/nav/ruta-de-regreso'
 import { contractsApi } from '@/lib/api/contracts.service'
+import { consignacionesApi } from '@/lib/api/inmobiliaria.service'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
+import type { Consignacion } from '@/lib/types/inmobiliaria'
 import type {
   Contract,
   InquilinoDelContrato,
   PropietarioDelContrato,
 } from '@/lib/types/contract'
+import { EditarPropietariosDialog } from '@/components/inmobiliaria/EditarPropietariosDialog'
 import { InvitarInquilino } from './InvitarInquilino'
 
 interface Props {
@@ -85,7 +92,7 @@ export function PartesDelContrato({
 
   return (
     <div className="space-y-4">
-      <Propietarios contract={contract} />
+      <Propietarios contract={contract} puedeEditar={puedeEditar} onActualizado={onActualizado} />
 
       <div className="space-y-2 border-t border-border pt-3 first:border-0 first:pt-0">
         <div className="flex items-center justify-between gap-2">
@@ -354,10 +361,26 @@ function Campo({
  * el usuario que corrió la migración — en QA los 99 contratos decían
  * «Propietario: victor ortiz».
  */
-function Propietarios({ contract }: { contract: Contract }) {
+function Propietarios({
+  contract,
+  puedeEditar,
+  onActualizado,
+}: {
+  contract: Contract
+  puedeEditar: boolean
+  onActualizado: (c: Contract) => void
+}) {
   const lista = contract.propietariosDelContrato?.propietarios ?? []
   const sumanCien = contract.propietariosDelContrato?.sumanCien ?? true
   const varios = lista.length > 1
+  // Sólo hay qué editar cuando hay un mandato detrás: la lista viene de él.
+  const hayMandato = lista.length > 0 && Boolean(contract.propertyId)
+  const fichaDelInmueble = contract.propertyId
+    ? conRegreso(
+        `/panel/inmobiliaria/inmuebles/${contract.propertyId}`,
+        `/panel/inmobiliaria/contratos/${contract.id}`,
+      )
+    : null
 
   if (lista.length === 0) {
     return (
@@ -372,9 +395,14 @@ function Propietarios({ contract }: { contract: Contract }) {
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {varios ? `Propietarios (${lista.length})` : 'Propietario'}
-      </p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {varios ? `Propietarios (${lista.length})` : 'Propietario'}
+        </p>
+        {puedeEditar && hayMandato ? (
+          <EditarPropietarios contract={contract} onActualizado={onActualizado} />
+        ) : null}
+      </div>
 
       {!sumanCien ? (
         /* Nunca se esconde: con participaciones torcidas el back NO reparte el
@@ -384,9 +412,22 @@ function Propietarios({ contract }: { contract: Contract }) {
           data-testid="participaciones-no-suman"
         >
           <Warning className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
-          Los porcentajes suman {(contract.propietariosDelContrato?.sumaBps ?? 0) / 100} %, no
-          100 %. Mientras no cuadren no se reparte el canon: corrígelos en el mandato del
-          inmueble.
+          <span>
+            Los porcentajes suman {(contract.propietariosDelContrato?.sumaBps ?? 0) / 100} %, no
+            100 %. Mientras no cuadren no se reparte el canon:{' '}
+            {fichaDelInmueble ? (
+              <Link
+                href={fichaDelInmueble}
+                className="underline underline-offset-2 hover:text-foreground"
+                data-testid="corregir-en-el-inmueble"
+              >
+                corrígelos en el mandato del inmueble
+              </Link>
+            ) : (
+              'corrígelos en el mandato del inmueble'
+            )}
+            .
+          </span>
         </p>
       ) : null}
 
@@ -407,16 +448,29 @@ function Propietarios({ contract }: { contract: Contract }) {
               <span className="block text-xs text-muted-foreground">{p.documentNumber}</span>
             </div>
             {varios ? (
-              <div className="flex-shrink-0 text-right">
-                <span className="block text-sm font-medium tabular-nums text-foreground">
-                  {p.participacion}
-                </span>
-                {p.canonCop !== null ? (
+              /* El % y la plata de cada uno, y el chip en el mayoritario — el
+                 mismo chip que lleva el inquilino principal más abajo. Con un
+                 solo dueño nada de esto: «100 %» y «Principal» serían ruido. */
+              <div className="flex flex-shrink-0 items-start gap-2">
+                <div className="text-right">
+                  <span className="block text-sm font-medium tabular-nums text-foreground">
+                    {p.participacion}
+                  </span>
+                  {p.canonCop !== null ? (
+                    <span
+                      className="block text-xs tabular-nums text-muted-foreground"
+                      data-testid="canon-del-propietario"
+                    >
+                      {formatCurrency(p.canonCop)} del canon
+                    </span>
+                  ) : null}
+                </div>
+                {p.esPrincipal ? (
                   <span
-                    className="block text-xs tabular-nums text-muted-foreground"
-                    data-testid="canon-del-propietario"
+                    className="rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-medium text-primary"
+                    data-testid="propietario-principal"
                   >
-                    {formatCurrency(p.canonCop)} del canon
+                    Principal
                   </span>
                 ) : null}
               </div>
@@ -425,6 +479,95 @@ function Propietarios({ contract }: { contract: Contract }) {
         ))}
       </ul>
     </div>
+  )
+}
+
+/**
+ * «Agregar» y «Editar» del propietario, como los tiene el inquilino.
+ *
+ * Los dos abren el MISMO diálogo (`EditarPropietariosDialog`) sobre el mandato
+ * del inmueble del contrato: el contrato sólo tiene `propertyId`, y
+ * `agencyId + propertyId` es único, así que `getAll({ propertyId })` devuelve
+ * cero o un mandato. Al guardar se relee el contrato entero — el reparto del
+ * canon lo calcula el back con la misma función que la dispersión, y acá no
+ * se recalcula nada por nuestra cuenta.
+ */
+function EditarPropietarios({
+  contract,
+  onActualizado,
+}: {
+  contract: Contract
+  onActualizado: (c: Contract) => void
+}) {
+  const [consignacion, setConsignacion] = useState<Consignacion | null>(null)
+  const [abierto, setAbierto] = useState(false)
+  const [buscando, setBuscando] = useState(false)
+
+  async function abrir() {
+    if (!contract.propertyId || buscando) return
+    setBuscando(true)
+    try {
+      const [mandato] = await consignacionesApi.getAll({ propertyId: contract.propertyId })
+      if (!mandato) {
+        toast.error('El inmueble no está consignado: registra al propietario en Inmuebles.')
+        return
+      }
+      setConsignacion(mandato)
+      setAbierto(true)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'No pudimos abrir el mandato del inmueble.')
+    } finally {
+      setBuscando(false)
+    }
+  }
+
+  async function guardado() {
+    try {
+      onActualizado(await contractsApi.getById(contract.id))
+    } catch {
+      // Los dueños ya quedaron guardados en el mandato; si la relectura del
+      // contrato falla, el refresco de la página los trae.
+    }
+  }
+
+  return (
+    <>
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
+          onClick={() => void abrir()}
+          disabled={buscando}
+          data-testid="agregar-propietario"
+        >
+          <Plus className="mr-1 h-4 w-4" />
+          Agregar
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
+          onClick={() => void abrir()}
+          disabled={buscando}
+          data-testid="editar-propietarios"
+        >
+          <PencilSimple className="mr-1 h-4 w-4" />
+          Editar
+        </Button>
+      </div>
+      {consignacion ? (
+        <EditarPropietariosDialog
+          open={abierto}
+          consignacion={consignacion}
+          onClose={() => setAbierto(false)}
+          onGuardado={(actualizada) => {
+            setConsignacion(actualizada)
+            void guardado()
+          }}
+        />
+      ) : null}
+    </>
   )
 }
 

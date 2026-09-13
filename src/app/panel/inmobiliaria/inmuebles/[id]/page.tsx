@@ -37,7 +37,7 @@ import {
   useAgenteDeConsignacion,
 } from '@/lib/hooks/useInmobiliaria';
 import { useProperty } from '@/lib/hooks/useProperties';
-import type { PropertyAvailability, ConsignacionFormData, Consignacion } from '@/lib/types/inmobiliaria';
+import type { PropertyAvailability, Consignacion } from '@/lib/types/inmobiliaria';
 
 // Components
 import { ConsignacionHeader } from '@/components/inmobiliaria/ConsignacionHeader';
@@ -48,10 +48,10 @@ import {
   CurrentLeaseSection,
   DocumentsSection,
 } from '@/components/inmobiliaria/ConsignacionDetailSections';
-import { CambiarPropietarioDialog } from '@/components/inmobiliaria/CambiarPropietarioDialog';
+import { EditarPropietariosDialog } from '@/components/inmobiliaria/EditarPropietariosDialog';
 import { InventarioDeLaConsignacion } from '@/components/inmobiliaria/InventarioDeLaConsignacion';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
-import { ConsignacionEditForm } from '@/components/inmobiliaria/ConsignacionEditForm';
+import { ConsignacionEditForm, type ConsignacionEdicion } from '@/components/inmobiliaria/ConsignacionEditForm';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
 import { usePuedeEditarInventario } from '@/lib/hooks/use-puede-editar-inventario';
 import { useCopiaDeInmueble } from '@/lib/hooks/use-copia-de-inmueble';
@@ -312,7 +312,7 @@ function ConsignacionDetailContent() {
     setShowEditModal(true);
   }, []);
 
-  const handleEditSubmit = useCallback(async (data: ConsignacionFormData) => {
+  const handleEditSubmit = useCallback(async (data: ConsignacionEdicion) => {
     if (!consignacion) return;
 
     try {
@@ -704,13 +704,15 @@ function ConsignacionDetailContent() {
         />
       </Modal>
 
-      {/* Cambiar de propietario: reapunta la consignación, no la tumba. */}
+      {/* Los dueños y su reparto (uno o varios, con su % del canon): edita la
+          lista del mandato, no lo tumba. Es el mismo diálogo que abre la
+          tarjeta «Partes» del contrato. */}
       {consignacion && (
-        <CambiarPropietarioDialog
+        <EditarPropietariosDialog
           open={showCambiarPropietario}
           consignacion={consignacion}
           onClose={() => setShowCambiarPropietario(false)}
-          onCambiado={(actualizada) => setConsignacionData(actualizada)}
+          onGuardado={(actualizada) => setConsignacionData(actualizada)}
         />
       )}
 

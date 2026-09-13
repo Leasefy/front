@@ -271,3 +271,50 @@ describe('ProtectedRoute — incomplete onboarding vs active agency membership',
     expect(childMounted()).toBe(true)
   })
 })
+
+/*
+ * 🔴 Nico, 2026-09-12: «hay muchos apartamentos donde no hay señal; la persona
+ * que hace el inventario debería poder agregar todo sin señal». Dentro del
+ * apartamento `GET /users/me` tampoco vuelve, así que el perfil queda
+ * degradado igual que con el back caído — pero acá «reintentando» es una
+ * pared: no hay nada que reintentar hasta que vuelva la red.
+ */
+describe('ProtectedRoute — sin señal deja trabajar', () => {
+  function sinRed(sin: boolean) {
+    Object.defineProperty(window.navigator, 'onLine', {
+      value: !sin,
+      configurable: true,
+    })
+  }
+
+  afterEach(() => {
+    sinRed(false)
+  })
+
+  it('sin señal muestra la pantalla en vez del cartel de reintentar', async () => {
+    sinRed(true)
+    authState.user = { role: 'tenant', profileSource: 'session', onboardingCompleted: true }
+    await renderPanel()
+
+    expect(childMounted()).toBe(true)
+    expect(replaceMock).not.toHaveBeenCalled()
+  })
+
+  it('con señal sigue mostrando el cartel de reintentar', async () => {
+    sinRed(false)
+    authState.user = { role: 'tenant', profileSource: 'session', onboardingCompleted: true }
+    await renderPanel()
+
+    expect(childMounted()).toBe(false)
+    expect(container.textContent).toContain('No pudimos confirmar tu sesión')
+  })
+
+  it('sin señal NO abre la puerta a un perfil confirmado sin permiso', async () => {
+    sinRed(true)
+    authState.user = { role: 'tenant', profileSource: 'backend', onboardingCompleted: true }
+    await renderPanel()
+
+    expect(childMounted()).toBe(false)
+    expect(replaceMock).toHaveBeenCalledWith('/inquilino')
+  })
+})

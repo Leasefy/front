@@ -162,6 +162,39 @@ describe('<ConsignacionEditForm> — a sale mandate is editable, not a dead end'
     expect(payload.saleCommissionPercent).toBeUndefined();
   });
 
+  /**
+   * 🔴 La pérdida silenciosa (Nico, 2026-09-13). El formulario mandaba
+   * `propietarioId: consignacion.propietarioId` en cada guardado; el back lo
+   * lee como «una lista de uno al 100 %» y reemplaza la lista entera: editar
+   * el canon de un mandato 70/30 borraba al dueño del 30 %.
+   */
+  it('editar el canon de un mandato 70/30 NO manda dueño alguno: ni `propietarioId` ni `copropietarios`', async () => {
+    const { onSubmit } = render(
+      makeConsignacion({
+        propietarioId: 'owner-1',
+        copropietarios: [
+          { propietarioId: 'owner-1', participacionBps: 7000 },
+          { propietarioId: 'owner-2', participacionBps: 3000 },
+        ],
+      }),
+    );
+    const canon = container.querySelector<HTMLInputElement>('input[type="number"]')!;
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+      setter.call(canon, '3000000');
+      canon.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    submitForm();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    const payload = onSubmit.mock.calls[0][0];
+    expect(payload).not.toHaveProperty('propietarioId');
+    expect(payload).not.toHaveProperty('copropietarios');
+    expect(payload.monthlyRent).toBe(3_000_000);
+  });
+
   it('blocks submission when saleCommissionPercent is 0 on a sale mandate (R3 mirrored client-side)', async () => {
     const { onSubmit } = render(
       makeConsignacion({ listingType: 'sale', monthlyRent: null, commissionPercent: 0, saleCommissionPercent: 0 }),

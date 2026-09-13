@@ -33,9 +33,25 @@ import { RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import type { Consignacion, ConsignacionFormData } from '@/lib/types/inmobiliaria';
 import { useAgentes } from '@/lib/hooks/useInmobiliaria';
 
+/**
+ * Lo que este formulario edita: los datos del inmueble y del mandato, NUNCA
+ * los dueños.
+ *
+ * 🔴 Hasta el 2026-09-13 el `onSubmit` mandaba `propietarioId:
+ * consignacion.propietarioId` en cada guardado «por completar el tipo». El
+ * back lee un `propietarioId` suelto como «una lista de uno al 100 %» y
+ * reemplaza la lista entera: editar el canon de un mandato 70/30 BORRABA al
+ * dueño del 30 % sin que nadie lo pidiera. Los dueños tienen su propio
+ * diálogo (`EditarPropietariosDialog`); acá el tipo ya no los admite.
+ */
+export type ConsignacionEdicion = Omit<
+  ConsignacionFormData,
+  'propietarioId' | 'copropietarios' | 'duenoPendienteId'
+>;
+
 interface ConsignacionEditFormProps {
   consignacion: Consignacion;
-  onSubmit: (data: ConsignacionFormData) => Promise<void>;
+  onSubmit: (data: ConsignacionEdicion) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -204,8 +220,8 @@ export function ConsignacionEditForm({
 
     setIsSubmitting(true);
     try {
+      // Sin `propietarioId`: ver `ConsignacionEdicion`.
       await onSubmit({
-        propietarioId: consignacion.propietarioId,
         propertyTitle: formData.propertyTitle,
         propertyAddress: formData.propertyAddress,
         propertyCity: formData.propertyCity,

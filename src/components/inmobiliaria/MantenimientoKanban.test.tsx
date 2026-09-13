@@ -37,6 +37,7 @@ vi.mock('@/lib/i18n', () => ({
  * importa probar acá es la decisión que toma `onDragEnd`, no el gesto.
  */
 let manejadores: Record<string, ((e: unknown) => unknown) | undefined> = {};
+let deteccionUsada: unknown = null;
 
 vi.mock('@dnd-kit/core', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
@@ -47,19 +48,23 @@ vi.mock('@dnd-kit/core', async (importOriginal) => {
       onDragStart,
       onDragOver,
       onDragEnd,
+      collisionDetection,
     }: {
       children: React.ReactNode;
       onDragStart?: (e: unknown) => unknown;
       onDragOver?: (e: unknown) => unknown;
       onDragEnd?: (e: unknown) => unknown;
+      collisionDetection?: unknown;
     }) => {
       manejadores = { onDragStart, onDragOver, onDragEnd };
+      deteccionUsada = collisionDetection;
       return <div data-testid="dnd-context">{children}</div>;
     },
   };
 });
 
 import { MantenimientoKanban } from './MantenimientoKanban';
+import { detectarColumnaDelPuntero } from './mantenimiento-kanban-colisiones';
 
 function hacerSolicitud(
   overrides: Partial<SolicitudMantenimiento> = {},
@@ -93,6 +98,7 @@ let root: Root;
 
 beforeEach(() => {
   manejadores = {};
+  deteccionUsada = null;
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -185,6 +191,39 @@ describe('soltar la tarjeta en otra columna', () => {
     const { onStatusChange } = montar();
     await soltar('sol-1', 'quoted');
     expect(onStatusChange).toHaveBeenCalledWith('sol-1', 'quoted');
+  });
+
+  /**
+   * 🔴 El tablero NO filtra destinos. Nico pidió «poder arrastrar un
+   * mantenimiento creado de un estado a otro» y el back ya deja ir a cualquiera
+   * de las cinco columnas: si acá se colara una tabla de saltos permitidos,
+   * volvería el mismo defecto por el otro lado.
+   */
+  it.each([
+    ['quoted', 'el paso de al lado'],
+    ['approved', 'saltándose una columna (lo que Nico intentó)'],
+    ['in_progress', 'saltándose dos'],
+    ['completed', 'hasta la última'],
+  ])('deja soltar en %s — %s', async (destino) => {
+    const { onStatusChange } = montar();
+    await soltar('sol-1', destino);
+    expect(onStatusChange).toHaveBeenCalledWith('sol-1', destino);
+  });
+
+  it('también hacia ATRÁS: de «Aprobadas» a «Reportadas»', async () => {
+    const { onStatusChange } = montar({
+      data: [hacerSolicitud({ status: 'approved' })],
+    });
+    await soltar('sol-1', 'reported');
+    expect(onStatusChange).toHaveBeenCalledWith('sol-1', 'reported');
+  });
+
+  it('el destino lo decide el PUNTERO, no el rectángulo corrido de la tarjeta', () => {
+    montar();
+    // `closestCorners` elegía la columna de al lado cuando la tarjeta se
+    // agarraba cerca de su borde izquierdo: ver
+    // `mantenimiento-kanban-colisiones.test.ts`.
+    expect(deteccionUsada).toBe(detectarColumnaDelPuntero);
   });
 
   it('soltarla fuera de toda columna no pide nada', async () => {

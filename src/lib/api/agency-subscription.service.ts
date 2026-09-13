@@ -67,4 +67,14 @@ export const agencySubscriptionApi = {
       {},
     );
   },
+
+  /**
+   * POST /inmobiliaria/subscription/charges/:chargeId/abandon — void a PENDING
+   * charge server-side (explicit "Salir sin pagar") and return fresh state.
+   * Idempotent: a second call on an already-terminal charge is a 200 no-op.
+   * Requires `subscription:edit`.
+   */
+  abandonCharge(chargeId: string): Promise<AgencySubscriptionState> {
+    return apiClient.post<AgencySubscriptionState>(`${BASE}/charges/${chargeId}/abandon`, {});
+  },
 };

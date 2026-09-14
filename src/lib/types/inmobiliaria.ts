@@ -1839,6 +1839,8 @@ export interface AgencyProfile {
   renovacionAutomatica?: boolean;
   /** IPC vigente en % (0..30). `null` = el IPC de diciembre del año anterior de la tabla de Leasefy. */
   ipcVigente?: number | null;
+  /** IPC de diciembre POR AÑO que cargó la inmobiliaria: `{ "2026": 5.3 }`. Para ese año manda sobre `ipcVigente` y la tabla. */
+  ipcPorAnio?: Record<string, number>;
   /** Tarifas tributarias (Decimal en el back: viaja como TEXTO; el formulario lo convierte). `reteicaPorMil` y la base mínima: null = no configurada. */
   ivaPorcentaje?: number | string;
   retefuenteArrendamientoPorcentaje?: number | string;
@@ -1916,6 +1918,8 @@ export interface UpdateAgencyPayload {
   renovacionAutomatica?: boolean;
   /** IPC vigente en %, 0..30 con dos decimales. `null` = la tabla del DANE que trae Leasefy. */
   ipcVigente?: number | null;
+  /** El mapa ENTERO de IPC por año (reemplaza al guardado): para quitar un año se manda sin él. */
+  ipcPorAnio?: Record<string, number>;
   /** Tarifas tributarias, 0..100 (la reteICA es por mil). `null` = no configurada. */
   ivaPorcentaje?: number;
   retefuenteArrendamientoPorcentaje?: number;

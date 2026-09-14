@@ -27,6 +27,7 @@ import { useI18n } from '@/lib/i18n';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { toast } from '@/components/ui/toast';
 import type {
   Renovacion,
   RenovacionHistoryItem,
@@ -34,6 +35,7 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import { getRenovacionStatusColor, getRenovacionStatusLabel } from '@/lib/types/inmobiliaria';
 import { agencyApi, renovacionesApi } from '@/lib/api/inmobiliaria.service';
+import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 import {
   PASOS_DE_RENOVACION,
   canalDeEnvio,
@@ -282,8 +284,12 @@ export function CuerpoDeRenovacion({
     void renovacionesApi
       .getDocumentUrl(renovacion.id)
       .then(({ url }) => window.open(url, '_blank', 'noopener'))
-      .catch(() => {
-        // Sin URL firmada no hay nada que abrir; el botón sólo existe con documento.
+      .catch((error: unknown) => {
+        // C30: el botón sólo existe con documento, así que si no abre es que
+        // algo falló (la URL firmada, el almacenamiento): se dice, no se calla.
+        toast.error('No se pudo abrir el documento', {
+          description: mensajeDelFallo(error, 'Reintenta en un momento.'),
+        });
       });
   };
 

@@ -13,6 +13,9 @@ import {
 import { useAuth } from '@/lib/auth/use-auth';
 import { useInvitation } from '@/lib/hooks/useInvitation';
 import { apiClient } from '@/lib/api/client';
+import { toast } from '@/components/ui/toast';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 
 // ============================================================================
 // Helpers
@@ -108,7 +111,8 @@ function ExpiredView() {
  *
  * States:
  *   loading  → spinner
- *   invalid  → not found message + go home
+ *   invalid  → not found message + go home (sólo el 404)
+ *   error    → no se pudo validar (500, red caída) + reintentar
  *   expired  → alert with re-invite suggestion
  *   valid, not logged in  → login/register buttons
  *   valid, logged in      → accept/decline buttons
@@ -118,7 +122,7 @@ export default function InvitacionPage() {
   const token = typeof params.token === 'string' ? params.token : '';
   const router = useRouter();
   const { user, isLoading: authLoading, needsOnboarding } = useAuth();
-  const { invitation, status } = useInvitation(token);
+  const { invitation, status, error: invitationError, reintentar } = useInvitation(token);
 
   const [accepting, setAccepting] = useState(false);
   const [declining, setDeclining] = useState(false);
@@ -174,17 +178,20 @@ export default function InvitacionPage() {
     setActionError(null);
     try {
       // Mismo criterio que aceptar: la URL del back la resuelve `apiClient`.
-      await apiClient
-        .post(`/inmobiliaria/agency/invitations/${token}/decline`)
-        .catch(() => {
-          // Un fallo de red al rechazar no cambia nada para la persona.
-        });
-
-      router.push('/');
-    } catch {
-      // Navigate away even if the call fails
-      router.push('/');
+      await apiClient.post(`/inmobiliaria/agency/invitations/${token}/decline`);
+    } catch (err) {
+      /*
+       * A5: antes se tragaba el fallo y se iba al inicio igual, así que la
+       * persona creía haber rechazado una invitación que seguía viva. Se dice
+       * con el motivo, y se queda para poder reintentar.
+       */
+      toast.error('No se pudo rechazar la invitación', {
+        description: mensajeDelFallo(err, 'Reintenta en un momento.'),
+      });
+      setDeclining(false);
+      return;
     }
+    router.push('/');
   }
 
   // ---- Loading state (while auth or token are resolving) ----
@@ -197,6 +204,18 @@ export default function InvitacionPage() {
   }
 
   // ---- Error states ----
+  // A1: un 500 o la red caída no dicen nada de la invitación. Se dice que no
+  // se pudo validar y se deja reintentar; «no encontrada» es sólo el 404.
+  if (status === 'error') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg p-4">
+        <div className="w-full max-w-md">
+          <FalloDeCarga error={invitationError} queEs="la invitación" onReintentar={reintentar} />
+        </div>
+      </div>
+    );
+  }
+
   if (status === 'invalid') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg p-4">

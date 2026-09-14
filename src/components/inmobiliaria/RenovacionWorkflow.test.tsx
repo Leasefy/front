@@ -45,6 +45,17 @@ vi.mock('@/lib/api/inmobiliaria.service', () => ({
   agencyApi: { getMyAgency: (...args: unknown[]) => getMyAgency(...args) },
 }));
 
+const toastError = vi.fn();
+vi.mock('@/components/ui/toast', () => ({
+  toast: {
+    error: (...args: unknown[]) => toastError(...args),
+    success: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+    message: vi.fn(),
+  },
+}));
+
 import { CuerpoDeRenovacion } from './RenovacionWorkflow';
 
 const HOY = new Date(2026, 8, 8);
@@ -383,6 +394,69 @@ describe('la firma', () => {
     expect(onUploadDocument).toHaveBeenCalledWith(archivo);
     expect(onStepComplete).toHaveBeenCalledWith('completed', 1_550_000, 0);
     expect(porTestId('paso-completada')).not.toBeNull();
+  });
+});
+
+/**
+ * Los fallos se dicen y no avanzan. El aviso de C28 y C29 lo da la página
+ * (su test lo cubre); acá se fija lo que le toca al cajón: con el handler
+ * rechazado, no se pasa de paso ni se cierra el diálogo. C30 sí es del cajón.
+ */
+describe('cuando algo falla (C28 · C29 · C30)', () => {
+  beforeEach(() => {
+    toastError.mockReset();
+  });
+
+  it('C28 · si subir el contrato firmado falla, se queda en la firma y no completa', async () => {
+    const onUploadDocument = vi.fn().mockRejectedValue(new Error('El archivo supera los 10 MB'));
+    const onStepComplete = vi.fn().mockResolvedValue(undefined);
+    await montar({ renovacion: { ...base, status: 'signed' }, onUploadDocument, onStepComplete });
+
+    await elegirArchivo(
+      porTestId<HTMLInputElement>('firma-archivo'),
+      new File(['pdf'], 'contrato-firmado.pdf', { type: 'application/pdf' }),
+    );
+    await clic(porTestId('renovacion-registrar-firma'));
+
+    expect(onUploadDocument).toHaveBeenCalled();
+    expect(onStepComplete).not.toHaveBeenCalled();
+    expect(porTestId('paso-firma')).not.toBeNull();
+    expect(porTestId('paso-completada')).toBeNull();
+    expect(porTestId<HTMLButtonElement>('renovacion-registrar-firma')?.disabled).toBe(false);
+  });
+
+  it('C29 · si no renovar falla, el diálogo sigue abierto con el motivo escrito', async () => {
+    const onTerminate = vi.fn().mockRejectedValue(new Error('No tienes permiso'));
+    await montar({ onTerminate });
+    await clic(porTestId('renovacion-no-renovar'));
+    await escribir(porTestId<HTMLTextAreaElement>('no-renovar-motivo'), 'Se muda en diciembre.');
+    await clic(porTestId('no-renovar-confirmar'));
+
+    expect(onTerminate).toHaveBeenCalledWith('Se muda en diciembre.');
+    expect(porTestId('dialogo-no-renovar')).not.toBeNull();
+    expect(porTestId<HTMLTextAreaElement>('no-renovar-motivo')?.value).toBe('Se muda en diciembre.');
+  });
+
+  it('🔴 C30 · si el contrato firmado no abre, lo dice con el motivo y no abre nada', async () => {
+    getDocumentUrl.mockRejectedValue(new Error('El documento ya no está disponible'));
+    const abrir = vi.spyOn(window, 'open').mockImplementation(() => null);
+    await montar({
+      renovacion: { ...base, status: 'completed', documentName: 'contrato-firmado.pdf' },
+    });
+
+    const boton = [...(porTestId('paso-completada')?.querySelectorAll('button') ?? [])].find((b) =>
+      b.textContent?.includes('Ver contrato firmado'),
+    );
+    await clic(boton ?? null);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(toastError).toHaveBeenCalledWith('No se pudo abrir el documento', {
+      description: 'El documento ya no está disponible',
+    });
+    expect(abrir).not.toHaveBeenCalled();
+    abrir.mockRestore();
   });
 });
 

@@ -83,10 +83,29 @@ export interface ResumenDeLaCorrida {
   simulado?: boolean;
 }
 
+/**
+ * ¿Falta el IPC del año que rige? Lo cuenta el back con la MISMA regla que
+ * ejecuta el cron, así que el aviso no puede decir algo distinto de lo que va
+ * a pasar.
+ */
+export interface IpcQueFalta {
+  /** El año cuyo IPC de diciembre falta; `null` = no falta ninguno. */
+  anioDelIpc: number | null;
+  /** El año en que rigen las renovaciones que lo necesitan. */
+  anioQueRige: number | null;
+  /** Contratos vigentes que se renovarían SIN incremento por eso. */
+  contratos: number;
+}
+
 export const renovacionAutomaticaApi = {
   /** Qué va a pasar con este contrato y cuándo. */
   async delContrato(contractId: string): Promise<PlanDelContrato> {
     return apiClient.get<PlanDelContrato>(`${BASE}/plan/${contractId}`);
+  },
+
+  /** 🔴 Cuántos contratos se renuevan sin incremento porque falta el IPC del año que rige. */
+  async ipcQueFalta(): Promise<IpcQueFalta> {
+    return apiClient.get<IpcQueFalta>(`${BASE}/ipc-que-falta`);
   },
 
   /**

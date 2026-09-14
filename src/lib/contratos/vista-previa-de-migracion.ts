@@ -54,7 +54,10 @@ const ORDEN: CampoDeContrato[] = [
   'inquilinoDocumento',
   'inquilinoTelefono',
   'fechaInicio',
+  'fechaDeCartera',
   'fechaFin',
+  'prorrateado',
+  'diasDePlazo',
   'canon',
   'canonTotal',
   'diaDePago',
@@ -154,6 +157,18 @@ function valorLegible(
       return f.fechaDeCartera ?? null
     case 'fechaFin':
       return f.endDate ?? null
+    // Con prorrateo el primer mes cobra sólo los días ocupados desde la fecha
+    // de cartera; sin él, el mes completo.
+    case 'prorrateado':
+      return f.prorratearPrimerMes === undefined
+        ? null
+        : f.prorratearPrimerMes
+          ? 'Sí'
+          : 'No'
+    case 'diasDePlazo':
+      return f.diasDePlazo === undefined
+        ? null
+        : `${f.diasDePlazo} ${f.diasDePlazo === 1 ? 'día' : 'días'} de plazo`
     case 'canon':
       return f.monthlyRent === undefined ? null : formatCurrency(f.monthlyRent)
     case 'deposito':

@@ -1,8 +1,10 @@
 'use client';
 
 /**
- * Perfil de la inmobiliaria: los datos de la empresa + el extracto mensual al
- * propietario. Los dos guardan por el MISMO endpoint (`PUT /inmobiliaria/agency`).
+ * Perfil de la inmobiliaria: los datos de la empresa, el extracto mensual al
+ * propietario y la renovación automática. Los tres guardan por el MISMO
+ * endpoint (`PUT /inmobiliaria/agency`) y con el mismo `guardar`, que sólo
+ * manda los campos cambiados.
  */
 
 import { toast } from '@/components/ui/toast';
@@ -10,7 +12,11 @@ import { Buildings, Info } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { useI18n } from '@/lib/i18n';
-import { ConfigPerfilAgencia, ConfigExtractoMensual } from '@/components/inmobiliaria';
+import {
+  ConfigPerfilAgencia,
+  ConfigExtractoMensual,
+  ConfigRenovacionAutomatica,
+} from '@/components/inmobiliaria';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
@@ -94,6 +100,7 @@ export function SeccionPerfil() {
           )}
           <ConfigPerfilAgencia agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
           <ConfigExtractoMensual agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
+          <ConfigRenovacionAutomatica agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
         </div>
       )}
     </EstadoDeDatos>

@@ -170,3 +170,47 @@ describe('PageGuard pre-existing behaviors (regression)', () => {
     expect(innerMounted()).toBe(true)
   })
 })
+
+/**
+ * 🔴 Nico, 2026-09-12: «hay muchos apartamentos donde no hay señal; la persona
+ * que hace el inventario debería poder agregar todo sin señal». Sin red,
+ * `GET /inmobiliaria/agency/my-permissions` no vuelve y `canAccess` devuelve
+ * false por no haber podido preguntar — no por una negativa. Expulsar ahí
+ * sacaba a la persona de la ficha justo al llegar al apartamento.
+ */
+describe('PageGuard sin señal', () => {
+  function sinRed(sin: boolean) {
+    Object.defineProperty(window.navigator, 'onLine', {
+      value: !sin,
+      configurable: true,
+    })
+  }
+
+  afterEach(() => {
+    sinRed(false)
+  })
+
+  it('sin señal no expulsa: deja ver la pantalla', () => {
+    sinRed(true)
+    permissionsMock.canAccess = () => false
+    render({ module: 'portafolio' })
+    expect(innerMounted()).toBe(true)
+    expect(replaceMock).not.toHaveBeenCalled()
+  })
+
+  it('sin señal tampoco expulsa por el rol de agencia', () => {
+    sinRed(true)
+    permissionsMock.agencyRole = null
+    render({ roles: ADMIN_CONTADOR })
+    expect(innerMounted()).toBe(true)
+    expect(replaceMock).not.toHaveBeenCalled()
+  })
+
+  it('con señal sigue expulsando igual que antes', () => {
+    sinRed(false)
+    permissionsMock.canAccess = () => false
+    render({ module: 'portafolio' })
+    expect(innerMounted()).toBe(false)
+    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria')
+  })
+})

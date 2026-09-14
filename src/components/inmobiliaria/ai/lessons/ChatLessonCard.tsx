@@ -33,6 +33,9 @@ import type {
 const KIND_LABEL: Record<ChatLesson['kind'], string> = {
   routing: 'Enrutamiento',
   approval: 'Aprobación',
+  // No se minó: alguien del equipo la escribió corrigiendo una respuesta con el
+  // pulgar abajo, y por eso nace certificada.
+  feedback: 'Corrección del equipo',
 }
 
 /** Human label for the agent a lesson concerns. */

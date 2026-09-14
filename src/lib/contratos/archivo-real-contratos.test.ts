@@ -265,3 +265,107 @@ describe('Contracts.csv: los valores', () => {
     expect(f.monthlyRent).toBe(1008403)
   })
 })
+
+/**
+ * 🔴 El SEGUNDO archivo real: `Contracts by Details.csv` (1.912 filas, `;`).
+ * Trae tres columnas que hasta el 2026-09-12 se perdían enteras —«Prorrateado»
+ * (1.843 «SI», 68 «NO»), «Días de Plazo» (2 ó 3 en 1.648 filas) y «Fecha
+ * Cartera», que tenía campo pero nunca viajaba al back—, y de las tres depende
+ * lo que se le cobra al inquilino el primer mes.
+ *
+ * Encabezados REALES; la fila es inventada con la misma forma.
+ */
+const ENCABEZADO_POR_DETALLE = [
+  'Consecutivo contrato',
+  'Total Canon Contrato',
+  'Consecutivo detalle',
+  'Nro. Propiedad',
+  'Dirección Propiedad',
+  'Documento Propietario',
+  'Nombre Propietario',
+  'Teléfono propietario',
+  'Email propietario',
+  'Documento Inquilino',
+  'Nombre Inquilino',
+  'Teléfono inquilino',
+  'Email inquilino',
+  'Codeudores',
+  'Valor canon',
+  '% Comisión',
+  'Valor comisión',
+  'Total arrendamiento',
+  'Periodicidad',
+  'Días de Plazo',
+  'Fecha inicio',
+  'Fecha fin',
+  'Fecha Cartera',
+  'Tipo de Uso',
+  'Escenario',
+  'Prorrateado',
+  'Renovación automática',
+  'Impuestos asumidos',
+  'Cobro de Intereses',
+  'Tipo de interés',
+  'Observaciones',
+  'Estado',
+]
+
+const FILA_POR_DETALLE: Record<string, unknown> = {
+  'Consecutivo contrato': '1686',
+  'Nro. Propiedad': '412',
+  'Dirección Propiedad': 'CR 50 127 SUR 61 OF 502',
+  'Documento Inquilino': '71211270',
+  'Nombre Inquilino': 'JORGE ANDRES LONDONO',
+  'Email inquilino': 'jorge@correo.co',
+  'Valor canon': '$1,008,403.00',
+  Periodicidad: 'Mensual',
+  'Días de Plazo': '3',
+  'Fecha inicio': '2026-09-01',
+  'Fecha fin': '2027-08-31',
+  'Fecha Cartera': '2026-09-12',
+  'Tipo de Uso': 'Vivienda',
+  Prorrateado: 'SI',
+  Estado: 'Activo',
+}
+
+describe('Contracts by Details.csv: prorrateo, plazo y fecha de cartera', () => {
+  const mapeo = mapearColumnas(ENCABEZADO_POR_DETALLE)
+  const porColumna = Object.fromEntries(mapeo.map((m) => [m.columna, m.campo]))
+
+  it('🔴 las tres columnas tienen campo propio', () => {
+    expect(porColumna['Prorrateado']).toBe('prorrateado')
+    expect(porColumna['Días de Plazo']).toBe('diasDePlazo')
+    expect(porColumna['Fecha Cartera']).toBe('fechaDeCartera')
+  })
+
+  it('🔴 «Días de Plazo» NO se roba el «Día de pago»: son cosas distintas', () => {
+    const conLasDos = mapearColumnas(['Días de Plazo', 'Día de pago'])
+    expect(conLasDos.map((m) => m.campo)).toEqual(['diasDePlazo', 'diaDePago'])
+  })
+
+  it('🔴 la fila viaja al back con las tres, no con el silencio de antes', () => {
+    const { fila: filaAMigrar } = leerFilaDelArchivo(FILA_POR_DETALLE, mapeo)
+
+    expect(filaAMigrar.prorratearPrimerMes).toBe(true)
+    expect(filaAMigrar.diasDePlazo).toBe(3)
+    expect(filaAMigrar.fechaDeCartera).toBe('2026-09-12')
+    // Y el inicio del contrato sigue siendo el suyo: son dos fechas.
+    expect(filaAMigrar.startDate).toBe('2026-09-01')
+  })
+
+  it('«NO» viaja como false, y lo ilegible viaja AUSENTE — nunca un "" que tumbe el lote', () => {
+    const { fila: filaAMigrar } = leerFilaDelArchivo(
+      { ...FILA_POR_DETALLE, Prorrateado: 'NO', 'Días de Plazo': 'N/A' },
+      mapeo,
+    )
+    expect(filaAMigrar.prorratearPrimerMes).toBe(false)
+    expect(filaAMigrar.diasDePlazo).toBeUndefined()
+
+    const vacia = leerFilaDelArchivo(
+      { ...FILA_POR_DETALLE, Prorrateado: '', 'Días de Plazo': '' },
+      mapeo,
+    )
+    expect(vacia.fila.prorratearPrimerMes).toBeUndefined()
+    expect(vacia.fila.diasDePlazo).toBeUndefined()
+  })
+})

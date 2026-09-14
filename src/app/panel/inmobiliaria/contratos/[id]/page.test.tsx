@@ -26,6 +26,24 @@ const { useContractMock, permisos } = vi.hoisted(() => ({
   permisos: { puede: false },
 }))
 
+/**
+ * El preview del contrato. Mutable porque la sección «Documento» tiene tres
+ * salidas distintas y hay que poder pararse en cada una: documento, contrato
+ * SIN documento (el migrado) y fallo de verdad.
+ */
+const { previewDelContrato } = vi.hoisted(() => ({
+  previewDelContrato: {
+    valor: {
+      preview: null as unknown,
+      isLoading: false,
+      error: null as string | null,
+      errorCrudo: null as unknown,
+      sinDocumento: false,
+      refetch: () => {},
+    },
+  },
+}))
+
 const { paramsDeBusqueda } = vi.hoisted(() => ({
   // Mutable para que un caso pueda entrar «desde» otra pantalla. Sin `volver`
   // el enlace de arriba sigue diciendo «Contratos», como siempre.
@@ -44,7 +62,7 @@ vi.mock('@/components/auth/PageGuard', () => ({
 
 vi.mock('@/lib/hooks/useContracts', () => ({
   useContract: () => useContractMock(),
-  useContractPreview: () => ({ preview: null, isLoading: false }),
+  useContractPreview: () => previewDelContrato.valor,
   useContractRejections: () => ({ rejections: [] }),
   useContractActions: () => ({ isSubmitting: false, lastError: null }),
   useSignedPdfUrl: () => ({ url: null, isLoading: false }),
@@ -101,8 +119,11 @@ vi.mock('@/components/contract/DownloadContractPdfButton', () => ({
   DownloadContractPdfButton: () =>
     React.createElement('div', { 'data-testid': 'download-pdf' }),
 }))
+// El `role="alert"` del cartel real va también en el doble: es lo que una
+// prueba puede mirar para decir «acá NO hay un error pintado».
 vi.mock('@/components/estado/FalloDeCarga', () => ({
-  FalloDeCarga: () => React.createElement('div', { 'data-testid': 'fallo-carga' }),
+  FalloDeCarga: () =>
+    React.createElement('div', { 'data-testid': 'fallo-carga', role: 'alert' }),
 }))
 vi.mock('@/components/contratos/AdministracionDelContrato', () => ({
   AdministracionDelContrato: () =>
@@ -124,11 +145,26 @@ vi.mock('@/components/contratos/CobrosDelContrato', () => ({
   CobrosDelContrato: () =>
     React.createElement('div', { 'data-testid': 'cobros' }),
 }))
+// El seguimiento de PQRS del contrato (Nico, 2026-09-12). Acá sólo importa
+// que la sección esté montada: lo que muestra se prueba en su propio archivo.
+vi.mock('@/components/contratos/PqrsDelContrato', () => ({
+  PqrsDelContrato: () => React.createElement('div', { 'data-testid': 'pqrs-del-contrato' }),
+}))
 vi.mock('@/components/contratos/VincularInmueble', () => ({
   VincularInmueble: ({ puedeVincular }: { puedeVincular: boolean }) =>
     puedeVincular
       ? React.createElement('button', { 'data-testid': 'vincular-inmueble' }, 'Vincular inmueble')
       : null,
+}))
+// El inventario y el historial del inmueble desde el contrato (2026-09-12):
+// acá sólo importa CUÁNDO se monta y con qué inmueble y contrato.
+vi.mock('@/components/contratos/InmuebleDelContrato', () => ({
+  InmuebleDelContrato: ({ propertyId, contratoId }: { propertyId: string | null; contratoId: string }) =>
+    React.createElement(
+      'div',
+      { 'data-testid': 'inmueble-del-contrato', 'data-contrato': contratoId },
+      propertyId ?? 'sin-inmueble',
+    ),
 }))
 
 // ── Import page AFTER mocks ───────────────────────────────────────────────
@@ -172,6 +208,14 @@ beforeEach(() => {
   document.body.appendChild(container)
   root = createRoot(container)
   useContractMock.mockReset()
+  previewDelContrato.valor = {
+    preview: null,
+    isLoading: false,
+    error: null,
+    errorCrudo: null,
+    sinDocumento: false,
+    refetch: () => {},
+  }
 })
 
 afterEach(() => {
@@ -398,5 +442,108 @@ describe('ContratoDetallePage — el resumen de arriba', () => {
     await renderPage()
 
     expect(container.querySelector('[data-testid="resumen-del-contrato"]')!.textContent).toContain('vencido hace')
+  })
+})
+
+/*
+ * 🔴 Nico, 2026-09-12: «estás tergiversando los números de contrato». El
+ * #1839 que vio es NUESTRO consecutivo; el suyo es 1686. El título lee el
+ * suyo, y debajo dice cuál es el nuestro.
+ */
+describe('ContratoDetallePage — el número de la inmobiliaria en el título', () => {
+  it('un contrato migrado se titula con SU número y dice cuál es el de Leasefy', async () => {
+    withContract(contract({ code: 1839, externalId: '1686', contractOrigin: 'MIGRATED' }))
+
+    await renderPage()
+
+    expect(container.querySelector('h1')?.textContent).toBe('Contrato 1686')
+    const nota = container.querySelector('[data-testid="numero-de-leasefy"]')
+    expect(nota?.textContent).toContain('1686 es el número de tu sistema anterior')
+    expect(nota?.textContent).toContain('en Leasefy es el #1839')
+    expect(container.textContent).not.toContain('Contrato #1839')
+  })
+
+  it('un contrato nativo sigue titulándose con el nuestro, sin nota', async () => {
+    withContract(contract({ code: 14, externalId: null }))
+
+    await renderPage()
+
+    expect(container.querySelector('h1')?.textContent).toBe('Contrato #14')
+    expect(container.querySelector('[data-testid="numero-de-leasefy"]')).toBeNull()
+  })
+})
+
+/*
+ * Nico, 2026-09-12: «el historial que hoy vive en el inmueble debe asociarse
+ * al contrato» y «el inventario debe verse también desde el contrato».
+ * Nico, 2026-09-13: «desde el contrato también debería de agregar todo lo que
+ * se pueda agregar del inventario» — y para eso el componente necesita saber
+ * DESDE QUÉ contrato se abrió: es lo que se guarda en el borrador y la página
+ * que se prepara para trabajar sin señal.
+ */
+describe('ContratoDetallePage — inventario e historial del inmueble', () => {
+  it('con inmueble, se montan sobre ESE inmueble y dicen desde qué contrato', async () => {
+    withContract(contract({ propertyId: 'prop-7' }))
+
+    await renderPage()
+
+    const montado = container.querySelector('[data-testid="inmueble-del-contrato"]')
+    expect(montado?.textContent).toBe('prop-7')
+    expect(montado?.getAttribute('data-contrato')).toBe(CONTRACT_ID)
+  })
+
+  /*
+   * Antes no se montaba nada y el hueco no decía nada. Ahora se monta igual y
+   * es el componente el que dice «este contrato no tiene inmueble asociado»:
+   * un inventario sin inmueble no tiene dónde vivir, y eso hay que decirlo.
+   */
+  it('sin inmueble se monta igual, para poder decirlo', async () => {
+    withContract(contract({ propertyId: null }))
+
+    await renderPage()
+
+    expect(container.querySelector('[data-testid="inmueble-del-contrato"]')?.textContent).toBe(
+      'sin-inmueble',
+    )
+  })
+})
+
+/*
+ * 🔴 Pasada de QA del 2026-09-12: en TODA ficha de un contrato migrado salía
+ * un cartel rojo. `GET /contracts/:id/preview` responde 400 «Contract HTML not
+ * generated» porque esos contratos se cargaron desde el archivo de la
+ * inmobiliaria —ya firmados en papel— y nunca tuvieron documento en Leasefy.
+ * No tener documento no es un fallo; un 400 con otro motivo, o un 500, sí.
+ */
+describe('ContratoDetallePage — el documento de un contrato migrado', () => {
+  it('🔴 sin documento lo dice en tono neutro, sin pintar un error', async () => {
+    previewDelContrato.valor = {
+      ...previewDelContrato.valor,
+      sinDocumento: true,
+    }
+    withContract(contract({ contractOrigin: 'MIGRATED', externalId: '1686' }))
+
+    await renderPage()
+
+    expect(
+      container.querySelector('[data-testid="contrato-sin-documento"]')?.textContent,
+    ).toContain('Este contrato se cargó desde tu sistema anterior y no tiene documento generado en Leasefy')
+    // Ni cartel de fallo ni nada que se anuncie como alerta.
+    expect(container.querySelector('[data-testid="fallo-carga"]')).toBeNull()
+    expect(container.querySelector('[role="alert"]')).toBeNull()
+  })
+
+  it('un 400 con OTRO motivo, o un 500, sí se pinta como fallo', async () => {
+    previewDelContrato.valor = {
+      ...previewDelContrato.valor,
+      errorCrudo: new Error('Boom'),
+      error: 'Boom',
+    }
+    withContract(contract({ contractOrigin: 'MIGRATED' }))
+
+    await renderPage()
+
+    expect(container.querySelector('[data-testid="fallo-carga"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="contrato-sin-documento"]')).toBeNull()
   })
 })

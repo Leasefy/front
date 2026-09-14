@@ -3,7 +3,7 @@
  * Connects to backend /api/v1/inmobiliaria endpoints
  */
 
-import { mantenimientoAlBack, mantenimientoDelBack } from './mantenimiento-enums';
+import { ESTADO_AL_BACK, mantenimientoAlBack, mantenimientoDelBack } from './mantenimiento-enums';
 import { apiClient, getAccessToken, ApiError } from '@/lib/api/client';
 import { resolveListingType } from '@/lib/api/properties.mapper';
 import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url';
@@ -27,6 +27,8 @@ import type {
   Dispersion,
   DispersionSummary,
   SolicitudMantenimiento,
+  MantenimientoQuote,
+  NuevaCotizacion,
   Renovacion,
   InmobiliariaDashboardKPIs,
   DocumentTemplate,
@@ -732,6 +734,48 @@ export const consignacionesApi = {
     return normalizeConsignacion(raw);
   },
 
+  /**
+   * POST /inmobiliaria/consignaciones/:id/inventario/foto — la foto de UN
+   * ítem (multipart `file` + `itemId`). Devuelve la URL con la que queda.
+   *
+   * Va aparte del PUT de la lista porque el inventario se llena sin señal: la
+   * persona recorre el apartamento, guarda todo en el teléfono y después sube
+   * foto por foto. El `itemId` es la llave de idempotencia — el back guarda
+   * cada foto en una ruta que depende sólo de él, así que reintentar una
+   * subida cortada pisa la misma foto en vez de dejar dos.
+   */
+  async subirFotoDeInventario(id: string, itemId: string, foto: Blob): Promise<string> {
+    const token = getAccessToken();
+    const formData = new FormData();
+    // El nombre del archivo no lo lee nadie (la ruta la arma el back con el
+    // `itemId`), pero un `Blob` sin nombre llega como `blob` y multer lo
+    // rechaza en algunos navegadores.
+    formData.append('file', foto, `${itemId}.jpg`);
+    formData.append('itemId', itemId);
+    let res: Response;
+    try {
+      res = await fetch(`${BACKEND_URL}${BASE}/consignaciones/${id}/inventario/foto`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+    } catch (err) {
+      throw new ApiError(
+        0,
+        `No pudimos conectarnos al servidor. ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { message?: unknown };
+      throw new ApiError(
+        res.status,
+        typeof body.message === 'string' ? body.message : 'No se pudo subir la foto',
+      );
+    }
+    const { photoUrl } = (await res.json()) as { photoUrl: string };
+    return photoUrl;
+  },
+
   async assignAgent(id: string, agenteUserId: string): Promise<Consignacion> {
     const raw = await apiClient.put<RawConsignacion>(
       `${BASE}/consignaciones/${id}/assign-agent`,
@@ -1080,10 +1124,17 @@ export const cobrosApi = {
   },
 
   /**
-   * El cobro de UN inmueble para UN mes. Es lo que pide el recibo de caja
-   * cuando el mes de ese inmueble todavía no se cobró: antes la única salida
-   * era `generate`, la corrida masiva (cien cobros para emitir uno).
-   * `creado: false` = ya existía; el cobro vuelve igual, con su saldo.
+   * El cobro de UN inmueble para UN mes, sin correr la generación de toda la
+   * inmobiliaria. `creado: false` = ya existía; el cobro vuelve igual, con su
+   * saldo.
+   *
+   * ⚠️ SIN CALLSITE desde el 2026-09-12. Lo pedía el recibo de caja cuando el
+   * mes de un inmueble todavía no se había cobrado, y ese camino se cayó: el
+   * recibo se le hace a un CLIENTE y la plata va a su deuda más vieja, así que
+   * crear el cobro del mes para poder recibir contra él es justo lo que Nico
+   * quiso sacar. Se deja porque el endpoint del back existe y «cobrar un mes
+   * suelto» es una operación legítima que va a volver a hacer falta; el día que
+   * se decida que no, se borran los dos lados juntos.
    */
   async generateOne(
     consignacionId: string,
@@ -1353,28 +1404,46 @@ export const mantenimientoApi = {
   },
 
   /**
-   * The backend has no generic `/status` route — it exposes explicit transitions
-   * (@Put :id/approve | :id/complete | :id/cancel). Map the target status to the
-   * matching endpoint. Statuses without a backend transition (reported / quoted /
-   * in_progress) cannot be set directly and throw.
+   * Mover la solicitud a otra columna del tablero.
+   *
+   * 🔴 Acá estaba la mitad de cliente del bug del arrastre. Esto era un `switch`
+   * sobre tres endpoints sueltos —`approve`, `complete`, `cancel`— y su `default`
+   * decía:
+   *
+   *     throw new Error(`Unsupported maintenance status transition: ${status}`)
+   *
+   * O sea que `reported`, `quoted` e `in_progress` NO se podían escribir por
+   * ningún camino: el destino más común del tablero («Cotizada», «En progreso»)
+   * moría en un Error de JavaScript que nunca salía del navegador. Ahora hay un
+   * `PUT :id/status` en el back y todo destino va por ahí, traducido al
+   * vocabulario del back (`ESTADO_AL_BACK`): un salto que el back no permite
+   * vuelve como 400 con el motivo escrito, que es lo que la pantalla muestra.
    */
   async changeStatus(id: string, status: string): Promise<SolicitudMantenimiento> {
-    switch (status) {
-      case 'approved':
-        return mantenimientoDelBack(await apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/approve`));
-      case 'completed':
-        // `completionNotes`/`completionPhotoUrls` are optional and not collected here.
-        return mantenimientoDelBack(await apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/complete`, {}));
-      case 'cancelled':
-        return mantenimientoDelBack(await apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/cancel`));
-      default:
-        throw new Error(`Unsupported maintenance status transition: ${status}`);
-    }
+    const alBack = ESTADO_AL_BACK[status as keyof typeof ESTADO_AL_BACK] ?? status;
+    return mantenimientoDelBack(
+      await apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/status`, { status: alBack }),
+    );
   },
 
   /** Alias for changeStatus used by operaciones page */
   async updateStatus(id: string, status: string): Promise<SolicitudMantenimiento> {
     return mantenimientoApi.changeStatus(id, status);
+  },
+
+  /**
+   * Agregarle una cotización a una solicitud que YA existe.
+   *
+   * El endpoint estaba en el back desde siempre (`POST :id/quote`) y este
+   * cliente no lo llamaba desde ningún lado: la pantalla ofrecía «Nueva
+   * cotización» y el handler contestaba «función en desarrollo» (Nico,
+   * 2026-09-12: «no deja agregar la cotización a un mantenimiento ya creado»).
+   *
+   * Los cinco campos son EXACTAMENTE los que guarda `MantenimientoQuote`. El
+   * modelo no tiene adjunto ni vigencia: no se inventan.
+   */
+  async addQuote(id: string, data: NuevaCotizacion): Promise<MantenimientoQuote> {
+    return apiClient.post<MantenimientoQuote>(`${BASE}/mantenimiento/${id}/quote`, data);
   },
 
   async approveQuote(id: string, quoteId: string): Promise<SolicitudMantenimiento> {

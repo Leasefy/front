@@ -8,7 +8,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { CaretLeft, Buildings, X, CalendarPlus } from '@phosphor-icons/react';
+import { CaretLeft, Buildings, X, CalendarPlus, WifiSlash } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -16,6 +16,7 @@ import { Button, EmptyState } from '@/components/ui';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FotosDelInmueble } from '@/components/inmobiliaria/FotosDelInmueble';
 import { VisitasDelInmueble } from '@/components/inmobiliaria/VisitasDelInmueble';
+import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/ComprobantesDelSistemaAnterior';
 import { VisorDeFotos } from '@/components/inmobiliaria/inmueble/VisorDeFotos';
 import { UbicacionDelInmueble } from '@/components/inmobiliaria/inmueble/UbicacionDelInmueble';
 import {
@@ -36,7 +37,7 @@ import {
   useAgenteDeConsignacion,
 } from '@/lib/hooks/useInmobiliaria';
 import { useProperty } from '@/lib/hooks/useProperties';
-import type { PropertyAvailability, ConsignacionFormData, Consignacion, InventoryItem } from '@/lib/types/inmobiliaria';
+import type { PropertyAvailability, ConsignacionFormData, Consignacion } from '@/lib/types/inmobiliaria';
 
 // Components
 import { ConsignacionHeader } from '@/components/inmobiliaria/ConsignacionHeader';
@@ -48,14 +49,15 @@ import {
   DocumentsSection,
 } from '@/components/inmobiliaria/ConsignacionDetailSections';
 import { CambiarPropietarioDialog } from '@/components/inmobiliaria/CambiarPropietarioDialog';
-import { ActaEntregaView } from '@/components/inmobiliaria/ActaEntregaView';
+import { InventarioDeLaConsignacion } from '@/components/inmobiliaria/InventarioDeLaConsignacion';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
 import { ConsignacionEditForm } from '@/components/inmobiliaria/ConsignacionEditForm';
-import {
-  InventarioItemDialog,
-  type ItemDeInventarioBorrador,
-} from '@/components/inmobiliaria/InventarioItemDialog';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
+import { usePuedeEditarInventario } from '@/lib/hooks/use-puede-editar-inventario';
+import { useCopiaDeInmueble } from '@/lib/hooks/use-copia-de-inmueble';
+import { useSinSenal } from '@/lib/hooks/use-sin-senal';
+import { registrarServiceWorker } from '@/lib/inventario/sw-inventario';
+import { cuando as cuandoSeGuardo } from '@/components/inmobiliaria/PrepararParaSinSenal';
 
 /** La forma de la ficha, sin datos: cabecera con foto y dos columnas. */
 function EsqueletoDeLaFicha() {
@@ -223,9 +225,6 @@ function ConsignacionDetailContent() {
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [consignacionData, setConsignacionData] = useState<Consignacion | null>(null);
-  // Inventario: `undefined` = diálogo cerrado; `null` = agregar; ítem = editar.
-  const [itemDeInventario, setItemDeInventario] = useState<InventoryItem | null | undefined>(undefined);
-  const [guardandoInventario, setGuardandoInventario] = useState(false);
   const [showTerminateDialog, setShowTerminateDialog] = useState(false);
   const [isTerminating, setIsTerminating] = useState(false);
   const [showCitaModal, setShowCitaModal] = useState(false);
@@ -239,8 +238,39 @@ function ConsignacionDetailContent() {
   const { consignacion: fetchedConsignacion, isLoading: cargandoConsignacion } =
     useConsignacion(consignacionId);
 
-  // Use local state for consignacion to allow updates after edit
-  const consignacion = consignacionData || fetchedConsignacion;
+  /*
+   * 🔴 Abrir la ficha YA estando sin señal.
+   *
+   * Nico, 2026-09-12: «hay muchos apartamentos donde no hay señal; la persona
+   * que hace el inventario debería poder agregar todo sin señal y, cuando
+   * tenga señal, cargarlo».
+   *
+   * Son dos piezas y hacen falta las dos. El service worker sirve el HTML de
+   * esta ruta —sin él el navegador ni llega acá— y esta copia le da los
+   * DATOS: sin ella la pantalla se arma vacía aunque el HTML sí llegue. La
+   * copia se refresca sola en cada visita con señal, y el botón de la columna
+   * derecha la baja a propósito antes de salir de la oficina.
+   */
+  const sinSenal = useSinSenal();
+  const copiaLocal = useCopiaDeInmueble(consignacionId, fetchedConsignacion ?? undefined);
+
+  // El worker se registra desde acá —no en el layout— porque es lo único que
+  // cachea, y sólo en producción o con `NEXT_PUBLIC_SW_INVENTARIO=1`.
+  useEffect(() => {
+    void registrarServiceWorker();
+  }, []);
+
+  /*
+   * El orden importa y es el mismo de siempre con un escalón más al final: lo
+   * que se acaba de editar gana sobre lo que trajo el back, y lo del back gana
+   * sobre la copia. La copia es la RED DE SEGURIDAD, nunca la fuente: en
+   * cuanto el back contesta, manda él.
+   */
+  const consignacion = consignacionData || fetchedConsignacion || copiaLocal.copia?.consignacion;
+  /** Se está mostrando lo guardado porque el back no contestó. */
+  const mostrandoCopia = Boolean(
+    !consignacionData && !fetchedConsignacion && copiaLocal.copia,
+  );
 
   // `?editar=1` (el «Editar» del kebab de la lista) abre el formulario apenas
   // hay datos, y se limpia la URL para que un refresh no lo vuelva a abrir.
@@ -399,53 +429,14 @@ function ConsignacionDetailContent() {
   }, []);
 
   /**
-   * El inventario vive en la consignación como lista completa: agregar,
-   * editar y quitar son «mandar la lista nueva» (PUT …/inventario). Se carga
-   * desde que el inmueble entra a la agencia — sin contrato, entrega ni acta.
+   * El inventario vive en la consignación como lista completa (PUT
+   * …/inventario), y se carga desde que el inmueble entra a la agencia — sin
+   * contrato, entrega ni acta. Todo el flujo —tarjeta, diálogo, borrador sin
+   * señal— vive en `InventarioDeLaConsignacion`, que es el MISMO que monta la
+   * ficha del contrato desde que Nico pidió (2026-09-13) poder cargarlo desde
+   * allá: dos copias del flujo se desincronizan al primer arreglo.
    */
-  const guardarInventario = useCallback(
-    async (items: InventoryItem[], mensaje: string) => {
-      if (!consignacion) return;
-      setGuardandoInventario(true);
-      try {
-        const updated = await consignacionesApi.actualizarInventario(consignacion.id, items);
-        setConsignacionData(updated);
-        setItemDeInventario(undefined);
-        toast.success(mensaje);
-      } catch (err) {
-        toast.error(t('inmobiliaria.acta.itemDialog.error'), {
-          description: err instanceof Error ? err.message : undefined,
-        });
-      } finally {
-        setGuardandoInventario(false);
-      }
-    },
-    [consignacion, t],
-  );
-
-  const handleGuardarItem = useCallback(
-    (item: ItemDeInventarioBorrador) => {
-      const actuales = consignacion?.inventoryItems ?? [];
-      const completo = { ...item, id: item.id ?? `it-${Date.now()}` } as InventoryItem;
-      const existe = actuales.some((i) => i.id === completo.id);
-      const siguientes = existe
-        ? actuales.map((i) => (i.id === completo.id ? completo : i))
-        : [...actuales, completo];
-      void guardarInventario(siguientes, t('inmobiliaria.acta.itemDialog.saved'));
-    },
-    [consignacion?.inventoryItems, guardarInventario, t],
-  );
-
-  const handleQuitarItem = useCallback(
-    (item: InventoryItem) => {
-      const actuales = consignacion?.inventoryItems ?? [];
-      void guardarInventario(
-        actuales.filter((i) => i.id !== item.id),
-        t('inmobiliaria.acta.itemDialog.removed'),
-      );
-    },
-    [consignacion?.inventoryItems, guardarInventario, t],
-  );
+  const puedeEditarInventario = usePuedeEditarInventario();
 
   // Mientras se pide, un esqueleto con la forma de la ficha. Antes esto
   // salía directo a «Consignación no encontrada» durante la carga y recién
@@ -460,10 +451,21 @@ function ConsignacionDetailContent() {
     return (
       <div className="p-4 md:p-6">
         <div className="max-w-lg mx-auto py-16">
+          {/* Sin señal y sin copia no es «no existe»: es «no lo preparaste».
+              Decir «Consignación no encontrada» ahí manda a buscar un
+              problema que no existe. */}
           <EmptyState
-            icon={Buildings}
-            title={t('inmobiliaria.portafolio.detail.notFound')}
-            description={t('inmobiliaria.portafolio.detail.notFoundDesc')}
+            icon={sinSenal ? WifiSlash : Buildings}
+            title={
+              sinSenal
+                ? t('inmobiliaria.sinSenal.sinCopia')
+                : t('inmobiliaria.portafolio.detail.notFound')
+            }
+            description={
+              sinSenal
+                ? t('inmobiliaria.sinSenal.explicacion')
+                : t('inmobiliaria.portafolio.detail.notFoundDesc')
+            }
             action={{
               label: t('inmobiliaria.portafolio.detail.backToPortfolio'),
               href: '/panel/inmobiliaria/inmuebles',
@@ -476,6 +478,22 @@ function ConsignacionDetailContent() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
+      {/* Sin señal la ficha se arma con lo guardado. Decirlo con la FECHA es
+          lo único honesto: las tarjetas que piden otras llamadas —fotos,
+          propietario, candidatos— van a salir vacías, y sin este cartel eso
+          se lee como «el inmueble no tiene nada». */}
+      {mostrandoCopia && copiaLocal.guardadoEn && (
+        <div
+          role="status"
+          className="rounded-md bg-warning-soft border border-border p-3 text-sm text-warning"
+          data-testid="viendo-copia-sin-senal"
+        >
+          {t('inmobiliaria.sinSenal.viendoCopia', {
+            cuando: cuandoSeGuardo(copiaLocal.guardadoEn),
+          })}
+        </div>
+      )}
+
       {/* Breadcrumb + agendar cita */}
       <div className="flex items-center justify-between gap-4">
         <nav className="flex items-center gap-2 text-sm min-w-0">
@@ -613,6 +631,19 @@ function ConsignacionDetailContent() {
             <CurrentLeaseSection consignacion={consignacion} />
           </motion.div>
 
+          {/* La historia contable ANTERIOR a Leasefy de este inmueble: los
+              comprobantes del sistema viejo que el back colgó de sus
+              contratos, en tres pestañas (ingresos · egresos · facturas).
+              Después del contrato vigente porque ése es el orden real —
+              arriba lo de hoy, abajo lo que quedó registrado antes. */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.27 }}
+          >
+            <ComprobantesDelSistemaAnterior propertyId={consignacion.propertyId} />
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -629,13 +660,12 @@ function ConsignacionDetailContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
           >
-            <ActaEntregaView
-              inventoryItems={consignacion.inventoryItems}
-              contractDate={consignacion.contractDate}
-              onPrint={() => router.push(`/panel/inmobiliaria/inmuebles/${consignacionId}/acta`)}
-              onAddItem={() => setItemDeInventario(null)}
-              onEditItem={(item) => setItemDeInventario(item)}
-              onDeleteItem={handleQuitarItem}
+            <InventarioDeLaConsignacion
+              consignacion={consignacion}
+              puedeEditar={puedeEditarInventario}
+              copiaLocal={copiaLocal}
+              sinSenal={sinSenal}
+              onActualizada={setConsignacionData}
             />
           </motion.div>
 
@@ -726,14 +756,6 @@ function ConsignacionDetailContent() {
         onCreated={() => {}}
         presetPropertyId={consignacion.propertyId}
         presetPropertyTitle={consignacion.propertyTitle}
-      />
-
-      <InventarioItemDialog
-        abierto={itemDeInventario !== undefined}
-        item={itemDeInventario ?? null}
-        guardando={guardandoInventario}
-        onCerrar={() => setItemDeInventario(undefined)}
-        onGuardar={handleGuardarItem}
       />
 
       <AsignarAgente

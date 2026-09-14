@@ -11,11 +11,16 @@
  * propietario—, sin esperar contrato, entrega ni acta. Un inmueble en venta
  * también tiene inventario.
  *
- * La foto es un enlace por ahora: la subida de archivos desde acá queda
- * dicha en el helper, no fingida.
+ * 🔴 Nico, 2026-09-12: «la parte de agregar inventario debería de funcionar
+ * offline porque hay muchos apartamentos donde no hay señal». Por eso la foto
+ * dejó de ser sólo un enlace: se toma con la cámara del teléfono ahí mismo y
+ * se guarda en el borrador local; la subida es después, cuando haya señal
+ * (`use-borrador-de-inventario.ts`). El campo de enlace sigue para quien ya
+ * tiene la foto publicada en otro lado.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Camera, Trash } from '@phosphor-icons/react';
 import {
   Button,
   Input,
@@ -46,13 +51,31 @@ const CONDICION_LABEL_KEY: Record<InventoryItem['condition'], string> = {
 
 export type ItemDeInventarioBorrador = Omit<InventoryItem, 'id'> & { id?: string };
 
+/** Lo mismo que acepta el back (`FotoDeInventarioService`). */
+export const FOTO_TIPOS = ['image/jpeg', 'image/png', 'image/webp'];
+export const FOTO_MAX_BYTES = 5 * 1024 * 1024;
+
+/**
+ * Se valida acá, con la foto todavía en la mano, y no al subir: una foto
+ * rechazada 40 minutos después —ya fuera del apartamento— no se puede volver
+ * a tomar.
+ */
+export function revisarFoto(archivo: File): string | null {
+  if (!FOTO_TIPOS.includes(archivo.type)) return 'La foto tiene que ser JPG, PNG o WebP.';
+  if (archivo.size > FOTO_MAX_BYTES) return 'La foto no puede pesar más de 5 MB.';
+  return null;
+}
+
 interface Props {
   abierto: boolean;
   /** `null` = agregar; con ítem = editar. */
   item: InventoryItem | null;
   guardando: boolean;
+  /** La foto que ya está en el borrador de este ítem, para mostrarla al editar. */
+  vistaPreviaDeLaFoto?: string;
   onCerrar: () => void;
-  onGuardar: (item: ItemDeInventarioBorrador) => void;
+  /** `foto` viaja aparte del ítem: todavía no tiene URL, es un archivo. */
+  onGuardar: (item: ItemDeInventarioBorrador, foto?: Blob | null) => void;
 }
 
 function nuevoId(): string {
@@ -61,14 +84,23 @@ function nuevoId(): string {
     : `it-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function InventarioItemDialog({ abierto, item, guardando, onCerrar, onGuardar }: Props) {
+export function InventarioItemDialog({
+  abierto,
+  item,
+  guardando,
+  vistaPreviaDeLaFoto,
+  onCerrar,
+  onGuardar,
+}: Props) {
   const { t } = useI18n();
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [condition, setCondition] = useState<InventoryItem['condition']>('good');
   const [notes, setNotes] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
-  const [errores, setErrores] = useState<{ name?: string; quantity?: string }>({});
+  const [foto, setFoto] = useState<File | null>(null);
+  const [errores, setErrores] = useState<{ name?: string; quantity?: string; foto?: string }>({});
+  const entradaDeFoto = useRef<HTMLInputElement>(null);
 
   // Cada apertura arranca del ítem que se edita (o en blanco).
   useEffect(() => {
@@ -78,8 +110,39 @@ export function InventarioItemDialog({ abierto, item, guardando, onCerrar, onGua
     setCondition(item?.condition ?? 'good');
     setNotes(item?.notes ?? '');
     setPhotoUrl(item?.photoUrl ?? '');
+    setFoto(null);
     setErrores({});
   }, [abierto, item]);
+
+  // La foto elegida en esta apertura; se revoca al cambiarla para no dejar
+  // una URL de objeto colgada por cada intento.
+  const [vistaLocal, setVistaLocal] = useState<string | null>(null);
+  useEffect(() => {
+    if (!foto) {
+      setVistaLocal(null);
+      return;
+    }
+    const url = URL.createObjectURL(foto);
+    setVistaLocal(url);
+    return () => URL.revokeObjectURL(url);
+  }, [foto]);
+
+  const elegirFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const archivo = e.target.files?.[0];
+    // Limpiar el input deja volver a elegir el MISMO archivo después de un
+    // rechazo; sin esto el `change` no vuelve a dispararse.
+    e.target.value = '';
+    if (!archivo) return;
+    const problema = revisarFoto(archivo);
+    if (problema) {
+      setErrores((v) => ({ ...v, foto: problema }));
+      return;
+    }
+    setErrores((v) => ({ ...v, foto: undefined }));
+    setFoto(archivo);
+  };
+
+  const vista = vistaLocal ?? vistaPreviaDeLaFoto ?? (photoUrl.trim() || null);
 
   const enviar = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,14 +154,17 @@ export function InventarioItemDialog({ abierto, item, guardando, onCerrar, onGua
     }
     setErrores(nuevosErrores);
     if (Object.keys(nuevosErrores).length > 0) return;
-    onGuardar({
-      id: item?.id ?? nuevoId(),
-      name: name.trim().slice(0, 120),
-      quantity: cantidad,
-      condition,
-      ...(notes.trim() ? { notes: notes.trim().slice(0, 500) } : {}),
-      ...(photoUrl.trim() ? { photoUrl: photoUrl.trim().slice(0, 500) } : {}),
-    });
+    onGuardar(
+      {
+        id: item?.id ?? nuevoId(),
+        name: name.trim().slice(0, 120),
+        quantity: cantidad,
+        condition,
+        ...(notes.trim() ? { notes: notes.trim().slice(0, 500) } : {}),
+        ...(photoUrl.trim() ? { photoUrl: photoUrl.trim().slice(0, 500) } : {}),
+      },
+      foto,
+    );
   };
 
   return (
@@ -175,9 +241,70 @@ export function InventarioItemDialog({ abierto, item, guardando, onCerrar, onGua
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="inv-photo" className="text-sm font-medium text-fg">
-              {t('inmobiliaria.acta.itemDialog.photoUrl')}
-            </label>
+            <span className="text-sm font-medium text-fg">
+              {t('inmobiliaria.acta.itemDialog.photo')}
+            </span>
+            <div className="flex items-center gap-3">
+              {vista ? (
+                <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-surface-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- la foto todavía no está subida: es una URL de objeto local */}
+                  <img
+                    src={vista}
+                    alt={t('inmobiliaria.acta.itemDialog.photo')}
+                    className="h-full w-full object-cover"
+                    data-testid="inventario-foto-vista"
+                  />
+                </div>
+              ) : (
+                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-md bg-surface-muted text-fg-subtle">
+                  <Camera className="h-6 w-6" />
+                </div>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* `capture="environment"` abre la cámara trasera del teléfono
+                    directo: quien recorre un apartamento no anda buscando la
+                    foto en la galería. En un computador se comporta como un
+                    selector de archivo normal. */}
+                <input
+                  ref={entradaDeFoto}
+                  id="inv-foto"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  capture="environment"
+                  className="sr-only"
+                  onChange={elegirFoto}
+                  data-testid="inventario-foto-archivo"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  hideArrow
+                  onClick={() => entradaDeFoto.current?.click()}
+                  data-testid="inventario-foto-tomar"
+                >
+                  <Camera className="h-4 w-4" />
+                  {foto
+                    ? t('inmobiliaria.acta.itemDialog.photoChange')
+                    : t('inmobiliaria.acta.itemDialog.photoTake')}
+                </Button>
+                {foto && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    hideArrow
+                    onClick={() => setFoto(null)}
+                    data-testid="inventario-foto-quitar"
+                  >
+                    <Trash className="h-4 w-4" />
+                    {t('inmobiliaria.acta.itemDialog.photoRemove')}
+                  </Button>
+                )}
+              </div>
+            </div>
+            {errores.foto && <p className="text-xs text-danger">{errores.foto}</p>}
+            <p className="text-xs text-fg-muted">{t('inmobiliaria.acta.itemDialog.photoHelp')}</p>
             <Input
               id="inv-photo"
               type="url"
@@ -185,8 +312,8 @@ export function InventarioItemDialog({ abierto, item, guardando, onCerrar, onGua
               onChange={(e) => setPhotoUrl(e.target.value)}
               placeholder={t('inmobiliaria.acta.itemDialog.photoUrlPlaceholder')}
               maxLength={500}
+              aria-label={t('inmobiliaria.acta.itemDialog.photoUrl')}
             />
-            <p className="text-xs text-fg-muted">{t('inmobiliaria.acta.itemDialog.photoUrlHelp')}</p>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

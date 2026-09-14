@@ -204,6 +204,22 @@ describe('arquitectura del panel — sidebar', () => {
     expect(modulos).toHaveLength(17);
   });
 
+  it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {
+    // Nico, 2026-09-12: «Agenda interna: la sección de agenda la debemos llevar
+    // para la sección de captación y arriendo». Estaba en Operación. Va detrás
+    // de Pipeline porque lo que llena la agenda son las visitas del prospecto.
+    const captacion = ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'captacion');
+    const operacion = ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'operacion');
+    const claves = captacion!.modulos.map((m) => m.key);
+    expect(claves).toContain('agenda');
+    expect(claves.indexOf('agenda')).toBe(claves.indexOf('pipeline') + 1);
+    expect(operacion!.modulos.map((m) => m.key)).not.toContain('agenda');
+    // Cambiar de grupo no cambia quién la ve: mismo gate, mismo encuadre.
+    const agenda = captacion!.modulos.find((m) => m.key === 'agenda');
+    expect(agenda!.module).toBe('operaciones');
+    expect(agenda!.scope).toBe('administracion');
+  });
+
   it('Configuración NO es una fila del sidebar: se entra por el menú del perfil', () => {
     // Había dos puertas a lo mismo (la fila y el ítem del menú del perfil).
     // Quedó una. Las rutas siguen vivas —y son destino de redirecciones—, por
@@ -351,5 +367,44 @@ describe('secciones (cards debajo del header) — la píldora IA no repite el no
       .map((p) => ({ href: p.href, es: String(leer(es, p.labelKey) ?? ''), en: String(leer(en, p.labelKey) ?? '') }))
       .filter((p) => /\bIA$/.test(p.es) || /\bAI$/.test(p.en));
     expect(repetidas).toEqual([]);
+  });
+});
+
+describe('arquitectura del panel — Contratos vive en Operación (Nico, 2026-09-12)', () => {
+  const grupoDe = (key: string) =>
+    ARQUITECTURA_DEL_PANEL.find((g) => g.modulos.some((m) => m.key === key))?.key ?? null;
+
+  it('🔴 «Contratos va dentro de OPERACIÓN»: ya no está en Captación y arriendo', () => {
+    expect(grupoDe('contratos')).toBe('operacion');
+  });
+
+  it('es la primera fila de Operación: lo que se opera es el contrato', () => {
+    const operacion = ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'operacion');
+    expect(operacion?.modulos[0]?.key).toBe('contratos');
+  });
+
+  it('cambiar de grupo no le cambió el permiso, el encuadre ni el ancla del tour', () => {
+    // Reordenar no abre ni cierra pantallas a nadie (`sidebar-del-panel.ts`).
+    const contratos = modulosDelPanel().find((m) => m.key === 'contratos');
+    expect(contratos?.module).toBe('contratos');
+    expect(contratos?.scope).toBe('administracion');
+    expect(contratos?.dataTourTarget).toBe('sidebar-contratos');
+    expect(contratos?.pantallas?.map((p) => p.href)).toEqual([`${PANEL}/contratos/renovaciones`]);
+  });
+
+  /*
+   * La lista era EXACTA (`['pipeline', 'inmuebles', 'postulaciones']`) y se
+   * puso roja el mismo día: otra tanda mudó la Agenda a Captación y este test
+   * no se enteró. Lo que hay que sostener es la REGLA R3 —un grupo no se queda
+   * con una sola fila— y que Contratos ya no esté acá; cuál es el resto del
+   * grupo es una decisión de navegación que cambia sola y no tiene por qué
+   * romper la mudanza de Contratos.
+   */
+  it('Captación sigue con al menos dos filas (R3) después de la mudanza', () => {
+    const captacion = ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'captacion');
+    const claves = captacion?.modulos.map((m) => m.key) ?? [];
+    expect(claves.length).toBeGreaterThanOrEqual(2);
+    expect(claves).toEqual(expect.arrayContaining(['pipeline', 'inmuebles', 'postulaciones']));
+    expect(claves).not.toContain('contratos');
   });
 });

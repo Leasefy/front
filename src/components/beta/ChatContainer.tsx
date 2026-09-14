@@ -16,7 +16,9 @@ import { AgentActivityIndicator } from './AgentActivityIndicator';
 import { AgentTaskThread } from './AgentTaskThread';
 import { AgentTaskProgress } from './AgentTaskProgress';
 import { ResponseCard } from './ResponseCard';
+import { MessageActions } from './MessageActions';
 import { WorkspaceView } from './WorkspaceView';
+import { AccionPropuestaCard } from './AccionPropuestaCard';
 import { DecisionCard } from './DecisionCard';
 import { ChatConversationBar } from './ChatConversationBar';
 
@@ -101,6 +103,8 @@ export function ChatContainer({ className }: ChatContainerProps) {
     turnSteps,
     retryAgent,
     selectDecisionOption,
+    confirmarAccionDelMensaje,
+    cancelarAccionDelMensaje,
   } = useBetaChatContext();
 
   const [workspaceMessageId, setWorkspaceMessageId] = useState<string | null>(null);
@@ -285,10 +289,17 @@ export function ChatContainer({ className }: ChatContainerProps) {
                   return (
                     <div key={message.id} className="space-y-3">
                       {responseNeedsCard(message) ? (
-                        <ResponseCard
-                          meta={message.responseMeta}
-                          content={message.content}
-                        />
+                        <>
+                          <ResponseCard
+                            meta={message.responseMeta}
+                            content={message.content}
+                          />
+                          {/* La tarjeta se quedaba SIN pulgares: justo las
+                              respuestas con cifras son las que hay que poder
+                              corregir (Nico, 13/09: «un pulgar en CADA
+                              respuesta»). Mismas acciones que la burbuja. */}
+                          <MessageActions message={message} />
+                        </>
                       ) : (
                         <AssistantBubble message={message} />
                       )}
@@ -301,6 +312,16 @@ export function ChatContainer({ className }: ChatContainerProps) {
                               ? (optionId) => selectDecisionOption(message.id, optionId)
                               : undefined
                           }
+                        />
+                      )}
+                      {message.accion && (
+                        <AccionPropuestaCard
+                          propuesta={message.accion.propuesta}
+                          estado={message.accion.estado}
+                          resultado={message.accion.resultado}
+                          error={message.accion.error}
+                          onConfirmar={() => confirmarAccionDelMensaje(message.id)}
+                          onCancelar={() => cancelarAccionDelMensaje(message.id)}
                         />
                       )}
                     </div>
@@ -316,10 +337,17 @@ export function ChatContainer({ className }: ChatContainerProps) {
                   return (
                     <div key={message.id} className="space-y-3">
                       {responseNeedsCard(message) ? (
-                        <ResponseCard
-                          meta={message.responseMeta}
-                          content={message.content}
-                        />
+                        <>
+                          <ResponseCard
+                            meta={message.responseMeta}
+                            content={message.content}
+                          />
+                          {/* La tarjeta se quedaba SIN pulgares: justo las
+                              respuestas con cifras son las que hay que poder
+                              corregir (Nico, 13/09: «un pulgar en CADA
+                              respuesta»). Mismas acciones que la burbuja. */}
+                          <MessageActions message={message} />
+                        </>
                       ) : (
                         <AssistantBubble message={message} />
                       )}
@@ -332,6 +360,16 @@ export function ChatContainer({ className }: ChatContainerProps) {
                               ? (optionId) => selectDecisionOption(message.id, optionId)
                               : undefined
                           }
+                        />
+                      )}
+                      {message.accion && (
+                        <AccionPropuestaCard
+                          propuesta={message.accion.propuesta}
+                          estado={message.accion.estado}
+                          resultado={message.accion.resultado}
+                          error={message.accion.error}
+                          onConfirmar={() => confirmarAccionDelMensaje(message.id)}
+                          onCancelar={() => cancelarAccionDelMensaje(message.id)}
                         />
                       )}
                     </div>
@@ -387,6 +425,17 @@ export function ChatContainer({ className }: ChatContainerProps) {
                             ? (optionId) => selectDecisionOption(message.id, optionId)
                             : undefined
                         }
+                      />
+                    )}
+
+                    {message.accion && (
+                      <AccionPropuestaCard
+                        propuesta={message.accion.propuesta}
+                        estado={message.accion.estado}
+                        resultado={message.accion.resultado}
+                        error={message.accion.error}
+                        onConfirmar={() => confirmarAccionDelMensaje(message.id)}
+                        onCancelar={() => cancelarAccionDelMensaje(message.id)}
                       />
                     )}
 

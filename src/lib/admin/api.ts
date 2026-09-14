@@ -36,6 +36,20 @@ export function setAdminToken(token: string | null): void {
   cachedToken = token
 }
 
+/**
+ * El bearer del admin, para los pocos llamados que NO van al micro de admin.
+ *
+ * Casi todo `/admin/*` pega a `adminApi` (base `NEXT_PUBLIC_ADMIN_API_URL`).
+ * Hay una excepción: el feedback del chat vive en el micro de agentes, que tiene
+ * su propia puerta de backoffice (`ADMIN_EMAILS`, misma lista). En vez de armar
+ * un proxy nuevo en el back sólo para esa lectura, se expone el token que el
+ * layout ya cachea. Sigue siendo el MISMO token de Supabase, con la MISMA
+ * validación del otro lado.
+ */
+export function getAdminToken(): string | null {
+  return cachedToken
+}
+
 async function bearer(): Promise<string | null> {
   return cachedToken
 }

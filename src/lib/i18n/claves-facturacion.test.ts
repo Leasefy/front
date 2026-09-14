@@ -57,6 +57,10 @@ const CLAVES_EN_USO = [
   'label',
   'title',
   'subtitle',
+  // «Nueva factura» es una pestaña más desde 2026-09-12, y la primera. No
+  // entra en `FacturacionTab`: esa lista describe los cuatro listados del
+  // motor DIAN, y esta pestaña no lista documentos, calcula los que faltan.
+  'tab_nueva',
   'm2BannerTitle',
   'm2BannerDesc',
   ...TABS.map((t) => `tab_${t}`),

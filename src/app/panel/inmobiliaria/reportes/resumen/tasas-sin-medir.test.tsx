@@ -156,6 +156,38 @@ describe('Resumen del negocio — con operación de verdad', () => {
     expect(texto('resumen-dias-al-cierre')).toContain('18');
   });
 
+  it('la ocupación se mide contra el CATÁLOGO y dice qué quedó afuera', async () => {
+    /*
+     * Nico, 2026-09-12: «esa tasa de ocupación se debe medir contra el
+     * inmueble disponible, no contra el no disponible, porque ya está fuera
+     * del catálogo». Sus números reales, redondeados: 730 arrendados, 880 en
+     * catálogo, 1.944 afuera. Contra el portafolio entero (2.824) la tasa
+     * daría 25,8 %; contra el catálogo da 83,0 %.
+     */
+    datos.kpis = enCero({
+      totalProperties: 2824,
+      propertiesInCatalog: 880,
+      propertiesOutOfCatalog: 1944,
+      propertiesRented: 730,
+      propertiesAvailable: 150,
+      occupancyRate: 82.95,
+    });
+    await montar();
+    const ocupacion = tarjeta('Ocupación').textContent ?? '';
+    expect(ocupacion).toContain('83.0%');
+    expect(ocupacion).toContain('730 arrendados de 880 en catálogo');
+    expect(ocupacion).toContain('1.944 fuera del catálogo');
+    // La tasa NO se mide contra los 2.824.
+    expect(ocupacion).not.toContain('25.');
+  });
+
+  it('sin el denominador nuevo cae al de antes, sin romperse', async () => {
+    // Una respuesta vieja en caché no trae `propertiesInCatalog`.
+    datos.kpis = enCero({ totalProperties: 10, propertiesRented: 8 });
+    await montar();
+    expect(tarjeta('Ocupación').textContent).toContain('80.0%');
+  });
+
   it('un recaudo MEDIDO en cero no es una raya: se esperaba plata y no entró', async () => {
     // La distinción entera: 0 de $10M es una mora del 100%, no «sin datos».
     datos.kpis = enCero({

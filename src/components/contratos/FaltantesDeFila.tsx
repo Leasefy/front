@@ -25,6 +25,7 @@ import {
   type FilaDeMigracion,
 } from "@/lib/api/contracts.service";
 import { propietariosApi } from "@/lib/api/inmobiliaria.service";
+import { formatCurrency } from "@/lib/format";
 import {
   SelectorDeInmueble,
   olvidarPortafolio,
@@ -99,6 +100,11 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
     porque:
       "Sin él no se puede programar el cobro ni los recordatorios de vencimiento.",
   },
+  reparto_del_canon: {
+    titulo: "La plata por dueño no cuadra",
+    porque:
+      "«Valor Canon» reparte el canon entre los dueños y la lista no coincide con ellos o no suma el canon. No se inventa un 50/50: corrige la celda en el archivo y vuelve a subirlo, o quita esa columna del mapeo para que queden en partes iguales y lo ajustas en el mandato del inmueble.",
+  },
 };
 
 /**
@@ -145,6 +151,16 @@ export function celdaDelFaltante(
       return texto(datos?.inquilino?.nombre);
     case 'inquilino_documento_ajeno':
       return texto(datos?.inquilino?.documento);
+    // La lista de plata tal como viajó, y el motivo exacto que dio el back
+    // (viene en la asociación de la fila, no en `datos`).
+    case 'reparto_del_canon': {
+      const lista = (datos as { canonPorPropietario?: unknown } | null)?.canonPorPropietario;
+      const plata = Array.isArray(lista)
+        ? lista.map((n) => formatCurrency(Number(n))).join(', ')
+        : null;
+      const motivo = fila.asociacion?.propietario?.reparto?.problema ?? null;
+      return texto([plata, motivo].filter(Boolean).join(' — '));
+    }
     default:
       return null;
   }

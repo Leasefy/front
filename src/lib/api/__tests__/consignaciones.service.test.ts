@@ -170,3 +170,50 @@ describe('normalizeConsignacion', () => {
     expect(row.agenteId).toBe('user-3');
   });
 });
+
+// ── (6) getByIdOrPropertyId: entrar por el inmueble trae la ficha completa ────
+
+describe('consignacionesApi.getByIdOrPropertyId', () => {
+  it('con el id de un INMUEBLE pide la ficha del mandato, no se queda con la fila de la lista', async () => {
+    // La lista no trae `inquilino`: quedarse con ella pintaba «Sin inquilino»
+    // en un inmueble arrendado cuando se entraba desde el contrato.
+    const inquilino = { contractId: 'ct-16', nombre: 'Inquilina de prueba' };
+    const respuestas = [
+      { ok: false, status: 404, body: { statusCode: 404, message: 'Consignación no encontrada' } },
+      { ok: true, status: 200, body: [BACKEND_ROW] },
+      { ok: true, status: 200, body: { ...BACKEND_ROW, inquilino } },
+    ];
+    const fn = vi.fn().mockImplementation(async () => {
+      const r = respuestas.shift()!;
+      return {
+        ok: r.ok,
+        status: r.status,
+        text: async () => JSON.stringify(r.body),
+        json: async () => r.body,
+      } as unknown as Response;
+    });
+    globalThis.fetch = fn as typeof globalThis.fetch;
+
+    const c = await consignacionesApi.getByIdOrPropertyId('inmueble-1');
+
+    expect(c.id).toBe('con-1');
+    expect(c.inquilino).toEqual(inquilino);
+    const urls = fn.mock.calls.map(([u]) => String(u));
+    expect(urls[0]).toContain('/inmobiliaria/consignaciones/inmueble-1');
+    expect(urls[1]).toContain('propertyId=inmueble-1');
+    expect(urls[2]).toMatch(/\/inmobiliaria\/consignaciones\/con-1$/);
+  });
+
+  it('si tampoco es un inmueble de la agencia, el error que vale es el primero', async () => {
+    const respuestas = [
+      { ok: false, status: 404, body: { statusCode: 404, message: 'Consignación no encontrada' } },
+      { ok: true, status: 200, body: [] },
+    ];
+    globalThis.fetch = vi.fn().mockImplementation(async () => {
+      const r = respuestas.shift()!;
+      return { ok: r.ok, status: r.status, text: async () => JSON.stringify(r.body), json: async () => r.body } as unknown as Response;
+    }) as typeof globalThis.fetch;
+
+    await expect(consignacionesApi.getByIdOrPropertyId('nada')).rejects.toMatchObject({ status: 404 });
+  });
+});

@@ -701,7 +701,10 @@ export const consignacionesApi = {
       // Si tampoco es un inmueble de esta agencia, el error que vale es el
       // primero —«no existe esa consignación»—, no «la lista vino vacía».
       if (porInmueble.length === 0) throw error;
-      return porInmueble[0];
+      // La lista no trae lo que sólo trae la ficha (el inquilino del contrato
+      // vigente, entre otros): entrar por el inmueble mostraba «Sin inquilino»
+      // en uno arrendado. Encontrado el mandato, se pide su ficha completa.
+      return this.getById(porInmueble[0].id);
     }
   },
 

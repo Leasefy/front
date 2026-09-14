@@ -25,6 +25,14 @@
  * haber numerado dejan facturas emitidas apuntando a una autorización que ya no
  * dice lo mismo. Lo que sí se puede es ANULARLA —deja de numerar, no se borra,
  * y las facturas que emitió la siguen apuntando— y cargar la siguiente.
+ *
+ * ── Anular pide confirmación y motivo (auditoría 13-09, F1) ────────────────
+ *
+ * Antes era un clic: el botón «Anular» de la fila mandaba la orden sin
+ * preguntar, y la inmobiliaria quedaba sin poder numerar facturas hasta cargar
+ * otra resolución. Ahora abre un diálogo que dice QUÉ se rompe y pide por qué;
+ * el back exige ese `motivo` (400 si falta o son sólo espacios) y lo guarda con
+ * la resolución.
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -34,6 +42,17 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
   Table,
   TableBody,
@@ -48,8 +67,12 @@ import { toast } from '@/components/ui/toast'
 import {
   facturacionPorMesService,
   fechaLegible,
+  type ResolucionDeFacturacion as Resolucion,
   type ResolucionesDeLaAgencia,
 } from '@/lib/api/facturacion-por-mes.service'
+
+/** El tope del back (`AnularResolucionDto`). */
+export const MAX_MOTIVO_DE_ANULACION = 500
 
 /** El formulario, con los campos como los trae el papel de la DIAN. */
 interface Formulario {
@@ -81,6 +104,9 @@ export function ResolucionDeFacturacion() {
   const [form, setForm] = useState<Formulario>(VACIO)
   const [guardando, setGuardando] = useState(false)
   const [anulando, setAnulando] = useState<string | null>(null)
+  /** La resolución que se está por anular: abre el diálogo que pide el motivo. */
+  const [porAnular, setPorAnular] = useState<Resolucion | null>(null)
+  const [motivo, setMotivo] = useState('')
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -144,13 +170,28 @@ export function ResolucionDeFacturacion() {
     }
   }
 
-  async function anular(id: string) {
-    setAnulando(id)
+  function pedirAnulacion(r: Resolucion) {
+    setMotivo('')
+    setPorAnular(r)
+  }
+
+  const motivoLimpio = motivo.trim()
+
+  async function anular() {
+    const r = porAnular
+    // El back responde 400 a un motivo vacío o de puros espacios. El botón ya
+    // está apagado en ese caso; esto es la misma regla, por si llega un Enter.
+    if (!r || motivoLimpio === '' || anulando) return
+    setAnulando(r.id)
     try {
-      await facturacionPorMesService.anularResolucion(id)
-      toast.success('Resolución anulada: ya no numera facturas')
+      await facturacionPorMesService.anularResolucion(r.id, motivoLimpio)
+      toast.success(`Resolución ${r.numero} anulada: ya no numera facturas`)
+      setPorAnular(null)
+      setMotivo('')
       await cargar()
     } catch (e) {
+      // El diálogo queda abierto y con el motivo escrito: reintentar no obliga
+      // a escribirlo de nuevo.
       toast.error(
         e instanceof Error ? e.message : 'No se pudo anular la resolución.',
       )
@@ -158,6 +199,14 @@ export function ResolucionDeFacturacion() {
       setAnulando(null)
     }
   }
+
+  /*
+   * Qué se rompe al anular, dicho para ESTA resolución. La que numera hoy deja
+   * a la inmobiliaria sin poder facturar; una que ya no numeraba (vencida,
+   * agotada) no cambia nada de hoy, y decirle a alguien que se va a quedar sin
+   * facturar cuando no es así es asustarlo en falso.
+   */
+  const numeraHoy = porAnular?.puedeNumerar === true
 
   return (
     <div className="space-y-4">
@@ -281,12 +330,9 @@ export function ResolucionDeFacturacion() {
                               variant="ghost"
                               hideArrow
                               disabled={anulando === r.id}
-                              onClick={() => void anular(r.id)}
+                              onClick={() => pedirAnulacion(r)}
                               data-testid={`anular-${r.id}`}
                             >
-                              {anulando === r.id ? (
-                                <Spinner className="h-4 w-4" />
-                              ) : null}
                               Anular
                             </Button>
                           )}
@@ -420,6 +466,63 @@ export function ResolucionDeFacturacion() {
           </Button>
         </div>
       </section>
+
+      <AlertDialog
+        open={porAnular !== null}
+        onOpenChange={(abierto) => {
+          // Mientras la orden viaja no se cierra: cerrar a mitad dejaría sin
+          // saber si la resolución quedó anulada o no.
+          if (!abierto && anulando === null) setPorAnular(null)
+        }}
+      >
+        <AlertDialogContent data-testid="anular-resolucion-dialogo">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              ¿Anular la resolución {porAnular?.numero}?
+            </AlertDialogTitle>
+            <AlertDialogDescription data-testid="anular-resolucion-consecuencia">
+              {numeraHoy
+                ? 'Es la resolución con la que numeras hoy. Sin resolución vigente no vas a poder numerar facturas hasta cargar otra: «Generar» queda apagado.'
+                : `Hoy no está numerando${porAnular?.explicacion ? ` (${porAnular.explicacion.replace(/\.$/, '')})` : ''}, así que no cambia lo que puedes facturar hoy.`}{' '}
+              Anular no se deshace; las facturas que ya numeró conservan su
+              número.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="motivo-anulacion">Motivo</Label>
+            <Textarea
+              id="motivo-anulacion"
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              placeholder="La DIAN autorizó un rango nuevo y este quedó sin uso."
+              rows={3}
+              maxLength={MAX_MOTIVO_DE_ANULACION}
+              disabled={anulando !== null}
+              data-testid="motivo-anulacion"
+            />
+            <p className="text-caption text-fg-muted">
+              Obligatorio: queda guardado con la resolución. Hasta{' '}
+              {MAX_MOTIVO_DE_ANULACION} caracteres.
+            </p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={anulando !== null}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              tone="danger"
+              onClick={(e) => {
+                // Radix cierra el diálogo al hacer clic: se frena para cerrarlo
+                // sólo si el back confirmó.
+                e.preventDefault()
+                void anular()
+              }}
+              disabled={motivoLimpio === '' || anulando !== null}
+              data-testid="confirmar-anular"
+            >
+              {anulando !== null ? 'Anulando…' : 'Anular la resolución'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

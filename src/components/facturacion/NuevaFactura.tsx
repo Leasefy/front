@@ -34,8 +34,15 @@
  * no emite, así que el botón se apaga y la pantalla dice por qué y a dónde ir.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Info, Receipt, SealWarning, Warning } from '@phosphor-icons/react'
+import { BarraDeTrabajo } from '@/components/migracion/BarraDeTrabajo'
+import {
+  generarPorTandas,
+  type ProgresoDeFacturas,
+  type ResultadoDeLaCorrida,
+} from './facturasPorTandas'
+import { InformeDeFacturacion, mensajeDelFalloDeEmision } from './InformeDeFacturacion'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -409,28 +416,68 @@ export function NuevaFactura() {
       .reduce((s, f) => s + f.totalCop, 0)
   }, [datos, seleccion])
 
+  /*
+   * F3 (auditoría 13-09): la corrida va en tandas de 200 con progreso real y
+   * «Detener». F2: al terminar —entera, detenida o caída a mitad— queda un
+   * informe con lo que salió y lo que no, hasta que se cierre o se cambie de
+   * mes. Antes una tanda caída decía «No se pudieron emitir las facturas»
+   * sobre las que sí habían salido.
+   */
+  const [progreso, setProgreso] = useState<ProgresoDeFacturas | null>(null)
+  const [deteniendo, setDeteniendo] = useState(false)
+  const detenerRef = useRef(false)
+  const [corridaHecha, setCorridaHecha] = useState<ResultadoDeLaCorrida | null>(null)
+
+  useEffect(() => {
+    // El informe es de UN mes: con otro mes elegido se leería como de éste.
+    setCorridaHecha(null)
+  }, [mes])
+
   async function generar() {
-    if (elegidas.length === 0) return
+    if (elegidas.length === 0 || generando) return
+    const claves = [...elegidas]
     setGenerando(true)
+    setCorridaHecha(null)
+    detenerRef.current = false
+    setDeteniendo(false)
+    setProgreso({ hechas: 0, total: claves.length, tanda: 0, tandas: 0 })
     try {
-      const r = await facturacionPorMesService.generar(mes, elegidas)
-      const partes = [
-        `${r.emitidas} ${r.emitidas === 1 ? 'factura emitida' : 'facturas emitidas'}`,
-        formatCurrency(r.totalCop),
-      ]
-      if (r.yaEstaban > 0) partes.push(`${r.yaEstaban} ya estaban emitidas`)
-      toast.success(partes.join(' · '))
+      const resultado = await generarPorTandas(
+        mes,
+        claves,
+        (elMes, lote) => facturacionPorMesService.generar(elMes, lote),
+        setProgreso,
+        { debeParar: () => detenerRef.current },
+      )
+      const { informe, corte } = resultado
+      setCorridaHecha(resultado)
+
+      if (informe.emitidas > 0 || informe.yaEstaban > 0) {
+        const partes = [
+          `${informe.emitidas} ${informe.emitidas === 1 ? 'factura emitida' : 'facturas emitidas'}`,
+          formatCurrency(informe.totalCop),
+        ]
+        if (informe.yaEstaban > 0) partes.push(`${informe.yaEstaban} ya estaban emitidas`)
+        toast.success(partes.join(' · '))
+      }
       // El rango de la resolución no alcanzó para todas: se emitió lo que cabía
       // y lo demás NO se numeró. Es un aviso aparte, no un renglón del éxito.
-      if (r.sinNumero > 0 && r.motivo) toast.error(r.motivo)
+      if (informe.sinNumero > 0 && informe.motivos[0]) toast.error(informe.motivos[0])
+      if (corte === 'fallo') toast.error(mensajeDelFalloDeEmision(resultado.error))
+
+      // Lo que salió tiene que verse como emitido, también después de un
+      // corte: y lo que quedó por emitir vuelve seleccionado para reintentar.
       await cargar(mes)
-    } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : 'No se pudieron emitir las facturas.',
-      )
     } finally {
       setGenerando(false)
+      setProgreso(null)
+      setDeteniendo(false)
     }
+  }
+
+  const detenerCorrida = () => {
+    detenerRef.current = true
+    setDeteniendo(true)
   }
 
   const vacio =
@@ -540,11 +587,43 @@ export function NuevaFactura() {
               <Receipt className="h-4 w-4" weight="bold" />
             )}
             {generando
-              ? 'Generando…'
+              ? progreso
+                ? `Emitiendo ${progreso.hechas.toLocaleString('es-CO')} de ${progreso.total.toLocaleString('es-CO')}…`
+                : 'Generando…'
               : `Generar ${elegidas.length} ${elegidas.length === 1 ? 'factura' : 'facturas'}`}
           </Button>
         </div>
       </div>
+
+      {/* F3: la ranura viva de la corrida — en qué va, cuánto falta y cómo
+          salir. Un spinner sin número sobre 3.824 facturas eran minutos sin
+          saber si seguía. */}
+      {generando && progreso && (
+        <div
+          className="rounded-lg border border-border bg-surface p-4"
+          data-testid="facturacion-en-curso"
+        >
+          <BarraDeTrabajo
+            testid="facturacion"
+            titulo="Emitiendo las facturas"
+            hechas={progreso.hechas}
+            total={progreso.total}
+            onDetener={detenerCorrida}
+            deteniendo={deteniendo}
+            nota={`${
+              progreso.tandas > 1 ? `Tanda ${progreso.tanda} de ${progreso.tandas}. ` : ''
+            }Si detienes, termina la tanda en curso; volver a apretar «Generar» no duplica las que ya salieron.`}
+          />
+        </div>
+      )}
+
+      {/* F2: lo que salió y lo que no, hasta que se cierre o cambie el mes. */}
+      {corridaHecha && !generando && (
+        <InformeDeFacturacion
+          corrida={corridaHecha}
+          onCerrar={() => setCorridaHecha(null)}
+        />
+      )}
 
       {/* 🔴 «Ver por generar hasta <fecha>» va acá, pegado al selector de mes,
           porque es la MISMA pregunta mirada más lejos — pero es una consulta,

@@ -454,4 +454,126 @@ describe('NuevaFactura', () => {
       );
     });
   });
+
+  /**
+   * Auditoría de casos de error 13-09.
+   *   · F3 — 3.824 facturas en un request colgaban la pantalla: ahora viajan
+   *     en tandas de 200 con progreso y «Detener».
+   *   · F2 — una corrida a medias decía «No se pudieron emitir» sobre las que
+   *     sí salieron: ahora hay un informe con lo que salió, lo que no y qué
+   *     hacer.
+   */
+  describe('F2 y F3 — la corrida en tandas y su informe', () => {
+    const muchas = (n: number) =>
+      Array.from({ length: n }, (_, i) =>
+        factura({ clave: `ct-${i}|2026-09|INQUILINO`, contractId: `ct-${i}` }),
+      );
+    const sale = async (mes: string, claves: string[]) => ({
+      mes,
+      emitidas: claves.length,
+      yaEstaban: 0,
+      sinNumero: 0,
+      motivo: null,
+      totalCop: claves.length * 1_000,
+      facturas: [],
+    });
+    const soltarTareas = () =>
+      act(async () => {
+        await new Promise((r) => setTimeout(r, 0));
+      });
+    const apretarGenerar = () =>
+      act(async () => {
+        (q('[data-testid="facturacion-generar"]') as HTMLButtonElement).click();
+      });
+
+    beforeEach(() => {
+      porGenerarMock.mockResolvedValue(respuesta({ inquilinos: muchas(450), propietarios: [] }));
+    });
+
+    it('🔴 F3: 450 elegidas viajan en tres tandas de a lo sumo 200', async () => {
+      generarMock.mockImplementation(sale);
+      await montar();
+      await apretarGenerar();
+      await soltarTareas();
+
+      expect(generarMock).toHaveBeenCalledTimes(3);
+      expect(generarMock.mock.calls.map((c) => (c[1] as string[]).length)).toEqual([200, 200, 50]);
+      const informe = q('[data-testid="facturacion-informe"]')!;
+      expect(informe.getAttribute('data-corte')).toBe('completa');
+      expect(informe.textContent).toContain('Se emitieron 450 facturas');
+      // Sin pendientes no hay nada que reintentar: no se lo pide.
+      expect(q('[data-testid="facturacion-informe-que-hacer"]')).toBeNull();
+    });
+
+    it('🔴 F3: dice en qué va y «Detener» corta al cerrar la tanda en curso', async () => {
+      let soltar: () => void = () => {};
+      generarMock.mockImplementationOnce(
+        (mes: string, claves: string[]) =>
+          new Promise((r) => {
+            soltar = () => r(sale(mes, claves));
+          }),
+      );
+      generarMock.mockImplementation(sale);
+      await montar();
+      await apretarGenerar();
+
+      expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain('Emitiendo 0 de 450');
+      expect(q('[data-testid="facturacion-progreso"]')).not.toBeNull();
+
+      await act(async () => {
+        (q('[data-testid="facturacion-detener"]') as HTMLButtonElement).click();
+      });
+      await act(async () => {
+        soltar();
+      });
+      await soltarTareas();
+
+      expect(generarMock).toHaveBeenCalledTimes(1);
+      const informe = q('[data-testid="facturacion-informe"]')!;
+      expect(informe.getAttribute('data-corte')).toBe('detenida');
+      expect(informe.textContent).toContain('Se emitieron 200 facturas');
+      expect(informe.textContent).toContain('250 facturas no se enviaron porque detuviste la corrida');
+      expect(informe.textContent).toContain('Vuelve a apretar «Generar»');
+    });
+
+    it('🔴 F2: una tanda caída a mitad no borra lo emitido y separa lo dudoso de lo no enviado', async () => {
+      generarMock.mockImplementationOnce(sale).mockRejectedValueOnce(new Error('504 Gateway Timeout'));
+      await montar();
+      await apretarGenerar();
+      await soltarTareas();
+
+      const informe = q('[data-testid="facturacion-informe"]')!;
+      expect(informe.getAttribute('data-corte')).toBe('fallo');
+      expect(informe.textContent).toContain('Se emitieron 200 facturas');
+      expect(q('[data-testid="facturacion-informe-sin-confirmar"]')!.textContent).toContain(
+        '200 facturas de la tanda que falló no se pudieron confirmar',
+      );
+      expect(q('[data-testid="facturacion-informe-sin-confirmar"]')!.textContent).toContain(
+        '504 Gateway Timeout',
+      );
+      expect(q('[data-testid="facturacion-informe-sin-enviar"]')!.textContent).toContain('50 facturas');
+      expect(q('[data-testid="facturacion-informe-que-hacer"]')!.textContent).toContain(
+        'las que salieron no se duplican',
+      );
+      // Lo emitido se dice como éxito; el fallo, aparte y con su mensaje.
+      expect(String(toastOk.mock.calls[0]?.[0])).toContain('200 facturas emitidas');
+      expect(toastErr).toHaveBeenCalledWith('504 Gateway Timeout');
+      // Se recarga para que las emitidas aparezcan como emitidas.
+      expect(porGenerarMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('el informe se cierra', async () => {
+      generarMock.mockImplementation(sale);
+      await montar();
+      await apretarGenerar();
+      await soltarTareas();
+      const cerrar = Array.from(
+        q('[data-testid="facturacion-informe"]')!.querySelectorAll('button'),
+      ).find((b) => b.textContent === 'Cerrar') as HTMLButtonElement;
+      await act(async () => {
+        cerrar.click();
+      });
+      expect(q('[data-testid="facturacion-informe"]')).toBeNull();
+    });
+  });
 });

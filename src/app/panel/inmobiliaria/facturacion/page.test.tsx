@@ -142,10 +142,55 @@ describe('/panel/inmobiliaria/facturacion', () => {
     // La leyenda de estados no filtraba nada.
     expect(texto).not.toContain(`${K}estadosLabel`);
     expect(texto).not.toContain(`${K}estadoAceptada`);
-    // Los únicos botones son las seis pestañas.
-    expect(qa('button')).toHaveLength(6);
-    expect(qa('button').every((b) => b.getAttribute('role') === 'tab')).toBe(true);
+    // Las seis pestañas y, en el vacío, la salida a lo ya emitido (F4): un
+    // botón que hace algo, no uno decorativo.
+    const botones = qa('button');
+    expect(botones.filter((b) => b.getAttribute('role') === 'tab')).toHaveLength(6);
+    expect(
+      botones
+        .filter((b) => b.getAttribute('role') !== 'tab')
+        .map((b) => b.getAttribute('data-testid')),
+    ).toEqual(['facturacion-ver-emitidas-ventas']);
 
     expect(texto).toContain(`${K}m2BannerTitle`);
+  });
+
+  /**
+   * F4 (auditoría 13-09): no hay ruta en el back que liste documentos
+   * emitidos, y el vacío decía «Todavía no tienes facturas de venta» después
+   * de emitir 800. Una pantalla que no puede leer no afirma nada sobre los
+   * datos de la persona: dice que el listado no existe todavía y a dónde ir.
+   */
+  describe('F4 — las pestañas sin listado no dicen «no tienes»', () => {
+    async function ir(tab: string) {
+      const pestana = qa('[role="tab"]').find((t) => t.textContent === `${K}tab_${tab}`)!;
+      await activarPestana(pestana);
+    }
+
+    it.each(['ventas', 'electronica', 'notas'])(
+      '🔴 %s: dice que el listado llega con el motor DIAN',
+      async (tab) => {
+        await ir(tab);
+        const vacio = q('[data-testid="sin-datos"]')!;
+        expect((vacio.textContent ?? '').toLowerCase()).not.toContain('no tienes');
+        expect(vacio.textContent).toContain('llega con el motor DIAN');
+        expect(vacio.textContent).toContain('Nueva factura');
+      },
+    );
+
+    it('«Ver las facturas emitidas» lleva a «Nueva factura», donde sí están', async () => {
+      await irAVentas();
+      await act(async () => {
+        (q('[data-testid="facturacion-ver-emitidas-ventas"]') as HTMLButtonElement).click();
+      });
+      expect(q('[data-testid="nueva-factura-simulada"]')).not.toBeNull();
+    });
+
+    it('Compras tampoco dice «no tienes»: manda a cuentas por pagar, que es donde viven', async () => {
+      await ir('compras');
+      const vacio = q('[data-testid="sin-datos"]')!;
+      expect((vacio.textContent ?? '').toLowerCase()).not.toContain('no tienes');
+      expect(vacio.querySelector('a[href="/panel/inmobiliaria/pagos/cxp"]')).not.toBeNull();
+    });
   });
 });

@@ -29,7 +29,14 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SegmentedControl } from '@leasefy/cadence';
 import type { ReportDefinition, ReportId, ReportCategory } from '@/lib/types/inmobiliaria';
 import { REPORT_DEFINITIONS } from '@/lib/constants/inmobiliaria-data';
-import { comoSeBaja, sePuedeBajar, nombreDelArchivo, rutaDeExport, descargarBlob } from '@/lib/reportes/exportables';
+import {
+  comoSeBaja,
+  sePuedeBajar,
+  nombreDelArchivo,
+  parametrosDelPeriodo,
+  rutaDeExport,
+  descargarBlob,
+} from '@/lib/reportes/exportables';
 import { zonasDelReporte } from '@/lib/reportes/zonas';
 import {
   useCarteraReport,
@@ -385,14 +392,17 @@ function ReportesContent() {
 
     setGeneratingReports((prev) => new Set([...prev, report.id]));
     try {
-      const blob = await apiClient.getBlob(rutaDeExport(como.tipo));
+      // RP1: el período elegido arriba viaja al archivo en la forma que cada
+      // tipo acepta, y el aviso dice qué hizo con él (ver exportables.ts).
+      const { params, nota } = parametrosDelPeriodo(como.tipo, filters.period);
+      const blob = await apiClient.getBlob(rutaDeExport(como.tipo, params));
       descargarBlob(blob, nombreDelArchivo(como.tipo, new Date().toISOString().slice(0, 10)));
 
       const now = new Date().toISOString();
       setReports((prev) =>
         prev.map((r) => (r.id === report.id ? { ...r, lastGenerated: now } : r)),
       );
-      toast.success('Descargado', { description: `${report.title} · CSV` });
+      toast.success('Descargado', { description: `${report.title} · CSV · ${nota}` });
       return true;
     } catch (error) {
       toast.error('No pudimos generar el reporte', {
@@ -409,7 +419,7 @@ function ReportesContent() {
         return next;
       });
     }
-  }, [router]);
+  }, [router, filters.period]);
 
   // Handle preview report
   const handlePreviewReport = useCallback((report: ReportDefinition) => {

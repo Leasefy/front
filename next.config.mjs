@@ -27,6 +27,27 @@ const nextConfig = {
     );
     return config;
   },
+  // `src/lib/utils/sanitize-html.ts` importa `isomorphic-dompurify`, que en el
+  // servidor arrastra jsdom. jsdom YA viene en la lista de externos que trae Next
+  // (`next/dist/lib/server-external-packages.json`), pero con pnpm no se puede
+  // resolver desde la raíz del proyecto: es dependencia TRANSITIVA y vive bajo
+  // `node_modules/.pnpm/`. El `baseResolveCheck` de Next descarta el externo cuando
+  // la resolución desde la raíz no coincide con la real, así que termina
+  // empaquetando jsdom en el bundle de servidor. Empaquetado, webpack reescribe
+  // `__dirname` y jsdom busca su hoja de estilos por defecto en
+  // `.next/browser/default-stylesheet.css`, que no existe: CUALQUIER render de
+  // servidor de una ruta que importe ese módulo —abrir
+  // /panel/inmobiliaria/contratos/<id> por URL directa o recargar la página—
+  // moría con ENOENT y 500. Entrando por clic desde la lista no se veía, porque
+  // esa es navegación de cliente.
+  // `isomorphic-dompurify` SÍ es dependencia directa (resuelve desde la raíz), así
+  // que marcarlo como externo del servidor pasa el chequeo y jsdom nunca entra al
+  // bundle: en el servidor se carga por `require` normal desde node_modules.
+  // En Next 14 la clave es `experimental.serverComponentsExternalPackages`; al
+  // subir a Next 15 se llama `serverExternalPackages` (nivel raíz).
+  experimental: {
+    serverComponentsExternalPackages: ['isomorphic-dompurify'],
+  },
   // TEMPORARY (stg-demo integration): the redesign depends on @leasefy/cadence, linked
   // locally via `file:../cadence` (no real pnpm workspace, no published tarball yet).
   // That linkage still surfaces type errors and some lint noise. We let `next build`

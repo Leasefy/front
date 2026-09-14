@@ -15,6 +15,7 @@
 import { SectionLabel } from '@/components/ui/section-label'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { CarteraCompleta } from '@/components/cartera/CarteraCompleta'
+import { PestanasDeCartera } from '@/components/cartera/PestanasDeCartera'
 
 export default function CarteraPage() {
   return (
@@ -30,6 +31,9 @@ export default function CarteraPage() {
             no vence va aparte: no es mora.
           </p>
         </header>
+
+        {/* Las otras dos lecturas de la misma plata: por concepto y por pagar. */}
+        <PestanasDeCartera />
 
         <CarteraCompleta />
       </div>

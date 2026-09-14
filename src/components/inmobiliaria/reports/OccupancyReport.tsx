@@ -71,17 +71,27 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
     <div className="space-y-6">
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 🔴 El total es el CATÁLOGO, y lo dice: Nico pidió medir la
+            ocupación «contra el inmueble disponible, no contra el no
+            disponible, porque ya está fuera del catálogo» (2026-09-12). Si hay
+            inmuebles afuera, el número tiene que decir cuántos son. */}
         <KPICard
-          label="Total propiedades"
+          label="En catálogo"
           value={summary.totalProperties}
           icon={Buildings}
           color="blue"
+          subtitle={
+            summary.outOfCatalog > 0
+              ? `${summary.outOfCatalog.toLocaleString('es-CO')} fuera del catálogo`
+              : undefined
+          }
         />
         <KPICard
           label="Arrendadas"
           value={summary.rented}
           icon={House}
           color="emerald"
+          subtitle="con contrato vigente"
         />
         <KPICard
           label="Vacantes"

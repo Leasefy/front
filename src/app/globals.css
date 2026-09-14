@@ -29,7 +29,7 @@
     --indigo-400: 230 100% 67%;   /* #4a6bff */
     --indigo-500: 230 100% 55%;   /* #1A40FF — AZUL LEASEFY */
     --indigo-600: 230 82% 46%;    /* #1533d6 */
-    --indigo-700: 230 82% 37%;    /* #0c1f80 */
+    --indigo-700: 230 82% 37%;    /* #112BAC */
     --indigo-800: 231 81% 29%;    /* #0E2185 */
     --indigo-900: 231 81% 22%;    /* #0B1A66 */
     --indigo-950: 231 45% 12%;    /* near-black with blue tint */
@@ -249,7 +249,7 @@
     --popover-foreground:  var(--neutral-900);   /* #1C1917 */
 
     /* Primary — Indigo (CTA/actions/links/focus) */
-    --primary:             var(--indigo-500);    /* #5B5FEF */
+    --primary:             var(--indigo-500);    /* #1A40FF */
     --primary-foreground:  0 0% 100%;            /* White on indigo */
 
     /* Secondary — Sand ambient (NOT for CTA) */
@@ -262,10 +262,10 @@
 
     /* Accent — alias to Primary for highlight states */
     --accent:              var(--indigo-50);     /* #F2F3FF */
-    --accent-foreground:   var(--indigo-700);    /* #3E41C9 */
+    --accent-foreground:   var(--indigo-700);    /* #112BAC */
 
     /* Brand — kept as alias for backward compat */
-    --brand:               var(--indigo-500);    /* #5B5FEF */
+    --brand:               var(--indigo-500);    /* #1A40FF */
     --brand-foreground:    0 0% 100%;
     --brand-muted:         var(--indigo-50);     /* #F2F3FF */
 
@@ -276,7 +276,7 @@
     /* Borders */
     --border:              var(--neutral-200);   /* #E7E5E4 */
     --input:               var(--neutral-200);   /* #E7E5E4 */
-    --ring:                var(--indigo-500);    /* #5B5FEF — focus rings */
+    --ring:                var(--indigo-500);    /* #1A40FF — focus rings */
 
     /* Focus ring with alpha (used by components directly) */
     --focus-ring:          91 95 239 / 0.25;     /* rgba(91,95,239,0.25) */
@@ -313,16 +313,16 @@
     --plan-status-blue-bg: #DBEAFE;
 
     /* --------------------------------------------------------
-     * WCAG AA Contrast Audit (2026-02-02)
+     * WCAG AA Contrast Audit (2026-02-02 · indigo re-verified 2026-09-13 con el azul #1A40FF)
      * All role-token pairs verified >= 4.5:1 for normal text.
      *   textPrimary  (#1C1917) on bg (#FAFAF9) → 15.7:1 ✓
      *   textSecondary (#44403C) on bg           → 8.2:1  ✓
      *   textTertiary  (#A8A29E) on bg           → 2.6:1  (decorative/disabled only — NOT for --muted-foreground)
      *   muted-foreground (#7A756F) on bg         → 4.56:1 ✓ AA normal (neutral-500)
-     *   indigo-500 (#5B5FEF) on white           → 4.6:1  ✓ AA normal
-     *   indigo-700 (#3E41C9) on white           → 7.1:1  ✓ AAA
-     *   white on indigo-500                     → 4.6:1  ✓ AA (btn text)
-     *   white on indigo-600                     → 5.2:1  ✓ AA
+     *   indigo-500 (#1A40FF) on white           → 6.5:1  ✓ AA normal
+     *   indigo-700 (#112BAC) on white           → 10.7:1 ✓ AAA
+     *   white on indigo-500                     → 6.5:1  ✓ AA (btn text)
+     *   white on indigo-600 (#1533D6)           → 8.4:1  ✓ AAA
      *   error-500 on white                      → 4.7:1  ✓
      *   success-700 on white                    → 7.5:1  ✓
      * -------------------------------------------------------- */
@@ -375,7 +375,7 @@
     --shadow-glow-blue: 0 0 40px rgba(59, 130, 246, 0.15);
 
     /* Selection/Focus shadows */
-    --shadow-ring-primary: 0 0 0 3px rgba(91, 95, 239, 0.15);
+    --shadow-ring-primary: 0 0 0 3px rgba(26, 64, 255, 0.15);
     --shadow-ring-emerald: 0 0 0 3px rgba(16, 185, 129, 0.15);
 
     /* ========================================================

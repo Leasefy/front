@@ -115,6 +115,19 @@ vi.mock('@/components/inmobiliaria/ActaEntregaView', () => ({
   ActaEntregaView: () => null,
 }));
 
+// El inventario entero (tarjeta, diálogo, barra del borrador) vive en su
+// propio componente desde que también se carga desde la ficha del contrato
+// (Nico, 2026-09-13). Acá no se prueba: tiene sus propias pruebas.
+vi.mock('@/components/inmobiliaria/InventarioDeLaConsignacion', () => ({
+  InventarioDeLaConsignacion: () => null,
+}));
+
+// El permiso pregunta por el PermissionsContext, que esta página no monta en
+// pruebas (el provider vive en el layout del panel).
+vi.mock('@/lib/hooks/use-puede-editar-inventario', () => ({
+  usePuedeEditarInventario: () => true,
+}));
+
 vi.mock('@/components/inmobiliaria/ConsignacionTimeline', () => ({
   ConsignacionTimeline: () => null,
 }));
@@ -124,6 +137,10 @@ vi.mock('@/components/inmobiliaria/agenda/PedirCitaModal', () => ({
 }));
 
 import ConsignacionDetailPage from './page';
+import {
+  almacenEnMemoria as almacenDeCopiasEnMemoria,
+  usarAlmacenDeCopias,
+} from '@/lib/inventario/copia-de-inmueble';
 
 const BASE_CONSIGNACION: Consignacion = {
   id: 'consig-1',
@@ -255,5 +272,81 @@ describe('<ConsignacionDetailPage> — mientras carga', () => {
 
     expect(container.querySelector('[data-testid="ficha-cargando"]')).toBeNull();
     expect(container.textContent).toContain('inmobiliaria.portafolio.detail.notFound');
+  });
+});
+
+/**
+ * 🔴 Nico, 2026-09-12: «hay muchos apartamentos donde no hay señal; la persona
+ * que hace el inventario debería poder agregar todo sin señal y, cuando tenga
+ * señal, cargarlo». Entrar a la ficha YA sin señal: el back no contesta, y la
+ * pantalla se arma con lo que este teléfono guardó.
+ */
+describe('<ConsignacionDetailPage> — sin señal', () => {
+  beforeEach(() => {
+    usarAlmacenDeCopias(almacenDeCopiasEnMemoria());
+  });
+  afterEach(() => {
+    usarAlmacenDeCopias(null);
+  });
+
+  async function renderAsync() {
+    await act(async () => {
+      root.render(<ConsignacionDetailPage />);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+
+  it('sin back y con copia guardada, la ficha se arma con la copia', async () => {
+    usarAlmacenDeCopias(
+      almacenDeCopiasEnMemoria([
+        {
+          consignacionId: 'consig-1',
+          titulo: 'Apto Chapinero',
+          direccion: 'Cra 1 # 2-3',
+          contrato: null,
+          consignacion: BASE_CONSIGNACION,
+          guardadoEn: 1_700_000_000_000,
+        },
+      ]),
+    );
+    useConsignacionMock.mockReturnValue({ consignacion: null, isLoading: false });
+
+    await renderAsync();
+
+    expect(container.textContent).toContain('Apto Chapinero');
+    expect(container.querySelector('[data-testid="viendo-copia-sin-senal"]')).toBeTruthy();
+  });
+
+  it('sin back y sin copia no se inventa un inmueble', async () => {
+    useConsignacionMock.mockReturnValue({ consignacion: null, isLoading: false });
+
+    await renderAsync();
+
+    expect(container.querySelector('[data-testid="viendo-copia-sin-senal"]')).toBeNull();
+    expect(container.textContent).not.toContain('Apto Chapinero');
+  });
+
+  it('con el back respondiendo, la copia NO se muestra como tal: manda el back', async () => {
+    usarAlmacenDeCopias(
+      almacenDeCopiasEnMemoria([
+        {
+          consignacionId: 'consig-1',
+          titulo: 'Título viejo',
+          direccion: 'Dirección vieja',
+          contrato: null,
+          consignacion: { ...BASE_CONSIGNACION, propertyTitle: 'Título viejo' },
+          guardadoEn: 1_700_000_000_000,
+        },
+      ]),
+    );
+    useConsignacionMock.mockReturnValue({ consignacion: BASE_CONSIGNACION, isLoading: false });
+
+    await renderAsync();
+
+    expect(container.textContent).toContain('Apto Chapinero');
+    expect(container.textContent).not.toContain('Título viejo');
+    expect(container.querySelector('[data-testid="viendo-copia-sin-senal"]')).toBeNull();
   });
 });

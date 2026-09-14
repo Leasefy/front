@@ -22,12 +22,15 @@ import { apiClient } from '@/lib/api/client';
 import { invalidar } from './refresco-de-datos';
 import { normalizeCobro } from './inmobiliaria.service';
 import type {
+  CarteraDelCliente,
   CobroConDesglose,
   ConciliacionDePagoAnterior,
   FiltrosDeRecibos,
   NuevoReciboDeCaja,
+  NuevoReciboPorCliente,
   ReciboDeCaja,
   RespuestaDeRecibo,
+  RespuestaDeReciboPorCliente,
 } from './recibos-de-caja.types';
 
 const BASE = '/inmobiliaria/recibos-de-caja';
@@ -75,6 +78,57 @@ export const recibosDeCajaApi = {
     const res = await apiClient.post<RespuestaDeRecibo>(BASE, cuerpo);
     invalidar('cobros');
     return normalizarRespuesta(res);
+  },
+
+  /**
+   * 🔴 El recibo tal como lo pidió Nico el 2026-09-12: se emite a un CLIENTE.
+   *
+   * No se manda a qué cobro va la plata porque no se elige: el back la reparte
+   * del período más viejo al más nuevo. Vuelve UN recibo por cada período que
+   * tocó, los cobros recompuestos y el plan de imputación para mostrarlo.
+   *
+   * Puede fallar con:
+   *   - 400 si el pago excede toda la deuda (trae el máximo en el mensaje), si
+   *     la persona no debe nada, o si no se dijo de quién es el pago.
+   *   - 409 `PLATA_SIN_RECIBO` si un período tiene plata que ningún recibo
+   *     respalda: hay que conciliarlo antes. El cuerpo trae el `cobroId`.
+   */
+  async crearPorCliente(datos: NuevoReciboPorCliente): Promise<RespuestaDeReciboPorCliente> {
+    const cuerpo: Record<string, unknown> = {
+      valorCop: datos.valorCop,
+      medio: datos.medio,
+    };
+    if (datos.tenantId) cuerpo.tenantId = datos.tenantId;
+    if (datos.cobroId) cuerpo.cobroId = datos.cobroId;
+    if (datos.fecha) cuerpo.fecha = datos.fecha;
+    if (datos.referencia) cuerpo.referencia = datos.referencia;
+    if (datos.notas) cuerpo.notas = datos.notas;
+
+    const res = await apiClient.post<RespuestaDeReciboPorCliente>(`${BASE}/por-cliente`, cuerpo);
+    invalidar('cobros');
+    return {
+      ...res,
+      cobros: (res.cobros ?? []).map((c) => normalizeCobro(c) as CobroConDesglose),
+    };
+  },
+
+  /** Lo que debe una persona AHORA, del período más viejo al más nuevo. */
+  async cartera(tenantId: string): Promise<CarteraDelCliente> {
+    return apiClient.get<CarteraDelCliente>(
+      `${BASE}/cartera/${encodeURIComponent(tenantId)}`,
+    );
+  },
+
+  /**
+   * La misma cartera, entrando desde la fila de un cobro.
+   *
+   * Devuelve TODO lo que esa persona debe, no sólo ese cobro: la plata puede
+   * tener que ir a un período más viejo, y eso hay que verlo antes de recibir.
+   */
+  async carteraPorCobro(cobroId: string): Promise<CarteraDelCliente> {
+    return apiClient.get<CarteraDelCliente>(
+      `${BASE}/cartera-por-cobro/${encodeURIComponent(cobroId)}`,
+    );
   },
 
   /** Los recibos de la inmobiliaria, filtrables. Por defecto, sólo los vivos. */
@@ -137,12 +191,17 @@ export const recibosDeCajaApi = {
 };
 
 export type {
+  CarteraDelCliente,
   CobroConDesglose,
+  CobroEnCartera,
   ConceptoDelCobro,
   ConciliacionDePagoAnterior,
   FiltrosDeRecibos,
   NuevoReciboDeCaja,
+  NuevoReciboPorCliente,
+  ParteDeLaImputacion,
   ReciboDeCaja,
   RespuestaDeRecibo,
+  RespuestaDeReciboPorCliente,
   TipoDeConcepto,
 } from './recibos-de-caja.types';

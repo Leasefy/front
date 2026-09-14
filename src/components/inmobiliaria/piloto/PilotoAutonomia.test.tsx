@@ -32,9 +32,17 @@ describe('AGENTES_NO_DISPONIBLES', () => {
 })
 
 describe('copy del panel de autonomía (es.json / en.json)', () => {
-  it('el modo "sombra" se lee "Manual" en ambos locales — el wire sigue en "sombra"', () => {
-    expect(es.inmobiliaria.piloto.autonomia.modo.sombra).toBe('Manual')
-    expect(en.inmobiliaria.piloto.autonomia.modo.sombra).toBe('Manual')
+  /*
+   * 🔴 «Sombra», no «Manual» (Nico, 2026-09-12). `develop` lo había renombrado
+   * a «Manual» y Nico pidió el nombre de vuelta: es el modo en que el piloto
+   * mira y sugiere sin tocar nada, y «Manual» se lee como «apagado», que es
+   * otra cosa. La llave del cable NO cambia — sigue siendo `sombra`, y eso es
+   * lo que esta prueba cuida: que renombrar la etiqueta no arrastre el
+   * contrato con el micro.
+   */
+  it('el modo "sombra" se lee "Sombra" — el wire sigue en "sombra"', () => {
+    expect(es.inmobiliaria.piloto.autonomia.modo.sombra).toBe('Sombra')
+    expect(en.inmobiliaria.piloto.autonomia.modo.sombra).toBe('Shadow')
     // Los otros dos modos no se tocaron.
     expect(es.inmobiliaria.piloto.autonomia.modo.copiloto).toBe('Copiloto')
     expect(es.inmobiliaria.piloto.autonomia.modo.autonomo).toBe('Autónomo')

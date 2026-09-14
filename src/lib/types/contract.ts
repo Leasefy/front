@@ -271,6 +271,134 @@ export interface PerfilesDelContrato {
   inmobiliaria: PerfilTributario;
 }
 
+/**
+ * Un dueño del inmueble, con su porcentaje y su parte del canon.
+ *
+ * 🔴 Nico, 2026-09-12: «Hay contratos que tienen tres propietarios y cada uno
+ * define cuál es el porcentaje de cada uno. Hay que dividir el canon entre los
+ * porcentajes que pidieron y tener la información de los tres propietarios.»
+ *
+ * El reparto lo hace el BACK con la misma función que la dispersión: si esta
+ * pantalla lo dividiera por su cuenta, el día que las dos cuentas difieran la
+ * ficha diría una cosa y el giro giraría otra.
+ *
+ * Los cuatro booleanos tributarios vienen CRUDOS (`null` = nadie lo afirmó),
+ * no mezclados con el default de su tipo de persona: la ficha muestra sólo lo
+ * que la persona TIENE, y para eso hay que distinguir «dijo que no» de «no
+ * dijo».
+ */
+export interface PropietarioDelContrato {
+  id: string;
+  name: string;
+  documentNumber: string;
+  documentType: string | null;
+  participacionBps: number;
+  /** Ya escrito: `60 %`, `33,33 %`. */
+  participacion: string;
+  /** `null` = no hay canon, o las participaciones no suman 100 %. */
+  canonCop: number | null;
+  esPrincipal: boolean;
+  responsableIva: boolean | null;
+  agenteRetenedorRenta: boolean | null;
+  agenteRetenedorIva: boolean | null;
+  agenteRetenedorIca: boolean | null;
+}
+
+export interface PropietariosDelContrato {
+  propietarios: PropietarioDelContrato[];
+  sumaBps: number;
+  /** `false` = hay que corregir el mandato; la ficha lo dice en voz alta. */
+  sumanCien: boolean;
+}
+
+/**
+ * Un inquilino del contrato. El principal es el titular (`Contract.tenantId`
+ * y su snapshot); los demás son coarrendatarios de `contrato_inquilinos`.
+ *
+ * Nico, 2026-09-12: «No se presentan tanto múltiples inquilinos, pero puede
+ * darse el caso: construirlo también para múltiples inquilinos.»
+ */
+export interface InquilinoDelContrato {
+  /** `null` en el principal: no tiene fila propia, vive en el contrato. */
+  id: string | null;
+  userId: string | null;
+  nombre: string;
+  documento: string;
+  email: string | null;
+  telefono: string | null;
+  esPrincipal: boolean;
+}
+
+/**
+ * El escenario tributario del contrato: cómo se LLAMA la situación que forman
+ * las dos partes, y qué genera.
+ *
+ * Nico, 2026-09-12: «Los contratos no están mostrando la información sobre el
+ * escenario que se da en ese contrato. Ejemplo: si el inquilino es persona
+ * natural y si el propietario es persona natural, el escenario de ese contrato
+ * sería contrato de arrendamiento entre personas naturales. Entonces ese no va
+ * a generar impuestos.»
+ *
+ * Los nueve códigos salen del catálogo que la inmobiliaria ya usaba en Nuby.
+ * Lo calcula el back con el mismo régimen que usa el motor de cobros: la
+ * pantalla lo muestra, no lo recalcula — una segunda cuenta es una cuenta que
+ * un día no coincide con la que cobra.
+ */
+export type CodigoDeEscenario =
+  | 'E1'
+  | 'E2'
+  | 'E3'
+  | 'E4'
+  | 'E5'
+  | 'E6'
+  | 'E7'
+  | 'E8'
+  | 'E9'
+  | 'SIN_DEFINIR';
+
+export interface ImpuestoDelEscenario {
+  tipo: 'IVA' | 'RETEFUENTE' | 'RETEIVA';
+  base: 'CANON' | 'COMISION';
+  nombre: string;
+  porcentaje: number;
+  loPractica: 'PROPIETARIO' | 'INQUILINO';
+  aCargoDe: 'INQUILINO' | 'PROPIETARIO' | 'INMOBILIARIA';
+  explicacion: string;
+}
+
+/**
+ * `AFIRMADO` = alguien lo dijo y el cobro lo practica. `DEDUCIDO` = salió del
+ * tipo de persona y el cobro NO lo practica hasta confirmarlo. La diferencia
+ * es plata, así que se muestra.
+ */
+export type OrigenDelEjeDelEscenario = 'AFIRMADO' | 'DEDUCIDO' | 'SIN_DEFINIR';
+
+export interface EjeDelEscenario {
+  valor: boolean | null;
+  origen: OrigenDelEjeDelEscenario;
+  porque: string;
+}
+
+export interface EscenarioTributarioDelContrato {
+  codigo: CodigoDeEscenario;
+  nombre: string;
+  /** El nombre literal del catálogo de Nuby, para poder cruzarlo. */
+  nombreEnNuby: string | null;
+  resumen: string;
+  impuestos: ImpuestoDelEscenario[];
+  sinImpuestos: boolean;
+  certeza: 'CONFIRMADO' | 'DEDUCIDO' | 'SIN_DEFINIR';
+  deducidos: string[];
+  faltan: string[];
+  ejes: {
+    ivaSobreElCanon: EjeDelEscenario;
+    retencionSobreElCanon: EjeDelEscenario;
+    reteIvaSobreElCanon: EjeDelEscenario;
+    retencionSobreLaComision: EjeDelEscenario;
+  };
+  fueraDelCatalogo: string[];
+}
+
 // ============================================================================
 // Contract
 // ============================================================================
@@ -306,6 +434,14 @@ export interface Contract {
    * (nunca `—`, nunca `#0`). Guarda con `!= null`.
    */
   code?: number;
+  /**
+   * El número con el que la inmobiliaria conoce el contrato (su sistema
+   * anterior), guardado al migrar. Es el que se lee grande en un contrato
+   * migrado; `code` va al lado, nombrado como el de Leasefy. Ver
+   * `lib/contratos/numero-del-contrato.ts`. `null` = no hay número;
+   * `undefined` = el back no lo mandó.
+   */
+  externalId?: string | null;
   status: ContractStatus;
 
   // Snapshot fields (Opción A — capturados al crear el contrato, inmutables).
@@ -371,6 +507,16 @@ export interface Contract {
   } | null;
 
   /**
+   * TODOS los dueños del inmueble, con su porcentaje y su parte del canon.
+   * Con un solo dueño es una lista de uno al 100 %; `undefined` = el back no
+   * lo mandó (lista, respuesta vieja) y la ficha cae a
+   * `propietarioDeLaConsignacion`.
+   */
+  propietariosDelContrato?: PropietariosDelContrato | null;
+  /** Todos los inquilinos, el principal primero y marcado. */
+  inquilinosDelContrato?: InquilinoDelContrato[] | null;
+
+  /**
    * Quién retiene qué. La retención la practica **quien paga**, así que sin
    * esto la liquidación de cada concepto era una suposición.
    *
@@ -382,6 +528,12 @@ export interface Contract {
   perfilesTributarios?: PerfilesDelContrato | null;
   /** El régimen ya resuelto por el back, con el origen de cada valor. */
   regimenTributario?: RegimenTributarioDelContrato | null;
+  /**
+   * Cómo se llama el escenario que forman las dos partes, y qué genera.
+   * Opcional porque no todos los cables del contrato lo traen (la lista, por
+   * ejemplo, sólo lo traería a costa de una consulta por fila).
+   */
+  escenarioTributario?: EscenarioTributarioDelContrato | null;
   /** null = heredar de la ficha del propietario. */
   arrendadorResponsableIva?: boolean | null;
 

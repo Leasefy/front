@@ -52,6 +52,40 @@ function plataDeContrato(v: unknown): number | undefined {
 }
 
 /**
+ * «Prorrateado» tal como lo escribe una inmobiliaria: `SI`/`NO`, con o sin
+ * tilde, `X`, `1`/`0`, o un booleano si la celda vino de un Excel con
+ * casillas. Lo que no se entiende queda `undefined` —«no lo sabemos»— y el
+ * contrato entra sin prorrateo, que es cobrar el mes completo: nunca un `''`
+ * que tumbe el lote contra el `@IsBoolean()` del back.
+ */
+export function siONoDeCelda(v: unknown): boolean | undefined {
+  if (typeof v === 'boolean') return v
+  if (typeof v === 'number') return v === 1 ? true : v === 0 ? false : undefined
+  if (!hayValor(v)) return undefined
+  const t = String(v)
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .trim()
+    .toUpperCase()
+  if (!t) return undefined
+  if (['SI', 'S', 'YES', 'Y', 'TRUE', 'VERDADERO', 'X', '1'].includes(t)) return true
+  if (['NO', 'N', 'FALSE', 'FALSO', '0'].includes(t)) return false
+  return undefined
+}
+
+/**
+ * «Días de Plazo»: un entero de 0 a 365. Lo que no es un plazo (vacío,
+ * «N/A», negativo, un año entero) viaja ausente y el contrato hereda el
+ * plazo de la agencia — igual que cuando la columna no viene.
+ */
+export function diasDePlazoDeCelda(v: unknown): number | undefined {
+  if (!hayValor(v)) return undefined
+  const n = comoEntero(v)
+  if (n === undefined || n < 0 || n > 365) return undefined
+  return n
+}
+
+/**
  * Lo que el archivo del sistema viejo trae, ya leído.
  *
  * Es el modelo de LECTURA del front: lo usan la vista previa y el resumen del
@@ -154,6 +188,7 @@ export function leerFilaDelArchivo(
   const v = (campo: CampoDeContrato) => valorDe(fila, mapeo, campo)
 
   const rawInicio = v('fechaInicio')
+  const rawCartera = v('fechaDeCartera')
   const rawFin = v('fechaFin')
   const rawDeposito = v('deposito')
   const rawDia = v('diaDePago')
@@ -216,6 +251,13 @@ export function leerFilaDelArchivo(
       documento: textoOpcional(v('inquilinoDocumento')) ?? inquilinos[0]?.documento,
     },
     startDate: hayValor(rawInicio) ? comoFecha(rawInicio) : undefined,
+    /*
+     * 🔴 Desde cuándo se COBRA, que no es desde cuándo empieza el contrato
+     * (Nico, 2026-09-10). El diccionario la reconocía desde entonces y esta
+     * fila NUNCA la mandaba: el back recibía el campo declarado y vacío, y
+     * todo el prorrateo salía de `startDate`.
+     */
+    fechaDeCartera: hayValor(rawCartera) ? comoFecha(rawCartera) : undefined,
     endDate: hayValor(rawFin) ? comoFecha(rawFin) : undefined,
     monthlyRent: canonTotal ?? canonSuelto,
     deposit: plataDeContrato(rawDeposito),
@@ -225,6 +267,14 @@ export function leerFilaDelArchivo(
     paymentDay: dia !== undefined && dia >= 1 && dia <= 28 ? dia : undefined,
     usoInmueble: hayValor(rawUso) ? comoUso(rawUso) : undefined,
     periodicidad: comoPeriodicidad(v('periodicidad')),
+    /*
+     * «Prorrateado» y «Días de Plazo» del archivo (Nico, 2026-09-12). Con
+     * prorrateo el primer mes cobra sólo los días desde la fecha de cartera
+     * —y el último, los días ocupados—; sin él, el mes completo cada día de
+     * cartera.
+     */
+    prorratearPrimerMes: siONoDeCelda(v('prorrateado')),
+    diasDePlazo: diasDePlazoDeCelda(v('diasDePlazo')),
     // «0» es una comisión real (0% existe); «10%» y «10,5» son humanos; 110
     // no es un porcentaje. `Number(v) || undefined` convertía el 0 en «no hay
     // dato» — el único caso en que un valor escrito desaparecía en silencio.

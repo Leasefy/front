@@ -13,7 +13,18 @@
  * CONTRACT_STATUS_COLORS already ship dark variants).
  */
 
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { MagnifyingGlass, SortAscending, SortDescending } from '@phosphor-icons/react';
+import {
+  filtrarContratos,
+  hayFiltros,
+  FILTROS_INICIALES,
+  type CampoDeOrden,
+  type FiltrosDeContratos,
+} from '@/lib/contratos/filtrar-contratos';
+import { numeroDelContrato } from '@/lib/contratos/numero-del-contrato';
+import { ContratoFilters } from '@/components/contratos/ContratoFilters';
 import { formatearVigencia } from '@/lib/contratos/fecha-de-vigencia';
 import { useRouter } from 'next/navigation';
 import { fmtCop } from './format';
@@ -74,6 +85,31 @@ function StatCard({ label, value, dot }: { label: string; value: number | string
   );
 }
 
+// ── Celda del número ─────────────────────────────────────────────────────────
+
+/*
+ * 🔴 Nico, 2026-09-12: «estás tergiversando los números de contrato». Vio el
+ * «#1839» acá, lo buscó en su sistema anterior y era OTRA persona. El dato
+ * estaba bien: #1839 es NUESTRO consecutivo y el suyo es 1686. La celda lee
+ * grande el número que la inmobiliaria conoce y, debajo, el nuestro con su
+ * dueño («Leasefy #1839») para que se sepa cuál es cuál. Un contrato nativo
+ * sigue mostrando `#code` solo. Sin ninguno ⇒ celda VACÍA: nunca «—», nunca
+ * «#0» (`numero-del-contrato.ts`).
+ */
+function CeldaDeNumero({ contrato }: { contrato: Contract }) {
+  const numero = numeroDelContrato(contrato);
+  return (
+    <div className="min-w-0">
+      <span className="font-mono tabular-nums text-sm text-foreground">{numero.principal ?? ''}</span>
+      {numero.secundario && (
+        <p className="text-caption text-muted-foreground font-mono tabular-nums whitespace-nowrap">
+          {numero.secundario}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ── Skeleton row ─────────────────────────────────────────────────────────────
 
 /*
@@ -115,11 +151,26 @@ function ContratosContent() {
 
   useAutoRefresh(refetch);
 
-  /**
-   * Paginado de presentación: `useContracts()` trae el portafolio entero y una
-   * inmobiliaria real tiene cientos de contratos. No hay filtros en esta
-   * pantalla, así que no hace falta `resetKey`.
+  /*
+   * 🔴 El buscador y los filtros (Nico, 2026-09-12: «esta tabla ¿por qué no
+   * tiene buscador?» y, la misma noche, «con TODOS los filtros»). Era la única
+   * de las cuatro del directorio sin uno, con 1.836 contratos paginados de a
+   * 10: encontrar uno era pasar 184 páginas.
+   *
+   * Filtran la lista COMPLETA y recién después se pagina. Al revés —filtrando
+   * lo que ya se paginó— el buscador miente: contesta «no se encontró» sobre
+   * algo que está en la página 3. Ver `filtrar-contratos.ts`.
    */
+  const [filtros, setFiltros] = useState<FiltrosDeContratos>(FILTROS_INICIALES);
+  const contratosFiltrados = useMemo(
+    () => filtrarContratos(contracts, filtros),
+    [contracts, filtros],
+  );
+  const conFiltros = hayFiltros(filtros);
+  const limpiarFiltros = () =>
+    // El orden no es un filtro: se conserva.
+    setFiltros({ ...FILTROS_INICIALES, campo: filtros.campo, sentido: filtros.sentido });
+
   const {
     pageItems,
     total,
@@ -128,21 +179,36 @@ function ContratosContent() {
     setPage,
     setPageSize,
     shouldPaginate,
-  } = useTablePagination(contracts);
+  } = useTablePagination(contratosFiltrados, {
+    // Cualquier cambio de filtro u orden vuelve a la página 1: filtrar desde
+    // la página 4 dejaría la tabla vacía sobre un resultado que sí tiene filas.
+    resetKey: JSON.stringify(filtros),
+  });
 
-  const COLUMNS = [
-    // T-0040 — el consecutivo, columna angosta y a la izquierda de todo, igual
-    // que el código de inmueble en `ConsignacionTable`. Es puramente aditiva:
-    // esta tabla no mostraba NINGÚN identificador, ni siquiera un UUID cortado,
-    // así que no hay nada que migrar ni nada que los usuarios hayan aprendido a
-    // citar.
-    tx('Código', 'Code'),
-    tx('Inquilino', 'Tenant'),
-    tx('Propiedad', 'Property'),
-    tx('Canon', 'Rent'),
-    tx('Vigencia', 'Term'),
-    tx('Estado', 'Status'),
-    '',
+  const ordenarPor = (campo: CampoDeOrden) =>
+    setFiltros((f) =>
+      f.campo === campo
+        ? { ...f, sentido: f.sentido === 'asc' ? 'desc' : 'asc' }
+        : { ...f, campo, sentido: 'asc' },
+    );
+  const SortIcon = filtros.sentido === 'asc' ? SortAscending : SortDescending;
+
+  /*
+   * Las columnas, con el campo por el que ordena cada una (las que ordenan).
+   * El esqueleto y el `colSpan` del vacío leen `COLUMNS.length`: repetir el
+   * conteo a mano es cómo se produjo la deriva de T-0040.
+   */
+  const COLUMNS: { label: string; campo?: CampoDeOrden }[] = [
+    // El número que se LEE: el de la inmobiliaria si lo hay, si no el nuestro
+    // (`CeldaDeNumero`). Angosta y a la izquierda de todo, igual que el código
+    // de inmueble en `ConsignacionTable`.
+    { label: tx('Código', 'Code'), campo: 'numero' },
+    { label: tx('Inquilino', 'Tenant'), campo: 'tenantName' },
+    { label: tx('Propiedad', 'Property') },
+    { label: tx('Canon', 'Rent'), campo: 'monthlyRent' },
+    { label: tx('Vigencia', 'Term'), campo: 'endDate' },
+    { label: tx('Estado', 'Status') },
+    { label: '' },
   ];
 
   const openContract = (c: Contract) => router.push(`/panel/inmobiliaria/contratos/${c.id}`);
@@ -305,7 +371,7 @@ function ContratosContent() {
 
       {/* Table */}
       <section className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-border">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-5 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-surface-muted flex items-center justify-center flex-shrink-0">
               <FileText className="w-[18px] h-[18px] text-fg-muted" weight="duotone" />
@@ -317,14 +383,55 @@ function ContratosContent() {
               </p>
             </div>
           </div>
+
         </div>
+
+        {/*
+          La barra de búsqueda y filtros, debajo de la cabecera y encima de la
+          tabla, como en propietarios e inmuebles: es el mismo gesto en las
+          cuatro pantallas del directorio. Sólo con algo que filtrar — una
+          barra sobre una lista vacía no puede encontrar nada.
+        */}
+        {contracts.length > 0 && (
+          <ContratoFilters
+            filtros={filtros}
+            onFiltros={setFiltros}
+            totalFiltrado={contratosFiltrados.length}
+            total={contracts.length}
+          />
+        )}
 
         <Table>
           <TableHeader>
             <TableRow>
               {COLUMNS.map((col, i) => (
                 <TableHead key={i} className="whitespace-nowrap">
-                  {col}
+                  {col.campo ? (
+                    /*
+                      allowlist: disparador de orden — no hay primitiva en
+                      Cadence. `uppercase` va explícito porque un `<button>`
+                      trae `text-transform: none` del navegador y perdía las
+                      mayúsculas del `TH`. Ver PropietarioTable.
+                    */
+                    <button
+                      type="button"
+                      onClick={() => ordenarPor(col.campo as CampoDeOrden)}
+                      className="flex items-center gap-1.5 uppercase hover:text-fg"
+                      aria-sort={
+                        filtros.campo === col.campo
+                          ? filtros.sentido === 'asc'
+                            ? 'ascending'
+                            : 'descending'
+                          : undefined
+                      }
+                      data-testid={`ordenar-${col.campo}`}
+                    >
+                      {col.label}
+                      {filtros.campo === col.campo && <SortIcon className="w-3.5 h-3.5" aria-hidden />}
+                    </button>
+                  ) : (
+                    col.label
+                  )}
                 </TableHead>
               ))}
             </TableRow>
@@ -332,12 +439,48 @@ function ContratosContent() {
           <TableBody>
             {isLoading && contracts.length === 0 && <TableSkeleton cells={COLUMNS.length} />}
 
+            {/*
+              🔴 Desde que hay buscador, un vacío ya NO significa siempre
+              «todavía no hay ninguno»: puede ser «tu búsqueda no encontró
+              nada», que es lo contrario — ahí lo útil no es crear un contrato
+              sino borrar lo escrito. Ofrecer «Nuevo contrato» sobre una
+              búsqueda fallida manda a crear algo que probablemente ya existe.
+            */}
+            {!isLoading && !error && contracts.length > 0 && contratosFiltrados.length === 0 && conFiltros && (
+              <TableRow>
+                <TableCell colSpan={COLUMNS.length} className="p-0">
+                  <SinDatos
+                    queSon="contratos"
+                    icono={MagnifyingGlass}
+                    titulo={tx('Sin resultados', 'No results')}
+                    descripcion={
+                      filtros.busqueda.trim()
+                        ? tx(
+                            `Ningún contrato coincide con «${filtros.busqueda}». Se buscó en los ${contracts.length} contratos, no sólo en esta página.`,
+                            `No contract matches “${filtros.busqueda}”. All ${contracts.length} contracts were searched, not just this page.`,
+                          )
+                        : tx(
+                            `Ningún contrato coincide con los filtros puestos. Se miraron los ${contracts.length} contratos, no sólo en esta página.`,
+                            `No contract matches the filters. All ${contracts.length} contracts were checked, not just this page.`,
+                          )
+                    }
+                    accion={
+                      <Button variant="secondary" hideArrow onClick={limpiarFiltros}>
+                        {filtros.busqueda.trim()
+                          ? tx('Limpiar la búsqueda', 'Clear search')
+                          : tx('Limpiar los filtros', 'Clear filters')}
+                      </Button>
+                    }
+                  />
+                </TableCell>
+              </TableRow>
+            )}
+
             {!isLoading && !error && contracts.length === 0 && (
               <TableRow>
                 <TableCell colSpan={COLUMNS.length} className="p-0">
-                  {/* No hay filtros en esta pantalla: un vacío acá siempre
-                      significa «todavía no hay ninguno», y lo útil es poder
-                      crear el primero desde el mismo lugar donde falta. */}
+                  {/* Sin ninguno cargado, lo útil sí es crear el primero desde
+                      el mismo lugar donde falta. */}
                   <SinDatos
                     queSon="contratos"
                     icono={FileText}
@@ -365,17 +508,8 @@ function ContratosContent() {
                   onClick={() => openContract(c)}
                   className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
                 >
-                  {/*
-                    T-0040 — `#{code}`, `font-mono tabular-nums`, sin ceros a la
-                    izquierda. Ausente ⇒ celda VACÍA: nunca `—`, nunca `#0`. La
-                    única forma de que falte es un `back` anterior a T-0040, y
-                    la degradación congelada para ese caso es no renderizar
-                    nada.
-                  */}
                   <TableCell className="px-5 py-4">
-                    <span className="font-mono tabular-nums text-fg-muted text-sm">
-                      {c.code != null ? `#${c.code}` : ''}
-                    </span>
+                    <CeldaDeNumero contrato={c} />
                   </TableCell>
                   <TableCell className="px-5 py-4">
                     <div className="flex items-center gap-2.5 min-w-0">

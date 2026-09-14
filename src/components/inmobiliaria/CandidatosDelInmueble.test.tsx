@@ -14,6 +14,12 @@ import type { LandlordCandidate } from '@/lib/api/applications.types'
 import { ApiError } from '@/lib/api/client'
 
 const getCandidates = vi.fn()
+// Decidir desde el cajón consulta `usePermissions` (S3). Permisos abiertos:
+// estas pruebas miran la lista de candidatos, no el gate.
+vi.mock('@/lib/hooks/usePermissions', () => ({
+  usePermissions: () => ({ isLoading: false, canAccess: () => true }),
+}))
+
 vi.mock('@/lib/api/applications.service', () => ({
   landlordApplicationsApi: {
     getCandidates: (...a: unknown[]) => getCandidates(...a),

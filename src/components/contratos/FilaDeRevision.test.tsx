@@ -467,3 +467,87 @@ describe('<FilaDeRevision> — cómo quedó pegado el inmueble', () => {
     expect($('[data-testid="asociacion-ninguno"]')).toBeNull()
   })
 })
+
+/*
+ * Varios dueños con su % (Nico, 2026-09-13): la fila muestra, ANTES de
+ * activar, cómo va a quedar repartido el mandato. Lo arma el back en
+ * `asociacion.propietario.reparto`; en QA en vivo no se pudo ver porque la
+ * cola de preparación la toman otros backs de la máquina, así que se fija acá.
+ */
+describe('<FilaDeRevision> — el reparto entre los dueños', () => {
+  const conReparto = (reparto: unknown): Partial<FilaDeMigracion> => ({
+    asociacion: {
+      inmueble: { asociadoPor: 'codigo', codigo: '77001', direccion: 'Calle 10', propertyId: 'prop-1' },
+      propietario: {
+        asociadoPor: 'documento',
+        documento: '43090971',
+        nombre: 'LUZ ADRIANA',
+        id: 'po-1',
+        cuantos: 2,
+        reparto,
+      },
+      inquilino: { asociadoPor: 'correo', documento: null, nombre: 'Claudia', id: null, cuantos: 1 },
+      escenario: [],
+      historico: false,
+    } as FilaDeMigracion['asociacion'],
+  })
+
+  it('muestra cada dueño con su % y su plata, y dice que el reparto es del archivo', () => {
+    montar(
+      conReparto({
+        explicito: true,
+        problema: null,
+        duenos: [
+          { documento: '43090971', nombre: 'LUZ ADRIANA', bps: 4100, canon: 451000 },
+          { documento: '42979803', nombre: 'MARIA VICTORIA', bps: 5900, canon: 649000 },
+        ],
+      }),
+    )
+    const bloque = document.querySelector('[data-testid="reparto-de-duenos"]')
+    expect(bloque?.textContent).toContain('2 dueños · reparto del archivo')
+    const filas = [...document.querySelectorAll('[data-testid="dueno-del-reparto"]')].map((li) =>
+      (li.textContent ?? '').replace(/\s+/g, ' '),
+    )
+    expect(filas[0]).toContain('LUZ ADRIANA')
+    expect(filas[0]).toContain('41 %')
+    expect(filas[0]).toMatch(/451\.000/)
+    expect(filas[1]).toContain('59 %')
+  })
+
+  it('en partes iguales lo dice, para que no se lea como un dato del archivo', () => {
+    montar(
+      conReparto({
+        explicito: false,
+        problema: null,
+        duenos: [
+          { documento: '1', nombre: 'A', bps: 5000, canon: 550000 },
+          { documento: '2', nombre: 'B', bps: 5000, canon: 550000 },
+        ],
+      }),
+    )
+    expect(document.querySelector('[data-testid="reparto-de-duenos"]')?.textContent).toContain(
+      'partes iguales',
+    )
+  })
+
+  it('si no cuadra, los dueños se ven SIN un % inventado', () => {
+    montar(
+      conReparto({
+        explicito: false,
+        problema: 'Los valores de «Valor Canon» suman $1.100.000 y el canon del contrato es $1.500.000',
+        duenos: [
+          { documento: '1', nombre: 'A', bps: null, canon: 451000 },
+          { documento: '2', nombre: 'B', bps: null, canon: 649000 },
+        ],
+      }),
+    )
+    const texto = document.querySelector('[data-testid="reparto-de-duenos"]')?.textContent ?? ''
+    expect(texto).toContain('el reparto no cuadra')
+    expect(texto).not.toMatch(/\d+ %/)
+  })
+
+  it('con un solo dueño, o sin el dato del back, no dibuja nada', () => {
+    montar()
+    expect(document.querySelector('[data-testid="reparto-de-duenos"]')).toBeNull()
+  })
+})

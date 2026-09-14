@@ -9305,6 +9305,7 @@
       "colOrigen": "Origen",
       "colVinculo": "Vínculo",
       "colResponsable": "Responsable",
+      "colPersona": "Persona",
       "colEstado": "Estado",
       "emptyTitle": "Sin eventos aún",
       "emptyDesc": "Tus visitas, firmas, vencimientos e inspecciones aparecen acá solas; las tareas, con «Nueva tarea».",

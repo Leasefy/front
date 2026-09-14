@@ -19,6 +19,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { KpiValor } from '@/components/estado/KpiValor';
 import { ApiError } from '@/lib/api/client';
 import { RESUMEN_AGENDA_VACIO } from '@/lib/api/agenda.types';
+import { rotuloDeLaPersona } from '@/lib/agenda/rotulo-de-la-persona';
 import type { AgendaListResponse, EventoAgenda, EventoTipo, EventoEstado } from '@/lib/api/agenda.types';
 import { agendaApi } from '@/lib/api/agenda.service';
 import { fechaLocal } from '@/lib/fechas-locales';
@@ -38,7 +39,7 @@ const RESUMEN_ITEMS: { key: string; dot: string; field: keyof typeof RESUMEN_AGE
 
 const COLUMNS = [
   'colFecha', 'colEvento', 'colTipo', 'colOrigen',
-  'colVinculo', 'colResponsable', 'colEstado',
+  'colVinculo', 'colPersona', 'colEstado',
 ];
 
 /** Dot color per event type (matches the summary tiles). */
@@ -301,8 +302,16 @@ function AgendaContent() {
                         {e.vinculoLabel ?? t(k('sinVinculo'))}
                       </span>
                     </TableCell>
-                    <TableCell className="whitespace-nowrap text-muted-foreground">
-                      {e.responsableNombre ?? t(k('sinVinculo'))}
+                    <TableCell className="whitespace-nowrap">
+                      {/* El mismo campo es el inquilino, quien visita o el responsable
+                          según el tipo: se dice debajo del nombre para que la fila no se
+                          lea al revés (ver `rotulo-de-la-persona.ts`). */}
+                      <span className="block text-muted-foreground">{e.responsableNombre ?? t(k('sinVinculo'))}</span>
+                      {e.responsableNombre && (
+                        <span className="block text-caption text-muted-foreground/80" data-testid="agenda-rol-persona">
+                          {rotuloDeLaPersona(e.tipo) ?? t(k('colResponsable'))}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       <div className="flex items-center gap-2">

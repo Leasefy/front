@@ -9265,6 +9265,7 @@
       "colOrigen": "Source",
       "colVinculo": "Link",
       "colResponsable": "Owner",
+      "colPersona": "Person",
       "colEstado": "Status",
       "emptyTitle": "No events yet",
       "emptyDesc": "Visits, signatures, expirations and inspections show up here on their own; tasks via “New task”.",

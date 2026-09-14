@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Cajon, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { agendaApi } from '@/lib/api/agenda.service';
+import { rotuloDeLaPersona } from '@/lib/agenda/rotulo-de-la-persona';
 import { tareaIdOf, type EventoAgenda, type EventoEstado } from '@/lib/api/agenda.types';
 import { fechaLocal } from '@/lib/fechas-locales';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
@@ -167,10 +168,10 @@ export function EventoAgendaDrawer({
                     '—'
                   )}
                 </Fila>
-                {/* 🔴 En una visita este campo NO es el responsable de la
-                    agencia: es quien va a visitar. Rotularlo «Responsable» hacía
-                    leer la fila al revés. */}
-                <Fila etiqueta={esVisita ? 'Quién visita' : t(k('colResponsable'))}>
+                {/* 🔴 Sólo en una tarea este campo es el responsable de la agencia:
+                    en una visita es quien va a visitar y en firmas, vencimientos e
+                    inspecciones es el inquilino (ver `rotulo-de-la-persona.ts`). */}
+                <Fila etiqueta={rotuloDeLaPersona(evento.tipo) ?? t(k('colResponsable'))}>
                   {evento.responsableNombre ?? '—'}
                 </Fila>
 

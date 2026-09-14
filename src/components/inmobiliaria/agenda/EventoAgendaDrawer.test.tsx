@@ -237,6 +237,26 @@ describe('<EventoAgendaDrawer> — qué muestra', () => {
     expect(container.textContent).not.toContain('Contacto');
   });
 
+  it('en un vencimiento el nombre es el del INQUILINO, no un responsable de la agencia', () => {
+    // QA 2026-09-14: «Vence el contrato · Apartamento en El Golf» con
+    // «Responsable: Lina María» — Lina es la inquilina, no quien lo atiende.
+    pintar(
+      visita({
+        id: 'expire-1',
+        tipo: 'vencimiento_contrato',
+        origen: 'sistema',
+        estadoRaw: undefined,
+        titulo: 'Vence el contrato · Apartamento en El Golf',
+        vinculoTipo: 'contrato',
+        responsableNombre: 'Lina María Agudelo Torres',
+      }),
+    );
+
+    expect(container.textContent).toContain('Inquilino');
+    expect(container.textContent).toContain('Lina María Agudelo Torres');
+    expect(container.textContent).not.toContain('inmobiliaria.agenda.colResponsable');
+  });
+
   it('una tarea conserva el rótulo de responsable', () => {
     pintar(
       visita({

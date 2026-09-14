@@ -371,3 +371,54 @@ describe('A7 — un doble clic no manda dos confirmaciones', () => {
     expect(aceptarCitaMock).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('agenda — la columna de la persona no se lee al revés', () => {
+  const evento = (extra: Record<string, unknown>) => ({
+    id: 'e-1',
+    origen: 'sistema',
+    estado: 'pendiente',
+    fecha: '2026-11-05T00:00:00',
+    vinculoTipo: 'contrato',
+    vinculoLabel: 'Apartamento en El Golf',
+    ...extra,
+  })
+
+  it('en un vencimiento dice que el nombre es el del inquilino', async () => {
+    // QA 2026-09-14: «Vence el contrato · Responsable: Lina María» — Lina es la
+    // inquilina, no quien atiende el vencimiento.
+    getAgendaMock.mockResolvedValue({
+      resumen: { ...AGENDA_VACIA.resumen, vencimientos: 1 },
+      eventos: [
+        evento({
+          tipo: 'vencimiento_contrato',
+          titulo: 'Vence el contrato · Apartamento en El Golf',
+          responsableNombre: 'Lina María Agudelo Torres',
+        }),
+      ],
+    })
+    await montar()
+
+    const rol = container.querySelector('[data-testid="agenda-rol-persona"]')
+    expect(rol?.textContent).toBe('Inquilino')
+    expect(container.textContent).toContain('Lina María Agudelo Torres')
+  })
+
+  it('en una tarea sigue diciendo responsable', async () => {
+    getAgendaMock.mockResolvedValue({
+      resumen: AGENDA_VACIA.resumen,
+      eventos: [
+        evento({
+          id: 'tarea-1',
+          tipo: 'tarea',
+          origen: 'usuario',
+          titulo: 'Llamar al propietario',
+          responsableNombre: 'Ana del equipo',
+        }),
+      ],
+    })
+    await montar()
+
+    const rol = container.querySelector('[data-testid="agenda-rol-persona"]')
+    expect(rol?.textContent).toContain('colResponsable')
+  })
+})

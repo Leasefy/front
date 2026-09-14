@@ -37,6 +37,8 @@ import type {
   FilaDeImportacion,
   ResolverInmuebleDto,
 } from '@/lib/api/inmuebles-importacion.service';
+import { formatCurrency } from '@/lib/format';
+import { bpsComoPorcentaje } from '@/lib/migracion/valores-de-origen';
 
 const TIPOS = [
   { value: 'apartment', label: 'Apartamento' },
@@ -127,6 +129,28 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
             );
           })}
         </div>
+      )}
+
+      {/* Varios dueños con su % (Nico, 2026-09-13): lo que va a quedar en el
+          mandato al activar, para verlo acá y no en la ficha después. */}
+      {fila.datos.propietarios && fila.datos.propietarios.length >= 2 && (
+        <ul className="space-y-0.5" data-testid="duenos-de-la-fila">
+          <li className="text-xs text-fg-muted">{fila.datos.propietarios.length} propietarios</li>
+          {fila.datos.propietarios.map((p, i) => (
+            <li key={`${p.documento ?? p.nombre ?? i}`} className="flex items-baseline justify-between gap-3 text-xs">
+              <span className="min-w-0 truncate text-fg">
+                {p.nombre ?? p.documento ?? 'Sin nombre'}
+                {p.documento && p.nombre ? <span className="text-fg-subtle"> · {p.documento}</span> : null}
+              </span>
+              <span className="shrink-0 font-mono tabular-nums text-fg">
+                {typeof p.participacionBps === 'number' ? bpsComoPorcentaje(p.participacionBps) : '—'}
+                {typeof p.canon === 'number' ? (
+                  <span className="text-fg-subtle"> · {formatCurrency(p.canon)}</span>
+                ) : null}
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
 
       {esDuplicado && fila.candidatos.length > 0 && (

@@ -19,7 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { IconButton, MonoLabel } from '@leasefy/cadence';
 import { faltantesParaElBack, requisitoDe } from '../lib/requisitosDelBack';
 import { useCamposQueSeQuedan } from '../lib/useCamposQueSeQuedan';
-import type { ImportProperty, AISuggestion } from '../lib/importTypes';
+import type { ImportProperty, AISuggestion, DuenoDelArchivo } from '../lib/importTypes';
 
 interface AISuggestionCardProps {
   property: ImportProperty;
@@ -117,6 +117,53 @@ function formatCOP(value: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+/**
+ * Los dueños de la fila con su % y su plata, como van a quedar en el mandato.
+ * Si los porcentajes no suman 100 se DICE acá mismo: el back va a frenar esa
+ * fila con `reparto` y nadie quiere enterarse después de subir 2.800.
+ */
+export function DuenosDelInmueble({ owners }: { owners?: DuenoDelArchivo[] }) {
+  if (!owners || owners.length < 2) return null;
+  const porcentajes = owners.map((o) => o.porcentaje);
+  const todos = porcentajes.every((x): x is number => typeof x === 'number');
+  const suma = todos ? porcentajes.reduce((a, x) => a + x, 0) : null;
+  const noSuman = suma !== null && Math.abs(suma - 100) > 0.1;
+  const conPlata = owners.every((o) => typeof o.canon === 'number');
+
+  return (
+    <div className="space-y-1" data-testid={`duenos-${owners.length}`}>
+      <span className="block text-xs text-fg-muted dark:text-fg-subtle">
+        {owners.length} propietarios
+        {todos ? ' · con su porcentaje' : conPlata ? ' · con su plata' : ' · en partes iguales (el archivo no trae porcentajes)'}
+      </span>
+      <ul className="space-y-0.5">
+        {owners.map((o, i) => (
+          <li key={`${o.documento ?? o.nombre ?? i}`} className="flex items-baseline justify-between gap-3 text-xs">
+            <span className="min-w-0 truncate text-fg dark:text-white">
+              {o.nombre ?? o.documento ?? 'Sin nombre'}
+              {o.documento && o.nombre ? (
+                <span className="text-fg-subtle"> · {o.documento}</span>
+              ) : null}
+            </span>
+            <span className="shrink-0 font-mono tabular-nums text-fg dark:text-white">
+              {typeof o.porcentaje === 'number' ? `${o.porcentaje} %` : '—'}
+              {typeof o.canon === 'number' ? (
+                <span className="text-fg-subtle"> · {formatCOP(o.canon)}</span>
+              ) : null}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {noSuman && (
+        <span className="block text-xs text-danger" data-testid="duenos-no-suman">
+          Los porcentajes suman {suma} %, no 100 %: esta fila va a quedar pendiente hasta que
+          cuadren.
+        </span>
+      )}
+    </div>
+  );
 }
 
 function getEffectiveValue(property: ImportProperty, field: string): string {
@@ -447,6 +494,11 @@ export function AISuggestionCard({
               )
             )}
           </div>
+
+          {/* Varios dueños con su % (Nico, 2026-09-13): lo que va a quedar en
+              el mandato, dueño por dueño, antes de subir nada. Sólo con dos o
+              más; con uno, el campo «Propietario» de abajo es todo lo que hay. */}
+          <DuenosDelInmueble owners={property.owners} />
 
           {/* Lo que falta para poder crearlo — editable ACÁ.
               Antes esto aparecía recién en el último paso, en una pantalla sin

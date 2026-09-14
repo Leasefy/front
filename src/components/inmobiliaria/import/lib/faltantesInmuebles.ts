@@ -21,7 +21,8 @@ export type FaltanteInmueble =
   | 'tipo_de_negocio'
   | 'departamento'
   | 'fecha_consignacion'
-  | 'posible_duplicado';
+  | 'posible_duplicado'
+  | 'reparto';
 
 const ETIQUETAS: Record<FaltanteInmueble, string> = {
   titulo: 'título',
@@ -37,6 +38,7 @@ const ETIQUETAS: Record<FaltanteInmueble, string> = {
   departamento: 'departamento',
   fecha_consignacion: 'fecha de consignación',
   posible_duplicado: 'posible duplicado — revisar antes de continuar',
+  reparto: 'reparto entre los dueños (los porcentajes o la plata no cuadran; corrige el archivo o quita esa columna del mapeo para que queden en partes iguales)',
 };
 
 const GENERICA = 'falta un dato';

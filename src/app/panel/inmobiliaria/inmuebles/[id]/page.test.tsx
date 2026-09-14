@@ -33,6 +33,12 @@ const { useConsignacionMock, usePropietarioMock, useAgenteMock, usePropertyMock 
 // controla la query con `queryDePrueba`.
 const queryDePrueba = { editar: null as string | null };
 const routerReplaceMock = vi.fn();
+// La ficha dibuja Candidatos, que decide con `usePermissions` (S3). Permisos
+// abiertos: estas pruebas miran la ficha, no el gate de decidir.
+vi.mock('@/lib/hooks/usePermissions', () => ({
+  usePermissions: () => ({ isLoading: false, canAccess: () => true }),
+}));
+
 vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'consig-1' }),
   useRouter: () => ({ push: vi.fn(), replace: routerReplaceMock }),

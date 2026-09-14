@@ -565,9 +565,12 @@ function PropietariosContent() {
     setEditingPropietario(null);
     setErrorAlEditar(null);
   };
-  /* O5: con inmuebles consignados el back rechaza el borrado con un 409. Se
-     dice antes y el botón no se ofrece activo. */
-  const borradoBloqueado = (deletingPropietario?.propertyCount ?? 0) > 0;
+  /* O5: con inmuebles consignados, o figurando como dueño en mandatos de otro
+     (copropiedades), el back rechaza el borrado con un 409. Se dice antes y el
+     botón no se ofrece activo. */
+  const inmueblesDelBorrado = deletingPropietario?.propertyCount ?? 0;
+  const copropiedadesDelBorrado = deletingPropietario?.copropiedadesCount ?? 0;
+  const borradoBloqueado = inmueblesDelBorrado > 0 || copropiedadesDelBorrado > 0;
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -886,9 +889,13 @@ function PropietariosContent() {
             {borradoBloqueado && (
               <AlertaAccionable
                 severidad="danger"
-                titulo={t('inmobiliaria.propietarios.deleteBloqueado.titulo', {
-                  count: deletingPropietario.propertyCount,
-                })}
+                titulo={
+                  inmueblesDelBorrado > 0
+                    ? t('inmobiliaria.propietarios.deleteBloqueado.titulo', { count: inmueblesDelBorrado })
+                    : t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietario', {
+                        count: copropiedadesDelBorrado,
+                      })
+                }
                 accion={{
                   label: t('inmobiliaria.propietarios.deleteBloqueado.accion'),
                   href: '/panel/inmobiliaria/inmuebles',
@@ -924,7 +931,7 @@ function PropietariosContent() {
                 onClick={handleConfirmDelete}
                 isLoading={isDeleting}
                 disabled={isDeleting || borradoBloqueado}
-                title={borradoBloqueado ? 'Primero retira o reasigna sus inmuebles consignados' : undefined}
+                title={borradoBloqueado ? 'Primero retira o reasigna los mandatos donde figura como dueño' : undefined}
                 data-testid="confirmar-eliminar"
               >
                 {t('inmobiliaria.common.delete')}

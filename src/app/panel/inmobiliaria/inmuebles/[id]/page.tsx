@@ -449,8 +449,15 @@ function ConsignacionDetailContent() {
           hideArrow
           className="shrink-0"
           onClick={() => setShowCitaModal(true)}
-          disabled={terminada}
-          title={terminada ? t('inmobiliaria.consignaciones.header.terminada.pedirCita') : undefined}
+          // F11: sin inmueble asociado no hay a dónde agendar la visita.
+          disabled={terminada || !consignacion.propertyId}
+          title={
+            terminada
+              ? t('inmobiliaria.consignaciones.header.terminada.pedirCita')
+              : !consignacion.propertyId
+                ? 'Esta consignación no tiene un inmueble asociado: no hay a dónde agendar la visita.'
+                : undefined
+          }
           data-testid="pedir-cita"
         >
           <CalendarPlus className="w-4 h-4" />

@@ -218,8 +218,10 @@ describe('<ConsignacionEditForm> — el cajón trae todo lo que se puede editar'
     expect(q<HTMLInputElement>('[data-testid="editar-externalId"]')!.value).toBe('3 - CR 50');
     expect(q<HTMLInputElement>('[data-testid="editar-area"]')!.value).toBe('70');
     expect(q<HTMLInputElement>('[data-testid="editar-contractEndDate"]')!.value).toBe('2026-12-31');
-    expect(q('[data-testid="amenidad-gym"]')!.getAttribute('aria-pressed')).toBe('true');
-    expect(q('[data-testid="amenidad-pets"]')!.getAttribute('aria-pressed')).toBe('false');
+    expect(q('[data-testid="amenidad-gym"]')!.getAttribute('data-activa')).toBe('si');
+    expect(q('[data-testid="amenidad-pets"]')!.getAttribute('data-activa')).toBe('no');
+    // Cada amenidad es la casilla de la casa, no un <button aria-pressed> a mano.
+    expect(q('[data-testid="amenidad-pets"] [role="checkbox"]')).not.toBeNull();
     // «Habitación» está en el selector de tipo (antes faltaba).
     expect(q('[data-testid="tipo-room"]')).not.toBeNull();
   });
@@ -269,7 +271,7 @@ describe('<ConsignacionEditForm> — el cajón trae todo lo que se puede editar'
     escribir('editar-externalId', ' 7 - CL 10 ');
     escribir('editar-floor', '');
     act(() => {
-      q('[data-testid="amenidad-pets"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      q('[data-testid="amenidad-pets"] [role="checkbox"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
     await guardar();
 

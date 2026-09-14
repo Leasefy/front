@@ -321,6 +321,34 @@ describe('<ConsignacionEditForm> — el cajón trae todo lo que se puede editar'
     expect(propertiesUpdate).not.toHaveBeenCalled();
   });
 
+  /**
+   * 🔴 La pérdida silenciosa que cerró copro (2026-09-13): el formulario viejo
+   * mandaba `propietarioId` en cada guardado, el back lo leía como «una lista
+   * de uno al 100 %» y editar el canon de un mandato 70/30 borraba al dueño
+   * del 30 %. El cajón tampoco los manda: los dueños tienen su diálogo.
+   */
+  it('editar el canon y la comisión de un mandato 70/30 NO manda dueño alguno a ninguna de las dos APIs', async () => {
+    render({
+      consignacion: makeConsignacion({
+        propietarioId: 'owner-1',
+        copropietarios: [
+          { propietarioId: 'owner-1', participacionBps: 7000 },
+          { propietarioId: 'owner-2', participacionBps: 3000 },
+        ],
+      }),
+    });
+    escribir('editar-monthlyRent', '3000000');
+    escribir('editar-commissionPercent', '12');
+    await guardar();
+
+    expect(propertiesUpdate).toHaveBeenCalledWith('prop-1', { monthlyRent: 3_000_000 });
+    expect(consigUpdate).toHaveBeenCalledWith('cons-1', { commissionPercent: 12 });
+    for (const [, cuerpo] of [...propertiesUpdate.mock.calls, ...consigUpdate.mock.calls] as [string, Record<string, unknown>][]) {
+      expect(cuerpo).not.toHaveProperty('propietarioId');
+      expect(cuerpo).not.toHaveProperty('copropietarios');
+    }
+  });
+
   it('una fecha de fin anterior a la de inicio no se manda', async () => {
     render();
     escribir('editar-contractEndDate', '2025-01-01');

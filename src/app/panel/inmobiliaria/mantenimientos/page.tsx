@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { SegmentedControl } from '@leasefy/cadence';
-import { Cajon, CajonCabecera } from '@/components/ui/cajon';
+import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 import type {
   SolicitudMantenimiento,
   MantenimientoStatus,
@@ -32,6 +32,7 @@ import {
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
 // ============================================================================
 // Types
@@ -165,6 +166,7 @@ function MantenimientosContent() {
     consignaciones: consignacionesData,
     isLoading: isLoadingConsignaciones,
     errorCrudo: consignacionesError,
+    refetch: refetchConsignaciones,
   } = useConsignaciones();
 
   const [mantenimientoView, setMantenimientoView] = useState<MantenimientoViewMode>('kanban');
@@ -246,7 +248,11 @@ function MantenimientosContent() {
         description: t('inmobiliaria.operaciones.toasts.requestCreatedDesc', { title: data.title }),
       });
     } catch (error) {
-      toast.error('Error al crear solicitud de mantenimiento');
+      // El back dice por qué no la creó («El inmueble no tiene contrato
+      // activo», un 403…): eso es lo que se muestra, como al mover o cotizar.
+      toast.error('No se pudo crear la solicitud', {
+        description: error instanceof Error ? error.message : undefined,
+      });
       setIsSubmittingMantenimiento(false);
     }
   }, [t, recargarMantenimientos]);
@@ -313,7 +319,9 @@ function MantenimientosContent() {
       await recargarMantenimientos();
       toast.success(t('inmobiliaria.operaciones.toasts.quoteApproved'));
     } catch (error) {
-      toast.error('Error al aprobar cotización');
+      toast.error('No se pudo aprobar la cotización', {
+        description: error instanceof Error ? error.message : undefined,
+      });
     }
   }, [t, recargarMantenimientos]);
 
@@ -576,6 +584,7 @@ function MantenimientosContent() {
                   onAddQuote={puedeEditar ? (s) => handleRequestQuote(s.id) : undefined}
                   onComplete={puedeEditar ? (s) => cambiarEstadoSinEsperar(s.id, 'completed') : undefined}
                   onCancel={puedeEditar ? (s) => cambiarEstadoSinEsperar(s.id, 'cancelled') : undefined}
+                  onCrear={handleNewMantenimiento}
                   minimal
                 />
               </motion.div>
@@ -592,7 +601,9 @@ function MantenimientosContent() {
         isOpen={isMantenimientoViewerOpen}
         onClose={handleMantenimientoViewerClose}
         onStatusChange={puedeEditar ? cambiarEstadoSinEsperar : undefined}
-        onApproveQuote={handleApproveQuote}
+        // Aprobar es editar: CONTADOR y VIEWER veían «Seleccionar» y el back
+        // les contestaba 403. Sin el callback el comparador no lo ofrece.
+        onApproveQuote={puedeEditar ? handleApproveQuote : undefined}
         onRequestQuote={puedeEditar ? handleRequestQuote : undefined}
       />
 
@@ -615,12 +626,26 @@ function MantenimientosContent() {
           titulo={t('inmobiliaria.operaciones.maintenance.newRequest')}
           descripcion={t('inmobiliaria.operaciones.maintenance.newRequestDesc')}
         />
-        <MantenimientoForm
-          consignaciones={rentedConsignaciones}
-          onSubmit={handleMantenimientoFormSubmit}
-          onCancel={handleMantenimientoFormCancel}
-          isSubmitting={isSubmittingMantenimiento}
-        />
+        {/* Si los inmuebles no llegaron, el selector quedaba vacío y decía
+            «no tienes inmuebles arrendados»: un fallo contado como un vacío.
+            Se dice que no se pudieron traer, con su reintento. */}
+        {consignacionesError ? (
+          <CajonCuerpo>
+            <FalloDeCarga
+              error={consignacionesError}
+              queEs="tus inmuebles arrendados"
+              onReintentar={refetchConsignaciones}
+              enmarcado={false}
+            />
+          </CajonCuerpo>
+        ) : (
+          <MantenimientoForm
+            consignaciones={rentedConsignaciones}
+            onSubmit={handleMantenimientoFormSubmit}
+            onCancel={handleMantenimientoFormCancel}
+            isSubmitting={isSubmittingMantenimiento}
+          />
+        )}
       </Cajon>
     </div>
   );

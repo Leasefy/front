@@ -7,14 +7,16 @@
  * el neto por propietario en `GET /inmobiliaria/dispersiones/preview`.
  *
  * Lo que muerde acá: que la pantalla PIDA los datos, que pinte los del back
- * —no los del ejemplo— y que un error se pueda reintentar en vez de quedar en
- * una tabla vacía indistinguible de «no hay nada».
+ * —no los del ejemplo—, que un fallo sea UN estado (no «error + no hay nada +
+ * $0 verde» a la vez), que el mes se pueda cambiar, y que el 400 de un
+ * inmueble con copropietarios diga cuál y lleve a su ficha.
  */
 
 import * as React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
+import { ApiError } from '@/lib/api/client';
 
 void React; // jsx-preserve
 
@@ -28,12 +30,48 @@ vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children?: React.ReactNode }) => children,
 }));
 
+// El Select de Radix no abre en happy-dom: un par de botones con el mismo contrato.
+vi.mock('@/components/ui/select', async () => {
+  const R = await import('react');
+  const Ctx = R.createContext<(v: string) => void>(() => undefined);
+  return {
+    Select: ({
+      value,
+      onValueChange,
+      children,
+    }: {
+      value: string;
+      onValueChange: (v: string) => void;
+      children?: React.ReactNode;
+    }) =>
+      R.createElement(
+        Ctx.Provider,
+        { value: onValueChange },
+        R.createElement('div', { 'data-select': value }, children),
+      ),
+    SelectTrigger: ({ children }: { children?: React.ReactNode }) =>
+      R.createElement('div', null, children),
+    SelectValue: () => null,
+    SelectContent: ({ children }: { children?: React.ReactNode }) => R.createElement('div', null, children),
+    SelectItem: ({ value, children }: { value: string; children?: React.ReactNode }) => {
+      const elegir = R.useContext(Ctx);
+      return R.createElement(
+        'button',
+        { type: 'button', 'data-opcion': value, onClick: () => elegir(value) },
+        children,
+      );
+    },
+  };
+});
+
 const preview = vi.fn();
 vi.mock('@/lib/api/inmobiliaria.service', () => ({
   dispersionesApi: { preview: (m: string) => preview(m) },
 }));
 
 import LiquidacionesPage from './page';
+
+const PID = '7c1d2b8e-0000-4000-8000-000000000001';
 
 function vistaPrevia(overrides: Record<string, unknown> = {}) {
   return {
@@ -79,6 +117,12 @@ function vistaPrevia(overrides: Record<string, unknown> = {}) {
 let host: HTMLDivElement;
 let root: Root;
 
+async function asentar() {
+  await act(async () => {
+    await Promise.resolve();
+  });
+}
+
 async function montar() {
   host = document.createElement('div');
   document.body.appendChild(host);
@@ -87,9 +131,7 @@ async function montar() {
     root.render(<LiquidacionesPage />);
   });
   // Deja correr el `await` del fetch simulado.
-  await act(async () => {
-    await Promise.resolve();
-  });
+  await asentar();
 }
 
 beforeEach(() => {
@@ -104,6 +146,12 @@ afterEach(() => {
 const texto = () => host.textContent ?? '';
 const filas = () =>
   Array.from(host.querySelectorAll('[data-testid="tesoreria-fila"]'));
+const q = (testid: string) => host.querySelector(`[data-testid="${testid}"]`);
+
+function mesActual() {
+  const hoy = new Date();
+  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+}
 
 describe('Liquidaciones pide y pinta la plata real del mes', () => {
   it('llama a la vista previa del back con el mes en curso', async () => {
@@ -111,7 +159,7 @@ describe('Liquidaciones pide y pinta la plata real del mes', () => {
     await montar();
 
     expect(preview).toHaveBeenCalledTimes(1);
-    expect(preview.mock.calls[0][0]).toMatch(/^\d{4}-\d{2}$/);
+    expect(preview.mock.calls[0][0]).toBe(mesActual());
   });
 
   it('pinta una fila por propietario, con su neto', async () => {
@@ -127,7 +175,6 @@ describe('Liquidaciones pide y pinta la plata real del mes', () => {
     preview.mockResolvedValue(vistaPrevia());
     await montar();
 
-    // La vitrina vieja: `EJEMPLO.canonRecibido = 2_500_000` y el badge «Ejemplo».
     expect(texto()).not.toContain('2.500.000');
     expect(texto()).not.toContain('inmobiliaria.tesoreria.ejemplo');
   });
@@ -136,12 +183,13 @@ describe('Liquidaciones pide y pinta la plata real del mes', () => {
     preview.mockResolvedValue(vistaPrevia());
     await montar();
 
-    const total = host.querySelector('[data-testid="tesoreria-neto-total"]');
+    const total = q('tesoreria-neto-total');
     // 540.000 + 360.000
     expect(total?.textContent).toContain('900.000');
+    expect(total?.className).toContain('text-success');
   });
 
-  it('sin propietarios muestra el vacío, no una tabla con números de mentira', async () => {
+  it('sin propietarios muestra el vacío, sin un neto de $0 al lado', async () => {
     preview.mockResolvedValue(
       vistaPrevia({ propietarios: [], totalPropietarios: 0, totalAGirar: 0 }),
     );
@@ -149,32 +197,136 @@ describe('Liquidaciones pide y pinta la plata real del mes', () => {
 
     expect(filas()).toHaveLength(0);
     expect(texto()).toContain('inmobiliaria.tesoreria.emptyTitle');
+    expect(q('tesoreria-neto-total')).toBeNull();
   });
+});
 
-  it('un error se ve, dice el motivo del back y se puede reintentar', async () => {
-    preview.mockRejectedValueOnce(
-      new Error('«Apto 101» tiene 2 copropietarios y el cobro lleva impuestos'),
-    );
+describe('L1 — un solo estado a la vez', () => {
+  it('con el back caído: el fallo con reintento, y NI «no hay nada» NI un neto de $0', async () => {
+    preview.mockRejectedValueOnce(new ApiError(500, 'Internal server error'));
     await montar();
 
-    const alerta = host.querySelector('[role="alert"]');
-    expect(alerta).not.toBeNull();
-    expect(texto()).toContain('copropietarios');
+    expect(q('fallo-de-carga')).not.toBeNull();
+    expect(texto()).not.toContain('inmobiliaria.tesoreria.emptyTitle');
+    expect(q('tesoreria-neto-total')).toBeNull();
+    expect(filas()).toHaveLength(0);
 
     preview.mockResolvedValue(vistaPrevia());
-    const reintentar = Array.from(host.querySelectorAll('button')).find((b) =>
-      b.textContent?.includes('inmobiliaria.tesoreria.retry'),
-    );
-    expect(reintentar).toBeDefined();
-
+    const reintentar = q('reintentar') as HTMLButtonElement | null;
+    expect(reintentar).not.toBeNull();
     await act(async () => {
       reintentar!.click();
-    });
-    await act(async () => {
-      await Promise.resolve();
+      // El botón espera un piso visible de 400 ms antes de soltarse.
+      await new Promise((r) => setTimeout(r, 450));
     });
 
     expect(preview).toHaveBeenCalledTimes(2);
+    expect(q('fallo-de-carga')).toBeNull();
     expect(filas()).toHaveLength(2);
+  });
+
+  it('un propietario que queda debiendo NO se pinta en verde, y se dice', async () => {
+    const base = vistaPrevia();
+    const propietarios = base.propietarios as Array<Record<string, unknown>>;
+    preview.mockResolvedValue(
+      vistaPrevia({
+        propietarios: [
+          propietarios[0],
+          {
+            ...propietarios[1],
+            totalCollected: 0,
+            totalCommission: 0,
+            totalConceptosACargo: 900_000,
+            netToPropietario: -900_000,
+          },
+        ],
+      }),
+    );
+    await montar();
+
+    const netos = Array.from(host.querySelectorAll('[data-testid="tesoreria-neto-fila"]'));
+    expect(netos[0].className).toContain('text-success');
+    expect(netos[1].className).toContain('text-danger');
+    expect(netos[1].className).not.toContain('text-success');
+    expect(netos[1].textContent).toContain('Queda debiendo');
+
+    // 540.000 − 900.000 = −360.000: el total también va en rojo.
+    const total = q('tesoreria-neto-total');
+    expect(total?.className).toContain('text-danger');
+    expect(q('tesoreria-quedan-debiendo')?.textContent).toContain('1 propietario queda debiendo');
+  });
+});
+
+describe('L2 — el mes se elige', () => {
+  it('ofrece los últimos 12 meses empezando por el corriente, sin meses futuros', async () => {
+    preview.mockResolvedValue(vistaPrevia());
+    await montar();
+
+    const opciones = Array.from(host.querySelectorAll('[data-opcion]')).map(
+      (b) => b.getAttribute('data-opcion'),
+    );
+    expect(opciones).toHaveLength(12);
+    expect(opciones[0]).toBe(mesActual());
+    expect(opciones.every((m) => (m as string) <= mesActual())).toBe(true);
+  });
+
+  it('elegir el mes anterior vuelve a pedir la liquidación de ESE mes', async () => {
+    preview.mockResolvedValue(vistaPrevia());
+    await montar();
+
+    const anterior = host.querySelectorAll('[data-opcion]')[1] as HTMLButtonElement;
+    const mes = anterior.getAttribute('data-opcion');
+    await act(async () => {
+      anterior.click();
+    });
+    await asentar();
+
+    expect(preview).toHaveBeenCalledTimes(2);
+    expect(preview.mock.calls[1][0]).toBe(mes);
+  });
+});
+
+describe('L3 — el 400 de copropietarios dice cuál inmueble y a dónde ir', () => {
+  it('participaciones ≠ 100: aviso con el motivo, enlace a la ficha y SIN «Reintentar»', async () => {
+    preview.mockRejectedValue(
+      new ApiError(
+        400,
+        `Las participaciones de los copropietarios de «Apto 101» suman 9000 y no 10000 puntos básicos (el 90 % y no el 100 %): no se puede repartir su plata. Corrige los porcentajes de los dueños en la ficha del inmueble (inmueble ${PID}).`,
+        'PARTICIPACIONES_NO_SUMAN_100',
+        {
+          statusCode: 400,
+          code: 'PARTICIPACIONES_NO_SUMAN_100',
+          propertyId: PID,
+          titulo: 'Apto 101',
+          detalle: { propertyId: PID, titulo: 'Apto 101', sumaBps: 9000 },
+        },
+      ),
+    );
+    await montar();
+
+    const aviso = q('liquidacion-frenada');
+    expect(aviso).not.toBeNull();
+    expect(aviso?.textContent).toContain('suman 9000 y no 10000');
+    expect(aviso?.textContent).toContain('Arregla las participaciones en la ficha del inmueble');
+    const enlace = aviso?.querySelector('a');
+    expect(enlace?.getAttribute('href')).toBe(`/panel/inmobiliaria/inmuebles/${PID}`);
+    expect(enlace?.textContent).toContain('Apto 101');
+
+    expect(q('reintentar')).toBeNull();
+    expect(texto()).not.toContain('inmobiliaria.tesoreria.emptyTitle');
+    expect(q('tesoreria-neto-total')).toBeNull();
+  });
+
+  it('copropietarios con impuestos: el mensaje del back tal cual y la lista de inmuebles', async () => {
+    const msg =
+      '«Casa 5» tiene 2 copropietarios y el cobro de 2026-08 lleva impuestos liquidados para un solo perfil tributario (IVA y retenciones del canon). No se puede repartir sin decidir a nombre de quién queda cada retención: liquida este inmueble por fuera de la corrida del mes.';
+    preview.mockRejectedValue(new ApiError(400, msg, 'COPROPIETARIOS_CON_IMPUESTOS'));
+    await montar();
+
+    const aviso = q('liquidacion-frenada');
+    expect(aviso?.getAttribute('data-code')).toBe('COPROPIETARIOS_CON_IMPUESTOS');
+    expect(aviso?.textContent).toContain(msg);
+    expect(aviso?.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles');
+    expect(q('reintentar')).toBeNull();
   });
 });

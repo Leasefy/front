@@ -38,6 +38,8 @@ import { usePropietarios, useInmobiliariaConfig } from '@/lib/hooks/useInmobilia
 import { apiClient } from '@/lib/api/client';
 import { ComisionDesglose } from './ComisionDesglose';
 import { nombreDelMes } from '@/lib/utils/mes';
+import Link from 'next/link';
+import { RUTA_LOTES } from '@/lib/api/dispersiones-errores';
 
 interface DispersionDetailProps {
   isOpen: boolean;
@@ -55,6 +57,17 @@ interface DispersionDetailProps {
   onProcess?: (dispersion: Dispersion, transferReference: string) => Promise<void> | void;
   onViewExtracto?: (dispersion: Dispersion) => void;
   onRetry?: (dispersion: Dispersion, transferReference: string) => Promise<void> | void;
+  /**
+   * La inmobiliaria aprueba y gira por lote, con código. El back responde 409
+   * `APROBAR_POR_LOTE` a aprobar Y a marcar girada una suelta, así que esos
+   * botones no se ofrecen: el pie lleva a Lotes.
+   */
+  apruebaPorLote?: boolean;
+  /**
+   * El id de quien mira. Si es quien aprobó, no puede anotar el giro (409
+   * `APROBADOR_Y_EJECUTOR_IGUALES`): se dice ANTES de escribir la referencia.
+   */
+  usuarioActualId?: string | null;
 }
 
 // Status icons
@@ -236,6 +249,8 @@ export function DispersionDetail({
   onProcess,
   onViewExtracto,
   onRetry,
+  apruebaPorLote = false,
+  usuarioActualId,
 }: DispersionDetailProps) {
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [referencia, setReferencia] = React.useState('');
@@ -345,7 +360,24 @@ export function DispersionDetail({
   /** Aprobada y esperando que OTRA persona anote la referencia del giro. */
   const esperaReferencia = dispersion.status === 'processing';
   const pideReferencia = esperaReferencia || isFailed;
-  const conReferencia = pideReferencia && (onProcess || onRetry);
+  /*
+   * D3: con aprobación por lote el back responde 409 `APROBAR_POR_LOTE` a
+   * aprobar Y a marcar girada una dispersión suelta. Ni el botón ni el campo
+   * de la referencia se ofrecen: el pie lleva a Lotes.
+   */
+  const ofreceLote = apruebaPorLote && (isPending || pideReferencia);
+  const conReferencia = pideReferencia && (onProcess || onRetry) && !apruebaPorLote;
+  /*
+   * D4: quien aprobó no puede anotar el giro (409 `APROBADOR_Y_EJECUTOR_IGUALES`).
+   * Antes se descubría DESPUÉS de escribir la referencia del banco. Se compara
+   * con el id de la sesión, que es el mismo que el back guarda en `approvedBy`.
+   */
+  const esQuienAprobo = Boolean(
+    pideReferencia &&
+      usuarioActualId &&
+      dispersion.approvedBy &&
+      dispersion.approvedBy === usuarioActualId,
+  );
 
   /*
    * Lo que va ENCIMA de los botones del pie: la referencia del giro —la
@@ -353,8 +385,12 @@ export function DispersionDetail({
    * 400 y la pantalla festejaba igual— y el aviso de que falta el segundo par
    * de ojos.
    */
-  const ayudaDelPie =
-    conReferencia || esperaReferencia ? (
+  const ayudaDelPie = ofreceLote ? (
+    <p className="text-[11px] text-muted-foreground" data-testid="dispersion-por-lote">
+      Tu inmobiliaria aprueba y gira las dispersiones por lote, con código: esta se aprueba en
+      Lotes, no desde acá.
+    </p>
+  ) : conReferencia || esperaReferencia ? (
       <div className="space-y-3">
         {conReferencia && (
           <div className="space-y-1.5">
@@ -368,16 +404,29 @@ export function DispersionDetail({
               id="dispersion-referencia"
               data-testid="dispersion-referencia"
               value={referencia}
+              disabled={esQuienAprobo}
+              aria-describedby={esQuienAprobo ? 'dispersion-aprobador-no-gira' : undefined}
               onChange={(e) => {
                 setReferencia(e.target.value);
                 if (errorDeReferencia) setErrorDeReferencia(null);
               }}
               placeholder={t('inmobiliaria.dispersiones.detailView.referenciaPlaceholder')}
-              className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+              className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
             />
-            <p className="text-[11px] text-muted-foreground">
-              {t('inmobiliaria.dispersiones.detailView.referenciaAyuda')}
-            </p>
+            {esQuienAprobo ? (
+              <p
+                id="dispersion-aprobador-no-gira"
+                data-testid="dispersion-aprobador-no-gira"
+                className="text-[11px] text-warning"
+              >
+                Tú aprobaste esta dispersión: la referencia del giro la carga otra persona del
+                equipo. Es el segundo par de ojos sobre la plata del propietario.
+              </p>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">
+                {t('inmobiliaria.dispersiones.detailView.referenciaAyuda')}
+              </p>
+            )}
             {errorDeReferencia && (
               <p role="alert" className="text-[11px] text-danger">
                 {errorDeReferencia}
@@ -387,7 +436,7 @@ export function DispersionDetail({
         )}
 
         {/* Aprobada: falta que OTRA persona cargue la referencia. */}
-        {esperaReferencia && (
+        {esperaReferencia && !esQuienAprobo && (
           <p className="text-[11px] text-muted-foreground">
             {t('inmobiliaria.dispersiones.detailView.esperandoSegundoOjo')}
           </p>
@@ -736,8 +785,19 @@ export function DispersionDetail({
           </Button>
         )}
 
+        {/* Por lote: el único camino que el back acepta. Reemplaza a Aprobar,
+            Marcar girada y Reintentar, que acá darían 409. */}
+        {ofreceLote && (
+          <Button asChild hideArrow className="gap-2">
+            <Link href={RUTA_LOTES} data-testid="dispersion-ir-a-lotes">
+              <Bank className="w-4 h-4" />
+              Ir a Lotes
+            </Link>
+          </Button>
+        )}
+
         {/* Aprobar — primer par de ojos (pendiente → en espera de giro) */}
-        {isPending && onApprove && (
+        {isPending && onApprove && !apruebaPorLote && (
           <Button
             className="bg-primary hover:opacity-90 text-primary-fg"
             onClick={handleApprove}
@@ -759,11 +819,13 @@ export function DispersionDetail({
         )}
 
         {/* Marcar girada — segundo par de ojos, con referencia */}
-        {esperaReferencia && onProcess && (
+        {esperaReferencia && onProcess && !apruebaPorLote && (
           <Button
             className="bg-primary hover:opacity-90 text-primary-fg"
             onClick={handleProcess}
-            disabled={isProcessing}
+            // Quien aprobó no la marca girada: se deshabilita ANTES, con la
+            // explicación encima, y no después de un 409.
+            disabled={isProcessing || esQuienAprobo}
             data-testid="dispersion-marcar-girada"
           >
             {isProcessing ? (
@@ -781,11 +843,11 @@ export function DispersionDetail({
         )}
 
         {/* Retry button (failed - right) */}
-        {isFailed && onRetry && (
+        {isFailed && onRetry && !apruebaPorLote && (
           <Button
             className="bg-warning hover:bg-warning text-white"
             onClick={handleRetry}
-            disabled={isProcessing}
+            disabled={isProcessing || esQuienAprobo}
           >
             {isProcessing ? (
               <span className="flex items-center gap-2">

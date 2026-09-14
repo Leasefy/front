@@ -27,6 +27,11 @@ export interface FilaDeCarteraDelInquilino {
   contractId: string | null;
   /** El número que la inmobiliaria conoce (el del sistema viejo si es migrado). */
   contrato: string | null;
+  /**
+   * Nuestro consecutivo rotulado («Leasefy #1839»), sólo cuando `contrato` es
+   * el de la inmobiliaria; `null` en un nativo. Ausente con un back anterior.
+   */
+  contratoDeLeasefy?: string | null;
   inmueble: string;
   month: string;
   /** `YYYY-MM-DD`. */
@@ -63,6 +68,8 @@ export interface TotalesDeCartera {
 export interface ContratoEnCartera {
   contractId: string | null;
   contrato: string | null;
+  /** Ver `FilaDeCarteraDelInquilino.contratoDeLeasefy`. */
+  contratoDeLeasefy?: string | null;
   inmueble: string;
 }
 

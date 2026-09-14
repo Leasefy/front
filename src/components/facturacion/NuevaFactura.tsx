@@ -232,7 +232,7 @@ function TablaDeFacturas({
                         {factura.numeroExterno ?? `#${factura.codigo ?? '—'}`}
                       </span>
                       {factura.numeroExterno && factura.codigo !== null && (
-                        <span className="text-fg-muted"> · #{factura.codigo}</span>
+                        <span className="text-fg-muted"> · Leasefy #{factura.codigo}</span>
                       )}
                     </TableCell>
                     <TableCell className="max-w-[220px]">
@@ -608,8 +608,12 @@ export function NuevaFactura() {
                       key={`${o.contractId}-${o.destinatario}`}
                       className="text-caption text-fg-muted"
                     >
-                      <span className="tabular-nums">#{o.codigo ?? '—'}</span> ·{' '}
-                      {o.inmueble} ·{' '}
+                      {/* El número que la inmobiliaria conoce, y el nuestro rotulado. */}
+                      <span className="tabular-nums">
+                        {o.numeroExterno ?? `#${o.codigo ?? '—'}`}
+                        {o.numeroExterno && o.codigo !== null && ` · Leasefy #${o.codigo}`}
+                      </span>{' '}
+                      · {o.inmueble} ·{' '}
                       {o.destinatario === 'INQUILINO' ? 'inquilino' : 'propietario'}:{' '}
                       {o.motivo}
                     </li>

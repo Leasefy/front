@@ -286,6 +286,32 @@ describe('NuevaFactura', () => {
     expect(q('[data-testid="sin-datos"]')).not.toBeNull();
   });
 
+  it('🔴 el número de Nui va grande y el nuestro rotulado: nunca un «#1839» pelado', async () => {
+    await montar();
+    expect(host.textContent).toContain('1686');
+    expect(host.textContent).toContain('Leasefy #1839');
+  });
+
+  it('un omitido migrado también se cita por el número de Nui, con el nuestro rotulado', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({
+        omitidos: [
+          {
+            contractId: 'ct-9',
+            codigo: 1839,
+            numeroExterno: '1686',
+            inmueble: 'Cra 76 #45-12 apto 302',
+            destinatario: 'INQUILINO',
+            motivo: 'No hay nada que cobrarle al inquilino este mes.',
+          },
+        ],
+      }),
+    );
+    await montar();
+    const bloque = q('[data-testid="facturacion-omitidos"]')!;
+    expect(bloque.textContent).toContain('1686 · Leasefy #1839');
+  });
+
   it('los contratos que NO generan factura se listan con su motivo', async () => {
     porGenerarMock.mockResolvedValue(
       respuesta({

@@ -1550,8 +1550,13 @@ export interface Renovacion {
   propietarioName: string;
   /** El contrato vivo del inmueble, resuelto por el back al leer. */
   contractId?: string | null;
-  /** Número visible del contrato («Contrato #99»), del mismo contrato vivo. */
+  /** Nuestro consecutivo del mismo contrato vivo. Lo que se MUESTRA es `contractNumero`. */
   contractCode?: number | null;
+  /**
+   * El número que se lee: el de la inmobiliaria si el contrato es migrado
+   * («1686»), si no «#code». Ausente con un back anterior: se arma «#code».
+   */
+  contractNumero?: string | null;
 
   // Current lease
   currentRent: number;

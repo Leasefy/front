@@ -120,6 +120,8 @@ export interface FacturaDelMes {
 export interface ContratoOmitido {
   contractId: string
   codigo: number | null
+  /** El número que la inmobiliaria conoce (el Nui). Ausente con un back anterior. */
+  numeroExterno?: string | null
   inmueble: string
   destinatario: DestinatarioDeFactura
   motivo: string

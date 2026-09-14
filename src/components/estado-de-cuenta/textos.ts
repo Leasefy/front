@@ -61,6 +61,7 @@ export const TEXTO: Record<string, string> = {
     'Pídele a tu inmobiliaria uno nuevo: los enlaces vencen para que tu información no quede abierta en internet.',
 
   'estadoDeCuenta.contrato': 'Contrato {{numero}}',
+  'estadoDeCuenta.numeroDeLeasefy': 'Leasefy #{{numero}}',
   'estadoDeCuenta.comoInquilino': 'Inquilino del inmueble en {{direccion}}',
   'estadoDeCuenta.comoPropietario': 'Propietario del inmueble en {{direccion}}',
   'estadoDeCuenta.vigente': 'Vigente',

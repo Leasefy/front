@@ -414,6 +414,11 @@ describe('el riel', () => {
     expect(porTestId('riel-contrato')?.textContent).toBe('Ver el contrato #99');
   });
 
+  it('🔴 un contrato migrado se enlaza por el número de Nui, no por el nuestro', async () => {
+    await montar({ renovacion: { ...base, contractCode: 1839, contractNumero: '1686' } });
+    expect(porTestId('riel-contrato')?.textContent).toBe('Ver el contrato 1686');
+  });
+
   it('agrega una nota y limpia el campo', async () => {
     const onNoteAdd = vi.fn().mockResolvedValue(undefined);
     await montar({ onNoteAdd });

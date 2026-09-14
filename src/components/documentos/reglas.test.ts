@@ -16,8 +16,7 @@ import {
   puedeGenerar,
   puedePreparar,
   queFaltaElegir,
-  esCampoDeCiudad,
-} from './reglas';
+  esCampoDeCiudad, etiquetaDelContratoParaElCombo, rotuloDelContratoPreparado, } from './reglas';
 
 const DOC: DocumentoGenerado = {
   id: 'd-1',
@@ -56,6 +55,38 @@ const CARTA: DocumentoGenerado = {
 describe('etiquetas de la tabla', () => {
   it('el inmueble sale del contrato cuando lo hay, con su número', () => {
     expect(etiquetaDelInmueble(DOC)).toBe('#111 · Calle 100 # 15-20');
+  });
+
+  it('🔴 un contrato migrado se etiqueta por el número de Nui, no por el nuestro', () => {
+    const migrado = { ...DOC, contract: { ...DOC.contract!, code: 1839, externalId: '1686' } };
+    expect(etiquetaDelInmueble(migrado)).toBe('1686 · Calle 100 # 15-20');
+    expect(etiquetaDelInmueble({ ...migrado, consignacion: null, contract: { ...migrado.contract, propertyAddress: null } })).toBe(
+      'Contrato 1686',
+    );
+  });
+
+  it('el combo lleva LOS DOS números, el nuestro rotulado, para que se encuentre por cualquiera', () => {
+    expect(
+      etiquetaDelContratoParaElCombo({
+        id: 'c-1',
+        code: 1839,
+        externalId: '1686',
+        propertyAddress: 'Calle 100 # 15-20',
+        tenantName: 'Ana Pérez',
+      }),
+    ).toBe('1686 · Leasefy #1839 · Calle 100 # 15-20 · Ana Pérez');
+    expect(
+      etiquetaDelContratoParaElCombo({ id: 'c-2', code: 111, propertyAddress: 'X', tenantName: 'Y' }),
+    ).toBe('#111 · X · Y');
+    expect(etiquetaDelContratoParaElCombo({ id: 'c-3' })).toBe('c-3');
+  });
+
+  it('el rótulo de la preparación dice cuál número es cuál', () => {
+    expect(rotuloDelContratoPreparado({ codigo: 1839, numeroExterno: '1686' })).toBe(
+      'Contrato 1686 · Leasefy #1839',
+    );
+    expect(rotuloDelContratoPreparado({ codigo: 111, numeroExterno: null })).toBe('Contrato #111');
+    expect(rotuloDelContratoPreparado({ codigo: 111 })).toBe('Contrato #111');
   });
 
   it('sin contrato cae al título del mandato', () => {

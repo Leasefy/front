@@ -129,6 +129,13 @@ export interface ContratoDelEstadoDeCuenta {
    * cliente que sólo conoce el número viejo.
    */
   numero: string;
+  /**
+   * Nuestro consecutivo (`Contract.code`), para decir de quién es cada número:
+   * «Contrato 1686 · Leasefy #1839» en un migrado, «Contrato #14» en uno
+   * nativo (`numero.ts`). Ausente si el back es anterior: se muestra `numero`
+   * tal cual.
+   */
+  numeroDeLeasefy?: number | null;
   rol: RolEnElContrato;
   inmueble: { direccion: string };
   vigente: boolean;

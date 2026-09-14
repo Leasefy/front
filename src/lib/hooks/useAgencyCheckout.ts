@@ -31,7 +31,18 @@ import { toast } from 'sonner';
 import { agencySubscriptionApi } from '@/lib/api/agency-subscription.service';
 import { ApiError } from '@/lib/api/client';
 
-export type AgencyCheckoutState = 'idle' | 'processing' | 'awaiting' | 'success' | 'error';
+export type AgencyCheckoutState =
+  | 'idle'
+  | 'processing'
+  | 'awaiting'
+  | 'success'
+  | 'error'
+  /** T-0089: `select-plan` scheduled a downgrade (no charge) — a legitimate,
+   * non-error terminal outcome. See `scheduled` for the tier + date. */
+  | 'scheduled'
+  /** T-0089: `select-plan` reported no change (e.g. re-selecting the current
+   * tier) — a legitimate, non-error terminal outcome. */
+  | 'unchanged';
 
 const POLL_INTERVAL_MS = 5_000;
 /** Delay before firing onSuccess so the success state is visible first. */
@@ -53,6 +64,10 @@ type StatusOutcome = 'active' | 'failed' | 'pending' | 'error';
 export interface UseAgencyCheckout {
   state: AgencyCheckoutState;
   error: string | null;
+  /** Present only once `state === 'scheduled'`: the tier + date of the
+   * downgrade `select-plan` just scheduled (no charge). Null otherwise —
+   * including for `'unchanged'`, which carries no tier/date (T-0089). */
+  scheduled: { pendingPlanTier: string; pendingPlanEffectiveAt: string | null } | null;
   /** Hosted Wompi payment link once generated (paid flow). */
   paymentUrl: string | null;
   /** Pre-open was blocked — surface the manual link. */
@@ -135,6 +150,10 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
   const [pollError, setPollError] = useState<string | null>(null);
   const [resuming, setResuming] = useState(false);
   const [awaitingTimedOut, setAwaitingTimedOut] = useState(false);
+  const [scheduled, setScheduled] = useState<{
+    pendingPlanTier: string;
+    pendingPlanEffectiveAt: string | null;
+  } | null>(null);
 
   // Keep onSuccess in a ref so an inline arrow from the caller doesn't reshuffle
   // the memoized callbacks / the success timer on every render.
@@ -353,14 +372,30 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
     setPopupBlocked(false);
     setAwaitingTimedOut(false);
     setResuming(false);
+    // Clear a previous call's scheduled-change payload — it must never leak
+    // into an unrelated later call (T-0089).
+    setScheduled(null);
     // Reset the reactivation bookkeeping every call — a prior pay() attempt
     // must never leak its kind/baseline into this one (T-0085).
     checkoutKindRef.current = 'purchase';
     baselineStatusRef.current = baselineStatus ?? null;
     try {
-      const { charge, outcome } = await agencySubscriptionApi.selectPlan(planId);
+      const { charge, outcome, effectiveAt } = await agencySubscriptionApi.selectPlan(planId);
       if (!charge) {
         payTab?.close();
+        // SCHEDULED_DOWNGRADE and NO_CHANGE are legitimate `charge: null`
+        // outcomes (T-0089) — the back scheduled/no-op'd the change and there
+        // is nothing to pay. Neither is an error; only an outcome-less
+        // `charge: null` (an old back, or a genuine failure) still is.
+        if (outcome === 'SCHEDULED_DOWNGRADE') {
+          setScheduled({ pendingPlanTier: planId, pendingPlanEffectiveAt: effectiveAt ?? null });
+          setState('scheduled');
+          return;
+        }
+        if (outcome === 'NO_CHANGE') {
+          setState('unchanged');
+          return;
+        }
         setError('No se generó un cobro para este plan. Contacta a soporte.');
         setState('error');
         return;
@@ -499,6 +534,7 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
     setPollError(null);
     setResuming(false);
     setAwaitingTimedOut(false);
+    setScheduled(null);
     targetTierRef.current = null;
     chargeIdRef.current = null;
 
@@ -536,6 +572,7 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
   return {
     state,
     error,
+    scheduled,
     paymentUrl,
     popupBlocked,
     pollError,

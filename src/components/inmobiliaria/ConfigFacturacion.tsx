@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -19,6 +19,7 @@ import {
   Lightning,
   ArrowUp,
   Percent,
+  WarningCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -26,6 +27,15 @@ import { formatCurrency as formatCOP, formatDate } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { toast } from '@/components/ui/toast';
 import {
   Table,
   TableHeader,
@@ -38,6 +48,7 @@ import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { useAgencyPlans } from '@/lib/hooks/useSubscription';
+import { agencySubscriptionApi } from '@/lib/api/agency-subscription.service';
 import type { AgencyPlan } from '@/lib/types/subscription';
 import type { AgencyBilling, BillingInvoice } from '@/lib/types/inmobiliaria';
 
@@ -87,7 +98,7 @@ export function ConfigFacturacion({
     shouldPaginate,
   } = useTablePagination(invoices);
 
-  const { currentPlanId, state, isLoading: subLoading, error: subError } =
+  const { currentPlanId, state, isLoading: subLoading, error: subError, refetch: subRefetch } =
     useAgencySubscription();
   const { plans, isLoading: plansLoading } = useAgencyPlans();
 
@@ -100,6 +111,54 @@ export function ConfigFacturacion({
       : null;
 
   const planLoading = isLoading || subLoading || plansLoading;
+
+  // ── Cancel at period end / pending change management (T-0089) ────────────
+  //
+  // "Cancelar plan" IS the existing scheduled-downgrade mechanism aimed at the
+  // catalog's free/default tier — there is no separate "cancelled" status,
+  // flag or endpoint. A pending change is detected as a cancellation purely by
+  // its TARGET being the default plan, never by a dedicated flag.
+  const defaultPlanId = plans.find((p) => p.isDefault)?.id ?? 'starter';
+  const pendingPlanTier = state?.pendingPlanTier ?? null;
+  const pendingPlanEffectiveAt = state?.pendingPlanEffectiveAt ?? null;
+  const pendingPlan: AgencyPlan | null = pendingPlanTier
+    ? plans.find((p) => p.id === pendingPlanTier) ?? null
+    : null;
+  const isPendingCancellation = pendingPlanTier === defaultPlanId;
+  // Hidden on the free/default tier (nothing to cancel) and while a change is
+  // already pending (its own "Deshacer" is the only action needed then).
+  const canCancelPlan = !!currentPlan && !currentPlan.isDefault && !pendingPlanTier;
+
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [undoing, setUndoing] = useState(false);
+
+  const handleConfirmCancel = useCallback(async () => {
+    setCancelling(true);
+    try {
+      await agencySubscriptionApi.selectPlan(defaultPlanId);
+      toast.success('Cancelación programada: tu plan cambia al final de tu período actual.');
+      setCancelDialogOpen(false);
+      void subRefetch();
+    } catch {
+      toast.error('No pudimos cancelar el plan. Intenta de nuevo.');
+    } finally {
+      setCancelling(false);
+    }
+  }, [defaultPlanId, subRefetch]);
+
+  const handleUndoPendingChange = useCallback(async () => {
+    setUndoing(true);
+    try {
+      await agencySubscriptionApi.cancelPendingChange();
+      toast.success('Deshecho: tu plan no va a cambiar.');
+      void subRefetch();
+    } catch {
+      toast.error('No pudimos deshacer el cambio. Intenta de nuevo.');
+    } finally {
+      setUndoing(false);
+    }
+  }, [subRefetch]);
 
   // Next billing date comes from the real subscription state, not a hardcoded
   // date. Absent for free/postpaid plans or a brand-new agency → simply hidden.
@@ -287,6 +346,36 @@ export function ConfigFacturacion({
                 )}
               </div>
 
+              {/* Pending change (T-0089) — a scheduled downgrade to the default
+                  tier IS the cancellation; any other target is a plan change. */}
+              {pendingPlanTier && (
+                <div className="mb-4 p-3 rounded-md bg-warning-soft border border-warning/30 flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2">
+                    <WarningCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-warning">
+                        {isPendingCancellation ? 'Cancelación programada' : 'Cambio de plan programado'}
+                      </p>
+                      <p className="text-xs text-fg-muted mt-0.5">
+                        {isPendingCancellation
+                          ? `Pasás a ${pendingPlan?.name ?? pendingPlanTier}${pendingPlanEffectiveAt ? ` el ${formatDate(pendingPlanEffectiveAt)}` : ''}. Sin más cobros.`
+                          : `Cambia a ${pendingPlan?.name ?? pendingPlanTier}${pendingPlanEffectiveAt ? ` el ${formatDate(pendingPlanEffectiveAt)}` : ''}.`}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    hideArrow
+                    onClick={handleUndoPendingChange}
+                    disabled={undoing}
+                    className="text-fg-muted flex-shrink-0"
+                  >
+                    Deshacer
+                  </Button>
+                </div>
+              )}
+
               {/* Upgrade → real /upgrade flow (Wompi). No mock dialog. */}
               <Button
                 hideArrow
@@ -296,6 +385,20 @@ export function ConfigFacturacion({
                 <ArrowUp className="w-4 h-4" />
                 {t('inmobiliaria.config.billing.upgradePlan')}
               </Button>
+
+              {/* Cancel at period end (T-0089) — schedules the downgrade to
+                  the default tier; access stays until currentPeriodEnd. */}
+              {canCancelPlan && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  hideArrow
+                  onClick={() => setCancelDialogOpen(true)}
+                  className="w-full justify-center text-danger mt-2"
+                >
+                  Cancelar plan
+                </Button>
+              )}
             </>
           ) : (
             // Plan could not be resolved (subscription/catalog error). Highlight
@@ -569,6 +672,30 @@ export function ConfigFacturacion({
           </div>
         )}
       </div>
+
+      {/* Confirm BEFORE scheduling the cancellation (T-0089) — exact copy of
+          what happens: current plan stays until currentPeriodEnd, then the
+          default tier, no further charges, undoable until that date. */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Cancelar tu plan</DialogTitle>
+          </DialogHeader>
+          <DialogDescription className="text-sm text-fg-muted">
+            {nextBillingDate
+              ? `Tu plan ${currentPlan?.name ?? ''} sigue activo hasta el ${formatDate(nextBillingDate)}. Después, pasás a Starter y no se te cobra más. Podés deshacer esto antes de esa fecha.`
+              : `Tu plan ${currentPlan?.name ?? ''} sigue activo hasta el final de tu período actual. Después, pasás a Starter y no se te cobra más. Podés deshacer esto antes de esa fecha.`}
+          </DialogDescription>
+          <DialogFooter>
+            <Button variant="outline" hideArrow onClick={() => setCancelDialogOpen(false)}>
+              Volver
+            </Button>
+            <Button variant="destructive" hideArrow onClick={handleConfirmCancel} isLoading={cancelling}>
+              Sí, cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

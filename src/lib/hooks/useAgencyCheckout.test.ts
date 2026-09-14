@@ -209,6 +209,98 @@ describe('useAgencyCheckout — pay (paid FLAT)', () => {
   });
 });
 
+describe('useAgencyCheckout — pay: SCHEDULED_DOWNGRADE / NO_CHANGE are not errors (T-0089)', () => {
+  it('resolves to `scheduled` (never `error`) when select-plan schedules a downgrade with no charge', async () => {
+    await mount();
+    const tab = fakeTab();
+    vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+    mockSelectPlan.mockResolvedValue({
+      charge: null,
+      outcome: 'SCHEDULED_DOWNGRADE',
+      subscription: { planTier: 'pro-plus', status: 'ACTIVE' },
+      effectiveAt: '2026-10-12T00:00:00.000Z',
+    });
+
+    await act(async () => {
+      await hook.pay('pro');
+    });
+    await flush();
+
+    expect(tab.close).toHaveBeenCalled();
+    expect(hook.state).toBe('scheduled');
+    expect(hook.error).toBeNull();
+    expect(hook.scheduled).toEqual({
+      pendingPlanTier: 'pro',
+      pendingPlanEffectiveAt: '2026-10-12T00:00:00.000Z',
+    });
+    expect(mockChargePaymentLink).not.toHaveBeenCalled();
+  });
+
+  it('resolves to `unchanged` (never `error`) when select-plan reports no change', async () => {
+    await mount();
+    const tab = fakeTab();
+    vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+    mockSelectPlan.mockResolvedValue({
+      charge: null,
+      outcome: 'NO_CHANGE',
+      subscription: { planTier: 'pro', status: 'ACTIVE' },
+    });
+
+    await act(async () => {
+      await hook.pay('pro');
+    });
+    await flush();
+
+    expect(tab.close).toHaveBeenCalled();
+    expect(hook.state).toBe('unchanged');
+    expect(hook.error).toBeNull();
+    expect(hook.scheduled).toBeNull();
+    expect(mockChargePaymentLink).not.toHaveBeenCalled();
+  });
+
+  it('keeps the existing error path when charge is null and outcome is absent (regression)', async () => {
+    await mount();
+    const tab = fakeTab();
+    vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+    mockSelectPlan.mockResolvedValue({ charge: null });
+
+    await act(async () => {
+      await hook.pay('pro');
+    });
+    await flush();
+
+    expect(tab.close).toHaveBeenCalled();
+    expect(hook.state).toBe('error');
+    expect(hook.error).toBe('No se generó un cobro para este plan. Contacta a soporte.');
+  });
+
+  it('clears a stale `scheduled` value from a previous call when a new pay() starts', async () => {
+    await mount();
+    vi.spyOn(window, 'open').mockReturnValue(fakeTab() as unknown as Window);
+    mockSelectPlan.mockResolvedValueOnce({
+      charge: null,
+      outcome: 'SCHEDULED_DOWNGRADE',
+      effectiveAt: '2026-10-12T00:00:00.000Z',
+    });
+    await act(async () => {
+      await hook.pay('pro');
+    });
+    await flush();
+    expect(hook.scheduled).not.toBeNull();
+
+    // A second pay() that opens the normal awaiting flow must not carry the
+    // previous call's scheduled-change payload.
+    mockSelectPlan.mockResolvedValueOnce({ charge: { id: 'ch_2', targetPlanTier: 'pro-plus' } });
+    mockChargePaymentLink.mockResolvedValue({ url: 'https://checkout.wompi.co/l/xyz' });
+    await act(async () => {
+      await hook.pay('pro-plus');
+    });
+    await flush();
+    expect(hook.scheduled).toBeNull();
+    expect(hook.state).toBe('awaiting');
+  });
+});
+
 describe('useAgencyCheckout — activate (free / percentage)', () => {
   it('activates without a charge and fires onSuccess after the delay', async () => {
     vi.useFakeTimers();

@@ -149,6 +149,12 @@ export interface AgencyPlan {
   features: string[];
   highlighted?: boolean;
   badge?: string;
+  /** Position in the tier ladder (mirrors `BackendSubscriptionPlan.level`); null = off-ladder
+   * (e.g. usage-based). Undefined only for the static fallback catalog (no backend data). */
+  level?: number | null;
+  /** True for the catalog's free/default plan (mirrors `BackendSubscriptionPlan.isDefault`).
+   * Undefined only for the static fallback catalog. */
+  isDefault?: boolean;
 }
 
 /**

@@ -6,10 +6,12 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui';
 import { useLenis } from '@/components/providers/SmoothScroll';
+import { formatDate } from '@/lib/format';
 import type { AgencyCheckoutState } from '@/lib/hooks/useAgencyCheckout';
 
 interface AgencyCheckoutOverlayProps {
-  /** Plan being purchased/activated — used only for copy. */
+  /** Plan being purchased/activated — used only for copy. For `scheduled`,
+   * this is the TARGET tier of the downgrade the back just scheduled. */
   planName: string;
   /** Paid FLAT plan → payment copy; free/percentage → activation copy. */
   isPaid: boolean;
@@ -23,6 +25,12 @@ interface AgencyCheckoutOverlayProps {
   awaitingTimedOut: boolean;
   /** True while `resume()` is fetching a fresh payment link (processing copy). */
   resuming?: boolean;
+  /** Present only for `state === 'scheduled'` (T-0089) — the tier/date of the
+   * downgrade `select-plan` just scheduled with no charge. */
+  scheduled?: { pendingPlanTier: string; pendingPlanEffectiveAt: string | null } | null;
+  /** Undo a just-scheduled downgrade (T-0089) — omit to hide the action
+   * entirely (e.g. while the undo call is being wired up by the caller). */
+  onUndo?: () => void;
   onVerify: () => void;
   /** Reset + close — honored while not mid-payment (idle/error), and while
    * `awaiting` so an abandoned session is never a dead end. The server-side
@@ -67,6 +75,8 @@ export function AgencyCheckoutOverlay({
   pollError,
   awaitingTimedOut,
   resuming = false,
+  scheduled = null,
+  onUndo,
   onVerify,
   onClose,
 }: AgencyCheckoutOverlayProps) {
@@ -85,7 +95,15 @@ export function AgencyCheckoutOverlay({
   // abandoned payment must have a way out; the server-side charge simply stays
   // PENDING, which is correct.
   const handleOpenChange = (next: boolean) => {
-    if (!next && (state === 'error' || state === 'idle' || state === 'awaiting')) onClose();
+    if (
+      !next &&
+      (state === 'error' ||
+        state === 'idle' ||
+        state === 'awaiting' ||
+        state === 'scheduled' ||
+        state === 'unchanged')
+    )
+      onClose();
   };
 
   return (
@@ -174,6 +192,48 @@ export function AgencyCheckoutOverlay({
             </DialogDescription>
             <Button variant="secondary" size="sm" hideArrow onClick={onClose} className="mt-1">
               Volver a los planes
+            </Button>
+          </div>
+        )}
+
+        {/* Scheduled downgrade (T-0089) — a legitimate, non-error outcome: the
+            back scheduled the change for the current period's end, no charge. */}
+        {state === 'scheduled' && (
+          <div className="flex flex-col items-center text-center gap-3 py-2">
+            <Clock className="w-12 h-12 text-info" weight="fill" />
+            <DialogTitle className="font-semibold text-fg">
+              Cambio de plan programado
+            </DialogTitle>
+            <DialogDescription className="text-sm text-fg-muted">
+              {scheduled?.pendingPlanEffectiveAt
+                ? `Tu plan cambiará a ${planName} el ${formatDate(scheduled.pendingPlanEffectiveAt)}. Hasta entonces, seguís con tu plan actual.`
+                : `Tu plan cambiará a ${planName} al final de tu período actual. Hasta entonces, seguís con tu plan actual.`}
+            </DialogDescription>
+            <div className="flex items-center justify-center gap-2 mt-1">
+              {onUndo && (
+                <Button variant="ghost" size="sm" hideArrow onClick={onUndo} className="text-fg-muted">
+                  Deshacer
+                </Button>
+              )}
+              <Button variant="secondary" size="sm" hideArrow onClick={onClose}>
+                Entendido
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* No change (T-0089) — e.g. re-selecting the current tier. Not an error. */}
+        {state === 'unchanged' && (
+          <div className="flex flex-col items-center text-center gap-3 py-2">
+            <CheckCircle className="w-12 h-12 text-fg-muted" />
+            <DialogTitle className="font-semibold text-fg">
+              Ya tienes este plan
+            </DialogTitle>
+            <DialogDescription className="text-sm text-fg-muted">
+              No hicimos ningún cambio.
+            </DialogDescription>
+            <Button variant="secondary" size="sm" hideArrow onClick={onClose} className="mt-1">
+              Cerrar
             </Button>
           </div>
         )}

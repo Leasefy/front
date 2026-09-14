@@ -13,6 +13,7 @@
 
 import * as React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { ApiError } from '@/lib/api/client';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
@@ -341,6 +342,65 @@ describe('<ConsignacionDetailPage> — mientras carga', () => {
 
     expect(container.querySelector('[data-testid="ficha-cargando"]')).toBeNull();
     expect(container.textContent).toContain('inmobiliaria.portafolio.detail.notFound');
+  });
+});
+
+/**
+ * F1 (P0): cualquier fallo de la carga —un 500, un 403, la red caída— pintaba
+ * «Consignación no encontrada» con un «Volver»: una afirmación que nadie
+ * verificó y sin forma de reintentar. «No existe» es sólo para un 404 real.
+ */
+describe('<ConsignacionDetailPage> — si la carga falla (F1)', () => {
+  it('un 500 NO dice «no encontrada»: dice que falló y reintentar vuelve a pedirla', async () => {
+    const refetch = vi.fn(async () => null);
+    useConsignacionMock.mockReturnValue({
+      consignacion: null,
+      isLoading: false,
+      errorCrudo: new ApiError(500, 'Internal server error'),
+      refetch,
+    });
+    renderPage();
+
+    const fallo = container.querySelector('[data-testid="fallo-de-carga"]');
+    expect(fallo).not.toBeNull();
+    expect(fallo?.getAttribute('data-tipo')).toBe('servidor');
+    expect(container.textContent).not.toContain('inmobiliaria.portafolio.detail.notFound');
+
+    await act(async () => {
+      (container.querySelector('[data-testid="reintentar"]') as HTMLButtonElement).click();
+    });
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('la red caída tampoco es «no encontrada», y sigue ofreciendo el camino de vuelta', () => {
+    useConsignacionMock.mockReturnValue({
+      consignacion: null,
+      isLoading: false,
+      errorCrudo: new TypeError('Failed to fetch'),
+      refetch: vi.fn(),
+    });
+    renderPage();
+
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('inmobiliaria.portafolio.detail.notFound');
+    expect(container.querySelector('[data-testid="reintentar"]')).not.toBeNull();
+    expect(container.querySelector('a[href="/panel/inmobiliaria/inmuebles"]')).not.toBeNull();
+  });
+
+  it('un 404 real dice que no existe, sin reintentar, con el camino de vuelta al portafolio', () => {
+    useConsignacionMock.mockReturnValue({
+      consignacion: null,
+      isLoading: false,
+      errorCrudo: new ApiError(404, 'Consignacion with ID x not found in this agency'),
+      refetch: vi.fn(),
+    });
+    renderPage();
+
+    const fallo = container.querySelector('[data-testid="fallo-de-carga"]');
+    expect(fallo?.getAttribute('data-tipo')).toBe('noExiste');
+    expect(container.querySelector('[data-testid="reintentar"]')).toBeNull();
+    const volver = container.querySelector('a[href="/panel/inmobiliaria/inmuebles"]');
+    expect(volver?.textContent).toContain('inmobiliaria.portafolio.detail.backToPortfolio');
   });
 });
 

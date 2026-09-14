@@ -1,6 +1,7 @@
 'use client';
 import { AsignarAgente } from '@/components/inmobiliaria/AsignarAgente';
 import { CandidatosDelInmueble } from '@/components/inmobiliaria/CandidatosDelInmueble';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -121,8 +122,14 @@ function ConsignacionDetailContent() {
   const [fotoAbierta, setFotoAbierta] = useState<number | null>(null);
 
   // Fetch data
-  const { consignacion: fetchedConsignacion, isLoading: cargandoConsignacion } =
-    useConsignacion(consignacionId);
+  // `errorCrudo`, no `error`: sin el status `FalloDeCarga` no distingue un 404
+  // —donde reintentar es mentir— de un 500 o de la red caída (F1).
+  const {
+    consignacion: fetchedConsignacion,
+    isLoading: cargandoConsignacion,
+    errorCrudo: errorConsignacion,
+    refetch: reintentarConsignacion,
+  } = useConsignacion(consignacionId);
 
   /*
    * 🔴 Abrir la ficha YA estando sin señal.
@@ -346,7 +353,36 @@ function ConsignacionDetailContent() {
     return <EsqueletoDeLaFicha />;
   }
 
-  // 404 if not found
+  /*
+   * F1 (P0): cualquier fallo —un 500, un 403, la red caída— caía abajo en
+   * «Consignación no encontrada» con un «Volver»: una afirmación sobre la base
+   * que nadie verificó (quien la lee piensa que la borraron) y sin forma de
+   * reintentar. `FalloDeCarga` clasifica el error: sobre un 404 real dice «no
+   * existe» y no ofrece reintentar; sobre lo demás dice qué pasó y reintenta.
+   * Mismo patrón que la ficha del propietario.
+   *
+   * Sin señal va primero su propio aviso («no la preparaste»): ahí el fallo
+   * de red es lo esperado y ese cartel lo explica mejor.
+   */
+  if (!consignacion && errorConsignacion && !sinSenal) {
+    return (
+      <div className="p-4 md:p-6" data-testid="ficha-fallo">
+        <div className="max-w-lg mx-auto py-16">
+          <FalloDeCarga
+            error={errorConsignacion}
+            queEs="el inmueble"
+            onReintentar={reintentarConsignacion}
+            volverA={{
+              label: t('inmobiliaria.portafolio.detail.backToPortfolio'),
+              href: '/panel/inmobiliaria/inmuebles',
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Respondió sin error y sin consignación, o sin señal y sin copia.
   if (!consignacion) {
     return (
       <div className="p-4 md:p-6">

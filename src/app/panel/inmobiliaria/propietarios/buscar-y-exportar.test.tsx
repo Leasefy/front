@@ -47,6 +47,11 @@ vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children?: React.ReactNode }) => children,
 }));
 
+// Con todos los permisos: los gates se prueban en `errores-y-permisos.test.tsx`.
+vi.mock('@/lib/hooks/usePermissions', () => ({
+  usePermissions: () => ({ canAccess: () => true, isLoading: false }),
+}));
+
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
   usePropietarios: () => ({
     propietarios: listaMock(),

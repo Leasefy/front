@@ -57,6 +57,12 @@ import {
   PropietarioForm,
 } from '@/components/inmobiliaria';
 import { ExtractoDelPropietarioDialog } from '@/components/inmobiliaria/ExtractoDelPropietarioDialog';
+import { InvitarAlPortal } from '@/components/inmobiliaria/InvitarAlPortal';
+import { usePermissions } from '@/lib/hooks/usePermissions';
+import {
+  errorAlGuardarPropietario,
+  type ErrorAlGuardarPropietario,
+} from '@/lib/propietarios/errores-del-propietario';
 import { ResumenEnLaFicha } from '@/components/estado-de-cuenta/ResumenEnLaFicha';
 import {
   usePropietario,
@@ -409,6 +415,18 @@ function PropietarioDetailContent() {
   const [activeTab, setTab] = useState<'properties' | 'payments' | 'notes'>('properties');
   const [notesValue, setNotesValue] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  // El motivo del back al editar, dentro del diálogo (duplicado → al lado del documento).
+  const [errorAlEditar, setErrorAlEditar] = useState<ErrorAlGuardarPropietario | null>(null);
+
+  /*
+   * 🔴 Las llaves con que el back protege cada acción de esta ficha
+   * (`propietarios.controller.ts`: PUT e invitar-al-portal → edit, DELETE →
+   * delete). Un CONTADOR o un VIEWER tienen sólo `view`: veían Editar,
+   * Eliminar y las notas, y el clic terminaba en 403.
+   */
+  const { canAccess } = usePermissions();
+  const puedeEditar = canAccess('propietarios', 'edit');
+  const puedeEliminar = canAccess('propietarios', 'delete');
 
   // Fetch propietario and keep local state for updates
   const {
@@ -534,6 +552,7 @@ function PropietarioDetailContent() {
   // Editar, borrar y las notas iban contra un `setTimeout`: el cartel verde
   // salía y nada se guardaba. Ahora pegan al back y la ficha se vuelve a leer.
   const handleEditSubmit = async (data: PropietarioFormData) => {
+    setErrorAlEditar(null);
     try {
       const actualizado = await propietariosApi.update(propietario.id, data);
       setPropietario(actualizado);
@@ -541,10 +560,15 @@ function PropietarioDetailContent() {
       setShowEditModal(false);
       await refetch();
     } catch (error) {
-      toast.error(t('inmobiliaria.propietarios.toasts.updateError'), {
-        description: mensajeDe(error, ''),
-      });
+      // No un toast que se va solo: «ese documento ya está cargado» va al lado
+      // del documento y el diálogo se queda abierto con lo que escribiste.
+      setErrorAlEditar(errorAlGuardarPropietario(error));
     }
+  };
+
+  const cerrarEdicion = () => {
+    setShowEditModal(false);
+    setErrorAlEditar(null);
   };
 
   const handleDelete = async () => {
@@ -681,10 +705,12 @@ function PropietarioDetailContent() {
             <BotonEnviarMensaje counterpartId={propietario.cuentaDePortalId} />
           )}
 
-          <Button variant="secondary" hideArrow onClick={() => setShowEditModal(true)}>
-            <PencilSimple className="w-4 h-4" />
-            {t('inmobiliaria.propietarios.edit')}
-          </Button>
+          {puedeEditar && (
+            <Button variant="secondary" hideArrow onClick={() => setShowEditModal(true)}>
+              <PencilSimple className="w-4 h-4" />
+              {t('inmobiliaria.propietarios.edit')}
+            </Button>
+          )}
 
           {/* Las tres acciones del menú hacen algo: extracto del mes (con
               PDF y correo), exportar a Excel, eliminar. Antes las dos primeras
@@ -710,15 +736,19 @@ function PropietarioDetailContent() {
                 <Download className="w-4 h-4" />
                 <span className="text-sm">{t('inmobiliaria.propietarios.detail.exportData')}</span>
               </DropdownListItem>
-              <DropdownListSeparator />
-              <DropdownListItem
-                onSelect={() => setShowDeleteModal(true)}
-                className="text-danger focus:bg-danger-soft focus:text-danger"
-                data-testid="accion-eliminar"
-              >
-                <TrashSimple className="w-4 h-4" />
-                <span className="text-sm">{t('inmobiliaria.common.delete')}</span>
-              </DropdownListItem>
+              {puedeEliminar && (
+                <>
+                  <DropdownListSeparator />
+                  <DropdownListItem
+                    onSelect={() => setShowDeleteModal(true)}
+                    className="text-danger focus:bg-danger-soft focus:text-danger"
+                    data-testid="accion-eliminar"
+                  >
+                    <TrashSimple className="w-4 h-4" />
+                    <span className="text-sm">{t('inmobiliaria.common.delete')}</span>
+                  </DropdownListItem>
+                </>
+              )}
             </DropdownListContent>
           </DropdownList>
         </div>
@@ -739,7 +769,7 @@ function PropietarioDetailContent() {
         propietario={propietario}
         variant="full"
         consignaciones={consignaciones}
-        onCargarCuenta={() => setShowEditModal(true)}
+        onCargarCuenta={puedeEditar ? () => setShowEditModal(true) : undefined}
       />
 
       {/* Content Grid */}
@@ -785,6 +815,28 @@ function PropietarioDetailContent() {
                 <FilaDeContacto etiqueta={t('inmobiliaria.propietarios.detail.refExterna')} valor={propietario.externalId} mono />
               ) : null}
             </div>
+            {/*
+             * 🔴 Sin cuenta en Leasefy, se DICE y se ofrece resolverlo (O4).
+             *
+             * Arriba, «Enviar mensaje» sólo se dibuja con `cuentaDePortalId`, y
+             * en la cartera real de Nico 1.676 de 1.733 propietarios no tienen
+             * cuenta: el hueco se leía como «acá no se puede escribir», no como
+             * «esta persona no tiene cuenta». Es el mismo aviso que la ficha del
+             * inmueble (`ConsignacionDetailSections`). Al invitar, el back
+             * devuelve la cuenta y el mensaje aparece sin recargar.
+             *
+             * Detrás de `propietarios:edit`, que es con lo que el back protege
+             * `POST :id/invitar-al-portal`.
+             */}
+            {!propietario.cuentaDePortalId && puedeEditar && (
+              <InvitarAlPortal
+                propietarioId={propietario.id}
+                correo={propietario.email}
+                onInvitado={(cuenta) =>
+                  setPropietario((p) => (p ? { ...p, cuentaDePortalId: cuenta } : p))
+                }
+              />
+            )}
           </section>
 
           <PerfilTributarioDelPropietario
@@ -801,7 +853,7 @@ function PropietarioDetailContent() {
           {/* Bank Info */}
           <PropietarioBankInfo
             bankAccount={propietario.bankAccount}
-            onEdit={() => setShowEditModal(true)}
+            onEdit={puedeEditar ? () => setShowEditModal(true) : undefined}
           />
         </div>
 
@@ -945,17 +997,19 @@ function PropietarioDetailContent() {
                     <p className="text-sm text-muted-foreground italic">{t('inmobiliaria.propietarios.detail.noNotes')}</p>
                   )}
 
-                  <Button
-                    variant="link"
-                    hideArrow
-                    className="mt-4 h-auto p-0"
-                    onClick={() => {
-                      setNotesValue(propietario.notes || '');
-                      setShowNotesModal(true);
-                    }}
-                  >
-                    {propietario.notes ? t('inmobiliaria.propietarios.detail.editNotes') : t('inmobiliaria.propietarios.detail.addNotes')}
-                  </Button>
+                  {puedeEditar && (
+                    <Button
+                      variant="link"
+                      hideArrow
+                      className="mt-4 h-auto p-0"
+                      onClick={() => {
+                        setNotesValue(propietario.notes || '');
+                        setShowNotesModal(true);
+                      }}
+                    >
+                      {propietario.notes ? t('inmobiliaria.propietarios.detail.editNotes') : t('inmobiliaria.propietarios.detail.addNotes')}
+                    </Button>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -965,16 +1019,26 @@ function PropietarioDetailContent() {
 
       {/* Edit Modal */}
       <Modal
-        open={showEditModal}
-        onClose={() => setShowEditModal(false)}
+        open={showEditModal && puedeEditar}
+        onClose={cerrarEdicion}
         title={t('inmobiliaria.propietarios.editOwner')}
         size="lg"
       >
+        {errorAlEditar?.general && (
+          <p
+            role="alert"
+            data-testid="aviso-en-el-dialogo"
+            className="mb-4 rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+          >
+            {errorAlEditar.general}
+          </p>
+        )}
         <PropietarioForm
           initialData={propietario}
           onSubmit={handleEditSubmit}
-          onCancel={() => setShowEditModal(false)}
+          onCancel={cerrarEdicion}
           mode="edit"
+          serverError={errorAlEditar?.campo ?? null}
         />
       </Modal>
 

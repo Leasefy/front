@@ -44,6 +44,14 @@ import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
 import { TablePagination } from '@/components/ui/pagination';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
+import { KpiValor } from '@/components/estado/KpiValor';
+import { AlertaAccionable } from '@/components/ui/alerta-accionable';
+import { usePermissions } from '@/lib/hooks/usePermissions';
+import {
+  errorAlGuardarPropietario,
+  motivoAlEliminarPropietario,
+  type ErrorAlGuardarPropietario,
+} from '@/lib/propietarios/errores-del-propietario';
 import {
   FILTROS_INICIALES,
   filtrarPropietarios,
@@ -198,6 +206,22 @@ function Modal({
 }
 
 /**
+ * El motivo del back, dentro del diálogo que lo provocó. Un toast se va solo
+ * en cuatro segundos y se lleva la única explicación de por qué no se guardó.
+ */
+function AvisoEnElDialogo({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      role="alert"
+      data-testid="aviso-en-el-dialogo"
+      className="mb-4 rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+    >
+      {children}
+    </p>
+  );
+}
+
+/**
  * Propietarios List Page
  * Main CRM view for managing property owners
  */
@@ -263,6 +287,32 @@ function PropietariosContent() {
   const [editingPropietario, setEditingPropietario] = useState<Propietario | null>(null);
   const [deletingPropietario, setDeletingPropietario] = useState<Propietario | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  /*
+   * 🔴 Lo que el back explica se queda en el diálogo.
+   *
+   * Los tres `catch` de abajo tiraban el motivo y ponían «Intenta de nuevo»:
+   * sobre «tiene 7 inmuebles consignados» (reintentar da lo mismo) y sobre
+   * «ese documento ya existe» (el dato está mal, no la red). Ahora el motivo
+   * se muestra adentro, y el duplicado va al lado del campo. Ver
+   * `lib/propietarios/errores-del-propietario.ts`.
+   */
+  const [motivoAlEliminar, setMotivoAlEliminar] = useState<string | null>(null);
+  const [errorAlCrear, setErrorAlCrear] = useState<ErrorAlGuardarPropietario | null>(null);
+  const [errorAlEditar, setErrorAlEditar] = useState<ErrorAlGuardarPropietario | null>(null);
+
+  /*
+   * 🔴 Las mismas llaves con que el back protege cada ruta
+   * (`propietarios.controller.ts`: POST create · PUT edit · DELETE delete).
+   * Un CONTADOR o un VIEWER sólo tienen `propietarios:view`: antes veían
+   * «Nuevo», «Editar» y «Eliminar», y el clic terminaba en un 403.
+   * `canAccess` en false mientras los permisos cargan: los botones aparecen
+   * cuando se sabe, nunca antes.
+   */
+  const { canAccess } = usePermissions();
+  const puedeCrear = canAccess('propietarios', 'create');
+  const puedeEditar = canAccess('propietarios', 'edit');
+  const puedeEliminar = canAccess('propietarios', 'delete');
 
   /*
    * Esta pantalla no tiene filtros, así que un vacío es siempre «no hay
@@ -372,18 +422,40 @@ function PropietariosContent() {
     router.push(`/panel/inmobiliaria/propietarios/${propietario.id}`);
   };
 
+  /*
+   * El menú de cada fila vive en `PropietarioTable`, que siempre dibuja
+   * «Editar» y «Eliminar». Mientras no se puedan esconder allá, el clic sin
+   * permiso DICE por qué no abre nada, en vez de abrir un formulario cuyo
+   * guardar devuelve 403.
+   */
+  const avisarSinPermiso = (accion: 'editar' | 'eliminar') => {
+    toast.error(`No tienes permiso para ${accion} propietarios`, {
+      description: 'Pídeselo al administrador de tu inmobiliaria.',
+    });
+  };
+
   const handleEdit = (propietario: Propietario) => {
+    if (!puedeEditar) return avisarSinPermiso('editar');
+    setErrorAlEditar(null);
     setEditingPropietario(propietario);
   };
 
   const handleDelete = (propietario: Propietario) => {
+    if (!puedeEliminar) return avisarSinPermiso('eliminar');
+    setMotivoAlEliminar(null);
     setDeletingPropietario(propietario);
   };
 
+  const cerrarEliminar = () => {
+    setDeletingPropietario(null);
+    setMotivoAlEliminar(null);
+  };
+
   const handleConfirmDelete = async () => {
-    if (!deletingPropietario) return;
+    if (!deletingPropietario || isDeleting) return;
 
     setIsDeleting(true);
+    setMotivoAlEliminar(null);
     try {
       await propietariosApi.delete(deletingPropietario.id);
       // La fila se va sola: el cliente avisa que «propietarios» cambió y la
@@ -392,15 +464,16 @@ function PropietariosContent() {
       toast.success(t('inmobiliaria.propietarios.toasts.deleted', { name: deletingPropietario.name }));
       setDeletingPropietario(null);
     } catch (err) {
-      console.error('Delete propietario error:', err);
-      toast.error(t('inmobiliaria.propietarios.toasts.deleteError'));
-      // Keep the item and the modal open so the user can retry
+      // El 409 dice QUÉ lo retiene («tiene N inmuebles consignados»): se
+      // muestra tal cual, dentro del diálogo, que se queda abierto.
+      setMotivoAlEliminar(motivoAlEliminarPropietario(err));
     } finally {
       setIsDeleting(false);
     }
   };
 
   const handleCreateSubmit = async (data: PropietarioFormData) => {
+    setErrorAlCrear(null);
     try {
       const created = await propietariosApi.create(data);
       // Aparece solo. Y se pide de nuevo al back a propósito: el objeto que
@@ -410,8 +483,9 @@ function PropietariosContent() {
       setShowAddModal(false);
       setCurrentPage(1); // Reset to first page to show new item
     } catch (err) {
-      console.error('Create propietario error:', err);
-      toast.error(t('inmobiliaria.propietarios.toasts.createError'));
+      // Duplicado → al lado del documento; 400 → al lado de su campo; lo
+      // demás, arriba del formulario. Nunca un «Intenta de nuevo» a secas.
+      setErrorAlCrear(errorAlGuardarPropietario(err));
       // Re-throw so the form keeps the modal open and resets its submitting state
       throw err;
     }
@@ -420,14 +494,14 @@ function PropietariosContent() {
   const handleEditSubmit = async (data: PropietarioFormData) => {
     if (!editingPropietario) return;
 
+    setErrorAlEditar(null);
     try {
       await propietariosApi.update(editingPropietario.id, data);
       // Se actualiza sola.
       toast.success(t('inmobiliaria.propietarios.toasts.updated'));
       setEditingPropietario(null);
     } catch (err) {
-      console.error('Update propietario error:', err);
-      toast.error(t('inmobiliaria.propietarios.toasts.updateError'));
+      setErrorAlEditar(errorAlGuardarPropietario(err));
       // Re-throw so the form keeps the modal open and resets its submitting state
       throw err;
     }
@@ -461,6 +535,40 @@ function PropietariosContent() {
     }
   };
 
+  /*
+   * 🔴 Los tiles salen de la MISMA lista que la tabla de abajo: mientras
+   * carga, un hueco; si falló, «—» con «No se pudo traer». Antes, con el back
+   * caído, la tabla decía «no se pudo cargar» y arriba los tiles afirmaban
+   * «0 propietarios · $0 · Al día» — y «Al día» es lo más peligroso de leer
+   * sobre datos que no llegaron.
+   *
+   * `KpiCard` tipa `value` como string pero lo pinta como hijo: el nodo se ve
+   * igual que el texto (mismo arreglo que Pipeline e Inquilinos).
+   */
+  const kpiSinDato = cargandoPropietarios || Boolean(errorPropietarios);
+  const valorDeTile = (valor: string) =>
+    (
+      <KpiValor cargando={cargandoPropietarios} fallo={errorPropietarios}>
+        {valor}
+      </KpiValor>
+    ) as unknown as string;
+
+  const cerrarAlta = () => {
+    setShowAddModal(false);
+    setErrorAlCrear(null);
+  };
+  const cerrarCapturaIA = () => {
+    setShowIACapture(false);
+    setErrorAlCrear(null);
+  };
+  const cerrarEdicion = () => {
+    setEditingPropietario(null);
+    setErrorAlEditar(null);
+  };
+  /* O5: con inmuebles consignados el back rechaza el borrado con un 409. Se
+     dice antes y el botón no se ofrece activo. */
+  const borradoBloqueado = (deletingPropietario?.propertyCount ?? 0) > 0;
+
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Page Header */}
@@ -479,16 +587,18 @@ function PropietariosContent() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <Button variant="secondary" hideArrow onClick={() => setShowIACapture(true)}>
-            <Sparkle className="w-5 h-5 text-primary" weight="fill" />
-            {t('inmobiliaria.propietarios.addOwnerIA')}
-          </Button>
-          <Button hideArrow onClick={() => setShowAddModal(true)}>
-            <UserPlus className="w-5 h-5" />
-            {t('inmobiliaria.propietarios.addOwner')}
-          </Button>
-        </div>
+        {puedeCrear && (
+          <div className="flex items-center gap-2 shrink-0">
+            <Button variant="secondary" hideArrow onClick={() => setShowIACapture(true)}>
+              <Sparkle className="w-5 h-5 text-primary" weight="fill" />
+              {t('inmobiliaria.propietarios.addOwnerIA')}
+            </Button>
+            <Button hideArrow onClick={() => setShowAddModal(true)}>
+              <UserPlus className="w-5 h-5" />
+              {t('inmobiliaria.propietarios.addOwner')}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* El clic que vino de otra pantalla y no llegó a ningún lado. Se dice:
@@ -516,28 +626,34 @@ function PropietariosContent() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           label={t('inmobiliaria.propietarios.title')}
-          value={String(stats.totalPropietarios)}
+          value={valorDeTile(String(stats.totalPropietarios))}
           icon={<Users />}
         />
         <KpiCard
           label={t('inmobiliaria.propietarios.properties')}
-          value={String(stats.totalProperties)}
+          value={valorDeTile(String(stats.totalProperties))}
           icon={<Buildings />}
         />
         <KpiCard
           label={t('inmobiliaria.propietarios.monthlyRevenue')}
-          value={formatCurrency(stats.totalMonthlyRent)}
+          value={valorDeTile(formatCurrency(stats.totalMonthlyRent))}
           icon={<CurrencyDollar />}
         />
+        {/* Sin dato, la etiqueta tampoco puede decir «Sin pendientes» ni
+            pintarse en verde: es la misma afirmación que el «$0». */}
         <KpiCard
           label={
-            stats.pendingCount > 0
-              ? t('inmobiliaria.propietarios.withBalance', { count: stats.pendingCount })
-              : t('inmobiliaria.propietarios.noPending')
+            kpiSinDato
+              ? 'Saldo pendiente'
+              : stats.pendingCount > 0
+                ? t('inmobiliaria.propietarios.withBalance', { count: stats.pendingCount })
+                : t('inmobiliaria.propietarios.noPending')
           }
-          value={stats.pendingCount > 0 ? formatCurrency(stats.totalPending) : t('inmobiliaria.propietarios.upToDate')}
-          icon={stats.pendingCount > 0 ? <Warning /> : <CurrencyDollar />}
-          deltaDirection={stats.pendingCount > 0 ? 'down' : 'up'}
+          value={valorDeTile(
+            stats.pendingCount > 0 ? formatCurrency(stats.totalPending) : t('inmobiliaria.propietarios.upToDate'),
+          )}
+          icon={!kpiSinDato && stats.pendingCount > 0 ? <Warning /> : <CurrencyDollar />}
+          deltaDirection={kpiSinDato ? 'neutral' : stats.pendingCount > 0 ? 'down' : 'up'}
         />
       </div>
 
@@ -577,9 +693,12 @@ function PropietariosContent() {
               },
             ]}
           />
-          <span className="text-sm text-muted-foreground tabular-nums">
-            {paginationData.totalItems} {t('inmobiliaria.propietarios.title').toLowerCase()}
-          </span>
+          {/* El mismo «0» que los tiles, un renglón más abajo: sin dato, no se dice. */}
+          {!kpiSinDato && (
+            <span className="text-sm text-muted-foreground tabular-nums">
+              {paginationData.totalItems} {t('inmobiliaria.propietarios.title').toLowerCase()}
+            </span>
+          )}
         </div>
 
         {/* Content */}
@@ -615,13 +734,19 @@ function PropietariosContent() {
                       <Button asChild hideArrow>
                         <Link href={RUTA_DE_LA_MIGRACION}>{copyDeMigracion.accion}</Link>
                       </Button>
-                      <Button variant="outline" hideArrow onClick={() => setShowAddModal(true)}>
-                        Agregar propietario
-                      </Button>
+                      {puedeCrear && (
+                        <Button variant="outline" hideArrow onClick={() => setShowAddModal(true)}>
+                          Agregar propietario
+                        </Button>
+                      )}
                     </div>
                   ) : undefined
                 }
-                crear={{ label: 'Agregar propietario', onClick: () => setShowAddModal(true) }}
+                crear={
+                  puedeCrear
+                    ? { label: 'Agregar propietario', onClick: () => setShowAddModal(true) }
+                    : undefined
+                }
               />
             ) : viewMode === 'table' ? (
               <PropietarioTable
@@ -685,54 +810,68 @@ function PropietariosContent() {
         )}
       </motion.div>
 
-      {/* Add Modal */}
+      {/* Add Modal — el permiso también cierra el `?nuevo=true`: sin él, el
+          enlace no abre un formulario que el back va a rechazar. */}
       <Modal
-        open={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        open={showAddModal && puedeCrear}
+        onClose={cerrarAlta}
         title={t('inmobiliaria.propietarios.addOwner')}
         size="lg"
       >
+        {errorAlCrear?.general && <AvisoEnElDialogo>{errorAlCrear.general}</AvisoEnElDialogo>}
         <PropietarioForm
           onSubmit={handleCreateSubmit}
-          onCancel={() => setShowAddModal(false)}
+          onCancel={cerrarAlta}
           mode="create"
+          serverError={errorAlCrear?.campo ?? null}
         />
       </Modal>
 
-      {/* AI Capture Modal (v6-07 — additive; reuses the create handler) */}
+      {/* AI Capture Modal (v6-07 — additive; reuses the create handler).
+          Su formulario vive dentro de `TerceroIACapture` y no recibe el error
+          por campo: el motivo va arriba, completo. */}
       <Modal
-        open={showIACapture}
-        onClose={() => setShowIACapture(false)}
+        open={showIACapture && puedeCrear}
+        onClose={cerrarCapturaIA}
         title={t('inmobiliaria.propietarios.addOwnerIA')}
         size="lg"
       >
+        {errorAlCrear && (errorAlCrear.general || errorAlCrear.campo) && (
+          <AvisoEnElDialogo>
+            {[errorAlCrear.campo?.message, errorAlCrear.general].filter(Boolean).join(' · ')}
+          </AvisoEnElDialogo>
+        )}
         <TerceroIACapture
           onCreated={handleCreateSubmit}
-          onClose={() => setShowIACapture(false)}
+          onClose={cerrarCapturaIA}
         />
       </Modal>
 
       {/* Edit Modal */}
       <Modal
-        open={!!editingPropietario}
-        onClose={() => setEditingPropietario(null)}
+        open={!!editingPropietario && puedeEditar}
+        onClose={cerrarEdicion}
         title={t('inmobiliaria.propietarios.editOwner')}
         size="lg"
       >
         {editingPropietario && (
-          <PropietarioForm
-            initialData={editingPropietario}
-            onSubmit={handleEditSubmit}
-            onCancel={() => setEditingPropietario(null)}
-            mode="edit"
-          />
+          <>
+            {errorAlEditar?.general && <AvisoEnElDialogo>{errorAlEditar.general}</AvisoEnElDialogo>}
+            <PropietarioForm
+              initialData={editingPropietario}
+              onSubmit={handleEditSubmit}
+              onCancel={cerrarEdicion}
+              mode="edit"
+              serverError={errorAlEditar?.campo ?? null}
+            />
+          </>
         )}
       </Modal>
 
       {/* Delete Confirmation Modal */}
       <Modal
-        open={!!deletingPropietario}
-        onClose={() => setDeletingPropietario(null)}
+        open={!!deletingPropietario && puedeEliminar}
+        onClose={cerrarEliminar}
         title={t('inmobiliaria.propietarios.deleteOwner')}
         size="sm"
       >
@@ -741,21 +880,40 @@ function PropietariosContent() {
             <p className="text-sm text-muted-foreground">
               {t('inmobiliaria.propietarios.deleteConfirm', { name: deletingPropietario.name })}
             </p>
-            {deletingPropietario.propertyCount > 0 && (
-              <div className="p-3 rounded-lg bg-warning-soft border border-warning/30">
-                <div className="flex items-center gap-2 text-warning">
-                  <Warning className="w-4 h-4" />
-                  <p className="text-sm">
-                    {t('inmobiliaria.propietarios.deleteWarningProperties', { count: deletingPropietario.propertyCount })}
-                  </p>
-                </div>
-              </div>
+            {/* O5 — lo mismo que la ficha: qué lo retiene y a dónde ir. El aviso
+                ámbar de antes lo decía, pero dejaba el botón activo y el clic
+                terminaba en el 409. */}
+            {borradoBloqueado && (
+              <AlertaAccionable
+                severidad="danger"
+                titulo={t('inmobiliaria.propietarios.deleteBloqueado.titulo', {
+                  count: deletingPropietario.propertyCount,
+                })}
+                accion={{
+                  label: t('inmobiliaria.propietarios.deleteBloqueado.accion'),
+                  href: '/panel/inmobiliaria/inmuebles',
+                }}
+                data-testid="borrar-bloqueado"
+              >
+                {t('inmobiliaria.propietarios.deleteBloqueado.detalle')}
+              </AlertaAccionable>
+            )}
+            {/* O1 — el motivo del back cuando igual lo rechaza (p. ej. una
+                copropiedad que la lista no cuenta). Se queda en el diálogo. */}
+            {motivoAlEliminar && (
+              <p
+                role="alert"
+                data-testid="motivo-al-eliminar"
+                className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+              >
+                {motivoAlEliminar}
+              </p>
             )}
             <div className="flex items-center gap-3 justify-end pt-4">
               <Button
                 variant="secondary"
                 hideArrow
-                onClick={() => setDeletingPropietario(null)}
+                onClick={cerrarEliminar}
                 disabled={isDeleting}
               >
                 {t('inmobiliaria.common.cancel')}
@@ -765,7 +923,9 @@ function PropietariosContent() {
                 hideArrow
                 onClick={handleConfirmDelete}
                 isLoading={isDeleting}
-                disabled={isDeleting}
+                disabled={isDeleting || borradoBloqueado}
+                title={borradoBloqueado ? 'Primero retira o reasigna sus inmuebles consignados' : undefined}
+                data-testid="confirmar-eliminar"
               >
                 {t('inmobiliaria.common.delete')}
               </Button>

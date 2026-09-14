@@ -103,6 +103,9 @@ export const recibosDeCajaApi = {
     if (datos.fecha) cuerpo.fecha = datos.fecha;
     if (datos.referencia) cuerpo.referencia = datos.referencia;
     if (datos.notas) cuerpo.notas = datos.notas;
+    // Sin esta línea la llave del formulario se perdía acá y el reintento
+    // volvía a emitir (R1).
+    if (datos.idempotencyKey) cuerpo.idempotencyKey = datos.idempotencyKey;
 
     const res = await apiClient.post<RespuestaDeReciboPorCliente>(`${BASE}/por-cliente`, cuerpo);
     invalidar('cobros');

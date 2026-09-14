@@ -175,6 +175,12 @@ export interface NuevoReciboPorCliente {
   referencia?: string;
   /** Los «saludos»: el texto que sale impreso en el recibo. */
   notas?: string;
+  /**
+   * Una por apertura del formulario (R1). Con la misma llave el servidor
+   * devuelve el recibo de la primera vez en vez de emitir otro: un timeout
+   * seguido de un reintento ya no deja dos juegos de recibos. Hasta 64.
+   */
+  idempotencyKey?: string;
 }
 
 /** A qué período fue una parte del pago, y cuánto de eso cubrió intereses. */

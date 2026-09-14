@@ -5,6 +5,10 @@ import {
   resolverDeZod,
   TASA_DIARIA_DEL_2_MENSUAL,
   type ValoresDeRegla,
+  efectivaAnualDesdeDiaria,
+  leerTasaDiaria,
+  porcentajeLegible,
+  topeDeUsuraDe,
 } from './esquema';
 
 function valores(sobre: Partial<ValoresDeRegla> = {}): ValoresDeRegla {
@@ -167,5 +171,55 @@ describe('PLANTILLAS', () => {
       valor: 10,
       base: 'CANON',
     });
+  });
+});
+
+describe('M1: la usura se ve mientras se escribe la tasa', () => {
+  it('convierte la diaria a efectiva anual como el servidor: compuesta 365 días', () => {
+    // (1 + 0,000667)^365 − 1 ≈ 27,55 %: el «2 % mensual» de siempre.
+    expect(efectivaAnualDesdeDiaria(0.0667)).toBeCloseTo(27.555, 2);
+    expect(efectivaAnualDesdeDiaria(0)).toBe(0);
+    expect(efectivaAnualDesdeDiaria(Number.NaN)).toBeNaN();
+  });
+
+  it('dice la equivalencia en castellano', () => {
+    expect(porcentajeLegible(0)).toBe('0,00 %');
+    expect(leerTasaDiaria(0.0667, 45)?.equivalencia).toMatch(/^Equivale a 27,5\d % efectivo anual\.$/);
+  });
+
+  it('🔴 si supera el tope lo avisa antes de guardar', () => {
+    const lectura = leerTasaDiaria(0.1, 25);
+    expect(lectura?.aviso?.tono).toBe('peligro');
+    expect(lectura?.aviso?.texto).toContain('Supera el tope de usura de tu inmobiliaria (25,00 % efectivo anual)');
+  });
+
+  it('por debajo del tope dice cuál es el tope', () => {
+    expect(leerTasaDiaria(0.0667, 45)?.aviso).toEqual({
+      tono: 'neutro',
+      texto: 'El tope de usura de tu inmobiliaria es 45,00 % efectivo anual.',
+    });
+  });
+
+  it('sin tope configurado lo dice con todas las letras', () => {
+    expect(leerTasaDiaria(0.0667, null)?.aviso).toEqual({
+      tono: 'atencion',
+      texto: 'Tu inmobiliaria no tiene configurado el tope de usura; la tasa no se valida contra la ley.',
+    });
+  });
+
+  it('si la configuración todavía no llegó no afirma nada sobre el tope', () => {
+    expect(leerTasaDiaria(0.0667, undefined)?.aviso).toBeNull();
+  });
+
+  it('con el campo vacío no pinta nada', () => {
+    expect(leerTasaDiaria(Number.NaN, 45)).toBeNull();
+  });
+
+  it('lee el tope aunque llegue como texto (Decimal) y trata vacío como «sin tope»', () => {
+    expect(topeDeUsuraDe('26.76')).toBe(26.76);
+    expect(topeDeUsuraDe(26.76)).toBe(26.76);
+    expect(topeDeUsuraDe(null)).toBeNull();
+    expect(topeDeUsuraDe('')).toBeNull();
+    expect(topeDeUsuraDe(undefined)).toBeNull();
   });
 });

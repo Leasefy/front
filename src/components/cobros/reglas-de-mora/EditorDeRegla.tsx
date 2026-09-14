@@ -51,6 +51,7 @@ import {
   resolverDeZod,
   VALORES_INICIALES,
   type ValoresDeRegla,
+  leerTasaDiaria,
 } from './esquema';
 import {
   describirRegla,
@@ -71,6 +72,11 @@ export interface EditorDeReglaProps {
   onCerrar: () => void;
   /** Lanza si el back rechaza; el mensaje se muestra adentro del modal. */
   onGuardar: (valores: ValoresDeRegla) => Promise<void>;
+  /**
+   * El tope de usura de la inmobiliaria (% efectivo anual). `null` = no está
+   * configurado · `undefined` = la configuración todavía no llegó.
+   */
+  topeDeUsura?: number | null;
 }
 
 function valoresDe(regla: ReglaDeMora): ValoresDeRegla {
@@ -93,7 +99,7 @@ function mensajeDe(error: unknown): string {
   return 'No se pudo guardar la regla. Prueba de nuevo.';
 }
 
-export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar }: EditorDeReglaProps) {
+export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar, topeDeUsura }: EditorDeReglaProps) {
   const {
     register,
     control,
@@ -313,6 +319,11 @@ export function EditorDeRegla({ abierto, regla, onCerrar, onGuardar }: EditorDeR
                     )}
                   </div>
                 )}
+                {/* M1: la tasa anual equivalente y el tope de usura, mientras
+                    se escribe y no recién en el rechazo al guardar. */}
+                {formula === 'INTERES_DIARIO' && (
+                  <LecturaDeLaTasaDiaria diaria={Number(vivos.valor)} tope={topeDeUsura} />
+                )}
               </Campo>
             </div>
             <Campo
@@ -456,6 +467,40 @@ function Campo({
       ) : ayuda ? (
         <p className="text-xs text-fg-muted">{ayuda}</p>
       ) : null}
+    </div>
+  );
+}
+
+function LecturaDeLaTasaDiaria({
+  diaria,
+  tope,
+}: {
+  diaria: number;
+  tope: number | null | undefined;
+}) {
+  const lectura = leerTasaDiaria(diaria, tope);
+  if (!lectura) return null;
+  const { aviso } = lectura;
+  return (
+    <div className="space-y-0.5" data-testid="lectura-de-la-tasa" aria-live="polite">
+      <p className="text-xs text-fg-muted">{lectura.equivalencia}</p>
+      {aviso && (
+        <p
+          data-testid="aviso-de-usura"
+          data-tono={aviso.tono}
+          role={aviso.tono === 'peligro' ? 'alert' : undefined}
+          className={cn(
+            'text-xs',
+            aviso.tono === 'peligro'
+              ? 'text-danger'
+              : aviso.tono === 'atencion'
+                ? 'text-warning'
+                : 'text-fg-muted',
+          )}
+        >
+          {aviso.texto}
+        </p>
+      )}
     </div>
   );
 }

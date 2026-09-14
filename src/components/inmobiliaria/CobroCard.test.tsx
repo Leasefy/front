@@ -16,6 +16,11 @@ import type { Cobro } from '@/lib/types/inmobiliaria';
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+const permisos = vi.hoisted(() => ({
+  valor: { isLoading: false as boolean, canAccess: (_m: string, _a: string): boolean => true },
+}));
+vi.mock('@/lib/hooks/usePermissions', () => ({ usePermissions: () => permisos.valor }));
+
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ t: (k: string) => k, locale: 'es' }),
 }));
@@ -46,10 +51,12 @@ vi.mock('@/components/ui', () => ({
   Button: ({
     children,
     onClick,
+    disabled,
   }: {
     children?: React.ReactNode;
-    onClick?: () => void;
-  }) => React.createElement('button', { onClick }, children),
+    onClick?: (e: { stopPropagation: () => void }) => void;
+    disabled?: boolean;
+  }) => React.createElement('button', { onClick, disabled }, children),
 }));
 
 import { CobroCard } from './CobroCard';
@@ -96,6 +103,7 @@ afterEach(() => {
   act(() => root.unmount());
   container.remove();
   vi.restoreAllMocks();
+  permisos.valor = { isLoading: false, canAccess: () => true };
 });
 
 function render(cobro: Cobro) {
@@ -119,5 +127,38 @@ describe('<CobroCard> tenant contact', () => {
     expect(container.querySelector('a[href^="https://wa.me/"]')).toBeNull();
     // The tenant name still renders — only the contact links are gated.
     expect(container.textContent).toContain('Jose Lopez');
+  });
+});
+
+describe('<CobroCard> «Hacer recibo» pide cobros:create (C6)', () => {
+  const botonDeRecibo = () =>
+    Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('recibos.hacerCorto'),
+    );
+
+  it('con permiso el botón emite', () => {
+    const onRegisterPayment = vi.fn();
+    act(() => root.render(<CobroCard cobro={BASE_COBRO} onRegisterPayment={onRegisterPayment} />));
+    const boton = botonDeRecibo();
+    expect(boton?.disabled).toBe(false);
+    act(() => boton?.click());
+    expect(onRegisterPayment).toHaveBeenCalledWith(BASE_COBRO);
+    expect(container.querySelector('[data-testid="motivo-sin-permiso-de-recibo"]')).toBeNull();
+  });
+
+  it('un VIEWER ve el botón deshabilitado y el porqué, y no emite', () => {
+    const canAccess = vi.fn((m: string, a: string) => m === 'cobros' && a === 'view');
+    permisos.valor = { isLoading: false, canAccess };
+    const onRegisterPayment = vi.fn();
+    act(() => root.render(<CobroCard cobro={BASE_COBRO} onRegisterPayment={onRegisterPayment} />));
+    const boton = botonDeRecibo();
+    expect(boton).toBeTruthy();
+    expect(boton?.disabled).toBe(true);
+    act(() => boton?.click());
+    expect(onRegisterPayment).not.toHaveBeenCalled();
+    expect(canAccess).toHaveBeenCalledWith('cobros', 'create');
+    expect(
+      container.querySelector('[data-testid="motivo-sin-permiso-de-recibo"]')?.textContent,
+    ).toBe('Necesitas permiso para crear cobros.');
   });
 });

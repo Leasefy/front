@@ -24,6 +24,9 @@ vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, initial: _i, animate: _a, ...props }: React.ComponentProps<'div'> & Record<string, unknown>) =>
       React.createElement('div', props, children),
+    // Cada fila de la tabla es un `motion.tr`: sin él, un extracto con líneas no se deja montar.
+    tr: ({ children, initial: _i, animate: _a, transition: _t, ...props }: React.ComponentProps<'tr'> & Record<string, unknown>) =>
+      React.createElement('tr', props, children),
   },
 }));
 // La lista de propietarios llega SIN `bankAccount` (banco plano, como el back
@@ -80,7 +83,31 @@ async function clickTestId(id: string) {
   });
 }
 
+/** Una línea del extracto con los campos que pinta la tabla. */
+const linea = (over: Partial<Extracto['lineItems'][number]> = {}): Extracto['lineItems'][number] => ({
+  cobroId: 'cob-1', consignacionId: 'c-1', propertyTitle: 'Apartamento en La Floresta', propertyAddress: 'Cra 42',
+  tenantName: 'Mónica', rentAmount: 720_000, adminAmount: 0, totalAmount: 720_000, paidAmount: 720_000,
+  status: 'PAID', commissionPercent: 0, commissionAmount: 0, netAmount: 720_000, rentCollected: 720_000,
+  conceptosAFavor: 0, conceptosACargo: 0, deTerceros: 0, renglones: [], ...over,
+});
+
 describe('<ExtractoPropietario>', () => {
+  it('con varios dueños la fila dice cuánto del inmueble es suyo, como el PDF; con uno solo no', async () => {
+    await render({
+      extracto: {
+        ...extracto,
+        lineItems: [
+          linea({ participacionBps: 4000, participacionLabel: '40 %' }),
+          linea({ cobroId: 'cob-2', consignacionId: 'c-2', propertyTitle: 'Local', participacionBps: 10000, participacionLabel: null }),
+        ],
+      },
+    });
+    const chips = container.querySelectorAll('[data-testid="participacion-en-el-extracto"]');
+    expect(chips).toHaveLength(1);
+    expect(chips[0].textContent).toContain('40 %');
+    expect(chips[0].closest('tr')?.textContent).toContain('La Floresta');
+  });
+
   it('la cuenta bancaria sale del extracto, aunque la lista de propietarios venga sin bankAccount', async () => {
     await render();
     const banco = container.querySelector('[data-testid="extracto-banco"]')!.textContent;

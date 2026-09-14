@@ -417,6 +417,16 @@ export function ExtractoPropietario({
                           <span className="text-xs text-muted-foreground truncate max-w-[180px]">
                             {prop.propertyAddress}
                           </span>
+                          {/* Con varios dueños la plata de la fila es SU parte:
+                              se dice cuánto, como en el PDF (2026-09-13). */}
+                          {prop.participacionLabel ? (
+                            <span
+                              className="mt-1 w-fit rounded-full bg-primary-soft px-2 py-0.5 font-mono text-[11px] tabular-nums text-primary"
+                              data-testid="participacion-en-el-extracto"
+                            >
+                              {prop.participacionLabel} {t('inmobiliaria.propietario.extracto.delInmueble')}
+                            </span>
+                          ) : null}
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">

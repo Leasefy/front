@@ -907,6 +907,14 @@ export interface ExtractoPropietario {
     propertyTitle: string;
     propertyAddress: string | null;
     tenantName: string | null;
+    /**
+     * Cuánto del inmueble es de este propietario (100 % = 10000). Con varios
+     * dueños cada columna de plata ya viene partida a SU parte; sin estos dos
+     * campos la fila se leía como si el inmueble entero fuera suyo.
+     */
+    participacionBps?: number;
+    /** `40 %`. `null` con un solo dueño: ahí sobra en pantalla (lo mismo que el PDF). */
+    participacionLabel?: string | null;
     /** Lo facturado al inquilino. */
     rentAmount: number;
     adminAmount: number;

@@ -33,6 +33,7 @@ import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { PIPELINE_STAGES, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import { PipelineCard } from './PipelineCard';
+import { MotivoDialog } from '@/components/inmobiliaria/agenda/MotivoDialog';
 
 // ============================================================================
 // Types
@@ -51,6 +52,17 @@ interface PipelineBoardProps {
     newStage: PipelineStage,
     lostReason?: string,
   ) => void | Promise<void>;
+  /**
+   * ¿Puede arrastrar? Mover es `pipeline:edit` en el back. Sin el permiso las
+   * tarjetas se abren pero no se arrastran. Por defecto `true`; la página pasa
+   * el permiso real.
+   */
+  puedeMover?: boolean;
+}
+
+/** Cerrado y Perdido no se mueven: el back responde 409 LEAD_TERMINADO. */
+function esTerminal(stage: PipelineStage): boolean {
+  return stage === 'completed' || stage === 'lost';
 }
 
 // ============================================================================
@@ -60,9 +72,11 @@ interface PipelineBoardProps {
 interface DraggableCardProps {
   item: PipelineItem;
   onClick: (item: PipelineItem) => void;
+  /** Por qué no se puede arrastrar; `undefined` = se puede. */
+  motivoBloqueo?: string;
 }
 
-function DraggableCard({ item, onClick }: DraggableCardProps) {
+function DraggableCard({ item, onClick, motivoBloqueo }: DraggableCardProps) {
   const {
     attributes,
     listeners,
@@ -72,6 +86,7 @@ function DraggableCard({ item, onClick }: DraggableCardProps) {
   } = useDraggable({
     id: item.id,
     data: { item },
+    disabled: Boolean(motivoBloqueo),
   });
 
   const style = transform
@@ -89,6 +104,8 @@ function DraggableCard({ item, onClick }: DraggableCardProps) {
         'transition-opacity duration-200',
         isDragging && 'opacity-40'
       )}
+      title={motivoBloqueo}
+      data-arrastrable={motivoBloqueo ? 'no' : 'si'}
       {...attributes}
       {...listeners}
     >
@@ -113,6 +130,7 @@ interface DroppableColumnProps {
   collapsible?: boolean;
   defaultCollapsed?: boolean;
   maxVisibleCards?: number;
+  puedeMover?: boolean;
 }
 
 function DroppableColumn({
@@ -123,6 +141,7 @@ function DroppableColumn({
   collapsible = true,
   defaultCollapsed = false,
   maxVisibleCards = 3,
+  puedeMover = true,
 }: DroppableColumnProps) {
   const { t } = useI18n();
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
@@ -274,6 +293,13 @@ function DroppableColumn({
                     key={item.id}
                     item={item}
                     onClick={onCardClick}
+                    motivoBloqueo={
+                      esTerminal(item.stage)
+                        ? 'Este lead ya terminó: no se mueve de etapa.'
+                        : !puedeMover
+                          ? 'No tienes permiso para mover leads.'
+                          : undefined
+                    }
                   />
                 ))
               )}
@@ -417,10 +443,14 @@ export function PipelineBoard({
   items,
   onItemClick,
   onStageChange,
+  puedeMover = true,
 }: PipelineBoardProps) {
   const { t } = useI18n();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  // El lead que se soltó en «Perdido» y espera su motivo.
+  const [perdiendo, setPerdiendo] = useState<PipelineItem | null>(null);
+  const [enviandoMotivo, setEnviandoMotivo] = useState(false);
 
   // Get the item being dragged
   const activeItem = useMemo(() => {
@@ -503,6 +533,20 @@ export function PipelineBoard({
       // Check if stage actually changed
       if (item.stage === newStage) return;
 
+      // La tarjeta ya viene bloqueada; esto cubre un arrastre por teclado.
+      // Cerrado y Perdido el back los rechaza con 409 LEAD_TERMINADO.
+      if (esTerminal(item.stage) || !puedeMover) return;
+
+      /*
+       * «Perdido» pide el motivo, igual que el cajón. Antes el arrastre se lo
+       * saltaba y la columna se llenaba de perdidos sin explicación. La
+       * tarjeta no se mueve hasta que se confirma.
+       */
+      if (newStage === 'lost') {
+        setPerdiendo(item);
+        return;
+      }
+
       // Get stage info for toast
       const oldStageInfo = getPipelineStageInfo(item.stage);
       const newStageInfo = getPipelineStageInfo(newStage);
@@ -518,7 +562,33 @@ export function PipelineBoard({
         description: `${item.candidateName}: ${oldStageInfo?.labelEs || item.stage} → ${newStageInfo?.labelEs || newStage}`,
       });
     },
-    [items, onStageChange, t]
+    [items, onStageChange, t, puedeMover]
+  );
+
+  /**
+   * Confirmar el motivo del arrastre a «Perdido».
+   *
+   * Si el back dice que no, la página ya lo avisó con su mensaje (409/400) y
+   * devolvió la tarjeta: el diálogo queda abierto para corregir o cancelar,
+   * como en el cajón.
+   */
+  const confirmarPerdido = useCallback(
+    async (motivo: string) => {
+      if (!perdiendo) return;
+      setEnviandoMotivo(true);
+      try {
+        await onStageChange(perdiendo.id, 'lost', motivo);
+      } catch {
+        setEnviandoMotivo(false);
+        return;
+      }
+      toast.info(t('inmobiliaria.pipeline.markedAsLost'), {
+        description: t('inmobiliaria.pipeline.markedAsLostDesc', { name: perdiendo.candidateName }),
+      });
+      setEnviandoMotivo(false);
+      setPerdiendo(null);
+    },
+    [perdiendo, onStageChange, t]
   );
 
   // Get stages to display (all except lost at the end).
@@ -550,6 +620,7 @@ export function PipelineBoard({
               items={itemsByStage[stage]}
               onCardClick={onItemClick}
               isOver={overId === stage}
+              puedeMover={puedeMover}
             />
           ))}
 
@@ -560,9 +631,21 @@ export function PipelineBoard({
             onCardClick={onItemClick}
             isOver={overId === 'lost'}
             defaultCollapsed={true}
+            puedeMover={puedeMover}
           />
         </div>
       </div>
+
+      {/* El mismo diálogo y el mismo mínimo que «Marcar perdido» en el cajón. */}
+      <MotivoDialog
+        abierto={perdiendo !== null}
+        titulo={`¿Marcar a ${perdiendo?.candidateName ?? ''} como perdido?`}
+        descripcion="Sale del embudo. Cuenta por qué se cayó: es lo que se lee después para saber qué falló."
+        etiquetaConfirmar="Marcar como perdido"
+        enviando={enviandoMotivo}
+        onCerrar={() => setPerdiendo(null)}
+        onConfirmar={(motivo) => void confirmarPerdido(motivo)}
+      />
 
       {/* Drag Overlay - Shows the card being dragged */}
       <DragOverlay dropAnimation={null}>

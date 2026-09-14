@@ -5,7 +5,13 @@
  * (`owner-portal.http`) → transporte agent-directo + degrade honesto a `null`/`[]` = no-disponible.
  * Montos leídos VERBATIM (sin aritmética de cliente).
  */
-import { ownerGet, ownerGetBlob } from './owner-portal.http';
+import {
+  ownerGet,
+  ownerGetBlob,
+  ownerGetBlobConEstado,
+  ownerGetConEstado,
+  type ResultadoDelPortal,
+} from './owner-portal.http';
 import type {
   FinanzasPortafolio,
   FinanzasInmueble,
@@ -16,6 +22,12 @@ import type {
 } from './owner-finanzas.types';
 
 export const ownerFinanzasApi = {
+  /** GET /portafolio con el estado: «no habilitado» ≠ «falló» (O1). Es lo que gobierna Mi plata. */
+  getPortafolioConEstado: (
+    agencyId: string | null,
+  ): Promise<ResultadoDelPortal<FinanzasPortafolio>> =>
+    ownerGetConEstado<FinanzasPortafolio>(agencyId, '/portafolio'),
+
   /** GET /portafolio — consolidado multi-inmueble. */
   getPortafolio: (agencyId: string | null): Promise<FinanzasPortafolio | null> =>
     ownerGet<FinanzasPortafolio>(agencyId, '/portafolio'),
@@ -48,6 +60,10 @@ export const ownerFinanzasApi = {
   /** GET /proyeccion — proyección de ingresos + supuestos. */
   getProyeccion: (agencyId: string | null): Promise<FinanzasProyeccion | null> =>
     ownerGet<FinanzasProyeccion>(agencyId, '/proyeccion'),
+
+  /** GET /informe.pdf con el estado: la descarga dice si falló o si todavía no está (O2). */
+  getInformePdfConEstado: (agencyId: string | null): Promise<ResultadoDelPortal<Blob>> =>
+    ownerGetBlobConEstado(agencyId, '/informe.pdf'),
 
   /** GET /informe.pdf — informe descargable. `null` si no-disponible. */
   getInformePdf: (agencyId: string | null): Promise<Blob | null> =>

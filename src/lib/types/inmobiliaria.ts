@@ -278,6 +278,14 @@ export interface Consignacion {
    */
   propertyStatus?: 'DRAFT' | 'AVAILABLE' | 'RENTED' | 'PENDING' | 'RESERVED' | null;
   /**
+   * El «Código» de la inmobiliaria y la fecha de consignación del inmueble
+   * detrás del mandato, planos como `propertyCode`. `GET /properties/:id` es
+   * PUBLIC y no los trae; el cajón «Editar» se siembra de acá (2026-09-13).
+   * `null` = no hay dato o no hay inmueble; ausente = back viejo.
+   */
+  propertyExternalId?: string | null;
+  propertyConsignedAt?: string | null;
+  /**
    * 🔴 Si el inmueble tiene un CONTRATO vigente. Es lo que decide «arrendado»
    * en todo el panel, no `availability`: un contrato migrado sin `Lease`
    * dejaba el mandato en «disponible» sobre un inmueble ocupado. `null` sin

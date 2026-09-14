@@ -133,6 +133,8 @@ export function mapBackendProperty(bp: BackendProperty): Property {
     // through `bp.code` preserves that absence as `undefined` (never `0`).
     code: bp.code,
     ...consignedAt,
+    // El código de la inmobiliaria: mismo trato que `code` (PORTFOLIO-only).
+    ...('externalId' in bp ? { externalId: bp.externalId ?? null } : {}),
 
     // Features
     bedrooms: bp.bedrooms,

@@ -111,6 +111,12 @@ export interface Property {
    * America/Bogotá) — render the `"YYYY-MM-DD"` string directly.
    */
   consignedAt?: string | null;
+  /**
+   * El «Código» con el que la inmobiliaria identifica el inmueble en su
+   * sistema anterior (el de Nui). PORTFOLIO-only como `code`: `undefined` =
+   * no autorizado, `null` = no tiene. Editable desde la ficha (2026-09-13).
+   */
+  externalId?: string | null;
 
   // Features
   /*

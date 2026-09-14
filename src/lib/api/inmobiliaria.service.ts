@@ -522,6 +522,13 @@ export function normalizeConsignacion(raw: RawConsignacion): Consignacion {
     // §A.9.1 — NEW, closes W3-c. `null` when the mandate has no linked
     // property (a migrated cartera row).
     propertyCode: raw.propertyCode ?? null,
+    // El código de la inmobiliaria y la fecha de consignación del inmueble,
+    // planos como `propertyCode`: `GET /properties/:id` es PUBLIC y no los
+    // trae, y el cajón «Editar» los necesita (2026-09-13).
+    propertyExternalId:
+      (raw as { propertyExternalId?: string | null }).propertyExternalId ?? null,
+    propertyConsignedAt:
+      (raw as { propertyConsignedAt?: string | null }).propertyConsignedAt ?? null,
     // Los dueños con su participación. `[]` sólo contra un back viejo que
     // todavía no manda el campo: la ficha cae a `propietarioId` en ese caso.
     // NO se fabrica `[{ propietarioId, 10000 }]` acá — sería inventar un dato
@@ -548,7 +555,8 @@ export type ConsignacionUpdateInput = Partial<ConsignacionFormData> & {
   status?: Consignacion['status'];
   availability?: Consignacion['availability'];
   contractDate?: string;
-  contractEndDate?: string;
+  /** `null` = quitar la fecha de fin (`''` da 400: `@IsDateString` no lo acepta). */
+  contractEndDate?: string | null;
   currentTenantName?: string;
   leaseEndDate?: string;
   consignmentContractUrl?: string;

@@ -3,14 +3,12 @@ import { AsignarAgente } from '@/components/inmobiliaria/AsignarAgente';
 import { CandidatosDelInmueble } from '@/components/inmobiliaria/CandidatosDelInmueble';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useCallback, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { CaretLeft, Buildings, X, CalendarPlus, WifiSlash } from '@phosphor-icons/react';
+import { CaretLeft, Buildings, CalendarPlus, WifiSlash } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
-import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button, EmptyState } from '@/components/ui';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,7 +27,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useLenis } from '@/components/providers/SmoothScroll';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import {
   useConsignacion,
@@ -51,7 +48,7 @@ import {
 import { EditarPropietariosDialog } from '@/components/inmobiliaria/EditarPropietariosDialog';
 import { InventarioDeLaConsignacion } from '@/components/inmobiliaria/InventarioDeLaConsignacion';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
-import { ConsignacionEditForm, type ConsignacionEdicion } from '@/components/inmobiliaria/ConsignacionEditForm';
+import { ConsignacionEditForm } from '@/components/inmobiliaria/ConsignacionEditForm';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
 import { usePuedeEditarInventario } from '@/lib/hooks/use-puede-editar-inventario';
 import { useCopiaDeInmueble } from '@/lib/hooks/use-copia-de-inmueble';
@@ -98,117 +95,6 @@ function EsqueletoDeLaFicha() {
       </div>
     </div>
   );
-}
-
-/**
- * Modal Component - Uses Portal to escape transformed parents
- */
-function Modal({
-  open,
-  onClose,
-  title,
-  children,
-  size = 'md',
-}: {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-}) {
-  const lenis = useLenis();
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
-
-  const sizeClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-  };
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (open) {
-      lenis.stop();
-      const scrollY = window.scrollY;
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.left = '0';
-      document.body.style.right = '0';
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      lenis.start();
-      const scrollY = document.body.style.top;
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.overflow = '';
-      window.scrollTo(0, parseInt(scrollY || '0') * -1);
-    };
-  }, [open, lenis]);
-
-  if (!open || !mounted) return null;
-
-  const modalContent = (
-    <div
-      // Modal layer = z-[300] (misma capa que <Dialog>/<Sheet>). Antes z-[9999],
-      // que tapaba cualquier AlertDialog disparado desde adentro. Ver DESIGN.md §17.
-      className="fixed inset-0 z-[300]"
-      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-      data-lenis-prevent
-      data-testid="modal-ficha"
-    >
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        onClick={onClose}
-      />
-      <div
-        className="absolute inset-0 flex items-center justify-center p-4"
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-      >
-        <div
-          className={cn(
-            'relative bg-card border border-border w-full rounded-[20px] flex flex-col',
-            sizeClasses[size]
-          )}
-          style={{ maxHeight: '85vh' }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex-shrink-0 flex items-center justify-between px-6 py-5 border-b border-border">
-            <h3 className="text-base font-semibold text-fg">
-              {title}
-            </h3>
-            <Button variant="ghost" size="icon" hideArrow onClick={onClose} aria-label="Cerrar">
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-          <div
-            ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto overscroll-contain p-6"
-            data-lenis-prevent
-            style={{
-              minHeight: 0,
-              overscrollBehavior: 'contain',
-              WebkitOverflowScrolling: 'touch',
-              touchAction: 'pan-y',
-            }}
-            onWheel={(e) => e.stopPropagation()}
-          >
-            {children}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  return createPortal(modalContent, document.body);
 }
 
 /**
@@ -312,42 +198,56 @@ function ConsignacionDetailContent() {
     setShowEditModal(true);
   }, []);
 
-  const handleEditSubmit = useCallback(async (data: ConsignacionEdicion) => {
-    if (!consignacion) return;
+  /*
+   * El cajón «Editar» guarda solo (inmueble + mandato) y relee el mandato;
+   * acá sólo se toma lo releído y se vuelve a pedir el inmueble, que es de
+   * donde salen las fotos, las coordenadas y el resto de la ficha.
+   */
+  const handleEditGuardado = useCallback(
+    (actualizada: Consignacion) => {
+      setConsignacionData(actualizada);
+      refetchProperty();
+    },
+    [refetchProperty],
+  );
 
-    try {
-      // PUT /inmobiliaria/consignaciones/:id — the service maps enum casing
-      // and strips agent reassignment (see ConsignacionUpdateInput).
-      let updated = await consignacionesApi.update(consignacion.id, {
-        propertyTitle: data.propertyTitle,
-        propertyAddress: data.propertyAddress,
-        propertyCity: data.propertyCity,
-        propertyZone: data.propertyZone,
-        propertyType: data.propertyType,
-        monthlyRent: data.monthlyRent,
-        adminFee: data.adminFee,
-        commissionPercent: data.commissionPercent,
-        minimumTerm: data.minimumTerm,
-      });
-
-      // El agente va por su propia ruta (`assign-agent` exige el User id):
-      // el formulario ya trae ese id como valor del selector. Sólo si cambió.
-      if (data.agenteId && data.agenteId !== consignacion.agenteId) {
-        updated = await consignacionesApi.assignAgent(consignacion.id, data.agenteId);
-      }
-
-      setConsignacionData(updated);
-      setShowEditModal(false);
-      toast.success(t('inmobiliaria.portafolio.detail.toasts.propertyUpdated'), {
-        description: t('inmobiliaria.portafolio.detail.toasts.changesSaved'),
-      });
-    } catch (err) {
-      // Keep the modal open so the user can retry without losing edits.
-      toast.error(t('inmobiliaria.portafolio.detail.toasts.updateError'), {
-        description: err instanceof Error ? err.message : undefined,
-      });
+  /*
+   * 🔴 Un mandato TERMINADO (Nico, 2026-09-13: «es súper raro» que la ficha
+   * siguiera igual). La fecha en que terminó no tiene columna: sale del evento
+   * `consignacion_terminada` del historial, que el back deja al terminar. Un
+   * mandato terminado antes de que existiera ese evento no tiene fecha, y el
+   * banner lo dice sin inventarla.
+   */
+  const terminada = consignacion?.status === 'terminated';
+  const [fechaDeTerminacion, setFechaDeTerminacion] = useState<string | null>(null);
+  useEffect(() => {
+    if (!terminada || !consignacionId) {
+      setFechaDeTerminacion(null);
+      return;
     }
-  }, [consignacion, t]);
+    let cancelado = false;
+    consignacionesApi
+      .getHistorial(consignacionId)
+      .then((eventos) => {
+        if (cancelado) return;
+        const evento = eventos.find((e) => e.tipo === 'consignacion_terminada');
+        setFechaDeTerminacion(evento?.fecha ?? null);
+      })
+      .catch(() => {
+        // Sin historial el banner sale sin fecha; no es un error de la ficha.
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [terminada, consignacionId]);
+  // «Arrendado» de verdad = contrato vigente: `arrendado` lo calcula el back
+  // mirando los contratos ACTIVE; `propertyStatus` lo pone el ciclo de vida
+  // del contrato; `currentLeaseId` es el arriendo vigente del mandato.
+  // `availability` NO cuenta: es lo que alguien marcó a mano.
+  const contratoVigente =
+    consignacion?.arrendado === true ||
+    consignacion?.propertyStatus === 'RENTED' ||
+    !!consignacion?.currentLeaseId;
 
   // The header disables the button whenever propertyId is missing, but the
   // guard is repeated here in case that ever stops being true — a click that
@@ -509,7 +409,14 @@ function ConsignacionDetailContent() {
             {consignacion.propertyTitle}
           </span>
         </nav>
-        <Button hideArrow className="shrink-0" onClick={() => setShowCitaModal(true)}>
+        <Button
+          hideArrow
+          className="shrink-0"
+          onClick={() => setShowCitaModal(true)}
+          disabled={terminada}
+          title={terminada ? t('inmobiliaria.consignaciones.header.terminada.pedirCita') : undefined}
+          data-testid="pedir-cita"
+        >
           <CalendarPlus className="w-4 h-4" />
           {t('inmobiliaria.agenda.pedirCita')}
         </Button>
@@ -529,6 +436,8 @@ function ConsignacionDetailContent() {
           onViewPortal={handleViewPortal}
           onChangeStatus={handleChangeStatus}
           onTerminate={handleTerminate}
+          fechaDeTerminacion={fechaDeTerminacion}
+          contratoVigente={contratoVigente}
         />
       </motion.div>
 
@@ -565,6 +474,8 @@ function ConsignacionDetailContent() {
               inmueble) no hay galería que mostrar. */}
           {consignacion.propertyId && (
             <motion.div
+              id="fotos"
+              className="scroll-mt-20"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.12 }}
@@ -645,6 +556,8 @@ function ConsignacionDetailContent() {
           </motion.div>
 
           <motion.div
+            id="documentos"
+            className="scroll-mt-20"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
@@ -690,19 +603,15 @@ function ConsignacionDetailContent() {
         titulo={consignacion.propertyTitle}
       />
 
-      {/* Edit Modal */}
-      <Modal
-        open={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        title={t('inmobiliaria.portafolio.detail.editProperty')}
-        size="lg"
-      >
-        <ConsignacionEditForm
-          consignacion={consignacion}
-          onSubmit={handleEditSubmit}
-          onCancel={() => setShowEditModal(false)}
-        />
-      </Modal>
+      {/* El cajón «Editar»: inmueble + mandato en un solo lugar. */}
+      <ConsignacionEditForm
+        abierto={showEditModal}
+        onCerrar={() => setShowEditModal(false)}
+        consignacion={consignacion}
+        property={property}
+        cargandoProperty={cargandoProperty}
+        onGuardado={handleEditGuardado}
+      />
 
       {/* Los dueños y su reparto (uno o varios, con su % del canon): edita la
           lista del mandato, no lo tumba. Es el mismo diálogo que abre la

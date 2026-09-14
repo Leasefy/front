@@ -38,10 +38,23 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => ({ get: (k: string) => (k === 'editar' ? queryDePrueba.editar : null) }),
 }));
 
-// El formulario de edición tiene su propio test; acá sólo importa que el modal
-// se abra. (Usa `formatCurrency` del i18n, que este mock no trae.)
+// El cajón de edición tiene su propio test; acá sólo importa que se abra
+// (renderiza sólo cuando `abierto`, como el cajón real).
 vi.mock('@/components/inmobiliaria/ConsignacionEditForm', () => ({
-  ConsignacionEditForm: () => <div data-testid="edit-form-stub" />,
+  ConsignacionEditForm: ({ abierto }: { abierto: boolean }) =>
+    abierto ? <div data-testid="edit-form-stub" /> : null,
+}));
+
+// La ficha relee el historial sólo con el mandato TERMINADO (para la fecha
+// del banner). Se controla por prueba.
+const { getHistorialMock } = vi.hoisted(() => ({ getHistorialMock: vi.fn() }));
+vi.mock('@/lib/api/inmobiliaria.service', () => ({
+  consignacionesApi: {
+    getHistorial: (...a: unknown[]) => getHistorialMock(...a),
+    getById: vi.fn(),
+    update: vi.fn(),
+    assignAgent: vi.fn(),
+  },
 }));
 
 vi.mock('@/lib/i18n', () => ({
@@ -92,13 +105,19 @@ vi.mock('@/components/inmobiliaria/ConsignacionHeader', () => ({
   ConsignacionHeader: ({
     propertyThumbnailUrl,
     onViewPortal,
+    fechaDeTerminacion,
+    contratoVigente,
   }: {
     propertyThumbnailUrl?: string;
     onViewPortal?: () => void;
+    fechaDeTerminacion?: string | null;
+    contratoVigente?: boolean;
   }) =>
     React.createElement('button', {
       'data-testid': 'view-portal-stub',
       'data-thumbnail': propertyThumbnailUrl ?? '',
+      'data-fecha-terminacion': fechaDeTerminacion ?? '',
+      'data-contrato-vigente': contratoVigente ? '1' : '0',
       onClick: onViewPortal,
     }),
 }));
@@ -235,21 +254,71 @@ describe('<ConsignacionDetailPage> — ?editar=1 abre el formulario (Nico, 2026-
     routerReplaceMock.mockReset();
   });
 
-  it('con ?editar=1 y datos cargados, el modal de edición ya está abierto y la URL se limpia', () => {
+  it('con ?editar=1 y datos cargados, el cajón de edición ya está abierto y la URL se limpia', () => {
     queryDePrueba.editar = '1';
     useConsignacionMock.mockReturnValue({ consignacion: BASE_CONSIGNACION });
     renderPage();
 
-    expect(document.body.querySelector('[data-testid="modal-ficha"]')).not.toBeNull();
     expect(document.body.querySelector('[data-testid="edit-form-stub"]')).not.toBeNull();
     expect(routerReplaceMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles/consig-1', { scroll: false });
   });
 
-  it('sin la query el modal no aparece solo', () => {
+  it('sin la query el cajón no aparece solo', () => {
     useConsignacionMock.mockReturnValue({ consignacion: BASE_CONSIGNACION });
     renderPage();
-    expect(document.body.querySelector('[data-testid="modal-ficha"]')).toBeNull();
+    expect(document.body.querySelector('[data-testid="edit-form-stub"]')).toBeNull();
     expect(routerReplaceMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('<ConsignacionDetailPage> — mandato TERMINADO (Nico, 2026-09-13: «es súper raro»)', () => {
+  beforeEach(() => {
+    getHistorialMock.mockReset();
+  });
+
+  it('con el mandato activo no lee el historial y «Pedir cita» está vivo', () => {
+    useConsignacionMock.mockReturnValue({ consignacion: BASE_CONSIGNACION });
+    renderPage();
+    expect(getHistorialMock).not.toHaveBeenCalled();
+    const cita = document.body.querySelector<HTMLButtonElement>('[data-testid="pedir-cita"]')!;
+    expect(cita.disabled).toBe(false);
+  });
+
+  it('terminado: «Pedir cita» queda deshabilitado con el porqué, y la fecha sale del evento del historial', async () => {
+    getHistorialMock.mockResolvedValue([
+      { id: 'e2', tipo: 'datos_editados', titulo: 'x', detalle: null, actor: 'Ana', esSistema: false, fecha: '2026-09-14T10:00:00.000Z', metadata: {} },
+      { id: 'e1', tipo: 'consignacion_terminada', titulo: 'Consignación terminada', detalle: null, actor: 'Ana', esSistema: false, fecha: '2026-09-13T15:00:00.000Z', metadata: {} },
+    ]);
+    useConsignacionMock.mockReturnValue({
+      consignacion: { ...BASE_CONSIGNACION, status: 'terminated', arrendado: true },
+    });
+    renderPage();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const cita = document.body.querySelector<HTMLButtonElement>('[data-testid="pedir-cita"]')!;
+    expect(cita.disabled).toBe(true);
+    expect(cita.getAttribute('title')).toBe('inmobiliaria.consignaciones.header.terminada.pedirCita');
+    expect(getHistorialMock).toHaveBeenCalledWith('consig-1');
+    const header = document.body.querySelector('[data-testid="view-portal-stub"]')!;
+    expect(header.getAttribute('data-fecha-terminacion')).toBe('2026-09-13T15:00:00.000Z');
+    // «Arrendado» = contrato vigente (`arrendado`), no `availability`.
+    expect(header.getAttribute('data-contrato-vigente')).toBe('1');
+  });
+
+  it('terminado antes de que existiera el evento: sin fecha, sin inventarla', async () => {
+    getHistorialMock.mockResolvedValue([]);
+    useConsignacionMock.mockReturnValue({ consignacion: { ...BASE_CONSIGNACION, status: 'terminated' } });
+    renderPage();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    const header = document.body.querySelector('[data-testid="view-portal-stub"]')!;
+    expect(header.getAttribute('data-fecha-terminacion')).toBe('');
+    expect(header.getAttribute('data-contrato-vigente')).toBe('0');
   });
 });
 

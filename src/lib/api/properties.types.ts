@@ -94,6 +94,13 @@ export interface BackendProperty {
    * Collapsing these two is the exact bug §3.2.6 exists to prevent.
    */
   consignedAt?: string | null;
+  /**
+   * El «Código» con el que la inmobiliaria identifica el inmueble en su
+   * sistema anterior (el que amarra los contratos migrados). PORTFOLIO-only,
+   * como `code`: ausente para un lector no autorizado, `null` = no tiene.
+   * Se edita desde la ficha desde el 2026-09-13.
+   */
+  externalId?: string | null;
 
   // Characteristics
   /*

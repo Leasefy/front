@@ -170,6 +170,80 @@ describe('<ConsignacionHeader> — abrir las fotos desde la portada', () => {
  * de la garantía la da el compilador: la prop `onRenew` ya no existe en el
  * tipo, así que volver a cablear el ítem rompe `tsc`.
  */
+describe('<ConsignacionHeader> — el «0» suelto (Nico, 2026-09-13, con captura)', () => {
+  // `{consignacion.adminFee && …}` con `adminFee = 0` hacía que React pintara
+  // el `0` al lado de «/mes».
+  it('con administración en 0 no aparece ningún «0» suelto', () => {
+    render({ consignacion: { ...BASE_CONSIGNACION, adminFee: 0, minimumTerm: 0 } });
+    const nodos: string[] = [];
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) nodos.push((walker.currentNode.textContent ?? '').trim());
+    expect(nodos.filter((n) => n === '0')).toEqual([]);
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.header.admin');
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.header.minimum');
+  });
+
+  it('con administración real sí se muestra', () => {
+    render({ consignacion: { ...BASE_CONSIGNACION, adminFee: 150000 } });
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.header.admin');
+  });
+});
+
+describe('<ConsignacionHeader> — un mandato TERMINADO se ve y se comporta distinto (Nico, 2026-09-13)', () => {
+  const terminada: Consignacion = { ...BASE_CONSIGNACION, status: 'terminated', availability: 'rented' };
+  const botones = () => Array.from(container.querySelectorAll('button, a'));
+  const conTexto = (t: string) => botones().find((b) => b.textContent?.includes(t));
+
+  it('muestra el banner con la fecha, sin el chip de disponibilidad, y con el aviso de contrato vigente', () => {
+    render({ consignacion: terminada, fechaDeTerminacion: '2026-09-13T15:00:00.000Z', contratoVigente: true });
+    const banner = container.querySelector('[data-testid="banner-consignacion-terminada"]')!;
+    expect(banner).not.toBeNull();
+    expect(banner.textContent).toContain('inmobiliaria.consignaciones.header.terminada.titulo');
+    expect(banner.textContent).toContain('inmobiliaria.consignaciones.header.terminada.detalle');
+    expect(container.querySelector('[data-testid="terminada-con-contrato"]')).not.toBeNull();
+    // El chip «Arrendado» (que sale de `availability`, no del contrato) ya no describe nada.
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.availability.rented');
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.status.terminated');
+  });
+
+  it('sin fecha conocida lo dice sin inventarla, y sin contrato no avisa de contrato', () => {
+    render({ consignacion: terminada, fechaDeTerminacion: null, contratoVigente: false });
+    const banner = container.querySelector('[data-testid="banner-consignacion-terminada"]')!;
+    expect(banner.textContent).toContain('inmobiliaria.consignaciones.header.terminada.tituloSinFecha');
+    expect(container.querySelector('[data-testid="terminada-con-contrato"]')).toBeNull();
+  });
+
+  it('el kebab no ofrece «Terminar» otra vez, no hay «Cambiar estado», «Ver en Portal» explica por qué y hay «Nueva consignación»', () => {
+    render({ consignacion: terminada });
+    expect(container.querySelector('[aria-label="inmobiliaria.consignaciones.header.moreActions"]')).toBeNull();
+    expect(conTexto('inmobiliaria.consignaciones.header.changeStatus')).toBeUndefined();
+    const portal = findViewPortalButton()!;
+    expect(portal.disabled).toBe(true);
+    expect(portal.getAttribute('title')).toBe('inmobiliaria.consignaciones.header.terminada.viewOnPortal');
+    const nueva = container.querySelector<HTMLAnchorElement>('[data-testid="header-nueva-consignacion"]')!;
+    expect(nueva).not.toBeNull();
+    expect(nueva.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles/nuevo?origen=existente');
+  });
+
+  it('«Editar» queda sólo para el inmueble: cambia de nombre, explica y sigue disparando onEdit', () => {
+    const onEdit = vi.fn();
+    render({ consignacion: terminada, onEdit });
+    const editar = container.querySelector<HTMLButtonElement>('[data-testid="header-editar"]')!;
+    expect(editar.textContent).toContain('inmobiliaria.consignaciones.header.terminada.editar');
+    expect(editar.getAttribute('title')).toBe('inmobiliaria.consignaciones.header.terminada.editarAyuda');
+    act(() => { editar.click(); });
+    expect(onEdit).toHaveBeenCalled();
+  });
+
+  it('un mandato activo conserva todo: chip de disponibilidad, «Cambiar estado» y el kebab', () => {
+    render();
+    expect(container.querySelector('[data-testid="banner-consignacion-terminada"]')).toBeNull();
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.availability.available');
+    expect(conTexto('inmobiliaria.consignaciones.header.changeStatus')).toBeDefined();
+    expect(container.querySelector('[aria-label="inmobiliaria.consignaciones.header.moreActions"]')).not.toBeNull();
+  });
+});
+
 describe('<ConsignacionHeader> — el menú no ofrece lo que no existe', () => {
   it('ya no hay «Renovar consignación», y «Terminar» sigue estando', () => {
     const fuente = readFileSync(

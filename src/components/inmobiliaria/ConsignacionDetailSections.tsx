@@ -134,7 +134,8 @@ export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) 
               </p>
             </div>
           )}
-          {consignacion.minimumTerm && (
+          {/* `> 0` y no `&&` a secas: con `0` React pinta el «0» suelto. */}
+          {!!consignacion.minimumTerm && consignacion.minimumTerm > 0 && (
             <div>
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.minimumTerm')}</p>
               <p className="text-sm font-medium text-fg">

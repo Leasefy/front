@@ -3293,6 +3293,7 @@
         "minimum": "Minimum:",
         "months": "months",
         "edit": "Edit",
+        "moreActions": "More actions",
         "viewOnPortal": "View on Portal",
         "viewOnPortalUnavailable": "This property has no linked listing",
         "comingSoon": "Coming soon",
@@ -3598,7 +3599,13 @@
           "publishErrorDesc": "{{reason}} Open it from the list and publish it whenever you're ready — don't create it again.",
           "publishErrorFallbackReason": "We couldn't publish it.",
           "photosPartialTitle": "Some photos didn't upload",
-          "photosPartialDesc": "{{uploaded}} of {{total}} uploaded. You can add the rest from the property."
+          "photosPartialDesc": "{{uploaded}} of {{total}} uploaded. You can add the rest from the property.",
+          "agentErrorTitle": "The property was created; we couldn’t assign the agent",
+          "agentErrorDesc": "The consignment carries on. Assign the agent later from the property — don’t create it again.",
+          "mandateDuplicateTitle": "This property already has a consignment",
+          "mandateDuplicateDesc": "{{reason}}. No second one was created: find it in the list before creating it again.",
+          "draftSavedTitle": "Property consigned and saved as a draft",
+          "draftSavedDesc": "\"{{title}}\" won’t be published until it has photos. Upload them from the property and publish it from there."
         },
         "step1": {
           "title": "Select Owner",
@@ -3721,6 +3728,13 @@
           "noName": "No name",
           "moreItems": "+{{count}} more",
           "noInventory": "No inventory registered"
+        },
+        "sinFotosDialog": {
+          "title": "Publish it without photos?",
+          "description": "On the portal a property without photos shows up as a grey box and almost nobody opens it. You can keep it as a draft and publish it once it has photos.",
+          "addPhotos": "Add photos",
+          "saveDraft": "Keep as draft",
+          "publishAnyway": "Publish without photos"
         }
       }
     },
@@ -5779,6 +5793,71 @@
             "description": "Contact support to activate Sura, Mapfre or Bolívar.",
             "cta": {
               "label": "Contact support"
+            }
+          },
+          "backToList": "Back to insurers",
+          "carrier": {
+            "subtitle": "How this insurer is doing: response time, errors, approvals and its latest quotes.",
+            "slaLinkLabel": "View SLA",
+            "refresh": "Refresh",
+            "noLatencyData": "No response-time data yet.",
+            "noErrorRateData": "No error data yet.",
+            "noApprovalData": "No approvals to show yet.",
+            "charts": {
+              "latency": {
+                "title": "Response time p95 · 30 days",
+                "tooltipLabel": "Response time p95"
+              },
+              "errorRate": {
+                "title": "Error rate · 30 days",
+                "tooltipLabel": "Error rate"
+              },
+              "approvalByCanon": {
+                "title": "Approval by rent range",
+                "tooltipLabel": "Approval"
+              }
+            },
+            "kpis": {
+              "latencyP95": "Response time p95",
+              "errorRate": "Error rate · 24 h",
+              "approvalRate": "Approval · 30 days",
+              "costPerQuote": "Cost per quote · 30 days"
+            },
+            "recentQuotes": {
+              "title": "Latest quotes",
+              "empty": "This insurer has no quotes yet.",
+              "verdict": {
+                "approved": "Approved",
+                "rejected": "Rejected"
+              },
+              "cols": {
+                "date": "Date",
+                "cedula": "ID number",
+                "canon": "Rent",
+                "verdict": "Result",
+                "prima": "Premium",
+                "latency": "Response time",
+                "view": "View"
+              },
+              "viewAriaLabel": "View quote"
+            },
+            "sla": {
+              "title": "SLA",
+              "subtitle": "Whether this insurer is responding within the agreed terms, and when it stopped.",
+              "since": "For",
+              "sinceUnknown": "no date",
+              "breachWindows": {
+                "title": "Breach windows",
+                "empty": "No breaches in this period.",
+                "ongoing": "Ongoing",
+                "cols": {
+                  "start": "Start",
+                  "end": "End",
+                  "duration": "Duration",
+                  "maxP95": "Max response time p95",
+                  "maxErrorRate": "Max error rate"
+                }
+              }
             }
           }
         },

@@ -39,7 +39,7 @@ const SLA_BG: Record<string, string> = {
 // =============================================================================
 
 function formatElapsed(since: string | null, t: (key: string) => string): string {
-  if (!since) return t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.since.unknown')
+  if (!since) return t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.sinceUnknown')
   const diffMs = Date.now() - new Date(since).getTime()
   const totalMinutes = Math.floor(diffMs / 60_000)
   const hours = Math.floor(totalMinutes / 60)

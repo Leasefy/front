@@ -19,9 +19,21 @@ void React // jsx-preserve
 // react-dom/client needs this flag to recognize our act() wrapping.
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { getAllCandidatesMock, pushMock } = vi.hoisted(() => ({
+const { getAllCandidatesMock, pushMock, canAccessMock, refresco } = vi.hoisted(() => ({
   getAllCandidatesMock: vi.fn(),
   pushMock: vi.fn(),
+  canAccessMock: vi.fn(),
+  /** El `load` que la página le entrega al refresco de 30 s. */
+  refresco: { fn: null as null | (() => unknown) },
+}))
+
+vi.mock('@/components/auth/PageGuard', () => ({
+  PageGuard: ({ module, children }: { module?: string; children?: React.ReactNode }) =>
+    React.createElement('div', { 'data-testid': 'page-guard', 'data-module': module }, children),
+}))
+
+vi.mock('@/lib/hooks/usePermissions', () => ({
+  usePermissions: () => ({ canAccess: canAccessMock }),
 }))
 
 vi.mock('next/navigation', () => ({
@@ -45,15 +57,27 @@ vi.mock('@/lib/api/applications.service', () => ({
 // El cajón tiene su propia suite (pide evaluación, créditos, documentos…). Acá
 // sólo interesa que ESTA pantalla lo monte con la persona correcta, sin navegar.
 vi.mock('@/components/inmobiliaria/CandidateDrawer', () => ({
-  CandidateDrawer: ({ candidate }: { candidate: { tenantName?: string } | null }) =>
+  CandidateDrawer: ({
+    candidate,
+    puedeDecidir,
+  }: {
+    candidate: { tenantName?: string } | null
+    puedeDecidir?: boolean
+  }) =>
     candidate
-      ? React.createElement('div', { 'data-testid': 'cajon-candidato' }, candidate.tenantName)
+      ? React.createElement(
+          'div',
+          { 'data-testid': 'cajon-candidato', 'data-puede-decidir': String(puedeDecidir) },
+          candidate.tenantName,
+        )
       : null,
 }))
 
 // Auto-refresh is interval/focus-driven — irrelevant in unit tests.
 vi.mock('@/lib/hooks/use-auto-refresh', () => ({
-  useAutoRefresh: () => undefined,
+  useAutoRefresh: (fn: () => unknown) => {
+    refresco.fn = fn
+  },
 }))
 
 // ── Mock presentational leaves (avoid pulling the whole DS in) ───────────
@@ -185,6 +209,8 @@ beforeEach(() => {
   root = createRoot(container)
   getAllCandidatesMock.mockReset()
   pushMock.mockReset()
+  canAccessMock.mockReset().mockReturnValue(true)
+  refresco.fn = null
 })
 
 afterEach(() => {
@@ -405,5 +431,93 @@ describe('PostulacionesPage', () => {
     expect(visible?.textContent).not.toContain('Property with ID')
     expect(container.querySelector('[data-testid="fallo-detalle-tecnico"]')?.className)
       .toContain('sr-only')
+  })
+
+  it('S1: una postulación desplazada se lee «No adjudicado» y cuenta en Rechazadas', async () => {
+    getAllCandidatesMock.mockResolvedValue({
+      ...RESPONSE,
+      candidates: [
+        ...RESPONSE.candidates,
+        {
+          id: 'app-3',
+          tenantName: 'Luis Rojas',
+          tenantEmail: 'luis@example.com',
+          status: 'NO_ADJUDICADO',
+          submittedAt: '2026-07-14T10:00:00.000Z',
+          propertyId: 'prop-1',
+          propertyTitle: 'Apartamento 3 hab en robledo',
+        },
+      ],
+    })
+
+    await renderPage()
+
+    const fila = Array.from(container.querySelectorAll('tbody tr')).find((tr) =>
+      tr.textContent?.includes('Luis Rojas'),
+    )
+    expect(fila?.textContent).toContain('No adjudicado')
+    expect(fila?.textContent).not.toContain('Desconocido')
+    const rechazadas = tiles().find((b) => b.textContent?.includes('Rechazadas'))
+    expect(rechazadas?.textContent).toContain('1')
+  })
+
+  it('S2: si el refresco de fondo falla, la tabla se queda y se avisa', async () => {
+    getAllCandidatesMock.mockResolvedValueOnce(RESPONSE)
+    await renderPage()
+    expect(container.querySelectorAll('tbody tr')).toHaveLength(2)
+
+    getAllCandidatesMock.mockRejectedValueOnce(new ApiError(502, 'Bad Gateway'))
+    await act(async () => {
+      await refresco.fn?.()
+    })
+
+    expect(container.querySelectorAll('tbody tr')).toHaveLength(2)
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull()
+    expect(container.querySelector('[data-testid="refresco-fallido"]')).not.toBeNull()
+
+    // Un refresco bueno quita el aviso.
+    getAllCandidatesMock.mockResolvedValueOnce(RESPONSE)
+    await act(async () => {
+      await refresco.fn?.()
+    })
+    expect(container.querySelector('[data-testid="refresco-fallido"]')).toBeNull()
+  })
+
+  it('S3: la pantalla está guardada por el módulo portafolio', async () => {
+    getAllCandidatesMock.mockResolvedValue(RESPONSE)
+    await renderPage()
+    expect(container.querySelector('[data-testid="page-guard"]')?.getAttribute('data-module')).toBe(
+      'portafolio',
+    )
+  })
+
+  it('S3: sin portafolio:edit el cajón se abre sin poder decidir', async () => {
+    canAccessMock.mockImplementation((m: string, a: string) => !(m === 'portafolio' && a === 'edit'))
+    getAllCandidatesMock.mockResolvedValue(RESPONSE)
+    await renderPage()
+
+    const fila = container.querySelector<HTMLElement>('tbody tr[role="button"]')
+    await act(async () => {
+      fila?.click()
+    })
+
+    expect(container.querySelector('[data-testid="cajon-candidato"]')?.getAttribute('data-puede-decidir')).toBe(
+      'false',
+    )
+    expect(canAccessMock).toHaveBeenCalledWith('portafolio', 'edit')
+  })
+
+  it('S3: con portafolio:edit el cajón deja decidir', async () => {
+    getAllCandidatesMock.mockResolvedValue(RESPONSE)
+    await renderPage()
+
+    const fila = container.querySelector<HTMLElement>('tbody tr[role="button"]')
+    await act(async () => {
+      fila?.click()
+    })
+
+    expect(container.querySelector('[data-testid="cajon-candidato"]')?.getAttribute('data-puede-decidir')).toBe(
+      'true',
+    )
   })
 })

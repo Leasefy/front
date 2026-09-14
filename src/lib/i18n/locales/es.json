@@ -3333,6 +3333,7 @@
         "minimum": "Mínimo:",
         "months": "meses",
         "edit": "Editar",
+        "moreActions": "Más acciones",
         "viewOnPortal": "Ver en Portal",
         "viewOnPortalUnavailable": "Este inmueble no tiene una propiedad vinculada",
         "comingSoon": "Próximamente",
@@ -3638,7 +3639,13 @@
           "publishErrorDesc": "{{reason}} Ábrelo desde la lista y publicalo cuando quieras — no lo cargues de nuevo.",
           "publishErrorFallbackReason": "No pudimos publicarlo.",
           "photosPartialTitle": "Algunas fotos no se subieron",
-          "photosPartialDesc": "Se subieron {{uploaded}} de {{total}}. Puedes agregar las que faltan desde el inmueble."
+          "photosPartialDesc": "Se subieron {{uploaded}} de {{total}}. Puedes agregar las que faltan desde el inmueble.",
+          "agentErrorTitle": "El inmueble quedó creado; no pudimos asignar el agente",
+          "agentErrorDesc": "La consignación sigue su curso. Asigna el agente después desde el inmueble — no lo cargues de nuevo.",
+          "mandateDuplicateTitle": "Este inmueble ya tiene una consignación",
+          "mandateDuplicateDesc": "{{reason}}. No se creó otra: búscalo en la lista antes de volver a cargarlo.",
+          "draftSavedTitle": "Inmueble consignado y guardado como borrador",
+          "draftSavedDesc": "\"{{title}}\" no se publica hasta que tenga fotos. Súbelas desde el inmueble y publícalo desde ahí."
         },
         "step1": {
           "title": "Seleccionar Propietario",
@@ -3761,6 +3768,13 @@
           "noName": "Sin nombre",
           "moreItems": "+{{count}} mas",
           "noInventory": "Sin inventario registrado"
+        },
+        "sinFotosDialog": {
+          "title": "¿Publicarlo sin fotos?",
+          "description": "En el portal un inmueble sin fotos se ve como un recuadro gris y casi nadie lo abre. Puedes dejarlo en borrador y publicarlo cuando le subas fotos.",
+          "addPhotos": "Agregar fotos",
+          "saveDraft": "Dejar en borrador",
+          "publishAnyway": "Publicar sin fotos"
         }
       }
     },
@@ -5819,6 +5833,71 @@
             "description": "Contacta a soporte para activar Sura, Mapfre o Bolívar.",
             "cta": {
               "label": "Contactar soporte"
+            }
+          },
+          "backToList": "Volver a aseguradoras",
+          "carrier": {
+            "subtitle": "Cómo le va a esta aseguradora: tiempo de respuesta, errores, aprobación y sus últimas cotizaciones.",
+            "slaLinkLabel": "Ver cumplimiento",
+            "refresh": "Actualizar",
+            "noLatencyData": "Todavía no hay datos de tiempo de respuesta.",
+            "noErrorRateData": "Todavía no hay datos de errores.",
+            "noApprovalData": "Todavía no hay aprobaciones para mostrar.",
+            "charts": {
+              "latency": {
+                "title": "Tiempo de respuesta p95 · 30 días",
+                "tooltipLabel": "Tiempo de respuesta p95"
+              },
+              "errorRate": {
+                "title": "Tasa de error · 30 días",
+                "tooltipLabel": "Tasa de error"
+              },
+              "approvalByCanon": {
+                "title": "Aprobación por rango de canon",
+                "tooltipLabel": "Aprobación"
+              }
+            },
+            "kpis": {
+              "latencyP95": "Tiempo de respuesta p95",
+              "errorRate": "Tasa de error · 24 h",
+              "approvalRate": "Aprobación · 30 días",
+              "costPerQuote": "Costo por cotización · 30 días"
+            },
+            "recentQuotes": {
+              "title": "Últimas cotizaciones",
+              "empty": "Esta aseguradora todavía no tiene cotizaciones.",
+              "verdict": {
+                "approved": "Aprobada",
+                "rejected": "Rechazada"
+              },
+              "cols": {
+                "date": "Fecha",
+                "cedula": "Cédula",
+                "canon": "Canon",
+                "verdict": "Resultado",
+                "prima": "Prima",
+                "latency": "Tiempo de respuesta",
+                "view": "Ver"
+              },
+              "viewAriaLabel": "Ver la cotización"
+            },
+            "sla": {
+              "title": "Cumplimiento",
+              "subtitle": "Si esta aseguradora responde dentro de lo acordado, y cuándo dejó de hacerlo.",
+              "since": "Hace",
+              "sinceUnknown": "sin fecha",
+              "breachWindows": {
+                "title": "Ventanas de incumplimiento",
+                "empty": "No hubo incumplimientos en este periodo.",
+                "ongoing": "En curso",
+                "cols": {
+                  "start": "Inicio",
+                  "end": "Fin",
+                  "duration": "Duración",
+                  "maxP95": "Tiempo de respuesta p95 máximo",
+                  "maxErrorRate": "Tasa de error máxima"
+                }
+              }
             }
           }
         },

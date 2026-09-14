@@ -12,6 +12,8 @@ import {
 } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
+import { usePermissions } from '@/lib/hooks/usePermissions'
+import { PageGuard } from '@/components/auth/PageGuard'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
@@ -43,6 +45,10 @@ const STATUS_CONFIG: Record<
   NEEDS_INFO:      { label: 'Pide info',         bg: 'bg-warning-soft',   text: 'text-warning' },
   WITHDRAWN:       { label: 'Retirado',          bg: 'bg-surface-muted',  text: 'text-fg-muted' },
   CONTRACT_FAILED: { label: 'Contrato fallido',  bg: 'bg-danger-soft',    text: 'text-danger' },
+  // Aprobar a una persona desplaza a las demás del mismo inmueble a
+  // NO_ADJUDICADO (landlord.service.ts). Sin esta fila salían «Desconocido».
+  NO_ADJUDICADO:   { label: 'No adjudicado',     bg: 'bg-surface-muted',  text: 'text-fg-muted' },
+  PREAPPROVED:     { label: 'Preaprobado',       bg: 'bg-primary-soft',   text: 'text-primary' },
 };
 
 const FALLBACK_STATUS = { label: 'Desconocido', bg: 'bg-surface-muted', text: 'text-fg-muted' };
@@ -74,10 +80,10 @@ const FILTERS: {
   statuses: LandlordApplicationStatus[] | null;
 }[] = [
   { key: 'ALL',         label: 'Total',         tone: 'neutral', icon: ClipboardText, statuses: null },
-  { key: 'IN_REVIEW',   label: 'En revisión',   tone: 'info',    icon: Hourglass,     statuses: ['SUBMITTED', 'UNDER_REVIEW'] },
+  { key: 'IN_REVIEW',   label: 'En revisión',   tone: 'info',    icon: Hourglass,     statuses: ['SUBMITTED', 'UNDER_REVIEW', 'PREAPPROVED'] },
   { key: 'NEEDS_INFO',  label: 'Pide info',     tone: 'warn',    icon: WarningCircle, statuses: ['NEEDS_INFO'] },
   { key: 'APPROVED',    label: 'Aprobadas',     tone: 'ok',      icon: CheckCircle,   statuses: ['APPROVED'] },
-  { key: 'REJECTED',    label: 'Rechazadas',    tone: 'bad',     icon: XCircle,       statuses: ['REJECTED', 'WITHDRAWN', 'CONTRACT_FAILED'] },
+  { key: 'REJECTED',    label: 'Rechazadas',    tone: 'bad',     icon: XCircle,       statuses: ['REJECTED', 'WITHDRAWN', 'CONTRACT_FAILED', 'NO_ADJUDICADO'] },
 ];
 
 function StatTile({
@@ -132,7 +138,7 @@ function initials(name: string): string {
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?'
 }
 
-export default function PostulacionesPage() {
+function PostulacionesContenido() {
   const [items, setItems] = useState<AllCandidatesItem[]>([])
   const [filter, setFilter] = useState<FilterKey>('ALL')
   const [search, setSearch] = useState('')
@@ -145,12 +151,29 @@ export default function PostulacionesPage() {
   // El error ENTERO, no su mensaje: el status distingue «no existe» de
   // «no pudimos cargar», y sólo uno de los dos se puede reintentar.
   const [error, setError] = useState<unknown>(null)
+  /**
+   * ¿Ya se vio la lista alguna vez? Es el `conservarContenido` de
+   * `EstadoDeDatos`: la lista se relee sola cada 30 s (`useAutoRefresh`) y una
+   * corrida fallida reemplazaba la tabla entera por el cartel de error. Lo que
+   * la persona estaba leyendo no dejó de ser cierto porque un refresco tropezó.
+   */
+  const [cargoAlgunaVez, setCargoAlgunaVez] = useState(false)
+
+  /*
+   * Aprobar, rechazar y pedir información escriben sobre la postulación. Un
+   * CONTADOR o un VIEWER no tienen `portafolio:edit` (role-defaults.ts), así que
+   * no se les dibujan los botones. Mientras los permisos cargan, `canAccess`
+   * devuelve false: los botones aparecen cuando se sabe, nunca antes.
+   */
+  const { canAccess } = usePermissions()
+  const puedeDecidir = canAccess('portafolio', 'edit')
 
   const load = useCallback(async () => {
     setError(null)
     try {
       const res = await landlordApplicationsApi.getAllCandidates()
       setItems(res.candidates)
+      setCargoAlgunaVez(true)
     } catch (err) {
       setError(err)
     } finally {
@@ -248,12 +271,31 @@ export default function PostulacionesPage() {
         </p>
       </div>
 
+      {/* El refresco de fondo falló con la lista ya en pantalla: se conserva y se
+          dice, en vez de borrarla o de dejarla envejecer en silencio. */}
+      {error && cargoAlgunaVez ? (
+        <div
+          role="status"
+          data-testid="refresco-fallido"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 text-sm text-fg"
+        >
+          <span>No pudimos actualizar la lista. Lo que ves es de la última vez que cargó.</span>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="font-medium text-primary hover:underline"
+          >
+            Reintentar
+          </button>
+        </div>
+      ) : null}
+
       {isLoading ? (
         /* Esqueleto con las 5 columnas reales de la tabla, no un spinner: la
            forma de lo que viene ya se conoce, así que la pantalla no tiene que
            saltar cuando lleguen los datos. */
         <EsqueletoTabla columnas={5} filas={6} />
-      ) : error ? (
+      ) : error && !cargoAlgunaVez ? (
         <FalloDeCarga
           error={error}
           queEs="las postulaciones"
@@ -460,6 +502,7 @@ export default function PostulacionesPage() {
           setAccion({ type, candidate: candidate as AllCandidatesItem })
         }}
         onReevaluated={() => void load()}
+        puedeDecidir={puedeDecidir}
       />
 
       {accion && (
@@ -471,5 +514,19 @@ export default function PostulacionesPage() {
         />
       )}
     </div>
+  )
+}
+
+/**
+ * Postulaciones vive dentro de «Comercial», al lado de Inmuebles, y lee los
+ * candidatos de los inmuebles de la agencia: el mismo módulo (`portafolio`) que
+ * ya guarda la lista de candidatos de un inmueble (`inmuebles/[id]/candidatos`).
+ * Antes no tenía guarda: un CONTADOR entraba por la URL y veía Aprobar/Rechazar.
+ */
+export default function PostulacionesPage() {
+  return (
+    <PageGuard module="portafolio">
+      <PostulacionesContenido />
+    </PageGuard>
   )
 }

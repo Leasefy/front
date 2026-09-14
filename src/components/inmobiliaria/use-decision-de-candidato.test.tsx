@@ -16,6 +16,11 @@ const approve = vi.fn()
 const reject = vi.fn()
 const requestInfo = vi.fn()
 const preapprove = vi.fn()
+const permisos = vi.hoisted(() => ({
+  valor: { isLoading: false as boolean, canAccess: (_m: string, _a: string): boolean => true },
+}))
+vi.mock('@/lib/hooks/usePermissions', () => ({ usePermissions: () => permisos.valor }))
+
 vi.mock('@/lib/api/applications.service', () => ({
   landlordApplicationsApi: {
     approve: (...a: unknown[]) => approve(...a),
@@ -186,5 +191,32 @@ describe('useDecisionDeCandidato', () => {
 
     // Dos capas de scroll una sobre otra es lo que se evita: queda el modal.
     expect(document.body.textContent).toContain('Rechazar postulación')
+  })
+
+  describe('sin portafolio:edit no se decide (S3)', () => {
+    const botonDelCajon = (texto: string) =>
+      Array.from(document.body.querySelectorAll('button')).find((b) => b.textContent?.trim() === texto)
+
+    afterEach(() => {
+      permisos.valor = { isLoading: false, canAccess: () => true }
+    })
+
+    // Ana está SUBMITTED: desde ahí se rechaza o se pide info (aprobar pide «en revisión»).
+    it('con permiso el cajón ofrece Rechazar y Pedir info', async () => {
+      await montar()
+      await tocar('abrir')
+      expect(botonDelCajon('Rechazar')).toBeTruthy()
+      expect(botonDelCajon('Pedir info')).toBeTruthy()
+    })
+
+    it('un VIEWER abre el cajón pero no ve Rechazar ni Pedir info', async () => {
+      permisos.valor = { isLoading: false, canAccess: (m: string, a: string) => !(m === 'portafolio' && a === 'edit') }
+      await montar()
+      await tocar('abrir')
+      expect(document.body.textContent).toContain('Ana Gómez')
+      expect(botonDelCajon('Aprobar')).toBeUndefined()
+      expect(botonDelCajon('Rechazar')).toBeUndefined()
+      expect(botonDelCajon('Pedir info')).toBeUndefined()
+    })
   })
 })

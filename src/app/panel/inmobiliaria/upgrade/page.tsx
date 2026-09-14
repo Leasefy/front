@@ -7,11 +7,24 @@ import { CheckCircle, Shield, Sparkle, Lock, Crown, Robot, ChartBar, Buildings, 
 import { BackButton } from '@/components/ui/back-button';
 import { PricingTable } from '@/components/pricing';
 import { AgencyCheckoutOverlay } from '@/components/inmobiliaria/AgencyCheckoutOverlay';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/toast';
+import { formatDate } from '@/lib/format';
 import { useAgencyPlans } from '@/lib/hooks/useSubscription';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { useAgencyCheckout } from '@/lib/hooks/useAgencyCheckout';
-import type { AgencyPlanId } from '@/lib/types/subscription';
+import { agencySubscriptionApi } from '@/lib/api/agency-subscription.service';
+import type { AgencyPlan, AgencyPlanId } from '@/lib/types/subscription';
 import { shouldResumeReactivation } from './resume-reactivation';
+import { isLowerTierChange } from './plan-change-confirm';
 
 /**
  * Upgrade page for agency users.
@@ -41,11 +54,17 @@ function AgencyUpgradeContent() {
   const currentPlan = currentPlanId ? plans.find((p) => p.id === currentPlanId) ?? null : null;
   const newPlan = selectedPlan ? plans.find((p) => p.id === selectedPlan) ?? null : null;
 
+  // A lower-tier selection awaiting the owner's confirmation (T-0089) — set by
+  // `handleSelectPlan`, cleared on cancel/confirm. Holds the TARGET plan so
+  // the dialog can show its name without a second catalog lookup.
+  const [pendingDowngrade, setPendingDowngrade] = useState<AgencyPlan | null>(null);
+
   // Direct-to-Wompi checkout (avaluo-style, no intermediate page). On success the
   // subscription is ACTIVE → go to the panel; the overlay shows success first.
   const {
     state,
     error,
+    scheduled,
     paymentUrl,
     popupBlocked,
     pollError,
@@ -91,11 +110,7 @@ function AgencyUpgradeContent() {
   // la pestaña de forma SÍNCRONA dentro del gesto del click, por eso el navegador
   // no la bloquea—; free/percentage se activan sin cobro; custom (inexistente en
   // el modelo dinámico) cae al checkout como cotización. El estado se ve en el overlay.
-  const handleSelectPlan = (planId: string) => {
-    if (planId === currentPlanId) return;
-    if (state === 'processing' || state === 'awaiting') return;
-    const target = plans.find((p) => p.id === planId);
-    if (!target) return;
+  const dispatchSelectPlan = (planId: string, target: AgencyPlan) => {
     setSelectedPlan(planId as AgencyPlanId);
     if (target.pricingModel === 'custom') {
       router.push(`/panel/inmobiliaria/checkout?plan=${planId}`);
@@ -114,6 +129,48 @@ function AgencyUpgradeContent() {
       );
     } else {
       void activate(planId);
+    }
+  };
+
+  // Clicking a LOWER tier must ask for confirmation before we ever call the
+  // back (T-0089) — `select-plan` schedules the downgrade silently otherwise,
+  // and the owner could lose paid features without realizing they asked for
+  // less. An upgrade or same-tier click (including the resume-driven
+  // reactivation path above) is unaffected — dispatched immediately, exactly
+  // as before.
+  const handleSelectPlan = (planId: string) => {
+    if (planId === currentPlanId) return;
+    if (state === 'processing' || state === 'awaiting') return;
+    const target = plans.find((p) => p.id === planId);
+    if (!target) return;
+    if (isLowerTierChange(currentPlan?.level, target.level)) {
+      setPendingDowngrade(target);
+      return;
+    }
+    dispatchSelectPlan(planId, target);
+  };
+
+  const confirmDowngrade = () => {
+    if (!pendingDowngrade) return;
+    const target = pendingDowngrade;
+    setPendingDowngrade(null);
+    dispatchSelectPlan(target.id, target);
+  };
+
+  // "Deshacer" on a just-scheduled downgrade (T-0089) — cancels the pending
+  // change server-side, then closes the overlay and refreshes the
+  // subscription snapshot so the panel/plan cards reflect the undo.
+  // `reset()` is safe to call here: no charge was tracked for a
+  // SCHEDULED_DOWNGRADE outcome, so its abandon call is a no-op.
+  const handleUndoScheduledChange = async () => {
+    try {
+      await agencySubscriptionApi.cancelPendingChange();
+      toast.success('Deshecho: tu plan no va a cambiar.');
+    } catch {
+      toast.error('No pudimos deshacer el cambio. Intenta de nuevo.');
+    } finally {
+      reset();
+      void subscriptionRefetch();
     }
   };
 
@@ -228,15 +285,45 @@ function AgencyUpgradeContent() {
           isPaid={newPlan.pricingModel === 'flat'}
           state={state}
           error={error}
+          scheduled={scheduled}
           paymentUrl={paymentUrl}
           popupBlocked={popupBlocked}
           pollError={pollError}
           awaitingTimedOut={awaitingTimedOut}
           resuming={resuming}
           onVerify={verifyNow}
+          onUndo={state === 'scheduled' ? handleUndoScheduledChange : undefined}
           onClose={reset}
         />
       )}
+
+      {/* Confirm BEFORE calling the back for a lower-tier selection (T-0089) —
+          `select-plan` schedules the downgrade silently otherwise. */}
+      <Dialog
+        open={!!pendingDowngrade}
+        onOpenChange={(open) => {
+          if (!open) setPendingDowngrade(null);
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Confirmar cambio de plan</DialogTitle>
+          </DialogHeader>
+          <DialogDescription className="text-sm text-fg-muted">
+            {subscriptionState?.subscription?.currentPeriodEnd
+              ? `Tu plan cambiará a ${pendingDowngrade?.name} el ${formatDate(subscriptionState.subscription.currentPeriodEnd)}; hasta entonces seguís con ${currentPlan?.name ?? 'tu plan actual'}.`
+              : `Tu plan cambiará a ${pendingDowngrade?.name} al final de tu período actual; hasta entonces seguís con ${currentPlan?.name ?? 'tu plan actual'}.`}
+          </DialogDescription>
+          <DialogFooter>
+            <Button variant="outline" hideArrow onClick={() => setPendingDowngrade(null)}>
+              Cancelar
+            </Button>
+            <Button hideArrow onClick={confirmDowngrade}>
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

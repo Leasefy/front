@@ -19,6 +19,21 @@ vi.mock('@/lib/i18n', () => ({
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }))
 
+const mockToastSuccess = vi.fn()
+const mockToastError = vi.fn()
+vi.mock('@/components/ui/toast', () => ({
+  toast: { success: (...a: unknown[]) => mockToastSuccess(...a), error: (...a: unknown[]) => mockToastError(...a) },
+}))
+
+const mockSelectPlan = vi.fn()
+const mockCancelPendingChange = vi.fn()
+vi.mock('@/lib/api/agency-subscription.service', () => ({
+  agencySubscriptionApi: {
+    selectPlan: (...a: unknown[]) => mockSelectPlan(...a),
+    cancelPendingChange: (...a: unknown[]) => mockCancelPendingChange(...a),
+  },
+}))
+
 const pushMock = vi.fn()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: pushMock }),
@@ -44,9 +59,14 @@ import type { AgencyPlan } from '@/lib/types/subscription'
 function makeSub(overrides: Record<string, unknown> = {}) {
   return {
     currentPlanId: 'pro',
-    state: { subscription: { currentPeriodEnd: '2026-03-01T00:00:00Z' } },
+    state: {
+      subscription: { currentPeriodEnd: '2026-03-01T00:00:00Z' },
+      pendingPlanTier: null,
+      pendingPlanEffectiveAt: null,
+    },
     isLoading: false,
     error: null as Error | null,
+    refetch: vi.fn(),
     ...overrides,
   }
 }
@@ -60,6 +80,21 @@ const PRO_PLAN: AgencyPlan = {
   evaluation: { price: 0, discount: 0, limit: null },
   limits: { properties: 100, users: 10 },
   features: ['Hasta 100 propiedades', 'Scoring premium'],
+  level: 1,
+  isDefault: false,
+}
+
+const STARTER_PLAN: AgencyPlan = {
+  id: 'starter',
+  name: 'Starter',
+  description: 'Plan gratis',
+  pricingModel: 'free',
+  price: { monthly: 0, yearly: 0 },
+  evaluation: { price: 42000, discount: 0, limit: null },
+  limits: { properties: 10, users: 2 },
+  features: ['Scoring básico'],
+  level: 0,
+  isDefault: true,
 }
 
 const BILLING: AgencyBilling = {
@@ -76,6 +111,10 @@ let root: Root
 
 beforeEach(() => {
   pushMock.mockClear()
+  mockToastSuccess.mockClear()
+  mockToastError.mockClear()
+  mockSelectPlan.mockReset().mockResolvedValue({ subscription: {}, charge: null, outcome: 'SCHEDULED_DOWNGRADE' })
+  mockCancelPendingChange.mockReset().mockResolvedValue({})
   subState.value = makeSub()
   plansState.value = { plans: [PRO_PLAN], isLoading: false }
   container = document.createElement('div')
@@ -205,5 +244,107 @@ describe('ConfigFacturacion — real subscription as source of truth', () => {
   it('no repite el título de la sección: el marco de Configuración ya lo pone', async () => {
     await render(BILLING)
     expect(container.querySelectorAll('h2')).toHaveLength(0)
+  })
+})
+
+function findButton(text: string): HTMLButtonElement | undefined {
+  return Array.from(document.querySelectorAll('button')).find((b) =>
+    (b.textContent ?? '').includes(text),
+  ) as HTMLButtonElement | undefined
+}
+
+describe('ConfigFacturacion — cancel at period end / pending change (T-0089)', () => {
+  it('shows a pending-change block labeled as CANCELLATION when the pending tier is the catalog default', async () => {
+    subState.value = makeSub({
+      state: {
+        subscription: { currentPeriodEnd: '2026-03-01T00:00:00Z' },
+        pendingPlanTier: 'starter',
+        pendingPlanEffectiveAt: '2026-03-01T00:00:00Z',
+      },
+    })
+    plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
+    await render(BILLING)
+    expect(container.textContent).toMatch(/cancelaci[oó]n programada/i)
+    expect(container.textContent).not.toMatch(/cambio de plan programado/i)
+  })
+
+  it('labels a non-default pending tier as a PLAN CHANGE, not a cancellation', async () => {
+    subState.value = makeSub({
+      state: {
+        subscription: { currentPeriodEnd: '2026-03-01T00:00:00Z' },
+        pendingPlanTier: 'flex',
+        pendingPlanEffectiveAt: '2026-03-01T00:00:00Z',
+      },
+      currentPlanId: 'pro',
+    })
+    plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
+    await render(BILLING)
+    expect(container.textContent).toMatch(/cambio de plan programado/i)
+    expect(container.textContent).not.toMatch(/cancelaci[oó]n programada/i)
+  })
+
+  it('"Deshacer" on the pending-change block calls cancelPendingChange and refetches', async () => {
+    const refetch = vi.fn()
+    subState.value = makeSub({
+      state: {
+        subscription: { currentPeriodEnd: '2026-03-01T00:00:00Z' },
+        pendingPlanTier: 'starter',
+        pendingPlanEffectiveAt: '2026-03-01T00:00:00Z',
+      },
+      refetch,
+    })
+    plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
+    await render(BILLING)
+    const undoBtn = findButton('Deshacer')
+    expect(undoBtn).toBeTruthy()
+    await act(async () => {
+      undoBtn!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(mockCancelPendingChange).toHaveBeenCalledTimes(1)
+    expect(refetch).toHaveBeenCalled()
+  })
+
+  it('"Cancelar plan" opens a confirmation dialog, and confirming calls selectPlan with the default plan id', async () => {
+    subState.value = makeSub({ currentPlanId: 'pro' })
+    plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
+    await render(BILLING)
+
+    const cancelTrigger = findButton('Cancelar plan')
+    expect(cancelTrigger).toBeTruthy()
+    await act(async () => {
+      cancelTrigger!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    // The dialog explains what happens before charging ahead.
+    expect(document.body.textContent).toMatch(/Pro/)
+    expect(document.body.textContent).toMatch(/Starter/)
+
+    const confirmBtn = findButton('Sí, cancelar')
+    expect(confirmBtn).toBeTruthy()
+    await act(async () => {
+      confirmBtn!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(mockSelectPlan).toHaveBeenCalledWith('starter')
+  })
+
+  it('hides "Cancelar plan" when the agency is already on the free/default plan', async () => {
+    subState.value = makeSub({ currentPlanId: 'starter' })
+    plansState.value = { plans: [STARTER_PLAN], isLoading: false }
+    await render(BILLING)
+    expect(findButton('Cancelar plan')).toBeFalsy()
+  })
+
+  it('hides "Cancelar plan" while a change is already pending', async () => {
+    subState.value = makeSub({
+      currentPlanId: 'pro',
+      state: {
+        subscription: { currentPeriodEnd: '2026-03-01T00:00:00Z' },
+        pendingPlanTier: 'starter',
+        pendingPlanEffectiveAt: '2026-03-01T00:00:00Z',
+      },
+    })
+    plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
+    await render(BILLING)
+    expect(findButton('Cancelar plan')).toBeFalsy()
   })
 })

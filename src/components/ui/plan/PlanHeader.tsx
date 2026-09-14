@@ -11,9 +11,11 @@ import { getUserHomeRoute } from '@/lib/auth/role-routes';
 import { type ActiveContext } from '@/lib/auth/active-context';
 import { ContextSwitcher } from './ContextSwitcher';
 import { useI18n } from '@/lib/i18n';
-import { getPlanById, PLANS } from '@/lib/constants/subscription-plans';
-import { useMySubscription } from '@/lib/hooks/useSubscription';
+import { getPlanById, PLANS, agencyPlanToDisplayPlan } from '@/lib/constants/subscription-plans';
+import { useMySubscription, useAgencyPlans } from '@/lib/hooks/useSubscription';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
+import { Spinner } from '@/components/ui/spinner';
+import { formatDate } from '@/lib/format';
 import { useLandlordNotifications, useTenantNotifications } from '@/lib/hooks/useNotifications';
 import { useArcoAlerts } from '@/lib/hooks/cobranza/use-arco-alerts';
 import { ArcoDeadlineAlert } from '@/components/inmobiliaria/cobranza/ArcoDeadlineAlert';
@@ -183,9 +185,31 @@ export function PlanHeader({
   // payment actually activates) instead of the legacy per-user /subscriptions/me,
   // so the header reflects the plan the agency pays for. Landlord/tenant keep the
   // legacy source (hook disabled there → no wasted /inmobiliaria/subscription call).
-  const { currentPlanId: agencyPlanId, error: agencyError } =
-    useAgencySubscription(isInmobiliaria);
-  const effectiveSubError = isInmobiliaria ? agencyError : subscriptionError;
+  const {
+    currentPlanId: agencyPlanId,
+    error: agencyError,
+    refetch: agencySubscriptionRefetch,
+    state: agencySubscriptionState,
+  } = useAgencySubscription(isInmobiliaria);
+  // The LIVE agency plan catalog — an admin-created tier (contrato 29, e.g.
+  // "pro-plus") only exists here, never in the static AGENCY_PLANS array.
+  // Same source `upgrade/page.tsx` and `ConfigFacturacion.tsx` resolve
+  // `currentPlan` against.
+  const {
+    plans: agencyPlans,
+    isLoading: agencyPlansLoading,
+    error: agencyPlansError,
+  } = useAgencyPlans();
+  // Fix round 1 (F1, verify): a catalog fetch failure is JUST as disqualifying
+  // as a subscription fetch failure. `useAgencyPlans()` silently degrades
+  // `plans` to the static AGENCY_PLANS list on error (useSubscription.ts) —
+  // which does not contain admin-created tiers — so trusting it here would
+  // resolve `agencyLivePlan` to null and fall through to `getPlanById`,
+  // reproducing the exact "Plan Starter" bug this task exists to fix.
+  const effectiveSubError = isInmobiliaria
+    ? agencyError ?? (agencyPlansError ? new Error(agencyPlansError) : null)
+    : subscriptionError;
+  const effectiveSubRefetch = isInmobiliaria ? agencySubscriptionRefetch : subscriptionRefetch;
 
   // Keep 'starter' as a silent fallback for avatar badge styling only.
   // Never use planId for plan-name display when the subscription failed to load.
@@ -194,7 +218,40 @@ export function PlanHeader({
       ? 'starter'
       : agencyPlanId ?? 'starter'
     : subscription?.planId ?? 'starter';
-  const currentPlan = getPlanById(planId);
+
+  // Resolve against the LIVE catalog in the agency context — `null` while the
+  // catalog hasn't loaded yet, or if the slug isn't in it (should not happen
+  // once loaded; `getPlanById` below is the safety net for that edge case).
+  // Also `null` on a catalog-fetch error (F1) — `effectiveSubError` above
+  // already routes the render to the honest error state before this value is
+  // ever displayed, but this stays defensive in its own right.
+  const agencyLivePlan =
+    isInmobiliaria && !agencyError && !agencyPlansError && agencyPlanId
+      ? agencyPlans.find((p) => p.id === agencyPlanId) ?? null
+      : null;
+
+  // While the agency catalog hasn't resolved yet, the popover must not flash
+  // a wrong plan name (e.g. "Starter" for a paying pro-plus agency) — show a
+  // loading state instead until the real plan can be resolved.
+  const isPlanCatalogLoading = isInmobiliaria && !effectiveSubError && agencyPlansLoading;
+
+  const currentPlan = isInmobiliaria
+    ? agencyLivePlan
+      ? agencyPlanToDisplayPlan(agencyLivePlan)
+      : getPlanById(planId)
+    : getPlanById(planId);
+
+  // One-line echo of a pending scheduled change (T-0089) — e.g. "Cambia a
+  // Starter el 12 de octubre de 2026". Detecting a cancellation (target is the
+  // catalog default) is left to the fuller management block in
+  // ConfigFacturacion; here it is always "Cambia a X", whatever X is.
+  const pendingPlanTier = isInmobiliaria ? agencySubscriptionState?.pendingPlanTier ?? null : null;
+  const pendingPlanEffectiveAt = isInmobiliaria
+    ? agencySubscriptionState?.pendingPlanEffectiveAt ?? null
+    : null;
+  const pendingPlanDisplay = pendingPlanTier
+    ? agencyPlans.find((p) => p.id === pendingPlanTier) ?? null
+    : null;
 
   // Tier helpers — false when error to avoid asserting a tier we didn't load.
   const isBaseTier = !effectiveSubError && planId === 'starter';
@@ -590,7 +647,7 @@ export function PlanHeader({
 
                   {/* Current Plan */}
                   <div className="p-5">
-                    {subscriptionError ? (
+                    {effectiveSubError ? (
                       /* Honest error state — do not assert a plan name we could not load */
                       <div className="flex flex-col items-center gap-3 py-2 text-center">
                         <p className="text-[13px] text-fg-muted">
@@ -598,11 +655,17 @@ export function PlanHeader({
                         </p>
                         <button
                           type="button"
-                          onClick={subscriptionRefetch}
+                          onClick={effectiveSubRefetch}
                           className="text-[12px] font-medium text-[#1A40FF] dark:text-[#5570FF] hover:underline"
                         >
                           Reintentar
                         </button>
+                      </div>
+                    ) : isPlanCatalogLoading ? (
+                      /* Catalog not resolved yet — never flash a wrong plan name (e.g.
+                         "Starter" for a paying agency) while it loads. */
+                      <div className="flex items-center justify-center py-6">
+                        <Spinner size="sm" variant="muted" />
                       </div>
                     ) : (
                       <>
@@ -624,7 +687,13 @@ export function PlanHeader({
                             <p className="text-[12px] text-plan-secondary">
                               {isBaseTier
                                 ? 'Funciones limitadas'
-                                : `Facturación ${subscription?.billingCycle === 'monthly' ? 'mensual' : 'anual'}`
+                                : isInmobiliaria
+                                  ? (agencyLivePlan?.pricingModel === 'percentage'
+                                      ? `${agencyLivePlan.canonPercentage ?? 1}% del canon administrado`
+                                      : agencyLivePlan?.pricingModel === 'custom'
+                                        ? 'Precio personalizado'
+                                        : 'Facturación mensual')
+                                  : `Facturación ${subscription?.billingCycle === 'monthly' ? 'mensual' : 'anual'}`
                               }
                             </p>
                           </div>
@@ -650,6 +719,15 @@ export function PlanHeader({
                             </div>
                           ))}
                         </div>
+
+                        {/* Pending change echo (T-0089) — the fuller "Deshacer" action
+                            lives in ConfigFacturacion; this is a one-line heads-up. */}
+                        {pendingPlanTier && (
+                          <p className="text-[11px] text-warning mb-3">
+                            Cambia a {pendingPlanDisplay?.name ?? pendingPlanTier}
+                            {pendingPlanEffectiveAt ? ` el ${formatDate(pendingPlanEffectiveAt)}` : ''}
+                          </p>
+                        )}
 
                         {/* Upgrade CTA — hide only when already on the top tier */}
                         {!isTopTier && (
@@ -1147,6 +1225,15 @@ export function PlanHeader({
                   <AvatarSubscriptionIndicator
                     variant="landlord"
                     planId={planId}
+                    agencyPlan={
+                      isInmobiliaria && agencyLivePlan
+                        ? {
+                            name: agencyLivePlan.name,
+                            isDefault: agencyLivePlan.isDefault ?? false,
+                            level: agencyLivePlan.level ?? null,
+                          }
+                        : undefined
+                    }
                   />
                 ) : tenantSubscription ? (
                   <AvatarSubscriptionIndicator

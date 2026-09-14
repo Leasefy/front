@@ -50,6 +50,12 @@ export interface InmuebleOcupado {
   /** El contrato que estorba, si el back lo manda en el cuerpo (`contratoId`). */
   contratoId?: string;
   contratoCode?: string | number;
+  /**
+   * Cómo se nombra ese contrato: «1686 (Leasefy #1839)» en un migrado, «#14» en
+   * uno nativo. Lo arma el back con la regla del número del contrato; si no
+   * llega (un back viejo), se cae a `#code`.
+   */
+  contratoNumero?: string;
 }
 
 /**
@@ -67,7 +73,13 @@ export function inmuebleOcupado(err: unknown): InmuebleOcupado | null {
   const contratoId = typeof d.contratoId === 'string' ? d.contratoId : undefined;
   const contratoCode =
     typeof d.contratoCode === 'string' || typeof d.contratoCode === 'number' ? d.contratoCode : undefined;
-  return { mensaje: err.message, contratoId, contratoCode };
+  const contratoNumero =
+    typeof d.contratoNumero === 'string' && d.contratoNumero
+      ? d.contratoNumero
+      : contratoCode !== undefined
+        ? `#${contratoCode}`
+        : undefined;
+  return { mensaje: err.message, contratoId, contratoCode, contratoNumero };
 }
 
 /** El rechazo de crear desde una postulación que YA tiene contrato. */

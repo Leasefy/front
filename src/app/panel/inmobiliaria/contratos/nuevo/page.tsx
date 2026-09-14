@@ -817,7 +817,7 @@ function NuevoContratoContent() {
                   href={`/panel/inmobiliaria/contratos/${errorDeInmueble.contratoId}`}
                   className="mt-1 inline-block font-medium text-primary underline underline-offset-2"
                 >
-                  Ver el contrato{errorDeInmueble.contratoCode ? ` #${errorDeInmueble.contratoCode}` : ''} que estorba
+                  Ver el contrato{errorDeInmueble.contratoNumero ? ` ${errorDeInmueble.contratoNumero}` : ''} que estorba
                 </Link>
               )}
             </div>

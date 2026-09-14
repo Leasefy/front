@@ -295,7 +295,7 @@ export function PropietarioTable({
                           className="block text-xs text-muted-foreground tabular-nums"
                           data-testid="copropiedades-del-propietario"
                         >
-                          {t('inmobiliaria.propietario.table.copropiedades', { n: propietario.copropiedadesCount })}
+                          {t('inmobiliaria.propietario.table.copropiedades', { n: propietario.copropiedadesCount ?? 0 })}
                         </span>
                       )}
                     </div>

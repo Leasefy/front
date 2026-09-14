@@ -229,13 +229,13 @@ export function PropietarioStats({
               ? [
                   t('inmobiliaria.propietario.stats.ofTotalRented', { rentados: propietario.activeLeases, total: propietario.propertyCount }),
                   (propietario.copropiedadesCount ?? 0) > 0
-                    ? t('inmobiliaria.propietario.stats.copropiedades', { n: propietario.copropiedadesCount })
+                    ? t('inmobiliaria.propietario.stats.copropiedades', { n: propietario.copropiedadesCount ?? 0 })
                     : null,
                 ]
                   .filter(Boolean)
                   .join(' · ')
               : (propietario.copropiedadesCount ?? 0) > 0
-                ? t('inmobiliaria.propietario.stats.copropiedades', { n: propietario.copropiedadesCount })
+                ? t('inmobiliaria.propietario.stats.copropiedades', { n: propietario.copropiedadesCount ?? 0 })
                 : t('inmobiliaria.propietario.stats.sinPropiedades')
           }
           deltaDirection={

@@ -659,7 +659,7 @@ function PropietarioDetailContent() {
                   : `${propietario.propertyCount} ${t('inmobiliaria.propietario.stats.properties').toLowerCase()}`,
                 // Sus copropiedades, aparte: el minoritario también es dueño.
                 (propietario.copropiedadesCount ?? 0) > 0
-                  ? t('inmobiliaria.propietario.stats.copropiedades', { n: propietario.copropiedadesCount })
+                  ? t('inmobiliaria.propietario.stats.copropiedades', { n: propietario.copropiedadesCount ?? 0 })
                   : null,
                 propietario.city || null,
                 t('inmobiliaria.propietarios.detail.desde', {
@@ -1006,7 +1006,7 @@ function PropietarioDetailContent() {
           {propietario.propertyCount === 0 && (propietario.copropiedadesCount ?? 0) > 0 && (
             <AlertaAccionable
               severidad="danger"
-              titulo={t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietario', { count: propietario.copropiedadesCount })}
+              titulo={t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietario', { count: propietario.copropiedadesCount ?? 0 })}
               accion={{ label: t('inmobiliaria.propietarios.deleteBloqueado.accion'), href: '/panel/inmobiliaria/inmuebles' }}
               data-testid="borrar-bloqueado-copropietario"
             >

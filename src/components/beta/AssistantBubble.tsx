@@ -1,6 +1,9 @@
 'use client';
 
+import { ArrowsClockwise, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { MessageActions } from './MessageActions';
@@ -26,9 +29,45 @@ interface AssistantBubbleProps {
  * quedaba SIN pulgares, que son justo las que hay que poder corregir.
  */
 export function AssistantBubble({ message, streamingContent, className }: AssistantBubbleProps) {
+  const { regenerateResponse, isThinking, isStreaming, isAgentsRunning } = useBetaChatContext();
   const isStreamingThis = message.status === 'streaming';
   const isSending = message.status === 'sending';
   const displayContent = isStreamingThis && streamingContent ? streamingContent : message.content;
+
+  /*
+   * B1 — el turno que falló. Antes quedaba `complete`: el aviso se pintaba con
+   * la cara de una respuesta, con pulgares, y no había forma de volver a
+   * preguntar sin reescribir. «Reintentar» rehace ESE turno con el mismo
+   * texto (`regenerateResponse` recorta desde la pregunta y la reenvía).
+   */
+  if (message.status === 'error') {
+    const ocupado = isThinking || isStreaming || isAgentsRunning;
+    return (
+      <div className={cn('flex gap-3', className)} data-testid="burbuja-con-error">
+        <div className="flex-shrink-0 w-7 h-7 mt-0.5 rounded-full bg-danger-soft flex items-center justify-center">
+          <WarningCircle className="w-4 h-4 text-danger" weight="bold" aria-hidden="true" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div
+            role="alert"
+            className="rounded-lg border border-danger/30 bg-danger-soft px-4 py-3 text-sm leading-relaxed text-danger"
+          >
+            {message.content}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-2 gap-1.5"
+            disabled={ocupado}
+            onClick={() => regenerateResponse(message.id)}
+          >
+            <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
+            Reintentar
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn('flex gap-3', className)}>

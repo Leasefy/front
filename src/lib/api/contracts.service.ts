@@ -966,6 +966,11 @@ export type Faltante =
    * mirar ese documento — corregirlo, o vaciarlo para volver al correo.
    */
   | 'inquilino_documento_ajeno'
+  /**
+   * El consecutivo viene en más de una fila del MISMO archivo: activarlas
+   * juntas crearía dos contratos con el mismo número. Se frenan las dos.
+   */
+  | 'consecutivo_repetido'
   | 'fechas'
   | 'canon'
   | 'uso'

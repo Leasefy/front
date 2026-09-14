@@ -78,6 +78,11 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
       "Sin correo no hay a quién invitar ni cómo distinguirlo de un homónimo.",
   },
   inquilino_nombre: { titulo: "Falta el nombre del inquilino", porque: "" },
+  consecutivo_repetido: {
+    titulo: "Ese consecutivo viene en más de una fila del archivo",
+    porque:
+      "Dos filas con el mismo número serían dos contratos con el mismo número. Deja una sola: descarta la otra fila o corrige el consecutivo en el archivo.",
+  },
   inquilino_documento_ajeno: {
     titulo: "Ese documento es de una cuenta que no es de inquilino",
     porque:
@@ -125,6 +130,7 @@ export function celdaDelFaltante(
   const datos = fila.datos as {
     direccion?: unknown;
     codigoInmueble?: unknown;
+    externalId?: unknown;
     inquilino?: { nombre?: unknown; correo?: unknown; documento?: unknown };
   } | null;
   const texto = (v: unknown) => {
@@ -161,6 +167,10 @@ export function celdaDelFaltante(
       const motivo = fila.asociacion?.propietario?.reparto?.problema ?? null;
       return texto([plata, motivo].filter(Boolean).join(' — '));
     }
+    // El consecutivo del sistema anterior, tal cual vino: es lo que hay que
+    // buscar en el archivo para decidir cuál de las filas gemelas se queda.
+    case 'consecutivo_repetido':
+      return texto(datos?.externalId != null ? `consecutivo ${String(datos.externalId)}` : null);
     default:
       return null;
   }

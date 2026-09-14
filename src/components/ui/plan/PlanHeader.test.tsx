@@ -79,8 +79,8 @@ vi.mock('@/lib/hooks/useAgencySubscription', () => ({
   useAgencySubscription: () => agencySubState.value,
 }));
 
-const agencyPlansState: { value: { plans: unknown[]; isLoading: boolean } } = {
-  value: { plans: [], isLoading: false },
+const agencyPlansState: { value: { plans: unknown[]; isLoading: boolean; error?: string | null } } = {
+  value: { plans: [], isLoading: false, error: null },
 };
 
 vi.mock('@/lib/hooks/useNotifications', () => ({
@@ -221,6 +221,21 @@ describe('PlanHeader — "Tu Suscripción" popover resolves the REAL agency plan
     render();
 
     const popover = container.querySelector('[data-testid="subscription-popover"]')!;
+    expect(popover.textContent).toContain('No pudimos cargar tu plan');
+  });
+
+  it('never falls back to "Plan Starter" when the CATALOG fetch fails independently of the subscription fetch (fix round 1, F1)', () => {
+    // Subscription resolves fine — the agency IS on pro-plus. Only the plans
+    // catalog fetch failed. useAgencyPlans() degrades `plans` to the static
+    // AGENCY_PLANS list on error (useSubscription.ts), which does not contain
+    // "pro-plus" — silently trusting it would reproduce the exact bug this
+    // task exists to fix.
+    agencySubState.value = { currentPlanId: 'pro-plus', error: null, refetch: vi.fn() };
+    agencyPlansState.value = { plans: [], isLoading: false, error: 'Error al cargar planes' };
+    render();
+
+    const popover = container.querySelector('[data-testid="subscription-popover"]')!;
+    expect(popover.textContent).not.toContain('Plan Starter');
     expect(popover.textContent).toContain('No pudimos cargar tu plan');
   });
 

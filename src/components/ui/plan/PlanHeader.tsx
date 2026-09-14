@@ -195,8 +195,20 @@ export function PlanHeader({
   // "pro-plus") only exists here, never in the static AGENCY_PLANS array.
   // Same source `upgrade/page.tsx` and `ConfigFacturacion.tsx` resolve
   // `currentPlan` against.
-  const { plans: agencyPlans, isLoading: agencyPlansLoading } = useAgencyPlans();
-  const effectiveSubError = isInmobiliaria ? agencyError : subscriptionError;
+  const {
+    plans: agencyPlans,
+    isLoading: agencyPlansLoading,
+    error: agencyPlansError,
+  } = useAgencyPlans();
+  // Fix round 1 (F1, verify): a catalog fetch failure is JUST as disqualifying
+  // as a subscription fetch failure. `useAgencyPlans()` silently degrades
+  // `plans` to the static AGENCY_PLANS list on error (useSubscription.ts) —
+  // which does not contain admin-created tiers — so trusting it here would
+  // resolve `agencyLivePlan` to null and fall through to `getPlanById`,
+  // reproducing the exact "Plan Starter" bug this task exists to fix.
+  const effectiveSubError = isInmobiliaria
+    ? agencyError ?? (agencyPlansError ? new Error(agencyPlansError) : null)
+    : subscriptionError;
   const effectiveSubRefetch = isInmobiliaria ? agencySubscriptionRefetch : subscriptionRefetch;
 
   // Keep 'starter' as a silent fallback for avatar badge styling only.
@@ -210,8 +222,11 @@ export function PlanHeader({
   // Resolve against the LIVE catalog in the agency context — `null` while the
   // catalog hasn't loaded yet, or if the slug isn't in it (should not happen
   // once loaded; `getPlanById` below is the safety net for that edge case).
+  // Also `null` on a catalog-fetch error (F1) — `effectiveSubError` above
+  // already routes the render to the honest error state before this value is
+  // ever displayed, but this stays defensive in its own right.
   const agencyLivePlan =
-    isInmobiliaria && !agencyError && agencyPlanId
+    isInmobiliaria && !agencyError && !agencyPlansError && agencyPlanId
       ? agencyPlans.find((p) => p.id === agencyPlanId) ?? null
       : null;
 

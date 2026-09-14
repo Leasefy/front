@@ -81,6 +81,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import { InterruptorDeWhatsapp } from '@/components/messages/InterruptorDeWhatsapp';
+import { ResumenEnLaFicha } from '@/components/estado-de-cuenta/ResumenEnLaFicha';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import {
@@ -335,6 +336,18 @@ export function CuerpoDelCajon({
         {/* El permiso para escribirle por WhatsApp desde el chat (2026-09-12).
             Apagado por defecto: tener su teléfono no autoriza el canal. */}
         <InterruptorDeWhatsapp personaId={persona.tenantId} className="mb-4" />
+        {/* El estado de cuenta, resumido, donde se necesita (CEO, 2026-09-13).
+            Se pinta solo si la persona tiene contratos: sin contrato no hay
+            cuotas que diferir, y el propio componente se calla si no hay nada
+            que decir en vez de mostrar un «$0» que se lee «está al día». */}
+        {!sinArriendos && (
+          <ResumenEnLaFicha
+            tipo="inquilino"
+            id={persona.tenantId}
+            volverA="/panel/inmobiliaria/inquilinos"
+            className="mb-4"
+          />
+        )}
         {sinArriendos ? (
           <div className="space-y-3">
             {arriendosIncompletos ? <Aviso texto={t(`${NS}.arriendosIncompletos`)} /> : null}

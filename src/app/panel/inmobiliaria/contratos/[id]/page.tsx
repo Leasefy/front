@@ -39,6 +39,7 @@ import { formatDate, formatCanon } from './format';
 import { Button } from '@/components/ui/button';
 import { Spinner, Badge } from '@/components/ui';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { ResumenEnLaFicha } from '@/components/estado-de-cuenta/ResumenEnLaFicha';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useAgencyAccess } from '@/lib/auth/useAgencyAccess';
 import { AuditTrail } from '@/components/contract/AuditTrail';
@@ -363,6 +364,32 @@ function ContratoDetalleContent() {
         inquilino debía plata sin ir a Cobros.
       */}
       <ResumenDelContrato contract={contract} cobros={resumenDeCobros} />
+
+      {/*
+        El estado de cuenta de ESTE contrato (CEO, 2026-09-13): cuánto resta por
+        pagar de todo el contrato y cuándo es la próxima cuota. `ResumenDelContrato`
+        de arriba dice lo del MES; esto dice lo de los 24 meses, que es la
+        pregunta que se hace al renovar o al cobrar.
+
+        Se pide del lado del INQUILINO, que es quien debe. Un contrato migrado
+        puede no tener `tenantId` (la persona se cargó sin cuenta): ahí se cae a
+        la del propietario, que siempre existe.
+      */}
+      {contract.tenantId ? (
+        <ResumenEnLaFicha
+          tipo="inquilino"
+          id={contract.tenantId}
+          soloContrato={contract.externalId ?? (contract.code != null ? String(contract.code) : null)}
+          volverA={`/panel/inmobiliaria/contratos/${contract.id}`}
+        />
+      ) : contract.landlordId ? (
+        <ResumenEnLaFicha
+          tipo="propietario"
+          id={contract.landlordId}
+          soloContrato={contract.externalId ?? (contract.code != null ? String(contract.code) : null)}
+          volverA={`/panel/inmobiliaria/contratos/${contract.id}`}
+        />
+      ) : null}
 
       {/* Action panel — only shown for users with contratos:edit */}
       {canEditContracts && (

@@ -4,7 +4,6 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
-  closestCorners,
   useDraggable,
   useDroppable,
   useSensor,
@@ -44,6 +43,7 @@ import type {
   MantenimientoStatus,
 } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getMantenimientoTypeInfo } from '@/lib/types/inmobiliaria';
+import { detectarColumnaDelPuntero } from './mantenimiento-kanban-colisiones';
 
 // ============================================================================
 // Types
@@ -466,6 +466,14 @@ function KanbanColumnComponent({
  * pantalla deja mover y el servidor rechaza, o peor, a una que la pantalla
  * frena por una regla que el servidor ya no tiene. La página muestra el motivo
  * que vuelve del 400.
+ *
+ * 🔴 2026-09-13: la tarjeta se arrastra a CUALQUIERA de las cinco columnas,
+ * hacia adelante y hacia atrás. La primera versión hacía las dos cosas mal a la
+ * vez —el back exigía el camino en orden y `closestCorners` elegía la columna
+ * equivocada—, así que Nico soltó su tarjeta al lado de «Reportadas» y leyó
+ * «No se puede mover la solicitud de Reportada a Aprobada». Las dos mitades
+ * están arregladas: la tabla del back ya no ordena el camino, y el destino lo
+ * decide el puntero (`mantenimiento-kanban-colisiones.ts`).
  */
 export function MantenimientoKanban({
   data,
@@ -599,7 +607,9 @@ export function MantenimientoKanban({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      // El destino lo decide el PUNTERO, no el rectángulo corrido de la
+      // tarjeta: ver `mantenimiento-kanban-colisiones.ts`.
+      collisionDetection={detectarColumnaDelPuntero}
       onDragStart={alEmpezar}
       onDragOver={alPasarPorEncima}
       onDragEnd={alSoltar}

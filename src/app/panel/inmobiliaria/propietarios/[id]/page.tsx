@@ -57,6 +57,7 @@ import {
   PropietarioForm,
 } from '@/components/inmobiliaria';
 import { ExtractoDelPropietarioDialog } from '@/components/inmobiliaria/ExtractoDelPropietarioDialog';
+import { ResumenEnLaFicha } from '@/components/estado-de-cuenta/ResumenEnLaFicha';
 import {
   usePropietario,
   useConsignaciones,
@@ -718,6 +719,16 @@ function PropietarioDetailContent() {
           </DropdownList>
         </div>
       </div>
+
+      {/* El estado de cuenta, resumido (CEO, 2026-09-13): lo que la
+          inmobiliaria le ha girado y lo que le falta por girar. Se pinta solo
+          si hay contratos; si la llamada falla, no se pinta nada, porque un
+          «$0» sobre datos que no llegaron se lee «no le debemos nada». */}
+      <ResumenEnLaFicha
+        tipo="propietario"
+        id={propietario.id}
+        volverA={`/panel/inmobiliaria/propietarios/${propietario.id}`}
+      />
 
       {/* Stats */}
       <PropietarioStats

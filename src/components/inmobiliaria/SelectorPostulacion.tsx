@@ -34,6 +34,7 @@ import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { EmptyState } from '@/components/ui/empty-state'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { PermissionGate } from '@/components/auth/PermissionGate'
 import {
   Dialog,
   DialogContent,
@@ -244,15 +245,21 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
 }
 
 /** El botón principal de la pantalla de Contratos. */
+/**
+ * 🔴 El gate vive ACÁ, no en cada pantalla que lo monta: el back exige
+ * `contratos:create` para crear, así que un CONTADOR o un VIEWER veían el
+ * botón, armaban el contrato entero y recién al final se comían un 403.
+ * Mismo criterio que «Generar documento» (`documentos/page.tsx:274`).
+ */
 export function NuevoContratoBoton({ className }: { className?: string }) {
   const [abierto, setAbierto] = useState(false)
   return (
-    <>
+    <PermissionGate module="contratos" action="create" fallback={null}>
       <Button onClick={() => setAbierto(true)} hideArrow className={cn('shrink-0 gap-2', className)}>
         <Plus className="w-4 h-4" weight="bold" />
         Nuevo contrato
       </Button>
       <SelectorPostulacion abierto={abierto} onOpenChange={setAbierto} />
-    </>
+    </PermissionGate>
   )
 }

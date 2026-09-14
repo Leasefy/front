@@ -28,6 +28,7 @@ export function useContracts() {
   const fetchContracts = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
     try {
       const result = await contractsApi.getMine();
       setContracts(result);
@@ -92,6 +93,10 @@ export function useContract(id: string | null) {
   const [contract, setContract] = useState<Contract | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // El error ENTERO, no su mensaje: `clasificarFallo` necesita el status para
+  // distinguir un 404 (no reintentar, volver) de una red caída (reintentar).
+  // `error` sigue siendo el string de siempre para los otros consumidores.
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const load = useCallback(async () => {
     if (!id) {
@@ -101,10 +106,12 @@ export function useContract(id: string | null) {
     }
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
     try {
       const c = await contractsApi.getById(id);
       setContract(c);
     } catch (err) {
+      setErrorCrudo(err);
       setError(err instanceof Error ? err.message : 'Error cargando contrato');
       setContract(null);
     } finally {
@@ -114,7 +121,7 @@ export function useContract(id: string | null) {
 
   useEffect(() => { load(); }, [load]);
 
-  return { contract, isLoading, error, refetch: load, setContract };
+  return { contract, isLoading, error, errorCrudo, refetch: load, setContract };
 }
 
 // ============================================================================
@@ -272,14 +279,25 @@ export function useContractActions() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastError, setLastError] = useState<Error | null>(null);
 
-  const run = async <T>(op: () => Promise<T>): Promise<T | null> => {
+  /*
+   * 🔴 Antes `run` hacía `catch { setLastError(err); return null }`, y las
+   * pantallas leían `actions.lastError?.message` DESPUÉS del await: leían el
+   * render viejo (closure), o sea `null`. Ningún 400/409 del back llegaba al
+   * usuario: «Ese inmueble ya tiene un contrato en curso (#1234)» se
+   * convertía en «No se pudo crear el contrato. Verifica los datos».
+   * Ahora el fallo se RELANZA: quien llama lo atrapa con `try/catch` y lee
+   * ESE error (`mensajeDelFallo`, `inmuebleOcupado`, `isPermissionError`).
+   * `lastError` sigue existiendo para quien lo renderice.
+   */
+  const run = async <T>(op: () => Promise<T>): Promise<T> => {
     setIsSubmitting(true);
     setLastError(null);
     try {
       return await op();
     } catch (err) {
-      setLastError(err instanceof Error ? err : new Error(String(err)));
-      return null;
+      const e = err instanceof Error ? err : new Error(String(err));
+      setLastError(e);
+      throw e;
     } finally {
       setIsSubmitting(false);
     }
@@ -341,7 +359,7 @@ export function useContractActions() {
   );
 
   const getRejections = useCallback(
-    (id: string): Promise<ContractRejection[] | null> => run(() => contractsApi.getRejections(id)),
+    (id: string): Promise<ContractRejection[]> => run(() => contractsApi.getRejections(id)),
     []
   );
 
@@ -354,12 +372,15 @@ export function useContractActions() {
 }
 
 /**
- * Helper: detecta si un Error corresponde a un 403 del backend.
- * Los servicios del api client lanzan `Error` con el `message` del backend
- * (ej. "No tienes permiso para edit en contratos").
+ * Cómo se lee el fallo de una acción (el 403, el motivo del back, el inmueble
+ * ocupado). Viven en `@/lib/contratos/fallo-de-accion`; se reexportan acá
+ * para quien ya importaba `isPermissionError` de este archivo.
  */
-export function isPermissionError(err: Error | null | undefined): boolean {
-  if (!err) return false;
-  const msg = err.message.toLowerCase();
-  return msg.includes('no tienes permiso') || msg.includes('forbidden') || msg.includes('403');
-}
+export {
+  isPermissionError,
+  mensajeDelFallo,
+  estadoDelFallo,
+  inmuebleOcupado,
+  contratoDuplicado,
+  type InmuebleOcupado,
+} from '@/lib/contratos/fallo-de-accion';

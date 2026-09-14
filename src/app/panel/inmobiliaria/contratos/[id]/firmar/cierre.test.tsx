@@ -53,20 +53,27 @@ const CONTRATO = {
   uploadedPdfPath: null,
 };
 
-vi.mock('@/lib/hooks/useContracts', () => ({
-  useContract: () => ({
-    contract: CONTRATO,
-    isLoading: false,
-    error: null,
-    setContract: vi.fn(),
-  }),
-  useContractPreview: () => ({ preview: null, isLoading: false }),
-  useSignedPdfUrl: () => ({ url: null, isLoading: false }),
-  useContractActions: () => ({ signAsLandlord: signAsLandlordMock, lastError: null }),
-  isPermissionError: () => false,
-}));
+// Los helpers que leen el error (`mensajeDelFallo`, `isPermissionError`) van
+// REALES: son justamente lo que se prueba cuando el back rechaza.
+vi.mock('@/lib/hooks/useContracts', async () => {
+  const real = await vi.importActual<typeof import('@/lib/hooks/useContracts')>('@/lib/hooks/useContracts');
+  return {
+    ...real,
+    useContract: () => ({
+      contract: CONTRATO,
+      isLoading: false,
+      error: null,
+      setContract: vi.fn(),
+    }),
+    useContractPreview: () => ({ preview: null, isLoading: false }),
+    useSignedPdfUrl: () => ({ url: null, isLoading: false }),
+    useContractActions: () => ({ signAsLandlord: signAsLandlordMock, lastError: null }),
+  };
+});
 
 import FirmarContratoPage from './page';
+import { toast } from 'sonner';
+import { ApiError } from '@/lib/api/client';
 
 void React;
 
@@ -106,5 +113,48 @@ describe('Firmar contrato — el cierre', () => {
     // El inquilino ya firmó: firmar acá cierra, no envía.
     expect(container.textContent).not.toContain('para enviarlo al inquilino');
     expect(container.textContent).toContain('El inquilino ya firmó');
+  });
+});
+
+/**
+ * 🔴 C26 — antes estas tres ramas eran inalcanzables: `signAsLandlord` nunca
+ * lanzaba y `actions.lastError` se leía del render viejo. Todo rechazo decía
+ * «No se pudo firmar el contrato. Intenta de nuevo.»
+ */
+describe('Firmar contrato — cuando el back rechaza, se dice el motivo', () => {
+  beforeEach(() => {
+    vi.mocked(toast.error).mockClear();
+  });
+
+  async function firmar() {
+    act(() => root.render(<FirmarContratoPage />));
+    await act(async () => {
+      (container.querySelector('[data-testid="firmar"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+  }
+
+  it('400 «Tenant must sign first» → «El inquilino todavía no firmó», y no se anuncia el cierre', async () => {
+    signAsLandlordMock.mockReset().mockRejectedValue(new ApiError(400, 'Tenant must sign first'));
+    await firmar();
+    expect(toast.error).toHaveBeenCalledWith('El inquilino todavía no firmó. No puedes firmar hasta que lo haga.');
+    expect(container.querySelector('[data-testid="firmado-cierre"]')).toBeNull();
+  });
+
+  it('403 → dice que es de permisos', async () => {
+    signAsLandlordMock.mockReset().mockRejectedValue(new ApiError(403, 'Forbidden resource'));
+    await firmar();
+    expect(toast.error).toHaveBeenCalledWith('No tienes permisos para esta acción.');
+  });
+
+  it('cualquier otro rechazo → el motivo del back en la descripción, no un genérico', async () => {
+    signAsLandlordMock
+      .mockReset()
+      .mockRejectedValue(new ApiError(409, 'Este contrato no está pendiente de tu firma.'));
+    await firmar();
+    expect(toast.error).toHaveBeenCalledWith('No se pudo firmar el contrato.', {
+      description: 'Este contrato no está pendiente de tu firma.',
+    });
+    expect(container.querySelector('[data-testid="firmado-cierre"]')).toBeNull();
   });
 });

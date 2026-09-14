@@ -51,6 +51,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { toast } from '@/components/ui/toast'
 import { conRegreso } from '@/lib/nav/ruta-de-regreso'
 import { contractsApi } from '@/lib/api/contracts.service'
@@ -177,12 +187,18 @@ function FilaDeInquilino({
   onListaNueva: (lista: InquilinoDelContrato[]) => void
 }) {
   const [quitando, setQuitando] = useState(false)
+  // Quitar a alguien de un contrato no se hace a un clic: el ícono de la
+  // basura queda a centímetros del nombre y un toque de más en el celular lo
+  // sacaba sin preguntar (DESIGN.md §17: confirmación = AlertDialog).
+  const [confirmando, setConfirmando] = useState(false)
 
   async function quitar() {
     if (!inquilino.id) return
     setQuitando(true)
     try {
-      onListaNueva(await contractsApi.quitarInquilino(contractId, inquilino.id))
+      const lista = await contractsApi.quitarInquilino(contractId, inquilino.id)
+      setConfirmando(false)
+      onListaNueva(lista)
       toast.success('Lo quitamos del contrato.')
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'No pudimos quitarlo.')
@@ -217,13 +233,41 @@ function FilaDeInquilino({
             type="button"
             aria-label={`Quitar a ${inquilino.nombre}`}
             disabled={quitando}
-            onClick={() => void quitar()}
+            onClick={() => setConfirmando(true)}
             className="text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
           >
             <Trash className="h-4 w-4" />
           </button>
         ) : null}
       </div>
+      <AlertDialog open={confirmando} onOpenChange={(abierto) => !quitando && setConfirmando(abierto)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Quitar a {inquilino.nombre || 'este coarrendatario'} del contrato?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {inquilino.nombre || 'Esta persona'}
+              {inquilino.documento ? ` (documento ${inquilino.documento})` : ''} deja de
+              figurar como coarrendatario de este contrato. El inquilino principal no
+              cambia. Si fue un error, puedes volver a agregarlo desde esta misma sección.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={quitando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              tone="danger"
+              disabled={quitando}
+              data-testid="confirmar-quitar-inquilino"
+              onClick={(e) => {
+                // Se queda abierto mientras quita: el cierre lo decide la respuesta.
+                e.preventDefault()
+                void quitar()
+              }}
+            >
+              {quitando ? 'Quitando…' : 'Quitar del contrato'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </li>
   )
 }

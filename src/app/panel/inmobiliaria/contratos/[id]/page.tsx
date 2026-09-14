@@ -46,7 +46,8 @@ import { AuditTrail } from '@/components/contract/AuditTrail';
 import { RejectionsHistory } from '@/components/contract/RejectionsHistory';
 import { CancelContractModal } from '@/components/contract/CancelContractModal';
 import { DownloadContractPdfButton } from '@/components/contract/DownloadContractPdfButton';
-import { useContract, useContractPreview, useContractActions, useContractRejections, useSignedPdfUrl, isPermissionError } from '@/lib/hooks/useContracts';
+import { useContract, useContractPreview, useContractActions, useContractRejections, useSignedPdfUrl } from '@/lib/hooks/useContracts';
+import { isPermissionError, mensajeDelFallo, estadoDelFallo } from '@/lib/contratos/fallo-de-accion';
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -118,7 +119,7 @@ function ContratoDetalleContent() {
   const rutaDeVuelta = rutaDeRegreso(searchParams.get('volver'), LISTA_DE_CONTRATOS);
   const etiquetaDeVuelta = VUELVE_A[lugarDeRegreso(rutaDeVuelta)];
 
-  const { contract, isLoading, error, refetch, setContract } = useContract(id);
+  const { contract, isLoading, error, errorCrudo, refetch, setContract } = useContract(id);
   // El respaldo vive en las cláusulas del contrato: es el campo real que
   // el backend persiste hoy. Ver src/lib/inmobiliaria/respaldo.ts.
   const respaldo = leerRespaldo(contract?.customClauses);
@@ -153,7 +154,10 @@ function ContratoDetalleContent() {
   const canInviteTenant = canAccess('contratos', 'create');
 
   const [actionError, setActionError] = useState<string | null>(null);
-  const [resumenDeCobros, setResumenDeCobros] = useState<ResumenDeCobros | null>(null);
+  // `null` = todavía no llegó · `'fallo'` = no se pudo traer · el resumen = llegó.
+  // El fallo es un estado propio: si se fabricara un resumen con ceros, la
+  // franja de arriba le diría «al día» a un inquilino en mora.
+  const [resumenDeCobros, setResumenDeCobros] = useState<ResumenDeCobros | 'fallo' | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -163,14 +167,15 @@ function ContratoDetalleContent() {
       setActionError(null);
       setPendingAction(key);
       try {
-        const result = await op();
-        if (result) {
-          await refetch();
-        } else {
-          setActionError('La operación falló. Intenta de nuevo.');
-        }
+        await op();
+        await refetch();
       } catch (err) {
-        setActionError(err instanceof Error ? err.message : 'Error inesperado');
+        // El motivo del back (400/409) en palabras; un 403 dice que es de permisos.
+        setActionError(
+          isPermissionError(err)
+            ? 'No tienes permiso para esta acción.'
+            : mensajeDelFallo(err, 'La operación falló. Intenta de nuevo.')
+        );
       } finally {
         setPendingAction(null);
       }
@@ -184,16 +189,18 @@ function ContratoDetalleContent() {
   const handleCancel = async (reason: string | undefined) => {
     if (!contract) return;
     setIsCancelling(true);
-    const updated = await actions.cancel(contract.id, reason ? { reason } : {});
-    setIsCancelling(false);
-    if (!updated) {
+    try {
+      await actions.cancel(contract.id, reason ? { reason } : {});
+    } catch (err) {
+      setIsCancelling(false);
+      // Se lee EL error que vino, no `actions.lastError` (que era el render viejo).
       toast.error(
-        isPermissionError(actions.lastError)
-          ? 'No tienes permisos para esta acción.'
-          : 'No se pudo cancelar el contrato.'
+        isPermissionError(err) ? 'No tienes permisos para esta acción.' : 'No se pudo cancelar el contrato.',
+        { description: isPermissionError(err) ? undefined : mensajeDelFallo(err, 'Intenta de nuevo.') }
       );
       return;
     }
+    setIsCancelling(false);
     toast.success('Contrato cancelado.');
     setIsCancelModalOpen(false);
     router.push('/panel/inmobiliaria/contratos');
@@ -203,16 +210,16 @@ function ContratoDetalleContent() {
     setActionError(null);
     setPendingAction('remind');
     try {
-      const result = await actions.remind(contract.id);
-      if (result) {
-        setActionError(null);
-      } else {
-        setActionError('Ya enviaste un recordatorio recientemente. Intenta de nuevo más tarde.');
-      }
+      await actions.remind(contract.id);
+      setActionError(null);
+      toast.success('Recordatorio enviado.');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error inesperado';
-      if (/429|too\s*many|24h/i.test(msg)) {
+      // 429 = ya hubo uno en las últimas 24 h; cualquier otro fallo dice su motivo.
+      const msg = mensajeDelFallo(err, 'No se pudo enviar el recordatorio.');
+      if (estadoDelFallo(err) === 429 || /too\s*many|24h/i.test(msg)) {
         setActionError('Ya enviaste un recordatorio en las últimas 24 horas.');
+      } else if (isPermissionError(err)) {
+        setActionError('No tienes permiso para esta acción.');
       } else {
         setActionError(msg);
       }
@@ -236,49 +243,48 @@ function ContratoDetalleContent() {
    * ofrecer reintentar — porque sobre algo que no existe reintentar no tiene
    * sentido. Las dos señales ya estaban por separado; se juntaban a mano.
    */
-  if (error) {
+  if (error || !contract) {
     /*
      * 🔴 Sin señal, el contrato no se puede traer —vive en el back— pero el
      * inventario del inmueble sí puede estar guardado en este teléfono, y es
      * lo que la persona fue a hacer al apartamento. `ContratoSinSenal` deja el
      * fallo con su reintentar y agrega abajo lo que SÍ se puede hacer; sin
      * copia guardada muestra sólo el fallo, como antes.
+     *
+     * Va el error CRUDO del hook (`errorCrudo`), no su mensaje: con el string
+     * un 404 se clasificaba como «problema nuestro» y ofrecía reintentar sobre
+     * un contrato que no existe. Y `!contract` sin error —el back contestó
+     * bien y sin contrato— cae acá también: antes era una tarjeta roja a mano,
+     * sin reintentar ni a dónde volver.
      */
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
         <ContratoSinSenal contratoId={id}>
           <FalloDeCarga
-            error={error}
+            error={errorCrudo ?? error}
             queEs="este contrato"
             onReintentar={refetch}
-            volverA={{ label: 'Contratos', href: '/panel/inmobiliaria/contratos' }}
+            volverA={{ label: 'Contratos', href: LISTA_DE_CONTRATOS }}
           />
         </ContratoSinSenal>
       </div>
     );
   }
 
-  if (!contract) {
-    return (
-      <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
-          <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold text-danger">No se pudo cargar el contrato</p>
-            <p className="text-sm text-danger mt-1">{error ?? 'Contrato no encontrado'}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const statusVariant = CONTRACT_STATUS_BADGE[contract.status as ContractStatus] ?? 'neutral';
+  // `secondary`, no `neutral`: `neutral` no es una variante del Badge de la
+  // casa (es el nombre interno del DS) y un estado desconocido caía en el
+  // fallback `default` —cobalto, el mismo del «Firmado»—.
+  const statusVariant = CONTRACT_STATUS_BADGE[contract.status as ContractStatus] ?? 'secondary';
   const statusLabel = CONTRACT_STATUS_LABELS[contract.status as ContractStatus] ?? contract.status;
   const numero = numeroDelContrato(contract);
   // Gate por permisos: contratos usa canAccess ('contratos' ya es módulo del backend).
   // Chat todavía usa el fallback por rol porque 'mensajes' no existe como módulo aún.
   const canCancel = canEditContracts && PRE_SIGNED_STATES.includes(contract.status as ContractStatus);
   const esPreFirma = PRE_SIGNED_STATES.includes(contract.status as ContractStatus);
+  // Un contrato cancelado o vencido ya no cobra: sus conceptos se LEEN —qué se
+  // cobraba— pero no se agregan ni se quitan, que sería editar un cobro que
+  // no va a salir.
+  const esTerminado = contract.status === 'cancelled' || contract.status === 'expired';
   const chatHref = isManager && contract.applicationId
     ? `/panel/inmobiliaria/mensajes?applicationId=${contract.applicationId}`
     : null;
@@ -544,7 +550,7 @@ function ContratoDetalleContent() {
         <div className="lg:col-span-2 space-y-6">
           {!esPreFirma && (
             <>
-              <ConceptosDelContrato contract={contract} puedeEditar={canEditContracts} />
+              <ConceptosDelContrato contract={contract} puedeEditar={canEditContracts && !esTerminado} />
               {/* Las reglas de mora de la inmobiliaria, y cuáles pisa este contrato. */}
               <ReglasDeMoraDelContrato contract={contract} puedeEditar={canEditContracts} />
               {/*
@@ -923,7 +929,7 @@ function ResumenDelContrato({
   cobros,
 }: {
   contract: { monthlyRent?: number | null; endDate?: string | null; paymentDueDay?: number | null; diasDePlazo?: number | null; propertyId: string | null };
-  cobros: ResumenDeCobros | null;
+  cobros: ResumenDeCobros | 'fallo' | null;
 }) {
   const dias = diasHasta(contract.endDate);
   const vence =
@@ -935,9 +941,14 @@ function ResumenDelContrato({
           ? { delta: `en ${dias} ${dias === 1 ? 'día' : 'días'}`, dir: 'down' as const }
           : { delta: `en ${dias} días`, dir: 'neutral' as const };
 
+  // Cuando los cobros no se pudieron traer va una raya, no un cero: un cero
+  // que en realidad es «no lo pudimos traer» afirma «al día», y tranquiliza
+  // justo a quien no debería. El reintento vive en la tarjeta Cobros de abajo.
   const saldo =
     cobros === null
       ? { value: '…', delta: undefined, dir: 'neutral' as const }
+      : cobros === 'fallo'
+        ? { value: '—', delta: 'No se pudo traer el saldo', dir: 'neutral' as const }
       : cobros.total === 0
         ? { value: '—', delta: contract.propertyId === null ? 'sin inmueble no hay cobros' : 'sin cobros todavía', dir: 'neutral' as const }
         : cobros.saldo > 0

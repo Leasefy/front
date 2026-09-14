@@ -33,6 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
@@ -64,7 +65,9 @@ const SIN_PLAN: Record<string, string> = {
 
 export function RenovacionDelContrato({ contract, puedeEditar }: Props) {
   const [datos, setDatos] = useState<PlanDelContrato | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  // El error ENTERO: `FalloDeCarga` lo clasifica (404 sin reintentar, red sí)
+  // y no muestra el inglés del back.
+  const [error, setError] = useState<unknown>(null)
   const [dialogoAbierto, setDialogoAbierto] = useState(false)
   const [guardando, setGuardando] = useState(false)
 
@@ -74,7 +77,7 @@ export function RenovacionDelContrato({ contract, puedeEditar }: Props) {
       setDatos(await renovacionAutomaticaApi.delContrato(contract.id))
     } catch (e) {
       // Un fallo NO se pinta como «no se renueva»: son cosas distintas.
-      setError(e instanceof Error ? e.message : 'No pudimos traer la renovación.')
+      setError(e)
     }
   }, [contract.id])
 
@@ -123,13 +126,13 @@ export function RenovacionDelContrato({ contract, puedeEditar }: Props) {
 
       {datos === null && error === null ? (
         <p className="text-sm text-muted-foreground">Cargando…</p>
-      ) : error ? (
-        <div className="space-y-2 text-sm">
-          <p className="text-destructive">{error}</p>
-          <Button variant="secondary" size="sm" hideArrow onClick={() => void cargar()}>
-            Reintentar
-          </Button>
-        </div>
+      ) : error !== null ? (
+        <FalloDeCarga
+          error={error}
+          queEs="la renovación de este contrato"
+          onReintentar={cargar}
+          enmarcado={false}
+        />
       ) : datos && !datos.plan ? (
         <p className="text-sm text-muted-foreground" data-testid="renovacion-sin-plan">
           {SIN_PLAN[datos.sinPlanPorque ?? ''] ??

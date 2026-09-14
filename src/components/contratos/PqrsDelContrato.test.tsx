@@ -30,6 +30,7 @@ vi.mock('next/navigation', () => ({
 }))
 
 import { pqrsApi } from '@/lib/api/pqrs-agencia.service'
+import { ApiError } from '@/lib/api/client'
 import type { Pqrs, PqrsEstado } from '@/lib/api/pqrs-agencia.types'
 import { PqrsDelContrato, lineaDeRelacion, lineaDeResumen } from './PqrsDelContrato'
 
@@ -272,9 +273,20 @@ describe('PqrsDelContrato — cuando no hay nada que mostrar', () => {
     deContrato.mockRejectedValue(new Error('Se cayó el back.'))
     await montar()
 
-    expect(container.querySelector('[data-testid="pqrs-del-contrato-error"]')?.textContent).toBe(
-      'Se cayó el back.',
-    )
+    // El cartel de la casa, con reintentar porque un 500/red sí puede cambiar.
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="reintentar"]')).not.toBeNull()
     expect(container.textContent).not.toContain('Este contrato no tiene PQRS')
+  })
+
+  it('sobre un 403 no ofrece reintentar ni muestra el mensaje crudo del back', async () => {
+    deContrato.mockRejectedValue(new ApiError(403, 'Forbidden resource'))
+    await montar()
+
+    const fallo = container.querySelector('[data-testid="fallo-de-carga"]')
+    expect(fallo?.getAttribute('data-tipo')).toBe('sinPermiso')
+    expect(container.querySelector('[data-testid="reintentar"]')).toBeNull()
+    // El inglés del back queda sólo en el nodo de diagnóstico, no a la vista.
+    expect(container.querySelector('[data-testid="fallo-detalle-tecnico"]')?.className).toContain('sr-only')
   })
 })

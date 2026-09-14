@@ -30,7 +30,6 @@ import { useRouter } from 'next/navigation';
 import { fmtCop } from './format';
 import {
   FileText,
-  Warning,
   CaretRight,
   House,
   User,
@@ -46,6 +45,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@leasefy/cadence';
 import { SinDatos } from '@/components/estado/SinDatos';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
@@ -73,14 +73,26 @@ function fmtDate(iso: string | null | undefined, locale: string): string {
 
 // ── Stat card ────────────────────────────────────────────────────────────────
 
-function StatCard({ label, value, dot }: { label: string; value: number | string; dot: string }) {
+function StatCard({
+  label,
+  value,
+  dot,
+  sub,
+}: {
+  label: string;
+  value: number | string;
+  dot: string;
+  /** La línea de abajo: «No se pudo traer» cuando el número es una raya por un fallo. */
+  sub?: string;
+}) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="rounded-lg border border-border bg-card p-4" data-testid="contratos-kpi">
       <div className="flex items-center gap-2">
         <span className={cn('w-2 h-2 rounded-full flex-shrink-0', dot)} />
         <span className="text-caption text-muted-foreground truncate">{label}</span>
       </div>
       <p className="mt-1.5 text-2xl font-medium tabular-nums text-foreground">{value}</p>
+      {sub ? <p className="mt-0.5 text-caption text-muted-foreground">{sub}</p> : null}
     </div>
   );
 }
@@ -143,13 +155,14 @@ function ContratosContent() {
   const router = useRouter();
   const tx = (es: string, en: string) => (locale === 'en' ? en : es);
 
-  const { contracts, stats, isLoading, error, refetch } = useContracts();
+  const { contracts, stats, isLoading, error, errorCrudo, refetch } = useContracts();
   // Contratos migrados que existen y no cobran (sin inmueble o sin
   // propietario). Vivía en la página de migración, que ya no existe: se dice
   // acá, que es donde la persona está mirando sus contratos.
   const deuda = useMigracionConDeuda();
 
   useAutoRefresh(refetch);
+  const sinDato = tx('No se pudo traer', "Couldn't load");
 
   /*
    * 🔴 El buscador y los filtros (Nico, 2026-09-12: «esta tabla ¿por qué no
@@ -336,38 +349,35 @@ function ContratosContent() {
       {/* Stats */}
       {/* Cuatro en fila desde tablet: a 900 px, con el menú escondido, sobra
           ancho y las tarjetas en 2×2 salían enormes para un solo número. */}
+      {/* Un cero que en realidad es «no lo pudimos traer» afirma algo falso
+          («no tienes contratos activos») y encima tranquiliza. Cuando la
+          consulta falló va una raya, y se dice por qué. */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label={tx('Total', 'Total')} value={isLoading ? '—' : stats.total} dot="bg-fg-subtle" />
-        <StatCard label={tx('Activos', 'Active')} value={isLoading ? '—' : stats.active} dot="bg-success" />
+        <StatCard
+          label={tx('Total', 'Total')}
+          value={isLoading || error ? '—' : stats.total}
+          sub={error ? sinDato : undefined}
+          dot="bg-fg-subtle"
+        />
+        <StatCard
+          label={tx('Activos', 'Active')}
+          value={isLoading || error ? '—' : stats.active}
+          sub={error ? sinDato : undefined}
+          dot="bg-success"
+        />
         <StatCard
           label={tx('Pendientes de firma', 'Pending signature')}
-          value={isLoading ? '—' : stats.pendingLandlord + stats.pendingTenant}
+          value={isLoading || error ? '—' : stats.pendingLandlord + stats.pendingTenant}
+          sub={error ? sinDato : undefined}
           dot="bg-warning"
         />
-        <StatCard label={tx('Borradores', 'Drafts')} value={isLoading ? '—' : stats.draft} dot="bg-fg-subtle" />
+        <StatCard
+          label={tx('Borradores', 'Drafts')}
+          value={isLoading || error ? '—' : stats.draft}
+          sub={error ? sinDato : undefined}
+          dot="bg-fg-subtle"
+        />
       </div>
-
-      {/* Error */}
-      {error && (
-        <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2.5">
-          <Warning className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" weight="fill" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-danger">
-              {tx('Error cargando contratos', 'Error loading contracts')}
-            </p>
-            <p className="text-xs text-danger/90 mt-0.5">{error}</p>
-          </div>
-          <Button
-            onClick={() => void refetch()}
-            variant="outline"
-            size="sm"
-            hideArrow
-            className="shrink-0"
-          >
-            {tx('Reintentar', 'Retry')}
-          </Button>
-        </div>
-      )}
 
       {/* Table */}
       <section className="rounded-lg border border-border bg-card overflow-hidden">
@@ -438,6 +448,24 @@ function ContratosContent() {
           </TableHeader>
           <TableBody>
             {isLoading && contracts.length === 0 && <TableSkeleton cells={COLUMNS.length} />}
+
+            {/* El fallo ocupa el mismo hueco que el vacío: es la misma pantalla
+                en otro estado. Antes era un cartel rojo a mano con el mensaje
+                crudo del backend y «Reintentar» siempre, incluso sobre un 403 o
+                un 404, donde reintentar no cambia nada. `FalloDeCarga` recibe el
+                error ENTERO y decide solo. */}
+            {!isLoading && error && (
+              <TableRow>
+                <TableCell colSpan={COLUMNS.length} className="p-0">
+                  <FalloDeCarga
+                    error={errorCrudo ?? error}
+                    queEs="los contratos"
+                    onReintentar={refetch}
+                    enmarcado={false}
+                  />
+                </TableCell>
+              </TableRow>
+            )}
 
             {/*
               🔴 Desde que hay buscador, un vacío ya NO significa siempre

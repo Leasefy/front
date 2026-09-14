@@ -333,8 +333,32 @@ describe('varios inquilinos', () => {
     await act(async () => {
       boton.click()
     })
+    // C11: la basura ya no quita — pregunta primero, diciendo a quién.
+    const dialogo = document.querySelector('[role="alertdialog"]')
+    expect(dialogo?.textContent).toContain('Ana Gómez')
+    expect(quitarInquilino).not.toHaveBeenCalled()
+
+    await act(async () => {
+      ;(document.querySelector('[data-testid="confirmar-quitar-inquilino"]') as HTMLButtonElement).click()
+    })
     expect(quitarInquilino).toHaveBeenCalledWith('c-1', 'ci-1')
     expect(container.textContent).not.toContain('Ana Gómez')
+  })
+
+  it('🔴 un toque de más en la basura no saca a nadie: cancelar no llama al back', async () => {
+    render(conDos)
+    const boton = container.querySelector('button[aria-label^="Quitar a"]') as HTMLButtonElement
+    await act(async () => {
+      boton.click()
+    })
+    const cancelar = Array.from(document.querySelectorAll('[role="alertdialog"] button')).find(
+      (b) => b.textContent === 'Cancelar',
+    ) as HTMLButtonElement
+    await act(async () => {
+      cancelar.click()
+    })
+    expect(quitarInquilino).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('Ana Gómez')
   })
 
   it('sin permiso de edición no hay botón de agregar ni de quitar', () => {

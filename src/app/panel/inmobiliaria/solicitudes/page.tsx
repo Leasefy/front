@@ -15,6 +15,9 @@ import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { toast } from '@/components/ui/toast';
+import { ApiError } from '@/lib/api/client';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { pqrsApi } from '@/lib/api/pqrs-agencia.service';
 import { RESUMEN_PQRS_VACIO } from '@/lib/api/pqrs-agencia.types';
@@ -118,8 +121,28 @@ function PqrsContent() {
       prev ? { ...prev, solicitudes: prev.solicitudes.map((s) => (s.id === p.id ? p : s)) } : prev,
     );
     setSeleccionada(p);
-    pqrsApi.listar().then(setData).catch(() => undefined);
+    pqrsApi
+      .listar()
+      .then(setData)
+      .catch(() => {
+        // El cambio ya quedó guardado; lo que falló fue refrescar los
+        // contadores. Callarlo dejaba el resumen viejo sin decirlo.
+        toast.error('No se pudo actualizar el resumen', {
+          description:
+            'El cambio quedó guardado; los contadores pueden estar desactualizados hasta que recargues.',
+        });
+      });
   };
+
+  // Se pidió una solicitud por URL y la lista cargó bien sin ella: decirlo,
+  // no callarlo. Antes el `?pqrs=` que no estaba se ignoraba en silencio y la
+  // persona quedaba mirando la tabla sin saber por qué no se abrió nada.
+  const pedidaNoEsta =
+    pqrsPedida !== null &&
+    !isLoading &&
+    !error &&
+    data !== null &&
+    !data.solicitudes.some((p) => p.id === pqrsPedida);
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -158,11 +181,38 @@ function PqrsContent() {
                 <span className={cn('w-2 h-2 rounded-full flex-shrink-0', item.dot)} />
                 <span className="text-caption text-fg-muted truncate">{t(k(`estado_${item.key}`))}</span>
               </div>
-              <p className="mt-1.5 text-2xl font-semibold tabular-nums text-fg">{resumen[item.field]}</p>
+              {/* Un 0 mientras carga o cuando la consulta falló afirma «no hay
+                  ninguna», que no se sabe. Esqueleto mientras carga; raya y
+                  motivo cuando falló. */}
+              {isLoading ? (
+                <div className="mt-2.5 h-7 w-10 rounded bg-surface-muted animate-pulse" aria-hidden="true" />
+              ) : (
+                <p
+                  className="mt-1.5 text-2xl font-semibold tabular-nums text-fg"
+                  data-testid="pqrs-resumen-valor"
+                >
+                  {error ? '—' : resumen[item.field]}
+                </p>
+              )}
+              {!isLoading && error ? (
+                <p className="text-caption text-fg-subtle">No se pudo traer</p>
+              ) : null}
             </div>
           ))}
         </div>
       </section>
+
+      {pedidaNoEsta ? (
+        <FalloDeCarga
+          error={new ApiError(404, `La solicitud ${pqrsPedida} no está en la lista`)}
+          queEs="esa solicitud"
+          volverA={
+            rutaDeVuelta !== ''
+              ? { label: VUELVE_A[lugarDeRegreso(rutaDeVuelta)], href: rutaDeVuelta }
+              : undefined
+          }
+        />
+      ) : null}
 
       {/* Reparación → cotización (PQRS-03) */}
       <Link

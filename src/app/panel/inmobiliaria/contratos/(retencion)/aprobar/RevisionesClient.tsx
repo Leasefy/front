@@ -318,7 +318,7 @@ export default function RevisionesClient() {
         error={error}
         vacio={rows.length === 0}
         queEs="la cola de revisión"
-        onReintentar={() => void refetch()}
+        onReintentar={refetch}
         esqueleto={
           <div className="space-y-2" data-testid="revisiones-cargando">
             {Array.from({ length: 4 }).map((_, i) => (

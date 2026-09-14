@@ -61,7 +61,7 @@ export function SeccionNotificaciones() {
       cargando={isLoading}
       error={errorCrudo}
       queEs="tus preferencias de notificaciones"
-      onReintentar={() => void refresh()}
+      onReintentar={refresh}
       esqueleto={<EsqueletoDeSeccion filas={5} />}
     >
     <TarjetaDeAjustes>

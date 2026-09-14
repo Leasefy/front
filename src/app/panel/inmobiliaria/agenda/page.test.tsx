@@ -31,7 +31,17 @@ vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ locale: 'es', t: (k: string) => k }),
 }))
 
-vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
+const toastMock = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }))
+vi.mock('sonner', () => ({ toast: toastMock }))
+
+// `operaciones:edit` decide si se dibujan las acciones que escriben. Controlado por test.
+let _puedeEditar = true
+vi.mock('@/lib/hooks/usePermissions', () => ({
+  usePermissions: () => ({
+    canAccess: (m: string, a: string) => (m === 'operaciones' && a === 'edit' ? _puedeEditar : true),
+    isLoading: false,
+  }),
+}))
 
 vi.mock('@/components/inmobiliaria/agenda/PedirCitaModal', () => ({
   PedirCitaModal: () => null,
@@ -46,8 +56,12 @@ vi.mock('@/lib/api/client', async (importOriginal) => {
 })
 
 const getAgendaMock = vi.fn()
+const aceptarCitaMock = vi.fn()
 vi.mock('@/lib/api/agenda.service', () => ({
-  agendaApi: { getAgenda: () => getAgendaMock() },
+  agendaApi: {
+    getAgenda: () => getAgendaMock(),
+    aceptarCita: (id: string) => aceptarCitaMock(id),
+  },
 }))
 
 import { ApiError } from '@/lib/api/client'
@@ -66,6 +80,7 @@ beforeEach(() => {
   document.body.appendChild(container)
   root = createRoot(container)
   _hayToken = false
+  _puedeEditar = true
 })
 
 afterEach(() => {
@@ -213,5 +228,146 @@ describe('agenda — una visita confirmada se ve confirmada', () => {
     // El stub de i18n devuelve la clave: alcanza para ver que NO reusa la de pendiente.
     expect(fila?.textContent).toContain('estado_confirmado')
     expect(fila?.textContent).not.toContain('estado_pendiente')
+  })
+})
+
+// ── Casos de error del tramo A (auditoría del 13-09) ─────────────────────────
+
+const CON_VISITA_PENDIENTE = {
+  resumen: {
+    total: 1,
+    visitas: 3,
+    firmasPendientes: 0,
+    vencimientos: 0,
+    seguimientos: 0,
+    inspecciones: 0,
+    tareas: 0,
+  },
+  eventos: [
+    {
+      id: 'visit-v-1',
+      tipo: 'visita',
+      origen: 'usuario',
+      estado: 'pendiente',
+      estadoRaw: 'PENDING',
+      titulo: 'Visita a Apto 402',
+      fecha: '2026-10-01T10:00:00',
+    },
+  ],
+  total: 1,
+}
+
+const tiles = () => Array.from(container.querySelectorAll<HTMLElement>('[data-testid="kpi-valor"]'))
+const botonConTexto = (texto: string) =>
+  Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find((b) => b.textContent?.includes(texto))
+
+describe('A1 — los tiles del resumen no dicen «0» cuando no saben', () => {
+  it('mientras carga: los seis tiles en «cargando», ninguno con un número', async () => {
+    getAgendaMock.mockReturnValue(new Promise(() => {}))
+    await montar()
+
+    expect(tiles()).toHaveLength(6)
+    expect(tiles().every((el) => el.dataset.estado === 'cargando')).toBe(true)
+  })
+
+  it('con la carga caída: «—» en los seis, y ningún «0» afirmado encima del fallo', async () => {
+    getAgendaMock.mockRejectedValue(new ApiError(500, 'boom'))
+    await montar()
+
+    expect(fallo()).not.toBeNull()
+    expect(tiles().every((el) => el.dataset.estado === 'fallo')).toBe(true)
+    expect(tiles().some((el) => el.textContent?.includes('0'))).toBe(false)
+  })
+
+  it('con datos: el número real', async () => {
+    getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
+    await montar()
+
+    expect(tiles()[0].dataset.estado).toBe('ok')
+    expect(tiles()[0].textContent).toBe('3')
+  })
+})
+
+describe('A3 — sin `operaciones:edit` no se dibuja lo que el back rechaza con 403', () => {
+  it('CONTADOR/VIEWER: ni Pedir cita, ni Nueva tarea, ni Confirmar/Rechazar en la fila', async () => {
+    _puedeEditar = false
+    getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
+    await montar()
+
+    expect(container.querySelector('[data-testid="pedir-cita"]')).toBeNull()
+    expect(container.querySelector('[data-testid="nueva-tarea"]')).toBeNull()
+    expect(botonConTexto('citaConfirmar')).toBeUndefined()
+    expect(botonConTexto('citaRechazar')).toBeUndefined()
+    // La fila se sigue viendo: leer la agenda sí puede.
+    expect(container.querySelector('[data-testid="agenda-fila"]')).not.toBeNull()
+  })
+
+  it('CONTADOR/VIEWER con la agenda vacía: el vacío no ofrece «Agendar una visita»', async () => {
+    _puedeEditar = false
+    getAgendaMock.mockResolvedValue(AGENDA_VACIA)
+    await montar()
+
+    expect(container.textContent).toContain('emptyTitle')
+    expect(container.textContent).not.toContain('Agendar una visita')
+  })
+
+  it('con permiso: los botones están', async () => {
+    getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
+    await montar()
+
+    expect(container.querySelector('[data-testid="pedir-cita"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="nueva-tarea"]')).not.toBeNull()
+    expect(botonConTexto('citaConfirmar')).toBeDefined()
+  })
+})
+
+describe('A2 — el motivo del back no se pierde en un catch sin argumento', () => {
+  it('un 409 que explica viaja en la descripción del aviso', async () => {
+    getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
+    aceptarCitaMock.mockRejectedValue(new ApiError(409, 'Esa cita ya fue cancelada.'))
+    await montar()
+
+    await act(async () => {
+      botonConTexto('citaConfirmar')!.click()
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(toastMock.error).toHaveBeenCalledWith(
+      'inmobiliaria.agenda.citaAccionError',
+      { description: 'Esa cita ya fue cancelada.' },
+    )
+  })
+
+  it('sesión vencida: no hay aviso de «no se pudo» encima del cierre de sesión', async () => {
+    getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
+    aceptarCitaMock.mockRejectedValue(new ApiError(401, 'Tu sesión expiró.'))
+    await montar()
+
+    await act(async () => {
+      botonConTexto('citaConfirmar')!.click()
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(toastMock.error).not.toHaveBeenCalled()
+  })
+})
+
+describe('A7 — un doble clic no manda dos confirmaciones', () => {
+  it('dos clics antes del siguiente render: una sola llamada al back', async () => {
+    getAgendaMock.mockResolvedValue(CON_VISITA_PENDIENTE)
+    aceptarCitaMock.mockReturnValue(new Promise(() => {}))
+    await montar()
+
+    const confirmar = botonConTexto('citaConfirmar')!
+    await act(async () => {
+      confirmar.click()
+      confirmar.click()
+    })
+
+    expect(aceptarCitaMock).toHaveBeenCalledTimes(1)
   })
 })

@@ -50,9 +50,20 @@ interface Props {
   onCambio: () => void;
   /** Las acciones de visita viven en la página (confirmar/rechazar/cancelar). */
   onAccionVisita: (visitId: string, accion: () => Promise<void>) => Promise<void>;
+  /**
+   * Sin `operaciones:edit` el back responde 403 a toda acción sobre visitas y
+   * tareas: el cajón queda de sólo lectura y lo dice, igual que la tabla (A3).
+   */
+  puedeEditar?: boolean;
 }
 
-export function EventoAgendaDrawer({ evento: entrante, onOpenChange, onCambio, onAccionVisita }: Props) {
+export function EventoAgendaDrawer({
+  evento: entrante,
+  onOpenChange,
+  onCambio,
+  onAccionVisita,
+  puedeEditar = true,
+}: Props) {
   // El cajón se cierra ANIMADO (`open={…}`, no desmontando), así que durante
   // los 500 ms de la salida el prop ya es `null` y el cuerpo se pintaría en
   // blanco mientras se va. Conservar el último evento es lo que hace que salga
@@ -222,6 +233,7 @@ export function EventoAgendaDrawer({ evento: entrante, onOpenChange, onCambio, o
                 </span>
               }
             >
+              {puedeEditar ? (
               <div className="flex flex-wrap items-center justify-end gap-2" data-testid="evento-acciones">
                 {evento.tipo === 'tarea' && evento.estadoRaw === 'PENDIENTE' && (
                   <>
@@ -276,6 +288,11 @@ export function EventoAgendaDrawer({ evento: entrante, onOpenChange, onCambio, o
                   </Button>
                 )}
               </div>
+              ) : (
+                <p className="text-sm text-fg-muted" data-testid="evento-sin-permiso">
+                  Necesitas permiso de operaciones para cambiar {esVisita ? 'esta visita' : 'esta tarea'}.
+                </p>
+              )}
             </CajonPie>
           </>
         )}

@@ -125,7 +125,7 @@ afterEach(() => {
   container.remove();
 });
 
-function pintar(evento: EventoAgenda | null) {
+function pintar(evento: EventoAgenda | null, puedeEditar?: boolean) {
   act(() => {
     root.render(
       <EventoAgendaDrawer
@@ -133,6 +133,7 @@ function pintar(evento: EventoAgenda | null) {
         onOpenChange={vi.fn()}
         onCambio={vi.fn()}
         onAccionVisita={onAccionVisita}
+        puedeEditar={puedeEditar}
       />,
     );
   });
@@ -248,5 +249,38 @@ describe('<EventoAgendaDrawer> — qué muestra', () => {
 
     expect(container.textContent).toContain('inmobiliaria.agenda.colResponsable');
     expect(container.textContent).not.toContain('Quién visita');
+  });
+});
+
+describe('<EventoAgendaDrawer> — sin operaciones:edit (A3)', () => {
+  it('una visita pendiente no ofrece confirmar ni rechazar, y dice por qué', () => {
+    pintar(visita({ estadoRaw: 'PENDING' }), false);
+
+    expect(container.querySelector('[data-testid="cita-confirmar"]')).toBeNull();
+    expect(container.querySelector('[data-testid="cita-rechazar"]')).toBeNull();
+    expect(container.querySelector('[data-testid="evento-acciones"]')).toBeNull();
+    expect(
+      container.querySelector('[data-testid="evento-sin-permiso"]')?.textContent,
+    ).toContain('esta visita');
+  });
+
+  it('una tarea pendiente no ofrece marcarla ni cancelarla', () => {
+    pintar(
+      visita({ id: 'tarea-1', tipo: 'tarea', estadoRaw: 'PENDIENTE', titulo: 'Llamar al propietario' }),
+      false,
+    );
+
+    expect(container.querySelector('[data-testid="tarea-completar"]')).toBeNull();
+    expect(container.textContent).not.toContain('Cancelar tarea');
+    expect(
+      container.querySelector('[data-testid="evento-sin-permiso"]')?.textContent,
+    ).toContain('esta tarea');
+  });
+
+  it('con permiso las acciones siguen ahí', () => {
+    pintar(visita({ estadoRaw: 'PENDING' }), true);
+
+    expect(container.querySelector('[data-testid="cita-confirmar"]')).toBeTruthy();
+    expect(container.querySelector('[data-testid="evento-sin-permiso"]')).toBeNull();
   });
 });

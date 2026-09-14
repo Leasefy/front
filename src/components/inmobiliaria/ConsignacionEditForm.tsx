@@ -410,7 +410,16 @@ export function ConsignacionEditForm({
     if (!v.address.trim()) e.address = tv('addressRequired');
     if (!v.city.trim()) e.city = tv('cityRequired');
     if (inmuebleEditable) {
-      if (v.description.trim() && v.description.trim().length < 20) e.description = tv('descriptionMin');
+      // Sólo si CAMBIÓ: un inmueble migrado trae descripciones cortas (o
+      // vacías) y el back sólo recibe la descripción si se tocó. Exigirla sin
+      // que nadie la tocara bloqueaba CUALQUIER edición de ese inmueble.
+      if (
+        v.description.trim() !== base.description &&
+        v.description.trim() &&
+        v.description.trim().length < 20
+      ) {
+        e.description = tv('descriptionMin');
+      }
       if (v.externalId.trim().length > 100) e.externalId = tv('externalIdMax');
       for (const k of ['bedrooms', 'bathrooms', 'floor', 'parkingSpaces'] as const) {
         if (v[k] !== '' && Number(v[k]) < 0) e[k] = tv('numeroNoNegativo');

@@ -308,6 +308,19 @@ describe('<ConsignacionEditForm> — el cajón trae todo lo que se puede editar'
     expect(propertiesUpdate).not.toHaveBeenCalled();
   });
 
+  it('un inmueble migrado con descripción corta se puede editar sin tocarla (la regla de 20 caracteres es sólo para la que cambia)', async () => {
+    render({ property: makeProperty({ description: 'Lindo' }) });
+    escribir('editar-area', '90');
+    await guardar();
+    expect(propertiesUpdate).toHaveBeenCalledWith('prop-1', { area: 90 });
+
+    // …pero si la escribe corta, sí se frena.
+    propertiesUpdate.mockClear();
+    escribir('editar-description', 'Muy corta');
+    await guardar();
+    expect(propertiesUpdate).not.toHaveBeenCalled();
+  });
+
   it('una fecha de fin anterior a la de inicio no se manda', async () => {
     render();
     escribir('editar-contractEndDate', '2025-01-01');

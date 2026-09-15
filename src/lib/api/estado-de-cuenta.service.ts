@@ -129,7 +129,37 @@ export const estadoDeCuentaApi = {
       {},
     );
   },
+
+  /**
+   * Los enlaces públicos que siguen abiertos para ese cliente, del más nuevo
+   * al más viejo (`GET :tipo/:id/enlaces`). Auditoría 13-09, E3.
+   */
+  enlaces(tipo: 'inquilino' | 'propietario', id: string): Promise<EnlaceVivo[]> {
+    return apiClient.get<EnlaceVivo[]>(`${BASE}/${tipo}/${encodeURIComponent(id)}/enlaces`);
+  },
+
+  /**
+   * Revoca un enlace: desde ahí responde 404 a quien lo abra
+   * (`DELETE enlaces/:enlaceId`). El permiso lo decide el back según el tipo
+   * guardado en el enlace.
+   */
+  revocarEnlace(enlaceId: string): Promise<{ revocado: boolean }> {
+    return apiClient.delete<{ revocado: boolean }>(
+      `${BASE}/enlaces/${encodeURIComponent(enlaceId)}`,
+    );
+  },
 };
+
+/** Un enlace abierto, como lo lista `compartir-estado-de-cuenta.service.ts#enlacesDe`. */
+export interface EnlaceVivo {
+  id: string;
+  /** ISO-8601. */
+  venceEl: string;
+  /** Cuántas veces se abrió. */
+  aperturas: number;
+  /** ISO-8601. */
+  creadoEl: string;
+}
 
 /**
  * El estado de cuenta detrás de un enlace público, SIN sesión.

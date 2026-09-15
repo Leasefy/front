@@ -288,6 +288,16 @@ export function PropietarioTable({
                       <span className="text-muted-foreground ml-1">
                         ({propietario.activeLeases} {t('inmobiliaria.propietario.table.rented')})
                       </span>
+                      {/* El minoritario existe: sus copropiedades van aparte
+                          del conteo de mandatos donde es principal. */}
+                      {(propietario.copropiedadesCount ?? 0) > 0 && (
+                        <span
+                          className="block text-xs text-muted-foreground tabular-nums"
+                          data-testid="copropiedades-del-propietario"
+                        >
+                          {t('inmobiliaria.propietario.table.copropiedades', { n: propietario.copropiedadesCount ?? 0 })}
+                        </span>
+                      )}
                     </div>
                   </TableCell>
 
@@ -337,7 +347,10 @@ export function PropietarioTable({
                           aria-label="Acciones"
                         />
                       </DropdownListTrigger>
-                      <DropdownListContent align="end" className="w-48">
+                      {/* El menú vive en un portal, pero sus clics suben por el árbol de React
+                          hasta la fila, que abre la ficha: «Editar» y «Eliminar» navegaban
+                          en vez de abrir su diálogo. Mismo corte que en RenovacionesTable. */}
+                      <DropdownListContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
                         <DropdownListItem onSelect={() => onView(propietario)}>
                           <Eye className="w-4 h-4" />
                           <span className="text-sm">{t('inmobiliaria.propietario.table.viewDetail')}</span>

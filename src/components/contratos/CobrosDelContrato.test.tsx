@@ -36,6 +36,7 @@ vi.mock('@/components/inmobiliaria/RecibosDeCajaHistorial', () => ({
 }))
 
 import { contractsApi } from '@/lib/api/contracts.service'
+import { ApiError } from '@/lib/api/client'
 import { CobrosDelContrato } from './CobrosDelContrato'
 import type { Contract } from '@/lib/types/contract'
 import type { CobroConDesglose } from '@/lib/api/recibos-de-caja.types'
@@ -153,16 +154,39 @@ describe('<CobrosDelContrato>', () => {
     cobrosMock.mockRejectedValueOnce(new Error('Se cayó el back'))
     await render(contrato())
 
-    expect(container.textContent).toContain('Se cayó el back')
+    // El cartel de la casa, que clasifica el fallo; no el texto crudo del back.
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
     expect(container.querySelector('[data-testid="cobros-vacio"]')).toBeNull()
 
     cobrosMock.mockResolvedValueOnce([cobro()])
-    const reintentar = Array.from(container.querySelectorAll('button')).find((b) =>
-      b.textContent?.includes('Reintentar'),
-    )!
+    const reintentar = container.querySelector<HTMLButtonElement>('[data-testid="reintentar"]')!
     await act(async () => {
       reintentar.click()
     })
     expect(container.textContent).toContain('Septiembre de 2026')
+  })
+
+  /**
+   * 🔴 C9 (P0). Un GET de cobros caído hacía `setCobros([])`, de ahí salía un
+   * resumen con `total: 0` y la franja de la ficha decía «Saldo del inquilino
+   * — · sin cobros todavía»: le decía «al día» a un moroso.
+   */
+  it('🔴 un fallo le avisa a la ficha «fallo», nunca un resumen en cero', async () => {
+    cobrosMock.mockRejectedValueOnce(new ApiError(500, 'Internal server error'))
+    const onResumen = vi.fn()
+    await act(async () => {
+      root.render(<CobrosDelContrato contract={contrato()} onResumen={onResumen} />)
+    })
+
+    expect(onResumen).toHaveBeenCalledWith('fallo')
+    expect(onResumen).not.toHaveBeenCalledWith(expect.objectContaining({ total: 0 }))
+  })
+
+  it('sobre un 404 no ofrece reintentar: volver a pedirlo no lo va a traer', async () => {
+    cobrosMock.mockRejectedValueOnce(new ApiError(404, 'Contract not found'))
+    await render(contrato())
+
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')?.getAttribute('data-tipo')).toBe('noExiste')
+    expect(container.querySelector('[data-testid="reintentar"]')).toBeNull()
   })
 })

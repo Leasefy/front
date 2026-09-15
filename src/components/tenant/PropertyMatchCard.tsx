@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { MapPin, CaretRight, Check } from '@phosphor-icons/react';
 
@@ -29,6 +29,14 @@ export interface PropertyMatchCardProps {
 // Component
 // ============================================================================
 
+function datosDelInmueble(property: RecommendedProperty['property']): string[] {
+  const datos: string[] = [];
+  if (property.bedrooms != null) datos.push(`${property.bedrooms} hab`);
+  if (property.bathrooms != null) datos.push(`${property.bathrooms} ${property.bathrooms === 1 ? 'baño' : 'baños'}`);
+  if (property.area != null) datos.push(formatArea(property.area));
+  return datos;
+}
+
 export function PropertyMatchCard({
   match,
   variant = 'default',
@@ -37,18 +45,14 @@ export function PropertyMatchCard({
 }: PropertyMatchCardProps) {
   const { property, matchScore, acceptanceProbability, recommendation } = match;
   const probabilityColors = getAcceptanceProbabilityColors(acceptanceProbability);
+  const datos = datosDelInmueble(property);
 
   if (variant === 'compact') {
     const CompactContent = (
       <>
         {/* Match Score Badge */}
         <div className="relative w-14 h-14 rounded-sm overflow-hidden flex-shrink-0">
-          <Image
-            src={property.thumbnailUrl}
-            alt={property.title}
-            fill
-            className="object-cover"
-          />
+          <PortadaDelInmueble property={property} alt={property.title} sizes="56px" compacta />
           <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
             <span className="text-lg font-bold text-white">{matchScore}%</span>
           </div>
@@ -113,11 +117,11 @@ export function PropertyMatchCard({
   // Image overlay content (shared between Link and button)
   const ImageOverlay = (
     <>
-      <Image
-        src={property.thumbnailUrl}
+      <PortadaDelInmueble
+        property={property}
         alt={property.title}
-        fill
-        className="object-cover group-hover:scale-105 transition-transform duration-500"
+        sizes="(max-width: 640px) 100vw, 33vw"
+        className="group-hover:scale-105 transition-transform duration-500"
       />
 
       {/* Gradient overlay */}
@@ -152,7 +156,7 @@ export function PropertyMatchCard({
         <div className="flex items-center gap-1.5 mb-1">
           <MapPin className="w-3 h-3 text-white/70" />
           <span className="text-[11px] text-white/80">
-            {property.neighborhood}, {property.city}
+            {[property.neighborhood, property.city].filter(Boolean).join(', ')}
           </span>
         </div>
         <p className="text-lg font-bold text-white">
@@ -209,13 +213,18 @@ export function PropertyMatchCard({
         )}
 
         {/* Property Features */}
-        <div className="flex items-center gap-3 mt-2 text-xs text-plan-muted">
-          <span>{property.bedrooms} hab</span>
-          <span className="w-1 h-1 rounded-full bg-plan-border" />
-          <span>{property.bathrooms} bano</span>
-          <span className="w-1 h-1 rounded-full bg-plan-border" />
-          <span>{formatArea(property.area)}</span>
-        </div>
+        {/* Sólo lo que el inmueble trae: los migrados llegan sin habitaciones,
+            baños ni área, y «hab · baños · m²» sin número no dice nada. */}
+        {datos.length > 0 && (
+          <div className="flex items-center gap-3 mt-2 text-xs text-plan-muted">
+            {datos.map((dato, i) => (
+              <span key={dato} className="flex items-center gap-3">
+                {i > 0 && <span className="w-1 h-1 rounded-full bg-plan-border" />}
+                {dato}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Recommendation - fixed height with line clamp */}
         <div className="flex items-start gap-2 mt-3 p-2.5 bg-surface-muted/50 rounded-sm min-h-[52px]">

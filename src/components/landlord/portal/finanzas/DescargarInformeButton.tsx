@@ -12,8 +12,9 @@ interface DescargarInformeButtonProps {
 
 /**
  * Descarga el informe PDF del propietario (`GET /informe.pdf`, blob vía agent). Degrade honesto:
- * si el back devuelve null (flag-OFF / no cableado) muestra un toast "Próximamente", NO un archivo
- * vacío ni un error crudo.
+ * si el portal no está habilitado (flag-OFF / no cableado) muestra un toast "Próximamente"; si
+ * FALLÓ (403, 5xx, red) lo dice con un toast de error (O2). Nunca un archivo vacío ni un error
+ * crudo, y nunca un rechazo sin atrapar que deja el botón colgado.
  */
 export function DescargarInformeButton({ agencyId }: DescargarInformeButtonProps) {
   const [loading, setLoading] = useState(false);
@@ -21,14 +22,23 @@ export function DescargarInformeButton({ agencyId }: DescargarInformeButtonProps
   async function handleDownload() {
     setLoading(true);
     try {
-      const blob = await ownerFinanzasApi.getInformePdf(agencyId);
-      if (!blob) {
+      const resultado = await ownerFinanzasApi.getInformePdfConEstado(agencyId);
+      if (resultado.estado === 'no-habilitado') {
         toast('Próximamente', {
           description: 'El informe se habilita cuando tu inmobiliaria active el Portal del Propietario.',
         });
         return;
       }
-      const url = URL.createObjectURL(blob);
+      if (resultado.estado === 'fallo') {
+        toast.error('No pudimos generar el informe', {
+          description:
+            resultado.status === 0
+              ? 'Revisa tu conexión e inténtalo de nuevo.'
+              : 'El portal no respondió. Inténtalo de nuevo en un momento.',
+        });
+        return;
+      }
+      const url = URL.createObjectURL(resultado.data);
       const a = document.createElement('a');
       a.href = url;
       a.download = 'informe-propietario.pdf';
@@ -36,6 +46,10 @@ export function DescargarInformeButton({ agencyId }: DescargarInformeButtonProps
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
+    } catch {
+      toast.error('No pudimos descargar el informe', {
+        description: 'Inténtalo de nuevo en un momento.',
+      });
     } finally {
       setLoading(false);
     }

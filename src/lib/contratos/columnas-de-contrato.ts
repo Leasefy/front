@@ -865,6 +865,13 @@ const TERMINOS_DE_TERMINACION = [
   "terminacion",
 ].map(canonizar);
 
+/** Las columnas que hablan del inmueble: con una de éstas, «Consecutivo» a secas se pone en duda. */
+const CAMPOS_DEL_INMUEBLE: ReadonlySet<CampoDeContrato> = new Set<CampoDeContrato>([
+  "propiedadCodigoYDireccion",
+  "codigoInmueble",
+  "direccionInmueble",
+]);
+
 /** Un empate normal siempre le gana a uno débil, empatara con lo que empatara. */
 function mejorQue(a: Empate, b: Empate | null): boolean {
   if (!b) return true;
@@ -984,6 +991,31 @@ export function mapearColumnas(encabezados: string[]): MapeoDeColumna[] {
       debil: Boolean(elegido.debil),
     };
   });
+
+  /*
+   * ── «Consecutivo» a secas cuando el archivo trae también el inmueble ─────
+   *
+   * «Consecutivo» solo empata con `consecutivoContrato` con certeza exacta,
+   * y en un export de contratos casi siempre lo es. Pero un archivo que trae
+   * además una columna de inmueble («Propiedad», «Código inmueble», la
+   * dirección) puede estar usando «Consecutivo» para el consecutivo del
+   * INMUEBLE, y ahí pegarlo sin preguntar al número del contrato es
+   * exactamente el error que Nico temía el 13-09 («¿no vayas a tergiversar
+   * el número de contrato en la migración?»). Se sigue mapeando igual —es la
+   * lectura más probable— pero con certeza dudosa, para que la pantalla lo
+   * marque y alguien lo confirme. «Consecutivo del contrato» sigue exacto.
+   */
+  const hayColumnaDeInmueble = candidatos.some(
+    (c) => c.campo !== null && CAMPOS_DEL_INMUEBLE.has(c.campo),
+  );
+  if (hayColumnaDeInmueble) {
+    for (const c of candidatos) {
+      if (c.campo === "consecutivoContrato" && c.porque === "consecutivo") {
+        c.certeza = "dudosa";
+        c.porque = "consecutivo (el archivo trae también el inmueble: confirma que es el del contrato)";
+      }
+    }
+  }
 
   /*
    * Un campo se llena una sola vez. Antes ganaba la primera columna que

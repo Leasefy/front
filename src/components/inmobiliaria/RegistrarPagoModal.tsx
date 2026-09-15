@@ -75,6 +75,8 @@ import { Input, Textarea } from '@/components/ui';
 import { Spinner } from '@/components/ui/spinner';
 import { Banner, Chip, CurrencyInput } from '@leasefy/cadence';
 import { ApiError } from '@/lib/api/client';
+import { generarIdempotencyKey } from '@/lib/contratos/idempotencia';
+import { SinDatos } from '@/components/estado/SinDatos';
 import type { Cobro } from '@/lib/types/inmobiliaria';
 import type {
   ConciliacionDePagoAnterior,
@@ -203,6 +205,26 @@ export function RegistrarPagoModal({
   const [errorDelBack, setErrorDelBack] = React.useState<string | null>(null);
   const [tocado, setTocado] = React.useState(false);
 
+  /*
+   * 🔴 R1: UNA llave por apertura del formulario.
+   *
+   * Sin llave, un timeout seguido de «Emitir» otra vez dejaba DOS juegos de
+   * recibos: el primero sí había entrado, sólo que la respuesta no llegó. Con
+   * la misma llave el servidor devuelve el recibo de la primera vez.
+   *
+   * Por eso se REUSA al reintentar tras un fallo —aunque se haya cambiado el
+   * monto: si el primero entró, emitir otro con llave nueva es justo el
+   * duplicado— y se descarta sólo cuando el recibo salió o el modal se cierra.
+   */
+  const llaveDelRecibo = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    llaveDelRecibo.current = isOpen ? generarIdempotencyKey() : null;
+  }, [isOpen]);
+  const llaveDeEsteRecibo = React.useCallback(() => {
+    if (!llaveDelRecibo.current) llaveDelRecibo.current = generarIdempotencyKey();
+    return llaveDelRecibo.current;
+  }, []);
+
   // Conciliación: se enciende con el 409 y guarda el mensaje del back tal cual.
   const [conciliando, setConciliando] = React.useState<
     { cobroId: string; mensaje: string } | null
@@ -259,6 +281,7 @@ export function RegistrarPagoModal({
   }, [cartera?.tenantId, cartera?.total, hoy]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cerrar = React.useCallback(() => {
+    llaveDelRecibo.current = null;
     setTenantId(null);
     setMonto(NaN);
     setMedio('');
@@ -290,7 +313,11 @@ export function RegistrarPagoModal({
         fecha,
         medio,
         ...(saludos.trim() ? { notas: saludos.trim() } : {}),
+        idempotencyKey: llaveDeEsteRecibo(),
       });
+
+      // Salió: el próximo recibo es otro y lleva otra llave.
+      llaveDelRecibo.current = null;
 
       const numeros = res.recibos.map((r) => String(r.numero)).join(', ');
       toast.success(
@@ -334,6 +361,7 @@ export function RegistrarPagoModal({
     cobroId,
     fecha,
     formatCurrency,
+    llaveDeEsteRecibo,
     medio,
     monto,
     onSubmit,
@@ -410,12 +438,20 @@ export function RegistrarPagoModal({
             </div>
           )}
 
+          {/*
+            R2: el cliente no debe nada. Se dice con las mismas palabras del
+            servidor y, como no existe el saldo a favor, no se promete un
+            anticipo. El pie se dibuja igual, con «Cerrar»: antes el modal
+            quedaba sin botones.
+          */}
           {conciliando === null && !cargando && cartera !== null && !hayCartera && (
-            <div
-              className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-fg-muted"
-              data-testid="cliente-sin-deuda"
-            >
-              {t('recibos.form.cartera.sinDeuda', { nombre: cartera.nombre })}
+            <div data-testid="cliente-sin-deuda">
+              <SinDatos
+                queSon="cuotas pendientes"
+                icono={Receipt}
+                titulo={t('recibos.form.cartera.sinDeuda', { nombre: cartera.nombre })}
+                descripcion="Cuando tenga una cuota por cobrar vas a poder hacerle el recibo. Todavía no se puede recibir plata por adelantado."
+              />
             </div>
           )}
 
@@ -581,7 +617,7 @@ export function RegistrarPagoModal({
         </>
 
         {/* Pie fijo: en un modal alto los botones no se pueden ir con el scroll. */}
-        {(hayCartera || conciliando !== null) && (
+        {(hayCartera || conciliando !== null || (!cargando && cartera !== null)) && (
           <DialogFooter>
             {conciliando !== null ? (
               <>
@@ -607,6 +643,10 @@ export function RegistrarPagoModal({
                     : t('recibos.conciliar.confirmar')}
                 </Button>
               </>
+            ) : !hayCartera ? (
+              <Button type="button" variant="outline" onClick={cerrar} data-testid="cerrar-sin-deuda">
+                Cerrar
+              </Button>
             ) : (
               <>
                 <Button type="button" variant="outline" onClick={cerrar} disabled={enviando}>

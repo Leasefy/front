@@ -254,3 +254,70 @@ describe('banderaDeOrigen', () => {
     expect(banderaDeOrigen('tal vez')).toBeUndefined();
   });
 });
+
+// ── Varios dueños con su % (Nico, 2026-09-13) ───────────────────────────────
+import {
+  bpsComoPorcentaje,
+  listaDePlata,
+  listaDePorcentajes,
+  listaPorMarcador,
+  repartoEnBps,
+} from './valores-de-origen';
+
+describe('listaDePlata — «Valor Canon» repartido entre dueños', () => {
+  it.each([
+    ['$451,000.00, $649,000.00', [451000, 649000]],
+    ['$451,000.00; $649,000.00', [451000, 649000]],
+    ['$451,000.00,$649,000.00', [451000, 649000]],
+    ['451.000, 649.000', [451000, 649000]],
+    ['$1,100,000.00', [1100000]],
+    ['451,000', [451000]],
+    ['', []],
+  ])('lee %j como %j', (entrada, esperado) => {
+    expect(listaDePlata(entrada)).toEqual(esperado);
+  });
+  it('un trozo que no es plata vuelve la celda entera indefinida', () => {
+    expect(listaDePlata('$451,000.00, N/A')).toBeUndefined();
+  });
+});
+
+describe('listaDePorcentajes', () => {
+  it.each([
+    ['60, 40', [60, 40]],
+    ['60 %, 40 %', [60, 40]],
+    ['33,33 %; 33,33 %; 33,34 %', [33.33, 33.33, 33.34]],
+    ['60/40', [60, 40]],
+    ['100', [100]],
+    ['', []],
+  ])('lee %j como %j', (entrada, esperado) => {
+    expect(listaDePorcentajes(entrada)).toEqual(esperado);
+  });
+  it('fuera de 0..100 no es un porcentaje', () => {
+    expect(listaDePorcentajes('60, 140')).toBeUndefined();
+  });
+});
+
+describe('listaPorMarcador — el teléfono numerado como los dueños', () => {
+  it('parte por [n] y ordena por el índice', () => {
+    expect(listaPorMarcador('[2] 3217834480, [1] 3103640479')).toEqual(['3103640479', '3217834480']);
+  });
+  it('sin marcador es un solo trozo (del [1])', () => {
+    expect(listaPorMarcador('3103640479 / esposo 3217834480')).toEqual(['3103640479 / esposo 3217834480']);
+    expect(listaPorMarcador('')).toEqual([]);
+  });
+});
+
+describe('repartoEnBps — suma exacta a 10.000, residuo al mayoritario', () => {
+  it('el caso real: 41 % / 59 %', () => {
+    expect(repartoEnBps([451000, 649000])).toEqual([4100, 5900]);
+  });
+  it('33,33 × 3 no queda en 9.999', () => {
+    const bps = repartoEnBps([33.33, 33.33, 33.34]);
+    expect(bps.reduce((a, b) => a + b, 0)).toBe(10000);
+    expect(bps).toEqual([3333, 3333, 3334]);
+  });
+  it('se escribe para una persona', () => {
+    expect(bpsComoPorcentaje(5900)).toBe('59 %');
+    expect(bpsComoPorcentaje(3333)).toBe('33,33 %');
+  });
+});

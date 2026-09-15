@@ -150,7 +150,10 @@ function DocumentosContent() {
     errorCrudo: errorActas,
     refetch: recargarActas,
   } = useActasEntrega();
-  const { consignaciones } = useConsignaciones({ status: 'active' });
+  // El error de las consignaciones también se lee: el formulario del acta
+  // elige el inmueble entre las arrendadas, y con la consulta caída el
+  // selector salía vacío y filtrado en silencio.
+  const { consignaciones, errorCrudo: errorConsignaciones } = useConsignaciones({ status: 'active' });
 
   /*
    * Los dos permisos que gobiernan los botones de esta pantalla, y son
@@ -239,8 +242,10 @@ function DocumentosContent() {
       setNuevaActaAbierta(false);
       toast.success(t('inmobiliaria.documentos.toasts.actaCreated'));
     } catch (e) {
+      // Lo que dijo el backend, no una clave fija: «El inmueble ya tiene un
+      // acta de entrega abierta» sirve; «No se pudo guardar» no.
       toast.error(t('inmobiliaria.documentos.toasts.actaError'), {
-        description: t('inmobiliaria.documentos.toasts.actaErrorDesc'),
+        description: e instanceof Error ? e.message : t('inmobiliaria.documentos.toasts.actaErrorDesc'),
       });
       throw e;
     }
@@ -299,7 +304,14 @@ function DocumentosContent() {
               </TabsTrigger>
               <TabsTrigger value="actas" className="gap-2 whitespace-nowrap">
                 {t('inmobiliaria.documentos.filters.actas')}
-                <span className="ml-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full bg-surface-muted px-1.5 text-caption tabular-nums text-fg-muted">{actas.length}</span>
+                {/* Con las actas caídas (un 403 para quien no tiene
+                    `portafolio:view`) el chip decía «0»: raya, no cero. */}
+                <span
+                  className="ml-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full bg-surface-muted px-1.5 text-caption tabular-nums text-fg-muted"
+                  data-testid="chip-actas"
+                >
+                  {errorActas ? '—' : actas.length}
+                </span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -525,7 +537,16 @@ function DocumentosContent() {
                           puedeCrearActas
                             ? {
                                 label: t('inmobiliaria.documentos.newActa'),
-                                onClick: () => setNuevaActaAbierta(true),
+                                onClick: () => {
+                                  if (errorConsignaciones) {
+                                    toast.error('No se pudieron traer los inmuebles arrendados', {
+                                      description:
+                                        'Sin ellos no se puede levantar un acta. Prueba de nuevo en un momento.',
+                                    });
+                                    return;
+                                  }
+                                  setNuevaActaAbierta(true);
+                                },
                               }
                             : undefined
                         }

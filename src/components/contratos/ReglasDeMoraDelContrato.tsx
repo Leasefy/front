@@ -21,6 +21,7 @@ import { usePathname } from 'next/navigation'
 import { Gavel, ArrowCounterClockwise, ArrowSquareOut } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { reglasDeMoraApi } from '@/lib/api/reglas-de-mora.service'
@@ -47,6 +48,10 @@ const PANTALLA_DE_REGLAS = '/panel/inmobiliaria/cobros/reglas-de-mora'
 
 export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
   const [reglas, setReglas] = useState<ReglaDeMoraDelContrato[] | null>(null)
+  // Dos errores distintos: el de CARGAR (entero, para que `FalloDeCarga` lo
+  // clasifique y ofrezca reintentar sólo si sirve) y el de GUARDAR un ajuste,
+  // que es un texto del back y se pinta bajo la lista.
+  const [errorDeCarga, setErrorDeCarga] = useState<unknown>(null)
   const [error, setError] = useState<string | null>(null)
   const [ocupada, setOcupada] = useState<string | null>(null)
 
@@ -60,14 +65,14 @@ export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
     : PANTALLA_DE_REGLAS
 
   const cargar = useCallback(async () => {
+    setErrorDeCarga(null)
     setError(null)
     setReglas(null)
     try {
       setReglas(await reglasDeMoraApi.delContrato(contract.id))
     } catch (e) {
       // Un fallo NO se pinta como «sin reglas»: son cosas distintas.
-      setError(e instanceof Error ? e.message : 'No pudimos traer las reglas de mora.')
-      setReglas([])
+      setErrorDeCarga(e)
     }
   }, [contract.id])
 
@@ -110,15 +115,15 @@ export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
         </Button>
       </div>
 
-      {reglas === null ? (
+      {errorDeCarga !== null ? (
+        <FalloDeCarga
+          error={errorDeCarga}
+          queEs="las reglas de mora de este contrato"
+          onReintentar={cargar}
+          enmarcado={false}
+        />
+      ) : reglas === null ? (
         <p className="text-sm text-muted-foreground">Cargando…</p>
-      ) : error && reglas.length === 0 ? (
-        <div className="space-y-2 text-sm">
-          <p className="text-destructive">{error}</p>
-          <Button variant="secondary" size="sm" hideArrow onClick={() => void cargar()}>
-            Reintentar
-          </Button>
-        </div>
       ) : reglas.length === 0 ? (
         <p className="text-sm text-muted-foreground" data-testid="reglas-vacio">
           La inmobiliaria todavía no tiene reglas de mora: a este contrato no

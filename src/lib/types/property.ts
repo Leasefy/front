@@ -111,6 +111,12 @@ export interface Property {
    * America/Bogotá) — render the `"YYYY-MM-DD"` string directly.
    */
   consignedAt?: string | null;
+  /**
+   * El «Código» con el que la inmobiliaria identifica el inmueble en su
+   * sistema anterior (el de Nui). PORTFOLIO-only como `code`: `undefined` =
+   * no autorizado, `null` = no tiene. Editable desde la ficha (2026-09-13).
+   */
+  externalId?: string | null;
 
   // Features
   /*
@@ -144,6 +150,10 @@ export interface Property {
   // Metadata
   landlordId: string;
   agencyName?: string | null;
+  /** Inmobiliaria que lo administra (null = sin inmobiliaria). */
+  agencyId?: string | null;
+  /** Logo de esa inmobiliaria, en el bucket público. */
+  agencyLogoUrl?: string | null;
   /**
    * Offering agency's social links — only populated on the detail response
    * (GET /properties/:id); null on list cards.

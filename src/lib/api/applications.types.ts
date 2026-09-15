@@ -184,7 +184,21 @@ export type LandlordApplicationStatus =
   | 'NEEDS_INFO'
   | 'WITHDRAWN'
   /** Terminal: el flujo de contrato colapsó (rechazo definitivo o cancelación). El tenant debe crear una nueva aplicación para reintentar. */
-  | 'CONTRACT_FAILED';
+  | 'CONTRACT_FAILED'
+  /**
+   * Terminal: la inmobiliaria adjudicó el inmueble a OTRA persona y esta
+   * postulación quedó desplazada (`landlord.service.ts` approve → updateMany a
+   * NO_ADJUDICADO). Sin esta entrada, aprobar a uno dejaba a los demás como
+   * «Desconocido», con el badge vacío y fuera de todos los tiles.
+   */
+  | 'NO_ADJUDICADO'
+  /**
+   * Lo lista el contrato generado del back (`generated/back.ts`), pero el enum
+   * de Prisma NO lo tiene: hoy ninguna fila puede traerlo. Está para que, si
+   * el contrato y la base se alinean, la pantalla no vuelva a decir
+   * «Desconocido».
+   */
+  | 'PREAPPROVED';
 
 export interface LandlordRiskScore {
   totalScore: number; // 0-100

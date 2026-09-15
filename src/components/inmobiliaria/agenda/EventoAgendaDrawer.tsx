@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Cajon, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { agendaApi } from '@/lib/api/agenda.service';
+import { rotuloDeLaPersona } from '@/lib/agenda/rotulo-de-la-persona';
 import { tareaIdOf, type EventoAgenda, type EventoEstado } from '@/lib/api/agenda.types';
 import { fechaLocal } from '@/lib/fechas-locales';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
@@ -50,9 +51,20 @@ interface Props {
   onCambio: () => void;
   /** Las acciones de visita viven en la página (confirmar/rechazar/cancelar). */
   onAccionVisita: (visitId: string, accion: () => Promise<void>) => Promise<void>;
+  /**
+   * Sin `operaciones:edit` el back responde 403 a toda acción sobre visitas y
+   * tareas: el cajón queda de sólo lectura y lo dice, igual que la tabla (A3).
+   */
+  puedeEditar?: boolean;
 }
 
-export function EventoAgendaDrawer({ evento: entrante, onOpenChange, onCambio, onAccionVisita }: Props) {
+export function EventoAgendaDrawer({
+  evento: entrante,
+  onOpenChange,
+  onCambio,
+  onAccionVisita,
+  puedeEditar = true,
+}: Props) {
   // El cajón se cierra ANIMADO (`open={…}`, no desmontando), así que durante
   // los 500 ms de la salida el prop ya es `null` y el cuerpo se pintaría en
   // blanco mientras se va. Conservar el último evento es lo que hace que salga
@@ -156,10 +168,10 @@ export function EventoAgendaDrawer({ evento: entrante, onOpenChange, onCambio, o
                     '—'
                   )}
                 </Fila>
-                {/* 🔴 En una visita este campo NO es el responsable de la
-                    agencia: es quien va a visitar. Rotularlo «Responsable» hacía
-                    leer la fila al revés. */}
-                <Fila etiqueta={esVisita ? 'Quién visita' : t(k('colResponsable'))}>
+                {/* 🔴 Sólo en una tarea este campo es el responsable de la agencia:
+                    en una visita es quien va a visitar y en firmas, vencimientos e
+                    inspecciones es el inquilino (ver `rotulo-de-la-persona.ts`). */}
+                <Fila etiqueta={rotuloDeLaPersona(evento.tipo) ?? t(k('colResponsable'))}>
                   {evento.responsableNombre ?? '—'}
                 </Fila>
 
@@ -222,6 +234,7 @@ export function EventoAgendaDrawer({ evento: entrante, onOpenChange, onCambio, o
                 </span>
               }
             >
+              {puedeEditar ? (
               <div className="flex flex-wrap items-center justify-end gap-2" data-testid="evento-acciones">
                 {evento.tipo === 'tarea' && evento.estadoRaw === 'PENDIENTE' && (
                   <>
@@ -276,6 +289,11 @@ export function EventoAgendaDrawer({ evento: entrante, onOpenChange, onCambio, o
                   </Button>
                 )}
               </div>
+              ) : (
+                <p className="text-sm text-fg-muted" data-testid="evento-sin-permiso">
+                  Necesitas permiso de operaciones para cambiar {esVisita ? 'esta visita' : 'esta tarea'}.
+                </p>
+              )}
             </CajonPie>
           </>
         )}

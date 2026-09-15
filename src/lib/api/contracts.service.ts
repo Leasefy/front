@@ -838,6 +838,12 @@ function mapBackendContractRejection(br: BackendContractRejection): ContractReje
 export interface TerceroDelArchivo {
   documento?: string;
   nombre?: string;
+  /**
+   * Su parte del canon en puntos básicos (10.000 = 100 %), calculada de la
+   * plata por dueño de «Valor Canon» cuando cuadra con el canon. Sólo en
+   * `propietarios`; el back la valida (todos o ninguno, suma 10.000).
+   */
+  participacionBps?: number;
 }
 
 export interface FilaAMigrar {
@@ -901,6 +907,16 @@ export interface FilaAMigrar {
    */
   propietarios?: TerceroDelArchivo[];
   /**
+   * 🔴 La PLATA de cada dueño, en el mismo orden que `propietarios`: la
+   * lista de «Valor Canon» (`«$451,000.00, $649,000.00»` → `[451000, 649000]`)
+   * tal como la trae el archivo. El back decide con ella: si cuadra con los
+   * dueños y con el canon, escribe el reparto proporcional (41 % / 59 %) y
+   * pisa lo que dejó el paso de inmuebles; si no cuadra, la fila queda
+   * frenada con `reparto_del_canon`. Sólo viaja cuando la celda trae dos o
+   * más valores — un valor solo es el canon de siempre.
+   */
+  canonPorPropietario?: number[];
+  /**
    * TODOS los inquilinos. El `[1]` es el titular —el que se enlaza como
    * inquilino del contrato— y los demás quedan escritos en las cláusulas: este
    * esquema no tiene un modelo de co-arrendatario y el back no inventa uno.
@@ -950,10 +966,21 @@ export type Faltante =
    * mirar ese documento — corregirlo, o vaciarlo para volver al correo.
    */
   | 'inquilino_documento_ajeno'
+  /**
+   * El consecutivo viene en más de una fila del MISMO archivo: activarlas
+   * juntas crearía dos contratos con el mismo número. Se frenan las dos.
+   */
+  | 'consecutivo_repetido'
   | 'fechas'
   | 'canon'
   | 'uso'
-  | 'dia_de_pago';
+  | 'dia_de_pago'
+  /**
+   * La plata por dueño de «Valor Canon» no cuadra con los dueños o con el
+   * canon. No se inventa un 50/50: se corrige el archivo o se quita esa
+   * columna del mapeo (partes iguales) y se ajusta en el mandato.
+   */
+  | 'reparto_del_canon';
 
 export interface InmuebleCandidato {
   id: string;
@@ -983,6 +1010,31 @@ export interface AsociacionDeTercero {
   id: string | null;
   /** Cuántos venían en el archivo: 2 o 3 es copropiedad o co-inquilinos. */
   cuantos: number;
+  /**
+   * Sólo para el propietario y sólo con 2+ dueños (o con una lista de plata
+   * que no cuadra): cómo va a quedar repartido el mandato, dueño por dueño,
+   * para verlo ANTES de activar. Ausente en las filas de un solo dueño y en
+   * las preparadas antes de que existiera.
+   */
+  reparto?: RepartoDeDuenos | null;
+}
+
+/** Un dueño del reparto: quién, cuánto (bps) y cuánta plata es eso. */
+export interface DuenoDelReparto {
+  documento: string | null;
+  nombre: string | null;
+  /** `null` cuando el reparto tiene problema y no se pudo calcular. */
+  bps: number | null;
+  /** La plata que le toca: la del archivo si la trajo, si no `canon × bps`. */
+  canon: number | null;
+}
+
+export interface RepartoDeDuenos {
+  duenos: DuenoDelReparto[];
+  /** `true` si el archivo dijo cuánto es de quién; `false` si son partes iguales presumidas. */
+  explicito: boolean;
+  /** El motivo, en castellano, cuando la fila quedó frenada por esto. */
+  problema: string | null;
 }
 
 /**

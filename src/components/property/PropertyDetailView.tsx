@@ -18,6 +18,8 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import { superaReferencia, referenciaCanon } from '@/lib/api/aprobacion.service';
 import { SobreTopeAlert } from '@/components/tenant/TopeAprobadoBanner';
+import { TePodemosArrendar } from '@/components/property/TePodemosArrendar';
+import { AdministradoPor } from '@/components/property/AdministradoPor';
 import { formatCurrency, formatArea } from '@/lib/format';
 
 // MapLibre toca `window`: sin SSR, con un esqueleto de la misma altura.
@@ -427,6 +429,24 @@ export function PropertyDetailView({
                   />
                 )}
 
+              {/* «¿Te podemos arrendar este inmueble?» (Nico, 2026-09-14): el
+                  estimado gratis por ingreso y la puerta al estudio con Fianly.
+                  Sólo en arriendo con canon, y no a quien ya tiene aprobación
+                  vigente: ése ya sabe su tope (lo cubre el aviso de arriba). Tampoco
+                  en un inmueble arrendado: el listado ya no lo muestra, y a quien
+                  llega por un enlace viejo no se le ofrece arrendar algo ocupado. */}
+              {property.listingType !== 'sale' && property.status !== 'rented' && (property.monthlyRent ?? 0) > 0 && !aprobacionVigente && (
+                <TePodemosArrendar
+                  propertyId={property.id}
+                  titulo={property.title}
+                  foto={property.images?.[0] ?? null}
+                  canon={property.monthlyRent ?? 0}
+                  ciudad={property.city}
+                  tipo={property.type}
+                  className="mb-8"
+                />
+              )}
+
               {/*
                 Acá iba `SocialProofBanner`: "7 viendo ahora" con un punto que
                 latía, "38 visitas hoy" y una insignia de "demanda muy alta".
@@ -562,9 +582,14 @@ export function PropertyDetailView({
                 <div className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     {property.agencyName && (
-                      <p className="text-[13px] text-muted-foreground">
-                        Ofrecido por <span className="font-medium text-foreground">{property.agencyName}</span>
-                      </p>
+                      <AdministradoPor
+                        tamano={28}
+                        administrador={{
+                          agencyId: property.agencyId ?? null,
+                          nombre: property.agencyName,
+                          logoUrl: property.agencyLogoUrl ?? null,
+                        }}
+                      />
                     )}
                     <p className="text-[13px] font-medium text-foreground mt-0.5">Síguenos</p>
                   </div>
@@ -590,6 +615,12 @@ export function PropertyDetailView({
             <div className="lg:col-span-5 hidden lg:block">
               <StickyCTA
                 propertyId={property.id}
+                arrendado={property.status === 'rented'}
+                administrador={
+                  property.agencyName
+                    ? { agencyId: property.agencyId ?? null, nombre: property.agencyName, logoUrl: property.agencyLogoUrl ?? null }
+                    : null
+                }
                 price={property.monthlyRent ?? 0}
                 adminFee={property.adminFee}
                 isWishlisted={isWishlisted(property.id)}
@@ -606,6 +637,7 @@ export function PropertyDetailView({
       {/* Mobile Sticky CTA */}
       <MobileStickyCTA
         propertyId={property.id}
+        arrendado={property.status === 'rented'}
         price={property.monthlyRent ?? 0}
         listingType={property.listingType}
         salePrice={property.salePrice}

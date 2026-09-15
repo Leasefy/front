@@ -134,7 +134,8 @@ export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) 
               </p>
             </div>
           )}
-          {consignacion.minimumTerm && (
+          {/* `> 0` y no `&&` a secas: con `0` React pinta el «0» suelto. */}
+          {!!consignacion.minimumTerm && consignacion.minimumTerm > 0 && (
             <div>
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.minimumTerm')}</p>
               <p className="text-sm font-medium text-fg">
@@ -160,7 +161,11 @@ interface PropietarioSectionProps {
    * lista quién es quién y cuánto le toca.
    */
   copropietarios?: Copropietario[];
-  /** Cambiar de propietario (se vendió, heredó). Sin esto no se muestra el botón. */
+  /**
+   * Editar los dueños y su reparto (se vendió, heredó, entró un socio, cambió
+   * el porcentaje). Sin esto no se muestra el botón. Abre
+   * `EditarPropietariosDialog`, el mismo que usa la tarjeta «Partes» del contrato.
+   */
   onCambiar?: () => void;
   /** La ruta de esta ficha, para que «Volver» en la del propietario regrese acá. */
   rutaDeOrigen?: string;
@@ -236,9 +241,9 @@ export function PropietarioSection({
                 hideArrow
                 onClick={onCambiar}
                 className="h-auto px-0 text-sm text-fg-muted hover:text-fg"
-                data-testid="cambiar-propietario"
+                data-testid="editar-propietarios"
               >
-                Cambiar
+                Editar propietarios
               </Button>
             )}
             <Link
@@ -256,9 +261,9 @@ export function PropietarioSection({
         </div>
 
         {/* Los dueños y su tajada. Sólo con más de uno — ver `variosDuenos`.
-            El principal (el de mayor participación) va marcado: es el que hoy
-            recibe el giro completo mientras el reparto por porcentaje no esté
-            hecho en la liquidación. */}
+            El principal (el de mayor participación) lleva el chip, como el
+            inquilino principal en la tarjeta «Partes» del contrato: es el que
+            figura como dueño en todo lo que sigue leyendo un solo id. */}
         {variosDuenos && (
           <div
             className="p-3 rounded-lg bg-surface-muted dark:bg-bg space-y-2"
@@ -276,11 +281,14 @@ export function PropietarioSection({
                 className="flex items-center justify-between gap-3"
                 data-testid="copropietario-item"
               >
-                <span className="min-w-0 truncate text-sm text-fg">
-                  {c.propietario?.name ?? c.propietarioId}
+                <span className="flex min-w-0 items-center gap-2 text-sm text-fg">
+                  <span className="truncate">{c.propietario?.name ?? c.propietarioId}</span>
                   {i === 0 && (
-                    <span className="ml-1.5 text-xs text-fg-muted dark:text-fg-subtle">
-                      · principal
+                    <span
+                      className="shrink-0 rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-medium text-primary"
+                      data-testid="copropietario-principal-chip"
+                    >
+                      Principal
                     </span>
                   )}
                 </span>

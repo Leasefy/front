@@ -232,14 +232,18 @@ export function CobroResumen({
             </p>
           </div>
 
-          {/* Pendiente */}
+          {/* Pendiente. El back manda en `totalPending` todo lo que falta cobrar, mora
+              incluida (así lo suman el pie de la tabla y los reportes). Al lado de
+              «En mora» eso contaba la mora dos veces: «Pendiente $10,6 M · 0 cobros»
+              y «En mora $10,6 M · 5 cobros» (QA 2026-09-14). Acá va lo que falta y
+              todavía NO está en mora, igual que su conteo. */}
           <div className="p-3 rounded-md bg-muted/30">
             <div className="flex items-center gap-2 mb-1">
               <Clock className="w-4 h-4 text-warning" weight="fill" />
               <span className="text-xs font-medium text-fg-muted">{t('inmobiliaria.cobros.resumen.pendingLabel')}</span>
             </div>
             <AnimatedNumber
-              value={summary.totalPending}
+              value={Math.max(0, summary.totalPending - summary.totalLate)}
               className="text-lg font-bold text-foreground"
               formatFn={formatCurrency}
             />

@@ -28,6 +28,8 @@ import { useCallback } from 'react'
 
 import { usePreScoringCurrent } from '@/lib/hooks/use-prescoring-current'
 import { AseguradorasConPrima } from '@/components/tenant/AseguradorasConPrima'
+import { RespuestaDelArriendo } from '@/components/aprobacion/RespuestaDelArriendo'
+import { ValidacionPorWhatsapp } from '@/components/aprobacion/ValidacionPorWhatsapp'
 import Link from 'next/link'
 import {
   ArrowsClockwise,
@@ -94,6 +96,12 @@ export default function AprobacionPage() {
         </p>
       </header>
 
+      {/* Paso 3 de 3 cuando llegó desde «¿Te podemos arrendar este inmueble?». */}
+      <RespuestaDelArriendo
+        estado={estado}
+        tope={current?.evaluation?.result?.fianly.maxEntrenchmentValue ?? null}
+      />
+
       {estado === 'aprobado' && (
         <AprobadoView evaluation={current?.evaluation ?? null} tf={tf} locale={locale} />
       )}
@@ -103,6 +111,7 @@ export default function AprobacionPage() {
           tf={tf}
           evaluation={current?.evaluation ?? null}
           expiresAt={current?.order?.expiresAt ?? null}
+          onActualizar={refetch}
         />
       )}
       {estado === 'sin_estudio' && <SinEstudioView tf={tf} />}
@@ -340,43 +349,20 @@ function EnProcesoView({
   tf,
   evaluation,
   expiresAt,
+  onActualizar,
 }: {
   tf: (k: string, f: string) => string
   evaluation: PreScoringEvaluation | null
   expiresAt: string | null
+  onActualizar: () => void
 }) {
-  // Dos motivos bien distintos de "en proceso": todavía se está consultando
-  // a las aseguradoras, o el correo con la autorización sigue sin abrirse.
-  // Decirle "estamos consultando" a alguien que no ha dado permiso es falso.
-  const esperandoAutorizacion = evaluation?.status === 'awaiting_authorization'
-
+  // Pagó y el estudio espera: o todavía no sale el WhatsApp de Fianly, o salió
+  // y falta que valide su identidad. Es la MISMA espera que vio al pagar, con
+  // «Ya la validé» y el reenvío (Nico, 15-09): quien cerró la página y vuelve
+  // desde un recordatorio sigue exactamente donde quedó.
   return (
-    <section className="rounded-xl border border-border bg-surface p-8 shadow-sm space-y-3">
-      <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center">
-        {esperandoAutorizacion ? (
-          <EnvelopeSimple className="w-6 h-6 text-primary" aria-hidden="true" />
-        ) : (
-          <ArrowsClockwise className="w-6 h-6 text-primary animate-spin" aria-hidden="true" />
-        )}
-      </div>
-      {/* h2 y no h1: el h1 de la página es "Mi tope de arriendo". */}
-      <h2 className="text-2xl font-semibold text-fg">
-        {esperandoAutorizacion
-          ? tf(`${NS}.proceso.autorizacion.title`, 'Esperamos tu autorización')
-          : tf(`${NS}.proceso.title`, 'Estamos consultando a las aseguradoras')}
-      </h2>
-      <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
-        {esperandoAutorizacion
-          ? tf(
-              `${NS}.proceso.autorizacion.desc`,
-              'Te mandamos un correo para que autorices la consulta a las aseguradoras. Apenas confirmes, seguimos solos.',
-            )
-          : tf(
-              `${NS}.proceso.desc`,
-              'Le preguntamos a todas con las que trabajamos, no solo a una. Es cuestión de segundos.',
-            )}
-      </p>
-
+    <section className="rounded-xl border border-border bg-surface p-6 shadow-sm space-y-4 md:p-8">
+      <ValidacionPorWhatsapp evaluationStatus={evaluation?.status ?? null} onActualizar={onActualizar} />
       {expiresAt && (
         <div className="pt-1">
           <VigenciaPill vigenteHasta={expiresAt} tf={tf} />

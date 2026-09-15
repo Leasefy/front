@@ -187,18 +187,47 @@ function FacturacionContent() {
                 </TableHeader>
                 <TableBody>
                   {/* El vacío vive dentro del cuerpo para que los encabezados
-                      se sigan viendo. */}
+                      se sigan viendo.
+
+                      🔴 F4 (auditoría 13-09): estas cuatro pestañas NO tienen de
+                      dónde leer — no hay ruta en el back que liste documentos
+                      emitidos (sólo `por-generar`, `:id` y las resoluciones).
+                      El vacío decía «Todavía no tienes facturas de venta»
+                      después de emitir 800 en «Nueva factura»: una afirmación
+                      falsa sobre los datos de la persona. Ahora dice que el
+                      listado no existe todavía y a dónde ir a verlas. */}
                   <TableRow>
                     <TableCell colSpan={tab.columns.length} className="p-0">
-                      <SinDatos
-                        queSon={t(k(`queSon_${tab.key}`))}
-                        icono={Receipt}
-                        descripcion={
-                          tab.key === 'compras'
-                            ? `${t(k('desc_compras'))} ${t(k('registrarCompraDesc'))}`
-                            : t(k(`desc_${tab.key}`))
-                        }
-                      />
+                      {tab.key === 'compras' ? (
+                        <SinDatos
+                          queSon={t(k('queSon_compras'))}
+                          icono={Receipt}
+                          titulo="Este listado todavía no trae tus compras"
+                          descripcion={`${t(k('desc_compras'))} Las facturas de proveedor que registras quedan en Pagos, en cuentas por pagar. ${t(k('registrarCompraDesc'))}`}
+                          accion={
+                            <Button asChild variant="outline" hideArrow data-testid="facturacion-ir-a-cxp">
+                              <Link href="/panel/inmobiliaria/pagos/cxp">Ver cuentas por pagar</Link>
+                            </Button>
+                          }
+                        />
+                      ) : (
+                        <SinDatos
+                          queSon={t(k(`queSon_${tab.key}`))}
+                          icono={Receipt}
+                          titulo="El listado llega con el motor DIAN"
+                          descripcion={`${t(k(`desc_${tab.key}`))} El listado de documentos electrónicos llega con el motor DIAN. Las facturas que emitiste están en «Nueva factura», con su número, eligiendo el mes.`}
+                          accion={
+                            <Button
+                              variant="outline"
+                              hideArrow
+                              onClick={() => setActive('nueva')}
+                              data-testid={`facturacion-ver-emitidas-${tab.key}`}
+                            >
+                              Ver las facturas emitidas
+                            </Button>
+                          }
+                        />
+                      )}
                     </TableCell>
                   </TableRow>
                 </TableBody>

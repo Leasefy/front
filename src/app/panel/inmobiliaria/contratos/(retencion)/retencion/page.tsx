@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Users, House, CurrencyDollar, HeartStraight, ArrowsClockwise, Warning, CaretRight, FolderOpen } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { useRetencionDashboard } from '@/lib/hooks/retencion/use-retencion'
 import { formatCop } from '@/lib/data/mock-retencion'
 import type { CardTone, DashboardCard } from '@/lib/types/retencion'
@@ -41,22 +42,9 @@ function KpiCard({ card }: { card: DashboardCard }) {
 }
 
 export default function RetencionDashboardPage() {
-  const { data, isLoading, error, usingMock } = useRetencionDashboard()
-
-  if (isLoading && !data) {
-    return (
-      <main className="p-6 lg:p-8">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="rounded-lg border border-border p-4">
-              <div className="h-4 w-24 rounded bg-surface-muted animate-pulse mb-3" />
-              <div className="h-6 w-16 rounded bg-surface-muted animate-pulse" />
-            </div>
-          ))}
-        </div>
-      </main>
-    )
-  }
+  const { data, isLoading, error, usingMock, refetch } = useRetencionDashboard()
+  const hayIndicadores = (data?.cards.length ?? 0) > 0
+  const urgentes = data?.urgent ?? []
 
   return (
     <main className="p-6 lg:p-8 space-y-6">
@@ -74,26 +62,48 @@ export default function RetencionDashboardPage() {
         ) : null}
       </header>
 
-      {data && data.cards.length > 0 ? (
+      {/* Cargando → falló → vacío → datos, en ese orden. Antes, con la
+          consulta caída, la pantalla afirmaba «Sin datos de portafolio» y «No
+          hay casos urgentes 🎉» —tranquilizando justo cuando no sabía nada— y
+          el fallo quedaba en un cartel rojo al fondo, sin reintentar. */}
+      <EstadoDeDatos
+        cargando={isLoading && !data}
+        error={error}
+        vacio={!hayIndicadores && urgentes.length === 0}
+        queEs="el tablero de retención"
+        onReintentar={refetch ? () => void refetch() : undefined}
+        esqueleto={
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4" data-testid="retencion-cargando">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="rounded-lg border border-border p-4">
+                <div className="h-4 w-24 rounded bg-surface-muted animate-pulse mb-3" />
+                <div className="h-6 w-16 rounded bg-surface-muted animate-pulse" />
+              </div>
+            ))}
+          </div>
+        }
+        cuandoVacio={
+          <EmptyState
+            icon={FolderOpen}
+            title="Sin datos de portafolio todavía."
+            description="Cuando haya propietarios e inmuebles en el portafolio vas a ver acá los indicadores de retención."
+          />
+        }
+      >
+      {hayIndicadores ? (
         <section aria-label="Indicadores de retención">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {data.cards.map((c) => (
+            {data!.cards.map((c) => (
               <KpiCard key={c.key} card={c} />
             ))}
           </div>
         </section>
-      ) : (
-        <EmptyState
-          icon={FolderOpen}
-          title="Sin datos de portafolio todavía."
-          description="Cuando haya propietarios e inmuebles en el portafolio vas a ver acá los indicadores de retención."
-        />
-      )}
+      ) : null}
 
       <section aria-label="Lo más urgente">
         <h2 className="text-base font-semibold text-fg mb-3">Lo más urgente</h2>
         <div className="rounded-lg border border-border divide-y divide-border-faint overflow-hidden">
-          {(data?.urgent ?? []).map((u) => (
+          {urgentes.map((u) => (
             <Link
               key={u.caseId}
               href={`/panel/inmobiliaria/contratos/riesgo/${encodeURIComponent(u.caseId)}`}
@@ -115,7 +125,7 @@ export default function RetencionDashboardPage() {
               <CaretRight size={16} className="text-fg-subtle shrink-0" />
             </Link>
           ))}
-          {(data?.urgent ?? []).length === 0 ? (
+          {urgentes.length === 0 ? (
             <EmptyState
               icon={HeartStraight}
               title="No hay casos urgentes ahora mismo. 🎉"
@@ -124,12 +134,7 @@ export default function RetencionDashboardPage() {
           ) : null}
         </div>
       </section>
-
-      {error && !isLoading ? (
-        <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
-          No pude cargar el dashboard: {error}
-        </div>
-      ) : null}
+      </EstadoDeDatos>
     </main>
   )
 }

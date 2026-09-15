@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { toast } from '@/components/ui/toast';
 import { CalendarBlank, CalendarPlus, Plus } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -13,8 +13,13 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { PermissionGate } from '@/components/auth/PermissionGate';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { KpiValor } from '@/components/estado/KpiValor';
+import { ApiError } from '@/lib/api/client';
 import { RESUMEN_AGENDA_VACIO } from '@/lib/api/agenda.types';
+import { rotuloDeLaPersona } from '@/lib/agenda/rotulo-de-la-persona';
 import type { AgendaListResponse, EventoAgenda, EventoTipo, EventoEstado } from '@/lib/api/agenda.types';
 import { agendaApi } from '@/lib/api/agenda.service';
 import { fechaLocal } from '@/lib/fechas-locales';
@@ -34,7 +39,7 @@ const RESUMEN_ITEMS: { key: string; dot: string; field: keyof typeof RESUMEN_AGE
 
 const COLUMNS = [
   'colFecha', 'colEvento', 'colTipo', 'colOrigen',
-  'colVinculo', 'colResponsable', 'colEstado',
+  'colVinculo', 'colPersona', 'colEstado',
 ];
 
 /** Dot color per event type (matches the summary tiles). */
@@ -63,6 +68,13 @@ function AgendaContent() {
   const { t, locale } = useI18n();
   const k = (s: string) => `inmobiliaria.agenda.${s}`;
 
+  // El back sirve la agenda con `operaciones:view` pero exige `operaciones:edit`
+  // para TODO lo que la cambia (`agenda.controller.ts`). Un CONTADOR o un VIEWER
+  // veían «Pedir cita», «Nueva tarea» y Confirmar/Rechazar/Cancelar, y cada clic
+  // terminaba en un 403 sin explicación. Si no se puede, no se dibuja.
+  const { canAccess } = usePermissions();
+  const puedeEditar = canAccess('operaciones', 'edit');
+
   const [data, setData] = useState<AgendaListResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   // El error entero, no un booleano: `FalloDeCarga` lo clasifica para saber si
@@ -85,17 +97,41 @@ function AgendaContent() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  // Confirm / reject / cancel a visit straight from the feed, then refresh.
+  /**
+   * Confirmar / rechazar / cancelar una visita desde el feed, y refrescar.
+   *
+   * 🔴 La guarda del doble clic es un `useRef`, no el `disabled` del botón:
+   * `setActingId` pinta en el render SIGUIENTE, así que dos clics seguidos
+   * (o un doble clic, que es lo normal cuando algo tarda) entraban los dos y
+   * mandaban dos confirmaciones de la misma cita. El ref cambia en el mismo
+   * tick que el clic, antes de que React vuelva a pintar.
+   */
+  const enCurso = useRef<string | null>(null);
   const runCitaAction = useCallback(
     async (visitId: string, action: () => Promise<void>) => {
+      if (enCurso.current) return;
+      enCurso.current = visitId;
       setActingId(visitId);
       try {
         await action();
         toast.success(t(k('citaAccionOk')));
         load();
-      } catch {
-        toast.error(t(k('citaAccionError')));
+      } catch (err) {
+        // Con la sesión vencida el cliente HTTP ya está cerrando sesión: un
+        // «no se pudo actualizar» encima sería mentira.
+        if (err instanceof ApiError && err.status === 401) return;
+        // El back explica POR QUÉ no se pudo (una cita ya cancelada, una que
+        // no es de esta agencia…). Ese motivo vale más que «Intenta de nuevo»,
+        // así que viaja en la descripción del toast en vez de perderse en un
+        // `catch` sin argumento.
+        toast.error(t(k('citaAccionError')), {
+          description:
+            err instanceof ApiError && err.message && err.message.length < 160
+              ? err.message
+              : undefined,
+        });
       } finally {
+        enCurso.current = null;
         setActingId(null);
       }
     },
@@ -149,16 +185,18 @@ function AgendaContent() {
           <h1 className="text-h2 text-foreground">{t(k('title'))}</h1>
           <p className="text-body text-muted-foreground max-w-2xl line-clamp-2">{t(k('subtitle'))}</p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" onClick={() => setCitaOpen(true)} hideArrow>
-            <CalendarPlus className="w-4 h-4" weight="bold" />
-            {t(k('pedirCita'))}
-          </Button>
-          <Button onClick={() => setTareaOpen(true)} hideArrow data-testid="nueva-tarea">
-            <Plus className="w-4 h-4" weight="bold" />
-            {t(k('new'))}
-          </Button>
-        </div>
+        <PermissionGate module="operaciones" action="edit" fallback={null}>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button variant="outline" onClick={() => setCitaOpen(true)} hideArrow data-testid="pedir-cita">
+              <CalendarPlus className="w-4 h-4" weight="bold" />
+              {t(k('pedirCita'))}
+            </Button>
+            <Button onClick={() => setTareaOpen(true)} hideArrow data-testid="nueva-tarea">
+              <Plus className="w-4 h-4" weight="bold" />
+              {t(k('new'))}
+            </Button>
+          </div>
+        </PermissionGate>
       </header>
 
       {/* Resumen por tipo */}
@@ -171,7 +209,15 @@ function AgendaContent() {
                 <span className={cn('w-2 h-2 rounded-full flex-shrink-0', item.dot)} />
                 <span className="text-caption text-muted-foreground truncate">{t(k(`tipo_${item.key}`))}</span>
               </div>
-              <p className="mt-1.5 text-2xl font-semibold tabular-nums text-foreground">{resumen[item.field]}</p>
+              {/* El número entra a los cuatro estados: con la carga caída, la
+                  tabla decía «no se pudo cargar» y un renglón más arriba los
+                  tiles afirmaban «0 visitas · 0 firmas». Un cero es un dato;
+                  «no sé» no es cero. */}
+              <p className="mt-1.5 text-2xl font-semibold tabular-nums text-foreground">
+                <KpiValor cargando={isLoading} fallo={error}>
+                  {resumen[item.field]}
+                </KpiValor>
+              </p>
             </div>
           ))}
         </div>
@@ -215,7 +261,11 @@ function AgendaContent() {
                       icono={CalendarBlank}
                       titulo={t(k('emptyTitle'))}
                       descripcion={t(k('emptyDesc'))}
-                      crear={{ label: 'Agendar una visita', onClick: () => setCitaOpen(true) }}
+                      crear={
+                        puedeEditar
+                          ? { label: 'Agendar una visita', onClick: () => setCitaOpen(true) }
+                          : undefined
+                      }
                     />
                   </TableCell>
                 </TableRow>
@@ -252,15 +302,23 @@ function AgendaContent() {
                         {e.vinculoLabel ?? t(k('sinVinculo'))}
                       </span>
                     </TableCell>
-                    <TableCell className="whitespace-nowrap text-muted-foreground">
-                      {e.responsableNombre ?? t(k('sinVinculo'))}
+                    <TableCell className="whitespace-nowrap">
+                      {/* El mismo campo es el inquilino, quien visita o el responsable
+                          según el tipo: se dice debajo del nombre para que la fila no se
+                          lea al revés (ver `rotulo-de-la-persona.ts`). */}
+                      <span className="block text-muted-foreground">{e.responsableNombre ?? t(k('sinVinculo'))}</span>
+                      {e.responsableNombre && (
+                        <span className="block text-caption text-muted-foreground/80" data-testid="agenda-rol-persona">
+                          {rotuloDeLaPersona(e.tipo) ?? t(k('colResponsable'))}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium', ESTADO_BADGE[e.estado])}>
                           {t(k(`estado_${e.estado}`))}
                         </span>
-                        {e.tipo === 'visita' && e.estadoRaw === 'PENDING' && (
+                        {puedeEditar && e.tipo === 'visita' && e.estadoRaw === 'PENDING' && (
                           <span className="flex items-center gap-1.5">
                             <Button
                               type="button"
@@ -285,7 +343,7 @@ function AgendaContent() {
                             </Button>
                           </span>
                         )}
-                        {e.tipo === 'visita' && e.estadoRaw === 'ACCEPTED' && (
+                        {puedeEditar && e.tipo === 'visita' && e.estadoRaw === 'ACCEPTED' && (
                           <Button
                             type="button"
                             variant="link"
@@ -328,6 +386,7 @@ function AgendaContent() {
         onOpenChange={(o) => { if (!o) setSeleccionado(null); }}
         onCambio={load}
         onAccionVisita={runCitaAction}
+        puedeEditar={puedeEditar}
       />
     </div>
   );

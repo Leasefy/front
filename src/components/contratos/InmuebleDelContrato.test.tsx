@@ -164,8 +164,9 @@ describe('InmuebleDelContrato', () => {
     expect(inventarioProps.ultimo?.contratoId).toBe('lease-9')
     // Ya no manda a hacer el trabajo a otra pantalla: el enlace es para VER.
     expect(container.textContent).not.toContain('se edita en la ficha del inmueble')
-    const enlace = container.querySelector('[data-testid="ver-el-inmueble"]') as HTMLAnchorElement
-    expect(enlace.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles/cons-1')
+    // …y va DENTRO de la tarjeta del inventario, al lado del título (Nico, 13-09).
+    expect((inventarioProps.ultimo as { enlaceAlInmueble?: { href: string } } | undefined)?.enlaceAlInmueble?.href).toBe('/panel/inmobiliaria/inmuebles/cons-1')
+    expect(container.querySelector('[data-testid="ver-el-inmueble"]')).toBeNull()
   })
 
   it('quien no puede editar en el inmueble tampoco edita acá', async () => {

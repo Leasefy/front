@@ -29,6 +29,7 @@ import { CobranzaNextActionsPanel } from '@/components/inmobiliaria/cobranza/Cob
 import { CobranzaOverviewSkeleton } from '@/components/skeleton/panel/CobranzaOverviewSkeleton'
 import { CobranzaImportCard } from '@/components/inmobiliaria/cobranza/CobranzaImportCard'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { Button } from '@/components/ui'
 import { CARTERA_STAGES } from '@/lib/cartera'
 import type { CarteraStage } from '@/lib/cartera'
@@ -181,6 +182,28 @@ export default function CobranzaOverviewPage() {
     )
   }
 
+  // 🔴 CB1 (13-09): sin datos y con fallo, la pantalla seguía de largo y
+  // pintaba la cartera entera en 0 —«0 en mora», etapas vacías— con un banner
+  // al final y sin reintento. Un fallo no es una cartera sana: se dice arriba,
+  // con reintento, y sin ningún número.
+  if (error && !data) {
+    return (
+      <main className="p-6 lg:p-8 space-y-6">
+        <header>
+          <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.cobranza.overview.title')}</h1>
+          <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
+            {t(`${PAGES_NS}.salaDesc`)}
+          </p>
+        </header>
+        <FalloDeCarga
+          error={error}
+          queEs="el panorama de tu cartera"
+          onReintentar={() => refetch()}
+        />
+      </main>
+    )
+  }
+
   // Live-region announcement string for new realtime stage transitions
   // (Phase 38 plan 38-04c / XR-06 / WCAG 4.1.3). String is i18n-translated;
   // raw event payloads (debtor PII) never reach this region.
@@ -214,6 +237,23 @@ export default function CobranzaOverviewPage() {
           {t(`${PAGES_NS}.salaDesc`)}
         </p>
       </header>
+
+      {/* Ya había datos y un refresco falló: lo de abajo no se borra, pero se
+          dice ARRIBA que puede estar viejo, con reintento. */}
+      {error && data && (
+        <div
+          role="alert"
+          data-testid="cartera-desactualizada"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-warning-soft px-4 py-2.5"
+        >
+          <p className="text-sm text-fg">
+            No se pudo actualizar el panorama de tu cartera: lo que ves es de la última carga.
+          </p>
+          <Button variant="outline" size="sm" onClick={() => void refetch()}>
+            Intentar de nuevo
+          </Button>
+        </div>
+      )}
 
       {/* ═══ 1. TE TOCA A TI ═══════════════════════════════════════════════
           Lo único que pide que una persona haga algo. Reemplaza cuatro
@@ -362,16 +402,6 @@ export default function CobranzaOverviewPage() {
         </ol>
       </details>
 
-      {/* Fallo al cargar el panorama de cartera. Va al final y no tapa nada:
-          las secciones que sí cargaron siguen siendo útiles. */}
-      {error && !isLoading && (
-        <div
-          role="alert"
-          className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
-        >
-          {t('inmobiliaria.ai.cobranza.overview.errorLoading')}: {error}
-        </div>
-      )}
     </main>
   )
 }

@@ -237,7 +237,21 @@ vi.mock('@/components/ui/empty-state', () => ({
 }));
 
 vi.mock('@/components/estado/FalloDeCarga', () => ({
-  FalloDeCarga: () => React.createElement('div', null, 'error'),
+  // El doble conserva lo que la pantalla le pide al cartel: estar, y
+  // reintentar cuando se le pasa cómo.
+  FalloDeCarga: ({ onReintentar }: { onReintentar?: () => unknown }) =>
+    React.createElement(
+      'div',
+      { 'data-testid': 'fallo-de-carga' },
+      'error',
+      onReintentar
+        ? React.createElement(
+            'button',
+            { type: 'button', 'data-testid': 'reintentar', onClick: () => onReintentar() },
+            'Reintentar',
+          )
+        : null,
+    ),
 }));
 
 let conversationsState: ChatConversation[] = [];
@@ -882,7 +896,7 @@ describe('<MessagesWidget> — un envío que falla (MSJ-4)', () => {
       messages: [],
       isLoading: false,
       isSending: false,
-      error: 'Network request failed',
+      errorDeEnvio: 'Network request failed',
       limpiarError: vi.fn(),
       sendMessage: enviar,
       markAsRead: markAsReadMock,
@@ -938,5 +952,135 @@ describe('<MessagesWidget> — plantillas y pendientes son de la inmobiliaria (M
     render('landlord');
     expect(container.querySelector('[data-testid="abrir-plantillas"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="abrir-pendientes"]')).not.toBeNull();
+  });
+});
+
+/**
+ * X1 — cargar y enviar son dos fallos distintos.
+ *
+ * Antes compartían un solo `error`: un GET caído pintaba «Sin mensajes» (como
+ * si el hilo estuviera vacío) Y «No se pudo enviar» (sin que nadie hubiera
+ * enviado nada), y el poll de 5 s lo volvía a disparar solo.
+ */
+describe('<MessagesWidget> — la carga que falla no es un envío que falla (X1)', () => {
+  it('con 0 mensajes y la carga caída muestra FalloDeCarga, no «Sin mensajes» ni «No se pudo enviar»', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    useChatMock.mockReturnValue({
+      messages: [],
+      isLoading: false,
+      isSending: false,
+      errorDeCarga: new ApiError(500, 'Internal server error'),
+      errorDeEnvio: null,
+      limpiarError: vi.fn(),
+      reintentarCarga: vi.fn(),
+      sendMessage: vi.fn(),
+      markAsRead: markAsReadMock,
+    });
+    conversationsState = [makeConversation()];
+    render('landlord');
+
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="mensaje-no-enviado"]')).toBeNull();
+    expect(container.textContent).not.toContain('Envía un mensaje para iniciar la conversación.');
+  });
+
+  it('el «Reintentar» del cartel vuelve a pedir el hilo', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const reintentarCarga = vi.fn().mockResolvedValue(undefined);
+    useChatMock.mockReturnValue({
+      messages: [],
+      isLoading: false,
+      isSending: false,
+      errorDeCarga: new ApiError(0, 'Failed to fetch'),
+      errorDeEnvio: null,
+      limpiarError: vi.fn(),
+      reintentarCarga,
+      sendMessage: vi.fn(),
+      markAsRead: markAsReadMock,
+    });
+    conversationsState = [makeConversation()];
+    render('landlord');
+
+    await act(async () => {
+      (container.querySelector('[data-testid="reintentar"]') as HTMLButtonElement).click();
+    });
+    expect(reintentarCarga).toHaveBeenCalledTimes(1);
+  });
+
+  it('si ya había mensajes, el poll caído NO borra el hilo: avisa discreto', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    useChatMock.mockReturnValue({
+      messages: [
+        {
+          id: 'm-1',
+          content: 'Hola, ¿cómo va el arriendo?',
+          isMine: false,
+          senderName: 'Ana',
+          perfil: 'TENANT',
+          readAt: null,
+          createdAt: new Date().toISOString(),
+          whatsappEstado: null,
+          whatsappError: null,
+        },
+      ],
+      isLoading: false,
+      isSending: false,
+      errorDeCarga: new ApiError(503, 'Service unavailable'),
+      errorDeEnvio: null,
+      limpiarError: vi.fn(),
+      reintentarCarga: vi.fn(),
+      sendMessage: vi.fn(),
+      markAsRead: markAsReadMock,
+    });
+    conversationsState = [makeConversation()];
+    render('landlord');
+
+    expect(container.textContent).toContain('Hola, ¿cómo va el arriendo?');
+    expect(container.querySelector('[data-testid="hilo-sin-actualizar"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull();
+    expect(container.querySelector('[data-testid="mensaje-no-enviado"]')).toBeNull();
+  });
+});
+
+/**
+ * X2 (P0) — la ficha del contrato manda `?applicationId=`. Si esa postulación
+ * no tiene hilo, se abría la PRIMERA conversación de la bandeja y la persona
+ * podía escribirle a otro.
+ */
+describe('<MessagesWidget> — un enlace a un contrato sin conversación (X2)', () => {
+  afterEach(() => {
+    searchParamsState.applicationId = null;
+    searchParamsState.conversationId = null;
+  });
+
+  it('NO selecciona otra conversación y dice que el contrato no tiene hilo', () => {
+    searchParamsState.conversationId = null;
+    searchParamsState.applicationId = 'app-sin-hilo';
+    conversationsState = [
+      makeConversation({ id: 'conv-1', applicationId: 'app-otra', name: 'Ana' }),
+      makeConversation({ id: 'conv-2', applicationId: null, name: 'Beto' }),
+    ];
+    render('landlord');
+
+    expect(useChatMock).not.toHaveBeenCalledWith('conv-1');
+    expect(useChatMock).not.toHaveBeenCalledWith('conv-2');
+    expect(useChatMock).toHaveBeenLastCalledWith(null);
+    const vacio = container.querySelector('[data-testid="sin-datos"]');
+    expect(vacio).not.toBeNull();
+    expect(vacio?.textContent).toContain('Este contrato todavía no tiene conversación');
+    // La bandeja sigue ahí para elegir a mano.
+    expect(container.textContent).toContain('Ana');
+  });
+
+  it('elegir una conversación a mano sí la abre', () => {
+    searchParamsState.applicationId = 'app-sin-hilo';
+    conversationsState = [makeConversation({ id: 'conv-1', applicationId: 'app-otra', name: 'Ana' })];
+    render('landlord');
+
+    const fila = Array.from(container.querySelectorAll('button, [role="button"]')).find((el) =>
+      el.textContent?.includes('Ana'),
+    );
+    clic(fila);
+    expect(useChatMock).toHaveBeenLastCalledWith('conv-1');
   });
 });

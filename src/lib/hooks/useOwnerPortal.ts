@@ -85,6 +85,12 @@ export interface UseOwnerFinanzasResult {
   isLoading: boolean;
   /** true = finanzas no disponibles (flag-OFF / owner-JWT no cableado) → "Próximamente". */
   unavailable: boolean;
+  /**
+   * El portafolio no llegó por una CAÍDA (403, 5xx, red), no porque el portal esté apagado.
+   * Se dice con reintento; nunca «Próximamente» sobre un fallo (O1).
+   */
+  fallo: { status: number; mensaje: string } | null;
+  reintentar: () => void;
   agencyId: string | null;
 }
 
@@ -99,6 +105,8 @@ export function useOwnerFinanzas(): UseOwnerFinanzasResult {
   const [proyeccion, setProyeccion] = useState<FinanzasProyeccion | null>(null);
   const [recaudoAnual, setRecaudoAnual] = useState<FinanzasRecaudoAnual | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [fallo, setFallo] = useState<{ status: number; mensaje: string } | null>(null);
+  const [intento, setIntento] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -109,13 +117,18 @@ export function useOwnerFinanzas(): UseOwnerFinanzasResult {
     setIsLoading(true);
     const year = new Date().getFullYear();
     Promise.all([
-      ownerFinanzasApi.getPortafolio(agencyId),
+      ownerFinanzasApi.getPortafolioConEstado(agencyId),
       ownerFinanzasApi.getInmuebles(agencyId),
       ownerFinanzasApi.getProyeccion(agencyId),
       ownerFinanzasApi.getRecaudoAnual(agencyId, year),
-    ]).then(([p, inm, proy, anual]) => {
+    ]).then(([resultado, inm, proy, anual]) => {
       if (!alive) return;
-      setPortafolio(p);
+      setPortafolio(resultado.estado === 'ok' ? resultado.data : null);
+      setFallo(
+        resultado.estado === 'fallo'
+          ? { status: resultado.status, mensaje: resultado.mensaje }
+          : null,
+      );
       setInmuebles(inm);
       setProyeccion(proy);
       setRecaudoAnual(anual);
@@ -124,10 +137,21 @@ export function useOwnerFinanzas(): UseOwnerFinanzasResult {
     return () => {
       alive = false;
     };
-  }, [agencyId]);
+  }, [agencyId, intento]);
 
-  const unavailable = !agencyId || (!isLoading && portafolio === null);
-  return { portafolio, inmuebles, proyeccion, recaudoAnual, isLoading, unavailable, agencyId };
+  const unavailable = !agencyId || (!isLoading && portafolio === null && fallo === null);
+  const reintentar = () => setIntento((n) => n + 1);
+  return {
+    portafolio,
+    inmuebles,
+    proyeccion,
+    recaudoAnual,
+    isLoading,
+    unavailable,
+    fallo,
+    reintentar,
+    agencyId,
+  };
 }
 
 export interface UseOwnerInmuebleResult {

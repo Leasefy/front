@@ -265,6 +265,17 @@ describe('el faltante dice QUÉ decía el archivo', () => {
     expect(celdaDelFaltante(f, 'inmueble')).toBe('Cra 43A # 5-15');
   });
 
+  it('un consecutivo repetido muestra el número del archivo, para buscar la fila gemela', () => {
+    const f = {
+      ...filaBase(),
+      faltantes: ['consecutivo_repetido'],
+      datos: { direccion: 'x', externalId: '1686', inquilino: { nombre: 'Ana' } },
+    } as unknown as FilaDeMigracion;
+
+    expect(celdaDelFaltante(f, 'consecutivo_repetido')).toBe('consecutivo 1686');
+    expect(EXPLICACION.consecutivo_repetido.titulo).toContain('más de una fila');
+  });
+
   it('un correo ilegible se muestra tal cual vino', () => {
     const f = {
       ...filaBase(),

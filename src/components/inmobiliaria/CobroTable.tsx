@@ -34,6 +34,7 @@ import {
   DropdownListItem,
 } from '@/components/ui/dropdown-menu';
 import { useI18n } from '@/lib/i18n';
+import { MOTIVO_SIN_PERMISO_DE_RECIBO, usePuedeHacerRecibo } from './permiso-de-recibo';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/types/inmobiliaria';
 
@@ -78,6 +79,7 @@ export function CobroTable({
   showSummary = false,
 }: CobroTableProps) {
   const { t, formatDate, formatCurrency } = useI18n();
+  const puedeHacerRecibo = usePuedeHacerRecibo();
   const [sortField, setSortField] = useState<SortField>('dueDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
@@ -367,15 +369,26 @@ export function CobroTable({
                         aria-label="Acciones"
                       />
                     </DropdownListTrigger>
-                    <DropdownListContent align="end" className="w-44">
+                    <DropdownListContent align="end" className={cn(puedeHacerRecibo ? 'w-44' : 'w-60')}>
                       <DropdownListItem onSelect={() => onCobroClick?.(cobro)}>
                         <Eye className="w-4 h-4" />
                         <span className="text-sm">{t('inmobiliaria.cobros.table.viewDetail')}</span>
                       </DropdownListItem>
                       {cobro.status !== 'paid' && onRegisterPayment && (
-                        <DropdownListItem onSelect={() => onRegisterPayment(cobro)} className="text-primary">
+                        // Sin `cobros:create` la opción queda a la vista y
+                        // deshabilitada, y dice por qué (C6).
+                        <DropdownListItem
+                          disabled={!puedeHacerRecibo}
+                          onSelect={() => onRegisterPayment(cobro)}
+                          className="text-primary"
+                        >
                           <CurrencyCircleDollar className="w-4 h-4" />
-                          <span className="text-sm">{t('recibos.hacerCorto')}</span>
+                          <span className="flex flex-col">
+                            <span className="text-sm">{t('recibos.hacerCorto')}</span>
+                            {!puedeHacerRecibo && (
+                              <span className="text-xs text-fg-muted">{MOTIVO_SIN_PERMISO_DE_RECIBO}</span>
+                            )}
+                          </span>
                         </DropdownListItem>
                       )}
                     </DropdownListContent>

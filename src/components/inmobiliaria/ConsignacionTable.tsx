@@ -29,6 +29,7 @@ import { IconButton } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -165,6 +166,18 @@ export function ConsignacionTable({
   onCompletarMandato,
 }: ConsignacionTableProps) {
   const { t } = useI18n();
+  /*
+   * L2: el menú de la fila ofrecía Editar, Pedir cita y Retirar a cualquiera
+   * que viera el portafolio; un CONTADOR o un VIEWER apretaban y el back
+   * contestaba 403. Cada acción se dibuja sólo si el permiso que exige el back
+   * la deja pasar: editar, retirar y completar el mandato son de `portafolio`;
+   * la cita es de `operaciones`, que es lo que pide la agenda al crearla.
+   */
+  const { canAccess } = usePermissions();
+  const puedeEditar = canAccess('portafolio', 'edit');
+  const puedeRetirar = canAccess('portafolio', 'delete');
+  const puedeCrearMandato = canAccess('portafolio', 'create');
+  const puedePedirCita = canAccess('operaciones', 'edit');
   const [sortField, setSortField] = useState<SortField>('propertyTitle');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -329,8 +342,15 @@ export function ConsignacionTable({
             const zoneText = row.propertyZone?.trim() ? row.propertyZone : null;
 
             const handleCompletarMandato = () => {
-              if (row.kind === 'sinMandato') onCompletarMandato?.(row);
+              if (row.kind === 'sinMandato' && puedeCrearMandato) onCompletarMandato?.(row);
             };
+
+            // L3: una visita a un inmueble que ya tiene inquilino no tiene a
+            // quién mostrárselo. Lo dice el CONTRATO vigente (`arrendado`); si
+            // la fila viene de una respuesta vieja sin ese campo, se cae a la
+            // disponibilidad del mandato — la misma regla de los tiles.
+            const estaArrendado =
+              row.kind === 'consignacion' && (row.arrendado ?? row.availability === 'rented');
 
             // contract.md T-0038 §3.2.5 — PORTFOLIO-only, but only the
             // `sinMandato` source (sin-consignacion) carries it on the wire
@@ -529,6 +549,7 @@ export function ConsignacionTable({
                       variant="ghost"
                       size="sm"
                       hideArrow
+                      disabled={!puedeCrearMandato}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleCompletarMandato();
@@ -543,6 +564,9 @@ export function ConsignacionTable({
 
                 {/* Actions */}
                 <TableCell className="p-4" onClick={(e) => e.stopPropagation()}>
+                  {/* Sin mandato la única acción es completarlo: sin permiso
+                      para crearlo, un menú vacío no es una acción. */}
+                  {(row.kind === 'consignacion' || puedeCrearMandato) && (
                   <DropdownList
                     open={openMenuId === rowKey}
                     onOpenChange={(o) => setOpenMenuId(o ? rowKey : null)}
@@ -565,6 +589,7 @@ export function ConsignacionTable({
                             <Eye className="w-4 h-4" />
                             <span className="text-sm">{t('inmobiliaria.consignaciones.table.viewDetail')}</span>
                           </DropdownListItem>
+                          {puedeEditar && (
                           <DropdownListItem
                             className="gap-3"
                             onClick={() => onEdit(row)}
@@ -572,7 +597,8 @@ export function ConsignacionTable({
                             <PencilSimple className="w-4 h-4" />
                             <span className="text-sm">{t('inmobiliaria.consignaciones.table.edit')}</span>
                           </DropdownListItem>
-                          {onAgendarCita && (
+                          )}
+                          {onAgendarCita && puedePedirCita && !estaArrendado && (
                             <DropdownListItem
                               className="gap-3"
                               onClick={() => onAgendarCita(row)}
@@ -617,7 +643,7 @@ export function ConsignacionTable({
                               </span>
                             </DropdownListItem>
                           )}
-                          {onEliminar && (
+                          {onEliminar && puedeRetirar && (
                             <DropdownListItem
                               className="gap-3 text-danger focus:text-danger"
                               onClick={() => onEliminar(row)}
@@ -646,6 +672,7 @@ export function ConsignacionTable({
                       )}
                     </DropdownListContent>
                   </DropdownList>
+                  )}
                 </TableCell>
               </motion.tr>
             );

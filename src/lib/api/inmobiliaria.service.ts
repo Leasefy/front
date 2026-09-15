@@ -174,7 +174,10 @@ function mapBankCodeToWire(code: BankCode): string {
  * (reading 'bank')» — Nico buscó un propietario recién creado y vio «no
  * encontrado» y después «esta sección se rompió».
  */
-type PropietarioDelBack = Omit<Propietario, 'bankAccount' | 'propertyCount' | 'activeLeases' | 'totalMonthlyRent' | 'pendingBalance'> & {
+type PropietarioDelBack = Omit<
+  Propietario,
+  'bankAccount' | 'propertyCount' | 'activeLeases' | 'totalMonthlyRent' | 'pendingBalance' | 'copropiedadesCount'
+> & {
   bankName?: string | null;
   bankAccountType?: string | null;
   bankAccountNumber?: string | null;
@@ -187,6 +190,7 @@ type PropietarioDelBack = Omit<Propietario, 'bankAccount' | 'propertyCount' | 'a
   totalCommission?: number;
   pendingBalance?: number;
   lastPaymentDate?: string | null;
+  copropiedadesCount?: number;
 };
 
 /** Minúsculas y sin tildes: «Banco de Bogota» e «Itau» (así llegan de una migración) tienen que dar con «Bogotá» e «Itaú». */
@@ -218,6 +222,9 @@ export function normalizePropietario(raw: PropietarioDelBack): Propietario {
     ...(rest as Omit<Propietario, 'bankAccount'>),
     propertyCount: raw.propertyCount ?? 0,
     activeLeases: raw.activeLeases ?? 0,
+    // `?? 0` y no `?? undefined`: contra un back viejo se lee «ninguna», que es
+    // lo que la pantalla mostraba hasta hoy — no se inventa un número.
+    copropiedadesCount: raw.copropiedadesCount ?? 0,
     totalMonthlyRent: raw.totalMonthlyRent ?? 0,
     pendingBalance: raw.pendingBalance ?? 0,
     lastPaymentDate: raw.lastPaymentDate ?? null,
@@ -515,6 +522,13 @@ export function normalizeConsignacion(raw: RawConsignacion): Consignacion {
     // §A.9.1 — NEW, closes W3-c. `null` when the mandate has no linked
     // property (a migrated cartera row).
     propertyCode: raw.propertyCode ?? null,
+    // El código de la inmobiliaria y la fecha de consignación del inmueble,
+    // planos como `propertyCode`: `GET /properties/:id` es PUBLIC y no los
+    // trae, y el cajón «Editar» los necesita (2026-09-13).
+    propertyExternalId:
+      (raw as { propertyExternalId?: string | null }).propertyExternalId ?? null,
+    propertyConsignedAt:
+      (raw as { propertyConsignedAt?: string | null }).propertyConsignedAt ?? null,
     // Los dueños con su participación. `[]` sólo contra un back viejo que
     // todavía no manda el campo: la ficha cae a `propietarioId` en ese caso.
     // NO se fabrica `[{ propietarioId, 10000 }]` acá — sería inventar un dato
@@ -541,7 +555,8 @@ export type ConsignacionUpdateInput = Partial<ConsignacionFormData> & {
   status?: Consignacion['status'];
   availability?: Consignacion['availability'];
   contractDate?: string;
-  contractEndDate?: string;
+  /** `null` = quitar la fecha de fin (`''` da 400: `@IsDateString` no lo acepta). */
+  contractEndDate?: string | null;
   currentTenantName?: string;
   leaseEndDate?: string;
   consignmentContractUrl?: string;
@@ -614,8 +629,14 @@ export const consignacionesApi = {
     // El back no filtra por `propietarioId` (sólo por inmueble/estado/agente):
     // la ficha del propietario decía «2 consignadas» y listaba las 12 de la
     // agencia (2026-09-02). Se filtra acá hasta que el endpoint lo acepte.
-    return params?.propietarioId
-      ? todas.filter((c) => c.propietarioId === params.propietarioId)
+    // Entran también los mandatos donde figura como COPROPIETARIO sin ser el
+    // principal (2026-09-13): el dueño del 30 % de un inmueble veía su ficha
+    // con cero propiedades mientras la dispersión le giraba su parte.
+    const id = params?.propietarioId;
+    return id
+      ? todas.filter(
+          (c) => c.propietarioId === id || c.copropietarios.some((x) => x.propietarioId === id),
+        )
       : todas;
   },
 
@@ -680,7 +701,10 @@ export const consignacionesApi = {
       // Si tampoco es un inmueble de esta agencia, el error que vale es el
       // primero —«no existe esa consignación»—, no «la lista vino vacía».
       if (porInmueble.length === 0) throw error;
-      return porInmueble[0];
+      // La lista no trae lo que sólo trae la ficha (el inquilino del contrato
+      // vigente, entre otros): entrar por el inmueble mostraba «Sin inquilino»
+      // en uno arrendado. Encontrado el mandato, se pide su ficha completa.
+      return this.getById(porInmueble[0].id);
     }
   },
 
@@ -1639,10 +1663,10 @@ export const reportesApi = {
     return apiClient.get<RentabilidadReport>(`${BASE}/reports/rentabilidad${qs ? `?${qs}` : ''}`);
   },
 
-  async getExtracto(propietarioId: string, month?: string): Promise<unknown> {
-    const qs = month ? `?month=${month}` : '';
-    return apiClient.get(`${BASE}/reports/extracto/${propietarioId}${qs}`);
-  },
+  // `getExtracto` vivía acá contra `/reports/extracto/:id`, una segunda
+  // fórmula del extracto que no sabía de copropietarios. Nadie la llamaba; el
+  // extracto es `propietariosApi.getExtracto` y en el back la ruta vieja ya
+  // delega en ese mismo documento (2026-09-13).
 
   async export(reportId: string, format: 'pdf' | 'xlsx', params?: Record<string, string>): Promise<Blob> {
     const query = new URLSearchParams({ reportId, format, ...params });

@@ -11,8 +11,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 import type { LandlordCandidate } from '@/lib/api/applications.types'
+import { ApiError } from '@/lib/api/client'
 
 const getCandidates = vi.fn()
+// Decidir desde el cajón consulta `usePermissions` (S3). Permisos abiertos:
+// estas pruebas miran la lista de candidatos, no el gate.
+vi.mock('@/lib/hooks/usePermissions', () => ({
+  usePermissions: () => ({ isLoading: false, canAccess: () => true }),
+}))
+
 vi.mock('@/lib/api/applications.service', () => ({
   landlordApplicationsApi: {
     getCandidates: (...a: unknown[]) => getCandidates(...a),
@@ -149,5 +156,71 @@ describe('<CandidatosDelInmueble>', () => {
     expect(enlace?.getAttribute('href')).toBe(
       '/panel/inmobiliaria/inmuebles/cons-1/candidatos',
     )
+  })
+})
+
+/**
+ * F7: un mandato migrado de cartera nace sin inmueble, y la tarjeta decía
+ * «Cargando…» para siempre. F8: si la carga fallaba, «No pudimos cargarlos»
+ * sin ninguna salida.
+ */
+describe('<CandidatosDelInmueble> — sin inmueble y con fallo (F7, F8)', () => {
+  let container: HTMLDivElement
+  let root: Root
+
+  beforeEach(() => {
+    ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    getCandidates.mockReset()
+  })
+
+  afterEach(() => {
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  it('sin inmueble no pide nada y dice por qué, en vez de «Cargando…» eterno', async () => {
+    await act(async () => {
+      root.render(<CandidatosDelInmueble propertyId={undefined} consignacionId="cons-1" />)
+    })
+
+    expect(getCandidates).not.toHaveBeenCalled()
+    expect(container.textContent).not.toContain('Cargando…')
+    expect(container.textContent).toContain('Sin inmueble asociado')
+    expect(container.querySelector('[data-testid="sin-datos"]')).not.toBeNull()
+    // Sin inmueble tampoco hay pantalla de candidatos a la que enlazar.
+    expect(container.querySelector('a[href*="/candidatos"]')).toBeNull()
+  })
+
+  it('un 500 dice que falló, dentro de la tarjeta, y reintentar trae la lista', async () => {
+    getCandidates.mockRejectedValueOnce(new ApiError(500, 'Internal server error'))
+    await act(async () => {
+      root.render(<CandidatosDelInmueble propertyId="prop-1" consignacionId="cons-1" />)
+    })
+
+    const fallo = container.querySelector('[data-testid="fallo-de-carga"]')
+    expect(fallo).not.toBeNull()
+    expect(fallo?.getAttribute('data-enmarcado')).toBe('no')
+
+    getCandidates.mockResolvedValueOnce([candidato('a', 'Ana Pérez')])
+    await act(async () => {
+      ;(container.querySelector('[data-testid="reintentar"]') as HTMLButtonElement).click()
+    })
+
+    expect(getCandidates).toHaveBeenCalledTimes(2)
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull()
+    expect(container.textContent).toContain('Ana Pérez')
+  })
+
+  it('un 403 no ofrece reintentar: el permiso no cambia por pedir otra vez', async () => {
+    getCandidates.mockRejectedValueOnce(new ApiError(403, 'Forbidden'))
+    await act(async () => {
+      root.render(<CandidatosDelInmueble propertyId="prop-1" consignacionId="cons-1" />)
+    })
+
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="reintentar"]')).toBeNull()
   })
 })

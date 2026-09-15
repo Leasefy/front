@@ -46,7 +46,15 @@ export interface Propietario {
   /** Departamento, aparte de la ciudad; lo parte la migración y lo edita el formulario. */
   department?: string | null;
   bankAccount: PropietarioBankAccount;
+  /** Mandatos donde es el propietario PRINCIPAL (el de mayor participación). */
   propertyCount: number;
+  /**
+   * Mandatos donde es dueño con un porcentaje SIN ser el principal
+   * (2026-09-13). Va aparte de `propertyCount` para no contar dos veces el
+   * mismo inmueble. Opcional porque un back viejo no la manda; `normalizePropietario`
+   * la deja en 0 en ese caso.
+   */
+  copropiedadesCount?: number;
   activeLeases: number;
   totalMonthlyRent: number;
   /**
@@ -269,6 +277,14 @@ export interface Consignacion {
    * `null` cuando el mandato no tiene inmueble (cartera migrada).
    */
   propertyStatus?: 'DRAFT' | 'AVAILABLE' | 'RENTED' | 'PENDING' | 'RESERVED' | null;
+  /**
+   * El «Código» de la inmobiliaria y la fecha de consignación del inmueble
+   * detrás del mandato, planos como `propertyCode`. `GET /properties/:id` es
+   * PUBLIC y no los trae; el cajón «Editar» se siembra de acá (2026-09-13).
+   * `null` = no hay dato o no hay inmueble; ausente = back viejo.
+   */
+  propertyExternalId?: string | null;
+  propertyConsignedAt?: string | null;
   /**
    * 🔴 Si el inmueble tiene un CONTRATO vigente. Es lo que decide «arrendado»
    * en todo el panel, no `availability`: un contrato migrado sin `Lease`
@@ -899,6 +915,14 @@ export interface ExtractoPropietario {
     propertyTitle: string;
     propertyAddress: string | null;
     tenantName: string | null;
+    /**
+     * Cuánto del inmueble es de este propietario (100 % = 10000). Con varios
+     * dueños cada columna de plata ya viene partida a SU parte; sin estos dos
+     * campos la fila se leía como si el inmueble entero fuera suyo.
+     */
+    participacionBps?: number;
+    /** `40 %`. `null` con un solo dueño: ahí sobra en pantalla (lo mismo que el PDF). */
+    participacionLabel?: string | null;
     /** Lo facturado al inquilino. */
     rentAmount: number;
     adminAmount: number;
@@ -1526,8 +1550,13 @@ export interface Renovacion {
   propietarioName: string;
   /** El contrato vivo del inmueble, resuelto por el back al leer. */
   contractId?: string | null;
-  /** Número visible del contrato («Contrato #99»), del mismo contrato vivo. */
+  /** Nuestro consecutivo del mismo contrato vivo. Lo que se MUESTRA es `contractNumero`. */
   contractCode?: number | null;
+  /**
+   * El número que se lee: el de la inmobiliaria si el contrato es migrado
+   * («1686»), si no «#code». Ausente con un back anterior: se arma «#code».
+   */
+  contractNumero?: string | null;
 
   // Current lease
   currentRent: number;
@@ -1810,6 +1839,8 @@ export interface AgencyProfile {
   renovacionAutomatica?: boolean;
   /** IPC vigente en % (0..30). `null` = el IPC de diciembre del año anterior de la tabla de Leasefy. */
   ipcVigente?: number | null;
+  /** IPC de diciembre POR AÑO que cargó la inmobiliaria: `{ "2026": 5.3 }`. Para ese año manda sobre `ipcVigente` y la tabla. */
+  ipcPorAnio?: Record<string, number>;
   /** Tarifas tributarias (Decimal en el back: viaja como TEXTO; el formulario lo convierte). `reteicaPorMil` y la base mínima: null = no configurada. */
   ivaPorcentaje?: number | string;
   retefuenteArrendamientoPorcentaje?: number | string;
@@ -1887,6 +1918,8 @@ export interface UpdateAgencyPayload {
   renovacionAutomatica?: boolean;
   /** IPC vigente en %, 0..30 con dos decimales. `null` = la tabla del DANE que trae Leasefy. */
   ipcVigente?: number | null;
+  /** El mapa ENTERO de IPC por año (reemplaza al guardado): para quitar un año se manda sin él. */
+  ipcPorAnio?: Record<string, number>;
   /** Tarifas tributarias, 0..100 (la reteICA es por mil). `null` = no configurada. */
   ivaPorcentaje?: number;
   retefuenteArrendamientoPorcentaje?: number;

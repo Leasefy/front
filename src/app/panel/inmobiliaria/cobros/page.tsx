@@ -22,6 +22,16 @@ import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { Button, Spinner } from '@/components/ui';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import {
+  FranjaDelResumen,
+  contarPorEstado,
+  conteosDePestanas,
+  type ConteosPorEstado,
+} from './estado-de-cobros';
+import {
+  MOTIVO_SIN_PERMISO_DE_RECIBO,
+  usePuedeHacerRecibo,
+} from '@/components/inmobiliaria/permiso-de-recibo';
 import { IconButton, SegmentedControl } from '@leasefy/cadence';
 import {
   useCobros,
@@ -32,7 +42,7 @@ import {
   cobrosApi,
 } from '@/lib/hooks/useInmobiliaria';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
-import type { Cobro, CobroStatus, CobroSummary } from '@/lib/types/inmobiliaria';
+import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
 import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
 import type {
   CobroConDesglose,
@@ -73,6 +83,7 @@ function getCurrentMonth(): string {
 function CobrosContent() {
   const { t, locale } = useI18n();
   const searchParams = useSearchParams();
+  const puedeHacerRecibo = usePuedeHacerRecibo();
 
   // State for filters
   const [filters, setFilters] = useState<CobroFiltersState>({
@@ -100,6 +111,7 @@ function CobrosContent() {
   const {
     summary: apiSummary,
     isLoading: summaryLoading,
+    errorCrudo: summaryError,
     refetch: refetchSummary,
   } = useCobroSummary(filters.month);
 
@@ -222,38 +234,50 @@ function CobrosContent() {
       ? armarCopyDeMigracion(deudaDeMigracion)
       : null;
 
-  // Use summary from API (fallback to default if loading)
-  const summary: CobroSummary = useMemo(() => {
-    if (apiSummary) return apiSummary;
+  /*
+   * 🔴 C2: acá se armaba un resumen de ceros cuando el del servidor no estaba,
+   * y sobre un 500 la franja decía «$0 recaudado». Ya no hay resumen de
+   * respaldo: `FranjaDelResumen` pinta esqueleto, fallo con reintento o los
+   * números de verdad.
+   */
 
-    // Mientras carga tampoco hay nada medido: la tasa va en null (una raya),
-    // no en 0 — un 0 acá parpadeaba como «0.0% · Bajo ↘» antes de llegar el
-    // resumen de verdad.
-    return {
-      month: filters.month,
-      totalExpected: 0,
-      totalCollected: 0,
-      totalPending: 0,
-      totalLate: 0,
-      collectionRate: null,
-      cobrosPaid: 0,
-      cobrosPending: 0,
-      cobrosLate: 0,
-    };
-  }, [apiSummary, filters.month]);
+  /*
+   * 🔴 C3: el filtro de estado viaja al servidor, así que con «En mora» puesto
+   * el listado sólo trae los de mora y las demás pestañas caían a 0. Se
+   * recuerda el último conteo SIN filtro de este mes y propietario, y
+   * `conteosDePestanas` decide de dónde sale cada número.
+   */
+  const alcanceDeLosConteos = `${filters.month}|${filters.propietarioId ?? ''}`;
+  const [conteosSinFiltro, setConteosSinFiltro] = useState<{
+    alcance: string;
+    conteos: ConteosPorEstado;
+  } | null>(null);
+  useEffect(() => {
+    if (filters.status !== 'all' || cobrosLoading || cobrosError || !apiCobros) return;
+    setConteosSinFiltro({ alcance: alcanceDeLosConteos, conteos: contarPorEstado(apiCobros) });
+  }, [filters.status, cobrosLoading, cobrosError, apiCobros, alcanceDeLosConteos]);
 
-  // Count cobros by status for tabs (from API data)
-  const cobroCountByStatus = useMemo(() => {
-    const monthCobros = apiCobros || [];
-    return {
-      all: monthCobros.length,
-      pending: monthCobros.filter((c) => c.status === 'pending').length,
-      paid: monthCobros.filter((c) => c.status === 'paid').length,
-      partial: monthCobros.filter((c) => c.status === 'partial').length,
-      late: monthCobros.filter((c) => c.status === 'late').length,
-      defaulted: monthCobros.filter((c) => c.status === 'defaulted').length,
-    };
-  }, [apiCobros]);
+  const cobroCountByStatus = useMemo(
+    () =>
+      conteosDePestanas({
+        estado: filters.status,
+        cobros: cobrosLoading || cobrosError ? null : (apiCobros ?? null),
+        recordados:
+          conteosSinFiltro?.alcance === alcanceDeLosConteos ? conteosSinFiltro.conteos : null,
+        resumen: apiSummary,
+        filtradoPorPropietario: Boolean(filters.propietarioId),
+      }),
+    [
+      filters.status,
+      filters.propietarioId,
+      cobrosLoading,
+      cobrosError,
+      apiCobros,
+      conteosSinFiltro,
+      alcanceDeLosConteos,
+      apiSummary,
+    ],
+  );
 
   // Handle cobro click - open detail modal
   const handleCobroClick = useCallback((cobro: Cobro) => {
@@ -323,31 +347,31 @@ function CobrosContent() {
     [aplicarCobro],
   );
 
-  // Handle send reminder
+  /**
+   * Mandar el recordatorio.
+   *
+   * 🔴 NO atrapa el error (C1): lo dice el cajón que apretó el botón. Antes se
+   * tragaba acá con un `console.error` y el cajón anunciaba «Recordatorio
+   * enviado» sobre un 500. El contador sube sólo DESPUÉS de que el envío
+   * volvió bien: si el `await` lanza, esa línea no corre.
+   */
   const handleSendReminder = useCallback(
     async (cobro: Cobro) => {
-      try {
-        // Call API to send reminder
-        await cobrosApi.sendReminder(cobro.id);
+      await cobrosApi.sendReminder(cobro.id);
 
-        // Optimistically update local state
-        setCobrosData((prev) => {
-          if (!prev) return prev;
-          return prev.map((c) =>
-            c.id === cobro.id
-              ? {
-                  ...c,
-                  remindersSent: c.remindersSent + 1,
-                  lastReminderDate: new Date().toISOString().split('T')[0],
-                  updatedAt: new Date().toISOString(),
-                }
-              : c
-          );
-        });
-      } catch (error) {
-        console.error('Error sending reminder:', error);
-        // In a production app, show error toast here
-      }
+      setCobrosData((prev) => {
+        if (!prev) return prev;
+        return prev.map((c) =>
+          c.id === cobro.id
+            ? {
+                ...c,
+                remindersSent: c.remindersSent + 1,
+                lastReminderDate: new Date().toISOString().split('T')[0],
+                updatedAt: new Date().toISOString(),
+              }
+            : c
+        );
+      });
     },
     [setCobrosData]
   );
@@ -451,16 +475,24 @@ function CobrosContent() {
               <span className="hidden sm:inline">Reglas de mora</span>
             </Link>
           </Button>
-          <Button
-            hideArrow
-            onClick={() => {
-              setPaymentCobro(null);
-              setIsPaymentModalOpen(true);
-            }}
+          {/* Sin `cobros:create` queda a la vista y deshabilitado, con el
+              porqué (C6): esconderlo se lee como «falta la función». */}
+          <span
+            className="inline-flex"
+            title={puedeHacerRecibo ? undefined : MOTIVO_SIN_PERMISO_DE_RECIBO}
           >
-            <Plus className="w-4 h-4" />
-            {t('recibos.hacer')}
-          </Button>
+            <Button
+              hideArrow
+              disabled={!puedeHacerRecibo}
+              onClick={() => {
+                setPaymentCobro(null);
+                setIsPaymentModalOpen(true);
+              }}
+            >
+              <Plus className="w-4 h-4" />
+              {t('recibos.hacer')}
+            </Button>
+          </span>
         </div>
       </div>
 
@@ -470,11 +502,20 @@ function CobrosContent() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <CobroResumen
-          summary={summary}
-          onViewPending={handleViewPending}
-          onViewLate={handleViewLate}
-        />
+        <FranjaDelResumen
+          resumen={apiSummary}
+          cargando={summaryLoading}
+          error={summaryError}
+          onReintentar={refetchSummary}
+        >
+          {(resumen) => (
+            <CobroResumen
+              summary={resumen}
+              onViewPending={handleViewPending}
+              onViewLate={handleViewLate}
+            />
+          )}
+        </FranjaDelResumen>
       </motion.div>
 
       {/* Unified Data Card - View Toggle + Filters + Content + Pagination */}

@@ -173,7 +173,7 @@ export default function NotificacionesPage() {
             variant="ghost"
             icon={<Gear className="w-5 h-5" />}
             aria-label="Configuración"
-            onClick={() => router.push('/panel/configuracion')}
+            onClick={() => router.push('/panel/configuracion/notificaciones')}
           />
         </div>
       </div>

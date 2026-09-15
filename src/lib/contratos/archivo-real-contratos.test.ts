@@ -235,12 +235,15 @@ describe('Contracts.csv: los valores', () => {
     expect(f.propietario?.documento).toBe('43090971')
     expect(o.propietarios).toHaveLength(2)
     expect(o.propietarios[1].documento).toBe('42979803')
-    // Y los dos viajan: el [1] es el titular del mandato y el [2] queda como
-    // copropietario en partes iguales.
+    // Y los dos viajan con su parte: «Valor Canon» reparte el canon entre los
+    // dos ($504.201 + $504.202 = $1.008.403 = «Canon Total»), así que cada uno
+    // lleva su % en puntos básicos y la lista cruda viaja aparte para que el
+    // back la verifique.
     expect(f.propietarios).toEqual([
-      { documento: '43090971', nombre: 'LUZ ADRIANA PEREZ' },
-      { documento: '42979803', nombre: 'MARIA VICTORIA PEREZ' },
+      { documento: '43090971', nombre: 'LUZ ADRIANA PEREZ', participacionBps: 5000 },
+      { documento: '42979803', nombre: 'MARIA VICTORIA PEREZ', participacionBps: 5000 },
     ])
+    expect(f.canonPorPropietario).toEqual([504201, 504202])
     // El canon repartido no es UN número: manda «Canon Total».
     expect(f.monthlyRent).toBe(1008403)
   })

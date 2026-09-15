@@ -269,3 +269,39 @@ describe('toImportarInmuebleDto — el tipo sigue al precio que existe', () => {
     expect(dto.salePrice).toBeUndefined();
   });
 });
+
+// ── Varios dueños con su % (Nico, 2026-09-13) ───────────────────────────────
+import { propietariosDelInmueble } from './toImportarInmuebleDto';
+
+describe('toImportarInmuebleDto — propietarios[]', () => {
+  const dos = [
+    { documento: '43090971', nombre: 'LUZ', telefono: '300', porcentaje: 60 },
+    { documento: '42979803', nombre: 'MARIA', porcentaje: 40 },
+  ];
+
+  it('con dos o más dueños viaja la lista con el % en puntos básicos', () => {
+    const dto = toImportarInmuebleDto(inmueble({ ownerDocument: '43090971', ownerName: 'LUZ', owners: dos }));
+    expect(dto.propietarios).toEqual([
+      { documento: '43090971', nombre: 'LUZ', telefono: '300', participacionBps: 6000 },
+      { documento: '42979803', nombre: 'MARIA', participacionBps: 4000 },
+    ]);
+    // Y el [1] sigue en los campos de siempre.
+    expect(dto.propietarioDocumento).toBe('43090971');
+  });
+
+  it('con un solo dueño la lista no viaja', () => {
+    const dto = toImportarInmuebleDto(inmueble({ ownerName: 'LUZ', owners: [dos[0]] }));
+    expect('propietarios' in dto).toBe(false);
+  });
+
+  it('33,33 × 3 se normaliza a 10.000 exacto; 33 × 3 viaja tal cual (99 %) para que el back frene', () => {
+    const tres = (p: number[]) => p.map((porcentaje, i) => ({ documento: String(i), porcentaje }));
+    expect(propietariosDelInmueble(tres([33.33, 33.33, 33.34]))?.map((d) => d.participacionBps)).toEqual([3333, 3333, 3334]);
+    expect(propietariosDelInmueble(tres([33, 33, 33]))?.map((d) => d.participacionBps)).toEqual([3300, 3300, 3300]);
+  });
+
+  it('la plata por dueño viaja cruda como `canon`', () => {
+    const r = propietariosDelInmueble([{ documento: '1', canon: 660000 }, { documento: '2', canon: 440000 }]);
+    expect(r).toEqual([{ documento: '1', canon: 660000 }, { documento: '2', canon: 440000 }]);
+  });
+});

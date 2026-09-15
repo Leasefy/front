@@ -5,22 +5,48 @@ import { Spinner } from '@/components/ui';
 import { useOwnerFinanzas } from '@/lib/hooks/useOwnerPortal';
 import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholder';
 import { MiPlataView } from '@/components/landlord/portal/finanzas/MiPlataView';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { ApiError } from '@/lib/api/client';
 
 /**
  * Mi plata (F3) — v8-02. Cableado a los endpoints de finanzas del back
  * (`/api/portal/{agencyId}/propietario/{portafolio,inmuebles,proyeccion,recaudo/anual,informe.pdf}`).
  *
- * Tres estados: cargando → Spinner; no-disponible (flag-OFF / owner-JWT no cableado) → "Próximamente"
- * honesto; con data → `MiPlataView`. NUNCA se fabrican números.
+ * Cuatro estados: cargando → Spinner; falló (403, 5xx, red) → `FalloDeCarga` con reintento;
+ * no-disponible (flag-OFF / owner-JWT no cableado) → "Próximamente" honesto; con data → `MiPlataView`.
+ * Una caída NUNCA se disfraza de «Próximamente» (O1). NUNCA se fabrican números.
  */
 export default function PortafolioPage() {
-  const { portafolio, inmuebles, proyeccion, recaudoAnual, isLoading, unavailable, agencyId } =
-    useOwnerFinanzas();
+  const {
+    portafolio,
+    inmuebles,
+    proyeccion,
+    recaudoAnual,
+    isLoading,
+    unavailable,
+    fallo,
+    reintentar,
+    agencyId,
+  } = useOwnerFinanzas();
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
         <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (fallo) {
+    return (
+      <div className="min-h-screen bg-bg px-4 py-10 sm:px-6" data-testid="mi-plata-fallo">
+        <div className="mx-auto max-w-3xl">
+          <FalloDeCarga
+            error={new ApiError(fallo.status, fallo.mensaje)}
+            queEs="tu plata"
+            onReintentar={reintentar}
+          />
+        </div>
       </div>
     );
   }

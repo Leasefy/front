@@ -259,3 +259,33 @@ describe('clasificarFallo — 401 de sesión muerta', () => {
     expect(fallo.sePuedeReintentar).toBe(true)
   })
 })
+
+/**
+ * Los dos casos que el chat del panel necesitaba y nadie clasificaba: un 402
+ * (el plan se quedó sin créditos de IA) se pintaba como «fue un problema
+ * nuestro» con un «Intentar de nuevo» que no podía funcionar; y un pedido que
+ * se cortó por tiempo se leía como error de servidor.
+ */
+describe('clasificarFallo — sin créditos y tardó demasiado', () => {
+  it('un 402 es «sin créditos»: reintentar no compra créditos', () => {
+    const fallo = clasificarFallo(new ApiError(402, 'Payment Required'))
+    expect(fallo.tipo).toBe('sinCreditos')
+    expect(fallo.sePuedeReintentar).toBe(false)
+    expect(fallo.titulo).toContain('créditos')
+  })
+
+  it.each([
+    Object.assign(new Error('The operation timed out'), { name: 'TimeoutError' }),
+    Object.assign(new Error('signal is aborted without reason'), { name: 'AbortError' }),
+    new Error('Request timeout after 30000ms'),
+  ])('un pedido cortado por tiempo o abortado es «tardo» y sí se reintenta', (error) => {
+    const fallo = clasificarFallo(error)
+    expect(fallo.tipo).toBe('tardo')
+    expect(fallo.sePuedeReintentar).toBe(true)
+  })
+
+  it('un mensaje que sólo menciona «timeout» de pasada con un status real no se confunde', () => {
+    const fallo = clasificarFallo(new ApiError(404, 'timeout config not found'))
+    expect(fallo.tipo).toBe('noExiste')
+  })
+})

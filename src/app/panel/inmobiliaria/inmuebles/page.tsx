@@ -48,6 +48,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
+import { KpiValor } from '@/components/estado/KpiValor';
 import type { Consignacion, PortafolioRow, InmuebleSinConsignacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency, portafolioRowKey } from '@/lib/types/inmobiliaria';
 import { ConsignacionCard } from '@/components/inmobiliaria/ConsignacionCard';
@@ -264,19 +265,23 @@ function PortafolioContent() {
     ).length;
     const inProcess = mandatos.filter((c) => c.availability === 'in_process').length;
     const maintenance = mandatos.filter((c) => c.availability === 'maintenance').length;
-    // contract-addendum-2.md §A.10 — a SALE mandate has `monthlyRent: null`
-    // (never `0`, C6). Summing it in with a `?? 0` would silently undercount
-    // nothing (null contributes 0 either way to a sum), but a RENT mandate's
-    // `monthlyRent` is guaranteed NOT NULL by the DB CHECK — the `?? 0` here
-    // is a type-narrowing formality, not a real coalesce risk. Filtering by
-    // `listingType` (rather than relying on the null check alone) keeps the
-    // intent explicit: this tile is a RENTAL revenue figure.
-    const totalMonthlyRent = mandatos
-      .filter((c) => c.listingType !== 'sale')
-      .reduce((sum, c) => sum + (c.monthlyRent ?? 0), 0);
-
-    return { total, available, rented, inProcess, maintenance, totalMonthlyRent };
+    // L4: aquí también se sumaba el canon mensual (`totalMonthlyRent`), que no
+    // se pintaba en ningún tile: un cálculo muerto que hacía creer que la
+    // pantalla lo mostraba.
+    return { total, available, rented, inProcess, maintenance };
   }, [filteredConsignaciones]);
+
+  /*
+   * L1: los tiles se pintaban FUERA del `EstadoDeDatos` de la tabla. Con el
+   * back caído la tabla decía «no se pudo cargar» y un renglón arriba los
+   * tiles afirmaban «0 totales · 0 arrendados»; mientras cargaba, un «0» que
+   * después saltaba al número real. Un cero es un dato; «no sé» no es cero.
+   */
+  const kpi = (valor: number) => (
+    <KpiValor cargando={cargandoConsignaciones} fallo={errorConsignaciones}>
+      {valor}
+    </KpiValor>
+  );
 
   // Paginación — el pie canónico del panel (`useTablePagination` +
   // `TablePagination`). Antes era un prev/next hecho a mano de 12 por página:
@@ -338,10 +343,9 @@ function PortafolioContent() {
    * llega a la pantalla, y sin datos la pantalla llega vacía.
    *
    * El resultado se dice DENTRO de la lista «Disponibles sin señal», no con un
-   * toast: los toasts de este panel no se pintan (está documentado más abajo,
-   * en `motivoDelRechazo`), y un botón que parece no hacer nada es peor que
-   * no tenerlo — sobre todo éste, que se toca justamente para poder salir
-   * tranquilo a la calle.
+   * toast: es la respuesta a lo que la persona acaba de tocar y su lugar es al
+   * lado, no una esquina que se va sola — sobre todo éste, que se toca
+   * justamente para poder salir tranquilo a la calle.
    */
   const [avisoSinSenal, setAvisoSinSenal] = useState<{ ok: boolean; texto: string } | null>(null);
 
@@ -391,12 +395,11 @@ function PortafolioContent() {
    * preguntar, y su lugar es al lado del botón que apretó, no en una esquina
    * que se va sola a los cuatro segundos.
    *
-   * La segunda la encontré probándolo: **los toasts de este panel no se
-   * pintan**. El DELETE devolvía 409, la fila sobrevivía —correcto— y en
-   * pantalla no pasaba absolutamente nada. Medido: el `<section>` de sonner
-   * está montado y vacío, así que `toast()` escribe en un sitio que nadie
-   * muestra. Es anterior a este cambio y está anotado aparte; acá el arreglo
-   * no puede depender de eso.
+   * La segunda la encontré probándolo: en ese momento **los toasts de este
+   * panel no se pintaban** —el DELETE devolvía 409, la fila sobrevivía y en
+   * pantalla no pasaba nada—. Eso se arregló el mismo día (6b2d84dd: un solo
+   * `<Toaster>` en `app/layout.tsx`, fuera de los guards), pero la razón de
+   * fondo sigue en pie: un rechazo que explica va al lado del botón.
    */
   const [motivoDelRechazo, setMotivoDelRechazo] = useState<string | null>(null);
 
@@ -502,31 +505,31 @@ function PortafolioContent() {
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
         <StatTile
           icon={<Buildings className="w-5 h-5" weight="duotone" />}
-          value={stats.total}
+          value={kpi(stats.total)}
           label={t('inmobiliaria.portafolio.summary.totalProperties')}
           tone="neutral"
         />
         <StatTile
           icon={<CheckCircle className="w-5 h-5" weight="duotone" />}
-          value={stats.available}
+          value={kpi(stats.available)}
           label={t('inmobiliaria.portafolio.summary.available')}
           tone="ok"
         />
         <StatTile
           icon={<HouseSimple className="w-5 h-5" weight="duotone" />}
-          value={stats.rented}
+          value={kpi(stats.rented)}
           label={t('inmobiliaria.portafolio.summary.rented')}
           tone="info"
         />
         <StatTile
           icon={<Timer className="w-5 h-5" weight="duotone" />}
-          value={stats.inProcess}
+          value={kpi(stats.inProcess)}
           label={t('inmobiliaria.portafolio.stats.inProcess')}
           tone="warn"
         />
         <StatTile
           icon={<Wrench className="w-5 h-5" weight="duotone" />}
-          value={stats.maintenance}
+          value={kpi(stats.maintenance)}
           label={t('inmobiliaria.portafolio.stats.maintenance')}
           tone="bad"
           className="hidden sm:flex"
@@ -788,7 +791,8 @@ function StatTile({
   className,
 }: {
   icon: React.ReactNode;
-  value: number;
+  /** El número ya envuelto en `KpiValor`: cargando, falló o el valor. */
+  value: React.ReactNode;
   label: string;
   tone: keyof typeof TILE_TONES;
   className?: string;

@@ -55,7 +55,7 @@ import { ordenarReglas, reglasDeMoraApi } from '@/lib/api/reglas-de-mora.service
 import type { ReglaDeMora } from '@/lib/api/reglas-de-mora.types';
 import { cn } from '@/lib/utils';
 import { EditorDeRegla } from './EditorDeRegla';
-import { PLANTILLAS, type PlantillaDeRegla, type ValoresDeRegla } from './esquema';
+import { PLANTILLAS, type PlantillaDeRegla, type ValoresDeRegla, topeDeUsuraDe } from './esquema';
 import {
   describirDisparador,
   describirFormula,
@@ -347,7 +347,13 @@ export function ReglasDeMora() {
         )}
       </EstadoDeDatos>
 
-      <EditorDeRegla abierto={editor.abierto} regla={editor.regla} onCerrar={cerrarEditor} onGuardar={guardar} />
+      <EditorDeRegla
+        abierto={editor.abierto}
+        regla={editor.regla}
+        onCerrar={cerrarEditor}
+        onGuardar={guardar}
+        topeDeUsura={config ? topeDeUsuraDe(config.agency?.topeInteresMoraEaPorcentaje) : undefined}
+      />
     </div>
   );
 }

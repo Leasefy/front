@@ -54,6 +54,8 @@ import {
   puedeGenerar,
   puedePreparar,
   queFaltaElegir,
+  etiquetaDelContratoParaElCombo,
+  rotuloDelContratoPreparado,
 } from './reglas';
 
 /**
@@ -208,14 +210,9 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
         .filter((c) => c.status !== 'cancelled')
         .map((c) => ({
           value: c.id,
-          // El Combobox busca sólo por `label`, así que todo lo buscable va acá.
-          label: [
-            c.code ? `#${c.code}` : null,
-            c.propertyAddress || null,
-            c.tenantName || null,
-          ]
-            .filter(Boolean)
-            .join(' · ') || c.id,
+          // El Combobox busca sólo por `label`, así que todo lo buscable va
+          // acá: los DOS números (el de Nui y el nuestro, rotulado).
+          label: etiquetaDelContratoParaElCombo(c),
         })),
     [contracts],
   );
@@ -382,7 +379,7 @@ export function GenerarDocumentoDialog({ open, onOpenChange, onGenerado }: Props
                 <p className="text-body-sm text-fg">{preparacion.nombreSugerido}</p>
                 <p className="text-caption text-fg-muted">
                   {preparacion.contrato
-                    ? `Contrato #${preparacion.contrato.codigo} · ${
+                    ? `${rotuloDelContratoPreparado(preparacion.contrato)} · ${
                         preparacion.contrato.uso === 'COMERCIAL' ? 'uso comercial' : 'vivienda'
                       }${
                         preparacion.contrato.canon !== null

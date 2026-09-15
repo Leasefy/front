@@ -252,3 +252,54 @@ describe('InquilinoPage — useTenantCases is called unconditionally, fetch gate
     expect((options as { skip?: boolean } | undefined)?.skip).not.toBe(true)
   })
 })
+
+describe('InquilinoPage — «Propiedades para ti» con inmuebles migrados (2026-09-15)', () => {
+  const base = {
+    listingType: 'rent',
+    status: 'available',
+    city: 'Caldas',
+    amenities: [],
+  }
+  const migrado = {
+    ...base,
+    id: 'sin-foto',
+    title: 'Apartamento en La Playita, Caldas',
+    neighborhood: 'LA PLAYITA',
+    monthlyRent: 1_000_000,
+    images: [],
+    thumbnailUrl: '',
+    bedrooms: null,
+    bathrooms: null,
+    area: null,
+  }
+  const conFoto = {
+    ...base,
+    id: 'con-foto',
+    title: 'Apartamento en Centro, Caldas',
+    neighborhood: 'CENTRO',
+    monthlyRent: 2_000_000,
+    images: ['https://x.supabase.co/a.jpg'],
+    thumbnailUrl: 'https://x.supabase.co/a.jpg',
+    bedrooms: 2,
+    bathrooms: 1,
+    area: null,
+  }
+
+  it('pone primero el que tiene foto, dice «Sin fotos» en vez de una imagen rota y no pinta datos sin número', () => {
+    loadedUser()
+    featuredPropsMock.mockReturnValue({ properties: [migrado, conFoto], isLoading: false })
+    render()
+
+    const titulos = Array.from(container.querySelectorAll('h3')).map((h) => h.textContent)
+    const i = titulos.indexOf('Apartamento en Centro, Caldas')
+    const j = titulos.indexOf('Apartamento en La Playita, Caldas')
+    expect(i).toBeGreaterThanOrEqual(0)
+    expect(j).toBeGreaterThan(i)
+
+    expect(container.querySelectorAll('[data-testid="inmueble-sin-fotos"]').length).toBe(1)
+    const datos = Array.from(container.querySelectorAll('[data-testid="datos-del-inmueble"]')).map((d) => d.textContent)
+    // El migrado no tiene fila de datos; el otro sólo los que trae (sin «m²» suelto).
+    expect(datos).toEqual(['2 hab1 baño'])
+  })
+})
+

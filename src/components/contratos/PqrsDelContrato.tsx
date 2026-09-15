@@ -29,6 +29,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ArrowSquareOut, Lifebuoy } from '@phosphor-icons/react'
 
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { Button } from '@/components/ui/button'
 import { TablePagination } from '@/components/ui/pagination'
 import { pqrsApi } from '@/lib/api/pqrs-agencia.service'
@@ -105,7 +106,8 @@ export function lineaDeRelacion(relacion: {
 
 export function PqrsDelContrato({ contractId }: Props) {
   const [datos, setDatos] = useState<PqrsDelContratoResponse | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  // El error ENTERO: `FalloDeCarga` lo clasifica y no muestra el inglés del back.
+  const [error, setError] = useState<unknown>(null)
   const [filtro, setFiltro] = useState<PqrsEstado | null>(null)
 
   // La solicitud devuelve a quien llegó desde acá a ESTE contrato y no a la
@@ -126,7 +128,7 @@ export function PqrsDelContrato({ contractId }: Props) {
       // Un fallo NO se pinta como «este contrato no tiene PQRS»: son cosas
       // distintas, y confundirlas hace creer que no hay historia cuando lo
       // que hay es una petición caída.
-      setError(e instanceof Error ? e.message : 'No pudimos traer las PQRS del contrato.')
+      setError(e)
     }
   }, [contractId])
 
@@ -174,14 +176,12 @@ export function PqrsDelContrato({ contractId }: Props) {
       {datos === null && error === null ? (
         <p className="text-sm text-muted-foreground">Cargando…</p>
       ) : error !== null ? (
-        <div className="space-y-2 text-sm">
-          <p className="text-destructive" data-testid="pqrs-del-contrato-error">
-            {error}
-          </p>
-          <Button variant="secondary" size="sm" hideArrow onClick={() => void cargar()}>
-            Reintentar
-          </Button>
-        </div>
+        <FalloDeCarga
+          error={error}
+          queEs="las PQRS de este contrato"
+          onReintentar={cargar}
+          enmarcado={false}
+        />
       ) : datos !== null && datos.relacion.propertyId === null ? (
         // Sin inmueble no hay con qué atar una PQRS, y decirlo es distinto de
         // decir «no tiene»: acá falta el vínculo, no la historia.

@@ -66,6 +66,8 @@ export interface DocumentoGenerado {
   contract: {
     id: string;
     code: number;
+    /** El número que la inmobiliaria conoce (el Nui) si el contrato es migrado. */
+    externalId?: string | null;
     propertyAddress: string | null;
     propertyCity: string | null;
     tenantName: string | null;
@@ -141,7 +143,10 @@ export interface PreparacionDeDocumento {
   nombreSugerido: string;
   contrato: {
     id: string;
+    /** Nuestro consecutivo. */
     codigo: number;
+    /** El número que la inmobiliaria conoce (el Nui) si el contrato es migrado. */
+    numeroExterno?: string | null;
     direccion: string | null;
     arrendatario: string | null;
     arrendador: string | null;

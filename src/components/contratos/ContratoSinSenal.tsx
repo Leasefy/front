@@ -20,7 +20,6 @@
  */
 
 import { useEffect, useState, type ReactNode } from 'react';
-import Link from 'next/link';
 import { WifiSlash } from '@phosphor-icons/react';
 import { InventarioDeLaConsignacion } from '@/components/inmobiliaria/InventarioDeLaConsignacion';
 import { usePuedeEditarInventario } from '@/lib/hooks/use-puede-editar-inventario';
@@ -96,17 +95,11 @@ export function ContratoSinSenal({ contratoId, children }: Props) {
           contratoId={contratoId}
           sinSenal={sinSenal}
           onActualizada={setReciente}
+          enlaceAlInmueble={{
+            href: rutaDeLaFichaDelInmueble(copia.consignacionId),
+            testid: 'ver-el-inmueble-sin-senal',
+          }}
         />
-
-        <p className="text-xs text-fg-muted px-1">
-          <Link
-            href={rutaDeLaFichaDelInmueble(copia.consignacionId)}
-            className="font-medium text-primary hover:underline"
-            data-testid="ver-el-inmueble-sin-senal"
-          >
-            Ver el inmueble →
-          </Link>
-        </p>
       </div>
     </div>
   );

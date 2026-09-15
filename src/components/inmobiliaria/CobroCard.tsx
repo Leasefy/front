@@ -21,6 +21,7 @@ import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getCobroStatusColor } from '@/lib/types/inmobiliaria';
+import { MOTIVO_SIN_PERMISO_DE_RECIBO, usePuedeHacerRecibo } from './permiso-de-recibo';
 
 interface CobroCardProps {
   cobro: Cobro;
@@ -56,6 +57,9 @@ export function CobroCard({
   compact = false,
 }: CobroCardProps) {
   const { t, locale } = useI18n();
+  // La vista de tarjetas pide el mismo `cobros:create` que la tabla y el cajón
+  // (C6): sin él, «Hacer recibo» queda a la vista, deshabilitado y con el porqué.
+  const puedeHacerRecibo = usePuedeHacerRecibo();
 
   const STATUS_LABELS: Record<CobroStatus, string> = useMemo(() => ({
     pending: t('inmobiliaria.cobros.card.statusLabels.pending'),
@@ -269,17 +273,26 @@ export function CobroCard({
       {/* Actions */}
       <div className="px-5 py-4 flex items-center justify-between border-t border-border-faint">
         {cobro.status !== 'paid' && onRegisterPayment && (
-          <Button
-            size="sm"
-            hideArrow
-            onClick={(e) => {
-              e.stopPropagation();
-              onRegisterPayment(cobro);
-            }}
-          >
-            <CurrencyCircleDollar className="w-4 h-4" />
-            {t('recibos.hacerCorto')}
-          </Button>
+          <div className="flex flex-col items-start gap-1">
+            <Button
+              size="sm"
+              hideArrow
+              disabled={!puedeHacerRecibo}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!puedeHacerRecibo) return;
+                onRegisterPayment(cobro);
+              }}
+            >
+              <CurrencyCircleDollar className="w-4 h-4" />
+              {t('recibos.hacerCorto')}
+            </Button>
+            {!puedeHacerRecibo && (
+              <span data-testid="motivo-sin-permiso-de-recibo" className="text-xs text-fg-muted">
+                {MOTIVO_SIN_PERMISO_DE_RECIBO}
+              </span>
+            )}
+          </div>
         )}
         {cobro.status === 'paid' && (
           <div className="flex items-center gap-2 text-sm text-success">

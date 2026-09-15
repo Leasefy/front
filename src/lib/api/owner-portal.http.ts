@@ -16,31 +16,76 @@ function ownerBase(agencyId: string | null): string | null {
   return `${base}/api/portal/${agencyId}/propietario`;
 }
 
-/** GET tipado contra el agent, scoped al propietario. `null` = no-disponible. */
-export async function ownerGet<T>(agencyId: string | null, path: string): Promise<T | null> {
+/**
+ * «El portal no está habilitado» NO es lo mismo que «falló» (O1, auditoría del 13-09).
+ *
+ * - `no-habilitado`: falta la URL del micro o el `agencyId`, o el micro responde 401 (hoy el
+ *   bearer de Supabase no es el owner-JWT que exige) o 404 (flag apagado / ruta que no existe).
+ *   Ése sí es «Próximamente».
+ * - `fallo`: 403, 5xx, red caída o una respuesta que no se puede leer. Antes caía en el mismo
+ *   `null` y el propietario veía «Próximamente» sobre una caída, sin forma de reintentar.
+ */
+export type ResultadoDelPortal<T> =
+  | { estado: 'ok'; data: T }
+  | { estado: 'no-habilitado' }
+  | { estado: 'fallo'; status: number; mensaje: string };
+
+const STATUS_DE_NO_HABILITADO = new Set([401, 404]);
+
+async function pedirAlPortal<T>(
+  agencyId: string | null,
+  path: string,
+  leer: (res: Response) => Promise<T | null>,
+): Promise<ResultadoDelPortal<T>> {
   const base = ownerBase(agencyId);
-  if (!base) return null;
+  if (!base) return { estado: 'no-habilitado' };
+  let res: Response;
   try {
-    const res = await globalThis.fetch(`${base}${path}`, { headers: agentAuthHeaders() });
-    if (!res.ok) return null;
-    const text = await res.text();
-    return text ? (JSON.parse(text) as T) : null;
+    res = await globalThis.fetch(`${base}${path}`, { headers: agentAuthHeaders() });
   } catch {
-    return null;
+    return { estado: 'fallo', status: 0, mensaje: 'No hubo conexión con el portal.' };
+  }
+  if (STATUS_DE_NO_HABILITADO.has(res.status)) return { estado: 'no-habilitado' };
+  if (!res.ok) {
+    return { estado: 'fallo', status: res.status, mensaje: `El portal respondió ${res.status}.` };
+  }
+  try {
+    const data = await leer(res);
+    return data === null ? { estado: 'no-habilitado' } : { estado: 'ok', data };
+  } catch {
+    return { estado: 'fallo', status: res.status, mensaje: 'La respuesta del portal no se pudo leer.' };
   }
 }
 
-/** GET de un binario (PDF) contra el agent. `null` = no-disponible. */
+/** GET tipado contra el agent con el estado: distingue «no habilitado» de «falló». */
+export function ownerGetConEstado<T>(
+  agencyId: string | null,
+  path: string,
+): Promise<ResultadoDelPortal<T>> {
+  return pedirAlPortal<T>(agencyId, path, async (res) => {
+    const text = await res.text();
+    return text ? (JSON.parse(text) as T) : null;
+  });
+}
+
+/** GET de un binario (PDF) contra el agent, con el estado. */
+export function ownerGetBlobConEstado(
+  agencyId: string | null,
+  path: string,
+): Promise<ResultadoDelPortal<Blob>> {
+  return pedirAlPortal<Blob>(agencyId, path, (res) => res.blob());
+}
+
+/** GET tipado contra el agent, scoped al propietario. `null` = no-disponible (o falló). */
+export async function ownerGet<T>(agencyId: string | null, path: string): Promise<T | null> {
+  const r = await ownerGetConEstado<T>(agencyId, path);
+  return r.estado === 'ok' ? r.data : null;
+}
+
+/** GET de un binario (PDF) contra el agent. `null` = no-disponible (o falló). */
 export async function ownerGetBlob(agencyId: string | null, path: string): Promise<Blob | null> {
-  const base = ownerBase(agencyId);
-  if (!base) return null;
-  try {
-    const res = await globalThis.fetch(`${base}${path}`, { headers: agentAuthHeaders() });
-    if (!res.ok) return null;
-    return await res.blob();
-  } catch {
-    return null;
-  }
+  const r = await ownerGetBlobConEstado(agencyId, path);
+  return r.estado === 'ok' ? r.data : null;
 }
 
 /**

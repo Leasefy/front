@@ -51,7 +51,7 @@ vi.mock('@/components/estado/FalloDeCarga', () => ({
     ),
 }))
 
-import { CarteraPorConcepto } from './CarteraPorConcepto'
+import { CarteraPorConcepto, rotuloDelContrato } from './CarteraPorConcepto'
 
 function fila(p: Partial<FilaDeCarteraDelInquilino> = {}): FilaDeCarteraDelInquilino {
   const base: FilaDeCarteraDelInquilino = {
@@ -107,7 +107,9 @@ const NICOLAS: InquilinoEnCartera = (() => {
     nombre: 'Nicolás Rojas',
     documento: '70814637',
     telefono: '3010082450',
-    contratos: [{ contractId: 'ct1', contrato: '1686', inmueble: 'Apartamento 302' }],
+    contratos: [
+      { contractId: 'ct1', contrato: '1686', contratoDeLeasefy: 'Leasefy #1839', inmueble: 'Apartamento 302' },
+    ],
     filas,
     totales: {
       porConcepto: { CANON: 6_300_000, INTERES_DE_MORA: 158_200, GASTO_ADMINISTRATIVO: 420_000 },
@@ -264,6 +266,9 @@ describe('CarteraPorConcepto', () => {
     expect(filas).toHaveLength(2)
     expect(filas[0]!.textContent).toContain('Nicolás Rojas')
     expect(filas[0]!.textContent).toContain('3 meses')
+    // El número de Nui primero y el nuestro rotulado: nunca un «#1839» pelado.
+    expect(filas[0]!.textContent).toContain('contrato 1686 · Leasefy #1839')
+    expect(filas[1]!.textContent).toContain('contrato #94')
 
     // Canon · intereses · gasto administrativo · debe (con el abono debajo).
     expect(pesosDe(filas[0]!)).toEqual([6_300_000, 105_000, 373_200, 6_778_200])
@@ -412,5 +417,20 @@ describe('CarteraPorConcepto', () => {
 
     expect($('[data-testid="tabla-por-concepto"]').textContent).toContain('Nadie te debe nada')
     expect(host.querySelector('[data-testid="totales-por-concepto"]')).toBeNull()
+  })
+})
+
+describe('rotuloDelContrato — de quién es cada número', () => {
+  it('migrado: el de la inmobiliaria y el nuestro rotulado', () => {
+    expect(rotuloDelContrato({ contrato: '1686', contratoDeLeasefy: 'Leasefy #1839' })).toBe(
+      ' · contrato 1686 · Leasefy #1839',
+    )
+  })
+  it('nativo: sólo el nuestro', () => {
+    expect(rotuloDelContrato({ contrato: '#94', contratoDeLeasefy: null })).toBe(' · contrato #94')
+    expect(rotuloDelContrato({ contrato: '#94' })).toBe(' · contrato #94')
+  })
+  it('sin contrato: nada', () => {
+    expect(rotuloDelContrato({ contrato: null })).toBe('')
   })
 })

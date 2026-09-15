@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import { MapPin, Heart, Camera, Bed, Bathtub, CornersOut, House, ArrowSquareOut, CaretRight, X, ArrowsOut } from '@phosphor-icons/react';
@@ -122,11 +123,9 @@ export function PropertyDetailSheet({
           <div className="flex-1 overflow-y-auto overscroll-contain" data-lenis-prevent>
             {/* Hero Image */}
             <div className="relative aspect-video bg-surface-muted">
-              <Image
-                src={property.thumbnailUrl}
+              <PortadaDelInmueble
+                property={property}
                 alt={property.title}
-                fill
-                className="object-cover"
                 sizes="(max-width: 640px) 100vw, 600px"
                 priority
               />
@@ -135,16 +134,19 @@ export function PropertyDetailSheet({
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
 
               {/* View photos button */}
-              <Button
-                variant="secondary"
-                size="sm"
-                hideArrow
-                onClick={() => handleOpenGallery(0)}
-                className="absolute bottom-4 right-4 bg-surface/90 backdrop-blur-sm"
-              >
-                <Camera className="w-4 h-4" />
-                Ver {property.images.length} fotos
-              </Button>
+              {/* «Ver 0 fotos» abría una galería vacía. */}
+              {property.images.length > 0 && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  hideArrow
+                  onClick={() => handleOpenGallery(0)}
+                  className="absolute bottom-4 right-4 bg-surface/90 backdrop-blur-sm"
+                >
+                  <Camera className="w-4 h-4" />
+                  Ver {property.images.length} {property.images.length === 1 ? 'foto' : 'fotos'}
+                </Button>
+              )}
 
               {/* Match Score Badge (if matchData present) */}
               {matchData && (
@@ -249,13 +251,15 @@ export function PropertyDetailSheet({
                 <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-xl">
                   <Bed className="w-5 h-5 text-fg-muted mb-1.5" />
                   <span className="text-sm font-semibold text-fg">
-                    {property.bedrooms} hab
+                    {property.bedrooms != null ? `${property.bedrooms} hab` : '—'}
                   </span>
                 </div>
                 <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-xl">
                   <Bathtub className="w-5 h-5 text-fg-muted mb-1.5" />
                   <span className="text-sm font-semibold text-fg">
-                    {property.bathrooms} baño
+                    {property.bathrooms != null
+                      ? `${property.bathrooms} ${property.bathrooms === 1 ? 'baño' : 'baños'}`
+                      : '—'}
                   </span>
                 </div>
                 <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-xl">

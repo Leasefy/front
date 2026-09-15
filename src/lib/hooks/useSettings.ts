@@ -3,7 +3,7 @@
  */
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { settingsApi, type NotificationSettings } from '@/lib/api/settings.service'
 import type { TeamMember, TeamRole } from '@/lib/types/team'
 
@@ -22,28 +22,43 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   pushUrgent: true,
 }
 
+/**
+ * 🔴 `settings` arranca en `DEFAULT_SETTINGS` y, si el GET falla, SE QUEDA ahí.
+ * Pintar esos valores como si fueran lo guardado son «notificaciones
+ * fantasma»: la pantalla dice «te avisamos de los pagos» sin saber si es
+ * cierto. Por eso el hook expone el fallo entero (`errorCrudo`, con el status
+ * que `FalloDeCarga` necesita para decidir si reintentar sirve) y `refresh`.
+ * Quien pinte `settings` tiene que mirar `errorCrudo` antes.
+ */
 export function useNotificationSettings() {
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_SETTINGS)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null)
+  const montado = useRef(true)
+
+  const refresh = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const data = await settingsApi.getNotificationSettings()
+      if (!montado.current) return
+      setSettings(data)
+      setError(null)
+      setErrorCrudo(null)
+    } catch (err) {
+      if (!montado.current) return
+      setErrorCrudo(err)
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      if (montado.current) setIsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    let cancelled = false
-    settingsApi.getNotificationSettings()
-      .then((data) => {
-        if (!cancelled) {
-          setSettings(data)
-          setIsLoading(false)
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setError(err.message)
-          setIsLoading(false)
-        }
-      })
-    return () => { cancelled = true }
-  }, [])
+    montado.current = true
+    void refresh()
+    return () => { montado.current = false }
+  }, [refresh])
 
   const updateSetting = useCallback(async (key: keyof NotificationSettings, value: boolean) => {
     // Optimistic update
@@ -59,7 +74,27 @@ export function useNotificationSettings() {
     }
   }, [])
 
-  return { settings, isLoading, error, updateSetting }
+  /**
+   * Varias banderas en UNA escritura: el inquilino ve «Correos de tu arriendo»
+   * como un solo interruptor que en el back son cuatro. Si falla, vuelve todo a
+   * como estaba — el interruptor tiene que decir lo que de verdad quedó.
+   */
+  const updateSettings = useCallback(async (parche: Partial<NotificationSettings>) => {
+    let anterior: NotificationSettings | null = null
+    setSettings(prev => {
+      anterior = prev
+      return { ...prev, ...parche }
+    })
+    try {
+      const updated = await settingsApi.updateNotificationSettings(parche)
+      setSettings(updated)
+    } catch (err) {
+      if (anterior) setSettings(anterior)
+      throw err
+    }
+  }, [])
+
+  return { settings, isLoading, error, errorCrudo, refresh, updateSetting, updateSettings }
 }
 
 // ============================================================================

@@ -78,6 +78,7 @@ const CLAVES_DEL_DTO = new Set([
   'invitar',
   'pdfPath',
   'propietarios',
+  'canonPorPropietario',
   'inquilinos',
   'escenarioOrigen',
   'estadoOrigen',
@@ -93,7 +94,7 @@ const CLAVES_DEL_INQUILINO = new Set(['nombre', 'correo', 'telefono', 'documento
 /** `PropietarioDelArchivoDto`. */
 const CLAVES_DEL_PROPIETARIO = new Set(['nombre', 'documento', 'correo', 'telefono'])
 /** `TerceroDelArchivoDto` — dos claves, y ninguna más. */
-const CLAVES_DEL_TERCERO = new Set(['documento', 'nombre'])
+const CLAVES_DEL_TERCERO = new Set(['documento', 'nombre', 'participacionBps'])
 
 /**
  * Una fila con la forma del archivo real (Contracts.csv), con dos
@@ -182,10 +183,13 @@ describe('el payload lleva, campo por campo, lo que el archivo dijo', () => {
   })
 
   it('las dos listas van completas y en el orden del archivo', () => {
+    // Los dueños llevan su parte: «Valor Canon» ($504.201 + $504.202) cuadra
+    // con «Canon Total», así que cada uno viaja con su % en puntos básicos.
     expect(payload.propietarios).toEqual([
-      { documento: '43090971', nombre: 'LUZ ADRIANA PEREZ' },
-      { documento: '42979803', nombre: 'MARIA VICTORIA PEREZ' },
+      { documento: '43090971', nombre: 'LUZ ADRIANA PEREZ', participacionBps: 5000 },
+      { documento: '42979803', nombre: 'MARIA VICTORIA PEREZ', participacionBps: 5000 },
     ])
+    expect(payload.canonPorPropietario).toEqual([504201, 504202])
     expect(payload.inquilinos).toEqual([
       { documento: '71211270', nombre: 'JORGE ANDRES LONDONO' },
       { documento: '1020304050', nombre: 'ANA SOFIA RUIZ' },

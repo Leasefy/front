@@ -278,3 +278,27 @@ describe('la cédula del propietario tiene su propia columna', () => {
     expect(porCampo.ownerDocument).toBe('Cédula del propietario');
   });
 });
+
+// ── Varios dueños con su % (Nico, 2026-09-13) ───────────────────────────────
+describe('el porcentaje y la plata de cada propietario', () => {
+  it.each([
+    ['% Propietario', 'ownerShare'],
+    ['Porcentaje propietario', 'ownerShare'],
+    ['Participación', 'ownerShare'],
+    ['Porcentaje de participación', 'ownerShare'],
+    ['Canon por propietario', 'ownerRent'],
+    ['Reparto del canon', 'ownerRent'],
+  ])('%s → %s', (encabezado, campo) => {
+    expect(campoDe(encabezado)).toBe(campo)
+  })
+
+  it('«Porcentaje» a secas y «Comisión» siguen siendo la comisión (decisión conservadora)', () => {
+    expect(campoDe('Porcentaje')).toBe('commissionPercent')
+    expect(campoDe('% Comisión')).toBe('commissionPercent')
+  })
+
+  it('«Propietario» y «Teléfonos Propietario» no se mueven', () => {
+    expect(campoDe('Propietario')).toBe('ownerName')
+    expect(campoDe('Teléfonos Propietario')).toBe('ownerPhone')
+  })
+})

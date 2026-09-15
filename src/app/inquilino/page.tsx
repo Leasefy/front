@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import Image from 'next/image';
+import { PortadaDelInmueble, primeraFoto } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, MapPin, CreditCard, FileText, House, CaretRight, MagnifyingGlass, Heart, Shield, CheckCircle, Check, ArrowRight, Lightbulb, ClipboardText } from '@phosphor-icons/react';
@@ -37,6 +37,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useI18n } from '@/lib/i18n';
 import type { Property } from '@/lib/types/property';
+import { formatArea } from '@/lib/format';
 
 /**
  * Tenant Dashboard - Landing Page Style
@@ -154,7 +155,7 @@ export default function InquilinoPage() {
    * y no encontrarla en su catálogo. La vista previa prometía algo que el
    * destino no tenía.
    */
-  const { properties: featuredRaw, isLoading: featuredLoading } = useFeaturedProperties(12);
+  const { properties: featuredRaw, isLoading: featuredLoading } = useFeaturedProperties(24);
   const referenciaHome = referenciaCanon(aprobacion);
   const featuredProperties = useMemo(() => {
     // T-0038: this widget compares against a RENT approval cap
@@ -167,7 +168,13 @@ export default function InquilinoPage() {
       ? disponibles.filter((p) => (p.monthlyRent ?? 0) <= referenciaHome.valorCop)
       : disponibles;
     // Safe: every row here already passed the `listingType !== 'sale'` filter above.
-    return [...dentro].sort((a, b) => (a.monthlyRent ?? 0) - (b.monthlyRent ?? 0)).slice(0, 4);
+    // Los que tienen foto primero y, entre iguales, el más barato: los migrados
+    // llegan sin fotos y llenaban las cuatro tarjetas de «Sin fotos» mientras
+    // había inmuebles con fotos en la misma tanda (Nico, 2026-09-15).
+    const conFoto = (p: Property) => (primeraFoto(p) ? 1 : 0);
+    return [...dentro]
+      .sort((a, b) => conFoto(b) - conFoto(a) || (a.monthlyRent ?? 0) - (b.monthlyRent ?? 0))
+      .slice(0, 4);
   }, [featuredRaw, referenciaHome]);
 
   /*
@@ -461,11 +468,10 @@ export default function InquilinoPage() {
                     className="group relative overflow-hidden rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] hover:border-border dark:hover:border-border-strong transition-colors duration-300 text-left w-full"
                   >
                     <div className="relative aspect-[16/10] overflow-hidden">
-                      <Image
-                        src={property.images[0]}
+                      <PortadaDelInmueble
+                        property={property}
                         alt={property.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="group-hover:scale-105 transition-transform duration-500"
                       />
 
                       {/*
@@ -510,25 +516,36 @@ export default function InquilinoPage() {
 
                       <p className="text-sm text-fg-muted dark:text-fg-subtle flex items-center gap-1.5 mb-3">
                         <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                        {property.neighborhood}, {property.city}
+                        {[property.neighborhood, property.city].filter(Boolean).join(', ')}
                       </p>
 
-                      <div className="flex items-center gap-2 pt-3 border-t border-border-faint dark:border-border-strong">
-                        <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
-                          {property.bedrooms} {locale === 'es' ? 'hab' : 'bed'}
-                        </span>
-                        <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
-                          {property.bathrooms}{' '}
-                          {locale === 'es'
-                            ? property.bathrooms === 1
-                              ? 'baño'
-                              : 'baños'
-                            : 'bath'}
-                        </span>
-                        <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
-                          {property.area} m²
-                        </span>
-                      </div>
+                      {/* Sólo los datos que el inmueble trae: los migrados llegan
+                          sin habitaciones, baños ni área, y las pastillas salían
+                          «hab», «baños», «m²» sin número. */}
+                      {(property.bedrooms != null || property.bathrooms != null || property.area != null) && (
+                        <div data-testid="datos-del-inmueble" className="flex items-center gap-2 pt-3 border-t border-border-faint dark:border-border-strong">
+                          {property.bedrooms != null && (
+                            <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
+                              {property.bedrooms} {locale === 'es' ? 'hab' : 'bed'}
+                            </span>
+                          )}
+                          {property.bathrooms != null && (
+                            <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
+                              {property.bathrooms}{' '}
+                              {locale === 'es'
+                                ? property.bathrooms === 1
+                                  ? 'baño'
+                                  : 'baños'
+                                : 'bath'}
+                            </span>
+                          )}
+                          {property.area != null && (
+                            <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
+                              {formatArea(property.area)}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </motion.button>
                 ))}

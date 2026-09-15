@@ -78,6 +78,19 @@ export const COLUMN_KEYWORDS: Record<string, string[]> = {
   // 'propietario' (11) le ganaba, así que los teléfonos entraban en el NOMBRE
   // del dueño. Por eso las variantes en plural están escritas aparte.
   ownerPhone:       ['telefonos del propietario', 'telefono del propietario', 'whatsapp del propietario', 'celular del propietario', 'contacto del propietario', 'whatsapp propietario', 'telefonos propietario', 'telefono propietario', 'celulares propietario', 'celular propietario', 'contacto propietario', 'telefonos arrendador', 'telefono arrendador', 'celular arrendador', 'telefono del dueno', 'numero propietario', 'movil propietario', 'tel propietario', 'telefonos', 'telefono', 'whatsapp', 'celular', 'movil', 'tel', 'phone'],
+  /*
+   * Varios dueños con su % del canon (Nico, 2026-09-13). Cada alias es MÁS
+   * LARGO que 'propietario' (11) para ganarle en el nivel 1, y que 'comision'
+   * (8) y 'porcentaje' (10): «% Propietario» y «Porcentaje propietario» son el
+   * reparto, no la comisión. Un «Porcentaje» a secas SIGUE siendo la comisión
+   * (decisión conservadora: cambiarlo movería en silencio la comisión de los
+   * archivos que hoy la traen así; si es el reparto, la persona lo mapea a
+   * mano). 'participacion' sola sí es del reparto: nadie llama así a la
+   * comisión.
+   */
+  ownerShare:       ['porcentaje del propietario', 'porcentaje de propietario', 'porcentaje propietario', 'porcentajes propietarios', 'porcentaje de participacion', 'porcentaje participacion', 'participacion del propietario', 'participacion propietario', 'porcentaje de propiedad', 'porcentaje de copropiedad', '% del propietario', '% propietario', '% de propiedad', 'participacion'],
+  /* …o la plata de cada dueño. Más largo que 'canon' (5) y que 'propietario' (11). */
+  ownerRent:        ['canon de cada propietario', 'canon por propietario', 'canon del propietario', 'canon propietario', 'valor por propietario', 'valor de cada propietario', 'valor del propietario', 'canon por dueno', 'reparto del canon', 'reparto'],
   status:           ['estado del inmueble', 'estado', 'status', 'disponibilidad'],
   notes:            ['observaciones', 'observacion', 'notas', 'comentarios', 'descripcion', 'notes'],
   // T-0038 §3.2.6 (D5, R6) — property-level "fecha de consignación",

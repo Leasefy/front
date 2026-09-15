@@ -46,6 +46,8 @@ export interface ResultadoActivacionCompleta {
    * de 679.
    */
   reusados: number;
+  /** Mandatos creados con varios dueños y su reparto, sumando las llamadas. */
+  mandatosConVariosDuenos: number;
   omitidas: FilaOmitida[];
   /** How many `activar()` calls this took — surfaced for diagnostics, never
    * used to decide correctness (that's `restantes === 0` alone). */
@@ -115,6 +117,7 @@ export async function activarLoteCompleto(
 ): Promise<ResultadoActivacionCompleta> {
   let activados = 0;
   let reusados = 0;
+  let mandatosConVariosDuenos = 0;
   const omitidas: FilaOmitida[] = [];
   let llamadas = 0;
 
@@ -133,6 +136,7 @@ export async function activarLoteCompleto(
     llamadas += 1;
     activados += r.activados;
     reusados += r.reusados ?? 0;
+    mandatosConVariosDuenos += r.mandatosConVariosDuenos ?? 0;
     omitidas.push(...r.omitidas);
     onProgreso?.({
       activados,
@@ -146,6 +150,7 @@ export async function activarLoteCompleto(
       return {
         activados,
         reusados,
+        mandatosConVariosDuenos,
         omitidas,
         llamadas,
         detenidoPorLimite: false,
@@ -160,6 +165,7 @@ export async function activarLoteCompleto(
       return {
         activados,
         reusados,
+        mandatosConVariosDuenos,
         omitidas,
         llamadas,
         detenidoPorLimite: false,
@@ -182,6 +188,7 @@ export async function activarLoteCompleto(
       return {
         activados,
         reusados,
+        mandatosConVariosDuenos,
         omitidas,
         llamadas,
         detenidoPorLimite: false,
@@ -194,6 +201,7 @@ export async function activarLoteCompleto(
       return {
         activados,
         reusados,
+        mandatosConVariosDuenos,
         omitidas,
         llamadas,
         detenidoPorLimite: true,

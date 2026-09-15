@@ -21,7 +21,10 @@ import {
   Images,
   Car,
   Mountains,
+  Prohibit,
+  Plus,
 } from '@phosphor-icons/react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import {
@@ -59,6 +62,17 @@ interface ConsignacionHeaderProps {
   onViewPortal?: () => void;
   onChangeStatus?: (status: PropertyAvailability) => void;
   onTerminate?: () => void;
+  /**
+   * Cuándo terminó el mandato (ISO), sacado del evento `consignacion_terminada`
+   * del historial. `null` = terminó antes de que existiera ese evento: el
+   * banner lo dice sin fecha antes que inventar una.
+   */
+  fechaDeTerminacion?: string | null;
+  /**
+   * El inmueble tiene un contrato de arriendo vigente. Con el mandato
+   * terminado hay que decirlo: el contrato sigue su curso por su lado.
+   */
+  contratoVigente?: boolean;
   /*
    * 🔴 `onRenew` se retiró junto con su renglón del menú: «Renovar
    * consignación» sólo mostraba «próximamente». No hay endpoint de renovación
@@ -125,9 +139,11 @@ const STATUS_STYLES: Record<ConsignacionStatus, { bg: string; text: string; labe
     text: 'text-fg-muted dark:text-fg-subtle',
     labelKey: 'inmobiliaria.consignaciones.status.expired',
   },
+  // Apagado, no rojo: un mandato terminado no es una alarma, es un registro
+  // cerrado (Nico, 2026-09-13).
   terminated: {
-    bg: 'bg-danger-soft',
-    text: 'text-danger',
+    bg: 'bg-surface-muted dark:bg-ink',
+    text: 'text-fg-muted dark:text-fg-subtle',
     labelKey: 'inmobiliaria.consignaciones.status.terminated',
   },
 };
@@ -145,8 +161,22 @@ export function ConsignacionHeader({
   onViewPortal,
   onChangeStatus,
   onTerminate,
+  fechaDeTerminacion,
+  contratoVigente,
 }: ConsignacionHeaderProps) {
   const { t, formatDate } = useI18n();
+
+  /*
+   * 🔴 Un mandato TERMINADO se ve y se comporta distinto (Nico, 2026-09-13,
+   * después de «Terminar consignación»: «es súper raro» — la ficha seguía
+   * igual, con el chip «Arrendado», y el kebab ofrecía terminarla otra vez).
+   * Acá: la foto en gris, sin chip de disponibilidad (ya no rige), un banner
+   * que dice cuándo terminó y qué implica, y sólo las acciones que tienen
+   * sentido: editar el INMUEBLE (lo descriptivo; el back rechaza los términos
+   * del mandato con 409) y abrir una consignación nueva. «Ver en Portal» queda
+   * deshabilitado con el porqué; «Cambiar estado» y «Terminar» desaparecen.
+   */
+  const terminada = consignacion.status === 'terminated';
 
   const PropertyIcon = PROPERTY_TYPE_ICONS[consignacion.propertyType];
   const availability = AVAILABILITY_STYLES[consignacion.availability];
@@ -177,14 +207,17 @@ export function ConsignacionHeader({
               <img
                 src={thumbnailUrl}
                 alt={consignacion.propertyTitle}
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                className={cn(
+                  'h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]',
+                  terminada && 'grayscale',
+                )}
               />
             </button>
           ) : thumbnailUrl ? (
             <img
               src={thumbnailUrl}
               alt={consignacion.propertyTitle}
-              className="w-full h-full object-cover"
+              className={cn('w-full h-full object-cover', terminada && 'grayscale')}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -236,14 +269,46 @@ export function ConsignacionHeader({
         <div className="flex-1 p-5 lg:p-6">
           {/* Status Badges */}
           <div className="flex flex-wrap items-center gap-2 mb-3">
-            <span className={cn('px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1.5', availability.bg, availability.text)}>
-              <AvailabilityIcon className="w-4 h-4" />
-              {t(availability.labelKey)}
-            </span>
+            {/* La disponibilidad sale de `availability` (no del contrato) y con
+                el mandato terminado ya no describe nada: se esconde. */}
+            {!terminada && (
+              <span className={cn('px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1.5', availability.bg, availability.text)}>
+                <AvailabilityIcon className="w-4 h-4" />
+                {t(availability.labelKey)}
+              </span>
+            )}
             <span className={cn('px-3 py-1 rounded-full text-sm font-medium', status.bg, status.text)}>
               {t('inmobiliaria.consignaciones.header.consignacion')} {t(status.labelKey)}
             </span>
           </div>
+
+          {terminada && (
+            <div
+              role="status"
+              className="rounded-md bg-warning-soft border border-border p-3 flex items-start gap-2 mb-4"
+              data-testid="banner-consignacion-terminada"
+            >
+              <Prohibit className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-warning">
+                  {fechaDeTerminacion
+                    ? t('inmobiliaria.consignaciones.header.terminada.titulo', { fecha: formatDate(fechaDeTerminacion) })
+                    : t('inmobiliaria.consignaciones.header.terminada.tituloSinFecha')}
+                </p>
+                <p className="text-body-sm text-fg-muted mt-0.5">
+                  {t('inmobiliaria.consignaciones.header.terminada.detalle')}
+                  {contratoVigente && (
+                    <>
+                      {' '}
+                      <span className="font-medium text-fg" data-testid="terminada-con-contrato">
+                        {t('inmobiliaria.consignaciones.header.terminada.conContrato')}
+                      </span>
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Title */}
           <h1 className="text-2xl lg:text-3xl font-bold text-fg mb-2">
@@ -273,7 +338,9 @@ export function ConsignacionHeader({
                 {consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
               </span>
               <span className="text-lg text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.header.perMonth')}</span>
-              {consignacion.adminFee && consignacion.adminFee > 0 && (
+              {/* `!!x && x > 0`: con `adminFee = 0`, `{0 && …}` pintaba un «0»
+                  suelto al lado de «/mes» (Nico, 2026-09-13, con captura). */}
+              {!!consignacion.adminFee && consignacion.adminFee > 0 && (
                 <span className="text-sm text-fg-subtle dark:text-fg-muted">
                   + {formatCurrency(consignacion.adminFee)} {t('inmobiliaria.consignaciones.header.admin')}
                 </span>
@@ -293,7 +360,7 @@ export function ConsignacionHeader({
                 <span>{t('inmobiliaria.consignaciones.header.until')} {formatDate(consignacion.contractEndDate)}</span>
               </div>
             )}
-            {consignacion.minimumTerm && (
+            {!!consignacion.minimumTerm && consignacion.minimumTerm > 0 && (
               <div className="flex items-center gap-1.5">
                 <Timer className="w-4 h-4" />
                 <span>{t('inmobiliaria.consignaciones.header.minimum')} {consignacion.minimumTerm} {t('inmobiliaria.consignaciones.header.months')}</span>
@@ -303,10 +370,18 @@ export function ConsignacionHeader({
 
           {/* Actions Bar */}
           <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-border-faint dark:border-border-strong">
-            {/* Edit Button */}
-            <Button hideArrow onClick={onEdit}>
+            {/* Edit Button — con el mandato terminado, sólo lo del inmueble */}
+            <Button
+              hideArrow
+              onClick={onEdit}
+              disabled={terminada && !consignacion.propertyId}
+              title={terminada ? t('inmobiliaria.consignaciones.header.terminada.editarAyuda') : undefined}
+              data-testid="header-editar"
+            >
               <PencilSimple className="w-4 h-4" />
-              {t('inmobiliaria.consignaciones.header.edit')}
+              {terminada
+                ? t('inmobiliaria.consignaciones.header.terminada.editar')
+                : t('inmobiliaria.consignaciones.header.edit')}
             </Button>
 
             {/* View Portal Button */}
@@ -314,62 +389,88 @@ export function ConsignacionHeader({
               variant="secondary"
               hideArrow
               onClick={onViewPortal}
-              disabled={!canViewPortal}
-              title={canViewPortal ? undefined : t('inmobiliaria.consignaciones.header.viewOnPortalUnavailable')}
+              disabled={!canViewPortal || terminada}
+              title={
+                terminada
+                  ? t('inmobiliaria.consignaciones.header.terminada.viewOnPortal')
+                  : canViewPortal
+                    ? undefined
+                    : t('inmobiliaria.consignaciones.header.viewOnPortalUnavailable')
+              }
             >
               <Eye className="w-4 h-4" />
               {t('inmobiliaria.consignaciones.header.viewOnPortal')}
               <ArrowSquareOut className="w-4 h-4" />
             </Button>
 
-            {/* Status Dropdown */}
-            <DropdownList>
-              <DropdownListTrigger asChild>
-                <Button variant="secondary" hideArrow>
-                  {t('inmobiliaria.consignaciones.header.changeStatus')}
-                  <CaretDown className="w-4 h-4" />
-                </Button>
-              </DropdownListTrigger>
-              <DropdownListContent align="start" className="w-48">
-                {(Object.entries(AVAILABILITY_STYLES) as [PropertyAvailability, typeof AVAILABILITY_STYLES[PropertyAvailability]][]).map(([key, style]) => {
-                  const Icon = style.icon;
-                  return (
-                    <DropdownListItem
-                      key={key}
-                      onSelect={() => onChangeStatus?.(key)}
-                      className={cn(consignacion.availability === key && 'bg-surface-muted dark:bg-ink')}
-                    >
-                      <Icon className={cn('w-4 h-4', style.text)} />
-                      <span className="text-fg dark:text-fg-subtle">{t(style.labelKey)}</span>
-                      {consignacion.availability === key && (
-                        <CheckCircle className="w-4 h-4 ml-auto text-primary" />
-                      )}
-                    </DropdownListItem>
-                  );
-                })}
-              </DropdownListContent>
-            </DropdownList>
+            {terminada ? (
+              // La salida correcta. El wizard «existente» sólo lista inmuebles
+              // SIN mandato y `agencyId + propertyId` es único: hoy no hay un
+              // flujo que reabra ESTE inmueble; el enlace lleva a Nueva
+              // consignación y el reporte lo deja dicho.
+              <Button
+                variant="secondary"
+                hideArrow
+                asChild
+                title={t('inmobiliaria.consignaciones.header.terminada.nuevaConsignacionAyuda')}
+              >
+                <Link href="/panel/inmobiliaria/inmuebles/nuevo?origen=existente" data-testid="header-nueva-consignacion">
+                  <Plus className="w-4 h-4" />
+                  {t('inmobiliaria.consignaciones.header.terminada.nuevaConsignacion')}
+                </Link>
+              </Button>
+            ) : (
+              <>
+                {/* Status Dropdown */}
+                <DropdownList>
+                  <DropdownListTrigger asChild>
+                    <Button variant="secondary" hideArrow>
+                      {t('inmobiliaria.consignaciones.header.changeStatus')}
+                      <CaretDown className="w-4 h-4" />
+                    </Button>
+                  </DropdownListTrigger>
+                  <DropdownListContent align="start" className="w-48">
+                    {(Object.entries(AVAILABILITY_STYLES) as [PropertyAvailability, typeof AVAILABILITY_STYLES[PropertyAvailability]][]).map(([key, style]) => {
+                      const Icon = style.icon;
+                      return (
+                        <DropdownListItem
+                          key={key}
+                          onSelect={() => onChangeStatus?.(key)}
+                          className={cn(consignacion.availability === key && 'bg-surface-muted dark:bg-ink')}
+                        >
+                          <Icon className={cn('w-4 h-4', style.text)} />
+                          <span className="text-fg dark:text-fg-subtle">{t(style.labelKey)}</span>
+                          {consignacion.availability === key && (
+                            <CheckCircle className="w-4 h-4 ml-auto text-primary" />
+                          )}
+                        </DropdownListItem>
+                      );
+                    })}
+                  </DropdownListContent>
+                </DropdownList>
 
-            {/* More Actions Menu */}
-            <DropdownList>
-              <DropdownListTrigger asChild>
-                <IconButton
-                  variant="outline"
-                  aria-label={t('inmobiliaria.consignaciones.header.moreActions')}
-                  className="ml-auto"
-                  icon={<DotsThree className="w-5 h-5" weight="bold" />}
-                />
-              </DropdownListTrigger>
-              <DropdownListContent align="end" className="w-48">
-                <DropdownListItem
-                  onSelect={() => onTerminate?.()}
-                  className="text-danger focus:text-danger"
-                >
-                  <XCircle className="w-4 h-4" />
-                  {t('inmobiliaria.consignaciones.header.terminateConsignment')}
-                </DropdownListItem>
-              </DropdownListContent>
-            </DropdownList>
+                {/* More Actions Menu */}
+                <DropdownList>
+                  <DropdownListTrigger asChild>
+                    <IconButton
+                      variant="outline"
+                      aria-label={t('inmobiliaria.consignaciones.header.moreActions')}
+                      className="ml-auto"
+                      icon={<DotsThree className="w-5 h-5" weight="bold" />}
+                    />
+                  </DropdownListTrigger>
+                  <DropdownListContent align="end" className="w-48">
+                    <DropdownListItem
+                      onSelect={() => onTerminate?.()}
+                      className="text-danger focus:text-danger"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      {t('inmobiliaria.consignaciones.header.terminateConsignment')}
+                    </DropdownListItem>
+                  </DropdownListContent>
+                </DropdownList>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -19,6 +19,12 @@ vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
 vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children?: React.ReactNode }) => children,
 }));
+vi.mock('@/lib/hooks/usePermissions', () => ({
+  usePermissions: () => ({ canAccess: () => true, isLoading: false }),
+}));
+vi.mock('@/components/inmobiliaria/NuevoLeadDialog', () => ({
+  NuevoLeadDialog: () => null,
+}));
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
   usePipelineItems: () => ({ pipelineItems: datos.items, isLoading: false, refetch: vi.fn() }),
   useAgentes: () => ({ agentes: [] }),

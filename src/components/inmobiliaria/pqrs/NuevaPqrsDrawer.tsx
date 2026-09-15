@@ -3,9 +3,10 @@
 /**
  * «Nueva solicitud» — radicar una PQRS a mano desde el panel.
  *
- * Pega a `POST /inmobiliaria/pqrs`. El inmueble y el responsable son
- * opcionales: una queja de un tercero no tiene inmueble, y asignar puede
- * esperar al triage.
+ * Pega a `POST /inmobiliaria/pqrs`. El inmueble es opcional (una queja de un
+ * tercero no tiene inmueble); el RESPONSABLE no: decisión de negocio de Nico
+ * del 2026-09-15, una PQRS no puede quedar sin quien responda. Viene
+ * preelegida la persona que está radicando, que es quien la tiene en la mano.
  *
  * Nico (2026-09-08): quien la presenta se ELIGE de la lista cuando la hay
  * (inquilinos o propietarios, con buscador); un tercero se escribe. El asunto
@@ -27,6 +28,7 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
 import { etiquetaDeInmueble } from '@/components/contratos/VincularInmueble'
 import { useAgentes, useConsignaciones } from '@/lib/hooks/useInmobiliaria'
+import { useAuth } from '@/lib/auth'
 import { ApiError } from '@/lib/api/client'
 import { pqrsApi } from '@/lib/api/pqrs-agencia.service'
 import { inquilinosApi } from '@/lib/api/inquilinos.service'
@@ -88,6 +90,7 @@ export function opcionDePersona(p: PersonaElegible): ComboboxOption {
 export function loQueFalta(errores: Record<string, string>, solicitante: PqrsSolicitante): string | null {
   const partes: string[] = []
   if (errores.solicitanteNombre) partes.push(solicitante === 'TERCERO' ? 'el nombre' : 'quién la presenta')
+  if (errores.asignadoAUserId) partes.push('quién responde')
   if (errores.asunto) partes.push('el asunto')
   if (errores.descripcion) partes.push('acortar la descripción')
   if (partes.length === 0) return null
@@ -102,6 +105,7 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
 
   const { consignaciones } = useConsignaciones()
   const { agentes } = useAgentes()
+  const { user } = useAuth()
 
   // Las listas se leen al abrir: inquilinos y propietarios de la agencia. Si
   // una viene vacía, ese tipo se escribe a mano, sin lista.
@@ -153,7 +157,19 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
   }, [])
   const tocar = (campo: string) => setTocado((t) => ({ ...t, [campo]: true }))
 
-  const errores = useMemo(() => validarPqrs(form), [form])
+  // El valor es el id de USUARIO, no el de miembro: es lo que guarda el back.
+  const opcionesAgente = useMemo(
+    () =>
+      agentes
+        .filter((a): a is typeof a & { userId: string } => Boolean(a.userId))
+        .map((a) => ({ value: a.userId, label: a.name })),
+    [agentes],
+  )
+
+  const errores = useMemo(
+    () => validarPqrs(form, opcionesAgente.length > 0),
+    [form, opcionesAgente.length],
+  )
   const falta = loQueFalta(errores, form.solicitanteTipo)
   const valido = !falta
 
@@ -187,14 +203,15 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
     () => consignaciones.map((c) => ({ value: c.id, label: etiquetaDeInmueble(c) })),
     [consignaciones],
   )
-  // El valor es el id de USUARIO, no el de miembro: es lo que guarda el back.
-  const opcionesAgente = useMemo(
-    () =>
-      agentes
-        .filter((a): a is typeof a & { userId: string } => Boolean(a.userId))
-        .map((a) => ({ value: a.userId, label: a.name })),
-    [agentes],
-  )
+  // Responsable por defecto: quien está radicando. Es la lectura honesta de
+  // la decisión de Nico —«no puede quedar sin responsable»— sin obligar a
+  // elegir en la lista cada vez; se cambia con un clic. Sólo al abrir y sólo
+  // si no hay nadie elegido: no pisa lo que la persona ya eligió.
+  useEffect(() => {
+    if (!open || form.asignadoAUserId || !user?.id) return
+    if (!opcionesAgente.some((o) => o.value === user.id)) return
+    setForm((f) => (f.asignadoAUserId ? f : { ...f, asignadoAUserId: user.id }))
+  }, [open, form.asignadoAUserId, opcionesAgente, user?.id])
 
   async function radicar(e: React.FormEvent) {
     e.preventDefault()
@@ -334,9 +351,7 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="pqrs-asignado">
-                  Asignar a <span className="text-fg-muted font-normal">(opcional)</span>
-                </Label>
+                <Label htmlFor="pqrs-asignado">Responsable</Label>
                 <Combobox
                   data-testid="pqrs-asignado"
                   options={opcionesAgente}
@@ -347,6 +362,13 @@ export function NuevaPqrsDrawer({ open, onOpenChange, onCreated }: Props) {
                   disabled={opcionesAgente.length === 0}
                   contentClassName="z-[400]"
                 />
+                {/* Quién responde no es un detalle administrativo: es contra
+                    quién corre el reloj de los 15 días hábiles de la Ley 1755. */}
+                <p className="text-caption text-fg-muted">
+                  {opcionesAgente.length
+                    ? 'Quien responde hasta que se reasigne. El plazo de ley corre para esta persona.'
+                    : 'Todavía no hay agentes en la lista: responderá quien la radique.'}
+                </p>
               </div>
             </div>
 

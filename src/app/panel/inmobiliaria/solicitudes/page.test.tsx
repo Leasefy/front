@@ -10,6 +10,8 @@
  */
 
 import * as React from 'react'
+import { filtrarPqrs, FILTROS_DE_PQRS_VACIOS } from './page'
+import type { Pqrs } from '@/lib/api/pqrs-agencia.types'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
@@ -327,5 +329,61 @@ describe('solicitudes — el resumen no afirma ceros que no sabe (S1 · S2 · S3
       'No se pudo actualizar el resumen',
       expect.objectContaining({ description: expect.any(String) }),
     )
+  })
+})
+
+/**
+ * S4 de la auditoría del 13-09: era la única lista del panel sin buscador ni
+ * filtro, y `listar()` trae TODAS las solicitudes de la agencia.
+ */
+describe('filtrarPqrs', () => {
+  const fila = (p: Partial<Pqrs> & { id: string }) =>
+    ({
+      numero: 1,
+      radicado: 'PQRS-0001',
+      tipo: 'RECLAMO',
+      solicitanteTipo: 'INQUILINO',
+      solicitanteNombre: 'Camila Restrepo',
+      solicitanteContacto: null,
+      asunto: 'Gotera en el baño',
+      descripcion: null,
+      consignacionId: null,
+      inmuebleLabel: 'Apto 402 · Cra 43',
+      asignadoAUserId: 'u-1',
+      asignadoANombre: 'Ana Ruiz',
+      asignadoDesde: null,
+      estado: 'ASIGNADA',
+      slaVenceAt: '2026-09-24T15:00:00Z',
+      resueltaAt: null,
+      cerradaAt: null,
+      createdAt: '2026-09-03T15:00:00Z',
+      updatedAt: '2026-09-03T15:00:00Z',
+      ...p,
+    }) as Pqrs
+
+  const lista = [
+    fila({ id: 'a' }),
+    fila({ id: 'b', radicado: 'PQRS-0002', solicitanteNombre: 'Jorge Pérez', asunto: 'Ruido', estado: 'CERRADA' }),
+  ]
+
+  it('sin filtros devuelve todo, sin copiar nada de más', () => {
+    expect(filtrarPqrs(lista, FILTROS_DE_PQRS_VACIOS)).toHaveLength(2)
+  })
+
+  it('busca por radicado, por quién la puso, por asunto y por inmueble', () => {
+    const solo = (texto: string) =>
+      filtrarPqrs(lista, { ...FILTROS_DE_PQRS_VACIOS, texto }).map((p) => p.id)
+    expect(solo('PQRS-0002')).toEqual(['b'])
+    expect(solo('camila')).toEqual(['a'])
+    expect(solo('ruido')).toEqual(['b'])
+    expect(solo('Apto 402')).toEqual(['a', 'b'])
+    expect(solo('   ')).toEqual(['a', 'b'])
+  })
+
+  it('el filtro de estado y el texto se aplican juntos', () => {
+    expect(
+      filtrarPqrs(lista, { texto: 'jorge', estado: 'ASIGNADA' }).map((p) => p.id),
+    ).toEqual([])
+    expect(filtrarPqrs(lista, { texto: '', estado: 'CERRADA' }).map((p) => p.id)).toEqual(['b'])
   })
 })

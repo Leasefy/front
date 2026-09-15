@@ -497,6 +497,26 @@ describe('<AprobacionPage> — paso 2 desde la ficha', () => {
     expect((container.querySelector('[data-testid="select-ciudad"]') as HTMLSelectElement).value).toBe('Bello')
   })
 
+  it('el botón queda apagado hasta autorizar el tratamiento de datos', () => {
+    act(() => {
+      root.render(<AprobacionPage />)
+    })
+    const boton = container.querySelector('button[type="submit"]') as HTMLButtonElement
+    expect(boton.disabled).toBe(true)
+
+    act(() => {
+      ;(container.querySelector('#consent') as HTMLButtonElement).click()
+    })
+    expect(boton.disabled).toBe(false)
+  })
+
+  it('desde la ficha la ciudad es «Ciudad del inmueble»', () => {
+    act(() => {
+      root.render(<AprobacionPage />)
+    })
+    expect(container.querySelector('label[for="ciudad"]')?.textContent).toBe('Ciudad del inmueble')
+  })
+
   it('sin venir de la ficha no muestra los pasos ni un inmueble', () => {
     window.history.replaceState(null, '', '/aprobacion')
     act(() => {

@@ -5,7 +5,7 @@
  * `/aprobacion` está en modo "pagando" (pestaña de Wompi abierta en otra
  * pestaña, esta pantalla poleando):
  *  · sin_estudio (con y sin `popupBlocked`) → esperando confirmación de pago
- *  · en_proceso                              → pago confirmado, revisa el correo
+ *  · en_proceso                              → pago confirmado, valida por WhatsApp
  *  · aprobado / rechazado                    → estudio listo, ver resultado
  *  · expirado / error                        → salida para reintentar
  *
@@ -106,13 +106,12 @@ describe('<EstadoPagoAprobacion>', () => {
     expect(refetchMock).toHaveBeenCalledTimes(1)
   })
 
-  it('en_proceso: pago confirmado, con CTA a /inquilino/aprobacion', () => {
+  it('en_proceso: pago confirmado y sigue la validación de identidad por WhatsApp', () => {
     mockHook('en_proceso')
     render()
 
     expect(container.textContent).toContain('Pago confirmado')
-    const cta = container.querySelector('a[href="/inquilino/aprobacion"]')
-    expect(cta).not.toBeNull()
+    expect(container.querySelector('[data-testid="validacion-whatsapp"]')).not.toBeNull()
   })
 
   it('aprobado: estudio listo, con CTA a /inquilino/aprobacion', () => {

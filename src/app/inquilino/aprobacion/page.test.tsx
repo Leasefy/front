@@ -222,26 +222,28 @@ describe('rechazado — tiene salidas, no es un callejón', () => {
 })
 
 describe('en proceso', () => {
-  it('consultando: no lo manda a irse ni le promete un correo', () => {
+  it('antes del WhatsApp: dice que prepara la validación', () => {
     montar({
       order: { status: 'STUDY_STARTED', paymentStatus: 'APPROVED', expiresAt: null },
       evaluation: { status: 'started', result: null },
     })
     render()
     const t = texto()
-    expect(t).toContain('Estamos consultando a las aseguradoras')
-    expect(t).not.toContain('puedes cerrar esta página')
+    expect(t).toContain('Estamos preparando tu validación')
+    expect(t).not.toContain('Valida tu identidad por WhatsApp')
   })
 
-  it('esperando autorización: lo dice distinto de "consultando"', () => {
+  it('esperando la validación: pide validar por WhatsApp, con «Ya la validé» y el reenvío', () => {
     montar({
       order: { status: 'PAID', paymentStatus: 'APPROVED', expiresAt: null },
       evaluation: { status: 'awaiting_authorization', result: null },
     })
     render()
     const t = texto()
-    expect(t).toContain('Esperamos tu autorización')
-    expect(t).not.toContain('Estamos consultando a las aseguradoras')
+    expect(t).toContain('Valida tu identidad por WhatsApp')
+    expect(t).toContain('Ya la validé, continuar')
+    expect(t).toContain('Reenviar la validación')
+    expect(t).not.toContain('Estamos preparando tu validación')
   })
 
   it('muestra la ventana de la orden cuando viene expiresAt', () => {

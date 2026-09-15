@@ -279,6 +279,13 @@ export default function AprobacionPage() {
           pasos en su propia franja, FUERA del formulario, y debajo una sola
           tarjeta con cabecera y el formulario en grupos de dos columnas. */}
       <main id="main-content" className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8 md:py-12">
+        {/* La franja de pasos sigue arriba también mientras paga y valida: es
+            el mismo paso 2, no otra pantalla. */}
+        {desdeLaFicha && (
+          <section data-testid="paso-2-de-3" className="rounded-2xl border border-border bg-surface px-5 py-4">
+            <PasosDelArriendo actual={2} />
+          </section>
+        )}
         {resolviendoEstudio ? (
           // Nunca el formulario mientras no se sepa si esta persona ya tiene
           // estudio: mostrarlo y sacarlo un instante después es peor que
@@ -292,23 +299,15 @@ export default function AprobacionPage() {
         ) : pagando ? (
           // Reemplaza el form: el pago se abrió en otra pestaña, esta se
           // queda poleando el back en vez de navegar.
-          <Card>
-            <CardContent className="pt-6">
-              <EstadoPagoAprobacion
-                paymentUrl={paymentUrl}
-                popupBlocked={popupBlocked}
-                onReintentar={() => setPagando(false)}
-              />
-            </CardContent>
-          </Card>
+          <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm md:p-8">
+            <EstadoPagoAprobacion
+              paymentUrl={paymentUrl}
+              popupBlocked={popupBlocked}
+              onReintentar={() => setPagando(false)}
+            />
+          </section>
         ) : (
           <>
-            {desdeLaFicha && (
-              <section data-testid="paso-2-de-3" className="rounded-2xl border border-border bg-surface px-5 py-4">
-                <PasosDelArriendo actual={2} />
-              </section>
-            )}
-
             <section
               aria-labelledby="estudio-titulo"
               className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
@@ -438,8 +437,13 @@ export default function AprobacionPage() {
                       : 'Lo que quieres arrendar. Lo usamos para el estudio.'
                   }
                 >
-                  {/* Ya no es "del inmueble": puede no haber inmueble todavía. */}
-                  <Field id="ciudad" label="Ciudad donde quieres vivir" error={errors.ciudad}>
+                  {/* Desde la ficha es la del inmueble; sin ficha, la ciudad donde busca.
+                      «Ciudad donde quieres vivir» no era la pregunta (Nico, 15-09). */}
+                  <Field
+                    id="ciudad"
+                    label={desdeLaFicha ? 'Ciudad del inmueble' : '¿En qué ciudad buscas arriendo?'}
+                    error={errors.ciudad}
+                  >
                     <Select value={fields.ciudad} onValueChange={(v) => v && set('ciudad', v)}>
                       <SelectTrigger id="ciudad">
                         <SelectValue placeholder="Selecciona una ciudad" />
@@ -511,14 +515,17 @@ export default function AprobacionPage() {
                   ) : (
                     <span aria-hidden="true" />
                   )}
+                  {/* Apagado hasta autorizar el tratamiento de datos: sin eso no hay
+                      consulta posible, y un botón que invita a algo imposible sólo
+                      devuelve un error (Nico, 15-09). */}
                   <Button
                     type="submit"
                     size="lg"
                     className="w-full sm:w-auto"
                     isLoading={submitting}
-                    disabled={submitting}
+                    disabled={submitting || !fields.consent}
                   >
-                    Consultar mi aprobación
+                    {submitting ? 'Preparando tu pago…' : 'Consultar mi aprobación'}
                   </Button>
                 </div>
               </form>

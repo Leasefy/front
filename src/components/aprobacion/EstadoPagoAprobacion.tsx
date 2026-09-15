@@ -24,13 +24,13 @@ import {
   ArrowSquareOut,
   CheckCircle,
   Clock,
-  EnvelopeSimple,
   WarningCircle,
 } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui'
 import { usePreScoringCurrent } from '@/lib/hooks/use-prescoring-current'
+import { ValidacionPorWhatsapp } from './ValidacionPorWhatsapp'
 
 export interface EstadoPagoAprobacionProps {
   /** Link de pago hosteado por Wompi, para el link manual y el botón de reabrir. */
@@ -46,7 +46,7 @@ export function EstadoPagoAprobacion({
   popupBlocked,
   onReintentar,
 }: EstadoPagoAprobacionProps) {
-  const { estado, isLoading, refetch } = usePreScoringCurrent()
+  const { current, estado, isLoading, refetch } = usePreScoringCurrent()
 
   // El hook ya polea solo, pero al volver de la pestaña de Wompi conviene
   // revalidar de inmediato en vez de esperar el próximo tick del intervalo.
@@ -104,17 +104,15 @@ export function EstadoPagoAprobacion({
   }
 
   if (estado === 'en_proceso') {
+    // Pagó: ahora valida su identidad por WhatsApp con Fianly (Nico, 15-09).
+    // La espera, «Ya la validé» y el reenvío viven en `ValidacionPorWhatsapp`,
+    // la misma que encuentra en «Mi aprobación» si cierra y vuelve.
     return (
-      <Estado
-        icon={<EnvelopeSimple className="w-6 h-6 text-primary" aria-hidden="true" />}
-        tono="primary"
-        titulo="Pago confirmado"
-        descripcion="Te enviamos un correo para autorizar y completar tu estudio — tienes 48 horas."
-      >
-        <Button asChild className="w-full">
-          <Link href="/inquilino/aprobacion">Ver mi aprobación</Link>
-        </Button>
-      </Estado>
+      <ValidacionPorWhatsapp
+        pagoConfirmado
+        evaluationStatus={current?.evaluation?.status ?? null}
+        onActualizar={refetch}
+      />
     )
   }
 
@@ -131,6 +129,9 @@ export function EstadoPagoAprobacion({
         {isLoading
           ? 'Un momento, estamos consultando el estado de tu pago.'
           : 'Completa el pago en la pestaña que abrimos. Esta pantalla se actualiza sola.'}
+      </p>
+      <p className="text-caption text-fg-muted leading-relaxed max-w-sm">
+        Después del pago te llega un WhatsApp de Fianly para validar tu identidad.
       </p>
       {paymentUrl && (
         <a

@@ -444,9 +444,11 @@ function PortafolioContent() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {/* Captura con IA — venía de «Inmuebles · catálogo». Apagada a pedido
-              de Nico (2026-09-02: «eso no sirve ahora»). La ruta
-              /inmuebles/captura sigue existiendo; cuando la captura esté a la
-              altura, se vuelve a mostrar acá.
+              de Nico (2026-09-02: «eso no sirve ahora»). Desde el 15-09 la ruta
+              /inmuebles/captura REDIRIGE acá (W6): estaba viva sin un solo
+              enlace que llegara a ella. El componente PropertyIACapture sigue
+              entero; cuando la captura esté a la altura, se descomenta este
+              botón y se vuelve a montar la pantalla.
           <Button variant="secondary" hideArrow onClick={handleCaptura}>
             <Sparkle className="w-4 h-4 text-primary" weight="fill" />
             {t('inmobiliaria.inmuebles.acciones.captura')}

@@ -27,7 +27,7 @@ import { etiquetaDeInmueble } from '@/components/contratos/VincularInmueble';
 import { aFechaIso, fechaLocal, hoyLocal } from '@/lib/fechas-locales';
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria';
 import { ApiError } from '@/lib/api/client';
-import { agendaApi } from '@/lib/api/agenda.service';
+import { agendaApi, type TipoDeVisita } from '@/lib/api/agenda.service';
 
 /** Cada media hora, de 6:00 a 21:00: lo que se agenda de verdad. */
 export const HORAS: string[] = Array.from({ length: 31 }, (_, i) => {
@@ -45,14 +45,15 @@ export function estaArrendado(c: { arrendado?: boolean | null; availability?: st
 }
 
 /** Dónde se pinta el motivo de un rechazo: al lado del campo que lo causó. */
-export type CampoDelRechazo = 'inmueble' | 'hora' | 'general';
+export type CampoDelRechazo = 'inmueble' | 'hora' | 'modalidad' | 'general';
 
 /**
  * Traduce el error del back a un lugar en el formulario.
  *
  * El back responde 409 con `code` (`agenda.service.ts#createCita`):
  * `HORARIO_OCUPADO` va al lado de la hora, `INMUEBLE_ARRENDADO` al lado del
- * inmueble. Cualquier otro 400/409 trae su propio motivo en castellano y va
+ * inmueble, `MODALIDAD_NO_ACEPTADA` al lado del selector de modalidad.
+ * Cualquier otro 400/409 trae su propio motivo en castellano y va
  * arriba del pie. Un 500 o un corte de red no explican nada: ahí va el texto
  * genérico, pero DENTRO del modal, para no perder lo que ya se llenó.
  * `null` = no mostrar nada (401: el cliente ya está cerrando la sesión).
@@ -68,6 +69,10 @@ export function rechazoDeCita(
   const mensaje = explica ? err.message : generico;
   if (err.status === 409 && code === 'HORARIO_OCUPADO') return { campo: 'hora', mensaje };
   if (err.status === 409 && code === 'INMUEBLE_ARRENDADO') return { campo: 'inmueble', mensaje };
+  // A5: el inmueble no acepta esa modalidad. Va al lado del selector, que es
+  // el campo que hay que cambiar, no en un aviso general arriba del pie.
+  if (err.status === 409 && code === 'MODALIDAD_NO_ACEPTADA')
+    return { campo: 'modalidad', mensaje };
   return { campo: 'general', mensaje };
 }
 
@@ -120,7 +125,18 @@ export function PedirCitaModal({
   const [date, setDate] = useState('');
   const [startTime, setStartTime] = useState('10:00');
   const [endTime, setEndTime] = useState('10:30');
-  const [visitType, setVisitType] = useState<'IN_PERSON' | 'VIRTUAL'>('IN_PERSON');
+  const [visitType, setVisitType] = useState<TipoDeVisita>('IN_PERSON');
+  /**
+   * A5 — qué modalidades acepta ESTE inmueble.
+   *
+   * `null` = todavía no lo sabemos (no hay inmueble elegido, está cargando, o
+   * la consulta falló): ahí se ofrecen las dos, que es lo que se hacía siempre.
+   * Una lectura que no respondió no puede quitarle opciones a nadie.
+   * `[]` = el inmueble no tiene modalidades configuradas: también se ofrecen
+   * las dos (el back no bloquea ese caso) y se dice que conviene cargar sus
+   * horarios. Una lista con contenido es la verdad: sólo esas se ofrecen.
+   */
+  const [modalidades, setModalidades] = useState<TipoDeVisita[] | null>(null);
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [rechazo, setRechazo] = useState<{ campo: CampoDelRechazo; mensaje: string } | null>(null);
@@ -150,6 +166,45 @@ export function PedirCitaModal({
       setRechazo(null);
     }
   }, [isOpen, presetPropertyId]);
+
+  // Se consulta al elegir el inmueble, no al abrir: el combo cambia y cada
+  // inmueble tiene su propia respuesta. Un fallo NO se muestra: dejaría un
+  // error rojo sobre algo que la persona no pidió, y el back sigue teniendo la
+  // última palabra si la modalidad no corresponde.
+  useEffect(() => {
+    if (!isOpen || !propertyId) {
+      setModalidades(null);
+      return;
+    }
+    let vigente = true;
+    setModalidades(null);
+    agendaApi
+      .getDisponibilidad(propertyId)
+      .then((d) => {
+        if (vigente) setModalidades(d.visitTypes ?? []);
+      })
+      .catch(() => {
+        if (vigente) setModalidades(null);
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [isOpen, propertyId]);
+
+  /** Las que se ofrecen de verdad. Sin respuesta o sin configurar: las dos. */
+  const modalidadesOfrecidas = useMemo<TipoDeVisita[]>(
+    () =>
+      modalidades && modalidades.length > 0 ? modalidades : ['IN_PERSON', 'VIRTUAL'],
+    [modalidades],
+  );
+
+  // Si la elegida dejó de estar en la lista (se cambió de inmueble), se pasa a
+  // la primera aceptada en vez de mandar una que el back va a rechazar.
+  useEffect(() => {
+    if (!modalidadesOfrecidas.includes(visitType)) {
+      setVisitType(modalidadesOfrecidas[0]);
+    }
+  }, [modalidadesOfrecidas, visitType]);
 
   const canSubmit =
     !submitting &&
@@ -341,15 +396,26 @@ export function PedirCitaModal({
             <label className="mb-1.5 block text-caption text-muted-foreground">
               {t(k('citaType'))}
             </label>
-            <Select value={visitType} onValueChange={(v) => setVisitType(v as 'IN_PERSON' | 'VIRTUAL')}>
-              <SelectTrigger className="w-full">
+            <Select value={visitType} onValueChange={(v) => setVisitType(v as TipoDeVisita)}>
+              <SelectTrigger className="w-full" data-testid="cita-modalidad">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="IN_PERSON">{t(k('citaTypeInPerson'))}</SelectItem>
-                <SelectItem value="VIRTUAL">{t(k('citaTypeVirtual'))}</SelectItem>
+                {modalidadesOfrecidas.includes('IN_PERSON') && (
+                  <SelectItem value="IN_PERSON">{t(k('citaTypeInPerson'))}</SelectItem>
+                )}
+                {modalidadesOfrecidas.includes('VIRTUAL') && (
+                  <SelectItem value="VIRTUAL">{t(k('citaTypeVirtual'))}</SelectItem>
+                )}
               </SelectContent>
             </Select>
+            {avisoDe('modalidad')}
+            {modalidades?.length === 0 && (
+              <p className="mt-1.5 text-caption text-fg-muted">
+                Este inmueble todavía no tiene horarios de visita cargados: se ofrecen las
+                dos modalidades, pero conviene configurarlos en su ficha.
+              </p>
+            )}
           </div>
 
           {/* Notes */}

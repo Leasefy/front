@@ -234,6 +234,83 @@ export interface NuevaResolucion {
 
 // ══ Llamadas ════════════════════════════════════════════════════════════════
 
+// ══ Anular una factura emitida: la nota crédito ═════════════════════════════
+//
+// 🔴 DECISIÓN DE NEGOCIO (Nico, 2026-09-15) — CAMBIABLE. Una factura emitida no
+// se borra: lleva un número que la DIAN autorizó. Anular es emitir OTRO
+// documento —la nota crédito— con concepto y motivo obligatorios; quedan los
+// dos. Y cuando no se puede, la pantalla lo DICE en vez de ofrecer el botón.
+// Las reglas están en `back-erp/src/inmobiliaria/facturacion/nota-credito.ts`.
+
+/** `ConceptoDeNotaCredito` en `schema.prisma`. */
+export type ConceptoDeNotaCredito =
+  | 'DEVOLUCION'
+  | 'ANULACION'
+  | 'REBAJA'
+  | 'AJUSTE_DE_PRECIO'
+  | 'OTROS'
+
+/** El nombre del concepto tal como lo lee una persona. */
+export const NOMBRE_DEL_CONCEPTO: Record<ConceptoDeNotaCredito, string> = {
+  DEVOLUCION: 'Devolución del servicio o del valor cobrado',
+  ANULACION: 'Anulación de la factura',
+  REBAJA: 'Rebaja o descuento',
+  AJUSTE_DE_PRECIO: 'Ajuste de precio',
+  OTROS: 'Otro',
+}
+
+export type BloqueoDeNotaCredito =
+  | 'SIN_NUMERO_DIAN'
+  | 'YA_ANULADA'
+  | 'MIGRACION_PENDIENTE'
+
+export interface EstadoDeLaAnulacion {
+  puede: boolean
+  bloqueo: BloqueoDeNotaCredito | null
+  /** Qué decirle a la persona cuando no se puede. */
+  explicacion: string | null
+}
+
+export interface NotaCreditoDeLaFactura {
+  id: string
+  /** `NC-12`: consecutivo PROPIO, no el de las facturas. */
+  numero: string
+  concepto: ConceptoDeNotaCredito
+  motivo: string
+  valorCop: number
+  /** Qué pasó en el libro, o por qué no pasó nada. */
+  notaContable: string | null
+  createdAt: string
+}
+
+export interface FacturaEmitida {
+  id: string
+  numero: number
+  /** Con prefijo (`FE-1042`). `null` = se emitió sin resolución cargada. */
+  numeroDian: string | null
+  destinatario: DestinatarioDeFactura
+  terceroNombre: string
+  terceroDocumento: string | null
+  inmueble: string
+  contractId: string
+  mes: string
+  baseCop: number
+  ivaCop: number
+  retencionesCop: number
+  totalCop: number
+  netoCop: number
+  createdAt: string
+  notaCredito: NotaCreditoDeLaFactura | null
+  anulacion: EstadoDeLaAnulacion
+}
+
+export interface FacturasEmitidasDelMes {
+  mes: string
+  /** `false` = esta base todavía no tiene la tabla de notas crédito. */
+  anulacionDisponible: boolean
+  facturas: FacturaEmitida[]
+}
+
 export const facturacionPorMesService = {
   /** El listado COMPLETO del mes, separado en inquilinos y propietarios. */
   porGenerar: (mes: string) =>
@@ -285,6 +362,29 @@ export const facturacionPorMesService = {
     apiClient.post<ResolucionDeFacturacion>(
       `${BASE}/resolucion/${id}/anular`,
       { motivo },
+    ),
+
+  /** Lo YA emitido del mes, con el estado de su anulación. */
+  emitidas: (mes: string) =>
+    apiClient.get<FacturasEmitidasDelMes>(
+      `${BASE}/emitidas?mes=${encodeURIComponent(mes)}`,
+    ),
+
+  /**
+   * Anula una factura emitiendo una nota crédito.
+   *
+   * 🔴 `concepto` y `motivo` son obligatorios en el back (mínimo 10 caracteres;
+   * sólo espacios es 400). Un 409 trae `code`: `YA_ANULADA`, `SIN_NUMERO_DIAN`
+   * o `MIGRACION_PENDIENTE`, y la pantalla lo lee para decir qué pasó en vez de
+   * un «error» pelado.
+   */
+  emitirNotaCredito: (
+    facturaId: string,
+    datos: { concepto: ConceptoDeNotaCredito; motivo: string },
+  ) =>
+    apiClient.post<{ id: string; numeroDeLaNota: string; valorCop: number }>(
+      `${BASE}/${facturaId}/nota-credito`,
+      { concepto: datos.concepto, motivo: datos.motivo },
     ),
 }
 

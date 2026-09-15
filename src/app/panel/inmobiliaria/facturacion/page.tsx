@@ -34,6 +34,12 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { NuevaFactura } from '@/components/facturacion/NuevaFactura';
+import { FacturasEmitidas } from '@/components/facturacion/FacturasEmitidas';
+import {
+  mesActual,
+  mesesParaElegir,
+  mesLegible,
+} from '@/lib/api/facturacion-por-mes.service';
 import { ResolucionDeFacturacion } from '@/components/facturacion/ResolucionDeFacturacion';
 import type { FacturacionTab } from '@/lib/api/facturacion.types';
 
@@ -93,6 +99,14 @@ function FacturacionContent() {
   const { t } = useI18n();
   const [active, setActive] = useState<PestanaDeFacturacion>('nueva');
   const k = (suffix: string) => `inmobiliaria.facturacion.${suffix}`;
+
+  /*
+   * El mes de los listados de documentos. «Ventas» y «Notas» leen
+   * `GET /facturacion/emitidas?mes=`, que es por mes como todo lo demás de
+   * facturación; las otras dos pestañas todavía no tienen de dónde leer.
+   */
+  const [mes, setMes] = useState(mesActual());
+  const meses = mesesParaElegir();
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -173,7 +187,45 @@ function FacturacionContent() {
             </div>
           </TabsContent>
 
-          {TABS.map((tab) => (
+          {/* 🔴 «Ventas» y «Notas» YA tienen de dónde leer.
+              F4 de la auditoría del 13-09: estas pestañas decían «todavía no
+              tienes facturas de venta» después de emitir 800, porque no había
+              ninguna ruta que listara lo emitido. Ahora existe
+              `GET /facturacion/emitidas`, y con ella la anulación por NOTA
+              CRÉDITO (decisión de negocio de Nico del 15-09: una factura
+              emitida no se borra, se netea con otro documento). «Compras» y
+              «Electrónica» siguen con su vacío honesto: esas sí dependen del
+              motor DIAN. */}
+          {(['ventas', 'notas'] as const).map((clave) => (
+            <TabsContent key={clave} value={clave} className="mt-0">
+              <div className="space-y-4 p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <label
+                    htmlFor="facturacion-mes-emitidas"
+                    className="text-caption text-fg-muted"
+                  >
+                    Mes
+                  </label>
+                  <select
+                    id="facturacion-mes-emitidas"
+                    className="h-9 rounded-md border border-border bg-surface px-3 text-sm"
+                    value={mes}
+                    onChange={(e) => setMes(e.target.value)}
+                    data-testid="facturacion-mes-emitidas"
+                  >
+                    {meses.map((m) => (
+                      <option key={m} value={m}>
+                        {mesLegible(m)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <FacturasEmitidas mes={mes} vista={clave} />
+              </div>
+            </TabsContent>
+          ))}
+
+          {TABS.filter((x) => x.key === 'compras' || x.key === 'electronica').map((tab) => (
             <TabsContent key={tab.key} value={tab.key} className="mt-0">
               <Table>
                 <TableHeader>

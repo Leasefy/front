@@ -35,6 +35,18 @@ vi.mock('@/components/facturacion/NuevaFactura', () => ({
   NuevaFactura: () => <div data-testid="nueva-factura-simulada" />,
 }));
 
+/*
+ * «Ventas» y «Notas» ya listan de verdad (`GET /facturacion/emitidas`) y desde
+ * ahí se anula con nota crédito. Ese comportamiento tiene su propia prueba
+ * (`FacturasEmitidas.test.tsx`); acá se reemplaza por un marcador, igual que
+ * «Nueva factura», porque lo que esta prueba fija es la TARJETA.
+ */
+vi.mock('@/components/facturacion/FacturasEmitidas', () => ({
+  FacturasEmitidas: ({ vista }: { vista: string }) => (
+    <div data-testid={`emitidas-simulada-${vista}`} />
+  ),
+}));
+
 import FacturacionPage from './page';
 
 const K = 'inmobiliaria.facturacion.';
@@ -85,7 +97,11 @@ describe('/panel/inmobiliaria/facturacion', () => {
   });
 
   it('las pestañas viven dentro de la tarjeta de la tabla, antes de la tabla', async () => {
-    await irAVentas();
+    // En «Electrónica», que es la que sigue dibujando la tabla acá dentro.
+    const electronica = qa('[role="tab"]').find(
+      (t) => t.textContent === `${K}tab_electronica`,
+    )!;
+    await activarPestana(electronica);
     const tarjeta = q('[data-testid="facturacion-tarjeta"]');
     expect(tarjeta).not.toBeNull();
 
@@ -111,17 +127,32 @@ describe('/panel/inmobiliaria/facturacion', () => {
   });
 
   it('los encabezados se ven y el vacío va en el cuerpo, en una celda que los abarca', async () => {
-    await irAVentas();
-    expect(qa('thead th')).toHaveLength(9);
+    // Se mira en «Electrónica»: es la que sigue sin listado. «Ventas» y
+    // «Notas» ya leen del back y pintan su propia tabla.
+    const electronica = qa('[role="tab"]').find(
+      (t) => t.textContent === `${K}tab_electronica`,
+    )!;
+    await activarPestana(electronica);
+    expect(qa('thead th')).toHaveLength(7);
 
     const celda = q('tbody td');
     expect(celda).not.toBeNull();
-    expect(celda!.getAttribute('colspan')).toBe('9');
+    expect(celda!.getAttribute('colspan')).toBe('7');
 
     const vacio = celda!.querySelector('[data-testid="sin-datos"]');
     expect(vacio).not.toBeNull();
     // La descripción de la pestaña vive en el vacío, no en una franja aparte.
-    expect(vacio!.textContent).toContain(`${K}desc_ventas`);
+    expect(vacio!.textContent).toContain(`${K}desc_electronica`);
+  });
+
+  it('🔴 «Ventas» y «Notas» listan lo emitido, con su selector de mes', async () => {
+    await irAVentas();
+    expect(q('[data-testid="emitidas-simulada-ventas"]')).not.toBeNull();
+    expect(q('[data-testid="facturacion-mes-emitidas"]')).not.toBeNull();
+
+    const notas = qa('[role="tab"]').find((t) => t.textContent === `${K}tab_notas`)!;
+    await activarPestana(notas);
+    expect(q('[data-testid="emitidas-simulada-notas"]')).not.toBeNull();
   });
 
   it('cambiar de pestaña cambia las columnas y el vacío', async () => {
@@ -146,11 +177,12 @@ describe('/panel/inmobiliaria/facturacion', () => {
     // botón que hace algo, no uno decorativo.
     const botones = qa('button');
     expect(botones.filter((b) => b.getAttribute('role') === 'tab')).toHaveLength(6);
+    // En «Ventas» ya no hay botón suelto: la pestaña lista de verdad.
     expect(
       botones
         .filter((b) => b.getAttribute('role') !== 'tab')
         .map((b) => b.getAttribute('data-testid')),
-    ).toEqual(['facturacion-ver-emitidas-ventas']);
+    ).toEqual([]);
 
     expect(texto).toContain(`${K}m2BannerTitle`);
   });
@@ -167,7 +199,7 @@ describe('/panel/inmobiliaria/facturacion', () => {
       await activarPestana(pestana);
     }
 
-    it.each(['ventas', 'electronica', 'notas'])(
+    it.each(['electronica'])(
       '🔴 %s: dice que el listado llega con el motor DIAN',
       async (tab) => {
         await ir(tab);
@@ -179,9 +211,9 @@ describe('/panel/inmobiliaria/facturacion', () => {
     );
 
     it('«Ver las facturas emitidas» lleva a «Nueva factura», donde sí están', async () => {
-      await irAVentas();
+      await ir('electronica');
       await act(async () => {
-        (q('[data-testid="facturacion-ver-emitidas-ventas"]') as HTMLButtonElement).click();
+        (q('[data-testid="facturacion-ver-emitidas-electronica"]') as HTMLButtonElement).click();
       });
       expect(q('[data-testid="nueva-factura-simulada"]')).not.toBeNull();
     });

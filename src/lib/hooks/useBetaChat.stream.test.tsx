@@ -281,6 +281,30 @@ describe('un turno que falla (B1·B2·B3)', () => {
     s.soltar();
   });
 
+  it('🔴 sin créditos ANUNCIADO dentro del stream: el panel dice el motivo, no «no pude conectarme»', async () => {
+    // B2 de la auditoría del 13-09, la mitad que faltaba. Acá el micro ya
+    // contestó 200 (es un stream) y el saldo se acaba a mitad de camino: el
+    // único lugar donde puede viajar el 402 es el evento `error`. Antes ese
+    // evento perdía el código y la burbuja decía «no pude conectarme».
+    streamChatTurn.mockImplementation(async (args: { handlers: { onError?: (m: string, meta?: { status?: number; code?: string }) => void } }) => {
+      args.handlers.onError?.('La cuenta de IA se quedó sin créditos.', {
+        status: 402,
+        code: 'sin_creditos_ia',
+      });
+    });
+    const s = montar();
+    act(() => {
+      s.actual.sendMessage('¿cuánto me deben?');
+    });
+
+    await esperarA(() => s.actual.messages.some((m) => m.role === 'assistant' && m.status === 'error'));
+    const burbuja = s.actual.messages.find((m) => m.role === 'assistant')!;
+    expect(burbuja.content).toContain('sin créditos de IA');
+    // Y no reintenta por POST: el saldo no cambia entre un pedido y otro.
+    expect(postChatTurn).not.toHaveBeenCalled();
+    s.soltar();
+  });
+
   it('un 402 del stream no insiste por el POST: el saldo no cambia entre un pedido y otro', async () => {
     streamChatTurn.mockRejectedValue(new ApiError(402, 'sin saldo'));
     const s = montar();

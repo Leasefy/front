@@ -164,10 +164,27 @@ describe('handleSSEEvent', () => {
       onToolStep: (p) => calls.push(`tool:${p.agent}:${p.tool}:${p.label}`),
       onPendingApproval: (a) => calls.push(`approval:${a.id}:${a.options.length}`),
       onDone: (f) => calls.push(`done:${f.dispatches.length}`),
-      onError: (m) => calls.push(`error:${m}`),
+      onError: (m, meta) => calls.push(`error:${m}:${meta?.status ?? '-'}:${meta?.code ?? '-'}`),
     };
     return { calls, handlers };
   }
+
+  it('🔴 el error del stream conserva su código: sin créditos no es «no pude conectarme»', () => {
+    // B2 de la auditoría del 13-09. La respuesta HTTP del stream ya salió con
+    // 200, así que el único lugar donde puede viajar el 402 es este evento.
+    const { calls, handlers } = collect();
+    handleSSEEvent(
+      'event: error\ndata: {"error":"La cuenta de IA se quedó sin créditos.","status":402,"code":"sin_creditos_ia"}',
+      handlers,
+    );
+    expect(calls).toEqual(['error:La cuenta de IA se quedó sin créditos.:402:sin_creditos_ia']);
+  });
+
+  it('un error sin código sigue llegando, sin inventarle uno', () => {
+    const { calls, handlers } = collect();
+    handleSSEEvent('event: error\ndata: {"error":"boom"}', handlers);
+    expect(calls).toEqual(['error:boom:-:-']);
+  });
 
   it('dispatches message with text + actions', () => {
     const { calls, handlers } = collect();
@@ -235,7 +252,7 @@ describe('handleSSEEvent', () => {
     );
     handleSSEEvent('event: error\ndata: {"error":"boom"}', handlers);
     handleSSEEvent('event: message\ndata: {bad json', handlers);
-    expect(calls).toEqual(['done:1', 'error:boom']);
+    expect(calls).toEqual(['done:1', 'error:boom:-:-']);
   });
 });
 

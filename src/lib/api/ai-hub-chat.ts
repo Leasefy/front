@@ -282,7 +282,16 @@ export interface ChatStreamHandlers {
     dispatches: BackendDispatch[];
     generatedAt: string;
   }) => void;
-  onError?: (message: string) => void;
+  /**
+   * Un fallo ANUNCIADO dentro del stream (evento `error`).
+   *
+   * 🔴 `status` y `code` viajan porque la respuesta HTTP ya salió con 200 —es
+   * un stream— así que sin ellos no queda NINGÚN código en ningún lado: el
+   * panel leía cualquier corte como «no pude conectarme», incluida la cuenta
+   * sin saldo, que es la única que se arregla recargando créditos (auditoría
+   * 13-09, caso B2).
+   */
+  onError?: (message: string, meta?: { status?: number; code?: string }) => void;
 }
 
 /**
@@ -404,7 +413,10 @@ export function handleSSEEvent(
       });
       break;
     case 'error':
-      handlers.onError?.(String(obj.error ?? 'stream error'));
+      handlers.onError?.(String(obj.error ?? 'stream error'), {
+        ...(typeof obj.status === 'number' ? { status: obj.status } : {}),
+        ...(typeof obj.code === 'string' ? { code: obj.code } : {}),
+      });
       break;
     default:
       break;

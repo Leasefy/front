@@ -80,9 +80,11 @@ describe('<TePodemosArrendar>', () => {
     expect(hay('estimado-no-alcanza')).toBeNull();
   });
 
-  it('la nota sólo dice que es un estimado', () => {
+  it('la nota dice que es un cálculo rápido y qué sigue, sin citar la regla', () => {
     montar();
-    expect(contenedor!.textContent).toContain('Es un estimado.');
-    expect(contenedor!.textContent).not.toMatch(/1,5|Fianly/);
+    const nota = hay('nota-estimado')?.textContent ?? '';
+    expect(nota).toContain('no una aprobación');
+    expect(nota).toContain('siguiente paso');
+    expect(nota).not.toMatch(/1,5|Fianly/);
   });
 });

@@ -134,7 +134,11 @@ export function TePodemosArrendar({ canon, ciudad, tipo, className }: TePodemosA
       </div>
 
       <div className="mt-6 flex flex-col gap-4 border-t border-border pt-5 md:flex-row md:items-center md:justify-between">
-        <p className="text-caption text-fg-muted">Es un estimado.</p>
+        <p data-testid="nota-estimado" className="text-caption text-fg-muted md:max-w-[52ch]">
+          <span className="font-medium text-fg">Es un cálculo rápido con tu ingreso, no una aprobación.</span> Si te
+          alcanza, en el siguiente paso validamos tus datos y te damos la respuesta definitiva para arrendar este
+          inmueble.
+        </p>
         <Button
           type="button"
           onClick={verificar}

@@ -29,7 +29,8 @@
  */
 
 import { useState } from 'react'
-import { Warning, CheckCircle } from '@phosphor-icons/react'
+import Link from 'next/link'
+import { Warning, CheckCircle, SealWarning, ArrowSquareOut } from '@phosphor-icons/react'
 
 import {
   Dialog,
@@ -41,7 +42,11 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
-import { cobrosApi } from '@/lib/api/inmobiliaria.service'
+import {
+  cobrosApi,
+  type ConsignacionConContratoVencido,
+  type ResultadoDeLaGeneracion,
+} from '@/lib/api/inmobiliaria.service'
 import { mesEnTitulo } from '@/lib/utils/mes'
 import { useI18n } from '@/lib/i18n'
 
@@ -56,6 +61,104 @@ export interface GenerarCobrosDialogProps {
   onGenerado: () => void
 }
 
+/**
+ * Los contratos VENCIDOS que la corrida dejó fuera.
+ *
+ * 🔴 Se ordenan poniendo primero los que YA tienen una renovación abierta:
+ * ésos están a un clic de resolverse y son los que conviene mirar antes.
+ */
+export function ordenarVencidos(
+  contratos: readonly ConsignacionConContratoVencido[],
+): ConsignacionConContratoVencido[] {
+  return [...contratos].sort((a, b) => {
+    if (a.tieneRenovacionAbierta !== b.tieneRenovacionAbierta) {
+      return a.tieneRenovacionAbierta ? -1 : 1
+    }
+    // Después, el más vencido primero: es el que más tiempo lleva sin cobrarse.
+    return b.diasVencido - a.diasVencido
+  })
+}
+
+/** «Contrato 1839» o, si es migrado, el número que la inmobiliaria conoce. */
+function nombreDelContrato(c: ConsignacionConContratoVencido): string {
+  return c.externalId ? `Contrato ${c.externalId}` : `Contrato ${c.code}`
+}
+
+function OmitidosPorVencido({
+  omitidos,
+}: {
+  omitidos: NonNullable<ResultadoDeLaGeneracion['omitidosPorContratoVencido']>
+}) {
+  /*
+   * 🔴 `consultado: false` NO es «no hay vencidos»: es «no se pudo saber».
+   * La corrida se comportó como siempre y NO excluyó a nadie. Decirlo como si
+   * estuviera todo bien sería afirmar algo que nadie verificó.
+   */
+  if (!omitidos.consultado) {
+    return (
+      <div
+        className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3 text-sm text-fg"
+        data-testid="vencidos-no-verificado"
+      >
+        <SealWarning className="mt-0.5 h-4 w-4 shrink-0 text-warning" weight="duotone" aria-hidden="true" />
+        <span>
+          No se pudo verificar si hay contratos vencidos, así que esta corrida
+          NO excluyó a ninguno: se comportó como siempre.
+          {omitidos.motivo ? ` ${omitidos.motivo}` : ''} Avísale a tu equipo
+          técnico antes de dar el mes por cerrado.
+        </span>
+      </div>
+    )
+  }
+
+  const contratos = ordenarVencidos(omitidos.contratos)
+
+  return (
+    <div className="space-y-2" data-testid="vencidos-omitidos">
+      <p className="flex items-start gap-2 text-sm text-fg">
+        <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" weight="duotone" aria-hidden="true" />
+        <span>
+          <strong className="tabular-nums">{omitidos.cuantos}</strong>{' '}
+          {omitidos.cuantos === 1
+            ? 'contrato vencido quedó fuera'
+            : 'contratos vencidos quedaron fuera'}
+          : no se les generó cobro. Renuévalos o termínalos para que vuelvan a
+          la corrida.
+        </span>
+      </p>
+
+      <ul className="max-h-64 divide-y divide-border overflow-y-auto rounded-lg border border-border">
+        {contratos.map((c) => (
+          <li key={c.contractId} className="flex items-start justify-between gap-3 px-3 py-2.5">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-fg">
+                {c.tenantName ?? nombreDelContrato(c)}
+              </p>
+              <p className="truncate text-caption text-fg-muted">
+                {c.propertyAddress ? `${c.propertyAddress} · ` : ''}
+                {c.leyenda}
+              </p>
+              {c.tieneRenovacionAbierta ? (
+                <p className="text-caption text-primary" data-testid={`renovacion-abierta-${c.contractId}`}>
+                  Ya tiene una renovación abierta
+                </p>
+              ) : null}
+            </div>
+            <Link
+              href={`/panel/inmobiliaria/contratos/${c.contractId}`}
+              className="flex shrink-0 items-center gap-1 text-caption text-primary hover:underline"
+              data-testid={`ir-al-contrato-${c.contractId}`}
+            >
+              Abrir
+              <ArrowSquareOut className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 export function GenerarCobrosDialog({
   open,
   onOpenChange,
@@ -66,6 +169,15 @@ export function GenerarCobrosDialog({
   const { t } = useI18n()
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState<unknown>(null)
+  /**
+   * El resultado de la corrida. Antes el diálogo se cerraba y listo; desde que
+   * el back excluye los contratos VENCIDOS hay que mostrarlos, porque una
+   * corrida que deja gente afuera en silencio es justo lo que esa exclusión
+   * vino a evitar.
+   */
+  const [resultado, setResultado] = useState<ResultadoDeLaGeneracion | null>(
+    null,
+  )
 
   const titulo = mesEnTitulo(mes)
 
@@ -73,9 +185,16 @@ export function GenerarCobrosDialog({
     setEnviando(true)
     setError(null)
     try {
-      await cobrosApi.generate(mes)
+      const r = await cobrosApi.generate(mes)
       onGenerado()
-      onOpenChange(false)
+      const omitidos = r?.omitidosPorContratoVencido
+      // Sólo se queda abierto si hay algo que CONTAR: vencidos que quedaron
+      // fuera, o que no se pudo verificar si los había.
+      if (omitidos && (omitidos.cuantos > 0 || !omitidos.consultado)) {
+        setResultado(r)
+      } else {
+        onOpenChange(false)
+      }
     } catch (err) {
       // El error se queda EN el diálogo: cerrarlo escondería el fallo y el
       // usuario creería que se generaron.
@@ -87,7 +206,10 @@ export function GenerarCobrosDialog({
 
   function cambiarApertura(siguiente: boolean) {
     if (enviando) return // no cerrar a mitad de una acción masiva
-    if (!siguiente) setError(null)
+    if (!siguiente) {
+      setError(null)
+      setResultado(null)
+    }
     onOpenChange(siguiente)
   }
 
@@ -103,7 +225,20 @@ export function GenerarCobrosDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {error ? (
+        {resultado?.omitidosPorContratoVencido ? (
+          <div className="space-y-3">
+            <p className="flex items-start gap-2 text-sm text-fg-muted">
+              <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-success" weight="duotone" aria-hidden="true" />
+              <span>
+                La corrida de {titulo} terminó
+                {typeof resultado.created === 'number'
+                  ? `: ${resultado.created.toLocaleString('es-CO')} ${resultado.created === 1 ? 'cobro generado' : 'cobros generados'}.`
+                  : '.'}
+              </span>
+            </p>
+            <OmitidosPorVencido omitidos={resultado.omitidosPorContratoVencido} />
+          </div>
+        ) : error ? (
           <FalloDeCarga
             error={error}
             queEs={t('inmobiliaria.ai.pagos_home.resumen.generar.queEs')}
@@ -164,6 +299,12 @@ export function GenerarCobrosDialog({
         )}
 
         <DialogFooter>
+          {resultado ? (
+            <Button hideArrow onClick={() => cambiarApertura(false)} data-testid="generar-cerrar">
+              Cerrar
+            </Button>
+          ) : (
+            <>
           <Button
             variant="secondary"
             hideArrow
@@ -182,6 +323,8 @@ export function GenerarCobrosDialog({
               ? t('inmobiliaria.ai.pagos_home.resumen.generar.enviando')
               : t('inmobiliaria.ai.pagos_home.resumen.generar.confirmar', { mes: titulo })}
           </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

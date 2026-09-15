@@ -1039,6 +1039,49 @@ export function normalizeCobro<T extends Cobro>(raw: T): T {
   };
 }
 
+/**
+ * Una consignación que quedó FUERA de la corrida porque su contrato venció.
+ * Espeja `ConsignacionConContratoVencido` en
+ * `back-erp/src/inmobiliaria/cobros/cobros.service.ts`.
+ */
+export interface ConsignacionConContratoVencido {
+  consignacionId: string;
+  contractId: string;
+  /** Nuestro consecutivo. */
+  code: number;
+  /** El número que la inmobiliaria conoce (el Nui de un contrato migrado). */
+  externalId: string | null;
+  tenantName: string | null;
+  propertyAddress: string | null;
+  /** `YYYY-MM-DD` del fin pactado que ya pasó. */
+  endDate: string;
+  diasVencido: number;
+  /** Lista para mostrar: «Vencido desde el 2026-03-31 (168 días)». */
+  leyenda: string;
+  /** Alguien ya abrió una renovación: la pantalla los pone primero. */
+  tieneRenovacionAbierta: boolean;
+}
+
+/** Lo que devuelve `POST /inmobiliaria/cobros/generate`. */
+export interface ResultadoDeLaGeneracion {
+  month?: string;
+  created?: number;
+  skipped?: number;
+  skippedCanonDesconocido?: number;
+  /**
+   * 🔴 `consultado: false` NO es «no hay vencidos»: es «no se pudo saber» (la
+   * migración de terminación no está aplicada o la consulta falló). La corrida
+   * se comportó como siempre y NO excluyó a nadie. Son dos hechos distintos y
+   * la pantalla tiene que decirlos distinto.
+   */
+  omitidosPorContratoVencido?: {
+    consultado: boolean;
+    motivo?: string | null;
+    cuantos: number;
+    contratos: ConsignacionConContratoVencido[];
+  };
+}
+
 export const cobrosApi = {
   /**
    * Sin `month` trae TODOS los meses. `consignacionId` (el mandato del
@@ -1143,8 +1186,16 @@ export const cobrosApi = {
     };
   },
 
-  async generate(month: string): Promise<void> {
-    await apiClient.post(`${BASE}/cobros/generate`, { month });
+  /**
+   * La corrida del mes. Devuelve el resultado ENTERO, no `void`: desde el
+   * 2026-09-15 el back excluye los contratos VENCIDOS y los devuelve con su
+   * lista, y una corrida que deja gente afuera en silencio es exactamente lo
+   * que esa exclusión vino a evitar.
+   */
+  async generate(month: string): Promise<ResultadoDeLaGeneracion> {
+    return apiClient.post<ResultadoDeLaGeneracion>(`${BASE}/cobros/generate`, {
+      month,
+    });
   },
 
   /**

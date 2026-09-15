@@ -83,6 +83,14 @@ export interface BackendChatMessage {
   content: string;
   readAt: string | null;
   createdAt: string;
+  /**
+   * El puente con WhatsApp (2026-09-12). `null`/ausente = el mensaje sólo
+   * vivió en la plataforma. Con valor, además viajó por WhatsApp y esto es en
+   * qué quedó.
+   */
+  whatsappEstado?: EstadoDeWhatsapp | null;
+  /** Por qué falló, literal del proveedor. */
+  whatsappError?: string | null;
   sender: {
     id: string;
     firstName: string | null;
@@ -96,9 +104,43 @@ export interface BackendChatMessage {
  * compat path, still live) both return this shape. §B.1: adding `propertyId`
  * / `initiatorId` / `kind` to the raw entity is additive and safe.
  */
+/** Los estados del puente con WhatsApp, tal como los devuelve el back. */
+export type EstadoDeWhatsapp =
+  | 'ENCOLADO'
+  | 'ENVIADO'
+  | 'ENTREGADO'
+  | 'LEIDO'
+  | 'FALLO'
+  | 'SIMULADO'
+  | 'RECIBIDO';
+
+/** Por qué este hilo llega (o no) al WhatsApp del tercero. */
+export type MotivoDelCanalDeWhatsapp =
+  | 'ok'
+  | 'no_aplica'
+  | 'sin_consentimiento'
+  | 'sin_telefono'
+  | 'ambiguo'
+  | 'invalido';
+
+/**
+ * El estado del canal de WhatsApp de un hilo (o de una persona, en su ficha).
+ * Lo devuelve `GET /conversations/:id` y `GET /inmobiliaria/terceros/:id/whatsapp`.
+ */
+export interface CanalDeWhatsapp {
+  puedeEnviar: boolean;
+  motivo: MotivoDelCanalDeWhatsapp;
+  nombre: string | null;
+  /** Recortado a propósito por el back: `+57 310 ••• 0479`. */
+  telefono: string | null;
+  aceptaWhatsapp: boolean;
+}
+
 export interface BackendConversationWithMessages {
   id: string;
   kind?: string;
+  /** Aditivo: si lo que se escriba acá también sale por WhatsApp, o por qué no. */
+  whatsapp?: CanalDeWhatsapp;
   applicationId: string | null;
   propertyId?: string;
   /** Lease this thread belongs to — OPTIONAL (COMU-01 external dep; see `BackendConversation.leaseId`). */
@@ -219,6 +261,13 @@ export interface ChatMessage {
   perfil: PerfilEnLaConversacion;
   readAt: string | null;
   createdAt: string;
+  /**
+   * El puente con WhatsApp: `null` = este mensaje sólo vivió en la plataforma.
+   * Con valor, además salió (o entró) por WhatsApp y esto es en qué quedó.
+   */
+  whatsappEstado: EstadoDeWhatsapp | null;
+  /** Por qué falló. Se muestra: «falló» sin motivo no le dice a nadie qué hacer. */
+  whatsappError: string | null;
 }
 
 // ============================================================================
@@ -351,6 +400,8 @@ export function mapToMessage(backend: BackendChatMessage, currentUserId: string)
     perfil: resolverPerfil(backend.sender.role),
     readAt: backend.readAt,
     createdAt: backend.createdAt,
+    whatsappEstado: backend.whatsappEstado ?? null,
+    whatsappError: backend.whatsappError ?? null,
   };
 }
 

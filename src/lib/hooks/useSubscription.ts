@@ -217,6 +217,8 @@ export function mergeBackendIntoAgencyPlan(backend: BackendSubscriptionPlan): Ag
     features,
     highlighted: known?.highlighted,
     badge: known?.badge,
+    level: backend.level ?? null,
+    isDefault: backend.isDefault,
   };
 }
 

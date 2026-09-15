@@ -258,6 +258,21 @@ export interface ChatSnapshot {
   enPrejuridico: number;
 }
 
+/**
+ * Una acción que el chat dejó PREPARADA en este mensaje y que espera el sí del
+ * operador. `estado` es el estado de la tarjeta en ESTE navegador; la verdad
+ * vive en el agente (la propuesta vence a los 10 minutos y su confirmación es
+ * idempotente), así que la tarjeta nunca ejecuta por su cuenta: manda el id.
+ */
+export interface AccionEnHilo {
+  propuesta: import('@/lib/api/ai-hub-acciones').BackendAccionPropuesta;
+  estado: 'pendiente' | 'confirmando' | 'ejecutada' | 'fallida' | 'cancelada' | 'vencida';
+  /** Lo que de verdad pasó al confirmar: cuántos salieron y quiénes no. */
+  resultado?: import('@/lib/api/ai-hub-acciones').ResultadoDeAccion | null;
+  /** Por qué no se pudo ni intentar (venció, la cancelaron, sin permiso). */
+  error?: string | null;
+}
+
 export interface ChatMessage {
   /** Unique identifier (crypto.randomUUID or fallback) */
   id: string;
@@ -273,6 +288,8 @@ export interface ChatMessage {
   agentActivity?: AgentActivityBlock;
   /** Pending decision attached to this assistant response */
   decision?: PendingDecision;
+  /** Acción preparada por el chat que espera confirmación (o su resultado). */
+  accion?: AccionEnHilo;
   /** Structured response metadata for rich card display */
   responseMeta?: ResponseMeta;
   /** Action proposals (F5) — one or more work items awaiting human confirmation */
@@ -284,10 +301,24 @@ export interface ChatMessage {
    *
    * Se guarda en el mensaje —y por lo tanto sobrevive el localStorage, que
    * serializa el mensaje entero— para que el pulgar quede marcado al volver a
-   * la conversación. HOY NO SALE DE ACÁ: no existe endpoint de feedback, así
-   * que es memoria local, no una señal que llegue a nadie.
+   * la conversación. Desde el 13/09 además SALE: `rateMessage` lo manda a
+   * `POST /ai-hub/chat/feedback`, que lo guarda por inmobiliaria y, con
+   * comentario, lo convierte en una lección que el chat usa en la siguiente
+   * pregunta.
    */
   feedback?: 'up' | 'down' | null;
+  /**
+   * El backend confirmó la valoración. Es lo que hace que la pantalla pueda
+   * decir «guardado» sin mentir: el pulgar marcado y el pulgar GUARDADO son
+   * dos cosas distintas (la red puede fallar).
+   */
+  feedbackEnviado?: boolean;
+  /** Lo que el usuario escribió en «¿qué esperabas?» (pulgar abajo). */
+  feedbackComentario?: string;
+  /** Marcó «la cifra está mal». */
+  feedbackCifraMal?: boolean;
+  /** Se creó una lección con ese comentario (el chat aprendió algo). */
+  feedbackLeccion?: boolean;
 }
 
 export interface Conversation {

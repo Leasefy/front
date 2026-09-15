@@ -146,12 +146,28 @@ export interface GrupoDelPanel {
 const r = (p: string) => `${PANEL}${p}`;
 
 export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
-  // ── CAPTACIÓN Y ARRIENDO ── conseguir inmuebles, estudiar candidatos, firmar.
+  // ── CAPTACIÓN Y ARRIENDO ── conseguir inmuebles y estudiar candidatos. El
+  // contrato que sale de acá ya se vive en Operación (Nico, 2026-09-12).
   {
     key: 'captacion',
     labelKey: 'inmobiliaria.nav.secCaptacion',
     modulos: [
       { key: 'pipeline', labelKey: 'inmobiliaria.nav.pipelineCorto', href: r('/pipeline'), icon: Kanban, module: 'pipeline', scope: 'comercial' },
+      // Agenda estaba en Operación y se mudó acá (Nico, 2026-09-12: «Agenda
+      // interna: la sección de agenda la debemos llevar para la sección de
+      // captación y arriendo»). Va detrás de Pipeline porque lo que llena la
+      // agenda son las VISITAS del prospecto —«Pedir cita» pide el nombre del
+      // prospecto y la propiedad—: primero el prospecto, después la cita, y
+      // recién ahí el inmueble que se le muestra y la postulación que firma.
+      // Conserva su `module: 'operaciones'` y su `scope: 'administracion'`:
+      // cambiar de grupo no le abre la pantalla a nadie que no la tuviera ni
+      // se la cierra a quien la tenía (ver la regla al principio del archivo).
+      // Efecto colateral asumido: la barra inferior del móvil muestra las 5
+      // primeras filas navegables (`MobileNavBar`), así que Agenda entra ahí y
+      // Postulaciones pasa al «más». Ninguna puerta se pierde —el sheet las
+      // lista todas— y mover la fila sin mover el móvil sería tener dos menús
+      // que no coinciden.
+      { key: 'agenda', labelKey: 'inmobiliaria.nav.agenda', href: r('/agenda'), icon: CalendarBlank, module: 'operaciones', scope: 'administracion' },
       {
         key: 'inmuebles', labelKey: 'inmobiliaria.nav.inmuebles', href: r('/inmuebles'), icon: Buildings, module: 'portafolio', scope: 'comercial', dataTourTarget: 'sidebar-inmuebles',
         pantallas: [
@@ -181,7 +197,20 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           { labelKey: 'inmobiliaria.ai.nav.cotizador', href: r('/postulaciones/asegurabilidad'), icon: Umbrella, module: 'cotizador', ia: true, agente: 'asegurabilidad', dataTourTarget: 'sidebar-cotizador' },
         ],
       },
+    ],
+  },
+
+  // ── OPERACIÓN ── el contrato firmado y todo lo que lo sostiene vivo.
+  {
+    key: 'operacion',
+    labelKey: 'inmobiliaria.nav.secOperacionDelContrato',
+    modulos: [
       {
+        // 🔴 Nico, 2026-09-12: «Contratos va dentro de OPERACIÓN». Vivía en
+        // Captación y arriendo porque ahí se firma; pero un contrato se OPERA
+        // —cobros, mantenimientos, renovación— mucho más tiempo del que se
+        // firma, y la fila va con lo que se opera. Conserva `module`, `roles`
+        // y `scope`: cambiar de grupo no abre ni cierra pantallas a nadie.
         // 'contratos' es su propia AGENCY_MODULES key (todos los roles la tienen).
         key: 'contratos', labelKey: 'inmobiliaria.nav.contratos', href: r('/contratos'), icon: FilePlus, module: 'contratos', scope: 'administracion', dataTourTarget: 'sidebar-contratos',
         pantallas: [
@@ -192,14 +221,6 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // `contratos/(retencion)/` y sólo se alcanzan escribiendo la URL.
         ],
       },
-    ],
-  },
-
-  // ── OPERACIÓN ── sostener el contrato vivo y atender al cliente.
-  {
-    key: 'operacion',
-    labelKey: 'inmobiliaria.nav.secOperacionDelContrato',
-    modulos: [
       // Sin `ia: true` ni la pantalla «Tickets»: el agente de mantenimiento
       // (bandeja de tickets, resumen, ficha) es mock-first y el micro no tiene
       // su endpoint (`/api/agency/:id/mantenimiento/inbox` no existe). Con
@@ -213,7 +234,6 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // `roles` y no `module`: no hay llave de AGENCY_MODULES para mensajes, y
       // la pantalla se cierra por rol (`AgencyRoleGuard allowed="managers"`).
       { key: 'mensajes', labelKey: 'inmobiliaria.nav.mensajes', href: r('/mensajes'), icon: Chat, module: null, roles: GESTION_ROLES, scope: 'administracion' },
-      { key: 'agenda', labelKey: 'inmobiliaria.nav.agenda', href: r('/agenda'), icon: CalendarBlank, module: 'operaciones', scope: 'administracion' },
     ],
   },
 

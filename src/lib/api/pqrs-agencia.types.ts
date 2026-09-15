@@ -68,6 +68,31 @@ export interface PqrsListResponse {
   solicitudes: Pqrs[];
 }
 
+/**
+ * Con qué se ató la lista de PQRS de UN contrato.
+ *
+ * Viaja a la pantalla a propósito: `Pqrs` no tiene `contractId` —una solicitud
+ * se radica contra el INMUEBLE—, así que el back cruza el inmueble del
+ * contrato con la ventana en que el contrato estuvo vivo. La sección lo dice
+ * en vez de presentar la lista como si fuera un vínculo directo.
+ */
+export interface RelacionPqrsDelContrato {
+  /** El inmueble del contrato. `null` = contrato sin inmueble asociado. */
+  propertyId: string | null;
+  /** `YYYY-MM-DD`. `null` si el contrato no tiene fecha de inicio. */
+  desde: string | null;
+  /** `YYYY-MM-DD`: la fecha de fin del contrato, o hoy si todavía corre. */
+  hasta: string;
+  /** `true` cuando el contrato no tiene fecha de fin y `hasta` es hoy. */
+  sinFin: boolean;
+}
+
+export interface PqrsDelContratoResponse {
+  resumen: ResumenPqrs;
+  solicitudes: Pqrs[];
+  relacion: RelacionPqrsDelContrato;
+}
+
 export interface CrearPqrsInput {
   tipo: PqrsTipo;
   solicitanteTipo: PqrsSolicitante;

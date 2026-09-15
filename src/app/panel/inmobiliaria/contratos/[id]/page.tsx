@@ -39,6 +39,7 @@ import { formatDate, formatCanon } from './format';
 import { Button } from '@/components/ui/button';
 import { Spinner, Badge } from '@/components/ui';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { ResumenEnLaFicha } from '@/components/estado-de-cuenta/ResumenEnLaFicha';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useAgencyAccess } from '@/lib/auth/useAgencyAccess';
 import { AuditTrail } from '@/components/contract/AuditTrail';
@@ -50,14 +51,20 @@ import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { AdministracionDelContrato } from '@/components/contratos/AdministracionDelContrato';
+import { EscenarioTributario } from '@/components/contratos/EscenarioTributario';
 import { ConceptosDelContrato } from '@/components/contratos/ConceptosDelContrato';
 import { CobrosDelContrato, type ResumenDeCobros } from '@/components/contratos/CobrosDelContrato';
 import { ReglasDeMoraDelContrato } from '@/components/contratos/ReglasDeMoraDelContrato';
-import { DocumentosContablesDelContrato } from '@/components/contratos/DocumentosContablesDelContrato';
+import { RenovacionDelContrato } from '@/components/contratos/RenovacionDelContrato';
+import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/ComprobantesDelSistemaAnterior';
+import { PqrsDelContrato } from '@/components/contratos/PqrsDelContrato';
 import { Stat, StatStrip } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { VincularInmueble } from '@/components/contratos/VincularInmueble';
-import { InvitarInquilino } from '@/components/contratos/InvitarInquilino';
+import { PartesDelContrato } from '@/components/contratos/PartesDelContrato';
+import { InmuebleDelContrato } from '@/components/contratos/InmuebleDelContrato';
+import { ContratoSinSenal } from '@/components/contratos/ContratoSinSenal';
+import { numeroDelContrato, tituloDelContrato } from '@/lib/contratos/numero-del-contrato';
 
 const PRE_SIGNED_STATES: ContractStatus[] = ['draft', 'pending_landlord', 'pending_tenant', 'rejected_pending_modifications'];
 
@@ -115,7 +122,16 @@ function ContratoDetalleContent() {
   // El respaldo vive en las cláusulas del contrato: es el campo real que
   // el backend persiste hoy. Ver src/lib/inmobiliaria/respaldo.ts.
   const respaldo = leerRespaldo(contract?.customClauses);
-  const { preview, isLoading: isLoadingPreview } = useContractPreview(id);
+  // `sinDocumento` es el contrato migrado —sin HTML ni PDF en Leasefy—, que
+  // NO es un fallo; `errorCrudo` es todo lo demás, y eso sí se pinta como
+  // error. Ver `esContratoSinDocumento` en contracts.service.ts.
+  const {
+    preview,
+    isLoading: isLoadingPreview,
+    errorCrudo: falloDelDocumento,
+    sinDocumento,
+    refetch: recargarDocumento,
+  } = useContractPreview(id);
   const { rejections } = useContractRejections(id);
   const actions = useContractActions();
 
@@ -221,14 +237,23 @@ function ContratoDetalleContent() {
    * sentido. Las dos señales ya estaban por separado; se juntaban a mano.
    */
   if (error) {
+    /*
+     * 🔴 Sin señal, el contrato no se puede traer —vive en el back— pero el
+     * inventario del inmueble sí puede estar guardado en este teléfono, y es
+     * lo que la persona fue a hacer al apartamento. `ContratoSinSenal` deja el
+     * fallo con su reintentar y agrega abajo lo que SÍ se puede hacer; sin
+     * copia guardada muestra sólo el fallo, como antes.
+     */
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
-        <FalloDeCarga
-          error={error}
-          queEs="este contrato"
+        <ContratoSinSenal contratoId={id}>
+          <FalloDeCarga
+            error={error}
+            queEs="este contrato"
             onReintentar={refetch}
-          volverA={{ label: 'Contratos', href: '/panel/inmobiliaria/contratos' }}
-        />
+            volverA={{ label: 'Contratos', href: '/panel/inmobiliaria/contratos' }}
+          />
+        </ContratoSinSenal>
       </div>
     );
   }
@@ -249,6 +274,7 @@ function ContratoDetalleContent() {
 
   const statusVariant = CONTRACT_STATUS_BADGE[contract.status as ContractStatus] ?? 'neutral';
   const statusLabel = CONTRACT_STATUS_LABELS[contract.status as ContractStatus] ?? contract.status;
+  const numero = numeroDelContrato(contract);
   // Gate por permisos: contratos usa canAccess ('contratos' ya es módulo del backend).
   // Chat todavía usa el fallback por rol porque 'mensajes' no existe como módulo aún.
   const canCancel = canEditContracts && PRE_SIGNED_STATES.includes(contract.status as ContractStatus);
@@ -273,21 +299,37 @@ function ContratoDetalleContent() {
             </Link>
           </Button>
           {/*
-            T-0040 — el consecutivo es el nombre del contrato: va en el título,
-            no en una línea debajo de un título genérico. El UUID vuelve tal
-            cual cuando no hay código —sólo un `back` anterior a T-0040 lo
+            T-0040 — el número es el nombre del contrato: va en el título, no
+            en una línea debajo de un título genérico. El UUID vuelve tal cual
+            cuando no hay número —sólo un `back` anterior a T-0040 lo
             produce—. Sin `#0` ni `#undefined`: o el número, o el id.
+
+            🔴 Nico, 2026-09-12: para un contrato MIGRADO el número que se lee
+            es el de SU sistema anterior (1686), no nuestro consecutivo
+            (#1839) — lo buscó en su archivo y era otra persona. El nuestro va
+            debajo, nombrado, para que se sepa cuál es cuál
+            (`numero-del-contrato.ts`).
           */}
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-h2 text-fg">
-              {contract.code != null ? `Contrato #${contract.code}` : 'Contrato de arrendamiento'}
-            </h1>
+            <h1 className="text-h2 text-fg">{tituloDelContrato(contract)}</h1>
             <Badge variant={statusVariant}>
               {statusLabel}
             </Badge>
           </div>
-          {contract.code == null ? (
+          {numero.principal == null ? (
             <p className="text-sm text-muted-foreground mt-1">ID: {contract.id}</p>
+          ) : null}
+          {numero.esDeLaInmobiliaria ? (
+            <p className="text-sm text-muted-foreground mt-1" data-testid="numero-de-leasefy">
+              {numero.principal} es el número de tu sistema anterior
+              {numero.secundario ? (
+                <>
+                  {' · '}en Leasefy es el{' '}
+                  <span className="font-mono tabular-nums">{numero.secundario.replace('Leasefy ', '')}</span>
+                </>
+              ) : null}
+              .
+            </p>
           ) : null}
           {/* De qué contrato se trata, sin bajar a las tarjetas: inmueble e inquilino. */}
           <p className="text-sm text-muted-foreground mt-1">
@@ -322,6 +364,32 @@ function ContratoDetalleContent() {
         inquilino debía plata sin ir a Cobros.
       */}
       <ResumenDelContrato contract={contract} cobros={resumenDeCobros} />
+
+      {/*
+        El estado de cuenta de ESTE contrato (CEO, 2026-09-13): cuánto resta por
+        pagar de todo el contrato y cuándo es la próxima cuota. `ResumenDelContrato`
+        de arriba dice lo del MES; esto dice lo de los 24 meses, que es la
+        pregunta que se hace al renovar o al cobrar.
+
+        Se pide del lado del INQUILINO, que es quien debe. Un contrato migrado
+        puede no tener `tenantId` (la persona se cargó sin cuenta): ahí se cae a
+        la del propietario, que siempre existe.
+      */}
+      {contract.tenantId ? (
+        <ResumenEnLaFicha
+          tipo="inquilino"
+          id={contract.tenantId}
+          soloContrato={contract.externalId ?? (contract.code != null ? String(contract.code) : null)}
+          volverA={`/panel/inmobiliaria/contratos/${contract.id}`}
+        />
+      ) : contract.landlordId ? (
+        <ResumenEnLaFicha
+          tipo="propietario"
+          id={contract.landlordId}
+          soloContrato={contract.externalId ?? (contract.code != null ? String(contract.code) : null)}
+          volverA={`/panel/inmobiliaria/contratos/${contract.id}`}
+        />
+      ) : null}
 
       {/* Action panel — only shown for users with contratos:edit */}
       {canEditContracts && (
@@ -367,20 +435,15 @@ function ContratoDetalleContent() {
         {/* Left — info cards */}
         <div className="lg:col-span-1 space-y-4">
           <InfoCard title="Partes" icon={User}>
-            <FilaDelPropietario contract={contract} />
-            <InfoRow label="Inquilino" value={contract.tenantName} />
-            {/* T-0036 §3.2.B6 — la salida de un contrato migrado sin
-                inquilino: se muestra sólo mientras tenantId siga null. */}
-            {contract.tenantId === null && (
-              <div className="pt-1">
-                <InvitarInquilino
-                  contract={contract}
-                  puedeInvitar={canInviteTenant}
-                  onActualizado={(c) => setContract(c)}
-                  onConflicto={() => void refetch()}
-                />
-              </div>
-            )}
+            {/* Todos los dueños con su porcentaje y su parte del canon, y
+                todos los inquilinos con su DOCUMENTO (Nico, 2026-09-12). */}
+            <PartesDelContrato
+              contract={contract}
+              puedeInvitar={canInviteTenant}
+              puedeEditar={canEditContracts}
+              onActualizado={(c) => setContract(c)}
+              onConflicto={() => void refetch()}
+            />
           </InfoCard>
 
           <InfoCard title="Inmueble" icon={Buildings}>
@@ -431,6 +494,13 @@ function ContratoDetalleContent() {
             onActualizado={(c) => setContract(c)}
           />
 
+          {/* Cómo se llama la situación tributaria que forman las dos partes y
+              qué genera (Nico, 2026-09-12: «los contratos no están mostrando la
+              información sobre el escenario que se da en ese contrato»). Va
+              pegado a Administración porque los datos que lo definen —el uso
+              del inmueble y el perfil del inquilino— se corrigen justo arriba. */}
+          <EscenarioTributario contract={contract} />
+
           {/* Paso 11: quién respalda este arriendo. Si no está, se dice — un
               contrato sin respaldo registrado no es un contrato sin respaldo,
               pero tampoco se puede afirmar que lo tiene. */}
@@ -477,6 +547,12 @@ function ContratoDetalleContent() {
               <ConceptosDelContrato contract={contract} puedeEditar={canEditContracts} />
               {/* Las reglas de mora de la inmobiliaria, y cuáles pisa este contrato. */}
               <ReglasDeMoraDelContrato contract={contract} puedeEditar={canEditContracts} />
+              {/*
+                🔴 Qué va a pasar cuando venza: se renueva sola por el mismo
+                término con el canon incrementado si nadie avisa tres meses
+                antes (Ley 820, arts. 20 y 22). Nico, 2026-09-12.
+              */}
+              <RenovacionDelContrato contract={contract} puedeEditar={canEditContracts} />
               <CobrosDelContrato
                 key={contract.propertyId ?? 'sin-inmueble'}
                 contract={contract}
@@ -494,8 +570,13 @@ function ContratoDetalleContent() {
                 así que uno que todavía se está firmando no puede tener
                 ninguno, y pedirlos sería una petición que siempre vuelve
                 vacía.
+
+                En tres pestañas —ingresos · egresos · facturas— porque una
+                sola lista mezclada no deja ver nada (Nico, 2026-09-12).
               */}
-              <DocumentosContablesDelContrato contractId={contract.id} />
+              <ComprobantesDelSistemaAnterior contractId={contract.id} />
+              {/* El seguimiento de PQRS del contrato (Nico, 2026-09-12). */}
+              <PqrsDelContrato contractId={contract.id} />
             </>
           )}
 
@@ -563,11 +644,38 @@ function ContratoDetalleContent() {
                   className="prose prose-sm max-w-none dark:prose-invert"
                   {...sanitizeContractHtml(preview.html)}
                 />
+              ) : sinDocumento ? (
+                /*
+                  🔴 Nico, 2026-09-12: un contrato migrado NO tiene documento
+                  en Leasefy —se cargó desde el archivo de la inmobiliaria, ya
+                  firmado en papel— y el 400 del preview pintaba un cartel rojo
+                  en los 1.836 contratos de la migración. No es un fallo: se
+                  dice de frente y sin alarma.
+
+                  No hay acción que ofrecer hoy, y no se inventa ninguna:
+                  · adjuntar el PDF firmado lo rechaza el back («Solo se puede
+                    reemplazar el PDF en contratos con
+                    contractOrigin=UPLOADED_PDF»), y el PATCH además devuelve
+                    el contrato a PENDING_TENANT_SIGNATURE — sobre un contrato
+                    VIGENTE eso es romperlo;
+                  · armar desde plantilla sólo existe al CREAR
+                    (/contratos/nuevo), no sobre un contrato que ya existe.
+                  Cuando exista alguno de los dos caminos, el botón va acá.
+                */
+                <p className="text-sm text-muted-foreground py-2" data-testid="contrato-sin-documento">
+                  Este contrato se cargó desde tu sistema anterior y no tiene documento generado en Leasefy.
+                </p>
+              ) : falloDelDocumento ? (
+                /* Un 400 con OTRO motivo, o un 500: eso sí es un fallo. */
+                <FalloDeCarga
+                  error={falloDelDocumento}
+                  queEs="el documento del contrato"
+                  onReintentar={recargarDocumento}
+                  enmarcado={false}
+                />
               ) : (
                 <p className="text-sm text-muted-foreground py-2">
-                  {contract.contractOrigin === 'MIGRATED'
-                    ? 'Sin documento: este contrato entró por migración sin el PDF firmado.'
-                    : 'No hay vista previa disponible.'}
+                  Todavía no hay documento para este contrato.
                 </p>
               )}
             </div>
@@ -585,6 +693,21 @@ function ContratoDetalleContent() {
               />
             </>
           )}
+
+          {/*
+            🔴 Nico, 2026-09-12: el inventario y el historial del inmueble se
+            ven también desde el contrato, no sólo desde la ficha del inmueble.
+            🔴 Nico, 2026-09-13: «desde el contrato también debería de agregar
+            todo lo que se pueda agregar del inventario» — el mismo componente
+            de la ficha del inmueble, sobre la misma consignación.
+            Sin inmueble se dice ahí mismo en vez de dejar un hueco: el
+            inventario es del inmueble y este contrato todavía no tiene uno.
+          */}
+          <InmuebleDelContrato
+            key={contract.propertyId ?? 'sin-inmueble'}
+            propertyId={contract.propertyId}
+            contratoId={contract.id}
+          />
         </div>
       </div>
     </div>
@@ -914,47 +1037,6 @@ function InfoCard({
       <div className="space-y-2">{children}</div>
     </section>
   );
-}
-
-/**
- * El propietario es el de la consignación del inmueble — la ficha que la
- * inmobiliaria administra y a la que le dispersa. `landlordName` es otra
- * cosa: en un contrato migrado es el usuario que corrió la migración, y en
- * QA los 99 contratos decían «Propietario: victor ortiz». Sin consignación
- * no hay a quién mostrar: se dice, en vez de caer al nombre equivocado.
- */
-function FilaDelPropietario({ contract }: { contract: Contract }) {
-  const p = contract.propietarioDeLaConsignacion;
-  if (p) {
-    return (
-      <div className="flex items-start justify-between gap-3 text-sm">
-        <span className="text-muted-foreground">Propietario</span>
-        <span className="text-right">
-          <Link
-            href={conRegreso(`/panel/inmobiliaria/propietarios/${p.id}`, `/panel/inmobiliaria/contratos/${contract.id}`)}
-            className="font-medium text-foreground hover:underline"
-            data-testid="propietario-ficha"
-          >
-            {p.name}
-          </Link>
-          <span className="block text-xs text-muted-foreground">{p.documentNumber}</span>
-        </span>
-      </div>
-    );
-  }
-  if (contract.contractOrigin === 'MIGRATED') {
-    return (
-      <div className="flex items-start justify-between gap-3 text-sm">
-        <span className="text-muted-foreground">Propietario</span>
-        <span className="text-right text-xs text-muted-foreground" data-testid="propietario-sin-consignacion">
-          {contract.propertyId
-            ? 'El inmueble no está consignado: registra al propietario en Inmuebles.'
-            : 'Se vincula con el inmueble.'}
-        </span>
-      </div>
-    );
-  }
-  return <InfoRow label="Propietario" value={contract.landlordName} />;
 }
 
 function InfoRow({ label, value }: { label: string; value: string | number | null | undefined }) {

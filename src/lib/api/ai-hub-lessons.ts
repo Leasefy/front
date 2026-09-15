@@ -23,7 +23,12 @@ import { agentAuthHeaders } from '@/lib/api/agent-auth';
 
 // ── Backend contract (mirror of the agent's agency-ai-hub chat-lessons) ──────
 
-export type ChatLessonKind = 'routing' | 'approval';
+/**
+ * `routing` / `approval` se MINAN del historial; `feedback` la escribió una
+ * persona de la inmobiliaria al marcar una respuesta con el pulgar abajo
+ * (por eso nace certificada). Ver `ai-hub-feedback.ts`.
+ */
+export type ChatLessonKind = 'routing' | 'approval' | 'feedback';
 
 export type ChatLessonStatus = 'candidate' | 'certified' | 'rejected';
 

@@ -3,6 +3,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePermissions } from '@/lib/hooks/usePermissions';
+import { estaSinSenal, useSinSenal } from '@/lib/hooks/use-sin-senal';
 import type { AgencyRole } from '@/lib/auth/agency-roles';
 
 interface PageGuardProps {
@@ -39,6 +40,7 @@ interface PageGuardProps {
 export function PageGuard({ module, action = 'view', adminOnly = false, roles, children }: PageGuardProps) {
   const router = useRouter();
   const { canAccess, isAdmin, isLoading, agencyRole } = usePermissions();
+  const sinSenal = useSinSenal();
 
   const moduleAllowed = module ? canAccess(module, action) : true;
   const roleAllowed =
@@ -47,11 +49,39 @@ export function PageGuard({ module, action = 'view', adminOnly = false, roles, c
       : agencyRole !== null && (roles as string[]).includes(agencyRole);
   const hasAccess = isAdmin || (adminOnly ? false : moduleAllowed && roleAllowed);
 
+  /*
+   * 🔴 Sin señal NO se expulsa a nadie.
+   *
+   * Nico, 2026-09-12: «hay muchos apartamentos donde no hay señal; la persona
+   * que hace el inventario debería poder agregar todo sin señal». Los permisos
+   * salen de `GET /inmobiliaria/agency/my-permissions`; sin red esa llamada no
+   * vuelve, `permissions` queda en null y `canAccess` devuelve false —que acá
+   * significaba «no tienes permiso» y mandaba a la persona al inicio del panel
+   * justo cuando abría la ficha dentro del apartamento.
+   *
+   * Es el mismo criterio que ya tiene ProtectedRoute con un perfil degradado:
+   * no se pudo PREGUNTAR no es lo mismo que la respuesta fue NO. Y no afloja
+   * ninguna frontera real: sin red no hay dato del back que mostrar, lo único
+   * que se ve es la copia que ESTE dispositivo guardó con sesión válida, y
+   * cualquier llamada que salga sigue llevando el JWT y la decide el back.
+   *
+   * `navigator.onLine === false` es la única señal que se cree (ver
+   * `use-sin-senal.ts`): un `true` no prueba nada, un `false` sí.
+   */
+  const noSePudoPreguntar = sinSenal && !hasAccess;
+
   useEffect(() => {
-    if (!isLoading && !hasAccess) {
+    // Se pregunta al navegador EN ESTE INSTANTE y no al estado: el estado se
+    // llena en un efecto, y en el primer montaje —que es cuando se decide
+    // redirigir— todavía vale `false`. Esa carrera expulsaba igual.
+    if (!isLoading && !hasAccess && !estaSinSenal()) {
       router.replace('/panel/inmobiliaria');
     }
-  }, [isLoading, hasAccess, router]);
+  }, [isLoading, hasAccess, sinSenal, router]);
+
+  if (noSePudoPreguntar) {
+    return <>{children}</>;
+  }
 
   if (isLoading || !hasAccess) {
     return (

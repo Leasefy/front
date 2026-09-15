@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Wrench,
@@ -117,6 +117,40 @@ interface PropertySelectorProps {
 function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertySelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  /** Envuelve AL BUSCADOR Y A LA LISTA: un clic acá adentro no cierra nada. */
+  const contenedorRef = useRef<HTMLDivElement>(null);
+
+  /*
+    🔴 Antes el cierre lo hacía un `<div className="fixed inset-0">` invisible
+    montado ENCIMA del propio buscador: el segundo clic sobre el input no
+    llegaba al input, lo comía el manto y la lista se cerraba. O sea, hacer
+    clic dos veces para seguir escribiendo cerraba el desplegable.
+
+    El patrón del resto del producto es escuchar el clic de afuera en
+    `document` (ver `usePanelFlotante` en components/messages y
+    `PaymentAccountsSection`): sin manto, el input sigue siendo clicable.
+    Se escucha `mousedown` y no `click` porque con `click` el mismo evento que
+    reabre el buscador dispararía primero el cierre. Escape también cierra.
+  */
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const alClicAfuera = (evento: MouseEvent) => {
+      if (contenedorRef.current && !contenedorRef.current.contains(evento.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    const alTeclear = (evento: KeyboardEvent) => {
+      if (evento.key === 'Escape') setIsOpen(false);
+    };
+
+    document.addEventListener('mousedown', alClicAfuera);
+    document.addEventListener('keydown', alTeclear);
+    return () => {
+      document.removeEventListener('mousedown', alClicAfuera);
+      document.removeEventListener('keydown', alTeclear);
+    };
+  }, [isOpen]);
 
   const filteredConsignaciones = useMemo(() => {
     if (!searchQuery.trim()) return consignaciones;
@@ -202,7 +236,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
           </div>
         </div>
       ) : (
-        <div className="relative">
+        <div className="relative" ref={contenedorRef}>
           <div className="relative">
             <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
             <Input
@@ -266,8 +300,6 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
               </motion.div>
             )}
           </AnimatePresence>
-
-          {isOpen && <div className="fixed inset-0" onClick={() => setIsOpen(false)} />}
         </div>
       )}
     </div>

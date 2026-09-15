@@ -315,7 +315,20 @@ function ResumenDelNegocio() {
    * Sin esto, una inmobiliaria sin un inmueble leía «0.0% de ocupación».
    */
   const tasaDeRecaudo = tasaMedida(kpis.collectedRevenue, kpis.expectedRevenue);
-  const tasaDeOcupacion = tasaMedida(kpis.propertiesRented, kpis.totalProperties);
+  /*
+   * 🔴 La ocupación se mide contra el CATÁLOGO, no contra todo el portafolio
+   * (Nico, 2026-09-12: «esa tasa de ocupación se debe medir contra el inmueble
+   * disponible, no contra el no disponible, porque ya está fuera del
+   * catálogo»). `propertiesInCatalog` es el denominador que manda el back; una
+   * respuesta vieja en caché no lo trae y ahí cae a `totalProperties`, que es
+   * lo que se venía usando.
+   */
+  const enCatalogo = kpis.propertiesInCatalog ?? kpis.totalProperties;
+  const fueraDelCatalogo = kpis.propertiesOutOfCatalog ?? 0;
+  const tasaDeOcupacion = tasaMedida(kpis.propertiesRented, enCatalogo);
+  // Con 1.944 inmuebles afuera, «1944» sin separador se lee mal en una
+  // subtítulo de tarjeta. El resto del panel ya formatea así.
+  const miles = (n: number) => n.toLocaleString('es-CO');
 
   /*
    * La tendencia es un % contra el mes anterior, y ese mes anterior no viaja.
@@ -421,7 +434,17 @@ function ResumenDelNegocio() {
         <KPICard
           title={t('inmobiliaria.dashboard.kpi.totalProperties')}
           value={kpis.totalProperties}
-          subtitle={t('inmobiliaria.dashboard.kpi.rentedAndAvailable', { rented: kpis.propertiesRented, available: kpis.propertiesAvailable })}
+          subtitle={
+            /*
+             * `propertiesRented` y `propertiesAvailable` son del CATÁLOGO, y
+             * el total es el portafolio entero: sin decir cuántos quedaron
+             * fuera, «2.655 · 725 arrendadas · 74 disponibles» no cierra y
+             * parece un error de cuentas.
+             */
+            fueraDelCatalogo > 0
+              ? `${t('inmobiliaria.dashboard.kpi.rentedAndAvailable', { rented: miles(kpis.propertiesRented), available: miles(kpis.propertiesAvailable) })} · ${t('inmobiliaria.dashboard.kpi.outOfCatalog', { count: miles(fueraDelCatalogo) })}`
+              : t('inmobiliaria.dashboard.kpi.rentedAndAvailable', { rented: miles(kpis.propertiesRented), available: miles(kpis.propertiesAvailable) })
+          }
           icon={Buildings}
           href="/panel/inmobiliaria/inmuebles"
         />
@@ -439,7 +462,12 @@ function ResumenDelNegocio() {
         <KPICard
           title={t('inmobiliaria.dashboard.kpi.occupancy')}
           value={textoDeTasa(tasaDeOcupacion)}
-          subtitle={t('inmobiliaria.dashboard.kpi.occupancyOf', { rented: kpis.propertiesRented, total: kpis.totalProperties })}
+          subtitle={
+            // El número dice QUÉ cuenta: nunca un porcentaje suelto.
+            fueraDelCatalogo > 0
+              ? `${t('inmobiliaria.dashboard.kpi.occupancyOf', { rented: miles(kpis.propertiesRented), total: miles(enCatalogo) })} · ${t('inmobiliaria.dashboard.kpi.outOfCatalog', { count: miles(fueraDelCatalogo) })}`
+              : t('inmobiliaria.dashboard.kpi.occupancyOf', { rented: miles(kpis.propertiesRented), total: miles(enCatalogo) })
+          }
           icon={House}
         />
       </div>

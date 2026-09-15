@@ -25,6 +25,16 @@ vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children?: React.ReactNode }) => children,
 }));
 
+/*
+ * «Nueva factura» es la pestaña por defecto desde 2026-09-12 y pide el listado
+ * del mes al back. Acá se prueba la TARJETA —las pestañas adentro, el vacío en
+ * el cuerpo, ningún control sin comportamiento—, así que se reemplaza por un
+ * marcador: su propio comportamiento vive en `NuevaFactura.test.tsx`.
+ */
+vi.mock('@/components/facturacion/NuevaFactura', () => ({
+  NuevaFactura: () => <div data-testid="nueva-factura-simulada" />,
+}));
+
 import FacturacionPage from './page';
 
 const K = 'inmobiliaria.facturacion.';
@@ -60,7 +70,22 @@ async function activarPestana(el: Element) {
 }
 
 describe('/panel/inmobiliaria/facturacion', () => {
-  it('las pestañas viven dentro de la tarjeta de la tabla, antes de la tabla', () => {
+  /** La tarjeta abre en «Nueva factura»; las columnas se ven en «Ventas». */
+  async function irAVentas() {
+    const ventas = qa('[role="tab"]').find((t) => t.textContent === `${K}tab_ventas`)!;
+    await activarPestana(ventas);
+  }
+
+  it('abre en «Nueva factura»: es el pedido de Nico, no un listado de lo ya emitido', () => {
+    const activa = qa('[role="tab"]').find((t) => t.getAttribute('aria-selected') === 'true');
+    expect(activa!.textContent).toBe(`${K}tab_nueva`);
+    expect(q('[data-testid="nueva-factura-simulada"]')).not.toBeNull();
+    // El banner del M2 no se pinta encima de una pestaña que sí tiene motor.
+    expect(host.textContent ?? '').not.toContain(`${K}m2BannerTitle`);
+  });
+
+  it('las pestañas viven dentro de la tarjeta de la tabla, antes de la tabla', async () => {
+    await irAVentas();
     const tarjeta = q('[data-testid="facturacion-tarjeta"]');
     expect(tarjeta).not.toBeNull();
 
@@ -74,14 +99,19 @@ describe('/panel/inmobiliaria/facturacion', () => {
     expect(listas[0].compareDocumentPosition(tabla!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     expect(qa('[role="tab"]').map((t) => t.textContent)).toEqual([
+      `${K}tab_nueva`,
       `${K}tab_ventas`,
       `${K}tab_compras`,
       `${K}tab_electronica`,
       `${K}tab_notas`,
+      // La resolución de la DIAN: el permiso con el que se numera. Va última
+      // porque se toca una vez al año, no todos los meses.
+      `${K}tab_resolucion`,
     ]);
   });
 
-  it('los encabezados se ven y el vacío va en el cuerpo, en una celda que los abarca', () => {
+  it('los encabezados se ven y el vacío va en el cuerpo, en una celda que los abarca', async () => {
+    await irAVentas();
     expect(qa('thead th')).toHaveLength(9);
 
     const celda = q('tbody td');
@@ -104,15 +134,16 @@ describe('/panel/inmobiliaria/facturacion', () => {
     expect(q('[data-testid="sin-datos"]')!.textContent).toContain(`${K}desc_compras`);
   });
 
-  it('no queda ningún control sin comportamiento; el banner del M2 sigue', () => {
+  it('no queda ningún control sin comportamiento; el banner del M2 sigue', async () => {
+    await irAVentas();
     const texto = host.textContent ?? '';
     // «Nueva factura» sólo mostraba un toast «llega con M2».
     expect(texto).not.toContain(`${K}new`);
     // La leyenda de estados no filtraba nada.
     expect(texto).not.toContain(`${K}estadosLabel`);
     expect(texto).not.toContain(`${K}estadoAceptada`);
-    // Los únicos botones son las cuatro pestañas.
-    expect(qa('button')).toHaveLength(4);
+    // Los únicos botones son las seis pestañas.
+    expect(qa('button')).toHaveLength(6);
     expect(qa('button').every((b) => b.getAttribute('role') === 'tab')).toBe(true);
 
     expect(texto).toContain(`${K}m2BannerTitle`);

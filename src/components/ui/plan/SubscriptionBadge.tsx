@@ -176,10 +176,66 @@ export function SubscriptionBadge({
 // Compact Avatar Badge (for header)
 // ============================================================================
 
+/**
+ * Minimal shape of a live-catalog agency plan (see `useAgencyPlans()` /
+ * `AgencyPlan`) needed to style the avatar badge. Kept separate from
+ * `AgencyPlan` so this component does not need to import the full type.
+ */
+export interface AgencyBadgePlan {
+  name: string;
+  /** True for the catalog's free/default plan — hides the badge, same rule
+   * the static `starter` slug used to encode. */
+  isDefault: boolean;
+  /** Ladder level (mirrors `BackendSubscriptionPlan.level`); null = off-ladder
+   * (e.g. usage-based). Styling is keyed on this, never on the plan's slug —
+   * an admin-created tier (contrato 29) has no entry in `LANDLORD_BADGES`. */
+  level: number | null;
+}
+
+/**
+ * Badge visual treatment for a LIVE agency-catalog plan, keyed on
+ * `level`/`isDefault` — never on the slug, so any admin-created tier gets a
+ * badge instead of silently disappearing (contrato 29).
+ */
+function agencyBadgeConfig(plan: AgencyBadgePlan) {
+  // Off-ladder (e.g. a usage-based/percentage plan) — same premium treatment
+  // the static 'flex' entry used.
+  if (plan.level === null) {
+    return {
+      label: `Plan ${plan.name}`,
+      shortLabel: plan.name,
+      icon: Crown,
+      colors: {
+        bg: 'bg-gradient-to-r from-warning/10 to-warning/10',
+        text: 'text-warning',
+        border: 'border-warning/30',
+        iconBg: 'bg-warning',
+      },
+    };
+  }
+  // Any on-ladder paid tier — same treatment the static 'pro' entry used.
+  return {
+    label: `Plan ${plan.name}`,
+    shortLabel: plan.name,
+    icon: Shield,
+    colors: {
+      bg: 'bg-gradient-to-r from-primary/10 to-primary/10',
+      text: 'text-primary',
+      border: 'border-primary/30',
+      iconBg: 'bg-primary',
+    },
+  };
+}
+
 export interface AvatarSubscriptionIndicatorProps {
   variant: 'tenant' | 'landlord';
   tenantSubscription?: TenantSubscriptionTextT;
   planId?: PlanId;
+  /** Live agency-catalog plan (see `useAgencyPlans()` + `agencyPlanId`). When
+   * provided for `variant="landlord"`, this REPLACES the static `planId`
+   * lookup so an admin-created tier (e.g. "pro-plus") renders correctly
+   * instead of vanishing because it has no entry in `LANDLORD_BADGES`. */
+  agencyPlan?: AgencyBadgePlan | null;
   className?: string;
 }
 
@@ -190,20 +246,27 @@ export function AvatarSubscriptionIndicator({
   variant,
   tenantSubscription = 'none',
   planId = 'starter',
+  agencyPlan,
   className,
 }: AvatarSubscriptionIndicatorProps) {
-  // Get badge config based on variant
-  const badgeConfig = variant === 'tenant'
-    ? TENANT_BADGES[tenantSubscription]
-    : LANDLORD_BADGES[planId];
+  // Get badge config based on variant. For landlord/agency, the live catalog
+  // (when provided) takes priority over the static planId map — it is the
+  // only source that knows about admin-created tiers (contrato 29).
+  const badgeConfig =
+    variant === 'tenant'
+      ? TENANT_BADGES[tenantSubscription]
+      : agencyPlan
+        ? (agencyPlan.isDefault ? null : agencyBadgeConfig(agencyPlan))
+        : LANDLORD_BADGES[planId];
 
   // Don't render for free tier landlords or tenants without pass
   if (!badgeConfig) {
     return null;
   }
 
-  // For base tier landlords, only show if explicitly requested
-  if (variant === 'landlord' && planId === 'starter') {
+  // For base tier landlords (static path only — the live-catalog path already
+  // decided via `isDefault` above), only show if explicitly requested.
+  if (variant === 'landlord' && !agencyPlan && planId === 'starter') {
     return null;
   }
 

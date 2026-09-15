@@ -36,6 +36,16 @@ export interface AgencySubscription {
   nextBillingDate?: string | null;
 }
 
+/**
+ * INITIAL — first charge for a brand-new paid subscription. RENEWAL — a
+ * same-tier billing-cycle charge (monthly cron, or a T-0085 reactivation
+ * reusing/creating one for a SUSPENDED/PAST_DUE owner). UPGRADE — a ladder
+ * move to a higher tier (`targetPlanTier` set). Already on the wire today
+ * (`agency-subscription.controller.ts` returns the raw Prisma row, no
+ * serializer) — this type just didn't declare it (T-0085 contract §3.2/§4).
+ */
+export type AgencyChargeKind = 'INITIAL' | 'RENEWAL' | 'UPGRADE';
+
 export interface AgencySubscriptionCharge {
   id: string;
   amount: number; // COP whole pesos
@@ -55,6 +65,8 @@ export interface AgencySubscriptionCharge {
    * Null for a RENEWAL charge (same plan, fresh period).
    */
   targetPlanTier?: string | null;
+  /** See `AgencyChargeKind`. Optional because older reads may omit it. */
+  kind?: AgencyChargeKind;
 }
 
 /** GET /inmobiliaria/subscription — current state; poll target after checkout. */
@@ -64,12 +76,47 @@ export interface AgencySubscriptionState {
   openCharge: AgencySubscriptionCharge | null;
   status: AgencySubscriptionStatus | null;
   canOfferRentals: boolean;
+  /** Current plan slug (R6: free-form lowercase-kebab, e.g. "pro"). Redundant
+   * with `subscription.planTier` but present at the top level on the wire
+   * (`AgencySubscriptionStateDto`) — null only for a brand-new agency with no
+   * subscription row yet. */
+  planTier: string | null;
+  /** Ladder level of the current plan; null = off-ladder (e.g. usage-based). */
+  level: number | null;
+  /** Tier a scheduled downgrade will switch to; null when nothing is scheduled
+   * (T-0089 — "Cancelar plan" is a scheduled downgrade to the catalog's
+   * default/free tier, detected here rather than via any "cancelled" flag). */
+  pendingPlanTier: string | null;
+  /** When the scheduled change takes effect (`currentPeriodEnd`); null when
+   * nothing is scheduled. */
+  pendingPlanEffectiveAt: string | null;
 }
+
+/**
+ * Discriminator the back branches on internally (`SelectPlanResponseDto`,
+ * `agency-subscription-response.dto.ts`). The front does not switch on every
+ * member today — `pay()` only special-cases `REACTIVATION_PENDING` (T-0085);
+ * every other value follows the existing payment-link path unchanged.
+ */
+export type SelectPlanOutcome =
+  | 'NO_CHANGE'
+  | 'PENDING_PAYMENT'
+  | 'SCHEDULED_DOWNGRADE'
+  | 'FLEX_ACTIVATED'
+  /** SUSPENDED/PAST_DUE owner re-selecting their current tier: a payable
+   * RENEWAL charge (reused or freshly created) lifts the suspension once
+   * paid. `charge.targetPlanTier` is always null for this outcome. */
+  | 'REACTIVATION_PENDING';
 
 /** POST select-plan → PRO returns a PENDING `charge`; STARTER/FLEX return `charge: null`. */
 export interface SelectPlanResponse {
   subscription: AgencySubscription;
   charge: AgencySubscriptionCharge | null;
+  /** Optional: an old back predating T-0085 never sends it. */
+  outcome?: SelectPlanOutcome;
+  /** When the scheduled downgrade takes effect. Present only for
+   * `SCHEDULED_DOWNGRADE` (T-0089); absent/null otherwise. */
+  effectiveAt?: string | null;
 }
 
 export interface ChargePseCheckoutDto {

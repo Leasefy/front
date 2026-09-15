@@ -49,6 +49,17 @@ const STATUS_BADGE_VARIANT = {
   defaulted: 'destructive',
 } as const;
 
+/**
+ * El texto de una celda, en minúscula, aunque la celda esté vacía.
+ *
+ * El tipo dice `string`; la base dice otra cosa. Un cobro migrado a nombre de
+ * nadie llega con `tenantName: null` y `.toLowerCase()` sobre eso no devuelve
+ * una fila fea: tumba la tabla entera con un `TypeError`.
+ */
+export function enMinuscula(valor: string | null | undefined): string {
+  return (valor ?? '').toLowerCase();
+}
+
 interface CobroTableProps {
   cobros: Cobro[];
   onCobroClick?: (cobro: Cobro) => void;
@@ -97,13 +108,17 @@ export function CobroTable({
       let bVal: string | number = '';
 
       switch (sortField) {
+        // 🔴 `enMinuscula` y no `.toLowerCase()` directo: los dos campos son
+        // `string` en el tipo y NO en la base (un cobro migrado a nombre de
+        // nadie llega con `tenantName: null`), y ordenar por esa columna
+        // tumbaba la tabla entera. Mismo defecto que el buscador de la página.
         case 'propertyTitle':
-          aVal = a.propertyTitle.toLowerCase();
-          bVal = b.propertyTitle.toLowerCase();
+          aVal = enMinuscula(a.propertyTitle);
+          bVal = enMinuscula(b.propertyTitle);
           break;
         case 'tenantName':
-          aVal = a.tenantName.toLowerCase();
-          bVal = b.tenantName.toLowerCase();
+          aVal = enMinuscula(a.tenantName);
+          bVal = enMinuscula(b.tenantName);
           break;
         case 'month':
           aVal = a.month;

@@ -1193,6 +1193,98 @@ describe('<MigrarContratos> — invitar:false ya no crea nada, y el resumen lo d
     expect(texto).toContain('contrato')
   })
 
+  /*
+   * 🔴 Re-subir el archivo ACTUALIZA lo ya migrado (2026-09-13). Los 1.836
+   * contratos de una inmobiliaria real se habían migrado sin fecha de cartera;
+   * volver a subir el archivo bueno decía «0 contratos activados» y ni una
+   * palabra de lo que acababa de arreglar.
+   */
+  it('el resultado dice cuántos contratos YA MIGRADOS quedaron actualizados', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(1)
+    await confirmarRevision()
+    vi.mocked(contractsApi.migracion.activar).mockResolvedValue({
+      intentadas: 1,
+      activadas: 0,
+      fallidas: 0,
+      invitados: 0,
+      yaMigradas: 1,
+      actualizadas: 1,
+      resultados: [
+        {
+          fila: 0,
+          estado: 'creado',
+          contratoId: 'c-1',
+          inquilinoInvitado: false,
+        },
+      ],
+    })
+
+    await act(async () => {
+      boton('Activar 1 contratos')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    const aviso = container.querySelector('[data-testid="aviso-actualizados"]')
+    expect(aviso?.textContent).toMatch(/1 contrato que ya estaba migrado/)
+    expect(aviso?.textContent).toMatch(/fecha de cartera/)
+  })
+
+  it('dice cuáles NO se actualizaron porque ya tienen plata movida', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(1)
+    await confirmarRevision()
+    vi.mocked(contractsApi.migracion.activar).mockResolvedValue({
+      intentadas: 1,
+      activadas: 0,
+      fallidas: 0,
+      invitados: 0,
+      yaMigradas: 1,
+      actualizadas: 0,
+      porRevisarAMano: 1,
+      resultados: [
+        { fila: 0, estado: 'creado', contratoId: 'c-1', inquilinoInvitado: false },
+      ],
+    })
+
+    await act(async () => {
+      boton('Activar 1 contratos')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(
+      container.querySelector('[data-testid="aviso-revisar-a-mano"]')?.textContent,
+    ).toMatch(/cobros o facturas/)
+    // Sin actualizaciones no se afirma ninguna: nunca «0 actualizados».
+    expect(container.querySelector('[data-testid="aviso-actualizados"]')).toBeNull()
+  })
+
+  it('un back viejo que no manda `actualizadas` no pinta ninguna línea', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(1)
+    await confirmarRevision()
+    vi.mocked(contractsApi.migracion.activar).mockResolvedValue({
+      intentadas: 1,
+      activadas: 1,
+      fallidas: 0,
+      invitados: 0,
+      resultados: [
+        { fila: 0, estado: 'creado', contratoId: 'c-1', inquilinoInvitado: false },
+      ],
+    })
+
+    await act(async () => {
+      boton('Activar 1 contratos')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(container.querySelector('[data-testid="aviso-actualizados"]')).toBeNull()
+    expect(container.querySelector('[data-testid="aviso-revisar-a-mano"]')).toBeNull()
+  })
+
   it('el resumen de activación NO suma la línea cuando porInvitar está ausente (back viejo)', async () => {
     render()
     await esperar()

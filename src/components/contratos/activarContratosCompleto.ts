@@ -31,6 +31,18 @@ export interface ProgresoDeContratos {
   activadas: number;
   /** De ésas, las que no se pudieron crear. */
   fallidas: number;
+  /**
+   * 2026-09-13 — filas cuyo consecutivo YA existía y que el archivo ACTUALIZÓ
+   * (fecha de cartera, plazo, prorrateo, fecha fin, estado). Es lo que
+   * contesta «¿sirvió de algo volver a subir el archivo?»: sin este número,
+   * re-subir se ve igual que no haber hecho nada.
+   */
+  actualizadas: number;
+  /**
+   * De esas actualizaciones, las que el back NO escribió porque el contrato
+   * ya tiene cobros o facturas: las mira una persona.
+   */
+  porRevisarAMano: number;
   /** Cuántas quedan, según la última llamada. */
   restantes: number;
   llamadas: number;
@@ -58,6 +70,8 @@ export async function activarContratosCompleto(
   let hechas = 0;
   let activadas = 0;
   let fallidas = 0;
+  let actualizadas = 0;
+  let porRevisarAMano = 0;
   let llamadas = 0;
 
   for (;;) {
@@ -66,11 +80,17 @@ export async function activarContratosCompleto(
     hechas += r.intentadas;
     activadas += r.activadas;
     fallidas += r.fallidas;
+    // Ausentes en un back anterior al 2026-09-13 ⇒ 0, nunca un conteo
+    // inventado: la pantalla no pinta la línea si el total queda en cero.
+    actualizadas += r.actualizadas ?? 0;
+    porRevisarAMano += r.porRevisarAMano ?? 0;
 
     const progreso: ProgresoDeContratos = {
       hechas,
       activadas,
       fallidas,
+      actualizadas,
+      porRevisarAMano,
       restantes: r.restantes ?? 0,
       llamadas,
     };

@@ -21,6 +21,7 @@ import {
   PaintBrush,
   Key,
   DotsThreeCircle,
+  DotsThree,
   Warning,
   Clock,
   CheckCircle,
@@ -50,6 +51,12 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu';
 import { IconButton } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type {
@@ -74,6 +81,12 @@ export interface MantenimientoViewerProps {
   onApproveQuote?: (solicitudId: string, quoteId: string) => void;
   onAddNote?: (solicitudId: string, note: string) => void;
   onUploadPhoto?: (solicitudId: string, type: 'before' | 'after', files: File[]) => void;
+  /**
+   * Abrir el diálogo para agregarle una cotización a ESTA solicitud.
+   *
+   * Es lo mismo que dispara «Nueva cotización» dentro del comparador: un solo
+   * handler para las dos puertas, así no se pueden separar.
+   */
   onRequestQuote?: (solicitudId: string) => void;
 }
 
@@ -396,6 +409,7 @@ export function MantenimientoViewer({
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [completionNotes, setCompletionNotes] = useState('');
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | undefined>(undefined);
+  const [menuAbierto, setMenuAbierto] = useState(false);
 
   const TypeIcon = solicitud ? TYPE_ICONS[solicitud.type] : Wrench;
   const typeInfo = solicitud ? getMantenimientoTypeInfo(solicitud.type) : null;
@@ -412,6 +426,50 @@ export function MantenimientoViewer({
       setSelectedQuoteId(solicitud.selectedQuoteId);
     }
   }, [solicitud?.selectedQuoteId]);
+
+  /**
+   * Lo que ofrece el menú de los tres puntos.
+   *
+   * Cada entrada sólo aparece si hay quien la atienda Y si el estado la admite:
+   * un menú que ofrece cotizar una solicitud ya completada es la misma promesa
+   * rota que el botón que contestaba «función en desarrollo». Una solicitud
+   * cerrada o cancelada deja el menú vacío y entonces no se dibuja.
+   */
+  const accionesDelMenu = useMemo(() => {
+    if (!solicitud) return [];
+    const cerrada = solicitud.status === 'completed' || solicitud.status === 'cancelled';
+    if (cerrada) return [];
+
+    const acciones: {
+      id: string;
+      etiqueta: string;
+      icono: React.ElementType;
+      tono?: string;
+      alElegir: () => void;
+    }[] = [];
+
+    if (onRequestQuote) {
+      acciones.push({
+        id: 'cotizar',
+        etiqueta: t('inmobiliaria.mantenimiento.addQuote'),
+        icono: CurrencyDollar,
+        tono: 'text-primary',
+        alElegir: () => onRequestQuote(solicitud.id),
+      });
+    }
+
+    if (onStatusChange) {
+      acciones.push({
+        id: 'cancelar',
+        etiqueta: t('inmobiliaria.mantenimiento.cancelRequest'),
+        icono: XCircle,
+        tono: 'text-danger',
+        alElegir: () => setShowCancelDialog(true),
+      });
+    }
+
+    return acciones;
+  }, [solicitud, onRequestQuote, onStatusChange, t]);
 
   const handleAddNote = () => {
     if (solicitud && onAddNote && noteText.trim()) {
@@ -467,12 +525,45 @@ export function MantenimientoViewer({
             >
               <TypeIcon className={cn('w-5 h-5', priorityStyle.text)} />
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <SheetTitle className="text-left text-lg font-semibold text-fg">{solicitud.title}</SheetTitle>
               <p className="text-sm text-muted-foreground mt-0.5">
                 {typeInfo?.labelEs} · {fmtDate(solicitud.createdAt)}
               </p>
             </div>
+
+            {/* Los tres puntos del detalle.
+                🔴 Antes NO existían: el detalle no tenía menú ninguno, así que
+                «agregarle una cotización desde los tres puntos» no era un botón
+                roto, era un botón que no estaba (Nico, 2026-09-12). Sólo lleva
+                acciones que de verdad hacen algo; una solicitud cerrada no
+                muestra menú porque no queda nada que hacerle. */}
+            {accionesDelMenu.length > 0 && (
+              <DropdownList open={menuAbierto} onOpenChange={setMenuAbierto}>
+                <DropdownListTrigger asChild>
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    icon={<DotsThree className="w-5 h-5" weight="bold" />}
+                    aria-label={t('inmobiliaria.mantenimiento.moreActions')}
+                    data-testid="mantenimiento-detalle-menu"
+                  />
+                </DropdownListTrigger>
+                <DropdownListContent align="end" className="w-56">
+                  {accionesDelMenu.map((accion) => (
+                    <DropdownListItem
+                      key={accion.id}
+                      className={cn('gap-3', accion.tono)}
+                      onClick={accion.alElegir}
+                      data-testid={`mantenimiento-detalle-${accion.id}`}
+                    >
+                      <accion.icono className="w-4 h-4" />
+                      <span className="text-sm">{accion.etiqueta}</span>
+                    </DropdownListItem>
+                  ))}
+                </DropdownListContent>
+              </DropdownList>
+            )}
           </div>
 
           {/* Status & Priority Badges */}

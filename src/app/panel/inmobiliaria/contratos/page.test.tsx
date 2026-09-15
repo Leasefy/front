@@ -73,8 +73,25 @@ vi.mock('@/lib/hooks/use-migracion-con-deuda', () => ({
 }))
 
 vi.mock('@/components/estado/SinDatos', () => ({
-  SinDatos: ({ titulo }: { titulo: string }) =>
-    React.createElement('div', { 'data-testid': 'sin-datos' }, titulo),
+  // 🔴 El mock pinta también `descripcion` y `accion`: desde que hay buscador,
+  // el vacío tiene DOS caras («todavía no hay ninguno» vs «tu búsqueda no
+  // encontró nada») y lo que las distingue vive ahí, no en el título.
+  SinDatos: ({
+    titulo,
+    descripcion,
+    accion,
+  }: {
+    titulo: string
+    descripcion?: string
+    accion?: React.ReactNode
+  }) =>
+    React.createElement(
+      'div',
+      null,
+      React.createElement('h3', null, titulo),
+      descripcion ? React.createElement('p', null, descripcion) : null,
+      accion ?? null,
+    ),
 }))
 
 vi.mock('@/components/ui/button', () => ({
@@ -94,6 +111,38 @@ vi.mock('@/components/ui/pagination', () => ({
 vi.mock('@leasefy/cadence', () => ({
   Eyebrow: ({ children }: { children?: React.ReactNode }) =>
     React.createElement('p', null, children),
+  // El buscador de la tabla (2026-09-12): acá sólo hace falta que exista.
+  Input: (props: Record<string, unknown>) => React.createElement('input', props),
+  IconButton: ({ icon, ...props }: Record<string, unknown> & { icon?: React.ReactNode }) =>
+    React.createElement('button', { type: 'button', ...props }, icon),
+  // El control segmentado de los filtros: un botón por opción, con testid
+  // para poder tocarlo desde acá.
+  SegmentedControl: ({
+    value,
+    onChange,
+    options,
+  }: {
+    value: string
+    onChange: (v: string) => void
+    options: { value: string; label: string }[]
+  }) =>
+    React.createElement(
+      'div',
+      null,
+      options.map((o) =>
+        React.createElement(
+          'button',
+          {
+            key: o.value,
+            type: 'button',
+            'data-testid': `segmento-${o.value}`,
+            'aria-pressed': value === o.value,
+            onClick: () => onChange(o.value),
+          },
+          o.label,
+        ),
+      ),
+    ),
   // Lo que usa `AlertaAccionable`: el vestido es del DS, acá sólo el contenido.
   Alert: ({ children, title, variant, icon, ...props }: Record<string, unknown> & { children?: React.ReactNode; title?: string }) => {
     void variant; void icon
@@ -101,6 +150,43 @@ vi.mock('@leasefy/cadence', () => ({
   },
   AlertAction: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
 }))
+
+// Los desplegables de los filtros (Radix). Se pintan planos: cada opción es
+// un botón que avisa al `Select` de arriba por contexto, para poder elegir
+// una desde el test sin abrir ningún portal.
+vi.mock('@/components/ui/select', async () => {
+  const R = await import('react')
+  const Ctx = R.createContext<(v: string) => void>(() => undefined)
+  return {
+    Select: ({
+      value,
+      onValueChange,
+      children,
+    }: {
+      value: string
+      onValueChange: (v: string) => void
+      children?: React.ReactNode
+    }) =>
+      R.createElement(
+        Ctx.Provider,
+        { value: onValueChange },
+        R.createElement('div', { 'data-select': value }, children),
+      ),
+    SelectTrigger: ({ children, className, ...props }: Record<string, unknown> & { children?: React.ReactNode }) => {
+      void className
+      return R.createElement('button', { type: 'button', ...props }, children)
+    },
+    SelectContent: ({ children }: { children?: React.ReactNode }) => R.createElement('div', null, children),
+    SelectItem: ({ value, children }: { value: string; children?: React.ReactNode }) => {
+      const elegir = R.useContext(Ctx)
+      return R.createElement(
+        'button',
+        { type: 'button', 'data-opcion': value, onClick: () => elegir(value) },
+        children,
+      )
+    },
+  }
+})
 
 // The table shim re-exports cadence primitives — replace it with plain
 // elements, forwarding ALL props so nothing that reaches the DOM is hidden.
@@ -299,5 +385,227 @@ describe('ContratosPage — contratos migrados que no cobran', () => {
     await renderPage()
 
     expect(container.querySelector('[data-testid="alerta-migrados-sin-cobrar"]')).toBeNull()
+  })
+})
+
+/**
+ * 🔴 Nico, 2026-09-12: «esta tabla ¿por qué no tiene buscador?». Era la única
+ * de las cuatro del directorio sin uno, con 1.836 contratos de a 10 por
+ * página.
+ *
+ * Lo que se fija acá es la trampa que ya costó una vez en propietarios: un
+ * buscador que mira la PÁGINA en vez de la lista contesta «no se encontró»
+ * sobre algo que sí existe.
+ */
+describe('ContratosPage — el buscador', () => {
+  const TRES = [
+    contract({ id: 'a', code: 1981, tenantName: 'Juan Esteban Sanchez' }),
+    contract({ id: 'b', code: 1980, tenantName: 'Martínez Gómez', propertyAddress: 'CL 106B SUR' }),
+    contract({ id: 'c', code: 1979, tenantName: 'Sofia Colorado' }),
+  ]
+  const buscador = () =>
+    container.querySelector('[data-testid="buscar-contratos"]') as HTMLInputElement
+  const filas = () => Array.from(container.querySelectorAll('tbody tr'))
+
+  const escribir = async (v: string) => {
+    const i = buscador()
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(i, v)
+      i.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+
+  it('🔴 aparece cuando hay contratos, y no sobre una lista vacía', async () => {
+    withContracts([])
+    await renderPage()
+    expect(buscador()).toBeNull()
+
+    withContracts(TRES)
+    await renderPage()
+    expect(buscador()).not.toBeNull()
+  })
+
+  it('filtra por nombre del inquilino', async () => {
+    withContracts(TRES)
+    await renderPage()
+    await escribir('martinez')
+
+    expect(filas()).toHaveLength(1)
+    expect(container.textContent).toContain('Martínez Gómez')
+    expect(container.textContent).not.toContain('Sofia Colorado')
+  })
+
+  it('filtra por código, con o sin numeral', async () => {
+    withContracts(TRES)
+    await renderPage()
+    await escribir('#1979')
+
+    expect(filas()).toHaveLength(1)
+    expect(container.textContent).toContain('Sofia Colorado')
+  })
+
+  /*
+   * 🔴 Sin resultados NO se ofrece «Nuevo contrato»: ahí lo útil es borrar lo
+   * escrito, no crear algo que probablemente ya existe. Y se dice que se buscó
+   * en TODOS, que es lo que distingue este buscador del que miente.
+   */
+  it('sin resultados lo dice, aclara que buscó en todos, y deja limpiar', async () => {
+    withContracts(TRES)
+    await renderPage()
+    await escribir('no existe nadie así')
+
+    expect(filas()).toHaveLength(1)
+    expect(container.textContent).toContain('Sin resultados')
+    expect(container.textContent).toContain('los 3 contratos')
+    expect(container.textContent).not.toContain('Sin contratos aún')
+
+    const limpiar = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Limpiar la búsqueda'),
+    )!
+    await act(async () => limpiar.click())
+    expect(filas()).toHaveLength(3)
+  })
+
+  it('con la lista vacía de verdad sigue ofreciendo crear el primero', async () => {
+    withContracts([])
+    await renderPage()
+
+    expect(container.textContent).toContain('Sin contratos aún')
+    expect(container.textContent).not.toContain('Sin resultados')
+  })
+})
+
+
+/*
+ * 🔴 Nico, 2026-09-12: «estás tergiversando los números de contrato». Vio el
+ * #1839 (nuestro consecutivo), lo buscó en su sistema anterior y era otra
+ * persona. La celda lee grande el número que ÉL conoce (`externalId`) y debajo
+ * el nuestro, nombrado.
+ */
+describe('ContratosPage — el número que la inmobiliaria conoce', () => {
+  const primeraCelda = () => bodyRows()[0].querySelectorAll('td')[0]
+
+  it('un contrato migrado muestra SU número grande y el nuestro como «Leasefy #…»', async () => {
+    withContracts([contract({ id: 'c-1', code: 1839, externalId: '1686', contractOrigin: 'MIGRATED' })])
+    await renderPage()
+
+    const celda = primeraCelda()
+    expect(celda.querySelector('span')?.textContent).toBe('1686')
+    expect(celda.textContent).toContain('Leasefy #1839')
+  })
+
+  it('un contrato nativo sigue mostrando sólo el nuestro', async () => {
+    withContracts([contract({ id: 'c-1', code: 14, externalId: null })])
+    await renderPage()
+
+    expect(primeraCelda().textContent).toBe('#14')
+    expect(primeraCelda().textContent).not.toContain('Leasefy')
+  })
+
+  it('el buscador encuentra por el número de la inmobiliaria', async () => {
+    withContracts([
+      contract({ id: 'a', code: 1839, externalId: '1686', tenantName: 'Nubia David', contractOrigin: 'MIGRATED' }),
+      contract({ id: 'b', code: 1967, externalId: '1839', tenantName: 'Maria Bedoya', contractOrigin: 'MIGRATED' }),
+    ])
+    await renderPage()
+    const i = container.querySelector('[data-testid="buscar-contratos"]') as HTMLInputElement
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(i, '1686')
+      i.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    expect(bodyRows()).toHaveLength(1)
+    expect(container.textContent).toContain('Nubia David')
+  })
+})
+
+/*
+ * Nico, 2026-09-12: «la tabla de contratos con TODOS los filtros, el mismo
+ * patrón de las otras tablas». Filtran la lista completa y después se pagina:
+ * el conteo dice «N de M» sobre el total, no sobre la página.
+ */
+describe('ContratosPage — los filtros', () => {
+  const LISTA = [
+    contract({ id: 'a', code: 1, tenantName: 'Ana Activa', status: 'active', monthlyRent: 3_000_000, contractOrigin: 'GENERATED' }),
+    contract({ id: 'b', code: 2, tenantName: 'Bruno Borrador', status: 'draft', monthlyRent: 1_000_000, contractOrigin: 'GENERATED' }),
+    contract({ id: 'c', code: 3, externalId: '900', tenantName: 'Carla Migrada', status: 'active', monthlyRent: null, propertyId: null, contractOrigin: 'MIGRATED' }),
+  ]
+  const filas = () => Array.from(container.querySelectorAll('tbody tr'))
+  // La celda del inquilino trae nombre y correo: el nombre es el primer <p>.
+  const nombres = () => filas().map((r) => r.querySelectorAll('td')[1]?.querySelector('p')?.textContent ?? '')
+  const click = async (sel: string) => {
+    const el = container.querySelector(sel) as HTMLElement
+    expect(el, sel).not.toBeNull()
+    await act(async () => el.click())
+  }
+  const elegir = async (testid: string, opcion: string) =>
+    click(`[data-testid="${testid}"] ~ div [data-opcion="${opcion}"], [data-testid="${testid}"] + div [data-opcion="${opcion}"]`)
+
+  it('🔴 la barra aparece con contratos y no sobre una lista vacía', async () => {
+    withContracts([])
+    await renderPage()
+    expect(container.querySelector('[data-testid="filtros-de-contratos"]')).toBeNull()
+
+    withContracts(LISTA)
+    await renderPage()
+    expect(container.querySelector('[data-testid="filtros-de-contratos"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="conteo-filtrado"]')?.textContent).toBe('3 de 3')
+  })
+
+  it('migrados / creados acá', async () => {
+    withContracts(LISTA)
+    await renderPage()
+
+    await click('[data-testid="segmento-migrado"]')
+    expect(nombres()).toEqual(['Carla Migrada'])
+    expect(container.querySelector('[data-testid="conteo-filtrado"]')?.textContent).toBe('1 de 3')
+
+    await click('[data-testid="segmento-nativo"]')
+    expect(nombres()).toEqual(['Ana Activa', 'Bruno Borrador'])
+  })
+
+  it('por estado, desde el desplegable', async () => {
+    withContracts(LISTA)
+    await renderPage()
+
+    await elegir('filtro-estado', 'draft')
+    expect(nombres()).toEqual(['Bruno Borrador'])
+  })
+
+  it('sin inmueble y sin canon', async () => {
+    withContracts(LISTA)
+    await renderPage()
+
+    await elegir('filtro-inmueble', 'sin')
+    expect(nombres()).toEqual(['Carla Migrada'])
+
+    await elegir('filtro-inmueble', 'all')
+    await elegir('filtro-canon', 'sin_canon')
+    expect(nombres()).toEqual(['Carla Migrada'])
+  })
+
+  it('«Limpiar» vuelve a la lista completa, y sin resultados lo dice y deja limpiar', async () => {
+    withContracts(LISTA)
+    await renderPage()
+
+    await elegir('filtro-estado', 'cancelled')
+    expect(container.textContent).toContain('Sin resultados')
+    expect(container.textContent).toContain('los filtros puestos')
+    expect(container.textContent).toContain('los 3 contratos')
+
+    await click('[data-testid="limpiar-filtros"]')
+    expect(nombres()).toHaveLength(3)
+    expect(container.querySelector('[data-testid="limpiar-filtros"]')).toBeNull()
+  })
+
+  it('ordena por canon tocando el encabezado, y el «sin canon» va al final en los dos sentidos', async () => {
+    withContracts(LISTA)
+    await renderPage()
+
+    await click('[data-testid="ordenar-monthlyRent"]')
+    expect(nombres()).toEqual(['Bruno Borrador', 'Ana Activa', 'Carla Migrada'])
+
+    await click('[data-testid="ordenar-monthlyRent"]')
+    expect(nombres()).toEqual(['Ana Activa', 'Bruno Borrador', 'Carla Migrada'])
   })
 })

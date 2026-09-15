@@ -55,7 +55,10 @@ export function adaptOccupancy(report: OcupacionReport | null | undefined): Occu
 
   return {
     summary: {
+      // `totalProperties` del back ya es el CATÁLOGO desde el 2026-09-12; lo
+      // que quedó afuera viene aparte para poder decirlo en pantalla.
       totalProperties: report.totalProperties,
+      outOfCatalog: report.totalOutOfCatalog ?? 0,
       rented: report.totalOccupied,
       vacant,
       vacancyRate: vacancyRate === null ? null : Math.round(vacancyRate * 10) / 10,
@@ -67,7 +70,10 @@ export function adaptOccupancy(report: OcupacionReport | null | undefined): Occu
       id: p.consignacionId,
       title: p.propertyTitle,
       zone: p.propertyZone,
-      status: p.availability === 'RENTED' ? 'rented' : 'vacant',
+      // 🔴 La insignia la decide el CONTRATO (`arrendado`), no la
+      // disponibilidad del mandato: eso era lo que estaba mintiendo. Una
+      // respuesta vieja en caché no trae el campo y ahí cae a lo de antes.
+      status: (p.arrendado ?? p.availability === 'RENTED') ? 'rented' : 'vacant',
       tenant: p.tenantName,
       rentAmount: p.monthlyRent,
     })),
@@ -78,6 +84,7 @@ export function adaptOccupancy(report: OcupacionReport | null | undefined): Occu
     byZone: report.zones.map((z) => ({
       zone: z.zone,
       total: z.total,
+      outOfCatalog: z.outOfCatalog ?? 0,
       rented: z.occupied,
       vacant: z.vacant,
       vacancyRate: z.total > 0 ? Math.round(z.vacancyRate * 10) / 10 : null,

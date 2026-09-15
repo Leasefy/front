@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Lifebuoy, Plus, Wrench, ArrowRight } from '@phosphor-icons/react';
+import { useSearchParams } from 'next/navigation';
+import { ArrowLeft, Lifebuoy, Plus, Wrench, ArrowRight } from '@phosphor-icons/react';
+import { lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
@@ -37,6 +39,21 @@ const RESUMEN_ITEMS: { key: string; dot: string; field: keyof typeof RESUMEN_PQR
   { key: 'cerradas', dot: 'bg-fg-subtle', field: 'cerradas' },
 ];
 
+/**
+ * Cómo se nombra la vuelta. Espeja `VUELVE_A` de la ficha del contrato: un
+ * «Volver» mudo no dice a dónde, y a esta pantalla se llega desde la sección
+ * PQRS de un contrato (Nico, 2026-09-12).
+ */
+const VUELVE_A: Record<ReturnType<typeof lugarDeRegreso>, string> = {
+  contrato: 'Volver al contrato',
+  inmueble: 'Volver al inmueble',
+  cobro: 'Volver al cobro',
+  propietario: 'Volver al propietario',
+  dispersiones: 'Volver a dispersiones',
+  lista: 'Volver',
+  otro: 'Volver',
+};
+
 const COLUMNS = [
   'colRadicado', 'colSolicitante', 'colTipo', 'colInmueble',
   'colAsignado', 'colEstado', 'colSla',
@@ -53,6 +70,17 @@ function PqrsContent() {
   const [nuevaOpen, setNuevaOpen] = useState(false);
   const [seleccionada, setSeleccionada] = useState<Pqrs | null>(null);
 
+  // Se llega acá desde la sección PQRS de un contrato, que manda la solicitud
+  // en `?pqrs=` y su propia ruta en `?volver=`: el enlace tiene que abrir ESA
+  // solicitud y poder devolver a la ficha, no dejar a la persona buscándola en
+  // la tabla de toda la agencia.
+  const searchParams = useSearchParams();
+  const pqrsPedida = searchParams.get('pqrs');
+  const volver = searchParams.get('volver');
+  // Sólo se acepta un destino de adentro del panel: un regreso a cualquier URL
+  // es un open redirect con otro nombre. `null` = no vino ninguno.
+  const rutaDeVuelta = volver ? rutaDeRegreso(volver, '') : '';
+
   const load = useCallback(() => {
     setIsLoading(true);
     setError(null);
@@ -66,6 +94,17 @@ function PqrsContent() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Abrir la pedida UNA sola vez: sin esta marca, cerrar el cajón lo volvería
+  // a abrir en el siguiente render porque el `?pqrs=` sigue en la URL.
+  const yaAbierta = useRef<string | null>(null);
+  useEffect(() => {
+    if (!pqrsPedida || yaAbierta.current === pqrsPedida) return;
+    const encontrada = data?.solicitudes.find((p) => p.id === pqrsPedida);
+    if (!encontrada) return;
+    yaAbierta.current = pqrsPedida;
+    setSeleccionada(encontrada);
+  }, [pqrsPedida, data]);
 
   const resumen = data?.resumen ?? RESUMEN_PQRS_VACIO;
   const solicitudes = data?.solicitudes ?? [];
@@ -87,6 +126,18 @@ function PqrsContent() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
+          {/* La vuelta va arriba a la izquierda: es de dónde viene la persona,
+              no una acción de la pantalla. */}
+          {rutaDeVuelta !== '' && (
+            <Link
+              href={rutaDeVuelta}
+              className="inline-flex items-center gap-1.5 text-caption text-fg-muted hover:text-fg"
+              data-testid="pqrs-volver"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              {VUELVE_A[lugarDeRegreso(rutaDeVuelta)]}
+            </Link>
+          )}
           <SectionLabel>{t(k('label'))}</SectionLabel>
           <h1 className="text-h2 text-fg">{t(k('title'))}</h1>
           <p className="text-body text-fg-muted max-w-2xl line-clamp-2">{t(k('subtitle'))}</p>
@@ -247,7 +298,11 @@ export default function PqrsPage() {
     // los roles de agencia y el back la sirve con `operaciones:view`. Con
     // `adminOnly` el enlace existía y al tocarlo te sacaba, sin decir nada.
     <PageGuard module="operaciones">
-      <PqrsContent />
+      {/* `useSearchParams` obliga a un límite de Suspense: sin él, `next build`
+          falla al prerenderizar esta ruta. */}
+      <Suspense fallback={null}>
+        <PqrsContent />
+      </Suspense>
     </PageGuard>
   );
 }

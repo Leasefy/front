@@ -10,7 +10,7 @@
 // porque 'mensajes' aún no es módulo del backend. Cuando el backend lo agregue, migrar a
 // canAccess('mensajes', 'view').
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { leerRespaldo, etiquetaDeTipo } from '@/lib/inmobiliaria/respaldo';
 import { conRegreso, lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
@@ -31,8 +31,14 @@ import {
   ChatCircle,
   XCircle,
   ShieldCheck,
+  CalendarX,
+  ArrowsClockwise,
+  ArrowsLeftRight,
 } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
+import { TerminarContrato } from '@/components/contratos/TerminarContrato';
+import { CesionDelInmueble } from '@/components/contratos/CesionDelInmueble';
+import { vigenciaDelContrato, type Vigencia } from '@/lib/contratos/vigencia';
 import { cn } from '@/lib/utils';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { formatDate, formatCanon } from './format';
@@ -160,6 +166,23 @@ function ContratoDetalleContent() {
   const [resumenDeCobros, setResumenDeCobros] = useState<ResumenDeCobros | 'fallo' | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [terminarAbierto, setTerminarAbierto] = useState(false);
+  const [cesionAbierta, setCesionAbierta] = useState(false);
+
+  /*
+   * 🔴 Cómo está el contrato HOY, calculado y no guardado: un `active` cuya
+   * fecha de fin pasó es un contrato VENCIDO, aunque su estado siga diciendo
+   * «activo». La misma regla que el back (`vigencia-del-contrato.ts`).
+   */
+  const vigencia = useMemo<Vigencia>(
+    () =>
+      vigenciaDelContrato({
+        status: (contract?.status ?? 'draft') as ContractStatus,
+        endDate: contract?.endDate ?? null,
+        terminadoEn: contract?.terminadoEn ?? null,
+      }),
+    [contract?.status, contract?.endDate, contract?.terminadoEn],
+  );
   const [isCancelling, setIsCancelling] = useState(false);
 
   const runAction = useCallback(
@@ -411,7 +434,27 @@ function ContratoDetalleContent() {
             onRemind={handleRemind}
             onSign={() => router.push(`/panel/inmobiliaria/contratos/${contract.id}/firmar`)}
             onEdit={() => router.push(`/panel/inmobiliaria/contratos/${contract.id}/editar`)}
+            vigencia={vigencia}
             onCancelRequest={() => setIsCancelModalOpen(true)}
+            onTerminar={() => setTerminarAbierto(true)}
+            onCeder={() => setCesionAbierta(true)}
+          />
+
+          <TerminarContrato
+            contractId={contract.id}
+            abierto={terminarAbierto}
+            onCerrar={() => setTerminarAbierto(false)}
+            onTerminado={() => void refetch()}
+          />
+
+          <CesionDelInmueble
+            contractId={contract.id}
+            propietarioActual={
+              contract.propietarioDeLaConsignacion?.name ?? contract.landlordName ?? null
+            }
+            abierto={cesionAbierta}
+            onCerrar={() => setCesionAbierta(false)}
+            onRegistrada={() => void refetch()}
           />
 
           <CancelContractModal
@@ -728,26 +771,51 @@ function ActionPanel({
   pendingAction,
   latestRejectionReason,
   canCancel,
+  vigencia,
   onSend,
   onSign,
   onActivate,
   onRemind,
   onEdit,
   onCancelRequest,
+  onTerminar,
+  onCeder,
 }: {
   contract: { id: string; status: string };
   isSubmitting: boolean;
   pendingAction: string | null;
   latestRejectionReason?: string;
   canCancel: boolean;
+  /** Cómo está este contrato hoy — de acá sale si está vencido. */
+  vigencia: Vigencia;
   onSend: () => void;
   onSign: () => void;
   onActivate: () => void;
   onRemind: () => void;
   onEdit: () => void;
   onCancelRequest: () => void;
+  onTerminar: () => void;
+  onCeder: () => void;
 }) {
   const status = contract.status as ContractStatus;
+  /*
+   * La cesión no es destructiva pero tampoco es la acción principal: vive en
+   * el pie, con el mismo peso visual que «Cancelar contrato», porque pasa una
+   * vez en la vida de un contrato y no queremos que compita con «Terminar».
+   */
+  const cesionButton = (
+    <Button
+      type="button"
+      variant="link"
+      hideArrow
+      onClick={onCeder}
+      className="h-auto gap-1 px-0 text-xs font-medium"
+      data-testid="abrir-cesion"
+    >
+      <ArrowsLeftRight className="w-3.5 h-3.5" />
+      El propietario vendió el inmueble
+    </Button>
+  );
   const cancelButton = canCancel ? (
     <Button
       type="button"
@@ -861,8 +929,58 @@ function ActionPanel({
     );
   }
 
-  // Activo: no hay nada que hacer, y el chip del título ya lo dice. Una
-  // banda verde que repite «contrato activo» es una pantalla más larga.
+  /*
+   * 🔴 Un contrato que YA PASÓ su fecha de fin (auditoría 2026-09-13, N2).
+   * Sigue `active` porque nada lo vence solo —la prórroga tácita es la regla—,
+   * pero no puede seguir pintándose «Activo» en verde mientras se le generan
+   * cobros: acá se dice desde cuándo y se ofrecen los dos caminos.
+   */
+  if (vigencia.vencidoSinRenovar) {
+    return (
+      <ActionBar
+        title={`Vencido desde el ${vigencia.vencidoDesde}`}
+        subtitle={`Pasaron ${vigencia.diasVencido} día(s) de la fecha de fin y nadie lo renovó ni lo terminó. Se le siguen generando cobros hasta que decidas.`}
+        cta={{
+          label: 'Renovar contrato',
+          icon: ArrowsClockwise,
+          onClick: () => {
+            document
+              .querySelector('[data-testid="renovacion-del-contrato"]')
+              ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          },
+        }}
+        secondaryCta={{
+          label: 'Terminar el arriendo',
+          icon: CalendarX,
+          onClick: onTerminar,
+        }}
+        tone="warning"
+        footer={cesionButton}
+      />
+    );
+  }
+
+  /*
+   * 🔴 Activo y dentro de plazo. Antes esto devolvía `null` («no hay nada que
+   * hacer»), y por eso un arriendo que se rompía antes de tiempo no tenía
+   * ninguna salida en la pantalla (auditoría 2026-09-13, N1 · P0 y C8).
+   */
+  if (status === 'active') {
+    return (
+      <ActionBar
+        title="Arriendo en curso"
+        subtitle={vigencia.leyenda}
+        secondaryCta={{
+          label: 'Terminar el arriendo',
+          icon: CalendarX,
+          onClick: onTerminar,
+        }}
+        tone="success"
+        footer={cesionButton}
+      />
+    );
+  }
+
   return null;
 }
 

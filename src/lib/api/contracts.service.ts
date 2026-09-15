@@ -126,6 +126,13 @@ export function mapBackendContract(bc: BackendContract): Contract {
     // Un back anterior a esta rama no los manda: el default es el del esquema.
     prorratearPrimerMes: bc.prorratearPrimerMes ?? false,
     diasDePlazo: bc.diasDePlazo ?? null,
+    // Terminación anticipada: `?? null` y no `?? undefined` — cuando el back
+    // las omite (migración sin aplicar) llegan `undefined`, y `null` es lo que
+    // la pantalla ya sabe leer como «no se terminó».
+    terminadoEn: bc.terminadoEn ?? null,
+    motivoDeTerminacion: bc.motivoDeTerminacion ?? null,
+    notaDeTerminacion: bc.notaDeTerminacion ?? null,
+    finPactadoOriginal: bc.finPactadoOriginal ?? null,
     // `null` y ausente se tratan igual a propósito: los dos significan «no hay
     // referencia propia», y quien la muestra se cae al consecutivo.
     referenciaDeRecaudo: bc.referenciaDeRecaudo ?? null,

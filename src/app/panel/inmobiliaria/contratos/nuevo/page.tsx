@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { MoneyInput } from '@/components/ui/money-input';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Select,
@@ -136,6 +137,14 @@ function NuevoContratoContent() {
   const [property, setProperty] = useState<Property | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  /*
+   * 🔴 El error CRUDO, además del mensaje (auditoría 2026-09-13, C20). Con el
+   * string suelto, `FalloDeCarga` no puede distinguir un 404 de un corte de
+   * red y ofrece «Reintentar» sobre algo que no existe. `intento` es lo que
+   * hace que ese botón vuelva a correr la carga: el efecto depende de él.
+   */
+  const [loadErrorCrudo, setLoadErrorCrudo] = useState<unknown>(null);
+  const [intento, setIntento] = useState(0);
 
   const [form, setForm] = useState<FormState>(() => {
     const start = todayISO();
@@ -171,6 +180,8 @@ function NuevoContratoContent() {
       setIsLoading(false);
       return;
     }
+    setLoadError(null);
+    setLoadErrorCrudo(null);
 
     let cancelled = false;
     async function load() {
@@ -225,6 +236,7 @@ function NuevoContratoContent() {
         }
       } catch (err) {
         if (cancelled) return;
+        setLoadErrorCrudo(err);
         setLoadError(err instanceof Error ? err.message : 'No se pudo cargar la aplicación');
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -232,7 +244,9 @@ function NuevoContratoContent() {
     }
     load();
     return () => { cancelled = true; };
-  }, [applicationId, esManual]);
+  // `intento` está acá para que «Reintentar» del `FalloDeCarga` vuelva a correr
+  // esta carga: es el único disparador que tiene esa pantalla.
+  }, [applicationId, esManual, intento]);
 
   const updateForm = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -481,16 +495,22 @@ function NuevoContratoContent() {
     );
   }
 
+  /*
+   * 🔴 C20 (auditoría 2026-09-13): esto era una tarjeta roja a mano, sin
+   * «Reintentar» ni «Volver» — un corte de red dejaba a la persona en un
+   * callejón sin salida, con el único camino de escribir la URL a mano.
+   * `FalloDeCarga` es el patrón de la casa: clasifica el error (404 vs. red),
+   * ofrece reintentar cuando tiene sentido y siempre da por dónde salir.
+   */
   if (loadError || (!application && !esManual)) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
-          <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold text-danger">No se pudo cargar la aplicación</p>
-            <p className="text-sm text-danger mt-1">{loadError}</p>
-          </div>
-        </div>
+        <FalloDeCarga
+          error={loadErrorCrudo ?? loadError ?? 'No se pudo cargar la postulación'}
+          queEs="esta postulación"
+          onReintentar={() => setIntento((n) => n + 1)}
+          volverA={{ label: 'Contratos', href: '/panel/inmobiliaria/contratos' }}
+        />
       </div>
     );
   }

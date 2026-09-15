@@ -1,0 +1,259 @@
+"use client";
+
+/**
+ * Terminar un arriendo antes de tiempo.
+ *
+ * ── Por qué existe (auditoría del 2026-09-13, N1 · P0 y C8) ────────────────
+ *
+ * Un contrato vigente no tenía NINGUNA acción: `ActionPanel` devolvía `null`
+ * en `active` («no hay nada que hacer») y `cancelar` no sirve — el back sólo
+ * admite cancelar hasta la firma. La única forma de cerrar un arriendo que se
+ * rompe antes de tiempo era borrar cosas o esperar el vencimiento.
+ *
+ * ── Por qué NO es un botón a un clic ───────────────────────────────────────
+ *
+ * La misma auditoría marcó como P1 que las acciones destructivas de este panel
+ * se disparan sin decir qué se llevan por delante (C11, C12, M5). Terminar un
+ * arriendo corta los cobros del mes siguiente y libera el inmueble: acá se
+ * pide fecha y motivo, y ANTES de confirmar se muestra lo que va a quedar
+ * cobrado del último mes, calculado por el back con la misma cuenta con la que
+ * después lo va a cobrar. La persona ve el número, no se lo imagina.
+ */
+
+import { useCallback, useEffect, useState } from "react";
+import { AlertTriangle, CalendarX } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/components/ui/toast";
+import {
+  cicloDeVidaApi,
+  type MotivoDeTerminacion,
+  type VistaPreviaDeTerminacion,
+} from "@/lib/api/ciclo-de-vida.service";
+import { isPermissionError, mensajeDelFallo } from "@/lib/contratos/fallo-de-accion";
+
+/** `2026-09-15` — hoy, como lo espera un `<input type="date">`. */
+function hoyComoInput(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+const PESOS = new Intl.NumberFormat("es-CO", {
+  style: "currency",
+  currency: "COP",
+  maximumFractionDigits: 0,
+});
+
+export interface TerminarContratoProps {
+  contractId: string;
+  abierto: boolean;
+  onCerrar: () => void;
+  /** Se llama con la terminación ya hecha, para recargar la ficha. */
+  onTerminado: () => void;
+}
+
+export function TerminarContrato({
+  contractId,
+  abierto,
+  onCerrar,
+  onTerminado,
+}: TerminarContratoProps) {
+  const [motivos, setMotivos] = useState<MotivoDeTerminacion[]>([]);
+  const [terminadoEn, setTerminadoEn] = useState(hoyComoInput);
+  const [motivo, setMotivo] = useState("");
+  const [nota, setNota] = useState("");
+  const [vista, setVista] = useState<VistaPreviaDeTerminacion | null>(null);
+  const [guardando, setGuardando] = useState(false);
+
+  useEffect(() => {
+    if (!abierto) return;
+    cicloDeVidaApi
+      .motivosDeTerminacion()
+      .then((r) => setMotivos(r.motivos))
+      .catch(() => setMotivos([]));
+  }, [abierto]);
+
+  /*
+   * La vista previa se pide al back y NO se calcula acá: el prorrateo del
+   * último mes es la misma cuenta con la que después se va a cobrar, y dos
+   * implementaciones de la misma cuenta terminan dando números distintos en
+   * la pantalla y en la factura.
+   */
+  const pedirVistaPrevia = useCallback(
+    async (fecha: string) => {
+      if (!fecha) return;
+      try {
+        setVista(await cicloDeVidaApi.vistaPreviaDeTerminacion(contractId, fecha));
+      } catch {
+        // Que la vista previa no cargue no puede tapar el formulario: el back
+        // vuelve a validar al confirmar y ahí sí dice qué pasa.
+        setVista(null);
+      }
+    },
+    [contractId],
+  );
+
+  useEffect(() => {
+    if (abierto) void pedirVistaPrevia(terminadoEn);
+  }, [abierto, terminadoEn, pedirVistaPrevia]);
+
+  const elegido = motivos.find((m) => m.codigo === motivo);
+  const faltaNota = elegido?.exigeNota === true && nota.trim().length === 0;
+  const puedeConfirmar =
+    !guardando && !!terminadoEn && !!motivo && !faltaNota && vista?.puedeTerminarse !== false;
+
+  async function confirmar() {
+    setGuardando(true);
+    try {
+      const r = await cicloDeVidaApi.terminar(contractId, {
+        terminadoEn,
+        motivo,
+        nota: nota.trim() || undefined,
+      });
+      toast.success(`Contrato terminado el ${r.terminadoEn}.`, {
+        description: r.inmuebleLiberado
+          ? "El inmueble volvió a quedar disponible y no se le generan más cobros."
+          : "No se le generan más cobros. El inmueble sigue ocupado por otro contrato.",
+      });
+      onCerrar();
+      onTerminado();
+    } catch (err) {
+      toast.error(
+        isPermissionError(err)
+          ? "No tienes permisos para terminar contratos."
+          : "No se pudo terminar el contrato.",
+        {
+          description: isPermissionError(err)
+            ? undefined
+            : mensajeDelFallo(err, "Intenta de nuevo."),
+        },
+      );
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <Dialog open={abierto} onOpenChange={(v) => !v && onCerrar()}>
+      <DialogContent className="sm:max-w-lg" data-testid="terminar-contrato">
+        <DialogHeader>
+          <DialogTitle>Terminar el arriendo antes de tiempo</DialogTitle>
+          <DialogDescription>
+            El contrato queda terminado con su fecha y su motivo. Lo ya cobrado
+            o pagado no se toca, no se le generan cobros nuevos y el inmueble
+            vuelve a quedar disponible. El mandato del propietario sigue activo.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="terminadoEn">Fecha de terminación</Label>
+            <Input
+              id="terminadoEn"
+              type="date"
+              value={terminadoEn}
+              onChange={(e) => setTerminadoEn(e.target.value)}
+              data-testid="terminado-en"
+            />
+            {vista?.finPactado && (
+              <p className="text-xs text-muted-foreground">
+                Se había pactado hasta el {vista.finPactado}. Ese plazo queda
+                guardado.
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="motivo">Motivo</Label>
+            <select
+              id="motivo"
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              data-testid="motivo-de-terminacion"
+            >
+              <option value="">Elige un motivo…</option>
+              {motivos.map((m) => (
+                <option key={m.codigo} value={m.codigo}>
+                  {m.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="nota">
+              {elegido?.exigeNota ? "Cuál (obligatorio)" : "Nota (opcional)"}
+            </Label>
+            <Textarea
+              id="nota"
+              value={nota}
+              onChange={(e) => setNota(e.target.value)}
+              rows={2}
+              data-testid="nota-de-terminacion"
+            />
+          </div>
+
+          {/* Lo que va a quedar cobrado. El número, antes de confirmar. */}
+          {vista?.prorrateoDelUltimoMes && (
+            <div
+              className="rounded-md bg-muted p-3 text-sm"
+              data-testid="prorrateo-del-ultimo-mes"
+            >
+              <p className="font-medium">Último mes ({vista.prorrateoDelUltimoMes.mes})</p>
+              <p className="text-muted-foreground">
+                Se cobran {vista.prorrateoDelUltimoMes.diasOcupados} de{" "}
+                {vista.prorrateoDelUltimoMes.diasDelMes} días:{" "}
+                <strong className="text-foreground">
+                  {PESOS.format(vista.prorrateoDelUltimoMes.valorCop)}
+                </strong>{" "}
+                de {PESOS.format(vista.prorrateoDelUltimoMes.canonMensualCop)}.
+              </p>
+            </div>
+          )}
+          {vista && !vista.prorrateoDelUltimoMes && vista.puedeTerminarse && (
+            <p className="text-sm text-muted-foreground" data-testid="sin-prorrateo">
+              Este contrato no tiene canon cargado, así que no se puede calcular
+              qué paga el último mes.
+            </p>
+          )}
+
+          {vista?.razon && (
+            <p
+              className="flex items-start gap-2 text-sm text-plan-status-yellow"
+              data-testid="razon-para-no-terminar"
+            >
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              {vista.razon}
+            </p>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="secondary" onClick={onCerrar} disabled={guardando}>
+            Volver
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={confirmar}
+            disabled={!puedeConfirmar}
+            data-testid="confirmar-terminacion"
+          >
+            <CalendarX className="mr-2 h-4 w-4" />
+            {guardando ? "Terminando…" : "Terminar el arriendo"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -38,6 +38,11 @@ import {
   ListPlus,
 } from '@phosphor-icons/react';
 
+import {
+  colorDeVigencia,
+  etiquetaDeVigencia,
+  vigenciaDelContrato,
+} from '@/lib/contratos/vigencia';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
@@ -572,14 +577,37 @@ function ContratosContent() {
                     {fmtDate(c.startDate, locale)} <span className="opacity-50">→</span> {fmtDate(c.endDate, locale)}
                   </TableCell>
                   <TableCell className="px-5 py-4">
-                    <span
-                      className={cn(
-                        'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap',
-                        CONTRACT_STATUS_COLORS[c.status] ?? 'bg-muted text-muted-foreground',
-                      )}
-                    >
-                      {CONTRACT_STATUS_LABELS[c.status] ?? c.status}
-                    </span>
+                    {/*
+                      🔴 El chip lo decide la VIGENCIA, no el estado crudo
+                      (auditoría 2026-09-13, N2). Un contrato `active` cuya
+                      fecha de fin ya pasó decía «Activo» en verde para
+                      siempre, mientras se le seguían generando cobros.
+                    */}
+                    {(() => {
+                      const v = vigenciaDelContrato({
+                        status: c.status,
+                        endDate: c.endDate,
+                        terminadoEn: c.terminadoEn ?? null,
+                      });
+                      return (
+                        <span
+                          className={cn(
+                            'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap',
+                            colorDeVigencia(
+                              v,
+                              CONTRACT_STATUS_COLORS[c.status] ?? 'bg-muted text-muted-foreground',
+                            ),
+                          )}
+                          title={v.leyenda}
+                          data-testid={v.vencidoSinRenovar ? 'contrato-vencido' : undefined}
+                        >
+                          {etiquetaDeVigencia(
+                            v,
+                            CONTRACT_STATUS_LABELS[c.status] ?? c.status,
+                          )}
+                        </span>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="px-5 py-4 text-right">
                     <CaretRight className="w-4 h-4 text-muted-foreground inline-block" />

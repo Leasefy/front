@@ -118,6 +118,11 @@ export interface BackendContract {
    * `diasDePlazo: null` = hereda los de la inmobiliaria.
    */
   prorratearPrimerMes?: boolean;
+  /** Terminación anticipada. Ausentes si la migración 20260915170000 no está aplicada. */
+  terminadoEn?: string | null;
+  motivoDeTerminacion?: string | null;
+  notaDeTerminacion?: string | null;
+  finPactadoOriginal?: string | null;
   diasDePlazo?: number | null;
   /**
    * 🔴 Con qué número paga el inquilino (columna `referencia_de_recaudo`).

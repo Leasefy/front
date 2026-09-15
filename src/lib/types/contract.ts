@@ -444,6 +444,23 @@ export interface Contract {
   externalId?: string | null;
   status: ContractStatus;
 
+  // ── Terminación anticipada (back: migración 20260915170000) ──────────────
+  //
+  // 🔴 `status` NO distingue «lo terminaron antes de tiempo» de «se venció
+  // solo»: los dos son `expired`, porque en el back `EXPIRED` ya significa
+  // «terminado» y así están guardados los 1.145 contratos migrados como
+  // «Terminado». Quien los distingue es `terminadoEn`.
+  //
+  // `undefined` = la migración todavía no está aplicada en esa base y el
+  // back omite las columnas. Se lee igual que «no se terminó».
+  /** `'2026-09-30'` — el día en que se terminó antes de tiempo. */
+  terminadoEn?: string | null;
+  /** El código del motivo (`MUTUO_ACUERDO`, `VENTA_DEL_INMUEBLE`, …). */
+  motivoDeTerminacion?: string | null;
+  notaDeTerminacion?: string | null;
+  /** Hasta cuándo se había pactado, antes de que la terminación moviera `endDate`. */
+  finPactadoOriginal?: string | null;
+
   // Snapshot fields (Opción A — capturados al crear el contrato, inmutables).
   // Pueden venir '' cuando el backfill no encontró el dato original.
   propertyAddress: string;

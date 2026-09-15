@@ -150,6 +150,10 @@ export interface Property {
   // Metadata
   landlordId: string;
   agencyName?: string | null;
+  /** Inmobiliaria que lo administra (null = sin inmobiliaria). */
+  agencyId?: string | null;
+  /** Logo de esa inmobiliaria, en el bucket público. */
+  agencyLogoUrl?: string | null;
   /**
    * Offering agency's social links — only populated on the detail response
    * (GET /properties/:id); null on list cards.

@@ -157,6 +157,8 @@ export function mapBackendProperty(bp: BackendProperty): Property {
     // Metadata
     landlordId: bp.landlordId,
     agencyName: bp.agency?.name ?? null,
+    agencyId: bp.agency?.id ?? null,
+    agencyLogoUrl: bp.agency?.logoUrl ?? null,
     // Only present on GET /properties/:id (detail); null on list responses
     agencySocials: bp.agency?.branding?.socials ?? null,
     createdAt: bp.createdAt,

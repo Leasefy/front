@@ -287,6 +287,27 @@ describe('<StickyCTA> — inmueble arrendado (2026-09-15)', () => {
   })
 })
 
+describe('<StickyCTA> — quién administra el inmueble (2026-09-15)', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('otra inmobiliaria encabeza la tarjeta con su logo (o sus iniciales) y su nombre', () => {
+    render({ administrador: { agencyId: 'agencia-1', nombre: 'victor inmobiliaria8', logoUrl: null } })
+    const logo = q('[data-testid="logo-del-administrador"]')
+    expect(logo?.textContent).toBe('VI')
+    expect(container.textContent).toContain('victor inmobiliaria8')
+    expect(container.textContent).toContain('Administra este inmueble')
+  })
+
+  it('si la administra Leasefy, encabeza el logotipo de Leasefy', () => {
+    vi.stubEnv('NEXT_PUBLIC_LEASEFY_AGENCY_ID', 'agencia-leasefy')
+    render({ administrador: { agencyId: 'agencia-leasefy', nombre: 'Leasefy.co', logoUrl: null } })
+    expect(q('[data-testid="logo-del-administrador"]')).toBeNull()
+    expect(container.textContent).not.toContain('Administra este inmueble')
+  })
+})
+
 describe('<StickyCTA> — compartir avisa lo que pasó', () => {
   /** El botón de compartir del encabezado de la tarjeta (40px). */
   const botonCompartir = () => q('[data-testid="share-copy-header"]') as HTMLButtonElement

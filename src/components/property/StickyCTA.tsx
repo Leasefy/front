@@ -9,6 +9,7 @@ import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { SegmentedControl } from '@leasefy/cadence';
 import { LeasefyLogotype } from '@/components/brand';
+import { LogoDelAdministrador, esLeasefy, type Administrador } from '@/components/property/AdministradoPor';
 import { useOptionalI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -36,6 +37,11 @@ interface StickyCTAProps {
    * El back ya rechaza la postulación; esto evita invitar a algo imposible.
    */
   arrendado?: boolean;
+  /**
+   * Quién administra el inmueble. Otra inmobiliaria ⇒ su logo y su nombre
+   * encabezan la tarjeta; Leasefy o sin inmobiliaria ⇒ el logotipo de Leasefy.
+   */
+  administrador?: Administrador | null;
   /** Monthly rent (COP). Ignored for display when `listingType === 'sale'` — see `salePrice`. */
   price: number;
   adminFee?: number;
@@ -210,6 +216,7 @@ function getScheduleErrorMessage(err: unknown): string {
 export function StickyCTA({
   propertyId,
   arrendado = false,
+  administrador = null,
   visitTypes,
   price,
   adminFee = 0,
@@ -385,17 +392,29 @@ export function StickyCTA({
           <div className="flex items-start justify-between mb-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                {/* El logotipo real, el mismo del header y del login. Acá vivió
-                    primero un nombre tipeado a mano (Nico, 2026-09-04) y después
-                    el lockup del DS, que arma símbolo + «Leasefy» en tipografía y
-                    tampoco es el logo (Nico, 2026-09-15). */}
-                <LeasefyLogotype size={20} className="text-fg" title="Leasefy" />
+                {/* Encabeza quien administra el inmueble (Nico, 2026-09-15). Si es
+                    otra inmobiliaria, su logo y su nombre; si es Leasefy o no hay
+                    inmobiliaria, el logotipo real de Leasefy (nunca el lockup del
+                    DS, que arma símbolo + «Leasefy» en tipografía). */}
+                {administrador && !esLeasefy(administrador.agencyId) ? (
+                  <>
+                    <LogoDelAdministrador administrador={administrador} tamano={28} />
+                    <span className="max-w-[12rem] truncate text-[15px] font-semibold text-foreground">
+                      {administrador.nombre}
+                    </span>
+                  </>
+                ) : (
+                  <LeasefyLogotype size={20} className="text-fg" title="Leasefy" />
+                )}
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[hsl(var(--success-50))] dark:bg-[hsl(var(--success-500)/0.15)] text-[hsl(var(--success-500))] text-[10px] font-semibold uppercase tracking-wide rounded-full">
                   <Check className="w-3 h-3" />
                   Verificado
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">Respuesta en menos de 24h</p>
+              <p className="text-xs text-muted-foreground">
+                {administrador && !esLeasefy(administrador.agencyId) ? 'Administra este inmueble · ' : ''}
+                Respuesta en menos de 24h
+              </p>
             </div>
             <div className="flex gap-2">
               {onWishlistToggle && (

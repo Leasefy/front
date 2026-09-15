@@ -124,9 +124,12 @@ export interface BackendProperty {
   images?: BackendPropertyImage[];
   propertyAccess?: BackendPropertyAccessAgent[];
   // GET /properties/:id (detail) includes the offering agency's branding;
-  // the list endpoint (GET /properties) returns only `{ name }`.
+  // the list endpoint (GET /properties) returns `{ id, name, logoUrl }`.
   agency?: {
+    /** Desde 2026-09-15 (quién administra, con su logo). Opcional: un back viejo no lo manda. */
+    id?: string;
     name: string;
+    logoUrl?: string | null;
     branding?: {
       primaryColor?: string;
       secondaryColor?: string;

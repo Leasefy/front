@@ -25,6 +25,7 @@ import {
   PreScoringError,
 } from '@/lib/api/estudio-solicitud.service'
 import { EstadoPagoAprobacion } from '@/components/aprobacion/EstadoPagoAprobacion'
+import { PasosDelArriendo } from '@/components/aprobacion/PasosDelArriendo'
 import { usePreScoringCurrent } from '@/lib/hooks/use-prescoring-current'
 import { tieneEstudioVigente } from '@/lib/api/prescoring.types'
 import {
@@ -277,12 +278,12 @@ export default function AprobacionPage() {
         <Card>
           <CardHeader>
             {desdeLaFicha && (
-              <div data-testid="paso-2-de-2" className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="text-caption font-medium uppercase tracking-wide text-fg-muted">Paso 2 de 2</span>
-                <span className="inline-flex items-center gap-1 text-caption text-success">
+              <div data-testid="paso-2-de-3" className="mb-4 flex flex-col gap-4">
+                <PasosDelArriendo actual={2} />
+                <p className="inline-flex items-center gap-1.5 text-caption text-success">
                   <CheckCircle weight="fill" className="h-4 w-4" aria-hidden="true" />
-                  Tu ingreso alcanza para este inmueble
-                </span>
+                  Tu ingreso alcanza para este inmueble. Ahora validamos que te lo podamos arrendar.
+                </p>
               </div>
             )}
             <CardTitle>Conoce hasta cuánto te arrendamos</CardTitle>

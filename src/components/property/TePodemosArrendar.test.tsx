@@ -29,7 +29,9 @@ function montar() {
   document.body.appendChild(contenedor);
   root = createRoot(contenedor);
   act(() => {
-    root!.render(<TePodemosArrendar canon={2_000_000} ciudad="Medellín" tipo="apartment" />);
+    root!.render(
+      <TePodemosArrendar propertyId="p-1" titulo="Apartamento en Laureles" canon={2_000_000} ciudad="Medellín" tipo="apartment" />,
+    );
   });
 }
 
@@ -71,12 +73,14 @@ describe('<TePodemosArrendar>', () => {
     expect(hay('estimado-no-alcanza')).toBeNull();
   });
 
-  it('al verificar con un ingreso que alcanza sigue al paso 2, el estudio prellenado', () => {
+  it('al verificar con un ingreso que alcanza guarda el recorrido y va a «¡Felicitaciones!»', () => {
     montar();
     escribir('tpa-ingreso', '2000000');
     escribir('tpa-codeudor', '1000000');
     verificar();
-    expect(pushMock).toHaveBeenCalledWith('/aprobacion?paso=2&canon=2000000&ciudad=Medell%C3%ADn&tipo=apartamento');
+    expect(pushMock).toHaveBeenCalledWith('/propiedades/p-1/te-alcanza');
+    const guardado = JSON.parse(window.sessionStorage.getItem('leasefy:arriendo-en-curso') ?? '{}');
+    expect(guardado).toMatchObject({ propertyId: 'p-1', tipo: 'apartamento', canon: 2_000_000, ingresoTotal: 3_000_000 });
     expect(hay('estimado-no-alcanza')).toBeNull();
   });
 

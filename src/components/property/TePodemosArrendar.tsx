@@ -21,12 +21,16 @@ import { MoneyInput } from '@/components/ui/money-input';
 import { formatCurrency } from '@/lib/format';
 import type { PropertyType } from '@/lib/types/property';
 import {
-  enlaceAlEstudio,
   estimarArriendo,
+  tipoParaElEstudio,
   type EstimadoDeArriendo,
 } from '@/lib/aprobacion/estimado-de-arriendo';
+import { guardarArriendoEnCurso } from '@/lib/aprobacion/arriendo-en-curso';
 
 interface TePodemosArrendarProps {
+  propertyId: string;
+  titulo: string;
+  foto?: string | null;
   canon: number;
   ciudad?: string | null;
   tipo?: PropertyType | null;
@@ -42,7 +46,7 @@ function Fila({ etiqueta, valor, fuerte }: { etiqueta: string; valor: string; fu
   );
 }
 
-export function TePodemosArrendar({ canon, ciudad, tipo, className }: TePodemosArrendarProps) {
+export function TePodemosArrendar({ propertyId, titulo, foto, canon, ciudad, tipo, className }: TePodemosArrendarProps) {
   const router = useRouter();
   const [ingreso, setIngreso] = useState('');
   const [ingresoCodeudor, setIngresoCodeudor] = useState('');
@@ -63,7 +67,17 @@ export function TePodemosArrendar({ canon, ciudad, tipo, className }: TePodemosA
     });
     if (!estimado) return;
     if (estimado.alcanza) {
-      router.push(enlaceAlEstudio({ canon, ciudad, tipo, paso2: true }));
+      guardarArriendoEnCurso({
+        propertyId,
+        titulo,
+        ciudad: ciudad ?? null,
+        tipo: tipoParaElEstudio(tipo),
+        foto: foto ?? null,
+        canon,
+        ingresoTotal: estimado.ingresoTotal,
+        canonMaximo: estimado.canonMaximo,
+      });
+      router.push(`/propiedades/${propertyId}/te-alcanza`);
       return;
     }
     setNoAlcanza(estimado);
@@ -77,7 +91,7 @@ export function TePodemosArrendar({ canon, ciudad, tipo, className }: TePodemosA
       data-testid="te-podemos-arrendar"
       className={`rounded-lg border border-border bg-surface p-6 shadow-sm ${className ?? ''}`}
     >
-      <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">Paso 1 de 2</p>
+      <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">Paso 1 de 3</p>
       <h2 id="te-podemos-arrendar-titulo" className="mt-1 text-xl font-heading font-semibold text-fg text-balance">
         ¿Te podemos arrendar este inmueble?
       </h2>

@@ -28,6 +28,7 @@ import { useCallback } from 'react'
 
 import { usePreScoringCurrent } from '@/lib/hooks/use-prescoring-current'
 import { AseguradorasConPrima } from '@/components/tenant/AseguradorasConPrima'
+import { RespuestaDelArriendo } from '@/components/aprobacion/RespuestaDelArriendo'
 import Link from 'next/link'
 import {
   ArrowsClockwise,
@@ -93,6 +94,12 @@ export default function AprobacionPage() {
           {tf(`${NS}.subtitulo`, 'Hasta cuánto te respaldan las aseguradoras')}
         </p>
       </header>
+
+      {/* Paso 3 de 3 cuando llegó desde «¿Te podemos arrendar este inmueble?». */}
+      <RespuestaDelArriendo
+        estado={estado}
+        tope={current?.evaluation?.result?.fianly.maxEntrenchmentValue ?? null}
+      />
 
       {estado === 'aprobado' && (
         <AprobadoView evaluation={current?.evaluation ?? null} tf={tf} locale={locale} />

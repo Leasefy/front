@@ -434,6 +434,9 @@ export function PropertyDetailView({
                   vigente: ése ya sabe su tope (lo cubre el aviso de arriba). */}
               {property.listingType !== 'sale' && (property.monthlyRent ?? 0) > 0 && !aprobacionVigente && (
                 <TePodemosArrendar
+                  propertyId={property.id}
+                  titulo={property.title}
+                  foto={property.images?.[0] ?? null}
                   canon={property.monthlyRent ?? 0}
                   ciudad={property.city}
                   tipo={property.type}

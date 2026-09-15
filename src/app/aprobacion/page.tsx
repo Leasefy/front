@@ -1,15 +1,20 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowsClockwise, CheckCircle, X } from '@phosphor-icons/react'
+import { ArrowLeft, ArrowsClockwise, CheckCircle, HouseLine, MapPin, X } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink'
 import { LeasefyLogotype } from '@/components/brand'
 import { useAuth } from '@/lib/auth/use-auth'
 import { getUserHomeRoute } from '@/lib/auth/role-routes'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { MoneyInput } from '@/components/ui/money-input'
+import { formatCurrency } from '@/lib/format'
+import { leerArriendoEnCurso, type ArriendoEnCurso } from '@/lib/aprobacion/arriendo-en-curso'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { PhoneField } from '@/components/ui/phone-field'
@@ -85,11 +90,30 @@ export default function AprobacionPage() {
   // menús no hay opción vacía que la persona pueda elegir.
   // Llegó de «Verificar» en la ficha con un ingreso que alcanza: esto es el paso 2.
   const [desdeLaFicha, setDesdeLaFicha] = useState(false)
+  // El inmueble que eligió en el paso 1 (foto, título, canon), para no hablar en abstracto.
+  const [arriendo, setArriendo] = useState<ArriendoEnCurso | null>(null)
+  // La ciudad del inmueble entra a las opciones aunque no esté entre las fijas
+  // (Nico probó con uno en Bello y el campo quedaba vacío). El back acepta
+  // cualquier texto; el micro la resuelve contra la lista de Fianly y avisa si
+  // no hay cobertura.
+  const [ciudades, setCiudades] = useState<readonly string[]>(CIUDADES)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const prellenado = prellenadoDesdeUrl(params, CIUDADES)
+    const ciudadDeLaFicha = params.get('ciudad')?.trim()
+    const conLaDeLaFicha =
+      ciudadDeLaFicha &&
+      !CIUDADES.some((c) => c.localeCompare(ciudadDeLaFicha, 'es', { sensitivity: 'base' }) === 0)
+        ? [...CIUDADES, ciudadDeLaFicha]
+        : CIUDADES
+    setCiudades(conLaDeLaFicha)
+    const prellenado = prellenadoDesdeUrl(params, conLaDeLaFicha)
     if (Object.keys(prellenado).length > 0) setFields((f) => ({ ...f, ...prellenado }))
-    setDesdeLaFicha(vieneDelPaso1(params))
+    const delPaso1 = vieneDelPaso1(params)
+    setDesdeLaFicha(delPaso1)
+    if (delPaso1) setArriendo(leerArriendoEnCurso())
+    // «Continuar al paso 2» está al pie del paso 1: con Lenis, el App Router
+    // abría esta pantalla a esa altura y no desde el comienzo.
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
   }, [])
 
   /**
@@ -239,7 +263,7 @@ export default function AprobacionPage() {
           alcance. Patrón canónico de `WizardShell` / `PublishShell`. Lenis usa
           scroll nativo, así que `sticky` funciona sin trucos. */}
       <header className="sticky top-0 z-20 border-b border-border bg-surface">
-        <div className="mx-auto flex max-w-2xl items-center justify-between gap-4 px-4 py-4">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-4">
           {/* El logo real, el mismo del sidebar: monocromo por currentColor. */}
           <BrandHomeLink aria-label="Leasefy — inicio" className="text-fg">
             <LeasefyLogotype size={24} />
@@ -251,7 +275,10 @@ export default function AprobacionPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-8">
+      {/* Nico, 14-09: el paso 2 se arma como el paso 1 (`/arrendar/[id]`) — los
+          pasos en su propia franja, FUERA del formulario, y debajo una sola
+          tarjeta con cabecera y el formulario en grupos de dos columnas. */}
+      <main id="main-content" className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8 md:py-12">
         {resolviendoEstudio ? (
           // Nunca el formulario mientras no se sepa si esta persona ya tiene
           // estudio: mostrarlo y sacarlo un instante después es peor que
@@ -275,149 +302,266 @@ export default function AprobacionPage() {
             </CardContent>
           </Card>
         ) : (
-        <Card>
-          <CardHeader>
+          <>
             {desdeLaFicha && (
-              <div data-testid="paso-2-de-3" className="mb-4 flex flex-col gap-4">
+              <section data-testid="paso-2-de-3" className="rounded-2xl border border-border bg-surface px-5 py-4">
                 <PasosDelArriendo actual={2} />
-                <p className="inline-flex items-center gap-1.5 text-caption text-success">
-                  <CheckCircle weight="fill" className="h-4 w-4" aria-hidden="true" />
-                  Tu ingreso alcanza para este inmueble. Ahora validamos que te lo podamos arrendar.
-                </p>
-              </div>
+              </section>
             )}
-            <CardTitle>Conoce hasta cuánto te arrendamos</CardTitle>
-            <CardDescription>
-              {/* Decía «Es gratis y sin compromiso» y se cobra. No se
-                  inventa el monto: el precio lo manda el backend y hoy no
-                  lo manda (ver lib/api/estudio-pago.service.ts). */}
-              Consultamos varias aseguradoras a la vez y te decimos hasta cuánto te
-              respaldan. Se paga una sola vez y te sirve para todas las propiedades
-              que te interesen.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-              <Field id="nombres" label="Nombres" error={errors.nombres}>
-                <Input
-                  id="nombres"
-                  autoComplete="given-name"
-                  placeholder="Ej: María"
-                  value={fields.nombres}
-                  onChange={(e) => set('nombres', e.target.value)}
-                />
-              </Field>
 
-              <Field id="apellidos" label="Apellidos" error={errors.apellidos}>
-                <Input
-                  id="apellidos"
-                  autoComplete="family-name"
-                  placeholder="Ej: Restrepo"
-                  value={fields.apellidos}
-                  onChange={(e) => set('apellidos', e.target.value)}
-                />
-              </Field>
+            <section
+              aria-labelledby="estudio-titulo"
+              className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
+            >
+              <div className="flex flex-col gap-5 bg-primary-soft px-6 py-8 md:px-10">
+                <div className="flex flex-col gap-2">
+                  {desdeLaFicha && (
+                    <p className="text-caption font-medium uppercase tracking-wide text-primary">
+                      Paso 2 de 3 · validamos tus datos
+                    </p>
+                  )}
+                  <h1
+                    id="estudio-titulo"
+                    className="font-heading text-2xl font-semibold leading-tight text-fg text-balance md:text-4xl"
+                  >
+                    {desdeLaFicha ? 'Validemos que te lo podamos arrendar' : 'Conoce hasta cuánto te arrendamos'}
+                  </h1>
+                  <p className="max-w-prose text-sm text-fg-muted">
+                    {/* Decía «Es gratis y sin compromiso» y se cobra. No se
+                        inventa el monto: el precio lo manda el backend y hoy no
+                        lo manda (ver lib/api/estudio-pago.service.ts). */}
+                    Consultamos varias aseguradoras a la vez y te decimos hasta cuánto te
+                    respaldan. Se paga una sola vez y te sirve para todas las propiedades
+                    que te interesen.
+                  </p>
+                </div>
 
-              <Field id="cedula" label="Cédula" error={errors.cedula}>
-                <Input
-                  id="cedula"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  placeholder="Ej: 1098765432"
-                  value={fields.cedula}
-                  onChange={(e) => set('cedula', e.target.value)}
-                />
-              </Field>
-
-              <Field id="phone" label="Celular" error={errors.phone}>
-                <PhoneField
-                  id="phone"
-                  value={fields.phone}
-                  onChange={(v) => set('phone', v)}
-                  invalid={Boolean(errors.phone)}
-                />
-              </Field>
-
-              <Field id="email" label="Correo electrónico" error={errors.email}>
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="Ej: maria@correo.com"
-                  value={fields.email}
-                  onChange={(e) => set('email', e.target.value)}
-                />
-              </Field>
-
-              {/* Ya no es "del inmueble": puede no haber inmueble todavía. */}
-              <Field id="ciudad" label="Ciudad donde quieres vivir" error={errors.ciudad}>
-                <Select value={fields.ciudad} onValueChange={(v) => v && set('ciudad', v)}>
-                  <SelectTrigger id="ciudad">
-                    <SelectValue placeholder="Selecciona una ciudad" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CIUDADES.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              <Field id="canon" label="Canon mensual" error={errors.canon}>
-                <Input
-                  id="canon"
-                  inputMode="numeric"
-                  placeholder="Ej: 2.000.000"
-                  value={fields.canon}
-                  onChange={(e) => set('canon', e.target.value)}
-                />
-                <p className="mt-1.5 text-xs text-fg-muted">
-                  El canon mensual de la propiedad que quieres arrendar. Lo usamos para el estudio.
-                </p>
-              </Field>
-
-              <Field id="tipoInmueble" label="Tipo de inmueble" error={errors.tipoInmueble}>
-                <Select value={fields.tipoInmueble} onValueChange={(v) => v && set('tipoInmueble', v)}>
-                  <SelectTrigger id="tipoInmueble">
-                    <SelectValue placeholder="Selecciona el tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="apartamento">Apartamento</SelectItem>
-                    <SelectItem value="casa">Casa</SelectItem>
-                    <SelectItem value="local">Local</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              <div className="flex items-start gap-2">
-                <Checkbox
-                  id="consent"
-                  checked={fields.consent}
-                  onCheckedChange={(checked) => set('consent', checked === true)}
-                  className="mt-0.5"
-                />
-                <Label htmlFor="consent" className="text-xs font-normal leading-relaxed text-fg-muted">
-                  {/* Al inquilino no se le dice "asegurabilidad" — docs/VOCABULARIO.md */}
-                  Autorizo el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 para
-                  consultar mi aprobación con las aseguradoras y ser contactado por un asesor de Leasefy.
-                </Label>
+                {arriendo && (
+                  <div
+                    data-testid="inmueble-del-paso-2"
+                    className="flex items-center gap-4 rounded-xl border border-border bg-surface p-3"
+                  >
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-surface-muted">
+                      {arriendo.foto ? (
+                        <Image src={arriendo.foto} alt={arriendo.titulo} fill sizes="64px" className="object-cover" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary-soft to-surface-muted text-primary">
+                          <HouseLine weight="duotone" className="h-7 w-7" aria-hidden="true" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-fg">{arriendo.titulo}</p>
+                      <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-fg-muted">
+                        {arriendo.ciudad && (
+                          <span className="inline-flex items-center gap-1">
+                            <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+                            {arriendo.ciudad}
+                          </span>
+                        )}
+                        <span className="whitespace-nowrap">
+                          <span className="font-mono tabular-nums text-fg">{formatCurrency(arriendo.canon)}</span> /mes
+                        </span>
+                      </p>
+                      {/* En celular va debajo: a la derecha apretaba el título a dos palabras por línea. */}
+                      <SelloTeAlcanza className="mt-2 sm:hidden" />
+                    </div>
+                    <SelloTeAlcanza className="hidden shrink-0 sm:inline-flex" />
+                  </div>
+                )}
               </div>
-              {errors.consent && <p className="text-xs text-danger">{errors.consent}</p>}
 
-              {submitError && (
-                <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">{submitError}</p>
-              )}
+              <form onSubmit={handleSubmit} className="flex flex-col gap-8 p-6 md:p-8" noValidate>
+                <Grupo
+                  id="grupo-tus-datos"
+                  titulo="Tus datos"
+                  ayuda="Como aparecen en tu cédula. Con ellos consultamos a las aseguradoras."
+                >
+                  <Field id="nombres" label="Nombres" error={errors.nombres}>
+                    <Input
+                      id="nombres"
+                      autoComplete="given-name"
+                      placeholder="Ej: María"
+                      value={fields.nombres}
+                      onChange={(e) => set('nombres', e.target.value)}
+                    />
+                  </Field>
 
-              <Button type="submit" className="w-full" isLoading={submitting} disabled={submitting}>
-                Consultar mi aprobación
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                  <Field id="apellidos" label="Apellidos" error={errors.apellidos}>
+                    <Input
+                      id="apellidos"
+                      autoComplete="family-name"
+                      placeholder="Ej: Restrepo"
+                      value={fields.apellidos}
+                      onChange={(e) => set('apellidos', e.target.value)}
+                    />
+                  </Field>
+
+                  <Field id="cedula" label="Cédula" error={errors.cedula}>
+                    <Input
+                      id="cedula"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      placeholder="Ej: 1098765432"
+                      value={fields.cedula}
+                      onChange={(e) => set('cedula', e.target.value)}
+                    />
+                  </Field>
+
+                  <Field id="phone" label="Celular" error={errors.phone}>
+                    <PhoneField
+                      id="phone"
+                      value={fields.phone}
+                      onChange={(v) => set('phone', v)}
+                      invalid={Boolean(errors.phone)}
+                    />
+                  </Field>
+
+                  <Field id="email" label="Correo electrónico" error={errors.email} className="md:col-span-2">
+                    <Input
+                      id="email"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="Ej: maria@correo.com"
+                      value={fields.email}
+                      onChange={(e) => set('email', e.target.value)}
+                    />
+                  </Field>
+                </Grupo>
+
+                <Grupo
+                  id="grupo-el-inmueble"
+                  titulo="El inmueble"
+                  ayuda={
+                    desdeLaFicha
+                      ? 'Ya viene del inmueble que elegiste. Puedes cambiarlo si buscas otro.'
+                      : 'Lo que quieres arrendar. Lo usamos para el estudio.'
+                  }
+                >
+                  {/* Ya no es "del inmueble": puede no haber inmueble todavía. */}
+                  <Field id="ciudad" label="Ciudad donde quieres vivir" error={errors.ciudad}>
+                    <Select value={fields.ciudad} onValueChange={(v) => v && set('ciudad', v)}>
+                      <SelectTrigger id="ciudad">
+                        <SelectValue placeholder="Selecciona una ciudad" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ciudades.map((c) => (
+                          <SelectItem key={c} value={c}>
+                            {c}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
+                  <Field id="tipoInmueble" label="Tipo de inmueble" error={errors.tipoInmueble}>
+                    <Select value={fields.tipoInmueble} onValueChange={(v) => v && set('tipoInmueble', v)}>
+                      <SelectTrigger id="tipoInmueble">
+                        <SelectValue placeholder="Selecciona el tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="apartamento">Apartamento</SelectItem>
+                        <SelectItem value="casa">Casa</SelectItem>
+                        <SelectItem value="local">Local</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
+                  {/* Con puntos de miles mientras se escribe (Nico, 14-09: «1100000»
+                      no se lee). Hacia el formulario siguen siendo dígitos pelados. */}
+                  <Field id="canon" label="Canon mensual" error={errors.canon} className="md:col-span-2">
+                    <MoneyInput
+                      id="canon"
+                      placeholder="2.000.000"
+                      value={fields.canon}
+                      onChange={(v) => set('canon', v)}
+                    />
+                  </Field>
+                </Grupo>
+
+                <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface-muted p-4">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="consent"
+                      checked={fields.consent}
+                      onCheckedChange={(checked) => set('consent', checked === true)}
+                      className="mt-0.5"
+                    />
+                    <Label htmlFor="consent" className="text-xs font-normal leading-relaxed text-fg-muted">
+                      {/* Al inquilino no se le dice "asegurabilidad" — docs/VOCABULARIO.md */}
+                      Autorizo el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 para
+                      consultar mi aprobación con las aseguradoras y ser contactado por un asesor de Leasefy.
+                    </Label>
+                  </div>
+                  {errors.consent && <p className="text-xs text-danger">{errors.consent}</p>}
+                </div>
+
+                {submitError && (
+                  <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">{submitError}</p>
+                )}
+
+                <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+                  {arriendo ? (
+                    <Button asChild variant="ghost" hideArrow>
+                      <Link href={`/arrendar/${arriendo.propertyId}`}>
+                        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                        Volver al paso 1
+                      </Link>
+                    </Button>
+                  ) : (
+                    <span aria-hidden="true" />
+                  )}
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full sm:w-auto"
+                    isLoading={submitting}
+                    disabled={submitting}
+                  >
+                    Consultar mi aprobación
+                  </Button>
+                </div>
+              </form>
+            </section>
+          </>
         )}
       </main>
+    </div>
+  )
+}
+
+function SelloTeAlcanza({ className }: { className: string }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full bg-success/10 px-3 py-1 text-caption font-medium text-success ${className}`}
+    >
+      <CheckCircle weight="fill" className="h-4 w-4" aria-hidden="true" />
+      Te alcanza
+    </span>
+  )
+}
+
+/** Un grupo del formulario: título, para qué es, y sus campos en dos columnas. */
+function Grupo({
+  id,
+  titulo,
+  ayuda,
+  children,
+}: {
+  id: string
+  titulo: string
+  ayuda: string
+  children: React.ReactNode
+}) {
+  return (
+    <div role="group" aria-labelledby={id} className="flex flex-col gap-4">
+      <div>
+        <h2 id={id} className="font-heading text-lg font-semibold text-fg">
+          {titulo}
+        </h2>
+        <p className="mt-0.5 text-caption text-fg-muted">{ayuda}</p>
+      </div>
+      <div className="grid gap-x-4 gap-y-5 md:grid-cols-2">{children}</div>
     </div>
   )
 }
@@ -426,15 +570,17 @@ function Field({
   id,
   label,
   error,
+  className,
   children,
 }: {
   id: string
   label: string
   error?: string
+  className?: string
   children: React.ReactNode
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className={`space-y-1.5 ${className ?? ''}`}>
       <Label htmlFor={id} className="text-sm font-medium">
         {label}
       </Label>

@@ -52,6 +52,10 @@ export default function ArrendarPage({ params }: Props) {
   const [arriendo, setArriendo] = useState<ArriendoEnCurso | null | undefined>(undefined);
 
   useEffect(() => {
+    // Se llega desde «Verificar», a mitad de la ficha, y el App Router con Lenis
+    // abría esta pantalla a esa misma altura (medido el 14-09: 518 px), con el
+    // «¡Felicitaciones!» fuera de vista. Nico: «no me puso la pantalla arriba».
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     const leido = leerArriendoEnCurso(id);
     if (!leido) {
       router.replace(`/propiedades/${id}`);

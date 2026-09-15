@@ -36,9 +36,38 @@ export function PasosDelArriendo({
     ...(conDescripcion ? { description: p.description } : {}),
     sublabel: i < indice ? 'Completo' : i === indice ? 'En curso' : 'Pendiente',
   }));
+  const activo = Math.min(indice, PASOS.length - 1);
+  const stepper = (
+    <Stepper steps={steps} activeIndex={activo} orientation={orientation} aria-label="Pasos para arrendar" />
+  );
+  if (orientation === 'vertical') {
+    return (
+      <div data-testid="pasos-del-arriendo" className={className}>
+        {stepper}
+      </div>
+    );
+  }
+  // En celular los tres rótulos no caben en fila y la franja se salía de la
+  // pantalla (medido a 400 px el 14-09): ahí va el paso en curso y una barra.
   return (
     <div data-testid="pasos-del-arriendo" className={className}>
-      <Stepper steps={steps} activeIndex={Math.min(indice, PASOS.length - 1)} orientation={orientation} aria-label="Pasos para arrendar" />
+      <div className="hidden sm:block">{stepper}</div>
+      <div className="flex flex-col gap-2 sm:hidden">
+        <p className="flex items-baseline justify-between gap-3 text-caption">
+          <span className="font-medium text-fg">{PASOS[activo].label}</span>
+          <span className="shrink-0 font-mono tabular-nums text-fg-muted">
+            Paso {activo + 1} de {PASOS.length}
+          </span>
+        </p>
+        <div className="grid grid-cols-3 gap-1.5" aria-hidden="true">
+          {PASOS.map((p, i) => (
+            <span
+              key={p.id}
+              className={`h-1.5 rounded-full ${i < indice ? 'bg-primary' : i === indice ? 'bg-primary/40' : 'bg-border'}`}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

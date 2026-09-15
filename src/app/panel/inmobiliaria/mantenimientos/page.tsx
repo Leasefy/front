@@ -561,10 +561,13 @@ function MantenimientosContent() {
                 exit={{ opacity: 0 }}
                 className="p-5"
               >
+                {/* M6: el tablero vacío eran cinco columnas en cero y ninguna
+                    salida. Ahora ofrece lo mismo que la lista hermana. */}
                 <MantenimientoKanban
                   data={mantenimientos}
                   onViewDetails={handleViewMantenimiento}
                   onStatusChange={puedeEditar ? handleMantenimientoStatusChange : undefined}
+                  onCrear={handleNewMantenimiento}
                 />
               </motion.div>
             ) : (

@@ -36,6 +36,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { SinDatos } from '@/components/estado/SinDatos';
 import type {
   SolicitudMantenimiento,
   MantenimientoType,
@@ -52,6 +53,15 @@ import { detectarColumnaDelPuntero } from './mantenimiento-kanban-colisiones';
 interface MantenimientoKanbanProps {
   data: SolicitudMantenimiento[];
   onViewDetails?: (solicitud: SolicitudMantenimiento) => void;
+  /**
+   * Crear la primera. M6 de la auditoría del 13-09: con el tablero vacío se
+   * veían cinco columnas en cero y ninguna salida — la lista hermana sí
+   * ofrecía «Nueva solicitud» desde su `SinDatos`, el tablero no.
+   */
+  onCrear?: () => void;
+  /** ¿Hay filtros puestos? Filtrado a cero no es «todavía no tienes». */
+  hayFiltros?: boolean;
+  onLimpiarFiltros?: () => void;
   /**
    * Mover la solicitud a la columna donde se soltó.
    *
@@ -479,6 +489,9 @@ export function MantenimientoKanban({
   data,
   onViewDetails,
   onStatusChange,
+  onCrear,
+  hayFiltros = false,
+  onLimpiarFiltros,
 }: MantenimientoKanbanProps) {
   const { t } = useI18n();
   const [arrastrandoId, setArrastrandoId] = useState<string | null>(null);
@@ -569,6 +582,20 @@ export function MantenimientoKanban({
     },
     [data, onStatusChange]
   );
+
+  // Tablero vacío: cinco columnas en cero no dicen nada y no ofrecen nada.
+  // Mismo `SinDatos` que la vista de lista, con las mismas dos salidas.
+  if (data.length === 0) {
+    return (
+      <SinDatos
+        queSon="solicitudes de mantenimiento"
+        icono={Wrench}
+        hayFiltros={hayFiltros}
+        {...(onLimpiarFiltros ? { onLimpiarFiltros } : {})}
+        {...(onCrear ? { crear: { label: 'Nueva solicitud', onClick: onCrear } } : {})}
+      />
+    );
+  }
 
   const tablero = (
     <>

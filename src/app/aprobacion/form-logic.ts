@@ -100,3 +100,26 @@ export function validatePreApprovalForm(f: PreApprovalFormFields): PreApprovalFo
     canonCop,
   }
 }
+
+/**
+ * Lo que llega por la URL desde la ficha de un inmueble («¿Te podemos arrendar
+ * este inmueble?» → «Verificar con Fianly»). Sólo se toma lo que el formulario
+ * sabe mostrar: una ciudad fuera de la lista o un tipo desconocido se ignoran
+ * en vez de dejar un select con un valor que no tiene opción.
+ */
+export function prellenadoDesdeUrl(
+  params: URLSearchParams,
+  ciudades: readonly string[],
+): Partial<PreApprovalFormFields> {
+  const salida: Partial<PreApprovalFormFields> = {}
+  const canon = (params.get('canon') ?? '').replace(/\D/g, '')
+  if (canon && Number(canon) > 0) salida.canon = canon
+  const ciudad = params.get('ciudad')?.trim()
+  const deLaLista = ciudades.find(
+    (c) => c.localeCompare(ciudad ?? '', 'es', { sensitivity: 'base' }) === 0,
+  )
+  if (deLaLista) salida.ciudad = deLaLista
+  const tipo = params.get('tipo')
+  if (tipo === 'apartamento' || tipo === 'casa' || tipo === 'local') salida.tipoInmueble = tipo
+  return salida
+}

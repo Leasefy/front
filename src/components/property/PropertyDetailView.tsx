@@ -18,6 +18,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import { superaReferencia, referenciaCanon } from '@/lib/api/aprobacion.service';
 import { SobreTopeAlert } from '@/components/tenant/TopeAprobadoBanner';
+import { TePodemosArrendar } from '@/components/property/TePodemosArrendar';
 import { formatCurrency, formatArea } from '@/lib/format';
 
 // MapLibre toca `window`: sin SSR, con un esqueleto de la misma altura.
@@ -426,6 +427,19 @@ export function PropertyDetailView({
                     className="mb-8"
                   />
                 )}
+
+              {/* «¿Te podemos arrendar este inmueble?» (Nico, 2026-09-14): el
+                  estimado gratis por ingreso y la puerta al estudio con Fianly.
+                  Sólo en arriendo con canon, y no a quien ya tiene aprobación
+                  vigente: ése ya sabe su tope (lo cubre el aviso de arriba). */}
+              {property.listingType !== 'sale' && (property.monthlyRent ?? 0) > 0 && !aprobacionVigente && (
+                <TePodemosArrendar
+                  canon={property.monthlyRent ?? 0}
+                  ciudad={property.city}
+                  tipo={property.type}
+                  className="mb-8"
+                />
+              )}
 
               {/*
                 Acá iba `SocialProofBanner`: "7 viendo ahora" con un punto que

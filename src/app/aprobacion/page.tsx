@@ -28,6 +28,7 @@ import { EstadoPagoAprobacion } from '@/components/aprobacion/EstadoPagoAprobaci
 import { usePreScoringCurrent } from '@/lib/hooks/use-prescoring-current'
 import { tieneEstudioVigente } from '@/lib/api/prescoring.types'
 import {
+  prellenadoDesdeUrl,
   validatePreApprovalForm,
   type PreApprovalFormFields,
 } from './form-logic'
@@ -72,6 +73,14 @@ export default function AprobacionPage() {
   const [pagando, setPagando] = useState(false)
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
   const [popupBlocked, setPopupBlocked] = useState(false)
+
+  // Desde la ficha de un inmueble («¿Te podemos arrendar este inmueble?») el
+  // estudio llega con el canon, la ciudad y el tipo ya puestos. Se lee en el
+  // cliente y una sola vez: lo que la persona cambie después manda.
+  useEffect(() => {
+    const prellenado = prellenadoDesdeUrl(new URLSearchParams(window.location.search), CIUDADES)
+    if (Object.keys(prellenado).length > 0) setFields((f) => ({ ...f, ...prellenado }))
+  }, [])
 
   /**
    * Guarda de reingreso: quien YA tiene un estudio no puede ver este
@@ -143,7 +152,7 @@ export default function AprobacionPage() {
     if (!v.valid || v.phoneE164 === null || v.canonCop === null) return
 
     if (!user) {
-      router.push('/auth?returnUrl=' + encodeURIComponent('/aprobacion'))
+      router.push('/auth?returnUrl=' + encodeURIComponent('/aprobacion' + window.location.search))
       return
     }
 

@@ -83,7 +83,10 @@ export default function TeAlcanzaPage({ params }: Props) {
                       </h1>
                       <p className="mt-2 text-sm text-fg-muted">
                         {arriendo.titulo}
-                        {arriendo.ciudad ? ` · ${arriendo.ciudad}` : ''}
+                        {/* El título ya suele traer la ciudad («…, Caldas»): no repetirla. */}
+                        {arriendo.ciudad && !arriendo.titulo.toLowerCase().includes(arriendo.ciudad.toLowerCase())
+                          ? ` · ${arriendo.ciudad}`
+                          : ''}
                       </p>
                     </div>
 

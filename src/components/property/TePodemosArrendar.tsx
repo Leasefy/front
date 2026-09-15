@@ -53,6 +53,9 @@ export function TePodemosArrendar({ propertyId, titulo, foto, canon, ciudad, tip
   const [ingresoCodeudor, setIngresoCodeudor] = useState('');
   // Sólo lo que dio «Verificar» y no alcanzó. Si alcanza, se navega al paso 2.
   const [noAlcanza, setNoAlcanza] = useState<EstimadoDeArriendo | null>(null);
+  // Le alcanzó y ya va hacia «¡Felicitaciones!»: el botón carga mientras llega
+  // (Nico, 15-09) y no deja un segundo clic.
+  const [yendoALaRespuesta, setYendoALaRespuesta] = useState(false);
 
   const cambiar = (fijar: (v: string) => void) => (v: string) => {
     fijar(v);
@@ -78,6 +81,7 @@ export function TePodemosArrendar({ propertyId, titulo, foto, canon, ciudad, tip
         ingresoTotal: estimado.ingresoTotal,
         canonMaximo: estimado.canonMaximo,
       });
+      setYendoALaRespuesta(true);
       router.push(`/arrendar/${propertyId}`);
       return;
     }
@@ -158,11 +162,12 @@ export function TePodemosArrendar({ propertyId, titulo, foto, canon, ciudad, tip
         <Button
           type="button"
           onClick={verificar}
-          disabled={!puedeVerificar}
+          disabled={!puedeVerificar || yendoALaRespuesta}
+          isLoading={yendoALaRespuesta}
           data-testid="verificar-arriendo"
           className="md:flex-shrink-0"
         >
-          Verificar
+          {yendoALaRespuesta ? 'Verificando…' : 'Verificar'}
         </Button>
       </div>
     </section>

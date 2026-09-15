@@ -84,6 +84,25 @@ describe('<TePodemosArrendar>', () => {
     expect(hay('estimado-no-alcanza')).toBeNull();
   });
 
+  it('si alcanza, «Verificar» carga mientras lleva a la respuesta y no deja otro clic', () => {
+    montar();
+    escribir('tpa-ingreso', '4000000');
+    verificar();
+    const boton = hay('verificar-arriendo') as HTMLButtonElement;
+    expect(boton.disabled).toBe(true);
+    expect(boton.textContent).toContain('Verificando');
+    expect(pushMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('si no alcanza, «Verificar» no se queda cargando', () => {
+    montar();
+    escribir('tpa-ingreso', '1000000');
+    verificar();
+    const boton = hay('verificar-arriendo') as HTMLButtonElement;
+    expect(boton.disabled).toBe(false);
+    expect(boton.textContent).not.toContain('Verificando');
+  });
+
   it('la nota dice que es un cálculo rápido y qué sigue, sin citar la regla', () => {
     montar();
     const nota = hay('nota-estimado')?.textContent ?? '';

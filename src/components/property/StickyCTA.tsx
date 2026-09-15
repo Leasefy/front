@@ -8,7 +8,7 @@ import { toast } from '@/components/ui/toast';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { SegmentedControl } from '@leasefy/cadence';
-import { LeasefyLogo } from '@/components/brand';
+import { LeasefyLogotype } from '@/components/brand';
 import { useOptionalI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -378,10 +378,11 @@ export function StickyCTA({
           <div className="flex items-start justify-between mb-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                {/* La firma del DS, no el nombre tipeado a mano: acá vivía un
-                    `<p>Leasefy</p>` que no era el logo (Nico, 2026-09-04). Es
-                    el mismo arreglo que ya se hizo en los dos footers. */}
-                <LeasefyLogo size={20} tone="brand" />
+                {/* El logotipo real, el mismo del header y del login. Acá vivió
+                    primero un nombre tipeado a mano (Nico, 2026-09-04) y después
+                    el lockup del DS, que arma símbolo + «Leasefy» en tipografía y
+                    tampoco es el logo (Nico, 2026-09-15). */}
+                <LeasefyLogotype size={20} className="text-fg" title="Leasefy" />
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[hsl(var(--success-50))] dark:bg-[hsl(var(--success-500)/0.15)] text-[hsl(var(--success-500))] text-[10px] font-semibold uppercase tracking-wide rounded-full">
                   <Check className="w-3 h-3" />
                   Verificado

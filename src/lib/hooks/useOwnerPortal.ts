@@ -82,6 +82,9 @@ export interface UseOwnerFinanzasResult {
   inmuebles: FinanzasInmueble[];
   proyeccion: FinanzasProyeccion | null;
   recaudoAnual: FinanzasRecaudoAnual | null;
+  /** Por qué no llegó esa parte. `null` = llegó, o llegó vacía (O3). */
+  falloProyeccion: string | null;
+  falloRecaudo: string | null;
   isLoading: boolean;
   /** true = finanzas no disponibles (flag-OFF / owner-JWT no cableado) → "Próximamente". */
   unavailable: boolean;
@@ -104,6 +107,8 @@ export function useOwnerFinanzas(): UseOwnerFinanzasResult {
   const [inmuebles, setInmuebles] = useState<FinanzasInmueble[]>([]);
   const [proyeccion, setProyeccion] = useState<FinanzasProyeccion | null>(null);
   const [recaudoAnual, setRecaudoAnual] = useState<FinanzasRecaudoAnual | null>(null);
+  const [falloProyeccion, setFalloProyeccion] = useState<string | null>(null);
+  const [falloRecaudo, setFalloRecaudo] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [fallo, setFallo] = useState<{ status: number; mensaje: string } | null>(null);
   const [intento, setIntento] = useState(0);
@@ -119,8 +124,8 @@ export function useOwnerFinanzas(): UseOwnerFinanzasResult {
     Promise.all([
       ownerFinanzasApi.getPortafolioConEstado(agencyId),
       ownerFinanzasApi.getInmuebles(agencyId),
-      ownerFinanzasApi.getProyeccion(agencyId),
-      ownerFinanzasApi.getRecaudoAnual(agencyId, year),
+      ownerFinanzasApi.getProyeccionConEstado(agencyId),
+      ownerFinanzasApi.getRecaudoAnualConEstado(agencyId, year),
     ]).then(([resultado, inm, proy, anual]) => {
       if (!alive) return;
       setPortafolio(resultado.estado === 'ok' ? resultado.data : null);
@@ -130,8 +135,14 @@ export function useOwnerFinanzas(): UseOwnerFinanzasResult {
           : null,
       );
       setInmuebles(inm);
-      setProyeccion(proy);
-      setRecaudoAnual(anual);
+      /*
+       * O3: una tarjeta que se borra no dice si falló o si no hay nada. Se
+       * guarda el ESTADO de cada parte para que la vista pueda decirlo.
+       */
+      setProyeccion(proy.estado === 'ok' ? proy.data : null);
+      setFalloProyeccion(proy.estado === 'fallo' ? proy.mensaje : null);
+      setRecaudoAnual(anual.estado === 'ok' ? anual.data : null);
+      setFalloRecaudo(anual.estado === 'fallo' ? anual.mensaje : null);
       setIsLoading(false);
     });
     return () => {
@@ -146,6 +157,8 @@ export function useOwnerFinanzas(): UseOwnerFinanzasResult {
     inmuebles,
     proyeccion,
     recaudoAnual,
+    falloProyeccion,
+    falloRecaudo,
     isLoading,
     unavailable,
     fallo,

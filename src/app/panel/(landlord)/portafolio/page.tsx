@@ -22,6 +22,8 @@ export default function PortafolioPage() {
     inmuebles,
     proyeccion,
     recaudoAnual,
+    falloProyeccion,
+    falloRecaudo,
     isLoading,
     unavailable,
     fallo,
@@ -69,6 +71,8 @@ export default function PortafolioPage() {
       inmuebles={inmuebles}
       proyeccion={proyeccion}
       recaudoAnual={recaudoAnual}
+      falloProyeccion={falloProyeccion}
+      falloRecaudo={falloRecaudo}
     />
   );
 }

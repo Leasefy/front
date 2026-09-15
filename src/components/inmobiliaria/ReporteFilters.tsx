@@ -40,7 +40,6 @@ interface ReporteFiltersProps {
     operativo: number;
     agentes: number;
   };
-  zones: string[];
   /** Minimal mode for embedded use in unified cards */
   minimal?: boolean;
 }
@@ -127,7 +126,6 @@ export function ReporteFilters({
   filters,
   onFiltersChange,
   reportCounts,
-  zones,
   minimal = false,
 }: ReporteFiltersProps) {
   const { t, formatDate: fmtDate } = useI18n();
@@ -262,31 +260,14 @@ export function ReporteFilters({
           </SelectContent>
         </Select>
 
-        {/* Zonas — sólo si hay zonas de verdad.
-
-            Antes la lista venía quemada en la página («Chapinero», «El
-            Poblado»…) y el desplegable siempre estaba. Ahora las zonas salen
-            del reporte de ocupación: mientras carga, o si la agencia no tiene
-            ninguna, el control no se dibuja. Un desplegable vacío que igual
-            dice «Todas las zonas» sugiere que las zonas existen y que las
-            mostramos todas. */}
-        {zones.length > 0 && (
-        <Select
-          value={filters.zone ?? 'all'}
-          onValueChange={(v) => updateFilter('zone', v === 'all' ? null : v)}
-        >
-          <SelectTrigger className="w-auto min-w-[140px] gap-2">
-            <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="max-h-64">
-            <SelectItem value="all">{t('inmobiliaria.reporte.allZones')}</SelectItem>
-            {zones.map((zone) => (
-              <SelectItem key={zone} value={zone}>{zone}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        )}
+        {/* 🔴 El filtro de zona se RETIRÓ (RP2, auditoría 13-09).
+            `filters.zone` se guardaba y nunca se aplicaba: `filteredReports`
+            filtra por categoría, favoritos y búsqueda, y ningún endpoint de
+            reportes acepta una zona. Elegir una zona no cambiaba nada, y un
+            control que no hace nada en una pantalla de REPORTES —donde el dato
+            se convierte en decisión— hace creer que el número que se está
+            mirando es el de esa zona. Vuelve cuando el back sepa filtrar por
+            zona; las zonas reales ya se saben leer (`lib/reportes/zonas.ts`). */}
 
         {/* Favorites Toggle */}
         <Chip

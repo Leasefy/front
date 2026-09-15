@@ -49,6 +49,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { formatCurrency } from '@/lib/format';
+import { netoDelPropietario } from '@/lib/dinero/neto-del-propietario';
 import { apiClient, ApiError } from '@/lib/api/client';
 import { useRentabilidadReport } from '@/lib/hooks/useInmobiliaria';
 import { nombreDelArchivo, rutaDeExport, descargarBlob } from '@/lib/reportes/exportables';
@@ -335,9 +336,14 @@ function RentabilidadContent() {
               value={formatCurrency(totales.comisionCop)}
               compact
             />
+            {/* 🔴 Decisión de negocio (Nico, 2026-09-15), CAMBIABLE: un neto
+                negativo NO es plata a favor del propietario. Se dice con la
+                palabra «queda debiendo» y en rojo — nunca en verde, y nunca un
+                «−$340.000» pelado entre columnas alineadas, que se lee como un
+                número más. La regla vive en `lib/dinero/neto-del-propietario`. */}
             <Stat
               label={t('inmobiliaria.reportes.rentabilidad.stats.netToOwners')}
-              value={formatCurrency(totales.netoPropietarioCop)}
+              value={netoDelPropietario(totales.netoPropietarioCop, formatCurrency).texto}
               delta={t('inmobiliaria.reportes.rentabilidad.stats.withValue', { count: totales.conValor })}
               compact
             />
@@ -495,8 +501,12 @@ function RentabilidadContent() {
                     <TableCell numeric className="whitespace-nowrap font-mono tabular-nums text-fg-muted">
                       {formatCurrency(f.gastosMantenimientoCop)}
                     </TableCell>
-                    <TableCell numeric className="whitespace-nowrap font-mono font-medium tabular-nums text-fg">
-                      {formatCurrency(f.netoPropietarioCop)}
+                    <TableCell
+                      numeric
+                      className={`whitespace-nowrap font-mono font-medium tabular-nums ${netoDelPropietario(f.netoPropietarioCop).clase}`}
+                      title={netoDelPropietario(f.netoPropietarioCop).explicacion ?? undefined}
+                    >
+                      {netoDelPropietario(f.netoPropietarioCop, formatCurrency).texto}
                     </TableCell>
                     <TableCell numeric className="whitespace-nowrap font-mono tabular-nums">
                       {f.rentabilidadNetaAnualPct === null ? (
@@ -535,8 +545,12 @@ function RentabilidadContent() {
                   <TableCell numeric className="whitespace-nowrap font-mono tabular-nums text-fg">
                     {formatCurrency(totales.gastosMantenimientoCop)}
                   </TableCell>
-                  <TableCell numeric className="whitespace-nowrap font-mono font-semibold tabular-nums text-fg">
-                    {formatCurrency(totales.netoPropietarioCop)}
+                  <TableCell
+                    numeric
+                    className={`whitespace-nowrap font-mono font-semibold tabular-nums ${netoDelPropietario(totales.netoPropietarioCop).clase}`}
+                    title={netoDelPropietario(totales.netoPropietarioCop).explicacion ?? undefined}
+                  >
+                    {netoDelPropietario(totales.netoPropietarioCop, formatCurrency).texto}
                   </TableCell>
                   <TableCell numeric />
                 </TableRow>

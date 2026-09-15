@@ -609,6 +609,7 @@ export function PropertyDetailView({
             <div className="lg:col-span-5 hidden lg:block">
               <StickyCTA
                 propertyId={property.id}
+                arrendado={property.status === 'rented'}
                 price={property.monthlyRent ?? 0}
                 adminFee={property.adminFee}
                 isWishlisted={isWishlisted(property.id)}
@@ -625,6 +626,7 @@ export function PropertyDetailView({
       {/* Mobile Sticky CTA */}
       <MobileStickyCTA
         propertyId={property.id}
+        arrendado={property.status === 'rented'}
         price={property.monthlyRent ?? 0}
         listingType={property.listingType}
         salePrice={property.salePrice}

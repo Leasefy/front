@@ -78,7 +78,7 @@ describe('<TePodemosArrendar>', () => {
     escribir('tpa-ingreso', '2000000');
     escribir('tpa-codeudor', '1000000');
     verificar();
-    expect(pushMock).toHaveBeenCalledWith('/propiedades/p-1/te-alcanza');
+    expect(pushMock).toHaveBeenCalledWith('/arrendar/p-1');
     const guardado = JSON.parse(window.sessionStorage.getItem('leasefy:arriendo-en-curso') ?? '{}');
     expect(guardado).toMatchObject({ propertyId: 'p-1', tipo: 'apartamento', canon: 2_000_000, ingresoTotal: 3_000_000 });
     expect(hay('estimado-no-alcanza')).toBeNull();

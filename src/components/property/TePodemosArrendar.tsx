@@ -26,6 +26,7 @@ import {
   type EstimadoDeArriendo,
 } from '@/lib/aprobacion/estimado-de-arriendo';
 import { guardarArriendoEnCurso } from '@/lib/aprobacion/arriendo-en-curso';
+import { PasosDelArriendo } from '@/components/aprobacion/PasosDelArriendo';
 
 interface TePodemosArrendarProps {
   propertyId: string;
@@ -77,7 +78,7 @@ export function TePodemosArrendar({ propertyId, titulo, foto, canon, ciudad, tip
         ingresoTotal: estimado.ingresoTotal,
         canonMaximo: estimado.canonMaximo,
       });
-      router.push(`/propiedades/${propertyId}/te-alcanza`);
+      router.push(`/arrendar/${propertyId}`);
       return;
     }
     setNoAlcanza(estimado);
@@ -131,9 +132,10 @@ export function TePodemosArrendar({ propertyId, titulo, foto, canon, ciudad, tip
               </div>
             </div>
           ) : (
-            <p data-testid="estimado-vacio" className="text-sm text-fg-muted">
-              Toca «Verificar» cuando tengas tu ingreso.
-            </p>
+            <div data-testid="estimado-vacio" className="flex flex-col gap-3">
+              <p className="text-sm font-medium text-fg">Así funciona</p>
+              <PasosDelArriendo actual={1} orientation="vertical" conDescripcion />
+            </div>
           )}
           <div className="flex flex-col gap-2">
             <Fila etiqueta="Canon del inmueble" valor={formatCurrency(canon)} />

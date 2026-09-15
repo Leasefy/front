@@ -74,7 +74,27 @@ export function useNotificationSettings() {
     }
   }, [])
 
-  return { settings, isLoading, error, errorCrudo, refresh, updateSetting }
+  /**
+   * Varias banderas en UNA escritura: el inquilino ve «Correos de tu arriendo»
+   * como un solo interruptor que en el back son cuatro. Si falla, vuelve todo a
+   * como estaba — el interruptor tiene que decir lo que de verdad quedó.
+   */
+  const updateSettings = useCallback(async (parche: Partial<NotificationSettings>) => {
+    let anterior: NotificationSettings | null = null
+    setSettings(prev => {
+      anterior = prev
+      return { ...prev, ...parche }
+    })
+    try {
+      const updated = await settingsApi.updateNotificationSettings(parche)
+      setSettings(updated)
+    } catch (err) {
+      if (anterior) setSettings(anterior)
+      throw err
+    }
+  }, [])
+
+  return { settings, isLoading, error, errorCrudo, refresh, updateSetting, updateSettings }
 }
 
 // ============================================================================

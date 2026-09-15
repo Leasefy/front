@@ -93,18 +93,17 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay }}
-        className="rounded-lg bg-surface-muted overflow-hidden"
+        // La tarjeta de Configuración de la inmobiliaria: el título «Equipo» ya
+        // lo pone el marco, acá quedan el conteo y la acción (Nico, 2026-09-15).
+        className="rounded-lg border border-border bg-surface overflow-hidden"
       >
-        <div className="px-6 py-5 border-b border-border-faint">
-          <div className="flex items-center justify-between">
+        <div className="px-4 py-3 sm:px-5 border-b border-border">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center">
-                <Users className="w-5 h-5 text-fg-muted" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-muted">
+                <Users className="h-[18px] w-[18px] text-fg-muted" />
               </div>
-              <div>
-                <h2 className="font-semibold text-fg">{t('landlordSettings.team.title')}</h2>
-                <p className="text-xs text-fg-subtle">{teamMembersList.length} {teamMembersList.length !== 1 ? t('landlordSettings.team.members') : t('landlordSettings.team.member')}</p>
-              </div>
+              <p className="text-sm text-fg-muted">{teamMembersList.length} {teamMembersList.length !== 1 ? t('landlordSettings.team.members') : t('landlordSettings.team.member')}</p>
             </div>
             <Button
               hideArrow
@@ -116,9 +115,9 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
             </Button>
           </div>
         </div>
-        <div className="divide-y divide-border-faint">
+        <div className="divide-y divide-border">
           {teamMembersList.map((member) => (
-            <div key={member.id} className="flex items-center justify-between px-6 py-4">
+            <div key={member.id} className="flex items-center justify-between px-4 py-4 sm:px-5">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
                   <span className="text-sm font-semibold text-[#1A40FF] dark:text-[#5570FF]">

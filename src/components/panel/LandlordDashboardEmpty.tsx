@@ -66,7 +66,8 @@ const getSetupSteps = (hasProperty: boolean): SetupStep[] => [
     descriptionEs: 'Recibe el arriendo automáticamente',
     descriptionEn: 'Receive rent automatically',
     icon: CreditCard,
-    href: '/panel/configuracion',
+    // Directo a la sección, no a la raíz de Configuración (que es «Tu plan»).
+    href: '/panel/configuracion/cuentas-de-recaudo',
     completed: false,
   },
 ];

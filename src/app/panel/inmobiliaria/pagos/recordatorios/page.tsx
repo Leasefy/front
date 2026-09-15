@@ -1,315 +1,634 @@
 'use client'
 
 /**
- * /ai/pagos/recordatorios — Recordatorios (punto 8).
+ * Recordatorios — la cobranza con reglaje.
  *
- * PREVENCIÓN, no cobranza: la secuencia de avisos ANTES de que un pago se
- * atrase (3 días antes · día de vencimiento · 1 día después · 3 días después →
- * el caso pasa a cobranza). Esta superficie es UX sobre un backend de
- * recordatorios que todavía no existe → toda persistencia es un placeholder
- * honesto "Próximamente" (T-323: ningún botón finge funcionar). La config se
- * edita en estado local para que el equipo vea/diseñe la secuencia y el mensaje.
+ * ── Qué era esta pantalla y qué es ahora ────────────────────────────────────
+ * Hasta hoy era una maqueta honesta: la secuencia era una constante, los
+ * controles vivían en estado local y «Guardar» decía «Próximamente» porque no
+ * había back. Ya lo hay (`/inmobiliaria/cobranza/secuencia`), así que la
+ * pantalla dejó de describir una intención y pasó a operar.
  *
- * Las operaciones profundas de cobros viven en /panel/inmobiliaria/cobros y la
- * cobranza humana en /ai/pagos/cola — acá solo se cross-linkea, no se duplica.
+ * ── Lo que pidió el CEO (2026-09-15) ────────────────────────────────────────
+ * «El cobro no debería generarse de forma automática: que la persona de
+ * finanzas decida cuándo cobrar, basada en la cartera.»
+ * «Al inicio del mes, que se envíe el recordatorio. Le ponemos un reglaje:
+ * después del recordatorio le damos 3 días; si al tercer día no paga, otro
+ * cobro ya con el interés generado; y así.»
+ *
+ * Por eso la pantalla tiene tres bloques y ese orden:
+ *   1. Las CONDICIONES de cobro (las pone la inmobiliaria).
+ *   2. El CALENDARIO que sale de esas condiciones: qué va a pasar y cuándo.
+ *   3. El DISPARO desde la cartera, con la vista previa antes de mandar.
+ *
+ * 🔴 No hay ningún interruptor de «automático»: nada se envía sin que alguien
+ * lo dispare acá. `activa` significa «ya definí mis condiciones», no «mandá
+ * solo». Un envío automático de cobros es lo que produjo los ~680 correos
+ * reales del 14-09.
+ *
+ * 🔴 El botón de enviar NUNCA está habilitado sin vista previa: la persona
+ * tiene que haber visto a cuántos le va a llegar.
  */
 
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   BellRinging,
   CalendarCheck,
-  ClockClockwise,
-  WarningCircle,
-  EnvelopeSimple,
   ChatCircleDots,
-  DeviceMobile,
-  Sparkle,
+  EnvelopeSimple,
   Info,
+  PaperPlaneTilt,
+  Warning,
 } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
-
-import { Button, Card, CardContent, Switch } from '@/components/ui'
-import { Chip, SegmentedControl, Eyebrow } from '@leasefy/cadence'
+import { Button, Card, CardContent, Input, Label, Switch, Textarea, toast } from '@/components/ui'
+import { Eyebrow, SegmentedControl } from '@leasefy/cadence'
 
 import {
-  SecuenciaRecordatorios,
-  type PasoRecordatorio,
-} from '@/components/inmobiliaria/pagos/SecuenciaRecordatorios'
+  cobranzaSecuenciaApi,
+  mesDeHoy,
+} from '@/lib/api/cobranza-secuencia.service'
+import {
+  ETIQUETA_DEL_MOTIVO,
+  MOTIVOS_DE_EXCLUSION,
+  type CalendarioDeLaSecuencia,
+  type CanalDeCobranza,
+  type SecuenciaDeCobranza,
+  type VistaPreviaDeCobranza,
+} from '@/lib/api/cobranza-secuencia.types'
 
-// ── Secuencia de prevención (4 toques + escalación) ──────────────────────────
-// Estática: describe el embudo de recordatorios estándar de la visión.
-
-const SECUENCIA: PasoRecordatorio[] = [
-  {
-    id: 'preaviso',
-    cuando: '3 días antes',
-    titulo: 'Preaviso amable',
-    descripcion: 'Recordamos al inquilino que su pago vence pronto, con el monto y el medio.',
-    icon: BellRinging,
-    tono: 'info',
-  },
-  {
-    id: 'vencimiento',
-    cuando: 'Día de vencimiento',
-    titulo: 'Recordatorio del día',
-    descripcion: 'Aviso el mismo día con el enlace de pago listo para completar en un toque.',
-    icon: CalendarCheck,
-    tono: 'info',
-  },
-  {
-    id: 'post-1',
-    cuando: '1 día después',
-    titulo: 'Seguimiento temprano',
-    descripcion: 'Si aún no hay pago, recordamos con tono cordial y ofrecemos ayuda.',
-    icon: ClockClockwise,
-    tono: 'warning',
-  },
-  {
-    id: 'post-3',
-    cuando: '3 días después',
-    titulo: 'Último aviso de prevención',
-    descripcion: 'Cierre del ciclo preventivo: si no hay pago, el caso pasa a cobranza.',
-    icon: WarningCircle,
-    tono: 'danger',
-    esEscalacion: true,
-  },
+const CANALES: { value: CanalDeCobranza; label: string }[] = [
+  { value: 'CORREO', label: 'Correo' },
+  { value: 'WHATSAPP', label: 'WhatsApp' },
 ]
 
-// ── Canales (multi-select, contrato §3 → <Chip>) ─────────────────────────────
-
-type CanalId = 'whatsapp' | 'correo' | 'sms'
-
-const CANALES: { id: CanalId; label: string; icon: typeof ChatCircleDots }[] = [
-  { id: 'whatsapp', label: 'WhatsApp', icon: ChatCircleDots },
-  { id: 'correo', label: 'Correo', icon: EnvelopeSimple },
-  { id: 'sms', label: 'SMS', icon: DeviceMobile },
-]
-
-// ── Tono del mensaje (excluyente, contrato §3 → <SegmentedControl>) ──────────
-
-type TonoMensaje = 'cordial' | 'directo' | 'formal'
-
-const TONOS: { value: TonoMensaje; label: string }[] = [
-  { value: 'cordial', label: 'Cordial' },
-  { value: 'directo', label: 'Directo' },
-  { value: 'formal', label: 'Formal' },
-]
-
-// Texto de muestra por tono (preview en la card de mensaje).
-const PREVIEW_POR_TONO: Record<TonoMensaje, string> = {
-  cordial:
-    '¡Hola, María! 👋 Te recordamos con cariño que tu arriendo de octubre vence en 3 días ($1.850.000). Puedes pagar en un toque desde aquí: leasefy.co/pago. ¡Gracias!',
-  directo:
-    'Hola María. Tu arriendo de octubre ($1.850.000) vence en 3 días. Paga aquí: leasefy.co/pago.',
-  formal:
-    'Estimada María, le recordamos que su canon de arrendamiento correspondiente a octubre ($1.850.000) vence en 3 días. Realice su pago en: leasefy.co/pago. Cordialmente, su inmobiliaria.',
+function pesos(valor: number): string {
+  return `$${Math.round(valor).toLocaleString('es-CO')}`
 }
 
-const CUANDO_COBRANZA: { value: string; label: string }[] = [
-  { value: '1', label: '1 día después del vencimiento' },
-  { value: '3', label: '3 días después del vencimiento' },
-  { value: '5', label: '5 días después del vencimiento' },
-  { value: '7', label: '7 días después del vencimiento' },
-]
+/** `2026-10-04` → `sábado, 4 de octubre`. Sin husos: es un día del calendario. */
+function fechaLegible(iso: string): string {
+  const [anio, mes, dia] = iso.split('-').map(Number)
+  return new Date(Date.UTC(anio, mes - 1, dia)).toLocaleDateString('es-CO', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  })
+}
+
+function mensajeDeError(err: unknown): string {
+  const posible = err as { message?: string; response?: { data?: { message?: string } } }
+  return posible?.response?.data?.message ?? posible?.message ?? 'No se pudo completar la acción.'
+}
+
+function Aviso({ tono, children }: { tono: 'info' | 'warning'; children: React.ReactNode }) {
+  const Icono = tono === 'warning' ? Warning : Info
+  return (
+    <div
+      className={`flex items-start gap-3 rounded-lg border px-4 py-3 ${
+        tono === 'warning'
+          ? 'border-warning/30 bg-warning/5'
+          : 'border-border bg-surface-muted'
+      }`}
+    >
+      <Icono
+        className={`mt-0.5 h-5 w-5 shrink-0 ${tono === 'warning' ? 'text-warning' : 'text-fg-muted'}`}
+        weight="duotone"
+        aria-hidden="true"
+      />
+      <div className="text-sm text-fg-muted">{children}</div>
+    </div>
+  )
+}
 
 function PagosRecordatorios() {
-  // Estado local (no persiste: sin endpoint → "Próximamente").
-  const [automatico, setAutomatico] = useState(true)
-  const [canales, setCanales] = useState<Set<CanalId>>(new Set<CanalId>(['whatsapp', 'correo']))
-  const [tono, setTono] = useState<TonoMensaje>('cordial')
-  const [diasACobranza, setDiasACobranza] = useState('3')
+  const [secuencia, setSecuencia] = useState<SecuenciaDeCobranza | null>(null)
+  const [calendario, setCalendario] = useState<CalendarioDeLaSecuencia | null>(null)
+  const [previa, setPrevia] = useState<VistaPreviaDeCobranza | null>(null)
 
-  const toggleCanal = (id: CanalId) => {
-    setCanales((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+  const [mes, setMes] = useState(() => mesDeHoy())
+  const [paso, setPaso] = useState<number | null>(null)
+  const [canal, setCanal] = useState<CanalDeCobranza | null>(null)
+
+  const [cargando, setCargando] = useState(true)
+  const [guardando, setGuardando] = useState(false)
+  const [consultando, setConsultando] = useState(false)
+  const [enviando, setEnviando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // El borrador de la configuración: se edita en local y sólo viaja al guardar.
+  const [borrador, setBorrador] = useState<Partial<SecuenciaDeCobranza>>({})
+  const valor = <K extends keyof SecuenciaDeCobranza>(clave: K): SecuenciaDeCobranza[K] | undefined =>
+    (borrador[clave] ?? secuencia?.[clave]) as SecuenciaDeCobranza[K] | undefined
+
+  const cargar = useCallback(async () => {
+    setCargando(true)
+    setError(null)
+    try {
+      const config = await cobranzaSecuenciaApi.obtener()
+      setSecuencia(config)
+      setBorrador({})
+      setCanal((actual) => actual ?? config.canalPreferido)
+    } catch (err) {
+      setError(mensajeDeError(err))
+    } finally {
+      setCargando(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void cargar()
+  }, [cargar])
+
+  // El calendario se vuelve a pedir cada vez que cambia el mes o se guarda el
+  // reglaje: es la promesa que la pantalla le hace a la persona.
+  useEffect(() => {
+    if (!secuencia?.disponible) return
+    let vigente = true
+    void cobranzaSecuenciaApi
+      .calendario(mes)
+      .then((c) => {
+        if (vigente) setCalendario(c)
+      })
+      .catch(() => {
+        if (vigente) setCalendario(null)
+      })
+    return () => {
+      vigente = false
+    }
+  }, [mes, secuencia])
+
+  const guardar = async () => {
+    if (Object.keys(borrador).length === 0) return
+    setGuardando(true)
+    try {
+      const config = await cobranzaSecuenciaApi.guardar({
+        ...(borrador.activa !== undefined && { activa: borrador.activa }),
+        ...(borrador.diaDelRecordatorio !== undefined && {
+          diaDelRecordatorio: borrador.diaDelRecordatorio,
+        }),
+        ...(borrador.diasEntreAvisos !== undefined && {
+          diasEntreAvisos: borrador.diasEntreAvisos,
+        }),
+        ...(borrador.maxAvisosConInteres !== undefined && {
+          maxAvisosConInteres: borrador.maxAvisosConInteres,
+        }),
+        ...(borrador.canalPreferido !== undefined && { canalPreferido: borrador.canalPreferido }),
+        ...(borrador.mensajeDelRecordatorio !== undefined && {
+          mensajeDelRecordatorio: borrador.mensajeDelRecordatorio ?? '',
+        }),
+        ...(borrador.mensajeDelAviso !== undefined && {
+          mensajeDelAviso: borrador.mensajeDelAviso ?? '',
+        }),
+      })
+      setSecuencia(config)
+      setBorrador({})
+      // El reglaje cambió: lo que la vista previa decía ya no vale.
+      setPrevia(null)
+      toast.success('Se guardaron las condiciones de cobro.')
+    } catch (err) {
+      toast.error(mensajeDeError(err))
+    } finally {
+      setGuardando(false)
+    }
   }
 
-  const canalesActivosLabel = useMemo(() => {
-    const activos = CANALES.filter((c) => canales.has(c.id)).map((c) => c.label)
-    return activos.length > 0 ? activos.join(' · ') : 'Ningún canal seleccionado'
-  }, [canales])
+  const consultar = async () => {
+    setConsultando(true)
+    setPrevia(null)
+    try {
+      const vista = await cobranzaSecuenciaApi.destinatarios({
+        mes,
+        ...(paso !== null && { paso }),
+        ...(canal !== null && { canal }),
+      })
+      setPrevia(vista)
+    } catch (err) {
+      toast.error(mensajeDeError(err))
+    } finally {
+      setConsultando(false)
+    }
+  }
+
+  const enviar = async () => {
+    if (!previa || previa.lesLlega === 0) return
+    setEnviando(true)
+    try {
+      const resultado = await cobranzaSecuenciaApi.enviar({
+        mes,
+        paso: previa.paso,
+        canal: previa.canal,
+      })
+      toast.success(
+        `Salieron ${resultado.enviados} avisos. ` +
+          `${resultado.omitidos} omitidos y ${resultado.fallidos} fallidos.`,
+      )
+      // Después de enviar, la vista previa vieja miente: se vuelve a pedir.
+      await consultar()
+    } catch (err) {
+      toast.error(mensajeDeError(err))
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  const hayCambios = Object.keys(borrador).length > 0
+  const whatsappApagado =
+    secuencia?.canalDeWhatsapp && !secuencia.canalDeWhatsapp.disponible
+      ? secuencia.canalDeWhatsapp.motivo
+      : null
+
+  const excluidos = useMemo(
+    () =>
+      previa
+        ? MOTIVOS_DE_EXCLUSION.filter((m) => previa.excluidos[m] > 0).map((m) => ({
+            motivo: m,
+            etiqueta: ETIQUETA_DEL_MOTIVO[m],
+            cuantos: previa.excluidos[m],
+          }))
+        : [],
+    [previa],
+  )
+
+  if (cargando) {
+    return <div className="p-6 text-sm text-fg-muted lg:p-8">Cargando las condiciones de cobro…</div>
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4 p-6 lg:p-8">
+        <Aviso tono="warning">{error}</Aviso>
+        <Button hideArrow onClick={() => void cargar()}>
+          Reintentar
+        </Button>
+      </div>
+    )
+  }
 
   return (
-    <div className="p-6 lg:p-8 space-y-6">
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+    <div className="space-y-6 p-6 lg:p-8">
       <header className="space-y-2">
+        <Eyebrow>Cobranza</Eyebrow>
         <h1 className="text-h2 text-fg">Recordatorios</h1>
-        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-          La secuencia de avisos que enviamos <span className="font-medium text-fg">antes</span> de
-          que un pago se atrase. Es prevención: el objetivo es que el inquilino pague a tiempo y el
-          caso nunca llegue a cobranza.
+        <p className="max-w-2xl text-sm text-fg-muted">
+          Las condiciones con las que esta inmobiliaria cobra, y el disparo desde la cartera. Nada
+          sale solo: el recordatorio y los avisos los manda una persona, después de ver a cuántos le
+          va a llegar.
         </p>
       </header>
 
-      {/* ── Secuencia de prevención ────────────────────────────────────────── */}
+      {secuencia && !secuencia.disponible && (
+        <Aviso tono="warning">{secuencia.motivo}</Aviso>
+      )}
+
+      {/* ── 1. Las condiciones de cobro ─────────────────────────────────── */}
       <Card>
-        <CardContent className="p-5 lg:p-6 space-y-5">
+        <CardContent className="space-y-6 p-5 lg:p-6">
           <div className="space-y-1">
-            <Eyebrow>Secuencia de prevención</Eyebrow>
-            <h2 className="text-base font-semibold text-fg">Cómo recordamos cada pago</h2>
-            <p className="text-sm text-fg-muted max-w-2xl">
-              Cuatro toques escalonados; si tras el último el pago sigue pendiente, el caso pasa al
-              agente de cobranza.
+            <Eyebrow>Condiciones de cobro</Eyebrow>
+            <h2 className="text-base font-semibold text-fg">El reglaje</h2>
+            <p className="max-w-2xl text-sm text-fg-muted">
+              Un recordatorio al inicio del mes y, si no pagan, avisos con el interés ya generado,
+              separados por los días que definas.
             </p>
           </div>
 
-          <SecuenciaRecordatorios pasos={SECUENCIA} />
-
-          {/* Cross-link a la cobranza humana — NO se duplica la cola acá */}
-          <div className="rounded-lg border border-border bg-surface-muted px-4 py-3 flex items-start gap-3">
-            <Info className="h-5 w-5 shrink-0 text-fg-muted mt-0.5" weight="duotone" aria-hidden="true" />
-            <p className="text-sm text-fg-muted">
-              Los casos que ya escalaron se gestionan en la{' '}
-              <Link
-                href="/panel/inmobiliaria/pagos/cola"
-                className="text-primary underline-offset-4 hover:underline font-medium"
-              >
-                cola de cobranza
-              </Link>
-              . El detalle de cobros y aging vive en{' '}
-              <Link
-                href="/panel/inmobiliaria/cobros"
-                className="text-primary underline-offset-4 hover:underline font-medium"
-              >
-                Cobros
-              </Link>
-              .
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ── Configuración (estado local; persistir = Próximamente) ─────────── */}
-      <Card>
-        <CardContent className="p-5 lg:p-6 space-y-6">
-          <div className="space-y-1">
-            <Eyebrow>Configuración</Eyebrow>
-            <h2 className="text-base font-semibold text-fg">Cuándo y cómo enviamos</h2>
-            <p className="text-sm text-fg-muted max-w-2xl">
-              Ajusta el comportamiento de la secuencia. Estos cambios son una vista previa: la
-              activación se conectará pronto.
-            </p>
-          </div>
-
-          {/* Automático on/off */}
           <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-card px-4 py-3.5">
-            <div className="space-y-0.5 min-w-0">
-              <p className="text-sm font-medium text-fg">Recordatorios automáticos</p>
+            <div className="min-w-0 space-y-0.5">
+              <p className="text-sm font-medium text-fg">Secuencia activa</p>
               <p className="text-xs text-fg-muted">
-                Cuando está activo, la secuencia se envía sola en cada hito sin intervención.
+                Significa que las condiciones ya están definidas y finanzas puede disparar la
+                secuencia. <span className="font-medium text-fg">No envía nada por su cuenta.</span>
               </p>
             </div>
             <Switch
-              checked={automatico}
-              onCheckedChange={setAutomatico}
-              aria-label="Recordatorios automáticos"
-              className="shrink-0 mt-0.5"
+              checked={valor('activa') ?? false}
+              onCheckedChange={(v) => setBorrador((b) => ({ ...b, activa: v }))}
+              aria-label="Secuencia activa"
+              disabled={!secuencia?.disponible}
+              className="mt-0.5 shrink-0"
             />
           </div>
 
-          {/* Canales (multi-select) */}
-          <div className="space-y-2">
-            <div className="space-y-0.5">
-              <p className="text-sm font-medium text-fg">Canales</p>
-              <p className="text-xs text-fg-muted">Por dónde llegan los recordatorios al inquilino.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {CANALES.map((canal) => {
-                const CanalIcon = canal.icon
-                const selected = canales.has(canal.id)
-                return (
-                  <Chip
-                    key={canal.id}
-                    selected={selected}
-                    onClick={() => toggleCanal(canal.id)}
-                    icon={<CanalIcon weight="duotone" />}
-                  >
-                    {canal.label}
-                  </Chip>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Tono (excluyente) */}
-          <div className="space-y-2">
-            <div className="space-y-0.5">
-              <p className="text-sm font-medium text-fg">Tono del mensaje</p>
-              <p className="text-xs text-fg-muted">Define el estilo con el que hablamos.</p>
-            </div>
-            <SegmentedControl
-              options={TONOS}
-              value={tono}
-              onChange={(v) => setTono(v)}
-              aria-label="Tono del mensaje"
-            />
-          </div>
-
-          {/* Cuándo pasa a cobranza (excluyente) */}
-          <div className="space-y-2">
-            <div className="space-y-0.5">
-              <p className="text-sm font-medium text-fg">Cuándo pasa a cobranza</p>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="dia-recordatorio">Día del recordatorio</Label>
+              <Input
+                id="dia-recordatorio"
+                type="number"
+                min={1}
+                max={28}
+                value={valor('diaDelRecordatorio') ?? 1}
+                disabled={!secuencia?.disponible}
+                onChange={(e) =>
+                  setBorrador((b) => ({ ...b, diaDelRecordatorio: Number(e.target.value) }))
+                }
+              />
               <p className="text-xs text-fg-muted">
-                Tras este margen sin pago, el caso deja la prevención y escala al agente de cobranza.
+                Hasta 28: el 30 no existe en febrero y ese mes no saldría.
               </p>
             </div>
-            <SegmentedControl
-              options={CUANDO_COBRANZA.map((o) => ({ value: o.value, label: `${o.value} días` }))}
-              value={diasACobranza}
-              onChange={(v) => setDiasACobranza(v)}
-              aria-label="Días antes de pasar a cobranza"
-            />
-            <p className="text-xs text-fg-muted">
-              {CUANDO_COBRANZA.find((o) => o.value === diasACobranza)?.label}
-            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="dias-entre">Días entre avisos</Label>
+              <Input
+                id="dias-entre"
+                type="number"
+                min={1}
+                max={30}
+                value={valor('diasEntreAvisos') ?? 3}
+                disabled={!secuencia?.disponible}
+                onChange={(e) =>
+                  setBorrador((b) => ({ ...b, diasEntreAvisos: Number(e.target.value) }))
+                }
+              />
+              <p className="text-xs text-fg-muted">Lo que se le da al inquilino para pagar.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="max-avisos">Avisos con interés</Label>
+              <Input
+                id="max-avisos"
+                type="number"
+                min={0}
+                max={10}
+                value={valor('maxAvisosConInteres') ?? 3}
+                disabled={!secuencia?.disponible}
+                onChange={(e) =>
+                  setBorrador((b) => ({ ...b, maxAvisosConInteres: Number(e.target.value) }))
+                }
+              />
+              <p className="text-xs text-fg-muted">El tope. Sin él, «y así» sería para siempre.</p>
+            </div>
           </div>
 
-          {/* Guardar — T-323: sin endpoint → placeholder honesto deshabilitado */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-border pt-4">
+          <div className="space-y-2">
+            <Label>Canal</Label>
+            <SegmentedControl
+              options={CANALES.map((c) => ({ value: c.value, label: c.label }))}
+              value={valor('canalPreferido') ?? 'CORREO'}
+              onChange={(v) =>
+                setBorrador((b) => ({ ...b, canalPreferido: v as CanalDeCobranza }))
+              }
+              aria-label="Canal de cobranza"
+            />
+            {whatsappApagado && <Aviso tono="info">{whatsappApagado}</Aviso>}
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="msg-recordatorio">Tu texto en el recordatorio</Label>
+              <Textarea
+                id="msg-recordatorio"
+                rows={3}
+                maxLength={1000}
+                placeholder="Opcional. Se agrega al correo de la plantilla."
+                value={valor('mensajeDelRecordatorio') ?? ''}
+                disabled={!secuencia?.disponible}
+                onChange={(e) =>
+                  setBorrador((b) => ({ ...b, mensajeDelRecordatorio: e.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="msg-aviso">Tu texto en el aviso con interés</Label>
+              <Textarea
+                id="msg-aviso"
+                rows={3}
+                maxLength={1000}
+                placeholder="Opcional. Se agrega al correo de la plantilla."
+                value={valor('mensajeDelAviso') ?? ''}
+                disabled={!secuencia?.disponible}
+                onChange={(e) => setBorrador((b) => ({ ...b, mensajeDelAviso: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-fg-muted">
-              Guardar la configuración estará disponible cuando se conecte el motor de recordatorios.
+              El interés lo calcula el motor de mora con tus{' '}
+              <Link
+                href="/panel/inmobiliaria/cobros/reglas-de-mora"
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                reglas de mora
+              </Link>
+              . Acá se define cuándo se avisa, no cuánto se cobra.
             </p>
-            <Button hideArrow disabled title="Próximamente" className="shrink-0">
-              Guardar (Próximamente)
+            <Button
+              hideArrow
+              onClick={() => void guardar()}
+              disabled={!hayCambios || guardando || !secuencia?.disponible}
+              className="shrink-0"
+            >
+              {guardando ? 'Guardando…' : 'Guardar condiciones'}
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* ── Vista previa del mensaje ───────────────────────────────────────── */}
+      {/* ── 2. El calendario que sale del reglaje ───────────────────────── */}
       <Card>
-        <CardContent className="p-5 lg:p-6 space-y-4">
-          <div className="space-y-1">
-            <Eyebrow>Vista previa</Eyebrow>
-            <h2 className="text-base font-semibold text-fg">Ejemplo de mensaje</h2>
+        <CardContent className="space-y-5 p-5 lg:p-6">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="space-y-1">
+              <Eyebrow>Así queda tu secuencia</Eyebrow>
+              <h2 className="text-base font-semibold text-fg">Qué va a pasar y cuándo</h2>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="mes">Mes que se cobra</Label>
+              <Input
+                id="mes"
+                type="month"
+                value={mes}
+                onChange={(e) => {
+                  setMes(e.target.value)
+                  setPrevia(null)
+                  setPaso(null)
+                }}
+                className="w-44"
+              />
+            </div>
+          </div>
+
+          {hayCambios && (
+            <Aviso tono="info">
+              Estás viendo el calendario de las condiciones <strong>guardadas</strong>. Guardá los
+              cambios para verlos reflejados acá.
+            </Aviso>
+          )}
+
+          {calendario && calendario.pasos.length > 0 ? (
+            <ol className="space-y-2">
+              {calendario.pasos.map((p) => (
+                <li
+                  key={p.paso}
+                  className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted px-4 py-3"
+                >
+                  {p.conInteres ? (
+                    <CalendarCheck className="mt-0.5 h-5 w-5 shrink-0 text-warning" weight="duotone" aria-hidden="true" />
+                  ) : (
+                    <BellRinging className="mt-0.5 h-5 w-5 shrink-0 text-primary" weight="duotone" aria-hidden="true" />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-fg">{p.titulo}</p>
+                    <p className="text-xs text-fg-muted">
+                      {fechaLegible(p.fecha)}
+                      {p.conInteres
+                        ? ' · con el interés ya generado'
+                        : ' · todavía sin mora que cobrar'}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : (
             <p className="text-sm text-fg-muted">
-              Así se ve el preaviso de 3 días antes con el tono y los canales elegidos.
+              El calendario aparece cuando las condiciones están guardadas.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── 3. El disparo desde la cartera ──────────────────────────────── */}
+      <Card>
+        <CardContent className="space-y-5 p-5 lg:p-6">
+          <div className="space-y-1">
+            <Eyebrow>Disparo desde la cartera</Eyebrow>
+            <h2 className="text-base font-semibold text-fg">
+              A quién le va a llegar el aviso de {mes}
+            </h2>
+            <p className="max-w-2xl text-sm text-fg-muted">
+              Sólo a quienes deban ese mes. Quien ya pagó —o pagó por adelantado— no recibe nada.
             </p>
           </div>
 
-          {/* Burbuja de mensaje de muestra */}
-          <div className="rounded-lg border border-border bg-surface-muted p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="grid h-7 w-7 place-items-center rounded-md bg-primary-soft text-primary">
-                <Sparkle className="h-4 w-4" weight="duotone" aria-hidden="true" />
-              </span>
-              <span className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-                Preaviso · 3 días antes
-              </span>
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="paso">Paso</Label>
+              <select
+                id="paso"
+                value={paso === null ? '' : String(paso)}
+                onChange={(e) => {
+                  setPaso(e.target.value === '' ? null : Number(e.target.value))
+                  setPrevia(null)
+                }}
+                className="h-10 rounded-md border border-border bg-card px-3 text-sm text-fg"
+              >
+                <option value="">El que toque hoy</option>
+                {(calendario?.pasos ?? []).map((p) => (
+                  <option key={p.paso} value={p.paso}>
+                    {p.titulo}
+                  </option>
+                ))}
+              </select>
             </div>
-            <p className="text-sm text-fg leading-relaxed">{PREVIEW_POR_TONO[tono]}</p>
+            <div className="space-y-1.5">
+              <Label>Canal</Label>
+              <SegmentedControl
+                options={CANALES.map((c) => ({ value: c.value, label: c.label }))}
+                value={canal ?? secuencia?.canalPreferido ?? 'CORREO'}
+                onChange={(v) => {
+                  setCanal(v as CanalDeCobranza)
+                  setPrevia(null)
+                }}
+                aria-label="Canal del disparo"
+              />
+            </div>
+            <Button
+              hideArrow
+              variant="secondary"
+              onClick={() => void consultar()}
+              disabled={consultando || !secuencia?.disponible}
+            >
+              {consultando ? 'Consultando…' : 'Ver a quién le llega'}
+            </Button>
           </div>
 
-          <p className="text-xs text-fg-muted">
-            Se enviará por: <span className="font-medium text-fg">{canalesActivosLabel}</span>.
-          </p>
+          {previa && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-border bg-surface-muted px-4 py-3">
+                <p className="text-sm text-fg">
+                  De <strong>{previa.revisados}</strong> cobros de {previa.mes}, le va a llegar a{' '}
+                  <strong className="text-primary">{previa.lesLlega}</strong> por{' '}
+                  {previa.canal === 'CORREO' ? 'correo' : 'WhatsApp'}.
+                </p>
+                {excluidos.length > 0 && (
+                  <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-muted">
+                    {excluidos.map((e) => (
+                      <li key={e.motivo}>
+                        {e.etiqueta}: <strong className="text-fg">{e.cuantos}</strong>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Toda fila que NO recibe sale igual, con su motivo: una lista sin
+                  eso es una lista en la que nadie confía. */}
+              <div className="max-h-96 overflow-auto rounded-lg border border-border">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-surface-muted text-left text-xs uppercase tracking-wide text-fg-muted">
+                    <tr>
+                      <th className="px-3 py-2 font-medium">Inquilino</th>
+                      <th className="px-3 py-2 font-medium">Inmueble</th>
+                      <th className="px-3 py-2 text-right font-medium">Debe</th>
+                      <th className="px-3 py-2 font-medium">¿Le llega?</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {previa.destinatarios.map((d) => (
+                      <tr key={d.cobroId} className="border-t border-border">
+                        <td className="px-3 py-2 text-fg">{d.nombre}</td>
+                        <td className="px-3 py-2 text-fg-muted">{d.inmueble}</td>
+                        <td className="px-3 py-2 text-right tabular-nums text-fg">
+                          {pesos(d.pendienteCop)}
+                        </td>
+                        <td className="px-3 py-2">
+                          {d.leLlega ? (
+                            <span className="inline-flex items-center gap-1.5 text-primary">
+                              {previa.canal === 'CORREO' ? (
+                                <EnvelopeSimple className="h-4 w-4" weight="duotone" aria-hidden="true" />
+                              ) : (
+                                <ChatCircleDots className="h-4 w-4" weight="duotone" aria-hidden="true" />
+                              )}
+                              {d.destino ?? 'Sí'}
+                            </span>
+                          ) : (
+                            <span className="text-fg-muted">{d.explicacion}</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-fg-muted">
+                  Se manda una sola vez por paso y canal. La Ley 2300 permite un contacto al día por
+                  persona: quien tenga varios inmuebles recibe un aviso, no uno por contrato.
+                </p>
+                <Button
+                  hideArrow
+                  onClick={() => void enviar()}
+                  disabled={enviando || previa.lesLlega === 0 || !previa.disponible}
+                  className="shrink-0"
+                >
+                  <PaperPlaneTilt className="mr-2 h-4 w-4" weight="duotone" aria-hidden="true" />
+                  {enviando ? 'Enviando…' : `Enviar a ${previa.lesLlega}`}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!previa && (
+            <Aviso tono="info">
+              El botón de enviar aparece <strong>después</strong> de ver la lista: nadie manda un
+              cobro sin saber a cuántos le llega.
+            </Aviso>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -318,7 +637,7 @@ function PagosRecordatorios() {
 
 export default function PagosRecordatoriosPage() {
   return (
-    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+    <PageGuard module="cobros" action="view">
       <PagosRecordatorios />
     </PageGuard>
   )

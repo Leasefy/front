@@ -19,11 +19,14 @@ import { apiClient } from '@/lib/api/client';
 import { invalidar } from './refresco-de-datos';
 import type {
   ArchivoGenerado,
+  CandidatosDeDispersion,
   FiltrosDeLotes,
   FormatoArchivoDePagos,
   LoteArmado,
   LoteDeDispersion,
   LoteResumen,
+  OrdenDeCandidatos,
+  QueMeterEnElLote,
   SolicitudDeAprobacion,
   VistaDelLote,
 } from './lotes-de-dispersion.types';
@@ -47,10 +50,40 @@ export const lotesDeDispersionApi = {
    * Las que no tienen la cuenta completa ENTRAN igual, con su motivo: por eso
    * la respuesta trae `excluidos`.
    */
-  async armar(month: string): Promise<LoteArmado> {
-    const res = await apiClient.post<LoteArmado>(BASE_DE_LOTES, { month });
+  async armar(que: QueMeterEnElLote): Promise<LoteArmado> {
+    // Clave por clave: el back valida con `forbidNonWhitelisted` y un
+    // `topeCop: undefined` en el cuerpo también es una clave de más.
+    const cuerpo: Record<string, unknown> = { month: que.month };
+    if (que.dispersionIds?.length) cuerpo.dispersionIds = que.dispersionIds;
+    if (que.orden) cuerpo.orden = que.orden;
+    if (que.topeCop !== undefined) cuerpo.topeCop = que.topeCop;
+    const res = await apiClient.post<LoteArmado>(BASE_DE_LOTES, cuerpo);
     invalidar('dispersiones');
     return res;
+  },
+
+  /**
+   * A quién le puedo pagar hoy: ordenado, sumando y con hasta dónde alcanza.
+   *
+   * Sin `month` trae las pendientes de TODOS los meses — a un propietario al
+   * que se le debe agosto y septiembre se le paga junto.
+   *
+   * `entraEnElCupo` es informativo: se puede girar por encima de la plata
+   * disponible y el exceso queda como descubierto del lote.
+   */
+  async candidatos(filtros?: {
+    month?: string;
+    orden?: OrdenDeCandidatos;
+    topeCop?: number;
+  }): Promise<CandidatosDeDispersion> {
+    const query = new URLSearchParams();
+    if (filtros?.month) query.set('month', filtros.month);
+    if (filtros?.orden) query.set('orden', filtros.orden);
+    if (filtros?.topeCop !== undefined) query.set('topeCop', String(filtros.topeCop));
+    const qs = query.toString();
+    return apiClient.get<CandidatosDeDispersion>(
+      `${BASE_DE_LOTES}/candidatos${qs ? `?${qs}` : ''}`,
+    );
   },
 
   async listar(filtros?: FiltrosDeLotes): Promise<LoteResumen[]> {
@@ -116,10 +149,21 @@ export const lotesDeDispersionApi = {
     return apiClient.getBlob(`${BASE_DE_LOTES}/${id}/archivo`);
   },
 
-  async marcarPagado(id: string, referenciaBanco: string): Promise<LoteDeDispersion> {
-    const res = await apiClient.post<LoteDeDispersion>(`${BASE_DE_LOTES}/${id}/pagado`, {
-      referenciaBanco: referenciaBanco.trim(),
-    });
+  /**
+   * Marca el lote pagado por el banco.
+   *
+   * `facturarAhora` REGISTRA la decisión («se le puede facturar en ese momento
+   * o después», el CEO); no emite ninguna factura — eso es del módulo de
+   * facturación. Se manda sólo si se decidió: `undefined` sería clave de más.
+   */
+  async marcarPagado(
+    id: string,
+    referenciaBanco: string,
+    facturarAhora?: boolean,
+  ): Promise<LoteDeDispersion> {
+    const cuerpo: Record<string, unknown> = { referenciaBanco: referenciaBanco.trim() };
+    if (facturarAhora !== undefined) cuerpo.facturarAhora = facturarAhora;
+    const res = await apiClient.post<LoteDeDispersion>(`${BASE_DE_LOTES}/${id}/pagado`, cuerpo);
     invalidar('dispersiones');
     return res;
   },
@@ -136,6 +180,8 @@ export const lotesDeDispersionApi = {
 
 export type {
   ArchivoGenerado,
+  CandidatoDeDispersion,
+  CandidatosDeDispersion,
   EstadoDelLote,
   FilaExcluida,
   FiltrosDeLotes,
@@ -144,6 +190,9 @@ export type {
   LoteArmado,
   LoteDeDispersion,
   LoteResumen,
+  OrdenDeCandidatos,
+  PlataDisponible,
+  QueMeterEnElLote,
   SolicitudDeAprobacion,
   VistaDelLote,
 } from './lotes-de-dispersion.types';

@@ -39,6 +39,7 @@ import { Banner } from '@leasefy/cadence';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
@@ -1064,12 +1065,20 @@ function MarcarPagadoDialog({
   onListo,
 }: DialogoBase & { onListo: (lote: LoteDeDispersion) => void }) {
   const [referencia, setReferencia] = useState('');
+  /**
+   * El CEO (2026-09-15): «Con factura: se le puede facturar en ese momento o
+   * después». Acá se REGISTRA la decisión; la factura electrónica la emite el
+   * módulo de facturación, no este botón, y la ayuda de abajo lo dice para que
+   * nadie crea que ya se emitió.
+   */
+  const [facturarAhora, setFacturarAhora] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!abierto) {
       setReferencia('');
+      setFacturarAhora(false);
       setError(null);
     }
   }, [abierto]);
@@ -1082,7 +1091,11 @@ function MarcarPagadoDialog({
     setEnviando(true);
     setError(null);
     try {
-      const pagado = await lotesDeDispersionApi.marcarPagado(lote.id, referencia);
+      const pagado = await lotesDeDispersionApi.marcarPagado(
+        lote.id,
+        referencia,
+        facturarAhora,
+      );
       onListo(pagado);
       toast.success('Lote marcado como pagado');
       onCerrar();
@@ -1117,6 +1130,27 @@ function MarcarPagadoDialog({
           />
           <p className="text-xs text-fg-muted">
             Un lote pagado ya no se anula: si algo salió mal, se corrige con una contrapartida.
+          </p>
+
+          <label className="flex items-start gap-2 pt-1" htmlFor="facturar-ahora">
+            <Checkbox
+              id="facturar-ahora"
+              data-testid="facturar-ahora"
+              checked={facturarAhora}
+              onCheckedChange={(v) => setFacturarAhora(v === true)}
+            />
+            <span className="text-xs text-fg-muted">
+              Facturarle ahora a los propietarios. Sin tildar queda «después».{' '}
+              <strong className="font-medium">
+                Sólo se registra la decisión: la factura se emite desde Facturación.
+              </strong>
+            </span>
+          </label>
+
+          <p className="text-xs text-fg-muted">
+            Al marcarlo pagado, a cada propietario le sale un correo con el valor, la referencia y
+            el aviso de que el banco puede tardar 2 días hábiles en reflejarlo. Su estado de cuenta
+            queda con la dispersión descontada.
           </p>
           {error && <Banner variant="danger">{error}</Banner>}
         </div>

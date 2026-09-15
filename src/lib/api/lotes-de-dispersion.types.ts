@@ -45,6 +45,12 @@ export interface LoteResumen {
   motivoDeLaAnulacion: string | null;
   createdAt: string;
   _count?: { items: number };
+  /** El cupo del día en que se armó. `null` mientras la migración no esté aplicada. */
+  disponibleAlArmarCop?: number | null;
+  /** Cuánto se giró por encima del cupo. `0` = alcanzaba. */
+  descubiertoCop?: number | null;
+  /** Qué se decidió sobre la factura al marcar pagado. */
+  facturarAhora?: boolean | null;
 }
 
 /** Una dispersión dentro del lote, con los datos bancarios congelados. */
@@ -95,6 +101,73 @@ export interface VistaDelLote {
 export interface LoteArmado {
   lote: LoteDeDispersion;
   excluidos: FilaExcluida[];
+  /** Lo que había en la cuenta cuando se armó. */
+  plata: PlataDisponible;
+  /**
+   * Cuánto de este lote sale de plata de la inmobiliaria porque no alcanzaba.
+   * `0` = alcanzaba. Se puede girar de más (decisión de Nico, 2026-09-15); lo
+   * que no se puede es que el número no se vea antes de mandarlo a aprobación.
+   */
+  descubiertoCop: number;
+}
+
+/**
+ * Cuánta plata hay HOY para girar.
+ *
+ * El CEO (2026-09-15): «la plata que yo tengo en mi cuenta hoy es la que
+ * debería mostrarse para poder dispersar. No necesito que me hayan cobrado ni
+ * que me hayan pagado». Es `entradas del extracto − lo ya comprometido`.
+ */
+export interface PlataDisponible {
+  /** Hasta qué día se contó, `YYYY-MM-DD`. */
+  corte: string;
+  entradasCop: number;
+  comprometidoCop: number;
+  /** Puede ser NEGATIVO: ya se adelantó plata propia. */
+  disponibleCop: number;
+  /**
+   * 🔴 `false` = la inmobiliaria nunca cargó un extracto. Entonces el cupo no
+   * es «no hay plata», es «no sabemos», y la pantalla lo tiene que decir así.
+   */
+  hayExtracto: boolean;
+  ultimoMovimiento: string | null;
+}
+
+/** Cómo se ordena «a quién le pago». */
+export type OrdenDeCandidatos = 'MENOR_A_MAYOR' | 'MAYOR_A_MENOR' | 'NOMBRE';
+
+/** Un propietario al que se le puede pagar, con el acumulado hasta él. */
+export interface CandidatoDeDispersion {
+  dispersionId: string;
+  propietarioId: string;
+  propietarioName: string;
+  month: string;
+  netoCop: number;
+  /** La suma de esta fila y las anteriores, en este orden. */
+  acumuladoCop: number;
+  /** El acumulado todavía cabe en el disponible. NO es un bloqueo. */
+  entraEnElCupo: boolean;
+  /** Por qué no podría ir al banco. `null` = puede. */
+  motivoDeExclusion: string | null;
+}
+
+export interface CandidatosDeDispersion {
+  orden: OrdenDeCandidatos;
+  plata: PlataDisponible;
+  candidatos: CandidatoDeDispersion[];
+  /** Los que caben en el tope pedido, para tildarlos de una. */
+  sugeridos: string[];
+  totalCop: number;
+  cantidad: number;
+}
+
+/** Con qué se arma el lote: a quiénes, en qué orden y hasta qué monto. */
+export interface QueMeterEnElLote {
+  month: string;
+  /** Sin la lista, todas las pendientes del mes. */
+  dispersionIds?: string[];
+  orden?: OrdenDeCandidatos;
+  topeCop?: number;
 }
 
 /**

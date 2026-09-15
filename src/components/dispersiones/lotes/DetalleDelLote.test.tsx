@@ -481,7 +481,14 @@ describe('<DetalleDelLote> — cierre', () => {
       await new Promise((r) => setTimeout(r, 0));
     });
 
-    expect(lotesDeDispersionApi.marcarPagado).toHaveBeenCalledWith(ID, 'BC-20260907-00123');
+    // `false` = «se factura después», que es lo que queda sin tildar la
+    // casilla. Viaja explícito: es una decisión del CEO que se REGISTRA, y un
+    // `undefined` no distingue «después» de «nadie decidió».
+    expect(lotesDeDispersionApi.marcarPagado).toHaveBeenCalledWith(
+      ID,
+      'BC-20260907-00123',
+      false,
+    );
     expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Pagado');
     expect(container.querySelector('[data-testid="acciones-del-lote"]')).toBeNull();
   });

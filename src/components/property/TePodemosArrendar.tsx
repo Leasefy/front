@@ -20,11 +20,7 @@ import { Button } from '@/components/ui/button';
 import { MoneyInput } from '@/components/ui/money-input';
 import { formatCurrency } from '@/lib/format';
 import type { PropertyType } from '@/lib/types/property';
-import {
-  MULTIPLO_INGRESO_CANON,
-  enlaceAlEstudio,
-  estimarArriendo,
-} from '@/lib/aprobacion/estimado-de-arriendo';
+import { enlaceAlEstudio, estimarArriendo } from '@/lib/aprobacion/estimado-de-arriendo';
 
 interface TePodemosArrendarProps {
   canon: number;
@@ -33,7 +29,6 @@ interface TePodemosArrendarProps {
   className?: string;
 }
 
-const multiplo = MULTIPLO_INGRESO_CANON.toLocaleString('es-CO');
 
 function Fila({ etiqueta, valor, fuerte }: { etiqueta: string; valor: string; fuerte?: boolean }) {
   return (
@@ -102,7 +97,7 @@ export function TePodemosArrendar({ canon, ciudad, tipo, className }: TePodemosA
               <CheckCircle weight="fill" className="mt-0.5 h-5 w-5 flex-shrink-0 text-success" />
               <div>
                 <p className="text-sm font-semibold text-success">Te alcanza para este inmueble</p>
-                <p className="mt-0.5 text-sm text-fg-muted">El siguiente paso es el estudio con Fianly.</p>
+                <p className="mt-0.5 text-sm text-fg-muted">Verifica tus datos para avanzar con el arriendo.</p>
               </div>
             </div>
           ) : (
@@ -130,16 +125,18 @@ export function TePodemosArrendar({ canon, ciudad, tipo, className }: TePodemosA
         </div>
       </div>
 
+      {/* Primero se dice si puede o no con la regla del ingreso; sólo a quien le
+          alcanza se le ofrece seguir. Mandar al estudio (con cédula, autorización
+          y pago) a alguien que ya sabemos que no llega no tiene sentido (Nico, 14-09). */}
       <div className="mt-6 flex flex-col gap-4 border-t border-border pt-5 md:flex-row md:items-center md:justify-between">
-        <p className="text-caption text-fg-muted md:max-w-[46ch]">
-          Es un estimado: las aseguradoras piden un ingreso de al menos {multiplo} veces el canon. La aprobación
-          real sale del estudio con Fianly, que revisa tu historial.
-        </p>
-        <Button asChild className="md:flex-shrink-0">
-          <Link href={enlaceAlEstudio({ canon, ciudad, tipo })} data-testid="verificar-con-fianly">
-            Verificar con Fianly
-          </Link>
-        </Button>
+        <p className="text-caption text-fg-muted">Es un estimado.</p>
+        {estimado?.alcanza && (
+          <Button asChild className="md:flex-shrink-0">
+            <Link href={enlaceAlEstudio({ canon, ciudad, tipo })} data-testid="verificar-arriendo">
+              Verificar
+            </Link>
+          </Button>
+        )}
       </div>
     </section>
   );

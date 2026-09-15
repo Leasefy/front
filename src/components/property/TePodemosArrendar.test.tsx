@@ -66,10 +66,27 @@ describe('<TePodemosArrendar>', () => {
     expect(hay('estimado-alcanza')).toBeTruthy();
   });
 
-  it('«Verificar con Fianly» abre el estudio con el canon, la ciudad y el tipo del inmueble', () => {
+  it('sin ingreso, o si no le alcanza, no se le ofrece verificar', () => {
     montar();
-    expect(hay('verificar-con-fianly')?.getAttribute('href')).toBe(
+    expect(hay('verificar-arriendo')).toBeNull();
+    escribir('tpa-ingreso', '2000000');
+    expect(hay('estimado-no-alcanza')).toBeTruthy();
+    expect(hay('verificar-arriendo')).toBeNull();
+  });
+
+  it('cuando le alcanza, «Verificar» abre el estudio con el canon, la ciudad y el tipo del inmueble', () => {
+    montar();
+    escribir('tpa-ingreso', '3000000');
+    const boton = hay('verificar-arriendo');
+    expect(boton?.textContent?.trim()).toBe('Verificar');
+    expect(boton?.getAttribute('href')).toBe(
       '/aprobacion?canon=2000000&ciudad=Medell%C3%ADn&tipo=apartamento',
     );
+  });
+
+  it('la nota sólo dice que es un estimado', () => {
+    montar();
+    expect(contenedor!.textContent).toContain('Es un estimado.');
+    expect(contenedor!.textContent).not.toMatch(/1,5|Fianly/);
   });
 });

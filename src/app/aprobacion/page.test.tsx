@@ -526,3 +526,77 @@ describe('<AprobacionPage> — paso 2 desde la ficha', () => {
     expect(container.querySelector('[data-testid="inmueble-del-paso-2"]')).toBeNull()
   })
 })
+
+/**
+ * «Cerrar» (Nico, 2026-09-15): desde el paso 2 devolvía al paso 1 —era
+ * `router.back()`— y salía sin preguntar. Ahora pregunta, y salir sale.
+ */
+describe('<AprobacionPage> — cerrar el paso 2', () => {
+  beforeEach(() => {
+    window.sessionStorage.clear()
+    window.history.replaceState(null, '', '/aprobacion?paso=2&canon=2200000&ciudad=Caldas&tipo=local')
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    window.history.replaceState(null, '', '/')
+  })
+
+  const cerrar = () => document.querySelector<HTMLButtonElement>('[data-testid="cerrar-aprobacion"]')!
+  const dialogo = () => document.querySelector('[data-testid="confirmar-salida-aprobacion"]')
+  const boton = (testId: string) => document.querySelector<HTMLButtonElement>(`[data-testid="${testId}"]`)
+
+  function conInmueble() {
+    guardarArriendoEnCurso({
+      propertyId: 'p-9',
+      titulo: 'Local en Centro, Caldas',
+      ciudad: 'Caldas',
+      tipo: 'local',
+      foto: null,
+      canon: 2_200_000,
+      ingresoTotal: 9_000_000,
+      canonMaximo: 3_000_000,
+    })
+  }
+
+  it('preguntar antes: el clic en Cerrar abre la confirmación y no navega', () => {
+    conInmueble()
+    act(() => root.render(<AprobacionPage />))
+
+    act(() => cerrar().click())
+
+    expect(pushMock).not.toHaveBeenCalled()
+    expect(dialogo()?.textContent).toContain('Local en Centro, Caldas')
+    expect(boton('seguir-en-aprobacion')).not.toBeNull()
+  })
+
+  it('salir va al inmueble que estaba intentando arrendar, NO al paso 1', () => {
+    conInmueble()
+    act(() => root.render(<AprobacionPage />))
+
+    act(() => cerrar().click())
+    act(() => boton('salir-de-aprobacion')!.click())
+
+    expect(pushMock).toHaveBeenCalledWith('/propiedades/p-9')
+  })
+
+  it('sin inmueble en curso y sin sesión, salir lleva al catálogo', () => {
+    mockUser = null
+    act(() => root.render(<AprobacionPage />))
+
+    act(() => cerrar().click())
+    act(() => boton('salir-de-aprobacion')!.click())
+
+    expect(pushMock).toHaveBeenCalledWith('/propiedades')
+  })
+
+  it('«Seguir con mi solicitud» cierra la confirmación sin sacarlo del paso 2', () => {
+    conInmueble()
+    act(() => root.render(<AprobacionPage />))
+
+    act(() => cerrar().click())
+    act(() => boton('seguir-en-aprobacion')!.click())
+
+    expect(pushMock).not.toHaveBeenCalled()
+  })
+})
+

@@ -17,6 +17,16 @@ import { formatCurrency } from '@/lib/format'
 import { leerArriendoEnCurso, type ArriendoEnCurso } from '@/lib/aprobacion/arriendo-en-curso'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { PhoneField } from '@/components/ui/phone-field'
 import {
   Select,
@@ -80,6 +90,9 @@ export default function AprobacionPage() {
   const [pagando, setPagando] = useState(false)
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
   const [popupBlocked, setPopupBlocked] = useState(false)
+  // «Cerrar» pregunta antes: acá se está a mitad de la única puerta para poder
+  // arrendar ese inmueble (Nico, 2026-09-15).
+  const [confirmandoSalida, setConfirmandoSalida] = useState(false)
 
   // Desde la ficha de un inmueble («¿Te podemos arrendar este inmueble?») el
   // estudio llega con el canon, la ciudad y el tipo ya puestos. Se lee en el
@@ -241,13 +254,18 @@ export default function AprobacionPage() {
   }
 
   /**
-   * Sale del flujo. Vuelve de donde vino; y si llegó por un link directo
-   * (WhatsApp del asesor, correo) no hay historia dentro del sitio, así que se
-   * lo manda a donde pertenece: su panel si tiene sesión, el catálogo si no.
+   * Sale del flujo, de verdad.
+   *
+   * 🔴 Antes era `router.back()`: desde el paso 2 la pantalla anterior es el
+   * paso 1, así que «Cerrar» devolvía al paso 1 en vez de salir (Nico,
+   * 2026-09-15). Ahora va al inmueble que estaba intentando arrendar —que es
+   * de donde vino y desde donde puede volver a empezar—; sin inmueble en curso,
+   * a su panel si tiene sesión y al catálogo si no.
    */
-  function cerrar() {
-    if (typeof window !== 'undefined' && window.history.length > 1) {
-      router.back()
+  function salirDelFlujo() {
+    setConfirmandoSalida(false)
+    if (arriendo?.propertyId) {
+      router.push(`/propiedades/${arriendo.propertyId}`)
       return
     }
     router.push(user ? getUserHomeRoute(user) : '/propiedades')
@@ -268,12 +286,43 @@ export default function AprobacionPage() {
           <BrandHomeLink aria-label="Leasefy — inicio" className="text-fg">
             <LeasefyLogotype size={24} />
           </BrandHomeLink>
-          <Button variant="outline" size="sm" onClick={cerrar} hideArrow>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setConfirmandoSalida(true)}
+            hideArrow
+            data-testid="cerrar-aprobacion"
+          >
             <X className="h-4 w-4" aria-hidden="true" />
             Cerrar
           </Button>
         </div>
       </header>
+
+      {/* Preguntar antes de salir: no es un formulario cualquiera, es lo único
+          que hay entre esta persona y poder arrendar ese inmueble, y quien
+          cierra acá casi nunca vuelve (Nico, 2026-09-15). */}
+      <AlertDialog open={confirmandoSalida} onOpenChange={setConfirmandoSalida}>
+        <AlertDialogContent data-testid="confirmar-salida-aprobacion">
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Sales de tu solicitud?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogDescription>
+            {arriendo
+              ? `Todavía no sabemos si te podemos arrendar ${arriendo.titulo}. Mientras tanto, otra persona puede tomarlo.`
+              : 'Todavía no sabemos hasta cuánto te podemos arrendar, y sin eso no puedes postularte a ningún inmueble.'}{' '}
+            Te toma un par de minutos terminar.
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="seguir-en-aprobacion">
+              Seguir con mi solicitud
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={salirDelFlujo} data-testid="salir-de-aprobacion">
+              Salir de todos modos
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Nico, 14-09: el paso 2 se arma como el paso 1 (`/arrendar/[id]`) — los
           pasos en su propia franja, FUERA del formulario, y debajo una sola

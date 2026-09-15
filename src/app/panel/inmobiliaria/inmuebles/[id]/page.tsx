@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { CaretLeft, Buildings, CalendarPlus, WifiSlash } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
+import { motivosDelError } from '@/lib/errores/descripcion-del-error';
 import { useI18n } from '@/lib/i18n';
 import { Button, EmptyState } from '@/components/ui';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -113,6 +114,17 @@ function ConsignacionDetailContent() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [consignacionData, setConsignacionData] = useState<Consignacion | null>(null);
   const [showTerminateDialog, setShowTerminateDialog] = useState(false);
+  /**
+   * F5 — por qué NO se pudo terminar el mandato, dentro del propio diálogo.
+   *
+   * Antes el motivo del back viajaba en la descripción de un toast: se iba
+   * solo a los pocos segundos, mientras el diálogo seguía abierto sin decir
+   * nada. Y cuando el 400 venía del `ValidationPipe` (varios motivos
+   * concatenados con « · »), el texto pasaba el tope del toast y ni siquiera
+   * aparecía. Es el mismo trato que ya le da «Retirar» a su 409 en la lista de
+   * Inmuebles: el motivo se queda al lado del botón que lo produjo.
+   */
+  const [motivoAlTerminar, setMotivoAlTerminar] = useState<string[]>([]);
   const [isTerminating, setIsTerminating] = useState(false);
   const [showCitaModal, setShowCitaModal] = useState(false);
   const [showAsignarAgente, setShowAsignarAgente] = useState(false);
@@ -282,8 +294,12 @@ function ConsignacionDetailContent() {
         description: t('inmobiliaria.portafolio.detail.toasts.changesSaved'),
       });
     } catch (err) {
+      // F5: un 400 del back trae sus motivos sueltos y `ApiError` los pega con
+      // « · ». El pegote pasa el tope del toast y se perdía entero; acá se
+      // pinta el primero, que es el que dice qué hay que cambiar.
+      const motivos = motivosDelError(err);
       toast.error(t('inmobiliaria.portafolio.detail.toasts.statusChangeError'), {
-        description: err instanceof Error ? err.message : undefined,
+        description: motivos[0],
       });
     }
   }, [consignacion, t]);
@@ -296,6 +312,7 @@ function ConsignacionDetailContent() {
   const handleTerminateConfirm = useCallback(async () => {
     if (!consignacion || isTerminating) return;
     setIsTerminating(true);
+    setMotivoAlTerminar([]);
     try {
       // PUT /inmobiliaria/consignaciones/:id { status: TERMINATED }
       const updated = await consignacionesApi.update(consignacion.id, {
@@ -305,9 +322,13 @@ function ConsignacionDetailContent() {
       setShowTerminateDialog(false);
       toast.success(t('inmobiliaria.portafolio.detail.toasts.terminated'));
     } catch (err) {
-      toast.error(t('inmobiliaria.portafolio.detail.toasts.terminateError'), {
-        description: err instanceof Error ? err.message : undefined,
-      });
+      // El diálogo NO se cierra: el motivo se queda donde se apretó el botón.
+      const motivos = motivosDelError(err);
+      setMotivoAlTerminar(motivos);
+      if (motivos.length === 0) {
+        // Un 5xx o un corte de red no explican nada: ahí sí el texto genérico.
+        toast.error(t('inmobiliaria.portafolio.detail.toasts.terminateError'));
+      }
     } finally {
       setIsTerminating(false);
     }
@@ -672,7 +693,10 @@ function ConsignacionDetailContent() {
       <AlertDialog
         open={showTerminateDialog}
         onOpenChange={(open) => {
-          if (!open && !isTerminating) setShowTerminateDialog(false);
+          if (!open && !isTerminating) {
+            setShowTerminateDialog(false);
+            setMotivoAlTerminar([]);
+          }
         }}
       >
         <AlertDialogContent>
@@ -686,6 +710,23 @@ function ConsignacionDetailContent() {
               })}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {motivoAlTerminar.length > 0 && (
+            <div
+              role="alert"
+              data-testid="terminar-rechazo"
+              className="rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger"
+            >
+              {motivoAlTerminar.length === 1 ? (
+                motivoAlTerminar[0]
+              ) : (
+                <ul className="list-disc space-y-1 pl-4">
+                  {motivoAlTerminar.map((m) => (
+                    <li key={m}>{m}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isTerminating}>
               {t('common.cancel')}

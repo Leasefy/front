@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { ApiError } from '@/lib/api/client'
-import { descripcionDelError } from './descripcion-del-error'
+import { descripcionDelError, motivosDelError } from './descripcion-del-error'
 
 describe('descripcionDelError', () => {
   it('un 409 o un 400 que explica se muestra tal cual', () => {
@@ -27,3 +27,39 @@ describe('descripcionDelError', () => {
     expect(descripcionDelError(new Error(''))).toBeUndefined()
   })
 })
+
+/**
+ * F5 — un 400 del `ValidationPipe` llega con varios motivos, y `ApiError` los
+ * pega con « · » para poder ser un `Error`. Ese pegote pasaba el tope y se
+ * perdía entero: el toast decía «no se pudo» y nadie sabía qué cambiar.
+ */
+describe('motivosDelError', () => {
+  it('devuelve los motivos SUELTOS de un 400 con lista, no el pegote', () => {
+    const e = new ApiError(400, [
+      'availability debe ser uno de los valores permitidos',
+      'status debe ser uno de los valores permitidos',
+    ]);
+    expect(motivosDelError(e)).toEqual([
+      'availability debe ser uno de los valores permitidos',
+      'status debe ser uno de los valores permitidos',
+    ]);
+  });
+
+  it('un 409 con un solo mensaje sale como un motivo', () => {
+    const e = new ApiError(409, 'El inmueble tiene un contrato vigente.');
+    expect(motivosDelError(e)).toEqual(['El inmueble tiene un contrato vigente.']);
+  });
+
+  it('un 5xx no explica nada: lista vacía para que quien llama ponga su texto', () => {
+    expect(motivosDelError(new ApiError(500, 'Internal server error'))).toEqual([]);
+  });
+
+  it('descarta el volcado de Prisma y los mensajes que no caben', () => {
+    expect(motivosDelError(new ApiError(400, 'Invalid `prisma.consignacion.update()`'))).toEqual([]);
+    expect(motivosDelError(new ApiError(400, 'x'.repeat(200)))).toEqual([]);
+  });
+
+  it('lo que no es un Error no tiene motivos', () => {
+    expect(motivosDelError('se rompió')).toEqual([]);
+  });
+});

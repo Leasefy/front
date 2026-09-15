@@ -30,7 +30,12 @@ describe('bootstrap-seed', () => {
   })
 
   it('each field is consumed independently — reading one does not clear another', () => {
-    const agencySubscription = { subscription: null, openCharge: null, status: null, canOfferRentals: true }
+    const agencySubscription = {
+      subscription: null, openCharge: null, status: null, canOfferRentals: true,
+      // Brand-new agency, no subscription row yet — all four T-0089 fields are null
+      // per AgencySubscriptionState's own doc comments (agency-subscription.types.ts).
+      planTier: null, level: null, pendingPlanTier: null, pendingPlanEffectiveAt: null,
+    }
     const mySubscription = {
       id: 's1', userId: 'u1', planId: 'pro' as const, status: 'active' as const,
       billingCycle: 'monthly' as const, currentPeriodStart: '2026-01-01', currentPeriodEnd: '2026-02-01', cancelAtPeriodEnd: false,

@@ -597,7 +597,7 @@
           "nit": {
             "type": "string",
             "maxLength": 20,
-            "pattern": "^\\d{9,10}(?:-\\d)?$",
+            "pattern": "^\\d{6,10}(?:-\\d)?$",
             "example": "900123456-7"
           },
           "existingTenantId": {
@@ -781,7 +781,7 @@
           },
           "nit": {
             "type": "string",
-            "pattern": "^\\d{9,10}(?:-\\d)?$",
+            "pattern": "^\\d{6,10}(?:-\\d)?$",
             "example": "900123456-7"
           },
           "address": {
@@ -1428,7 +1428,7 @@
           },
           "nit": {
             "type": "string",
-            "pattern": "^\\d{9,10}(?:-\\d)?$"
+            "pattern": "^\\d{6,10}(?:-\\d)?$"
           },
           "address": {
             "$ref": "#/components/schemas/OnboardingSessionAgencyAddress"
@@ -11902,6 +11902,20 @@
         ],
         "additionalProperties": false
       },
+      "AiHubAgentesAutonomiaResponse": {
+        "type": "object",
+        "properties": {
+          "agentes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubAutonomiaResponse"
+            }
+          }
+        },
+        "required": [
+          "agentes"
+        ]
+      },
       "AiHubRetenidoResultado": {
         "type": "object",
         "properties": {
@@ -13211,6 +13225,97 @@
           "traza",
           "generatedAt"
         ]
+      },
+      "AiHubMatchingEnviarOk": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "enviado"
+            ]
+          }
+        },
+        "required": [
+          "ok",
+          "estado"
+        ]
+      },
+      "AiHubMatchingNoEnviado": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "mensaje": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "motivo",
+          "mensaje"
+        ]
+      },
+      "AiHubMatchingNoDisponible": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "mensaje": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "mensaje"
+        ]
+      },
+      "AiHubMatchingDescartarOk": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "descartado"
+            ]
+          }
+        },
+        "required": [
+          "ok",
+          "estado"
+        ]
+      },
+      "AiHubMatchingDescartarBody": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
       },
       "AiHubMetricsResponse": {
         "type": "object",
@@ -39351,6 +39456,100 @@
         }
       }
     },
+    "/api/agency/{agencyId}/ai-hub/agentes/autonomia": {
+      "get": {
+        "operationId": "getAiHubAgentesAutonomiaRoster",
+        "summary": "Piloto automático — postura de autonomía de TODA la flota, en una llamada",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Roster completo, un item por agente de AGENTES_CON_AUTONOMIA",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubAgentesAutonomiaResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/agency/{agencyId}/ai-hub/retenidos/{decisionId}/aprobar": {
       "post": {
         "operationId": "aprobarRetenidoPiloto",
@@ -40937,6 +41136,278 @@
           },
           "404": {
             "description": "Unknown `agente`, or the case does not exist for this tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/matching/casos/{id}/enviar": {
+      "post": {
+        "operationId": "enviarAiHubMatchingCaso",
+        "summary": "Matching — mandarle al candidato las opciones de un caso de la cola",
+        "description": "Le pide al back que mande el correo con los inmuebles compatibles (el back vuelve a verificar consentimiento y enfriamiento). El caso pasa a `enviado`; si el correo no sale, responde 409 con el motivo en palabras y el caso se actualiza igual que cuando lo reporta el circuito automático.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Correo enviado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubMatchingEnviarOk"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant / rol insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El caso no existe en esta agencia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El caso ya no está en la cola, o el correo no salió (motivo en `mensaje`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubMatchingNoEnviado"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El back no respondió o la base no está disponible — se puede reintentar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubMatchingNoDisponible"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/matching/casos/{id}/descartar": {
+      "post": {
+        "operationId": "descartarAiHubMatchingCaso",
+        "summary": "Matching — sacar un caso de la cola sin mandar nada",
+        "description": "El caso pasa a `descartado` con quién lo decidió y el motivo (opcional). No se le manda nada al candidato. 409 si el caso ya no estaba en la cola.",
+        "tags": [
+          "agency",
+          "ai-hub"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiHubMatchingDescartarBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Caso descartado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubMatchingDescartarOk"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant / rol insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El caso no existe en esta agencia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El caso ya no estaba en la cola",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
             "content": {
               "application/json": {
                 "schema": {

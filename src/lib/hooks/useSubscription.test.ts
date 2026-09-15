@@ -32,6 +32,7 @@ vi.mock('@/lib/api/subscriptions.service', () => ({
 }))
 
 import { useMySubscription } from './useSubscription'
+import { setBootstrapSeed, clearBootstrapSeed } from '@/lib/auth/bootstrap-seed'
 
 // ── Fixture ───────────────────────────────────────────────────────────────────
 
@@ -156,6 +157,56 @@ describe('useMySubscription — refetch', () => {
 
     expect(hook.get().error).toBeNull()
     expect(hook.get().subscription).toEqual(MOCK_SUBSCRIPTION)
+  })
+})
+
+// ── (4) Login bootstrap seed (T-0082 WU-2b) ──────────────────────────────────
+//
+// contract.md §3.2 — `subscription` seeds `useMySubscription` (landlord/
+// tenant) so it does not re-fetch `GET /subscriptions/me` on the first mount
+// after login when the bootstrap already resolved it. A seed is one-shot: a
+// second mount (route revisit) must fall back to a live fetch, never reuse a
+// stale value.
+
+describe('useMySubscription — bootstrap seed (T-0082 WU-2b)', () => {
+  afterEach(() => clearBootstrapSeed())
+
+  it('uses the seeded subscription on first mount — never calls getMySubscription', async () => {
+    setBootstrapSeed({ mySubscription: MOCK_SUBSCRIPTION as never })
+
+    const hook = renderHook()
+    await act(async () => {})
+
+    expect(hook.get().subscription).toEqual(MOCK_SUBSCRIPTION)
+    expect(hook.get().isLoading).toBe(false)
+    expect(hook.get().error).toBeNull()
+    expect(mockGetMySubscription).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the live fetch when nothing was seeded', async () => {
+    // No setBootstrapSeed call — seed is null (fresh module state or already consumed).
+    mockGetMySubscription.mockResolvedValueOnce(MOCK_SUBSCRIPTION)
+
+    const hook = renderHook()
+    await act(async () => {})
+
+    expect(hook.get().subscription).toEqual(MOCK_SUBSCRIPTION)
+    expect(mockGetMySubscription).toHaveBeenCalledTimes(1)
+  })
+
+  it('a seed is consumed once — refetch() (e.g. a manual retry) always goes live', async () => {
+    setBootstrapSeed({ mySubscription: MOCK_SUBSCRIPTION as never })
+    mockGetMySubscription.mockResolvedValueOnce({ ...MOCK_SUBSCRIPTION, planId: 'ultra' })
+
+    const hook = renderHook()
+    await act(async () => {})
+    expect(mockGetMySubscription).not.toHaveBeenCalled()
+
+    await act(async () => { hook.get().refetch() })
+    await act(async () => {})
+
+    expect(mockGetMySubscription).toHaveBeenCalledTimes(1)
+    expect(hook.get().subscription?.planId).toBe('ultra')
   })
 })
 

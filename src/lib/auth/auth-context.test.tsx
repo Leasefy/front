@@ -23,12 +23,13 @@ void React // jsx-preserve
 
 type AuthEventCallback = (event: string, session: unknown) => Promise<void> | void
 
-const { getMock, postMock, supabaseSignOutMock, authCallbacks } = vi.hoisted(() => ({
+const { getMock, postMock, supabaseSignOutMock, signInWithPasswordMock, authCallbacks } = vi.hoisted(() => ({
   getMock: vi.fn(),
   // Resolves so the single-session claim (POST /auth/session/claim) in the
   // bootstrap path returns a promise (its .catch/await must not throw).
   postMock: vi.fn().mockResolvedValue({ superseded: false }),
   supabaseSignOutMock: vi.fn().mockResolvedValue({ error: null }),
+  signInWithPasswordMock: vi.fn(),
   authCallbacks: [] as AuthEventCallback[],
 }))
 
@@ -40,6 +41,7 @@ vi.mock('@/lib/supabase/client', () => ({
         return { data: { subscription: { unsubscribe: () => {} } } }
       },
       signOut: supabaseSignOutMock,
+      signInWithPassword: (...args: unknown[]) => signInWithPasswordMock(...args),
       mfa: {
         getAuthenticatorAssuranceLevel: vi.fn().mockResolvedValue({ data: null }),
       },
@@ -68,6 +70,7 @@ vi.mock('@/lib/api/client', () => {
     setAccessToken: vi.fn(),
     setUnauthorizedHandler: vi.fn(),
     setTokenRefresher: vi.fn(),
+    clearInFlightGets: vi.fn(),
   }
 })
 
@@ -89,6 +92,21 @@ const fakeSession = {
     app_metadata: { providers: ['email'] },
     user_metadata: { full_name: 'Ana Pérez' },
   },
+}
+
+/**
+ * T-0082 WU-2b: `GET /users/me/bootstrap` replaced `GET /users/me` +
+ * `GET /inmobiliaria/agency` as the login path's single call — `getMock` now
+ * answers this ONE path, so every fixture below builds the composed envelope
+ * (contract.md §3.2) instead of a flat `/users/me` body.
+ */
+function bootstrapEnvelope(
+  user: Record<string, unknown>,
+  role: string,
+  agency: Record<string, unknown> | null = null,
+  errors: string[] = [],
+) {
+  return { user, role, agency, subscription: null, onboarding: null, errors }
 }
 
 let container: HTMLDivElement
@@ -136,6 +154,7 @@ beforeEach(() => {
   getMock.mockReset()
   postMock.mockReset().mockResolvedValue({ superseded: false })
   supabaseSignOutMock.mockClear()
+  signInWithPasswordMock.mockReset()
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -149,14 +168,10 @@ afterEach(async () => {
 
 describe('AuthProvider — onboardingCompletedAt flag mapping', () => {
   it('flag null + firstName present (Google metadata) → NOT onboardingCompleted', async () => {
-    getMock.mockResolvedValue({
-      id: 'u1',
-      email: 'ana@example.com',
-      firstName: 'Ana',
-      lastName: 'Pérez',
-      role: 'TENANT',
-      onboardingCompletedAt: null,
-    })
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: null },
+      'TENANT',
+    ))
     await renderProviderAndEmitInitialSession()
 
     expect(captured!.user).not.toBeNull()
@@ -166,14 +181,10 @@ describe('AuthProvider — onboardingCompletedAt flag mapping', () => {
   })
 
   it('flag set → onboardingCompleted', async () => {
-    getMock.mockResolvedValue({
-      id: 'u1',
-      email: 'ana@example.com',
-      firstName: 'Ana',
-      lastName: 'Pérez',
-      role: 'TENANT',
-      onboardingCompletedAt: '2026-06-01T12:00:00.000Z',
-    })
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-06-01T12:00:00.000Z' },
+      'TENANT',
+    ))
     await renderProviderAndEmitInitialSession()
 
     expect(captured!.user!.onboardingCompleted).toBe(true)
@@ -293,24 +304,13 @@ describe('AuthProvider — agency membership detection (personal-role coexistenc
     email: 'ana@example.com',
     firstName: 'Ana',
     lastName: 'Pérez',
-    role: 'TENANT',
     onboardingCompletedAt: '2026-01-01T00:00:00.000Z',
   }
 
-  /** Route apiClient.get by path: /inmobiliaria/agency → agencyResp, else userResp. */
-  function routeGet(userResp: unknown, agencyResp: unknown | (() => Promise<unknown>)) {
-    getMock.mockImplementation((path: string) => {
-      if (path === '/inmobiliaria/agency') {
-        return typeof agencyResp === 'function'
-          ? (agencyResp as () => Promise<unknown>)()
-          : Promise.resolve(agencyResp)
-      }
-      return Promise.resolve(userResp)
-    })
-  }
-
   it('ACTIVE membership on a TENANT → hasActiveAgencyMembership true, checked, default personal context', async () => {
-    routeGet(TENANT, { id: 'ag-1', name: 'ABC', memberRole: 'AGENTE', memberStatus: 'ACTIVE' })
+    getMock.mockResolvedValue(bootstrapEnvelope(TENANT, 'TENANT', {
+      id: 'ag-1', name: 'ABC', memberRole: 'AGENTE', memberStatus: 'ACTIVE', permissions: null,
+    }))
     await renderProviderAndEmitInitialSession()
 
     expect(captured!.user!.role).toBe('tenant')
@@ -323,7 +323,9 @@ describe('AuthProvider — agency membership detection (personal-role coexistenc
   })
 
   it('INVITED membership → hasActiveAgencyMembership false (not yet accepted)', async () => {
-    routeGet(TENANT, { id: 'ag-1', name: 'ABC', memberStatus: 'INVITED' })
+    getMock.mockResolvedValue(bootstrapEnvelope(TENANT, 'TENANT', {
+      id: 'ag-1', name: 'ABC', memberRole: null, memberStatus: 'INVITED', permissions: null,
+    }))
     await renderProviderAndEmitInitialSession()
 
     expect(captured!.agencyMemberStatus).toBe('INVITED')
@@ -332,8 +334,8 @@ describe('AuthProvider — agency membership detection (personal-role coexistenc
     expect(captured!.activeContext).toBe('personal')
   })
 
-  it('no membership (404) → soft no-membership, no throw, checked true', async () => {
-    routeGet(TENANT, () => Promise.reject(new ApiError(404, 'no membership')))
+  it('no membership (agency: null, errors: []) → soft no-membership, no throw, checked true', async () => {
+    getMock.mockResolvedValue(bootstrapEnvelope(TENANT, 'TENANT', null, []))
     await renderProviderAndEmitInitialSession()
 
     expect(captured!.user!.role).toBe('tenant')
@@ -342,17 +344,11 @@ describe('AuthProvider — agency membership detection (personal-role coexistenc
     expect(captured!.agencyMembershipChecked).toBe(true)
   })
 
-  it('403 membership fetch is likewise treated as no membership', async () => {
-    routeGet(TENANT, () => Promise.reject(new ApiError(403, 'forbidden')))
-    await renderProviderAndEmitInitialSession()
-
-    expect(captured!.hasActiveAgencyMembership).toBe(false)
-    expect(captured!.agencyMembershipChecked).toBe(true)
-  })
-
   it('a pure-agency user resolves ACTIVE membership and an agency active-context', async () => {
-    const AGENT = { ...TENANT, id: 'u2', role: 'AGENT' }
-    routeGet(AGENT, { id: 'ag-9', name: 'Big', memberRole: 'ADMIN', memberStatus: 'ACTIVE' })
+    const AGENT = { ...TENANT, id: 'u2' }
+    getMock.mockResolvedValue(bootstrapEnvelope(AGENT, 'AGENT', {
+      id: 'ag-9', name: 'Big', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null,
+    }))
     await renderProviderAndEmitInitialSession()
 
     expect(captured!.user!.role).toBe('agency')
@@ -361,16 +357,15 @@ describe('AuthProvider — agency membership detection (personal-role coexistenc
     expect(captured!.activeContext).toBe('agency')
   })
 
-  it('confirmed 404 AFTER an ACTIVE membership → DOWNGRADES agency/status (revoked loses access)', async () => {
-    let agencyCall = 0
-    getMock.mockImplementation((path: string) => {
-      if (path === '/inmobiliaria/agency') {
-        agencyCall++
-        return agencyCall === 1
-          ? Promise.resolve({ id: 'ag-1', name: 'ABC', memberRole: 'AGENTE', memberStatus: 'ACTIVE' })
-          : Promise.reject(new ApiError(404, 'revoked'))
-      }
-      return Promise.resolve(TENANT)
+  it('confirmed no-membership AFTER an ACTIVE membership (via refreshUser) → DOWNGRADES agency/status (revoked loses access)', async () => {
+    let bootstrapCall = 0
+    getMock.mockImplementation(() => {
+      bootstrapCall++
+      return Promise.resolve(
+        bootstrapCall === 1
+          ? bootstrapEnvelope(TENANT, 'TENANT', { id: 'ag-1', name: 'ABC', memberRole: 'AGENTE', memberStatus: 'ACTIVE', permissions: null })
+          : bootstrapEnvelope(TENANT, 'TENANT', null, []),
+      )
     })
     await renderProviderAndEmitInitialSession()
     expect(captured!.hasActiveAgencyMembership).toBe(true)
@@ -379,22 +374,21 @@ describe('AuthProvider — agency membership detection (personal-role coexistenc
     await act(async () => {
       await captured!.refreshUser()
     })
-    // Confirmed no-membership → downgraded.
+    // Confirmed no-membership (second bootstrap's own composed verdict) → downgraded.
     expect(captured!.hasActiveAgencyMembership).toBe(false)
     expect(captured!.agencyMemberStatus).toBeNull()
     expect(captured!.agency).toBeNull()
   })
 
-  it('transient 5xx AFTER an ACTIVE membership → KEEPS the last ACTIVE (no flap)', async () => {
-    let agencyCall = 0
-    getMock.mockImplementation((path: string) => {
-      if (path === '/inmobiliaria/agency') {
-        agencyCall++
-        return agencyCall === 1
-          ? Promise.resolve({ id: 'ag-1', name: 'ABC', memberRole: 'AGENTE', memberStatus: 'ACTIVE' })
-          : Promise.reject(new ApiError(503, 'down'))
-      }
-      return Promise.resolve(TENANT)
+  it('transient agency_unavailable AFTER an ACTIVE membership (via refreshUser) → KEEPS the last ACTIVE (no flap)', async () => {
+    let bootstrapCall = 0
+    getMock.mockImplementation(() => {
+      bootstrapCall++
+      return Promise.resolve(
+        bootstrapCall === 1
+          ? bootstrapEnvelope(TENANT, 'TENANT', { id: 'ag-1', name: 'ABC', memberRole: 'AGENTE', memberStatus: 'ACTIVE', permissions: null })
+          : bootstrapEnvelope(TENANT, 'TENANT', null, ['agency_unavailable']),
+      )
     })
     await renderProviderAndEmitInitialSession()
     expect(captured!.hasActiveAgencyMembership).toBe(true)
@@ -402,19 +396,48 @@ describe('AuthProvider — agency membership detection (personal-role coexistenc
     await act(async () => {
       await captured!.refreshUser()
     })
-    // Transient → keep the last known ACTIVE membership.
+    // Transient → keep the last known ACTIVE membership (applyAgencyFetchResult's
+    // "never downgrade on a transient failure" rule, unchanged by WU-2b).
     expect(captured!.hasActiveAgencyMembership).toBe(true)
     expect(captured!.agency?.id).toBe('ag-1')
   })
+})
 
-  it('CRITICAL: a hung probe flips agencyMembershipChecked via the PROBE timeout (8s), NOT the 5s net', async () => {
+/**
+ * T-0082 WU-2b brief §4.5 — the six required TDD cases, verified directly
+ * against `GET /users/me/bootstrap`. (a)-(c) and (f) here; (d) belongs to
+ * `PermissionsContext.test.tsx` (the `permissions` seed only auth-context can
+ * hand off, but only PermissionsContext consumes); (e) is covered by
+ * `bootstrap.service.test.ts` (the `errors` default lives in that thin
+ * client, one layer below auth-context).
+ */
+describe('AuthProvider — bootstrap contract cases (wu-2b-front-brief.md §4.5)', () => {
+  const TENANT = {
+    id: 'u1',
+    email: 'ana@example.com',
+    firstName: 'Ana',
+    lastName: 'Pérez',
+    onboardingCompletedAt: '2026-01-01T00:00:00.000Z',
+  }
+
+  it('(a) one sign-in → exactly one GET /users/me/bootstrap; never the standalone /users/me or /inmobiliaria/agency', async () => {
+    getMock.mockResolvedValue(bootstrapEnvelope(TENANT, 'TENANT', {
+      id: 'ag-1', name: 'ABC', memberRole: 'AGENTE', memberStatus: 'ACTIVE', permissions: null,
+    }))
+    await renderProviderAndEmitInitialSession()
+
+    const bootstrapCalls = getMock.mock.calls.filter((c) => c[0] === '/users/me/bootstrap')
+    const userMeCalls = getMock.mock.calls.filter((c) => c[0] === '/users/me')
+    const agencyCalls = getMock.mock.calls.filter((c) => c[0] === '/inmobiliaria/agency')
+    expect(bootstrapCalls).toHaveLength(1)
+    expect(userMeCalls).toHaveLength(0)
+    expect(agencyCalls).toHaveLength(0)
+  })
+
+  it('(b) agency: null + errors: [] → confirmed no membership, NO self-heal (no /inmobiliaria/agency call even after the retry window)', async () => {
     vi.useFakeTimers()
     try {
-      getMock.mockImplementation((path: string) =>
-        path === '/inmobiliaria/agency'
-          ? new Promise(() => {}) // never resolves — simulates a hung GET
-          : Promise.resolve(TENANT),
-      )
+      getMock.mockResolvedValue(bootstrapEnvelope(TENANT, 'TENANT', null, []))
       await act(async () => {
         root.render(
           <AuthProvider>
@@ -422,44 +445,32 @@ describe('AuthProvider — agency membership detection (personal-role coexistenc
           </AuthProvider>,
         )
       })
-      const handlerPromise = authCallbacks[authCallbacks.length - 1]('INITIAL_SESSION', fakeSession)
-
-      // At t≈5.5s the 5s isLoading net has fired — but it must NOT touch the
-      // membership gate: agencyMembershipChecked is still false (probe pending).
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(5500)
-      })
-      expect(captured!.agencyMembershipChecked).toBe(false)
-
-      // Only the 8s probe timeout flips it (as a transient failure).
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(3000)
-      })
-      await act(async () => {
-        await handlerPromise
+        await authCallbacks[authCallbacks.length - 1]('INITIAL_SESSION', fakeSession)
       })
       expect(captured!.agencyMembershipChecked).toBe(true)
-      expect(captured!.hasActiveAgencyMembership).toBe(false)
+      expect(captured!.agency).toBeNull()
+
+      // Past the self-heal retry delay (2s) and well beyond — still nothing.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000)
+      })
+      const agencyCalls = getMock.mock.calls.filter((c) => c[0] === '/inmobiliaria/agency')
+      expect(agencyCalls).toHaveLength(0)
     } finally {
       vi.useRealTimers()
     }
   })
 
-  it('a slow (5-8s) probe does NOT prematurely redirect a dual user — gate holds, then admits ACTIVE', async () => {
+  it('(c) agency: null + errors: ["agency_unavailable"] → exactly ONE self-heal retry via the standalone GET /inmobiliaria/agency', async () => {
     vi.useFakeTimers()
     try {
-      // The agency GET resolves ACTIVE at ~6s (cold serverless start), before
-      // the 8s probe timeout.
-      getMock.mockImplementation((path: string) =>
-        path === '/inmobiliaria/agency'
-          ? new Promise((resolve) =>
-              setTimeout(
-                () => resolve({ id: 'ag-1', name: 'ABC', memberRole: 'AGENTE', memberStatus: 'ACTIVE' }),
-                6000,
-              ),
-            )
-          : Promise.resolve(TENANT),
-      )
+      getMock.mockImplementation((path: string) => {
+        if (path === '/inmobiliaria/agency') {
+          return Promise.resolve({ id: 'ag-1', name: 'Recovered', memberRole: 'ADMIN', memberStatus: 'ACTIVE' })
+        }
+        return Promise.resolve(bootstrapEnvelope(TENANT, 'TENANT', null, ['agency_unavailable']))
+      })
       await act(async () => {
         root.render(
           <AuthProvider>
@@ -467,29 +478,40 @@ describe('AuthProvider — agency membership detection (personal-role coexistenc
           </AuthProvider>,
         )
       })
-      const handlerPromise = authCallbacks[authCallbacks.length - 1]('INITIAL_SESSION', fakeSession)
-
-      // Past the 5s net but before the probe settles: the gate must still be
-      // holding (checked=false) — NOT flipped to checked-without-membership.
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(5500)
+        await authCallbacks[authCallbacks.length - 1]('INITIAL_SESSION', fakeSession)
       })
-      expect(captured!.agencyMembershipChecked).toBe(false)
-      expect(captured!.hasActiveAgencyMembership).toBe(false)
-
-      // At ~6s the real ACTIVE result lands → admit (checked + membership true).
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(1000)
-      })
-      await act(async () => {
-        await handlerPromise
-      })
+      // Bootstrap resolved (200, transient section) — checked flips immediately,
+      // no extra request yet.
       expect(captured!.agencyMembershipChecked).toBe(true)
-      expect(captured!.hasActiveAgencyMembership).toBe(true)
+      expect(captured!.agency).toBeNull()
+      expect(getMock.mock.calls.filter((c) => c[0] === '/inmobiliaria/agency')).toHaveLength(0)
+
+      // The self-heal retry fires after AGENCY_SELF_HEAL_RETRY_DELAY_MS (2s).
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000)
+      })
+      const agencyCalls = getMock.mock.calls.filter((c) => c[0] === '/inmobiliaria/agency')
+      expect(agencyCalls).toHaveLength(1)
       expect(captured!.agency?.id).toBe('ag-1')
+
+      // No second automatic retry — single guarded retry only (WU-1, unchanged).
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000)
+      })
+      expect(getMock.mock.calls.filter((c) => c[0] === '/inmobiliaria/agency')).toHaveLength(1)
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('(f) plain 401 (no code) from bootstrap → same handling as fetchUser\'s 401 today: user stays null, loader settles, no crash', async () => {
+    getMock.mockRejectedValue(new ApiError(401, 'No autorizado'))
+    await renderProviderAndEmitInitialSession()
+
+    expect(captured!.user).toBeNull()
+    expect(captured!.needsOnboarding).toBe(false)
+    expect(captured!.isLoading).toBe(false)
   })
 })
 
@@ -499,12 +521,11 @@ describe('AuthProvider — sesión única: «otro dispositivo» tiene que ser ot
     email: 'ana@example.com',
     firstName: 'Ana',
     lastName: 'Pérez',
-    role: 'TENANT',
     onboardingCompletedAt: '2026-06-01T12:00:00.000Z',
   }
 
   it('el claim manda el id estable de este navegador, el mismo en cada login', async () => {
-    getMock.mockResolvedValue(usuario)
+    getMock.mockResolvedValue(bootstrapEnvelope(usuario, 'TENANT'))
     await renderProviderAndEmitInitialSession()
 
     const claims = postMock.mock.calls.filter((c) => c[0] === '/auth/session/claim')
@@ -516,7 +537,7 @@ describe('AuthProvider — sesión única: «otro dispositivo» tiene que ser ot
   })
 
   it('cerrar sesión revoca en el SERVIDOR con el token todavía vivo: el siguiente login no encuentra una sesión «de otro dispositivo»', async () => {
-    getMock.mockResolvedValue(usuario)
+    getMock.mockResolvedValue(bootstrapEnvelope(usuario, 'TENANT'))
     await renderProviderAndEmitInitialSession()
 
     await act(async () => {
@@ -532,7 +553,7 @@ describe('AuthProvider — sesión única: «otro dispositivo» tiene que ser ot
   })
 
   it('si la sesión ya fue desplazada, el revoke del cierre (401 SESSION_SUPERSEDED) NO encadena otro cierre', async () => {
-    getMock.mockResolvedValue(usuario)
+    getMock.mockResolvedValue(bootstrapEnvelope(usuario, 'TENANT'))
     await renderProviderAndEmitInitialSession()
 
     // El back rechaza el revoke como lo haría con una sesión desplazada, y el
@@ -564,7 +585,7 @@ describe('AuthProvider — sesión única: «otro dispositivo» tiene que ser ot
   })
 
   it('un back caído no traba el cierre de sesión', async () => {
-    getMock.mockResolvedValue(usuario)
+    getMock.mockResolvedValue(bootstrapEnvelope(usuario, 'TENANT'))
     await renderProviderAndEmitInitialSession()
     postMock.mockRejectedValue(new Error('backend caído'))
 
@@ -599,5 +620,102 @@ describe('fetchAgencyWithTimeout', () => {
     )
     expect(result.agency?.id).toBe('ag-1')
     expect(result.memberStatus).toBe('ACTIVE')
+  })
+})
+
+/**
+ * T-0082 WU-1 (F1) — `signInWithEmail` used to run its own claim/fetchUser/MFA
+ * sequence IN ADDITION to the `onAuthStateChange` listener's SIGNED_IN
+ * handling of the very same sign-in, doubling `/users/me` (both calls used an
+ * explicit token, which bypassed `compartirGet`'s dedup — see client.ts). The
+ * listener is now the bootstrap's single owner; `signInWithEmail` only
+ * authenticates against Supabase and waits for the listener's own run.
+ */
+describe('AuthProvider — single bootstrap owner (signInWithEmail delegates to the SIGNED_IN listener)', () => {
+  it('one sign-in produces exactly one GET /users/me/bootstrap and one POST /auth/session/claim — never the standalone /users/me or /inmobiliaria/agency', async () => {
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'TENANT',
+      { id: 'ag-1', name: 'ABC', memberRole: 'AGENTE', memberStatus: 'ACTIVE', permissions: null },
+    ))
+    // Mimics supabase-js: signInWithPassword notifies onAuthStateChange
+    // (SIGNED_IN) as part of establishing the session, before its own promise
+    // settles.
+    signInWithPasswordMock.mockImplementation(async () => {
+      const cb = authCallbacks[authCallbacks.length - 1]
+      await cb?.('SIGNED_IN', fakeSession)
+      return { data: { session: fakeSession }, error: null }
+    })
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    // No session yet — mirrors visiting /auth logged out.
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('INITIAL_SESSION', null)
+    })
+
+    let signInResult: Awaited<ReturnType<AuthContextType['signInWithEmail']>> = null
+    await act(async () => {
+      const pending = captured!.signInWithEmail('ana@example.com', 'secret')
+      // The SIGNED_IN handler's MFA check (and the waiter resolve after it)
+      // runs on a `setTimeout(0)` — see `alSoltarElLock` in auth-context.tsx.
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      signInResult = await pending
+    })
+
+    expect(signInResult).not.toBeNull()
+    expect(signInResult!.role).toBe('tenant')
+
+    const bootstrapCalls = getMock.mock.calls.filter((c) => c[0] === '/users/me/bootstrap')
+    const userMeCalls = getMock.mock.calls.filter((c) => c[0] === '/users/me')
+    const agencyCalls = getMock.mock.calls.filter((c) => c[0] === '/inmobiliaria/agency')
+    const claimCalls = postMock.mock.calls.filter((c) => c[0] === '/auth/session/claim')
+    expect(bootstrapCalls).toHaveLength(1)
+    // Agency arrived bundled in the SAME bootstrap call — the whole point of
+    // T-0082 WU-2b is that neither of these fires at all on this path.
+    expect(userMeCalls).toHaveLength(0)
+    expect(agencyCalls).toHaveLength(0)
+    expect(claimCalls).toHaveLength(1)
+    expect(captured!.agency?.id).toBe('ag-1')
+  })
+
+  it('signInWithEmail still resolves null on the 409 duplicate-identity bootstrap failure, without calling the bootstrap a second time', async () => {
+    const message = 'Ya existe una cuenta registrada con este correo. Inicia sesión con tu cuenta original.'
+    getMock.mockRejectedValue(new ApiError(409, message))
+    signInWithPasswordMock.mockImplementation(async () => {
+      const cb = authCallbacks[authCallbacks.length - 1]
+      await cb?.('SIGNED_IN', fakeSession)
+      return { data: { session: fakeSession }, error: null }
+    })
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('INITIAL_SESSION', null)
+    })
+
+    let signInResult: Awaited<ReturnType<AuthContextType['signInWithEmail']>> = null
+    await act(async () => {
+      const pending = captured!.signInWithEmail('ana@example.com', 'secret')
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      signInResult = await pending
+    })
+
+    expect(signInResult).toBeNull()
+    expect(sessionStorage.getItem(AUTH_BOOTSTRAP_ERROR_KEY)).toBe(message)
+    // Exactly one bootstrap call — the listener's, not a second one from
+    // signInWithEmail (which no longer calls the bootstrap at all).
+    const bootstrapCalls = getMock.mock.calls.filter((c) => c[0] === '/users/me/bootstrap')
+    expect(bootstrapCalls).toHaveLength(1)
   })
 })

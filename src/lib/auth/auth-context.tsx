@@ -3,10 +3,15 @@
 import { createContext, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { User, AuthContextType, Agency, AgencyMemberRole, UserRole } from './types'
 import { toFrontendRole } from './types'
-import { fetchAgencyProfile, type AgencyFetchResult } from './agency-fetch'
+import { fetchAgencyProfile, agencyResultFromBootstrap, type AgencyFetchResult } from './agency-fetch'
 import { toast } from 'sonner'
 import { getSupabase } from '@/lib/supabase/client'
-import { apiClient, ApiError, getAccessToken, setAccessToken, setUnauthorizedHandler, setTokenRefresher } from '@/lib/api/client'
+import { apiClient, ApiError, getAccessToken, setAccessToken, setUnauthorizedHandler, setTokenRefresher, clearInFlightGets } from '@/lib/api/client'
+import { getBootstrap } from '@/lib/api/bootstrap.service'
+import { mapBootstrapSubscription } from '@/lib/api/subscriptions.service'
+import type { AgencySubscriptionState } from '@/lib/api/agency-subscription.types'
+import type { BackendSubscriptionMeResponse } from '@/lib/api/subscriptions.types'
+import { setBootstrapSeed, clearBootstrapSeed } from './bootstrap-seed'
 import {
   terminarSesion,
   terminarSesionSiMurio,
@@ -159,15 +164,21 @@ function isUserNotFoundError(err: unknown): boolean {
   return msg.includes('user not found')
 }
 
-/** Whether this user should have an agency membership fetched at all
- *  (AGENT/agency role). Tenants and landlords never call `/inmobiliaria/agency`. */
-function isAgencyCapable(u: User | null): boolean {
-  return !!u && (u.role === 'agency' || u.backendRole === 'AGENT')
-}
+/** Single delay (ms) for the agency self-heal backstop's ONE guarded retry —
+ *  see `AuthProvider`'s agency self-healing effect below. T-0082 WU-1 (F3)
+ *  collapsed the old 3-attempt backoff (`[0, 2000, 8000]`, up to 4 probes per
+ *  session) into a single re-probe, gated on the previous probe having failed
+ *  TRANSIENTLY (never after a definitive "not a member" result). */
+const AGENCY_SELF_HEAL_RETRY_DELAY_MS = 2000
 
-/** Bounded backoff schedule (ms) for the agency self-heal backstop —
- *  see `AuthProvider`'s agency self-healing effect below. */
-const AGENCY_SELF_HEAL_DELAYS_MS = [0, 2000, 8000]
+/** Bounded backoff schedule (ms) for the DEGRADED PROFILE self-heal below —
+ *  a separate concern from the agency backstop above. Merge note (T-0082):
+ *  `develop` wrote this self-heal against the agency backstop's pre-T-0082
+ *  3-attempt schedule (`AGENCY_SELF_HEAL_DELAYS_MS`, since collapsed to
+ *  `AGENCY_SELF_HEAL_RETRY_DELAY_MS`); T-0082 never touched the profile
+ *  self-heal or its retry count, so this keeps `develop`'s intended 0s/2s/8s
+ *  behavior under its own name instead of silently reducing it to one retry. */
+const PROFILE_SELF_HEAL_DELAYS_MS = [0, 2000, 8000]
 
 /** Hard ceiling for a single membership probe. apiClient has no
  *  AbortController, so we RACE the fetch against this timeout — a hung
@@ -288,6 +299,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const huboSesionRef = useRef(sesionGuardadaAlCargar)
 
   /**
+   * Session generation counter (T-0082 WU-1 remediation round 2,
+   * verify-3.md CRITICAL). Bumped on `SIGNED_OUT`, in `signOut()`, and at the
+   * start of every NEW `INITIAL_SESSION`/`SIGNED_IN` bootstrap.
+   *
+   * Round 1 cleared `agencyProbeInFlightRef`/`enVuelo` on sign-out, which
+   * stops a NEW caller from joining an OLD promise — but it does nothing
+   * about a coroutine that is ALREADY running: `apiClient` has no
+   * `AbortController` (a pre-existing, documented fact), so an in-flight
+   * `probeAgencyMembership`/`fetchUser` call for the session that just ended
+   * keeps executing in the background and, when it finally settles, used to
+   * write its result into shared `AuthProvider` state UNCONDITIONALLY —
+   * mixing identity A's stale data into identity B's session the moment A's
+   * orphaned call lands, even though the ref/map were cleared the instant B
+   * signed in. Proven reachable via the shipped `SesionYaAbierta` "cambiar de
+   * cuenta" flow (`await signOut()` then the login form, same tab, no
+   * reload) and via a forced sign-out (`SessionRevocationHandler`) racing an
+   * in-flight bootstrap.
+   *
+   * The fix: every fire-and-forget async path that writes shared state after
+   * an `await` captures this counter at its own start and re-checks it right
+   * before each write; a mismatch means the session moved on while the call
+   * was in flight, and the write is dropped silently instead of clobbering
+   * the CURRENT session's state. This is NOT solved by adding
+   * `AbortController` plumbing to `apiClient` — even an aborted/cancelled
+   * request still races the state write on the client side (the async
+   * function's `await` settles and its continuation runs regardless of
+   * whether the underlying request was told to cancel), so an epoch check is
+   * required either way and is sufficient on its own.
+   */
+  const sessionGenerationRef = useRef(0)
+
+  /**
    * Fetch the user profile from the backend.
    * Returns one of three states:
    *  - { user: User }            → authenticated, profile loaded
@@ -359,6 +402,115 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
+  /**
+   * T-0082 WU-2b: replaces `fetchUser` + the fire-and-forget agency probe for
+   * the login bootstrap — INITIAL_SESSION, SIGNED_IN, `refreshUser()` — with
+   * ONE call to `GET /users/me/bootstrap` (contract.md §3.2, Surface A).
+   * `TOKEN_REFRESHED` deliberately keeps calling `fetchUser` +
+   * `probeAgencyMembership` unchanged — it is a token rotation for an
+   * existing session, not a new bootstrap, and out of this unit's scope
+   * (wu-2b-front-brief.md §4).
+   *
+   * Same error contract as `fetchUser`, because the bootstrap's `user` row
+   * says so verbatim (contract.md §3.2): 401 user-not-found → onboarding, 409
+   * duplicate identity → sign out + sessionStorage message (never the
+   * degraded session fallback, which would loop), any other 401 → null,
+   * 5xx/network → the degraded Supabase-session fallback.
+   *
+   * `agencyResult: null` in the return means bootstrap never produced a
+   * membership verdict at all (any of the failure branches below, including
+   * the 5xx/network fallback) — the caller falls back to the standalone
+   * `probeAgencyMembership`, exactly like today's unconditional
+   * fire-and-forget probe. A non-null `agencyResult` means the bootstrap DID
+   * resolve — success, confirmed no-membership, or `agency_unavailable` — and
+   * the caller applies it directly via `applyAgencyFetchResult`, with zero
+   * extra network calls.
+   *
+   * `miGeneracion` (verify-5.md §3, CRITICAL, WU-2b remediation): every
+   * caller captures `sessionGenerationRef.current` before awaiting this
+   * function and re-checks it before writing `user`/`agency` state — but
+   * `bootstrap-seed.ts`'s `setBootstrapSeed` is module-level singleton
+   * state, not React state, and was being written UNCONDITIONALLY inside
+   * this function, before the caller's own generation check ever runs. A
+   * stale bootstrap for a session that has since ended (SIGNED_OUT, or
+   * another SIGNED_IN in the same tab) could overwrite the CURRENT session's
+   * still-unconsumed seed with the wrong identity's permissions/subscription
+   * — a not-yet-mounted `PermissionsProvider`/`useAgencySubscription`/
+   * `useMySubscription` would then consume the WRONG user's data on its
+   * first mount, with no self-correcting re-fetch. Required (not optional,
+   * unlike `checkMfaLevel`'s `miGeneracion?`) precisely so no call site can
+   * forget to pass it — this function itself decides nothing about which
+   * session it belongs to.
+   */
+  const fetchBootstrap = useCallback(async (
+    session: Session | null | undefined,
+    miGeneracion: number,
+  ): Promise<{ user: User | null; needsOnboarding: boolean; agencyResult: AgencyFetchResult | null }> => {
+    const token = session?.access_token
+    try {
+      const data = await getBootstrap(token)
+      // Same PanelPrefsContext seed `fetchUser` already did for /users/me —
+      // see the comment there. The bootstrap's `user.preferences` is the
+      // exact same field, just nested one level deeper.
+      if (typeof window !== 'undefined') {
+        const prefs = data.user.preferences as Record<string, unknown> | undefined | null
+        const dismissed = prefs?.panel_tour_dismissed_v1 === true
+        window.dispatchEvent(
+          new CustomEvent('leasefy:preferences:loaded', {
+            detail: { panel_tour_dismissed_v1: dismissed },
+          }),
+        )
+      }
+      // Seed the hooks/contexts that would otherwise re-fetch this on mount.
+      // Only ever seeds a field the bootstrap actually resolved — a null
+      // section here means "do the standalone fallback", never a seeded
+      // null (contract.md §3.2's degradation column; see bootstrap-seed.ts).
+      // GATED on the generation (see this function's doc comment above) —
+      // a session that has since ended must never plant a seed for whatever
+      // session replaced it.
+      if (sessionGenerationRef.current === miGeneracion) {
+        setBootstrapSeed({
+          permissions: data.agency?.permissions ?? null,
+          agencySubscription: data.role === 'AGENT' ? (data.subscription as AgencySubscriptionState | null) : null,
+          mySubscription: data.role !== 'AGENT'
+            ? mapBootstrapSubscription(data.subscription as BackendSubscriptionMeResponse | null)
+            : null,
+        })
+      }
+      return {
+        user: mapBackendUser({ ...data.user, role: data.role }, session?.user?.email_confirmed_at ?? undefined),
+        needsOnboarding: false,
+        agencyResult: agencyResultFromBootstrap(data.agency, data.errors),
+      }
+    } catch (err) {
+      if (isUserNotFoundError(err)) {
+        return { user: null, needsOnboarding: true, agencyResult: null }
+      }
+      if (err instanceof ApiError && err.status === 409) {
+        const message =
+          err.message ||
+          'Ya existe una cuenta registrada con este correo. Inicia sesión con tu cuenta original.'
+        if (typeof window !== 'undefined') {
+          try {
+            window.sessionStorage.setItem(AUTH_BOOTSTRAP_ERROR_KEY, message)
+          } catch {}
+        }
+        try {
+          getSupabase()?.auth.signOut({ scope: 'local' }).catch(() => {})
+        } catch {}
+        return { user: null, needsOnboarding: false, agencyResult: null }
+      }
+      if (err instanceof ApiError && err.status === 401) {
+        return { user: null, needsOnboarding: false, agencyResult: null }
+      }
+      if (session) {
+        return { user: mapSupabaseUser(session), needsOnboarding: false, agencyResult: null }
+      }
+      console.error('[Auth] Error fetching bootstrap:', err)
+      return { user: null, needsOnboarding: false, agencyResult: null }
+    }
+  }, [])
+
   /** Set the agency and role in context (called after registration or when user loads) */
   const setAgency = useCallback((agencyData: Agency | null, role: AgencyMemberRole | null) => {
     setAgencyState(agencyData)
@@ -395,15 +547,49 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setLastProbeTransient(!!result.transientFailure)
   }, [])
 
-  /** THE single membership-probe path used by every auth handler + refreshUser.
-   *  Bounds the fetch with a timeout and ALWAYS flips `agencyMembershipChecked`
-   *  in a `finally` — so a hung/slow/failed probe can never leave the agency
-   *  panel gate holding a spinner forever. */
-  const probeAgencyMembership = useCallback(async (token?: string) => {
+  /** In-flight `/inmobiliaria/agency` probe, shared by every caller — auth
+   *  events, the self-heal retry below, `refreshUser`, and `refreshAgency`.
+   *  T-0082 WU-1 (F3): the probe used to fire once per caller (up to 4x per
+   *  session — SIGNED_IN, `refreshUser`, and the old 3-attempt self-heal),
+   *  because each call started its own fetch. Sharing by this ref means an
+   *  overlapping trigger reuses the same in-flight request instead of racing
+   *  a parallel one. */
+  const agencyProbeInFlightRef = useRef<Promise<AgencyFetchResult> | null>(null)
+
+  /** THE single membership-probe path used by every auth handler + refreshUser
+   *  + refreshAgency + the self-heal retry. Bounds the fetch with a timeout,
+   *  ALWAYS flips `agencyMembershipChecked` in a `finally` — so a hung/slow/
+   *  failed probe can never leave the agency panel gate holding a spinner
+   *  forever — and returns the raw result so a caller can decide whether to
+   *  arm a retry (see `refreshAgency` below). */
+  const probeAgencyMembership = useCallback(async (token?: string): Promise<AgencyFetchResult> => {
+    const enVuelo = agencyProbeInFlightRef.current
+    if (enVuelo) return enVuelo
+    // Captured NOW, before the fetch even starts — this is the identity of
+    // "which session asked for this." See `sessionGenerationRef`'s doc
+    // comment: an uncancellable probe that outlives its own session must not
+    // write into whatever session is current by the time it settles.
+    const miGeneracion = sessionGenerationRef.current
+    const promesa = (async () => {
+      try {
+        const result = await fetchAgencyWithTimeout(fetchAgency, token)
+        if (sessionGenerationRef.current === miGeneracion) {
+          applyAgencyFetchResult(result)
+        }
+        return result
+      } finally {
+        // Same guard on the "checked" flag: a stale probe settling after
+        // sign-out must not touch the NEW session's gate state either.
+        if (sessionGenerationRef.current === miGeneracion) {
+          setAgencyMembershipChecked(true)
+        }
+      }
+    })()
+    agencyProbeInFlightRef.current = promesa
     try {
-      applyAgencyFetchResult(await fetchAgencyWithTimeout(fetchAgency, token))
+      return await promesa
     } finally {
-      setAgencyMembershipChecked(true)
+      agencyProbeInFlightRef.current = null
     }
   }, [applyAgencyFetchResult, fetchAgency])
 
@@ -414,101 +600,95 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // per auth event. If that single shot failed (network blip, dev HMR partial
   // reload losing state), `agency` stayed null for the rest of the session
   // with nothing ever re-requesting it, silently breaking anything gated on
-  // `agency?.id` (useBetaChat, the postulaciones panel). The effect below
-  // retries with bounded backoff whenever `user` is agency-capable and
-  // `agency` is still null — no new Supabase auth event required.
+  // `agency?.id` (useBetaChat, the postulaciones panel).
+  //
+  // T-0082 WU-1 (F3): collapsed from a 3-attempt backoff (`[0, 2000, 8000]`)
+  // into a SINGLE guarded retry, fired only when the probe that just ran
+  // failed TRANSIENTLY (network/timeout) — never after a definitive "not a
+  // member" result (403/404/410), for ANY role. A retry that fails
+  // transiently again is not retried further automatically; from there the
+  // user's manual "Intentar de nuevo" (`refreshAgency`) is the path forward.
   // ---------------------------------------------------------------------
-  const agencySelfHealActiveRef = useRef(false)
   const agencySelfHealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const agencySelfHealTokenRef = useRef(0)
 
-  /** Starts (or no-ops if already running) a bounded retry chain for the
-   *  agency fetch: attempts at 0s / 2s / 8s, then gives up until either a
-   *  dependency change restarts it or `refreshAgency()` re-arms it. Guarded
-   *  by `agencySelfHealActiveRef` so overlapping effect runs / manual
-   *  refreshes never stack concurrent chains. */
-  const startAgencySelfHeal = useCallback(() => {
-    if (agencySelfHealActiveRef.current) return
-    agencySelfHealActiveRef.current = true
-    const localToken = ++agencySelfHealTokenRef.current
-
-    const attempt = (index: number) => {
-      agencySelfHealTimeoutRef.current = setTimeout(async () => {
-        if (localToken !== agencySelfHealTokenRef.current) return
-        console.warn(
-          `[Auth] agency self-heal retry attempt ${index + 1}/${AGENCY_SELF_HEAL_DELAYS_MS.length} (no agency loaded yet)`,
-        )
-        const result = await fetchAgencyWithTimeout(fetchAgency)
-        if (localToken !== agencySelfHealTokenRef.current) return
-        applyAgencyFetchResult(result)
-        // Stop on a RESOLVED outcome (success OR confirmed no-membership); only
-        // a TRANSIENT failure keeps retrying with backoff.
-        if (result.agency || result.confirmedNoMembership) {
-          agencySelfHealActiveRef.current = false
-          return
-        }
-        const next = index + 1
-        if (next < AGENCY_SELF_HEAL_DELAYS_MS.length) {
-          attempt(next)
-        } else {
-          console.warn('[Auth] agency self-heal retries exhausted — call refreshAgency() to retry manually')
-          agencySelfHealActiveRef.current = false
-        }
-      }, AGENCY_SELF_HEAL_DELAYS_MS[index])
-    }
-    attempt(0)
-  }, [fetchAgency, applyAgencyFetchResult])
+  /** Arms the single retry, unless one is already scheduled. No-ops instead of
+   *  stacking a second timer on an overlapping call (effect re-run, manual
+   *  refresh). */
+  const scheduleAgencySelfHeal = useCallback(() => {
+    if (agencySelfHealTimeoutRef.current) return
+    const miGeneracion = sessionGenerationRef.current
+    agencySelfHealTimeoutRef.current = setTimeout(() => {
+      agencySelfHealTimeoutRef.current = null
+      // Don't even fire the retry for a session that has since ended —
+      // `probeAgencyMembership` would gate its own write anyway, but there's
+      // no reason to spend a network call on an abandoned session.
+      if (sessionGenerationRef.current !== miGeneracion) return
+      void probeAgencyMembership()
+    }, AGENCY_SELF_HEAL_RETRY_DELAY_MS)
+  }, [probeAgencyMembership])
 
   useEffect(() => {
-    // Retry when the agency is missing AND the user is either agency-capable
-    // (pure AGENT) OR the last probe was a TRANSIENT failure (covers dual-context
-    // TENANT/LANDLORD recovering from a blip). A CONFIRMED no-membership sets
-    // lastProbeTransient=false, so membership-less tenants never storm.
-    if (!user || agency || (!isAgencyCapable(user) && !lastProbeTransient)) return
-    startAgencySelfHeal()
+    // Only ever retries on a TRANSIENT failure — a confirmed no-membership
+    // result sets lastProbeTransient=false, so it's a terminal state here
+    // regardless of role (pure agency included: T-0082 dropped the old
+    // "always retry an agency-capable user" special case, which used to keep
+    // storming a revoked/never-a-member AGENT indefinitely).
+    if (!user || agency || !lastProbeTransient) return
+    scheduleAgencySelfHeal()
     return () => {
-      // Invalidate any pending/in-flight attempt from this chain and clear
-      // its timer — a fresh chain starts on the next effect run if still needed.
-      agencySelfHealTokenRef.current += 1
       if (agencySelfHealTimeoutRef.current) {
         clearTimeout(agencySelfHealTimeoutRef.current)
         agencySelfHealTimeoutRef.current = null
       }
-      agencySelfHealActiveRef.current = false
     }
-  }, [user, agency, lastProbeTransient, startAgencySelfHeal])
+  }, [user, agency, lastProbeTransient, scheduleAgencySelfHeal])
 
   /** Manually retry the agency fetch (e.g. a page's "Intentar de nuevo"
-   *  button). Always performs one direct fetch; if it also fails, re-arms
-   *  the automatic backstop above (even if it had already given up). */
+   *  button). Reuses an in-flight probe if one is already running
+   *  (`probeAgencyMembership`'s own dedup); if the fresh result is still
+   *  transient, arms one more guarded retry — mirrors the automatic path. */
   const refreshAgency = useCallback(async () => {
     console.warn('[Auth] agency manual refresh requested')
-    const result = await fetchAgency()
-    applyAgencyFetchResult(result)
-    if (!result.agency) {
-      agencySelfHealActiveRef.current = false
-      if (agencySelfHealTimeoutRef.current) {
-        clearTimeout(agencySelfHealTimeoutRef.current)
-        agencySelfHealTimeoutRef.current = null
-      }
-      startAgencySelfHeal()
+    const result = await probeAgencyMembership()
+    if (result.transientFailure) {
+      scheduleAgencySelfHeal()
     }
-  }, [fetchAgency, applyAgencyFetchResult, startAgencySelfHeal])
+  }, [probeAgencyMembership, scheduleAgencySelfHeal])
 
-  /** Refresh user data from backend (e.g. after onboarding) */
+  /** Refresh user data from backend (e.g. after onboarding).
+   *  T-0082 WU-2b: uses the SAME bootstrap `fetchBootstrap` (one call) the
+   *  login path uses, preserving this function's existing semantics — still
+   *  awaited (unlike the auth-event listener's fire-and-forget probe), still
+   *  gated on the session generation so a stale refresh from an ended session
+   *  can never clobber the session that replaced it. */
   const refreshUser = useCallback(async () => {
     // Use the already-stored token to avoid an extra getSession() lock acquisition.
-    // If the stored token is still valid the backend will respond; if not, fetchUser
-    // handles the 401 gracefully.
-    const { user: userData, needsOnboarding: needsOnb } = await fetchUser()
+    // If the stored token is still valid the backend will respond; if not,
+    // fetchBootstrap handles the 401 gracefully (same contract as fetchUser).
+    const miGeneracion = sessionGenerationRef.current
+    const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap(undefined, miGeneracion)
+    // The session that asked for this refresh may have ended (sign-out, a
+    // new sign-in) while the bootstrap was in flight — never let a stale
+    // refresh write over whatever session is current now.
+    if (sessionGenerationRef.current !== miGeneracion) return
     setUser(userData)
     setNeedsOnboarding(needsOnb)
     // Probe agency membership for EVERY authenticated user (personal-role
     // coexistence): a TENANT/LANDLORD may hold an agency membership.
     if (userData) {
-      await probeAgencyMembership()
+      if (agencyResult) {
+        // The bootstrap already resolved membership — apply directly, no
+        // extra network call.
+        applyAgencyFetchResult(agencyResult)
+        setAgencyMembershipChecked(true)
+      } else {
+        // The bootstrap failed wholesale (network/5xx) before it could
+        // produce a verdict — fall back to the standalone probe, exactly
+        // like this function did before WU-2b.
+        await probeAgencyMembership()
+      }
     }
-  }, [fetchUser, probeAgencyMembership])
+  }, [fetchBootstrap, probeAgencyMembership, applyAgencyFetchResult])
 
   /* ------------------------------------------------------------------
    * 🔴 Self-heal del PERFIL degradado.
@@ -522,6 +702,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
    *
    * Espejo exacto del backstop de la agencia, incluido el porqué de los
    * plazos: 0s / 2s / 8s cubre un reinicio de back sin martillar al servidor.
+   *
+   * Merge T-0082: este `await fetchUser()` es exactamente el tipo de
+   * escritura-después-de-await que la generación de sesión existe para
+   * proteger (ver `sessionGenerationRef` arriba). El token local
+   * (`perfilSelfHealTokenRef`) ya invalida un reintento cuando ESTE efecto
+   * se reprograma (p.ej. `user` cambia a null en el propio SIGNED_OUT), pero
+   * no conocía la generación compartida cuando se escribió en `develop` —
+   * se captura y re-chequea acá igual que en `refreshAgency`/`refreshUser`,
+   * belt and suspenders, para que un self-heal huérfano de una sesión que ya
+   * terminó nunca resucite un perfil viejo sobre la sesión que la reemplazó.
    * ------------------------------------------------------------------ */
   const perfilSelfHealActivoRef = useRef(false)
   const perfilSelfHealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -534,15 +724,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (perfilSelfHealActivoRef.current) return
     perfilSelfHealActivoRef.current = true
     const miToken = ++perfilSelfHealTokenRef.current
+    const miGeneracion = sessionGenerationRef.current
 
     const intentar = (indice: number) => {
       perfilSelfHealTimeoutRef.current = setTimeout(async () => {
         if (miToken !== perfilSelfHealTokenRef.current) return
+        if (sessionGenerationRef.current !== miGeneracion) return
         console.warn(
-          `[Auth] profile self-heal retry ${indice + 1}/${AGENCY_SELF_HEAL_DELAYS_MS.length} (perfil degradado)`,
+          `[Auth] profile self-heal retry ${indice + 1}/${PROFILE_SELF_HEAL_DELAYS_MS.length} (perfil degradado)`,
         )
         const { user: fresco } = await fetchUser()
         if (miToken !== perfilSelfHealTokenRef.current) return
+        if (sessionGenerationRef.current !== miGeneracion) return
         // Sólo se adopta un perfil REAL: otro degradado no es una mejora, y
         // pisarlo reiniciaría el efecto en un bucle.
         if (fresco?.profileSource === 'backend') {
@@ -552,13 +745,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
           return
         }
         const siguiente = indice + 1
-        if (siguiente < AGENCY_SELF_HEAL_DELAYS_MS.length) {
+        if (siguiente < PROFILE_SELF_HEAL_DELAYS_MS.length) {
           intentar(siguiente)
         } else {
           console.warn('[Auth] profile self-heal agotado — queda el botón «Reintentar ahora»')
           perfilSelfHealActivoRef.current = false
         }
-      }, AGENCY_SELF_HEAL_DELAYS_MS[indice])
+      }, PROFILE_SELF_HEAL_DELAYS_MS[indice])
     }
     intentar(0)
 
@@ -572,12 +765,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [user, fetchUser, probeAgencyMembership])
 
-  /** Check MFA assurance level and update mfaRequired state */
-  const checkMfaLevel = useCallback(async () => {
+  /** Check MFA assurance level and update mfaRequired state.
+   *  `miGeneracion`, when passed, gates the write: a deferred MFA check
+   *  (see `alSoltarElLock` below) that settles after the session has moved
+   *  on must not flip `mfaRequired` for whoever is signed in NOW. */
+  const checkMfaLevel = useCallback(async (miGeneracion?: number) => {
     const supabase = getSupabase()
     if (!supabase) return
     try {
       const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (miGeneracion !== undefined && sessionGenerationRef.current !== miGeneracion) return
       if (aal?.nextLevel === 'aal2' && aal?.currentLevel === 'aal1') {
         setMfaRequired(true)
       } else if (aal?.currentLevel === 'aal2') {
@@ -640,7 +837,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * (matches signOut's timeout-race style). A `superseded` result means this
    * device just displaced another one — tell the user.
    */
-  const claimActiveSession = useCallback(async (token: string) => {
+  const claimActiveSession = useCallback(async (token: string, miGeneracion?: number) => {
     // El id de ESTE navegador. Sin él, el back sólo sabe que había una sesión
     // anterior y la reporta como «otro dispositivo» aunque fuera la de este
     // mismo navegador — el cartel salía en cada login.
@@ -648,10 +845,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
       claimSession(token, { deviceId: getDeviceId() }).catch(() => null),
       new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
     ])
+    // Session-generation guard (see `sessionGenerationRef`'s doc comment): a
+    // claim started for a session that has since ended must not show ITS
+    // "cerramos tu sesión en otro dispositivo" toast over whatever session is
+    // current now — that would be as wrong as writing stale identity data.
+    if (miGeneracion !== undefined && sessionGenerationRef.current !== miGeneracion) return
     if (result?.superseded) {
       toast('Cerramos tu sesión en otro dispositivo')
     }
   }, [])
+
+  /**
+   * T-0082 WU-1 (F1): `signInWithEmail` used to run its OWN
+   * claim→fetchUser→MFA sequence, in parallel with the `onAuthStateChange`
+   * listener's SIGNED_IN handling of the very same sign-in — doubling
+   * `/users/me` (and, via the explicit token, bypassing `compartirGet`'s
+   * dedup too — see client.ts). The listener's SIGNED_IN branch is now the
+   * ONLY place that runs the bootstrap; `signInWithEmail` arms this resolver
+   * before calling Supabase and awaits it instead, so it still returns the
+   * loaded user (or null) to its caller (`AuthForm`'s inline 409 handling)
+   * without ever calling `fetchUser`/`checkMfaLevel` itself. A SIGNED_IN
+   * triggered by something other than `signInWithEmail` (e.g. a magic-link
+   * session exchange) finds no waiter registered — resolving it is then a
+   * no-op.
+   */
+  const signInBootstrapWaiterRef = useRef<((user: User | null) => void) | null>(null)
 
   // Initialize auth on mount.
   // We rely exclusively on onAuthStateChange (which fires INITIAL_SESSION on setup)
@@ -722,27 +940,49 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setAccessToken(null)
           }
           if (session) {
+            // A NEW bootstrap starts: bump the session generation before
+            // anything async runs, and capture it now. Every write below that
+            // follows an `await` re-checks this — if a SIGNED_OUT (or another
+            // sign-in) lands while this bootstrap is still in flight, this
+            // generation no longer matches the current one and the stale
+            // write is dropped instead of clobbering whatever session is
+            // current by the time it lands. See `sessionGenerationRef`'s doc
+            // comment.
+            sessionGenerationRef.current += 1
+            const miGeneracion = sessionGenerationRef.current
             huboSesionRef.current = true
             setAccessToken(session.access_token)
             // Claim the active session BEFORE any other authenticated request.
-            await claimActiveSession(session.access_token)
-            const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
+            await claimActiveSession(session.access_token, miGeneracion)
+            if (sessionGenerationRef.current !== miGeneracion) return
+            // T-0082 WU-2b: ONE call (GET /users/me/bootstrap) replaces
+            // fetchUser + the separate agency probe below.
+            const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap(session, miGeneracion)
+            if (sessionGenerationRef.current !== miGeneracion) return
             if (userData) userData.hasPassword = getHasPassword(session)
             setUser(userData)
             setNeedsOnboarding(needsOnb)
             setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
-            // Probe agency membership for every authenticated user (coexistence).
-            // Fire-and-forget: the global loader must NOT wait on
-            // /inmobiliaria/agency latency (only the agency-route gate waits, on
-            // agencyMembershipChecked). Matches SIGNED_IN's ordering.
+            // Apply the bootstrap's own membership verdict — no second
+            // request. Fire-and-forget ONLY as a fallback when the bootstrap
+            // failed wholesale (agencyResult null): the global loader must
+            // NOT wait on /inmobiliaria/agency latency (only the agency-route
+            // gate waits, on agencyMembershipChecked). Matches SIGNED_IN's
+            // ordering.
             if (userData) {
-              void probeAgencyMembership(session.access_token)
+              if (agencyResult) {
+                applyAgencyFetchResult(agencyResult)
+                setAgencyMembershipChecked(true)
+              } else {
+                void probeAgencyMembership(session.access_token)
+              }
             }
             // El loader se suelta recién con el MFA resuelto (como siempre se
             // quiso), pero fuera del callback — ver `alSoltarElLock`.
             const yaHizoOnboarding = userData?.onboardingCompleted === true
             alSoltarElLock(async () => {
-              await checkMfaLevel()
+              await checkMfaLevel(miGeneracion)
+              if (sessionGenerationRef.current !== miGeneracion) return
               setIsLoading(false)
               if (yaHizoOnboarding) {
                 requestNotificationPermission().catch(() => {})
@@ -752,31 +992,65 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
           setIsLoading(false)
         } else if (event === 'SIGNED_IN' && session) {
+          // Same reasoning as INITIAL_SESSION above: a NEW bootstrap, a new
+          // generation. See `sessionGenerationRef`'s doc comment.
+          sessionGenerationRef.current += 1
+          const miGeneracion = sessionGenerationRef.current
           huboSesionRef.current = true
           setAccessToken(session.access_token)
           // Claim the active session BEFORE any other authenticated request.
-          await claimActiveSession(session.access_token)
-          const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
+          await claimActiveSession(session.access_token, miGeneracion)
+          if (sessionGenerationRef.current !== miGeneracion) return
+          // T-0082 WU-2b: ONE call (GET /users/me/bootstrap) replaces
+          // fetchUser + the separate agency probe below.
+          const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap(session, miGeneracion)
+          if (sessionGenerationRef.current !== miGeneracion) return
           if (userData) userData.hasPassword = getHasPassword(session)
           setUser(userData)
           setNeedsOnboarding(needsOnb)
           setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
           setIsLoading(false)
-          // Probe agency membership for every authenticated user (coexistence).
-          // Fire-and-forget (isLoading already released above).
+          // Apply the bootstrap's own membership verdict — no second request.
+          // Fire-and-forget ONLY as a fallback when the bootstrap failed
+          // wholesale (agencyResult null); isLoading already released above.
           if (userData) {
-            void probeAgencyMembership(session.access_token)
+            if (agencyResult) {
+              applyAgencyFetchResult(agencyResult)
+              setAgencyMembershipChecked(true)
+            } else {
+              void probeAgencyMembership(session.access_token)
+            }
           }
           // SIGNED_IN también puede venir de adentro del lock (`setSession` en
           // /auth/enlace, el canje del código): el MFA se chequea al soltarlo.
           const yaHizoOnboarding = userData?.onboardingCompleted === true
           alSoltarElLock(async () => {
-            await checkMfaLevel()
+            await checkMfaLevel(miGeneracion)
+            // NOTE: the waiter handoff to `signInWithEmail` below is
+            // intentionally NOT gated on the generation — it resolves a
+            // promise local to the specific sign-in call that armed it (not
+            // shared `AuthProvider` state), so a caller still awaiting it
+            // must not be left hanging forever. `checkMfaLevel` itself
+            // already dropped its own stale write above.
             if (yaHizoOnboarding) {
               requestNotificationPermission().catch(() => {})
             }
+            // Hand the bootstrap result back to `signInWithEmail`, if it's the
+            // one waiting on it (see the ref's doc comment above) — this is
+            // the same point at which `signInWithEmail` used to return,
+            // directly, before this became the bootstrap's single owner.
+            signInBootstrapWaiterRef.current?.(userData)
+            signInBootstrapWaiterRef.current = null
           })
         } else if (event === 'SIGNED_OUT') {
+          // Bump FIRST, before anything else in this branch: every in-flight
+          // coroutine for the session that just ended (an un-awaited
+          // `fetchUser`/`probeAgencyMembership`, a deferred `checkMfaLevel`
+          // via `alSoltarElLock`, a pending `claimActiveSession`) captured the
+          // OLD generation and will find a mismatch — and drop its write
+          // silently — whenever it eventually settles. See
+          // `sessionGenerationRef`'s doc comment.
+          sessionGenerationRef.current += 1
           // auth-js emite SIGNED_OUT cuando descarta una sesión que no pudo
           // renovar (`_removeSession`). Si NO fue el usuario el que se fue y
           // había alguien adentro, esto es la muerte del refresh token: hay que
@@ -786,6 +1060,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (!cierreVoluntarioRef.current && huboSesionRef.current) {
             terminarSesion('expirada')
           }
+          // Mixing two identities in one response is the worst possible error
+          // here (T-0082 WU-1 remediation, verify-1.md §2): `agencyProbeInFlightRef`
+          // shares ONE in-flight `/inmobiliaria/agency` promise across every
+          // caller with no token/identity check at all, so a probe still
+          // pending for the session that just ended could resolve straight
+          // into the NEXT session's own probe if left set. Clearing both refs
+          // here — before the next SIGNED_IN can ever run — closes that gap
+          // for the ref-level dedup and for `apiClient.get`'s implicit
+          // (no-token) GETs (`clearInFlightGets`, see `client.ts`). Same
+          // reasoning extends to the bootstrap seed (T-0082 WU-2b): a seed
+          // set for the session that just ended must never be handed to the
+          // next sign-in's first mount of PermissionsContext/
+          // useAgencySubscription/useMySubscription in the same tab.
+          agencyProbeInFlightRef.current = null
+          clearInFlightGets()
+          clearBootstrapSeed()
           setAccessToken(null)
           setUser(null)
           setAgencyState(null)
@@ -804,15 +1094,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // usuario nuevo en la misma sesión: releer los metadatos acá.
           setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
         } else if (event === 'TOKEN_REFRESHED' && session) {
+          // A refresh is NOT a new session — do NOT bump the generation here.
+          // Just capture the CURRENT one: if a sign-out/sign-in genuinely
+          // races this refresh's `fetchUser` call, that other event bumps the
+          // generation itself and this stale write is dropped below same as
+          // any other path; if nothing races it (the common case), the
+          // generation is unchanged and this legitimate in-flight result is
+          // still applied. See `sessionGenerationRef`'s doc comment.
+          const miGeneracion = sessionGenerationRef.current
           huboSesionRef.current = true
           setAccessToken(session.access_token)
           const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
+          if (sessionGenerationRef.current !== miGeneracion) return
           if (userData) userData.hasPassword = getHasPassword(session)
           setUser(userData)
           setNeedsOnboarding(needsOnb)
           setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
           // El refresco corre adentro del lock de auth-js: el MFA se chequea al soltarlo.
-          alSoltarElLock(checkMfaLevel)
+          alSoltarElLock(() => checkMfaLevel(miGeneracion))
           // Probe agency membership for every authenticated user (coexistence).
           // Fire-and-forget so the global loader isn't blocked by agency latency
           // (the agency-route gate still waits on agencyMembershipChecked).
@@ -831,7 +1130,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       clearTimeout(safetyTimeout)
       subscription.unsubscribe()
     }
-  }, [fetchUser, checkMfaLevel, probeAgencyMembership, claimActiveSession])
+  }, [fetchUser, fetchBootstrap, checkMfaLevel, probeAgencyMembership, applyAgencyFetchResult, claimActiveSession])
 
   /** Sign in with Google OAuth via Supabase */
   const signInWithGoogle = useCallback(async () => {
@@ -848,26 +1147,46 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
-  /** Sign in with email and password. Returns the loaded user so callers can redirect based on role. */
+  /**
+   * Sign in with email and password. Returns the loaded user so callers can
+   * redirect based on role (and so `AuthForm` can detect a bootstrap failure
+   * that resolves to `null` without throwing — e.g. the 409 duplicate-identity
+   * case in `fetchUser`).
+   *
+   * T-0082 WU-1 (F1): this used to call `fetchUser` + `checkMfaLevel` itself,
+   * IN ADDITION to the `onAuthStateChange` listener's SIGNED_IN handler doing
+   * the exact same thing for the exact same sign-in — `/users/me` fired
+   * twice on every login. The listener is now the bootstrap's single owner;
+   * this function only authenticates against Supabase and then waits for the
+   * listener's own run to settle.
+   */
   const signInWithEmail = useCallback(async (email: string, password: string) => {
     const supabase = getSupabase()
     if (!supabase) throw new Error('Supabase not initialized')
+
+    // Armed BEFORE calling signInWithPassword: supabase-js notifies
+    // onAuthStateChange (SIGNED_IN) as part of establishing the session,
+    // which can happen before signInWithPassword's own promise settles —
+    // arming the waiter afterward would risk missing that notification.
+    let resolveBootstrap!: (user: User | null) => void
+    const bootstrapPromise = new Promise<User | null>((resolve) => {
+      resolveBootstrap = resolve
+    })
+    signInBootstrapWaiterRef.current = resolveBootstrap
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
-    // Immediately set token and fetch user so the caller can use role info for redirect
-    if (data.session) {
-      setAccessToken(data.session.access_token)
-      const { user: userData, needsOnboarding: needsOnb } = await fetchUser(data.session)
-      setUser(userData)
-      setNeedsOnboarding(needsOnb)
-      setPerfilElegido(leerPerfilElegido(data.session.user?.user_metadata))
-      // Resolve the MFA gate before returning so callers (AuthForm) can short-circuit
-      // the panel redirect to /auth/mfa-verify when a second factor is required.
-      await checkMfaLevel()
-      return userData
+    if (error) {
+      signInBootstrapWaiterRef.current = null
+      throw error
     }
-    return null
-  }, [fetchUser, checkMfaLevel])
+    if (!data.session) {
+      // No session to bootstrap from — no SIGNED_IN event will fire for this
+      // attempt, so nothing will ever resolve the waiter above.
+      signInBootstrapWaiterRef.current = null
+      return null
+    }
+    return bootstrapPromise
+  }, [])
 
   /**
    * Sign up with email and password. Returns whether email confirmation is required.
@@ -964,6 +1283,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // llamada, no de un token muerto: marcarlo evita el cartel "tu sesión
     // expiró" sobre una salida que el usuario pidió.
     cierreVoluntarioRef.current = true
+    // Bump the session generation NOW, synchronously, before any of the
+    // async work below — this invalidates every in-flight bootstrap/probe/
+    // refresh for the session that's ending, so an uncancellable coroutine
+    // that outlives it drops its write instead of applying it to whatever
+    // session starts next in this tab. See `sessionGenerationRef`'s doc
+    // comment. (The `SIGNED_OUT` event this triggers bumps it again — that's
+    // fine, we only ever compare for equality, never for a specific delta.)
+    sessionGenerationRef.current += 1
     // Best-effort FCM cleanup with the token still in memory.
     // Awaited but with a hard timeout so a slow backend can't stall logout.
     //
@@ -996,6 +1323,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Vive en session-terminal.ts porque el cierre por sesión vencida necesita
     // exactamente lo mismo: una sola definición de "qué es limpiar la sesión".
     purgarSesionLocal()
+
+    // Same reason as the `SIGNED_OUT` branch above in the auth-event listener
+    // (T-0082 WU-1 remediation, verify-1.md §2): mixing two identities in one
+    // response is the worst possible error here. This user-initiated path is
+    // the one `AuthForm.tsx`'s "cambiar de cuenta" actually exercises before
+    // the next sign-in can start, and it must not wait on the fire-and-forget
+    // `supabase.auth.signOut()` below (or its own async SIGNED_OUT event) to
+    // clear these — that could still lose the race against an immediate
+    // sign-in in the same tab.
+    agencyProbeInFlightRef.current = null
+    clearInFlightGets()
+    clearBootstrapSeed()
 
     setAccessToken(null)
     setUser(null)

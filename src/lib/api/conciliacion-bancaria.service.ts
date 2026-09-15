@@ -10,6 +10,7 @@
 import { apiClient } from '@/lib/api/client';
 import { invalidar } from './refresco-de-datos';
 import type {
+  DestinoDeConciliacion,
   FilaDeExtracto,
   FiltrosDeMovimientos,
   MovimientoBancario,
@@ -68,10 +69,24 @@ export const conciliacionBancariaApi = {
     return apiClient.get<ResumenDeConciliacion>(`${BASE}/resumen`);
   },
 
-  async conciliar(movimientoId: string, cobroId: string): Promise<ResultadoDeConciliar> {
+  /**
+   * Concilia una línea del banco contra un cobro (el atajo) o contra un CLIENTE
+   * (el camino completo: deuda más vieja primero, mes en curso al vuelo y
+   * sobrante a favor).
+   *
+   * 🔴 El cuerpo lleva EXACTAMENTE una de las dos claves: el back valida con
+   * `forbidNonWhitelisted` y mandar las dos es un 400 con la petición entera
+   * rechazada. Por eso se arma desde el destino y no con un spread.
+   */
+  async conciliar(
+    movimientoId: string,
+    destino: DestinoDeConciliacion,
+  ): Promise<ResultadoDeConciliar> {
+    const cuerpo =
+      'cobroId' in destino ? { cobroId: destino.cobroId } : { tenantId: destino.tenantId };
     const res = await apiClient.post<ResultadoDeConciliar>(
       `${BASE}/movimientos/${movimientoId}/conciliar`,
-      { cobroId },
+      cuerpo,
     );
     invalidar('cobros');
     return res;

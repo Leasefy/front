@@ -247,7 +247,18 @@ export function RegistrarPagoModal({
 
   const maximo = cartera?.total ?? 0;
   const montoValido = Number.isFinite(monto) && monto > 0;
-  const seExcede = montoValido && monto > maximo;
+  /*
+   * 🔴 Pagar de MÁS dejó de ser un error (CEO, 2026-09-15): «yo le pude haber
+   * hecho un recibo de caja de 15 millones y los 15 los concilio con los
+   * meses». Lo que sobra queda a favor del cliente y se consume solo.
+   *
+   * Sigue siendo un error cuando la base no tiene la migración del anticipo
+   * (`anticipoDisponible: false`): ahí el back responde 400 y topar el monto
+   * acá es decírselo antes de que pierda el formulario lleno.
+   */
+  const puedeGuardarAFavor = cartera?.anticipoDisponible === true;
+  const excedente = montoValido ? Math.max(0, monto - maximo) : 0;
+  const seExcede = excedente > 0 && !puedeGuardarAFavor;
 
   const errorDeMonto = !tocado
     ? null
@@ -260,7 +271,13 @@ export function RegistrarPagoModal({
           : null;
 
   const puedeEnviar =
-    cartera !== null && cartera.total > 0 && montoValido && !seExcede && medio !== '' && fecha !== '';
+    cartera !== null &&
+    // Sin deuda se puede recibir plata SÓLO si hay dónde guardarla a favor.
+    (cartera.total > 0 || puedeGuardarAFavor) &&
+    montoValido &&
+    !seExcede &&
+    medio !== '' &&
+    fecha !== '';
 
   /**
    * Al cambiar de cliente, el formulario arranca de cero con su deuda entera.
@@ -400,7 +417,13 @@ export function RegistrarPagoModal({
     }
   }, [conciliando, onConciliar, origen, recargar, t]);
 
-  const hayCartera = cartera !== null && cartera.total > 0;
+  /*
+   * Con qué se dibuja el formulario. Antes era «tiene deuda»; ahora también
+   * cuando NO debe nada pero la inmobiliaria puede guardarle saldo a favor,
+   * que es el pago por adelantado que pidió el CEO.
+   */
+  const hayCartera =
+    cartera !== null && (cartera.total > 0 || cartera.anticipoDisponible === true);
 
   return (
     <Dialog open={isOpen} onOpenChange={(abierto) => !abierto && cerrar()}>
@@ -450,7 +473,7 @@ export function RegistrarPagoModal({
                 queSon="cuotas pendientes"
                 icono={Receipt}
                 titulo={t('recibos.form.cartera.sinDeuda', { nombre: cartera.nombre })}
-                descripcion="Cuando tenga una cuota por cobrar vas a poder hacerle el recibo. Todavía no se puede recibir plata por adelantado."
+                descripcion="Cuando tenga una cuota por cobrar vas a poder hacerle el recibo. Recibir plata por adelantado necesita la migración del saldo a favor, que todavía no está aplicada en esta base."
               />
             </div>
           )}
@@ -529,6 +552,14 @@ export function RegistrarPagoModal({
                 <p className="text-xs text-fg-muted">
                   {t('recibos.form.maximo', { monto: formatCurrency(maximo) })}
                 </p>
+                {/* Decir a dónde va el excedente ANTES de emitir: si no, la
+                    plata «desaparece» de la cartera y nadie sabe dónde quedó. */}
+                {excedente > 0 && puedeGuardarAFavor && (
+                  <p className="text-xs text-fg-muted" data-testid="aviso-a-favor">
+                    {formatCurrency(excedente)} quedan a favor de {cartera?.nombre ?? 'el cliente'}:
+                    se aplican solos a los cobros que vayan apareciendo, del más viejo al más nuevo.
+                  </p>
+                )}
                 {errorDeMonto && <p className="text-xs text-destructive">{errorDeMonto}</p>}
               </div>
 

@@ -31,6 +31,8 @@ import type {
   ReciboDeCaja,
   RespuestaDeRecibo,
   RespuestaDeReciboPorCliente,
+  ResultadoDeAplicarAnticipos,
+  SaldoAFavorDelCliente,
 } from './recibos-de-caja.types';
 
 const BASE = '/inmobiliaria/recibos-de-caja';
@@ -120,6 +122,31 @@ export const recibosDeCajaApi = {
     return apiClient.get<CarteraDelCliente>(
       `${BASE}/cartera/${encodeURIComponent(tenantId)}`,
     );
+  },
+
+  /**
+   * El saldo a favor de un cliente y de dónde salió.
+   *
+   * `disponible: false` quiere decir que esta base todavía no tiene la
+   * migración del anticipo: la pantalla no debe ofrecer aplicarlo.
+   */
+  async anticipos(tenantId: string): Promise<SaldoAFavorDelCliente> {
+    return apiClient.get<SaldoAFavorDelCliente>(
+      `${BASE}/anticipos/${encodeURIComponent(tenantId)}`,
+    );
+  },
+
+  /**
+   * Gasta el saldo a favor contra la cartera de hoy, de la deuda más vieja a
+   * la más nueva. Nadie elige el mes: lo decide la imputación del back.
+   */
+  async aplicarAnticipos(tenantId: string): Promise<ResultadoDeAplicarAnticipos> {
+    const res = await apiClient.post<ResultadoDeAplicarAnticipos>(
+      `${BASE}/anticipos/${encodeURIComponent(tenantId)}/aplicar`,
+      {},
+    );
+    invalidar('cobros');
+    return res;
   },
 
   /**

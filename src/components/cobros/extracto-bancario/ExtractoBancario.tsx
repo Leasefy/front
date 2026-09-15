@@ -57,6 +57,7 @@ import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { ElegirCliente } from '@/components/inmobiliaria/ReciboPorCliente';
 import { toast } from '@/components/ui/toast';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
@@ -70,7 +71,7 @@ import type {
 } from '@/lib/api/conciliacion-bancaria.types';
 import { CargarExtracto } from './CargarExtracto';
 import { MovimientoFila } from './MovimientoFila';
-import { diaLegible, mensajeDe } from './formato';
+import { diaLegible, mensajeDe, plata } from './formato';
 
 /**
  * Cuántas líneas se traen por página.
@@ -136,6 +137,14 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
   const [errorDeCarga, setErrorDeCarga] = useState<unknown>(null);
   const [ocupados, setOcupados] = useState<ReadonlySet<string>>(new Set());
   const [ignorando, setIgnorando] = useState<MovimientoBancario | null>(null);
+  /*
+   * Conciliar contra un CLIENTE: la salida para la línea que no se parece a
+   * ningún cobro. Medido en dev el 15-09, los cobros con saldo eran todos de
+   * octubre y el extracto era de septiembre — el mes que la persona pagó
+   * sencillamente no existía como cobro, así que no había nada que elegir.
+   */
+  const [conCliente, setConCliente] = useState<MovimientoBancario | null>(null);
+  const [clienteElegido, setClienteElegido] = useState<string | null>(null);
   const [motivo, setMotivo] = useState('');
   const [confirmandoSeguros, setConfirmandoSeguros] = useState(false);
   const [corriendoSeguros, setCorriendoSeguros] = useState(false);
@@ -177,11 +186,46 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
   const conciliar = async (m: MovimientoBancario, c: CandidatoDeConciliacion) => {
     marcar(m.id, true);
     try {
-      const r = await conciliacionBancariaApi.conciliar(m.id, c.cobroId);
-      toast.success(`Recibo N.º ${r.recibo.numero} emitido a ${c.tenantName ?? c.propertyTitle}.`);
+      const r = await conciliacionBancariaApi.conciliar(m.id, { cobroId: c.cobroId });
+      const quien = c.tenantName ?? c.propertyTitle;
+      toast.success(
+        r.recibo ? `Recibo N.º ${r.recibo.numero} emitido a ${quien}.` : `Movimiento conciliado con ${quien}.`,
+      );
       await cargar();
     } catch (error) {
       toast.error(mensajeDe(error, 'No se pudo conciliar el movimiento.'));
+    } finally {
+      marcar(m.id, false);
+    }
+  };
+
+  /**
+   * La plata va contra la CARTERA del cliente, no contra un cobro elegido: el
+   * back la reparte del período más viejo al más nuevo, crea el cobro del mes
+   * en curso si falta y deja lo que sobre a favor de la persona. Nadie elige el
+   * mes — ésa fue una regla explícita de Nico.
+   */
+  const conciliarConCliente = async () => {
+    const m = conCliente;
+    if (!m || !clienteElegido) return;
+    marcar(m.id, true);
+    try {
+      const r = await conciliacionBancariaApi.conciliar(m.id, { tenantId: clienteElegido });
+      const cuantos = r.pago?.recibos.length ?? 0;
+      const aFavor = r.pago?.anticipoCop ?? 0;
+      // Se dice lo que PASÓ, no «listo»: cuántos meses se pagaron y cuánta
+      // plata quedó a favor. Sin eso nadie entiende a dónde fue el dinero.
+      toast.success(
+        cuantos === 0
+          ? `Quedaron ${plata(aFavor)} a favor del cliente: no debía nada.`
+          : `${cuantos} ${cuantos === 1 ? 'recibo emitido' : 'recibos emitidos'}` +
+              (aFavor > 0 ? ` y ${plata(aFavor)} a favor del cliente.` : '.'),
+      );
+      setConCliente(null);
+      setClienteElegido(null);
+      await cargar();
+    } catch (error) {
+      toast.error(mensajeDe(error, 'No se pudo conciliar contra el cliente.'));
     } finally {
       marcar(m.id, false);
     }
@@ -343,6 +387,10 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
                     puedeConciliar={puedeConciliar}
                     puedeEditar={puedeEditar}
                     onConciliar={(mov, c) => void conciliar(mov, c)}
+                    onConciliarConCliente={(mov) => {
+                      setConCliente(mov);
+                      setClienteElegido(null);
+                    }}
                     onIgnorar={(mov) => {
                       setIgnorando(mov);
                       setMotivo('');
@@ -371,6 +419,53 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
           )}
         </EstadoDeDatos>
       </section>
+
+      <Dialog
+        open={conCliente !== null}
+        onOpenChange={(abierto) => {
+          if (!abierto) {
+            setConCliente(null);
+            setClienteElegido(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Conciliar con un cliente</DialogTitle>
+            <DialogDescription>
+              {conCliente
+                ? `${plata(conCliente.valorCop)} del ${diaLegible(conCliente.fecha)} — «${conCliente.descripcion}».`
+                : ''}{' '}
+              La plata va a su deuda más vieja primero. Si el mes en curso todavía no está cobrado,
+              se genera con el canon de su contrato; lo que sobre queda a su favor para los meses
+              que vengan.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-6 py-4" data-testid="conciliar-con-cliente">
+            <ElegirCliente value={clienteElegido} onChange={setClienteElegido} />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              hideArrow
+              onClick={() => {
+                setConCliente(null);
+                setClienteElegido(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              hideArrow
+              disabled={!clienteElegido || (conCliente ? ocupados.has(conCliente.id) : true)}
+              onClick={() => void conciliarConCliente()}
+              data-testid="confirmar-conciliar-cliente"
+            >
+              Conciliar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={ignorando !== null} onOpenChange={(abierto) => !abierto && setIgnorando(null)}>
         <DialogContent>

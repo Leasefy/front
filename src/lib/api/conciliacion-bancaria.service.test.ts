@@ -58,9 +58,19 @@ describe('conciliacionBancariaApi — el contrato con el back', () => {
     await conciliacionBancariaApi.resumen();
     expect(getMock).toHaveBeenCalledWith(`${BASE}/resumen`);
 
-    await conciliacionBancariaApi.conciliar('m-1', 'c-1');
+    await conciliacionBancariaApi.conciliar('m-1', { cobroId: 'c-1' });
     expect(postMock).toHaveBeenCalledWith(`${BASE}/movimientos/m-1/conciliar`, { cobroId: 'c-1' });
     expect(invalidarMock).toHaveBeenCalledWith('cobros');
+
+    /*
+     * 🔴 Va UNA sola clave. El back valida con `forbidNonWhitelisted`: mandar
+     * `cobroId: undefined` junto a `tenantId` es un 400 de la petición entera,
+     * y es exactamente lo que produciría un spread del destino.
+     */
+    await conciliacionBancariaApi.conciliar('m-2', { tenantId: 'u-9' });
+    expect(postMock).toHaveBeenLastCalledWith(`${BASE}/movimientos/m-2/conciliar`, {
+      tenantId: 'u-9',
+    });
 
     await conciliacionBancariaApi.ignorar('m-1', 'Nómina');
     expect(postMock).toHaveBeenCalledWith(`${BASE}/movimientos/m-1/ignorar`, { motivo: 'Nómina' });

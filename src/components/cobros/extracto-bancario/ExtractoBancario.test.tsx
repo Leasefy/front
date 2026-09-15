@@ -34,6 +34,19 @@ vi.mock('@/components/estado/FalloDeCarga', () => ({
   ),
 }));
 vi.mock('@/components/inmobiliaria/import/lib/parseFile', () => ({ parseSpreadsheetFile: vi.fn() }));
+/*
+ * El combobox de clientes es del design system (Radix) y elegir dentro de él
+ * desde este DOM de prueba mide a Radix, no a esta pantalla. Lo que acá importa
+ * es el CABLEADO: que al elegir a alguien se mande `tenantId` y que el aviso
+ * diga a dónde fue la plata. `ElegirCliente` tiene sus propias pruebas.
+ */
+vi.mock('@/components/inmobiliaria/ReciboPorCliente', () => ({
+  ElegirCliente: ({ onChange }: { onChange: (id: string | null) => void }) => (
+    <button data-testid="elegir-cliente" onClick={() => onChange('u-9')}>
+      Elegir a Laura
+    </button>
+  ),
+}));
 
 import { ExtractoBancario } from './ExtractoBancario';
 
@@ -187,9 +200,81 @@ describe('ExtractoBancario — pendientes', () => {
     api.conciliar.mockResolvedValue({ recibo: { id: 'r-1', numero: 41 }, movimiento: {}, cobro: {} });
     await montar();
     await clic(botonConTexto('Conciliar', $('[data-testid="candidato-m-1-c-1"]')));
-    expect(api.conciliar).toHaveBeenCalledWith('m-1', 'c-1');
+    expect(api.conciliar).toHaveBeenCalledWith('m-1', { cobroId: 'c-1' });
     expect(toastMock.success).toHaveBeenCalledWith('Recibo N.º 41 emitido a Laura Pérez Gómez.');
     expect(api.listar).toHaveBeenCalledTimes(2);
+  });
+
+  /*
+   * 🔴 El caso que destrabó el extracto (15-09): los cobros con saldo eran
+   * todos de octubre y el extracto era de septiembre, así que NINGÚN cobro se
+   * parecía. Antes esto era un callejón sin salida.
+   */
+  it('sin candidatos ofrece conciliar contra un cliente, y manda tenantId', async () => {
+    api.listar.mockResolvedValue({
+      data: [movimiento({ candidatos: [] })],
+      total: 1,
+      limite: 50,
+      desplazamiento: 0,
+    });
+    api.conciliar.mockResolvedValue({
+      movimiento: {},
+      recibo: { id: 'r-9', numero: 77 },
+      cobro: { id: 'c-9' },
+      pago: {
+        recibos: [{ id: 'r-9', numero: 77, valorCop: 1000000 }],
+        imputacion: [],
+        totalCop: 1800000,
+        deudaRestante: 0,
+        anticipoCop: 800000,
+      },
+    });
+    await montar();
+
+    await clic($('[data-testid="conciliar-cliente-m-1"]'));
+    await clic($('[data-testid="elegir-cliente"]'));
+    await clic($('[data-testid="confirmar-conciliar-cliente"]'));
+
+    expect(api.conciliar).toHaveBeenCalledWith('m-1', { tenantId: 'u-9' });
+    // El aviso dice QUÉ pasó con la plata, no «listo».
+    expect(toastMock.success).toHaveBeenCalledWith(
+      '1 recibo emitido y $ 800.000 a favor del cliente.',
+    );
+    expect(api.listar).toHaveBeenCalledTimes(2);
+  });
+
+  /*
+   * El cliente no debía nada: el pago entero quedó a su favor y NO hay recibo.
+   * Pintar `recibo.numero` sin guardia reventaría justo acá.
+   */
+  it('un pago que queda entero a favor no rompe la pantalla y lo dice', async () => {
+    api.listar.mockResolvedValue({
+      data: [movimiento({ candidatos: [] })],
+      total: 1,
+      limite: 50,
+      desplazamiento: 0,
+    });
+    api.conciliar.mockResolvedValue({
+      movimiento: {},
+      recibo: null,
+      cobro: null,
+      pago: {
+        recibos: [],
+        imputacion: [],
+        totalCop: 1800000,
+        deudaRestante: 0,
+        anticipoCop: 1800000,
+      },
+    });
+    await montar();
+
+    await clic($('[data-testid="conciliar-cliente-m-1"]'));
+    await clic($('[data-testid="elegir-cliente"]'));
+    await clic($('[data-testid="confirmar-conciliar-cliente"]'));
+
+    expect(toastMock.success).toHaveBeenCalledWith(
+      'Quedaron $ 1.800.000 a favor del cliente: no debía nada.',
+    );
   });
 
   it('el error del back sale en palabras por toast y la fila sigue', async () => {

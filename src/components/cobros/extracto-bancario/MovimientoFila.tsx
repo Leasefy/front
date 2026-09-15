@@ -13,7 +13,7 @@
  * la decisión de la fila: cuál de los cobros con saldo es este movimiento.
  */
 
-import { ArrowCounterClockwise, CheckCircle, Prohibit, ShieldCheck } from '@phosphor-icons/react';
+import { ArrowCounterClockwise, CheckCircle, Prohibit, ShieldCheck, User } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
@@ -27,6 +27,8 @@ interface Props {
   puedeConciliar: boolean;
   puedeEditar: boolean;
   onConciliar: (movimiento: MovimientoBancario, candidato: CandidatoDeConciliacion) => void;
+  /** Conciliar contra la cartera ENTERA de un cliente, sin elegir cobro. */
+  onConciliarConCliente: (movimiento: MovimientoBancario) => void;
   onIgnorar: (movimiento: MovimientoBancario) => void;
   onReabrir: (movimiento: MovimientoBancario) => void;
 }
@@ -37,6 +39,7 @@ export function MovimientoFila({
   puedeConciliar,
   puedeEditar,
   onConciliar,
+  onConciliarConCliente,
   onIgnorar,
   onReabrir,
 }: Props) {
@@ -85,10 +88,30 @@ export function MovimientoFila({
       <TableCell className="max-w-[460px]">
         {esPendiente && !esSalida ? (
           m.candidatos.length === 0 ? (
-            <p className="text-caption text-fg-muted">
-              Ningún cobro con saldo se parece a este movimiento. Si es un pago, registralo a mano
-              desde el cobro; si no lo es, ignoralo.
-            </p>
+            /*
+             * 🔴 Antes acá sólo decía «registralo a mano desde el cobro», y eso
+             * era un callejón sin salida: si el mes que la persona pagó no está
+             * cobrado, no hay cobro al cual ir. Ahora la salida es el cliente —
+             * el back reparte la plata a su deuda más vieja, cobra el mes en
+             * curso si falta y deja el sobrante a su favor.
+             */
+            <div className="space-y-1.5">
+              <p className="text-caption text-fg-muted">
+                Ningún cobro con saldo se parece a este movimiento. Puede ser un mes que todavía no
+                está cobrado: conciliá contra el cliente y la plata se reparte sola.
+              </p>
+              <Button
+                size="sm"
+                variant="secondary"
+                hideArrow
+                disabled={!puedeConciliar || ocupado}
+                onClick={() => onConciliarConCliente(m)}
+                data-testid={`conciliar-cliente-${m.id}`}
+              >
+                <User className="h-4 w-4" aria-hidden="true" />
+                Conciliar con un cliente
+              </Button>
+            </div>
           ) : (
             <ul className="flex flex-col gap-1.5" aria-label="Cobros que se parecen">
               {m.candidatos.map((c) => (
@@ -129,6 +152,21 @@ export function MovimientoFila({
                   </Button>
                 </li>
               ))}
+              {/* Ninguno de los candidatos es: la plata igual puede ir contra
+                  la cartera del cliente, que es el camino completo. */}
+              <li>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  hideArrow
+                  disabled={!puedeConciliar || ocupado}
+                  onClick={() => onConciliarConCliente(m)}
+                  data-testid={`conciliar-cliente-${m.id}`}
+                >
+                  <User className="h-4 w-4" aria-hidden="true" />
+                  Ninguno: conciliar con un cliente
+                </Button>
+              </li>
             </ul>
           )
         ) : esPendiente && esSalida ? (

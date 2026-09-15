@@ -155,6 +155,23 @@ export interface CarteraDelCliente {
   inmuebles: number;
   total: number;
   cobros: CobroEnCartera[];
+  /**
+   * Plata que este cliente ya pagó de más y todavía no tiene contra qué ir.
+   * Cero cuando no tiene, y también cuando la base no tiene la migración del
+   * anticipo: el back informa cero antes que romper la cartera entera.
+   *
+   * Opcional porque un back sin este cambio no lo manda; se lee con `?? 0`.
+   */
+  saldoAFavor?: number;
+  /**
+   * 🔴 ¿Esta inmobiliaria puede guardar saldo a favor de esta persona?
+   *
+   * Cero saldo y «no se puede guardar saldo» son cosas distintas: con `false`
+   * (la base todavía no tiene la migración del anticipo) un pago mayor que la
+   * deuda va a dar 400, así que el formulario tiene que seguir topando el
+   * monto. Ausente se lee como `false`: un back viejo no promete nada.
+   */
+  anticipoDisponible?: boolean;
 }
 
 /**
@@ -206,6 +223,45 @@ export interface RespuestaDeReciboPorCliente {
   totalCop: number;
   /** Lo que la persona sigue debiendo después de este pago. */
   deudaRestante: number;
+  /**
+   * Lo que de este pago quedó A FAVOR del cliente: entró más plata que deuda.
+   * Se consume solo contra los cobros que vayan apareciendo, del más viejo al
+   * más nuevo. Cero cuando el pago alcanzó justo o faltó.
+   *
+   * Opcional por la misma razón que `saldoAFavor`.
+   */
+  anticipoCop?: number;
+}
+
+/** Un movimiento del libro de saldo a favor: positivo entra, negativo se gasta. */
+export interface MovimientoDeAnticipo {
+  id: string;
+  nombre: string;
+  valorCop: number;
+  fecha: string;
+  medio: string;
+  referencia: string | null;
+  notas: string | null;
+  reciboDeCajaId: string | null;
+  createdAt: string;
+}
+
+/** Lo que devuelve `GET /inmobiliaria/recibos-de-caja/anticipos/:tenantId`. */
+export interface SaldoAFavorDelCliente {
+  tenantId: string | null;
+  nombre: string;
+  saldoCop: number;
+  /** `false` = esta base todavía no tiene la migración: no ofrecer nada que dependa del anticipo. */
+  disponible: boolean;
+  movimientos: MovimientoDeAnticipo[];
+}
+
+/** Lo que devuelve aplicar el saldo a favor a la cartera de hoy. */
+export interface ResultadoDeAplicarAnticipos {
+  aplicadoCop: number;
+  saldoAFavor: number;
+  deudaRestante: number;
+  recibos: ReciboDeCaja[];
 }
 
 /** Filtros de `GET /inmobiliaria/recibos-de-caja`. */

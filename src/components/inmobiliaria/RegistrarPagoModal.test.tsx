@@ -646,20 +646,70 @@ describe('<RegistrarPagoModal> la llave del recibo (R1)', () => {
 });
 
 describe('<RegistrarPagoModal> un cliente sin cuotas pendientes (R2)', () => {
-  it('lo dice con las palabras del servidor, no promete un anticipo y deja salir con «Cerrar»', async () => {
-    carteraPorCobro.mockResolvedValue(debeTresMeses({ total: 0, cobros: [] }));
+  /*
+   * 🔴 Sin la migración del saldo a favor (`anticipoDisponible: false`) esto
+   * sigue siendo un callejón: el back responde 400 a cualquier plata que no
+   * tenga contra qué ir, así que el formulario no se dibuja y el vacío explica
+   * POR QUÉ. La regla vieja era «no prometas un anticipo»; la de hoy es «no
+   * prometas uno que esta base no puede guardar».
+   */
+  it('sin saldo a favor disponible lo dice, no dibuja el formulario y deja salir con «Cerrar»', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({ total: 0, cobros: [], anticipoDisponible: false }),
+    );
     const onClose = vi.fn();
     await abrir({ onClose });
 
     const vacio = document.body.querySelector('[data-testid="cliente-sin-deuda"] [data-testid="sin-datos"]');
     expect(vacio).toBeTruthy();
     expect(vacio!.textContent).toContain('recibos.form.cartera.sinDeuda');
-    expect(vacio!.textContent).not.toMatch(/saldo a favor|anticipo/i);
     expect(document.body.querySelector('#form-recibo-de-caja')).toBeNull();
 
     const cerrar = document.body.querySelector<HTMLButtonElement>('[data-testid="cerrar-sin-deuda"]');
     expect(cerrar?.textContent).toBe('Cerrar');
     act(() => cerrar!.click());
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+   * Con la migración aplicada, el mismo cliente SÍ puede pagar por adelantado:
+   * es el pedido del CEO («no tengo que esperar que se cumpla la fecha»).
+   */
+  it('con saldo a favor disponible sí se le puede recibir plata por adelantado', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({ total: 0, cobros: [], anticipoDisponible: true }),
+    );
+    await abrir({});
+
+    expect(document.body.querySelector('[data-testid="cliente-sin-deuda"]')).toBeNull();
+    expect(document.body.querySelector('#form-recibo-de-caja')).toBeTruthy();
+  });
+});
+
+describe('<RegistrarPagoModal> pagar de más', () => {
+  /*
+   * 🔴 Pagar de más dejó de ser un error (CEO, 2026-09-15). Lo que NO puede
+   * pasar es que la plata desaparezca de la pantalla sin explicación: el
+   * excedente se nombra antes de emitir.
+   */
+  it('con saldo a favor disponible acepta más que la deuda y dice cuánto queda a favor', async () => {
+    carteraPorCobro.mockResolvedValue(debeTresMeses({ anticipoDisponible: true }));
+    await abrir({});
+    escribir('#monto-recibo', '$ 5.000.000');
+
+    // 5.000.000 pagados − 3.000.000 de deuda. El `formatCurrency` de este
+    // archivo no pone separadores: se afirma sobre la cifra, no sobre el
+    // formato, que es del design system y no de esta pantalla.
+    const aviso = document.body.querySelector('[data-testid="aviso-a-favor"]');
+    expect(aviso?.textContent).toContain('2000000');
+    expect(document.body.querySelector('#form-recibo-de-caja')).toBeTruthy();
+  });
+
+  it('sin saldo a favor disponible sigue topando el monto', async () => {
+    carteraPorCobro.mockResolvedValue(debeTresMeses({ anticipoDisponible: false }));
+    await abrir({});
+    escribir('#monto-recibo', '$ 5.000.000');
+
+    expect(document.body.querySelector('[data-testid="aviso-a-favor"]')).toBeNull();
   });
 });

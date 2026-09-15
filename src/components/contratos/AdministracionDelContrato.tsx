@@ -84,6 +84,12 @@ export function AdministracionDelContrato({
     contract.diasDePlazo != null ? String(contract.diasDePlazo) : '',
   )
   const [prorratear, setProrratear] = useState(contract.prorratearPrimerMes ?? false)
+  /*
+   * 🔴 La referencia de recaudo: con qué número paga el inquilino. Vacío NO es
+   * «déjalo como estaba»: es «bórrala y vuelve al consecutivo», y por eso se
+   * manda igual (ver `guardar`).
+   */
+  const [referencia, setReferencia] = useState(contract.referenciaDeRecaudo ?? '')
 
   /*
    * El perfil tributario del inquilino. Es el ÚNICO de los tres que vive en el
@@ -155,6 +161,10 @@ export function AdministracionDelContrato({
         // `null` = volver a heredar los días de la inmobiliaria.
         diasDePlazo: plazo,
         prorratearPrimerMes: prorratear,
+        // Vacío se manda como `null` a propósito: borra la referencia y el
+        // contrato vuelve a pagarse con su consecutivo. Guardar '' dejaría un
+        // identificador que no empata con ninguna línea del extracto.
+        referenciaDeRecaudo: referencia.trim() === '' ? null : referencia.trim(),
         // `null` es una acción: «vuelve a no saberlo». Distinto de no mandar el
         // campo, que lo deja como estaba.
         arrendadorResponsableIva: deTernario(arrendadorIva),
@@ -172,6 +182,9 @@ export function AdministracionDelContrato({
       setGuardando(false)
     }
   }
+
+  /** Lo que la inmobiliaria cargó, si cargó algo. Vacío o espacios = no cargó. */
+  const referenciaPropia = (contract.referenciaDeRecaudo ?? '').trim()
 
   const regimen = contract.regimenTributario ?? null
   /*
@@ -231,6 +244,24 @@ export function AdministracionDelContrato({
           etiqueta="Primer mes"
           valor={contract.prorratearPrimerMes ? 'Prorrateado por días' : 'Mes completo'}
           ausente=""
+        />
+        {/*
+          🔴 Con qué paga el inquilino. Se muestra SIEMPRE con un valor: si la
+          inmobiliaria no cargó una, la referencia es el consecutivo del
+          contrato, y decirlo así es lo que invita a corregirla — una ficha que
+          dijera «sin definir» dejaría al auxiliar sin saber qué dictarle al
+          inquilino.
+        */}
+        <Fila
+          etiqueta="Referencia de recaudo"
+          valor={
+            referenciaPropia
+              ? referenciaPropia
+              : contract.code != null
+                ? `${contract.code} (el consecutivo de Leasefy)`
+                : null
+          }
+          ausente="Sin definir"
         />
         <Fila
           etiqueta="Comisión"
@@ -411,6 +442,28 @@ export function AdministracionDelContrato({
                 <p className="text-xs text-muted-foreground">
                   La mora corre desde el día de pago más este plazo. Vacío = los
                   días de la inmobiliaria.
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">
+                  Referencia de recaudo
+                </label>
+                <Input
+                  value={referencia}
+                  onChange={(e) => setReferencia(e.target.value)}
+                  maxLength={60}
+                  placeholder={
+                    contract.code != null
+                      ? `El consecutivo ${contract.code}`
+                      : 'El consecutivo del contrato'
+                  }
+                  data-testid="referencia-de-recaudo"
+                />
+                <p className="text-xs text-muted-foreground">
+                  El número con el que el inquilino paga y que viene escrito en
+                  el extracto: es lo que deja que la conciliación reconozca el
+                  pago sola. Vacío = se usa el consecutivo del contrato.
                 </p>
               </div>
 

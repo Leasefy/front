@@ -474,6 +474,15 @@ export interface Contract {
    * Opcionales en el tipo para no obligar a cada fixture viejo a declararlos;
    * el mapper (`mapBackendContract`) los llena SIEMPRE.
    */
+  /**
+   * 🔴 LA REFERENCIA DE RECAUDO: el número con el que este inquilino paga y
+   * que el banco escribe en la línea del extracto. Es lo que deja que la
+   * conciliación reconozca el pago en vez de adivinar por apellido.
+   *
+   * `null`/ausente = la inmobiliaria no cargó ninguna (o el back es anterior a
+   * esta rama): se usa el consecutivo del contrato (`code`).
+   */
+  referenciaDeRecaudo?: string | null;
   prorratearPrimerMes?: boolean;
   diasDePlazo?: number | null;
 

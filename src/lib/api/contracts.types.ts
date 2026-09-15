@@ -119,6 +119,12 @@ export interface BackendContract {
    */
   prorratearPrimerMes?: boolean;
   diasDePlazo?: number | null;
+  /**
+   * 🔴 Con qué número paga el inquilino (columna `referencia_de_recaudo`).
+   * Ausente = el back es anterior a esta rama, o la base todavía no tiene la
+   * columna (migración 20260915040000): se cae al consecutivo `code`.
+   */
+  referenciaDeRecaudo?: string | null;
 
   // ─── Administración (NO viajan en el documento firmado) ──────────────────
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL' | null;

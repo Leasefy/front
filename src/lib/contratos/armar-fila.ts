@@ -252,6 +252,13 @@ export function leerFilaDelArchivo(
    * back que recibe otra.
    */
   const consecutivo = textoDeOrigen(v('consecutivoContrato'))
+  /*
+   * 🔴 Con qué número paga el inquilino. Se manda aparte del consecutivo
+   * aunque el archivo traiga la misma columna en los dos: el consecutivo es
+   * cómo la inmobiliaria llama al contrato, la referencia es lo que el banco
+   * escribe en el extracto, y el cruce busca la segunda.
+   */
+  const referenciaDeRecaudo = textoOpcional(v('referenciaDeRecaudo'))
   const escenario = textoOpcional(v('escenario'))
   const estado = textoOpcional(v('estadoContrato'))
   const fechaTerminacion = fechaDeOrigen(v('fechaTerminacion'))
@@ -278,6 +285,7 @@ export function leerFilaDelArchivo(
      * todo el prorrateo salía de `startDate`.
      */
     fechaDeCartera: hayValor(rawCartera) ? comoFecha(rawCartera) : undefined,
+    referenciaDeRecaudo,
     endDate: hayValor(rawFin) ? comoFecha(rawFin) : undefined,
     monthlyRent,
     deposit: plataDeContrato(rawDeposito),

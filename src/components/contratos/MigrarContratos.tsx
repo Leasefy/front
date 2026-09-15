@@ -140,6 +140,7 @@ const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   // dirección, y los datos del contrato que antes se tiraban enteros.
   propiedadCodigoYDireccion: "Propiedad (código y dirección)",
   consecutivoContrato: "Consecutivo del contrato",
+  referenciaDeRecaudo: "Referencia de recaudo",
   estratoInmueble: "Estrato del inmueble",
   canonTotal: "Canon total",
   escenario: "Escenario tributario",

@@ -246,6 +246,66 @@ describe('los términos de cobro del contrato', () => {
     expect(dto.prorratearPrimerMes).toBe(true)
   })
 
+  /*
+   * 🔴 LA REFERENCIA DE RECAUDO: con qué número paga el inquilino y qué escribe
+   * el banco en la línea del extracto. Lo que se congela acá:
+   *  1. La ficha SIEMPRE muestra un número. Si la inmobiliaria no cargó
+   *     ninguna, muestra el consecutivo y lo dice — «sin definir» dejaría al
+   *     auxiliar sin saber qué dictarle al inquilino.
+   *  2. Vaciar el campo manda `null`, que borra la referencia y vuelve al
+   *     consecutivo. Guardar '' dejaría un identificador que no empata con
+   *     ninguna línea del extracto y la conciliación no encontraría nada.
+   */
+  it('sin referencia propia muestra el consecutivo y dice que es el de Leasefy', () => {
+    render(contrato({ referenciaDeRecaudo: null, code: 1839 }))
+    expect(document.body.textContent).toContain('Referencia de recaudo')
+    expect(document.body.textContent).toContain('1839 (el consecutivo de Leasefy)')
+  })
+
+  it('con referencia propia manda la que se escribió', async () => {
+    actualizar.mockResolvedValue(contrato())
+    render(contrato({ referenciaDeRecaudo: null, code: 1839 }))
+    editar()
+
+    const campo = document.querySelector<HTMLInputElement>(
+      '[data-testid="referencia-de-recaudo"]',
+    )!
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+    act(() => {
+      setter.call(campo, ' 10061234 ')
+      campo.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    await act(async () => {
+      boton('Guardar')!.click()
+    })
+
+    const [, dto] = actualizar.mock.calls[0]
+    expect(dto.referenciaDeRecaudo).toBe('10061234')
+  })
+
+  it('vaciar la referencia manda null: vuelve a valer el consecutivo', async () => {
+    actualizar.mockResolvedValue(contrato())
+    render(contrato({ referenciaDeRecaudo: '10061234', code: 1839 }))
+    editar()
+
+    const campo = document.querySelector<HTMLInputElement>(
+      '[data-testid="referencia-de-recaudo"]',
+    )!
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+    act(() => {
+      setter.call(campo, '   ')
+      campo.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    await act(async () => {
+      boton('Guardar')!.click()
+    })
+
+    const [, dto] = actualizar.mock.calls[0]
+    expect(dto.referenciaDeRecaudo).toBeNull()
+  })
+
   it('rechaza un plazo fuera de 0-60 sin llamar al back', async () => {
     render(contrato())
     editar()

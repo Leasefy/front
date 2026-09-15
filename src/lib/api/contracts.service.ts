@@ -126,6 +126,9 @@ export function mapBackendContract(bc: BackendContract): Contract {
     // Un back anterior a esta rama no los manda: el default es el del esquema.
     prorratearPrimerMes: bc.prorratearPrimerMes ?? false,
     diasDePlazo: bc.diasDePlazo ?? null,
+    // `null` y ausente se tratan igual a propósito: los dos significan «no hay
+    // referencia propia», y quien la muestra se cae al consecutivo.
+    referenciaDeRecaudo: bc.referenciaDeRecaudo ?? null,
     usoInmueble: bc.usoInmueble ?? null,
     periodicidad: bc.periodicidad ?? null,
     // Decimal de Prisma: viaja como string ("10.00"). Sin esto, `12 > 10`
@@ -751,6 +754,11 @@ export const contractsApi = {
        */
       diasDePlazo?: number | null;
       prorratearPrimerMes?: boolean;
+      /**
+       * 🔴 La referencia de recaudo: con qué número paga el inquilino. Cadena
+       * vacía o `null` = borrarla y volver al consecutivo del contrato.
+       */
+      referenciaDeRecaudo?: string | null;
     },
   ): Promise<Contract> {
     const raw = await apiClient.patch<BackendContract>(
@@ -871,6 +879,13 @@ export interface FilaAMigrar {
   startDate?: string;
   /** Desde cuándo se COBRA. Ausente = se usa `startDate`. */
   fechaDeCartera?: string;
+  /**
+   * 🔴 LA REFERENCIA DE RECAUDO: el número con el que paga el inquilino y que
+   * el banco escribe en la línea del extracto. Es lo que deja que la
+   * conciliación reconozca el pago en vez de adivinar por apellido. Ausente =
+   * el archivo no la traía; el contrato se paga con su consecutivo.
+   */
+  referenciaDeRecaudo?: string;
   endDate?: string;
   monthlyRent?: number;
   deposit?: number;

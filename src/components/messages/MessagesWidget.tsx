@@ -657,7 +657,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                       {searchQuery
                         ? (locale === 'es' ? 'No se encontraron conversaciones' : 'No conversations found')
                         : (locale === 'es'
-                            ? `Escribile a ${otherParty} desde acá; las conversaciones te van a quedar en esta lista.`
+                            ? `Escríbele a ${otherParty} desde acá; las conversaciones te van a quedar en esta lista.`
                             : `Message ${otherParty} from here; your conversations will stay in this list.`)}
                     </p>
                     {/* Acá SÍ va con texto: en un vacío el `+` de arriba es lo

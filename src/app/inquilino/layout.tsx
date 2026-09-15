@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass, SealCheck, Target, Bell, UserCircle, Gear, ClipboardText, Lifebuoy, Scroll, Receipt } from '@phosphor-icons/react';
+import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass, SealCheck, Target, UserCircle, Gear, ClipboardText, Lifebuoy, Scroll, Receipt } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
@@ -53,7 +53,9 @@ function useTenantNavItems() {
     // Sin badge fijo: el 2 estaba escrito a mano. Ahora el conteo sale de
     // useUnreadMessages (polling), así el sidebar nunca promete no-leídos falsos.
     { label: t('nav.messages'), href: '/inquilino/mensajes', icon: Chat, badge: unreadCount > 0 ? unreadCount : undefined },
-    { label: locale === 'es' ? 'Notificaciones' : 'Notifications', href: '/inquilino/notificaciones', icon: Bell },
+    // Sin «Notificaciones»: viven en la campana del header, igual que en el
+    // panel de la inmobiliaria (Nico, 2026-09-15). La pantalla completa sigue
+    // en /inquilino/notificaciones, a un clic desde «Ver todas».
     { label: t('nav.profile'), href: '/inquilino/perfil', icon: UserCircle },
     { label: t('nav.settings'), href: '/inquilino/configuracion', icon: Gear },
   ];

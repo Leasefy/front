@@ -103,7 +103,7 @@ function mount(opts: Parameters<typeof useNotificationsRealtime>[0]): {
 describe('useNotificationsRealtime', () => {
   it('subscribes to notifications:{userId} with INSERT filter user_id=eq.{id} on notification_logs', () => {
     const { root, container } = mount({ userId: 'user-1', onInsert: vi.fn() })
-    expect(channelNames[0]).toBe('notifications:user-1')
+    expect(channelNames[0]).toMatch(/^notifications:user-1:[a-z0-9]+$/)
     expect(channels.length).toBe(1)
     const [event, opts] = channels[0].__onArgs as [string, Record<string, unknown>]
     expect(event).toBe('postgres_changes')
@@ -187,6 +187,46 @@ describe('useNotificationsRealtime', () => {
       channels[0].__subscribeCb!('CHANNEL_ERROR')
     })
     expect(ref.current?.isConnected).toBe(false)
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  // Regresión 2026-09-15: la campana del header y /inquilino/notificaciones
+  // montan el hook a la vez. Con el mismo nombre de canal, Supabase devuelve el
+  // canal ya suscrito y el segundo `.on()` revienta la pantalla.
+  it('two simultaneous instances for the same user get distinct channels', () => {
+    const a = mount({ userId: 'user-1', onInsert: vi.fn() })
+    const b = mount({ userId: 'user-1', onInsert: vi.fn() })
+    expect(channels.length).toBe(2)
+    expect(channelNames[0]).not.toBe(channelNames[1])
+    // Each channel registered its listener before subscribing.
+    for (const ch of channels) {
+      expect(ch.on).toHaveBeenCalledTimes(1)
+      expect(ch.on.mock.invocationCallOrder[0]).toBeLessThan(ch.subscribe.mock.invocationCallOrder[0])
+    }
+    act(() => a.root.unmount())
+    act(() => b.root.unmount())
+    a.container.remove()
+    b.container.remove()
+  })
+
+  it('keeps the same channel across re-renders of one instance', () => {
+    const onInsert = vi.fn()
+    let forzar: (() => void) | null = null
+    const Harness = () => {
+      const [, setN] = React.useState(0)
+      forzar = () => setN((n) => n + 1)
+      useNotificationsRealtime({ userId: 'user-1', onInsert })
+      return null
+    }
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    act(() => root.render(<Harness />))
+    act(() => forzar!())
+    act(() => forzar!())
+    // The instance suffix is stable: re-rendering never opens a second channel.
+    expect(channels.length).toBe(1)
     act(() => root.unmount())
     container.remove()
   })

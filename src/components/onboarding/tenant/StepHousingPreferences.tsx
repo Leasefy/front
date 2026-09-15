@@ -2,13 +2,14 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { CurrencyDollar, MapPin, Calendar, PawPrint, WifiHigh, Car, Shield, Barbell, Tree, Warehouse, Waves, Sparkle, X } from '@phosphor-icons/react'
+import { CurrencyDollar, MapPin, PawPrint, WifiHigh, Car, Shield, Barbell, Tree, Warehouse, Waves, Sparkle, X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
-import { IconButton } from '@leasefy/cadence'
+import { DatePicker, IconButton } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/lib/i18n'
 import { useTenantOnboarding } from '@/lib/context/TenantOnboardingContext'
+import { aFechaIso, fechaLocal, hoyLocal } from '@/lib/fechas-locales'
 
 const CITIES = [
   'Bogotá',
@@ -220,18 +221,38 @@ export function StepHousingPreferences() {
           <label htmlFor="moveInDate" className="block text-sm font-medium text-fg-muted mb-2">
             ¿Cuándo planeas mudarte?
           </label>
-          <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2">
-              <Calendar className="h-5 w-5 text-fg-subtle" />
-            </div>
-            <Input
-              type="date"
+          {/* El calendario de cadence y no el nativo del navegador (que salía en
+              inglés), y una salida para quien todavía no sabe: la fecha nunca
+              fue obligatoria, pero el campo sólo ofrecía el calendario
+              (Nico, 2026-09-15). Elegir una opción apaga la otra. */}
+          <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-3">
+            <DatePicker
               id="moveInDate"
-              value={draft.moveInDate || ''}
-              onChange={(e) => updateDraft({ moveInDate: e.target.value })}
-              min={new Date().toISOString().split('T')[0]}
-              className={cn('h-12 pl-12 rounded-xl', draft.moveInDate && 'border-primary/30')}
+              value={fechaLocal(draft.moveInDate)}
+              onChange={(d) => updateDraft({ moveInDate: aFechaIso(d), moveInDateUnknown: false })}
+              minDate={hoyLocal()}
+              placeholder="Elige una fecha"
+              className={cn(
+                'h-12 w-full min-w-0 rounded-xl px-4 text-sm',
+                draft.moveInDate && 'border-[#1A40FF]/30',
+              )}
             />
+            <button
+              type="button"
+              data-testid="mudanza-sin-fecha"
+              aria-pressed={!!draft.moveInDateUnknown}
+              onClick={() =>
+                updateDraft({ moveInDate: '', moveInDateUnknown: !draft.moveInDateUnknown })
+              }
+              className={cn(
+                'h-12 px-5 rounded-xl border text-sm font-semibold transition-all duration-200',
+                draft.moveInDateUnknown
+                  ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/50 text-[#1A40FF] dark:bg-[#1A40FF]/20 dark:text-[#5570FF]'
+                  : 'border-border hover:border-border-strong bg-surface text-fg-muted'
+              )}
+            >
+              Aún no lo sé
+            </button>
           </div>
         </motion.div>
 

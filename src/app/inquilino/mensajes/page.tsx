@@ -26,5 +26,6 @@ export default function MensajesPage() {
     );
   }
 
-  return <MessagesWidget actor="tenant" />;
+  // Pantalla completa, igual que en la inmobiliaria (Nico, 2026-09-15).
+  return <MessagesWidget actor="tenant" pantallaCompleta />;
 }

@@ -7,6 +7,8 @@ import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@leasefy/cadence';
+import { aFechaIso, fechaLocal } from '@/lib/fechas-locales';
 import {
   getTenantPreferences,
   updateTenantPreferences,
@@ -278,11 +280,12 @@ export function PreferencesSection() {
             {locale === 'es' ? 'Fecha de mudanza' : 'Move-in date'}
           </label>
           {isEditing ? (
-            <Input
-              type="date"
-              value={form.moveInDate}
-              onChange={(e) => set({ moveInDate: e.target.value })}
-              className="w-full rounded-xl bg-surface-muted"
+            // El calendario de cadence, igual que en el onboarding (Nico, 2026-09-15).
+            <DatePicker
+              value={fechaLocal(form.moveInDate)}
+              onChange={(d) => set({ moveInDate: aFechaIso(d) })}
+              placeholder={locale === 'es' ? 'Elige una fecha' : 'Pick a date'}
+              className="h-10 w-full min-w-0 rounded-xl bg-surface-muted"
             />
           ) : (
             readonlyBox(

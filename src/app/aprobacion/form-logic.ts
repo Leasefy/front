@@ -123,3 +123,8 @@ export function prellenadoDesdeUrl(
   if (tipo === 'apartamento' || tipo === 'casa' || tipo === 'local') salida.tipoInmueble = tipo
   return salida
 }
+
+/** ¿Llegó de «Verificar» en la ficha con un ingreso que alcanza? Entonces el estudio es el paso 2. */
+export function vieneDelPaso1(params: URLSearchParams): boolean {
+  return params.get('paso') === '2'
+}

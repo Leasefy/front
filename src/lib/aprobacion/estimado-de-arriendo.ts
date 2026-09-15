@@ -74,12 +74,16 @@ export function enlaceAlEstudio({
   canon,
   ciudad,
   tipo,
+  paso2 = false,
 }: {
   canon: number;
   ciudad?: string | null;
   tipo?: PropertyType | null;
+  /** Viene de «Verificar» con un ingreso que alcanza: el estudio es el paso 2. */
+  paso2?: boolean;
 }): string {
   const q = new URLSearchParams();
+  if (paso2) q.set('paso', '2');
   if (canon > 0) q.set('canon', String(Math.round(canon)));
   if (ciudad?.trim()) q.set('ciudad', ciudad.trim());
   const t = tipoParaElEstudio(tipo);

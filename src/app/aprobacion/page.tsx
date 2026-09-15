@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowsClockwise, X } from '@phosphor-icons/react'
+import { ArrowsClockwise, CheckCircle, X } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink'
 import { LeasefyLogotype } from '@/components/brand'
@@ -29,6 +29,7 @@ import { usePreScoringCurrent } from '@/lib/hooks/use-prescoring-current'
 import { tieneEstudioVigente } from '@/lib/api/prescoring.types'
 import {
   prellenadoDesdeUrl,
+  vieneDelPaso1,
   validatePreApprovalForm,
   type PreApprovalFormFields,
 } from './form-logic'
@@ -81,9 +82,13 @@ export default function AprobacionPage() {
   // de recibir un valor por código, y vaciaban lo prellenado (medido en el
   // navegador el 14-09). Por eso sus `onValueChange` ignoran el vacío: en esos
   // menús no hay opción vacía que la persona pueda elegir.
+  // Llegó de «Verificar» en la ficha con un ingreso que alcanza: esto es el paso 2.
+  const [desdeLaFicha, setDesdeLaFicha] = useState(false)
   useEffect(() => {
-    const prellenado = prellenadoDesdeUrl(new URLSearchParams(window.location.search), CIUDADES)
+    const params = new URLSearchParams(window.location.search)
+    const prellenado = prellenadoDesdeUrl(params, CIUDADES)
     if (Object.keys(prellenado).length > 0) setFields((f) => ({ ...f, ...prellenado }))
+    setDesdeLaFicha(vieneDelPaso1(params))
   }, [])
 
   /**
@@ -271,6 +276,15 @@ export default function AprobacionPage() {
         ) : (
         <Card>
           <CardHeader>
+            {desdeLaFicha && (
+              <div data-testid="paso-2-de-2" className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="text-caption font-medium uppercase tracking-wide text-fg-muted">Paso 2 de 2</span>
+                <span className="inline-flex items-center gap-1 text-caption text-success">
+                  <CheckCircle weight="fill" className="h-4 w-4" aria-hidden="true" />
+                  Tu ingreso alcanza para este inmueble
+                </span>
+              </div>
+            )}
             <CardTitle>Conoce hasta cuánto te arrendamos</CardTitle>
             <CardDescription>
               {/* Decía «Es gratis y sin compromiso» y se cobra. No se

@@ -1,9 +1,14 @@
 /**
- * «¿Te podemos arrendar este inmueble?» — lo que ve la persona con cada ingreso.
+ * «¿Te podemos arrendar este inmueble?» — paso 1: nada hasta «Verificar»;
+ * si no alcanza se dice acá, si alcanza se sigue al paso 2 (el estudio).
  */
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
+
+const pushMock = vi.hoisted(() => vi.fn());
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: pushMock }) }));
+
 import { TePodemosArrendar } from './TePodemosArrendar';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -16,6 +21,7 @@ afterEach(() => {
   contenedor?.remove();
   root = null;
   contenedor = null;
+  pushMock.mockReset();
 });
 
 function montar() {
@@ -36,52 +42,42 @@ function escribir(id: string, texto: string) {
   });
 }
 
-const hay = (testid: string) => contenedor!.querySelector(`[data-testid="${testid}"]`);
+const hay = (testid: string) => contenedor!.querySelector<HTMLElement>(`[data-testid="${testid}"]`);
+const verificar = () => act(() => hay('verificar-arriendo')!.click());
 
 describe('<TePodemosArrendar>', () => {
-  it('sin ingreso no dice ni sí ni no', () => {
+  it('mientras escribe no dice si le alcanza', () => {
     montar();
+    expect((hay('verificar-arriendo') as HTMLButtonElement).disabled).toBe(true);
+    escribir('tpa-ingreso', '1000000');
+    expect(hay('estimado-no-alcanza')).toBeNull();
     expect(hay('estimado-vacio')).toBeTruthy();
-    expect(hay('estimado-alcanza')).toBeNull();
+  });
+
+  it('al verificar sin alcanzar lo dice acá, con lo que falta, y no sigue al estudio', () => {
+    montar();
+    escribir('tpa-ingreso', '2000000');
+    verificar();
+    expect(hay('estimado-no-alcanza')).toBeTruthy();
+    expect(hay('estimado-faltante')?.textContent?.replace(/\D/g, '')).toContain('1000000');
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it('cambiar el ingreso borra el resultado viejo', () => {
+    montar();
+    escribir('tpa-ingreso', '2000000');
+    verificar();
+    escribir('tpa-ingreso', '2500000');
     expect(hay('estimado-no-alcanza')).toBeNull();
   });
 
-  it('con 1,5 veces el canon le alcanza', () => {
-    montar();
-    escribir('tpa-ingreso', '3000000');
-    expect(hay('estimado-alcanza')).toBeTruthy();
-  });
-
-  it('con menos no le alcanza y le dice cuánto le falta', () => {
-    montar();
-    escribir('tpa-ingreso', '2000000');
-    expect(hay('estimado-no-alcanza')).toBeTruthy();
-    expect(hay('estimado-faltante')?.textContent?.replace(/\D/g, '')).toContain('1000000');
-  });
-
-  it('el codeudor suma y cambia la respuesta', () => {
+  it('al verificar con un ingreso que alcanza sigue al paso 2, el estudio prellenado', () => {
     montar();
     escribir('tpa-ingreso', '2000000');
     escribir('tpa-codeudor', '1000000');
-    expect(hay('estimado-alcanza')).toBeTruthy();
-  });
-
-  it('sin ingreso, o si no le alcanza, no se le ofrece verificar', () => {
-    montar();
-    expect(hay('verificar-arriendo')).toBeNull();
-    escribir('tpa-ingreso', '2000000');
-    expect(hay('estimado-no-alcanza')).toBeTruthy();
-    expect(hay('verificar-arriendo')).toBeNull();
-  });
-
-  it('cuando le alcanza, «Verificar» abre el estudio con el canon, la ciudad y el tipo del inmueble', () => {
-    montar();
-    escribir('tpa-ingreso', '3000000');
-    const boton = hay('verificar-arriendo');
-    expect(boton?.textContent?.trim()).toBe('Verificar');
-    expect(boton?.getAttribute('href')).toBe(
-      '/aprobacion?canon=2000000&ciudad=Medell%C3%ADn&tipo=apartamento',
-    );
+    verificar();
+    expect(pushMock).toHaveBeenCalledWith('/aprobacion?paso=2&canon=2000000&ciudad=Medell%C3%ADn&tipo=apartamento');
+    expect(hay('estimado-no-alcanza')).toBeNull();
   });
 
   it('la nota sólo dice que es un estimado', () => {

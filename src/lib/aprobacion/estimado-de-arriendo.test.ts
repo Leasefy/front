@@ -41,3 +41,11 @@ describe('enlaceAlEstudio', () => {
     expect(enlaceAlEstudio({ canon: 500_000, tipo: 'land' })).toBe('/aprobacion?canon=500000');
   });
 });
+
+describe('enlaceAlEstudio — paso 2', () => {
+  it('marca que el estudio es el segundo paso cuando viene de «Verificar»', () => {
+    expect(enlaceAlEstudio({ canon: 1_100_000, ciudad: 'Bogotá', tipo: 'house', paso2: true })).toBe(
+      '/aprobacion?paso=2&canon=1100000&ciudad=Bogot%C3%A1&tipo=casa',
+    );
+  });
+});

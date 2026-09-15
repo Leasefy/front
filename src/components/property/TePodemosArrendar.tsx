@@ -1,26 +1,30 @@
 'use client';
 
 /**
- * «¿Te podemos arrendar este inmueble?» — la tarjeta de la ficha pública.
+ * «¿Te podemos arrendar este inmueble?» — el paso 1 en la ficha pública.
  *
- * Nico, 2026-09-14: como la calculadora de hipoteca de los portales, pero para
- * arrendar. Con dos datos (su ingreso y, si tiene, el de su codeudor) la persona
- * sabe al instante si le alcanza para ESTE canon; lo importante para ella es
- * «¿lo puedo arrendar o no?». Después, «Verificar con Fianly» lanza el estudio
- * real ya prellenado con el canon, la ciudad y el tipo del inmueble.
+ * Nico, 2026-09-14: la persona escribe su ingreso (y el de su codeudor, si
+ * tiene) y toca «Verificar». Mientras escribe no se le dice nada. Al verificar:
+ * - si no le alcanza (ingreso < 1,5 × canon), se lo decimos acá con lo que le
+ *   falta — no tiene sentido pedirle cédula, autorización y pago;
+ * - si le alcanza, sigue al paso 2: el formulario del estudio con Fianly
+ *   (`/aprobacion?paso=2…`), ya prellenado con el canon, la ciudad y el tipo.
  *
- * Es un estimado (ver `estimado-de-arriendo.ts`): no consulta centrales ni
- * aseguradoras, y lo dice.
+ * Es un estimado (ver `estimado-de-arriendo.ts`) y lo dice.
  */
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { CheckCircle, WarningCircle } from '@phosphor-icons/react';
+import { useRouter } from 'next/navigation';
+import { WarningCircle } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { MoneyInput } from '@/components/ui/money-input';
 import { formatCurrency } from '@/lib/format';
 import type { PropertyType } from '@/lib/types/property';
-import { enlaceAlEstudio, estimarArriendo } from '@/lib/aprobacion/estimado-de-arriendo';
+import {
+  enlaceAlEstudio,
+  estimarArriendo,
+  type EstimadoDeArriendo,
+} from '@/lib/aprobacion/estimado-de-arriendo';
 
 interface TePodemosArrendarProps {
   canon: number;
@@ -28,7 +32,6 @@ interface TePodemosArrendarProps {
   tipo?: PropertyType | null;
   className?: string;
 }
-
 
 function Fila({ etiqueta, valor, fuerte }: { etiqueta: string; valor: string; fuerte?: boolean }) {
   return (
@@ -40,14 +43,33 @@ function Fila({ etiqueta, valor, fuerte }: { etiqueta: string; valor: string; fu
 }
 
 export function TePodemosArrendar({ canon, ciudad, tipo, className }: TePodemosArrendarProps) {
+  const router = useRouter();
   const [ingreso, setIngreso] = useState('');
   const [ingresoCodeudor, setIngresoCodeudor] = useState('');
+  // Sólo lo que dio «Verificar» y no alcanzó. Si alcanza, se navega al paso 2.
+  const [noAlcanza, setNoAlcanza] = useState<EstimadoDeArriendo | null>(null);
 
-  const estimado = estimarArriendo({
-    canon,
-    ingreso: Number(ingreso) || 0,
-    ingresoCodeudor: Number(ingresoCodeudor) || 0,
-  });
+  const cambiar = (fijar: (v: string) => void) => (v: string) => {
+    fijar(v);
+    // Un resultado viejo encima de un número nuevo mentiría.
+    setNoAlcanza(null);
+  };
+
+  const verificar = () => {
+    const estimado = estimarArriendo({
+      canon,
+      ingreso: Number(ingreso) || 0,
+      ingresoCodeudor: Number(ingresoCodeudor) || 0,
+    });
+    if (!estimado) return;
+    if (estimado.alcanza) {
+      router.push(enlaceAlEstudio({ canon, ciudad, tipo, paso2: true }));
+      return;
+    }
+    setNoAlcanza(estimado);
+  };
+
+  const puedeVerificar = (Number(ingreso) || 0) > 0;
 
   return (
     <section
@@ -55,12 +77,11 @@ export function TePodemosArrendar({ canon, ciudad, tipo, className }: TePodemosA
       data-testid="te-podemos-arrendar"
       className={`rounded-lg border border-border bg-surface p-6 shadow-sm ${className ?? ''}`}
     >
-      <h2 id="te-podemos-arrendar-titulo" className="text-xl font-heading font-semibold text-fg text-balance">
+      <p className="text-caption font-medium uppercase tracking-wide text-fg-muted">Paso 1 de 2</p>
+      <h2 id="te-podemos-arrendar-titulo" className="mt-1 text-xl font-heading font-semibold text-fg text-balance">
         ¿Te podemos arrendar este inmueble?
       </h2>
-      <p className="mt-1 text-sm text-fg-muted">
-        Con tu ingreso te decimos al instante si te alcanza para este canon.
-      </p>
+      <p className="mt-1 text-sm text-fg-muted">Escribe tu ingreso y verifica si te alcanza para este canon.</p>
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         <div className="flex flex-col gap-4">
@@ -68,7 +89,7 @@ export function TePodemosArrendar({ canon, ciudad, tipo, className }: TePodemosA
             <label htmlFor="tpa-ingreso" className="text-sm font-medium text-fg">
               Tu ingreso mensual
             </label>
-            <MoneyInput id="tpa-ingreso" value={ingreso} onChange={setIngreso} placeholder="4.500.000" />
+            <MoneyInput id="tpa-ingreso" value={ingreso} onChange={cambiar(setIngreso)} placeholder="4.500.000" />
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="tpa-codeudor" className="text-sm font-medium text-fg">
@@ -77,66 +98,52 @@ export function TePodemosArrendar({ canon, ciudad, tipo, className }: TePodemosA
             <MoneyInput
               id="tpa-codeudor"
               value={ingresoCodeudor}
-              onChange={setIngresoCodeudor}
+              onChange={cambiar(setIngresoCodeudor)}
               placeholder="0"
             />
           </div>
         </div>
 
         <div role="status" aria-live="polite" className="flex flex-col gap-4 rounded-lg bg-surface-muted p-5">
-          {estimado === null ? (
-            <div data-testid="estimado-vacio" className="flex flex-col gap-1">
-              <p className="text-sm font-medium text-fg">Escribe tu ingreso</p>
-              <p className="text-sm text-fg-muted">
-                Te mostramos si alcanza para el canon de{' '}
-                <span className="font-mono tabular-nums">{formatCurrency(canon)}</span>.
-              </p>
-            </div>
-          ) : estimado.alcanza ? (
-            <div data-testid="estimado-alcanza" className="flex items-start gap-2 rounded-md bg-success-soft p-3">
-              <CheckCircle weight="fill" className="mt-0.5 h-5 w-5 flex-shrink-0 text-success" />
-              <div>
-                <p className="text-sm font-semibold text-success">Te alcanza para este inmueble</p>
-                <p className="mt-0.5 text-sm text-fg-muted">Verifica tus datos para avanzar con el arriendo.</p>
-              </div>
-            </div>
-          ) : (
+          {noAlcanza ? (
             <div data-testid="estimado-no-alcanza" className="flex items-start gap-2 rounded-md bg-warning-soft p-3">
               <WarningCircle weight="fill" className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning" />
               <div>
                 <p className="text-sm font-semibold text-warning">Con ese ingreso no te alcanza</p>
                 <p data-testid="estimado-faltante" className="mt-0.5 text-sm text-fg-muted">
-                  Te faltan <span className="font-mono tabular-nums">{formatCurrency(estimado.faltante)}</span> de
+                  Te faltan <span className="font-mono tabular-nums">{formatCurrency(noAlcanza.faltante)}</span> de
                   ingreso al mes. Un codeudor puede sumar el suyo.
                 </p>
               </div>
             </div>
+          ) : (
+            <p data-testid="estimado-vacio" className="text-sm text-fg-muted">
+              Toca «Verificar» cuando tengas tu ingreso.
+            </p>
           )}
-
           <div className="flex flex-col gap-2">
             <Fila etiqueta="Canon del inmueble" valor={formatCurrency(canon)} />
-            {estimado && (
+            {noAlcanza && (
               <>
-                <Fila etiqueta="Ingreso que cuenta" valor={formatCurrency(estimado.ingresoTotal)} />
-                <Fila etiqueta="Canon que podrías pagar" valor={formatCurrency(estimado.canonMaximo)} fuerte />
+                <Fila etiqueta="Ingreso que cuenta" valor={formatCurrency(noAlcanza.ingresoTotal)} />
+                <Fila etiqueta="Canon que podrías pagar" valor={formatCurrency(noAlcanza.canonMaximo)} fuerte />
               </>
             )}
           </div>
         </div>
       </div>
 
-      {/* Primero se dice si puede o no con la regla del ingreso; sólo a quien le
-          alcanza se le ofrece seguir. Mandar al estudio (con cédula, autorización
-          y pago) a alguien que ya sabemos que no llega no tiene sentido (Nico, 14-09). */}
       <div className="mt-6 flex flex-col gap-4 border-t border-border pt-5 md:flex-row md:items-center md:justify-between">
         <p className="text-caption text-fg-muted">Es un estimado.</p>
-        {estimado?.alcanza && (
-          <Button asChild className="md:flex-shrink-0">
-            <Link href={enlaceAlEstudio({ canon, ciudad, tipo })} data-testid="verificar-arriendo">
-              Verificar
-            </Link>
-          </Button>
-        )}
+        <Button
+          type="button"
+          onClick={verificar}
+          disabled={!puedeVerificar}
+          data-testid="verificar-arriendo"
+          className="md:flex-shrink-0"
+        >
+          Verificar
+        </Button>
       </div>
     </section>
   );

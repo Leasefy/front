@@ -18,3 +18,11 @@ describe('prellenadoDesdeUrl', () => {
     expect(prellenadoDesdeUrl(p, CIUDADES)).toEqual({})
   })
 })
+
+describe('vieneDelPaso1', () => {
+  it('sólo con paso=2 en la URL', async () => {
+    const { vieneDelPaso1 } = await import('./form-logic')
+    expect(vieneDelPaso1(new URLSearchParams('paso=2&canon=1'))).toBe(true)
+    expect(vieneDelPaso1(new URLSearchParams('canon=1'))).toBe(false)
+  })
+})

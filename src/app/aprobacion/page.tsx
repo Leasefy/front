@@ -77,6 +77,10 @@ export default function AprobacionPage() {
   // Desde la ficha de un inmueble («¿Te podemos arrendar este inmueble?») el
   // estudio llega con el canon, la ciudad y el tipo ya puestos. Se lee en el
   // cliente y una sola vez: lo que la persona cambie después manda.
+  // 🔴 Los menús de ciudad y tipo mandan un `onValueChange('')` justo después
+  // de recibir un valor por código, y vaciaban lo prellenado (medido en el
+  // navegador el 14-09). Por eso sus `onValueChange` ignoran el vacío: en esos
+  // menús no hay opción vacía que la persona pueda elegir.
   useEffect(() => {
     const prellenado = prellenadoDesdeUrl(new URLSearchParams(window.location.search), CIUDADES)
     if (Object.keys(prellenado).length > 0) setFields((f) => ({ ...f, ...prellenado }))
@@ -332,7 +336,7 @@ export default function AprobacionPage() {
 
               {/* Ya no es "del inmueble": puede no haber inmueble todavía. */}
               <Field id="ciudad" label="Ciudad donde quieres vivir" error={errors.ciudad}>
-                <Select value={fields.ciudad} onValueChange={(v) => set('ciudad', v)}>
+                <Select value={fields.ciudad} onValueChange={(v) => v && set('ciudad', v)}>
                   <SelectTrigger id="ciudad">
                     <SelectValue placeholder="Selecciona una ciudad" />
                   </SelectTrigger>
@@ -360,7 +364,7 @@ export default function AprobacionPage() {
               </Field>
 
               <Field id="tipoInmueble" label="Tipo de inmueble" error={errors.tipoInmueble}>
-                <Select value={fields.tipoInmueble} onValueChange={(v) => set('tipoInmueble', v)}>
+                <Select value={fields.tipoInmueble} onValueChange={(v) => v && set('tipoInmueble', v)}>
                   <SelectTrigger id="tipoInmueble">
                     <SelectValue placeholder="Selecciona el tipo" />
                   </SelectTrigger>

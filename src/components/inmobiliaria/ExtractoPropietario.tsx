@@ -398,12 +398,24 @@ export function ExtractoPropietario({
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {/*
+                  Un extracto sin líneas se leía en blanco, y «este dueño no
+                  tiene inmuebles» y «este mes no se movió nada» son dos cosas
+                  distintas que hay que poder decirle. El back manda cuál es.
+                */}
+                {extracto.lineItems.length === 0 && extracto.sinMovimiento && (
+                  <TableRow>
+                    <TableCell colSpan={10} className="py-10 text-center text-fg-muted">
+                      {extracto.sinMovimiento.mensaje}
+                    </TableCell>
+                  </TableRow>
+                )}
                 {lineasDeLaPagina.map((prop, index) => {
                   const estado = aCobroStatus(prop.status);
                   const StatusIcon = getStatusIcon(estado);
                   return (
                     <motion.tr
-                      key={prop.cobroId}
+                      key={prop.cuotaId ?? prop.cobroId}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}

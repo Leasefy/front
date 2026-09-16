@@ -46,9 +46,11 @@ const extracto: Extracto = {
   month: '2026-09',
   generatedAt: '2026-09-02T18:00:00.000Z',
   lineItems: [],
+  sinMovimiento: null,
   totals: {
     totalRent: 0, totalAdmin: 0, totalPaid: 0, totalCommission: 0, totalNet: 0,
     totalConceptosAFavor: 0, totalConceptosACargo: 0, totalDeTerceros: 0,
+    totalGirado: 0, totalEnGiro: 0, totalPorGirar: 0,
   },
   bankInfo: { bankName: 'Banco Caja Social', bankAccountType: 'Corriente', bankAccountNumber: '36500386693', bankAccountHolder: 'Rentas' },
 };
@@ -85,10 +87,13 @@ async function clickTestId(id: string) {
 
 /** Una línea del extracto con los campos que pinta la tabla. */
 const linea = (over: Partial<Extracto['lineItems'][number]> = {}): Extracto['lineItems'][number] => ({
-  cobroId: 'cob-1', consignacionId: 'c-1', propertyTitle: 'Apartamento en La Floresta', propertyAddress: 'Cra 42',
+  cuotaId: 'q-1', cobroId: null, contractId: 'ct-1', consignacionId: 'c-1',
+  propertyTitle: 'Apartamento en La Floresta', propertyAddress: 'Cra 42',
   tenantName: 'Mónica', rentAmount: 720_000, adminAmount: 0, totalAmount: 720_000, paidAmount: 720_000,
   status: 'PAID', commissionPercent: 0, commissionAmount: 0, netAmount: 720_000, rentCollected: 720_000,
-  conceptosAFavor: 0, conceptosACargo: 0, deTerceros: 0, renglones: [], ...over,
+  conceptosAFavor: 0, conceptosACargo: 0, deTerceros: 0,
+  dispersionId: null, giradoCop: 0, enGiroCop: 0, porGirarCop: 720_000,
+  estadoDelGiro: 'POR_GIRAR', renglones: [], ...over,
 });
 
 describe('<ExtractoPropietario>', () => {
@@ -156,5 +161,30 @@ describe('<ExtractoPropietario>', () => {
     expect(toast.error).toHaveBeenCalledWith('inmobiliaria.propietario.extracto.emailError', {
       description: 'El propietario no tiene correo registrado',
     });
+  });
+});
+
+/**
+ * Un extracto sin líneas tiene que decir POR QUÉ.
+ *
+ * «Este dueño no tiene inmuebles» y «este mes no se movió nada» se leen igual
+ * —en blanco— y se arreglan distinto: la primera es un mandato que falta, la
+ * segunda es un mes sin actividad. El back manda cuál es; la pantalla la pinta.
+ */
+describe('extracto sin movimiento', () => {
+  it('dice el motivo que mandó el back en vez de quedarse en blanco', async () => {
+    await render({
+      extracto: {
+        ...extracto,
+        lineItems: [],
+        sinMovimiento: {
+          codigo: 'SIN_MOVIMIENTO_DEL_MES',
+          mensaje: 'Este mes no tuvo movimiento en ninguno de sus inmuebles.',
+        },
+      },
+    });
+    expect(container.textContent).toContain(
+      'Este mes no tuvo movimiento en ninguno de sus inmuebles.',
+    );
   });
 });

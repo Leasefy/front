@@ -925,8 +925,15 @@ export interface ExtractoPropietario {
   generatedAt: string;
 
   lineItems: {
-    cobroId: string;
-    consignacionId: string;
+    /**
+     * 🔴 La identidad de la fila desde el 16-09: la deuda del dueño vive en su
+     * CUOTA. `cobroId` es el documento del OTRO lado del contrato y viene
+     * `null` en todo extracto nuevo — llavear la lista por él colisiona.
+     */
+    cuotaId: string | null;
+    cobroId: string | null;
+    contractId: string | null;
+    consignacionId: string | null;
     propertyTitle: string;
     propertyAddress: string | null;
     tenantName: string | null;
@@ -956,8 +963,29 @@ export interface ExtractoPropietario {
     conceptosACargo: number;
     /** Lo que entró y no es suyo: administración, seguros, mora. */
     deTerceros: number;
+    /** La dispersión que se llevó esta cuota, si ya salió. */
+    dispersionId: string | null;
+    /** Lo ya girado, lo que va en un lote sin pagar y lo que falta. Suman `netAmount`. */
+    giradoCop: number;
+    enGiroCop: number;
+    porGirarCop: number;
+    /**
+     * `SIN_DATO` es una línea vieja armada sobre un cobro: el modelo anterior no
+     * guardaba en qué iba el giro, y decir «por girar» afirmaría algo que no consta.
+     */
+    estadoDelGiro: 'GIRADO' | 'EN_GIRO' | 'POR_GIRAR' | 'SIN_DATO';
     renglones: RenglonDeLiquidacion[];
   }[];
+
+  /**
+   * Por qué el extracto viene sin líneas, cuando viene sin líneas. Sin esto la
+   * pantalla no puede distinguir «este dueño no tiene inmuebles» de «este mes
+   * no se movió nada», y las dos se leen igual: en blanco.
+   */
+  sinMovimiento: {
+    codigo: 'SIN_INMUEBLES' | 'SIN_MOVIMIENTO_DEL_MES';
+    mensaje: string;
+  } | null;
 
   totals: {
     totalRent: number;
@@ -968,6 +996,9 @@ export interface ExtractoPropietario {
     totalConceptosAFavor: number;
     totalConceptosACargo: number;
     totalDeTerceros: number;
+    totalGirado: number;
+    totalEnGiro: number;
+    totalPorGirar: number;
   };
 
   bankInfo: {

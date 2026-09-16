@@ -11176,7 +11176,8 @@
       "descripcionAdelanto": "Nothing is past due. Anything that comes in today is an advance: it pays down the contract instalments that have not fallen due yet, starting with the closest one.",
       "pagaLoVencido": "Pay what is due",
       "adelantoDesde": "Past due today: {{vencido}}. Above that figure you are paying ahead against {{futuro}} that has not fallen due yet.",
-      "sinMandato": "The property has no mandate"
+      "sinMandato": "The property has no mandate",
+      "cuotaYCobroNoCuadran": "That month's records don't match"
     },
     "historial": {
       "titulo": "Cash receipts",

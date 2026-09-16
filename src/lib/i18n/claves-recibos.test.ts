@@ -109,6 +109,7 @@ const CLAVES_EN_USO = [
   'form.pagaLoVencido',
   'form.adelantoDesde',
   'form.sinMandato',
+  'form.cuotaYCobroNoCuadran',
   'form.cartera.vencidoLabel',
   'form.cartera.futuroLabel',
   'form.cartera.grupoVencido',

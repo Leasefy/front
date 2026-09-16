@@ -965,6 +965,57 @@ describe('<RegistrarPagoModal> los tres conflictos del back no son el mismo', ()
     expect(banner?.textContent).toContain('recibos.form.sinMandato');
   });
 
+  /*
+   * 🔴 (2026-09-16) CUOTA_Y_COBRO_NO_CUADRAN: los documentos del mes no cuadran
+   * (dos cobros para el mismo mes, o el cobro es de otro contrato del inmueble).
+   * Dos trampas: trae `cobroId` en el cuerpo —sin exigir el código caería al
+   * panel de conciliación— y un título genérico «no se emitió» invita a
+   * reintentar, que no sirve. El texto del back ya viene escrito para caja.
+   */
+  it('🔴 CUOTA_Y_COBRO_NO_CUADRAN lleva su propio título y no manda a conciliar aunque traiga cobroId', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({
+        cuotas: [periodo('c-jun', '2026-06', 1_000_000, { sinRespaldo: 500_000 })],
+        total: 1_000_000,
+        vencidoCop: 1_000_000,
+        futuroCop: 0,
+      }),
+    );
+    const mensaje =
+      'Hay dos cobros de junio de 2026 para Jose Lopez (Apto 101), y la cuota de ese mes ya está respaldada por el otro. ' +
+      'Revisa los dos en Cartera → Cobros emitidos y avísale a soporte cuál sobra: desde caja no se puede borrar un cobro.';
+    const onSubmit = vi.fn().mockRejectedValue(
+      new ApiError(409, mensaje, 'CUOTA_Y_COBRO_NO_CUADRAN', {
+        cobroId: 'c-jun',
+        cuotaId: 'q-c-jun',
+        month: '2026-06',
+      }),
+    );
+    await abrir({ onSubmit: onSubmit as never, onConciliar: vi.fn() as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(document.body.querySelector('[data-testid="panel-conciliacion"]')).toBeNull();
+    const banner = document.body.querySelector('[data-testid="error-del-back"]');
+    expect(banner?.textContent).toContain('recibos.form.cuotaYCobroNoCuadran');
+    expect(banner?.textContent).not.toContain('recibos.form.fallo');
+    expect(banner?.textContent).toContain('Cartera → Cobros emitidos');
+  });
+
+  it('un rechazo sin código conocido conserva el título genérico', async () => {
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValue(new ApiError(409, 'Otro conflicto cualquiera', 'CODIGO_NUEVO', {}));
+    await abrir({ onSubmit: onSubmit as never, onConciliar: vi.fn() as never });
+    elegirMedio('efectivo');
+    await enviar();
+
+    const banner = document.body.querySelector('[data-testid="error-del-back"]');
+    expect(banner?.textContent).toContain('recibos.form.fallo');
+    expect(banner?.textContent).not.toContain('recibos.form.cuotaYCobroNoCuadran');
+    expect(banner?.textContent).not.toContain('recibos.form.sinMandato');
+  });
+
   it('DEUDA_MAS_VIEJA tampoco: se muestra el mensaje que dice cuál va primero', async () => {
     carteraPorCobro.mockResolvedValue(
       debeTresMeses({

@@ -291,34 +291,51 @@ describe('arquitectura del panel — agentes', () => {
 
   /**
    * 🔴 La píldora «IA» anuncia «acá hay un agente trabajando», así que toda
-   * pantalla que ES la sala de un agente la lleva… salvo UNA, y la excepción
-   * está acá escrita para que nadie la «arregle»:
-   *
-   * **Pagos** (Nico, 2026-09-16: «no debe llamarse Pagos IA»). Es el módulo de
-   * LA PLATA de la inmobiliaria —la deuda de cada contrato, lo que entra de
-   * los inquilinos, lo que sale a los propietarios—, y su raíz es además la
-   * puerta del agente de pagos. Que el agente exista no vuelve al módulo una
-   * sala de agente: sus pantallas son las pestañas de adentro
-   * (`agentWorkspaceNav.ts`), un piso más abajo. Cobranza IA, que sí es la
-   * sala de un agente, conserva la suya.
+   * pantalla que ES la sala de un agente la lleva. Ya no hay excepciones: la
+   * última era Pagos, y el 2026-09-16 dejó de ser la sala de un agente
+   * (perdió el `agente`, no sólo la píldora).
    */
-  const SIN_PILDORA_IA = [`${PANEL}/pagos`];
-
-  it('toda pantalla con `agente` lleva la marca IA, salvo las declaradas', () => {
-    for (const p of pantallas.filter((x) => x.agente && !SIN_PILDORA_IA.includes(x.href))) {
+  it('toda pantalla con `agente` lleva la marca IA', () => {
+    for (const p of pantallas.filter((x) => x.agente)) {
       expect(p.ia, p.href).toBe(true);
     }
   });
 
-  it('🔴 «Pagos» NO lleva píldora IA: el módulo es la plata, no la sala de un agente', () => {
+  it('🔴 «Pagos» no es la sala de ningún agente: es LA PLATA de la inmobiliaria', () => {
+    // Nico, 2026-09-16: «no debe llamarse Pagos IA». Primero se le quitó la
+    // píldora; el mismo día se fue el `agente`, porque mientras estuviera la
+    // raíz seguía dibujando un TERCER renglón de pestañas que contradecía la
+    // separación inquilinos/propietarios de arriba («eso de inquilinos y
+    // propietarios no se entiende realmente»). Las nueve pestañas de esa Sala
+    // están repartidas o retiradas en la NOTA al pie de `agentWorkspaceNav.ts`.
     const pagos = modulos.find((m) => m.key === 'pagos')!;
     expect(pagos.ia).toBeFalsy();
-    // Pero el agente sigue existiendo, con su Sala y sus pestañas.
-    expect(pagos.agente).toBe('pagos');
-    expect(AGENT_WORKSPACES.find((w) => w.slug === 'pagos')).toBeTruthy();
-    // Y Cobranza, que sí es la sala de un agente, conserva la suya.
+    expect(pagos.agente).toBeUndefined();
+    expect(AGENT_WORKSPACES.find((w) => w.slug === 'pagos')).toBeUndefined();
+    // Sin agente en la raíz, la raíz vuelve a ser EXACTA: una ficha de caso
+    // (`/pagos/<id>`) no marca ninguna pestaña, como cualquier otra ficha.
+    expect(pestanasDelModulo(pagos)[0]?.exact).toBe(true);
+    // Y Cobranza, que sí es la sala de un agente, conserva las dos cosas.
     const cobranza = (pagos.pantallas ?? []).find((p) => p.href === `${PANEL}/pagos/cobranza`);
     expect(cobranza?.ia).toBe(true);
+    expect(cobranza?.agente).toBe('cobranza');
+  });
+
+  it('🔴 las dos pantallas del agente que se mudaron son pestañas de Cobranza', () => {
+    // «Pagos fallidos» (columnas: Inquilino · Valor · Motivo, con «link
+    // vencido» y «banco rechazó») y «Recordatorios» son plata del INQUILINO que
+    // no entró: cobranza, no giro al propietario.
+    const cobranza = AGENT_WORKSPACES.find((w) => w.slug === 'cobranza')!;
+    const hrefs = cobranza.items.map((i) => i.href);
+    expect(hrefs).toContain(`${PANEL}/pagos/cobranza/fallidos`);
+    expect(hrefs).toContain(`${PANEL}/pagos/cobranza/recordatorios`);
+    // Y se gatean con el módulo que las ofrece, no por rol: una pestaña que se
+    // ve y devuelve al inicio es el defecto MSJ-6.
+    for (const href of [`${PANEL}/pagos/cobranza/fallidos`, `${PANEL}/pagos/cobranza/recordatorios`]) {
+      const item = cobranza.items.find((i) => i.href === href)!;
+      expect(item.module, href).toBe('cobranza');
+      expect(item.roles, href).toBeUndefined();
+    }
   });
 
   it('Retención NO está en el catálogo: no va a producción todavía (Nico, 2026-09-03)', () => {
@@ -348,11 +365,17 @@ describe('arquitectura del panel — agentes', () => {
     expect(modulos.find((m) => m.key === 'mantenimientos')?.ia).toBeFalsy();
   });
 
-  it('un agente que es raíz de módulo excluye a sus hermanas (Pagos)', () => {
-    const pagos = AGENT_WORKSPACES.find((w) => w.slug === 'pagos')!;
-    const modulo = modulos.find((m) => m.key === 'pagos')!;
-    for (const hermana of modulo.pantallas ?? []) {
-      expect(pagos.excluir ?? [], hermana.href).toContain(hermana.href);
+  it('ningún agente es hoy la raíz de un módulo CON hermanas: nadie necesita `excluir`', () => {
+    // `excluir` existía para la Sala de Pagos, que era el agente Y la raíz del
+    // módulo de plata, y tenía que declarar a sus seis hermanas para no
+    // tragárselas. Esa Sala se fue el 2026-09-16. Conciliación sigue siendo la
+    // raíz de su módulo pero no tiene hermanas, así que no excluye nada.
+    for (const ws of AGENT_WORKSPACES) {
+      const modulo = modulos.find((m) => m.href === ws.basePath);
+      const hermanas = modulo?.pantallas ?? [];
+      for (const hermana of hermanas) {
+        expect(ws.excluir ?? [], `${ws.slug} ↔ ${hermana.href}`).toContain(hermana.href);
+      }
     }
   });
 });
@@ -400,13 +423,26 @@ describe('arquitectura del panel — resolución de rutas', () => {
     expect(pestanaActiva(pestanasDelModulo(contratos), `${PANEL}/contratos/7`)).toBeNull();
   });
 
-  it('cuando la raíz es la Sala de un agente, todo el agente la deja activa y las hermanas ganan', () => {
+  it('cuando la raíz es la Sala de un agente, todo el agente la deja activa (Conciliación)', () => {
+    const conciliacion = modulos.find((m) => m.key === 'conciliacion')!;
+    const tabs = pestanasDelModulo(conciliacion);
+    expect(pestanaActiva(tabs, `${PANEL}/conciliacion/cola`)?.href).toBe(`${PANEL}/conciliacion`);
+    expect(pestanaActiva(tabs, `${PANEL}/conciliacion/caso-9`)?.href).toBe(`${PANEL}/conciliacion`);
+  });
+
+  it('🔴 Pagos ya NO: su raíz es exacta y su ficha de caso no marca ninguna pestaña', () => {
+    // Mientras fue la Sala del agente, `/pagos/<id>` dejaba «Pagos» marcada y
+    // el módulo dibujaba un tercer renglón de pestañas. Desde el 2026-09-16 la
+    // raíz se comporta como cualquier otra: exacta, y la ficha trae su propia
+    // cabecera con su «Volver».
     const pagos = modulos.find((m) => m.key === 'pagos')!;
     const tabs = pestanasDelModulo(pagos);
-    expect(pestanaActiva(tabs, `${PANEL}/pagos/cola`)?.href).toBe(`${PANEL}/pagos`);
-    expect(pestanaActiva(tabs, `${PANEL}/pagos/abc-123`)?.href).toBe(`${PANEL}/pagos`);
+    expect(pestanaActiva(tabs, `${PANEL}/pagos`)?.href).toBe(`${PANEL}/pagos`);
+    expect(pestanaActiva(tabs, `${PANEL}/pagos/abc-123`)).toBeNull();
     expect(pestanaActiva(tabs, `${PANEL}/pagos/dispersiones/lotes/1`)?.href).toBe(`${PANEL}/pagos/dispersiones`);
-    expect(pestanaActiva(tabs, `${PANEL}/pagos/liquidaciones`)?.href).toBe(`${PANEL}/pagos/liquidaciones`);
+    expect(pestanaActiva(tabs, `${PANEL}/pagos/liquidaciones/por-aprobar`)?.href).toBe(
+      `${PANEL}/pagos/liquidaciones`,
+    );
   });
 });
 
@@ -490,16 +526,35 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
       'propietarios',
       'propietarios',
     ]);
-    // La Sala del agente no es de ninguna cara: mira las dos.
-    expect(tabs[0]?.href).toBe(pagos.href);
-    expect(tabs[0]?.cara).toBeUndefined();
-    // Y las dos caras tienen su rótulo en los dos idiomas (lo pinta
+    // Y las dos caras tienen su rótulo y su matiz en los dos idiomas (lo pinta
     // `SeccionesDelModulo` a partir de `CARAS_DE_LA_PLATA`).
     for (const c of CARAS_DE_LA_PLATA) {
       expect(typeof leer(es, c.labelKey), c.labelKey).toBe('string');
       expect(typeof leer(en, c.labelKey), c.labelKey).toBe('string');
+      expect(typeof leer(es, c.detalleKey), c.detalleKey).toBe('string');
+      expect(typeof leer(en, c.detalleKey), c.detalleKey).toBe('string');
     }
     expect(CARAS_DE_LA_PLATA.map((c) => c.cara)).toEqual(['inquilinos', 'propietarios']);
+  });
+
+  it('🔴 TODAS las pantallas tienen cara, la raíz incluida', () => {
+    // La raíz no tenía, así que se dibujaba como primera card en las DOS caras
+    // — y lo que muestra es la deuda de los INQUILINOS. Elegir «Propietarios» y
+    // encontrarse eso es el mismo defecto que Nico venía señalando, un piso más
+    // abajo (2026-09-16). `pestanasDelModulo` le pasa la `cara` del módulo.
+    expect(tabs[0]?.href).toBe(pagos.href);
+    expect(tabs[0]?.cara).toBe('inquilinos');
+    expect(tabs.filter((t) => !t.cara)).toEqual([]);
+  });
+
+  it('el rótulo de cada cara lleva VERBO: «Inquilinos» a secas ya nombra otra fila', () => {
+    // El directorio tiene una fila «Inquilinos» y otra «Propietarios». La misma
+    // palabra significando dos cosas distintas en el mismo panel es media
+    // explicación de por qué «no se entendía» (Nico, 2026-09-16).
+    const rotulos = CARAS_DE_LA_PLATA.map((c) => String(leer(es, c.labelKey)));
+    expect(rotulos).toEqual(['Cobrar a inquilinos', 'Pagar a propietarios']);
+    const filas = modulos.map((m) => String(leer(es, m.labelKey)));
+    for (const r of rotulos) expect(filas, r).not.toContain(r);
   });
 
   it('🔴 PERMISOS: cada pantalla conserva EXACTAMENTE el gate que tenía como fila propia', () => {
@@ -552,13 +607,15 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
     for (const t of tabs) expect(t.scope, t.href).toBe('finanzas');
   });
 
-  it('la Sala de Pagos excluye a las cinco hermanas: no se las traga el agente', () => {
-    const ws = AGENT_WORKSPACES.find((w) => w.slug === 'pagos')!;
-    for (const p of pagos.pantallas ?? []) expect(ws.excluir ?? [], p.href).toContain(p.href);
-    // Y Cobranza, que es OTRO agente, gana en su propia ruta.
+  it('🔴 dentro de Pagos el ÚNICO agente es Cobranza, y sólo en su propia ruta', () => {
+    // Antes la raíz era la Sala de Pagos y se tragaba todo lo que colgara de
+    // `/pagos` salvo lo que declarara en `excluir`. Ahora no hay nada que
+    // excluir: fuera de `/pagos/cobranza` no hay workspace de agente.
     expect(findAgentWorkspace(`${PANEL}/pagos/cobranza/deudores/1`)?.slug).toBe('cobranza');
-    expect(findAgentWorkspace(`${PANEL}/pagos/cola`)?.slug).toBe('pagos');
-    expect(findAgentWorkspace(`${PANEL}/pagos/cartera/cobros`)).toBeNull();
+    expect(findAgentWorkspace(`${PANEL}/pagos/cobranza/fallidos`)?.slug).toBe('cobranza');
+    for (const suelta of ['', '/abc-123', '/cartera/cobros', '/liquidaciones/por-aprobar', '/dispersiones']) {
+      expect(findAgentWorkspace(`${PANEL}/pagos${suelta}`), suelta).toBeNull();
+    }
   });
 
   it('la lista de cobros emitidos es una lectura de Cartera, no una fila', () => {
@@ -569,9 +626,14 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
     expect(existsSync(join(APP, 'pagos/cartera/cobros/page.tsx'))).toBe(true);
   });
 
-  it('la maqueta «Cobros a inquilinos» del agente murió (era la duplicación señalada)', () => {
-    expect(existsSync(join(APP, 'pagos/cobros'))).toBe(false);
-    const ws = AGENT_WORKSPACES.find((w) => w.slug === 'pagos')!;
-    expect(ws.items.map((i) => i.href)).not.toContain(`${PANEL}/pagos/cobros`);
+  it('las maquetas del tercer renglón murieron con él (eran la duplicación señalada)', () => {
+    // «Cobros a inquilinos» cayó el 15-09; «Generar cobros», «Reglas» y «Pagos
+    // a propietarios» el 16-09, con la Sala entera. Las cuatro eran pantallas
+    // con datos escritos a mano y botones en «Próximamente».
+    for (const muerta of ['pagos/cobros', 'pagos/generar', 'pagos/reglas', 'pagos/propietarios']) {
+      expect(existsSync(join(APP, muerta)), muerta).toBe(false);
+    }
+    // Y no quedó ni un workspace de agente colgando de la raíz del módulo.
+    expect(AGENT_WORKSPACES.filter((w) => w.basePath === `${PANEL}/pagos`)).toEqual([]);
   });
 });

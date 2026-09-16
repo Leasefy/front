@@ -35,9 +35,17 @@
  * 2. **Callar un mes que no se pudo liquidar.** La liquidación se niega a
  *    repartir impuestos entre copropietarios; ese mes sale con su aviso y con
  *    lo que sí tiene dispersión, en vez de aparecer en cero.
+ *
+ * ── 🔴 De cada fila se sale al ESTADO DE CUENTA (Nico, 2026-09-16) ──────────
+ *
+ * Es la cara PROPIETARIOS del mismo documento: un propietario con 15 contratos
+ * tiene UN estado de cuenta (CEO, 13-09). Acá siempre se puede abrir, porque
+ * la fila trae `propietarioId` — a diferencia del inquilino, que muchas veces
+ * sólo tiene documento.
  */
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { CaretDown, CaretRight, MagnifyingGlass, Users, Warning } from '@phosphor-icons/react'
 
 import { Input } from '@/components/ui/input'
@@ -56,6 +64,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useCarteraConPropietarios } from '@/lib/hooks/use-cartera'
+import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { mesEnTitulo } from '@/lib/utils/mes'
 import type { MesDelPropietario, PropietarioEnCartera } from '@/lib/api/cartera.types'
@@ -273,6 +282,9 @@ export function CarteraDePropietarios() {
   )
 }
 
+/** A dónde vuelve el estado de cuenta que se abra desde esta tabla. */
+const VOLVER_A = '/panel/inmobiliaria/pagos/cartera/por-pagar'
+
 function FilasDelPropietario({
   propietario,
   abierto,
@@ -296,6 +308,16 @@ function FilasDelPropietario({
             <Caret className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
             {propietario.nombre || 'Sin nombre'}
           </button>
+          {/* Fuera del `button`: un enlace no vive dentro de otro control.
+              Alineado con el nombre (el caret ocupa ~24 px). */}
+          <Link
+            href={`${rutaDelEstadoDeCuenta('propietario', propietario.propietarioId)}?volver=${encodeURIComponent(VOLVER_A)}`}
+            data-testid="propietario-estado-de-cuenta"
+            title={`Ver el estado de cuenta de ${propietario.nombre || 'este propietario'}`}
+            className="ml-6 mt-0.5 inline-block text-xs text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            Estado de cuenta
+          </Link>
         </TableCell>
         <TableCell className="text-right font-mono tabular-nums text-fg-muted">
           {propietario.meses.length}

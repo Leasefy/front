@@ -1,5 +1,8 @@
 /**
- * Rótulo de honestidad para /panel/inmobiliaria/pagos/recordatorios.
+ * Rótulo de honestidad para la secuencia de recordatorios de Cobranza.
+ *
+ * Vivía en la raíz de Pagos y se mudó acá el 2026-09-16 con el resto del tercer
+ * renglón (NOTA al pie de `agentWorkspaceNav.ts`).
  *
  * PREVIEW_POR_TONO (page.tsx:102) arma los mensajes con «María» y
  * «$1.850.000» escritos a mano.

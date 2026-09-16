@@ -401,7 +401,7 @@ function EquipoPagos() {
                 lo que necesita tu decisión.
               </p>
               <Link
-                href="/panel/inmobiliaria/pagos/cola"
+                href="/panel/inmobiliaria/pagos/liquidaciones/por-aprobar"
                 className="mt-2 inline-flex items-center text-sm font-medium text-primary underline-offset-4 hover:underline"
               >
                 Ir a la cola humana

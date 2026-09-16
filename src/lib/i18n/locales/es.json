@@ -924,10 +924,10 @@
       "secCaptacion": "Captación y arriendo",
       "secOperacionDelContrato": "Operación",
       "secDinero": "Dinero",
-      "caraInquilinos": "Inquilinos",
-      "caraInquilinosDetalle": "lo que entra",
-      "caraPropietarios": "Propietarios",
-      "caraPropietariosDetalle": "lo que sale",
+      "caraInquilinos": "Cobrar a inquilinos",
+      "caraInquilinosDetalle": "la plata que entra",
+      "caraPropietarios": "Pagar a propietarios",
+      "caraPropietariosDetalle": "la plata que sale",
       "secDirectorio": "Directorio",
       "pipelineCorto": "Pipeline",
       "mantenimientos": "Mantenimientos",
@@ -3895,7 +3895,7 @@
           "noValue": "Sin valor comercial registrado",
           "unknownRent": "Canon desconocido",
           "sourceLeases": "según contratos",
-          "sourceCobros": "según cobros",
+          "sourceCuotas": "según cuotas",
           "vacantDays": "{{dias}} días vacante",
           "sortedAsc": "ordenado de menor a mayor",
           "sortedDesc": "ordenado de mayor a menor"
@@ -8867,7 +8867,7 @@
       },
       "pagos_home": {
         "title": "Pagos",
-        "subtitle": "La deuda de cada contrato, mes a mes: lo que entra de los inquilinos y lo que sale hacia los propietarios.",
+        "subtitle": "La deuda que tienen los inquilinos este mes, cuota por cuota: existe desde que se firmó el contrato y es un pedazo del estado de cuenta de cada cliente.",
         "resumen": {
           "nuevaFactura": "Nueva factura",
           "atencion": {

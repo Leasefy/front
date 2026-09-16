@@ -143,8 +143,13 @@ describe('un solo módulo de plata — cada URL vieja abre lo mismo', () => {
     expect(tienePagina(destino)).toBe(true)
   })
 
-  it('lo que ya vivía en /pagos no se toca', () => {
-    for (const quieta of ['/pagos', '/pagos/liquidaciones', '/pagos/dispersiones', '/pagos/cxp', '/pagos/cola']) {
+  it('lo que ya vivía en /pagos no lo toca ESTA tabla', () => {
+    // 🔴 `/pagos/cola` salió de la lista el 2026-09-16: se mudó a
+    // `/pagos/liquidaciones/por-aprobar` con el resto del tercer renglón, y
+    // ahora sí redirige — pero desde OTRA tabla
+    // (`la-sala-de-pagos-se-fue.data.mjs`, que va antes en el config). Lo que
+    // se cuida acá es que la unificación Cobros→Pagos no se meta con ellas.
+    for (const quieta of ['/pagos', '/pagos/liquidaciones', '/pagos/dispersiones', '/pagos/cxp']) {
       expect(resolver(`${P}${quieta}`), quieta).toBeNull()
     }
   })

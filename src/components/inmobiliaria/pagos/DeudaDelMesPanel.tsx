@@ -61,6 +61,16 @@
  * 3. **Callar lo que el número no cuenta.** Contratos sin tabla de
  *    amortización y cuotas que el contrato ya no cubre salen en los avisos.
  * 4. **Pintar un error como un mes vacío.** Eso lo separa `EstadoDeDatos`.
+ *
+ * ── 🔴 Y la salida al ESTADO DE CUENTA (Nico, 2026-09-16, más tarde) ────────
+ *
+ * «Sigo preguntando si eso está con estado de cuenta atado, y ya te he
+ * explicado tantas veces que **eso va atado al estado de cuenta**.» Lo estaba
+ * en el modelo y no en la pantalla: el documento existía desde el 13-09 y sólo
+ * se llegaba a él desde las fichas (contrato, propietario, inquilino), nunca
+ * desde Pagos, que es donde se trabaja la plata. Ahora cada fila de la tabla lo abre
+ * (`CuotasDelMesTabla`) y el pie lo dice con palabras: un mes de esta tabla es
+ * un renglón del estado de cuenta de alguien.
  */
 
 import { useMemo, useState } from 'react'
@@ -399,7 +409,9 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
           <p className="text-xs text-fg-muted">
             La deuda sale de las cuotas del contrato, no de los cobros emitidos: existe
             desde que se firma, y el inquilino puede pagarla antes o hasta el día máximo
-            de cartera de su contrato. Leído contra el {datos.hoy}.
+            de cartera de su contrato. Cada fila es un mes del{' '}
+            <strong className="font-medium">estado de cuenta</strong> de ese cliente: haz
+            clic en su nombre para verlo completo. Leído contra el {datos.hoy}.
           </p>
         ) : null}
       </EstadoDeDatos>

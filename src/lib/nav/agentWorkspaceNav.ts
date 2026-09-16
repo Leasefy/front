@@ -75,13 +75,13 @@ export interface AgentWorkspace {
   /** Workspace root — also the "Resumen" destination. */
   basePath: string;
   /**
-   * Prefijos que cuelgan de `basePath` pero NO son del agente. Pagos es la
-   * Sala del agente Y la raíz del ÚNICO módulo de plata: `/pagos/recaudo`,
-   * `/pagos/cartera`, `/pagos/cobranza`, `/pagos/liquidaciones`,
-   * `/pagos/dispersiones` y `/pagos/cxp` son pantallas hermanas (o, en el caso
-   * de Cobranza, OTRO agente), no funciones de éste. Lo respeta
-   * `findAgentWorkspace`, y un test exige que toda hermana declarada en
-   * `arquitectura-del-panel.ts` esté en esta lista.
+   * Prefijos que cuelgan de `basePath` pero NO son del agente.
+   *
+   * Hoy no lo usa nadie: lo usaba la Sala de Pagos, que era a la vez el agente
+   * y la raíz del módulo de plata, y tenía que declarar a sus seis hermanas
+   * para no tragárselas. Esa Sala se fue el 2026-09-16 (ver la NOTA al pie).
+   * El campo se queda porque la situación —un agente en la raíz de un módulo
+   * con hermanas— puede volver, y `findAgentWorkspace` ya lo respeta.
    */
   excluir?: string[];
   /** i18n key for the agent's display name. */
@@ -122,8 +122,17 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.cobranzaAcuerdos', href: `${COBRANZA}/acuerdos`, icon: Handshake, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaDisputas', href: `${COBRANZA}/disputas`, icon: Scales, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.pagos', href: `${COBRANZA}/pagos`, icon: CreditCard, module: 'cobranza' },
+      // Llegó de la Sala de Pagos el 2026-09-16 (ver la NOTA al pie): el pago
+      // que se cayó es del INQUILINO —link vencido, banco que rechazó, pasarela
+      // caída— y lo que sigue es volver a pedírselo. Va pegada a «Pagos», que
+      // es el embudo del mismo dinero visto por el lado que sí entró.
+      { labelKey: 'inmobiliaria.ai.nav.pagosFallidos', href: `${COBRANZA}/fallidos`, icon: WarningCircle, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.llamadas', href: `${COBRANZA}/llamadas`, icon: PhoneCall, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cartas', href: `${COBRANZA}/cartas`, icon: Envelope, module: 'cobranza' },
+      // También llegó de la Sala de Pagos: una secuencia de recordatorios es
+      // cobranza, y va al lado de las cartas porque son el mismo oficio
+      // —escribirle al que debe— con distinto tono y distinto canal.
+      { labelKey: 'inmobiliaria.ai.nav.pagosRecordatorios', href: `${COBRANZA}/recordatorios`, icon: BellRinging, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.siniestros', href: `${COBRANZA}/siniestros`, icon: Siren, module: 'cobranza' },
       // FUSIONADO en el Resumen — «Reporte diario» (ver nota al pie del archivo).
       // { labelKey: 'inmobiliaria.ai.nav.cobranzaReporte', href: `${COBRANZA}/reporte`, icon: ChartLine, module: 'cobranza' },
@@ -239,45 +248,6 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.matchingCola', href: `${MATCHING}/cola`, icon: ClipboardText, module: 'matching' },
       // «Analítica» de Matching: el micro no publica ese endpoint y la tab era un error garantizado (2026-09-08). La ruta rebota al resumen.
       { labelKey: 'inmobiliaria.ai.nav.matchingConfiguracion', href: `${MATCHING}/configuracion`, icon: SlidersHorizontal, module: 'matching' },
-    ],
-  },
-  // ── Pagos (AP) ────────────────────────────────────────────────────────────
-  {
-    slug: 'pagos',
-    basePath: PAGOS,
-    excluir: [
-      `${PAGOS}/recaudo`,
-      `${PAGOS}/cartera`,
-      `${PAGOS}/cobranza`,
-      `${PAGOS}/liquidaciones`,
-      `${PAGOS}/dispersiones`,
-      `${PAGOS}/cxp`,
-    ],
-    labelKey: 'inmobiliaria.ai.nav.pagos',
-    icon: CurrencyDollar,
-    module: null,
-    roles: CONTADOR_ROLES,
-    items: [
-      { labelKey: 'inmobiliaria.ai.nav.resumen', href: PAGOS, icon: SquaresFour, exact: true, module: null, roles: CONTADOR_ROLES },
-      // RETIRADA — «Cobros a inquilinos» (`/pagos/cobros`). Era una maqueta:
-      // un cobro de ejemplo rotulado con `AvisoDatosDeEjemplo` y tres enlaces
-      // a la tabla real de cobros. Es LA duplicación que Nico señaló el
-      // 2026-09-15 («hay dos cosas de lo mismo, que son Cobros y uno en Pagos
-      // y el otro en Cobros»). La lista real de cobros emitidos vive ahora
-      // dentro de Cartera (`/pagos/cartera/cobros`), porque un cobro es un
-      // DOCUMENTO sobre la cartera, no una bandeja del agente. La URL vieja
-      // redirige allá (`un-solo-modulo-de-plata.data.mjs`); la clave i18n
-      // `inmobiliaria.ai.nav.pagosCobros` se queda, como con «Equipo IA».
-      { labelKey: 'inmobiliaria.ai.nav.pagosGenerar', href: `${PAGOS}/generar`, icon: PaperPlaneTilt, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosFallidos', href: `${PAGOS}/fallidos`, icon: WarningCircle, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosRecordatorios', href: `${PAGOS}/recordatorios`, icon: BellRinging, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosPropietarios', href: `${PAGOS}/propietarios`, icon: Wallet, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosCola', href: `${PAGOS}/cola`, icon: ClipboardText, module: null, roles: CONTADOR_ROLES },
-      // OCULTO — «Equipo IA» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.pagosEquipo', href: `${PAGOS}/equipo`, icon: UsersThree, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosAnalitica', href: `${PAGOS}/analitica`, icon: ChartLineUp, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosReglas', href: `${PAGOS}/reglas`, icon: Lightning, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosConfiguracion', href: `${PAGOS}/configuracion`, icon: SlidersHorizontal, module: null, roles: CONTADOR_ROLES },
     ],
   },
   // ── Mantenimiento (tickets) — APAGADO ─────────────────────────────────────
@@ -493,6 +463,118 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
  * `ejecucion/page.tsx`, `integraciones/page.tsx`). Las claves de i18n se
  * quedan, como con «Equipo IA». Cuando la comparación en vivo, la ejecución en
  * paralelo o las integraciones tengan endpoint, vuelven a la lista.
+ */
+
+/**
+ * NOTA — la Sala del agente de PAGOS se fue entera (2026-09-16, Nico).
+ *
+ * `/panel/inmobiliaria/pagos` tenía TRES renglones encima del contenido:
+ *
+ *   1. [Inquilinos · lo que entra] [Propietarios · lo que sale]   ← la cara
+ *   2. [Pagos] [Recaudo] [Cartera] [Cobranza IA]                  ← las cards
+ *   3. Resumen · Generar cobros · Pagos fallidos · Recordatorios ·
+ *      Pagos a propietarios · Por aprobar · Analítica · Reglas ·
+ *      Configuración                                              ← ESTA lista
+ *
+ * El tercero CONTRADECÍA al primero: decía «Pagos a propietarios» mientras
+ * arriba estaba elegido «Inquilinos». Nico, mirando el encabezado: «eso de
+ * inquilinos y propietarios no se entiende realmente, y que las tabs de abajo
+ * estén atadas a lo seleccionado arriba. Y esa tab de generar cobros, ¿para
+ * qué? […] eso va atado al estado de cuenta».
+ *
+ * Es herencia: el módulo era la Sala de un agente. Dejó de serlo la noche
+ * anterior, cuando perdió la píldora «IA» —«no debe llamarse Pagos IA»: es LA
+ * PLATA de la inmobiliaria, no un agente—. Una Sala sin agente es una lista de
+ * pantallas sueltas que no le obedecen a nadie, y eso era el tercer renglón.
+ *
+ * Ninguna pantalla VIVA se perdió. Las nueve, una por una:
+ *
+ *   · Resumen (`/pagos`)        — es la RAÍZ del módulo. Ya era la primera card
+ *                                 del segundo renglón; como pestaña era la misma
+ *                                 puerta dos veces.
+ *   · Generar cobros            — BORRADA. Era una maqueta (`RESULTADO_EJEMPLO`
+ *     (`/pagos/generar`)          escrito a mano, botón «Próximamente») y además
+ *                                 la pregunta está mal hecha: el cobro no crea
+ *                                 la deuda. La acción real vive en Cartera →
+ *                                 Cobros emitidos. La URL redirige allá.
+ *   · Pagos fallidos            — se mudó a Cobranza (`/pagos/cobranza/fallidos`).
+ *     (`/pagos/fallidos`)         Sus columnas son «Inquilino · Valor · Motivo»
+ *                                 y sus motivos son «link vencido», «banco
+ *                                 rechazó»: es plata del inquilino que no entró.
+ *   · Recordatorios             — se mudó a Cobranza (`/pagos/cobranza/recordatorios`).
+ *   · Pagos a propietarios      — BORRADA. 100 % maqueta (`BANDEJA_EJEMPLO`,
+ *     (`/pagos/propietarios`)     `LIQUIDACION_EJEMPLO`, todas las acciones en
+ *                                 «Próximamente») y su propio encabezado decía
+ *                                 que «la EJECUCIÓN real vive en /dispersiones
+ *                                 y /tesoreria». Liquidaciones ya responde la
+ *                                 MISMA pregunta con datos reales. La URL
+ *                                 redirige a Liquidaciones.
+ *   · Por aprobar               — se mudó a Liquidaciones
+ *     (`/pagos/cola`)             (`/pagos/liquidaciones/por-aprobar`): son
+ *                                 facturas de proveedor esperando aprobación
+ *                                 del contador, es decir plata que SALE.
+ *   · Reglas (`/pagos/reglas`)  — BORRADA. Maqueta que no persistía nada. Las
+ *                                 reglas que sí existen son las de mora, en
+ *                                 `/pagos/cartera/reglas-de-mora`. Redirige.
+ *   · Analítica                 — sin pestaña. Es el desempeño del AGENTE, y esa
+ *     (`/pagos/analitica`)        pregunta ya tiene fila propia en el sidebar:
+ *                                 «Desempeño IA» (`/reportes/ia`). Meterla como
+ *                                 pestaña de una pantalla de tesorería sería
+ *                                 volver a mezclar niveles. La ruta y su i18n se
+ *                                 quedan, igual que «Equipo IA».
+ *   · Configuración             — sin pestaña. Es la postura de autonomía del
+ *     (`/pagos/configuracion`)    agente, y el Piloto ya la gobierna para toda
+ *                                 la inmobiliaria (`PilotoAutonomia` en
+ *                                 `/piloto`). Conserva su única puerta viva: el
+ *                                 enlace «Automatización» de la ficha del caso
+ *                                 (`PagoCasoDetalle`).
+ *
+ * Las claves i18n (`inmobiliaria.ai.nav.pagos*`) se quedan todas: dos siguen en
+ * uso desde Cobranza y el resto sigue el mismo criterio que «Equipo IA».
+ *
+ * Las redirecciones viven en `la-sala-de-pagos-se-fue.data.mjs`, con su test.
+ *
+ * ── 🔴 Lo que esta Sala era, y qué haría falta para que vuelva ─────────────
+ *
+ * Esto NO era una carpeta de maquetas sueltas: era la CARCASA de un equipo de
+ * agentes que existe, está escrito y no está desplegado. Vive en el repo del
+ * micro (`~/rent/agent`), en la rama **`develop`** —verificado con
+ * `git ls-tree origin/develop`—, bajo `src/mastra/agents/pagos/`:
+ *
+ *   laura.ts      generación de cobros          ↔ pestaña «Generar cobros»
+ *   nicolas.ts    links de pago y envío         ↔ (sin pestaña propia)
+ *   valentina.ts  pagos fallidos y en riesgo    ↔ pestaña «Pagos fallidos»
+ *   samuel.ts     liquidación a propietarios    ↔ pestaña «Pagos a propietarios»
+ *   sofia.ts      reportes y notificaciones     ↔ pestaña «Recordatorios»
+ *
+ * más su orquestadora Gabriela (fase 47 del micro) y la ruta
+ * `src/server/routes/pagos-dispatch.ts` (`POST /pagos/dispatch`). NADA de eso
+ * está en las ramas con las que trabajamos: `cambios-nico-6/7` del micro no
+ * tienen ni un archivo de `agents/pagos`. El cliente del front ya lo dice —ver
+ * la nota de `src/lib/api/pagos-home.ts`—: el backend está detrás de la
+ * bandera `PAGOS_ENABLED`, responde 503 mientras está apagada y sus rutas no
+ * están mezcladas ni desplegadas, por eso 404 y 503 se tratan como «no
+ * disponible» y no como error.
+ *
+ * Se retira igual, por dos razones que no se cancelan con eso:
+ *
+ *   1. HOY contradice lo de arriba y lleva a pantallas con «Próximamente». Una
+ *      promesa de producto no puede ocupar el encabezado de la pantalla donde
+ *      se trabaja la plata de verdad.
+ *   2. 🔴 Ese equipo está construido sobre la premisa que Nico corrigió:
+ *      arranca en «generar el cobro», cuando **la deuda ya nació con el
+ *      contrato** y el cobro es apenas el documento con que se reclama una
+ *      parte de ella. Su primer paso —Laura generando cobros— no es el primer
+ *      paso del negocio.
+ *
+ * QUÉ TENDRÍA QUE CUMPLIR PARA VOLVER: colgar del ESTADO DE CUENTA DEL
+ * CONTRATO, no de «generar cobros». Es decir, entrar por la cuota que ya
+ * existe (`contrato_cuotas`) y no por un documento que alguien tiene que
+ * crear primero; y cada especialista aparecer DENTRO de la pantalla cuyo
+ * trabajo automatiza —Valentina en Cobranza → Pagos fallidos, Samuel en
+ * Liquidaciones, Sofía en Cobranza → Recordatorios—, que es justamente a donde
+ * se mudaron sus pantallas. Si vuelve como una Sala propia en la raíz del
+ * módulo, vuelve el mismo defecto.
  */
 
 /** Find the agent workspace whose basePath contains `pathname` (or null). */

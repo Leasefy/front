@@ -22,9 +22,25 @@
  * «cartera» es cómo se termina llamando a alguien que está usando el plazo que
  * la inmobiliaria misma le dio, con la Ley 2300 de por medio.
  *
+ * ── 🔴 De acá se sale al ESTADO DE CUENTA (Nico, 2026-09-16) ────────────────
+ *
+ * «Sigo preguntando si eso está con estado de cuenta atado, y ya te he
+ * explicado tantas veces que **eso va atado al estado de cuenta**.» La pantalla
+ * del estado de cuenta existía desde el 13-09 y su única puerta era la tarjeta
+ * resumida de las fichas (contrato, propietario, inquilino): desde Pagos, donde
+ * se trabaja la plata, no se llegaba. Esta fila es el lugar más natural
+ * para abrirla —es una cuota del mes, o sea un renglón del estado de cuenta de
+ * alguien—, así que el nombre del inquilino es el enlace.
+ *
+ * Con quién se abre lo decide `refDelInquilino`: la cuenta del portal si la
+ * tiene, si no el DOCUMENTO (que es lo normal en lo migrado). Sin ninguno de
+ * los dos el nombre va en texto plano: un enlace que lleva a un 404 enseña que
+ * la pantalla no sirve.
+ *
  * Sólo pinta. Cargando y fallo los resuelve `EstadoDeDatos` en el panel.
  */
 
+import Link from 'next/link'
 import { CurrencyCircleDollar } from '@phosphor-icons/react'
 
 import { Badge } from '@/components/ui/badge'
@@ -32,6 +48,8 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { TablePagination } from '@/components/ui/pagination'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { useTablePagination } from '@/lib/hooks/use-table-pagination'
+import { refDelInquilino } from '@/lib/estado-de-cuenta/con-quien-se-abre'
+import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import { rotuloDelContrato } from '@/lib/cartera/conceptos'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { nombreDelMes } from '@/lib/utils/mes'
@@ -74,6 +92,30 @@ export function fechaLocal(iso: string, locale: 'es' | 'en'): string {
     month: 'short',
     year: 'numeric',
   })
+}
+
+const VOLVER_A = '/panel/inmobiliaria/pagos'
+
+/**
+ * El nombre del inquilino, que es la puerta a su estado de cuenta cuando se le
+ * puede identificar. Sin referencia se pinta igual, pero sin enlace.
+ */
+function EnlaceAlEstadoDeCuenta({ fila }: { fila: FilaDeLaCuotaDelMes }) {
+  const nombre = fila.inquilino ?? 'Sin nombre en el contrato'
+  const ref = refDelInquilino(fila)
+  if (!ref) {
+    return <p className="truncate font-medium text-fg">{nombre}</p>
+  }
+  return (
+    <Link
+      href={`${rutaDelEstadoDeCuenta('inquilino', ref)}?volver=${encodeURIComponent(VOLVER_A)}`}
+      data-testid="cuota-estado-de-cuenta"
+      title={`Ver el estado de cuenta de ${nombre}`}
+      className="block truncate font-medium text-fg underline-offset-4 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+    >
+      {nombre}
+    </Link>
+  )
 }
 
 export interface CuotasDelMesTablaProps {
@@ -143,9 +185,7 @@ export function CuotasDelMesTabla({
             pageItems.map((f) => (
               <TableRow key={f.cuotaId} data-testid="cuota-fila">
                 <TableCell>
-                  <p className="truncate font-medium text-fg">
-                    {f.inquilino ?? 'Sin nombre en el contrato'}
-                  </p>
+                  <EnlaceAlEstadoDeCuenta fila={f} />
                   <p className="truncate text-caption text-fg-muted">
                     {f.documento ? `CC ${f.documento}` : ''}
                     {f.contrato ? rotuloDelContrato(f) : ''}
@@ -155,7 +195,7 @@ export function CuotasDelMesTabla({
                   <p className="truncate text-fg">{f.inmueble}</p>
                 </TableCell>
                 <TableCell className="whitespace-nowrap text-fg-muted">
-                  {nombreDelMes(f.month, idioma, 'short')}
+                  {nombreDelMes(f.mes, idioma, 'short')}
                 </TableCell>
                 <TableCell className="whitespace-nowrap tabular-nums" numeric>
                   <span className="font-medium text-fg">{formatCurrency(f.totalCop)}</span>

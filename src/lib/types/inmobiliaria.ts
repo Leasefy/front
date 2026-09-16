@@ -1343,8 +1343,17 @@ export interface FlujoCajaReport {
 // porcentajes vienen en 0-100 con dos decimales. `rentabilidadNetaAnualPct`
 // en `null` significa «sin valor comercial registrado»: no se inventa.
 
-/** De dónde salió la ocupación: del historial de contratos o de los cobros. */
-export type RentabilidadOcupacionFuente = 'leases' | 'cobros';
+/**
+ * De dónde salió la ocupación: del historial de contratos o de las cuotas.
+ *
+ * 🔴 `'cuotas'` se llamaba `'cobros'` hasta el 2026-09-16, en los dos lados. El
+ * respaldo —para cuando el inmueble no tiene arriendo registrado— dejó de ser
+ * «tuvo cobro ese mes», que en una inmobiliaria migrada es SIEMPRE falso porque
+ * no tiene ni un cobro emitido, y pasó a ser «tuvo cuota ese mes», que es el
+ * rastro fechado que deja el contrato desde que se firma. Espejo de
+ * `back-erp/src/inmobiliaria/reports/rentabilidad-por-inmueble.ts`.
+ */
+export type RentabilidadOcupacionFuente = 'leases' | 'cuotas';
 
 export interface RentabilidadFila {
   consignacionId: string;

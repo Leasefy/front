@@ -924,10 +924,10 @@
       "secCaptacion": "Acquisition & leasing",
       "secOperacionDelContrato": "Operations",
       "secDinero": "Money",
-      "caraInquilinos": "Tenants",
-      "caraInquilinosDetalle": "money in",
-      "caraPropietarios": "Owners",
-      "caraPropietariosDetalle": "money out",
+      "caraInquilinos": "Collect from tenants",
+      "caraInquilinosDetalle": "money coming in",
+      "caraPropietarios": "Pay owners",
+      "caraPropietariosDetalle": "money going out",
       "secDirectorio": "Directory",
       "pipelineCorto": "Pipeline",
       "mantenimientos": "Maintenance",
@@ -3855,7 +3855,7 @@
           "noValue": "No commercial value on record",
           "unknownRent": "Unknown rent",
           "sourceLeases": "from leases",
-          "sourceCobros": "from collections",
+          "sourceCuotas": "from instalments",
           "vacantDays": "{{dias}} days vacant",
           "sortedAsc": "sorted ascending",
           "sortedDesc": "sorted descending"
@@ -8827,7 +8827,7 @@
       },
       "pagos_home": {
         "title": "Payments",
-        "subtitle": "Each contract's debt, month by month: what comes in from tenants and what goes out to owners.",
+        "subtitle": "What tenants owe this month, instalment by instalment: it exists from the day the contract was signed and it is a slice of each client's account statement.",
         "resumen": {
           "nuevaFactura": "New invoice",
           "atencion": {

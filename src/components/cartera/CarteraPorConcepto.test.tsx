@@ -598,6 +598,35 @@ describe('CarteraPorConcepto — los tres números que no se pueden mezclar', ()
   })
 })
 
+describe('🔴 la puerta al estado de cuenta (Nico, 2026-09-16)', () => {
+  // «Todo funciona alrededor del estado de cuenta del contrato.» La pantalla
+  // existía desde el 13-09 y sólo las fichas llevaban a ella, no la cartera.
+  it('cada inquilino abre SU estado de cuenta, con el regreso a esta lectura', () => {
+    conCartera(cartera())
+    montar()
+    const enlace = todos('[data-testid="fila-inquilino"]')[0]!.querySelector(
+      '[data-testid="inquilino-estado-de-cuenta"]',
+    )
+    expect(enlace?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/estado-de-cuenta/inquilino/70814637?volver=%2Fpanel%2Finmobiliaria%2Fpagos%2Fcartera%2Fconceptos',
+    )
+  })
+
+  it('el enlace NO vive dentro del botón que abre la fila: serían dos controles anidados', () => {
+    conCartera(cartera())
+    montar()
+    const fila = todos('[data-testid="fila-inquilino"]')[0]!
+    expect(fila.querySelector('button [data-testid="inquilino-estado-de-cuenta"]')).toBeNull()
+    expect(fila.querySelector('[data-testid="inquilino-estado-de-cuenta"]')).not.toBeNull()
+  })
+
+  it('agrupado por CONTRATO (sin cuenta ni documento) no ofrece la puerta', () => {
+    conCartera(cartera({ inquilinos: [{ ...NICOLAS, clave: 'contrato:ct-1', documento: null }] }))
+    montar()
+    expect(host.querySelector('[data-testid="inquilino-estado-de-cuenta"]')).toBeNull()
+  })
+})
+
 describe('rotuloDelContrato — de quién es cada número', () => {
   it('migrado: el de la inmobiliaria y el nuestro rotulado', () => {
     expect(rotuloDelContrato({ contrato: '1686', contratoDeLeasefy: 'Leasefy #1839' })).toBe(

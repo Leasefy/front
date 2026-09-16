@@ -7,6 +7,7 @@ import { RUTAS_POR_CICLO_DE_VIDA_DATA } from "./src/lib/nav/rutas-por-ciclo-de-v
 import { RUTAS_UNIFICADAS_DEL_PANEL_DATA } from "./src/lib/nav/rutas-unificadas-del-panel.data.mjs";
 import { CONCILIACION_EN_UN_SOLO_LUGAR_DATA } from "./src/lib/nav/conciliacion-en-un-solo-lugar.data.mjs";
 import { UN_SOLO_MODULO_DE_PLATA_DATA } from "./src/lib/nav/un-solo-modulo-de-plata.data.mjs";
+import { LA_SALA_DE_PAGOS_SE_FUE_DATA } from "./src/lib/nav/la-sala-de-pagos-se-fue.data.mjs";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -149,8 +150,15 @@ const nextConfig = {
   // pantallas viven bajo /pagos. Ver src/lib/nav/un-solo-modulo-de-plata.ts.
   async redirects() {
     return [
-      // La arquitectura por ciclo de vida (2026-09) va PRIMERO: Next aplica la
-      // primera regla que calza y estas son las más específicas. Ver
+      // 🔴 PRIMERA de todas: las seis pantallas que dejó la Sala del agente de
+      // Pagos al irse (2026-09-16). Sus fuentes son LITERALES —no tapan nada—
+      // y declaran también el gemelo /ai/pagos/<x>, que si no se lo comería
+      // /ai/pagos/:path* de la tabla siguiente y el salto sería doble. Ver
+      // src/lib/nav/la-sala-de-pagos-se-fue.data.mjs (con test que lee ESTE
+      // archivo para exigir el orden).
+      ...LA_SALA_DE_PAGOS_SE_FUE_DATA,
+      // La arquitectura por ciclo de vida (2026-09) va después: Next aplica la
+      // primera regla que calza y estas son las más generales del panel. Ver
       // src/lib/nav/rutas-por-ciclo-de-vida.data.mjs (con test).
       ...RUTAS_POR_CICLO_DE_VIDA_DATA,
       ...RUTAS_UNIFICADAS_DEL_PANEL_DATA,

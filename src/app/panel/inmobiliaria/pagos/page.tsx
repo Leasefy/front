@@ -37,6 +37,31 @@
  *    explícito arriba (ver `SeccionesDelModulo`), no dos rótulos en versalitas
  *    metidos entre las cards.
  *
+ * ── Y lo que faltaba, el mismo día, más tarde ──────────────────────────────
+ *
+ * «Eso de inquilinos y propietarios **no se entiende realmente**, y que las
+ *  tabs de abajo estén atadas a lo seleccionado arriba. Y esa tab de **generar
+ *  cobros, ¿para qué?** Sigo preguntando si eso está con **estado de cuenta
+ *  atado**, y ya te he explicado tantas veces que **eso va atado al estado de
+ *  cuenta**.»
+ *
+ * Había un TERCER renglón encima del contenido —las pestañas de la Sala del
+ * agente— que decía «Pagos a propietarios» con «Inquilinos» elegido arriba. Se
+ * fue entero; sus nueve pestañas están repartidas o retiradas una por una en
+ * la NOTA al pie de `agentWorkspaceNav.ts`. Quedan DOS renglones: la cara y,
+ * debajo, sólo las pantallas de esa cara.
+ *
+ * Y esta pantalla pasó a ser de la cara INQUILINOS —lo dice el rótulo del
+ * encabezado y el `cara: 'inquilinos'` de la arquitectura—: antes no era de
+ * ninguna y aparecía como primera card también en «Propietarios», mostrando la
+ * deuda de los inquilinos.
+ *
+ * Y el estado de cuenta tiene camino desde donde se trabaja la plata: cada fila
+ * de la tabla de cuotas abre el del cliente que debe (`CuotasDelMesTabla`).
+ * Hasta hoy la ÚNICA puerta era la tarjeta resumida de las fichas (contrato,
+ * propietario, inquilino: `ResumenEnLaFicha`), y ninguna pantalla de Pagos
+ * llevaba a él.
+ *
  * ── Lo que se retiró de esta pantalla ───────────────────────────────────────
  *
  * La fila «Operaciones detalladas» (Cobros a inquilinos · Pagos a propietarios
@@ -54,6 +79,7 @@ import Link from 'next/link'
 import { CaretRight, Clock, Robot, User as UserIcon, Gear } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { SectionLabel } from '@/components/ui/section-label'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { Card, Badge } from '@/components/ui'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
@@ -125,7 +151,13 @@ function PagosHome() {
     <div className="space-y-8 p-6 lg:p-8">
       {/* Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
+        <div className="space-y-1.5">
+          {/* 🔴 La CARA, en el título. El selector de arriba dice de qué lado
+              del contrato estás; si la pantalla no lo repite, al bajar la vista
+              ya no se sabe. Y esta pantalla es de una sola cara: lo que deben
+              los inquilinos (ver `cara: 'inquilinos'` en
+              `arquitectura-del-panel.ts`). */}
+          <SectionLabel>Pagos · inquilinos</SectionLabel>
           <h1 className="text-h2 text-fg">
             {t('inmobiliaria.ai.pagos_home.title')}
           </h1>
@@ -162,7 +194,7 @@ function PagosHome() {
               {t('inmobiliaria.ai.pagos_home.resumen.atencion.titulo')}
             </h2>
             <Link
-              href="/panel/inmobiliaria/pagos/cola"
+              href="/panel/inmobiliaria/pagos/liquidaciones/por-aprobar"
               className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
             >
               {t('inmobiliaria.ai.pagos_home.resumen.atencion.verCola')}
@@ -185,7 +217,7 @@ function PagosHome() {
           </h2>
           {feed.length > MAX_ACTIVIDAD && (
             <Link
-              href="/panel/inmobiliaria/pagos/cola"
+              href="/panel/inmobiliaria/pagos/liquidaciones/por-aprobar"
               className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
               data-testid="actividad-ver-todo"
             >

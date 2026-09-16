@@ -119,11 +119,14 @@ describe('SeccionesDelModulo — las cards no se van al entrar en una sección',
     expect(lista.filter((c) => c.activa).map((c) => c.label)).toEqual(['cobranza'])
   })
 
-  it('en Pagos, la sección hermana (Liquidaciones) marca su card y la Sala no', () => {
+  it('🔴 en la cara propietarios la raíz de Pagos NO aparece: es la deuda de los INQUILINOS', () => {
+    // Hasta el 2026-09-16 la raíz no tenía cara y se dibujaba como primera card
+    // en las dos. Elegir «Pagar a propietarios» y encontrarse la deuda de los
+    // inquilinos es el mismo defecto que Nico señaló arriba, un piso más abajo.
     render('/panel/inmobiliaria/pagos/liquidaciones')
     const lista = cards()
+    expect(lista.map((c) => c.label)).toEqual(['liquidaciones', 'dispersiones'])
     expect(lista.filter((c) => c.activa).map((c) => c.label)).toEqual(['liquidaciones'])
-    expect(lista.find((c) => c.label === 'pagos')?.activa).toBe(false)
   })
 
   it('la lista de cobros emitidos deja marcada a Cartera: es una lectura suya, no un módulo', () => {
@@ -225,8 +228,10 @@ describe('SeccionesDelModulo — las dos caras de la plata (Nico, 2026-09-16)', 
 
   it('cada cara es un ENLACE a su primera sección: la cara viaja en la URL', () => {
     render('/panel/inmobiliaria/pagos')
+    // Inquilinos entra por la RAÍZ del módulo —la deuda del mes— porque desde
+    // el 2026-09-16 la raíz es de esa cara.
     expect(caras().map((c) => c.href)).toEqual([
-      '/panel/inmobiliaria/pagos/recaudo',
+      '/panel/inmobiliaria/pagos',
       '/panel/inmobiliaria/pagos/liquidaciones',
     ])
   })
@@ -240,7 +245,7 @@ describe('SeccionesDelModulo — las dos caras de la plata (Nico, 2026-09-16)', 
   it('🔴 la cara se deduce de la RUTA: en Dispersiones estás en Propietarios', () => {
     render('/panel/inmobiliaria/pagos/dispersiones')
     expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['propietarios'])
-    expect(cards().map((c) => c.label)).toEqual(['pagos', 'liquidaciones', 'dispersiones'])
+    expect(cards().map((c) => c.label)).toEqual(['liquidaciones', 'dispersiones'])
     expect(cards().filter((c) => c.activa).map((c) => c.label)).toEqual(['dispersiones'])
   })
 
@@ -249,9 +254,28 @@ describe('SeccionesDelModulo — las dos caras de la plata (Nico, 2026-09-16)', 
     expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['propietarios'])
   })
 
-  it('la Sala no es de ninguna cara: va suelta y primera, en las dos', () => {
+  it('🔴 TODA card del riel pertenece a la cara elegida, sin excepciones', () => {
+    // Es la regla que Nico pedía: «que las tabs de abajo estén atadas a lo
+    // seleccionado arriba». La última excepción era la raíz de Pagos.
     render('/panel/inmobiliaria/pagos/dispersiones')
-    expect(cards()[0]?.href).toBe('/panel/inmobiliaria/pagos')
+    expect(cards().map((c) => c.href)).toEqual([
+      '/panel/inmobiliaria/pagos/liquidaciones',
+      '/panel/inmobiliaria/pagos/dispersiones',
+    ])
+    render('/panel/inmobiliaria/pagos/cartera')
+    expect(cards().map((c) => c.href)).toEqual([
+      '/panel/inmobiliaria/pagos',
+      '/panel/inmobiliaria/pagos/recaudo',
+      '/panel/inmobiliaria/pagos/cartera',
+      '/panel/inmobiliaria/pagos/cobranza',
+    ])
+  })
+
+  it('el riel dice de qué CARA son sus cards, para quien no ve el selector', () => {
+    render('/panel/inmobiliaria/pagos/dispersiones')
+    expect(contenedor.querySelector('nav')?.getAttribute('aria-label')).toBe(
+      'pagos · caraPropietarios',
+    )
   })
 
   it('🔴 quien sólo tiene `cobros` ve su cara y NO la de propietarios', () => {
@@ -273,9 +297,9 @@ describe('SeccionesDelModulo — las dos caras de la plata (Nico, 2026-09-16)', 
     permisos.modulos = null
     render('/panel/inmobiliaria/pagos')
     expect(caras()).toHaveLength(2)
-    expect(cards()).toHaveLength(4)
+    expect(cards().map((c) => c.label)).toEqual(['pagos', 'recaudo', 'cartera', 'cobranza'])
     render('/panel/inmobiliaria/pagos/liquidaciones')
-    expect(cards().map((c) => c.label)).toEqual(['pagos', 'liquidaciones', 'dispersiones'])
+    expect(cards().map((c) => c.label)).toEqual(['liquidaciones', 'dispersiones'])
   })
 
   it('un módulo sin caras (Inmuebles) no dibuja selector alguno', () => {

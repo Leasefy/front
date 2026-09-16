@@ -18,7 +18,7 @@ import { guardarArriendoEnCurso } from '@/lib/aprobacion/arriendo-en-curso';
 
 let root: Root | null = null;
 let c: HTMLDivElement | null = null;
-beforeEach(() => { window.sessionStorage.clear(); confettiMock.mockReset(); router.replace.mockReset(); });
+beforeEach(() => { window.sessionStorage.clear(); confettiMock.mockReset(); router.replace.mockReset(); router.push.mockReset(); });
 afterEach(() => { act(() => root?.unmount()); c?.remove(); });
 
 function montar() {
@@ -52,3 +52,40 @@ describe('/arrendar/[id] — paso 1 cumplido', () => {
     expect(confettiMock).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Cerrar desde el paso 1 pregunta antes (Nico, 2026-09-15): era un enlace a la
+ * ficha y se salía de una, sin decir que puede perder el inmueble.
+ */
+describe('/arrendar/[id] — cerrar', () => {
+  const guardado = () =>
+    guardarArriendoEnCurso({ propertyId: 'p-1', titulo: 'Local en Centro, Caldas', ciudad: 'Caldas', tipo: 'local', foto: null, canon: 2_200_000, ingresoTotal: 9_000_000, canonMaximo: 4_000_000 });
+  const cerrar = () => c!.querySelector<HTMLButtonElement>('[data-testid="cerrar-arrendar"]')!;
+  const boton = (id: string) => document.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`);
+
+  it('Cerrar ya no es un enlace: abre la confirmación nombrando el inmueble, y no navega', () => {
+    guardado();
+    montar();
+    expect(cerrar().tagName).toBe('BUTTON');
+    act(() => cerrar().click());
+    expect(router.push).not.toHaveBeenCalled();
+    expect(document.querySelector('[data-testid="confirmar-salida-aprobacion"]')?.textContent).toContain('Local en Centro, Caldas');
+  });
+
+  it('«Salir de todos modos» vuelve a la ficha del inmueble', () => {
+    guardado();
+    montar();
+    act(() => cerrar().click());
+    act(() => boton('salir-de-aprobacion')!.click());
+    expect(router.push).toHaveBeenCalledWith('/propiedades/p-1');
+  });
+
+  it('«Seguir con mi solicitud» se queda en el paso 1', () => {
+    guardado();
+    montar();
+    act(() => cerrar().click());
+    act(() => boton('seguir-en-aprobacion')!.click());
+    expect(router.push).not.toHaveBeenCalled();
+  });
+});
+

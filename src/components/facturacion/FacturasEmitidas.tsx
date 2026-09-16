@@ -164,7 +164,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
             ? 'las facturas emitidas'
             : 'las notas crédito del mes'
         }
-        onReintentar={() => void cargar()}
+        onReintentar={cargar}
         esqueleto={<EsqueletoTabla filas={4} columnas={6} />}
         cuandoVacio={
           <SinDatos

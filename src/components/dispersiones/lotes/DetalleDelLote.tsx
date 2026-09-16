@@ -68,6 +68,7 @@ import { useLoteDeDispersion } from '@/lib/hooks/use-lotes-de-dispersion';
 import {
   lotesDeDispersionApi,
   type ArchivoGenerado,
+  type FacturacionDelLote,
   type FormatoArchivoDePagos,
   type LoteDeDispersion,
   type SolicitudDeAprobacion,
@@ -102,6 +103,96 @@ type Dialogo =
   | 'marcarPagado'
   | 'anular'
   | null;
+
+/**
+ * 🔴 QUÉ PASÓ CON LA FACTURA AL PROPIETARIO.
+ *
+ * El CEO (2026-09-15): «archivo plano por banco, egreso, **factura ahora o
+ * después**, correo al propietario». Hasta la segunda vuelta la casilla
+ * guardaba un booleano y no emitía nada; ahora emite de verdad, y el resultado
+ * tiene que verse acá y no en otra pantalla.
+ *
+ * Dos cosas que este bloque dice en voz alta y no se pueden suavizar:
+ *
+ *  · **Un fallo NO deshace el pago.** La plata ya salió del banco; el lote
+ *    quedó PAGADO. Lo que falta es emitir, y se reintenta desde Facturación.
+ *  · **«Ya estaban» no es un error.** Es la llave única de facturas haciendo
+ *    su trabajo: nadie facturó dos veces la misma comisión.
+ */
+function ResultadoDeLaFacturacion({ r }: { r: FacturacionDelLote }) {
+  if (!r.pedida) {
+    if (r.candidatas === 0) return null;
+    return (
+      <Banner variant="info" title="La factura al propietario queda para después">
+        <span data-testid="facturacion-del-lote-despues">
+          {r.candidatas}{' '}
+          {r.candidatas === 1 ? 'prefactura queda' : 'prefacturas quedan'}{' '}
+          esperando en Facturación: es la comisión de la inmobiliaria sobre lo
+          que este lote giró. Se emiten desde{' '}
+          <Link
+            href="/panel/inmobiliaria/facturacion"
+            className="underline underline-offset-2"
+          >
+            Facturación
+          </Link>
+          .
+        </span>
+      </Banner>
+    );
+  }
+
+  const hayFallas = r.fallas.length > 0;
+  return (
+    <Banner
+      variant={hayFallas ? 'warning' : 'success'}
+      title={
+        hayFallas
+          ? 'El lote quedó pagado; falta emitir parte de la facturación'
+          : 'Facturación al propietario emitida'
+      }
+    >
+      <div className="space-y-1" data-testid="facturacion-del-lote">
+        <p>
+          {r.emitidas}{' '}
+          {r.emitidas === 1 ? 'factura emitida' : 'facturas emitidas'} por{' '}
+          {formatCurrency(r.totalCop)}
+          {r.yaEstaban > 0 &&
+            ` · ${r.yaEstaban} ya ${r.yaEstaban === 1 ? 'estaba' : 'estaban'} emitida${r.yaEstaban === 1 ? '' : 's'}`}
+          {r.sinNumero > 0 && ` · ${r.sinNumero} sin número`}
+          {r.candidatas > 0 && ` · de ${r.candidatas}`}
+        </p>
+        {r.numeros.length > 0 && (
+          <p className="font-mono text-xs text-fg-muted">
+            {r.numeros.slice(0, 8).join(' · ')}
+            {r.numeros.length > 8 && ` +${r.numeros.length - 8}`}
+          </p>
+        )}
+        {hayFallas && (
+          <ul className="space-y-0.5">
+            {r.fallas.map((f) => (
+              <li key={`${f.mes}-${f.motivo}`} data-testid={`falla-${f.mes}`}>
+                {nombreDelMes(f.mes)}: {f.motivo}
+              </li>
+            ))}
+          </ul>
+        )}
+        {hayFallas && (
+          <p className="text-fg-muted">
+            La plata ya salió del banco y el lote quedó PAGADO: lo que falta es
+            emitir, y se reintenta desde{' '}
+            <Link
+              href="/panel/inmobiliaria/facturacion"
+              className="underline underline-offset-2"
+            >
+              Facturación
+            </Link>
+            .
+          </p>
+        )}
+      </div>
+    </Banner>
+  );
+}
 
 function mensajeDe(error: unknown, siNo: string): string {
   return error instanceof Error && error.message ? error.message : siNo;
@@ -233,6 +324,13 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         <Banner variant="danger" title="Lote bloqueado">
           Se agotaron los intentos del código de aprobación. Hay que anularlo y armarlo de nuevo.
         </Banner>
+      )}
+      {/* 🔴 Sólo aparece después de marcar pagado en esta sesión: `facturacion`
+          viene únicamente en la respuesta de `POST /:id/pagado`, nunca en el
+          `ver`. Que no esté no significa que no se facturó — significa que esta
+          pantalla no lo presenció. */}
+      {lote.facturacion && (
+        <ResultadoDeLaFacturacion r={lote.facturacion} />
       )}
       {lote.estado === 'ESPERANDO_APROBACION' && soyElCreador && !bloqueado && (
         <Banner variant="info" title="Tú armaste este lote">
@@ -1067,9 +1165,13 @@ function MarcarPagadoDialog({
   const [referencia, setReferencia] = useState('');
   /**
    * El CEO (2026-09-15): «Con factura: se le puede facturar en ese momento o
-   * después». Acá se REGISTRA la decisión; la factura electrónica la emite el
-   * módulo de facturación, no este botón, y la ayuda de abajo lo dice para que
-   * nadie crea que ya se emitió.
+   * después».
+   *
+   * 🔴 Tildado EMITE de verdad las facturas del lado propietario (la comisión
+   * de la inmobiliaria y sus impuestos) de las cuotas que este lote giró. Sin
+   * tildar quedan como prefactura pendiente en Facturación. Arranca apagado a
+   * propósito: emitir consume números de la resolución de la DIAN y no se
+   * deshace — una factura emitida se anula con nota crédito, no se borra.
    */
   const [facturarAhora, setFacturarAhora] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -1097,7 +1199,20 @@ function MarcarPagadoDialog({
         facturarAhora,
       );
       onListo(pagado);
-      toast.success('Lote marcado como pagado');
+      /*
+       * El detalle pinta el resultado completo (`ResultadoDeLaFacturacion`);
+       * el toast sólo resume, y NUNCA dice «emitidas» cuando hubo un fallo: la
+       * plata salió igual, pero la factura no.
+       */
+      const f = pagado.facturacion;
+      toast.success('Lote marcado como pagado', {
+        description:
+          f?.pedida === true
+            ? f.fallas.length > 0
+              ? `Se emitieron ${f.emitidas} facturas y ${f.fallas.length === 1 ? 'quedó 1 mes' : `quedaron ${f.fallas.length} meses`} sin facturar: mira el detalle.`
+              : `${f.emitidas} ${f.emitidas === 1 ? 'factura emitida' : 'facturas emitidas'} al propietario.`
+            : undefined,
+      });
       onCerrar();
     } catch (e) {
       setError(mensajeDe(e, 'No se pudo marcar el lote como pagado.'));
@@ -1140,10 +1255,14 @@ function MarcarPagadoDialog({
               onCheckedChange={(v) => setFacturarAhora(v === true)}
             />
             <span className="text-xs text-fg-muted">
-              Facturarle ahora a los propietarios. Sin tildar queda «después».{' '}
+              Facturarle ahora a los propietarios: se emite la comisión de la
+              inmobiliaria sobre lo que este lote gira, con su IVA y sus
+              retenciones.{' '}
               <strong className="font-medium">
-                Sólo se registra la decisión: la factura se emite desde Facturación.
-              </strong>
+                Consume números de la resolución de la DIAN y no se deshace: una
+                factura emitida se anula con nota crédito, no se borra.
+              </strong>{' '}
+              Sin tildar queda «después» y se emite desde Facturación.
             </span>
           </label>
 

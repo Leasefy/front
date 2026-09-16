@@ -108,6 +108,7 @@ function datos(over: Partial<FacturasPorGenerar> = {}): FacturasPorGenerar {
         motivoNoEmitible: null,
         inquilinos: lado({ porEmitir: 1, totalCop: 1_800_000 }),
         propietarios: lado(),
+        terminan: [],
       },
       {
         mes: '2026-12',
@@ -116,6 +117,18 @@ function datos(over: Partial<FacturasPorGenerar> = {}): FacturasPorGenerar {
         motivoNoEmitible: 'Diciembre de 2026 todavía no empieza: faltan 3 meses.',
         inquilinos: lado({ porEmitir: 1, totalCop: 1_800_000 }),
         propietarios: lado(),
+        // 🔴 Este contrato se acaba acá: de diciembre en adelante no aparece.
+        terminan: [
+          {
+            contractId: 'ct-1',
+            destinatario: 'INQUILINO',
+            codigo: 1839,
+            numeroExterno: '1686',
+            inmueble: 'Cra 76 #45-12 apto 302',
+            terceroNombre: 'Nubia Amparo David',
+            terminaEl: '2026-12-31',
+          },
+        ],
       },
     ],
     porContrato: [
@@ -250,6 +263,25 @@ describe('PrefacturasDelRango', () => {
   it('🔴 un contrato que se acaba dentro del rango lo dice, con la fecha', () => {
     const fila = q('[data-testid="rango-termina-ct-1"]');
     expect(fila?.textContent).toContain('31/12/2026');
+  });
+
+  it('🔴 el mes a mes dice DÓNDE se cae cada contrato que termina', () => {
+    // El CEO: «los contratos que finalicen antes se van eliminando de la
+    // prefactura». Sin esto, el total del mes siguiente baja y la única lectura
+    // posible es «faltan facturas».
+    const bloque = q('[data-testid="rango-terminan-2026-12"]');
+    expect(bloque).not.toBeNull();
+    expect(bloque?.textContent).toContain('1686');
+    expect(bloque?.textContent).toContain('Nubia Amparo David');
+    expect(bloque?.textContent).toContain('31/12/2026');
+    expect(q('[data-testid="rango-terminan-pildora-2026-12"]')?.textContent).toContain(
+      '1 terminan acá',
+    );
+  });
+
+  it('un mes en el que no se cae nadie no pinta el bloque ni la píldora', () => {
+    expect(q('[data-testid="rango-terminan-2026-09"]')).toBeNull();
+    expect(q('[data-testid="rango-terminan-pildora-2026-09"]')).toBeNull();
   });
 
   it('los totales del rango salen del back, no de una segunda cuenta', () => {

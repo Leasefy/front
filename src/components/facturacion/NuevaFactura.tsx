@@ -40,8 +40,17 @@
  * 🔴 La retención no baja el total: baja el neto, porque la practica quien
  * recibe la factura al pagar. Una fila cuya cuota se generó sin escenario
  * confirmado sale sin impuestos y se marca «sin confirmar». Y los `avisos` de la
- * fila —una cuota en mora cuyo interés ningún cobro liquidó— se muestran: la
- * plata que no se puede facturar se dice, no se pierde en silencio.
+ * fila se muestran: la plata que no se puede facturar se dice, no se pierde en
+ * silencio.
+ *
+ * ── 🔴 El interés de mora, y de dónde salió ────────────────────────────────
+ *
+ * Nico: «el interés sí se va cargando a la factura cada vez que se genera.» Una
+ * cuota en cartera lleva su recargo, y la fila dice con qué autoridad: **del
+ * cobro** (finanzas ya lo liquidó, el número está escrito y no se mueve) o
+ * **sobre la cuota** (el mismo motor de mora corriendo hoy, porque ningún cobro
+ * reclamó ese mes — el caso normal). El segundo CRECE cada día hasta que la
+ * factura se emita, y por eso no se puede pintar igual que el primero.
  *
  * Y el número: sale de la RESOLUCIÓN de la DIAN. Sin resolución vigente el back
  * no emite, así que el botón se apaga y la pantalla dice por qué y a dónde ir.
@@ -106,6 +115,45 @@ function conceptosLegibles(factura: FacturaDelMes): string {
   return `${nombres.slice(0, 2).join(' · ')} +${nombres.length - 2}`
 }
 
+/** El recargo de mora que lleva la fila. `0` si no lleva. */
+function moraDe(factura: FacturaDelMes): number {
+  return factura.mora?.recargosCop ?? 0
+}
+
+/**
+ * 🔴 EL INTERÉS DE MORA, CON SU ORIGEN.
+ *
+ * Nico: «el interés sí se va cargando a la factura cada vez que se genera.»
+ *
+ * Que la fila diga de DÓNDE salió el número no es un detalle: `Del cobro` es un
+ * valor que finanzas ya liquidó y quedó escrito, así que no se mueve; `Sobre la
+ * cuota` es el mismo motor de mora corriendo HOY sobre una deuda que ningún
+ * cobro reclamó, y por lo tanto CRECE cada día hasta que se emita. Quien mira
+ * la pantalla decide distinto según cuál de las dos sea.
+ */
+function InteresDeMora({ factura }: { factura: FacturaDelMes }) {
+  const mora = factura.mora
+  if (!mora || mora.recargosCop <= 0) return null
+  const delCobro = mora.origen === 'COBRO'
+  return (
+    <p
+      className="truncate text-caption text-fg-muted"
+      data-testid={`mora-${factura.clave}`}
+      title={
+        delCobro
+          ? 'Lo liquidó el cobro de ese mes: es un valor ya escrito y no se mueve.'
+          : 'Lo calcula el motor de mora sobre la cuota, con las reglas de esta inmobiliaria. Crece cada día hasta que la factura se emita.'
+      }
+    >
+      Mora {formatCurrency(mora.recargosCop)} · {mora.diasDeMora}{' '}
+      {mora.diasDeMora === 1 ? 'día' : 'días'} ·{' '}
+      <span className={delCobro ? 'text-fg-subtle' : 'text-warning'}>
+        {delCobro ? 'del cobro' : 'sobre la cuota'}
+      </span>
+    </p>
+  )
+}
+
 /**
  * 🔴 «Impuestos sin confirmar»: esta factura sale SIN impuestos porque el
  * escenario tributario del contrato está DEDUCIDO o falta un dato. El motivo va
@@ -165,6 +213,10 @@ function TablaDeFacturas({
     [filas],
   )
   const sinConfirmar = filas.filter((f) => f.impuestosSinConfirmar).length
+  // 🔴 La mora se totaliza aparte: es plata que la factura suma por encima de la
+  // cuota, y hasta la segunda vuelta de facturación NO se estaba cobrando.
+  const conMora = filas.filter((f) => moraDe(f) > 0)
+  const moraCop = conMora.reduce((s, f) => s + moraDe(f), 0)
   const elegidas = porEmitir.filter((c) => seleccion.has(c))
   const todas = porEmitir.length > 0 && elegidas.length === porEmitir.length
   const algunas = elegidas.length > 0 && !todas
@@ -190,6 +242,15 @@ function TablaDeFacturas({
             {formatCurrency(filas.reduce((s, f) => s + f.retencionesCop, 0))}
             {sinConfirmar > 0 && ` · ${sinConfirmar} sin confirmar`}
           </p>
+          {conMora.length > 0 && (
+            <p
+              className="whitespace-nowrap"
+              data-testid={`facturacion-${testid}-mora`}
+            >
+              Interés de mora {formatCurrency(moraCop)} en {conMora.length}{' '}
+              {conMora.length === 1 ? 'factura' : 'facturas'}
+            </p>
+          )}
         </div>
       </div>
 
@@ -296,6 +357,7 @@ function TablaDeFacturas({
                           deducción del egreso, no a la factura
                         </p>
                       )}
+                      <InteresDeMora factura={factura} />
                       {/* 🔴 Lo que esta factura NO lleva y alguien tiene que
                           saber: el interés de una cuota en mora que ningún cobro
                           liquidó, o un desglose que hubo que cuadrar contra el

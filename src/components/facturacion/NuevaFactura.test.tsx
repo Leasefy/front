@@ -735,18 +735,17 @@ describe('NuevaFactura', () => {
   /**
    * 🔴 La plata que la factura NO lleva, dicha en voz alta.
    *
-   * El interés de mora no está en la cuota: lo liquida el motor sobre el cobro.
-   * Cuando la cuota ya es cartera y no hay cobro, el back manda un `aviso` en vez
-   * de inventar el número — y la pantalla tiene que mostrarlo.
+   * Cuando la cuota ya es cartera y no hay con qué liquidar el interés, el back
+   * manda un `aviso` en vez de inventar el número — y la pantalla lo muestra.
    */
   describe('los avisos de la fila', () => {
-    it('una cuota en mora sin cobro reclama sus intereses en la fila', async () => {
+    it('una cuota en mora que nadie pudo liquidar lo reclama en la fila', async () => {
       porGenerarMock.mockResolvedValue(
         respuesta({
           inquilinos: [
             factura({
               avisos: [
-                'Esta cuota está en mora hace 42 días y la factura NO lleva intereses: el interés lo liquida el motor de mora sobre el cobro del mes, y este contrato no tiene cobro de 2026-09.',
+                'Esta cuota está en mora hace 42 días y la factura NO lleva intereses. La inmobiliaria no tiene reglas de mora activas.',
               ],
             }),
           ],
@@ -760,6 +759,83 @@ describe('NuevaFactura', () => {
     it('sin avisos no se pinta ninguna advertencia', async () => {
       await montar();
       expect(q('[data-testid="aviso-ct-1|2026-09|INQUILINO"]')).toBeNull();
+    });
+  });
+
+  /**
+   * 🔴 EL INTERÉS DE MORA, Y CON QUÉ AUTORIDAD.
+   *
+   * Nico: «el interés sí se va cargando a la factura cada vez que se genera.»
+   * `del cobro` es un número escrito que no se mueve; `sobre la cuota` es el
+   * motor corriendo hoy y CRECE cada día hasta que se emita. Pintarlos igual
+   * hace que la persona decida con información falsa.
+   */
+  describe('el interés de mora', () => {
+    const conMora = (over: Partial<FacturaDelMes['mora'] & object> = {}) =>
+      factura({
+        totalCop: 1_841_000,
+        mora: {
+          esCartera: true,
+          diasDeMora: 41,
+          recargosCop: 41_000,
+          origen: 'CUOTA',
+          motivo: null,
+          ...over,
+        },
+      });
+
+    it('🔴 muestra el valor, los días y que se calculó SOBRE LA CUOTA', async () => {
+      porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [conMora()] }));
+      await montar();
+      const mora = q('[data-testid="mora-ct-1|2026-09|INQUILINO"]');
+      expect(mora?.textContent).toContain('41.000');
+      expect(mora?.textContent).toContain('41 días');
+      expect(mora?.textContent).toContain('sobre la cuota');
+    });
+
+    it('🔴 un interés que ya liquidó el cobro se marca «del cobro»', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({ inquilinos: [conMora({ origen: 'COBRO' })] }),
+      );
+      await montar();
+      const mora = q('[data-testid="mora-ct-1|2026-09|INQUILINO"]');
+      expect(mora?.textContent).toContain('del cobro');
+      expect(mora?.textContent).not.toContain('sobre la cuota');
+    });
+
+    it('el encabezado totaliza la mora aparte de la base y el IVA', async () => {
+      porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [conMora()] }));
+      await montar();
+      const total = q('[data-testid="facturacion-inquilinos-mora"]');
+      expect(total?.textContent).toContain('41.000');
+      expect(total?.textContent).toContain('1 factura');
+    });
+
+    it('sin mora no se pinta la línea ni el total', async () => {
+      await montar();
+      expect(q('[data-testid="mora-ct-1|2026-09|INQUILINO"]')).toBeNull();
+      expect(q('[data-testid="facturacion-inquilinos-mora"]')).toBeNull();
+    });
+
+    it('una cuota en cartera con recargo en CERO no pinta una línea vacía', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({
+          inquilinos: [
+            conMora({ recargosCop: 0, origen: null, motivo: 'Sin reglas.' }),
+          ],
+        }),
+      );
+      await montar();
+      expect(q('[data-testid="mora-ct-1|2026-09|INQUILINO"]')).toBeNull();
+    });
+
+    it('un back anterior sin el campo `mora` no rompe la fila', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({ inquilinos: [factura({ mora: undefined })] }),
+      );
+      await montar();
+      expect(q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')).not.toBeNull();
+      expect(q('[data-testid="mora-ct-1|2026-09|INQUILINO"]')).toBeNull();
     });
   });
 });

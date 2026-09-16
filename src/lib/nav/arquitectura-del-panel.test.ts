@@ -14,7 +14,9 @@
  *   · no queda ninguna ruta bajo `/ai/` (el namespace paralelo murió), ni en
  *     la arquitectura ni en el código;
  *   · cada agente declarado existe en `agentWorkspaceNav.ts` y apunta a la
- *     misma ruta, y viceversa.
+ *     misma ruta, y viceversa;
+ *   · todos los agentes viven en «Agentes IA», el primer grupo, y ninguna sala
+ *     la reclaman dos lugares (Nico, 2026-09-16).
  *
  * Los dos de la cabecera (Inicio y Chat) viven en el layout y no se tocan:
  * acá sólo se verifica que ningún módulo les pise el icono.
@@ -34,13 +36,15 @@ import en from '@/lib/i18n/locales/en.json';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { PESTANAS_DE_CARTERA } from '@/components/cartera/PestanasDeCartera';
 import { AGENT_WORKSPACES, findAgentWorkspace } from './agentWorkspaceNav';
-import { pasaGateDeFila } from './agency-nav-filter';
-import { resolverEntradaDeModulo } from './sidebar-del-panel';
+import { filterAgencyNav, pasaGateDeFila, type NavFilterContext } from './agency-nav-filter';
+import { filasDelSidebar, resolverEntradaDeModulo } from './sidebar-del-panel';
+import { hrefDeLaFilaActiva } from './fila-activa-del-menu';
 import {
   ARQUITECTURA_DEL_PANEL,
   CARAS_DE_LA_PLATA,
   PANEL,
   RUTAS_FUERA_DEL_SIDEBAR,
+  grupoDelModulo,
   modulosDelPanel,
   pestanasDelModulo,
   moduloDeLaRuta,
@@ -201,14 +205,17 @@ describe('arquitectura del panel — sidebar', () => {
     }
   });
 
-  it('el sidebar tiene 16 módulos en 4 grupos con nombre (+ Inicio y Chat = 18 filas)', () => {
+  it('el sidebar tiene 22 módulos en 5 grupos con nombre (+ Inicio y Chat = 24 filas)', () => {
     // Eran 18 hasta que Configuración salió del sidebar (Nico, 2026-09-03): se
     // entra por el menú del perfil. Eran 17 hasta que «Cobros» y «Pagos» se
-    // volvieron un solo módulo de plata (Nico + CEO, 2026-09-15). La propuesta
-    // original contaba 21 porque incluía «Ayuda», que en el panel no existe
-    // como fila: no se inventa.
-    expect(ARQUITECTURA_DEL_PANEL.filter((g) => g.labelKey !== null)).toHaveLength(4);
-    expect(modulos).toHaveLength(16);
+    // volvieron un solo módulo de plata (Nico + CEO, 2026-09-15). Eran 16 en 4
+    // grupos hasta que los agentes tuvieron su sección (2026-09-16): cinco
+    // pantallas que eran secciones de otro módulo pasaron a ser filas, más la
+    // del equipo de pagos, que no tenía ninguna. Conciliación ya era fila: sólo
+    // cambió de grupo. La propuesta original contaba 21 porque incluía
+    // «Ayuda», que en el panel no existe como fila: no se inventa.
+    expect(ARQUITECTURA_DEL_PANEL.filter((g) => g.labelKey !== null)).toHaveLength(5);
+    expect(modulos).toHaveLength(22);
   });
 
   it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {
@@ -290,15 +297,16 @@ describe('arquitectura del panel — agentes', () => {
   });
 
   /**
-   * 🔴 La píldora «IA» anuncia «acá hay un agente trabajando», así que toda
-   * pantalla que ES la sala de un agente la lleva. Ya no hay excepciones: la
-   * última era Pagos, y el 2026-09-16 dejó de ser la sala de un agente
-   * (perdió el `agente`, no sólo la píldora).
+   * 🔴 La píldora «IA» anunciaba «acá hay un agente trabajando» en medio de
+   * pantallas que no lo eran. Desde el 2026-09-16 los agentes viven juntos en
+   * «Agentes IA», y ahí la píldora sobra: la cabecera ya lo dice. Queda para
+   * lo ASISTIDO por IA que se quedó en su módulo (Postulaciones, Soportes,
+   * Solicitudes).
    */
-  it('toda pantalla con `agente` lleva la marca IA', () => {
-    for (const p of pantallas.filter((x) => x.agente)) {
-      expect(p.ia, p.href).toBe(true);
-    }
+  it('ninguna fila de «Agentes IA» lleva la marca IA: la sección ya lo dice', () => {
+    const agentes = ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'agentes')!;
+    for (const m of agentes.modulos) expect(m.ia, m.key).toBeFalsy();
+    for (const p of pantallas.filter((x) => x.agente)) expect(p.ia, p.href).toBeFalsy();
   });
 
   it('🔴 «Pagos» no es la sala de ningún agente: es LA PLATA de la inmobiliaria', () => {
@@ -315,10 +323,10 @@ describe('arquitectura del panel — agentes', () => {
     // Sin agente en la raíz, la raíz vuelve a ser EXACTA: una ficha de caso
     // (`/pagos/<id>`) no marca ninguna pestaña, como cualquier otra ficha.
     expect(pestanasDelModulo(pagos)[0]?.exact).toBe(true);
-    // Y Cobranza, que sí es la sala de un agente, conserva las dos cosas.
-    const cobranza = (pagos.pantallas ?? []).find((p) => p.href === `${PANEL}/pagos/cobranza`);
-    expect(cobranza?.ia).toBe(true);
-    expect(cobranza?.agente).toBe('cobranza');
+    // Y Cobranza, que sí es la sala de un agente, ya no cuelga de acá: es su
+    // propia fila en «Agentes IA» (2026-09-16), con la misma URL.
+    expect((pagos.pantallas ?? []).map((p) => p.href)).not.toContain(`${PANEL}/pagos/cobranza`);
+    expect(modulos.find((m) => m.key === 'cobranza')?.agente).toBe('cobranza');
   });
 
   it('🔴 las dos pantallas del agente que se mudaron son pestañas de Cobranza', () => {
@@ -382,7 +390,10 @@ describe('arquitectura del panel — agentes', () => {
 
 describe('arquitectura del panel — resolución de rutas', () => {
   it('el módulo dueño es el de prefijo más largo', () => {
-    expect(moduloDeLaRuta(`${PANEL}/pagos/cobranza/deudores/1`)?.key).toBe('pagos');
+    // Desde el 2026-09-16 Cobranza es su propio módulo (en «Agentes IA») y su
+    // href es más largo que el de Pagos: la sala es suya, no de Pagos.
+    expect(moduloDeLaRuta(`${PANEL}/pagos/cobranza/deudores/1`)?.key).toBe('cobranza');
+    expect(moduloDeLaRuta(`${PANEL}/pagos/cartera/cobros`)?.key).toBe('pagos');
     expect(moduloDeLaRuta(`${PANEL}/pagos/dispersiones/lotes/2`)?.key).toBe('pagos');
     expect(moduloDeLaRuta(`${PANEL}/piloto`)).toBeNull();
     expect(moduloDeLaRuta(PANEL)).toBeNull();
@@ -399,7 +410,7 @@ describe('arquitectura del panel — resolución de rutas', () => {
   it('la pestaña activa es la de href más largo que coincida', () => {
     const pagos = modulos.find((m) => m.key === 'pagos')!;
     const tabs = pestanasDelModulo(pagos);
-    expect(pestanaActiva(tabs, `${PANEL}/pagos/cobranza/deudores/1`)?.href).toBe(`${PANEL}/pagos/cobranza`);
+    expect(pestanaActiva(tabs, `${PANEL}/pagos/dispersiones/lotes/2`)?.href).toBe(`${PANEL}/pagos/dispersiones`);
     expect(pestanaActiva(tabs, `${PANEL}/pagos/cartera`)?.href).toBe(`${PANEL}/pagos/cartera`);
     expect(pestanaActiva(tabs, `${PANEL}/pagos?estado=vencidos`)?.href).toBe(`${PANEL}/pagos`);
   });
@@ -504,15 +515,15 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
   const tabs = pestanasDelModulo(pagos);
   const porHref = (seg: string) => tabs.find((t) => t.href === `${PANEL}${seg}`);
 
-  it('🔴 «Cobros» desapareció del sidebar y Pagos quedó con las cinco pantallas', () => {
+  it('🔴 «Cobros» desapareció del sidebar y Pagos quedó con cuatro pantallas', () => {
     // «Hay dos cosas de lo mismo, que son Cobros y uno en Pagos y el otro en
     // Cobros […] que se fuera lo de Cobros, porque todo funciona alrededor del
     // estado de cuenta del contrato» (Nico). El CEO: «inquilinos […] y
-    // dispersión a propietarios, todo en un solo módulo».
+    // dispersión a propietarios, todo en un solo módulo». Eran cinco hasta que
+    // Cobranza se mudó a «Agentes IA» (2026-09-16).
     expect(pagos.pantallas?.map((p) => p.href)).toEqual([
       `${PANEL}/pagos/recaudo`,
       `${PANEL}/pagos/cartera`,
-      `${PANEL}/pagos/cobranza`,
       `${PANEL}/pagos/liquidaciones`,
       `${PANEL}/pagos/dispersiones`,
     ]);
@@ -520,7 +531,6 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
 
   it('las dos caras están declaradas y en orden: primero lo que ENTRA, después lo que SALE', () => {
     expect(pagos.pantallas?.map((p) => p.cara)).toEqual([
-      'inquilinos',
       'inquilinos',
       'inquilinos',
       'propietarios',
@@ -566,13 +576,13 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
     });
     expect(porHref('/pagos/recaudo')?.module).toBe('cobros');
     expect(porHref('/pagos/cartera')?.module).toBe('cobros');
-    expect(porHref('/pagos/cobranza')?.module).toBe('cobranza');
     expect(porHref('/pagos/liquidaciones')?.module).toBeNull();
     expect(porHref('/pagos/liquidaciones')?.roles).toEqual([AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]);
     expect(porHref('/pagos/dispersiones')?.module).toBe('dispersiones');
-    // Ninguna de las tres que venían de Cobros gana un gate de rol nuevo: si
-    // lo ganaran, quien tiene `cobros` y no es contador perdería su trabajo.
-    for (const seg of ['/pagos/recaudo', '/pagos/cartera', '/pagos/cobranza']) {
+    // Ninguna de las que venían de Cobros gana un gate de rol nuevo: si lo
+    // ganaran, quien tiene `cobros` y no es contador perdería su trabajo.
+    // (Cobranza, la tercera, se cuida en el bloque de «Agentes IA».)
+    for (const seg of ['/pagos/recaudo', '/pagos/cartera']) {
       expect(porHref(seg)?.roles, seg).toBeUndefined();
     }
   });
@@ -601,7 +611,7 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
     expect(tabs.filter((t) => pasaGateDeFila(t, ctx))).toHaveLength(tabs.length);
   });
 
-  it('el módulo conserva su encuadre de finanzas y lo hereda a las cinco', () => {
+  it('el módulo conserva su encuadre de finanzas y lo hereda a las cuatro', () => {
     // `AGENTE` (comercial) no ve finanzas, y no veía Cobros antes tampoco.
     expect(pagos.scope).toBe('finanzas');
     for (const t of tabs) expect(t.scope, t.href).toBe('finanzas');
@@ -635,5 +645,222 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
     }
     // Y no quedó ni un workspace de agente colgando de la raíz del módulo.
     expect(AGENT_WORKSPACES.filter((w) => w.basePath === `${PANEL}/pagos`)).toEqual([]);
+  });
+});
+
+describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026-09-16)', () => {
+  // «Todo lo que tenemos de AI en este momento —no lo que está sin sacar, lo
+  // que hay en este momento— creemos una sección sólo de agentes, y los
+  // metamos todos ahí. Arriba de la sección de captación.»
+  const agentes = ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'agentes')!;
+  const fila = (key: string) => agentes.modulos.find((m) => m.key === key)!;
+  const ADMIN_Y_CONTADOR = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR];
+  const t = (k: string) => k;
+
+  it('es el PRIMER grupo del catálogo, justo arriba de «Captación y arriendo»', () => {
+    expect(ARQUITECTURA_DEL_PANEL[0]?.key).toBe('agentes');
+    expect(ARQUITECTURA_DEL_PANEL[1]?.key).toBe('captacion');
+    expect(leer(es, agentes.labelKey!)).toBe('Agentes IA');
+    expect(leer(en, agentes.labelKey!)).toBe('AI Agents');
+  });
+
+  it('trae lo que funciona hoy en el orden de los módulos de donde vino; después el equipo de pagos y Desempeño IA', () => {
+    expect(agentes.modulos.map((m) => m.key)).toEqual([
+      'avaluos',
+      'matching',
+      'asegurabilidad',
+      'cobranza',
+      'conciliacion',
+      'agente-de-pagos',
+      'desempeno-ia',
+    ]);
+  });
+
+  it('🔴 las URLs NO se movieron: cada sala sigue donde estaba', () => {
+    // La última mudanza de URLs tocó 151 archivos. Lo que había que resolver
+    // —que la sala se viera dentro de Agentes— lo resuelve `moduloDeLaRuta`
+    // sin mover nada (ver el test del módulo dueño, abajo).
+    expect(agentes.modulos.map((m) => m.href.replace(PANEL, ''))).toEqual([
+      '/inmuebles/avaluos',
+      '/postulaciones/matching',
+      '/postulaciones/asegurabilidad',
+      '/pagos/cobranza',
+      '/conciliacion',
+      '/pagos/agente',
+      '/reportes/ia',
+    ]);
+  });
+
+  it('TODA sala de agente vive acá, y cada workspace registrado tiene acá su puerta', () => {
+    const deAgentes = new Set(agentes.modulos.map((m) => m.href));
+    const salas = pantallas.filter((p) => p.agente);
+    for (const sala of salas) expect(deAgentes.has(sala.href), sala.href).toBe(true);
+    expect(new Set(salas.map((p) => p.agente))).toEqual(new Set(AGENT_WORKSPACES.map((w) => w.slug)));
+  });
+
+  it('🔴 una sala la reclama UN solo lugar: ningún otro módulo la tiene como sección', () => {
+    const fuera = ARQUITECTURA_DEL_PANEL.filter((g) => g.key !== 'agentes')
+      .flatMap((g) => g.modulos)
+      .flatMap((m) => pestanasDelModulo(m));
+    for (const m of agentes.modulos) {
+      const reclamos = fuera.filter((p) => p.href === m.href || p.href.startsWith(`${m.href}/`));
+      expect(reclamos.map((p) => p.href), m.key).toEqual([]);
+    }
+  });
+
+  it('🔴 entrar a una sala —y a cualquier pestaña suya— se ve DENTRO de Agentes', () => {
+    // Es la regla que sostiene no mover las URLs: el módulo dueño es el de
+    // href más largo, y el de la sala es más largo que el del módulo que antes
+    // la hospedaba. De ahí salen el riel (se calla), el breadcrumb (arranca en
+    // «Agentes IA») y la fila marcada del sidebar.
+    for (const m of agentes.modulos) {
+      for (const ruta of [m.href, `${m.href}/cola`, `${m.href}/deudores/9?x=1`]) {
+        const dueno = moduloDeLaRuta(ruta);
+        expect(dueno?.key, ruta).toBe(m.key);
+        expect(grupoDelModulo(dueno!)?.key, ruta).toBe('agentes');
+      }
+    }
+    // Y lo que sigue siendo del módulo, sigue siendo del módulo.
+    expect(moduloDeLaRuta(`${PANEL}/pagos/cartera/cobros`)?.key).toBe('pagos');
+    expect(moduloDeLaRuta(`${PANEL}/postulaciones/soportes`)?.key).toBe('postulaciones');
+    expect(moduloDeLaRuta(`${PANEL}/inmuebles/9`)?.key).toBe('inmuebles');
+    expect(moduloDeLaRuta(`${PANEL}/reportes/rentabilidad`)?.key).toBe('reportes');
+  });
+
+  it('🔴 el sidebar marca UNA fila: la del agente, no la del módulo que lo hospedaba', () => {
+    const todo: NavFilterContext = { canAccess: () => true, isAdmin: true, agencyRole: AGENCY_ROLES.ADMIN };
+    const filas = filasDelSidebar(t, todo);
+    const marcada = (ruta: string) => hrefDeLaFilaActiva(filas, `${PANEL}${ruta}`)?.replace(PANEL, '');
+    expect(marcada('/pagos/cobranza/deudores/1')).toBe('/pagos/cobranza');
+    expect(marcada('/pagos/agente')).toBe('/pagos/agente');
+    expect(marcada('/pagos/cartera/cobros')).toBe('/pagos');
+    expect(marcada('/postulaciones/matching/cola')).toBe('/postulaciones/matching');
+    expect(marcada('/postulaciones/asegurabilidad')).toBe('/postulaciones/asegurabilidad');
+    expect(marcada('/postulaciones/soportes')).toBe('/postulaciones');
+    expect(marcada('/inmuebles/avaluos/cola')).toBe('/inmuebles/avaluos');
+    expect(marcada('/inmuebles/9')).toBe('/inmuebles');
+    expect(marcada('/reportes/ia')).toBe('/reportes/ia');
+    expect(marcada('/reportes/rentabilidad')).toBe('/reportes');
+  });
+
+  it('🔴 PERMISOS: cada fila conserva el gate y el encuadre que tenía donde vivía', () => {
+    const gate = (key: string) => {
+      const m = fila(key);
+      return { module: m.module, roles: m.roles, scope: m.scope };
+    };
+    // De Inmuebles y Postulaciones: heredaban `comercial`.
+    expect(gate('avaluos')).toEqual({ module: 'avaluos', roles: undefined, scope: 'comercial' });
+    expect(gate('matching')).toEqual({ module: 'matching', roles: undefined, scope: 'comercial' });
+    expect(gate('asegurabilidad')).toEqual({ module: 'cotizador', roles: undefined, scope: 'comercial' });
+    // De Pagos: heredaba `finanzas`, sin gate de rol.
+    expect(gate('cobranza')).toEqual({ module: 'cobranza', roles: undefined, scope: 'finanzas' });
+    // De Dinero, donde ya era fila: idéntica.
+    expect(gate('conciliacion')).toEqual({ module: null, roles: ADMIN_Y_CONTADOR, scope: 'finanzas' });
+    // De Reportes: heredaba `general`.
+    expect(gate('desempeno-ia')).toEqual({ module: 'analytics', roles: undefined, scope: 'general' });
+    // El equipo de pagos, con el gate de la Sala de la que viene.
+    expect(gate('agente-de-pagos')).toEqual({ module: null, roles: ADMIN_Y_CONTADOR, scope: 'finanzas' });
+  });
+
+  it('🔴 PERMISOS: cada rol ve en Agentes exactamente las salas que ya abría', () => {
+    const visibles = (ctx: NavFilterContext) =>
+      filterAgencyNav(filasDelSidebar(t, ctx), ctx)
+        .map((f) => f.href.replace(PANEL, ''))
+        .filter((h) => agentes.modulos.some((m) => m.href === `${PANEL}${h}`));
+    // El comercial no ve finanzas —no veía Cobranza dentro de Pagos—.
+    expect(visibles({ canAccess: () => true, isAdmin: false, agencyRole: AGENCY_ROLES.AGENTE })).toEqual([
+      '/inmuebles/avaluos',
+      '/postulaciones/matching',
+      '/postulaciones/asegurabilidad',
+      '/reportes/ia',
+    ]);
+    // El contador no ve comercial —no veía Avalúos dentro de Inmuebles—.
+    expect(visibles({ canAccess: () => true, isAdmin: false, agencyRole: AGENCY_ROLES.CONTADOR })).toEqual([
+      '/pagos/cobranza',
+      '/conciliacion',
+      '/pagos/agente',
+      '/reportes/ia',
+    ]);
+  });
+
+  it('🔴 quien tenía la sala por la fila de su módulo la sigue teniendo, ahora por la suya', () => {
+    // Antes, quien tenía `avaluos` pero no `portafolio` veía «Inmuebles» y la
+    // fila lo llevaba a Avalúos (`resolverEntradaDeModulo`). Ahora ve «Avalúos»
+    // y no ve «Inmuebles»: la misma puerta, con su nombre.
+    const ctx: NavFilterContext = { canAccess: (m) => m === 'avaluos', isAdmin: false, agencyRole: AGENCY_ROLES.VIEWER };
+    const hrefs = filterAgencyNav(filasDelSidebar(t, ctx), ctx).map((f) => f.href);
+    expect(hrefs).toContain(`${PANEL}/inmuebles/avaluos`);
+    expect(hrefs).not.toContain(`${PANEL}/inmuebles`);
+  });
+
+  it('🔴 la sección ENTERA se esconde si a alguien no le queda ninguna fila', () => {
+    // Los agentes son del plan Flex: sin plan, el micro no concede sus
+    // módulos y `canAccess` los niega. Sin ninguna fila, la cabecera no se
+    // queda sola (`filterAgencyNav` borra la cabecera vacía).
+    const sinAgentes: NavFilterContext = {
+      canAccess: (m) => ['portafolio', 'pipeline', 'contratos'].includes(m),
+      isAdmin: false,
+      agencyRole: AGENCY_ROLES.AGENTE,
+    };
+    const filas = filterAgencyNav(filasDelSidebar(t, sinAgentes), sinAgentes);
+    expect(filas.map((f) => f.label)).not.toContain('inmobiliaria.nav.secAgentes');
+    expect(filas.map((f) => f.label)).toContain('inmobiliaria.nav.secCaptacion');
+
+    // Con una sola fila visible, la sección aparece con esa fila.
+    const soloAnalytics: NavFilterContext = { ...sinAgentes, canAccess: (m) => m === 'analytics' };
+    const conUna = filterAgencyNav(filasDelSidebar(t, soloAnalytics), soloAnalytics);
+    const i = conUna.findIndex((f) => f.label === 'inmobiliaria.nav.secAgentes');
+    expect(i).toBeGreaterThanOrEqual(0);
+    expect(conUna[i + 1]?.href).toBe(`${PANEL}/reportes/ia`);
+  });
+
+  it('lo que está sin sacar NO entra: Retención, Mantenimiento (tickets), Evaluación de candidatos', () => {
+    const hrefs = agentes.modulos.map((m) => m.href);
+    for (const h of hrefs) {
+      expect(h, h).not.toMatch(/\/contratos\/|\/mantenimientos|\/postulaciones\/estudio/);
+    }
+  });
+
+  it('lo ASISTIDO por IA sin agente propio se queda en su módulo, con su píldora', () => {
+    // Postulaciones, Soportes y Solicitudes no son agentes: una cola que la IA
+    // llena y una persona decide. Si entraran, la sección dejaría de
+    // significar algo.
+    const deAgentes = new Set(agentes.modulos.map((m) => m.href));
+    for (const seg of ['/postulaciones', '/postulaciones/soportes', '/solicitudes']) {
+      const p = pantallas.find((x) => x.href === `${PANEL}${seg}`)!;
+      expect(p.ia, seg).toBe(true);
+      expect(p.agente, seg).toBeUndefined();
+      expect(deAgentes.has(p.href), seg).toBe(false);
+    }
+  });
+
+  it('🔴 «Agente de pagos» no se llama «Pagos», no es una Sala y no repite lo que se mudó', () => {
+    const agenteDePagos = fila('agente-de-pagos');
+    // Dos filas «Pagos» en el mismo menú no se distinguen.
+    expect(leer(es, agenteDePagos.labelKey)).toBe('Agente de pagos');
+    expect(modulos.filter((m) => leer(es, m.labelKey) === 'Pagos').map((m) => m.key)).toEqual(['pagos']);
+    // No es la Sala retirada: sin workspace, sin pestañas.
+    expect(agenteDePagos.agente).toBeUndefined();
+    expect(findAgentWorkspace(agenteDePagos.href)).toBeNull();
+    expect(existsSync(join(APP, 'pagos/agente/page.tsx'))).toBe(true);
+    // Lo que tenía vivo se mudó el mismo día, y se queda donde se mudó.
+    expect(moduloDeLaRuta(`${PANEL}/pagos/cobranza/fallidos`)?.key).toBe('cobranza');
+    expect(moduloDeLaRuta(`${PANEL}/pagos/cobranza/recordatorios`)?.key).toBe('cobranza');
+    expect(moduloDeLaRuta(`${PANEL}/pagos/liquidaciones/por-aprobar`)?.key).toBe('pagos');
+  });
+
+  it('los módulos que perdieron su agente siguen enteros', () => {
+    const secciones = (key: string) => (modulos.find((m) => m.key === key)!.pantallas ?? []).map((p) => p.href.replace(PANEL, ''));
+    // Inmuebles se queda sin secciones: el riel no se dibuja con una card sola.
+    expect(secciones('inmuebles')).toEqual([]);
+    expect(secciones('postulaciones')).toEqual(['/postulaciones/soportes']);
+    expect(secciones('pagos')).toEqual(['/pagos/recaudo', '/pagos/cartera', '/pagos/liquidaciones', '/pagos/dispersiones']);
+    expect(secciones('reportes')).toEqual(['/reportes/resumen', '/reportes/rentabilidad']);
+    // Dinero sin Conciliación sigue con más de una fila (R3).
+    expect(ARQUITECTURA_DEL_PANEL.find((g) => g.key === 'dinero')!.modulos.map((m) => m.key)).toEqual([
+      'pagos',
+      'facturacion',
+      'contabilidad',
+    ]);
   });
 });

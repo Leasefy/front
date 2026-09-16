@@ -32,6 +32,7 @@ import {
   TrendUp,
   ArrowLineDown,
   ArrowLineUp,
+  HandCoins,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import type { BusinessModule } from './agency-module-scope';
@@ -50,26 +51,54 @@ import type { BusinessModule } from './agency-module-scope';
  *   N2 Módulo    la entrada del sidebar; un listado o un tablero. Es la raíz.
  *   N3 Sección   hermana del listado, con su propia lógica; se abre desde el
  *                selector de secciones del módulo (cards debajo del header,
- *                que NO se esconden al entrar en una). Acá caen Cobranza,
- *                Cartera, Dispersiones, Renovaciones… Si es un agente, adentro
- *                trae SU profundidad: pestañas (WorkspaceNav,
- *                `agentWorkspaceNav.ts`) debajo de las cards.
+ *                que NO se esconden al entrar en una). Acá caen Cartera,
+ *                Dispersiones, Renovaciones, Soportes… Los agentes ya no: son
+ *                módulos de «Agentes IA», y SU profundidad son pestañas
+ *                (WorkspaceNav, `agentWorkspaceNav.ts`) debajo del header.
  *   N4 Ficha     un registro concreto. No se declara acá: es la hoja.
  *
- * Los grupos siguen el ciclo de vida del contrato —captar y arrendar → operar →
- * cobrar y pagar—, más el directorio de fichas y el pie transversal
- * (propuesta «Arquitectura de Leasefy», septiembre 2026).
+ * Arriba de todo va la sección de los AGENTES; debajo, los grupos siguen el
+ * ciclo de vida del contrato —captar y arrendar → operar → cobrar y pagar—, más
+ * el directorio de fichas y el pie transversal (propuesta «Arquitectura de
+ * Leasefy», septiembre 2026).
  *
  * ── Qué es un agente y qué no ───────────────────────────────────────────────
  *
- * «IA» dejó de ser parte del nombre de las secciones: es una marca (`ia: true`).
- * Una pantalla con `agente` es un WORKSPACE de agente —tiene su Sala, sus
+ * Una fila con `agente` es un WORKSPACE de agente —tiene su Sala, sus
  * pestañas internas y su historial, tal cual estaban bajo `/ai/*`—; el slug
  * apunta a `AGENT_WORKSPACES` y un test cuida que las rutas coincidan. Una
- * pantalla con `ia: true` pero sin `agente` está asistida por IA (una cola que
- * la IA llena y una persona decide; o una pantalla del agente que ya es
- * hermana directa del módulo, como las tres de Retención) pero no abre un
- * workspace con pestañas propias.
+ * pantalla con `ia: true` pero sin `agente` está ASISTIDA por IA (una cola que
+ * la IA llena y una persona decide: Postulaciones, Soportes, Solicitudes) y se
+ * queda en su módulo: no es un agente.
+ *
+ * ── 🔴 Los agentes tienen SU sección (Nico, 2026-09-16) ─────────────────────
+ *
+ * «Todo lo que tenemos de AI en este momento —no lo que está sin sacar, lo que
+ * hay en este momento— creemos una sección sólo de agentes, y los metamos
+ * todos ahí. Arriba de la sección de captación.»
+ *
+ * Revierte la decisión anterior, que era la contraria: «la IA es un modo, no
+ * un lugar», y cada agente vivía DENTRO del módulo cuyo proceso automatiza
+ * (Cobranza en Pagos, Matching y Asegurabilidad en Postulaciones, Avalúos en
+ * Inmuebles, Conciliación en Dinero, Desempeño IA en Reportes). Se MUDARON, no
+ * se duplicaron: una sala la reclama un solo lugar del catálogo.
+ *
+ * Lo que decide la mudanza, y lo que NO cambia:
+ *
+ *   · Las URLs se quedan (`/pagos/cobranza` sigue siendo `/pagos/cobranza`).
+ *     Cada agente es ahora un MÓDULO propio (N2), así que `moduloDeLaRuta`
+ *     —que elige el href más largo que sea prefijo— resuelve `/pagos/cobranza/…`
+ *     a Cobranza y no a Pagos: el riel de Pagos se calla, el encabezado arranca
+ *     en «Agentes IA» y el sidebar marca la fila del agente (la fila más
+ *     específica gana, `fila-activa-del-menu.ts`). Mover las URLs no resolvía
+ *     nada de eso y costaba otra mudanza de 151 archivos, los enlaces de los
+ *     correos y los del chat.
+ *   · Dentro de la sección la píldora «IA» sobra: la sección ya lo dice.
+ *   · Cada fila conserva el `module`/`roles` y el `scope` que tenía como
+ *     pantalla de su módulo anterior (el `scope` que heredaba, ahora escrito).
+ *   · Lo que existe pero está sin sacar NO entra: Retención, Mantenimiento
+ *     (tickets), Evaluación de candidatos. El equipo de Pagos SÍ entra, con una
+ *     pantalla que dice qué está encendido y qué falta (ver su fila).
  *
  * ── Reglas que NO cambian con esto ─────────────────────────────────────────
  *
@@ -98,8 +127,8 @@ const GESTION_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.A
  * No son grupos ni submódulos: son la MISMA plata mirada desde los dos lados
  * del contrato.
  *
- *   · `inquilinos`   — lo que ENTRA: la deuda del mes (la raíz), recaudo,
- *                      cartera y cobranza.
+ *   · `inquilinos`   — lo que ENTRA: la deuda del mes (la raíz), recaudo y
+ *                      cartera.
  *   · `propietarios` — lo que SALE: liquidaciones y dispersiones.
  *
  * 🔴 TODA pantalla del módulo tiene cara, incluida la raíz. El campo sigue
@@ -205,7 +234,11 @@ export interface PantallaDelPanel {
 }
 
 export interface ModuloDelPanel extends PantallaDelPanel {
-  /** Identificador estable = segmento de ruta. */
+  /**
+   * Identificador estable. Por lo general es el último segmento de la ruta;
+   * cuando el segmento solo no dice qué es (`/pagos/agente`, `/reportes/ia`),
+   * la clave lo dice entero (`agente-de-pagos`, `desempeno-ia`).
+   */
   key: string;
   /**
    * Encuadre por rol que tenía la fila ANTES de esta arquitectura. No es
@@ -217,7 +250,7 @@ export interface ModuloDelPanel extends PantallaDelPanel {
 }
 
 export interface GrupoDelPanel {
-  key: 'captacion' | 'operacion' | 'dinero' | 'directorio' | 'pie';
+  key: 'agentes' | 'captacion' | 'operacion' | 'dinero' | 'directorio' | 'pie';
   /** Clave i18n de la cabecera; null = sin cabecera (el pie). */
   labelKey: string | null;
   modulos: ModuloDelPanel[];
@@ -226,6 +259,59 @@ export interface GrupoDelPanel {
 const r = (p: string) => `${PANEL}${p}`;
 
 export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
+  // ── AGENTES IA ── todo lo de IA que funciona hoy, en un solo lugar y arriba
+  // de todo (Nico, 2026-09-16). El porqué y las reglas, en la cabecera.
+  //
+  // El ORDEN es el de los módulos de donde vinieron —Inmuebles, Postulaciones,
+  // Pagos, Dinero—, así la sección se lee en el mismo sentido que el resto del
+  // menú: primero lo que capta, después lo que cobra. Con una excepción a
+  // propósito: el equipo de pagos, que hoy no trabaja (su pantalla lo dice),
+  // va después de los que sí, y «Desempeño IA», que es cómo rinden todos,
+  // cierra. Efecto asumido, el mismo que se asumió con la Agenda: la barra
+  // inferior del móvil muestra las cinco primeras filas navegables
+  // (`MobileNavBar`), y ahora las tres después de Inicio y Chat son agentes.
+  // Ninguna puerta se pierde: el «más» las lista todas.
+  //
+  // Ninguna fila lleva `ia: true`: la cabecera ya lo dice.
+  {
+    key: 'agentes',
+    labelKey: 'inmobiliaria.nav.secAgentes',
+    modulos: [
+      // Venía de Inmuebles (`scope: 'comercial'` heredado). Gate `avaluos` con
+      // el fallback ABSENT = ALLOWED (agent-module-access.ts).
+      { key: 'avaluos', labelKey: 'inmobiliaria.ai.nav.avaluos', href: r('/inmuebles/avaluos'), icon: Scales, module: 'avaluos', scope: 'comercial', agente: 'avaluos' },
+      // Venían de Postulaciones (`scope: 'comercial'` heredado), en el orden en
+      // que se recorre un candidato.
+      { key: 'matching', labelKey: 'inmobiliaria.ai.nav.matching', href: r('/postulaciones/matching'), icon: GitMerge, module: 'matching', scope: 'comercial', agente: 'matching' },
+      { key: 'asegurabilidad', labelKey: 'inmobiliaria.ai.nav.cotizador', href: r('/postulaciones/asegurabilidad'), icon: Umbrella, module: 'cotizador', scope: 'comercial', agente: 'asegurabilidad', dataTourTarget: 'sidebar-cotizador' },
+      // Venía de Pagos, cara inquilinos (`scope: 'finanzas'` heredado). Sin
+      // `cara`: las caras son de Pagos, y Cobranza ya no es una de sus pantallas.
+      { key: 'cobranza', labelKey: 'inmobiliaria.ai.nav.cobranza', href: r('/pagos/cobranza'), icon: ChatCircleText, module: 'cobranza', scope: 'finanzas', agente: 'cobranza', dataTourTarget: 'sidebar-cobranza' },
+      // Venía de Dinero, donde ya era la raíz de su propio módulo: sólo cambió
+      // de grupo. Sus pestañas son las suyas.
+      { key: 'conciliacion', labelKey: 'inmobiliaria.nav.conciliacion', href: r('/conciliacion'), icon: Bank, module: null, roles: CONTADOR_ROLES, scope: 'finanzas', agente: 'conciliacion' },
+      // 🔴 El EQUIPO de pagos (Gabriela y sus cinco especialistas), no el
+      // módulo de la plata: «Pagos», en Dinero, sigue siendo la pantalla del
+      // ERP con sus dos caras. Se llama «Agente de pagos» porque dos filas
+      // «Pagos» en el mismo menú no se distinguen, y porque el resto de la
+      // sección nombra la TAREA y no a la persona (Cobranza, no Salomé): la
+      // única tarea que describe a este equipo, «pagos», ya la usa el ERP.
+      //
+      // Sin `agente`: no es una Sala. Su Sala —el tercer renglón de Pagos— se
+      // retiró el 2026-09-16 y lo que tenía vivo se mudó (fallidos y
+      // recordatorios a Cobranza, por aprobar a Liquidaciones); esta pantalla
+      // NO lo repite. Dice qué hace cada especialista, qué está encendido y
+      // qué falta, y se prende sola cuando el micro publique su tablero
+      // (`app/panel/inmobiliaria/pagos/agente/page.tsx`).
+      //
+      // El gate es el de aquella Sala: ADMIN y CONTADOR, encuadre de finanzas.
+      { key: 'agente-de-pagos', labelKey: 'inmobiliaria.nav.agenteDePagos', href: r('/pagos/agente'), icon: HandCoins, module: null, roles: CONTADOR_ROLES, scope: 'finanzas' },
+      // Venía de Reportes (`scope: 'general'` heredado): es cómo rinden los
+      // agentes de arriba, por eso cierra la sección.
+      { key: 'desempeno-ia', labelKey: 'inmobiliaria.nav.desempenoIa', href: r('/reportes/ia'), icon: ChartLineUp, module: 'analytics', scope: 'general' },
+    ],
+  },
+
   // ── CAPTACIÓN Y ARRIENDO ── conseguir inmuebles y estudiar candidatos. El
   // contrato que sale de acá ya se vive en Operación (Nico, 2026-09-12).
   {
@@ -248,33 +334,26 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // lista todas— y mover la fila sin mover el móvil sería tener dos menús
       // que no coinciden.
       { key: 'agenda', labelKey: 'inmobiliaria.nav.agenda', href: r('/agenda'), icon: CalendarBlank, module: 'operaciones', scope: 'administracion' },
-      {
-        key: 'inmuebles', labelKey: 'inmobiliaria.nav.inmuebles', href: r('/inmuebles'), icon: Buildings, module: 'portafolio', scope: 'comercial', dataTourTarget: 'sidebar-inmuebles',
-        pantallas: [
-          // Avalúos (7º agente): workspace de sólo lectura, proxied por el agente.
-          // Gate `avaluos` con el fallback ABSENT = ALLOWED (agent-module-access.ts).
-          { labelKey: 'inmobiliaria.ai.nav.avaluos', href: r('/inmuebles/avaluos'), icon: Scales, module: 'avaluos', ia: true, agente: 'avaluos' },
-        ],
-      },
+      // Avalúos se mudó a «Agentes IA» (2026-09-16): Inmuebles se queda sin
+      // secciones y `SeccionesDelModulo` no dibuja el riel de una sola card.
+      { key: 'inmuebles', labelKey: 'inmobiliaria.nav.inmuebles', href: r('/inmuebles'), icon: Buildings, module: 'portafolio', scope: 'comercial', dataTourTarget: 'sidebar-inmuebles' },
       {
         key: 'postulaciones', labelKey: 'inmobiliaria.nav.postulaciones', href: r('/postulaciones'), icon: ClipboardText, module: 'portafolio', scope: 'comercial', ia: true, dataTourTarget: 'sidebar-postulaciones',
-        // El flujo del candidato, en el orden en que se recorre. Las tres son
-        // pantallas completas: se entran desde acá porque nadie hace matching o
-        // asegurabilidad en abstracto —siempre es para una postulación—.
+        // Matching y Asegurabilidad se mudaron a «Agentes IA» (2026-09-16).
+        // Queda Soportes, que está ASISTIDA por IA pero no es un agente.
         pantallas: [
-          { labelKey: 'inmobiliaria.ai.nav.matching', href: r('/postulaciones/matching'), icon: GitMerge, module: 'matching', ia: true, agente: 'matching' },
           // Evaluación de candidatos (el agente `estudio`) está OCULTA por ahora
           // (Nico, 2026-09-08: «esta sección de evaluación de candidatos ocúltala
-          // por ahora»). Iba acá, entre Matching y Soportes. Las páginas siguen
-          // vivas bajo `postulaciones/estudio/` y su `layout.tsx` devuelve a
-          // Postulaciones a quien entre por la URL. Para reactivarla: descomentar
-          // esta línea y el import de `ShieldCheck`, el workspace en
-          // `agentWorkspaceNav.ts`, la fila del buscador (`navigation-source.ts`)
-          // y borrar ese layout (el test exige las dos puertas).
-          // { labelKey: 'inmobiliaria.ai.nav.estudio', href: r('/postulaciones/estudio'), icon: ShieldCheck, module: 'estudio', ia: true, agente: 'estudio' },
+          // por ahora»). Las páginas siguen vivas bajo `postulaciones/estudio/` y
+          // su `layout.tsx` devuelve a Postulaciones a quien entre por la URL.
+          // Para reactivarla: es un agente, así que va como fila de «Agentes
+          // IA» (con `scope: 'comercial'`), más el import de `ShieldCheck`, el
+          // workspace en `agentWorkspaceNav.ts`, la fila del buscador
+          // (`navigation-source.ts`) y borrar ese layout (el test exige las dos
+          // puertas).
+          // { key: 'estudio', labelKey: 'inmobiliaria.ai.nav.estudio', href: r('/postulaciones/estudio'), icon: ShieldCheck, module: 'estudio', scope: 'comercial', agente: 'estudio' },
           // Era una fila de Administración (la ve el CONTADOR); conserva ese encuadre.
           { labelKey: 'inmobiliaria.nav.soportesCorto', href: r('/postulaciones/soportes'), icon: ListChecks, module: 'documentos', scope: 'administracion', ia: true },
-          { labelKey: 'inmobiliaria.ai.nav.cotizador', href: r('/postulaciones/asegurabilidad'), icon: Umbrella, module: 'cotizador', ia: true, agente: 'asegurabilidad', dataTourTarget: 'sidebar-cotizador' },
         ],
       },
     ],
@@ -347,7 +426,8 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         //
         // Queda UN módulo con DOS CARAS de la misma plata:
         //   · inquilinos   — lo que ENTRA: la deuda del mes (la raíz),
-        //                    recaudo, cartera y cobranza.
+        //                    recaudo y cartera (la cobranza, que persigue la
+        //                    cartera, es un agente y vive en «Agentes IA»).
         //   · propietarios — lo que SALE: liquidaciones y dispersiones.
         //
         // 🔴 La raíz ES de la cara inquilinos (Nico, 2026-09-16). Era la Sala
@@ -361,7 +441,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         // 🔴 PERMISOS — lo que NO cambió, y por qué nadie gana ni pierde:
         // cada pantalla conserva EXACTAMENTE el `module`/`roles` que tenía
         // como fila propia. Recaudo y Cartera siguen pidiendo `cobros`,
-        // Cobranza `cobranza`, Dispersiones `dispersiones`, y la raíz y
+        // Dispersiones `dispersiones`, y la raíz y
         // Liquidaciones siguen siendo sólo ADMIN y CONTADOR. Quien tenía
         // `cobros` pero no es contador NO pierde su trabajo: la raíz no le
         // pasa el gate, pero `resolverEntradaDeModulo` (sidebar-del-panel.ts)
@@ -380,14 +460,18 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         // siendo una Sala y seguía dibujando el tercer renglón de pestañas que
         // contradecía a las caras. Las nueve pantallas de esa Sala están
         // repartidas o retiradas, una por una, en la NOTA al pie de
-        // `agentWorkspaceNav.ts`. Cobranza IA, acá abajo, SÍ conserva las dos
-        // cosas: ahí el agente es la pantalla.
+        // `agentWorkspaceNav.ts`. El equipo de agentes de pagos tiene hoy su
+        // propia fila en «Agentes IA» («Agente de pagos»), con otro nombre.
+        //
+        // 🔴 Cobranza ya NO es una sección de acá: se mudó a «Agentes IA» el
+        // 2026-09-16, con su URL intacta. Desde Cartera —que es lo que la
+        // cobranza persigue— se llega con un enlace (`IrALaCobranza`), no con
+        // una card: una sala la reclama un solo lugar.
         key: 'pagos', labelKey: 'inmobiliaria.ai.nav.pagos', href: r('/pagos'), icon: CurrencyDollar, module: null, roles: CONTADOR_ROLES, scope: 'finanzas', cara: 'inquilinos', dataTourTarget: 'sidebar-pagos',
         pantallas: [
           // Lo que ENTRA (cara inquilinos).
           { labelKey: 'inmobiliaria.nav.recaudo', href: r('/pagos/recaudo'), icon: Coins, module: 'cobros', cara: 'inquilinos' },
           { labelKey: 'inmobiliaria.nav.cartera', href: r('/pagos/cartera'), icon: CurrencyCircleDollar, module: 'cobros', cara: 'inquilinos' },
-          { labelKey: 'inmobiliaria.ai.nav.cobranza', href: r('/pagos/cobranza'), icon: ChatCircleText, module: 'cobranza', ia: true, agente: 'cobranza', dataTourTarget: 'sidebar-cobranza', cara: 'inquilinos' },
           // Lo que SALE (cara propietarios). Las facturas de proveedor (CxP)
           // cuelgan de Liquidaciones: hoy no tienen listado propio, y no se
           // inventa uno.
@@ -396,8 +480,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         ],
       },
       { key: 'facturacion', labelKey: 'inmobiliaria.nav.facturacion', href: r('/facturacion'), icon: Receipt, module: null, roles: CONTADOR_ROLES, scope: 'finanzas' },
-      // La Sala del agente de conciliación (F6). Sus pestañas son las suyas.
-      { key: 'conciliacion', labelKey: 'inmobiliaria.nav.conciliacion', href: r('/conciliacion'), icon: Bank, module: null, roles: CONTADOR_ROLES, scope: 'finanzas', ia: true, agente: 'conciliacion' },
+      // Conciliación (la Sala de su agente) se mudó a «Agentes IA» el 2026-09-16.
       { key: 'contabilidad', labelKey: 'inmobiliaria.nav.contabilidadCorta', href: r('/contabilidad'), icon: Calculator, module: null, roles: CONTADOR_ROLES, scope: 'finanzas' },
     ],
   },
@@ -426,8 +509,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // —la portada es Inicio—, así que vive con los reportes.
           { labelKey: 'inmobiliaria.nav.resumenDelNegocio', href: r('/reportes/resumen'), icon: SquaresFour, module: 'dashboard' },
           { labelKey: 'inmobiliaria.nav.rentabilidad', href: r('/reportes/rentabilidad'), icon: TrendUp, module: 'reportes' },
-          // Sin `ia: true`: el nombre ya dice «IA», y la píldora al lado repetía «IA IA».
-          { labelKey: 'inmobiliaria.nav.desempenoIa', href: r('/reportes/ia'), icon: ChartLineUp, module: 'analytics' },
+          // «Desempeño IA» se mudó a «Agentes IA» el 2026-09-16, con su URL.
         ],
       },
       // Configuración NO es una fila del sidebar (Nico, 2026-09-03: «tenemos
@@ -480,10 +562,10 @@ export function modulosDelPanel(): ModuloDelPanel[] {
  *
  * La raíz es EXACTA (en `/contratos/7` ninguna pestaña está activa y la barra
  * no se dibuja: la ficha ya trae su cabecera) salvo cuando la raíz es la Sala
- * de un agente —hoy sólo Conciliación—: ahí todo lo que cuelga del agente la
- * deja activa. Pagos dejó de serlo el 2026-09-16, así que su raíz volvió a ser
- * exacta y su ficha de caso (`/pagos/<id>`) no marca ninguna pestaña, como
- * cualquier otra ficha del panel.
+ * de un agente —las filas de «Agentes IA» con `agente`—: ahí todo lo que
+ * cuelga del agente la deja activa. Pagos dejó de serlo el 2026-09-16, así que
+ * su raíz volvió a ser exacta y su ficha de caso (`/pagos/<id>`) no marca
+ * ninguna pestaña, como cualquier otra ficha del panel.
  *
  * 🔴 La `cara` viaja con la raíz. Sin esto, la raíz de un módulo con dos caras
  * no sería de ninguna y se dibujaría en las dos — que es exactamente lo que
@@ -520,12 +602,24 @@ function sinQuery(pathname: string): string {
   return pathname.split('?')[0] ?? pathname;
 }
 
-/** El módulo dueño de una ruta (el de href más largo que sea prefijo). */
+/**
+ * El módulo dueño de una ruta (el de href más largo que sea prefijo).
+ *
+ * 🔴 Es lo que sostiene que las salas de «Agentes IA» conserven su URL: en
+ * `/pagos/cobranza/deudores/1` calzan Pagos (`/pagos`) y Cobranza
+ * (`/pagos/cobranza`), y gana Cobranza por ser la más larga. Sin esta regla,
+ * entrar a la sala se vería dentro de Pagos.
+ */
 export function moduloDeLaRuta(pathname: string): ModuloDelPanel | null {
   const ruta = sinQuery(pathname);
   const candidatos = modulosDelPanel().filter((m) => ruta === m.href || ruta.startsWith(`${m.href}/`));
   if (candidatos.length === 0) return null;
   return candidatos.sort((a, b) => b.href.length - a.href.length)[0] ?? null;
+}
+
+/** El grupo del sidebar al que pertenece un módulo (null si no está en el árbol). */
+export function grupoDelModulo(modulo: ModuloDelPanel): GrupoDelPanel | null {
+  return ARQUITECTURA_DEL_PANEL.find((g) => g.modulos.some((m) => m.key === modulo.key)) ?? null;
 }
 
 /** La pestaña activa dentro de un módulo: la de href más largo que coincida. */

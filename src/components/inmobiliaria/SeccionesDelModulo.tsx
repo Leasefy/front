@@ -17,25 +17,31 @@ import { BarraDePestanas, type CaraDeLaBarra, type PestanaDeBarra } from './Barr
 
 /**
  * SeccionesDelModulo — las secciones (N3) de un módulo, como cards chicas
- * dentro de un rectángulo debajo del header: [Inmuebles] [Avalúos IA].
+ * dentro de un rectángulo debajo del header: [Contratos] [Renovaciones].
  *
  * Se monta UNA vez en `app/panel/inmobiliaria/layout.tsx` y se esconde sola:
  *
  *   · fuera de un módulo con ≥2 secciones visibles (Pipeline, Mensajes,
- *     Conciliación…): una card sola no da a dónde pasar;
+ *     Inmuebles, cualquier sala de «Agentes IA»…): una card sola no da a dónde
+ *     pasar;
  *   · cuando ninguna sección coincide con la ruta —una ficha (`/contratos/7`),
  *     un flujo (`/inmuebles/nuevo`), la cuenta de cobro imprimible—: la ficha
  *     ya trae su cabecera y su «Volver», y la franja sólo sumaría ruido.
  *
- * Lo que NO hace, a propósito: esconderse dentro de un agente. Antes, al
+ * Lo que NO hace, a propósito: esconderse al entrar en una sección. Antes, al
  * entrar en Avalúos las pestañas «Inmuebles · Avalúos» desaparecían y en su
  * mismo sitio aparecían las del agente (Resumen · Mis solicitudes ·
  * Configuración): dos niveles distintos con la misma cara, turnándose el
- * lugar (Nico, 2026-09-03). Ahora las secciones se quedan quietas —Avalúos
- * sigue marcada en `/inmuebles/avaluos/cola`— y la PROFUNDIDAD de la sección
- * va DEBAJO, con otra cara: las pestañas del agente (`WorkspaceNav`) o las
- * pestañas propias de la página. La regla vale para todos los módulos: las
- * secciones son cards; lo que hay dentro de cada una son pestañas.
+ * lugar (Nico, 2026-09-03). Ahora las secciones se quedan quietas y la
+ * PROFUNDIDAD de la sección va DEBAJO, con otra cara (las pestañas propias de
+ * la página). La regla vale para todos los módulos: las secciones son cards;
+ * lo que hay dentro de cada una son pestañas.
+ *
+ * 🔴 Desde el 2026-09-16 ningún agente es una sección: tienen su propia fila
+ * en «Agentes IA», con su URL de siempre. `moduloDeLaRuta` elige el módulo de
+ * href más largo, así que en `/pagos/cobranza/…` el dueño es Cobranza —que no
+ * tiene secciones— y el riel de Pagos no aparece. Una sala no se ve dentro de
+ * dos lugares a la vez.
  *
  * Los gates son los MISMOS que tenía cada pantalla como entrada del sidebar
  * (`module`/`roles`/`scope`), resueltos con las mismas funciones que usa el

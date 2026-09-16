@@ -23,23 +23,29 @@
  * Follows the NEXT_PUBLIC_AGENT_URL + agentAuthHeaders + 404→notAvailable
  * pattern of `agent-workspace.ts`.
  *
- * ── 🔴 SIN CONSUMIDOR HOY, Y A PROPÓSITO NO SE BORRA (2026-09-16) ──────────
+ * ── 🔴 Quién lo usa hoy (2026-09-16) ───────────────────────────────────────
  *
- * Este módulo, `pagos-home.service.ts`, `pagos-home.types.ts` y los widgets
- * `PagosHomeMetricsStrip` / `PagosHomeAttentionList` no los monta ninguna
- * pantalla. No es olvido: es el PUENTE con un backend que está escrito y no
- * está desplegado, y tirarlo obligaría a reescribir el contrato cuando llegue.
+ * `fetchPagosHome` lo consume la pantalla «Agente de pagos» de «Agentes IA»
+ * (`/pagos/agente`, vía `useAgenteDePagos`): muestra el tablero del equipo SÓLO
+ * cuando esto devuelve datos, y mientras devuelva `notAvailable` dice con
+ * palabras que el tablero todavía no está publicado. Así se prende sola el día
+ * que el micro publique estas rutas, sin tocar el front.
  *
- * Dónde está ese backend (verificado con `git ls-tree origin/develop`): en el
- * repo del micro (`~/rent/agent`), rama **`develop`**, bajo
- * `src/mastra/agents/pagos/` — Laura (generación de cobros), Nicolás (links y
- * envío), Valentina (pagos fallidos), Samuel (liquidación a propietarios),
- * Sofía (reportes y notificaciones) —, con su orquestadora Gabriela y la ruta
- * `src/server/routes/pagos-dispatch.ts`. Nada de eso está en las ramas con las
- * que trabajamos (`cambios-nico-6/7` del micro no tienen `agents/pagos`), y
- * además va detrás de `PAGOS_ENABLED`.
+ * `pagos-home.service.ts`, `pagos-home.types.ts` y los widgets
+ * `PagosHomeMetricsStrip` / `PagosHomeAttentionList` siguen sin consumidor. No
+ * es olvido: son el PUENTE con un backend que no está desplegado, y tirarlos
+ * obligaría a reescribir el contrato cuando llegue.
  *
- * DÓNDE SE ENCHUFA CUANDO LLEGUE. No en una «Sala de Pagos» en la raíz del
+ * Dónde está ese backend (verificado con `git ls-tree` en el micro,
+ * `~/rent/agent`): el equipo —Payu, el conductor, cuya persona pública es
+ * Gabriela; y Laura, Nicolás, Valentina, Samuel y Sofía— está en
+ * `src/mastra/agents/pagos/` en `cambios-nico-6` (tip `6ddd953b`) y registrado
+ * en `src/mastra/index.ts`. Corre por un solo camino: `POST /pagos/dispatch` →
+ * `payment-orchestration-workflow`, que sólo se registra con `PAGOS_ENABLED`.
+ * Las rutas `/api/agency/{id}/pagos/home/*` que lee este archivo NO existen en
+ * esa rama: hoy responden 404.
+ *
+ * DÓNDE SE ENCHUFA CADA ESPECIALISTA. No en una «Sala de Pagos» en la raíz del
  * módulo: ese renglón se retiró el 2026-09-16 porque contradecía la separación
  * inquilinos/propietarios y porque arranca en «generar el cobro», cuando la
  * deuda ya nació con el contrato (el porqué completo, con el mapeo agente ↔

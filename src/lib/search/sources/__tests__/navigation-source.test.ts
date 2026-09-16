@@ -72,6 +72,28 @@ describe('navigationSource — chips', () => {
     expect(agenda?.subtitle).toBe('Captación y arriendo');
   });
 
+  it('🔴 los agentes se buscan bajo «Agentes IA», como en el menú (Nico, 2026-09-16)', async () => {
+    // Antes decían «Inmuebles», «Postulaciones», «Pagos · inquilinos», «Dinero»
+    // o «Reportes»: el módulo que los hospedaba. Las URLs no cambiaron.
+    const contexto = async (q: string, titulo: string) =>
+      (await buscar(q)).find((f) => f.title === titulo)?.subtitle
+    expect(await contexto('cobranza', 'Cobranza')).toBe('Agentes IA')
+    expect(await contexto('matching', 'Matching')).toBe('Agentes IA')
+    expect(await contexto('asegurabilidad', 'Asegurabilidad')).toBe('Agentes IA')
+    expect(await contexto('avalúo', 'Avalúos')).toBe('Agentes IA')
+    expect(await contexto('conciliación', 'Conciliación')).toBe('Agentes IA')
+    expect(await contexto('desempeño', 'Desempeño IA')).toBe('Agentes IA')
+  })
+
+  it('el equipo de pagos se encuentra por su nombre y por sus agentes, y no se confunde con Pagos', async () => {
+    const porNombre = (await buscar('agente de pagos')).find((f) => f.title === 'Agente de pagos')
+    expect(porNombre?.href).toBe('/panel/inmobiliaria/pagos/agente')
+    expect(porNombre?.subtitle).toBe('Agentes IA')
+    expect((await buscar('valentina')).map((f) => f.title)).toContain('Agente de pagos')
+    // «Pagos» es la plata de la inmobiliaria, no un agente.
+    expect((await buscar('pagos')).find((f) => f.title === 'Pagos')?.subtitle).toBe('Dinero')
+  })
+
   it('respeta canAccess: sin permiso de portafolio no sale la consignación', async () => {
     const sinPortafolio: SearchSourceContext = {
       agencyId: 'agency-1',

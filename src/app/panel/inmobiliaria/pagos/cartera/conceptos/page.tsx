@@ -16,18 +16,22 @@ import { SectionLabel } from '@/components/ui/section-label'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { CarteraPorConcepto } from '@/components/cartera/CarteraPorConcepto'
 import { PestanasDeCartera } from '@/components/cartera/PestanasDeCartera'
+import { IrALaCobranza } from '@/components/cartera/IrALaCobranza'
 
 export default function CarteraPorConceptoPage() {
   return (
     <PageGuard module="cobros" action="view">
       <div className="space-y-6 p-6 lg:p-8">
-        <header className="space-y-1.5">
-          <SectionLabel>Pagos · inquilinos</SectionLabel>
-          <h1 className="text-h2 text-fg">Cartera por concepto</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Cuánto debe cada inquilino, mes a mes, separado en canon, intereses de mora, gasto
-            administrativo y lo demás que se le cobra.
-          </p>
+        <header className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-1.5">
+            <SectionLabel>Pagos · inquilinos</SectionLabel>
+            <h1 className="text-h2 text-fg">Cartera por concepto</h1>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Cuánto debe cada inquilino, mes a mes, separado en canon, intereses de mora, gasto
+              administrativo y lo demás que se le cobra.
+            </p>
+          </div>
+          <IrALaCobranza />
         </header>
 
         <PestanasDeCartera />

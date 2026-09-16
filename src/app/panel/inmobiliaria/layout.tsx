@@ -192,15 +192,17 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // `exact` para que no quede resaltado en cada subruta.
     { label: t('inmobiliaria.nav.chat'),         href: '/panel/inmobiliaria',              icon: ChatsCircle,   exact: true, module: null, dataTourTarget: 'sidebar-chat' },
 
-    // ── LOS MÓDULOS ── por ciclo de vida del contrato.
+    // ── LOS MÓDULOS ── los agentes arriba, y después el ciclo de vida del contrato.
     //
-    // Captación y arriendo → Operación → Dinero → Directorio → (pie) Reportes y
-    // Configuración. La estructura vive como DATOS en
+    // Agentes IA → Captación y arriendo → Operación → Dinero → Directorio →
+    // (pie) Reportes. La estructura vive como DATOS en
     // src/lib/nav/arquitectura-del-panel.ts (grupos → módulos → pantallas) y
     // sidebar-del-panel.ts la vuelve filas: una por módulo, con la cabecera de
-    // su grupo. Las pantallas de cada módulo (Cobranza, Cartera, Renovaciones,
-    // Avalúos…) ya no son filas del sidebar: son las cards de SeccionesDelModulo,
-    // y si son un agente traen adentro su propio WorkspaceNav. 38 filas → 21.
+    // su grupo. Las pantallas de cada módulo (Cartera, Renovaciones, Soportes…)
+    // no son filas del sidebar: son las cards de SeccionesDelModulo. Los agentes
+    // (Cobranza, Avalúos…) sí son filas, en «Agentes IA», con su WorkspaceNav
+    // adentro (Nico, 2026-09-16). La fila marcada es UNA, la más específica
+    // (PlanSidebar → fila-activa-del-menu.ts): las salas conservan su URL.
     //
     // Los gates NO cambian: cada fila conserva el module/roles/scope que tenía,
     // y si la raíz de un módulo no pasa pero una de sus pantallas sí, la fila
@@ -305,7 +307,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           {/* Las dos capas de navegación debajo del header, montadas UNA vez y
               auto-ocultas fuera de su contexto, cada una con su cara:
               SeccionesDelModulo (las secciones del módulo como cards:
-              [Pagos] [Recaudo] [Cartera] [Cobranza] [Liquidaciones] [Dispersiones]) y, DEBAJO, dentro de un
+              [Pagos] [Recaudo] [Cartera]) y, DEBAJO, dentro de un
               agente, su WorkspaceNav (pestañas) + la novedad de primera visita.
               Las secciones no se esconden al entrar en el agente: la card
               sigue marcada y sus pestañas cuelgan de ella. */}

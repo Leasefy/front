@@ -938,6 +938,7 @@
       "resumenDelNegocio": "Resumen del negocio",
       "rentabilidad": "Rentabilidad",
       "desempenoIa": "Desempeño IA",
+      "agenteDePagos": "Agente de pagos",
       "agentesIa": "Agentes IA",
       "automatizacionIa": "Automatización IA",
       "riesgo": "Riesgo",
@@ -9699,11 +9700,11 @@
         "inmuebles": {
           "titulo": "Inmuebles es tu portafolio",
           "cuerpo": "Cada inmueble con su ficha, sus fotos, su propietario y su historial. De acá salen las publicaciones y las visitas.",
-          "dato": "Adentro está Avalúos, para pedir el valor comercial de uno."
+          "dato": "El valor comercial de uno lo calcula el agente de Avalúos, arriba en «Agentes IA»."
         },
         "postulaciones": {
           "titulo": "Quién quiere arrendar",
-          "cuerpo": "Las postulaciones que llegan, con el matching contra tu inventario, los soportes del candidato y la consulta de asegurabilidad a las aseguradoras.",
+          "cuerpo": "Las postulaciones que llegan y los soportes de cada candidato. El matching contra tu inventario y la asegurabilidad los trabajan sus agentes, arriba en «Agentes IA».",
           "dato": "El número al lado del nombre dice cuántas están esperando gestión."
         },
         "contratos": {
@@ -9713,12 +9714,12 @@
         },
         "pagos": {
           "titulo": "La plata, de los dos lados",
-          "cuerpo": "Una sola parada con las dos caras: del lado de los inquilinos están Recaudo (lo que ya entró), Cartera (lo que falta y los cobros emitidos) y Cobranza; del lado de los propietarios, Liquidaciones y Dispersiones.",
+          "cuerpo": "Una sola parada con las dos caras: del lado de los inquilinos están Recaudo (lo que ya entró) y Cartera (lo que falta y los cobros emitidos); del lado de los propietarios, Liquidaciones y Dispersiones. La cobranza, que persigue la cartera, es un agente: está en «Agentes IA».",
           "dato": "La deuda nace con el contrato: el cobro del mes es el documento con el que la reclamas, y lo decides tú mirando la cartera."
         },
         "reportes": {
           "titulo": "Cómo va el negocio",
-          "cuerpo": "El resumen con los números del mes, la rentabilidad por inmueble y el desempeño de los agentes de IA.",
+          "cuerpo": "El resumen con los números del mes y la rentabilidad por inmueble. Cómo rinden los agentes está en «Desempeño IA», dentro de «Agentes IA».",
           "dato": "Cada tabla del panel se puede exportar a Excel o PDF."
         },
         "piloto": {

@@ -3,8 +3,12 @@
  * muestre todo el detalle del inquilino… pagos, etc.»
  *
  * Lo que se protege acá es que el cajón no MIENTA:
- *   - un saldo que no llegó se muestra «—», nunca «$0» (que se lee «al día»);
- *   - la mora y los recordatorios salen del cobro, no de una cuenta propia;
+ *   - 🔴 lo que debe sale del ESTADO DE CUENTA (las cuotas del contrato), nunca
+ *     de sumar cobros: con cero cobros y cuotas pendientes, la deuda se ve
+ *     (Nico, 2026-09-15: la deuda nace con el contrato);
+ *   - al día · vencido, en plazo · en cartera, con la frontera que trae el back
+ *     y no con los días de mora del cobro;
+ *   - una deuda que no llegó se muestra «—», nunca «$0» (que se lee «al día»);
  *   - cuando falta el detalle de un contrato se dice, en vez de sumar a medias;
  *   - los arriendos terminados también aparecen.
  *
@@ -21,6 +25,7 @@ import { act } from 'react'
 import type { Inquilino, ArriendoDeInquilino } from '@/lib/api/inquilinos.service'
 import type { CobroConDesglose } from '@/lib/api/recibos-de-caja.types'
 import type { DetalleDeInquilino } from '@/lib/hooks/use-inquilino-detalle'
+import type { ResumenDelEstadoDeCuenta } from '@/lib/types/estado-de-cuenta'
 
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -130,6 +135,18 @@ function cobro(p: Partial<CobroConDesglose> = {}): CobroConDesglose {
   }
 }
 
+/** Un resumen del estado de cuenta: por defecto, un contrato y al día en todo. */
+function cuenta(p: Partial<ResumenDelEstadoDeCuenta> = {}): ResumenDelEstadoDeCuenta {
+  return {
+    restaPorPagar: 0,
+    pendiente: 0,
+    proximaCuota: null,
+    enMora: null,
+    contratos: 1,
+    ...p,
+  }
+}
+
 function detalle(p: Partial<DetalleDeInquilino> = {}): DetalleDeInquilino {
   return {
     persona: persona(),
@@ -139,6 +156,10 @@ function detalle(p: Partial<DetalleDeInquilino> = {}): DetalleDeInquilino {
     cargandoPagos: false,
     errorPagos: false,
     pagosIncompletos: false,
+    cuenta: cuenta(),
+    cargandoCuenta: false,
+    errorCuenta: false,
+    refDeCuenta: 't1',
     reintentar: vi.fn(),
     ...p,
   }
@@ -171,22 +192,20 @@ function montar(d: DetalleDeInquilino) {
 
 const texto = () => container!.textContent ?? ''
 
+/** Lo que dice la franja de la deuda, sin la lista de cobros. */
+const franja = () =>
+  container!.querySelector('[data-testid="inquilino-cajon-deuda"]')?.textContent ?? ''
+
 /** El `href` de todos los enlaces pintados. */
 const enlaces = () =>
   Array.from(container!.querySelectorAll('a')).map((a) => a.getAttribute('href'))
 
 describe('resumirPagos', () => {
-  it('suma el saldo, cuenta la mora y se queda con el atraso MAYOR', () => {
+  it('🔴 de los cobros NO sale ni saldo ni mora: sólo su historia como documentos', () => {
     const r = resumirPagos([
       cobro({ id: 'a', status: 'late', pendingAmount: 1_000_000, daysLate: 12 }),
-      cobro({ id: 'b', status: 'defaulted', pendingAmount: 2_000_000, daysLate: 95 }),
-      cobro({ id: 'c', status: 'paid', pendingAmount: 0, daysLate: 0 }),
     ])
-    expect(r.saldoPendiente).toBe(3_000_000)
-    // `late` y `defaulted` son los dos estados de mora, como en el panel de cobros.
-    expect(r.enMora).toBe(2)
-    // El que importa es el más viejo sin pagar, no el promedio ni el último.
-    expect(r.diasDeMora).toBe(95)
+    expect(Object.keys(r).sort()).toEqual(['recordatorios', 'ultimoPago', 'ultimoRecordatorio'])
   })
 
   it('el último pago y el último recordatorio son los MÁS RECIENTES, no el último de la lista', () => {
@@ -201,9 +220,6 @@ describe('resumirPagos', () => {
 
   it('sin cobros no inventa nada', () => {
     expect(resumirPagos([])).toEqual({
-      saldoPendiente: 0,
-      enMora: 0,
-      diasDeMora: 0,
       ultimoPago: null,
       recordatorios: 0,
       ultimoRecordatorio: null,
@@ -277,7 +293,7 @@ describe('<CuerpoDelCajon>', () => {
     expect(enlaces()).toContain('/panel/inmobiliaria/contratos/c-viejo')
   })
 
-  it('pinta los cobros con su estado, su mora y lo que se debe', () => {
+  it('pinta los cobros emitidos con su estado y el saldo del documento, sin días de mora del cobro', () => {
     montar(
       detalle({
         cobros: [
@@ -287,32 +303,113 @@ describe('<CuerpoDelCajon>', () => {
       }),
     )
     const pagos = container!.querySelector('[data-testid="inquilino-cajon-pagos"]')!.textContent ?? ''
+    expect(pagos).toContain('inquilinos.cajon.cobrosEmitidos')
     expect(pagos).toContain('inmobiliaria.cobros.status.late')
     expect(pagos).toContain('inmobiliaria.cobros.status.paid')
-    expect(pagos).toContain('inquilinos.cajon.diasDeMora:12')
-    expect(pagos).toContain('inquilinos.cajon.debe:$1.200.000')
+    expect(pagos).toContain('inquilinos.cajon.saldoDelCobro:$1.200.000')
+    expect(pagos).toContain('inquilinos.cajon.vencimiento:2026-08-05')
+    // `daysLate` del cobro no resta el plazo del contrato: no se pinta.
+    expect(pagos).not.toContain(':12')
     // El total incluye la mora ya causada, no el canon pelado.
     expect(pagos).toContain('$3.900.000')
   })
 
-  it('🔴 con los pagos sin llegar el saldo es «—», nunca $0 — un cero se lee «al día»', () => {
-    montar(detalle({ cargandoPagos: true }))
-    expect(texto()).toContain('inquilinos.cajon.saldoPendiente')
-    expect(texto()).toContain('—')
-    expect(texto()).not.toContain('inquilinos.cajon.saldoPendiente$0')
-    // Y sin saber el saldo tampoco se declara que está al día.
-    expect(texto()).not.toContain('inquilinos.cajon.alDia')
-
-    // Y con el pedido caído, tampoco.
-    act(() => root!.render(<CuerpoDelCajon detalle={detalle({ errorPagos: true })} />))
-    expect(texto()).toContain('inquilinos.cajon.errorPagos')
-    expect(texto()).toContain('—')
-    expect(texto()).not.toContain('inquilinos.cajon.alDia')
+  it('🔴 con CERO cobros y cuotas pendientes, la deuda se ve: resta por pagar, lo vencido y la cartera', () => {
+    montar(
+      detalle({
+        cobros: [],
+        cuenta: cuenta({
+          restaPorPagar: 15_000_000,
+          pendiente: 2_500_000,
+          proximaCuota: { fecha: '2026-10-05', monto: 1_250_000 },
+          enMora: { dias: 37, monto: 1_250_000 },
+        }),
+      }),
+    )
+    expect(franja()).toContain('inquilinos.cajon.restaPorPagar')
+    expect(franja()).toContain('$15.000.000')
+    expect(franja()).toContain('inquilinos.cajon.proximaCuota:2026-10-05,$1.250.000')
+    expect(franja()).toContain('inquilinos.cajon.vencidoSinPagar')
+    expect(franja()).toContain('$2.500.000')
+    expect(franja()).toContain('inquilinos.cajon.enCartera:37')
+    expect(franja()).not.toContain('—')
+    expect(franja()).not.toContain('inquilinos.cajon.alDia')
+    // Y el vacío de cobros no se lee como «no debe nada».
+    const pagos = container!.querySelector('[data-testid="inquilino-cajon-pagos"]')!.textContent ?? ''
+    expect(pagos).toContain('inquilinos.cajon.sinCobrosTitulo')
   })
 
-  it('con los cobros al día el saldo lo dice, en vez de dejar un $0 mudo', () => {
-    montar(detalle({ cobros: [cobro()] }))
-    expect(texto()).toContain('inquilinos.cajon.alDia')
+  it('🔴 el saldo NO sale de los cobros: un cobro en mora no pinta cartera si el estado de cuenta dice al día', () => {
+    montar(
+      detalle({
+        cobros: [cobro({ status: 'late', pendingAmount: 9_999_999, daysLate: 40, paidDate: undefined })],
+        cuenta: cuenta({ restaPorPagar: 0, pendiente: 0, enMora: null }),
+      }),
+    )
+    expect(franja()).toContain('inquilinos.cajon.alDia')
+    expect(franja()).not.toContain('$9.999.999')
+    expect(franja()).not.toContain('enCartera')
+  })
+
+  it('vencido dentro del plazo no es cartera: lo dice con las palabras de Pagos', () => {
+    montar(detalle({ cuenta: cuenta({ restaPorPagar: 5_000_000, pendiente: 1_250_000 }) }))
+    expect(franja()).toContain('inquilinos.cajon.vencidoEnPlazo')
+    expect(franja()).not.toContain('enCartera')
+    expect(franja()).not.toContain('inquilinos.cajon.alDia')
+  })
+
+  it('un día en cartera va en singular', () => {
+    montar(detalle({ cuenta: cuenta({ pendiente: 100, enMora: { dias: 1, monto: 100 } }) }))
+    expect(franja()).toContain('inquilinos.cajon.enCarteraUnDia')
+  })
+
+  it('🔴 con el estado de cuenta sin llegar la deuda es «—», nunca $0 — un cero se lee «al día»', () => {
+    montar(detalle({ cargandoCuenta: true, cuenta: null }))
+    expect(franja()).toContain('inquilinos.cajon.restaPorPagar—')
+    expect(franja()).toContain('inquilinos.cajon.vencidoSinPagar—')
+    expect(franja()).not.toContain('$0')
+    expect(franja()).not.toContain('inquilinos.cajon.alDia')
+
+    // Y con el pedido caído, tampoco: lo dice y ofrece reintentar.
+    const reintentar = vi.fn()
+    act(() =>
+      root!.render(
+        <CuerpoDelCajon detalle={detalle({ errorCuenta: true, cuenta: null, reintentar })} />,
+      ),
+    )
+    expect(franja()).toContain('inquilinos.cajon.errorCuenta')
+    expect(franja()).toContain('—')
+    expect(franja()).not.toContain('inquilinos.cajon.alDia')
+    const boton = Array.from(
+      container!.querySelector('[data-testid="inquilino-cajon-deuda"]')!.querySelectorAll('button'),
+    ).find((b) => (b.textContent ?? '').includes('inquilinos.cajon.reintentar'))
+    act(() => boton!.click())
+    expect(reintentar).toHaveBeenCalledTimes(1)
+  })
+
+  it('con arriendos pero ningún contrato en su estado de cuenta, no afirma un cero: lo dice', () => {
+    montar(detalle({ cuenta: cuenta({ contratos: 0 }), refDeCuenta: null }))
+    expect(franja()).toContain('inquilinos.cajon.sinEstadoDeCuenta')
+    expect(franja()).toContain('—')
+    expect(franja()).not.toContain('inquilinos.cajon.alDia')
+  })
+
+  it('al día en lo vencido, aunque deba cuotas futuras: la deuda del contrato no es mora', () => {
+    montar(detalle({ cuenta: cuenta({ restaPorPagar: 30_000_000, pendiente: 0 }) }))
+    expect(franja()).toContain('$30.000.000')
+    expect(franja()).toContain('inquilinos.cajon.alDia')
+  })
+
+  it('desde el cajón se abre su estado de cuenta, y vuelve a Inquilinos', () => {
+    montar(detalle({ refDeCuenta: '1020304050' }))
+    const enlace = container!.querySelector('[data-testid="inquilino-cajon-estado-de-cuenta"]')
+    expect(enlace?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/estado-de-cuenta/inquilino/1020304050?volver=%2Fpanel%2Finmobiliaria%2Finquilinos',
+    )
+
+    // Sin con qué abrirlo, no hay enlace a un 404.
+    act(() => root!.render(<CuerpoDelCajon detalle={detalle({ refDeCuenta: null })} />))
+    expect(container!.querySelector('[data-testid="inquilino-cajon-estado-de-cuenta"]')).toBeNull()
   })
 
   it('el error de pagos ofrece reintentar, y reintentar llama al hook', () => {
@@ -336,16 +433,24 @@ describe('<CuerpoDelCajon>', () => {
     expect(texto()).toContain('inquilinos.cajon.arriendosIncompletos')
   })
 
-  it('con contratos pero sin cobros, el vacío de pagos dice qué esperar y enlaza al contrato', () => {
+  it('con contratos pero sin cobros, el vacío dice que un cobro es un documento y lleva al estado de cuenta', () => {
     montar(detalle())
     const pagos = container!.querySelector('[data-testid="inquilino-cajon-pagos"]')!
-    expect(pagos.textContent).toContain('inquilinos.cajon.sinPagosTitulo')
-    expect(pagos.textContent).toContain('inquilinos.cajon.sinPagos')
+    expect(pagos.textContent).toContain('inquilinos.cajon.sinCobrosTitulo')
+    expect(pagos.textContent).toContain('inquilinos.cajon.sinCobros')
+    expect(
+      Array.from(pagos.querySelectorAll('a')).map((a) => a.getAttribute('href')),
+    ).toContain('/panel/inmobiliaria/estado-de-cuenta/inquilino/t1?volver=%2Fpanel%2Finmobiliaria%2Finquilinos')
+    // El vacío es el de la casa: círculo gris, no un cartel improvisado.
+    expect(pagos.querySelector('[data-testid="empty-state"]')).toBeTruthy()
+  })
+
+  it('sin estado de cuenta que abrir, el vacío de cobros cae al contrato', () => {
+    montar(detalle({ refDeCuenta: null }))
+    const pagos = container!.querySelector('[data-testid="inquilino-cajon-pagos"]')!
     expect(
       Array.from(pagos.querySelectorAll('a')).map((a) => a.getAttribute('href')),
     ).toContain('/panel/inmobiliaria/contratos/c1')
-    // El vacío es el de la casa: círculo gris, no un cartel improvisado.
-    expect(pagos.querySelector('[data-testid="empty-state"]')).toBeTruthy()
   })
 
   it('🔴 sin arriendos el cuerpo es UN vacío que dice qué falta y ofrece crear el contrato', () => {
@@ -356,11 +461,11 @@ describe('<CuerpoDelCajon>', () => {
     expect(texto()).toContain('inquilinos.crearSuContrato')
     expect(enlaces()).toContain(RUTA_MANUAL)
 
-    // Nada de resumir en cero lo que no existe: sin contrato no hay canon, ni
-    // arriendos vigentes, ni saldo. Y una segunda sección de pagos vacía sería
-    // decir dos veces lo mismo.
+    // Nada de resumir en cero lo que no existe: sin contrato no hay canon ni
+    // deuda. Y una segunda sección de cobros vacía sería decir dos veces lo
+    // mismo.
     expect(texto()).not.toContain('inquilinos.cajon.canonVigente')
-    expect(texto()).not.toContain('inquilinos.cajon.saldoPendiente')
+    expect(texto()).not.toContain('inquilinos.cajon.restaPorPagar')
     expect(container!.querySelector('[data-testid="inquilino-cajon-pagos"]')).toBeNull()
   })
 

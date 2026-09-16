@@ -260,55 +260,11 @@ export interface ResumenDelEstadoDeCuenta {
   contratos: number;
 }
 
-// ══ Prefacturas ═════════════════════════════════════════════════════════════
-
-/**
- * Una cuota por facturar (`PrefacturaDto` en el back).
- *
- * «Si quiero mirar qué facturas tengo por generar hasta el 31 de diciembre,
- * revisa los estados de cuenta de los contratos y muestra todas las posibles
- * facturas hasta esa fecha; los contratos que finalicen antes se van eliminando
- * de la prefactura. Lo que NO se puede es enviarlas todas en un solo mes.»
- * (CEO, 2026-09-13)
- *
- * Por eso esto LISTA y no emite: emitir sigue siendo por mes, en
- * `POST /inmobiliaria/facturacion/generar`.
+/*
+ * Las prefacturas vivían acá, espejando `GET /estado-de-cuenta/prefacturas`.
+ * Esa ruta se borró el 16-09: era una SEGUNDA regla para la misma plata —no
+ * cuadraba contra el neto de la cuota, dejaba fuera las cuotas ya pagadas (que
+ * también se facturan), no sabía de la resolución de la DIAN, no distinguía
+ * mostrar de emitir y no llevaba intereses—. La única prefactura es la de
+ * `GET /inmobiliaria/facturacion/por-generar`, en `facturacion-por-mes.service`.
  */
-export interface PrefacturaDelMes {
-  cuotaId: string;
-  contratoId: string;
-  /** El número que la inmobiliaria reconoce (`externalId ?? code`). */
-  contratoNumero: string;
-  lado: RolEnElContrato;
-  /** `YYYY-MM` del período. */
-  mes: string;
-  /** `YYYY-MM-DD`. */
-  desde: string;
-  /** `YYYY-MM-DD`. */
-  hasta: string;
-  /** `YYYY-MM-DD`: el día de cartera del período. */
-  vencimiento: string;
-  clienteNombre: string;
-  clienteDocumento: string | null;
-  inmueble: string;
-  /** Base gravable (canon + conceptos que se facturan). */
-  baseCop: number;
-  ivaCop: number;
-  totalCop: number;
-  /** `true` si esa cuota ya tiene factura emitida. Se ve, y no se vuelve a contar. */
-  yaFacturada: boolean;
-}
-
-export interface PrefacturasHasta {
-  /** `YYYY-MM-DD` hasta donde se miró. */
-  hasta: string;
-  prefacturas: PrefacturaDelMes[];
-  /** Cuántas por mes, para que la pantalla muestre la carga de cada mes. */
-  porMes: { mes: string; cantidad: number; totalCop: number }[];
-  totales: {
-    cantidad: number;
-    baseCop: number;
-    ivaCop: number;
-    totalCop: number;
-  };
-}

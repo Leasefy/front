@@ -6,7 +6,6 @@
  *   GET  /inmobiliaria/estado-de-cuenta/inquilino/:tenantRef
  *   GET  /inmobiliaria/estado-de-cuenta/propietario/:propietarioId
  *   GET  /inmobiliaria/estado-de-cuenta/:tipo/:id/resumen
- *   GET  /inmobiliaria/estado-de-cuenta/prefacturas?hasta=YYYY-MM-DD
  *   POST /inmobiliaria/estado-de-cuenta/:tipo/:id/compartir
  *   POST /inmobiliaria/estado-de-cuenta/:tipo/:id/compartir/correo|whatsapp
  *
@@ -32,7 +31,6 @@ import type {
   EstadoDeCuenta,
   EnvioDelEnlace,
   FiltrosDelEstadoDeCuenta,
-  PrefacturasHasta,
   ResumenDelEstadoDeCuenta,
 } from '@/lib/types/estado-de-cuenta';
 
@@ -93,17 +91,6 @@ export const estadoDeCuentaApi = {
   ): Promise<EstadoDeCuenta> {
     return apiClient.get<EstadoDeCuenta>(
       `${BASE}/propietario/${encodeURIComponent(propietarioId)}${queryDelFiltro(filtro)}`,
-    );
-  },
-
-  /**
-   * Todas las facturas que saldrían de acá hasta `hasta` (`YYYY-MM-DD`),
-   * agrupadas por mes. Es una consulta, no una emisión: generar sigue siendo
-   * por mes.
-   */
-  prefacturas(hasta: string): Promise<PrefacturasHasta> {
-    return apiClient.get<PrefacturasHasta>(
-      `${BASE}/prefacturas?hasta=${encodeURIComponent(hasta)}`,
     );
   },
 

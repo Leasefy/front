@@ -190,6 +190,7 @@ export type {
   CandidatosDeDispersion,
   EstadoDelLote,
   FacturacionDelLote,
+  FilaCompensada,
   FilaExcluida,
   FiltrosDeLotes,
   FormatoArchivoDePagos,

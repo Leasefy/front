@@ -20,6 +20,12 @@
  * descubierto— antes de armar, porque un adelanto que nadie vio es el que
  * después no se puede cuadrar.
  *
+ * 🔴 NUNCA una parte (Juan Camilo, 2026-09-16: «se les paga completo. Yo no les
+ * puedo pagar parcial»). No hay campo de monto por propietario: cada fila es su
+ * neto del mes ENTERO, y el tope sólo decide a quién tildar. Una liquidación
+ * cuyas deducciones cubren el mes se cierra en $0 con el lote: se tilda igual,
+ * no suma, y lo que falte pasa a su siguiente liquidación.
+ *
  * 🔴 «Acumulado» y «seleccionado» son dos números distintos a propósito. El
  * acumulado responde «hasta qué fila me alcanza si voy en este orden»; el
  * seleccionado responde «cuánto voy a girar». Mezclarlos haría que destildar a
@@ -106,7 +112,12 @@ export function ElegirAQuienPagarle({
     [datos],
   );
   const excluidos = useMemo(
-    () => (datos?.candidatos ?? []).filter((c) => c.motivoDeExclusion !== null),
+    () => (datos?.candidatos ?? []).filter((c) => c.motivoDeExclusion !== null && !c.seCompensa),
+    [datos],
+  );
+  /** Se cierran en $0: se tildan como cualquiera, pero no giran nada. */
+  const compensables = useMemo(
+    () => (datos?.candidatos ?? []).filter((c) => c.seCompensa),
     [datos],
   );
 
@@ -115,6 +126,13 @@ export function ElegirAQuienPagarle({
       girables.reduce((s, c) => (elegidos.has(c.dispersionId) ? s + c.netoCop : s), 0),
     [girables, elegidos],
   );
+
+  /** A cuántos se les gira de verdad; los que se cierran en $0 se cuentan aparte. */
+  const cerradosEnCero = useMemo(
+    () => compensables.filter((c) => elegidos.has(c.dispersionId)).length,
+    [compensables, elegidos],
+  );
+  const girados = elegidos.size - cerradosEnCero;
 
   const disponible = datos?.plata.disponibleCop ?? 0;
   // El descubierto se mide contra el disponible, nunca contra 0: si ya venía
@@ -142,7 +160,8 @@ export function ElegirAQuienPagarle({
   const tildarHastaElTope = () => {
     const topeCop = Number(tope.replace(/\D/g, ''));
     if (!Number.isFinite(topeCop) || topeCop <= 0) return;
-    const siguiente = new Set<string>();
+    // Las que se cierran en $0 no consumen tope: entran siempre.
+    const siguiente = new Set<string>(compensables.map((c) => c.dispersionId));
     let suma = 0;
     for (const c of girables) {
       // Se SIGUE mirando después de una que no cabe: con orden menor→mayor una
@@ -155,7 +174,7 @@ export function ElegirAQuienPagarle({
   };
 
   const tildarHastaElCupo = () => {
-    const siguiente = new Set<string>();
+    const siguiente = new Set<string>(compensables.map((c) => c.dispersionId));
     for (const c of girables) {
       if (!c.entraEnElCupo) break;
       siguiente.add(c.dispersionId);
@@ -232,6 +251,10 @@ export function ElegirAQuienPagarle({
           Quitar todos
         </Button>
       </div>
+      <p className="text-xs text-fg-muted" data-testid="sin-giro-parcial">
+        Cada propietario se gira completo o no se gira: el monto de «Pagar hasta» sólo decide a quién
+        tildar, nunca parte el neto de nadie.
+      </p>
 
       <div className="overflow-x-auto rounded-lg border border-border">
         <Table>
@@ -253,6 +276,32 @@ export function ElegirAQuienPagarle({
                 onAlternar={() => alternar(c.dispersionId)}
               />
             ))}
+            {compensables.map((c) => (
+              <TableRow
+                key={c.dispersionId}
+                className="cursor-pointer"
+                onClick={() => alternar(c.dispersionId)}
+                data-testid={`compensable-${c.dispersionId}`}
+              >
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={elegidos.has(c.dispersionId)}
+                    onCheckedChange={() => alternar(c.dispersionId)}
+                    aria-label={`Cerrar en $0 la liquidación de ${c.propietarioName}`}
+                  />
+                </TableCell>
+                <TableCell>
+                  <span className="text-fg">{c.propietarioName}</span>
+                  <p className="text-xs text-fg-muted">
+                    Sus deducciones cubren el mes: se cierra en $0
+                    {c.saldoEnContraCop ? ` y ${formatCurrency(c.saldoEnContraCop)} pasan al mes siguiente` : ''}.
+                  </p>
+                </TableCell>
+                <TableCell className="text-fg-muted">{nombreDelMes(c.month)}</TableCell>
+                <TableCell className="text-right font-mono tabular-nums text-fg">{formatCurrency(0)}</TableCell>
+                <TableCell className="text-right text-xs text-fg-muted">No suma</TableCell>
+              </TableRow>
+            ))}
             {excluidos.map((c) => (
               <TableRow key={c.dispersionId} className="opacity-60">
                 <TableCell />
@@ -267,7 +316,7 @@ export function ElegirAQuienPagarle({
                 <TableCell className="text-right text-xs text-fg-muted">No se puede girar</TableCell>
               </TableRow>
             ))}
-            {girables.length === 0 && excluidos.length === 0 && (
+            {girables.length === 0 && excluidos.length === 0 && compensables.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} className="py-8 text-center text-sm text-fg-muted">
                   No hay dispersiones pendientes de {nombreDelMes(mes)} sin lote.
@@ -285,8 +334,14 @@ export function ElegirAQuienPagarle({
         <p className="text-sm text-fg">
           Vas a dispersar{' '}
           <strong className="font-mono tabular-nums">{formatCurrency(totalElegido)}</strong> a{' '}
-          <strong>{elegidos.size}</strong>{' '}
-          {elegidos.size === 1 ? 'propietario' : 'propietarios'}.
+          <strong>{girados}</strong> {girados === 1 ? 'propietario' : 'propietarios'}
+          {cerradosEnCero > 0 && (
+            <>
+              {' '}
+              y cierras en $0 la liquidación de <strong>{cerradosEnCero}</strong>
+            </>
+          )}
+          .
         </p>
         {descubierto > 0 && (
           <span className="flex items-center gap-1.5 text-sm text-warning">

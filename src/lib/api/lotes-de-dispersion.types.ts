@@ -115,6 +115,21 @@ export interface LoteDeDispersion extends LoteResumen {
   facturacion?: FacturacionDelLote;
 }
 
+/**
+ * Una liquidación que se cierra con el lote SIN girar nada: sus deducciones
+ * cubren el neto del mes. No va en el archivo del banco; al marcar el lote
+ * pagado quedan aplicadas y lo que falte pasa a su siguiente liquidación.
+ */
+export interface FilaCompensada {
+  propietarioId: string;
+  nombre: string;
+  dispersionId: string;
+  /** El neto guardado: cero o en contra. */
+  netoCop: number;
+  /** Lo que pasa a su siguiente liquidación. */
+  saldoEnContraCop: number;
+}
+
 /** A quién le falta un dato, con nombre y motivo. */
 export interface FilaExcluida {
   propietarioId: string;
@@ -126,6 +141,8 @@ export interface FilaExcluida {
 export interface VistaDelLote {
   lote: LoteDeDispersion;
   excluidos: FilaExcluida[];
+  /** Las que se cierran en $0 por deducciones. Opcional: back anterior al 2026-09-16. */
+  compensados?: FilaCompensada[];
   /** Intentos de código que quedan antes de que el lote se bloquee. */
   intentosRestantes: number;
   bloqueado: boolean;
@@ -134,6 +151,7 @@ export interface VistaDelLote {
 export interface LoteArmado {
   lote: LoteDeDispersion;
   excluidos: FilaExcluida[];
+  compensados?: FilaCompensada[];
   /** Lo que había en la cuenta cuando se armó. */
   plata: PlataDisponible;
   /**
@@ -182,6 +200,13 @@ export interface CandidatoDeDispersion {
   entraEnElCupo: boolean;
   /** Por qué no podría ir al banco. `null` = puede. */
   motivoDeExclusion: string | null;
+  /**
+   * Sus deducciones cubren el neto del mes: se gira $0, pero entra al lote
+   * para cerrarse y pasar el saldo en contra a la siguiente liquidación.
+   */
+  seCompensa?: boolean;
+  /** Lo que pasa a su siguiente liquidación si se cierra en $0. */
+  saldoEnContraCop?: number;
 }
 
 export interface CandidatosDeDispersion {

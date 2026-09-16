@@ -236,11 +236,14 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
   const aplicarLote = useCallback(
     (lote: LoteDeDispersion) => {
       if (!vista) return;
+      // Las compensadas no cambian dentro de un lote: se reconocen por la
+      // dispersión, no por el texto del motivo.
+      const compensadas = new Set((vista.compensados ?? []).map((c) => c.dispersionId));
       setVista({
         ...vista,
         lote,
         excluidos: lote.items
-          .filter((i) => i.motivoDeExclusion !== null)
+          .filter((i) => i.motivoDeExclusion !== null && !compensadas.has(i.dispersionId))
           .map((i) => ({
             propietarioId: i.propietarioId,
             nombre: i.nombreTitular,
@@ -281,6 +284,8 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
   if (!vista) return null;
 
   const { lote, excluidos, intentosRestantes, bloqueado } = vista;
+  const compensados = vista.compensados ?? [];
+  const idsCompensados = new Set(compensados.map((c) => c.dispersionId));
   const acciones = accionesPara(lote.estado).filter(puede);
   const soyElCreador = yo !== null && yo === lote.creadoPorUserId;
   const exigeCodigo = Boolean(lote.codigoHash) || Boolean(lote.codigoExpiraAt);
@@ -491,6 +496,42 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
         </section>
       )}
 
+      {/* ── Compensados: se cierran en $0 ───────────────────────────────── */}
+      {compensados.length > 0 && (
+        <section className="space-y-3" data-testid="compensados-del-lote">
+          <Banner
+            variant="info"
+            title={`${compensados.length} ${compensados.length === 1 ? 'propietario se cierra' : 'propietarios se cierran'} en $0`}
+          >
+            Sus deducciones cubren el neto del mes: no se les gira nada y no van en el archivo del banco.
+            Al marcar el lote pagado su liquidación se cierra, las deducciones quedan aplicadas y lo que
+            falte pasa solo a su siguiente liquidación.
+          </Banner>
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Propietario</TableHead>
+                  <TableHead className="text-right">Se gira</TableHead>
+                  <TableHead className="text-right">Pasa al mes siguiente</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {compensados.map((c) => (
+                  <TableRow key={c.dispersionId}>
+                    <TableCell className="font-medium text-fg">{c.nombre}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">{formatCurrency(0)}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums text-warning">
+                      {formatCurrency(c.saldoEnContraCop)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+      )}
+
       {/* ── Los pagos, con los datos congelados ─────────────────────────── */}
       <section className="space-y-3">
         <div className="flex items-baseline justify-between">
@@ -532,6 +573,8 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                         <span className="inline-flex items-center gap-1 text-success">
                           <Check className="h-3.5 w-3.5" /> Sí
                         </span>
+                      ) : idsCompensados.has(item.dispersionId) ? (
+                        <span className="text-fg-muted">Se cierra en $0</span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-warning">
                           <X className="h-3.5 w-3.5" /> No

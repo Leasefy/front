@@ -23,6 +23,8 @@ import { CarrierApprovalByCanonChart } from '@/components/inmobiliaria/cotizador
 import { CarrierRecentQuotesTable } from '@/components/inmobiliaria/cotizador/CarrierRecentQuotesTable'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button } from '@/components/ui/button'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { falloDelAgente } from './fallo-del-agente'
 
 // =============================================================================
 // Component
@@ -82,22 +84,15 @@ export default function CarrierDeepDivePage() {
         </div>
       </header>
 
-      {/* Error state */}
+      {/* Fallo con datos ya en pantalla (el sondeo de 60 s tropezó): el cartel
+          dice qué pasó y deja lo que ya se veía. Antes decía «…errorLoading: 502»,
+          con la clave i18n cruda y el status suelto. */}
       {error && !isLoading && (
-        <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
-          <p className="text-sm text-danger">
-            {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.errorLoading')}: {error}
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            hideArrow
-            onClick={() => void refetch()}
-            className="shrink-0"
-          >
-            {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.retry')}
-          </Button>
-        </div>
+        <FalloDeCarga
+          error={falloDelAgente(error)}
+          queEs="los datos de esta aseguradora"
+          onReintentar={refetch}
+        />
       )}
 
       {/* KPI strip */}

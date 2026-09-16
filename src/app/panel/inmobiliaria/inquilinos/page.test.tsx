@@ -54,12 +54,15 @@ vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children?: React.ReactNode }) => children,
 }));
 
-const { listaMock } = vi.hoisted(() => ({ listaMock: vi.fn() }));
+const { listaMock, carga } = vi.hoisted(() => ({
+  listaMock: vi.fn(),
+  carga: { cargando: false, error: null as unknown },
+}));
 vi.mock('@/lib/hooks/use-inquilinos', () => ({
   useInquilinos: () => ({
     inquilinos: listaMock(),
-    cargando: false,
-    error: null,
+    cargando: carga.cargando,
+    error: carga.error,
     refrescar: vi.fn(),
   }),
 }));
@@ -161,6 +164,8 @@ function montar() {
 }
 
 beforeEach(() => {
+  carga.cargando = false;
+  carga.error = null;
   deudaMock.mockReset();
   listaMock.mockReset();
   listaMock.mockReturnValue([]);
@@ -361,5 +366,44 @@ describe('/panel/inmobiliaria/inquilinos — ?persona= (desde la bandeja de mens
 
     expect(host.querySelector('[data-testid="cajon-inquilino"]')).toBeNull();
     expect(host.querySelector('[data-testid="persona-no-encontrada"]')).toBeNull();
+  });
+});
+
+/**
+ * I1 · los tiles de arriba vivían FUERA de los cuatro estados de la tabla:
+ * con el back caído, la tabla decía «no se pudo cargar» y un renglón arriba
+ * los tiles afirmaban «0 inquilinos · 0 arriendos · $0». Salen de la misma
+ * carga, así que dicen lo mismo que ella.
+ */
+describe('/panel/inmobiliaria/inquilinos — I1: los tiles no dicen «0» cuando no saben', () => {
+  const tiles = () => Array.from(host.querySelectorAll('[data-testid="kpi-valor"]'));
+
+  it('mientras carga, los tres tiles son un hueco, no un número', () => {
+    deudaMock.mockReturnValue(null);
+    carga.cargando = true;
+    montar();
+
+    expect(tiles()).toHaveLength(3);
+    expect(tiles().every((t) => t.getAttribute('data-estado') === 'cargando')).toBe(true);
+    expect(tiles().map((t) => t.textContent).join('')).toBe('');
+  });
+
+  it('🔴 si la carga falló, «—» en los tres: nunca «0 · $0» sobre datos que no llegaron', () => {
+    deudaMock.mockReturnValue(null);
+    carga.error = Object.assign(new Error('502 Bad Gateway'), { status: 502 });
+    montar();
+
+    expect(tiles()).toHaveLength(3);
+    expect(tiles().every((t) => t.getAttribute('data-estado') === 'fallo')).toBe(true);
+    expect(tiles().some((t) => /\d/.test(t.textContent ?? ''))).toBe(false);
+  });
+
+  it('con datos, los tiles muestran lo vigente', () => {
+    deudaMock.mockReturnValue(null);
+    listaMock.mockReturnValue(UNA_PERSONA);
+    montar();
+
+    expect(tiles().every((t) => t.getAttribute('data-estado') === 'ok')).toBe(true);
+    expect(tiles().map((t) => t.textContent)).toEqual(['1', '1', '2000000']);
   });
 });

@@ -36,6 +36,16 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   contractsApi,
   type ConceptoDelContrato,
 } from '@/lib/api/contracts.service'
@@ -58,6 +68,10 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
   const [agregando, setAgregando] = useState(false)
+  // El concepto que se está por quitar. Quitar un recurrente cambia lo que se
+  // le cobra a alguien todos los meses: se confirma diciendo qué, cuánto y a
+  // quién, no a un clic sobre una basura.
+  const [aQuitar, setAQuitar] = useState<ConceptoDelContrato | null>(null)
 
   const [elegido, setElegido] = useState('')
   const [valor, setValor] = useState('')
@@ -160,6 +174,9 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
       setError(e instanceof Error ? e.message : 'No se pudo quitar.')
     } finally {
       setOcupado(false)
+      // Se cierra también si falló: el motivo se pinta al pie de la tarjeta,
+      // y detrás del diálogo no se vería.
+      setAQuitar(null)
     }
   }
 
@@ -200,7 +217,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
               contract={contract}
               puedeEditar={puedeEditar}
               ocupado={ocupado}
-              onQuitar={() => void quitar(c.id)}
+              onQuitar={() => setAQuitar(c)}
             />
           ))}
 
@@ -305,8 +322,55 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
       ) : null}
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+      <AlertDialog
+        open={aQuitar !== null}
+        onOpenChange={(abierto) => {
+          if (!abierto && !ocupado) setAQuitar(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Quitar «{aQuitar?.nombre}» del contrato?</AlertDialogTitle>
+            <AlertDialogDescription data-testid="que-deja-de-cobrarse">
+              {aQuitar ? queDejaDeCobrarse(aQuitar) : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={ocupado}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              tone="danger"
+              disabled={ocupado}
+              data-testid="confirmar-quitar-concepto"
+              onClick={(e) => {
+                // Se queda abierto mientras quita: el cierre lo decide la respuesta.
+                e.preventDefault()
+                if (aQuitar) void quitar(aQuitar.id)
+              }}
+            >
+              {ocupado ? 'Quitando…' : 'Quitar el concepto'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   )
+}
+
+/**
+ * Qué deja de cobrarse al quitar un concepto, en una frase: cuánto, cada
+ * cuánto, quién lo paga y quién lo recibe. Un recurrente que paga el
+ * inquilino además sale de su cobro mensual, y eso es lo que más importa.
+ */
+export function queDejaDeCobrarse(c: ConceptoDelContrato): string {
+  const monto = formatCurrency(c.valorCop)
+  const partes = `Lo paga ${QUIEN_PAGA[c.paga] ?? c.paga} y lo recibe ${QUIEN_PAGA[c.recibe] ?? c.recibe}.`
+  if (!c.recurrente) {
+    return `Se quita el cobro de una sola vez por ${monto}. ${partes}`
+  }
+  const alInquilino =
+    c.paga === 'INQUILINO' ? ' Deja de sumarse al cobro mensual del inquilino.' : ''
+  return `Deja de cobrarse ${monto} cada mes. ${partes}${alInquilino}`
 }
 
 /**

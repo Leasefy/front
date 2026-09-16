@@ -147,6 +147,7 @@ vi.mock('@/components/ui/select', () => {
 })
 
 import AprobacionPage from './page'
+import { guardarArriendoEnCurso } from '@/lib/aprobacion/arriendo-en-curso'
 
 // ---------------------------------------------------------------------------
 // Harness
@@ -447,3 +448,155 @@ describe('<AprobacionPage> — quien ya tiene un estudio no ve el formulario', (
     expect(container.querySelector('form')).not.toBeNull()
   })
 })
+
+/**
+ * Paso 2 del recorrido que empieza en la ficha (Nico, 14-09): se arma como el
+ * paso 1 — los pasos en su franja, FUERA del formulario —, recuerda el inmueble
+ * elegido, escribe el canon con puntos de miles y abre desde arriba.
+ */
+describe('<AprobacionPage> — paso 2 desde la ficha', () => {
+  beforeEach(() => {
+    window.sessionStorage.clear()
+    window.history.replaceState(null, '', '/aprobacion?paso=2&canon=1100000&ciudad=Bogot%C3%A1&tipo=apartamento')
+  })
+  afterEach(() => {
+    window.history.replaceState(null, '', '/')
+  })
+
+  it('los pasos van fuera del formulario, con el inmueble del paso 1 y el canon con puntos de miles', () => {
+    const subir = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    guardarArriendoEnCurso({
+      propertyId: 'p-1',
+      titulo: 'Apartamento en Bello',
+      ciudad: 'Bello',
+      tipo: 'apartamento',
+      foto: null,
+      canon: 1_100_000,
+      ingresoTotal: 5_000_000,
+      canonMaximo: 3_333_333,
+    })
+
+    act(() => {
+      root.render(<AprobacionPage />)
+    })
+
+    const pasos = container.querySelector('[data-testid="paso-2-de-3"]')
+    const form = container.querySelector('form') as HTMLFormElement
+    expect(pasos).not.toBeNull()
+    expect(form.contains(pasos)).toBe(false)
+    expect(container.querySelector('[data-testid="inmueble-del-paso-2"]')?.textContent).toContain('Apartamento en Bello')
+    expect((container.querySelector('#canon') as HTMLInputElement).value).toBe('1.100.000')
+    expect(subir).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }))
+  })
+
+  it('una ciudad del inmueble fuera de la lista fija igual queda elegida', () => {
+    window.history.replaceState(null, '', '/aprobacion?paso=2&canon=1100000&ciudad=Bello&tipo=apartamento')
+    act(() => {
+      root.render(<AprobacionPage />)
+    })
+    expect((container.querySelector('[data-testid="select-ciudad"]') as HTMLSelectElement).value).toBe('Bello')
+  })
+
+  it('el botón queda apagado hasta autorizar el tratamiento de datos', () => {
+    act(() => {
+      root.render(<AprobacionPage />)
+    })
+    const boton = container.querySelector('button[type="submit"]') as HTMLButtonElement
+    expect(boton.disabled).toBe(true)
+
+    act(() => {
+      ;(container.querySelector('#consent') as HTMLButtonElement).click()
+    })
+    expect(boton.disabled).toBe(false)
+  })
+
+  it('desde la ficha la ciudad es «Ciudad del inmueble»', () => {
+    act(() => {
+      root.render(<AprobacionPage />)
+    })
+    expect(container.querySelector('label[for="ciudad"]')?.textContent).toBe('Ciudad del inmueble')
+  })
+
+  it('sin venir de la ficha no muestra los pasos ni un inmueble', () => {
+    window.history.replaceState(null, '', '/aprobacion')
+    act(() => {
+      root.render(<AprobacionPage />)
+    })
+    expect(container.querySelector('[data-testid="paso-2-de-3"]')).toBeNull()
+    expect(container.querySelector('[data-testid="inmueble-del-paso-2"]')).toBeNull()
+  })
+})
+
+/**
+ * «Cerrar» (Nico, 2026-09-15): desde el paso 2 devolvía al paso 1 —era
+ * `router.back()`— y salía sin preguntar. Ahora pregunta, y salir sale.
+ */
+describe('<AprobacionPage> — cerrar el paso 2', () => {
+  beforeEach(() => {
+    window.sessionStorage.clear()
+    window.history.replaceState(null, '', '/aprobacion?paso=2&canon=2200000&ciudad=Caldas&tipo=local')
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    window.history.replaceState(null, '', '/')
+  })
+
+  const cerrar = () => document.querySelector<HTMLButtonElement>('[data-testid="cerrar-aprobacion"]')!
+  const dialogo = () => document.querySelector('[data-testid="confirmar-salida-aprobacion"]')
+  const boton = (testId: string) => document.querySelector<HTMLButtonElement>(`[data-testid="${testId}"]`)
+
+  function conInmueble() {
+    guardarArriendoEnCurso({
+      propertyId: 'p-9',
+      titulo: 'Local en Centro, Caldas',
+      ciudad: 'Caldas',
+      tipo: 'local',
+      foto: null,
+      canon: 2_200_000,
+      ingresoTotal: 9_000_000,
+      canonMaximo: 3_000_000,
+    })
+  }
+
+  it('preguntar antes: el clic en Cerrar abre la confirmación y no navega', () => {
+    conInmueble()
+    act(() => root.render(<AprobacionPage />))
+
+    act(() => cerrar().click())
+
+    expect(pushMock).not.toHaveBeenCalled()
+    expect(dialogo()?.textContent).toContain('Local en Centro, Caldas')
+    expect(boton('seguir-en-aprobacion')).not.toBeNull()
+  })
+
+  it('salir va al inmueble que estaba intentando arrendar, NO al paso 1', () => {
+    conInmueble()
+    act(() => root.render(<AprobacionPage />))
+
+    act(() => cerrar().click())
+    act(() => boton('salir-de-aprobacion')!.click())
+
+    expect(pushMock).toHaveBeenCalledWith('/propiedades/p-9')
+  })
+
+  it('sin inmueble en curso y sin sesión, salir lleva al catálogo', () => {
+    mockUser = null
+    act(() => root.render(<AprobacionPage />))
+
+    act(() => cerrar().click())
+    act(() => boton('salir-de-aprobacion')!.click())
+
+    expect(pushMock).toHaveBeenCalledWith('/propiedades')
+  })
+
+  it('«Seguir con mi solicitud» cierra la confirmación sin sacarlo del paso 2', () => {
+    conInmueble()
+    act(() => root.render(<AprobacionPage />))
+
+    act(() => cerrar().click())
+    act(() => boton('seguir-en-aprobacion')!.click())
+
+    expect(pushMock).not.toHaveBeenCalled()
+  })
+})
+

@@ -177,7 +177,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         ],
       },
       {
-        key: 'postulaciones', labelKey: 'inmobiliaria.nav.postulaciones', href: r('/postulaciones'), icon: ClipboardText, module: null, scope: 'comercial', ia: true, dataTourTarget: 'sidebar-postulaciones',
+        key: 'postulaciones', labelKey: 'inmobiliaria.nav.postulaciones', href: r('/postulaciones'), icon: ClipboardText, module: 'portafolio', scope: 'comercial', ia: true, dataTourTarget: 'sidebar-postulaciones',
         // El flujo del candidato, en el orden en que se recorre. Las tres son
         // pantallas completas: se entran desde acá porque nadie hace matching o
         // asegurabilidad en abstracto —siempre es para una postulación—.

@@ -173,3 +173,87 @@ export const PLANTILLAS: readonly PlantillaDeRegla[] = [
     },
   },
 ];
+
+// ── Usura (M1, 13-09) ───────────────────────────────────────────────────────
+//
+// Antes, quien escribía una tasa diaria no veía qué tasa anual estaba pactando:
+// sólo había un aviso por encima de 1 % diario, y el tope de usura de la
+// inmobiliaria aparecía recién como un rechazo al guardar.
+
+/**
+ * Tasa DIARIA en porcentaje (0,0667 = 0,0667 % por día) → efectiva anual en
+ * porcentaje. Es la conversión del servidor (`efectivaAnualDesdeDiaria` en
+ * `reglas-de-mora.service.ts`): la diaria compuesta 365 días, que es como se
+ * certifica la usura. Un valor no finito devuelve `NaN`.
+ */
+export function efectivaAnualDesdeDiaria(diariaPorcentaje: number): number {
+  if (!Number.isFinite(diariaPorcentaje)) return Number.NaN;
+  return ((1 + diariaPorcentaje / 100) ** 365 - 1) * 100;
+}
+
+/**
+ * El tope de la inmobiliaria llega como número, como texto (es un Decimal) o
+ * vacío. `null` = no está configurado.
+ */
+export function topeDeUsuraDe(valor: number | string | null | undefined): number | null {
+  if (valor === null || valor === undefined || valor === '') return null;
+  const n = typeof valor === 'number' ? valor : Number(valor);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+const FORMATO_DE_PORCENTAJE = new Intl.NumberFormat('es-CO', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+export function porcentajeLegible(n: number): string {
+  return `${FORMATO_DE_PORCENTAJE.format(n)} %`;
+}
+
+export interface LecturaDeLaTasa {
+  equivalencia: string;
+  aviso: { tono: 'peligro' | 'atencion' | 'neutro'; texto: string } | null;
+}
+
+/**
+ * Lo que se lee debajo de la tasa mientras se escribe.
+ *
+ * `tope`: un número = el techo configurado · `null` = la inmobiliaria no lo
+ * configuró (y se dice con todas las letras) · `undefined` = la configuración
+ * todavía no llegó, así que no se afirma nada sobre el techo.
+ */
+export function leerTasaDiaria(
+  diariaPorcentaje: number,
+  tope: number | null | undefined,
+): LecturaDeLaTasa | null {
+  if (!Number.isFinite(diariaPorcentaje) || diariaPorcentaje < 0) return null;
+  const ea = efectivaAnualDesdeDiaria(diariaPorcentaje);
+  const equivalencia = `Equivale a ${porcentajeLegible(ea)} efectivo anual.`;
+  if (tope === undefined) return { equivalencia, aviso: null };
+  if (tope === null) {
+    return {
+      equivalencia,
+      aviso: {
+        tono: 'atencion',
+        texto:
+          'Tu inmobiliaria no tiene configurado el tope de usura; la tasa no se valida contra la ley.',
+      },
+    };
+  }
+  if (ea > tope) {
+    return {
+      equivalencia,
+      aviso: {
+        tono: 'peligro',
+        texto: `Supera el tope de usura de tu inmobiliaria (${porcentajeLegible(tope)} efectivo anual): al guardar se va a rechazar.`,
+      },
+    };
+  }
+  return {
+    equivalencia,
+    aviso: {
+      tono: 'neutro',
+      texto: `El tope de usura de tu inmobiliaria es ${porcentajeLegible(tope)} efectivo anual.`,
+    },
+  };
+}

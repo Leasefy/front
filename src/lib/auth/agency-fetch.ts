@@ -1,5 +1,6 @@
 import type { Agency, AgencyMemberRole } from './types'
 import { apiClient, ApiError } from '@/lib/api/client'
+import type { BootstrapAgency } from '@/lib/api/bootstrap.service'
 
 /** Parsed shape of a 200 OK `/inmobiliaria/agency` response. */
 export interface ParsedAgency {
@@ -93,5 +94,42 @@ export async function fetchAgencyProfile(token?: string): Promise<AgencyFetchRes
       confirmedNoMembership: expectedNoMembership,
       transientFailure: !expectedNoMembership,
     }
+  }
+}
+
+/**
+ * Build an `AgencyFetchResult` from the login bootstrap's embedded `agency`
+ * field instead of a live `GET /inmobiliaria/agency` call (T-0082 WU-2b,
+ * contract.md §3.2). Mirrors `fetchAgencyProfile`'s three outcomes exactly —
+ * this is what lets `auth-context.tsx` feed the bootstrap's agency data
+ * through the SAME `applyAgencyFetchResult` write path used by the standalone
+ * probe, self-heal retry and `refreshAgency()`, with no special-casing there:
+ *
+ *   - `agency` present                                  → success, same shape a live fetch would produce
+ *   - `agency: null`, `errors` has NO `agency_unavailable` → CONFIRMED no membership (resolved, no re-probe)
+ *   - `agency: null`, `errors` HAS `agency_unavailable`    → TRANSIENT (arms the standalone self-heal retry)
+ */
+export function agencyResultFromBootstrap(
+  agency: BootstrapAgency | null,
+  errors: string[],
+): AgencyFetchResult {
+  if (agency) {
+    const { memberRole, memberStatus, permissions, ...agencyFields } = agency
+    void permissions // consumed by PermissionsContext's seed, not here
+    return {
+      agency: agencyFields as Agency,
+      role: memberRole,
+      memberStatus,
+      confirmedNoMembership: false,
+      transientFailure: false,
+    }
+  }
+  const transientFailure = errors.includes('agency_unavailable')
+  return {
+    agency: null,
+    role: null,
+    memberStatus: null,
+    confirmedNoMembership: !transientFailure,
+    transientFailure,
   }
 }

@@ -31,8 +31,14 @@ vi.mock('@/lib/auth', () => ({
   useAuth: () => authState,
 }))
 
+const { legacyPermissionsGetMock } = vi.hoisted(() => ({
+  legacyPermissionsGetMock: vi.fn((..._args: unknown[]) =>
+    Promise.resolve({ isAdmin: false, role: 'ADMIN', effectivePermissions: {} }),
+  ),
+}))
+
 vi.mock('@/lib/api/client', () => ({
-  apiClient: { get: vi.fn(async () => ({ isAdmin: false, role: 'ADMIN', effectivePermissions: {} })) },
+  apiClient: { get: (...args: unknown[]) => legacyPermissionsGetMock(...args) },
   getAccessToken: () => 'token-de-prueba',
 }))
 
@@ -40,6 +46,7 @@ import {
   PermissionsProvider,
   usePermissionsContext,
 } from './PermissionsContext'
+import { setBootstrapSeed, clearBootstrapSeed } from '@/lib/auth/bootstrap-seed'
 
 type Ctx = ReturnType<typeof usePermissionsContext>
 
@@ -80,6 +87,7 @@ async function asentar() {
 }
 
 beforeEach(() => {
+  legacyPermissionsGetMock.mockClear()
   vi.stubEnv('NEXT_PUBLIC_AGENT_URL', 'http://localhost:4000')
   vi.stubGlobal(
     'fetch',
@@ -101,6 +109,75 @@ afterEach(() => {
   vi.unstubAllGlobals()
   vi.unstubAllEnvs()
   vi.restoreAllMocks()
+  clearBootstrapSeed()
+})
+
+/**
+ * T-0082 WU-2b, brief §4.5 (d) — the login bootstrap's `agency.permissions`
+ * (contract.md §3.2) seeds this context so it does NOT fire
+ * `GET /inmobiliaria/agency/my-permissions` on mount when the value is
+ * present. It fires that call only when `permissions` is `null` (either the
+ * bootstrap resolved no seed at all, or the seed was already consumed).
+ * The agent-side `my-permissions` call (`fetchAgentPermissions`) is
+ * UNCHANGED by this — it stays unconditional per contract.md §5/§8.
+ */
+describe('PermissionsProvider — bootstrap seed (T-0082 WU-2b §4.5(d))', () => {
+  it('a seeded permissions value is used directly — the back my-permissions call never fires', async () => {
+    authState = { agency: { id: AGENCY }, agencyMembershipChecked: true }
+    setBootstrapSeed({
+      permissions: {
+        memberId: 'm1',
+        role: 'ADMIN',
+        isAdmin: true,
+        permissions: null,
+        effectivePermissions: 'FULL_ACCESS',
+        usingDefaults: false,
+      },
+    })
+
+    const { leer } = montar()
+    await asentar()
+
+    expect(leer().permissions?.isAdmin).toBe(true)
+    expect(legacyPermissionsGetMock).not.toHaveBeenCalled()
+    // The agent-side call is UNCHANGED — still fires regardless of the seed.
+    expect(leer().agentAccessStatus).toBe('resuelto')
+  })
+
+  it('falls back to GET /inmobiliaria/agency/my-permissions when permissions was NOT seeded (contract fallback)', async () => {
+    authState = { agency: { id: AGENCY }, agencyMembershipChecked: true }
+    // No setBootstrapSeed call — seed is null.
+
+    const { leer } = montar()
+    await asentar()
+
+    expect(legacyPermissionsGetMock).toHaveBeenCalledTimes(1)
+    expect(leer().permissions?.isAdmin).toBe(false)
+  })
+
+  it('a seed is consumed once — a manual refetch() always goes live', async () => {
+    authState = { agency: { id: AGENCY }, agencyMembershipChecked: true }
+    setBootstrapSeed({
+      permissions: {
+        memberId: 'm1',
+        role: 'ADMIN',
+        isAdmin: true,
+        permissions: null,
+        effectivePermissions: 'FULL_ACCESS',
+        usingDefaults: false,
+      },
+    })
+
+    const { leer } = montar()
+    await asentar()
+    expect(legacyPermissionsGetMock).not.toHaveBeenCalled()
+
+    await act(async () => {
+      await leer().refetch()
+    })
+
+    expect(legacyPermissionsGetMock).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('agentAccessStatus', () => {

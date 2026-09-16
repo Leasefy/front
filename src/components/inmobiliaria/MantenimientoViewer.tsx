@@ -659,7 +659,7 @@ export function MantenimientoViewer({
               </h4>
               <CotizacionComparator
                 solicitud={solicitud}
-                onSelectQuote={handleSelectQuote}
+                onSelectQuote={onApproveQuote ? handleSelectQuote : undefined}
                 onRequestNewQuote={
                   onRequestQuote ? () => onRequestQuote(solicitud.id) : undefined
                 }

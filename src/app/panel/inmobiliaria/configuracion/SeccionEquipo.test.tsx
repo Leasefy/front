@@ -96,6 +96,45 @@ describe('sección Equipo', () => {
     expect(botonesDeInvitar()).toHaveLength(0)
   })
 
+  // G2 — cambiar rol, activar/desactivar, reenviar y eliminar pasaban sin gate:
+  // un AGENTE veía los tres puntos y cada acción terminaba en un 403 del back
+  // («admin only»). Van detrás del MISMO permiso que invitar.
+  describe('acciones de cada fila', () => {
+    /** El disparador de Radix abre con `pointerdown`, no con `click`. */
+    async function abrirMenuDe(email: string) {
+      const fila = [...container.querySelectorAll('tr')].find((tr) => (tr.textContent ?? '').includes(email))
+      const disparador = fila?.querySelector<HTMLElement>('button[aria-label="Acciones"]')
+      expect(disparador).toBeTruthy()
+      await act(async () => {
+        disparador!.dispatchEvent(
+          new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, pointerId: 1 }),
+        )
+      })
+      return [...document.body.querySelectorAll('[role="menuitem"]')].map((el) => (el.textContent ?? '').trim())
+    }
+
+    it('sin permiso para administrar el equipo, el menú sólo ofrece ver la ficha', async () => {
+      permisos = { isAdmin: false, canAccess: () => false }
+      await render()
+      const items = await abrirMenuDe('nuevo@agencia.com')
+
+      expect(items.some((i) => i.includes('Ver ficha'))).toBe(true)
+      for (const accion of ['editRole', 'resendInvite', 'activate', 'deactivate', 'delete']) {
+        expect(items.some((i) => i === accion)).toBe(false)
+      }
+    })
+
+    it('con el permiso de invitar, ofrece cambiar rol, reenviar, activar y eliminar', async () => {
+      await render()
+      const items = await abrirMenuDe('nuevo@agencia.com')
+
+      expect(items).toContain('editRole')
+      expect(items).toContain('resendInvite')
+      expect(items).toContain('activate')
+      expect(items).toContain('delete')
+    })
+  })
+
   it('ofrece las tres vistas: el padrón y los dos tableros de desempeño', async () => {
     await render()
     const texto = container.textContent ?? ''

@@ -38,7 +38,15 @@ import {
   validarPartes,
   type PartesManuales,
 } from '@/components/contratos/PartesDelContratoManual';
+import Link from 'next/link';
 import { useContractActions } from '@/lib/hooks/useContracts';
+import {
+  mensajeDelFallo,
+  inmuebleOcupado,
+  contratoDuplicado,
+  isPermissionError,
+  type InmuebleOcupado,
+} from '@/lib/contratos/fallo-de-accion';
 import { contractsApi } from '@/lib/api/contracts.service';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { propertiesApi } from '@/lib/api/properties.service';
@@ -146,6 +154,9 @@ function NuevoContratoContent() {
   });
 
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // El 409 del back cuando el inmueble ya tiene contrato: vive al lado del
+  // selector y se borra apenas se elige otro inmueble.
+  const [errorDeInmueble, setErrorDeInmueble] = useState<InmuebleOcupado | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   // Paso 11 del recorrido: qué aseguradora aprobó y con qué número. Antes no
   // se registraba en ningún lado, así que meses después nadie sabía a quién
@@ -417,13 +428,6 @@ function NuevoContratoContent() {
                 },
               }),
         });
-        if (!creado) {
-          setSubmitError(
-            actions.lastError?.message
-              ?? 'No se pudo crear el contrato. Verifica los datos e intenta de nuevo.'
-          );
-          return;
-        }
         if (creado.inquilino.invitado) {
           toast.success('Contrato creado. Le mandamos al inquilino la invitación para crear su cuenta.');
         } else {
@@ -434,29 +438,36 @@ function NuevoContratoContent() {
       }
 
       const contract = await actions.create({ applicationId: applicationId!, ...terminos });
-
-      if (!contract) {
-        // Race condition: el contrato puede haberse creado desde otra tab o ronda previa.
-        // Si el backend rechazó por duplicado, recuperamos el existente y redirigimos.
-        const errMsg = actions.lastError?.message?.toLowerCase() ?? '';
-        if (errMsg.includes('ya existe un contrato') || errMsg.includes('already exists')) {
-          const existing = await contractsApi.getByApplicationId(applicationId!);
-          if (existing) {
-            toast.info('Esta aplicación ya tiene un contrato. Te llevamos al detalle.');
-            router.replace(`/panel/inmobiliaria/contratos/${existing.id}`);
-            return;
-          }
-        }
-        setSubmitError(
-          actions.lastError?.message
-            ?? 'No se pudo crear el contrato. Verifica los datos e intenta de nuevo.'
-        );
-        return;
-      }
-
       router.push(`/panel/inmobiliaria/contratos/${contract.id}`);
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Error al crear el contrato');
+      /*
+       * 🔴 Antes acá llegaba sólo lo que `run()` no tragaba (nada): el 409
+       * «Ese inmueble ya tiene un contrato en curso (#1234)» se leía como
+       * «Verifica los datos». Ahora el error VIENE y se reparte:
+       *   - inmueble ocupado → al lado del selector, con el enlace al contrato;
+       *   - postulación que ya tiene contrato → se recupera y se redirige;
+       *   - el resto → el motivo del back en palabras.
+       */
+      const ocupado = inmuebleOcupado(err);
+      if (ocupado && esManual) {
+        setErrorDeInmueble(ocupado);
+        setSubmitError(null);
+        return;
+      }
+      if (!esManual && contratoDuplicado(err)) {
+        // Race: el contrato pudo crearse desde otra pestaña o una ronda previa.
+        const existing = await contractsApi.getByApplicationId(applicationId!).catch(() => null);
+        if (existing) {
+          toast.info('Esta aplicación ya tiene un contrato. Te llevamos al detalle.');
+          router.replace(`/panel/inmobiliaria/contratos/${existing.id}`);
+          return;
+        }
+      }
+      setSubmitError(
+        isPermissionError(err)
+          ? 'No tienes permiso para crear contratos.'
+          : mensajeDelFallo(err, 'No se pudo crear el contrato. Verifica los datos e intenta de nuevo.')
+      );
     }
   };
 
@@ -524,9 +535,13 @@ function NuevoContratoContent() {
             valor={partes}
             onCambio={(v) => {
               setPartesTocadas(true);
+              if (v.propertyId !== partes.propertyId) setErrorDeInmueble(null);
               setPartes(v);
             }}
-            errores={partesTocadas ? validation : {}}
+            errores={{
+              ...(partesTocadas ? validation : {}),
+              ...(errorDeInmueble ? { propertyId: errorDeInmueble.mensaje } : {}),
+            }}
             onInmuebleElegido={(c) => {
               setInmuebleElegido(c.propertyTitle);
               // El mandato, para que el arrendador del contrato salga del
@@ -789,6 +804,25 @@ function NuevoContratoContent() {
         </section>
 
         {/* Errors + submit */}
+        {errorDeInmueble && (
+          <div
+            role="alert"
+            className="rounded-lg border border-warning/30 bg-warning-soft/40 p-4 flex items-start gap-2"
+          >
+            <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="text-fg">{errorDeInmueble.mensaje}</p>
+              {errorDeInmueble.contratoId && (
+                <Link
+                  href={`/panel/inmobiliaria/contratos/${errorDeInmueble.contratoId}`}
+                  className="mt-1 inline-block font-medium text-primary underline underline-offset-2"
+                >
+                  Ver el contrato{errorDeInmueble.contratoNumero ? ` ${errorDeInmueble.contratoNumero}` : ''} que estorba
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
         {submitError && (
           <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
             <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />

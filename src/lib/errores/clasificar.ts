@@ -23,7 +23,17 @@
 import { ApiError, getAccessToken, esCodigoDeSesionMuerta } from '@/lib/api/client'
 import { sesionTerminada } from '@/lib/auth/session-terminal'
 
-export type TipoDeFallo = 'noExiste' | 'sinPermiso' | 'sinSesion' | 'red' | 'servidor' | 'limitado'
+export type TipoDeFallo =
+  | 'noExiste'
+  | 'sinPermiso'
+  | 'sinSesion'
+  | 'red'
+  | 'servidor'
+  | 'limitado'
+  /** 402: el plan se quedó sin créditos de IA. Reintentar no compra créditos. */
+  | 'sinCreditos'
+  /** El pedido se cortó por tiempo (o se abortó) antes de que hubiera respuesta. */
+  | 'tardo'
 
 export interface FalloDeCarga {
   tipo: TipoDeFallo
@@ -121,6 +131,23 @@ function statusDe(error: unknown): number | null {
   return null
 }
 
+/**
+ * ¿El pedido se cortó por tiempo antes de tener respuesta?
+ *
+ * `AbortSignal.timeout()` rechaza con un `TimeoutError`; un `AbortController`
+ * con un `AbortError`; algunos clientes tiran un `Error` que dice «timeout».
+ * Sólo se consulta cuando NO hubo status: un 404 cuyo texto menciona
+ * «timeout» sigue siendo un 404.
+ */
+function esCorteDeTiempo(error: unknown): boolean {
+  if (error && typeof error === 'object' && 'name' in error) {
+    const nombre = (error as { name: unknown }).name
+    if (nombre === 'TimeoutError' || nombre === 'AbortError') return true
+  }
+  const texto = textoDe(error)
+  return Boolean(texto && /timed?[\s-]?out/i.test(texto))
+}
+
 export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarga {
   const status = statusDe(error)
   const mensajeOriginal = textoDe(error)
@@ -132,6 +159,21 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
       titulo: `No encontramos ${eso}`,
       descripcion:
         'Puede que se haya eliminado, o que el enlace esté mal. Revisa la dirección o vuelve al listado.',
+      sePuedeReintentar: false,
+      status,
+      mensajeOriginal,
+    }
+  }
+
+  // Un 402 no es un tropiezo: el plan se quedó sin créditos de IA. Ofrecer
+  // «Intentar de nuevo» ahí es la misma promesa falsa que sobre un 404 — la
+  // consulta no va a pasar hasta que alguien recargue.
+  if (status === 402) {
+    return {
+      tipo: 'sinCreditos',
+      titulo: 'Tu plan se quedó sin créditos de IA',
+      descripcion:
+        'Pídele a quien administra la cuenta que recargue o cambie de plan. Hasta entonces, reintentar no va a cambiar nada.',
       sePuedeReintentar: false,
       status,
       mensajeOriginal,
@@ -217,6 +259,18 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
       titulo: 'No pudimos conectarnos',
       descripcion:
         'Revisa tu conexión. Los datos siguen ahí; apenas vuelva la red los traemos.',
+      sePuedeReintentar: true,
+      status,
+      mensajeOriginal,
+    }
+  }
+
+  if (status === null && esCorteDeTiempo(error)) {
+    return {
+      tipo: 'tardo',
+      titulo: 'Tardó demasiado en responder',
+      descripcion:
+        'La consulta se cortó antes de terminar. Prueba de nuevo en un momento.',
       sePuedeReintentar: true,
       status,
       mensajeOriginal,

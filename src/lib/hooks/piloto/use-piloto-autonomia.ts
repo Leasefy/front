@@ -3,35 +3,34 @@
 /**
  * use-piloto-autonomia.ts — autonomía POR AGENTE, escribible.
  *
- * GET por agente del roster de workspaces (los 7 `AgenteId` de work-item.ts —
- * es el vocabulario que el endpoint de autonomía ya acepta; el registro
- * `ai-agents.ts` usa otros ids que el micro no conoce):
- *
- *   GET /api/agency/{agencyId}/ai-hub/agentes/{agente}/autonomia   (ya existe)
+ *   GET /api/agency/{agencyId}/ai-hub/agentes/autonomia            (T-0082 —
+ *       roster batcheado: UNA llamada que reemplaza los 12 GETs por agente
+ *       que este hook hacía antes con `Promise.allSettled`/
+ *       `mapWithConcurrency` (T-0076 solo acotó ese fan-out a 3 en vuelo, no
+ *       lo eliminó). Contrato:
+ *       `.orchestration/tasks/T-0082-login-bootstrap-fanout/contract.md`
+ *       §3.2 Surface B. Misma lectura que ya usa la píldora de la flota
+ *       — `leerAutonomiaDeLaFlota` en el micro — con el shape por-ítem
+ *       byte-idéntico al GET por agente, que sigue vivo sin cambios.)
  *   PUT /api/agency/{agencyId}/ai-hub/agentes/{agente}/autonomia   {modo}
  *
- * Fail-soft por agente: un agente cuyo GET da 404 simplemente no aparece —
- * no tumba a los demás. `setModo` es optimista: pinta el modo nuevo, hace el
- * PUT y ante error hace rollback y devuelve el error para el toast.
+ * Fail-soft por agente: un agente ausente del array devuelto simplemente no
+ * aparece — mismo resultado visible que el 404 por agente de antes, solo que
+ * ahora se resuelve indexando la respuesta, no con un fetch que falla.
+ * Si la llamada ENTERA falla (503/403/red), no hay degradación parcial que
+ * diseñar: es una sola lectura batcheada — o vuelve todo o no vuelve nada
+ * (contract.md §3.3). `setModo` es optimista: pinta el modo nuevo, hace el
+ * PUT y ante error hace rollback y devuelve el error para el toast; ante
+ * éxito parchea la fila local — no hace falta re-disparar el roster entero
+ * por un solo campo.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { fetchAgentAutonomia, type VallaItem } from '@/lib/api/agent-workspace'
+import { fetchAgentAutonomiaRoster, type VallaItem } from '@/lib/api/agent-workspace'
 import { putPilotoAutonomia, type AutonomiaModo } from '@/lib/api/piloto'
 import type { AgenteId } from '@/lib/api/work-item'
-import { mapWithConcurrency } from '@/lib/utils/concurrency'
-
-/**
- * T-0076: los 12 agentes del roster se pedían con
- * `Promise.allSettled(PILOTO_AGENTES.map(...))` — 12 peticiones simultáneas,
- * el mayor contribuyente al burst que tumbaba `/panel/inmobiliaria/piloto`
- * contra `agents_limit` de NGINX (5 r/s, burst 10; ver ledger de la tarea).
- * `CONCURRENCIA_AUTONOMIA` acota cuántas van en vuelo a la vez; el resultado
- * —una fila por agente que contestó, fail-soft por agente— es idéntico.
- */
-const CONCURRENCIA_AUTONOMIA = 3
 
 /**
  * El roster del panel (work-item.ts, cerrado 2026-06-08) MÁS los agentes
@@ -39,6 +38,13 @@ const CONCURRENCIA_AUTONOMIA = 3
  * solo-cobranza, el endpoint de autonomía acepta también retención, calidad,
  * prospectos, aprobaciones y mantenimiento — y elegirles modo acá es
  * exactamente lo que gobierna su ejecución (piloto/gobierno.ts en el micro).
+ *
+ * Este set DEBE coincidir con `AGENTES_CON_AUTONOMIA` en el micro
+ * (`agent/src/piloto/flota.ts`, `AGENTE_IDS` ∪ `AGENTES_GOBERNADOS`) — si un
+ * lado cambia sin el otro, un agente desaparece en silencio de un lado del
+ * roster (contract.md §3.2, "Verified alignment", verificado por enumeración
+ * 2026-09-10). El micro ya deja un comentario apuntando acá; este es el que
+ * apunta para allá.
  */
 export type AgentePiloto =
   | AgenteId
@@ -80,7 +86,7 @@ export interface UsePilotoAutonomiaResult {
   /** Cuántos agentes tiene el roster (no cuántos contestaron). */
   totalRoster: number
   isLoading: boolean
-  /** Solo cuando NINGÚN agente contestó bien y al menos uno falló de verdad. */
+  /** Solo cuando la llamada al roster falló entera (contract.md §3.3). */
   error: string | null
   /** Agente cuyo PUT está en vuelo (deshabilita su control). */
   busyAgente: AgentePiloto | null
@@ -114,41 +120,40 @@ export function usePilotoAutonomia(): UsePilotoAutonomiaResult {
     const controller = new AbortController()
     abortRef.current = controller
     setIsLoading(true)
-    const settled = await mapWithConcurrency(PILOTO_AGENTES, CONCURRENCIA_AUTONOMIA, (agente) =>
-      fetchAgentAutonomia(agencyId, agente, controller.signal),
-    )
-    if (controller.signal.aborted) return
+    try {
+      const { data } = await fetchAgentAutonomiaRoster(agencyId, controller.signal)
+      if (controller.signal.aborted) return
 
-    const next: AutonomiaRow[] = []
-    let algunError: string | null = null
-    settled.forEach((result, i) => {
-      if (result.status === 'rejected') {
-        // Fail-soft por agente: se registra el primer error real, pero los
-        // demás agentes siguen rindiendo su fila.
-        if (!algunError) {
-          algunError =
-            result.reason instanceof Error ? result.reason.message : 'fetch_failed'
-        }
-        return
-      }
-      const { data } = result.value
-      if (!data) return // 404: el agente aún no reporta autonomía — se omite.
-      next.push({
-        agente: PILOTO_AGENTES[i],
-        modo: data.modo,
-        modosDisponibles: data.modosDisponibles,
-        // Datos REALES que el API ya publicaba y este hook descartaba,
-        // mientras el panel explicaba las vallas con texto inventado.
-        valla: Array.isArray(data.valla) ? data.valla : [],
-        t323: Boolean(data.t323),
-        efectoReal: typeof data.efectoReal === 'string' ? data.efectoReal : null,
+      // Índice por `agente` (contract.md §3.1: es un array porque cada fila
+      // se auto-identifica; "keyed by agent id" se resuelve ACÁ, no en el wire).
+      const porAgente = new Map((data?.agentes ?? []).map((fila) => [fila.agente, fila]))
+
+      const next: AutonomiaRow[] = []
+      PILOTO_AGENTES.forEach((agente) => {
+        const fila = porAgente.get(agente)
+        // Ausente del roster: mismo fail-soft que el 404 por agente de
+        // antes — la fila simplemente no aparece, no es un error.
+        if (!fila) return
+        next.push({
+          agente,
+          modo: fila.modo,
+          modosDisponibles: fila.modosDisponibles,
+          valla: Array.isArray(fila.valla) ? fila.valla : [],
+          t323: Boolean(fila.t323),
+          efectoReal: typeof fila.efectoReal === 'string' ? fila.efectoReal : null,
+        })
       })
-    })
-    setRows(next)
-    // Error visible SOLO si no hay nada que mostrar: con filas en pantalla,
-    // un agente caído no debe pintar un banner encima de datos buenos.
-    setError(next.length === 0 && algunError ? algunError : null)
-    setIsLoading(false)
+      setRows(next)
+      setError(null)
+    } catch (err) {
+      if (controller.signal.aborted) return
+      // Sin degradación parcial posible: es UNA lectura batcheada — si la
+      // llamada falla, no hay filas que mostrar (contract.md §3.3).
+      setRows([])
+      setError(err instanceof Error ? err.message : 'fetch_failed')
+    } finally {
+      if (!controller.signal.aborted) setIsLoading(false)
+    }
   }, [agencyId])
 
   useEffect(() => {
@@ -178,6 +183,8 @@ export function usePilotoAutonomia(): UsePilotoAutonomiaResult {
         return { ok: false, error: res.error }
       }
       // El backend es la autoridad: si respondió un modo distinto, gana él.
+      // No hace falta re-disparar el roster completo (contract.md, brief §4
+      // item 2): la fila local ya quedó correcta con este parche.
       if (res.data && res.data.modo !== modo) {
         const modoServidor = res.data.modo
         setRows((cur) =>

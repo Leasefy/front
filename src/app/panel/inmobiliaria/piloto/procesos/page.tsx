@@ -24,6 +24,7 @@ import Link from 'next/link'
 import { ArrowLeft } from '@phosphor-icons/react'
 import { MonoLabel } from '@leasefy/cadence'
 
+import { PageGuard } from '@/components/auth/PageGuard'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/lib/i18n'
 import { usePilotoProcesos } from '@/lib/hooks/piloto/use-piloto-procesos'
@@ -33,7 +34,7 @@ import { PilotoCatalogo } from '@/components/inmobiliaria/piloto/PilotoCatalogo'
 import { PilotoCajon, type PilotoApertura } from '@/components/inmobiliaria/piloto/PilotoCajon'
 import type { TipoDeProceso } from '@/lib/api/piloto'
 
-export default function PilotoProcesosPage() {
+function PilotoProcesosContent() {
   const { t } = useI18n()
   const [tipo, setTipo] = useState<TipoDeProceso | 'todos'>('todos')
   const procesos = usePilotoProcesos(tipo)
@@ -103,5 +104,21 @@ export default function PilotoProcesosPage() {
         onAccionEjecutada={procesos.refetch}
       />
     </div>
+  )
+}
+
+/*
+ * P1 — Mismo guard que `/piloto`: `PageGuard` SIN módulo, a propósito. La fila del menú declara
+ * `module: null` (layout.tsx: el Piloto es el inicio de TODO miembro y cada
+ * widget se defiende solo) y `arquitectura-del-panel.ts` no le asigna módulo.
+ * Lo que sí hace el guard: el contenido —y sus consultas— no se monta hasta
+ * que los permisos resuelven, igual que en el resto de las páginas del panel,
+ * y sin señal no expulsa a nadie.
+ */
+export default function PilotoProcesosPage() {
+  return (
+    <PageGuard>
+      <PilotoProcesosContent />
+    </PageGuard>
   )
 }

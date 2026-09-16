@@ -7,6 +7,7 @@ import { Heart, MapPin, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { IconButton } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
+import { AdministradoPor } from '@/components/property/AdministradoPor';
 import { formatCurrency, formatArea } from '@/lib/format';
 import type { Property } from '@/lib/types/property';
 import type { QualificationResult } from '@/lib/scoring/propertyMatching';
@@ -52,6 +53,8 @@ export function PropertyCard({
     status,
     type,
     agencyName,
+    agencyId,
+    agencyLogoUrl,
     listingType,
     salePrice,
   } = property;
@@ -307,11 +310,12 @@ export function PropertyCard({
           {title}
         </h3>
 
-        {/* Offering agency — only when the property belongs to an agency */}
+        {/* Quién lo administra, con su logo: Leasefy u otra inmobiliaria. */}
         {agencyName && (
-          <p className="text-[12px] text-muted-foreground truncate mt-0.5">
-            Ofrecido por {agencyName}
-          </p>
+          <AdministradoPor
+            className="mt-1.5"
+            administrador={{ agencyId: agencyId ?? null, nombre: agencyName, logoUrl: agencyLogoUrl ?? null }}
+          />
         )}
 
         {/* Price — prominent */}

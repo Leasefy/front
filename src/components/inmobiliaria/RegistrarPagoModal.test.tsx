@@ -604,3 +604,62 @@ describe('<RegistrarPagoModal> los medios configurados por la inmobiliaria', () 
     expect(medio.length).toBe(40);
   });
 });
+
+describe('<RegistrarPagoModal> la llave del recibo (R1)', () => {
+  const llaveDe = (onSubmit: ReturnType<typeof vi.fn>, i: number) =>
+    (onSubmit.mock.calls[i][0] as { idempotencyKey?: string }).idempotencyKey;
+
+  it('🔴 reintentar tras un fallo manda LA MISMA llave; el recibo siguiente lleva otra', async () => {
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValueOnce(new ApiError(0, 'fetch failed'))
+      .mockResolvedValueOnce(RESPUESTA)
+      .mockResolvedValueOnce(RESPUESTA);
+
+    await abrir({ onSubmit: onSubmit as never });
+    elegirMedio('efectivo');
+    await enviar(); // se cae la red: el primero pudo haber entrado
+    await enviar(); // reintento
+
+    expect(onSubmit).toHaveBeenCalledTimes(2);
+    const primera = llaveDe(onSubmit, 0);
+    expect(typeof primera).toBe('string');
+    expect(primera!.length).toBeGreaterThan(0);
+    expect(primera!.length).toBeLessThanOrEqual(64);
+    expect(llaveDe(onSubmit, 1)).toBe(primera);
+
+    // Salió bien y se cerró. Se abre de nuevo para OTRO recibo.
+    await act(async () => {
+      root.render(
+        <RegistrarPagoModal isOpen={false} onClose={vi.fn()} cobro={COBRO} onSubmit={onSubmit as never} />,
+      );
+    });
+    await abrir({ onSubmit: onSubmit as never });
+    escribir('#monto-recibo', '$ 1.000.000');
+    elegirMedio('efectivo');
+    await enviar();
+
+    expect(onSubmit).toHaveBeenCalledTimes(3);
+    expect(llaveDe(onSubmit, 2)).toBeTruthy();
+    expect(llaveDe(onSubmit, 2)).not.toBe(primera);
+  });
+});
+
+describe('<RegistrarPagoModal> un cliente sin cuotas pendientes (R2)', () => {
+  it('lo dice con las palabras del servidor, no promete un anticipo y deja salir con «Cerrar»', async () => {
+    carteraPorCobro.mockResolvedValue(debeTresMeses({ total: 0, cobros: [] }));
+    const onClose = vi.fn();
+    await abrir({ onClose });
+
+    const vacio = document.body.querySelector('[data-testid="cliente-sin-deuda"] [data-testid="sin-datos"]');
+    expect(vacio).toBeTruthy();
+    expect(vacio!.textContent).toContain('recibos.form.cartera.sinDeuda');
+    expect(vacio!.textContent).not.toMatch(/saldo a favor|anticipo/i);
+    expect(document.body.querySelector('#form-recibo-de-caja')).toBeNull();
+
+    const cerrar = document.body.querySelector<HTMLButtonElement>('[data-testid="cerrar-sin-deuda"]');
+    expect(cerrar?.textContent).toBe('Cerrar');
+    act(() => cerrar!.click());
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});

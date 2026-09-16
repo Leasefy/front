@@ -215,13 +215,116 @@ describe('ResolucionDeFacturacion', () => {
     expect(resolucionesMock).toHaveBeenCalledTimes(2);
   });
 
-  it('anular pide la anulación y vuelve a leer', async () => {
-    await montar();
-    await act(async () => {
-      (q('[data-testid="anular-res-1"]') as HTMLButtonElement).click();
+  /**
+   * F1 (auditoría 13-09): anular era un clic que dejaba a la inmobiliaria sin
+   * poder numerar. Ahora abre un diálogo que dice qué se rompe y pide el
+   * motivo, que el back exige.
+   */
+  describe('anular una resolución', () => {
+    const enElDocumento = (s: string) => document.querySelector(s);
+
+    function escribirMotivo(valor: string) {
+      const area = enElDocumento('[data-testid="motivo-anulacion"]') as HTMLTextAreaElement;
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype,
+        'value',
+      )!.set!;
+      setter.call(area, valor);
+      area.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    async function abrirDialogo() {
+      await act(async () => {
+        (q('[data-testid="anular-res-1"]') as HTMLButtonElement).click();
+      });
+    }
+
+    const confirmar = () =>
+      enElDocumento('[data-testid="confirmar-anular"]') as HTMLButtonElement;
+
+    it('🔴 el botón de la fila NO anula: abre el diálogo que dice qué se rompe', async () => {
+      await montar();
+      await abrirDialogo();
+      expect(anularMock).not.toHaveBeenCalled();
+      const consecuencia = enElDocumento('[data-testid="anular-resolucion-consecuencia"]')!;
+      // Es la que numera hoy: sin ella no se factura.
+      expect(consecuencia.textContent).toContain('no vas a poder numerar facturas');
+      expect(consecuencia.textContent).toContain('no se deshace');
     });
-    expect(anularMock).toHaveBeenCalledWith('res-1');
-    expect(resolucionesMock).toHaveBeenCalledTimes(2);
+
+    it('🔴 sin motivo no manda nada; sólo espacios tampoco', async () => {
+      await montar();
+      await abrirDialogo();
+      expect(confirmar().disabled).toBe(true);
+
+      await act(async () => {
+        escribirMotivo('    ');
+      });
+      expect(confirmar().disabled).toBe(true);
+
+      await act(async () => {
+        confirmar().click();
+      });
+      expect(anularMock).not.toHaveBeenCalled();
+    });
+
+    it('con motivo manda { motivo } sin los espacios de los bordes y vuelve a leer', async () => {
+      await montar();
+      await abrirDialogo();
+      await act(async () => {
+        escribirMotivo('  La DIAN autorizó un rango nuevo.  ');
+      });
+      expect(confirmar().disabled).toBe(false);
+      await act(async () => {
+        confirmar().click();
+      });
+      expect(anularMock).toHaveBeenCalledWith('res-1', 'La DIAN autorizó un rango nuevo.');
+      expect(toastOk).toHaveBeenCalled();
+      expect(resolucionesMock).toHaveBeenCalledTimes(2);
+      // Se cerró: la resolución quedó anulada.
+      expect(enElDocumento('[data-testid="anular-resolucion-dialogo"]')).toBeNull();
+    });
+
+    it('si el back falla, lo dice y el diálogo sigue abierto con el motivo escrito', async () => {
+      anularMock.mockRejectedValue(
+        new Error('Escribe por qué anulas la resolución: sin ella la inmobiliaria no puede numerar facturas.'),
+      );
+      await montar();
+      await abrirDialogo();
+      await act(async () => {
+        escribirMotivo('Rango nuevo');
+      });
+      await act(async () => {
+        confirmar().click();
+      });
+      expect(toastErr).toHaveBeenCalledWith(
+        'Escribe por qué anulas la resolución: sin ella la inmobiliaria no puede numerar facturas.',
+      );
+      expect(toastOk).not.toHaveBeenCalled();
+      expect(
+        (enElDocumento('[data-testid="motivo-anulacion"]') as HTMLTextAreaElement).value,
+      ).toBe('Rango nuevo');
+    });
+
+    it('una resolución que ya no numeraba no amenaza con dejarte sin facturar', async () => {
+      const base = respuesta();
+      resolucionesMock.mockResolvedValue({
+        ...base,
+        resoluciones: [
+          {
+            ...base.resoluciones[0],
+            puedeNumerar: false,
+            motivo: 'VENCIDA',
+            explicacion: 'La resolución 18764003394379 venció el 15/01/2026.',
+          },
+        ],
+      });
+      await montar();
+      await abrirDialogo();
+      const consecuencia = enElDocumento('[data-testid="anular-resolucion-consecuencia"]')!;
+      expect(consecuencia.textContent).not.toContain('no vas a poder numerar');
+      expect(consecuencia.textContent).toContain('venció el 15/01/2026');
+    });
   });
 
   it('un fallo al cargar se dice y no se pinta como éxito', async () => {

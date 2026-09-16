@@ -21,9 +21,19 @@ void React // jsx-preserve
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { useContractMock, permisos } = vi.hoisted(() => ({
+const { useContractMock, permisos, accionesDelContrato } = vi.hoisted(() => ({
   useContractMock: vi.fn(),
   permisos: { puede: false },
+  // Las acciones RELANZAN el fallo del back (C5-C7): cada caso decide si
+  // resuelven o rechazan.
+  accionesDelContrato: {
+    isSubmitting: false,
+    lastError: null,
+    send: vi.fn(),
+    activate: vi.fn(),
+    remind: vi.fn(),
+    cancel: vi.fn(),
+  },
 }))
 
 /**
@@ -42,6 +52,11 @@ const { previewDelContrato } = vi.hoisted(() => ({
       refetch: () => {},
     },
   },
+}))
+
+// C9: la tarjeta de cobros le reporta a la ficha que NO pudo traerlos.
+const { cobrosDelDoble } = vi.hoisted(() => ({
+  cobrosDelDoble: { fallan: false },
 }))
 
 const { paramsDeBusqueda } = vi.hoisted(() => ({
@@ -64,7 +79,7 @@ vi.mock('@/lib/hooks/useContracts', () => ({
   useContract: () => useContractMock(),
   useContractPreview: () => previewDelContrato.valor,
   useContractRejections: () => ({ rejections: [] }),
-  useContractActions: () => ({ isSubmitting: false, lastError: null }),
+  useContractActions: () => accionesDelContrato,
   useSignedPdfUrl: () => ({ url: null, isLoading: false }),
   isPermissionError: () => false,
 }))
@@ -97,8 +112,8 @@ vi.mock('@/components/ui/button', () => ({
 
 vi.mock('@/components/ui', () => ({
   Spinner: () => React.createElement('div', { 'data-testid': 'spinner' }),
-  Badge: ({ children }: { children?: React.ReactNode }) =>
-    React.createElement('span', { 'data-testid': 'badge' }, children),
+  Badge: ({ children, variant }: { children?: React.ReactNode; variant?: string }) =>
+    React.createElement('span', { 'data-testid': 'badge', 'data-variant': variant }, children),
 }))
 
 // Each factory builds its own element: `vi.mock` is hoisted above every
@@ -111,9 +126,18 @@ vi.mock('@/components/contract/RejectionsHistory', () => ({
   RejectionsHistory: () =>
     React.createElement('div', { 'data-testid': 'rejections-history' }),
 }))
+// El doble expone la confirmación: C7 prueba qué pasa DESPUÉS de confirmar.
 vi.mock('@/components/contract/CancelContractModal', () => ({
-  CancelContractModal: () =>
-    React.createElement('div', { 'data-testid': 'cancel-modal' }),
+  CancelContractModal: ({ onConfirm }: { onConfirm: (r: string | undefined) => unknown }) =>
+    React.createElement(
+      'div',
+      { 'data-testid': 'cancel-modal' },
+      React.createElement(
+        'button',
+        { 'data-testid': 'confirmar-cancelacion', onClick: () => onConfirm('El propietario desistió') },
+        'Confirmar cancelación',
+      ),
+    ),
 }))
 vi.mock('@/components/contract/DownloadContractPdfButton', () => ({
   DownloadContractPdfButton: () =>
@@ -121,17 +145,39 @@ vi.mock('@/components/contract/DownloadContractPdfButton', () => ({
 }))
 // El `role="alert"` del cartel real va también en el doble: es lo que una
 // prueba puede mirar para decir «acá NO hay un error pintado».
+// Expone lo que recibe (C14): a dónde vuelve, si hay reintentar y si le llegó
+// el error ENTERO —con su status— o sólo el texto.
 vi.mock('@/components/estado/FalloDeCarga', () => ({
-  FalloDeCarga: () =>
-    React.createElement('div', { 'data-testid': 'fallo-carga', role: 'alert' }),
+  FalloDeCarga: ({
+    error,
+    onReintentar,
+    volverA,
+  }: {
+    error?: unknown
+    onReintentar?: () => unknown
+    volverA?: { href: string }
+  }) =>
+    React.createElement('div', {
+      'data-testid': 'fallo-carga',
+      role: 'alert',
+      'data-volver': volverA?.href,
+      'data-reintentar': onReintentar ? 'si' : 'no',
+      'data-status':
+        error && typeof error === 'object' && 'status' in error
+          ? String((error as { status: unknown }).status)
+          : 'sin-status',
+    }),
 }))
 vi.mock('@/components/contratos/AdministracionDelContrato', () => ({
   AdministracionDelContrato: () =>
     React.createElement('div', { 'data-testid': 'administracion' }),
 }))
 vi.mock('@/components/contratos/ConceptosDelContrato', () => ({
-  ConceptosDelContrato: () =>
-    React.createElement('div', { 'data-testid': 'conceptos' }),
+  ConceptosDelContrato: ({ puedeEditar }: { puedeEditar?: boolean }) =>
+    React.createElement('div', {
+      'data-testid': 'conceptos',
+      'data-puede-editar': puedeEditar ? 'si' : 'no',
+    }),
 }))
 vi.mock('@/components/contratos/InvitarInquilino', () => ({
   InvitarInquilino: () =>
@@ -142,8 +188,12 @@ vi.mock('@/components/contratos/ReglasDeMoraDelContrato', () => ({
     React.createElement('div', { 'data-testid': 'reglas-de-mora' }),
 }))
 vi.mock('@/components/contratos/CobrosDelContrato', () => ({
-  CobrosDelContrato: () =>
-    React.createElement('div', { 'data-testid': 'cobros' }),
+  CobrosDelContrato: ({ onResumen }: { onResumen?: (r: unknown) => void }) => {
+    React.useEffect(() => {
+      if (cobrosDelDoble.fallan) onResumen?.('fallo')
+    }, [onResumen])
+    return React.createElement('div', { 'data-testid': 'cobros' })
+  },
 }))
 // El seguimiento de PQRS del contrato (Nico, 2026-09-12). Acá sólo importa
 // que la sección esté montada: lo que muestra se prueba en su propio archivo.
@@ -208,6 +258,7 @@ beforeEach(() => {
   document.body.appendChild(container)
   root = createRoot(container)
   useContractMock.mockReset()
+  cobrosDelDoble.fallan = false
   previewDelContrato.valor = {
     preview: null,
     isLoading: false,
@@ -229,6 +280,123 @@ async function renderPage() {
     root.render(React.createElement(ContratoDetallePage))
   })
 }
+
+/**
+ * 🔴 C5 · C6 · C7 — las acciones de la ficha dicen el motivo del back.
+ *
+ * `useContractActions.run()` se tragaba el error: enviar decía «La operación
+ * falló», TODO fallo del recordatorio decía «Ya enviaste un recordatorio
+ * recientemente», y cancelar leía `actions.lastError` del render viejo (un 403
+ * salía «No se pudo cancelar»). Ahora la acción relanza y la ficha reparte.
+ */
+describe('ContratoDetallePage — el fallo de una acción, en palabras', () => {
+  // `toast` sale de `@/components/ui/toast`, que reexporta el de sonner (mockeado arriba).
+  let toast: { error: ReturnType<typeof vi.fn>; success: ReturnType<typeof vi.fn> }
+
+  beforeEach(async () => {
+    toast = (await import('sonner')).toast as unknown as typeof toast
+    permisos.puede = true
+    accionesDelContrato.send.mockReset()
+    accionesDelContrato.remind.mockReset()
+    accionesDelContrato.cancel.mockReset()
+  })
+  afterEach(() => {
+    permisos.puede = false
+  })
+
+  function boton(texto: string): HTMLButtonElement {
+    const b = [...container.querySelectorAll('button')].find((x) => x.textContent?.includes(texto))
+    if (!b) throw new Error(`No está el botón «${texto}»`)
+    return b as HTMLButtonElement
+  }
+  async function clic(b: HTMLElement) {
+    await act(async () => {
+      b.click()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+  }
+
+  it('C5 · enviar con un 400 → el motivo del back, no «La operación falló»', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    accionesDelContrato.send.mockRejectedValue(
+      new ApiError(400, 'El contrato no tiene documento: súbelo antes de enviarlo.'),
+    )
+    withContract(contract({ status: 'draft' }))
+    await renderPage()
+    await clic(boton('Enviar al inquilino'))
+
+    expect(container.textContent).toContain('El contrato no tiene documento: súbelo antes de enviarlo.')
+    expect(container.textContent).not.toContain('La operación falló')
+  })
+
+  it('C5 · enviar con un 403 → dice que es de permisos, no el texto crudo', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    accionesDelContrato.send.mockRejectedValue(new ApiError(403, 'Forbidden resource'))
+    withContract(contract({ status: 'draft' }))
+    await renderPage()
+    await clic(boton('Enviar al inquilino'))
+
+    expect(container.textContent).toContain('No tienes permiso para esta acción.')
+    expect(container.textContent).not.toContain('Forbidden resource')
+  })
+
+  it('C6 · recordar con un 429 → «ya enviaste uno en las últimas 24 horas»', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    accionesDelContrato.remind.mockRejectedValue(new ApiError(429, 'ThrottlerException'))
+    withContract(contract({ status: 'pending_tenant' }))
+    await renderPage()
+    await clic(boton('Recordar firma'))
+
+    expect(container.textContent).toContain('Ya enviaste un recordatorio en las últimas 24 horas.')
+  })
+
+  it('C6 · recordar con un 500 → su motivo, NUNCA «ya enviaste un recordatorio»', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    accionesDelContrato.remind.mockRejectedValue(new ApiError(500, 'El proveedor de correo no respondió.'))
+    withContract(contract({ status: 'pending_tenant' }))
+    await renderPage()
+    await clic(boton('Recordar firma'))
+
+    expect(container.textContent).toContain('El proveedor de correo no respondió.')
+    expect(container.textContent).not.toContain('Ya enviaste')
+  })
+
+  it('C6 · recordar que sale bien lo confirma', async () => {
+    accionesDelContrato.remind.mockResolvedValue({ remindedAt: 'x', nextAllowedAt: 'y' })
+    withContract(contract({ status: 'pending_tenant' }))
+    await renderPage()
+    await clic(boton('Recordar firma'))
+
+    expect(toast.success).toHaveBeenCalledWith('Recordatorio enviado.')
+  })
+
+  it('C7 · cancelar con un 403 → «no tienes permisos», leído del error que vino', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    accionesDelContrato.cancel.mockRejectedValue(new ApiError(403, 'Forbidden resource'))
+    withContract(contract({ status: 'draft' }))
+    await renderPage()
+    await clic(container.querySelector('[data-testid="confirmar-cancelacion"]') as HTMLElement)
+
+    expect(accionesDelContrato.cancel).toHaveBeenCalledWith(CONTRACT_ID, { reason: 'El propietario desistió' })
+    expect(toast.error).toHaveBeenCalledWith('No tienes permisos para esta acción.', { description: undefined })
+    expect(toast.success).not.toHaveBeenCalled()
+  })
+
+  it('C7 · cancelar con un 409 → el motivo del back en la descripción', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    accionesDelContrato.cancel.mockRejectedValue(
+      new ApiError(409, 'El contrato ya está firmado: no se puede cancelar.'),
+    )
+    withContract(contract({ status: 'draft' }))
+    await renderPage()
+    await clic(container.querySelector('[data-testid="confirmar-cancelacion"]') as HTMLElement)
+
+    expect(toast.error).toHaveBeenCalledWith('No se pudo cancelar el contrato.', {
+      description: 'El contrato ya está firmado: no se puede cancelar.',
+    })
+  })
+})
 
 /**
  * 🔴 2026-09-12. La ficha del inmueble ahora ofrece «Ver contrato» —el
@@ -442,6 +610,86 @@ describe('ContratoDetallePage — el resumen de arriba', () => {
     await renderPage()
 
     expect(container.querySelector('[data-testid="resumen-del-contrato"]')!.textContent).toContain('vencido hace')
+  })
+
+  /**
+   * 🔴 C9 (P0). Con el GET de cobros caído la franja decía «Saldo del
+   * inquilino — · sin cobros todavía»: le afirmaba «al día» a un moroso.
+   */
+  it('🔴 si los cobros no se pudieron traer, el saldo es una raya que lo dice — nunca «sin cobros»', async () => {
+    cobrosDelDoble.fallan = true
+    withContract(contract({}))
+
+    await renderPage()
+
+    const franja = container.querySelector('[data-testid="resumen-del-contrato"]')!.textContent
+    expect(franja).toContain('No se pudo traer el saldo')
+    expect(franja).not.toContain('sin cobros todavía')
+    expect(franja).not.toContain('al día')
+  })
+})
+
+describe('ContratoDetallePage — el contrato que no llega', () => {
+  it('C14: sin contrato y sin error, el cartel de la casa con reintentar y a dónde volver', async () => {
+    useContractMock.mockReturnValue({
+      contract: null,
+      isLoading: false,
+      error: null,
+      errorCrudo: null,
+      refetch: vi.fn(),
+      setContract: vi.fn(),
+    })
+
+    await renderPage()
+
+    const fallo = container.querySelector('[data-testid="fallo-carga"]')
+    expect(fallo).not.toBeNull()
+    expect(fallo!.getAttribute('data-reintentar')).toBe('si')
+    expect(fallo!.getAttribute('data-volver')).toBe('/panel/inmobiliaria/contratos')
+    // La tarjeta roja hecha a mano ya no existe.
+    expect(container.textContent).not.toContain('Contrato no encontrado')
+  })
+
+  it('C14: al cartel le llega el error ENTERO del hook, con su status, no sólo el texto', async () => {
+    useContractMock.mockReturnValue({
+      contract: null,
+      isLoading: false,
+      error: 'Contract not found',
+      errorCrudo: { status: 404, message: 'Contract not found' },
+      refetch: vi.fn(),
+      setContract: vi.fn(),
+    })
+
+    await renderPage()
+
+    expect(container.querySelector('[data-testid="fallo-carga"]')!.getAttribute('data-status')).toBe('404')
+  })
+})
+
+describe('ContratoDetallePage — un contrato que ya terminó', () => {
+  it('C13: cancelado o vencido, los conceptos se leen pero no se editan', async () => {
+    permisos.puede = true
+    try {
+      for (const status of ['cancelled', 'expired'] as const) {
+        withContract(contract({ status }))
+        await renderPage()
+        expect(container.querySelector('[data-testid="conceptos"]')!.getAttribute('data-puede-editar')).toBe('no')
+      }
+
+      withContract(contract({ status: 'active' }))
+      await renderPage()
+      expect(container.querySelector('[data-testid="conceptos"]')!.getAttribute('data-puede-editar')).toBe('si')
+    } finally {
+      permisos.puede = false
+    }
+  })
+
+  it('C15: un estado que no conocemos va con la variante gris del Badge, no con una que no existe', async () => {
+    withContract(contract({ status: 'algo_nuevo_del_back' as Contract['status'] }))
+
+    await renderPage()
+
+    expect(container.querySelector('[data-testid="badge"]')!.getAttribute('data-variant')).toBe('secondary')
   })
 })
 

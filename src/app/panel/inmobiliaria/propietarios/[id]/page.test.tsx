@@ -12,6 +12,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 import type { Propietario } from '@/lib/types/inmobiliaria';
+import { ApiError } from '@/lib/api/client';
 
 void React;
 
@@ -35,6 +36,46 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children?: React.ReactNode }) => children,
+}));
+
+/* Todo permitido salvo lo que el test niegue (`propietarios:edit`, …). */
+const permisos = vi.hoisted(() => ({ negadas: new Set<string>() }));
+vi.mock('@/lib/hooks/usePermissions', () => ({
+  usePermissions: () => ({
+    isLoading: false,
+    canAccess: (m: string, a: string) => !permisos.negadas.has(`${m}:${a}`),
+  }),
+}));
+
+/*
+ * El aviso de invitar se prueba aparte (`InvitarAlPortal.test.tsx`). Acá sólo
+ * importa CUÁNDO se monta, con qué datos, y qué pasa en la ficha al invitar:
+ * el doble invita con un clic. El botón de mensaje y el interruptor de
+ * WhatsApp publican a quién apuntan.
+ */
+vi.mock('@/components/inmobiliaria/InvitarAlPortal', () => ({
+  InvitarAlPortal: ({
+    propietarioId,
+    correo,
+    onInvitado,
+  }: {
+    propietarioId: string;
+    correo?: string | null;
+    onInvitado: (cuenta: string) => void;
+  }) =>
+    React.createElement('button', {
+      'data-testid': 'invitar-al-portal',
+      'data-propietario': propietarioId,
+      'data-correo': correo ?? '',
+      onClick: () => onInvitado('user-nuevo'),
+    }),
+}));
+vi.mock('@/components/messages/BotonEnviarMensaje', () => ({
+  BotonEnviarMensaje: ({ counterpartId }: { counterpartId: string }) =>
+    React.createElement('div', { 'data-testid': 'enviar-mensaje', 'data-para': counterpartId }),
+}));
+vi.mock('@/components/messages/InterruptorDeWhatsapp', () => ({
+  InterruptorDeWhatsapp: () => null,
 }));
 
 vi.mock('@/lib/i18n', () => ({
@@ -141,9 +182,12 @@ vi.mock('@/components/estado/FalloDeCarga', () => ({
 
 vi.mock('@/components/inmobiliaria', () => ({
   PropietarioStats: () => React.createElement('div', { 'data-testid': 'stats' }),
-  PropietarioBankInfo: ({ onEdit }: { onEdit?: () => void }) => React.createElement('button', { 'data-testid': 'editar-banco', onClick: onEdit }),
-  PropietarioForm: ({ onSubmit }: { onSubmit: (d: unknown) => void }) =>
-    React.createElement('button', { 'data-testid': 'form-guardar', onClick: () => onSubmit({ name: 'Nuevo nombre', email: 'x@y.z', phone: '1', documentType: 'CC', documentNumber: '9', bankCode: '', accountType: '', accountNumber: '', accountHolder: '' }) }, 'guardar'),
+  // Sin `onEdit` la tarjeta real no dibuja el botón: el doble tampoco.
+  PropietarioBankInfo: ({ onEdit }: { onEdit?: () => void }) =>
+    onEdit ? React.createElement('button', { 'data-testid': 'editar-banco', onClick: onEdit }) : null,
+  // Publica el error por campo que recibió (`serverError`).
+  PropietarioForm: ({ onSubmit, serverError }: { onSubmit: (d: unknown) => void; serverError?: { field: string; message: string } | null }) =>
+    React.createElement('button', { 'data-testid': 'form-guardar', 'data-error-campo': serverError?.field ?? '', 'data-error-mensaje': serverError?.message ?? '', onClick: () => onSubmit({ name: 'Nuevo nombre', email: 'x@y.z', phone: '1', documentType: 'CC', documentNumber: '9', bankCode: '', accountType: '', accountNumber: '', accountHolder: '' }) }, 'guardar'),
 }));
 vi.mock('@/components/inmobiliaria/ExtractoDelPropietarioDialog', () => ({
   ExtractoDelPropietarioDialog: ({ abierto, propietarioId }: { abierto: boolean; propietarioId: string }) =>
@@ -213,6 +257,7 @@ beforeEach(() => {
   datos.dispersiones = [];
   datos.errorDispersiones = null;
   nav.volver = null;
+  permisos.negadas.clear();
   api.update.mockResolvedValue({ ...PROPIETARIO, name: 'Nuevo nombre' });
   api.delete.mockResolvedValue(undefined);
   exportar.mockResolvedValue('propietario-nicolas-2026-09-02.xlsx');
@@ -312,12 +357,30 @@ describe('Editar, notas y eliminar — contra el back, no contra un setTimeout',
     expect(toast.success).toHaveBeenCalledWith('inmobiliaria.propietarios.toasts.updated');
   });
 
-  it('si el back rechaza la edición, no dice «actualizado»', async () => {
+  it('🔴 si el documento ya está en otra ficha, lo dice AL LADO del documento y no dice «actualizado»', async () => {
+    api.update.mockRejectedValueOnce(
+      new ApiError(409, 'Ya existe un propietario con el documento 9 en esta agencia'),
+    );
+    await render();
+    await click('editar-banco');
+    await click('form-guardar');
+
+    const form = document.querySelector('[data-testid="form-guardar"]')!;
+    expect(form.getAttribute('data-error-campo')).toBe('documentNumber');
+    expect(form.getAttribute('data-error-mensaje')).toBe('Ese documento ya está cargado');
+    // Un toast que se va solo no es donde se lee por qué no se guardó.
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it('si el back rechaza la edición sin un campo (500), lo dice dentro del diálogo', async () => {
     api.update.mockRejectedValueOnce(new Error('documento repetido'));
     await render();
     await click('editar-banco');
     await click('form-guardar');
-    expect(toast.error).toHaveBeenCalledWith('inmobiliaria.propietarios.toasts.updateError', { description: 'documento repetido' });
+    expect(document.querySelector('[data-testid="aviso-en-el-dialogo"]')!.textContent).toContain(
+      'No pudimos guardar el propietario',
+    );
     expect(toast.success).not.toHaveBeenCalled();
   });
 
@@ -412,5 +475,80 @@ describe('Un fallo de carga se dice, no se disfraza', () => {
       description: 'inmobiliaria.propietarios.detail.exportIncompleto',
     });
     expect(toast.success).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * O4 · «No tiene cuenta en Leasefy», dicho y con la salida al lado.
+ *
+ * El botón de mensaje sólo se dibuja con `cuentaDePortalId`, y casi ningún
+ * propietario la tiene (57 de 1.733 en la cartera real de Nico): sin el aviso,
+ * la ficha tenía un hueco que se leía como «acá no se puede escribir».
+ */
+describe('O4 — invitar al portal desde la ficha del propietario', () => {
+  const invitar = () => document.querySelector('[data-testid="invitar-al-portal"]');
+
+  it('🔴 sin cuenta, ofrece invitarlo con su id y su correo', async () => {
+    datos.propietario = { ...PROPIETARIO, cuentaDePortalId: null };
+    await render();
+    expect(invitar()).not.toBeNull();
+    expect(invitar()!.getAttribute('data-propietario')).toBe('p1');
+    expect(invitar()!.getAttribute('data-correo')).toBe('n@tikin.op');
+    expect(document.querySelector('[data-testid="enviar-mensaje"]')).toBeNull();
+  });
+
+  it('al invitar, el aviso se va y aparece «Enviar mensaje» sin recargar', async () => {
+    datos.propietario = { ...PROPIETARIO, cuentaDePortalId: null };
+    await render();
+    await click('invitar-al-portal');
+    expect(invitar()).toBeNull();
+    expect(document.querySelector('[data-testid="enviar-mensaje"]')!.getAttribute('data-para')).toBe('user-nuevo');
+  });
+
+  it('con cuenta, no hay aviso: está el mensaje', async () => {
+    datos.propietario = { ...PROPIETARIO, cuentaDePortalId: 'user-nicolas' };
+    await render();
+    expect(invitar()).toBeNull();
+    expect(document.querySelector('[data-testid="enviar-mensaje"]')).not.toBeNull();
+  });
+
+  it('sin `propietarios:edit` no se ofrece: el back protege la invitación con esa llave', async () => {
+    permisos.negadas.add('propietarios:edit');
+    datos.propietario = { ...PROPIETARIO, cuentaDePortalId: null };
+    await render();
+    expect(invitar()).toBeNull();
+  });
+});
+
+/**
+ * O3 · un CONTADOR o un VIEWER tienen sólo `propietarios:view`. Veían Editar,
+ * Eliminar y las notas, y el clic terminaba en 403.
+ */
+describe('O3 — la ficha sólo ofrece lo que el back va a dejar hacer', () => {
+  it('con todos los permisos están Editar, el lápiz del banco y Eliminar', async () => {
+    await render();
+    expect(container.textContent).toContain('inmobiliaria.propietarios.edit');
+    expect(container.querySelector('[data-testid="editar-banco"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="accion-eliminar"]')).not.toBeNull();
+  });
+
+  it('🔴 sin `edit` no hay Editar, ni lápiz del banco, ni notas', async () => {
+    permisos.negadas.add('propietarios:edit');
+    await render();
+    expect(
+      Array.from(container.querySelectorAll('button')).some(
+        (b) => b.textContent === 'inmobiliaria.propietarios.edit',
+      ),
+    ).toBe(false);
+    expect(container.querySelector('[data-testid="editar-banco"]')).toBeNull();
+    // El extracto y exportar son lectura: siguen.
+    expect(container.querySelector('[data-testid="accion-extracto"]')).not.toBeNull();
+  });
+
+  it('🔴 sin `delete` el menú no ofrece Eliminar', async () => {
+    permisos.negadas.add('propietarios:delete');
+    await render();
+    expect(container.querySelector('[data-testid="accion-eliminar"]')).toBeNull();
+    expect(container.querySelector('[data-testid="accion-exportar"]')).not.toBeNull();
   });
 });

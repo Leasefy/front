@@ -7,12 +7,19 @@ import { subscriptionsApi } from '@/lib/api/subscriptions.service';
 import type { DisplaySubscription, BackendSubscriptionPlan } from '@/lib/api/subscriptions.types';
 import type { PlanId, AgencyPlan, PricingModel } from '@/lib/types/subscription';
 import { AGENCY_PLANS, BASE_EVALUATION_PRICE_COP } from '@/lib/constants/subscription-plans';
+import { consumeMySubscriptionSeed } from '@/lib/auth/bootstrap-seed';
 
 /**
  * Hook to get the current user's subscription.
  * On error, sets `error` and leaves `subscription` as null — does NOT default
  * to any plan. Callers must distinguish three states: `isLoading`, `error`,
  * and a real `subscription`. Use `refetch` to retry after a transient failure.
+ *
+ * T-0082 WU-2b: on the FIRST mount, if the login bootstrap already resolved
+ * this user's subscription (contract.md §3.2), consume that seed instead of
+ * firing `GET /subscriptions/me` again. The seed is one-shot
+ * (`bootstrap-seed.ts`) — a manual `refetch()` always goes live, and a second
+ * mount after the seed was already consumed falls back to the live fetch too.
  */
 export function useMySubscription() {
   const [subscription, setSubscription] = useState<DisplaySubscription | null>(null);
@@ -39,6 +46,13 @@ export function useMySubscription() {
   }, []);
 
   useEffect(() => {
+    const seeded = consumeMySubscriptionSeed();
+    if (seeded) {
+      setSubscription(seeded);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
     fetchSubscription();
   }, [fetchSubscription]);
 

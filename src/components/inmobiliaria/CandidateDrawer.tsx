@@ -59,6 +59,13 @@ interface CandidateDrawerProps {
   onClose: () => void;
   onAction: (type: CandidateAction, candidate: LandlordCandidate) => void;
   /**
+   * ¿Quien mira puede decidir? Con `false` el pie de Aprobar/Rechazar/Pedir
+   * info no se dibuja. Por defecto `true`: el cajón también lo monta el
+   * propietario directo, que no tiene permisos de agencia; la pantalla de la
+   * agencia es la que sabe si el rol (CONTADOR, VIEWER) puede escribir.
+   */
+  puedeDecidir?: boolean;
+  /**
    * Kept for caller compatibility; no longer invoked. The drawer used to call
    * this after triggering a fresh AI re-evaluation — that trigger was removed
    * in T-0024 (the panel now reads the pre-scoring study the candidate
@@ -80,6 +87,8 @@ const STATUS_LABELS: Record<LandlordApplicationStatus, string> = {
   NEEDS_INFO: 'Pide info',
   WITHDRAWN: 'Retirado',
   CONTRACT_FAILED: 'Contrato fallido',
+  NO_ADJUDICADO: 'No adjudicado',
+  PREAPPROVED: 'Preaprobado',
 };
 
 const LEVEL_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -171,7 +180,7 @@ const DOC_TYPE_LABELS: Record<string, string> = {
  * cerrar: así el polling de la evaluación no queda vivo con el cajón cerrado,
  * y abrir a otro candidato lo vuelve a montar limpio.
  */
-export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawerProps) {
+export function CandidateDrawer({ candidate, onClose, onAction, puedeDecidir = true }: CandidateDrawerProps) {
   const ultimo = useUltimoPresente(candidate);
 
   return (
@@ -183,7 +192,12 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
         className="w-full sm:max-w-2xl !p-0 flex flex-col gap-0 bg-background"
       >
         {ultimo && (
-          <CuerpoDelCandidato candidate={ultimo} onClose={onClose} onAction={onAction} />
+          <CuerpoDelCandidato
+            candidate={ultimo}
+            onClose={onClose}
+            onAction={onAction}
+            puedeDecidir={puedeDecidir}
+          />
         )}
       </SheetContent>
     </Sheet>
@@ -195,9 +209,10 @@ interface CuerpoDelCandidatoProps {
   candidate: LandlordCandidate;
   onClose: () => void;
   onAction: (type: CandidateAction, candidate: LandlordCandidate) => void;
+  puedeDecidir: boolean;
 }
 
-function CuerpoDelCandidato({ candidate, onClose, onAction }: CuerpoDelCandidatoProps) {
+function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: CuerpoDelCandidatoProps) {
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -369,7 +384,7 @@ function CuerpoDelCandidato({ candidate, onClose, onAction }: CuerpoDelCandidato
   const canApprove = candidate.status === 'UNDER_REVIEW';
   const canReject = isOpenForDecision;
   const canRequestInfo = isOpenForDecision;
-  const hayAcciones = canApprove || canReject || canRequestInfo;
+  const hayAcciones = puedeDecidir && (canApprove || canReject || canRequestInfo);
 
   return (
     <>

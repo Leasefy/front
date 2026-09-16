@@ -276,3 +276,42 @@ describe('código y ciudad del inmueble', () => {
     expect(campoDe('Uso del inmueble')).toBe('uso')
   })
 })
+
+/*
+ * 🔴 Nico, 2026-09-13: «¿ya organizaste bien lo de que no vayas a tergiversar
+ * el número de contrato en la migración?». «Consecutivo» a secas es el número
+ * del contrato en un export de contratos — pero si el archivo trae además una
+ * columna de inmueble, puede ser el consecutivo del INMUEBLE, y pegarlo sin
+ * preguntar al número del contrato es exactamente lo que él temía.
+ */
+describe('«Consecutivo» a secas y la columna de inmueble', () => {
+  it('solo, es el consecutivo del contrato y está seguro', () => {
+    const [m] = mapearColumnas(['Consecutivo'])
+    expect(m.campo).toBe('consecutivoContrato')
+    expect(m.certeza).toBe('exacta')
+  })
+
+  it('con «Propiedad» al lado sigue siendo el del contrato, pero pide confirmación', () => {
+    const [consecutivo, propiedad] = mapearColumnas(['Consecutivo', 'Propiedad'])
+    expect(consecutivo.campo).toBe('consecutivoContrato')
+    expect(consecutivo.certeza).toBe('dudosa')
+    expect(consecutivo.porque).toContain('confirma')
+    expect(propiedad.campo).toBe('propiedadCodigoYDireccion')
+  })
+
+  it('con el código o la dirección del inmueble también se pone en duda', () => {
+    expect(mapearColumnas(['Consecutivo', 'Código del inmueble'])[0].certeza).toBe('dudosa')
+    expect(mapearColumnas(['Consecutivo', 'Dirección'])[0].certeza).toBe('dudosa')
+  })
+
+  it('«Consecutivo del contrato» no se pone en duda: ya dice de qué es', () => {
+    const [m] = mapearColumnas(['Consecutivo del contrato', 'Propiedad'])
+    expect(m.campo).toBe('consecutivoContrato')
+    expect(m.certeza).toBe('exacta')
+  })
+
+  it('con otras columnas que no son del inmueble sigue seguro', () => {
+    const [m] = mapearColumnas(['Consecutivo', 'Canon', 'Arrendatario'])
+    expect(m.certeza).toBe('exacta')
+  })
+})

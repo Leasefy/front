@@ -31,6 +31,49 @@ import { useDispersiones } from '@/lib/hooks/useInmobiliaria';
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
 import { ComisionDesglose } from './ComisionDesglose';
 import { mesEnTitulo } from '@/lib/utils/mes';
+import { AlertaAccionable } from '@/components/ui/alerta-accionable';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { AvisoLiquidacionFrenada } from './AvisoLiquidacionFrenada';
+import { leerLiquidacionFrenada, motivoLegible } from '@/lib/api/dispersiones-errores';
+
+/**
+ * Lo que el asistente dice cuando el back no liquidó, en tres escalones:
+ *
+ *   1. Un dato del inmueble frena el mes (`code` conocido) → cuál inmueble,
+ *      el motivo del back y el enlace a su ficha. Sin reintentar: da igual.
+ *   2. Otro 4xx con motivo → el motivo, tal cual lo escribió el back.
+ *   3. Red o servidor → `FalloDeCarga`, que sí ofrece reintentar.
+ */
+function FalloDelAsistente({
+  error,
+  queNoSalio,
+  onReintentar,
+}: {
+  error: unknown;
+  queNoSalio: string;
+  onReintentar?: () => void;
+}) {
+  const frenada = leerLiquidacionFrenada(error);
+  if (frenada) {
+    return <AvisoLiquidacionFrenada frenada={frenada} despues="generar las dispersiones" />;
+  }
+  const motivo = motivoLegible(error);
+  if (motivo) {
+    return (
+      <AlertaAccionable severidad="danger" titulo={queNoSalio} data-testid="asistente-motivo">
+        {motivo}
+      </AlertaAccionable>
+    );
+  }
+  return (
+    <FalloDeCarga
+      error={error}
+      queEs="las dispersiones del mes"
+      onReintentar={onReintentar}
+      enmarcado
+    />
+  );
+}
 
 interface DispersionWizardProps {
   initialMonth?: string;
@@ -160,7 +203,19 @@ export function DispersionWizard({
    * el nombre como «Propietario desconocido».
    */
   const [cargandoPrevia, setCargandoPrevia] = useState(false);
-  const [errorPrevia, setErrorPrevia] = useState<string | null>(null);
+  /*
+   * El error ENTERO, no una frase fija. Antes acá se guardaba «No pudimos
+   * calcular las dispersiones de este mes» y se tiraba lo que el back había
+   * explicado: que las participaciones de un inmueble no suman 100 %, o que
+   * uno con varios dueños lleva impuestos. Con el `code` se sabe cuál
+   * inmueble y a dónde ir; sin él, la persona reintentaba algo que no iba a
+   * cambiar.
+   */
+  const [errorPrevia, setErrorPrevia] = useState<unknown>(null);
+  /** Sube para volver a pedir la vista previa cuando el fallo fue de red o del servidor. */
+  const [intentoPrevia, setIntentoPrevia] = useState(0);
+  /** Lo que el back contestó al confirmar, si no generó. */
+  const [errorAlGenerar, setErrorAlGenerar] = useState<unknown>(null);
   /** Cuántas ya existen: sin esto, «no hay nada» tapa «ya se generaron». */
   const [yaGenerados, setYaGenerados] = useState(0);
 
@@ -196,10 +251,8 @@ export function DispersionWizard({
           seleccionados: borradores.map((b) => b.propietarioId),
         }));
       })
-      .catch(() => {
-        if (!cancelado) {
-          setErrorPrevia('No pudimos calcular las dispersiones de este mes.');
-        }
+      .catch((error: unknown) => {
+        if (!cancelado) setErrorPrevia(error);
       })
       .finally(() => {
         if (!cancelado) setCargandoPrevia(false);
@@ -208,7 +261,7 @@ export function DispersionWizard({
     return () => {
       cancelado = true;
     };
-  }, [state.month]);
+  }, [state.month, intentoPrevia]);
 
   // Check if dispersiones already exist for the month
   const existingDispersiones = useMemo(() => {
@@ -228,6 +281,8 @@ export function DispersionWizard({
       month,
       seleccionados: [],
     }));
+    // El motivo de no haber generado era de OTRO mes.
+    setErrorAlGenerar(null);
   }, []);
 
   // Step validation
@@ -328,6 +383,7 @@ export function DispersionWizard({
   // Submit handler
   const handleSubmit = useCallback(async () => {
     setIsSubmitting(true);
+    setErrorAlGenerar(null);
 
     try {
       /*
@@ -364,8 +420,18 @@ export function DispersionWizard({
       }
 
       onComplete?.([], state.month);
-    } catch {
-      toast.error('Error al generar dispersiones');
+    } catch (error) {
+      /*
+       * Antes: «Error al generar dispersiones», y el motivo del back a la
+       * basura. El back para la corrida ENTERA por un solo inmueble mal
+       * cargado; sin decir cuál, la persona no tiene por dónde empezar. El
+       * aviso con el enlace queda pegado al pie; el toast sólo avisa.
+       */
+      setErrorAlGenerar(error);
+      const frenada = leerLiquidacionFrenada(error);
+      toast.error(frenada?.titulo ?? 'No se generaron las dispersiones', {
+        description: frenada?.mensaje ?? motivoLegible(error) ?? undefined,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -548,12 +614,11 @@ export function DispersionWizard({
                 <p className="text-muted-foreground">Calculando…</p>
               </div>
             ) : errorPrevia ? (
-              <div className="p-12 text-center rounded-lg border border-dashed border-destructive/40">
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  No pudimos calcular este mes
-                </h3>
-                <p className="text-muted-foreground">{errorPrevia}</p>
-              </div>
+              <FalloDelAsistente
+                error={errorPrevia}
+                queNoSalio="No pudimos calcular este mes"
+                onReintentar={() => setIntentoPrevia((n) => n + 1)}
+              />
             ) : state.dispersionDrafts.length === 0 ? (
               <div className="p-12 text-center rounded-lg border border-dashed border-border">
                 <CurrencyCircleDollar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -1032,6 +1097,17 @@ export function DispersionWizard({
             </motion.div>
           </AnimatePresence>
         </div>
+
+        {/* Lo que el back contestó al confirmar, pegado al botón que lo
+            disparó: con el inmueble y su enlace, no un toast que se va. */}
+        {errorAlGenerar != null && (
+          <div className="px-6 pb-4">
+            <FalloDelAsistente
+              error={errorAlGenerar}
+              queNoSalio="No se generaron las dispersiones"
+            />
+          </div>
+        )}
 
         {/* Footer Navigation */}
         <div className="px-6 py-4 border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-muted/20 flex items-center justify-between">

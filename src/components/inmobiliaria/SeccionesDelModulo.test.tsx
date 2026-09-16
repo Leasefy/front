@@ -169,7 +169,8 @@ describe('SeccionesDelModulo — cuándo NO se dibuja', () => {
     permisos.agencyRole = 'AGENTE'
     // Tiene permiso de `estudio`, pero Evaluación de candidatos está oculta
     // (Nico, 2026-09-08): con permiso y todo, la card no aparece.
-    permisos.modulos = ['matching', 'estudio']
+    // `portafolio`: Postulaciones lo pide (S3) y el AGENTE lo tiene por defecto.
+    permisos.modulos = ['portafolio', 'matching', 'estudio']
     render('/panel/inmobiliaria/postulaciones/matching')
     const lista = cards()
     expect(lista.map((c) => c.label)).toEqual(['postulaciones', 'matching'])

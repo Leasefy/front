@@ -8,7 +8,8 @@ import { toast } from '@/components/ui/toast';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { SegmentedControl } from '@leasefy/cadence';
-import { LeasefyLogo } from '@/components/brand';
+import { LeasefyLogotype } from '@/components/brand';
+import { LogoDelAdministrador, esLeasefy, type Administrador } from '@/components/property/AdministradoPor';
 import { useOptionalI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -30,6 +31,17 @@ interface StickyCTAProps {
    * significa «ninguna» y apaga el agendamiento.
    */
   visitTypes?: Array<'IN_PERSON' | 'VIRTUAL'>;
+  /**
+   * El inmueble ya está arrendado: no se ofrece postularse ni agendar visita
+   * (Nico, 2026-09-15, «¿por qué sigue apareciendo que se puede postular?»).
+   * El back ya rechaza la postulación; esto evita invitar a algo imposible.
+   */
+  arrendado?: boolean;
+  /**
+   * Quién administra el inmueble. Otra inmobiliaria ⇒ su logo y su nombre
+   * encabezan la tarjeta; Leasefy o sin inmobiliaria ⇒ el logotipo de Leasefy.
+   */
+  administrador?: Administrador | null;
   /** Monthly rent (COP). Ignored for display when `listingType === 'sale'` — see `salePrice`. */
   price: number;
   adminFee?: number;
@@ -203,6 +215,8 @@ function getScheduleErrorMessage(err: unknown): string {
  */
 export function StickyCTA({
   propertyId,
+  arrendado = false,
+  administrador = null,
   visitTypes,
   price,
   adminFee = 0,
@@ -378,16 +392,29 @@ export function StickyCTA({
           <div className="flex items-start justify-between mb-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                {/* La firma del DS, no el nombre tipeado a mano: acá vivía un
-                    `<p>Leasefy</p>` que no era el logo (Nico, 2026-09-04). Es
-                    el mismo arreglo que ya se hizo en los dos footers. */}
-                <LeasefyLogo size={20} tone="brand" />
+                {/* Encabeza quien administra el inmueble (Nico, 2026-09-15). Si es
+                    otra inmobiliaria, su logo y su nombre; si es Leasefy o no hay
+                    inmobiliaria, el logotipo real de Leasefy (nunca el lockup del
+                    DS, que arma símbolo + «Leasefy» en tipografía). */}
+                {administrador && !esLeasefy(administrador.agencyId) ? (
+                  <>
+                    <LogoDelAdministrador administrador={administrador} tamano={28} />
+                    <span className="max-w-[12rem] truncate text-[15px] font-semibold text-foreground">
+                      {administrador.nombre}
+                    </span>
+                  </>
+                ) : (
+                  <LeasefyLogotype size={20} className="text-fg" title="Leasefy" />
+                )}
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[hsl(var(--success-50))] dark:bg-[hsl(var(--success-500)/0.15)] text-[hsl(var(--success-500))] text-[10px] font-semibold uppercase tracking-wide rounded-full">
                   <Check className="w-3 h-3" />
                   Verificado
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">Respuesta en menos de 24h</p>
+              <p className="text-xs text-muted-foreground">
+                {administrador && !esLeasefy(administrador.agencyId) ? 'Administra este inmueble · ' : ''}
+                Respuesta en menos de 24h
+              </p>
             </div>
             <div className="flex gap-2">
               {onWishlistToggle && (
@@ -497,6 +524,18 @@ export function StickyCTA({
               <p className="text-[11px] text-muted-foreground text-center mt-3">
                 Como inmobiliaria no aplicas ni agendas visitas — comparte el enlace con tus clientes.
               </p>
+            </div>
+          ) : arrendado ? (
+            <div data-testid="inmueble-arrendado" className="flex flex-col gap-4">
+              <div className="rounded-lg bg-surface-muted p-4">
+                <p className="text-[15px] font-semibold text-foreground">Este inmueble ya está arrendado</p>
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                  Ya no recibe postulaciones ni visitas. Te mostramos los que siguen disponibles.
+                </p>
+              </div>
+              <Button asChild className="w-full">
+                <Link href="/propiedades">Ver inmuebles disponibles</Link>
+              </Button>
             </div>
           ) : (
           <>
@@ -843,11 +882,14 @@ export function StickyCTA({
 export function MobileStickyCTA({
   propertyId,
   price,
+  arrendado = false,
   listingType = 'rent',
   salePrice,
 }: {
   propertyId: string;
   price: number;
+  /** Ver `StickyCTA`: arrendado ⇒ ni postularse ni visita. */
+  arrendado?: boolean;
   /** contract.md T-0038 §3.2.2/§3.3 — see `StickyCTA`'s prop doc. */
   listingType?: 'rent' | 'sale';
   /** contract.md T-0038 §3.2.3 — `null`/absent renders "Sin dato", never `$0` (C6). */
@@ -914,6 +956,10 @@ export function MobileStickyCTA({
                     Compartir
                   </>
                 )}
+              </Button>
+            ) : arrendado ? (
+              <Button asChild hideArrow data-testid="mobile-inmueble-arrendado">
+                <Link href="/propiedades">Ver disponibles</Link>
               </Button>
             ) : isSaleListing ? (
               // contract.md T-0038 §3.3, ledger §2.7 O-1 — no postulación,

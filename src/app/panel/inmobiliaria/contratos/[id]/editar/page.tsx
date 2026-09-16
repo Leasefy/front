@@ -36,6 +36,7 @@ import {
 } from '@/lib/hooks/useContracts';
 import type { InsuranceTier, UpdateContractDto } from '@/lib/api/contracts.types';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { mensajeDelFallo, isPermissionError } from '@/lib/contratos/fallo-de-accion';
 import { isoToInputDate } from './iso-to-input-date';
 import {
   MAX_DIAS_DE_PLAZO,
@@ -183,11 +184,9 @@ function EditarContratoContent() {
       if (form.deposit) dto.deposit = Number(form.deposit);
       if (uploadedPdfPath) dto.uploadedPdfPath = uploadedPdfPath;
 
-      const updated = await actions.update(contractId, dto);
-      if (!updated) {
-        setSubmitError('No se pudo actualizar el contrato. Verifica los datos e intenta de nuevo.');
-        return;
-      }
+      // Si el back rechaza (400 con la lista de campos, 403, 409) el error se
+      // relanza y lo lee el `catch` de abajo con su motivo, no un genérico.
+      await actions.update(contractId, dto);
 
       /*
        * 🔴 Acá decía «Fírmalo para enviarlo al inquilino» y mandaba a
@@ -210,7 +209,11 @@ function EditarContratoContent() {
       });
       router.push(`/panel/inmobiliaria/contratos/${contractId}`);
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Error al actualizar el contrato');
+      setSubmitError(
+        isPermissionError(err)
+          ? 'No tienes permiso para editar contratos.'
+          : mensajeDelFallo(err, 'No se pudo actualizar el contrato. Verifica los datos e intenta de nuevo.')
+      );
     }
   };
 

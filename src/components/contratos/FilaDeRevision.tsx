@@ -41,6 +41,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PercentInput } from "@/components/ui/percent-input";
 import { formatCurrency } from "@/lib/format";
+import { bpsComoPorcentaje } from "@/lib/migracion/valores-de-origen";
 import {
   contractsApi,
   type FilaDeMigracion,
@@ -249,6 +250,14 @@ export function FilaDeRevision({
         </div>
       </div>
 
+      {/*
+        Varios dueños con su % (Nico, 2026-09-13): lo que va a quedar en el
+        mandato, dueño por dueño, ANTES de activar. Lo arma el back de la
+        plata de «Valor Canon» (o en partes iguales si el archivo no la trae);
+        si no cuadra, se ven los dueños sin % y el faltante de abajo lo explica.
+      */}
+      <RepartoEntreDuenos reparto={fila.asociacion?.propietario?.reparto} />
+
       {!consignada && !sinInmueble && editable ? (
         <p className="text-xs text-muted-foreground">
           El porcentaje se puede poner cuando el inmueble esté consignado.
@@ -402,6 +411,58 @@ function ComoQuedoElInmueble({
     >
       {dice}
     </p>
+  );
+}
+
+/**
+ * Los dueños del inmueble con su % y su plata, como van a quedar en el
+ * mandato. Sólo con dos o más: con uno no hay reparto que mostrar. Con
+ * problema (la plata no cuadra) los dueños se ven igual, sin %, para que se
+ * sepa quiénes son mientras se corrige el archivo.
+ */
+function RepartoEntreDuenos({
+  reparto,
+}: {
+  reparto?: FilaDeMigracion["asociacion"] extends infer A
+    ? A extends { propietario: { reparto?: infer R } }
+      ? R
+      : never
+    : never;
+}) {
+  if (!reparto || reparto.duenos.length < 2) return null;
+  return (
+    <div className="space-y-1" data-testid="reparto-de-duenos">
+      <p className="text-xs text-muted-foreground">
+        {reparto.duenos.length} dueños
+        {reparto.problema
+          ? " · el reparto no cuadra"
+          : reparto.explicito
+            ? " · reparto del archivo"
+            : " · partes iguales (el archivo no trae porcentajes)"}
+      </p>
+      <ul className="space-y-0.5">
+        {reparto.duenos.map((d, i) => (
+          <li
+            key={`${d.documento ?? d.nombre ?? i}`}
+            className="flex items-baseline justify-between gap-3 text-xs"
+            data-testid="dueno-del-reparto"
+          >
+            <span className="min-w-0 truncate text-foreground">
+              {d.nombre ?? d.documento ?? "Sin nombre"}
+              {d.documento && d.nombre ? (
+                <span className="text-muted-foreground"> · {d.documento}</span>
+              ) : null}
+            </span>
+            <span className="shrink-0 font-mono tabular-nums text-foreground">
+              {d.bps !== null ? `${bpsComoPorcentaje(d.bps)}` : "—"}
+              {d.canon !== null ? (
+                <span className="text-muted-foreground"> · {formatCurrency(d.canon)}</span>
+              ) : null}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

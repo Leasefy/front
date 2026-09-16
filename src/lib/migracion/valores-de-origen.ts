@@ -171,6 +171,29 @@ export function listaDePersonas(v: unknown): PersonaDeOrigen[] {
   return personas;
 }
 
+/**
+ * Una celda hermana numerada con el mismo marcador que los dueños
+ * («[1] 3103640479, [2] 3217834480» → `['3103640479', '3217834480']`), en el
+ * orden de los índices. Sin marcadores devuelve la celda entera como UN
+ * trozo: un teléfono suelto es del `[1]`, no se reparte. Vacío → `[]`.
+ */
+export function listaPorMarcador(v: unknown): string[] {
+  const texto = String(v ?? '').replace(/\s+/g, ' ').trim();
+  if (!texto) return [];
+  const marcadores = [...texto.matchAll(/\[(\d+)\]/g)];
+  if (marcadores.length === 0) return [texto];
+  const trozos: { orden: number; texto: string }[] = [];
+  for (let i = 0; i < marcadores.length; i++) {
+    const desde = (marcadores[i].index ?? 0) + marcadores[i][0].length;
+    const hasta = i + 1 < marcadores.length ? (marcadores[i + 1].index ?? texto.length) : texto.length;
+    trozos.push({
+      orden: Number(marcadores[i][1]),
+      texto: texto.slice(desde, hasta).replace(/[,;]\s*$/, '').trim(),
+    });
+  }
+  return trozos.sort((a, b) => a.orden - b.orden).map((t) => t.texto);
+}
+
 // ── «código - dirección» ────────────────────────────────────────────────────
 
 export interface InmuebleDeOrigen {
@@ -314,6 +337,98 @@ export function plataDeOrigen(v: unknown): number | undefined {
 
   const n = Number(`${entera}.${decimal || '0'}`);
   return Number.isFinite(n) ? signo * n : undefined;
+}
+
+/**
+ * `«$451,000.00, $649,000.00»` → `[451000, 649000]`: la plata de CADA dueño,
+ * en el orden de los dueños (`[1]`, `[2]`).
+ *
+ * Es cómo el export real escribe «Valor Canon» en los 41 contratos con dos
+ * dueños: el mismo canon repartido, en una sola celda. Hasta el 2026-09-13 se
+ * descartaba por no ser UN número (`plataDeOrigen` la devuelve `undefined`), y
+ * ahí estaba el porcentaje real (451000/1100000 = 41 %).
+ *
+ * ── Cómo se parte, y por qué no por cualquier coma ──────────────────────────
+ * La coma también es separador de miles (`$451,000.00`). Se parte por `;`, por
+ * `|`, por salto de línea, por una coma seguida de ESPACIO (un separador de
+ * miles nunca lleva espacio después) o por una coma seguida de `$`. Un
+ * `451000,649000` pegado sin espacio no se distingue de un número escrito raro
+ * y no se adivina: se lee como UN valor.
+ *
+ * Un solo valor devuelve `[n]`; vacío devuelve `[]`; si algún trozo no es
+ * plata, la celda entera vuelve `undefined` — nunca una lista a medias.
+ * Espejo de `parsearListaDeDinero` en el back.
+ */
+export function listaDePlata(v: unknown): number[] | undefined {
+  if (typeof v === 'number') return Number.isFinite(v) ? [Math.round(v)] : undefined;
+  const s = String(v ?? '').trim();
+  if (!s) return [];
+  const trozos = s
+    .split(/\s*;\s*|\s*\|\s*|\s*\n\s*|,\s+|,(?=\s*\$)/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const valores: number[] = [];
+  for (const trozo of trozos) {
+    const n = plataDeOrigen(trozo);
+    if (n === undefined) return undefined;
+    valores.push(Math.round(n));
+  }
+  return valores;
+}
+
+/**
+ * `«60, 40»` / `«60 %, 40 %»` / `«60%;40%»` → `[60, 40]`: el porcentaje de
+ * cada dueño, en el orden de los dueños. Un número suelto devuelve `[n]`;
+ * vacío `[]`; un trozo que no es porcentaje (fuera de 0..100, texto) vuelve
+ * la celda entera `undefined`.
+ */
+export function listaDePorcentajes(v: unknown): number[] | undefined {
+  if (typeof v === 'number') {
+    return Number.isFinite(v) && v >= 0 && v <= 100 ? [v] : undefined;
+  }
+  const s = String(v ?? '').trim();
+  if (!s) return [];
+  // La coma SIN espacio es decimal («33,33 %»): sólo parte la coma con
+  // espacio, el `;`, el `|`, la barra y el salto de línea.
+  const trozos = s
+    .split(/\s*[;|/]\s*|\s*\n\s*|,\s+/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const valores: number[] = [];
+  for (const trozo of trozos) {
+    const n = porcentajeDeOrigen(trozo);
+    if (n === undefined) return undefined;
+    valores.push(n);
+  }
+  return valores;
+}
+
+/** 100 % en puntos básicos: cómo el back guarda `participacionBps`. */
+export const BPS_TOTAL = 10_000;
+
+/**
+ * Plata (o porcentajes) por dueño → puntos básicos que suman EXACTAMENTE
+ * 10.000, con el residuo del redondeo al MAYORITARIO (empate: el primero).
+ * `[451000, 649000]` → `[4100, 5900]`. Misma aritmética que
+ * `repartoProporcional` en el back: el CHECK de la base exige la suma exacta.
+ * Sin valores, o con suma cero, devuelve `[]`.
+ */
+export function repartoEnBps(valores: number[]): number[] {
+  const suma = valores.reduce((a, v) => a + v, 0);
+  if (valores.length === 0 || suma <= 0) return [];
+  const crudos = valores.map((v) => Math.round((v / suma) * BPS_TOTAL));
+  const residuo = BPS_TOTAL - crudos.reduce((a, v) => a + v, 0);
+  let mayor = 0;
+  for (let i = 1; i < valores.length; i++) {
+    if (valores[i] > valores[mayor]) mayor = i;
+  }
+  crudos[mayor] += residuo;
+  return crudos;
+}
+
+/** `5900` → `«59 %»`, `3333` → `«33,33 %»`. Para pintar un reparto. */
+export function bpsComoPorcentaje(bps: number): string {
+  return `${new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 }).format(bps / 100)} %`;
 }
 
 /** `«26,766»` → 26766. Un consecutivo del export trae miles con coma. */

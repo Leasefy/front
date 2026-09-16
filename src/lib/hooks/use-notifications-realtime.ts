@@ -7,7 +7,14 @@
  * postgres_changes subscription on `notification_logs` INSERTs, filtered to the
  * current user. Pattern mirrors the cobranza realtime hooks
  * (use-debtor-calls-realtime.ts) with these specifics:
- *  - Channel name `notifications:{userId}` — one per user.
+ *  - Channel name `notifications:{userId}:{instancia}` — one per hook instance.
+ *    🔴 NO uno por usuario: `supabase.channel(nombre)` devuelve el canal que ya
+ *    existe si el nombre se repite, y ese ya está suscrito. La campana del
+ *    header monta este hook y /inquilino/notificaciones lo monta otra vez: con
+ *    el mismo nombre, el segundo `.on()` caía sobre un canal suscrito y la
+ *    pantalla reventaba con «cannot add `postgres_changes` callbacks … after
+ *    `subscribe()`» (Nico, 2026-09-15). El filtro por usuario vive en `filter`,
+ *    no en el nombre: separar canales no cambia qué filas llegan.
  *  - Single client-side predicate `user_id=eq.{userId}` (postgres_changes
  *    limit); row-level isolation is also enforced by RLS
  *    (`user_id = auth.uid()`) so another user never receives these rows.
@@ -19,7 +26,7 @@
  *    the consumer can refetch and close any gap opened during a disconnect.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getSupabase } from '@/lib/supabase/client'
 import {
   mapRealtimeRowToBackendNotification,
@@ -41,6 +48,11 @@ export function useNotificationsRealtime({
   onReconnect,
 }: UseNotificationsRealtimeOptions): { isConnected: boolean } {
   const [isConnected, setIsConnected] = useState(false)
+  // Fijo por instancia, no por render: si cambiara, re-suscribiría en cada render.
+  const instanciaRef = useRef<string | null>(null)
+  if (instanciaRef.current === null) {
+    instanciaRef.current = Math.random().toString(36).slice(2, 10)
+  }
 
   useEffect(() => {
     if (!userId) return
@@ -48,7 +60,7 @@ export function useNotificationsRealtime({
     if (!supabase) return
 
     const channel = supabase
-      .channel(`notifications:${userId}`)
+      .channel(`notifications:${userId}:${instanciaRef.current}`)
       .on(
         'postgres_changes',
         {

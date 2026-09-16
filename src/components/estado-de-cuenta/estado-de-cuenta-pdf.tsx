@@ -71,6 +71,7 @@ import {
   type AmortizacionDelContrato,
 } from './resumen';
 import { texto } from './textos';
+import { numeroDelContratoDelEstado } from './numero';
 
 // ══ Paleta ══════════════════════════════════════════════════════════════════
 //
@@ -227,6 +228,20 @@ export function paraElPapel(entrada: string): string {
 }
 
 /** `texto()` pasado por el filtro. TODO rótulo del documento sale por acá. */
+/**
+ * «Contrato 1686 · Leasefy #1839» en un migrado, «Contrato #14» en un nativo:
+ * el papel dice de quién es cada número, igual que la pantalla.
+ */
+function tituloDelContratoEnElPapel(
+  contrato: Pick<ContratoDelEstadoDeCuenta, 'numero' | 'numeroDeLeasefy'>,
+): string {
+  const numero = numeroDelContratoDelEstado(contrato);
+  const titulo = frase('estadoDeCuenta.contrato', { numero: numero.principal });
+  return numero.numeroDeLeasefy != null
+    ? `${titulo} · ${frase('estadoDeCuenta.numeroDeLeasefy', { numero: numero.numeroDeLeasefy })}`
+    : titulo;
+}
+
 function frase(clave: string, params?: Record<string, string | number>): string {
   return paraElPapel(texto(clave, params));
 }
@@ -638,7 +653,7 @@ function ContratoEnLaPortada({
     <View style={estilos.filaDeCartera} wrap={false}>
       <View style={{ width: 250, paddingRight: 12 }}>
         <Text style={estilos.numeroDeContrato}>
-          {frase('estadoDeCuenta.contrato', { numero: contrato.numero })}
+          {tituloDelContratoEnElPapel(contrato)}
         </Text>
         <Text style={estilos.direccion}>
           {texto(
@@ -759,7 +774,7 @@ function PaginaDelContrato({
         <View style={estilos.bandaTitulo}>
           <View>
             <Text style={estilos.bandaNumero}>
-              {frase('estadoDeCuenta.contrato', { numero: contrato.numero })}
+              {tituloDelContratoEnElPapel(contrato)}
             </Text>
             <Text style={estilos.bandaDireccion}>
               {texto(

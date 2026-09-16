@@ -36,6 +36,26 @@ export interface AISuggestion {
   accepted: boolean | null; // null = pending
 }
 
+/**
+ * Un dueño cuando la fila trae VARIOS (Nico, 2026-09-13: «un inmueble puede
+ * tener múltiples propietarios con diferentes % del canon»). Sale de la
+ * columna multivalor del archivo real («[1] doc - nombre, [2] doc - nombre»),
+ * del teléfono numerado con el mismo marcador, y de la columna de porcentajes
+ * («60, 40») o de plata por dueño, si vienen.
+ */
+export interface DuenoDelArchivo {
+  documento?: string;
+  nombre?: string;
+  telefono?: string;
+  correo?: string;
+  /** Su % del canon tal como lo escribió el archivo (60 = 60 %). */
+  porcentaje?: number;
+  /** Su parte del canon en pesos, si el archivo la trae repartida. */
+  canon?: number;
+  /** El `[n]` con el que el archivo lo numeró. */
+  orden?: number;
+}
+
 export interface ImportProperty {
   _rowIndex: number;
   /**
@@ -71,6 +91,13 @@ export interface ImportProperty {
   /** Cédula/NIT del propietario: con esto el back resuelve la ficha sin ambigüedad. */
   ownerDocument?: string;
   ownerPhone?: string;
+  /**
+   * TODOS los dueños cuando son dos o más, en el orden del archivo, con su %
+   * o su plata. `ownerName`/`ownerDocument`/`ownerPhone` siguen siendo el `[1]`
+   * (compatibilidad: un archivo de un dueño por fila no cambia en nada).
+   * Viajan al back como `propietarios[]` y quedan escritos en el mandato.
+   */
+  owners?: DuenoDelArchivo[];
   status?: string;
   notes?: string;
   /** contract.md T-0038 §3.2.6 (D5, R6) — "YYYY-MM-DD", agency-only. */
@@ -161,6 +188,11 @@ export const TARGET_FIELDS = [
   { key: 'ownerName', label: 'Propietario', required: false },
   { key: 'ownerDocument', label: 'Cédula / NIT del propietario', required: false },
   { key: 'ownerPhone', label: 'Teléfono propietario', required: false },
+  // Varios dueños con su % (Nico, 2026-09-13): «60, 40» o «60 %, 40 %», en
+  // el mismo orden que los dueños de la columna «Propietario».
+  { key: 'ownerShare', label: '% de cada propietario', required: false },
+  // …o la plata de cada uno («$660.000, $440.000»), si el archivo reparte así.
+  { key: 'ownerRent', label: 'Canon de cada propietario', required: false },
   { key: 'status', label: 'Estado', required: false },
   { key: 'notes', label: 'Observaciones', required: false },
   { key: 'consignedAt', label: 'Fecha de consignación', required: false },

@@ -11,6 +11,7 @@ import { Bell, CreditCard, Envelope, FileText, Tag } from '@phosphor-icons/react
 import { Switch } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { useNotificationSettings } from '@/lib/hooks/useSettings';
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EsqueletoDeSeccion, FilaDeAjuste, TarjetaDeAjustes } from './piezas';
 
 /** Clave de la UI → clave del back. */
@@ -18,7 +19,7 @@ type ClaveDelBack = 'emailApplications' | 'emailPayments' | 'emailContracts' | '
 
 export function SeccionNotificaciones() {
   const { t, locale } = useI18n();
-  const { settings, isLoading, updateSetting } = useNotificationSettings();
+  const { settings, isLoading, errorCrudo, refresh, updateSetting } = useNotificationSettings();
 
   const filas: Array<{ clave: ClaveDelBack; icono: typeof Bell; titulo: string; desc: string }> = [
     {
@@ -53,9 +54,16 @@ export function SeccionNotificaciones() {
     },
   ];
 
-  if (isLoading) return <EsqueletoDeSeccion filas={5} />;
-
+  // Si no se pudo leer lo guardado, no hay perillas que mostrar: las de
+  // fábrica dirían «activado» sobre algo que nadie sabe si está activado.
   return (
+    <EstadoDeDatos
+      cargando={isLoading}
+      error={errorCrudo}
+      queEs="tus preferencias de notificaciones"
+      onReintentar={refresh}
+      esqueleto={<EsqueletoDeSeccion filas={5} />}
+    >
     <TarjetaDeAjustes>
       {filas.map((fila) => (
         <FilaDeAjuste key={fila.clave} icono={fila.icono} titulo={fila.titulo} descripcion={fila.desc}>
@@ -79,5 +87,6 @@ export function SeccionNotificaciones() {
         </FilaDeAjuste>
       ))}
     </TarjetaDeAjustes>
+    </EstadoDeDatos>
   );
 }

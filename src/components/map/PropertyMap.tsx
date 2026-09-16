@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useCallback, useState, useEffect } from 'react';
-import Map, { MapRef, Marker } from 'react-map-gl/maplibre';
+import Map, { FullscreenControl, MapRef, Marker, NavigationControl } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Property } from '@/lib/types/property';
 import { INITIAL_VIEW_STATE, MAP_STYLE, ZOOM_LEVELS } from '@/lib/constants/map';
@@ -10,6 +10,14 @@ import { PriceMarker } from './PriceMarker';
 import { ClusterMarker } from './ClusterMarker';
 import { tieneCoordenadas } from './coordenadas';
 import { cn } from '@/lib/utils';
+
+// Textos de los botones del mapa, en español (MapLibre los trae en inglés).
+const LOCALE_MAPA = {
+  'NavigationControl.ZoomIn': 'Acercar',
+  'NavigationControl.ZoomOut': 'Alejar',
+  'FullscreenControl.Enter': 'Ver el mapa en pantalla completa',
+  'FullscreenControl.Exit': 'Salir de pantalla completa',
+};
 
 export interface MapBounds {
   north: number;
@@ -141,8 +149,13 @@ export function PropertyMap({
         onLoad={handleMapLoad}
         onMoveEnd={updateMapState}
         attributionControl={true}
+        locale={LOCALE_MAPA}
         reuseMaps
       >
+        {/* Acercar, alejar y pantalla completa, como en el mapa de la ficha
+            (Nico, 2026-09-15: «debería tener el zoom y el ampliar como todos»). */}
+        <NavigationControl position="top-right" showCompass={false} />
+        <FullscreenControl position="top-right" />
         {points.map((point) => {
           const [lng, lat] = point.geometry.coordinates;
 

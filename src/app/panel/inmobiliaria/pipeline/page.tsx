@@ -9,8 +9,11 @@ import {
   CalendarCheck,
   CheckCircle,
   ChartLineUp,
+  Plus,
 } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
+import { Button } from '@/components/ui/button';
+import { PermissionGate } from '@/components/auth/PermissionGate';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import {
@@ -26,8 +29,12 @@ import {
   PipelineDetail,
   type PipelineFiltersState,
 } from '@/components/inmobiliaria';
-import { Spinner } from '@/components/ui/spinner';
 import { KpiCard } from '@leasefy/cadence';
+import { usePermissions } from '@/lib/hooks/usePermissions';
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { SinDatos } from '@/components/estado/SinDatos';
+import { KpiValor } from '@/components/estado/KpiValor';
+import { NuevoLeadDialog } from '@/components/inmobiliaria/NuevoLeadDialog';
 import { tasaMedida, textoDeTasa } from '@/lib/tasas';
 
 /**
@@ -38,7 +45,14 @@ function PipelineContent() {
   const { t } = useI18n();
 
   // Fetch data from API
-  const { pipelineItems, isLoading, refetch } = usePipelineItems();
+  // `errorCrudo` es el error entero (status incluido): sin él, un 500/403/red
+  // se veía como seis columnas «Arrastra aquí» y KPIs en 0.
+  const { pipelineItems, isLoading, errorCrudo, refetch } = usePipelineItems();
+  const { canAccess } = usePermissions();
+  // El back exige `pipeline:edit` para mover y `pipeline:create` para crear
+  // (`pipeline.controller.ts`): lo que responde 403 no se ofrece.
+  const puedeMover = canAccess('pipeline', 'edit');
+  const puedeCrear = canAccess('pipeline', 'create');
   const { agentes } = useAgentes();
   const { consignaciones } = useConsignaciones();
 
@@ -58,12 +72,29 @@ function PipelineContent() {
     search: undefined,
   });
 
-  // Sync API data to local state for optimistic updates
+  /*
+   * La copia local (para el arrastre optimista) sigue SIEMPRE a la del back.
+   * Antes sólo se copiaba `if (length > 0)`: al borrar el último lead el back
+   * devolvía `[]` y la tarjeta quedaba de fantasma. Un refresco que falla no
+   * vacía nada: `useApiData` conserva el último `data` bueno.
+   */
   useEffect(() => {
-    if (pipelineItems.length > 0) {
-      setItems(pipelineItems);
-    }
+    setItems(pipelineItems);
   }, [pipelineItems]);
+
+  /*
+   * ¿Ya se mostró el tablero una vez? Después de mover un lead se hace
+   * `refetch()`, que vuelve a poner `isLoading`: sin esto el tablero entero
+   * parpadeaba a spinner tras cada arrastre, y un refresco caído lo borraba.
+   */
+  const [yaSeMostro, setYaSeMostro] = useState(false);
+  useEffect(() => {
+    if (!isLoading && !errorCrudo) setYaSeMostro(true);
+  }, [isLoading, errorCrudo]);
+  const cargandoPorPrimeraVez = isLoading && !yaSeMostro;
+  const falloSinDatos = yaSeMostro ? null : errorCrudo;
+
+  const [creandoLead, setCreandoLead] = useState(false);
 
   // Calculate stats from all items
   const stats = useMemo(() => {
@@ -73,7 +104,10 @@ function PipelineContent() {
     ).length;
     const completedThisMonth = items.filter((i) => {
       if (i.stage !== 'completed') return false;
-      const date = new Date(i.updatedAt);
+      // Cuándo ENTRÓ a «Cerrado», no la última edición: `updatedAt` cambia con
+      // cualquier nota, y un cierre de agosto con una nota de hoy contaba
+      // como cerrado este mes.
+      const date = new Date(i.enteredStageAt);
       const now = new Date();
       return (
         date.getMonth() === now.getMonth() &&
@@ -224,24 +258,42 @@ function PipelineContent() {
     setTimeout(() => setSelectedItem(null), 300);
   }, []);
 
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="p-4 md:p-6 space-y-6">
-        <div className="space-y-1">
-          <h1 className="text-h2 text-fg">
-            {t('inmobiliaria.pipeline.title')}
-          </h1>
-          <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">
-            {t('inmobiliaria.pipeline.subtitle')}
-          </p>
-        </div>
-        <div className="flex items-center justify-center py-12">
-          <Spinner size="lg" />
-        </div>
-      </div>
-    );
-  }
+  /*
+   * Los dos vacíos (`SinDatos`): «nunca entró un lead» invita a cargar uno;
+   * «ningún lead coincide» ofrece quitar los filtros. Antes los dos eran seis
+   * columnas «Arrastra aquí» sin salida.
+   */
+  const hayFiltros = Boolean(
+    filters.agenteId ||
+      filters.consignacionId ||
+      filters.dateFrom ||
+      filters.dateTo ||
+      filters.search,
+  );
+  const limpiarFiltros = useCallback(() => {
+    setFilters({
+      agenteId: undefined,
+      consignacionId: undefined,
+      dateFrom: undefined,
+      dateTo: undefined,
+      search: undefined,
+    });
+  }, []);
+
+  /*
+   * El número de cada tile con los cuatro estados adentro: mientras carga, un
+   * hueco; si la carga falló, «—» con «No se pudo traer». Antes, con el back
+   * caído, los tiles afirmaban «0 leads · 0 en proceso».
+   *
+   * `KpiCard` tipa `value` como string pero lo pinta como hijo
+   * (`children: value` en @leasefy/cadence): el nodo se ve igual que el texto.
+   */
+  const valorDeTile = (valor: string) =>
+    (
+      <KpiValor cargando={cargandoPorPrimeraVez} fallo={falloSinDatos}>
+        {valor}
+      </KpiValor>
+    ) as unknown as string;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -264,22 +316,22 @@ function PipelineContent() {
       >
         <KpiCard
           label={t('inmobiliaria.pipeline.stats.totalLeads')}
-          value={String(stats.total)}
+          value={valorDeTile(String(stats.total))}
           icon={<Users />}
         />
         <KpiCard
           label={t('inmobiliaria.pipeline.stats.inProcess')}
-          value={String(stats.inProcess)}
+          value={valorDeTile(String(stats.inProcess))}
           icon={<Funnel />}
         />
         <KpiCard
           label={t('inmobiliaria.pipeline.stats.closedThisMonth')}
-          value={String(stats.completedThisMonth)}
+          value={valorDeTile(String(stats.completedThisMonth))}
           icon={<CheckCircle />}
         />
         <KpiCard
           label={t('inmobiliaria.pipeline.stats.conversionRate')}
-          value={textoDeTasa(stats.conversionRate, 0)}
+          value={valorDeTile(textoDeTasa(stats.conversionRate, 0))}
           icon={<ChartLineUp />}
         />
       </motion.div>
@@ -292,13 +344,29 @@ function PipelineContent() {
         className="rounded-lg border border-border bg-card overflow-hidden"
       >
         {/* Header with count */}
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3 bg-muted/20">
           <span className="text-sm font-medium text-foreground">
             {t('inmobiliaria.pipeline.board.title')}
           </span>
-          <span className="text-sm text-muted-foreground tabular-nums">
-            {t('inmobiliaria.pipeline.board.count', { filtered: filteredItems.length, total: items.length })}
-          </span>
+          <div className="flex items-center gap-3">
+            {/* «0 de 0 leads» mientras no se sabe también es un cero inventado. */}
+            {yaSeMostro && (
+              <span className="text-sm text-muted-foreground tabular-nums">
+                {t('inmobiliaria.pipeline.board.count', { filtered: filteredItems.length, total: items.length })}
+              </span>
+            )}
+            <PermissionGate module="pipeline" action="create" fallback={null}>
+              <Button
+                size="sm"
+                hideArrow
+                onClick={() => setCreandoLead(true)}
+                data-testid="pipeline-nuevo-lead"
+              >
+                <Plus className="w-4 h-4" />
+                Nuevo lead
+              </Button>
+            </PermissionGate>
+          </div>
         </div>
 
         {/* Filters */}
@@ -309,14 +377,39 @@ function PipelineContent() {
           onFilterChange={handleFilterChange}
         />
 
-        {/* Pipeline Board */}
-        <div className="p-4">
-          <PipelineBoard
-            items={filteredItems}
-            onItemClick={handleCardClick}
-            onStageChange={handleStageChange}
-          />
-        </div>
+        {/* Pipeline Board — con los cuatro estados */}
+        <EstadoDeDatos
+          cargando={cargandoPorPrimeraVez}
+          error={errorCrudo}
+          conservarContenido={yaSeMostro}
+          vacio={filteredItems.length === 0}
+          queEs="el pipeline"
+          onReintentar={refetch}
+          cuandoVacio={
+            <SinDatos
+              hayFiltros={hayFiltros}
+              queSon="leads"
+              icono={Funnel}
+              titulo="Todavía no hay leads en el pipeline"
+              descripcion="Entran solos cuando alguien pide una visita o se postula a uno de tus inmuebles. El que te llega por teléfono lo puedes cargar a mano."
+              crear={
+                puedeCrear
+                  ? { label: 'Nuevo lead', onClick: () => setCreandoLead(true) }
+                  : undefined
+              }
+              onLimpiarFiltros={limpiarFiltros}
+            />
+          }
+        >
+          <div className="p-4">
+            <PipelineBoard
+              items={filteredItems}
+              onItemClick={handleCardClick}
+              onStageChange={handleStageChange}
+              puedeMover={puedeMover}
+            />
+          </div>
+        </EstadoDeDatos>
       </motion.div>
 
       {/* Detail Modal */}
@@ -325,7 +418,20 @@ function PipelineContent() {
         onClose={handleDetailClose}
         item={selectedItem}
         onStageChange={handleStageChange}
+        puedeEditar={puedeMover}
       />
+
+      {puedeCrear && (
+        <NuevoLeadDialog
+          abierto={creandoLead}
+          consignaciones={consignaciones}
+          onCerrar={() => setCreandoLead(false)}
+          onCreado={() => {
+            setCreandoLead(false);
+            void refetch();
+          }}
+        />
+      )}
     </div>
   );
 }

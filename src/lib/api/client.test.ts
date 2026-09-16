@@ -1,5 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { apiClient, ApiError, setAccessToken, setUnauthorizedHandler, esCodigoDeSesionMuerta, setTokenRefresher, getAccessToken } from './client'
+import {
+  apiClient,
+  ApiError,
+  setAccessToken,
+  setUnauthorizedHandler,
+  esCodigoDeSesionMuerta,
+  setTokenRefresher,
+  getAccessToken,
+  clearInFlightGets,
+} from './client'
 import { resetSessionTerminal, terminarSesion } from '@/lib/auth/session-terminal'
 
 // ---------------------------------------------------------------------------
@@ -350,6 +359,153 @@ describe('ApiError — `code` forwarding on the generic non-2xx branch', () => {
 
     const err = (await apiClient.get('/x').catch((e) => e)) as ApiError
     expect(err.code).toBeUndefined()
+  })
+})
+
+/**
+ * T-0082 WU-1 (F1/F2) — an explicit `token` used to always bypass
+ * `compartirGet`'s in-flight dedup, so two concurrent explicit-token GETs to
+ * the same path (the login bootstrap's `fetchUser` + `fetchAgencyProfile`
+ * pattern) always hit the network twice. The token is per-session, not
+ * per-call, so sharing by path alone is safe.
+ */
+describe('apiClient.get — explicit-token GETs share the in-flight request', () => {
+  it('two concurrent calls with the same explicit token to the same path produce one network call', async () => {
+    const fetchFalso = vi.fn(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                status: 200,
+                ok: true,
+                json: async () => ({ id: 'u1' }),
+                text: async () => JSON.stringify({ id: 'u1' }),
+              } as unknown as Response),
+            10,
+          ),
+        ),
+    )
+    vi.stubGlobal('fetch', fetchFalso)
+
+    const [a, b] = await Promise.all([
+      apiClient.get('/users/me', 'token-de-sesion'),
+      apiClient.get('/users/me', 'token-de-sesion'),
+    ])
+
+    expect(fetchFalso).toHaveBeenCalledTimes(1)
+    expect(a).toEqual({ id: 'u1' })
+    expect(b).toEqual({ id: 'u1' })
+  })
+
+  it('is NOT a cache: once the shared promise settles, the next call goes out again', async () => {
+    const fetchFalso = stubFetch(200, { id: 'u1' })
+    vi.stubGlobal('fetch', fetchFalso)
+
+    await apiClient.get('/users/me', 'token-de-sesion')
+    await apiClient.get('/users/me', 'token-de-sesion')
+
+    expect(fetchFalso).toHaveBeenCalledTimes(2)
+  })
+
+  /**
+   * verify-1.md §2 CRITICAL — the dangerous case the original WU-1 tests never
+   * exercised: two DIFFERENT identities (different explicit tokens) racing the
+   * SAME path. Mixing two identities in one response is the worst possible
+   * error here — same-tab sign-out → sign-in as another account
+   * (`AuthForm.tsx`'s `quiereOtraCuenta`) can overlap exactly like this. The
+   * fix keys `compartirGet` by `path` + token (`claveDeGet` in `client.ts`), so
+   * two different tokens must NEVER share a network call or a response body,
+   * even when they race in flight at the same millisecond.
+   */
+  it('two concurrent calls with DIFFERENT explicit tokens to the same path do NOT share — two network calls, each with its own body', async () => {
+    const fetchFalso = vi.fn((_url: string, init?: RequestInit) => {
+      const auth = (init?.headers as Record<string, string>)?.['Authorization'] ?? ''
+      const body = auth === 'Bearer token-A' ? { id: 'user-A' } : { id: 'user-B' }
+      return new Promise((resolve) =>
+        setTimeout(
+          () =>
+            resolve({
+              status: 200,
+              ok: true,
+              json: async () => body,
+              text: async () => JSON.stringify(body),
+            } as unknown as Response),
+          10,
+        ),
+      )
+    })
+    vi.stubGlobal('fetch', fetchFalso)
+
+    const [a, b] = await Promise.all([
+      apiClient.get('/users/me', 'token-A'),
+      apiClient.get('/users/me', 'token-B'),
+    ])
+
+    expect(fetchFalso).toHaveBeenCalledTimes(2)
+    expect(a).toEqual({ id: 'user-A' })
+    expect(b).toEqual({ id: 'user-B' })
+  })
+
+  /**
+   * verify-1.md §2 — the implicit (no-token) path has no identity to key by at
+   * all: it shares by `path` alone, same as before this fix. The only guard
+   * against a stale in-flight implicit GET leaking into the NEXT session (in
+   * the same tab, no page reload) is clearing the shared map on sign-out.
+   * `clearInFlightGets` (re-exported from `refresco-de-datos.ts`'s
+   * `descartarEnVuelo`) is what `AuthProvider` calls on `SIGNED_OUT` and on its
+   * own `signOut()` — see `auth-context.tsx`.
+   */
+  it('clearInFlightGets drops a still-pending implicit GET, so the next call after "sign-out" starts fresh instead of inheriting it', async () => {
+    let resolveA!: (res: unknown) => void
+    const fetchFalso = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveA = resolve
+          }),
+      )
+      .mockImplementationOnce(() =>
+        Promise.resolve({
+          status: 200,
+          ok: true,
+          json: async () => ({ id: 'user-B' }),
+          text: async () => JSON.stringify({ id: 'user-B' }),
+        } as unknown as Response),
+      )
+    vi.stubGlobal('fetch', fetchFalso)
+
+    // User A's implicit GET (no explicit token — reads `_accessToken`) is still
+    // in flight when "sign-out" happens. An implicit call awaits the
+    // session-resolved gate before it actually reaches `fetch` (see
+    // `esperarRespuestaDeSesion` in client.ts) — flush that microtask first.
+    const pendingA = apiClient.get('/users/me')
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(fetchFalso).toHaveBeenCalledTimes(1)
+
+    // Simulates AuthProvider's SIGNED_OUT / signOut() cleanup.
+    clearInFlightGets()
+
+    // User B signs in and the SAME implicit path is requested again — without
+    // the clear, this would have reused A's still-pending promise (same key:
+    // `path` alone). With the clear, it must go out as a fresh network call.
+    const pendingB = apiClient.get('/users/me')
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(fetchFalso).toHaveBeenCalledTimes(2)
+
+    resolveA({
+      status: 200,
+      ok: true,
+      json: async () => ({ id: 'user-A' }),
+      text: async () => JSON.stringify({ id: 'user-A' }),
+    })
+
+    const [a, b] = await Promise.all([pendingA, pendingB])
+    expect(a).toEqual({ id: 'user-A' })
+    expect(b).toEqual({ id: 'user-B' })
   })
 })
 

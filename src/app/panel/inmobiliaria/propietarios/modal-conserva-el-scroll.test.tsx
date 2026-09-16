@@ -46,6 +46,11 @@ vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children?: React.ReactNode }) => children,
 }));
 
+// Con todos los permisos: el modal de alta sólo se abre para quien puede crear.
+vi.mock('@/lib/hooks/usePermissions', () => ({
+  usePermissions: () => ({ canAccess: () => true, isLoading: false }),
+}));
+
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
   usePropietarios: () => ({
     propietarios: [],

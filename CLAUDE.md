@@ -70,7 +70,25 @@ activity feed, execution panel).
 
 ## Auth y permisos
 
-- `AuthProvider` escucha `supabase.auth.onAuthStateChange` y llama `GET /users/me` al back.
+- `AuthProvider` escucha `supabase.auth.onAuthStateChange` y llama **una sola vez**
+  `GET /users/me/bootstrap` (T-0082), que compone perfil + rol + agencia (+ permisos
+  efectivos) + suscripción + estado de onboarding en una sola respuesta
+  (`src/lib/api/bootstrap.service.ts`). Los cinco endpoints que compone
+  (`GET /users/me`, `GET /inmobiliaria/agency`, `GET /inmobiliaria/agency/my-permissions`,
+  `GET /inmobiliaria/subscription` / `GET /subscriptions/me`, `GET /users/me/onboarding/status`)
+  siguen vivos, sin cambios, como **fallback por sección**: si el bootstrap reporta esa
+  sección como fallida (`errors[]`) o no logueada (`agency: null`), el llamador original
+  vuelve a pegarle directo a su endpoint. `refreshUser()` usa el mismo bootstrap.
+- `src/lib/auth/bootstrap-seed.ts` — singleton de módulo (no React state) que entrega, UNA
+  sola vez por campo, lo que el bootstrap ya resolvió a `PermissionsContext`,
+  `useAgencySubscription` y `useMySubscription`, para que esos hooks no vuelvan a pedir en
+  el primer mount lo que el login ya trajo. Un segundo mount (revisita de ruta) siempre cae
+  al fetch en vivo — no es una caché, es dato inicial de un solo uso. Se limpia en
+  `SIGNED_OUT`/`signOut()` — el seed de una sesión NUNCA debe llegar al próximo login en la
+  misma pestaña.
+- El agent-side `GET {agentUrl}/api/agency/{id}/my-permissions` (cobranza/cotizador) NO se
+  plegó en el bootstrap a propósito (pondría una llamada S2S back→agent en el camino
+  crítico del login) — sigue siempre disparándose desde `PermissionsContext.tsx`.
 - Guards client-side (no middleware): `ProtectedRoute`, `AgencyRoleGuard`, `PermissionGate`.
 - `PermissionsContext.canAccess(module, action)` — gate granular; carga permisos de back Y agent.
 - Roles front: `tenant | landlord | agency`. Roles de agencia en `src/lib/auth/agency-roles.ts`
@@ -118,3 +136,4 @@ TDD, testing, estándares, living-docs). Cargá la skill que aplique antes de to
 | Ubicación de agentes IA | repo separado `Leasefy/agent` | Microservicio dueño de los agentes; el front llama por HTTP. 2026-04-07 (commit `60e773c`) |
 | Plan gating de IA | solo planes Flex | Los agentes IA son el diferenciador del plan Flex |
 | Colores UI agentes | neutro/sobrio | Sin colores estridentes |
+| Login bootstrap (T-0082) | un solo `GET /users/me/bootstrap` compone 5 llamadas; los 5 endpoints originales quedan como fallback por sección, nunca se retiran | Cortar el fan-out de requests post-login sin introducir una caché ni romper la degradación fina que ya existía por endpoint |

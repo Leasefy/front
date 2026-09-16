@@ -9,6 +9,7 @@ import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Card, Spinner } from '@/components/ui';
+import { toast } from '@/components/ui/toast';
 import { Eyebrow, StatusBadge, MonoLabel } from '@leasefy/cadence';
 import { ContractPreview } from '@/components/contract/ContractPreview';
 import { SignatureForm } from '@/components/contract/SignatureForm';
@@ -17,6 +18,7 @@ import { AuditTrail } from '@/components/contract/AuditTrail';
 import type { SelectedInsurance } from '@/lib/types/insurance';
 import { CONTRACT_TEMPLATES, getTemplateById } from '@/lib/constants/contract-templates';
 import { useContracts, useContractActions } from '@/lib/hooks/useContracts';
+import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 import { useLandlordProperty, useCandidate } from '@/lib/hooks/useLandlord';
 import { CONTRACT_TYPE_LABELS, CONTRACT_TYPE_DESCRIPTIONS, getContractTypeLabel } from '@/lib/types/contract';
 import type { Contract, ContractType } from '@/lib/types/contract';
@@ -292,21 +294,25 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
     const endDate = end.toISOString().slice(0, 10);
 
     setIsCreating(true);
-    const newContract = await actions.create({
-      applicationId: candidateId, // candidateId === applicationId en esta ruta
-      startDate,
-      endDate,
-      monthlyRent: property.monthlyRent,
-      deposit: property.deposit ?? property.monthlyRent,
-      paymentDay: 1,
-      insuranceTier: 'NONE',
-    });
     void selectedType;
-    if (newContract) {
+    try {
+      const newContract = await actions.create({
+        applicationId: candidateId, // candidateId === applicationId en esta ruta
+        startDate,
+        endDate,
+        monthlyRent: property.monthlyRent,
+        deposit: property.deposit ?? property.monthlyRent,
+        paymentDay: 1,
+        insuranceTier: 'NONE',
+      });
       setContract(newContract);
       refetchContracts();
+    } catch (err) {
+      // Las acciones relanzan el fallo del back: antes acá no pasaba nada visible.
+      toast.error('No se pudo crear el contrato.', { description: mensajeDelFallo(err, 'Intenta de nuevo.') });
+    } finally {
+      setIsCreating(false);
     }
-    setIsCreating(false);
   };
 
   // Map the UI tier ('none'|'basic'|'premium') to the contract DTO tier ('NONE'|'BASIC'|'PREMIUM').
@@ -323,28 +329,31 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
     // so the insurance update must happen first to avoid a re-sign loop.
     const desiredTier = INSURANCE_TIER_MAP[selectedInsurance.tier];
     let contractToSign = contract;
-    if (desiredTier !== contractToSign.insuranceTier) {
-      const updatedTier = await actions.update(contractToSign.id, { insuranceTier: desiredTier });
-      if (updatedTier) {
+    try {
+      if (desiredTier !== contractToSign.insuranceTier) {
+        const updatedTier = await actions.update(contractToSign.id, { insuranceTier: desiredTier });
         contractToSign = updatedTier;
         setContract(updatedTier);
       }
-    }
 
-    const consent = contractToSign.uploadedPdfPath
-      ? 'Confirmo digitalmente que el PDF adjunto contiene mi firma manuscrita/presencial y acepto todos sus términos.'
-      : 'Acepto los términos y condiciones de este contrato de arrendamiento y confirmo que la información proporcionada es verídica.';
-    const updated = await actions.signAsLandlord(contractToSign.id, {
-      acceptedTerms: true,
-      consentText: consent,
-      signatureData,
-      otpVerificationToken,
-    });
-    if (updated) {
+      const consent = contractToSign.uploadedPdfPath
+        ? 'Confirmo digitalmente que el PDF adjunto contiene mi firma manuscrita/presencial y acepto todos sus términos.'
+        : 'Acepto los términos y condiciones de este contrato de arrendamiento y confirmo que la información proporcionada es verídica.';
+      const updated = await actions.signAsLandlord(contractToSign.id, {
+        acceptedTerms: true,
+        consentText: consent,
+        signatureData,
+        otpVerificationToken,
+      });
       setContract(updated);
       refetchContracts();
+    } catch (err) {
+      // Antes: si fallaba el cambio de seguro se firmaba igual con el tier viejo,
+      // y si fallaba la firma no se decía nada. Ahora se corta y se dice el motivo.
+      toast.error('No se pudo firmar el contrato.', { description: mensajeDelFallo(err, 'Intenta de nuevo.') });
+    } finally {
+      setIsSigning(false);
     }
-    setIsSigning(false);
   };
 
   // Loading state

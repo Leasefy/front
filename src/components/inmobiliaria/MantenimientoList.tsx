@@ -54,6 +54,17 @@ import {
   DropdownListTrigger,
 } from '@/components/ui/dropdown-menu';
 import { IconButton } from '@leasefy/cadence';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { SinDatos } from '@/components/estado/SinDatos';
 
 // ============================================================================
 // Types
@@ -66,6 +77,11 @@ interface MantenimientoListProps {
   onApproveQuote?: (solicitud: SolicitudMantenimiento, quoteId: string) => void;
   onComplete?: (solicitud: SolicitudMantenimiento) => void;
   onCancel?: (solicitud: SolicitudMantenimiento) => void;
+  /**
+   * Crear la primera solicitud desde el vacío. En modo `minimal` los filtros
+   * no se ven, así que el vacío era un cartel sin salida.
+   */
+  onCrear?: () => void;
   /** Hide the summary cards and filters - useful when embedded in a parent with its own UI */
   minimal?: boolean;
 }
@@ -492,6 +508,7 @@ export function MantenimientoList({
   onApproveQuote,
   onComplete,
   onCancel,
+  onCrear,
   minimal = false,
 }: MantenimientoListProps) {
   const { t, formatDate: fmtDate } = useI18n();
@@ -502,6 +519,21 @@ export function MantenimientoList({
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('priority');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  /*
+   * Cancelar es un estado TERMINAL: el back no tiene reapertura. Desde los tres
+   * puntos se cancelaba a un clic —el mismo gesto que «Ver detalles», un ítem
+   * más abajo—, así que se pide confirmación diciendo que no hay vuelta atrás.
+   * El detalle ya lo hacía; la lista era la única puerta sin pregunta.
+   */
+  const [solicitudACancelar, setSolicitudACancelar] = useState<SolicitudMantenimiento | null>(null);
+
+  const limpiarFiltros = () => {
+    setTypeFilter('all');
+    setPriorityFilter('all');
+    setStatusFilter('all');
+    setSearchQuery('');
+  };
 
   // Filter and Sort data
   const filteredData = useMemo(() => {
@@ -635,10 +667,14 @@ export function MantenimientoList({
                 key={solicitud.id}
                 solicitud={solicitud}
                 onViewDetails={() => onViewDetails?.(solicitud)}
-                onAddQuote={() => onAddQuote?.(solicitud)}
-                onApproveQuote={(quoteId) => onApproveQuote?.(solicitud, quoteId)}
-                onComplete={() => onComplete?.(solicitud)}
-                onCancel={() => onCancel?.(solicitud)}
+                // Sólo se pasa lo que el padre atiende. Envolver siempre en una
+                // flecha hacía que la tarjeta viera un callback aunque el padre
+                // no mandara ninguno (sin permiso de edición), y el menú ofrecía
+                // cotizar, completar y cancelar para terminar en un 403.
+                onAddQuote={onAddQuote ? () => onAddQuote(solicitud) : undefined}
+                onApproveQuote={onApproveQuote ? (quoteId) => onApproveQuote(solicitud, quoteId) : undefined}
+                onComplete={onComplete ? () => onComplete(solicitud) : undefined}
+                onCancel={onCancel ? () => setSolicitudACancelar(solicitud) : undefined}
                 t={t}
                 fmtDate={fmtDate}
               />
@@ -646,17 +682,19 @@ export function MantenimientoList({
           </AnimatePresence>
         </div>
       ) : (
-        <div className="p-12 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-            <Wrench className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold text-foreground mb-1">
-            {t('inmobiliaria.mantenimiento.noRequestsToShow')}
-          </h3>
-          <p className="text-muted-foreground">
-            {hasFilters ? t('inmobiliaria.mantenimiento.adjustFilters') : t('inmobiliaria.mantenimiento.noRequestsRegistered')}
-          </p>
-        </div>
+        // Los dos vacíos: nunca hubo solicitudes (ofrece crear) o hay pero el
+        // filtro no deja ver ninguna (ofrece quitarlo). `queSon` es «arreglos»
+        // porque el componente arma «Ningún <singular> coincide…» y
+        // «Ningún solicitud» no se dice.
+        <SinDatos
+          queSon="arreglos"
+          icono={Wrench}
+          titulo="Todavía no hay solicitudes de mantenimiento"
+          descripcion="Cuando un inquilino reporte un arreglo o registres uno, aparece acá."
+          hayFiltros={hasFilters}
+          onLimpiarFiltros={limpiarFiltros}
+          crear={onCrear ? { label: 'Nueva solicitud', onClick: onCrear } : undefined}
+        />
       )}
 
       {/* Pie del listado: cuántas solicitudes hay, cuáles se ven y cuántas por
@@ -673,6 +711,37 @@ export function MantenimientoList({
           />
         </div>
       )}
+
+      <AlertDialog
+        open={solicitudACancelar !== null}
+        onOpenChange={(abierto) => {
+          if (!abierto) setSolicitudACancelar(null);
+        }}
+      >
+        <AlertDialogContent data-testid="confirmar-cancelar-solicitud">
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Cancelar esta solicitud?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {solicitudACancelar
+                ? `«${solicitudACancelar.title}» en ${solicitudACancelar.propertyTitle} queda cancelada y no se puede reabrir. Si el arreglo vuelve a hacer falta, tendrás que crear una solicitud nueva.`
+                : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Volver</AlertDialogCancel>
+            <AlertDialogAction
+              tone="danger"
+              data-testid="confirmar-cancelar-solicitud-si"
+              onClick={() => {
+                if (solicitudACancelar) onCancel?.(solicitudACancelar);
+                setSolicitudACancelar(null);
+              }}
+            >
+              Sí, cancelar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

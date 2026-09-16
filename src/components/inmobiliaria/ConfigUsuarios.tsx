@@ -594,23 +594,27 @@ export function ConfigUsuarios({
                             </DropdownListItem>
                           )}
 
-                          {/* Edit Role */}
-                          <DropdownListItem
-                            className="gap-3"
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setEditRoleModalOpen(true);
-                            }}
-                          >
-                            <PencilSimple className="w-4 h-4" />
-                            <span className="text-sm">{t('inmobiliaria.config.users.editRole')}</span>
-                          </DropdownListItem>
-
-                          {/* Resend Invite (if invited) */}
-                          {user.status === 'invited' && (
+                          {/* Cada acción aparece sólo si alguien la atiende: sin permiso
+                              para administrar el equipo, el padre no las pasa y ofrecerlas
+                              era mandar a la persona a un 403. */}
+                          {onUpdateRole && (
                             <DropdownListItem
                               className="gap-3"
-                              onClick={() => onResendInvite?.(user.id)}
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setEditRoleModalOpen(true);
+                              }}
+                            >
+                              <PencilSimple className="w-4 h-4" />
+                              <span className="text-sm">{t('inmobiliaria.config.users.editRole')}</span>
+                            </DropdownListItem>
+                          )}
+
+                          {/* Resend Invite (if invited) */}
+                          {user.status === 'invited' && onResendInvite && (
+                            <DropdownListItem
+                              className="gap-3"
+                              onClick={() => onResendInvite(user.id)}
                             >
                               <ArrowClockwise className="w-4 h-4" />
                               <span className="text-sm">{t('inmobiliaria.config.users.resendInvite')}</span>
@@ -618,36 +622,41 @@ export function ConfigUsuarios({
                           )}
 
                           {/* Toggle Status */}
-                          <DropdownListItem
-                            className="gap-3"
-                            onClick={() => onToggleStatus?.(user.id)}
-                          >
-                            {user.status === 'active' ? (
-                              <>
-                                <UserMinus className="w-4 h-4" />
-                                <span className="text-sm">{t('inmobiliaria.config.users.deactivate')}</span>
-                              </>
-                            ) : (
-                              <>
-                                <UserCheck className="w-4 h-4" />
-                                <span className="text-sm">{t('inmobiliaria.config.users.activate')}</span>
-                              </>
-                            )}
-                          </DropdownListItem>
-
-                          <DropdownListSeparator />
+                          {onToggleStatus && (
+                            <DropdownListItem
+                              className="gap-3"
+                              onClick={() => onToggleStatus(user.id)}
+                            >
+                              {user.status === 'active' ? (
+                                <>
+                                  <UserMinus className="w-4 h-4" />
+                                  <span className="text-sm">{t('inmobiliaria.config.users.deactivate')}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <UserCheck className="w-4 h-4" />
+                                  <span className="text-sm">{t('inmobiliaria.config.users.activate')}</span>
+                                </>
+                              )}
+                            </DropdownListItem>
+                          )}
 
                           {/* Delete */}
-                          <DropdownListItem
-                            className="gap-3 text-danger focus:text-danger"
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setDeleteModalOpen(true);
-                            }}
-                          >
-                            <Trash className="w-4 h-4" />
-                            <span className="text-sm">{t('inmobiliaria.common.delete')}</span>
-                          </DropdownListItem>
+                          {onDelete && (
+                            <>
+                              <DropdownListSeparator />
+                              <DropdownListItem
+                                className="gap-3 text-danger focus:text-danger"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setDeleteModalOpen(true);
+                                }}
+                              >
+                                <Trash className="w-4 h-4" />
+                                <span className="text-sm">{t('inmobiliaria.common.delete')}</span>
+                              </DropdownListItem>
+                            </>
+                          )}
                         </DropdownListContent>
                       </DropdownList>
                     </TableCell>

@@ -36,6 +36,10 @@ const ICONO: Record<TipoDeFallo, Icon> = {
   // T-0076: un 429 se pinta con un reloj, no con la octógono de alarma del
   // «problema nuestro» — es un límite de ritmo, no una falla.
   limitado: Timer,
+  // Sin créditos: está bloqueado hasta que alguien recargue, no roto.
+  sinCreditos: Lock,
+  // Se cortó por tiempo: el mismo reloj que el límite de ritmo.
+  tardo: Timer,
 }
 
 export interface FalloDeCargaProps {

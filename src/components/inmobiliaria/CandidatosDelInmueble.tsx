@@ -13,6 +13,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Users, ArrowRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { useDecisionDeCandidato } from '@/components/inmobiliaria/use-decision-de-candidato';
 import type { LandlordCandidate, LandlordApplicationStatus } from '@/lib/api/applications.types';
@@ -27,6 +29,8 @@ const ESTADO: Record<LandlordApplicationStatus, { label: string; bg: string; tex
   NEEDS_INFO: { label: 'Pide info', bg: 'bg-warning-soft', text: 'text-warning' },
   WITHDRAWN: { label: 'Retirado', bg: 'bg-surface-muted', text: 'text-fg-muted' },
   CONTRACT_FAILED: { label: 'Contrato fallido', bg: 'bg-danger-soft', text: 'text-danger' },
+  NO_ADJUDICADO: { label: 'No adjudicado', bg: 'bg-surface-muted', text: 'text-fg-muted' },
+  PREAPPROVED: { label: 'Preaprobado', bg: 'bg-primary-soft', text: 'text-primary' },
 };
 
 /** Los que todavía esperan una decisión — es el número que importa. */
@@ -44,7 +48,8 @@ export function CandidatosDelInmueble({
   consignacionId: string;
 }) {
   const [candidatos, setCandidatos] = useState<LandlordCandidate[] | null>(null);
-  const [fallo, setFallo] = useState(false);
+  /** El error entero: `FalloDeCarga` decide con su status si reintentar sirve. */
+  const [fallo, setFallo] = useState<unknown>(null);
 
   /*
    * Una sola lectura, y la última manda.
@@ -61,10 +66,10 @@ export function CandidatosDelInmueble({
       const lista = await landlordApplicationsApi.getCandidates(propertyId);
       if (peticion.current !== mia) return;
       setCandidatos(lista);
-      setFallo(false);
-    } catch {
+      setFallo(null);
+    } catch (e) {
       if (peticion.current !== mia) return;
-      setFallo(true);
+      setFallo(e ?? new Error('No pudimos cargar los candidatos'));
     }
   }, [propertyId]);
 
@@ -113,7 +118,9 @@ export function CandidatosDelInmueble({
           <div>
             <h3 className="text-sm font-semibold text-fg">Candidatos</h3>
             <p className="text-xs text-fg-muted">
-              {candidatos === null
+              {!propertyId
+                ? 'Sin inmueble asociado'
+                : candidatos === null
                 ? fallo
                   ? 'No pudimos cargarlos'
                   : 'Cargando…'
@@ -131,6 +138,32 @@ export function CandidatosDelInmueble({
           </span>
         )}
       </div>
+
+      {/* F7: un mandato migrado de cartera nace sin inmueble, y a los
+          candidatos se les postula a un INMUEBLE. `cargar` no pide nada sin
+          `propertyId`, así que la tarjeta decía «Cargando…» para siempre. */}
+      {!propertyId && (
+        <SinDatos
+          queSon="candidatos"
+          icono={Users}
+          titulo="Esta consignación no tiene un inmueble asociado"
+          descripcion="Los candidatos se postulan a un inmueble: cuando le asocies uno, aparecen acá."
+          className="py-8"
+        />
+      )}
+
+      {/* F8: el fallo dice qué pasó y, si reintentar puede cambiar algo, lo
+          ofrece. Antes quedaba «No pudimos cargarlos» sin salida. Si ya había
+          una lista (falló la relectura después de decidir), se conserva. */}
+      {propertyId && candidatos === null && Boolean(fallo) && (
+        <FalloDeCarga
+          error={fallo}
+          queEs="los candidatos"
+          onReintentar={cargar}
+          enmarcado={false}
+          className="py-8"
+        />
+      )}
 
       {ordenados !== null && ordenados.length > 0 && (
         <ul className="divide-y divide-border">

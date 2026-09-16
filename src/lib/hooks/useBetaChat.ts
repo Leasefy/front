@@ -43,6 +43,8 @@ import {
   type BackendAccionPropuesta,
 } from '@/lib/api/ai-hub-acciones';
 import { enviarFeedbackDeChat } from '@/lib/api/ai-hub-feedback';
+import { ApiError } from '@/lib/api/client';
+import { clasificarFallo } from '@/lib/errores/clasificar';
 
 /**
  * Backend snapshot (has `generatedAt`) → the front `ChatSnapshot` (numeric KPIs
@@ -391,6 +393,34 @@ export interface UseBetaChatReturn {
 
 export interface UseBetaChatOptions {
   onTabChange?: (tab: string) => void;
+}
+
+/**
+ * Lo que dice la burbuja cuando el turno falló (B2).
+ *
+ * 🔴 Antes era UN texto fijo —«No pude conectarme con el asistente»— para
+ * todo. Con la API del modelo sin saldo, el operador leía «no me pude
+ * conectar» y reintentaba en loop: el problema no era la conexión, era el
+ * plan. La clasificación es la misma de toda la app (`clasificarFallo`); acá
+ * sólo se dice en la voz del asistente. El texto crudo del error nunca se
+ * muestra.
+ */
+export function mensajeDeFalloDelChat(error: unknown): string {
+  const fallo = clasificarFallo(error);
+  switch (fallo.tipo) {
+    case 'sinCreditos':
+      return 'Tu plan se quedó sin créditos de IA. Pídele a quien administra la cuenta que recargue o cambie de plan.';
+    case 'limitado':
+      return 'Demasiadas consultas seguidas. Espera un momento y vuelve a preguntar.';
+    case 'tardo':
+      return 'El asistente tardó demasiado en responder. Prueba de nuevo en un momento.';
+    case 'sinSesion':
+      return 'Tu sesión se venció. Vuelve a entrar para seguir conversando.';
+    case 'sinPermiso':
+      return 'Tu rol en la inmobiliaria no incluye el asistente. Pídele a un administrador que te lo habilite.';
+    default:
+      return 'No pude conectarme con el asistente en este momento. Prueba de nuevo en un momento.';
+  }
 }
 
 export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
@@ -757,9 +787,12 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             ? c
             : {
                 ...c,
+                // B1: `error`, no `complete`. Con `complete` el aviso se
+                // pintaba como una respuesta más —con pulgares— y viajaba
+                // como historial al modelo.
                 messages: c.messages.map((m) =>
                   m.id === assistantId
-                    ? { ...m, content: message, status: 'complete' as MessageStatus }
+                    ? { ...m, content: message, status: 'error' as MessageStatus }
                     : m
                 ),
                 updatedAt: new Date(),
@@ -1335,12 +1368,20 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       const activeConv = conversations.find((c) => c.id === conversationId);
       // History from prior turns (completed), oldest→newest, capped at 10. Sent
       // as a fallback; the backend prefers its own server-side memory when set.
-      const history = (activeConv?.messages ?? [])
-        .filter(
-          (m) =>
-            (m.role === 'user' && m.content) ||
-            (m.role === 'assistant' && m.status === 'complete' && m.content)
-        )
+      //
+      // B3: un turno que FALLÓ no es conversación. Ni el aviso de error (que el
+      // modelo leería como algo que él dijo) ni la pregunta que lo originó (que
+      // leería como una pregunta todavía sin contestar).
+      const previos = activeConv?.messages ?? [];
+      const history = previos
+        .filter((m, i) => {
+          if (m.status === 'error' || !m.content) return false;
+          if (m.role === 'user') {
+            const respuesta = previos.slice(i + 1).find((x) => x.role !== 'system');
+            return respuesta?.status !== 'error';
+          }
+          return m.role === 'assistant' && m.status === 'complete';
+        })
         .slice(-10)
         .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
@@ -1426,9 +1467,18 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           });
           if (signal.aborted) return;
           finishTurn(streamed, assistantId, conversationId, streamed.liveBlock);
-        } catch {
+        } catch (errorDelStream) {
           // Abortar es intencional: ni respaldo POST ni cartel de error.
           if (signal.aborted) return;
+          // Sin créditos o limitado: el POST pega contra el mismo tope. Se
+          // dice ya, en vez de hacer esperar un segundo fallo idéntico.
+          if (
+            errorDelStream instanceof ApiError &&
+            (errorDelStream.status === 402 || errorDelStream.status === 429)
+          ) {
+            finalizeError(assistantId, conversationId, mensajeDeFalloDelChat(errorDelStream));
+            return;
+          }
           // Stream failed (route missing, proxy buffering, mid-stream drop) →
           // clear any partial live UI and fall back to the one-shot POST.
           setActiveAgentBlock(null);
@@ -1437,12 +1487,12 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             const resp = await postChatTurn({ agencyId, message: trimmed, history, signal });
             if (signal.aborted) return;
             finishTurn(resp, assistantId, conversationId, null);
-          } catch {
+          } catch (errorDelPost) {
             if (signal.aborted) return;
             finalizeError(
               assistantId,
               conversationId,
-              'No pude conectarme con el asistente en este momento. Intenta de nuevo en un momento.'
+              mensajeDeFalloDelChat(errorDelPost)
             );
           }
         } finally {

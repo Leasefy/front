@@ -27,9 +27,23 @@
  * la fecha del último asiento SÓLO cuando el mes va en cero — un cero sin
  * contexto se lee como «acá no hay nada».
  *
- * Cada pedido falla por separado (`allSettled`): si el balance no responde,
- * las cuentas activas siguen apareciendo. Lo que no se pudo preguntar no
- * genera alerta — una portada que no sabe, no grita.
+ * ── Cada consulta falla por separado, y lo DICE (auditoría 13-09, CT1) ─────
+ *
+ * Siguen siendo siete pedidos independientes (`allSettled`): si el balance no
+ * responde, las cuentas activas siguen apareciendo. Lo que cambió es qué pasa
+ * con el que falla. Antes quedaba en `null` y sólo un `title` al pasar el
+ * mouse lo contaba; peor, una revisión caída (asientos faltantes, balance) no
+ * generaba alerta, y una portada sin alertas se lee como «todo en orden».
+ * Ahora cada tarjeta que falló muestra «No cargó: <motivo>» con un
+ * «Reintentar» que vuelve a pedir SÓLO esa consulta.
+ *
+ * ── Reprocesar pide confirmación (CT2) ────────────────────────────────────
+ *
+ * «Reprocesar» escribía asientos en el libro con un clic. Ahora abre un
+ * diálogo que dice cuántos movimientos y de qué tipo se van a asentar. Lo que
+ * dice está verificado contra `asientos-automaticos.service.ts#reprocesar`:
+ * asienta cobros, recibos y lotes que NO tienen asiento; los que ya lo tienen
+ * no se tocan.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -49,6 +63,16 @@ import {
 import type { Icon } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/toast';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
@@ -77,6 +101,7 @@ import {
   rangoDelMesAnterior,
   rangoInvertido,
 } from '@/lib/contabilidad/fechas';
+import { clasificarFallo } from '@/lib/errores/clasificar';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { Monto } from './Monto';
@@ -90,6 +115,16 @@ const ULTIMOS = 5;
 
 // ══ Los datos de la portada ═════════════════════════════════════════════════
 
+/** Las siete consultas de la portada. Cada una se reintenta sola. */
+export type ConsultaDeLaPortada =
+  | 'cuentas'
+  | 'libro'
+  | 'delMes'
+  | 'cierre'
+  | 'faltantes'
+  | 'balance'
+  | 'anterior';
+
 interface Portada {
   cuentasActivas: number | null;
   /** El libro entero: `total` y los `ULTIMOS` más recientes. */
@@ -97,85 +132,179 @@ interface Portada {
   asientosEnElLibro: number | null;
   asientosDelMes: number | null;
   cierre: Cierre | null;
-  /** ¿La consulta del cierre falló? `cierre: null` sola no lo distingue. */
-  falloDelCierre: boolean;
   faltantes: AsientosFaltantes | null;
   balance: { cuadra: boolean; diferenciaCop: number } | null;
   mesAnterior: MesAnterior | null;
+  /** Lo que tiró cada consulta que falló, entero. Ausente = no falló. */
+  fallos: Partial<Record<ConsultaDeLaPortada, unknown>>;
 }
 
-const NADA_TODAVIA: Portada = {
+type Parche = Partial<Omit<Portada, 'fallos'>>;
+
+const nadaTodavia = (): Portada => ({
   cuentasActivas: null,
   ultimos: null,
   asientosEnElLibro: null,
   asientosDelMes: null,
   cierre: null,
-  falloDelCierre: false,
   faltantes: null,
   balance: null,
   mesAnterior: null,
+  fallos: {},
+});
+
+/** Qué pide cada consulta y qué parte de la portada llena. */
+const PEDIDOS: Record<ConsultaDeLaPortada, () => Promise<Parche>> = {
+  cuentas: async () => ({
+    cuentasActivas: (await contabilidadApi.puc.listar({ soloActivas: true })).length,
+  }),
+  libro: async () => {
+    const libro = await contabilidadApi.asientos.listar({ limite: ULTIMOS });
+    return { ultimos: libro.asientos, asientosEnElLibro: libro.total };
+  },
+  delMes: async () => ({
+    asientosDelMes: (
+      await contabilidadApi.asientos.listar({ desde: primerDiaDelMes(), hasta: hoy(), limite: 1 })
+    ).total,
+  }),
+  cierre: async () => ({ cierre: await contabilidadApi.asientos.cierre() }),
+  faltantes: async () => ({ faltantes: await contabilidadApi.asientos.faltantes() }),
+  balance: async () => {
+    const b = await contabilidadApi.reportes.balanceDePrueba({});
+    return { balance: { cuadra: b.cuadra, diferenciaCop: b.diferenciaCop } };
+  },
+  anterior: async () => {
+    const mes = rangoDelMesAnterior();
+    const r = await contabilidadApi.asientos.listar({ desde: mes.desde, hasta: mes.hasta, limite: 1 });
+    return { mesAnterior: { mes: mes.mes, hasta: mes.hasta, asientos: r.total } };
+  },
 };
 
-function valor<T>(r: PromiseSettledResult<T>): T | null {
-  return r.status === 'fulfilled' ? r.value : null;
-}
+const CONSULTAS = Object.keys(PEDIDOS) as ConsultaDeLaPortada[];
 
 function usePortada() {
-  const [datos, setDatos] = useState<Portada>(NADA_TODAVIA);
+  const [datos, setDatos] = useState<Portada>(nadaTodavia);
   const [cargando, setCargando] = useState(true);
+  const [reintentando, setReintentando] = useState<ReadonlySet<ConsultaDeLaPortada>>(new Set());
 
   const cargar = useCallback(async () => {
     setCargando(true);
-    const mes = rangoDelMesAnterior();
-    const [cuentas, libro, delMes, cierre, faltantes, balance, anterior] = await Promise.allSettled([
-      contabilidadApi.puc.listar({ soloActivas: true }),
-      contabilidadApi.asientos.listar({ limite: ULTIMOS }),
-      contabilidadApi.asientos.listar({ desde: primerDiaDelMes(), hasta: hoy(), limite: 1 }),
-      contabilidadApi.asientos.cierre(),
-      contabilidadApi.asientos.faltantes(),
-      contabilidadApi.reportes.balanceDePrueba({}),
-      contabilidadApi.asientos.listar({ desde: mes.desde, hasta: mes.hasta, limite: 1 }),
-    ]);
-
-    const elLibro = valor(libro);
-    const elBalance = valor(balance);
-    const elMesAnterior = valor(anterior);
-
-    setDatos({
-      cuentasActivas: valor(cuentas)?.length ?? null,
-      ultimos: elLibro?.asientos ?? null,
-      asientosEnElLibro: elLibro?.total ?? null,
-      asientosDelMes: valor(delMes)?.total ?? null,
-      cierre: valor(cierre),
-      falloDelCierre: cierre.status === 'rejected',
-      faltantes: valor(faltantes),
-      balance: elBalance ? { cuadra: elBalance.cuadra, diferenciaCop: elBalance.diferenciaCop } : null,
-      mesAnterior: elMesAnterior
-        ? { mes: mes.mes, hasta: mes.hasta, asientos: elMesAnterior.total }
-        : null,
+    const resultados = await Promise.allSettled(CONSULTAS.map((c) => PEDIDOS[c]()));
+    const siguiente = nadaTodavia();
+    resultados.forEach((r, i) => {
+      if (r.status === 'fulfilled') Object.assign(siguiente, r.value);
+      else siguiente.fallos[CONSULTAS[i]] = r.reason;
     });
+    setDatos(siguiente);
     setCargando(false);
+  }, []);
+
+  /** Vuelve a pedir UNA consulta; las demás no se tocan ni parpadean. */
+  const reintentar = useCallback(async (consulta: ConsultaDeLaPortada) => {
+    setReintentando((previo) => new Set(previo).add(consulta));
+    try {
+      const parche = await PEDIDOS[consulta]();
+      setDatos((d) => {
+        const fallos = { ...d.fallos };
+        delete fallos[consulta];
+        return { ...d, ...parche, fallos };
+      });
+    } catch (e) {
+      setDatos((d) => ({ ...d, fallos: { ...d.fallos, [consulta]: e } }));
+    } finally {
+      setReintentando((previo) => {
+        const siguiente = new Set(previo);
+        siguiente.delete(consulta);
+        return siguiente;
+      });
+    }
   }, []);
 
   useEffect(() => {
     void cargar();
   }, [cargar]);
 
-  return { datos, cargando, recargar: cargar };
+  return { datos, cargando, recargar: cargar, reintentar, reintentando };
 }
 
 // ══ Piezas ══════════════════════════════════════════════════════════════════
+
+/** Por qué no cargó, en palabras cortas: va detrás de «No cargó:». */
+function motivoDelFallo(error: unknown): string {
+  switch (clasificarFallo(error).tipo) {
+    case 'sinPermiso':
+      return 'tu rol no tiene acceso a esta consulta';
+    case 'sinSesion':
+      return 'tu sesión se venció';
+    case 'red':
+      return 'no hubo conexión con el servidor';
+    case 'limitado':
+      return 'hubo demasiadas consultas seguidas, espera un momento';
+    case 'noExiste':
+      return 'el servidor no encontró esta consulta';
+    default:
+      return 'falló del lado del servidor';
+  }
+}
+
+/** La línea de una tarjeta que no cargó, con su reintento si tiene sentido. */
+function NoCargo({
+  error,
+  consulta,
+  onReintentar,
+  reintentando,
+}: {
+  error: unknown;
+  consulta: ConsultaDeLaPortada;
+  onReintentar: (c: ConsultaDeLaPortada) => void;
+  reintentando: boolean;
+}) {
+  // Sobre un 403 o un 404 reintentar da lo mismo: no se ofrece.
+  const sePuede = clasificarFallo(error).sePuedeReintentar;
+  return (
+    <p
+      className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-fg-muted"
+      role="alert"
+      data-testid={`no-cargo-${consulta}`}
+    >
+      <WarningCircle className="h-3.5 w-3.5 shrink-0 text-danger" aria-hidden="true" />
+      <span>No cargó: {motivoDelFallo(error)}.</span>
+      {sePuede ? (
+        <Button
+          variant="link"
+          size="sm"
+          hideArrow
+          className="h-auto p-0 text-caption"
+          onClick={() => onReintentar(consulta)}
+          disabled={reintentando}
+          data-testid={`reintentar-${consulta}`}
+        >
+          {reintentando ? 'Reintentando…' : 'Reintentar'}
+        </Button>
+      ) : null}
+    </p>
+  );
+}
+
+interface FalloDeTarjeta {
+  consulta: ConsultaDeLaPortada;
+  error: unknown;
+  onReintentar: (c: ConsultaDeLaPortada) => void;
+  reintentando: boolean;
+}
 
 function Cifra({
   etiqueta,
   valor: v,
   pie,
   cargando,
+  fallo,
 }: {
   etiqueta: string;
   valor: number | null;
   pie?: string;
   cargando: boolean;
+  fallo?: FalloDeTarjeta;
 }) {
   return (
     <div className="space-y-1">
@@ -187,14 +316,16 @@ function Cifra({
             aria-label="cargando"
           />
         ) : v === null ? (
-          <span className="text-fg-subtle" title="No se pudo consultar">
-            —
-          </span>
+          <span className="text-fg-subtle">—</span>
         ) : (
           v.toLocaleString('es-CO')
         )}
       </dd>
-      {pie && !cargando ? <p className="text-caption text-fg-muted">{pie}</p> : null}
+      {!cargando && fallo ? (
+        <NoCargo {...fallo} />
+      ) : pie && !cargando ? (
+        <p className="text-caption text-fg-muted">{pie}</p>
+      ) : null}
     </div>
   );
 }
@@ -232,7 +363,14 @@ function Alerta({
           <Link href={alerta.accion.href}>{alerta.accion.label}</Link>
         </Button>
       ) : alerta.accion.tipo === 'reprocesar' ? (
-        <Button variant="outline" size="sm" hideArrow onClick={onReprocesar} disabled={ocupado}>
+        <Button
+          variant="outline"
+          size="sm"
+          hideArrow
+          onClick={onReprocesar}
+          disabled={ocupado}
+          data-testid="reprocesar-asientos"
+        >
           <ArrowsClockwise className="mr-1.5 h-4 w-4" aria-hidden="true" />
           {ocupado ? 'Reprocesando…' : alerta.accion.label}
         </Button>
@@ -245,7 +383,15 @@ function Alerta({
   );
 }
 
-function UltimosAsientos({ asientos, cargando }: { asientos: AsientoContable[] | null; cargando: boolean }) {
+function UltimosAsientos({
+  asientos,
+  cargando,
+  fallo,
+}: {
+  asientos: AsientoContable[] | null;
+  cargando: boolean;
+  fallo?: FalloDeTarjeta;
+}) {
   return (
     <section className="flex flex-col rounded-lg border border-border bg-surface p-4">
       <div className="flex items-baseline justify-between gap-3">
@@ -258,6 +404,10 @@ function UltimosAsientos({ asientos, cargando }: { asientos: AsientoContable[] |
       {cargando ? (
         <div className="flex items-center justify-center py-8">
           <Spinner />
+        </div>
+      ) : fallo ? (
+        <div className="py-6">
+          <NoCargo {...fallo} />
         </div>
       ) : asientos === null ? (
         <p className="py-6 text-sm text-fg-muted">No se pudo leer el libro.</p>
@@ -411,12 +561,38 @@ const DESTINOS: Destino[] = [
   },
 ];
 
+/**
+ * Las revisiones que alimentan las alertas. Si una no carga, «no hay alertas»
+ * deja de significar «está todo bien», y eso se dice.
+ */
+const REVISIONES: { consulta: ConsultaDeLaPortada; que: string }[] = [
+  { consulta: 'faltantes', que: 'Si hay movimientos sin asiento' },
+  { consulta: 'balance', que: 'Si el libro cuadra' },
+  { consulta: 'anterior', que: 'Si el mes anterior quedó por cerrar' },
+];
+
+function plural(n: number, singular: string, varios: string): string {
+  return `${n.toLocaleString('es-CO')} ${n === 1 ? singular : varios}`;
+}
+
+/** «2 cobros, 1 recibo de caja y 3 lotes de giros». */
+function queSeVaAAsentar(f: AsientosFaltantes): string {
+  const partes = [
+    f.cobros > 0 ? plural(f.cobros, 'cobro', 'cobros') : null,
+    f.recibos > 0 ? plural(f.recibos, 'recibo de caja', 'recibos de caja') : null,
+    f.lotes > 0 ? plural(f.lotes, 'lote de giros', 'lotes de giros') : null,
+  ].filter((p): p is string => p !== null);
+  if (partes.length <= 1) return partes[0] ?? '';
+  return `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`;
+}
+
 // ══ La portada ══════════════════════════════════════════════════════════════
 
 export function HubDeContabilidad() {
   const { formatCurrency } = useI18n();
-  const { datos, cargando, recargar } = usePortada();
+  const { datos, cargando, recargar, reintentar, reintentando } = usePortada();
   const [reprocesando, setReprocesando] = useState(false);
+  const [confirmandoReproceso, setConfirmandoReproceso] = useState(false);
   const cierreRef = useRef<HTMLDivElement>(null);
 
   const alertas = useMemo(
@@ -429,6 +605,17 @@ export function HubDeContabilidad() {
       }).map((a) => describirAlerta(a, formatCurrency)),
     [datos, formatCurrency],
   );
+
+  /** La línea de fallo de una consulta, o nada si no falló. */
+  const falloDe = (consulta: ConsultaDeLaPortada): FalloDeTarjeta | undefined =>
+    consulta in datos.fallos
+      ? {
+          consulta,
+          error: datos.fallos[consulta],
+          onReintentar: (c) => void reintentar(c),
+          reintentando: reintentando.has(consulta),
+        }
+      : undefined;
 
   const reprocesar = async () => {
     setReprocesando(true);
@@ -445,8 +632,10 @@ export function HubDeContabilidad() {
         );
       }
       if (r.asentados === 0 && r.sinResolver === 0) toast.success('No había nada pendiente de asentar.');
+      setConfirmandoReproceso(false);
       await recargar();
     } catch (e) {
+      // El diálogo queda abierto: reintentar no obliga a volver a abrirlo.
       toast.error(mensajeDeContabilidad(e, 'No se pudo reprocesar.'));
     } finally {
       setReprocesando(false);
@@ -469,21 +658,60 @@ export function HubDeContabilidad() {
   const pieDelMes =
     datos.asientosDelMes === 0 && ultimo ? `el último, el ${diaLegible(ultimo.fecha)}` : undefined;
 
+  const revisionesCaidas = cargando ? [] : REVISIONES.filter((r) => r.consulta in datos.fallos);
+  const faltantes = datos.faltantes;
+
   return (
     <div className="space-y-6">
       <dl
         className="grid gap-6 rounded-lg border border-border bg-surface p-6 sm:grid-cols-3"
         aria-label="Resumen del libro"
       >
-        <Cifra etiqueta="Cuentas activas" valor={datos.cuentasActivas} cargando={cargando} />
+        <Cifra
+          etiqueta="Cuentas activas"
+          valor={datos.cuentasActivas}
+          cargando={cargando}
+          fallo={falloDe('cuentas')}
+        />
         <Cifra
           etiqueta="Asientos este mes"
           valor={datos.asientosDelMes}
           pie={pieDelMes}
           cargando={cargando}
+          fallo={falloDe('delMes')}
         />
-        <Cifra etiqueta="Asientos en el libro" valor={datos.asientosEnElLibro} cargando={cargando} />
+        <Cifra
+          etiqueta="Asientos en el libro"
+          valor={datos.asientosEnElLibro}
+          cargando={cargando}
+          fallo={falloDe('libro')}
+        />
       </dl>
+
+      {/* CT1: que no aparezca ninguna alerta sólo vale si se pudo revisar. */}
+      {revisionesCaidas.length > 0 ? (
+        <section
+          className="space-y-2 rounded-lg border border-border bg-surface p-4"
+          aria-label="Revisiones que no cargaron"
+          data-testid="revisiones-caidas"
+        >
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium text-fg">No pude revisar todo el libro</p>
+            <p className="text-caption text-fg-muted">
+              Sin estas consultas no sé si hay alertas: que no aparezca ninguna no quiere decir que
+              esté todo en orden.
+            </p>
+          </div>
+          <ul className="space-y-1.5">
+            {revisionesCaidas.map((r) => (
+              <li key={r.consulta} className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                <span className="text-sm text-fg">{r.que}</span>
+                <NoCargo {...falloDe(r.consulta)!} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {alertas.length > 0 ? (
         <section className="space-y-3" aria-label="Alertas de contabilidad">
@@ -491,7 +719,7 @@ export function HubDeContabilidad() {
             <Alerta
               key={a.clave}
               alerta={a}
-              onReprocesar={() => void reprocesar()}
+              onReprocesar={() => setConfirmandoReproceso(true)}
               onCerrarMes={irAlCierre}
               ocupado={reprocesando}
             />
@@ -500,19 +728,20 @@ export function HubDeContabilidad() {
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <UltimosAsientos asientos={datos.ultimos} cargando={cargando} />
+        <UltimosAsientos asientos={datos.ultimos} cargando={cargando} fallo={falloDe('libro')} />
         <ParaElContador />
       </div>
 
       {/* `tabIndex={-1}`: la alerta «Cerrar el mes» trae el foco acá, y sin
           esto un div no lo recibe. */}
-      <div ref={cierreRef} tabIndex={-1} className="outline-none">
+      <div ref={cierreRef} tabIndex={-1} className="space-y-2 outline-none">
         <CierreDePeriodo
           cierre={datos.cierre}
           cargando={cargando}
-          fallo={datos.falloDelCierre}
+          fallo={'cierre' in datos.fallos}
           onCerrado={() => void recargar()}
         />
+        {!cargando && falloDe('cierre') ? <NoCargo {...falloDe('cierre')!} /> : null}
       </div>
 
       <nav aria-label="Secciones de contabilidad" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -536,6 +765,45 @@ export function HubDeContabilidad() {
           </Link>
         ))}
       </nav>
+
+      {/* CT2: reprocesar escribe en el libro. Se dice cuánto y qué antes. */}
+      <AlertDialog
+        open={confirmandoReproceso}
+        onOpenChange={(abierto) => {
+          if (!abierto && !reprocesando) setConfirmandoReproceso(false);
+        }}
+      >
+        <AlertDialogContent data-testid="confirmar-reproceso-dialogo">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {faltantes
+                ? `¿Asentar ${plural(faltantes.total, 'movimiento', 'movimientos')} sin asiento?`
+                : '¿Reprocesar los movimientos sin asiento?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription data-testid="confirmar-reproceso-detalle">
+              {faltantes && faltantes.total > 0
+                ? `Vas a generar los asientos de ${queSeVaAAsentar(faltantes)}. `
+                : 'Vas a generar los asientos de los movimientos que todavía no tienen. '}
+              Cada uno queda con la fecha de su documento y los asientos que ya existen no se tocan.
+              Los que no se puedan asentar quedan como están y te digo por qué.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={reprocesando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                // Se cierra sólo cuando el back contestó.
+                e.preventDefault();
+                void reprocesar();
+              }}
+              disabled={reprocesando}
+              data-testid="confirmar-reproceso"
+            >
+              {reprocesando ? 'Asentando…' : 'Asentar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

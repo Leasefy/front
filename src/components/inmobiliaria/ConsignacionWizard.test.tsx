@@ -289,8 +289,10 @@ async function renderWizard(agentes: Agente[]) {
   })
 }
 
+// `document.body`, no `container`: el diálogo de «¿publicar sin fotos?» vive
+// en un portal de Radix, fuera del contenedor del test.
 function findButtonByText(text: string): HTMLButtonElement {
-  const buttons = Array.from(container.querySelectorAll('button'))
+  const buttons = Array.from(document.body.querySelectorAll('button'))
   const match = buttons.find((b) => b.textContent?.includes(text))
   if (!match) throw new Error(`No button found with text "${text}"`)
   return match
@@ -301,6 +303,24 @@ async function clickButton(button: HTMLButtonElement) {
     button.click()
     await new Promise((r) => setTimeout(r, 0))
   })
+}
+
+const CONFIRMAR_CONSIGNACION = 'inmobiliaria.consignaciones.wizard.confirmConsignment'
+
+function hayBoton(text: string): boolean {
+  return Array.from(document.body.querySelectorAll('button')).some((b) => b.textContent?.includes(text))
+}
+
+/**
+ * Confirma la consignación. Sin fotos, el wizard pregunta antes de publicar
+ * (W2); los casos que no tratan de eso eligen «Publicar sin fotos», que es lo
+ * que hacía antes sin preguntar.
+ */
+async function enviar() {
+  await clickButton(findButtonByText(CONFIRMAR_CONSIGNACION))
+  if (hayBoton('inmobiliaria.consignaciones.wizard.sinFotosDialog.publishAnyway')) {
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.sinFotosDialog.publishAnyway'))
+  }
 }
 
 describe('<ConsignacionWizard> — agent assignment is optional', () => {
@@ -330,8 +350,7 @@ describe('<ConsignacionWizard> — agent assignment is optional', () => {
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5 (no agent picked)
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
 
-    const submitBtn = findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment')
-    await clickButton(submitBtn)
+    await enviar()
 
     expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
     expect(propertiesApiMock.assignAgent).not.toHaveBeenCalled()
@@ -356,8 +375,7 @@ describe('<ConsignacionWizard> — agent assignment is optional', () => {
 
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
 
-    const submitBtn = findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment')
-    await clickButton(submitBtn)
+    await enviar()
 
     expect(propertiesApiMock.assignAgent).toHaveBeenCalledWith('property-1', 'agente1@test.com')
     const payload = consignacionesApiMock.create.mock.calls[0][0]
@@ -403,9 +421,7 @@ describe('<ConsignacionWizard> — crear el inmueble resuelve su ubicación', ()
     for (let i = 0; i < 5; i++) {
       await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
     }
-    await clickButton(
-      findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment'),
-    )
+    await enviar()
   }
 
   it('🔴 sin coordenadas del buscador, las resuelve con la dirección, la ciudad y el departamento', async () => {
@@ -473,8 +489,7 @@ describe('<ConsignacionWizard> — publishes the property after the mandate (T-0
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
-    const submitBtn = findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment')
-    await clickButton(submitBtn)
+    await enviar()
   }
 
   it('PATCHes status AVAILABLE after the mandate is created, then shows success', async () => {
@@ -539,8 +554,7 @@ describe('<ConsignacionWizard> — SALE listing carries a reduced mandate (contr
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5 (photos-only, T-0042)
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
-    const submitBtn = findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment')
-    await clickButton(submitBtn)
+    await enviar()
   }
 
   it('creates the property with listingType sale, salePrice, and monthlyRent: null — never 0 (C6)', async () => {
@@ -614,7 +628,7 @@ describe('<ConsignacionWizard> — property photos (T-0017)', () => {
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment'))
+    await enviar()
   }
 
   it('never calls uploadPropertyPhotos when the user added no photos', async () => {
@@ -800,7 +814,7 @@ describe('<ConsignacionWizard> — step 5 reachable on the sale path (T-0042)', 
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5 (photos-only step, now reachable)
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment'))
+    await enviar()
 
     expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
     expect(uploadPropertyPhotosMock).toHaveBeenCalledWith('property-1', photos)
@@ -828,7 +842,7 @@ describe('<ConsignacionWizard> — desde la ficha del propietario (propietarioIn
     for (let paso = 1; paso < 6; paso++) {
       await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
     }
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment'))
+    await enviar()
     expect(pushMock).toHaveBeenCalledWith(FICHA)
     expect(pushMock).not.toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
   })
@@ -839,7 +853,7 @@ describe('<ConsignacionWizard> — desde la ficha del propietario (propietarioIn
     for (let paso = 1; paso < 6; paso++) {
       await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
     }
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment'))
+    await enviar()
     expect(pushMock).toHaveBeenCalledWith(FICHA)
   })
 
@@ -848,7 +862,92 @@ describe('<ConsignacionWizard> — desde la ficha del propietario (propietarioIn
     for (let paso = 1; paso < 6; paso++) {
       await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
     }
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment'))
+    await enviar()
     expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
+  })
+})
+
+describe('<ConsignacionWizard> — fallos a la mitad y publicar sin fotos (W1, W2, W3)', () => {
+  const SIN_FOTOS = 'inmobiliaria.consignaciones.wizard.sinFotosDialog'
+
+  async function llegarAlFinal() {
+    await renderWizard(AGENTE_LIST)
+    for (let i = 0; i < 8 && !hayBoton(CONFIRMAR_CONSIGNACION); i++) {
+      await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next'))
+    }
+  }
+
+  function titulos(fn: unknown): string[] {
+    return (fn as ReturnType<typeof vi.fn>).mock.calls.map((c) => String(c[0]))
+  }
+
+  it('W1: si asignar el agente falla, el inmueble no se da por perdido y la consignación sigue', async () => {
+    permissionsState.isAdmin = false
+    authState.user = { id: 'agent-user-1', email: 'agente1@test.com', name: 'Agente Uno' }
+    propertiesApiMock.assignAgent.mockRejectedValueOnce(new ApiError(400, 'No se pudo asignar'))
+
+    await llegarAlFinal()
+    await enviar()
+
+    expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(titulos(toast.warning)).toContain('inmobiliaria.consignaciones.wizard.toasts.agentErrorTitle')
+    expect(titulos(toast.error)).not.toContain('inmobiliaria.consignaciones.wizard.toasts.errorTitle')
+    expect(consignacionesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(propertiesApiMock.update).toHaveBeenCalledWith('property-1', { status: 'AVAILABLE' })
+  })
+
+  it('W2: sin fotos pregunta ANTES de crear nada', async () => {
+    await llegarAlFinal()
+    await clickButton(findButtonByText(CONFIRMAR_CONSIGNACION))
+
+    expect(hayBoton(`${SIN_FOTOS}.saveDraft`)).toBe(true)
+    expect(hayBoton(`${SIN_FOTOS}.publishAnyway`)).toBe(true)
+    expect(propertiesApiMock.create).not.toHaveBeenCalled()
+  })
+
+  it('W2: «Dejar en borrador» crea inmueble y consignación, no publica, y lo dice', async () => {
+    await llegarAlFinal()
+    await clickButton(findButtonByText(CONFIRMAR_CONSIGNACION))
+    await clickButton(findButtonByText(`${SIN_FOTOS}.saveDraft`))
+
+    expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(consignacionesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(propertiesApiMock.update).not.toHaveBeenCalled()
+    expect(titulos(toast.success)).toEqual(['inmobiliaria.consignaciones.wizard.toasts.draftSavedTitle'])
+    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
+  })
+
+  it('W2: con fotos no pregunta y publica', async () => {
+    stepFivePhotosHolder.photos = [new File(['a'], 'a.jpg', { type: 'image/jpeg' })]
+    uploadPropertyPhotosMock.mockResolvedValue({ uploaded: 1, failed: [] })
+
+    await llegarAlFinal()
+    await clickButton(findButtonByText(CONFIRMAR_CONSIGNACION))
+
+    expect(hayBoton(`${SIN_FOTOS}.saveDraft`)).toBe(false)
+    expect(propertiesApiMock.update).toHaveBeenCalledWith('property-1', { status: 'AVAILABLE' })
+  })
+
+  it('W3: un 409 de consignación duplicada muestra el motivo del back, no «complétala»', async () => {
+    const motivo = 'Ya existe una consignación para este inmueble en esta agencia'
+    consignacionesApiMock.create.mockRejectedValueOnce(new ApiError(409, motivo))
+
+    await llegarAlFinal()
+    await enviar()
+
+    const llamadas = (toast.error as ReturnType<typeof vi.fn>).mock.calls
+    expect(llamadas).toHaveLength(1)
+    expect(llamadas[0][0]).toBe('inmobiliaria.consignaciones.wizard.toasts.mandateDuplicateTitle')
+    expect(String(llamadas[0][1].description)).toContain(motivo)
+    expect(propertiesApiMock.update).not.toHaveBeenCalled()
+  })
+
+  it('W3: un fallo de consignación que no es 409 conserva el aviso de completar', async () => {
+    consignacionesApiMock.create.mockRejectedValueOnce(new ApiError(500, 'boom'))
+
+    await llegarAlFinal()
+    await enviar()
+
+    expect(titulos(toast.error)).toEqual(['inmobiliaria.consignaciones.wizard.toasts.mandateErrorTitle'])
   })
 })

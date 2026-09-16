@@ -23,10 +23,11 @@ void React // jsx-preserve
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { canAccessMock, useDocumentosLegalesMock, useActasEntregaMock } = vi.hoisted(() => ({
+const { canAccessMock, useDocumentosLegalesMock, useActasEntregaMock, useConsignacionesMock } = vi.hoisted(() => ({
   canAccessMock: vi.fn(),
   useDocumentosLegalesMock: vi.fn(),
   useActasEntregaMock: vi.fn(),
+  useConsignacionesMock: vi.fn(),
 }))
 
 vi.mock('next/navigation', () => ({
@@ -67,7 +68,7 @@ vi.mock('@/components/documentos/useDocumentosLegales', () => ({
 
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
   useActasEntrega: () => useActasEntregaMock(),
-  useConsignaciones: () => ({ consignaciones: [], isLoading: false }),
+  useConsignaciones: () => useConsignacionesMock(),
   actasApi: { create: vi.fn() },
 }))
 
@@ -80,7 +81,16 @@ vi.mock('@/components/documentos/GenerarDocumentoDialog', () => ({
 }))
 
 vi.mock('@/components/inmobiliaria', () => ({
-  ActaEntregaForm: () => null,
+  // Deja guardar desde el test: `onSave` es `guardarActa` de la página.
+  ActaEntregaForm: ({ onSave }: { onSave: (d: unknown) => Promise<void> }) =>
+    React.createElement(
+      'button',
+      {
+        'data-testid': 'acta-form-guardar',
+        onClick: () => void onSave({ type: 'entrega' }).catch(() => undefined),
+      },
+      'guardar',
+    ),
   ActaEntregaViewer: () => null,
 }))
 
@@ -90,13 +100,13 @@ vi.mock('@/components/ui/toast', () => ({
 
 // El vacío: lo único que importa acá es SI le llegó un botón de crear.
 vi.mock('@/components/estado/SinDatos', () => ({
-  SinDatos: ({ crear, titulo }: { crear?: { label: string }; titulo?: string }) =>
+  SinDatos: ({ crear, titulo }: { crear?: { label: string; onClick?: () => void }; titulo?: string }) =>
     React.createElement(
       'div',
       { 'data-testid': 'sin-datos' },
       titulo,
       crear
-        ? React.createElement('button', { 'data-testid': 'sin-datos-crear' }, crear.label)
+        ? React.createElement('button', { 'data-testid': 'sin-datos-crear', onClick: crear.onClick }, crear.label)
         : null,
     ),
 }))
@@ -239,6 +249,9 @@ vi.mock('@/components/ui/table', () => {
 
 // ── Import page AFTER mocks ───────────────────────────────────────────────
 import DocumentosPage from './page'
+import { toast } from '@/components/ui/toast'
+import { actasApi } from '@/lib/hooks/useInmobiliaria'
+import { ApiError } from '@/lib/api/client'
 
 const SIN_DOCUMENTOS = {
   documentos: [],
@@ -280,6 +293,8 @@ beforeEach(() => {
   useActasEntregaMock.mockReset()
   useDocumentosLegalesMock.mockReturnValue(SIN_DOCUMENTOS)
   useActasEntregaMock.mockReturnValue(SIN_ACTAS)
+  useConsignacionesMock.mockReset()
+  useConsignacionesMock.mockReturnValue({ consignaciones: [], isLoading: false, errorCrudo: null })
 })
 
 afterEach(() => {
@@ -413,5 +428,81 @@ describe('Documentos — los botones del vacío piden el permiso que el backend 
     abrirPestana('actas')
 
     expect(container.querySelector('[data-testid="sin-datos-crear"]')).not.toBeNull()
+  })
+})
+
+describe('Documentos — contadores, errores del acta y consignaciones caídas (D1 · D2 · D3)', () => {
+  const chipActas = () => container.querySelector('[data-testid="chip-actas"]')
+
+  async function abrirNuevaActa() {
+    abrirPestana('actas')
+    const crear = container.querySelector<HTMLButtonElement>('[data-testid="sin-datos-crear"]')
+    expect(crear).not.toBeNull()
+    await act(async () => {
+      crear!.click()
+    })
+  }
+
+  it('🔴 con las actas en 403 el chip dice «—», no «0»', async () => {
+    canAccessMock.mockImplementation(permisosDe('CONTADOR'))
+    useActasEntregaMock.mockReturnValue({ ...SIN_ACTAS, errorCrudo: new ApiError(403, 'Forbidden resource') })
+    await renderPage()
+
+    expect(chipActas()?.textContent).toBe('—')
+  })
+
+  it('sin error el chip cuenta las actas', async () => {
+    canAccessMock.mockImplementation(permisosDe('AGENTE'))
+    await renderPage()
+
+    expect(chipActas()?.textContent).toBe('0')
+  })
+
+  it('🔴 guardar un acta que el back rechaza muestra LO QUE DIJO el back, no una clave fija', async () => {
+    canAccessMock.mockImplementation(permisosDe('AGENTE'))
+    vi.mocked(actasApi.create).mockRejectedValue(
+      new ApiError(409, 'El inmueble ya tiene un acta de entrega abierta'),
+    )
+    await renderPage()
+    await abrirNuevaActa()
+
+    const guardar = container.querySelector<HTMLButtonElement>('[data-testid="acta-form-guardar"]')
+    expect(guardar).not.toBeNull()
+    await act(async () => {
+      guardar!.click()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ description: 'El inmueble ya tiene un acta de entrega abierta' }),
+    )
+  })
+
+  it('🔴 con las consignaciones caídas no abre un formulario con el selector vacío: lo dice antes', async () => {
+    canAccessMock.mockImplementation(permisosDe('AGENTE'))
+    useConsignacionesMock.mockReturnValue({
+      consignaciones: [],
+      isLoading: false,
+      errorCrudo: new ApiError(500, 'Internal server error'),
+    })
+    await renderPage()
+    await abrirNuevaActa()
+
+    expect(toast.error).toHaveBeenCalledWith(
+      'No se pudieron traer los inmuebles arrendados',
+      expect.objectContaining({ description: expect.any(String) }),
+    )
+    expect(container.querySelector('[data-testid="acta-form-guardar"]')).toBeNull()
+  })
+
+  it('con las consignaciones bien, «Nueva acta» abre el formulario', async () => {
+    canAccessMock.mockImplementation(permisosDe('AGENTE'))
+    await renderPage()
+    await abrirNuevaActa()
+
+    expect(container.querySelector('[data-testid="acta-form-guardar"]')).not.toBeNull()
+    expect(toast.error).not.toHaveBeenCalled()
   })
 })

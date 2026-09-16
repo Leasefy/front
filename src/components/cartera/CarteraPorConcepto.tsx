@@ -361,7 +361,7 @@ function FilasDelInquilino({
                 {inquilino.contratos.length > 1
                   ? ` · ${inquilino.contratos.length} contratos`
                   : inquilino.contratos[0]?.contrato
-                    ? ` · contrato ${inquilino.contratos[0].contrato}`
+                    ? rotuloDelContrato(inquilino.contratos[0])
                     : ''}
               </span>
             </span>
@@ -402,6 +402,21 @@ function FilasDelInquilino({
   )
 }
 
+/**
+ * « · contrato 1686 · Leasefy #1839» en un migrado, « · contrato #94» en un
+ * nativo: el número que la inmobiliaria conoce primero, y el nuestro rotulado
+ * para que se sepa cuál es cuál (Nico se asustó con un «#1839» pelado).
+ */
+export function rotuloDelContrato(c: {
+  contrato: string | null
+  contratoDeLeasefy?: string | null
+}): string {
+  if (!c.contrato) return ''
+  return c.contratoDeLeasefy
+    ? ` · contrato ${c.contrato} · ${c.contratoDeLeasefy}`
+    : ` · contrato ${c.contrato}`
+}
+
 function FilaDelMes({
   fila,
   conceptos,
@@ -417,7 +432,7 @@ function FilaDelMes({
         <span className="block text-sm text-fg">{mesEnTitulo(fila.month)}</span>
         <span className="block text-xs text-fg-muted">
           {fila.inmueble}
-          {fila.contrato ? ` · contrato ${fila.contrato}` : ''}
+          {fila.contrato ? rotuloDelContrato(fila) : ''}
         </span>
         <span className="mt-0.5 block text-xs">
           {fila.enSiniestro ? (

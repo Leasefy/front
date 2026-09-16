@@ -134,12 +134,19 @@ describe('la resolución de facturación', () => {
     expect(postMock.mock.calls[1]?.[1]).toHaveProperty('ultimoNumeroUsado', 1199)
   })
 
-  it('anular pega en la ruta de la resolución, con cuerpo vacío', () => {
-    void facturacionPorMesService.anularResolucion('res-1')
+  it('🔴 anular pega en la ruta de la resolución y manda SÓLO el motivo', () => {
+    // `AnularResolucionDto` exige `motivo`; con `forbidNonWhitelisted` una
+    // clave de más también es 400. El cuerpo vacío de antes hoy es un 400.
+    void facturacionPorMesService.anularResolucion(
+      'res-1',
+      'La DIAN autorizó un rango nuevo.',
+    )
     expect(postMock).toHaveBeenCalledWith(
       '/inmobiliaria/facturacion/resolucion/res-1/anular',
-      {},
+      { motivo: 'La DIAN autorizó un rango nuevo.' },
     )
+    const cuerpo = postMock.mock.calls.at(-1)?.[1] as Record<string, unknown>
+    expect(Object.keys(cuerpo)).toEqual(['motivo'])
   })
 })
 

@@ -79,6 +79,7 @@ import { KpiCard, Eyebrow } from '@leasefy/cadence';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { PermissionGate } from '@/components/auth/PermissionGate';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { KpiValor } from '@/components/estado/KpiValor';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { Button } from '@/components/ui/button';
 import { TablePagination } from '@/components/ui/pagination';
@@ -278,6 +279,23 @@ function ContenidoDeInquilinos() {
   const vacioPorLaMigracion = !hayFiltros && vacioPorMigracion(deuda);
   const copy = deuda && vacioPorLaMigracion ? copyDeMigracion(deuda) : null;
 
+  /*
+   * 🔴 Los tiles salen de la MISMA carga que la tabla de abajo, así que dicen
+   * lo mismo que ella: mientras carga, un hueco; si falló, «—» con «No se pudo
+   * traer». Antes, con el back caído, la tabla decía «no se pudo cargar» y un
+   * renglón arriba los tiles afirmaban «0 inquilinos · $0» — un cero es un
+   * dato, y nadie lo verificó.
+   *
+   * `KpiCard` tipa `value` como string pero lo pinta como hijo: el nodo se ve
+   * igual que el texto (mismo arreglo que Pipeline).
+   */
+  const valorDeTile = (valor: string) =>
+    (
+      <KpiValor cargando={cargando} fallo={error}>
+        {valor}
+      </KpiValor>
+    ) as unknown as string;
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
       {/* El botón vive en el encabezado y no en el vacío: con la lista llena
@@ -329,17 +347,17 @@ function ContenidoDeInquilinos() {
       <div className="grid gap-4 sm:grid-cols-3">
         <KpiCard
           label={t('inquilinos.kpi.personas')}
-          value={String(totales.personas)}
+          value={valorDeTile(String(totales.personas))}
           icon={<Users />}
         />
         <KpiCard
           label={t('inquilinos.kpi.arriendosVigentes')}
-          value={String(totales.vigentes)}
+          value={valorDeTile(String(totales.vigentes))}
           icon={<Buildings />}
         />
         <KpiCard
           label={t('inquilinos.kpi.canonVigente')}
-          value={formatCurrency(totales.canon)}
+          value={valorDeTile(formatCurrency(totales.canon))}
           icon={<CurrencyDollar />}
         />
       </div>

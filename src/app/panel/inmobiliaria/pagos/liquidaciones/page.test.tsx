@@ -330,3 +330,77 @@ describe('L3 — el 400 de copropietarios dice cuál inmueble y a dónde ir', ()
     expect(q('reintentar')).toBeNull();
   });
 });
+
+/**
+ * Deducciones (Nico y Juan Camilo, 2026-09-16): la liquidación es lo que el
+ * contrato cobra MENOS sus deducciones. El back manda el bloque con la regla
+ * única; la pantalla pinta lo que se descuenta y lo que se gira, entero o $0.
+ */
+describe('Deducciones del mes', () => {
+  function bloque(p: {
+    netoDelMesCop: number;
+    deduccionesCop: number;
+    aGirarCop: number;
+    saldoEnContraCop: number;
+  }) {
+    return {
+      ...p,
+      deducciones: [],
+      saldoAnteriorCop: 0,
+      netoCop: p.netoDelMesCop - p.deduccionesCop,
+      compensadoCop: p.netoDelMesCop - p.aGirarCop,
+      renglones: [],
+    };
+  }
+
+  it('la columna dice lo descontado y el neto es lo que se gira; deducciones mayores que el neto: $0 y la diferencia pasa, sin «queda debiendo»', async () => {
+    const base = vistaPrevia();
+    const [jorge, marcela] = base.propietarios as Array<Record<string, unknown>>;
+    preview.mockResolvedValue(
+      vistaPrevia({
+        propietarios: [
+          {
+            ...jorge,
+            netToPropietario: 240_000,
+            conDeducciones: bloque({
+              netoDelMesCop: 540_000,
+              deduccionesCop: 300_000,
+              aGirarCop: 240_000,
+              saldoEnContraCop: 0,
+            }),
+          },
+          {
+            ...marcela,
+            netToPropietario: -140_000,
+            conDeducciones: bloque({
+              netoDelMesCop: 360_000,
+              deduccionesCop: 500_000,
+              aGirarCop: 0,
+              saldoEnContraCop: 140_000,
+            }),
+          },
+        ],
+      }),
+    );
+    await montar();
+
+    const deducciones = Array.from(host.querySelectorAll('[data-testid="tesoreria-deducciones-fila"]'));
+    expect(deducciones.map((d) => d.textContent)).toEqual([
+      expect.stringContaining('300.000'),
+      expect.stringContaining('500.000'),
+    ]);
+
+    const netos = Array.from(host.querySelectorAll('[data-testid="tesoreria-neto-fila"]'));
+    expect(netos[0].textContent).toContain('240.000');
+    expect(netos[1].textContent).toContain('0');
+    expect(netos[1].className).not.toContain('text-danger');
+    expect(netos[1].textContent).not.toContain('Queda debiendo');
+    expect(netos[1].querySelector('[data-testid="tesoreria-en-contra-fila"]')).not.toBeNull();
+
+    expect(q('tesoreria-deducciones-total')?.textContent).toContain('800.000');
+    // Lo que sale del banco: 240.000 + 0.
+    expect(q('tesoreria-a-girar-total')?.textContent).toContain('240.000');
+    expect(q('tesoreria-quedan-en-cero')).not.toBeNull();
+    expect(q('tesoreria-quedan-debiendo')).toBeNull();
+  });
+});

@@ -32,6 +32,7 @@ import type {
   PropietarioBankAccount,
 } from '@/lib/types/inmobiliaria';
 import { baseDeLaDispersion } from '@/lib/propietarios/base-del-canon';
+import type { DeduccionesDeLaLiquidacion } from '@/lib/types/deducciones';
 
 /** Lo que manda el back, tal cual. */
 export interface DispersionDelBack {
@@ -54,6 +55,8 @@ export interface DispersionDelBack {
   totalConceptosACargo?: number;
   totalDeTerceros?: number;
   netToPropietario: number;
+  /** Las deducciones de la liquidación. La manda `GET` desde el 2026-09-16. */
+  conDeducciones?: DeduccionesDeLaLiquidacion | null;
   status: string;
   approvedBy?: string | null;
   approvedAt?: string | null;
@@ -145,6 +148,8 @@ export function adaptarDispersion(d: DispersionDelBack): Dispersion {
     totalConceptosACargo: d.totalConceptosACargo ?? 0,
     totalDeTerceros: d.totalDeTerceros ?? 0,
     netToPropietario: d.netToPropietario,
+    // Tal cual: la cuenta es del back. Ausente = back viejo = sin deducciones.
+    ...(d.conDeducciones ? { conDeducciones: d.conDeducciones } : {}),
     status: estadoDeDispersion(d.status),
     approvedBy: d.approvedBy ?? undefined,
     approvedAt: d.approvedAt ?? undefined,

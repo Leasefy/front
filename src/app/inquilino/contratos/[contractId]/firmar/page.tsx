@@ -131,6 +131,21 @@ function ContractDocumentView({
       />
     );
   }
+  if (preview?.origin === 'SIN_DOCUMENTO') {
+    /*
+      🔴 El contrato que tu inmobiliaria trajo de su sistema anterior: ya se
+      firmó en papel y no tiene documento en Leasefy. Antes el back respondía
+      400 y esta vista se quedaba con la ruedita girando para siempre.
+    */
+    return (
+      <div
+        className="rounded-xl border border-border bg-surface p-6 text-sm text-muted-foreground"
+        data-testid="contrato-sin-documento"
+      >
+        Este contrato se firmó fuera de Leasefy y no tiene documento digital acá. Si necesitas una copia, pídesela a tu inmobiliaria.
+      </div>
+    );
+  }
   return (
     <div className="rounded-xl border border-border bg-surface p-8 flex items-center justify-center">
       <Spinner size="md" variant="muted" />

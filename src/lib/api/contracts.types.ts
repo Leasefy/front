@@ -329,10 +329,17 @@ export interface VerifyOtpResponse {
   expiresAt: string;
 }
 
-/** Shape returned by GET /contracts/:id/preview */
+/**
+ * Shape returned by GET /contracts/:id/preview.
+ *
+ * `SIN_DOCUMENTO` NO es un error: es el contrato que entró por la migración,
+ * ya firmado en papel, que nunca tuvo HTML ni PDF en Leasefy. Antes el back
+ * respondía 400 y cada pantalla lo adivinaba por el texto; ahora lo dice.
+ */
 export type ContractPreview =
   | { origin: 'GENERATED'; html: string }
-  | { origin: 'UPLOADED_PDF'; pdfUrl: string; expiresAt: string };
+  | { origin: 'UPLOADED_PDF'; pdfUrl: string; expiresAt: string }
+  | { origin: 'SIN_DOCUMENTO'; motivo: 'MIGRADO' };
 
 /**
  * Shape returned by GET /contracts/:id/pdf — signed URL para descargar el PDF actual.

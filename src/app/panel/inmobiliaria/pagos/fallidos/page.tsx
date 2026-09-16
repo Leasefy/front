@@ -180,7 +180,7 @@ function PagosFallidos() {
       {/* Cross-link a la operación profunda — NUNCA duplicar esa tabla acá */}
       <div className="text-sm">
         <Link
-          href="/panel/inmobiliaria/cobros"
+          href="/panel/inmobiliaria/pagos/cartera/cobros"
           className="inline-flex items-center gap-1.5 text-primary underline-offset-4 hover:underline font-medium"
         >
           Ver todos los cobros y el detalle de cada factura

@@ -221,7 +221,7 @@ const FLOW: FlowNode[] = [
     quien: 'Laura',
     titulo: 'Genera los cobros del mes',
     detalle: 'Arma cada cobro con su valor, concepto y vencimiento, listo para enviar.',
-    link: { href: '/panel/inmobiliaria/cobros', label: 'Ver cobros' },
+    link: { href: '/panel/inmobiliaria/pagos/cartera/cobros', label: 'Ver cobros' },
   },
   {
     id: 'nicolas',
@@ -419,7 +419,7 @@ function EquipoPagos() {
             Ejemplo ilustrativo de cómo se reparte el trabajo de un lote del mes entre el equipo. Los
             datos reales de cada lote viven en{' '}
             <Link
-              href="/panel/inmobiliaria/cobros"
+              href="/panel/inmobiliaria/pagos/cartera/cobros"
               className="font-medium text-primary underline-offset-4 hover:underline"
             >
               Cobros

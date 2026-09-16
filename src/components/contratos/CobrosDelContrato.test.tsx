@@ -127,7 +127,7 @@ describe('<CobrosDelContrato>', () => {
     expect(container.querySelector('[data-testid="desglose"]')?.textContent).toBe('Canon | Parqueadero')
     expect(container.querySelector('[data-testid="recibos"]')?.textContent).toBe('0 recibos')
     const enlace = container.querySelector<HTMLAnchorElement>('[data-testid="cuenta-de-cobro-2026-09"]')!
-    expect(enlace.getAttribute('href')).toContain('/panel/inmobiliaria/cobros/cb-1/cuenta-de-cobro')
+    expect(enlace.getAttribute('href')).toContain('/panel/inmobiliaria/pagos/cartera/cobros/cb-1/cuenta-de-cobro')
     // Vuelve a la ficha del contrato, no a Cobros.
     expect(decodeURIComponent(enlace.getAttribute('href')!)).toContain('volver=/panel/inmobiliaria/contratos/c-1')
   })

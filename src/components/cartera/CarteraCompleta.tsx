@@ -341,7 +341,7 @@ export function CarteraCompleta() {
           {vista === 'deudas' ? (
             <CarteraTable
               items={pagDeudas.pageItems}
-              onVerCobro={(i) => router.push(`/panel/inmobiliaria/cobros?cobro=${i.cobroId}`)}
+              onVerCobro={(i) => router.push(`/panel/inmobiliaria/pagos/cartera/cobros?cobro=${i.cobroId}`)}
               vacio={
                 /* Dos vacíos distintos: no deber nada es una buena noticia; no
                    encontrar nada con un filtro puesto se arregla quitándolo. Lo

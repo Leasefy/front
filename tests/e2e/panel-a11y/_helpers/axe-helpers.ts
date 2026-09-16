@@ -26,7 +26,7 @@
  *   })
  *
  *   test(..., async ({ page }) => {
- *     await page.goto('/panel/inmobiliaria/cobros/cobranza')
+ *     await page.goto('/panel/inmobiliaria/pagos/cobranza')
  *     const result = await runAxeOrFixme(page)
  *     if (result.skipped) return // test.fixme already called
  *     assertNoBlockingViolations(result.violations)

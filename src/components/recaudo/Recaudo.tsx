@@ -144,10 +144,10 @@ export function Recaudo() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/cobros">Ver cobros del mes</Link>
+            <Link href="/panel/inmobiliaria/pagos/cartera/cobros">Ver cobros del mes</Link>
           </Button>
           <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href="/panel/inmobiliaria/cobros/cartera">Ver cartera</Link>
+            <Link href="/panel/inmobiliaria/pagos/cartera">Ver cartera</Link>
           </Button>
           <Button asChild variant="secondary" size="sm" hideArrow>
             <Link href="/panel/inmobiliaria/pagos/dispersiones/lotes">
@@ -187,7 +187,7 @@ export function Recaudo() {
                   Nada que contar en {nombreDelMes(month)}: no hubo cobros, recibos ni giros con fecha
                   en este mes. Si la plata entró, se registra con un recibo de caja desde Cobros.
                 </span>
-                <Link href="/panel/inmobiliaria/cobros" className="font-medium text-primary underline-offset-2 hover:underline">
+                <Link href="/panel/inmobiliaria/pagos/cartera/cobros" className="font-medium text-primary underline-offset-2 hover:underline">
                   Ir a cobros
                 </Link>
               </p>

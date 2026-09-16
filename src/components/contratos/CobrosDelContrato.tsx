@@ -149,7 +149,7 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
           ) : null}
         </div>
         <Button asChild variant="ghost" size="sm" hideArrow>
-          <Link href="/panel/inmobiliaria/cobros">
+          <Link href="/panel/inmobiliaria/pagos/cartera/cobros">
             Ir a Cobros
             <ArrowSquareOut className="ml-1 h-3.5 w-3.5" />
           </Link>
@@ -252,7 +252,7 @@ function FilaDeCobro({
 }) {
   const periodo = capitalizar(nombreDelMes(cobro.month))
   const vence = fechaCorta(cobro.dueDate)
-  const cuentaDeCobro = `/panel/inmobiliaria/cobros/${cobro.id}/cuenta-de-cobro?volver=${encodeURIComponent(volverA)}`
+  const cuentaDeCobro = `/panel/inmobiliaria/pagos/cartera/cobros/${cobro.id}/cuenta-de-cobro?volver=${encodeURIComponent(volverA)}`
 
   return (
     <>

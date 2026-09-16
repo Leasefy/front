@@ -338,7 +338,7 @@ function FilaDeCartera({
         {/* Enlace de verdad, no un onClick: se puede abrir en otra pestaña. */}
         <Button asChild variant="ghost" size="sm" hideArrow>
           <Link
-            href={`/panel/inmobiliaria/cobros?cobro=${item.cobroId}`}
+            href={`/panel/inmobiliaria/pagos/cartera/cobros?cobro=${item.cobroId}`}
             onClick={(e) => e.stopPropagation()}
           >
             <ArrowSquareOut className="h-4 w-4" aria-hidden="true" />

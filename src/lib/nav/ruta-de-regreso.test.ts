@@ -41,7 +41,7 @@ describe('lugarDeRegreso', () => {
   it('nombra la ficha de la que se vino', () => {
     expect(lugarDeRegreso('/panel/inmobiliaria/contratos/c1')).toBe('contrato');
     expect(lugarDeRegreso('/panel/inmobiliaria/inmuebles/i1')).toBe('inmueble');
-    expect(lugarDeRegreso('/panel/inmobiliaria/cobros/co1')).toBe('cobro');
+    expect(lugarDeRegreso('/panel/inmobiliaria/pagos/cartera/cobros/co1')).toBe('cobro');
     expect(lugarDeRegreso('/panel/inmobiliaria/propietarios/p1?tab=pagos')).toBe('propietario');
     expect(lugarDeRegreso('/panel/inmobiliaria/pagos/dispersiones')).toBe('dispersiones');
   });
@@ -50,5 +50,24 @@ describe('lugarDeRegreso', () => {
     expect(lugarDeRegreso('/panel/inmobiliaria/propietarios')).toBe('lista');
     expect(lugarDeRegreso('/panel/inmobiliaria/contratos')).toBe('lista');
     expect(lugarDeRegreso('/panel/inmobiliaria/hoy')).toBe('otro');
+    // La LISTA de cobros emitidos es una lista, no «un cobro»: con la regla
+    // vieja (mirar sólo el segundo tramo) `/pagos/cartera/cobros` habría
+    // dicho «volver al cobro» estando parado en la tabla entera.
+    expect(lugarDeRegreso('/panel/inmobiliaria/pagos/cartera/cobros')).toBe('lista');
+  });
+
+  it('las otras pantallas de Pagos no se hacen pasar por una ficha', () => {
+    // Desde el 2026-09-15 bajo `/pagos` cuelga toda la plata, así que el
+    // segundo tramo ya no alcanza para nombrar lo que hay.
+    for (const ruta of [
+      '/panel/inmobiliaria/pagos',
+      '/panel/inmobiliaria/pagos/recaudo',
+      '/panel/inmobiliaria/pagos/cartera',
+      '/panel/inmobiliaria/pagos/cartera/conceptos',
+      '/panel/inmobiliaria/pagos/cobranza/deudores/d1',
+      '/panel/inmobiliaria/pagos/liquidaciones',
+    ]) {
+      expect(lugarDeRegreso(ruta), ruta).toBe('otro');
+    }
   });
 });

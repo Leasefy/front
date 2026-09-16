@@ -138,18 +138,18 @@ const PAGES: PageDef[] = [
   },
   {
     label: 'Cobranza overview',
-    route: '/panel/inmobiliaria/cobros/cobranza',
+    route: '/panel/inmobiliaria/pagos/cobranza',
     mockUrls: async (page) => {
       await fulfillJson(page, '**/cartera/overview', POPULATED_OVERVIEW)
     },
   },
   {
     label: 'Cobranza deudores list',
-    route: '/panel/inmobiliaria/cobros/cobranza/deudores',
+    route: '/panel/inmobiliaria/pagos/cobranza/deudores',
     mockUrls: async (page) => {
       // Scope to `/api/agency/.../cobranza/deudores` — anchoring on `/api/`
       // prevents the glob from also matching the page route
-      // `/panel/inmobiliaria/cobros/cobranza/deudores`.
+      // `/panel/inmobiliaria/pagos/cobranza/deudores`.
       await fulfillJson(page, '**/api/agency/*/cobranza/deudores**', POPULATED_DEUDORES)
     },
     // Pre-existing runtime bug in DeudoresListClient.tsx:162 — a useRef
@@ -160,7 +160,7 @@ const PAGES: PageDef[] = [
   },
   {
     label: 'Cobranza deudor detail',
-    route: '/panel/inmobiliaria/cobros/cobranza/deudores/test-debtor-id',
+    route: '/panel/inmobiliaria/pagos/cobranza/deudores/test-debtor-id',
     mockUrls: async (page) => {
       // Anchor on `/api/` to avoid swallowing the page route navigation.
       await fulfillJson(page, '**/api/agency/*/cobranza/deudores/test-debtor-id', {
@@ -180,7 +180,7 @@ const PAGES: PageDef[] = [
   },
   {
     label: 'Cobranza escalaciones',
-    route: '/panel/inmobiliaria/cobros/cobranza/escalaciones',
+    route: '/panel/inmobiliaria/pagos/cobranza/escalaciones',
     mockUrls: async (page) => {
       // EscalationsListResponse shape from use-escalations.ts —
       //   { open, assigned, resolved, resolvedNextCursor, generatedAt }
@@ -214,7 +214,7 @@ const PAGES: PageDef[] = [
   },
   {
     label: 'Cobranza reporte diario',
-    route: '/panel/inmobiliaria/cobros/cobranza/reporte',
+    route: '/panel/inmobiliaria/pagos/cobranza/reporte',
     mockUrls: async (page) => {
       // Real shape: DailyReportResponse from use-daily-report.ts —
       //   { report_date, computed_at?, summary, top_debtors, alerts }
@@ -234,7 +234,7 @@ const PAGES: PageDef[] = [
   },
   {
     label: 'Cobranza configuración',
-    route: '/panel/inmobiliaria/cobros/cobranza/configuracion',
+    route: '/panel/inmobiliaria/pagos/cobranza/configuracion',
     mockUrls: async (page) => {
       // Real endpoint per use-policies-config.ts:45 — `/api/agency/:id/policies`,
       // NOT `cobranza/policies/current`. The configuracion page renders a

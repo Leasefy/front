@@ -409,7 +409,7 @@ function PagosRecordatorios() {
             <p className="text-xs text-fg-muted">
               El interés lo calcula el motor de mora con tus{' '}
               <Link
-                href="/panel/inmobiliaria/cobros/reglas-de-mora"
+                href="/panel/inmobiliaria/pagos/cartera/reglas-de-mora"
                 className="font-medium text-primary underline-offset-4 hover:underline"
               >
                 reglas de mora

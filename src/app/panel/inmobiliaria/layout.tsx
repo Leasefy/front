@@ -305,7 +305,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           {/* Las dos capas de navegación debajo del header, montadas UNA vez y
               auto-ocultas fuera de su contexto, cada una con su cara:
               SeccionesDelModulo (las secciones del módulo como cards:
-              [Cobros] [Recaudo] [Cartera] [Cobranza]) y, DEBAJO, dentro de un
+              [Pagos] [Recaudo] [Cartera] [Cobranza] [Liquidaciones] [Dispersiones]) y, DEBAJO, dentro de un
               agente, su WorkspaceNav (pestañas) + la novedad de primera visita.
               Las secciones no se esconden al entrar en el agente: la card
               sigue marcada y sus pestañas cuelgan de ella. */}

@@ -31,9 +31,14 @@ import { AirTrafficControl, ChatsCircle } from '@phosphor-icons/react';
 
 import es from '@/lib/i18n/locales/es.json';
 import en from '@/lib/i18n/locales/en.json';
-import { AGENT_WORKSPACES } from './agentWorkspaceNav';
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
+import { PESTANAS_DE_CARTERA } from '@/components/cartera/PestanasDeCartera';
+import { AGENT_WORKSPACES, findAgentWorkspace } from './agentWorkspaceNav';
+import { pasaGateDeFila } from './agency-nav-filter';
+import { resolverEntradaDeModulo } from './sidebar-del-panel';
 import {
   ARQUITECTURA_DEL_PANEL,
+  CARAS_DE_LA_PLATA,
   PANEL,
   RUTAS_FUERA_DEL_SIDEBAR,
   modulosDelPanel,
@@ -196,12 +201,14 @@ describe('arquitectura del panel — sidebar', () => {
     }
   });
 
-  it('el sidebar tiene 17 módulos en 4 grupos con nombre (+ Inicio y Chat = 19 filas)', () => {
+  it('el sidebar tiene 16 módulos en 4 grupos con nombre (+ Inicio y Chat = 18 filas)', () => {
     // Eran 18 hasta que Configuración salió del sidebar (Nico, 2026-09-03): se
-    // entra por el menú del perfil. La propuesta original contaba 21 porque
-    // incluía «Ayuda», que en el panel no existe como fila: no se inventa.
+    // entra por el menú del perfil. Eran 17 hasta que «Cobros» y «Pagos» se
+    // volvieron un solo módulo de plata (Nico + CEO, 2026-09-15). La propuesta
+    // original contaba 21 porque incluía «Ayuda», que en el panel no existe
+    // como fila: no se inventa.
     expect(ARQUITECTURA_DEL_PANEL.filter((g) => g.labelKey !== null)).toHaveLength(4);
-    expect(modulos).toHaveLength(17);
+    expect(modulos).toHaveLength(16);
   });
 
   it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {
@@ -324,27 +331,45 @@ describe('arquitectura del panel — agentes', () => {
 
 describe('arquitectura del panel — resolución de rutas', () => {
   it('el módulo dueño es el de prefijo más largo', () => {
-    expect(moduloDeLaRuta(`${PANEL}/cobros/cobranza/deudores/1`)?.key).toBe('cobros');
+    expect(moduloDeLaRuta(`${PANEL}/pagos/cobranza/deudores/1`)?.key).toBe('pagos');
     expect(moduloDeLaRuta(`${PANEL}/pagos/dispersiones/lotes/2`)?.key).toBe('pagos');
     expect(moduloDeLaRuta(`${PANEL}/piloto`)).toBeNull();
     expect(moduloDeLaRuta(PANEL)).toBeNull();
   });
 
+  it('«Cobros» ya no es un módulo: ninguna ruta del árbol cuelga de /cobros', () => {
+    // Nico + CEO, 2026-09-15. Las URLs viejas siguen vivas, pero por
+    // redirección (`un-solo-modulo-de-plata.data.mjs`), no por una fila.
+    expect(modulos.map((m) => m.key)).not.toContain('cobros');
+    expect(pantallas.map((p) => p.href).filter((h) => h.startsWith(`${PANEL}/cobros`))).toEqual([]);
+    expect(moduloDeLaRuta(`${PANEL}/cobros`)).toBeNull();
+  });
+
   it('la pestaña activa es la de href más largo que coincida', () => {
-    const cobros = modulos.find((m) => m.key === 'cobros')!;
-    const tabs = pestanasDelModulo(cobros);
-    expect(pestanaActiva(tabs, `${PANEL}/cobros/cobranza/deudores/1`)?.href).toBe(`${PANEL}/cobros/cobranza`);
-    expect(pestanaActiva(tabs, `${PANEL}/cobros/cartera`)?.href).toBe(`${PANEL}/cobros/cartera`);
-    expect(pestanaActiva(tabs, `${PANEL}/cobros?estado=vencidos`)?.href).toBe(`${PANEL}/cobros`);
+    const pagos = modulos.find((m) => m.key === 'pagos')!;
+    const tabs = pestanasDelModulo(pagos);
+    expect(pestanaActiva(tabs, `${PANEL}/pagos/cobranza/deudores/1`)?.href).toBe(`${PANEL}/pagos/cobranza`);
+    expect(pestanaActiva(tabs, `${PANEL}/pagos/cartera`)?.href).toBe(`${PANEL}/pagos/cartera`);
+    expect(pestanaActiva(tabs, `${PANEL}/pagos?estado=vencidos`)?.href).toBe(`${PANEL}/pagos`);
+  });
+
+  it('lo que cuelga de Cartera la deja marcada a ella (la lista de cobros es una lectura suya)', () => {
+    const pagos = modulos.find((m) => m.key === 'pagos')!;
+    const tabs = pestanasDelModulo(pagos);
+    for (const bajoCartera of ['/cobros', '/cobros/7/cuenta-de-cobro', '/conceptos', '/por-pagar', '/reglas-de-mora']) {
+      expect(
+        pestanaActiva(tabs, `${PANEL}/pagos/cartera${bajoCartera}`)?.href,
+        bajoCartera,
+      ).toBe(`${PANEL}/pagos/cartera`);
+    }
   });
 
   it('la raíz de un módulo es exacta: en una ficha o un flujo ninguna pestaña está activa', () => {
-    const cobros = modulos.find((m) => m.key === 'cobros')!;
-    expect(pestanaActiva(pestanasDelModulo(cobros), `${PANEL}/cobros/7/cuenta-de-cobro`)).toBeNull();
-    expect(pestanaActiva(pestanasDelModulo(cobros), `${PANEL}/cobros/reglas-de-mora`)).toBeNull();
     const inmuebles = modulos.find((m) => m.key === 'inmuebles')!;
     expect(pestanaActiva(pestanasDelModulo(inmuebles), `${PANEL}/inmuebles/nuevo`)).toBeNull();
     expect(pestanaActiva(pestanasDelModulo(inmuebles), `${PANEL}/inmuebles/9`)).toBeNull();
+    const contratos = modulos.find((m) => m.key === 'contratos')!;
+    expect(pestanaActiva(pestanasDelModulo(contratos), `${PANEL}/contratos/7`)).toBeNull();
   });
 
   it('cuando la raíz es la Sala de un agente, todo el agente la deja activa y las hermanas ganan', () => {
@@ -406,5 +431,119 @@ describe('arquitectura del panel — Contratos vive en Operación (Nico, 2026-09
     expect(claves.length).toBeGreaterThanOrEqual(2);
     expect(claves).toEqual(expect.arrayContaining(['pipeline', 'inmuebles', 'postulaciones']));
     expect(claves).not.toContain('contratos');
+  });
+});
+
+
+describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-09-15)', () => {
+  const pagos = modulos.find((m) => m.key === 'pagos')!;
+  const tabs = pestanasDelModulo(pagos);
+  const porHref = (seg: string) => tabs.find((t) => t.href === `${PANEL}${seg}`);
+
+  it('🔴 «Cobros» desapareció del sidebar y Pagos quedó con las cinco pantallas', () => {
+    // «Hay dos cosas de lo mismo, que son Cobros y uno en Pagos y el otro en
+    // Cobros […] que se fuera lo de Cobros, porque todo funciona alrededor del
+    // estado de cuenta del contrato» (Nico). El CEO: «inquilinos […] y
+    // dispersión a propietarios, todo en un solo módulo».
+    expect(pagos.pantallas?.map((p) => p.href)).toEqual([
+      `${PANEL}/pagos/recaudo`,
+      `${PANEL}/pagos/cartera`,
+      `${PANEL}/pagos/cobranza`,
+      `${PANEL}/pagos/liquidaciones`,
+      `${PANEL}/pagos/dispersiones`,
+    ]);
+  });
+
+  it('las dos caras están declaradas y en orden: primero lo que ENTRA, después lo que SALE', () => {
+    expect(pagos.pantallas?.map((p) => p.cara)).toEqual([
+      'inquilinos',
+      'inquilinos',
+      'inquilinos',
+      'propietarios',
+      'propietarios',
+    ]);
+    // La Sala del agente no es de ninguna cara: mira las dos.
+    expect(tabs[0]?.href).toBe(pagos.href);
+    expect(tabs[0]?.cara).toBeUndefined();
+    // Y las dos caras tienen su rótulo en los dos idiomas (lo pinta
+    // `SeccionesDelModulo` a partir de `CARAS_DE_LA_PLATA`).
+    for (const c of CARAS_DE_LA_PLATA) {
+      expect(typeof leer(es, c.labelKey), c.labelKey).toBe('string');
+      expect(typeof leer(en, c.labelKey), c.labelKey).toBe('string');
+    }
+    expect(CARAS_DE_LA_PLATA.map((c) => c.cara)).toEqual(['inquilinos', 'propietarios']);
+  });
+
+  it('🔴 PERMISOS: cada pantalla conserva EXACTAMENTE el gate que tenía como fila propia', () => {
+    // Unificar no puede abrirle a nadie una pantalla que no tenía ni cerrarle
+    // una que usaba. Estos son los gates de ANTES, uno por uno.
+    expect({ module: pagos.module, roles: pagos.roles }).toEqual({
+      module: null,
+      roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+    });
+    expect(porHref('/pagos/recaudo')?.module).toBe('cobros');
+    expect(porHref('/pagos/cartera')?.module).toBe('cobros');
+    expect(porHref('/pagos/cobranza')?.module).toBe('cobranza');
+    expect(porHref('/pagos/liquidaciones')?.module).toBeNull();
+    expect(porHref('/pagos/liquidaciones')?.roles).toEqual([AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]);
+    expect(porHref('/pagos/dispersiones')?.module).toBe('dispersiones');
+    // Ninguna de las tres que venían de Cobros gana un gate de rol nuevo: si
+    // lo ganaran, quien tiene `cobros` y no es contador perdería su trabajo.
+    for (const seg of ['/pagos/recaudo', '/pagos/cartera', '/pagos/cobranza']) {
+      expect(porHref(seg)?.roles, seg).toBeUndefined();
+    }
+  });
+
+  it('🔴 PERMISOS: quien sólo tiene `cobros` entra igual, y no ve la dispersión', () => {
+    // El mecanismo es `resolverEntradaDeModulo`: si la raíz no le pasa, la
+    // fila se abre en la primera pestaña que sí. Es el MISMO que ya usaban
+    // Inmuebles/Avalúos, no uno nuevo.
+    const ctx = {
+      canAccess: (m: string) => m === 'cobros',
+      isAdmin: false,
+      agencyRole: AGENCY_ROLES.VIEWER as string,
+    };
+    expect(resolverEntradaDeModulo(pagos, ctx)?.href).toBe(`${PANEL}/pagos/recaudo`);
+    const visibles = tabs.filter((t) => pasaGateDeFila(t, ctx)).map((t) => t.href);
+    expect(visibles).toEqual([`${PANEL}/pagos/recaudo`, `${PANEL}/pagos/cartera`]);
+  });
+
+  it('🔴 PERMISOS: el contador no pierde liquidaciones ni dispersiones', () => {
+    const ctx = {
+      canAccess: () => true,
+      isAdmin: false,
+      agencyRole: AGENCY_ROLES.CONTADOR as string,
+    };
+    expect(resolverEntradaDeModulo(pagos, ctx)?.href).toBe(`${PANEL}/pagos`);
+    expect(tabs.filter((t) => pasaGateDeFila(t, ctx))).toHaveLength(tabs.length);
+  });
+
+  it('el módulo conserva su encuadre de finanzas y lo hereda a las cinco', () => {
+    // `AGENTE` (comercial) no ve finanzas, y no veía Cobros antes tampoco.
+    expect(pagos.scope).toBe('finanzas');
+    for (const t of tabs) expect(t.scope, t.href).toBe('finanzas');
+  });
+
+  it('la Sala de Pagos excluye a las cinco hermanas: no se las traga el agente', () => {
+    const ws = AGENT_WORKSPACES.find((w) => w.slug === 'pagos')!;
+    for (const p of pagos.pantallas ?? []) expect(ws.excluir ?? [], p.href).toContain(p.href);
+    // Y Cobranza, que es OTRO agente, gana en su propia ruta.
+    expect(findAgentWorkspace(`${PANEL}/pagos/cobranza/deudores/1`)?.slug).toBe('cobranza');
+    expect(findAgentWorkspace(`${PANEL}/pagos/cola`)?.slug).toBe('pagos');
+    expect(findAgentWorkspace(`${PANEL}/pagos/cartera/cobros`)).toBeNull();
+  });
+
+  it('la lista de cobros emitidos es una lectura de Cartera, no una fila', () => {
+    // Un cobro es el DOCUMENTO con el que se reclama parte de la deuda, y la
+    // deuda nace con el contrato. Un documento no es un módulo.
+    expect(pantallas.map((p) => p.href)).not.toContain(`${PANEL}/pagos/cartera/cobros`);
+    expect(PESTANAS_DE_CARTERA.map((p) => p.href)).toContain(`${PANEL}/pagos/cartera/cobros`);
+    expect(existsSync(join(APP, 'pagos/cartera/cobros/page.tsx'))).toBe(true);
+  });
+
+  it('la maqueta «Cobros a inquilinos» del agente murió (era la duplicación señalada)', () => {
+    expect(existsSync(join(APP, 'pagos/cobros'))).toBe(false);
+    const ws = AGENT_WORKSPACES.find((w) => w.slug === 'pagos')!;
+    expect(ws.items.map((i) => i.href)).not.toContain(`${PANEL}/pagos/cobros`);
   });
 });

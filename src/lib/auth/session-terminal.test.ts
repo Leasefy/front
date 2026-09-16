@@ -38,7 +38,7 @@ beforeEach(() => {
   resetSessionTerminal()
   localStorage.clear()
   sessionStorage.clear()
-  enRuta('/panel/inmobiliaria/cobros')
+  enRuta('/panel/inmobiliaria/pagos/cartera/cobros')
 })
 
 afterEach(() => {
@@ -63,7 +63,7 @@ describe('terminarSesion', () => {
   })
 
   it('lleva a /auth conservando a dónde quería ir y por qué salió', () => {
-    enRuta('/panel/inmobiliaria/cobros', '?estado=vencidos')
+    enRuta('/panel/inmobiliaria/pagos/cartera/cobros', '?estado=vencidos')
 
     terminarSesion('expirada')
 
@@ -71,7 +71,7 @@ describe('terminarSesion', () => {
     const destino = new URL(replace.mock.calls[0][0] as string)
     expect(destino.pathname).toBe('/auth')
     expect(destino.searchParams.get('returnUrl')).toBe(
-      '/panel/inmobiliaria/cobros?estado=vencidos',
+      '/panel/inmobiliaria/pagos/cartera/cobros?estado=vencidos',
     )
     expect(destino.searchParams.get('reason')).toBe('expirada')
   })

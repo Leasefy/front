@@ -64,7 +64,7 @@ describe('sin permiso el botón se deshabilita con el porqué, no desaparece', (
   it.each([
     'src/components/inmobiliaria/CobroDetail.tsx',
     'src/components/inmobiliaria/CobroTable.tsx',
-    'src/app/panel/inmobiliaria/cobros/page.tsx',
+    'src/app/panel/inmobiliaria/pagos/cartera/cobros/page.tsx',
   ])('%s', (ruta) => {
     const s = fuente(ruta);
     expect(s).toContain('usePuedeHacerRecibo()');

@@ -44,9 +44,21 @@ describe('navigationSource — chips', () => {
   });
 
   it('el contexto viaja en subtitle: es lo que se pinta a la derecha', async () => {
+    // Decía «Cobros», que era el módulo dueño. Desde el 2026-09-15 la plata es
+    // un solo módulo con dos caras, y el contexto dice de cuál es cada fila.
     const filas = await buscar('cartera');
     const cartera = filas.find((f) => f.title === 'Cartera');
-    expect(cartera?.subtitle).toBe('Cobros');
+    expect(cartera?.subtitle).toBe('Pagos · inquilinos');
+  });
+
+  it('«cobros» sigue encontrando la lista de cobros emitidos, que ya no es un módulo', async () => {
+    // Era el nombre de una fila del sidebar y la gente lo escribe. Si el
+    // buscador dejara de contestarlo, la unificación se leería como una
+    // función borrada.
+    const filas = await buscar('cobros');
+    const emitidos = filas.find((f) => f.title === 'Cobros emitidos');
+    expect(emitidos?.href).toBe('/panel/inmobiliaria/pagos/cartera/cobros');
+    expect(emitidos?.subtitle).toBe('Cartera');
   });
 
   it('Agenda se busca bajo «Captación y arriendo», no bajo «Operación»', async () => {

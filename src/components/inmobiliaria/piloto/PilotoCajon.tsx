@@ -574,7 +574,7 @@ export function PilotoCajon({
         <PilotoDocumento
           artifactId={documento}
           onClose={() => setDocumento(null)}
-          hrefCompleto={`/panel/inmobiliaria/cobros/cobranza/cartas/${documento}`}
+          hrefCompleto={`/panel/inmobiliaria/pagos/cobranza/cartas/${documento}`}
         />
       )}
     </Sheet>

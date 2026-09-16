@@ -206,19 +206,19 @@ const COBERTURA: string[] = [
   'app/panel/inmobiliaria/documentos/page.tsx',
   'app/panel/inmobiliaria/reportes/resumen/page.tsx',
   // — cobros / cobranza ————————————————————————————————————————
-  'app/panel/inmobiliaria/cobros/page.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/DeudoresListClient.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/DebtorActionRail.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/DebtorSidebar.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/tabs/AccionesTab.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/tabs/MemosTab.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/tabs/CompromisosTab.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/tabs/LlamadasTab.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/tabs/TimelineTab.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/llamadas/page.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/escalaciones/page.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/reportes-propietarios/page.tsx',
-  'app/panel/inmobiliaria/cobros/cobranza/configuracion/page.tsx',
+  'app/panel/inmobiliaria/pagos/cartera/cobros/page.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/DeudoresListClient.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/DebtorActionRail.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/DebtorSidebar.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/tabs/AccionesTab.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/tabs/MemosTab.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/tabs/CompromisosTab.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/tabs/LlamadasTab.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/tabs/TimelineTab.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/llamadas/page.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/escalaciones/page.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/reportes-propietarios/page.tsx',
+  'app/panel/inmobiliaria/pagos/cobranza/configuracion/page.tsx',
   'components/inmobiliaria/cobranza/AcuerdosGeneralesTabla.tsx',
   'components/inmobiliaria/cobranza/AcuerdosTabla.tsx',
   'components/inmobiliaria/cobranza/CobranzaNextActionsPanel.tsx',
@@ -401,22 +401,22 @@ const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
   'components/inmobiliaria/VisitasDelInmueble.tsx':
     'Uno es `role="checkbox"` (tarjeta seleccionable entera) y el otro `role="tab"` ' +
     'dentro de un `role="tablist"`.',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/DeudoresListClient.tsx':
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/DeudoresListClient.tsx':
     'Tarjeta-fila de deudor en móvil: el equivalente exacto del `TableRow` de ≥md.',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/DebtorActionRail.tsx':
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/DebtorActionRail.tsx':
     'Tarjeta de acción a lo ancho (`border` + `bg-card` + `rounded-md`): chrome de ' +
     'tarjeta, no de botón. Y convertirla ROMPERÍA algo real: el `title` que explica ' +
     'por qué está deshabilitada por RBAC dejaría de verse, porque el `Button` del DS ' +
     'trae `disabled:pointer-events-none` y el navegador no dibuja tooltip sobre un ' +
     'elemento sin eventos de puntero.',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/tabs/AccionesTab.tsx':
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/tabs/AccionesTab.tsx':
     'Mismas tarjetas de acción en grilla 2×2, con el mismo problema del tooltip en ' +
     '`disabled`.',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/tabs/LlamadasTab.tsx':
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/tabs/LlamadasTab.tsx':
     'Tarjeta-fila de móvil, equivalente del `TableRow` de escritorio.',
-  'app/panel/inmobiliaria/cobros/cobranza/deudores/[id]/tabs/TimelineTab.tsx':
+  'app/panel/inmobiliaria/pagos/cobranza/deudores/[id]/tabs/TimelineTab.tsx':
     'Fila del timeline: el borde lo pone el `<li>`, el botón no tiene chrome propio.',
-  'app/panel/inmobiliaria/cobros/cobranza/reportes-propietarios/page.tsx':
+  'app/panel/inmobiliaria/pagos/cobranza/reportes-propietarios/page.tsx':
     'Ítem seleccionable de una `<ul>` (`aria-pressed`, tres líneas con ícono).',
   'components/inmobiliaria/cobranza/CobranzaNextActionsPanel.tsx':
     'Fila de lista, sin fondo ni borde propios.',

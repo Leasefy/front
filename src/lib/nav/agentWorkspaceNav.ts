@@ -27,7 +27,7 @@ import {
   ArrowsClockwise,
   Wallet,
   PaperPlaneTilt,
-  Receipt,
+  // Receipt,  ← reactivar junto con la pestaña «Cobros a inquilinos»
   WarningCircle,
   Bank,
 } from '@phosphor-icons/react';
@@ -76,9 +76,12 @@ export interface AgentWorkspace {
   basePath: string;
   /**
    * Prefijos que cuelgan de `basePath` pero NO son del agente. Pagos es la
-   * Sala del agente Y la raíz del módulo: `/pagos/dispersiones`,
-   * `/pagos/liquidaciones` y `/pagos/cxp` son pantallas hermanas, no
-   * funciones del agente. Lo respeta `findAgentWorkspace`.
+   * Sala del agente Y la raíz del ÚNICO módulo de plata: `/pagos/recaudo`,
+   * `/pagos/cartera`, `/pagos/cobranza`, `/pagos/liquidaciones`,
+   * `/pagos/dispersiones` y `/pagos/cxp` son pantallas hermanas (o, en el caso
+   * de Cobranza, OTRO agente), no funciones de éste. Lo respeta
+   * `findAgentWorkspace`, y un test exige que toda hermana declarada en
+   * `arquitectura-del-panel.ts` esté en esta lista.
    */
   excluir?: string[];
   /** i18n key for the agent's display name. */
@@ -90,7 +93,7 @@ export interface AgentWorkspace {
 }
 
 const PANEL = '/panel/inmobiliaria';
-const COBRANZA = `${PANEL}/cobros/cobranza`;
+const COBRANZA = `${PANEL}/pagos/cobranza`;
 const ASEGURABILIDAD = `${PANEL}/postulaciones/asegurabilidad`;
 const AVALUOS = `${PANEL}/inmuebles/avaluos`;
 const CONCILIACION = `${PANEL}/conciliacion`;
@@ -242,14 +245,29 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
   {
     slug: 'pagos',
     basePath: PAGOS,
-    excluir: [`${PAGOS}/dispersiones`, `${PAGOS}/liquidaciones`, `${PAGOS}/cxp`],
+    excluir: [
+      `${PAGOS}/recaudo`,
+      `${PAGOS}/cartera`,
+      `${PAGOS}/cobranza`,
+      `${PAGOS}/liquidaciones`,
+      `${PAGOS}/dispersiones`,
+      `${PAGOS}/cxp`,
+    ],
     labelKey: 'inmobiliaria.ai.nav.pagos',
     icon: CurrencyDollar,
     module: null,
     roles: CONTADOR_ROLES,
     items: [
       { labelKey: 'inmobiliaria.ai.nav.resumen', href: PAGOS, icon: SquaresFour, exact: true, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosCobros', href: `${PAGOS}/cobros`, icon: Receipt, module: null, roles: CONTADOR_ROLES },
+      // RETIRADA — «Cobros a inquilinos» (`/pagos/cobros`). Era una maqueta:
+      // un cobro de ejemplo rotulado con `AvisoDatosDeEjemplo` y tres enlaces
+      // a la tabla real de cobros. Es LA duplicación que Nico señaló el
+      // 2026-09-15 («hay dos cosas de lo mismo, que son Cobros y uno en Pagos
+      // y el otro en Cobros»). La lista real de cobros emitidos vive ahora
+      // dentro de Cartera (`/pagos/cartera/cobros`), porque un cobro es un
+      // DOCUMENTO sobre la cartera, no una bandeja del agente. La URL vieja
+      // redirige allá (`un-solo-modulo-de-plata.data.mjs`); la clave i18n
+      // `inmobiliaria.ai.nav.pagosCobros` se queda, como con «Equipo IA».
       { labelKey: 'inmobiliaria.ai.nav.pagosGenerar', href: `${PAGOS}/generar`, icon: PaperPlaneTilt, module: null, roles: CONTADOR_ROLES },
       { labelKey: 'inmobiliaria.ai.nav.pagosFallidos', href: `${PAGOS}/fallidos`, icon: WarningCircle, module: null, roles: CONTADOR_ROLES },
       { labelKey: 'inmobiliaria.ai.nav.pagosRecordatorios', href: `${PAGOS}/recordatorios`, icon: BellRinging, module: null, roles: CONTADOR_ROLES },

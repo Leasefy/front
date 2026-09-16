@@ -6,6 +6,7 @@ import { usePermissionsContext } from '@/lib/context/PermissionsContext';
 import { pasaGateDeFila } from '@/lib/nav/agency-nav-filter';
 import { canSeeBusinessModule } from '@/lib/nav/agency-module-scope';
 import {
+  CARAS_DE_LA_PLATA,
   moduloDeLaRuta,
   pestanaActiva,
   pestanasDelModulo,
@@ -16,7 +17,8 @@ import { BarraDePestanas, type PestanaDeBarra } from './BarraDePestanas';
 /**
  * SeccionesDelModulo — las secciones (N3) de un módulo, como cards chicas
  * dentro de un rectángulo debajo del header: [Inmuebles] [Avalúos IA];
- * [Cobros] [Recaudo] [Cartera] [Cobranza IA].
+ * [Pagos] │ INQUILINOS [Recaudo] [Cartera] [Cobranza IA] │ PROPIETARIOS
+ * [Liquidaciones] [Dispersiones].
  *
  * Se monta UNA vez en `app/panel/inmobiliaria/layout.tsx` y se esconde sola:
  *
@@ -38,7 +40,13 @@ import { BarraDePestanas, type PestanaDeBarra } from './BarraDePestanas';
  *
  * Los gates son los MISMOS que tenía cada pantalla como entrada del sidebar
  * (`module`/`roles`/`scope`), resueltos con las mismas funciones que usa el
- * sidebar: nadie ve una card que no podía abrir antes.
+ * sidebar: nadie ve una card que no podía abrir antes. Eso vale también para
+ * el módulo único de plata: quien no tiene `dispersiones` no ve la card de
+ * Dispersiones aunque ahora viva en la misma fila que su cartera.
+ *
+ * Cuando un módulo tiene dos CARAS (`cara` en `arquitectura-del-panel.ts`) las
+ * cards van en el mismo riel, separadas por su rótulo. Un rótulo cuyas cards
+ * se filtraron todas no se dibuja: no se anuncia una cara vacía.
  */
 export function SeccionesDelModulo() {
   const pathname = usePathname() ?? '';
@@ -60,6 +68,7 @@ export function SeccionesDelModulo() {
   const ruta = pathname.split('?')[0] ?? pathname;
   const etiqueta = (p: PantallaDelPanel) => (p.hintKey ? `${t(p.labelKey)} · ${t(p.hintKey)}` : t(p.labelKey));
 
+  const rotuloDeLaCara = new Map(CARAS_DE_LA_PLATA.map((c) => [c.cara, t(c.labelKey)]));
   const items: PestanaDeBarra[] = visibles.map((p) => ({
     href: p.href,
     label: etiqueta(p),
@@ -67,6 +76,7 @@ export function SeccionesDelModulo() {
     active: activa.href === p.href,
     current: ruta === p.href,
     ia: p.ia,
+    grupo: p.cara ? rotuloDeLaCara.get(p.cara) : undefined,
     dataTourTarget: p.dataTourTarget,
   }));
 

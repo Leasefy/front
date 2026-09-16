@@ -193,7 +193,7 @@ describe('PilotoCajon — modo alerta', () => {
     severidad: 'alta' as const,
     titulo: '3 promesas de pago vencidas',
     detalle: 'El deudor se comprometió y la fecha pasó.',
-    href: '/panel/inmobiliaria/cobros/cobranza/pagos',
+    href: '/panel/inmobiliaria/pagos/cobranza/pagos',
     items: [
       { id: 'prom:p-1', titulo: '$250.000 — Ana R.', desde: '2026-08-25T10:00:00-05:00' },
       { id: 'prom:p-2', titulo: '$800.000 — Luis M.' },
@@ -241,7 +241,7 @@ describe('PilotoCajon — una carta se lee acá mismo', () => {
     fuente: 'carta',
     enlaces: [
       { label: 'Leer el PDF antes de aprobar', href: 'https://demo.leasefy.co/cartas/2.pdf' },
-      { label: 'Abrir la carta', href: '/panel/inmobiliaria/cobros/cobranza/cartas/carta-9' },
+      { label: 'Abrir la carta', href: '/panel/inmobiliaria/pagos/cobranza/cartas/carta-9' },
     ],
   }
 

@@ -16,7 +16,7 @@ import {
   ordenarPorAntiguedad,
   type DeudaImputable,
 } from './imputar-pago';
-import type { CobroEnCartera } from '@/lib/api/recibos-de-caja.types';
+import type { PeriodoEnDeuda } from '@/lib/api/recibos-de-caja.types';
 
 function deuda(id: string, month: string, pendiente: number, extra: Partial<DeudaImputable> = {}) {
   return { id, month, pendiente, ...extra };
@@ -140,9 +140,11 @@ describe('ordenarPorAntiguedad', () => {
 });
 
 describe('deudasDeLaCartera', () => {
-  it('traduce el cobro del back a lo que la regla necesita', () => {
-    const cobro = {
+  function periodo(over: Partial<PeriodoEnDeuda> = {}): PeriodoEnDeuda {
+    return {
       id: 'c1',
+      cuotaId: 'q1',
+      cobroId: null,
       month: '2026-06',
       dueDate: '2026-06-05T00:00:00.000Z',
       createdAt: '2026-06-01T00:00:00.000Z',
@@ -154,14 +156,19 @@ describe('deudasDeLaCartera', () => {
       totalWithFees: 1_120_000,
       paidAmount: 20_000,
       pendingAmount: 1_100_000,
-      status: 'PENDING',
+      estado: 'PARCIAL',
+      status: null,
       daysLate: 12,
       lateFee: 120_000,
+      vencida: true,
       sinRespaldo: 0,
       conceptos: [],
-    } satisfies CobroEnCartera;
+      ...over,
+    };
+  }
 
-    expect(deudasDeLaCartera([cobro])).toEqual([
+  it('traduce el período del back a lo que la regla necesita', () => {
+    expect(deudasDeLaCartera([periodo()])).toEqual([
       {
         id: 'c1',
         month: '2026-06',
@@ -172,5 +179,38 @@ describe('deudasDeLaCartera', () => {
         yaAbonado: 20_000,
       },
     ]);
+  });
+
+  /*
+   * 🔴 La regla del 2026-09-15: una cuota que todavía no vence ES deuda y entra
+   * a la imputación — abonar a ella es ADELANTAR, que es lo que el CEO pidió.
+   * Dejarla afuera acá volvería a producir el «no debe nada» con el contrato
+   * vigente, sólo que del lado del front.
+   */
+  it('las cuotas que todavía NO vencen entran igual: es contra lo que se adelanta', () => {
+    const futura = periodo({
+      id: 'c-dic',
+      month: '2026-12',
+      dueDate: '2026-12-05T00:00:00.000Z',
+      vencida: false,
+      lateFee: 0,
+      paidAmount: 0,
+      pendingAmount: 1_000_000,
+    });
+    const plan = imputarPago(deudasDeLaCartera([futura]), 1_000_000);
+    expect(plan.partes.map((p) => p.month)).toEqual(['2026-12']);
+    // Y NO sobra nada: no es saldo a favor, es una cuota que bajó.
+    expect(plan.sobrante).toBe(0);
+    expect(plan.deudaRestante).toBe(0);
+  });
+
+  /* El orden por período deja las futuras de últimas solas: sin excepciones. */
+  it('lo vencido se paga antes que lo futuro, sin ninguna regla aparte', () => {
+    const cuotas = [
+      periodo({ id: 'c-dic', month: '2026-12', vencida: false, lateFee: 0, paidAmount: 0, pendingAmount: 1_000_000 }),
+      periodo({ id: 'c-jun', month: '2026-06', vencida: true, lateFee: 0, paidAmount: 0, pendingAmount: 1_000_000 }),
+    ];
+    const plan = imputarPago(deudasDeLaCartera(cuotas), 1_000_000);
+    expect(plan.partes.map((p) => p.id)).toEqual(['c-jun']);
   });
 });

@@ -9,7 +9,7 @@ import * as React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
-import type { CarteraDelCliente, CobroEnCartera } from '@/lib/api/recibos-de-caja.types';
+import type { CarteraDelCliente, PeriodoEnDeuda } from '@/lib/api/recibos-de-caja.types';
 import type { Inquilino } from '@/lib/api/inquilinos.service';
 
 void React;
@@ -37,18 +37,24 @@ import {
   ElegirCliente,
   clientesParaRecibo,
   conceptosDelPeriodo,
-  estadoLegible,
+  diaDeVencimiento,
   etiquetaDeCliente,
   periodosSinConciliar,
+  separarPorVencimiento,
+  soloSePuedeAdelantar,
 } from './ReciboPorCliente';
 
 function inquilino(tenantId: string, nombre: string, extra: Partial<Inquilino> = {}): Inquilino {
   return { tenantId, nombre, email: null, telefono: null, documento: null, arriendos: [], ...extra };
 }
 
-function periodo(id: string, extra: Partial<CobroEnCartera> = {}): CobroEnCartera {
+function periodo(id: string, extra: Partial<PeriodoEnDeuda> = {}): PeriodoEnDeuda {
   return {
     id,
+    cuotaId: `q-${id}`,
+    // 🔴 Sin cobro: es el caso NORMAL y el de las 30.951 cuotas de la agencia
+    // migrada. La deuda existe igual — nadie la ha reclamado todavía.
+    cobroId: null,
     month: '2026-06',
     dueDate: '2026-06-05T00:00:00.000Z',
     createdAt: '2026-06-01T00:00:00.000Z',
@@ -60,9 +66,11 @@ function periodo(id: string, extra: Partial<CobroEnCartera> = {}): CobroEnCarter
     totalWithFees: 1_000_000,
     paidAmount: 0,
     pendingAmount: 1_000_000,
-    status: 'PENDING',
+    estado: 'PENDIENTE',
+    status: null,
     daysLate: 0,
     lateFee: 0,
+    vencida: true,
     sinRespaldo: 0,
     conceptos: [],
     ...extra,
@@ -115,22 +123,66 @@ describe('conceptosDelPeriodo', () => {
   });
 });
 
-describe('estadoLegible', () => {
+describe('separarPorVencimiento — los dos números que no se pueden mezclar', () => {
   /*
-   * 🔴 Visto en el navegador, no acá: la cartera NO pasa por `normalizeCobro`,
-   * así que llega con el enum de Prisma. Bajar a minúscula no alcanza —
-   * `cobro_pending` no está en el diccionario y la pantalla mostraba la clave
-   * cruda `inmobiliaria.cobros.status.cobro_pending` al lado del monto.
+   * 🔴 Nico (2026-09-15): «Desde que él comience el contrato ya debe. No tienes
+   * que esperar que se cumpla la fecha para entender que él debe.» Las dos
+   * mitades significan cosas distintas —una se reclama, la otra se adelanta— y
+   * el 72 % de la plata de dev está del lado futuro.
    */
-  it('COBRO_PENDING es «pending», que es lo que el diccionario conoce', () => {
-    expect(estadoLegible('COBRO_PENDING')).toBe('pending');
+  it('parte la cartera en vencidas y futuras, conservando el orden del back', () => {
+    const { vencidas, futuras } = separarPorVencimiento([
+      periodo('c-jun', { month: '2026-06', vencida: true }),
+      periodo('c-jul', { month: '2026-07', vencida: true }),
+      periodo('c-dic', { month: '2026-12', vencida: false }),
+    ]);
+    expect(vencidas.map((c) => c.id)).toEqual(['c-jun', 'c-jul']);
+    expect(futuras.map((c) => c.id)).toEqual(['c-dic']);
   });
 
-  it('los demás sólo bajan a minúscula', () => {
-    expect(estadoLegible('PARTIAL')).toBe('partial');
-    expect(estadoLegible('LATE')).toBe('late');
-    expect(estadoLegible('DEFAULTED')).toBe('defaulted');
-    expect(estadoLegible('PAID')).toBe('paid');
+  it('una cartera entera de cuotas futuras no deja ninguna vencida', () => {
+    const { vencidas, futuras } = separarPorVencimiento([
+      periodo('c-nov', { month: '2026-11', vencida: false }),
+    ]);
+    expect(vencidas).toEqual([]);
+    expect(futuras).toHaveLength(1);
+  });
+});
+
+describe('soloSePuedeAdelantar', () => {
+  const base: CarteraDelCliente = {
+    tenantId: 't1',
+    nombre: 'Jose',
+    documento: null,
+    email: null,
+    inmuebles: 1,
+    total: 0,
+    vencidoCop: 0,
+    futuroCop: 0,
+    cuotas: [],
+  };
+
+  it('debe, pero nada venció todavía: se adelanta', () => {
+    expect(
+      soloSePuedeAdelantar({ ...base, total: 2_000_000, vencidoCop: 0, futuroCop: 2_000_000 }),
+    ).toBe(true);
+  });
+
+  it('con algo vencido NO es sólo adelanto: hay algo que reclamar hoy', () => {
+    expect(
+      soloSePuedeAdelantar({ ...base, total: 2_000_000, vencidoCop: 500_000, futuroCop: 1_500_000 }),
+    ).toBe(false);
+  });
+
+  it('sin ninguna cuota pendiente no hay nada que adelantar', () => {
+    expect(soloSePuedeAdelantar(base)).toBe(false);
+    expect(soloSePuedeAdelantar(null)).toBe(false);
+  });
+});
+
+describe('diaDeVencimiento', () => {
+  it('se queda con el día del calendario, sin la hora', () => {
+    expect(diaDeVencimiento('2026-12-05T00:00:00.000Z')).toBe('2026-12-05');
   });
 });
 
@@ -142,7 +194,9 @@ describe('periodosSinConciliar', () => {
     email: null,
     inmuebles: 1,
     total: 2_000_000,
-    cobros: [
+    vencidoCop: 2_000_000,
+    futuroCop: 0,
+    cuotas: [
       periodo('c-jun', { month: '2026-06', paidAmount: 400_000, sinRespaldo: 400_000 }),
       periodo('c-jul', { month: '2026-07' }),
     ],

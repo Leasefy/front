@@ -223,7 +223,7 @@ export const recibosDeCajaApi = {
 export type {
   CarteraDelCliente,
   CobroConDesglose,
-  CobroEnCartera,
+  PeriodoEnDeuda,
   ConceptoDelCobro,
   ConciliacionDePagoAnterior,
   FiltrosDeRecibos,

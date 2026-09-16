@@ -25,6 +25,7 @@ vi.mock('@/lib/api/properties.service', () => ({ propertiesApi: api }))
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }))
 
 import { FotosDelInmueble } from './FotosDelInmueble'
+import { ApiError } from '@/lib/api/client'
 
 const tick = () => act(async () => { await new Promise((r) => setTimeout(r, 0)) })
 
@@ -183,5 +184,39 @@ describe('FotosDelInmueble — quitar y portada (Nico, 2026-09-03)', () => {
     })
     await tick()
     expect(toastMock.error).toHaveBeenCalledWith('No se pudo cambiar la portada', { description: undefined })
+  })
+})
+
+/**
+ * F9: si la galería no cargaba, la tarjeta pintaba `e.message` en rojo —
+ * «Failed to fetch», «Internal server error»— y no ofrecía reintentar.
+ */
+describe('FotosDelInmueble — si la galería no carga (F9)', () => {
+  it('dice que falló con FalloDeCarga, sin el texto crudo en rojo, y reintentar vuelve a pedirla', async () => {
+    api.getImages.mockRejectedValueOnce(new ApiError(500, 'Internal server error'))
+    await montar()
+
+    const fallo = container.querySelector('[data-testid="fallo-de-carga"]')
+    expect(fallo).not.toBeNull()
+    expect(fallo?.getAttribute('data-enmarcado')).toBe('no')
+    expect(container.querySelector('p.text-danger')).toBeNull()
+
+    api.getImages.mockResolvedValueOnce([])
+    await act(async () => {
+      ;(container.querySelector('[data-testid="reintentar"]') as HTMLButtonElement).click()
+    })
+    await tick()
+
+    expect(api.getImages).toHaveBeenCalledTimes(2)
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull()
+    expect(container.querySelector('[data-testid="fotos-vacio"]')).not.toBeNull()
+  })
+
+  it('la red caída tampoco se muestra como «Failed to fetch»', async () => {
+    api.getImages.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await montar()
+
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
+    expect(container.querySelector('p.text-danger')).toBeNull()
   })
 })

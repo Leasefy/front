@@ -37,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { DesgloseAdeudado } from '@/components/inmobiliaria/DesgloseAdeudado'
 import { RecibosDeCajaHistorial } from '@/components/inmobiliaria/RecibosDeCajaHistorial'
 import { contractsApi } from '@/lib/api/contracts.service'
@@ -57,8 +58,16 @@ export interface ResumenDeCobros {
 
 interface Props {
   contract: Contract
-  /** Para el resumen de arriba: cuántos períodos, cuánto se debe, cuántos en mora. */
-  onResumen?: (r: ResumenDeCobros) => void
+  /**
+   * Para el resumen de arriba: cuántos períodos, cuánto se debe, cuántos en
+   * mora — o `'fallo'` cuando no se pudieron traer.
+   *
+   * 🔴 El fallo se REPORTA, no se calla. Antes un GET caído hacía
+   * `setCobros([])` y de ahí salía un resumen con ceros: la franja de arriba
+   * ponía «Saldo del inquilino — · sin cobros todavía», o sea le decía «al
+   * día» a un moroso. Un saldo que no se pudo traer no es un saldo de cero.
+   */
+  onResumen?: (r: ResumenDeCobros | 'fallo') => void
 }
 
 const ESTADO: Record<CobroStatus, { etiqueta: string; variante: 'warning' | 'success' | 'default' | 'destructive' }> = {
@@ -71,7 +80,9 @@ const ESTADO: Record<CobroStatus, { etiqueta: string; variante: 'warning' | 'suc
 
 export function CobrosDelContrato({ contract, onResumen }: Props) {
   const [cobros, setCobros] = useState<CobroConDesglose[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  // El error ENTERO, no su mensaje: `FalloDeCarga` necesita el status para
+  // saber si reintentar tiene sentido y para no mostrar el inglés del back.
+  const [error, setError] = useState<unknown>(null)
   const [abierto, setAbierto] = useState<string | null>(null)
 
   const cargar = useCallback(async () => {
@@ -82,8 +93,9 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
       setCobros(lista)
     } catch (e) {
       // Un fallo NO se pinta como «no tiene cobros»: son cosas distintas.
-      setError(e instanceof Error ? e.message : 'No pudimos traer los cobros.')
-      setCobros([])
+      // Y `cobros` se queda en `null`: con `[]` el resumen salía en cero y la
+      // franja de arriba afirmaba que el inquilino estaba al día.
+      setError(e)
     }
   }, [contract.id])
 
@@ -100,8 +112,9 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
   }, [cobros])
 
   useEffect(() => {
-    if (cobros !== null) onResumen?.(resumen)
-  }, [cobros, resumen, onResumen])
+    if (error) onResumen?.('fallo')
+    else if (cobros !== null) onResumen?.(resumen)
+  }, [cobros, error, resumen, onResumen])
 
   // Paginación — un período por mes: a los dos años de contrato son 24 filas,
   // y cada una se despliega. El resumen del encabezado sigue contando TODOS
@@ -143,16 +156,18 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
         </Button>
       </div>
 
-      {cobros === null ? (
+      {error ? (
+        // Sin marco: la tarjeta que lo envuelve ya tiene el suyo, y su gemelo
+        // vacío (`EmptyState`) ocupa este mismo hueco sin marco.
+        <FalloDeCarga
+          error={error}
+          queEs="los cobros de este contrato"
+          onReintentar={cargar}
+          enmarcado={false}
+        />
+      ) : cobros === null ? (
         <div className="flex items-center justify-center py-10">
           <Spinner size="sm" variant="muted" />
-        </div>
-      ) : error ? (
-        <div className="space-y-2 px-5 py-6 text-sm">
-          <p className="text-danger">{error}</p>
-          <Button variant="secondary" size="sm" hideArrow onClick={() => void cargar()}>
-            Reintentar
-          </Button>
         </div>
       ) : cobros.length === 0 ? (
         <div data-testid="cobros-vacio">

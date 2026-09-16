@@ -28,6 +28,7 @@ vi.mock('next/navigation', () => ({
 }))
 
 import { reglasDeMoraApi } from '@/lib/api/reglas-de-mora.service'
+import { ApiError } from '@/lib/api/client'
 import type { ReglaDeMoraDelContrato } from '@/lib/api/reglas-de-mora.types'
 import { ReglasDeMoraDelContrato } from './ReglasDeMoraDelContrato'
 
@@ -197,16 +198,37 @@ describe('<ReglasDeMoraDelContrato>', () => {
     delContrato.mockRejectedValueOnce(new Error('Se cayó el back'))
     await render()
 
-    expect(container.textContent).toContain('Se cayó el back')
+    // El cartel de la casa, que clasifica el fallo; no el texto crudo del back.
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
     expect(container.querySelector('[data-testid="reglas-vacio"]')).toBeNull()
 
     delContrato.mockResolvedValueOnce([fila()])
-    const reintentar = Array.from(container.querySelectorAll('button')).find((b) =>
-      b.textContent?.includes('Reintentar'),
-    )!
+    const reintentar = container.querySelector<HTMLButtonElement>('[data-testid="reintentar"]')!
     await act(async () => {
       reintentar.click()
     })
+    expect(container.textContent).toContain('Honorario de cobranza')
+  })
+
+  it('sobre un 403 no ofrece reintentar: el permiso no cambia por pedirlo otra vez', async () => {
+    delContrato.mockRejectedValueOnce(new ApiError(403, 'No tienes permiso para view en cobros'))
+    await render()
+
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')?.getAttribute('data-tipo')).toBe('sinPermiso')
+    expect(container.querySelector('[data-testid="reintentar"]')).toBeNull()
+  })
+
+  it('un fallo al GUARDAR un ajuste no borra la lista ni se pinta como fallo de carga', async () => {
+    delContrato.mockResolvedValue([fila()])
+    ajustar.mockRejectedValue(new Error('No se pudo guardar el ajuste.'))
+    await render()
+
+    const interruptor = container.querySelector<HTMLButtonElement>('[data-testid="aplica-honorario"]')!
+    await act(async () => {
+      interruptor.click()
+    })
+
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull()
     expect(container.textContent).toContain('Honorario de cobranza')
   })
 

@@ -41,6 +41,9 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { AvailabilityScheduleEditor } from '@/components/panel/AvailabilityScheduleEditor';
 import { agendaApi, type TipoDeVisita } from '@/lib/api/agenda.service';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { SinDatos } from '@/components/estado/SinDatos';
+import { descripcionDelError } from '@/lib/errores/descripcion-del-error';
 import { scheduleToWindows, windowsToSchedule } from '@/lib/utils/availability-schedule';
 import {
   type AvailabilitySchedule,
@@ -48,7 +51,12 @@ import {
 } from '@/lib/types/property';
 
 export interface VisitasDelInmuebleProps {
-  propertyId: string;
+  /**
+   * Puede faltar: un mandato migrado de cartera nace sin inmueble. Sin él no
+   * hay horarios que leer — pedirlos era `GET /propiedades/null/disponibilidad`,
+   * un 400, y un «Reintentar» que nunca iba a funcionar (F6).
+   */
+  propertyId?: string;
 }
 
 /** Cuántas franjas quedaron cargadas: lo que decide si hay visitas o no. */
@@ -138,6 +146,7 @@ type Estado = 'cargando' | 'listo' | 'error';
 
 export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
   const [estado, setEstado] = useState<Estado>('cargando');
+  const [errorDeCarga, setErrorDeCarga] = useState<unknown>(null);
   // Una agenda por modalidad. Son distintas a propósito.
   const [agendas, setAgendas] = useState<Record<TipoDeVisita, AvailabilitySchedule | null>>({
     IN_PERSON: null,
@@ -149,6 +158,7 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
   const [guardando, setGuardando] = useState(false);
 
   const cargar = useCallback(() => {
+    if (!propertyId) return;
     setEstado('cargando');
     agendaApi
       .getDisponibilidad(propertyId)
@@ -163,7 +173,10 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
         setModalidades(visitTypes ?? []);
         setEstado('listo');
       })
-      .catch(() => setEstado('error'));
+      .catch((e: unknown) => {
+        setErrorDeCarga(e ?? new Error('No pudimos leer los horarios de visita'));
+        setEstado('error');
+      });
   }, [propertyId]);
 
   useEffect(cargar, [cargar]);
@@ -174,6 +187,7 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
       tipos?: TipoDeVisita[],
       deModalidad: TipoDeVisita = 'IN_PERSON',
     ) => {
+      if (!propertyId) return;
       setGuardando(true);
       try {
         // `null` = apagar: se manda la lista vacía, que borra las ventanas de
@@ -190,9 +204,12 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
         toast.success(
           nuevo ? 'Horarios de visita guardados' : 'Visitas apagadas para este inmueble',
         );
-      } catch {
+      } catch (e) {
+        // F12: el back explica por qué no (una franja que se cruza, una
+        // modalidad que no aplica). Tragarlo dejaba a la persona reintentando
+        // lo mismo; «intenta de nuevo» queda sólo para lo que no explica.
         toast.error('No pudimos guardar los horarios', {
-          description: 'Intenta de nuevo en unos segundos.',
+          description: descripcionDelError(e) ?? 'Intenta de nuevo en unos segundos.',
         });
       } finally {
         setGuardando(false);
@@ -214,6 +231,32 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
     // tal cual para no borrarla al pasar por acá.
     void guardar(agendas.IN_PERSON, siguiente, 'IN_PERSON');
   };
+
+  if (!propertyId) {
+    return (
+      <section
+        className="rounded-lg border border-border bg-surface"
+        data-testid="visitas-del-inmueble"
+      >
+        <header className="flex items-start gap-3 border-b border-border px-5 py-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-soft">
+            <CalendarCheck className="h-[18px] w-[18px] text-primary" aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-fg">Visitas</h3>
+            <p className="mt-0.5 text-body-sm text-fg-muted">Sin inmueble asociado</p>
+          </div>
+        </header>
+        <SinDatos
+          queSon="visitas"
+          icono={CalendarCheck}
+          titulo="Esta consignación no tiene un inmueble asociado"
+          descripcion="Las visitas se agendan sobre un inmueble: cuando le asocies uno, aquí eliges los días y las horas."
+          className="py-8"
+        />
+      </section>
+    );
+  }
 
   return (
     <section
@@ -271,16 +314,16 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
           </div>
         )}
 
+        {/* Un 404 o un 403 no se arreglan reintentando: `FalloDeCarga` lo
+            sabe por el status y sólo ofrece el botón cuando sirve. */}
         {estado === 'error' && (
-          <div className="flex items-start gap-3 rounded-lg border border-border bg-danger-soft p-3">
-            <Warning className="mt-0.5 h-5 w-5 shrink-0 text-danger" weight="fill" aria-hidden />
-            <div className="min-w-0 flex-1">
-              <p className="text-body-sm text-danger">No pudimos leer los horarios de visita.</p>
-              <Button variant="outline" size="sm" hideArrow onClick={cargar} className="mt-2">
-                Reintentar
-              </Button>
-            </div>
-          </div>
+          <FalloDeCarga
+            error={errorDeCarga}
+            queEs="los horarios de visita"
+            onReintentar={cargar}
+            enmarcado={false}
+            className="py-6"
+          />
         )}
 
         {estado === 'listo' && !prendido && (

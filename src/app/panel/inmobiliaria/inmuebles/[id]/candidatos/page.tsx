@@ -18,6 +18,7 @@ import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 import { type ActionType } from '@/components/inmobiliaria/AccionDePostulacion';
 import { useDecisionDeCandidato } from '@/components/inmobiliaria/use-decision-de-candidato';
 import { RecorridoHilo } from '@/components/inmobiliaria/recorrido/RecorridoHilo';
@@ -41,6 +42,8 @@ const STATUS_CONFIG: Record<
   NEEDS_INFO:      { label: 'Pide info',         bg: 'bg-warning-soft',   text: 'text-warning' },
   WITHDRAWN:       { label: 'Retirado',          bg: 'bg-surface-muted',  text: 'text-fg-muted' },
   CONTRACT_FAILED: { label: 'Contrato fallido',  bg: 'bg-danger-soft',    text: 'text-danger' },
+  NO_ADJUDICADO:   { label: 'No adjudicado',     bg: 'bg-surface-muted',  text: 'text-fg-muted' },
+  PREAPPROVED:     { label: 'Preaprobado',       bg: 'bg-primary-soft',   text: 'text-primary' },
 };
 
 const FALLBACK_STATUS = { label: 'Desconocido', bg: 'bg-surface-muted', text: 'text-fg-muted' };
@@ -58,6 +61,8 @@ const STATUS_VARIANT: Record<
   NEEDS_INFO: 'warning',
   WITHDRAWN: 'secondary',
   CONTRACT_FAILED: 'destructive',
+  NO_ADJUDICADO: 'secondary',
+  PREAPPROVED: 'default',
 };
 
 const SCORE_COLORS: Record<string, string> = {
@@ -80,12 +85,17 @@ function CandidateActions({
   candidate,
   existingContract,
   onAction,
+  puedeDecidir,
 }: {
   candidate: LandlordCandidate;
   existingContract?: Contract | null;
   onAction: (type: ActionType, candidate: LandlordCandidate) => void;
+  /** Sin `portafolio:edit` (CONTADOR, VIEWER) no se dibujan Aprobar/Rechazar/Pedir info. */
+  puedeDecidir: boolean;
 }) {
   const { status } = candidate;
+
+  if (!puedeDecidir && (status === 'SUBMITTED' || status === 'UNDER_REVIEW')) return null;
 
   // SUBMITTED cannot legally move to APPROVED (application-state-machine.ts) — no
   // "Aprobar" chip here. Same affordances as before, minus the deleted preapprove chip.
@@ -189,6 +199,9 @@ function CandidateActions({
 function CandidatosContent() {
   const params = useParams();
   const router = useRouter();
+  // El PageGuard deja pasar a quien tiene `portafolio:view`; decidir pide `edit`.
+  const { canAccess } = usePermissions();
+  const puedeDecidir = canAccess('portafolio', 'edit');
   /**
    * `[id]` es el id de la CONSIGNACIÓN, igual que en `/inmuebles/[id]`.
    *
@@ -513,6 +526,7 @@ function CandidatosContent() {
                           candidate={candidate}
                           existingContract={getContractByApplicationId(candidate.id)}
                           onAction={pedirAccion}
+                          puedeDecidir={puedeDecidir}
                         />
                       </TableCell>
                     </TableRow>

@@ -223,9 +223,20 @@ export function PropietarioStats({
           label={t('inmobiliaria.propietario.stats.properties')}
           value={String(propietario.propertyCount)}
           delta={
+            // Con copropiedades se dicen: un dueño del 30 % de un inmueble no
+            // tiene «0 propiedades» (2026-09-13).
             propietario.propertyCount > 0
-              ? t('inmobiliaria.propietario.stats.ofTotalRented', { rentados: propietario.activeLeases, total: propietario.propertyCount })
-              : t('inmobiliaria.propietario.stats.sinPropiedades')
+              ? [
+                  t('inmobiliaria.propietario.stats.ofTotalRented', { rentados: propietario.activeLeases, total: propietario.propertyCount }),
+                  (propietario.copropiedadesCount ?? 0) > 0
+                    ? t('inmobiliaria.propietario.stats.copropiedades', { n: propietario.copropiedadesCount ?? 0 })
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
+              : (propietario.copropiedadesCount ?? 0) > 0
+                ? t('inmobiliaria.propietario.stats.copropiedades', { n: propietario.copropiedadesCount ?? 0 })
+                : t('inmobiliaria.propietario.stats.sinPropiedades')
           }
           deltaDirection={
             propietario.propertyCount > 0 && propietario.activeLeases < propietario.propertyCount ? 'down' : 'neutral'

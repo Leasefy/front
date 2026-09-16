@@ -120,6 +120,8 @@ export interface FacturaDelMes {
 export interface ContratoOmitido {
   contractId: string
   codigo: number | null
+  /** El número que la inmobiliaria conoce (el Nui). Ausente con un back anterior. */
+  numeroExterno?: string | null
   inmueble: string
   destinatario: DestinatarioDeFactura
   motivo: string
@@ -272,11 +274,17 @@ export const facturacionPorMesService = {
         : {}),
     }),
 
-  /** Anula una resolución: deja de numerar, pero no se borra. */
-  anularResolucion: (id: string) =>
+  /**
+   * Anula una resolución: deja de numerar, pero no se borra.
+   *
+   * 🔴 `motivo` es obligatorio en el back (`AnularResolucionDto`, hasta 500
+   * caracteres; sólo espacios es 400): una resolución anulada deja a la
+   * inmobiliaria sin poder numerar, y el porqué tiene que quedar escrito.
+   */
+  anularResolucion: (id: string, motivo: string) =>
     apiClient.post<ResolucionDeFacturacion>(
       `${BASE}/resolucion/${id}/anular`,
-      {},
+      { motivo },
     ),
 }
 

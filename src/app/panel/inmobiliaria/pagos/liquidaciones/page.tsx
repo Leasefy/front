@@ -15,31 +15,67 @@
  * El desglose de IVA no se muestra: el back lo devuelve dentro de los conceptos
  * y separarlo acá sería una cuenta distinta de la del giro. La columna «IVA
  * com.» se retiró en vez de rellenarse con un cálculo del navegador.
+ *
+ * Un solo estado a la vez (auditoría 2026-09-13, L1): con el back caído la
+ * pantalla decía TRES cosas juntas —el cartel de error, «este mes todavía no
+ * hay nada que liquidar» y un neto de $0 en verde—. Ahora cargando, frenada,
+ * falló, vacía y con datos se excluyen.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Wallet, ArrowClockwise, WarningCircle } from '@phosphor-icons/react';
+import { Wallet, CalendarBlank } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button, Badge } from '@/components/ui';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { SinDatos } from '@/components/estado/SinDatos';
+import { EsqueletoIndicadores, EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
+import { AvisoLiquidacionFrenada } from '@/components/inmobiliaria/AvisoLiquidacionFrenada';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
+import { leerLiquidacionFrenada } from '@/lib/api/dispersiones-errores';
+import { mesEnTitulo } from '@/lib/utils/mes';
 
 const COLUMNS = [
   'colPropietario', 'colCanon', 'colComision', 'colAFavor', 'colDescuentos', 'colNeto', 'colCuenta', 'colEstado', 'colComprobante',
 ];
 
+/** Cuántos meses hacia atrás ofrece el selector, contando el corriente. */
+const MESES_EN_EL_SELECTOR = 12;
+
+function claveDelMes(fecha: Date): string {
+  return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+}
+
 /** El mes en curso, en el formato que espera el back (`2026-02`). */
 function mesEnCurso(): string {
+  return claveDelMes(new Date());
+}
+
+/**
+ * Los últimos meses, del corriente hacia atrás — el mismo selector que
+ * Cobros y Dispersiones. Topado en el mes corriente: un mes futuro no tiene
+ * cobros pagados y sólo mostraría un vacío que se lee como «no hay nada».
+ */
+function mesesRecientes(): { value: string; label: string }[] {
   const hoy = new Date();
-  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+  return Array.from({ length: MESES_EN_EL_SELECTOR }, (_, i) => {
+    const value = claveDelMes(new Date(hoy.getFullYear(), hoy.getMonth() - i, 1));
+    return { value, label: mesEnTitulo(value) };
+  });
 }
 
 type Propietario = VistaPreviaDeDispersiones['propietarios'][number];
@@ -47,31 +83,44 @@ type Propietario = VistaPreviaDeDispersiones['propietarios'][number];
 function TesoreriaContent() {
   const { t } = useI18n();
   const k = (s: string) => `inmobiliaria.tesoreria.${s}`;
-  const [month] = useState(mesEnCurso);
+  // Antes era `useState(mesEnCurso)` sin setter: el mes anterior —el que de
+  // verdad se liquida los primeros días— no se podía ver.
+  const [month, setMonth] = useState(mesEnCurso);
+  const meses = useMemo(mesesRecientes, []);
 
   const [vista, setVista] = useState<VistaPreviaDeDispersiones | null>(null);
   const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  // Si se cambia de mes mientras el anterior carga, gana el último pedido.
+  const pedido = useRef(0);
 
   const cargar = useCallback(async () => {
+    const este = ++pedido.current;
     setCargando(true);
     setError(null);
     try {
-      setVista(await dispersionesApi.preview(month));
+      const datos = await dispersionesApi.preview(month);
+      if (este === pedido.current) setVista(datos);
     } catch (e) {
-      // El motivo real, no un «algo salió mal»: si el back explica por qué no
-      // pudo liquidar (por ejemplo un inmueble con copropietarios e impuestos),
-      // esa frase es justo lo que hay que leer.
-      setError(e instanceof Error ? e.message : String(e));
+      if (este !== pedido.current) return;
+      setError(e);
       setVista(null);
     } finally {
-      setCargando(false);
+      if (este === pedido.current) setCargando(false);
     }
   }, [month]);
 
   useEffect(() => {
     void cargar();
   }, [cargar]);
+
+  /*
+   * Un 400 con código es un DATO del inmueble, no una caída: reintentar da el
+   * mismo 400. Va con su enlace al inmueble y sin «Reintentar». Cualquier otro
+   * fallo lo clasifica `FalloDeCarga`, que ofrece reintentar sólo si puede
+   * cambiar (red, servidor).
+   */
+  const frenada = leerLiquidacionFrenada(error);
 
   const propietarios: Propietario[] = vista?.propietarios ?? [];
   const suma = (campo: keyof Propietario) =>
@@ -86,11 +135,23 @@ function TesoreriaContent() {
     { labelKey: 'fACargo', value: suma('totalConceptosACargo'), sign: '−', tone: 'text-danger' },
   ];
   const neto = suma('netToPropietario');
+  /*
+   * El back reparte en negativo cuando lo que paga el propietario (predial,
+   * reparaciones) supera lo recaudado: el propietario queda DEBIENDO. Antes el
+   * neto se pintaba siempre en verde, y un «−$300.000» verde se lee como plata
+   * a favor.
+   */
+  const quedanDebiendo = propietarios.filter((p) => p.netToPropietario < 0).length;
+
+  const vacio = !cargando && !error && propietarios.length === 0;
+  // El fallo y el vacío no traen tarjeta propia (van dentro del hueco de
+  // contenido); acá ese hueco es la página, así que se la pone el contenedor.
+  const huecoConTarjeta = !cargando && (Boolean(error) || vacio);
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div className="space-y-1.5">
           <SectionLabel>{t(k('label'))}</SectionLabel>
           <h1 className="text-h2 text-fg">{t(k('title'))}</h1>
@@ -105,130 +166,162 @@ function TesoreriaContent() {
             Registrar la factura de un proveedor —incluida la lectura desde
             foto— vive ahora en Facturación → Compras, que es esa sección.
             Acá se lee el neto de cada propietario, no se crean documentos. */}
+        <div className="shrink-0">
+          <label className="block text-xs font-medium text-fg-muted mb-1.5" id="liquidaciones-mes">
+            Mes
+          </label>
+          <Select value={month} onValueChange={setMonth}>
+            <SelectTrigger className="gap-2 min-w-[200px]" aria-labelledby="liquidaciones-mes">
+              <CalendarBlank className="w-4 h-4 text-fg-muted shrink-0" aria-hidden="true" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {meses.map((m) => (
+                <SelectItem key={m.value} value={m.value}>
+                  {m.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </header>
 
-      {error && (
+      {frenada ? (
+        <AvisoLiquidacionFrenada frenada={frenada} despues="calcular el neto" />
+      ) : (
         <div
-          role="alert"
-          className="rounded-lg border border-danger/30 bg-danger/5 p-4 flex items-start gap-3"
+          className={cn(huecoConTarjeta && 'rounded-lg border border-border bg-card')}
+          data-testid="liquidaciones-hueco"
         >
-          <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" weight="fill" />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-fg">{t(k('errorTitle'))}</p>
-            <p className="text-xs text-fg-muted mt-0.5 break-words">{error}</p>
-          </div>
-          <Button variant="secondary" hideArrow onClick={() => void cargar()} className="flex-shrink-0">
-            <ArrowClockwise className="w-4 h-4" />
-            {t(k('retry'))}
-          </Button>
+          <EstadoDeDatos
+            cargando={cargando}
+            error={error}
+            vacio={vacio}
+            queEs="las liquidaciones del mes"
+            onReintentar={cargar}
+            esqueleto={
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" data-testid="liquidaciones-cargando">
+                <EsqueletoIndicadores cantidad={1} className="sm:grid-cols-1 lg:grid-cols-1" />
+                <EsqueletoTabla columnas={COLUMNS.length} className="lg:col-span-2" />
+              </div>
+            }
+            cuandoVacio={
+              <SinDatos
+                queSon="liquidaciones"
+                icono={Wallet}
+                titulo={t(k('emptyTitle'))}
+                descripcion={t(k('emptyDesc'))}
+              />
+            }
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* El mes en plata — sumas reales, no una fórmula de ejemplo */}
+              <section className="lg:col-span-1 rounded-lg border border-border bg-card p-5 space-y-4 h-fit">
+                <div className="flex items-center justify-between gap-2">
+                  <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
+                  <Badge variant="secondary">{mesEnTitulo(month)}</Badge>
+                </div>
+                <div className="space-y-2.5">
+                  {resumen.map((row) => (
+                    <div key={row.labelKey} className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">{t(k(row.labelKey))}</span>
+                      <span className={cn('font-mono tabular-nums', row.tone)}>
+                        {row.sign}{formatCurrency(row.value)}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="border-t border-border pt-2.5 flex items-center justify-between">
+                    <span className="text-sm font-semibold text-fg flex items-center gap-1.5">
+                      <Wallet className={cn('w-4 h-4', neto < 0 ? 'text-danger' : 'text-success')} />
+                      {t(k('fNeto'))}
+                    </span>
+                    <span
+                      className={cn(
+                        'font-mono tabular-nums font-semibold',
+                        neto < 0 ? 'text-danger' : 'text-success',
+                      )}
+                      data-testid="tesoreria-neto-total"
+                    >
+                      {formatCurrency(neto)}
+                    </span>
+                  </div>
+                  {quedanDebiendo > 0 && (
+                    <p className="text-xs text-danger" data-testid="tesoreria-quedan-debiendo">
+                      {quedanDebiendo === 1
+                        ? '1 propietario queda debiendo este mes: lo que paga supera lo recaudado.'
+                        : `${quedanDebiendo} propietarios quedan debiendo este mes: lo que pagan supera lo recaudado.`}
+                    </p>
+                  )}
+                </div>
+              </section>
+
+              {/* Egresos table */}
+              <section className="lg:col-span-2 rounded-lg border border-border bg-card overflow-hidden">
+                <div className="flex items-center gap-3 p-5 border-b border-border">
+                  <div className="w-9 h-9 rounded-md bg-surface-muted flex items-center justify-center flex-shrink-0">
+                    <Wallet className="w-[18px] h-[18px] text-fg-muted" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-semibold text-fg">{t(k('egresosTitle'))}</h2>
+                    <p className="text-xs text-fg-muted mt-0.5">{t(k('egresosDesc'))}</p>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {COLUMNS.map((c) => (
+                          <TableHead key={c} className="whitespace-nowrap">
+                            {t(k(c))}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {propietarios.map((p) => (
+                        <TableRow key={p.propietarioId} data-testid="tesoreria-fila">
+                          <TableCell className="font-medium text-fg">{p.propietarioName}</TableCell>
+                          <TableCell className="font-mono tabular-nums">{formatCurrency(p.totalCollected)}</TableCell>
+                          <TableCell className="font-mono tabular-nums text-danger">−{formatCurrency(p.totalCommission)}</TableCell>
+                          <TableCell className="font-mono tabular-nums">{p.totalConceptosAFavor > 0 ? `+${formatCurrency(p.totalConceptosAFavor)}` : '—'}</TableCell>
+                          <TableCell className="font-mono tabular-nums text-danger">{p.totalConceptosACargo > 0 ? `−${formatCurrency(p.totalConceptosACargo)}` : '—'}</TableCell>
+                          <TableCell
+                            className={cn(
+                              'font-mono tabular-nums font-semibold',
+                              p.netToPropietario < 0 ? 'text-danger' : 'text-success',
+                            )}
+                            data-testid="tesoreria-neto-fila"
+                          >
+                            {formatCurrency(p.netToPropietario)}
+                            {p.netToPropietario < 0 && (
+                              <span className="block text-[11px] font-normal font-sans">Queda debiendo</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs text-fg-muted whitespace-nowrap">
+                            {p.propietarioBankAccount
+                              ? `${p.propietarioBankName ?? ''} ${p.propietarioBankAccount}`.trim()
+                              : t(k('sinCuenta'))}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={p.yaExiste ? 'secondary' : 'outline'}>
+                              {t(k(p.yaExiste ? 'estadoGenerada' : 'estadoPendiente'))}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button asChild variant="ghost" hideArrow className="h-8 px-2 text-xs">
+                              <Link href={`/panel/inmobiliaria/pagos/dispersiones?mes=${month}`}>{t(k('verDispersiones'))}</Link>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </section>
+            </div>
+          </EstadoDeDatos>
         </div>
       )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* El mes en plata — sumas reales, no una fórmula de ejemplo */}
-        <section className="lg:col-span-1 rounded-lg border border-border bg-card p-5 space-y-4 h-fit">
-          <div className="flex items-center justify-between">
-            <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
-            <Badge variant="secondary">{month}</Badge>
-          </div>
-          <div className="space-y-2.5">
-            {resumen.map((row) => (
-              <div key={row.labelKey} className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">{t(k(row.labelKey))}</span>
-                <span className={cn('font-mono tabular-nums', row.tone)}>
-                  {row.sign}{formatCurrency(row.value)}
-                </span>
-              </div>
-            ))}
-            <div className="border-t border-border pt-2.5 flex items-center justify-between">
-              <span className="text-sm font-semibold text-fg flex items-center gap-1.5">
-                <Wallet className="w-4 h-4 text-success" />
-                {t(k('fNeto'))}
-              </span>
-              <span
-                className="font-mono tabular-nums font-semibold text-success"
-                data-testid="tesoreria-neto-total"
-              >
-                {formatCurrency(neto)}
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {/* Egresos table */}
-        <section className="lg:col-span-2 rounded-lg border border-border bg-card overflow-hidden">
-          <div className="flex items-center gap-3 p-5 border-b border-border">
-            <div className="w-9 h-9 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
-              <Wallet className="w-[18px] h-[18px] text-neutral-600 dark:text-neutral-300" />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-fg">{t(k('egresosTitle'))}</h2>
-              <p className="text-xs text-fg-muted mt-0.5">{t(k('egresosDesc'))}</p>
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {COLUMNS.map((c) => (
-                    <TableHead key={c} className="whitespace-nowrap">
-                      {t(k(c))}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {cargando && (
-                  <TableRow>
-                    <TableCell colSpan={COLUMNS.length} className="py-10 text-center text-sm text-fg-muted">
-                      {t(k('cargando'))}
-                    </TableCell>
-                  </TableRow>
-                )}
-
-                {!cargando && propietarios.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={COLUMNS.length} className="p-0">
-                      <EmptyState
-                        icon={Wallet}
-                        title={t(k('emptyTitle'))}
-                        description={t(k('emptyDesc'))}
-                      />
-                    </TableCell>
-                  </TableRow>
-                )}
-
-                {!cargando &&
-                  propietarios.map((p) => (
-                    <TableRow key={p.propietarioId} data-testid="tesoreria-fila">
-                      <TableCell className="font-medium text-fg">{p.propietarioName}</TableCell>
-                      <TableCell className="font-mono tabular-nums">{formatCurrency(p.totalCollected)}</TableCell>
-                      <TableCell className="font-mono tabular-nums text-danger">−{formatCurrency(p.totalCommission)}</TableCell>
-                      <TableCell className="font-mono tabular-nums">{p.totalConceptosAFavor > 0 ? `+${formatCurrency(p.totalConceptosAFavor)}` : '—'}</TableCell>
-                      <TableCell className="font-mono tabular-nums text-danger">{p.totalConceptosACargo > 0 ? `−${formatCurrency(p.totalConceptosACargo)}` : '—'}</TableCell>
-                      <TableCell className="font-mono tabular-nums font-semibold text-success">{formatCurrency(p.netToPropietario)}</TableCell>
-                      <TableCell className="text-xs text-fg-muted whitespace-nowrap">
-                        {p.propietarioBankAccount
-                          ? `${p.propietarioBankName ?? ''} ${p.propietarioBankAccount}`.trim()
-                          : t(k('sinCuenta'))}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={p.yaExiste ? 'secondary' : 'outline'}>
-                          {t(k(p.yaExiste ? 'estadoGenerada' : 'estadoPendiente'))}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Button asChild variant="ghost" hideArrow className="h-8 px-2 text-xs">
-                          <Link href="/panel/inmobiliaria/pagos/dispersiones">{t(k('verDispersiones'))}</Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-              </TableBody>
-            </Table>
-          </div>
-        </section>
-      </div>
     </div>
   );
 }

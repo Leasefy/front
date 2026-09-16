@@ -372,3 +372,57 @@ describe('diaDelMesDe — el día de pago viene como fecha en los exports reales
     expect(diaDelMesDe('mensual')).toBeUndefined()
   })
 })
+
+// ── Varios dueños con su % del canon (Nico, 2026-09-13) ─────────────────────
+import { leerFilaDelArchivo, conSuParte } from './armar-fila'
+
+describe('«Valor Canon» repartido entre los dueños', () => {
+  const mapeo = mapearColumnas(['Propietario de Propiedad', 'Valor Canon', 'Canon Total'])
+  const dos = '[1] 43090971 - LUZ ADRIANA, [2] 42979803 - MARIA VICTORIA'
+
+  it('la lista viaja cruda y cada dueño lleva su parte cuando cuadra (41 % / 59 %)', () => {
+    const { fila } = leerFilaDelArchivo(
+      { 'Propietario de Propiedad': dos, 'Valor Canon': '$451,000.00, $649,000.00', 'Canon Total': '$1,100,000.00' },
+      mapeo,
+    )
+    expect(fila.canonPorPropietario).toEqual([451000, 649000])
+    expect(fila.monthlyRent).toBe(1100000)
+    expect(fila.propietarios?.map((p) => p.participacionBps)).toEqual([4100, 5900])
+  })
+
+  it('sin «Canon Total», la suma de las partes es el canon', () => {
+    const sinTotal = mapearColumnas(['Propietario de Propiedad', 'Valor Canon'])
+    const { fila } = leerFilaDelArchivo(
+      { 'Propietario de Propiedad': dos, 'Valor Canon': '$451,000.00, $649,000.00' },
+      sinTotal,
+    )
+    expect(fila.monthlyRent).toBe(1100000)
+    expect(fila.propietarios?.map((p) => p.participacionBps)).toEqual([4100, 5900])
+  })
+
+  it('si la plata no suma el canon, la lista viaja igual pero SIN bps: el back frena la fila', () => {
+    const { fila } = leerFilaDelArchivo(
+      { 'Propietario de Propiedad': dos, 'Valor Canon': '$451,000.00, $649,000.00', 'Canon Total': '$1,500,000.00' },
+      mapeo,
+    )
+    expect(fila.canonPorPropietario).toEqual([451000, 649000])
+    expect(fila.propietarios?.every((p) => p.participacionBps === undefined)).toBe(true)
+  })
+
+  it('un solo valor es el canon de siempre: no viaja ninguna lista', () => {
+    const { fila } = leerFilaDelArchivo(
+      { 'Propietario de Propiedad': '[1] 43090971 - LUZ ADRIANA', 'Valor Canon': '$1,100,000.00' },
+      mapearColumnas(['Propietario de Propiedad', 'Valor Canon']),
+    )
+    expect(fila.canonPorPropietario).toBeUndefined()
+    expect(fila.monthlyRent).toBe(1100000)
+    expect(fila.propietarios?.[0].participacionBps).toBeUndefined()
+  })
+
+  it('conSuParte: más valores que dueños, o un $0, no reparte', () => {
+    const p = [{ documento: '1', nombre: 'A' }, { documento: '2', nombre: 'B' }]
+    expect(conSuParte(p, [1, 2, 3], 6).every((x) => x.participacionBps === undefined)).toBe(true)
+    expect(conSuParte(p, [0, 100], 100).every((x) => x.participacionBps === undefined)).toBe(true)
+    expect(conSuParte(p, [300, 700], 1000).map((x) => x.participacionBps)).toEqual([3000, 7000])
+  })
+})

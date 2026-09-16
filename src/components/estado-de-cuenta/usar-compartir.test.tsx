@@ -10,12 +10,17 @@
  * 🔴 La regla de si SE PUEDE mandar vive en el back, no acá: él sabe si hay
  * correo, cuenta del portal, teléfono y consentimiento. Estas pruebas fijan que
  * el front no la duplique ni la tape.
+ *
+ * Auditoría de casos de error 13-09: E2 (el envío se confirma antes de salir),
+ * E3 (un enlace revocado no se vuelve a copiar) y E5 (cada fallo dice lo suyo).
  */
 
 import * as React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
+
+import { ApiError } from '@/lib/api/client';
 
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -55,6 +60,11 @@ function Arnes() {
       <button data-testid="enlace" onClick={() => void c.copiarEnlace()} />
       <button data-testid="correo" onClick={() => void c.enviarPorCorreo()} />
       <button data-testid="whatsapp" onClick={() => void c.enviarPorWhatsapp()} />
+      <button data-testid="pedir-correo" onClick={() => c.pedirEnvio('CORREO')} />
+      <button data-testid="confirmar" onClick={() => void c.confirmarEnvio()} />
+      <button data-testid="cancelar" onClick={() => c.cancelarEnvio()} />
+      <button data-testid="olvidar-e-1" onClick={() => c.olvidarEnlace('e-1')} />
+      <span data-testid="por-confirmar">{c.envioPorConfirmar ?? ''}</span>
     </>
   );
 }
@@ -190,5 +200,88 @@ describe('useCompartirEstado', () => {
     await apretar('correo');
 
     expect(error).toHaveBeenCalled();
+  });
+});
+
+describe('E2 — un envío real se confirma antes de salir', () => {
+  it('🔴 pedir el envío NO manda nada: queda esperando confirmación', async () => {
+    await montar();
+    await apretar('pedir-correo');
+
+    expect(enviar).not.toHaveBeenCalled();
+    expect(host.querySelector('[data-testid="por-confirmar"]')!.textContent).toBe('CORREO');
+  });
+
+  it('confirmar manda por el canal pedido y cierra la espera', async () => {
+    await montar();
+    await apretar('pedir-correo');
+    await apretar('confirmar');
+
+    expect(enviar).toHaveBeenCalledTimes(1);
+    expect(enviar).toHaveBeenCalledWith('inquilino', 'tenant-1', 'CORREO');
+    expect(host.querySelector('[data-testid="por-confirmar"]')!.textContent).toBe('');
+  });
+
+  it('cancelar no manda', async () => {
+    await montar();
+    await apretar('pedir-correo');
+    await apretar('cancelar');
+    await apretar('confirmar');
+
+    expect(enviar).not.toHaveBeenCalled();
+  });
+});
+
+describe('E5 — cada fallo dice lo suyo', () => {
+  it('🔴 un 403 dice que el rol no puede compartirlo, no «no se pudo»', async () => {
+    enviar.mockRejectedValue(new ApiError(403, 'Forbidden resource'));
+    await montar();
+    await apretar('correo');
+
+    expect(String(error.mock.calls[0]![0])).toContain('Tu rol no puede compartir');
+    expect(String(error.mock.calls[0]![0])).not.toContain('Forbidden');
+  });
+
+  it('sin red dice que no hubo conexión y que no se pudo confirmar', async () => {
+    enviar.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await montar();
+    await apretar('correo');
+
+    expect(String(error.mock.calls[0]![0])).toContain('No hubo conexión');
+  });
+
+  it('un 4xx del back trae su propio motivo en castellano, y ése gana', async () => {
+    enviar.mockRejectedValue(new ApiError(404, 'Ese cliente no tiene contratos en la inmobiliaria.'));
+    await montar();
+    await apretar('whatsapp');
+
+    expect(error).toHaveBeenCalledWith('Ese cliente no tiene contratos en la inmobiliaria.');
+  });
+
+  it('copiar el enlace con un 403 también lo dice', async () => {
+    compartir.mockRejectedValue(new ApiError(403, 'Forbidden resource'));
+    await montar();
+    await apretar('enlace');
+
+    expect(String(error.mock.calls[0]![0])).toContain('Tu rol no puede compartir');
+  });
+});
+
+describe('E3 — un enlace revocado no se vuelve a copiar', () => {
+  it('🔴 tras revocarlo, «Copiar enlace» pide uno nuevo en vez de dar el viejo', async () => {
+    compartir.mockResolvedValueOnce({ ...ENLACE, id: 'e-1' }).mockResolvedValueOnce({
+      url: 'https://app.leasefy.co/estado-de-cuenta/nuevo',
+      venceEl: '2026-10-14',
+      id: 'e-2',
+    });
+    await montar();
+    await apretar('enlace');
+    await apretar('olvidar-e-1');
+    await apretar('enlace');
+
+    expect(compartir).toHaveBeenCalledTimes(2);
+    expect(navigator.clipboard.writeText).toHaveBeenLastCalledWith(
+      'https://app.leasefy.co/estado-de-cuenta/nuevo',
+    );
   });
 });

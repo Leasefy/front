@@ -42,6 +42,8 @@ import { propertiesApi } from '@/lib/api/properties.service';
 import { PROPERTY_PHOTO_MAX_COUNT } from '@/lib/api/property-photos';
 import { SubidaDeFotos, filtrarFotos } from '@/components/inmobiliaria/inmueble/SubidaDeFotos';
 import { FotosDesdeEnlace } from '@/components/inmobiliaria/inmueble/FotosDesdeEnlace';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { descripcionDelError } from '@/lib/errores/descripcion-del-error';
 
 interface Imagen {
   id: string;
@@ -64,22 +66,13 @@ export interface FotosDelInmuebleProps {
   onVer?: (indice: number) => void;
 }
 
-/**
- * Lo que dice el back cabe en un toast sólo si es una frase. Un volcado de
- * Prisma («Invalid `this.prisma…` invocation … Unique constraint failed») no
- * le sirve a nadie en la pantalla: se deja el título y ya.
- */
-function descripcionDelError(e: unknown): string | undefined {
-  if (!(e instanceof Error) || !e.message) return undefined;
-  const m = e.message.trim();
-  if (m.length > 160 || m.includes('\n') || m.startsWith('Invalid `')) return undefined;
-  return m;
-}
-
 export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmuebleProps) {
   const [imagenes, setImagenes] = useState<Imagen[]>([]);
   const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // El error ENTERO, no su mensaje (F9): con el texto pelado la tarjeta
+  // pintaba «Failed to fetch» o «Internal server error» en rojo, y sin status
+  // no hay forma de saber si reintentar sirve.
+  const [error, setError] = useState<unknown>(null);
   const [enCamino, setEnCamino] = useState<EnCamino[]>([]);
   const [ocupada, setOcupada] = useState<string | null>(null);
   // Arrastrar fotos sobre CUALQUIER parte de la sección (no sólo la zona):
@@ -94,7 +87,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
       const lista = await propertiesApi.getImages(propertyId);
       setImagenes([...lista].sort((a, b) => a.order - b.order));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudieron cargar las fotos.');
+      setError(e ?? new Error('No se pudieron cargar las fotos.'));
     } finally {
       setCargando(false);
     }
@@ -257,7 +250,13 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
             <Spinner size="sm" /> Cargando fotos…
           </div>
         ) : error ? (
-          <p className="text-sm text-danger">{error}</p>
+          <FalloDeCarga
+            error={error}
+            queEs="las fotos"
+            onReintentar={cargar}
+            enmarcado={false}
+            className="py-8"
+          />
         ) : imagenes.length === 0 && enCamino.length === 0 ? (
           <div className="space-y-4" data-testid="fotos-vacio">
             <p className="text-sm text-fg-muted">

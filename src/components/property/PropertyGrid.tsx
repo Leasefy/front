@@ -17,8 +17,11 @@ import { cn } from '@/lib/utils';
 import type { Property } from '@/lib/types/property';
 import type { QualificationResult } from '@/lib/scoring/propertyMatching';
 
-const INITIAL_ITEMS = 9;
-const LOAD_MORE_ITEMS = 6;
+// Múltiplos de 2 y de 3 (la grilla va a dos columnas con el mapa y a tres sin
+// él): ninguna tanda deja una tarjeta sola en su fila. Y de a 24 por clic —antes
+// eran 6 y había que darle muchas veces a «Cargar más» (Nico, 2026-09-15).
+const INITIAL_ITEMS = 12;
+const LOAD_MORE_ITEMS = 24;
 const SKELETON_COUNT = 6;
 
 export interface PropertyGridProps {

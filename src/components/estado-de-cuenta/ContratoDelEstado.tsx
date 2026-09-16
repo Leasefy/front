@@ -36,6 +36,7 @@
 import * as React from 'react';
 
 import { cn } from '@/lib/utils';
+import { numeroDelContratoDelEstado } from './numero';
 import { formatCurrency } from '@/lib/format';
 import {
   Table,
@@ -109,6 +110,7 @@ export function ContratoDelEstado({ contrato, hoy, sinPaginar = false }: Props) 
   );
 
   const paginar = !sinPaginar && cuantasFilas(contrato) > FILAS_SIN_PAGINAR;
+  const numero = numeroDelContratoDelEstado(contrato);
 
   return (
     <section
@@ -118,9 +120,17 @@ export function ContratoDelEstado({ contrato, hoy, sinPaginar = false }: Props) 
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b border-border pb-3">
         <div className="min-w-0">
+          {/* El número que el cliente conoce, y el nuestro rotulado al lado
+              cuando no es el mismo («Contrato 1686 · Leasefy #1839»). */}
           <h3 className="text-subtitle text-fg">
             {t('estadoDeCuenta.contratoPalabra')}{' '}
-            <span className="font-mono tabular-nums">{contrato.numero}</span>
+            <span className="font-mono tabular-nums">{numero.principal}</span>
+            {numero.numeroDeLeasefy != null && (
+              <span className="font-mono tabular-nums text-body-sm text-fg-muted" data-testid="numero-de-leasefy">
+                {' · '}
+                {t('estadoDeCuenta.numeroDeLeasefy', { numero: String(numero.numeroDeLeasefy) })}
+              </span>
+            )}
           </h3>
           <p className="mt-0.5 text-body-sm text-fg-muted">
             {t(

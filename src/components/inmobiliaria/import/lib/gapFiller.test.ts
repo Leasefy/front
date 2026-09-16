@@ -238,3 +238,63 @@ describe('mapRowsToProperties — una columna partida en dos (2026-09-11)', () =
     expect(p.propertyAddress).toBe('CR 50 127');
   });
 });
+
+// ── Varios dueños con su % (Nico, 2026-09-13) ───────────────────────────────
+describe('mapRowsToProperties — varios dueños en la celda «Propietario»', () => {
+  const col = (sourceColumn: string, targetField: string): ColumnMapping => ({
+    sourceColumn, targetField, confidence: 1, isManual: false,
+  });
+  const fila = {
+    _rowIndex: 1,
+    Propietario: '[1] 43.090.971 - LUZ ADRIANA, [2] 42979803 - MARIA VICTORIA',
+    'Teléfonos Propietario': '[1] 3103640479, [2] 3217834480',
+    '% Propietario': '60, 40',
+    Canon: '$1,100,000.00',
+  };
+  const mapeo = [
+    col('Propietario', 'ownerName'),
+    col('Teléfonos Propietario', 'ownerPhone'),
+    col('% Propietario', 'ownerShare'),
+    col('Canon', 'monthlyRent'),
+  ];
+
+  it('arma los dueños con documento limpio, teléfono y % por posición; el [1] queda en los campos de siempre', () => {
+    const [p] = mapRowsToProperties([fila], mapeo);
+    expect(p.owners).toEqual([
+      { documento: '43090971', nombre: 'LUZ ADRIANA', telefono: '3103640479', porcentaje: 60, orden: 1 },
+      { documento: '42979803', nombre: 'MARIA VICTORIA', telefono: '3217834480', porcentaje: 40, orden: 2 },
+    ]);
+    expect(p.ownerDocument).toBe('43090971');
+    expect(p.ownerName).toBe('LUZ ADRIANA');
+    expect(p.ownerPhone).toBe('3103640479');
+    expect(p.monthlyRent).toBe(1100000);
+  });
+
+  it('también con la columna partida en documento + nombre', () => {
+    const [p] = mapRowsToProperties([fila], [
+      { sourceColumn: 'Propietario', targetField: null, confidence: 1, isManual: true, partes: { destinos: ['ownerDocument', 'ownerName'] } },
+    ]);
+    expect(p.owners?.map((o) => o.documento)).toEqual(['43090971', '42979803']);
+    expect(p.ownerName).toBe('LUZ ADRIANA');
+  });
+
+  it('«Canon» con dos valores es el canon repartido: la suma es el canon y cada parte va a su dueño', () => {
+    const [p] = mapRowsToProperties(
+      [{ ...fila, Canon: '$660,000.00, $440,000.00', '% Propietario': '' }],
+      mapeo,
+    );
+    expect(p.monthlyRent).toBe(1100000);
+    expect(p.owners?.map((o) => o.canon)).toEqual([660000, 440000]);
+  });
+
+  it('un % que no se puede emparejar (tres valores para dos dueños) se deja vacío', () => {
+    const [p] = mapRowsToProperties([{ ...fila, '% Propietario': '50, 30, 20' }], mapeo);
+    expect(p.owners?.every((o) => o.porcentaje === undefined)).toBe(true);
+  });
+
+  it('un solo dueño no arma la lista (compatibilidad)', () => {
+    const [p] = mapRowsToProperties([{ ...fila, Propietario: '43090971 - LUZ ADRIANA' }], mapeo);
+    expect(p.owners).toBeUndefined();
+    expect(p.ownerDocument).toBe('43090971');
+  });
+});

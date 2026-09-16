@@ -54,11 +54,36 @@ vi.mock('@/components/inmobiliaria/pqrs/NuevaPqrsDrawer', () => ({
 }))
 // El cajón del detalle: el test sólo necesita saber QUÉ solicitud se abrió.
 vi.mock('@/components/inmobiliaria/pqrs/PqrsDrawer', () => ({
-  PqrsDrawer: ({ pqrs }: { pqrs: { radicado: string } | null }) =>
-    pqrs ? React.createElement('p', null, `cajon:${pqrs.radicado}`) : null,
+  // Además de QUÉ solicitud se abrió, deja disparar `onActualizado` como lo
+  // haría el cajón al mover de estado: eso relanza el refresco de fondo.
+  PqrsDrawer: ({
+    pqrs,
+    onActualizado,
+  }: {
+    pqrs: { radicado: string } | null
+    onActualizado?: (p: unknown) => void
+  }) =>
+    pqrs
+      ? React.createElement(
+          React.Fragment,
+          null,
+          React.createElement('p', null, `cajon:${pqrs.radicado}`),
+          React.createElement(
+            'button',
+            { 'data-testid': 'cajon-actualizar', onClick: () => onActualizado?.(pqrs) },
+            'mover',
+          ),
+        )
+      : null,
+}))
+
+vi.mock('@/components/ui/toast', () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
 }))
 
 import PqrsPage from './page'
+import { toast } from '@/components/ui/toast'
+import { ApiError } from '@/lib/api/client'
 
 let container: HTMLDivElement
 let root: Root
@@ -193,5 +218,114 @@ describe('solicitudes — se llega desde la ficha de un contrato', () => {
     await montar()
 
     expect(container.textContent).not.toContain('cajon:')
+  })
+})
+
+describe('solicitudes — el resumen no afirma ceros que no sabe (S1 · S2 · S3)', () => {
+  const OTRA: Record<string, unknown> = {
+    id: 'p-1',
+    numero: 7,
+    radicado: 'PQRS-0007',
+    tipo: 'QUEJA',
+    solicitanteTipo: 'INQUILINO',
+    solicitanteNombre: 'Camila',
+    solicitanteContacto: null,
+    asunto: 'Fuga en el baño',
+    descripcion: null,
+    consignacionId: 'c-1',
+    inmuebleLabel: 'Apto 402',
+    asignadoAUserId: null,
+    asignadoANombre: null,
+    estado: 'EN_PROCESO',
+    slaVenceAt: '2026-03-20T10:00:00.000Z',
+    resueltaAt: null,
+    cerradaAt: null,
+    createdAt: '2026-03-01T10:00:00.000Z',
+    updatedAt: '2026-03-01T10:00:00.000Z',
+  }
+  const RESUMEN = {
+    total: 1,
+    recibidas: 0,
+    asignadas: 0,
+    enProceso: 1,
+    enCotizacion: 0,
+    resueltas: 0,
+    cerradas: 0,
+  }
+  const grilla = () => container.querySelector('.lg\\:grid-cols-6')
+
+  it('🔴 con la lista caída, las seis tarjetas dicen «—» y «No se pudo traer», no 0', async () => {
+    listarMock.mockRejectedValue(new ApiError(500, 'Internal server error'))
+    await montar()
+
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
+    const valores = Array.from(container.querySelectorAll('[data-testid="pqrs-resumen-valor"]'))
+    expect(valores).toHaveLength(6)
+    for (const v of valores) expect(v.textContent).toBe('—')
+    expect(grilla()!.textContent).toContain('No se pudo traer')
+    expect(grilla()!.textContent).not.toMatch(/\d/)
+  })
+
+  it('🔴 mientras carga no hay números en el resumen: esqueleto, no ceros', async () => {
+    listarMock.mockReturnValue(new Promise(() => undefined))
+    await montar()
+
+    expect(grilla()).not.toBeNull()
+    expect(grilla()!.textContent).not.toMatch(/\d/)
+    expect(container.querySelectorAll('[data-testid="pqrs-resumen-valor"]')).toHaveLength(0)
+  })
+
+  it('con la lista bien, el resumen muestra sus números', async () => {
+    listarMock.mockResolvedValue({ resumen: RESUMEN, solicitudes: [OTRA] })
+    await montar()
+
+    const valores = Array.from(container.querySelectorAll('[data-testid="pqrs-resumen-valor"]')).map(
+      (v) => v.textContent,
+    )
+    expect(valores).toContain('1')
+    expect(grilla()!.textContent).not.toContain('No se pudo traer')
+  })
+
+  it('🔴 un `?pqrs=` que no está en la lista lo dice («no encontramos esa solicitud»), no se calla', async () => {
+    query = 'pqrs=p-que-no-esta'
+    listarMock.mockResolvedValue({ resumen: RESUMEN, solicitudes: [OTRA] })
+    await montar()
+
+    const fallo = container.querySelector('[data-testid="fallo-de-carga"]')
+    expect(fallo).not.toBeNull()
+    expect(fallo!.getAttribute('data-tipo')).toBe('noExiste')
+    expect(fallo!.textContent).toContain('esa solicitud')
+    // Reintentar sobre algo que no existe sería mentir.
+    expect(fallo!.querySelector('[data-testid="reintentar"]')).toBeNull()
+  })
+
+  it('un `?pqrs=` que SÍ está abre el cajón y no muestra ningún fallo', async () => {
+    query = 'pqrs=p-1'
+    listarMock.mockResolvedValue({ resumen: RESUMEN, solicitudes: [OTRA] })
+    await montar()
+
+    expect(container.textContent).toContain('cajon:PQRS-0007')
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull()
+  })
+
+  it('🔴 si el refresco de fondo falla después de mover una solicitud, avisa con un toast', async () => {
+    query = 'pqrs=p-1'
+    listarMock
+      .mockResolvedValueOnce({ resumen: RESUMEN, solicitudes: [OTRA] })
+      .mockRejectedValueOnce(new ApiError(500, 'Internal server error'))
+    await montar()
+
+    const mover = container.querySelector<HTMLButtonElement>('[data-testid="cajon-actualizar"]')
+    expect(mover).not.toBeNull()
+    await act(async () => {
+      mover!.click()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(toast.error).toHaveBeenCalledWith(
+      'No se pudo actualizar el resumen',
+      expect.objectContaining({ description: expect.any(String) }),
+    )
   })
 })

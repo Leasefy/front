@@ -732,9 +732,13 @@ export function RielDeActividad({
               className="inline-flex items-center gap-1 font-medium text-primary underline-offset-2 hover:underline"
               data-testid="riel-contrato"
             >
-              {renovacion.contractCode != null
-                ? `Ver el contrato #${renovacion.contractCode}`
-                : 'Ver el contrato'}
+              {/* El número que la inmobiliaria conoce (el back lo manda ya
+                  resuelto); «#code» sólo con un back anterior. */}
+              {renovacion.contractNumero
+                ? `Ver el contrato ${renovacion.contractNumero}`
+                : renovacion.contractCode != null
+                  ? `Ver el contrato #${renovacion.contractCode}`
+                  : 'Ver el contrato'}
             </Link>
           ) : null}
         </div>

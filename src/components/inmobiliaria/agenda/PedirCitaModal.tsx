@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from '@/components/ui/toast';
 import { CalendarPlus } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
@@ -35,6 +35,42 @@ export const HORAS: string[] = Array.from({ length: 31 }, (_, i) => {
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 });
 
+/**
+ * Un inmueble arrendado no recibe visitas. «Arrendado» se decide igual que en
+ * la lista de Inmuebles: por el contrato vigente (`arrendado`), y sólo si la
+ * fila vino sin ese campo, por `availability`.
+ */
+export function estaArrendado(c: { arrendado?: boolean | null; availability?: string }): boolean {
+  return c.arrendado ?? c.availability === 'rented';
+}
+
+/** Dónde se pinta el motivo de un rechazo: al lado del campo que lo causó. */
+export type CampoDelRechazo = 'inmueble' | 'hora' | 'general';
+
+/**
+ * Traduce el error del back a un lugar en el formulario.
+ *
+ * El back responde 409 con `code` (`agenda.service.ts#createCita`):
+ * `HORARIO_OCUPADO` va al lado de la hora, `INMUEBLE_ARRENDADO` al lado del
+ * inmueble. Cualquier otro 400/409 trae su propio motivo en castellano y va
+ * arriba del pie. Un 500 o un corte de red no explican nada: ahí va el texto
+ * genérico, pero DENTRO del modal, para no perder lo que ya se llenó.
+ * `null` = no mostrar nada (401: el cliente ya está cerrando la sesión).
+ */
+export function rechazoDeCita(
+  err: unknown,
+  generico: string,
+): { campo: CampoDelRechazo; mensaje: string } | null {
+  if (!(err instanceof ApiError)) return { campo: 'general', mensaje: generico };
+  if (err.status === 401) return null;
+  const code = err.code ?? (typeof err.detalle?.code === 'string' ? err.detalle.code : undefined);
+  const explica = (err.status === 400 || err.status === 409) && !!err.message;
+  const mensaje = explica ? err.message : generico;
+  if (err.status === 409 && code === 'HORARIO_OCUPADO') return { campo: 'hora', mensaje };
+  if (err.status === 409 && code === 'INMUEBLE_ARRENDADO') return { campo: 'inmueble', mensaje };
+  return { campo: 'general', mensaje };
+}
+
 interface PedirCitaModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -62,15 +98,20 @@ export function PedirCitaModal({
   // TODOS los del portafolio, en un Combobox con buscador: una inmobiliaria
   // con doscientos inmuebles no encuentra el suyo bajando un Select (Nico,
   // 2026-09-03: «no aparecen todos y deja un buscador ahí»).
+  // Los arrendados NO se ofrecen: el back los rechaza con 409, y ofrecerlos
+  // era invitar a llenar el formulario entero para nada. Se cuentan aparte
+  // para decir por qué un inmueble conocido no aparece en el buscador.
   const { consignaciones } = useConsignaciones();
+  const conInmueble = useMemo(() => consignaciones.filter((c) => c.propertyId), [consignaciones]);
   const opcionesInmueble = useMemo<ComboboxOption[]>(
     () =>
-      consignaciones
-        .filter((c) => c.propertyId)
+      conInmueble
+        .filter((c) => !estaArrendado(c))
         .sort((a, b) => a.propertyTitle.localeCompare(b.propertyTitle))
         .map((c) => ({ value: c.propertyId, label: etiquetaDeInmueble(c) })),
-    [consignaciones],
+    [conInmueble],
   );
+  const arrendadosOcultos = conInmueble.length - opcionesInmueble.length;
 
   const [propertyId, setPropertyId] = useState('');
   const [contactName, setContactName] = useState('');
@@ -82,6 +123,10 @@ export function PedirCitaModal({
   const [visitType, setVisitType] = useState<'IN_PERSON' | 'VIRTUAL'>('IN_PERSON');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [rechazo, setRechazo] = useState<{ campo: CampoDelRechazo; mensaje: string } | null>(null);
+  // Guarda síncrona del doble clic: `submitting` pinta en el render siguiente,
+  // y dos clics seguidos alcanzaban a mandar dos citas iguales.
+  const enviando = useRef(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -102,6 +147,7 @@ export function PedirCitaModal({
       setEndTime('10:30');
       setVisitType('IN_PERSON');
       setNotes('');
+      setRechazo(null);
     }
   }, [isOpen, presetPropertyId]);
 
@@ -115,8 +161,10 @@ export function PedirCitaModal({
     endTime > startTime;
 
   const handleSubmit = async () => {
-    if (!canSubmit) return;
+    if (!canSubmit || enviando.current) return;
+    enviando.current = true;
     setSubmitting(true);
+    setRechazo(null);
     try {
       await agendaApi.createCita({
         propertyId,
@@ -135,14 +183,21 @@ export function PedirCitaModal({
     } catch (err) {
       // Con la sesión vencida el cliente ya está cerrando sesión: un «no se
       // pudo agendar» encima sería mentira (la cita no falló, la sesión sí).
-      if (err instanceof ApiError && err.status === 401) return;
-      toast.error(t(k('citaError')), {
-        description: err instanceof ApiError && err.message.length < 160 ? err.message : undefined,
-      });
+      // Todo lo demás se dice DENTRO del modal, al lado del campo que lo causó:
+      // un toast se va solo y deja al usuario adivinando qué cambiar.
+      setRechazo(rechazoDeCita(err, t(k('citaError'))));
     } finally {
+      enviando.current = false;
       setSubmitting(false);
     }
   };
+
+  const avisoDe = (campo: CampoDelRechazo) =>
+    rechazo?.campo === campo ? (
+      <p role="alert" data-testid={`cita-rechazo-${campo}`} className="mt-1.5 text-caption text-danger">
+        {rechazo.mensaje}
+      </p>
+    ) : null;
 
   return (
     <ResponsiveDialog
@@ -173,13 +228,24 @@ export function PedirCitaModal({
             ) : (
               <Combobox
                 value={propertyId || undefined}
-                onChange={(v) => setPropertyId(v ?? '')}
+                onChange={(v) => {
+                  setPropertyId(v ?? '');
+                  if (rechazo?.campo === 'inmueble') setRechazo(null);
+                }}
                 options={opcionesInmueble}
                 placeholder={t(k('citaSelectProperty'))}
                 searchPlaceholder="Escribe #código, título o dirección"
                 contentClassName="z-[400]"
               />
             )}
+            {avisoDe('inmueble')}
+            {!isPreset && arrendadosOcultos > 0 ? (
+              <p className="mt-1.5 text-caption text-fg-subtle" data-testid="cita-arrendados-ocultos">
+                {arrendadosOcultos === 1
+                  ? 'No aparece 1 inmueble arrendado: no recibe visitas.'
+                  : `No aparecen ${arrendadosOcultos} inmuebles arrendados: no reciben visitas.`}
+              </p>
+            ) : null}
           </div>
 
           {/* Contact */}
@@ -240,8 +306,16 @@ export function PedirCitaModal({
                 <label className="mb-1.5 block text-caption text-muted-foreground">
                   {t(k('citaStart'))} <span className="text-danger">*</span>
                 </label>
-                <Select value={startTime} onValueChange={setStartTime}>
-                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <Select
+                  value={startTime}
+                  onValueChange={(v) => {
+                    setStartTime(v);
+                    if (rechazo?.campo === 'hora') setRechazo(null);
+                  }}
+                >
+                  <SelectTrigger className="w-full" aria-invalid={rechazo?.campo === 'hora' || undefined}>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {HORAS.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
                   </SelectContent>
@@ -259,6 +333,7 @@ export function PedirCitaModal({
                 </Select>
               </div>
             </div>
+            {avisoDe('hora')}
           </div>
 
           {/* Type */}
@@ -291,6 +366,16 @@ export function PedirCitaModal({
             />
           </div>
         </div>
+
+        {rechazo?.campo === 'general' ? (
+          <p
+            role="alert"
+            data-testid="cita-rechazo-general"
+            className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+          >
+            {rechazo.mensaje}
+          </p>
+        ) : null}
 
         <ResponsiveDialogFooter className="gap-2">
           <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={submitting}>

@@ -42,6 +42,7 @@ vi.mock('@/components/ui/toast', () => ({
 }));
 
 import { RenovacionDelContrato } from './RenovacionDelContrato';
+import { ApiError } from '@/lib/api/client';
 import type { PlanDelContrato } from '@/lib/api/renovacion-automatica.service';
 
 /** El ejemplo de Nico: contrato del 3 de septiembre, canon $1.000.000. */
@@ -211,8 +212,17 @@ describe('RenovacionDelContrato', () => {
 
   it('un fallo NO se pinta como «no se renueva»', async () => {
     delContrato.mockRejectedValue(new Error('back caído'));
-    const c = await montar();
-    expect(texto(c)).toContain('back caído');
+    await montar();
+    // El cartel de la casa, con reintentar: un 500 o la red sí pueden cambiar.
+    expect(porTestId('fallo-de-carga')).not.toBeNull();
+    expect(porTestId('reintentar')).not.toBeNull();
     expect(porTestId('renovacion-frase')).toBeNull();
+  });
+
+  it('sobre un 404 no ofrece reintentar: el contrato no va a aparecer', async () => {
+    delContrato.mockRejectedValue(new ApiError(404, 'Contract not found'));
+    await montar();
+    expect(porTestId('fallo-de-carga')?.getAttribute('data-tipo')).toBe('noExiste');
+    expect(porTestId('reintentar')).toBeNull();
   });
 });

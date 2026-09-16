@@ -1143,7 +1143,8 @@ export function StepConfirmation({
                       {formatCurrency(monthlyRent)}
                       <span className="text-sm font-normal text-fg-muted">{t('inmobiliaria.consignaciones.wizard.step6.perMonth')}</span>
                     </span>
-                    {formData.adminFee && (
+                    {/* `> 0`: con administración en 0, `{0 && …}` pinta un «0» suelto. */}
+                    {!!formData.adminFee && formData.adminFee > 0 && (
                       <span className="text-sm text-fg-muted dark:text-fg-subtle">
                         + {formatCurrency(formData.adminFee)} {t('inmobiliaria.consignaciones.wizard.step6.admin')}
                       </span>

@@ -52,6 +52,7 @@ import { useCallback, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ListChecks } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
 import { Button } from '@/components/ui/button'
 
 import { useI18n } from '@/lib/i18n'
@@ -73,7 +74,7 @@ import type { PulsoAlerta } from '@/lib/api/piloto'
 /** Una decisión «atrasada» lleva más de una semana esperando. */
 const SEMANA_MS = 7 * 86_400_000
 
-export default function PilotoPage() {
+function PilotoContent() {
   const { t } = useI18n()
   const inbox = usePilotoInbox()
   const actividad = usePilotoActivity(50)
@@ -225,5 +226,21 @@ export default function PilotoPage() {
         onAccionEjecutada={refetchTrasAccion}
       />
     </div>
+  )
+}
+
+/*
+ * P1 — `PageGuard` SIN módulo, a propósito. La fila del menú declara
+ * `module: null` (layout.tsx: el Piloto es el inicio de TODO miembro y cada
+ * widget se defiende solo) y `arquitectura-del-panel.ts` no le asigna módulo.
+ * Lo que sí hace el guard: el contenido —y sus consultas— no se monta hasta
+ * que los permisos resuelven, igual que en el resto de las páginas del panel,
+ * y sin señal no expulsa a nadie.
+ */
+export default function PilotoPage() {
+  return (
+    <PageGuard>
+      <PilotoContent />
+    </PageGuard>
   )
 }

@@ -62,6 +62,12 @@ export interface TenantOnboardingDraft extends TenantOnboardingData {
   step2Valid?: boolean
   /** Cédula de Ciudadanía (Colombia) */
   rut?: string
+  /**
+   * Eligió «Aún no lo sé» en «¿Cuándo planeas mudarte?». Sólo vive en el
+   * borrador: al back no se manda fecha, que es lo mismo que no saberla; esto
+   * es para que al volver al paso la opción siga marcada.
+   */
+  moveInDateUnknown?: boolean
 }
 
 export const initialTenantOnboardingDraft: TenantOnboardingDraft = {

@@ -57,7 +57,25 @@ export type Faltante =
   | 'tipo_de_negocio'
   | 'departamento'
   | 'fecha_consignacion'
-  | 'posible_duplicado';
+  | 'posible_duplicado'
+  /** Varios dueños y los porcentajes (o la plata) no cuadran. */
+  | 'reparto';
+
+/**
+ * Un dueño de `propietarios[]`. Espejo de `PropietarioDelInmuebleDto` del
+ * back: **sólo estas claves** — con `forbidNonWhitelisted` una de más es un
+ * 400 del lote entero.
+ */
+export interface PropietarioDelInmuebleDto {
+  documento?: string;
+  nombre?: string;
+  telefono?: string;
+  correo?: string;
+  /** Su parte en puntos básicos (10.000 = 100 %). */
+  participacionBps?: number;
+  /** Su parte del canon en pesos, si el archivo la trae repartida. */
+  canon?: number;
+}
 
 export interface InmuebleDuplicado {
   id: string;
@@ -142,6 +160,13 @@ export interface ImportarInmuebleDto {
    * sólo si no tenía teléfono — un archivo viejo no pisa lo corregido a mano.
    */
   propietarioTelefono?: string;
+  /**
+   * TODOS los dueños cuando son dos o más, en el orden del archivo, con su %
+   * o su plata (Nico, 2026-09-13). Con uno solo no viaja. El back los escribe
+   * en el mandato en la misma transacción que lo crea; si los porcentajes no
+   * suman 100 la fila queda pendiente con `reparto`.
+   */
+  propietarios?: PropietarioDelInmuebleDto[];
   /**
    * El estado del inmueble en el sistema anterior («Activa», «Arrendada»,
    * «Inactiva»), CRUDO. El back lo traduce a `PropertyStatus` y lo que no
@@ -255,6 +280,8 @@ export interface ResumenActivacionInmuebles {
   reusados?: number;
   omitidas: FilaOmitida[];
   restantes: number;
+  /** Mandatos creados en esta llamada que quedaron con varios dueños y su reparto. */
+  mandatosConVariosDuenos?: number;
 }
 
 /**

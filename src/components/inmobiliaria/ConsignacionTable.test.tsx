@@ -55,6 +55,17 @@ vi.mock('framer-motion', () => ({
   ),
 }));
 
+// Los permisos salen del PermissionsContext del layout, que acá no se monta.
+// `null` = se puede todo (ADMIN); cada prueba de permisos pone su propio set.
+const permisos = vi.hoisted(() => ({ concedidos: null as Set<string> | null }));
+vi.mock('@/lib/hooks/usePermissions', () => ({
+  usePermissions: () => ({
+    canAccess: (modulo: string, accion: string) =>
+      permisos.concedidos === null || permisos.concedidos.has(`${modulo}:${accion}`),
+    isLoading: false,
+  }),
+}));
+
 import { ConsignacionTable } from './ConsignacionTable';
 
 let container: HTMLDivElement;
@@ -298,5 +309,115 @@ describe('<ConsignacionTable> — R3/R4 actions menu is gated for mandate-less r
     const items = Array.from(document.querySelectorAll('[role="menuitem"]')).map((el) => el.textContent);
     expect(items.some((t) => t?.includes('inmobiliaria.consignaciones.table.viewDetail'))).toBe(true);
     expect(items.some((t) => t?.includes('inmobiliaria.consignaciones.table.edit'))).toBe(true);
+  });
+});
+
+/**
+ * L2: el menú de la fila ofrecía Editar, Pedir cita y Retirar a cualquiera que
+ * viera el portafolio, y el back le contestaba 403 a un CONTADOR o un VIEWER.
+ * L3: «Pedir cita» aparecía sobre un inmueble que ya tiene inquilino.
+ */
+describe('<ConsignacionTable> — el menú de la fila respeta permisos y ocupación (L2, L3)', () => {
+  afterEach(() => {
+    permisos.concedidos = null;
+  });
+
+  function abrirMenu() {
+    const trigger = container.querySelector('[aria-label="Acciones"]');
+    expect(trigger).toBeTruthy();
+    act(() => {
+      (trigger as HTMLElement).dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, pointerId: 1 }),
+      );
+    });
+  }
+
+  function opciones() {
+    return Array.from(document.querySelectorAll('[role="menuitem"]')).map((el) => el.textContent ?? '');
+  }
+
+  const conTodo = {
+    onAgendarCita: vi.fn(),
+    onEliminar: vi.fn(),
+    onCandidatos: vi.fn(),
+  };
+
+  it('un VIEWER ve el detalle y los candidatos, pero ni Editar, ni Pedir cita, ni Retirar', () => {
+    permisos.concedidos = new Set(['portafolio:view', 'operaciones:view']);
+    render([{ kind: 'consignacion', ...makeConsignacion() }], conTodo);
+    abrirMenu();
+
+    const items = opciones();
+    expect(items.some((t) => t.includes('inmobiliaria.consignaciones.table.viewDetail'))).toBe(true);
+    expect(items.some((t) => t.includes('inmobiliaria.inmuebles.acciones.candidatos'))).toBe(true);
+    expect(items.some((t) => t.includes('inmobiliaria.consignaciones.table.edit'))).toBe(false);
+    expect(items.some((t) => t.includes('inmobiliaria.agenda.pedirCita'))).toBe(false);
+    expect(items.some((t) => t.includes('inmobiliaria.inmuebles.acciones.eliminar'))).toBe(false);
+  });
+
+  it('un AGENTE edita y pide cita, pero retirar un inmueble es sólo de quien tiene portafolio:delete', () => {
+    permisos.concedidos = new Set([
+      'portafolio:view',
+      'portafolio:create',
+      'portafolio:edit',
+      'operaciones:view',
+      'operaciones:create',
+      'operaciones:edit',
+    ]);
+    render([{ kind: 'consignacion', ...makeConsignacion() }], conTodo);
+    abrirMenu();
+
+    const items = opciones();
+    expect(items.some((t) => t.includes('inmobiliaria.consignaciones.table.edit'))).toBe(true);
+    expect(items.some((t) => t.includes('inmobiliaria.agenda.pedirCita'))).toBe(true);
+    expect(items.some((t) => t.includes('inmobiliaria.inmuebles.acciones.eliminar'))).toBe(false);
+  });
+
+  it('la cita la decide `operaciones`, no `portafolio`: con portafolio:edit y sin operaciones:edit no aparece', () => {
+    permisos.concedidos = new Set(['portafolio:view', 'portafolio:edit', 'operaciones:view']);
+    render([{ kind: 'consignacion', ...makeConsignacion() }], conTodo);
+    abrirMenu();
+
+    expect(opciones().some((t) => t.includes('inmobiliaria.agenda.pedirCita'))).toBe(false);
+  });
+
+  it('sobre un inmueble con contrato vigente no se ofrece «Pedir cita», aunque se pueda', () => {
+    render([{ kind: 'consignacion', ...makeConsignacion({ arrendado: true, availability: 'available' }) }], conTodo);
+    abrirMenu();
+
+    expect(opciones().some((t) => t.includes('inmobiliaria.agenda.pedirCita'))).toBe(false);
+    // Lo demás sigue: arrendado no es «no se puede tocar».
+    expect(opciones().some((t) => t.includes('inmobiliaria.consignaciones.table.edit'))).toBe(true);
+  });
+
+  it('una fila de una respuesta vieja sin `arrendado` se cae a la disponibilidad del mandato', () => {
+    render([{ kind: 'consignacion', ...makeConsignacion({ availability: 'rented' }) }], conTodo);
+    abrirMenu();
+
+    expect(opciones().some((t) => t.includes('inmobiliaria.agenda.pedirCita'))).toBe(false);
+  });
+
+  it('un inmueble disponible y sin contrato sí ofrece «Pedir cita»', () => {
+    render([{ kind: 'consignacion', ...makeConsignacion({ arrendado: false, availability: 'available' }) }], conTodo);
+    abrirMenu();
+
+    expect(opciones().some((t) => t.includes('inmobiliaria.agenda.pedirCita'))).toBe(true);
+  });
+
+  it('sin portafolio:create, una fila sin mandato no tiene menú y completar el mandato no hace nada', () => {
+    permisos.concedidos = new Set(['portafolio:view']);
+    const { onCompletarMandato } = render([makeSinMandatoRow()]);
+
+    expect(container.querySelector('[aria-label="Acciones"]')).toBeNull();
+
+    const alerta = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('inmobiliaria.consignaciones.table.missingMandate'),
+    ) as HTMLButtonElement;
+    expect(alerta.disabled).toBe(true);
+
+    act(() => {
+      (container.querySelector('tbody tr') as HTMLElement).click();
+    });
+    expect(onCompletarMandato).not.toHaveBeenCalled();
   });
 });

@@ -18,6 +18,16 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -91,6 +101,8 @@ export function ConsignacionWizard({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  /** W2: sin fotos se pregunta antes de publicar (ver `handleSubmit`). */
+  const [preguntarSinFotos, setPreguntarSinFotos] = useState(false);
 
   // Form data state
   const [formData, setFormData] = useState<Partial<WizardFormData>>({
@@ -330,7 +342,7 @@ export function ConsignacionWizard({
    * creado sin mandato en vez de decir «listo» — media verdad se lee como
    * mentira entera cuando aparece la factura.
    */
-  const handleSubmit = useCallback(async () => {
+  const crearConsignacion = useCallback(async (publicar: boolean) => {
     if (!isStepValid) return;
     setIsSubmitting(true);
 
@@ -432,12 +444,26 @@ export function ConsignacionWizard({
 
       // Assign agent
       const selectedAgente = agentes.find((a) => a.id === formData.agenteId);
-      if (isAgentRole && user?.email) {
-        // Agent creating → auto-assign to themselves
-        await propertiesApi.assignAgent(property.id, user.email);
-      } else if (!isAgentRole && selectedAgente?.email) {
-        // Admin → assign the selected agent by email
-        await propertiesApi.assignAgent(property.id, selectedAgente.email);
+      /*
+       * W1 — el inmueble YA existe. Si asignar el agente falla y el error cae en
+       * el catch general, la pantalla decía «No pudimos crear el inmueble. No se
+       * guardó nada» y quien reintentaba terminaba con DOS inmuebles. Asignar es
+       * un paso más, no el que decide si hay inmueble: se avisa y se sigue con
+       * la consignación, que igual lleva `agenteUserId`.
+       */
+      try {
+        if (isAgentRole && user?.email) {
+          // Agent creating → auto-assign to themselves
+          await propertiesApi.assignAgent(property.id, user.email);
+        } else if (!isAgentRole && selectedAgente?.email) {
+          // Admin → assign the selected agent by email
+          await propertiesApi.assignAgent(property.id, selectedAgente.email);
+        }
+      } catch (error) {
+        console.error('Error assigning agent:', error);
+        toast.warning(t('inmobiliaria.consignaciones.wizard.toasts.agentErrorTitle'), {
+          description: t('inmobiliaria.consignaciones.wizard.toasts.agentErrorDesc'),
+        });
       }
 
       /**
@@ -512,8 +538,34 @@ export function ConsignacionWizard({
         // busque en la lista y lo complete, o que lo dé por perdido y lo cargue
         // de nuevo — y termine con dos.
         console.error('Error creating consignacion:', error);
-        toast.error(t('inmobiliaria.consignaciones.wizard.toasts.mandateErrorTitle'), {
-          description: t('inmobiliaria.consignaciones.wizard.toasts.mandateErrorDesc'),
+        if (error instanceof ApiError && error.status === 409) {
+          // W3 — el back dice que ya hay una consignación para este inmueble
+          // (P2002, consignaciones.service.ts). «Ábrelo y completa la
+          // consignación» era falso: ya está completa. Se dice lo que el back
+          // dijo y que no se creó otra.
+          toast.error(t('inmobiliaria.consignaciones.wizard.toasts.mandateDuplicateTitle'), {
+            description: t('inmobiliaria.consignaciones.wizard.toasts.mandateDuplicateDesc', {
+              reason: error.message,
+            }),
+          });
+        } else {
+          toast.error(t('inmobiliaria.consignaciones.wizard.toasts.mandateErrorTitle'), {
+            description: t('inmobiliaria.consignaciones.wizard.toasts.mandateErrorDesc'),
+          });
+        }
+        router.push(destinoAlSalir);
+        return;
+      }
+
+      if (!publicar) {
+        // W2 — la persona eligió dejarlo en borrador porque no tiene fotos. El
+        // inmueble nace DRAFT (`POST /properties`), así que basta con no
+        // publicarlo; lo que falta es DECIRLO, para que nadie lo busque en el
+        // portal.
+        toast.success(t('inmobiliaria.consignaciones.wizard.toasts.draftSavedTitle'), {
+          description: t('inmobiliaria.consignaciones.wizard.toasts.draftSavedDesc', {
+            title: formData.propertyTitle || '',
+          }),
         });
         router.push(destinoAlSalir);
         return;
@@ -579,6 +631,22 @@ export function ConsignacionWizard({
       setIsSubmitting(false);
     }
   }, [formData, isStepValid, isAgentRole, user, agentes, router, destinoAlSalir, t]);
+
+  /**
+   * W2 — publicar sin fotos deja un recuadro gris en el portal
+   * (`properties.service.ts` publica AVAILABLE sin mirar fotos). No se bloquea:
+   * se pregunta ANTES de crear nada, con tres salidas — volver a subirlas,
+   * dejarlo en borrador o publicarlo igual.
+   */
+  const sinFotos = (formData.photos ?? []).length === 0;
+  const handleSubmit = useCallback(() => {
+    if (!isStepValid || isSubmitting) return;
+    if (sinFotos) {
+      setPreguntarSinFotos(true);
+      return;
+    }
+    void crearConsignacion(true);
+  }, [isStepValid, isSubmitting, sinFotos, crearConsignacion]);
 
   // Cancel handler
   const handleCancel = useCallback(() => {
@@ -804,6 +872,38 @@ export function ConsignacionWizard({
           </div>
         </div>
       </div>
+
+      <AlertDialog open={preguntarSinFotos} onOpenChange={setPreguntarSinFotos}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('inmobiliaria.consignaciones.wizard.sinFotosDialog.title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('inmobiliaria.consignaciones.wizard.sinFotosDialog.description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => goToStep(5)}>
+              {t('inmobiliaria.consignaciones.wizard.sinFotosDialog.addPhotos')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setPreguntarSinFotos(false);
+                void crearConsignacion(false);
+              }}
+            >
+              {t('inmobiliaria.consignaciones.wizard.sinFotosDialog.saveDraft')}
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={() => {
+                setPreguntarSinFotos(false);
+                void crearConsignacion(true);
+              }}
+            >
+              {t('inmobiliaria.consignaciones.wizard.sinFotosDialog.publishAnyway')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Cancel Confirmation Dialog */}
       <AnimatePresence>

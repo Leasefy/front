@@ -29,15 +29,28 @@
  * cambiárselo a todos, esta Sala se compone directo. De lo que traía
  * `<SalaAgente>` se conserva lo que NO se repetía: la actividad reciente.
  *
- * Fail-soft: el resumen (GET …/conciliacion/summary) puede no estar desplegado
- * (404) o la base en modo stub → sus dos bloques no se pintan y la pantalla
- * conserva el hero, la corrida y la ayuda. Nunca un muro de error.
+ * ── Cuando el resumen no llega (auditoría de casos de error 13-09) ─────────
+ *
+ * Antes, fail-soft a secas: si GET …/conciliacion/summary fallaba, los dos
+ * bloques del resumen no se pintaban y la pantalla quedaba igual que una
+ * cuenta sin nada que revisar. Eso se lee como «todo en orden».
+ *
+ *   · K1 — Si falló y no hay nada que mostrar, el hueco dice que no cargó, con
+ *     reintento. Si falló un REFRESCO, los números se quedan y una línea dice
+ *     que son de la lectura anterior.
+ *   · K2 — «Conciliar» no se ofrece mientras no se sabe qué movimientos hay
+ *     (leyendo o falló), y el `title` dice por qué.
+ *   · K3 — El sondeo de la corrida corta al primer fallo de lectura y lo avisa
+ *     UNA vez, en vez de seguir girando en silencio.
+ *
+ * Sigue siendo fail-soft para la ruta NO desplegada (404): eso no es un fallo
+ * de hoy sino una función que todavía no existe en ese entorno.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { toast } from '@/components/ui/toast'
-import { ArrowsClockwise, CaretRight, CheckCircle, UploadSimple } from '@phosphor-icons/react'
+import { ArrowsClockwise, CaretRight, CheckCircle, UploadSimple, WarningCircle } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
 import {
@@ -52,6 +65,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui'
 import { PageGuard } from '@/components/auth/PageGuard'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { useConciliacionSummary } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
@@ -72,6 +86,11 @@ const COLA_HREF = '/panel/inmobiliaria/conciliacion/cola'
 /** Ancla en la página de movimientos — el cargador lleva id="upload". */
 const SUBIR_EXTRACTO_HREF = '/panel/inmobiliaria/conciliacion/movimientos#upload'
 
+/** Cada cuánto se vuelve a leer el resumen mientras corre una conciliación. */
+const SONDEO_MS = 5000
+/** Seis vueltas ≈ 30 s. */
+const VUELTAS_DEL_SONDEO = 6
+
 /** «Cómo funciona» — el viaje de la conciliación en 3 pasos. */
 const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] = [
   { icon: UploadSimple, titleKey: `${PAGES_NS}.comoFunciona.step1.title`, descKey: `${PAGES_NS}.comoFunciona.step1.desc` },
@@ -86,11 +105,14 @@ const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] =
  * `lista`      → el resumen cambió: se dice CUÁNTO cambió.
  * `sinCambios` → pasaron ~30 s y el resumen sigue igual. No se declara
  *                fracaso: la corrida puede seguir procesando. Se dice eso.
+ * `sinLectura` → el resumen dejó de poder leerse mientras se miraba. Tampoco
+ *                se declara fracaso de la corrida: lo que falló es mirarla.
  */
 type Corrida =
   | { estado: 'corriendo' }
   | { estado: 'lista'; conciliados: number; enCola: number }
   | { estado: 'sinCambios' }
+  | { estado: 'sinLectura' }
 
 function ResultadoDeLaCorrida({ corrida }: { corrida: Corrida | null }) {
   if (!corrida) return null
@@ -99,17 +121,22 @@ function ResultadoDeLaCorrida({ corrida }: { corrida: Corrida | null }) {
     corrida.estado === 'corriendo'
       ? 'Corrida en marcha: el agente está cruzando tus movimientos contra los cobros.'
       : corrida.estado === 'sinCambios'
-        ? 'La corrida sigue procesando: todavía no cambió nada en el resumen. Vuelve en un rato o mirá la cola.'
-        : [
-            corrida.conciliados > 0
-              ? `${corrida.conciliados} ${corrida.conciliados === 1 ? 'movimiento conciliado' : 'movimientos conciliados'}`
-              : null,
-            corrida.enCola > 0
-              ? `${corrida.enCola} ${corrida.enCola === 1 ? 'caso quedó' : 'casos quedaron'} en la cola para que los apruebes`
-              : null,
-          ]
-            .filter(Boolean)
-            .join(' · ')
+        ? 'La corrida sigue procesando: todavía no cambió nada en el resumen. Vuelve en un rato o mira la cola.'
+        : corrida.estado === 'sinLectura'
+          ? 'Dejé de mirar la corrida porque no pude leer el resumen. La corrida puede seguir en el servidor: recarga en un rato o mira la cola.'
+          : [
+              corrida.conciliados > 0
+                ? `${corrida.conciliados} ${corrida.conciliados === 1 ? 'movimiento conciliado' : 'movimientos conciliados'}`
+                : null,
+              corrida.enCola > 0
+                ? `${corrida.enCola} ${corrida.enCola === 1 ? 'caso quedó' : 'casos quedaron'} en la cola para que los apruebes`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')
+
+  const verLaCola =
+    corrida.estado === 'sinLectura' || (corrida.estado === 'lista' && corrida.enCola > 0)
 
   return (
     <section
@@ -119,14 +146,18 @@ function ResultadoDeLaCorrida({ corrida }: { corrida: Corrida | null }) {
       data-estado={corrida.estado}
     >
       <div className="flex items-start gap-3">
-        <ArrowsClockwise
-          className={`mt-0.5 h-4 w-4 shrink-0 text-fg-muted ${corrida.estado === 'corriendo' ? 'motion-safe:animate-spin' : ''}`}
-          aria-hidden="true"
-        />
+        {corrida.estado === 'sinLectura' ? (
+          <WarningCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+        ) : (
+          <ArrowsClockwise
+            className={`mt-0.5 h-4 w-4 shrink-0 text-fg-muted ${corrida.estado === 'corriendo' ? 'motion-safe:animate-spin' : ''}`}
+            aria-hidden="true"
+          />
+        )}
         <div className="min-w-0 space-y-1">
           <p className="text-body-sm font-medium text-fg">Última corrida</p>
           <p className="text-body-sm text-fg-muted">{texto}</p>
-          {corrida.estado === 'lista' && corrida.enCola > 0 && (
+          {verLaCola && (
             <Link
               href={COLA_HREF}
               className="inline-block text-body-sm text-primary underline-offset-2 hover:underline"
@@ -146,9 +177,13 @@ function ConciliacionSala() {
   // repetían los del resumen con otra ventana y confundían más de lo que decían.
   const { data: overview } = useAgentOverview('conciliacion')
 
-  // Resumen real del backend (taxonomía + totales + tasa). Fail-soft: null → no se muestra.
-  const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } =
-    useConciliacionSummary()
+  // Resumen real del backend (taxonomía + totales + tasa).
+  const {
+    data: summary,
+    isLoading: summaryLoading,
+    error: summaryError,
+    refetch: refetchSummary,
+  } = useConciliacionSummary()
   // Disparo de conciliación on-demand (acción humana, T-323).
   const { isRunning, requestRun } = useConciliacionRun()
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -172,37 +207,60 @@ function ConciliacionSala() {
   // Sin movimientos cargados no hay nada que cruzar: el extracto va primero.
   const sinMovimientos = movimientos === 0
 
-  // `refetchSummary` devuelve void: el dato fresco llega por estado, así que
-  // el sondeo lo lee de una referencia en vez de esperar un valor de retorno.
-  const ultimoResumen = useRef(summary)
-  ultimoResumen.current = summary
+  // K1/K2: «no sé» tiene dos formas, y ninguna es «no hay nada».
+  const leyendoResumen = summaryLoading && !summary
+  const resumenCaido = Boolean(summaryError) && !summary && !summaryLoading
 
   /** Mira el resumen unas cuantas veces y reporta el delta real. */
   const vigilarLaCorrida = useCallback(
     (antes: { conciliados: number; enCola: number }) => {
       if (sondeo.current) clearInterval(sondeo.current)
       let vueltas = 0
+      /*
+       * K3: `cortado` además del `clearInterval`, porque una vuelta que ya
+       * salió puede volver DESPUÉS de que otra cortó. Sin la bandera, dos
+       * lecturas fallidas en vuelo eran dos avisos.
+       */
+      let cortado = false
+      const cortar = () => {
+        cortado = true
+        if (sondeo.current) clearInterval(sondeo.current)
+        sondeo.current = null
+      }
+
       sondeo.current = setInterval(() => {
+        if (cortado) return
         vueltas += 1
-        void refetchSummary().then(() => {
-          const ahora = ultimoResumen.current?.totals
-          if (ahora) {
-            const nuevosConciliados = ahora.conciliados - antes.conciliados
-            const nuevosEnCola = ahora.en_cola - antes.enCola
-            if (nuevosConciliados > 0 || nuevosEnCola > 0) {
-              setCorrida({ estado: 'lista', conciliados: nuevosConciliados, enCola: nuevosEnCola })
-              if (sondeo.current) clearInterval(sondeo.current)
-              return
+        refetchSummary()
+          .then((lectura) => {
+            if (cortado) return
+            if (lectura.error) throw new Error(lectura.error)
+            const ahora = lectura.data?.totals
+            if (ahora) {
+              const nuevosConciliados = ahora.conciliados - antes.conciliados
+              const nuevosEnCola = ahora.en_cola - antes.enCola
+              if (nuevosConciliados > 0 || nuevosEnCola > 0) {
+                cortar()
+                setCorrida({ estado: 'lista', conciliados: nuevosConciliados, enCola: nuevosEnCola })
+                return
+              }
             }
-          }
-          if (vueltas >= 6) {
-            // Seis vueltas (~30 s) sin cambios. No se declara éxito ni fracaso:
-            // se dice lo que se sabe, que es que todavía no hay resultado.
-            setCorrida({ estado: 'sinCambios' })
-            if (sondeo.current) clearInterval(sondeo.current)
-          }
-        })
-      }, 5000)
+            if (vueltas >= VUELTAS_DEL_SONDEO) {
+              // Seis vueltas (~30 s) sin cambios. No se declara éxito ni fracaso:
+              // se dice lo que se sabe, que es que todavía no hay resultado.
+              cortar()
+              setCorrida({ estado: 'sinCambios' })
+            }
+          })
+          .catch(() => {
+            if (cortado) return
+            cortar()
+            setCorrida({ estado: 'sinLectura' })
+            toast.error('Dejé de mirar la corrida: no pude leer el resumen.', {
+              description: 'La corrida puede seguir en el servidor. Recarga en un rato o mira la cola.',
+            })
+          })
+      }, SONDEO_MS)
     },
     [refetchSummary],
   )
@@ -230,6 +288,14 @@ function ConciliacionSala() {
   }
 
   const feed = overview?.feed ?? []
+
+  const porQueNoSePuedeConciliar = sinMovimientos
+    ? 'Todavía no hay movimientos cargados: sube el extracto del banco primero.'
+    : leyendoResumen
+      ? 'Todavía estoy leyendo el resumen: en un momento sabes qué hay para conciliar.'
+      : resumenCaido
+        ? 'No pude leer el resumen, así que no sé qué movimientos hay para cruzar. Reintenta abajo.'
+        : undefined
 
   return (
     <div className="p-6 lg:p-8 space-y-6" data-testid="sala-agente-conciliacion">
@@ -273,18 +339,14 @@ function ConciliacionSala() {
               </Link>
             </Button>
             {/* Acción PRINCIPAL: conciliar ahora (T-323, confirmación humana).
-                Sin movimientos cargados el botón no promete nada: dice por qué
-                no se puede y deja el extracto como el paso que sigue. */}
+                Sin movimientos cargados, o sin saber cuántos hay, el botón no
+                promete nada: dice por qué no se puede. */}
             <Button
               hideArrow
-              disabled={isRunning || sinMovimientos}
+              disabled={isRunning || sinMovimientos || leyendoResumen || resumenCaido}
               onClick={() => setConfirmOpen(true)}
               data-testid="conciliacion-run-cta"
-              title={
-                sinMovimientos
-                  ? 'Todavía no hay movimientos cargados: sube el extracto del banco primero.'
-                  : undefined
-              }
+              title={porQueNoSePuedeConciliar}
             >
               <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
               {isRunning
@@ -297,11 +359,46 @@ function ConciliacionSala() {
         </div>
       </section>
 
+      {/* K1: el resumen no llegó y no hay nada que mostrar. El hueco lo dice,
+          con reintento — nunca queda como una cuenta sin pendientes. */}
+      {resumenCaido && (
+        <section
+          className="rounded-lg border border-border bg-surface"
+          data-testid="conciliacion-resumen-fallo"
+        >
+          <FalloDeCarga
+            error={summaryError}
+            queEs="el resumen de la conciliación"
+            onReintentar={refetchSummary}
+            enmarcado={false}
+          />
+        </section>
+      )}
+
+      {/* K1: falló un refresco. Los números se quedan, pero no se hacen pasar
+          por los de ahora. */}
+      {summary && summaryError && !summaryLoading && (
+        <div
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-warning-soft px-4 py-3"
+          role="status"
+          data-testid="conciliacion-resumen-desactualizado"
+        >
+          <WarningCircle className="h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+          <p className="min-w-0 flex-1 text-body-sm text-fg">
+            No pude actualizar el resumen: estos números son de la última lectura.
+          </p>
+          <Button variant="outline" size="sm" hideArrow onClick={() => void refetchSummary()}>
+            Intentar de nuevo
+          </Button>
+        </div>
+      )}
+
       {/* 2. Lo que encontró el agente — la tarjeta protagonista. */}
       <HallazgosDelAgente data={summary} colaHref={COLA_HREF} />
 
-      {/* 3. Una sola franja de KPIs. */}
-      <ConciliacionResumen data={summary} isLoading={summaryLoading} showSkeleton />
+      {/* 3. Una sola franja de KPIs. El esqueleto sólo en la PRIMERA lectura:
+             en cada vuelta del sondeo se borraban los números y volvían. */}
+      <ConciliacionResumen data={summary} isLoading={leyendoResumen} showSkeleton />
 
       {/* 4. Qué pasó con la última corrida. */}
       <ResultadoDeLaCorrida corrida={corrida} />

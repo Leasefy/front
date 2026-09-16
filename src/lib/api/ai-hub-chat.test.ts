@@ -340,3 +340,48 @@ describe('mapBackendBriefing (tolerant)', () => {
     expect(Number.isNaN(briefing!.date.getTime())).toBe(false);
   });
 });
+
+/**
+ * B2 — `new Error('ai-hub chat ' + status)` tiraba el status a la basura: un
+ * 402 (sin créditos de IA) y un 429 se pintaban igual que un 500. Ahora el
+ * transporte rechaza con `ApiError`, que `clasificarFallo` sabe leer.
+ */
+describe('postChatTurn / streamChatTurn — el fallo conserva status y cuerpo', () => {
+  const respuesta = (status: number, cuerpo: unknown) =>
+    ({
+      ok: false,
+      status,
+      body: null,
+      json: async () => cuerpo,
+      text: async () => JSON.stringify(cuerpo),
+    }) as unknown as Response;
+
+  it.each([402, 429, 503])('POST con %i rechaza con ApiError y ese status', async (status) => {
+    process.env.NEXT_PUBLIC_AGENT_URL = 'http://agente.test';
+    const { postChatTurn } = await import('./ai-hub-chat');
+    const { ApiError } = await import('@/lib/api/client');
+    vi.stubGlobal('fetch', vi.fn(async () => respuesta(status, { message: 'sin saldo', code: 'X' })));
+    try {
+      const err = await postChatTurn({ agencyId: 'ag-1', message: 'hola' }).catch((e) => e);
+      expect(err).toBeInstanceOf(ApiError);
+      expect(err.status).toBe(status);
+      expect(err.code).toBe('X');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('el stream que no abre también rechaza con ApiError', async () => {
+    process.env.NEXT_PUBLIC_AGENT_URL = 'http://agente.test';
+    const { streamChatTurn } = await import('./ai-hub-chat');
+    const { ApiError } = await import('@/lib/api/client');
+    vi.stubGlobal('fetch', vi.fn(async () => respuesta(402, { error: 'credit balance is too low' })));
+    try {
+      const err = await streamChatTurn({ agencyId: 'ag-1', message: 'hola', handlers: {} }).catch((e) => e);
+      expect(err).toBeInstanceOf(ApiError);
+      expect(err.status).toBe(402);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});

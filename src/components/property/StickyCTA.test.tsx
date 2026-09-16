@@ -269,6 +269,45 @@ describe('<StickyCTA> — RENT listing (regression)', () => {
 // ninguno de los dos da».
 // ============================================================================
 
+describe('<StickyCTA> — inmueble arrendado (2026-09-15)', () => {
+  it('no ofrece postularse ni agendar visita: dice que está arrendado y lleva a los disponibles', () => {
+    render({ arrendado: true })
+    const texto = container.textContent ?? ''
+    expect(texto).toContain('Este inmueble ya está arrendado')
+    expect(texto).not.toContain('Postularme')
+    expect(texto).not.toContain('Agendar visita')
+    expect(q('[data-testid="inmueble-arrendado"] a[href="/propiedades"]')).not.toBeNull()
+  })
+
+  it('la inmobiliaria sigue viendo su panel para compartir', () => {
+    authState = { user: { role: 'agency' }, isAuthenticated: true, hasActiveAgencyMembership: true }
+    render({ arrendado: true })
+    expect(q('[data-testid="agency-share-panel"]')).not.toBeNull()
+    expect(q('[data-testid="inmueble-arrendado"]')).toBeNull()
+  })
+})
+
+describe('<StickyCTA> — quién administra el inmueble (2026-09-15)', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('otra inmobiliaria encabeza la tarjeta con su logo (o sus iniciales) y su nombre', () => {
+    render({ administrador: { agencyId: 'agencia-1', nombre: 'victor inmobiliaria8', logoUrl: null } })
+    const logo = q('[data-testid="logo-del-administrador"]')
+    expect(logo?.textContent).toBe('VI')
+    expect(container.textContent).toContain('victor inmobiliaria8')
+    expect(container.textContent).toContain('Administra este inmueble')
+  })
+
+  it('si la administra Leasefy, encabeza el logotipo de Leasefy', () => {
+    vi.stubEnv('NEXT_PUBLIC_LEASEFY_AGENCY_ID', 'agencia-leasefy')
+    render({ administrador: { agencyId: 'agencia-leasefy', nombre: 'Leasefy.co', logoUrl: null } })
+    expect(q('[data-testid="logo-del-administrador"]')).toBeNull()
+    expect(container.textContent).not.toContain('Administra este inmueble')
+  })
+})
+
 describe('<StickyCTA> — compartir avisa lo que pasó', () => {
   /** El botón de compartir del encabezado de la tarjeta (40px). */
   const botonCompartir = () => q('[data-testid="share-copy-header"]') as HTMLButtonElement

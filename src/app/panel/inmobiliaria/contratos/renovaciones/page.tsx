@@ -9,6 +9,8 @@ import { useRenovaciones, renovacionesApi } from '@/lib/hooks/useInmobiliaria';
 import { getRenovacionStatusLabel } from '@/lib/types/inmobiliaria';
 import type { Renovacion } from '@/lib/types/inmobiliaria';
 import { RenovacionesTable, RenovacionWorkflow } from '@/components/inmobiliaria';
+import { AvisoIpcQueFalta } from '@/components/inmobiliaria/AvisoIpcQueFalta';
+import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 
 /**
  * Renovaciones — dedicated route so lease renewals are a first-class,
@@ -72,6 +74,10 @@ function RenovacionesContent() {
         </p>
       </header>
 
+      {/* N3: sin el IPC del año que rige, las renovaciones salen con el mismo
+          canon. Se avisa arriba de la tabla, antes de que pase. */}
+      <AvisoIpcQueFalta />
+
       {/* La carga, el fallo y el vacío viven DENTRO de la tarjeta de la tabla,
           como en Contratos: nada suelto por fuera. */}
       {/* «Notificar» también abre el cajón: la propuesta sale con el mensaje y
@@ -128,7 +134,16 @@ function RenovacionesContent() {
             toast.success('Borrador guardado');
           }}
           onUploadDocument={async (file) => {
-            await renovacionesApi.uploadDocument(selectedRenovacion.id, file);
+            // C28: sin este try el cajón soltaba el spinner y no decía nada.
+            // Rechazar es lo que lo deja quieto en el paso de la firma.
+            try {
+              await renovacionesApi.uploadDocument(selectedRenovacion.id, file);
+            } catch (error) {
+              toast.error('No se pudo subir el documento firmado', {
+                description: mensajeDelFallo(error, 'Reintenta en un momento.'),
+              });
+              throw error;
+            }
             await recargarRenovaciones();
             toast.success('Documento de renovación subido');
           }}
@@ -154,12 +169,17 @@ function RenovacionesContent() {
                 status: 'terminated',
                 ...(reason ? { historyNote: reason } : {}),
               });
-              await recargarRenovaciones();
-              handleClose();
-              toast.success(t('inmobiliaria.operaciones.toasts.renewalTerminated'));
-            } catch {
-              toast.error('Error al terminar renovación');
+            } catch (error) {
+              // C29: avisar Y relanzar. Sin el `throw` el cajón creía que había
+              // salido y cerraba el diálogo con la renovación todavía abierta.
+              toast.error('No se pudo cerrar la renovación', {
+                description: mensajeDelFallo(error, 'Reintenta en un momento.'),
+              });
+              throw error;
             }
+            await recargarRenovaciones();
+            handleClose();
+            toast.success(t('inmobiliaria.operaciones.toasts.renewalTerminated'));
           }}
           onNoteAdd={async (note) => {
             try {

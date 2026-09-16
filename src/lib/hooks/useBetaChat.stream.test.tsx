@@ -38,9 +38,11 @@ vi.mock('@/lib/api/ai-hub-chat', async () => {
 
 import {
   aprobacionADecision,
+  mensajeDeFalloDelChat,
   podarConversacionesViejas,
   useBetaChat,
 } from './useBetaChat';
+import { ApiError } from '@/lib/api/client';
 import type { BackendPendingApproval } from '@/lib/api/ai-hub-chat';
 import type { Conversation } from '@/lib/types/beta-chat';
 
@@ -229,5 +231,113 @@ describe('aprobacionADecision — la MISMA conversión para el stream y el respa
       title: 'Acuerdo de pago',
       category: 'cobranza',
     });
+  });
+});
+
+/**
+ * B1·B2·B3 — un turno que falla.
+ *
+ * Antes: `finalizeError` escribía un texto fijo en la burbuja con
+ * `status: 'complete'` — sin estilo de fallo, sin Reintentar, con el mismo
+ * «no pude conectarme» para un 402 (sin créditos de IA), un 429 y un 500; y
+ * ese texto viajaba después como `history` al modelo, como si fuera una
+ * respuesta.
+ */
+describe('un turno que falla (B1·B2·B3)', () => {
+  const exito = (texto: string) => async (args: { handlers: Record<string, unknown> }) => {
+    const h = args.handlers as {
+      onMessage: (t: string, a: unknown[]) => void;
+      onDone: (f: unknown) => void;
+    };
+    h.onMessage(texto, []);
+    h.onDone({ responseText: texto, suggestedActions: [], dispatches: [] });
+  };
+
+  it.each([
+    [new ApiError(402, 'Your credit balance is too low'), 'sin créditos de IA'],
+    [new ApiError(429, 'Too many requests'), 'Demasiadas consultas'],
+    [new ApiError(503, 'Service unavailable'), 'No pude conectarme con el asistente'],
+    [new TypeError('Failed to fetch'), 'No pude conectarme con el asistente'],
+    [Object.assign(new Error('The operation timed out'), { name: 'TimeoutError' }), 'tardó demasiado'],
+  ])('mensajeDeFalloDelChat(%s) dice «%s» y nunca el texto crudo', (error, esperado) => {
+    const texto = mensajeDeFalloDelChat(error);
+    expect(texto).toContain(esperado);
+    expect(texto).not.toContain((error as Error).message);
+  });
+
+  it('un 402 deja la burbuja en `error` con el motivo en palabras y la UI desbloqueada', async () => {
+    streamChatTurn.mockRejectedValue(new ApiError(402, 'Your credit balance is too low'));
+    postChatTurn.mockRejectedValue(new ApiError(402, 'Your credit balance is too low'));
+    const s = montar();
+    act(() => {
+      s.actual.sendMessage('¿cuántos inmuebles tengo?');
+    });
+
+    await esperarA(() => s.actual.messages.some((m) => m.role === 'assistant' && m.status === 'error'));
+    const burbuja = s.actual.messages.find((m) => m.role === 'assistant')!;
+    expect(burbuja.content).toContain('sin créditos de IA');
+    expect(burbuja.content).not.toContain('credit balance');
+    expect(s.actual.isThinking || s.actual.isStreaming || s.actual.isAgentsRunning).toBe(false);
+    s.soltar();
+  });
+
+  it('un 402 del stream no insiste por el POST: el saldo no cambia entre un pedido y otro', async () => {
+    streamChatTurn.mockRejectedValue(new ApiError(402, 'sin saldo'));
+    const s = montar();
+    act(() => {
+      s.actual.sendMessage('hola');
+    });
+    await esperarA(() => s.actual.messages.some((m) => m.status === 'error'));
+    expect(postChatTurn).not.toHaveBeenCalled();
+    s.soltar();
+  });
+
+  it('Reintentar reenvía EL MISMO texto y no duplica la pregunta', async () => {
+    streamChatTurn.mockRejectedValueOnce(new ApiError(503, 'x'));
+    postChatTurn.mockRejectedValueOnce(new ApiError(503, 'x'));
+    const s = montar();
+    act(() => {
+      s.actual.sendMessage('¿quién debe más?');
+    });
+    await esperarA(() => s.actual.messages.some((m) => m.status === 'error'));
+    const fallida = s.actual.messages.find((m) => m.status === 'error')!;
+
+    streamChatTurn.mockImplementation(exito('Debe más Ana.'));
+    act(() => {
+      s.actual.regenerateResponse(fallida.id);
+    });
+    await esperarA(() =>
+      s.actual.messages.some((m) => m.role === 'assistant' && m.status === 'complete'),
+    );
+
+    const ultima = streamChatTurn.mock.calls.at(-1)![0] as { message: string };
+    expect(ultima.message).toBe('¿quién debe más?');
+    expect(s.actual.messages.filter((m) => m.role === 'user')).toHaveLength(1);
+    expect(s.actual.messages.some((m) => m.status === 'error')).toBe(false);
+    s.soltar();
+  });
+
+  it('el turno fallido NO viaja como historial en la pregunta siguiente', async () => {
+    streamChatTurn.mockRejectedValueOnce(new ApiError(402, 'x'));
+    postChatTurn.mockRejectedValueOnce(new ApiError(402, 'x'));
+    const s = montar();
+    act(() => {
+      s.actual.sendMessage('pregunta que falló');
+    });
+    await esperarA(() => s.actual.messages.some((m) => m.status === 'error'));
+
+    streamChatTurn.mockImplementation(exito('Listo.'));
+    act(() => {
+      s.actual.sendMessage('pregunta nueva');
+    });
+    await esperarA(() => streamChatTurn.mock.calls.length >= 2);
+
+    const { history } = streamChatTurn.mock.calls.at(-1)![0] as {
+      history: { role: string; content: string }[];
+    };
+    const enviado = JSON.stringify(history);
+    expect(enviado).not.toContain('pregunta que falló');
+    expect(enviado).not.toContain('créditos');
+    s.soltar();
   });
 });

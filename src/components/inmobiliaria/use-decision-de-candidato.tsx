@@ -21,6 +21,7 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { CandidateDrawer } from '@/components/inmobiliaria/CandidateDrawer';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 import {
   AccionDePostulacion,
   type ActionType,
@@ -66,6 +67,12 @@ export function useDecisionDeCandidato<C extends LandlordCandidate>({
   onCambio: () => void | Promise<void>;
 }): DecisionDeCandidato<C> {
   const [abierto, setAbierto] = useState<C | null>(null);
+  // Aprobar, rechazar y pedir información exigen `portafolio:edit` (S3). Sin él
+  // el cajón muestra al candidato pero no ofrece decidir. Mientras resuelven
+  // los permisos se deja decidir, como en el resto del panel, para no hacer
+  // parpadear los botones a quien sí puede.
+  const { canAccess, isLoading: cargandoPermisos } = usePermissions();
+  const puedeDecidir = cargandoPermisos || canAccess('portafolio', 'edit');
   const [accion, setAccion] = useState<{ tipo: ActionType; candidato: C } | null>(null);
   const [eligiendo, setEligiendo] = useState<C | null>(null);
 
@@ -127,6 +134,7 @@ export function useDecisionDeCandidato<C extends LandlordCandidate>({
           pedirAccion(tipo, candidato as C);
         }}
         onReevaluated={onCambio}
+        puedeDecidir={puedeDecidir}
       />
 
       {eligiendo && (

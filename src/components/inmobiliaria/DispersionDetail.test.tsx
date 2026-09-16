@@ -169,3 +169,74 @@ describe('<DispersionDetail> propietario contact', () => {
     expect(container.textContent).toContain('Maria Perez');
   });
 });
+
+function renderConProps(
+  dispersion: Dispersion,
+  props: Partial<React.ComponentProps<typeof DispersionDetail>>,
+) {
+  propietariosMock.mockReturnValue({ propietarios: [BASE_PROPIETARIO] });
+  act(() => {
+    root.render(
+      React.createElement(DispersionDetail, {
+        isOpen: true,
+        onClose: () => {},
+        dispersion,
+        ...props,
+      }),
+    );
+  });
+}
+
+const q = (testid: string) => container.querySelector(`[data-testid="${testid}"]`);
+
+describe('<DispersionDetail> D3 — la agencia aprueba por lote', () => {
+  it('pendiente: no hay «Aprobar»; hay «Ir a Lotes» y la razón', () => {
+    renderConProps(BASE_DISPERSION, { apruebaPorLote: true, onApprove: vi.fn() });
+    expect(q('dispersion-aprobar')).toBeNull();
+    expect(q('dispersion-ir-a-lotes')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/pagos/dispersiones/lotes',
+    );
+    expect(q('dispersion-por-lote')?.textContent).toContain('por lote');
+  });
+
+  it('aprobada: tampoco se ofrece anotar el giro, que también da 409', () => {
+    renderConProps(
+      { ...BASE_DISPERSION, status: 'processing', approvedBy: 'u-1' },
+      { apruebaPorLote: true, onProcess: vi.fn() },
+    );
+    expect(q('dispersion-marcar-girada')).toBeNull();
+    expect(q('dispersion-referencia')).toBeNull();
+    expect(q('dispersion-ir-a-lotes')).not.toBeNull();
+  });
+
+  it('sin aprobación por lote, «Aprobar» sigue vivo', () => {
+    renderConProps(BASE_DISPERSION, { apruebaPorLote: false, onApprove: vi.fn() });
+    expect(q('dispersion-aprobar')).not.toBeNull();
+    expect(q('dispersion-ir-a-lotes')).toBeNull();
+  });
+});
+
+describe('<DispersionDetail> D4 — quien aprobó no marca girada', () => {
+  const aprobada: Dispersion = { ...BASE_DISPERSION, status: 'processing', approvedBy: 'u-1' };
+
+  it('si quien mira la aprobó: campo y botón deshabilitados, con la explicación ANTES de escribir', () => {
+    const onProcess = vi.fn();
+    renderConProps(aprobada, { onProcess, usuarioActualId: 'u-1' });
+
+    const input = q('dispersion-referencia') as HTMLInputElement;
+    const boton = q('dispersion-marcar-girada') as HTMLButtonElement;
+    expect(input.disabled).toBe(true);
+    expect(boton.disabled).toBe(true);
+    expect(q('dispersion-aprobador-no-gira')?.textContent).toContain('Tú aprobaste esta dispersión');
+
+    act(() => boton.click());
+    expect(onProcess).not.toHaveBeenCalled();
+  });
+
+  it('si la aprobó otra persona: se puede anotar la referencia', () => {
+    renderConProps(aprobada, { onProcess: vi.fn(), usuarioActualId: 'u-2' });
+    expect((q('dispersion-referencia') as HTMLInputElement).disabled).toBe(false);
+    expect((q('dispersion-marcar-girada') as HTMLButtonElement).disabled).toBe(false);
+    expect(q('dispersion-aprobador-no-gira')).toBeNull();
+  });
+});

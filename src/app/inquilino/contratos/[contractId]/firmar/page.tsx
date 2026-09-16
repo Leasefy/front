@@ -18,6 +18,7 @@ import { CancelContractModal } from '@/components/contract/CancelContractModal';
 import { DownloadContractPdfButton } from '@/components/contract/DownloadContractPdfButton';
 import Link from 'next/link';
 import { useContract, useContractActions, useContractPreview, useSignedPdfUrl, useContractRejections } from '@/lib/hooks/useContracts';
+import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 import type { ContractPreview as ContractPreviewResponse } from '@/lib/api/contracts.types';
 import { getTemplateById } from '@/lib/constants/contract-templates';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
@@ -323,31 +324,39 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
     void otpVerified;
 
     setIsSigning(true);
-    const updated = await actions.signAsTenant(activeContract.id, {
-      acceptedTerms: true,
-      consentText: 'Acepto los términos y condiciones de este contrato de arrendamiento y confirmo que la información proporcionada es verídica.',
-      signatureData,
-      otpVerificationToken,
-    });
-    if (updated) {
+    try {
+      const updated = await actions.signAsTenant(activeContract.id, {
+        acceptedTerms: true,
+        consentText: 'Acepto los términos y condiciones de este contrato de arrendamiento y confirmo que la información proporcionada es verídica.',
+        signatureData,
+        otpVerificationToken,
+      });
       setLocalContract(updated);
       setSignedSuccess(true);
       toast.success(locale === 'es' ? 'Contrato firmado exitosamente' : 'Contract signed successfully');
-    } else {
-      toast.error(locale === 'es' ? 'Error al firmar el contrato' : 'Error signing contract');
+    } catch (err) {
+      // Las acciones relanzan el fallo del back: acá se dice su motivo.
+      toast.error(locale === 'es' ? 'Error al firmar el contrato' : 'Error signing contract', {
+        description: mensajeDelFallo(err, ''),
+      });
+    } finally {
+      setIsSigning(false);
     }
-    setIsSigning(false);
   };
 
   const handleCancel = async (reason: string | undefined) => {
     if (!activeContract) return;
     setIsCancelling(true);
-    const updated = await actions.cancel(activeContract.id, reason ? { reason } : {});
-    setIsCancelling(false);
-    if (!updated) {
-      toast.error(locale === 'es' ? 'No se pudo cancelar el contrato.' : 'Could not cancel the contract.');
+    try {
+      await actions.cancel(activeContract.id, reason ? { reason } : {});
+    } catch (err) {
+      setIsCancelling(false);
+      toast.error(locale === 'es' ? 'No se pudo cancelar el contrato.' : 'Could not cancel the contract.', {
+        description: mensajeDelFallo(err, ''),
+      });
       return;
     }
+    setIsCancelling(false);
     toast.success(locale === 'es' ? 'Contrato cancelado.' : 'Contract cancelled.');
     setIsCancelModalOpen(false);
     router.push('/inquilino/contratos');
@@ -356,16 +365,20 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
   const handleReject = async (type: RejectionType, reason: string) => {
     if (!activeContract) return;
     setIsRejecting(true);
-    const updated = await actions.rejectAsTenant(activeContract.id, { type, reason });
-    setIsRejecting(false);
-    if (!updated) {
+    let updated: Awaited<ReturnType<typeof actions.rejectAsTenant>>;
+    try {
+      updated = await actions.rejectAsTenant(activeContract.id, { type, reason });
+    } catch (err) {
+      setIsRejecting(false);
       toast.error(
         type === 'MODIFICATIONS'
           ? (locale === 'es' ? 'No se pudo enviar el pedido de cambios.' : 'Could not submit the change request.')
-          : (locale === 'es' ? 'No se pudo enviar el rechazo.' : 'Could not submit the rejection.')
+          : (locale === 'es' ? 'No se pudo enviar el rechazo.' : 'Could not submit the rejection.'),
+        { description: mensajeDelFallo(err, '') }
       );
       return;
     }
+    setIsRejecting(false);
     setLocalContract(updated);
     setIsRejectModalOpen(false);
     if (type === 'DEFINITIVE') {

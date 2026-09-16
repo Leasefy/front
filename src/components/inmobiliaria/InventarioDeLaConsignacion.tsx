@@ -58,6 +58,11 @@ interface Props {
   sinSenal?: boolean;
   /** La consignación que devolvió el back al subir el borrador. */
   onActualizada?: (consignacion: Consignacion) => void;
+  /**
+   * «Ver el inmueble →» al lado del título, cuando la tarjeta se abre desde
+   * otra ficha (el contrato). Desde la ficha del inmueble no hace falta.
+   */
+  enlaceAlInmueble?: { href: string; texto?: string; testid?: string };
 }
 
 export function InventarioDeLaConsignacion({
@@ -67,6 +72,7 @@ export function InventarioDeLaConsignacion({
   copiaLocal,
   sinSenal = false,
   onActualizada,
+  enlaceAlInmueble,
 }: Props) {
   const { t } = useI18n();
   const router = useRouter();
@@ -170,6 +176,15 @@ export function InventarioDeLaConsignacion({
         onAddItem={puedeEditar ? () => setItemAbierto(null) : undefined}
         onEditItem={puedeEditar ? (item) => setItemAbierto(item) : undefined}
         onDeleteItem={puedeEditar ? quitarItem : undefined}
+        enlace={
+          enlaceAlInmueble
+            ? {
+                href: enlaceAlInmueble.href,
+                texto: enlaceAlInmueble.texto ?? 'Ver el inmueble',
+                testid: enlaceAlInmueble.testid,
+              }
+            : undefined
+        }
       />
 
       {puedeEditar && (

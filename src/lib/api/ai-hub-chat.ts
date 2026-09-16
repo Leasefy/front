@@ -16,6 +16,7 @@
  */
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
+import { ApiError } from '@/lib/api/client';
 import type { BackendAccionPropuesta } from '@/lib/api/ai-hub-acciones';
 import { AGENT_WORKSPACES } from '@/lib/nav/agentWorkspaceNav';
 import type {
@@ -412,6 +413,36 @@ export function handleSSEEvent(
 
 // ── Network ───────────────────────────────────────────────────────────────────
 
+/**
+ * El fallo del agente, entero.
+ *
+ * 🔴 Antes: `throw new Error('ai-hub chat ' + status)`. El status quedaba
+ * enterrado en un texto y el cuerpo se tiraba: un 402 (el plan se quedó sin
+ * créditos de IA) y un 429 terminaban en la burbuja como «no pude
+ * conectarme», igual que un 500. Con `ApiError`, `clasificarFallo` los
+ * distingue.
+ */
+async function falloDelAgente(res: Response, que: string): Promise<ApiError> {
+  let cuerpo: Record<string, unknown> | undefined;
+  try {
+    const json: unknown = await res.json();
+    if (json && typeof json === 'object' && !Array.isArray(json)) {
+      cuerpo = json as Record<string, unknown>;
+    }
+  } catch {
+    // Sin cuerpo JSON (un proxy que devuelve HTML, por ejemplo): queda el status.
+  }
+  const crudo = cuerpo?.message ?? cuerpo?.error;
+  const mensaje =
+    typeof crudo === 'string'
+      ? crudo
+      : Array.isArray(crudo) && crudo.every((x) => typeof x === 'string')
+        ? (crudo as string[])
+        : `${que} ${res.status}`;
+  const code = typeof cuerpo?.code === 'string' ? cuerpo.code : undefined;
+  return new ApiError(res.status, mensaje, code, cuerpo);
+}
+
 function agentBaseUrl(): string {
   const base = process.env.NEXT_PUBLIC_AGENT_URL;
   if (!base) throw new Error('NEXT_PUBLIC_AGENT_URL not configured');
@@ -444,7 +475,7 @@ export async function postChatTurn(args: {
     body: buildBody(args.message, args.history),
     ...(args.signal ? { signal: args.signal } : {}),
   });
-  if (!res.ok) throw new Error(`ai-hub chat ${res.status}`);
+  if (!res.ok) throw await falloDelAgente(res, 'ai-hub chat');
   return (await res.json()) as BackendChatResponse;
 }
 
@@ -491,7 +522,8 @@ export async function streamChatTurn(args: {
     body: buildBody(args.message, args.history),
     ...(args.signal ? { signal: args.signal } : {}),
   });
-  if (!res.ok || !res.body) throw new Error(`ai-hub chat stream ${res.status}`);
+  if (!res.ok) throw await falloDelAgente(res, 'ai-hub chat stream');
+  if (!res.body) throw new Error('ai-hub chat stream sin cuerpo');
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();

@@ -52,6 +52,12 @@ interface PipelineDetailProps {
     newStage: PipelineStage,
     lostReason?: string,
   ) => void | Promise<void>;
+  /**
+   * ¿Puede mover o marcar perdido? Mover es `pipeline:edit` en el back: a un
+   * CONTADOR o VIEWER los botones le respondían 403. Por defecto `true` para
+   * no cambiar a quien ya lo usa; la página pasa el permiso real.
+   */
+  puedeEditar?: boolean;
 }
 
 /**
@@ -157,7 +163,13 @@ function RiskBadge({ score, level }: { score?: number; level?: string }) {
  * PipelineDetail - Sheet drawer showing full pipeline item details
  * Clean, minimal design following project conventions
  */
-export function PipelineDetail({ isOpen, onClose, item, onStageChange }: PipelineDetailProps) {
+export function PipelineDetail({
+  isOpen,
+  onClose,
+  item,
+  onStageChange,
+  puedeEditar = true,
+}: PipelineDetailProps) {
   const { t, formatDate: formatDateI18n } = useI18n();
   const [notes, setNotes] = useState('');
   const [isMoving, setIsMoving] = useState(false);
@@ -561,7 +573,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
         </div>
 
         {/* Footer Actions */}
-        {!isTerminal && (
+        {!isTerminal && puedeEditar && (
           <div className="shrink-0 p-4 border-t border-border bg-card flex items-center gap-3">
             <Button
               variant="outline"

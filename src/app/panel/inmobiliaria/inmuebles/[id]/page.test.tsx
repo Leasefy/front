@@ -13,6 +13,7 @@
 
 import * as React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { ApiError } from '@/lib/api/client';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
@@ -32,16 +33,35 @@ const { useConsignacionMock, usePropietarioMock, useAgenteMock, usePropertyMock 
 // controla la query con `queryDePrueba`.
 const queryDePrueba = { editar: null as string | null };
 const routerReplaceMock = vi.fn();
+// La ficha dibuja Candidatos, que decide con `usePermissions` (S3). Permisos
+// abiertos: estas pruebas miran la ficha, no el gate de decidir.
+vi.mock('@/lib/hooks/usePermissions', () => ({
+  usePermissions: () => ({ isLoading: false, canAccess: () => true }),
+}));
+
 vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'consig-1' }),
   useRouter: () => ({ push: vi.fn(), replace: routerReplaceMock }),
   useSearchParams: () => ({ get: (k: string) => (k === 'editar' ? queryDePrueba.editar : null) }),
 }));
 
-// El formulario de edición tiene su propio test; acá sólo importa que el modal
-// se abra. (Usa `formatCurrency` del i18n, que este mock no trae.)
+// El cajón de edición tiene su propio test; acá sólo importa que se abra
+// (renderiza sólo cuando `abierto`, como el cajón real).
 vi.mock('@/components/inmobiliaria/ConsignacionEditForm', () => ({
-  ConsignacionEditForm: () => <div data-testid="edit-form-stub" />,
+  ConsignacionEditForm: ({ abierto }: { abierto: boolean }) =>
+    abierto ? <div data-testid="edit-form-stub" /> : null,
+}));
+
+// La ficha relee el historial sólo con el mandato TERMINADO (para la fecha
+// del banner). Se controla por prueba.
+const { getHistorialMock } = vi.hoisted(() => ({ getHistorialMock: vi.fn() }));
+vi.mock('@/lib/api/inmobiliaria.service', () => ({
+  consignacionesApi: {
+    getHistorial: (...a: unknown[]) => getHistorialMock(...a),
+    getById: vi.fn(),
+    update: vi.fn(),
+    assignAgent: vi.fn(),
+  },
 }));
 
 vi.mock('@/lib/i18n', () => ({
@@ -92,13 +112,19 @@ vi.mock('@/components/inmobiliaria/ConsignacionHeader', () => ({
   ConsignacionHeader: ({
     propertyThumbnailUrl,
     onViewPortal,
+    fechaDeTerminacion,
+    contratoVigente,
   }: {
     propertyThumbnailUrl?: string;
     onViewPortal?: () => void;
+    fechaDeTerminacion?: string | null;
+    contratoVigente?: boolean;
   }) =>
     React.createElement('button', {
       'data-testid': 'view-portal-stub',
       'data-thumbnail': propertyThumbnailUrl ?? '',
+      'data-fecha-terminacion': fechaDeTerminacion ?? '',
+      'data-contrato-vigente': contratoVigente ? '1' : '0',
       onClick: onViewPortal,
     }),
 }));
@@ -235,21 +261,71 @@ describe('<ConsignacionDetailPage> — ?editar=1 abre el formulario (Nico, 2026-
     routerReplaceMock.mockReset();
   });
 
-  it('con ?editar=1 y datos cargados, el modal de edición ya está abierto y la URL se limpia', () => {
+  it('con ?editar=1 y datos cargados, el cajón de edición ya está abierto y la URL se limpia', () => {
     queryDePrueba.editar = '1';
     useConsignacionMock.mockReturnValue({ consignacion: BASE_CONSIGNACION });
     renderPage();
 
-    expect(document.body.querySelector('[data-testid="modal-ficha"]')).not.toBeNull();
     expect(document.body.querySelector('[data-testid="edit-form-stub"]')).not.toBeNull();
     expect(routerReplaceMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles/consig-1', { scroll: false });
   });
 
-  it('sin la query el modal no aparece solo', () => {
+  it('sin la query el cajón no aparece solo', () => {
     useConsignacionMock.mockReturnValue({ consignacion: BASE_CONSIGNACION });
     renderPage();
-    expect(document.body.querySelector('[data-testid="modal-ficha"]')).toBeNull();
+    expect(document.body.querySelector('[data-testid="edit-form-stub"]')).toBeNull();
     expect(routerReplaceMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('<ConsignacionDetailPage> — mandato TERMINADO (Nico, 2026-09-13: «es súper raro»)', () => {
+  beforeEach(() => {
+    getHistorialMock.mockReset();
+  });
+
+  it('con el mandato activo no lee el historial y «Pedir cita» está vivo', () => {
+    useConsignacionMock.mockReturnValue({ consignacion: BASE_CONSIGNACION });
+    renderPage();
+    expect(getHistorialMock).not.toHaveBeenCalled();
+    const cita = document.body.querySelector<HTMLButtonElement>('[data-testid="pedir-cita"]')!;
+    expect(cita.disabled).toBe(false);
+  });
+
+  it('terminado: «Pedir cita» queda deshabilitado con el porqué, y la fecha sale del evento del historial', async () => {
+    getHistorialMock.mockResolvedValue([
+      { id: 'e2', tipo: 'datos_editados', titulo: 'x', detalle: null, actor: 'Ana', esSistema: false, fecha: '2026-09-14T10:00:00.000Z', metadata: {} },
+      { id: 'e1', tipo: 'consignacion_terminada', titulo: 'Consignación terminada', detalle: null, actor: 'Ana', esSistema: false, fecha: '2026-09-13T15:00:00.000Z', metadata: {} },
+    ]);
+    useConsignacionMock.mockReturnValue({
+      consignacion: { ...BASE_CONSIGNACION, status: 'terminated', arrendado: true },
+    });
+    renderPage();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const cita = document.body.querySelector<HTMLButtonElement>('[data-testid="pedir-cita"]')!;
+    expect(cita.disabled).toBe(true);
+    expect(cita.getAttribute('title')).toBe('inmobiliaria.consignaciones.header.terminada.pedirCita');
+    expect(getHistorialMock).toHaveBeenCalledWith('consig-1');
+    const header = document.body.querySelector('[data-testid="view-portal-stub"]')!;
+    expect(header.getAttribute('data-fecha-terminacion')).toBe('2026-09-13T15:00:00.000Z');
+    // «Arrendado» = contrato vigente (`arrendado`), no `availability`.
+    expect(header.getAttribute('data-contrato-vigente')).toBe('1');
+  });
+
+  it('terminado antes de que existiera el evento: sin fecha, sin inventarla', async () => {
+    getHistorialMock.mockResolvedValue([]);
+    useConsignacionMock.mockReturnValue({ consignacion: { ...BASE_CONSIGNACION, status: 'terminated' } });
+    renderPage();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    const header = document.body.querySelector('[data-testid="view-portal-stub"]')!;
+    expect(header.getAttribute('data-fecha-terminacion')).toBe('');
+    expect(header.getAttribute('data-contrato-vigente')).toBe('0');
   });
 });
 
@@ -272,6 +348,65 @@ describe('<ConsignacionDetailPage> — mientras carga', () => {
 
     expect(container.querySelector('[data-testid="ficha-cargando"]')).toBeNull();
     expect(container.textContent).toContain('inmobiliaria.portafolio.detail.notFound');
+  });
+});
+
+/**
+ * F1 (P0): cualquier fallo de la carga —un 500, un 403, la red caída— pintaba
+ * «Consignación no encontrada» con un «Volver»: una afirmación que nadie
+ * verificó y sin forma de reintentar. «No existe» es sólo para un 404 real.
+ */
+describe('<ConsignacionDetailPage> — si la carga falla (F1)', () => {
+  it('un 500 NO dice «no encontrada»: dice que falló y reintentar vuelve a pedirla', async () => {
+    const refetch = vi.fn(async () => null);
+    useConsignacionMock.mockReturnValue({
+      consignacion: null,
+      isLoading: false,
+      errorCrudo: new ApiError(500, 'Internal server error'),
+      refetch,
+    });
+    renderPage();
+
+    const fallo = container.querySelector('[data-testid="fallo-de-carga"]');
+    expect(fallo).not.toBeNull();
+    expect(fallo?.getAttribute('data-tipo')).toBe('servidor');
+    expect(container.textContent).not.toContain('inmobiliaria.portafolio.detail.notFound');
+
+    await act(async () => {
+      (container.querySelector('[data-testid="reintentar"]') as HTMLButtonElement).click();
+    });
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('la red caída tampoco es «no encontrada», y sigue ofreciendo el camino de vuelta', () => {
+    useConsignacionMock.mockReturnValue({
+      consignacion: null,
+      isLoading: false,
+      errorCrudo: new TypeError('Failed to fetch'),
+      refetch: vi.fn(),
+    });
+    renderPage();
+
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('inmobiliaria.portafolio.detail.notFound');
+    expect(container.querySelector('[data-testid="reintentar"]')).not.toBeNull();
+    expect(container.querySelector('a[href="/panel/inmobiliaria/inmuebles"]')).not.toBeNull();
+  });
+
+  it('un 404 real dice que no existe, sin reintentar, con el camino de vuelta al portafolio', () => {
+    useConsignacionMock.mockReturnValue({
+      consignacion: null,
+      isLoading: false,
+      errorCrudo: new ApiError(404, 'Consignacion with ID x not found in this agency'),
+      refetch: vi.fn(),
+    });
+    renderPage();
+
+    const fallo = container.querySelector('[data-testid="fallo-de-carga"]');
+    expect(fallo?.getAttribute('data-tipo')).toBe('noExiste');
+    expect(container.querySelector('[data-testid="reintentar"]')).toBeNull();
+    const volver = container.querySelector('a[href="/panel/inmobiliaria/inmuebles"]');
+    expect(volver?.textContent).toContain('inmobiliaria.portafolio.detail.backToPortfolio');
   });
 });
 

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { CreditCard, Bank, Wallet, House, Star, Warning, CaretRight, TrashSimple, Plus, X, Check } from '@phosphor-icons/react';
+import { Bank, Wallet, House, Star, Warning, CaretRight, TrashSimple, Plus, X, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
@@ -281,24 +281,12 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay }}
-        className="rounded-lg bg-surface-muted overflow-hidden"
+        // La tarjeta de Configuración de la inmobiliaria: el título y la bajada
+        // de «Cuentas de pago» ya los pone el marco (Nico, 2026-09-15).
+        className="rounded-lg border border-border bg-surface overflow-hidden"
       >
-        <div className="px-6 py-5 border-b border-border-faint">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center">
-                <CreditCard className="w-5 h-5 text-success" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-fg">{t('landlordSettings.paymentAccounts.title')}</h2>
-                <p className="text-xs text-fg-subtle">{t('landlordSettings.paymentAccounts.subtitle')}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* My Accounts List */}
-        <div className="p-6">
+        <div className="p-4 sm:p-5">
           <h3 className="text-sm font-medium text-fg-muted mb-4">
             {t('landlordSettings.paymentAccounts.myAccounts')}
           </h3>

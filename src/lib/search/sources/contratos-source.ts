@@ -25,7 +25,27 @@ function norm(s: string): string {
     .toLowerCase();
 }
 
-function matchesQuery(item: BackendContract, q: string): boolean {
+/**
+ * El número que EMPATÓ con lo que se escribió, para ponerlo al lado del
+ * resultado: si buscaron «1686» se ve «1686»; si buscaron «1839» se ve
+ * «Leasefy #1839», para que quede claro que ése es el nuestro y no el de la
+ * inmobiliaria. `null` cuando lo que empató fue otra cosa (nombre, dirección).
+ */
+export function numeroQueCoincide(
+  item: Pick<BackendContract, 'code' | 'externalId'>,
+  q: string,
+): string | null {
+  const n = norm(q.trim());
+  if (!n) return null;
+  const externo = (item.externalId ?? '').trim();
+  if (externo && norm(externo).includes(n)) return externo;
+  if (item.code != null && String(item.code).includes(n)) {
+    return externo ? `Leasefy #${item.code}` : `#${item.code}`;
+  }
+  return null;
+}
+
+export function matchesQuery(item: BackendContract, q: string): boolean {
   const n = norm(q);
   return (
     norm(item.tenantName ?? '').includes(n) ||
@@ -123,6 +143,12 @@ export const contratosSource: SearchSource = {
               : `Contrato ${item.id.slice(0, 8)}`),
         subtitle: item.propertyAddress ?? item.propertyCity ?? '',
         badges: [
+          // El número que coincidió con lo buscado, primero: es lo que la
+          // persona escribió y lo que tiene que reconocer en el resultado.
+          ...(() => {
+            const numero = numeroQueCoincide(item, query);
+            return numero ? [{ label: numero, color: 'neutral' as const }] : [];
+          })(),
           {
             label: STATUS_LABELS_ES[item.status] ?? item.status,
             color: STATUS_COLORS[item.status] ?? 'neutral',

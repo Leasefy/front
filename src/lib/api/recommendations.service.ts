@@ -5,15 +5,28 @@
 
 import { apiClient } from '@/lib/api/client';
 import type { Property } from '@/lib/types/property';
+import type { BackendProperty, PaginatedResponse } from '@/lib/api/properties.types';
+import { mapBackendProperty } from '@/lib/api/properties.mapper';
 import type { AcceptanceProbability, MatchFactor } from '@/lib/scoring/propertyMatching';
 
 // ============================================================================
 // Backend Types
 // ============================================================================
 
-export interface BackendRecommendation {
-  propertyId: string;
-  property: Property;
+/**
+ * Lo que `GET /recommendations` devuelve DE VERDAD (back-erp
+ * `RecommendationsService.getRecommendations`): una página `{ data, meta }`
+ * donde cada fila es el inmueble del listado público, APLANADO, con el puntaje
+ * encima — no `{ recommendations: [{ property, … }] }`.
+ *
+ * 🔴 Este archivo esperaba la segunda forma: `res.recommendations` llegaba
+ * `undefined`, el `.map` tiraba un TypeError y /inquilino/para-ti mostraba
+ * «No pudimos cargar esto» con referencia SER- (un error sin status) a todo el
+ * que entraba (Nico, 2026-09-15). Y aunque la forma hubiera cuadrado, el
+ * inmueble viene con las fotos como `{ url, order }`: sin `mapBackendProperty`
+ * las tarjetas no tenían portada.
+ */
+export type BackendRecommendation = BackendProperty & {
   matchScore: number;
   acceptanceProbability: string;
   matchFactors?: {
@@ -23,11 +36,12 @@ export interface BackendRecommendation {
     preferences?: { score: number; label: string };
   };
   recommendation?: string;
-}
+};
 
-export interface BackendRecommendationsResponse {
-  recommendations: BackendRecommendation[];
-}
+export type BackendRecommendationsResponse = PaginatedResponse<BackendRecommendation>;
+
+/** Tope del DTO del back (`@Max(50)`): pedir más es un 400. */
+export const MAX_RECOMENDACIONES = 50;
 
 // ============================================================================
 // Mapped Type (matches PropertyMatch from propertyMatching.ts)
@@ -59,9 +73,9 @@ function mapProbability(p: string): AcceptanceProbability {
   return 'baja';
 }
 
-function mapRecommendation(r: BackendRecommendation): RecommendedProperty {
+export function mapRecommendation(r: BackendRecommendation): RecommendedProperty {
   return {
-    property: r.property,
+    property: mapBackendProperty(r),
     matchScore: r.matchScore,
     acceptanceProbability: mapProbability(r.acceptanceProbability),
     matchFactors: {
@@ -82,9 +96,11 @@ export const recommendationsApi = {
   /**
    * Get personalized recommendations for the current user
    */
-  async getMine(limit?: number): Promise<RecommendedProperty[]> {
-    const params = limit ? `?limit=${limit}` : '';
-    const res = await apiClient.get<BackendRecommendationsResponse>(`/recommendations${params}`);
-    return res.recommendations.map(mapRecommendation);
+  async getMine(limit: number = MAX_RECOMENDACIONES): Promise<RecommendedProperty[]> {
+    // Sin límite el back devuelve 9: el catálogo pagina del lado del cliente,
+    // así que se pide el máximo que el back acepta.
+    const tope = Math.min(Math.max(1, limit), MAX_RECOMENDACIONES);
+    const res = await apiClient.get<BackendRecommendationsResponse>(`/recommendations?limit=${tope}`);
+    return res.data.map(mapRecommendation);
   },
 };

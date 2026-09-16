@@ -17,6 +17,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 import type { Contract } from '@/lib/types/contract'
+import { ApiError } from '@/lib/api/client'
 
 void React // jsx-preserve
 
@@ -607,5 +608,65 @@ describe('ContratosPage — los filtros', () => {
 
     await click('[data-testid="ordenar-monthlyRent"]')
     expect(nombres()).toEqual(['Ana Activa', 'Bruno Borrador', 'Carla Migrada'])
+  })
+})
+
+describe('ContratosPage — la consulta caída no se disfraza de cero ni de vacío (C1 · C2)', () => {
+  const kpis = () => Array.from(container.querySelectorAll('[data-testid="contratos-kpi"]'))
+
+  it('🔴 con un 500, los cuatro contadores muestran «—» y «No se pudo traer», nunca 0', async () => {
+    withContracts([], { error: 'Internal server error', errorCrudo: new ApiError(500, 'Internal server error') })
+    await renderPage()
+
+    expect(kpis()).toHaveLength(4)
+    for (const kpi of kpis()) {
+      expect(kpi.textContent).toContain('—')
+      expect(kpi.textContent).toContain('No se pudo traer')
+      expect(kpi.textContent).not.toMatch(/\d/)
+    }
+  })
+
+  it('con un 500 el fallo va en la tabla con «Intentar de nuevo», y no afirma «Sin contratos aún»', async () => {
+    const refetch = vi.fn()
+    withContracts([], {
+      error: 'Internal server error',
+      errorCrudo: new ApiError(500, 'Internal server error'),
+      refetch,
+    })
+    await renderPage()
+
+    const fallo = container.querySelector('[data-testid="fallo-de-carga"]')
+    expect(fallo).not.toBeNull()
+    expect(fallo!.getAttribute('data-tipo')).toBe('servidor')
+    expect(container.textContent).not.toContain('Sin contratos aún')
+    // El cartel rojo a mano ya no existe.
+    expect(container.textContent).not.toContain('Error cargando contratos')
+
+    const reintentar = container.querySelector<HTMLButtonElement>('[data-testid="reintentar"]')
+    expect(reintentar).not.toBeNull()
+    await act(async () => {
+      reintentar!.click()
+    })
+    expect(refetch).toHaveBeenCalled()
+  })
+
+  it('🔴 con un 403 no ofrece reintentar: volver a pedirlo no cambia nada', async () => {
+    withContracts([], { error: 'Forbidden resource', errorCrudo: new ApiError(403, 'Forbidden resource') })
+    await renderPage()
+
+    const fallo = container.querySelector('[data-testid="fallo-de-carga"]')
+    expect(fallo?.getAttribute('data-tipo')).toBe('sinPermiso')
+    expect(container.querySelector('[data-testid="reintentar"]')).toBeNull()
+    const botones = Array.from(container.querySelectorAll('button')).map((b) => b.textContent)
+    expect(botones).not.toContain('Reintentar')
+  })
+
+  it('sin error, los contadores muestran su número y no hay cartel de fallo', async () => {
+    withContracts([contract({ id: 'c-1' }), contract({ id: 'c-2' })])
+    await renderPage()
+
+    expect(kpis()[0].textContent).toContain('2')
+    expect(container.textContent).not.toContain('No se pudo traer')
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull()
   })
 })

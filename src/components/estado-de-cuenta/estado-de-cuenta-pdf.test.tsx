@@ -196,6 +196,23 @@ describe('EstadoDeCuentaPDF', () => {
     expect(letraDe(conNota[1])).not.toContain(filtrado);
   });
 
+  it('🔴 el papel rotula los dos números: «Contrato 1298 · Leasefy #1839»; un nativo va como «Contrato #14»', () => {
+    const hojasConNumero = paginasDe(
+      EstadoDeCuentaPDF({
+        doc: estadoDeCuenta({
+          contratos: [
+            contrato({ numeroDeLeasefy: 1839 }),
+            contrato({ id: 'ct-14', numero: '14', numeroDeLeasefy: 14 }),
+          ],
+        }),
+        hoy: HOY,
+      }),
+    );
+    expect(letraDe(hojasConNumero[1])).toContain('Contrato 1298 · Leasefy #1839');
+    expect(letraDe(hojasConNumero[2])).toContain('Contrato #14');
+    expect(letraDe(hojasConNumero[2])).not.toContain('Leasefy #14');
+  });
+
   it('cada contrato trae su encabezado, sus dos secciones y sus totales', () => {
     const hoja = letraDe(hojas[1]);
     expect(hoja).toContain(`Contrato ${SIN_IMPUESTOS.numero}`);

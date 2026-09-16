@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -309,20 +310,30 @@ export default function RevisionesClient() {
         />
       </div>
 
-      {/* Table */}
-      {isLoading && !data ? (
-        <div className="space-y-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-14 rounded-lg bg-surface-muted animate-pulse" />
-          ))}
-        </div>
-      ) : rows.length === 0 ? (
-        <EmptyState
-          icon={Gavel}
-          title="No hay decisiones en este filtro."
-          description="Prueba con otra pestaña, con otro tipo de decisión o cambia lo que escribiste en la búsqueda."
-        />
-      ) : (
+      {/* Table — cargando → falló → vacío → datos. Antes el vacío se evaluaba
+          sin mirar el error: con la cola caída decía «No hay decisiones en
+          este filtro» y el fallo quedaba abajo, en rojo y sin reintentar. */}
+      <EstadoDeDatos
+        cargando={isLoading && !data}
+        error={error}
+        vacio={rows.length === 0}
+        queEs="la cola de revisión"
+        onReintentar={refetch}
+        esqueleto={
+          <div className="space-y-2" data-testid="revisiones-cargando">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-14 rounded-lg bg-surface-muted animate-pulse" />
+            ))}
+          </div>
+        }
+        cuandoVacio={
+          <EmptyState
+            icon={Gavel}
+            title="No hay decisiones en este filtro."
+            description="Prueba con otra pestaña, con otro tipo de decisión o cambia lo que escribiste en la búsqueda."
+          />
+        }
+      >
         <div className="overflow-x-auto rounded-lg border border-border">
           <Table>
             <TableHeader>
@@ -438,13 +449,7 @@ export default function RevisionesClient() {
             </div>
           )}
         </div>
-      )}
-
-      {error && !isLoading ? (
-        <div className="rounded-lg border border-danger bg-danger-soft p-4 text-sm text-danger">
-          No pude cargar la cola de revisión: {error}
-        </div>
-      ) : null}
+      </EstadoDeDatos>
 
       {/* Confirmación de revisión */}
       <AlertDialog open={pending !== null} onOpenChange={(o) => !o && setPending(null)}>

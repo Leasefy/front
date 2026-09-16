@@ -19,6 +19,8 @@ import { CarrierSlaBreachWindows } from '@/components/inmobiliaria/cotizador/Car
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button } from '@/components/ui/button'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { falloDelAgente } from '../fallo-del-agente'
 
 // =============================================================================
 // Component
@@ -36,6 +38,23 @@ export default function CarrierSlaPage() {
   // the plan's literal `aseguradoras.carrier.sla.empty.*` path was a parallel namespace not wired in i18n
   // — reusing already-scaffolded keys avoids adding orphan strings under an unwired `carrier` namespace.
   if (isLoading && !sla) return <PageSkeleton variant="list" />
+  /*
+   * Sin datos Y con error, el agente no contestó: eso no es «todavía no hay
+   * cumplimiento que mostrar». Esta guarda va ANTES del vacío, que si no se
+   * quedaba con el caso (`!sla`) y un agente caído se leía como una
+   * aseguradora sin historia.
+   */
+  if (error && !sla) {
+    return (
+      <main className="p-6 lg:p-8">
+        <FalloDeCarga
+          error={falloDelAgente(error)}
+          queEs="el cumplimiento de esta aseguradora"
+          onReintentar={refetch}
+        />
+      </main>
+    )
+  }
   if (
     !isLoading &&
     (!sla || (!sla.state && (!sla.breachWindows || sla.breachWindows.length === 0)))
@@ -82,22 +101,15 @@ export default function CarrierSlaPage() {
         </Button>
       </header>
 
-      {/* Error state */}
+      {/* Fallo con datos ya en pantalla (el sondeo de 60 s tropezó): el cartel
+          dice qué pasó y deja lo que ya se veía. Antes decía «…errorLoading: 502»,
+          con la clave i18n cruda y el status suelto. */}
       {error && !isLoading && (
-        <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
-          <p className="text-sm text-danger">
-            {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.errorLoading')}: {error}
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            hideArrow
-            onClick={() => void refetch()}
-            className="shrink-0"
-          >
-            {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.retry')}
-          </Button>
-        </div>
+        <FalloDeCarga
+          error={falloDelAgente(error)}
+          queEs="el cumplimiento de esta aseguradora"
+          onReintentar={refetch}
+        />
       )}
 
       {/* SLA state card with sparklines */}

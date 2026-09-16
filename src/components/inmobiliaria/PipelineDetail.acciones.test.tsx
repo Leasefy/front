@@ -206,3 +206,27 @@ describe('PipelineDetail — marcar como perdido', () => {
     );
   });
 });
+
+describe('PipelineDetail — sin permiso para mover', () => {
+  it('sin `pipeline:edit` no ofrece «Marcar perdido» ni «Mover a…»: el back respondería 403', () => {
+    act(() => {
+      root.render(
+        <PipelineDetail
+          isOpen
+          onClose={() => {}}
+          item={ITEM}
+          onStageChange={vi.fn() as never}
+          puedeEditar={false}
+        />,
+      );
+    });
+
+    expect(container.querySelector('[data-testid="pipeline-marcar-perdido"]')).toBeNull();
+    const botones = Array.from(container.querySelectorAll('button')).map(
+      (b) => b.textContent ?? '',
+    );
+    expect(botones.some((texto) => texto.includes('Visita realizada'))).toBe(false);
+    // El detalle se sigue leyendo: lo que se esconde es sólo lo que escribe.
+    expect(container.textContent).toContain('Ana Restrepo');
+  });
+});

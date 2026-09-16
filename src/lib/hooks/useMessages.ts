@@ -83,7 +83,17 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  /**
+   * 🔴 DOS errores, no uno. Antes había un solo `error` para cargar y para
+   * enviar: un GET caído pintaba «Sin mensajes» + «No se pudo enviar» sin que
+   * nadie hubiera enviado nada, y el poll de 5 s lo volvía a disparar solo.
+   *
+   * - `errorDeCarga`: el error CRUDO del GET (inicial o del poll), para que
+   *   `FalloDeCarga` lo clasifique por status.
+   * - `errorDeEnvio`: sólo lo escribe `sendMessage`.
+   */
+  const [errorDeCarga, setErrorDeCarga] = useState<unknown>(null);
+  const [errorDeEnvio, setErrorDeEnvio] = useState<string | null>(null);
   // Si este hilo también llega al WhatsApp del tercero, o por qué no. Lo
   // decide el back (teléfono utilizable + consentimiento): la pantalla no
   // adivina nada.
@@ -99,9 +109,11 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
       const mapped = res.messages.map((m) => mapToMessage(m, userId));
       setMessages(mapped);
       setCanalDeWhatsapp(res.whatsapp ?? null);
+      setErrorDeCarga(null);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error cargando mensajes';
-      setError(message);
+      // Lo que ya estaba en el hilo NO se borra: un poll caído no es motivo
+      // para vaciar la conversación que la persona está leyendo.
+      setErrorDeCarga(err ?? new Error('Error cargando mensajes'));
     }
     // `api` is a fresh object literal from the caller every render by
     // design (see useChat/useApplicationChat below) — its methods are
@@ -118,9 +130,23 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
       return;
     }
     setIsLoading(true);
-    setError(null);
+    setErrorDeCarga(null);
+    setErrorDeEnvio(null);
     fetchMessages().finally(() => setIsLoading(false));
   }, [id, fetchMessages]);
+
+  /**
+   * Reintentar la carga desde el cartel. Devuelve la promesa para que
+   * `FalloDeCarga` pueda mostrar el botón ocupado mientras tanto.
+   */
+  const reintentarCarga = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      await fetchMessages();
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fetchMessages]);
 
   // Polling every 5s while conversation is open
   useEffect(() => {
@@ -144,7 +170,7 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
     async (content: string): Promise<boolean> => {
       if (!id || !userId) return false;
       setIsSending(true);
-      setError(null);
+      setErrorDeEnvio(null);
       try {
         // Optimistic append
         const optimistic: ChatMessage = {
@@ -171,7 +197,7 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
         await fetchMessages();
         return true;
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error enviando mensaje');
+        setErrorDeEnvio(err instanceof Error ? err.message : 'Error enviando mensaje');
         // Remove optimistic message on error
         setMessages((prev) => prev.filter((m) => !m.id.startsWith('temp-')));
         return false;
@@ -184,7 +210,7 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
   );
 
   /** Para que la pantalla pueda apagar el cartel cuando ya no aplica. */
-  const limpiarError = useCallback(() => setError(null), []);
+  const limpiarError = useCallback(() => setErrorDeEnvio(null), []);
 
   /**
    * Marcar el hilo como leído.
@@ -212,8 +238,21 @@ function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
     messages,
     isLoading,
     isSending,
-    error,
+    errorDeCarga,
+    errorDeEnvio,
+    /**
+     * Legado para `<ChatThread>`, que pinta un solo renglón con el texto: el
+     * envío primero, y si no, la carga. Código nuevo lee los dos de arriba.
+     */
+    error:
+      errorDeEnvio ??
+      (errorDeCarga
+        ? errorDeCarga instanceof Error
+          ? errorDeCarga.message
+          : 'Error cargando mensajes'
+        : null),
     limpiarError,
+    reintentarCarga,
     sendMessage,
     markAsRead,
     canalDeWhatsapp,

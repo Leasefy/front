@@ -69,7 +69,14 @@ export function SeccionEquipo() {
     }
   }, [searchParams, router]);
 
-  const puedeInvitar = isAdmin || canAccess('agentes', 'create');
+  /*
+   * UN gate para todo lo que toca el padrón: invitar, cambiar rol, activar o
+   * desactivar, reenviar la invitación y eliminar. El back marca esas rutas
+   * «admin only»; un AGENTE veía los tres puntos igual y cada acción terminaba
+   * en un 403 disfrazado de «Error al actualizar rol». Es el mismo permiso que
+   * ya decidía el botón de invitar — no uno nuevo.
+   */
+  const puedeAdministrarEquipo = isAdmin || canAccess('agentes', 'create');
 
   const VISTAS: Array<{ id: Vista; label: string; icon: React.ElementType }> = useMemo(
     () => [
@@ -262,11 +269,11 @@ export function SeccionEquipo() {
         >
           <ConfigUsuarios
             users={users}
-            onInvite={puedeInvitar ? invitar : undefined}
-            onUpdateRole={cambiarRol}
-            onToggleStatus={alternarEstado}
-            onResendInvite={reenviarInvitacion}
-            onDelete={eliminar}
+            onInvite={puedeAdministrarEquipo ? invitar : undefined}
+            onUpdateRole={puedeAdministrarEquipo ? cambiarRol : undefined}
+            onToggleStatus={puedeAdministrarEquipo ? alternarEstado : undefined}
+            onResendInvite={puedeAdministrarEquipo ? reenviarInvitacion : undefined}
+            onDelete={puedeAdministrarEquipo ? eliminar : undefined}
             onVerFicha={verFicha}
             abrirInvitacion={invitarAlMontar}
           />

@@ -1,7 +1,13 @@
 // src/components/inmobiliaria/import/lib/gapFiller.ts
 // Mock AI gap-filling engine — deterministic heuristic rules, no real AI backend
 
-import type { ImportProperty, AISuggestion, ParsedRow, ColumnMapping } from './importTypes';
+import type {
+  ImportProperty,
+  AISuggestion,
+  ParsedRow,
+  ColumnMapping,
+  DuenoDelArchivo,
+} from './importTypes';
 import { tipoEfectivo } from './requisitosDelBack';
 import { tituloSugerido } from './tituloSugerido';
 import { cleanNumericValue } from './valorNumerico';
@@ -9,6 +15,10 @@ import {
   documentoYNombre,
   estratoDePalabras,
   fechaDeOrigen,
+  listaDePersonas,
+  listaDePlata,
+  listaDePorcentajes,
+  listaPorMarcador,
 } from '@/lib/migracion/valores-de-origen';
 import { normalizarParte, partirCelda } from './columnaCompuesta';
 
@@ -214,7 +224,38 @@ export function mapRowsToProperties(
       errorMessages: [],
     };
 
+    /*
+     * Las celdas de las que salen los VARIOS dueños (Nico, 2026-09-13). Se
+     * guardan crudas mientras dura el mapeo y se leen al final, cuando ya se
+     * sabe cuántos dueños trae la fila: el teléfono, el % y la plata se
+     * emparejan por posición con «[1] … , [2] …».
+     */
+    const crudas: Partial<Record<'owner' | 'phone' | 'share' | 'rent' | 'monthlyRent', unknown>> = {};
+
     const asignar = (field: string, rawValue: unknown) => {
+      if (field === 'ownerShare') {
+        crudas.share = rawValue;
+        return;
+      }
+      if (field === 'ownerRent') {
+        crudas.rent = rawValue;
+        return;
+      }
+      if (field === 'ownerPhone') crudas.phone = rawValue;
+      if (field === 'monthlyRent') {
+        /*
+         * «Canon» con DOS valores («$660,000, $440,000») es el canon repartido
+         * entre los dueños, no un número ilegible: la suma de las partes es el
+         * canon (son los números del archivo, no un invento) y las partes van a
+         * cada dueño.
+         */
+        const lista = listaDePlata(rawValue);
+        if (lista && lista.length >= 2) {
+          crudas.monthlyRent = lista;
+          prop.monthlyRent = lista.reduce((a, n) => a + n, 0);
+          return;
+        }
+      }
       if (field === 'stratum') {
         // El archivo real trae el estrato en PALABRAS («Tres», «No
         // Estratificada»). `cleanNumericValue` lo dejaría vacío siempre.
@@ -244,6 +285,19 @@ export function mapRowsToProperties(
     for (const mapping of columnMappings) {
       if (!(mapping.sourceColumn in row)) continue;
       const rawValue = row[mapping.sourceColumn];
+
+      /*
+       * La columna del dueño (entera o partida) se guarda cruda: con dos o
+       * más marcadores «[n]» trae VARIOS dueños y se lee completa al final;
+       * `partirCelda` de una celda así dejaría en el nombre «LUZ, [2] 42979803
+       * - MARIA», que es exactamente el dato roto que se está evitando.
+       */
+      const destinos = mapping.partes
+        ? mapping.partes.destinos
+        : [mapping.targetField, null];
+      if (destinos.includes('ownerName') || destinos.includes('ownerDocument')) {
+        crudas.owner = rawValue;
+      }
 
       if (mapping.partes) {
         // Dos datos en la celda: cada parte a su campo. La celda que no tenga
@@ -282,8 +336,62 @@ export function mapRowsToProperties(
       }
     }
 
+    const owners = duenosDeLaFila(crudas);
+    if (owners) {
+      prop.owners = owners;
+      // El `[1]` sigue en los campos de siempre: es el principal, y un archivo
+      // de un dueño por fila no pasa por acá.
+      prop.ownerDocument = owners[0].documento ?? prop.ownerDocument;
+      prop.ownerName = owners[0].nombre ?? prop.ownerName;
+      if (owners[0].telefono) prop.ownerPhone = owners[0].telefono;
+    }
+
     return prop;
   });
+}
+
+/**
+ * Los VARIOS dueños de una fila, o `undefined` si trae uno solo (o ninguno).
+ *
+ * Los dueños salen de la celda «[1] doc - nombre, [2] doc - nombre». El
+ * teléfono, el % y la plata se emparejan POR POSICIÓN con esa lista: el
+ * i-ésimo valor es del i-ésimo dueño. Un teléfono sin marcador es del `[1]`.
+ * Un % o una plata que no se pueden leer, o que traen otra cantidad de
+ * valores, se dejan vacíos: el back frena la fila con `reparto` y la revisión
+ * lo muestra — nunca un 50/50 pegado a un dato que dice otra cosa.
+ */
+export function duenosDeLaFila(crudas: {
+  owner?: unknown;
+  phone?: unknown;
+  share?: unknown;
+  rent?: unknown;
+  monthlyRent?: unknown;
+}): DuenoDelArchivo[] | undefined {
+  const personas = listaDePersonas(crudas.owner);
+  if (personas.length < 2) return undefined;
+
+  const telefonos = listaPorMarcador(crudas.phone);
+  const porcentajes = listaDePorcentajes(crudas.share);
+  // Una columna propia de plata por dueño manda; si no, el «Canon» que vino
+  // repartido en la misma celda. Una lista vacía es «no vino», no una lista.
+  const plataPropia = listaDePlata(crudas.rent);
+  const plata =
+    plataPropia && plataPropia.length > 0
+      ? plataPropia
+      : Array.isArray(crudas.monthlyRent)
+        ? (crudas.monthlyRent as number[])
+        : undefined;
+  const conPorcentaje = porcentajes && porcentajes.length === personas.length;
+  const conPlata = plata && plata.length === personas.length;
+
+  return personas.map((p, i) => ({
+    ...(p.documento ? { documento: p.documento } : {}),
+    ...(p.nombre ? { nombre: p.nombre } : {}),
+    ...(telefonos[i]?.trim() ? { telefono: telefonos[i].trim() } : {}),
+    ...(conPorcentaje ? { porcentaje: porcentajes[i] } : {}),
+    ...(conPlata ? { canon: plata[i] } : {}),
+    ...(p.orden !== undefined ? { orden: p.orden } : {}),
+  }));
 }
 
 // ============================================================================

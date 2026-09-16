@@ -16,6 +16,7 @@ import type {
   PlantillaLegalDelSistema,
   RevisionDelIncremento,
 } from '@/lib/api/documentos.service';
+import { numeroDelContrato } from '@/lib/contratos/numero-del-contrato';
 
 // ─── Etiquetas ───────────────────────────────────────────────────────────────
 
@@ -42,13 +43,50 @@ export const CATEGORIA_LABEL: Record<CategoriaDeDocumento, string> = {
   OTRO: 'Otro',
 };
 
-/** De qué inmueble o contrato habla el documento, para la columna de la tabla. */
+/**
+ * De qué inmueble o contrato habla el documento, para la columna de la tabla.
+ * El número es el que la inmobiliaria conoce («1686 · Calle 100…» en un
+ * migrado, «#111 · Calle 100…» en un nativo; `numero-del-contrato.ts`).
+ */
 export function etiquetaDelInmueble(doc: DocumentoGenerado): string | null {
   if (doc.contract) {
+    const numero = numeroDelContrato(doc.contract).principal ?? `#${doc.contract.code}`;
     const direccion = doc.contract.propertyAddress ?? doc.consignacion?.propertyTitle ?? null;
-    return direccion ? `#${doc.contract.code} · ${direccion}` : `Contrato #${doc.contract.code}`;
+    return direccion ? `${numero} · ${direccion}` : `Contrato ${numero}`;
   }
   return doc.consignacion?.propertyTitle ?? null;
+}
+
+/**
+ * La opción del combo de contratos. El Combobox busca SÓLO por `label`, así
+ * que van LOS DOS números: escribir «1686» (el de Nui) o «111» (el nuestro)
+ * tiene que encontrar el mismo contrato, y el nuestro va rotulado para que
+ * nadie lo confunda con el de la inmobiliaria.
+ */
+export function etiquetaDelContratoParaElCombo(c: {
+  id: string;
+  code?: number | null;
+  externalId?: string | null;
+  propertyAddress?: string | null;
+  tenantName?: string | null;
+}): string {
+  const numero = numeroDelContrato({ code: c.code ?? undefined, externalId: c.externalId });
+  return (
+    [numero.principal, numero.secundario, c.propertyAddress || null, c.tenantName || null]
+      .filter(Boolean)
+      .join(' · ') || c.id
+  );
+}
+
+/** «Contrato 1686 · Leasefy #111» / «Contrato #111»: el rótulo de la preparación. */
+export function rotuloDelContratoPreparado(c: {
+  codigo: number;
+  numeroExterno?: string | null;
+}): string {
+  const numero = numeroDelContrato({ code: c.codigo, externalId: c.numeroExterno });
+  return numero.secundario
+    ? `Contrato ${numero.principal} · ${numero.secundario}`
+    : `Contrato ${numero.principal}`;
 }
 
 /** Entre quiénes es. Sale del contrato, que es el único que las tiene juntas. */

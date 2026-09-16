@@ -40,7 +40,12 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.f
 vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
-vi.mock('@/lib/hooks/useContracts', () => ({ useContractActions: () => acciones }))
+// Los helpers que leen el error (`inmuebleOcupado`, `mensajeDelFallo`…) van
+// REALES: son lo que decide qué ve el usuario cuando el back rechaza.
+vi.mock('@/lib/hooks/useContracts', async () => {
+  const real = await vi.importActual<typeof import('@/lib/hooks/useContracts')>('@/lib/hooks/useContracts')
+  return { ...real, useContractActions: () => acciones }
+})
 vi.mock('@/lib/api/contracts.service', () => ({
   contractsApi: { getByApplicationId: vi.fn().mockResolvedValue(null) },
 }))
@@ -67,10 +72,15 @@ vi.mock('@/components/contratos/PartesDelContratoManual', async () => {
     PartesDelContratoManual: ({
       onCambio,
       onInmuebleElegido,
+      errores,
     }: {
       onCambio: (p: { propertyId: string; inquilino: unknown }) => void
       onInmuebleElegido?: (c: unknown) => void
+      errores?: Record<string, string>
     }) => (
+      <>
+      {/* Lo que el componente real pinta debajo del selector de inmueble. */}
+      <span data-testid="error-propertyId">{errores?.propertyId}</span>
       <button
         type="button"
         data-testid="elegir-partes"
@@ -86,11 +96,13 @@ vi.mock('@/components/contratos/PartesDelContratoManual', async () => {
       >
         elegir
       </button>
+      </>
     ),
   }
 })
 
 import NuevoContratoPage from './page'
+import { ApiError } from '@/lib/api/client'
 import type { PreparacionDeContrato } from '@/lib/api/contratos-plantilla.service'
 
 // ─── Datos ───────────────────────────────────────────────────────────────────
@@ -311,5 +323,84 @@ describe('el PDF armado por el sistema llega al submit igual que el subido a man
     // Y nada de la plantilla se cuela en el cuerpo de `POST /contracts`.
     expect(enviado).not.toHaveProperty('clausulas')
     expect(enviado).not.toHaveProperty('valores')
+  })
+})
+
+/**
+ * 🔴 C17 — el back dice «Ese inmueble ya tiene un contrato en curso (#1234).
+ * Cancélalo o esperá a que termine.»; el usuario leía «No se pudo crear el
+ * contrato. Verifica los datos e intenta de nuevo.» y se ponía a revisar
+ * fechas y cánones que estaban bien.
+ */
+describe('crear un contrato que el back rechaza: el motivo, al lado del campo', () => {
+  async function crearConPdf() {
+    acciones.uploadPdf.mockResolvedValue({ uploadedPdfPath: 'contracts/uploads/u-1/mano.pdf' })
+    await montar()
+    clic(porTestId('elegir-partes'))
+    await act(async () => {
+      await Promise.resolve()
+    })
+    const input = contenedor.querySelector<HTMLInputElement>('#pdf-upload')!
+    const archivo = new File(['%PDF-1.4'], 'contrato.pdf', { type: 'application/pdf' })
+    Object.defineProperty(input, 'files', { value: [archivo], configurable: true })
+    await act(async () => {
+      input.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    clic(porTexto('button[type="submit"]', 'Crear contrato'))
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+  }
+
+  beforeEach(() => {
+    router.push.mockReset()
+  })
+
+  it('409 inmueble ocupado → el mensaje del back al lado del selector de inmueble, no «Verifica los datos»', async () => {
+    const motivo = 'Ese inmueble ya tiene un contrato en curso (#1234). Cancélalo o esperá a que termine.'
+    acciones.createManual.mockRejectedValue(
+      new ApiError(409, motivo, undefined, { statusCode: 409, message: motivo }),
+    )
+    await crearConPdf()
+
+    expect(acciones.createManual).toHaveBeenCalledTimes(1)
+    expect(porTestId('error-propertyId')?.textContent).toBe(motivo)
+    expect(contenedor.textContent).not.toContain('Verifica los datos')
+    expect(router.push).not.toHaveBeenCalled()
+    // Sin el id del contrato en el cuerpo, no se inventa un enlace.
+    expect(porTexto('a', 'que estorba')).toBeNull()
+  })
+
+  it('cuando el back nombra el contrato que estorba, hay enlace a él', async () => {
+    acciones.createManual.mockRejectedValue(
+      new ApiError(409, 'Ese inmueble ya tiene un contrato en curso (#1234).', undefined, {
+        contratoId: 'c-9',
+        contratoCode: 1234,
+      }),
+    )
+    await crearConPdf()
+
+    const enlace = porTexto('a', 'que estorba')
+    expect(enlace?.getAttribute('href')).toBe('/panel/inmobiliaria/contratos/c-9')
+    expect(enlace?.textContent).toContain('#1234')
+  })
+
+  it('400 del ValidationPipe → la lista de motivos del back, no un genérico', async () => {
+    acciones.createManual.mockRejectedValue(
+      new ApiError(400, ['El canon debe ser positivo', 'La fecha de fin es inválida']),
+    )
+    await crearConPdf()
+
+    expect(contenedor.textContent).toContain('El canon debe ser positivo · La fecha de fin es inválida')
+    // No es un problema del inmueble: el campo queda limpio.
+    expect(porTestId('error-propertyId')?.textContent).toBe('')
+  })
+
+  it('403 → dice que es de permisos', async () => {
+    acciones.createManual.mockRejectedValue(new ApiError(403, 'Forbidden resource'))
+    await crearConPdf()
+    expect(contenedor.textContent).toContain('No tienes permiso para crear contratos.')
   })
 })

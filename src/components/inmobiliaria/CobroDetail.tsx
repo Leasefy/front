@@ -23,7 +23,6 @@ import {
   Receipt,
   ArrowRight,
   CaretRight,
-  XCircle,
   Bank,
   Printer,
 } from '@phosphor-icons/react';
@@ -43,13 +42,19 @@ import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
 import type { CobroConDesglose, ReciboDeCaja } from '@/lib/api/recibos-de-caja.types';
 import { DesgloseAdeudado } from './DesgloseAdeudado';
 import { RecibosDeCajaHistorial } from './RecibosDeCajaHistorial';
+import { enviarRecordatorio } from './recordatorio-de-cobro';
+import { MOTIVO_SIN_PERMISO_DE_RECIBO, usePuedeHacerRecibo } from './permiso-de-recibo';
 
 interface CobroDetailProps {
   isOpen: boolean;
   onClose: () => void;
   cobro: Cobro | null;
   onRegisterPayment?: (cobro: Cobro) => void;
-  onSendReminder?: (cobro: Cobro) => void;
+  /**
+   * Tiene que devolver la promesa y RELANZAR si falla: el cajón espera la
+   * respuesta y dice si salió o por qué no.
+   */
+  onSendReminder?: (cobro: Cobro) => Promise<unknown> | void;
   /**
    * Anular un recibo devuelve el cobro recompuesto. Sin esto, la fila de la
    * tabla se queda con el saldo de antes y el usuario ve dos cifras distintas
@@ -150,6 +155,7 @@ export function CobroDetail({
 }: CobroDetailProps) {
   const { t, formatDate, locale } = useI18n();
   const [isSendingReminder, setIsSendingReminder] = React.useState(false);
+  const puedeHacerRecibo = usePuedeHacerRecibo();
   const { stop: stopLenis, start: startLenis } = useLenis();
 
   /*
@@ -203,25 +209,26 @@ export function CobroDetail({
     return consignaciones.find((c) => c.id === cobro.consignacionId) ?? null;
   }, [cobro, consignaciones]);
 
-  // Handle send reminder
+  /*
+   * 🔴 Antes: un `setTimeout` de un segundo que no esperaba nada, el envío sin
+   * `await` y «Recordatorio enviado» siempre, aunque el servidor contestara
+   * 500. Ahora se espera la respuesta y el toast dice lo que pasó.
+   */
   const handleSendReminder = async () => {
-    if (!cobro || !onSendReminder) return;
+    if (!cobro || !onSendReminder || isSendingReminder) return;
 
     setIsSendingReminder(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    onSendReminder(cobro);
-    toast.success(t('inmobiliaria.cobros.toasts.reminderSent'), {
-      description: t('inmobiliaria.cobros.toasts.reminderSentDesc', { name: cobro.tenantName }),
-    });
-    setIsSendingReminder(false);
-  };
-
-  // Handle mark as defaulted
-  const handleMarkDefaulted = () => {
-    if (!cobro) return;
-    toast.info(t('inmobiliaria.cobros.toasts.markDefaulted'), {
-      description: t('inmobiliaria.cobros.toasts.markDefaultedDesc'),
-    });
+    try {
+      await enviarRecordatorio({
+        enviar: () => onSendReminder(cobro),
+        exito: {
+          titulo: t('inmobiliaria.cobros.toasts.reminderSent'),
+          descripcion: t('inmobiliaria.cobros.toasts.reminderSentDesc', { name: cobro.tenantName }),
+        },
+      });
+    } finally {
+      setIsSendingReminder(false);
+    }
   };
 
   if (!cobro) return null;
@@ -502,8 +509,7 @@ export function CobroDetail({
         </motion.section>
       </CajonCuerpo>
 
-      {/* Pie fijo. A la izquierda lo secundario (la cuenta de cobro, marcar
-          en mora); a la derecha las acciones del cobro. */}
+      {/* Pie fijo. A la izquierda lo secundario (la cuenta de cobro); a la derecha las acciones del cobro. */}
       <CajonPie
         izquierda={
           <>
@@ -517,16 +523,11 @@ export function CobroDetail({
                 Cuenta de cobro
               </Link>
             </Button>
-            {isLate && (
-              <Button
-                variant="ghost"
-                className="text-danger hover:bg-danger-soft dark:hover:bg-danger/20"
-                onClick={handleMarkDefaulted}
-              >
-                <XCircle className="w-4 h-4 mr-2" />
-                {t('inmobiliaria.cobros.detail.markDefaulted')}
-              </Button>
-            )}
+            {/* «Marcar incumplido» se retiró (C8, 13-09): sólo mostraba un
+                aviso. En el servidor no hay ninguna ruta que marque un cobro
+                como incumplido ni nada que escriba ese estado, así que el
+                botón prometía una acción que no existe. Vuelve cuando exista
+                la ruta. */}
           </>
         }
       >
@@ -539,13 +540,21 @@ export function CobroDetail({
         */}
         <div className="flex flex-row-reverse gap-3">
           {isPending && onRegisterPayment && (
-            <Button
-              className="bg-success hover:bg-success text-white"
-              onClick={() => onRegisterPayment(cobro)}
+            // Sin `cobros:create` queda a la vista y deshabilitado, con el
+            // porqué en el título: esconderlo se lee como «falta la función».
+            <span
+              className="inline-flex"
+              title={puedeHacerRecibo ? undefined : MOTIVO_SIN_PERMISO_DE_RECIBO}
             >
-              <Receipt className="w-4 h-4 mr-2" />
-              {t('recibos.hacer')}
-            </Button>
+              <Button
+                className="bg-success hover:bg-success text-white"
+                disabled={!puedeHacerRecibo}
+                onClick={() => onRegisterPayment(cobro)}
+              >
+                <Receipt className="w-4 h-4 mr-2" />
+                {t('recibos.hacer')}
+              </Button>
+            </span>
           )}
           {isPending && onSendReminder && (
             <Button

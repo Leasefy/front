@@ -10,7 +10,8 @@ import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 import { Spinner } from '@/components/ui';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SignatureForm } from '@/components/contract/SignatureForm';
-import { useContract, useContractPreview, useContractActions, useSignedPdfUrl, isPermissionError } from '@/lib/hooks/useContracts';
+import { useContract, useContractPreview, useContractActions, useSignedPdfUrl } from '@/lib/hooks/useContracts';
+import { isPermissionError, mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -44,30 +45,30 @@ function FirmarContratoContent() {
       ? 'Confirmo digitalmente que el PDF adjunto contiene mi firma manuscrita/presencial y acepto todos sus términos.'
       : 'Acepto los términos y condiciones de este contrato de arrendamiento y confirmo que la información proporcionada es verídica.';
 
-    const updated = await actions.signAsLandlord(contract.id, {
-      acceptedTerms: true,
-      consentText: consent,
-      signatureData,
-      otpVerificationToken,
-    });
-
-    if (updated) {
+    try {
+      const updated = await actions.signAsLandlord(contract.id, {
+        acceptedTerms: true,
+        consentText: consent,
+        signatureData,
+        otpVerificationToken,
+      });
       setContract(updated);
       setSigned(true);
       toast.success('Contrato firmado. Proceso completado.');
-    } else {
-      // Backend rechaza con 400 "Tenant must sign first" si el landlord intenta firmar antes.
-      const msg = actions.lastError?.message ?? '';
-      if (msg === 'Tenant must sign first' || /tenant.*sign first/i.test(msg)) {
+    } catch (err) {
+      // El back rechaza con 400 «Tenant must sign first» si el arrendador
+      // intenta firmar antes que el inquilino. Se lee EL error que vino.
+      const msg = mensajeDelFallo(err, '');
+      if (/tenant.*sign first/i.test(msg)) {
         toast.error('El inquilino todavía no firmó. No puedes firmar hasta que lo haga.');
-      } else if (isPermissionError(actions.lastError)) {
+      } else if (isPermissionError(err)) {
         toast.error('No tienes permisos para esta acción.');
       } else {
-        toast.error('No se pudo firmar el contrato. Intenta de nuevo.');
+        toast.error('No se pudo firmar el contrato.', { description: msg || 'Intenta de nuevo.' });
       }
+    } finally {
+      setIsSigning(false);
     }
-
-    setIsSigning(false);
   };
 
   if (isLoading) {

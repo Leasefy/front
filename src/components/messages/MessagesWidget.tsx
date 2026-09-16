@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { useAuth } from '@/lib/auth';
 import { useConversations, useChat } from '@/lib/hooks/useMessages';
 import { agentContactApi } from '@/lib/api/agent-contact.service';
@@ -249,8 +250,11 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
     messages,
     isLoading: isLoadingMessages,
     isSending,
-    error: errorDeEnvio,
+    errorDeCarga,
+    errorDeEnvio,
     limpiarError,
+    reintentarCarga,
+    refetch: refetchMessages,
     sendMessage,
     markAsRead,
     canalDeWhatsapp,
@@ -280,6 +284,10 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
         setShowMobileChat(true);
         return;
       }
+      // 🔴 X2: el enlace pide el hilo de UN contrato y ese hilo no existe.
+      // Antes se caía al «primero disponible» y la persona terminaba
+      // escribiéndole a otra. Sin hilo, no se elige nada: el panel lo dice.
+      if (!match && !selectedConversationId) return;
     }
     if (!selectedConversationId && conversations.length > 0) {
       setSelectedConversationId(conversations[0].id);
@@ -289,6 +297,14 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
   const selectedConversation: ChatConversation | undefined = conversations.find(
     (c) => c.id === selectedConversationId,
   );
+
+  /** El enlace venía de un contrato cuya postulación todavía no tiene hilo. */
+  const contratoSinConversacion =
+    Boolean(urlApplicationId) &&
+    !urlConversationId &&
+    !isLoadingConversations &&
+    !selectedConversation &&
+    !conversations.some((c) => c.applicationId === urlApplicationId);
 
   /**
    * Un hilo recién abierto todavía no está en la lista: se selecciona primero
@@ -641,7 +657,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                       {searchQuery
                         ? (locale === 'es' ? 'No se encontraron conversaciones' : 'No conversations found')
                         : (locale === 'es'
-                            ? `Escribile a ${otherParty} desde acá; las conversaciones te van a quedar en esta lista.`
+                            ? `Escríbele a ${otherParty} desde acá; las conversaciones te van a quedar en esta lista.`
                             : `Message ${otherParty} from here; your conversations will stay in this list.`)}
                     </p>
                     {/* Acá SÍ va con texto: en un vacío el `+` de arriba es lo
@@ -731,7 +747,28 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                 !showMobileChat && 'hidden md:flex',
               )}
             >
-              {!selectedConversation ? (
+              {!selectedConversation && contratoSinConversacion ? (
+                <div className="flex-1 flex items-center justify-center">
+                  {/* No se ofrece «abrir una conversación»: el back no tiene
+                      cómo abrir un hilo POR postulación (`abrirHiloDirecto`
+                      va por contraparte). La bandeja de la izquierda queda
+                      para elegir a mano. */}
+                  <SinDatos
+                    queSon={locale === 'es' ? 'conversaciones' : 'conversations'}
+                    icono={ChatCircle}
+                    titulo={
+                      locale === 'es'
+                        ? 'Este contrato todavía no tiene conversación'
+                        : "This contract doesn't have a conversation yet"
+                    }
+                    descripcion={
+                      locale === 'es'
+                        ? 'Nadie ha escrito todavía sobre esta postulación. Elige otra conversación de la lista o inicia una nueva.'
+                        : 'No one has written about this application yet. Pick another conversation or start a new one.'
+                    }
+                  />
+                </div>
+              ) : !selectedConversation ? (
                 <div className="flex-1 flex items-center justify-center">
                   <EmptyState
                     icon={ChatCircle}
@@ -885,6 +922,15 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                       <div className="flex-1 overflow-y-auto p-6 bg-muted/30">
                         {isLoadingMessages ? (
                           <MessagesSkeleton />
+                        ) : messages.length === 0 && errorDeCarga ? (
+                          /* X1: la carga falló y no hay nada que mostrar. NO es
+                             «Sin mensajes» (sería mentir que el hilo está
+                             vacío) ni «No se pudo enviar» (nadie envió). */
+                          <FalloDeCarga
+                            error={errorDeCarga}
+                            queEs={locale === 'es' ? 'esta conversación' : 'this conversation'}
+                            onReintentar={reintentarCarga}
+                          />
                         ) : messages.length === 0 ? (
                           <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
                             <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4 border border-border">
@@ -901,6 +947,30 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                           </div>
                         ) : (
                           <div className="space-y-4">
+                            {/* X1: el poll de fondo falló con el hilo ya a la
+                                vista. No se borra lo leído: se avisa que puede
+                                estar desactualizado. */}
+                            {Boolean(errorDeCarga) && (
+                              <div
+                                data-testid="hilo-sin-actualizar"
+                                role="status"
+                                className="flex items-center gap-2 rounded-md border border-border bg-surface-muted px-3 py-2 text-xs text-fg-muted"
+                              >
+                                <Warning className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+                                <span className="flex-1">
+                                  {locale === 'es'
+                                    ? 'No pudimos traer los mensajes nuevos. Lo que ves puede estar desactualizado.'
+                                    : "We couldn't fetch new messages. What you see may be out of date."}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => void refetchMessages()}
+                                  className="shrink-0 font-medium underline underline-offset-2"
+                                >
+                                  {locale === 'es' ? 'Reintentar' : 'Retry'}
+                                </button>
+                              </div>
+                            )}
                             <AnimatePresence initial={false}>
                               {messages.map((message, index) => (
                                 <motion.div

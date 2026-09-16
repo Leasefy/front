@@ -7,6 +7,7 @@ import { Input } from '@/components/ui';
 import { Switch } from '@/components/ui/switch';
 import { renovacionAutomaticaApi } from '@/lib/api/renovacion-automatica.service';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
+import { ConfigIpcPorAnio } from './ConfigIpcPorAnio';
 
 /** El mismo `@Min(0) @Max(30)` del DTO del back. */
 export const MIN_IPC = 0;
@@ -222,6 +223,9 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
             'Se usa para el incremento del canon en cada renovación; si está vacío se usa el IPC de diciembre del año anterior de la tabla de Leasefy.'}
         </p>
       </div>
+
+      {/* N3: el IPC por año. El de arriba no tiene año y se queda viejo en silencio. */}
+      <ConfigIpcPorAnio agency={agency} onSave={onSave} canEdit={canEdit} />
 
       {hayMovimiento && pronostico && (
         <p

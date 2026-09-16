@@ -36,6 +36,7 @@ import {
   useTablePagination,
 } from '@/lib/hooks/use-table-pagination';
 import { IconButton } from '@leasefy/cadence';
+import Link from 'next/link';
 import type { InventoryItem } from '@/lib/types/inmobiliaria';
 
 interface ActaEntregaViewProps {
@@ -51,6 +52,13 @@ interface ActaEntregaViewProps {
   onDeleteItem?: (item: InventoryItem) => void;
   onPrint?: () => void;
   onDownload?: () => void;
+  /**
+   * Un enlace que va al lado del título («Ver el inmueble →» cuando la
+   * tarjeta se abre desde el contrato). Nico, 2026-09-13: «esa acción de ver
+   * el inmueble debería quedar dentro de la card, quizás por el título, para
+   * que se asocie mejor» — suelto debajo de la tarjeta parecía de otra cosa.
+   */
+  enlace?: { href: string; texto: string; testid?: string };
 }
 
 // Condition styling
@@ -106,6 +114,7 @@ export function ActaEntregaView({
   onDeleteItem,
   onPrint,
   onDownload,
+  enlace,
 }: ActaEntregaViewProps) {
   const { t, formatDate: fmtDate } = useI18n();
   const [searchTerm, setSearchTerm] = useState('');
@@ -148,12 +157,21 @@ export function ActaEntregaView({
     <div className="rounded-lg border border-border bg-card overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b border-border">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
             <div className="w-8 h-8 rounded-md bg-success-soft flex items-center justify-center">
               <Package className="w-4 h-4 text-success" />
             </div>
             <h3 className="text-base font-semibold text-fg">{t('inmobiliaria.acta.title')}</h3>
+            {enlace && (
+              <Link
+                href={enlace.href}
+                className="text-sm font-medium text-primary hover:underline whitespace-nowrap"
+                data-testid={enlace.testid}
+              >
+                {enlace.texto} →
+              </Link>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {/* Imprimir abre la hoja del acta (`/inmuebles/[id]/acta`); sin

@@ -73,6 +73,12 @@ const CSS_DE_IMPRESION = `
     --border-strong: #d5d1ca;
   }
   [data-estado-pagina] { padding: 0 !important; max-width: none !important; }
+  [data-estado-marco] {
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
   [data-estado-hoja] {
     max-width: none !important;
     margin: 0 !important;

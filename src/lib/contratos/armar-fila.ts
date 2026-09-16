@@ -18,12 +18,14 @@
  */
 
 import type { CampoDeContrato, MapeoDeColumna } from './columnas-de-contrato'
-import type { FilaAMigrar } from '@/lib/api/contracts.service'
+import type { FilaAMigrar, TerceroDelArchivo } from '@/lib/api/contracts.service'
 import {
   codigoYDireccion,
   estratoDePalabras,
   fechaDeOrigen,
   listaDePersonas,
+  listaDePlata,
+  repartoEnBps,
   type PersonaDeOrigen,
 } from '@/lib/migracion/valores-de-origen'
 import {
@@ -217,12 +219,30 @@ export function leerFilaDelArchivo(
   /*
    * El canon: manda «Canon Total». «Valor Canon» es el mismo canon repartido
    * entre los dueños y en los contratos con dos llega como una LISTA
-   * («$451,000.00, $649,000.00»), que no es un número — `plataDeContrato` lo
-   * devuelve ausente, que es lo correcto, pero el contrato se quedaba sin
-   * canon habiendo un total perfectamente legible al lado.
+   * («$451,000.00, $649,000.00»), que no es UN número.
+   *
+   * 🔴 Esa lista ya no se tira (Nico, 2026-09-13: «múltiples propietarios con
+   * diferentes % del canon»): ahí está el porcentaje REAL de cada dueño
+   * (451000/1100000 = 41 %). Viaja cruda como `canonPorPropietario`, en el
+   * orden de `propietarios`, y el back decide: si cuadra, escribe el reparto
+   * proporcional; si no, frena la fila con su motivo. Con un solo valor la
+   * celda es el canon de siempre y no viaja ninguna lista.
+   *
+   * Sin «Canon Total», la suma de las partes ES el canon: son los números
+   * del archivo, no un invento — y sin ella el contrato quedaba en $0.
    */
+  const rawCanon = v('canon')
+  const listaDelCanon = listaDePlata(rawCanon)
+  const canonPorPropietario =
+    listaDelCanon && listaDelCanon.length >= 2 && listaDelCanon.every((n) => n >= 0)
+      ? listaDelCanon
+      : undefined
   const canonTotal = plataDeContrato(v('canonTotal'))
-  const canonSuelto = plataDeContrato(v('canon'))
+  const canonSuelto = canonPorPropietario ? undefined : plataDeContrato(rawCanon)
+  const sumaDeLasPartes = canonPorPropietario
+    ? plataDeContrato(canonPorPropietario.reduce((a, n) => a + n, 0))
+    : undefined
+  const monthlyRent = canonTotal ?? canonSuelto ?? sumaDeLasPartes
 
   /*
    * Lo que el archivo dice del contrato más allá del canon: el consecutivo, el
@@ -259,7 +279,7 @@ export function leerFilaDelArchivo(
      */
     fechaDeCartera: hayValor(rawCartera) ? comoFecha(rawCartera) : undefined,
     endDate: hayValor(rawFin) ? comoFecha(rawFin) : undefined,
-    monthlyRent: canonTotal ?? canonSuelto,
+    monthlyRent,
     deposit: plataDeContrato(rawDeposito),
     // X5: un día de pago ausente o fuera de [1,28] viaja ausente, nunca
     // fabricado como "el 1" — eso es lo que hacía que 1383 filas quedaran
@@ -297,7 +317,10 @@ export function leerFilaDelArchivo(
     externalId: consecutivo,
     // Sólo cuando el archivo trae la lista: una lista vacía no dice nada que
     // el back no sepa ya, y ocupa lugar en un lote de 1.851 filas.
-    ...(propietarios.length > 0 ? { propietarios: propietarios.map(soloDocumentoYNombre) } : {}),
+    ...(propietarios.length > 0
+      ? { propietarios: conSuParte(propietarios, canonPorPropietario, monthlyRent) }
+      : {}),
+    ...(canonPorPropietario ? { canonPorPropietario } : {}),
     ...(inquilinos.length > 0 ? { inquilinos: inquilinos.map(soloDocumentoYNombre) } : {}),
     escenarioOrigen: escenario,
     estadoOrigen: estado,
@@ -338,6 +361,32 @@ function soloDocumentoYNombre(p: PersonaDeOrigen): { documento?: string; nombre?
     ...(p.documento ? { documento: p.documento } : {}),
     ...(p.nombre ? { nombre: p.nombre } : {}),
   }
+}
+
+/**
+ * Los dueños con su `participacionBps` cuando la plata de «Valor Canon»
+ * cuadra: un valor por dueño y una suma igual al canon (tolerancia de un peso
+ * por dueño, lo que pierde el redondeo del export). `[451000, 649000]` sobre
+ * $1.100.000 → 4100 / 5900.
+ *
+ * Cuando NO cuadra no se manda ningún bps: la lista cruda viaja igual
+ * (`canonPorPropietario`) y es el back quien frena la fila con el motivo. Acá
+ * no se inventa un 50/50 ni se «arregla» la suma. Misma aritmética que
+ * `decidirReparto` en el back, para que la vista previa y el mandato digan lo
+ * mismo.
+ */
+export function conSuParte(
+  propietarios: PersonaDeOrigen[],
+  plata: number[] | undefined,
+  canon: number | undefined,
+): TerceroDelArchivo[] {
+  const base = propietarios.map(soloDocumentoYNombre)
+  if (!plata || plata.length !== propietarios.length || propietarios.length < 2) return base
+  if (plata.some((n) => n <= 0)) return base
+  const suma = plata.reduce((a, n) => a + n, 0)
+  if (canon !== undefined && Math.abs(suma - canon) > propietarios.length) return base
+  const bps = repartoEnBps(plata)
+  return base.map((p, i) => ({ ...p, participacionBps: bps[i] }))
 }
 
 /**

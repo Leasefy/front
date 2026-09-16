@@ -36,7 +36,11 @@ import { formatCurrency, getMantenimientoTypeInfo } from '@/lib/types/inmobiliar
 
 export interface CotizacionComparatorProps {
   solicitud: SolicitudMantenimiento;
-  onSelectQuote: (quoteId: string) => void;
+  /**
+   * Aprobar una cotización. Opcional a propósito: sin permiso de edición
+   * (CONTADOR, VIEWER) el back contesta 403, así que el botón no se ofrece.
+   */
+  onSelectQuote?: (quoteId: string) => void;
   onRequestNewQuote?: () => void;
   selectedQuoteId?: string;
 }
@@ -110,7 +114,8 @@ interface QuoteCardProps {
   quote: MantenimientoQuote;
   analysis: QuoteAnalysis;
   isSelected: boolean;
-  onSelect: () => void;
+  /** Sin él la tarjeta no ofrece «Seleccionar»: quien no puede aprobar sólo compara. */
+  onSelect?: () => void;
   t: (key: string, params?: Record<string, string | number>) => string;
   locale: string;
 }
@@ -246,12 +251,12 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
             <CheckCircle className="w-4 h-4" weight="fill" />
             {t('inmobiliaria.finance.quotes.selected')}
           </div>
-        ) : (
+        ) : onSelect ? (
           <Button hideArrow onClick={onSelect} className="w-full">
             <Check className="w-4 h-4" weight="bold" />
             {t('inmobiliaria.finance.quotes.select')}
           </Button>
-        )}
+        ) : null}
       </div>
     </motion.div>
   );
@@ -337,12 +342,12 @@ export function CotizacionComparator({
                 <CheckCircle className="w-4 h-4" weight="fill" />
                 {t('inmobiliaria.finance.quotes.selected')}
               </div>
-            ) : (
+            ) : onSelectQuote ? (
               <Button hideArrow onClick={() => onSelectQuote(quote.id)} className="flex-1">
                 <Check className="w-4 h-4" weight="bold" />
                 {t('inmobiliaria.finance.quotes.select')}
               </Button>
-            )}
+            ) : null}
             {onRequestNewQuote && (
               <Button variant="outline" size="icon" hideArrow onClick={onRequestNewQuote}>
                 <Plus className="w-4 h-4" />
@@ -420,7 +425,7 @@ export function CotizacionComparator({
                 quote={quote}
                 analysis={analysis}
                 isSelected={selectedQuoteId === quote.id}
-                onSelect={() => onSelectQuote(quote.id)}
+                onSelect={onSelectQuote ? () => onSelectQuote(quote.id) : undefined}
                 t={t}
                 locale={locale}
               />

@@ -267,6 +267,8 @@ export function StepConfirmImport({
     /* Los que ya existían por «Código» y se re-apuntaron. La pantalla final
        los cuenta: ver el mensaje de «Importación completada». */
     reusados: number;
+    /* Mandatos que quedaron con varios dueños y su reparto (Nico, 2026-09-13). */
+    mandatosConVariosDuenos?: number;
     omitidas: FilaOmitida[];
   } | null>(null);
   const [isComplete, setIsComplete] = useState(false);
@@ -1132,6 +1134,16 @@ export function StepConfirmImport({
                 {state.importedCount} propiedades
               </span>{" "}
               a tu portafolio
+            </p>
+          )}
+          {/* Varios dueños con su % (Nico, 2026-09-13): cuántos mandatos
+              quedaron repartidos según el archivo, para no tener que abrir
+              cada ficha a comprobarlo. */}
+          {resultadoActivacion && (resultadoActivacion.mandatosConVariosDuenos ?? 0) > 0 && (
+            <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="mandatos-varios-duenos">
+              {resultadoActivacion.mandatosConVariosDuenos === 1
+                ? '1 mandato quedó con varios dueños y el reparto que traía el archivo.'
+                : `${resultadoActivacion.mandatosConVariosDuenos} mandatos quedaron con varios dueños y el reparto que traía el archivo.`}
             </p>
           )}
           {fotosProgreso && (

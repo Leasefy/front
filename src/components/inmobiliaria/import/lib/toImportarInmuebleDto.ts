@@ -13,11 +13,15 @@
  * the review step to fix.
  */
 
-import type { ImportProperty } from './importTypes';
+import type { DuenoDelArchivo, ImportProperty } from './importTypes';
 import { tipoEfectivo } from './requisitosDelBack';
 import { TYPE_TO_BACKEND } from '@/lib/api/properties.mapper';
 import type { PropertyType } from '@/lib/types/property';
-import type { ImportarInmuebleDto } from '@/lib/api/inmuebles-importacion.service';
+import type {
+  ImportarInmuebleDto,
+  PropietarioDelInmuebleDto,
+} from '@/lib/api/inmuebles-importacion.service';
+import { repartoEnBps } from '@/lib/migracion/valores-de-origen';
 
 export function toImportarInmuebleDto(p: ImportProperty): ImportarInmuebleDto {
   const dto: ImportarInmuebleDto = {};
@@ -118,5 +122,49 @@ export function toImportarInmuebleDto(p: ImportProperty): ImportarInmuebleDto {
   if (p.ownerName?.trim()) dto.propietarioNombre = p.ownerName.trim();
   if (p.commissionPercent != null) dto.comisionPorcentaje = p.commissionPercent;
 
+  /*
+   * Varios dueños con su % (Nico, 2026-09-13). Sólo con dos o más: con uno,
+   * los campos sueltos de arriba son todo lo que hay y el back sigue igual.
+   * Los nombres de las claves son los de `PropietarioDelInmuebleDto`: con
+   * `forbidNonWhitelisted` una clave de más es un 400 del lote entero.
+   */
+  const propietarios = propietariosDelInmueble(p.owners);
+  if (propietarios) dto.propietarios = propietarios;
+
   return dto;
+}
+
+/**
+ * Los dueños como los declara el back, con el % pasado a puntos básicos.
+ *
+ * Los porcentajes del archivo («33,33 / 33,33 / 33,34», o «60 / 40») se
+ * convierten con `repartoEnBps` cuando suman 100 (tolerancia de una décima,
+ * lo que pierde el redondeo a dos decimales): así 33,33 × 3 no queda en 9.999
+ * sino en 10.000 exacto, que es lo que exige la base. Si suman otra cosa
+ * («33 / 33 / 33»), se mandan tal cual (× 100) y es el BACK quien frena la
+ * fila con `reparto`: no se corrige un archivo que dice 99.
+ *
+ * La plata por dueño viaja cruda (`canon`) y el back la reparte.
+ */
+export function propietariosDelInmueble(
+  owners: DuenoDelArchivo[] | undefined,
+): PropietarioDelInmuebleDto[] | undefined {
+  if (!owners || owners.length < 2) return undefined;
+  const porcentajes = owners.map((o) => o.porcentaje);
+  const todosConPorcentaje = porcentajes.every((x): x is number => typeof x === 'number');
+  const suma = todosConPorcentaje ? porcentajes.reduce((a, x) => a + x, 0) : NaN;
+  const cuadran = todosConPorcentaje && Math.abs(suma - 100) <= 0.1 && porcentajes.every((x) => x > 0);
+  const bps = cuadran ? repartoEnBps(porcentajes) : undefined;
+
+  return owners.map((o, i) => {
+    const dueño: PropietarioDelInmuebleDto = {};
+    if (o.documento?.trim()) dueño.documento = o.documento.trim();
+    if (o.nombre?.trim()) dueño.nombre = o.nombre.trim();
+    if (o.telefono?.trim()) dueño.telefono = o.telefono.trim();
+    if (o.correo?.trim()) dueño.correo = o.correo.trim();
+    if (bps) dueño.participacionBps = bps[i];
+    else if (typeof o.porcentaje === 'number') dueño.participacionBps = Math.round(o.porcentaje * 100);
+    if (typeof o.canon === 'number') dueño.canon = o.canon;
+    return dueño;
+  });
 }

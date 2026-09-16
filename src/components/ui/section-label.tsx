@@ -1,7 +1,7 @@
 import { MonoLabel } from "@leasefy/cadence";
 import { cn } from "@/lib/utils";
 
-type DotVariant = 'default' | 'warning' | 'info' | 'success';
+type DotVariant = 'default' | 'warning' | 'info' | 'success' | 'neutral';
 
 interface SectionLabelProps {
   children: React.ReactNode;
@@ -11,11 +11,14 @@ interface SectionLabelProps {
 
 // Cadence eyebrow dot — cobalt by default; status variants reuse the Cadence
 // feedback hues (amber/info-blue/green). Square 2px corner like the DS Eyebrow.
+// `neutral` is for a state that is over, not a status to watch (a finished
+// lease): a warm grey dot, so the eyebrow keeps its rhythm without a hue.
 const dotColors: Record<DotVariant, string> = {
   default: 'bg-primary',
   warning: 'bg-warning',
   info: 'bg-info',
   success: 'bg-success',
+  neutral: 'bg-border-strong',
 };
 
 /**

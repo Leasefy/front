@@ -451,9 +451,24 @@ export function RegistrarPagoModal({
        *     recibo necesita uno para poder emitir el documento. Es un problema
        *     de configuración, no del pago, y por eso se rotula distinto: quien
        *     está en caja tiene que saber que la salida es asignar el mandato.
+       *   · 409 `CUOTA_Y_COBRO_NO_CUADRAN` (2026-09-16) → los DOCUMENTOS del
+       *     período no cuadran: dos cobros para el mismo mes, un cobro de otro
+       *     contrato del inmueble (cambio de inquilino), o una cuota con plata
+       *     que el cobro no conoce. No es el pago ni la persona, y un «no se
+       *     emitió» genérico hace pensar que reintentar sirve. El back manda el
+       *     `message` ya escrito para caja (mes, de quién es, qué hacer, sin
+       *     ids) y trae `cobroId` en el cuerpo: por eso el chequeo de arriba
+       *     exige el CÓDIGO, si no este 409 caería al panel de conciliación.
        */
       const sinMandato = e instanceof ApiError && e.code === 'CONTRATO_SIN_MANDATO';
-      setTituloDelError(sinMandato ? t('recibos.form.sinMandato') : null);
+      const noCuadran = e instanceof ApiError && e.code === 'CUOTA_Y_COBRO_NO_CUADRAN';
+      setTituloDelError(
+        sinMandato
+          ? t('recibos.form.sinMandato')
+          : noCuadran
+            ? t('recibos.form.cuotaYCobroNoCuadran')
+            : null,
+      );
       setErrorDelBack(e instanceof Error ? e.message : t('recibos.form.fallo'));
     } finally {
       setEnviando(false);

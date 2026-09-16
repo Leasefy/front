@@ -11216,7 +11216,8 @@
       "descripcionAdelanto": "No tiene nada vencido. Lo que entre hoy es un adelanto: baja las cuotas de su contrato que todavía no vencen, de la más próxima en adelante.",
       "pagaLoVencido": "Paga lo vencido",
       "adelantoDesde": "Vencido hoy: {{vencido}}. Por encima de esa cifra estás adelantando contra {{futuro}} que todavía no vencen.",
-      "sinMandato": "Falta el mandato del inmueble"
+      "sinMandato": "Falta el mandato del inmueble",
+      "cuotaYCobroNoCuadran": "Los documentos de ese mes no cuadran"
     },
     "historial": {
       "titulo": "Recibos de caja",

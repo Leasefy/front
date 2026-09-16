@@ -744,7 +744,9 @@ function PagosRecordatorios() {
 
 export default function PagosRecordatoriosPage() {
   return (
-    <PageGuard module="cobros" action="view">
+    /* Mudada a Cobranza el 2026-09-16: el gate es el del módulo que la
+       contiene y el que la ofrece como pestaña, no el de la cartera. */
+    <PageGuard module="cobranza" action="view">
       <PagosRecordatorios />
     </PageGuard>
   )

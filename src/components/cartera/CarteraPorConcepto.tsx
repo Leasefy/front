@@ -62,9 +62,22 @@
  * 5. **Callar lo que el número NO cuenta.** Hay contratos vigentes sin tabla de
  *    amortización (195 en dev): su deuda no está en estas cifras, y un cero por
  *    omisión es exactamente el defecto que este cambio vino a arreglar.
+ *
+ * ── 🔴 De cada fila se sale al ESTADO DE CUENTA (Nico, 2026-09-16) ──────────
+ *
+ * «Todo funciona alrededor del estado de cuenta del contrato.» La pantalla del
+ * estado de cuenta existía desde el 13-09 y sólo se llegaba a ella desde las
+ * fichas (contrato, propietario, inquilino); ninguna pantalla de Pagos llevaba
+ * a ella. Una fila de cartera ES un pedazo del estado de cuenta de alguien, así
+ * que desde acá se abre el documento completo del cliente.
+ *
+ * Con quién se abre sale de la `clave` con la que el back agrupó al inquilino
+ * (`refDesdeLaClave`). Los agrupados por CONTRATO —sin cuenta y sin documento—
+ * no tienen con qué identificarse y no llevan enlace.
  */
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { CaretDown, CaretRight, CurrencyCircleDollar, MagnifyingGlass, Warning } from '@phosphor-icons/react'
 
 import { Input } from '@/components/ui/input'
@@ -84,6 +97,8 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useCarteraDeInquilinos } from '@/lib/hooks/use-cartera'
+import { refDesdeLaClave } from '@/lib/estado-de-cuenta/con-quien-se-abre'
+import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { mesEnTitulo } from '@/lib/utils/mes'
 import type {
@@ -395,6 +410,24 @@ export function CarteraPorConcepto() {
 }
 
 /** La fila del inquilino (su total) y, si está abierta, la de cada mes. */
+const VOLVER_A = '/panel/inmobiliaria/pagos/cartera/conceptos'
+
+/** La puerta al estado de cuenta del inquilino, cuando se le puede identificar. */
+function EnlaceAlEstadoDeCuenta({ clave, nombre }: { clave: string; nombre: string | null }) {
+  const ref = refDesdeLaClave(clave)
+  if (!ref) return null
+  return (
+    <Link
+      href={`${rutaDelEstadoDeCuenta('inquilino', ref)}?volver=${encodeURIComponent(VOLVER_A)}`}
+      data-testid="inquilino-estado-de-cuenta"
+      title={`Ver el estado de cuenta de ${nombre ?? 'este inquilino'}`}
+      className="ml-6 mt-0.5 inline-block text-xs text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+    >
+      Estado de cuenta
+    </Link>
+  )
+}
+
 function FilasDelInquilino({
   inquilino,
   conceptos,
@@ -437,6 +470,9 @@ function FilasDelInquilino({
               </span>
             </span>
           </button>
+          {/* Fuera del `button`: un enlace no puede vivir dentro de otro
+              control. Alineado con el nombre (el caret ocupa ~24 px). */}
+          <EnlaceAlEstadoDeCuenta clave={inquilino.clave} nombre={inquilino.nombre} />
         </TableCell>
         <CeldasDeConceptos
           porConcepto={inquilino.totales.saldoPorConcepto}

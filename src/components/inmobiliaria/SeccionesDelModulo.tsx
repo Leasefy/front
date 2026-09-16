@@ -43,7 +43,7 @@ import { BarraDePestanas, type CaraDeLaBarra, type PestanaDeBarra } from './Barr
  * el módulo único de plata: quien no tiene `dispersiones` no ve la card de
  * Dispersiones aunque ahora viva en el mismo módulo que su cartera.
  *
- * ── 🔴 Las dos CARAS (Nico, 2026-09-16) ─────────────────────────────────────
+ * ── 🔴 Las dos CARAS (Nico, 15 y 16-09) ─────────────────────────────────────
  *
  * Un módulo puede tener dos caras del mismo asunto (`cara` en
  * `arquitectura-del-panel.ts`; hoy sólo Pagos: lo que ENTRA de los inquilinos
@@ -55,8 +55,7 @@ import { BarraDePestanas, type CaraDeLaBarra, type PestanaDeBarra } from './Barr
  *
  * Ahora:
  *   1. **la cara es un selector explícito** en su propio renglón, arriba;
- *   2. **debajo van sólo las secciones de la cara elegida**, más las que no
- *      son de ninguna (la Sala de Pagos, que mira las dos), siempre primeras;
+ *   2. **debajo van SÓLO las secciones de la cara elegida**;
  *   3. **la cara se deduce de la RUTA** —estás en Dispersiones ⇒ estás en
  *      Propietarios— y por defecto entra Inquilinos, que es donde se opera
  *      todos los días;
@@ -67,6 +66,12 @@ import { BarraDePestanas, type CaraDeLaBarra, type PestanaDeBarra } from './Barr
  * presentes no se dibuja el selector: no se anuncia una separación que, para
  * esa persona, no existe. Es lo que hace que quien sólo tiene `cobros` vea su
  * cara y ni se entere de la de propietarios.
+ *
+ * 🔴 Una sección SIN cara se dibuja en las dos, y eso es una puerta trasera al
+ * mismo defecto: `/pagos` no tenía cara y aparecía como primera card también
+ * en «Propietarios», mostrando la deuda de los inquilinos (Nico, 2026-09-16).
+ * Ya no hay ninguna —la raíz de Pagos declara la suya—, pero el filtro sigue
+ * aceptándolas: son legítimas sólo si la pantalla de verdad mira las dos.
  */
 export function SeccionesDelModulo() {
   const pathname = usePathname() ?? '';
@@ -132,10 +137,20 @@ export function SeccionesDelModulo() {
     activa: c.cara === caraActiva,
   }));
 
+  /*
+   * Con dos caras el riel de abajo NO son «las secciones de Pagos»: son las de
+   * la cara elegida. Un lector de pantalla que oiga «Secciones de Pagos» en
+   * los dos rieles no tiene cómo saber que cambió de lado.
+   */
+  const caraElegida = caras.find((c) => c.activa);
+  const ariaDelRiel = caraElegida
+    ? `${t(modulo.labelKey)} · ${caraElegida.label}`
+    : `Secciones de ${t(modulo.labelKey)}`;
+
   return (
     <BarraDePestanas
       items={items}
-      ariaLabel={`Secciones de ${t(modulo.labelKey)}`}
+      ariaLabel={ariaDelRiel}
       cssVar="--secciones-h"
       topClass="top-16"
       nivel="secciones"

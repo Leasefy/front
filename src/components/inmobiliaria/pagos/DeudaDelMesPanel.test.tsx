@@ -18,6 +18,9 @@
  *  5. Un fallo del back no se pinta como un mes en cero.
  *  6. Sin `cobros:create` el botón queda a la vista y deshabilitado, con el
  *     porqué: esconderlo se lee como «falta la función».
+ *  7. 🔴 **Cada fila abre el ESTADO DE CUENTA de su cliente** (Nico, más tarde
+ *     el mismo día: «eso va atado al estado de cuenta»). Con la cuenta del
+ *     portal si la tiene, si no con el DOCUMENTO; sin ninguno, sin enlace.
  */
 import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -101,10 +104,12 @@ function fila(p: Partial<FilaDeLaCuotaDelMes> = {}): FilaDeLaCuotaDelMes {
     contrato: '1686',
     contratoDeLeasefy: 'Leasefy #1839',
     inquilino: 'Nicolás Rojas',
+    // Sin cuenta del portal: lo normal en lo migrado. Lo identifica el documento.
+    tenantId: null,
     documento: '70814637',
     telefono: null,
     inmueble: 'Apartamento 302',
-    month: '2026-09',
+    mes: '2026-09',
     vence: '2026-09-05',
     estado: 'PENDIENTE',
     cajon: 'CARTERA',
@@ -383,6 +388,48 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
     montar()
     expect($('[data-testid="fallo-de-carga"]').textContent).toContain('502 Bad Gateway')
     expect(host.querySelector('[data-testid="resumen-del-mes"]')).toBeNull()
+  })
+
+  it('🔴 la columna «Período» dice el mes: el back manda `mes`, no `month`', () => {
+    // El espejo del tipo decía `month` y el back siempre mandó `mes`: la
+    // columna venía leyendo `undefined` y salía en blanco.
+    montar()
+    const celdas = todos('[data-testid="cuota-fila"]')[0]!.querySelectorAll('td')
+    expect((celdas[2]!.textContent ?? '').trim()).not.toBe('')
+    expect(celdas[2]!.textContent).toContain('2026')
+  })
+
+  describe('🔴 la puerta al estado de cuenta', () => {
+    it('sin cuenta del portal, el nombre abre el estado de cuenta POR DOCUMENTO', () => {
+      montar()
+      const enlace = todos('[data-testid="cuota-fila"]')[0]!.querySelector(
+        '[data-testid="cuota-estado-de-cuenta"]',
+      )
+      expect(enlace?.getAttribute('href')).toBe(
+        '/panel/inmobiliaria/estado-de-cuenta/inquilino/70814637?volver=%2Fpanel%2Finmobiliaria%2Fpagos',
+      )
+      expect(enlace?.textContent).toBe('Nicolás Rojas')
+    })
+
+    it('con cuenta del portal, la cuenta manda sobre el documento', () => {
+      conMes(mes({ filas: [fila({ tenantId: 'u-77' })] }))
+      montar()
+      expect($('[data-testid="cuota-estado-de-cuenta"]').getAttribute('href')).toBe(
+        '/panel/inmobiliaria/estado-de-cuenta/inquilino/u-77?volver=%2Fpanel%2Finmobiliaria%2Fpagos',
+      )
+    })
+
+    it('sin cuenta ni documento no se ofrece una puerta que da 404, pero el nombre sigue', () => {
+      conMes(mes({ filas: [fila({ tenantId: null, documento: null })] }))
+      montar()
+      expect(host.querySelector('[data-testid="cuota-estado-de-cuenta"]')).toBeNull()
+      expect($('[data-testid="cuota-fila"]').textContent).toContain('Nicolás Rojas')
+    })
+
+    it('el pie lo dice con palabras: cada fila es un mes del estado de cuenta', () => {
+      montar()
+      expect(host.textContent).toContain('estado de cuenta')
+    })
   })
 
   it('sin permiso de recibo el botón queda a la vista, deshabilitado y con el porqué', () => {

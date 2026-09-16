@@ -56,6 +56,13 @@ const ANTERIOR = sumarMeses(HOY, -1);
 function resumen(over: Partial<ResumenDeRecaudo> = {}): ResumenDeRecaudo {
   return {
     month: HOY,
+    // 🔴 LA DEUDA sale de las cuotas del contrato, no de los cobros emitidos.
+    deudaDelMesCop: 3_000_000,
+    cuotasDelMes: 2,
+    cuotasPagadas: 1,
+    cuotasPendientes: 1,
+    cuotasEnCartera: 1,
+    cobrosEmitidos: 2,
     facturadoCop: 3_000_000,
     recaudadoCop: 1_500_000,
     recaudadoDelMesCop: 1_000_000,
@@ -76,6 +83,12 @@ function resumen(over: Partial<ResumenDeRecaudo> = {}): ResumenDeRecaudo {
 }
 
 const VACIO = resumen({
+  deudaDelMesCop: 0,
+  cuotasDelMes: 0,
+  cuotasPagadas: 0,
+  cuotasPendientes: 0,
+  cuotasEnCartera: 0,
+  cobrosEmitidos: 0,
   facturadoCop: 0,
   recaudadoCop: 0,
   recaudadoDelMesCop: 0,
@@ -126,8 +139,14 @@ beforeEach(() => {
   resumenMock.mockReset();
   serieMock.mockReset();
   serieMock.mockResolvedValue([
-    { month: ANTERIOR, facturadoCop: 1, recaudadoCop: 1, dispersadoCop: 0 },
-    { month: HOY, facturadoCop: 3_000_000, recaudadoCop: 1_500_000, dispersadoCop: 1_000_000 },
+    { month: ANTERIOR, deudaDelMesCop: 1, facturadoCop: 1, recaudadoCop: 1, dispersadoCop: 0 },
+    {
+      month: HOY,
+      deudaDelMesCop: 3_000_000,
+      facturadoCop: 3_000_000,
+      recaudadoCop: 1_500_000,
+      dispersadoCop: 1_000_000,
+    },
   ]);
 });
 
@@ -139,19 +158,25 @@ afterEach(async () => {
 });
 
 describe('Recaudo', () => {
-  it('muestra las cuatro cifras con su definición, lo facturado y el detalle por medio', async () => {
+  it('muestra las cinco cifras con su definición, los cobros emitidos y el detalle por medio', async () => {
     resumenMock.mockResolvedValue(resumen());
     await montar();
 
+    // 🔴 «Se debe» es la cifra de referencia y sale de las CUOTAS del contrato.
+    expect($('[data-testid="valor-se-debe"]').textContent).toBe('$ 3.000.000');
+    expect($('[data-testid="cifra-se-debe"]').textContent).toContain('2 cuotas');
     expect($('[data-testid="valor-llego"]').textContent).toBe('$ 1.500.000');
     expect($('[data-testid="cifra-llego"]').textContent).toContain('$ 1.000.000 son de cobros de este mes');
     expect($('[data-testid="valor-pendiente"]').textContent).toBe('$ 1.500.000');
-    expect($('[data-testid="cifra-pendiente"]').textContent).toContain('En mora acumulada');
+    // Se cuenta en CUOTAS, no en cobros: con 0 cobros emitidos el rótulo viejo
+    // decía «Saldo de los 0 cobros del mes sin pagar» sobre $1.251 millones.
+    expect($('[data-testid="cifra-pendiente"]').textContent).toContain('Saldo de 1 cuota');
+    expect($('[data-testid="cifra-pendiente"]').textContent).toContain('En cartera acumulada');
     expect($('[data-testid="cifra-pendiente"]').textContent).toContain('$ 800.000');
     expect($('[data-testid="valor-dispersado"]').textContent).toBe('$ 1.000.000');
     expect($('[data-testid="cifra-dispersado"]').textContent).toContain('$ 150.000 de comisión');
     expect($('[data-testid="valor-disponible"]').textContent).toBe('$ 2.850.000');
-    expect($('[data-testid="facturado"]').textContent).toContain('Facturado $ 3.000.000');
+    expect($('[data-testid="facturado"]').textContent).toContain('Cobros emitidos $ 3.000.000');
     expect($('[data-testid="facturado"]').textContent).toContain('1 pagados');
 
     const porMedio = $('[data-testid="por-medio"]').textContent ?? '';
@@ -184,6 +209,8 @@ describe('Recaudo', () => {
     expect(mesSinMovimiento(resumen())).toBe(false);
     // Un mes con cobros pendientes pero sin plata NO es un mes vacío.
     expect(mesSinMovimiento({ ...VACIO, cobrosPendientes: 3, facturadoCop: 1 })).toBe(false);
+    // 🔴 Ni un mes que hace deber plata sin un solo cobro emitido.
+    expect(mesSinMovimiento({ ...VACIO, deudaDelMesCop: 1_251_000_000, cuotasDelMes: 30_951 })).toBe(false);
   });
 
   it('el selector arranca en el mes de hoy, no deja avanzar al futuro y pide el mes anterior', async () => {
@@ -243,6 +270,31 @@ describe('Recaudo', () => {
     expect(host.querySelector('[data-testid="medio-total"]')).toBeNull();
   });
 
+  it('🔴 un mes con deuda y CERO cobros emitidos no se anuncia como vacío', async () => {
+    // Es el mes típico de la inmobiliaria migrada: 30.951 cuotas, 0 cobros.
+    // Con las condiciones viejas de `mesSinMovimiento` cumplía las cuatro y
+    // salía «Nada que contar» encima de $1.251 millones de deuda viva.
+    resumenMock.mockResolvedValue(
+      resumen({
+        cobrosEmitidos: 0,
+        cobrosPagados: 0,
+        cobrosPendientes: 0,
+        cobrosEnMora: 0,
+        facturadoCop: 0,
+        recaudadoCop: 0,
+        recaudadoDelMesCop: 0,
+        dispersadoCop: 0,
+        porMedio: [],
+      }),
+    );
+    await montar();
+
+    expect(host.textContent).not.toContain('Nada que contar');
+    expect($('[data-testid="valor-se-debe"]').textContent).toBe('$ 3.000.000');
+    // Y el cero de los cobros se dice con palabras, no como «Facturado $ 0».
+    expect($('[data-testid="facturado"]').textContent).toContain('Nadie emitió un cobro');
+  });
+
   it('si el back falla se ve el fallo, no un mes vacío', async () => {
     resumenMock.mockRejectedValue(new Error('Se cayó la red.'));
     await montar();
@@ -252,17 +304,19 @@ describe('Recaudo', () => {
 });
 
 describe('los helpers de la tabla', () => {
-  it('el porcentaje recaudado es null sin facturación, entero con ella', () => {
-    expect(porcentajeRecaudado({ facturadoCop: 0, recaudadoCop: 0 })).toBeNull();
-    expect(porcentajeRecaudado({ facturadoCop: 3_000_000, recaudadoCop: 1_500_000 })).toBe(50);
-    expect(porcentajeRecaudado({ facturadoCop: 3, recaudadoCop: 1 })).toBe(33);
+  it('🔴 el porcentaje se mide contra lo que el mes HACE DEBER, no contra lo facturado', () => {
+    // Era `facturadoCop` (los cobros emitidos) y daba «Sin facturar» sobre
+    // meses con miles de millones de deuda: hablaba del papeleo, no del negocio.
+    expect(porcentajeRecaudado({ deudaDelMesCop: 0, recaudadoCop: 0 })).toBeNull();
+    expect(porcentajeRecaudado({ deudaDelMesCop: 3_000_000, recaudadoCop: 1_500_000 })).toBe(50);
+    expect(porcentajeRecaudado({ deudaDelMesCop: 3, recaudadoCop: 1 })).toBe(33);
   });
 
   it('la serie se ordena del mes más reciente al más viejo sin mutar la original', () => {
     const serie = [
-      { month: '2026-07', facturadoCop: 1, recaudadoCop: 1, dispersadoCop: 0 },
-      { month: '2026-09', facturadoCop: 1, recaudadoCop: 1, dispersadoCop: 0 },
-      { month: '2026-08', facturadoCop: 1, recaudadoCop: 1, dispersadoCop: 0 },
+      { month: '2026-07', deudaDelMesCop: 1, facturadoCop: 1, recaudadoCop: 1, dispersadoCop: 0 },
+      { month: '2026-09', deudaDelMesCop: 1, facturadoCop: 1, recaudadoCop: 1, dispersadoCop: 0 },
+      { month: '2026-08', deudaDelMesCop: 1, facturadoCop: 1, recaudadoCop: 1, dispersadoCop: 0 },
     ];
     expect(serieParaLaTabla(serie).map((p) => p.month)).toEqual(['2026-09', '2026-08', '2026-07']);
     expect(serie[0].month).toBe('2026-07');

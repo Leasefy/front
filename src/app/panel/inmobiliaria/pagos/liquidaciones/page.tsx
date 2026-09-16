@@ -28,6 +28,7 @@ import { Wallet, CalendarBlank } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
+import { PestanasDeLiquidaciones } from '@/components/liquidaciones/PestanasDeLiquidaciones';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button, Badge } from '@/components/ui';
 import {
@@ -185,6 +186,8 @@ function TesoreriaContent() {
           </Select>
         </div>
       </header>
+
+      <PestanasDeLiquidaciones />
 
       {frenada ? (
         <AvisoLiquidacionFrenada frenada={frenada} despues="calcular el neto" />

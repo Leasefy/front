@@ -270,3 +270,21 @@ describe('CarteraDePropietarios', () => {
     expect(host.querySelector('[data-testid="totales-por-pagar"]')).toBeNull()
   })
 })
+
+describe('🔴 la puerta al estado de cuenta del PROPIETARIO (Nico, 2026-09-16)', () => {
+  it('cada propietario abre SU estado de cuenta, con el regreso a esta lectura', () => {
+    conDatos(datosDe())
+    montar()
+    const enlaces = todos('[data-testid="propietario-estado-de-cuenta"]')
+    expect(enlaces.map((a) => a.getAttribute('href'))).toEqual([
+      '/panel/inmobiliaria/estado-de-cuenta/propietario/p1?volver=%2Fpanel%2Finmobiliaria%2Fpagos%2Fcartera%2Fpor-pagar',
+      '/panel/inmobiliaria/estado-de-cuenta/propietario/p2?volver=%2Fpanel%2Finmobiliaria%2Fpagos%2Fcartera%2Fpor-pagar',
+    ])
+  })
+
+  it('el enlace NO vive dentro del botón que abre la fila', () => {
+    conDatos(datosDe())
+    montar()
+    expect(host.querySelector('button [data-testid="propietario-estado-de-cuenta"]')).toBeNull()
+  })
+})

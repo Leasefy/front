@@ -432,10 +432,14 @@ function RentabilidadContent() {
 
             <TableBody>
               {pageItems.map((f) => {
+                /* 🔴 El respaldo pasó de «tuvo cobro ese mes» a «tuvo CUOTA
+                   ese mes» el 2026-09-16 (`RentabilidadOcupacionFuente`): una
+                   inmobiliaria migrada no tiene un solo cobro, así que el
+                   rótulo «según cobros» nombraba una fuente que no existe. */
                 const fuente =
                   f.ocupacionFuente === 'leases'
                     ? t('inmobiliaria.reportes.rentabilidad.table.sourceLeases')
-                    : t('inmobiliaria.reportes.rentabilidad.table.sourceCobros');
+                    : t('inmobiliaria.reportes.rentabilidad.table.sourceCuotas');
                 const detalleOcupacion = `${formatearPct(f.ocupacionPct, locale)} ${fuente} · ${t(
                   'inmobiliaria.reportes.rentabilidad.table.vacantDays',
                   { dias: f.diasVacantes },

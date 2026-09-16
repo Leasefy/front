@@ -98,12 +98,15 @@ const GESTION_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.A
  * No son grupos ni submódulos: son la MISMA plata mirada desde los dos lados
  * del contrato.
  *
- *   · `inquilinos`   — lo que ENTRA: recaudo, cartera, cobranza.
- *   · `propietarios` — lo que SALE: liquidaciones, dispersiones.
+ *   · `inquilinos`   — lo que ENTRA: la deuda del mes (la raíz), recaudo,
+ *                      cartera y cobranza.
+ *   · `propietarios` — lo que SALE: liquidaciones y dispersiones.
  *
- * Una pantalla SIN `cara` (la Sala de Pagos) mira las dos y va primera, suelta.
+ * 🔴 TODA pantalla del módulo tiene cara, incluida la raíz. El campo sigue
+ * siendo opcional porque otro módulo con caras podría tener una pantalla que
+ * mire las dos; hoy Pagos no tiene ninguna, y es a propósito (abajo).
  *
- * ── 🔴 Cómo se dibujan, y por qué cambió (Nico, 2026-09-16) ─────────────────
+ * ── 🔴 Cómo se dibujan, y las DOS veces que cambió (Nico, 15 y 16-09) ───────
  *
  * Primero fueron dos rótulos en versalitas metidos ENTRE las cards, en el
  * mismo riel: `[Pagos] │ INQUILINOS [Recaudo] [Cartera] [Cobranza] │
@@ -111,15 +114,32 @@ const GESTION_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.A
  * inquilinos y propietarios no se entiende, esa separación de las tabs de
  * arriba». Y tenía razón: eran dos niveles distintos —de qué lado del contrato
  * estoy, y qué pantalla abro— peleando por el mismo renglón, con la misma
- * cara.
+ * cara. Se separaron en dos renglones: un SELECTOR de cara arriba y, debajo,
+ * sólo las pantallas de la cara elegida (`SeccionesDelModulo`).
  *
- * Ahora son un SELECTOR explícito arriba y, debajo, sólo las pantallas de la
- * cara elegida (`SeccionesDelModulo` + `BarraDePestanas`). La cara se deduce de
- * la ruta —estás en Dispersiones ⇒ estás en Propietarios— y por defecto entra
- * Inquilinos, que es donde se opera todos los días.
+ * Siguió sin entenderse, y el 16-09 apareció el porqué de fondo: había un
+ * TERCER renglón —las pestañas de la Sala del agente de Pagos— que decía
+ * «Pagos a propietarios» mientras arriba estaba elegido «Inquilinos». Ese
+ * renglón se fue entero (ver la NOTA al pie de `agentWorkspaceNav.ts`), y con
+ * él la última contradicción. Quedan DOS renglones, y el de abajo siempre
+ * pertenece al de arriba.
+ *
+ * Con el tercer renglón fuera quedaba un último resto: la raíz `/pagos` no
+ * tenía cara, así que aparecía como primera card en LAS DOS. Pero esa pantalla
+ * es la deuda del mes de los INQUILINOS: elegir «Propietarios» y encontrarse
+ * con la deuda de los inquilinos es el mismo defecto un piso más abajo. Por
+ * eso la raíz declara `cara: 'inquilinos'` y `pestanasDelModulo` se la pasa.
+ *
+ * La cara se deduce de la ruta —estás en Dispersiones ⇒ estás en
+ * Propietarios— y por defecto entra Inquilinos, que es donde se opera todos
+ * los días.
  *
  * El `detalleKey` NO es decoración: es lo que hace que la separación se lea de
- * un vistazo («lo que entra» / «lo que sale») sin tener que abrir nada.
+ * un vistazo sin tener que abrir nada. Y desde el 16-09 los rótulos llevan
+ * VERBO («Cobrar a inquilinos» / «Pagar a propietarios»): «Inquilinos» a secas
+ * ya nombra una fila del sidebar —el directorio— y la misma palabra en dos
+ * lugares significando dos cosas distintas es media explicación de por qué
+ * «no se entendía».
  */
 export type CaraDeLaPlata = 'inquilinos' | 'propietarios';
 
@@ -326,10 +346,17 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         // (`/pagos/cartera/cobros`, `components/cartera/PestanasDeCartera.tsx`).
         //
         // Queda UN módulo con DOS CARAS de la misma plata:
-        //   · inquilinos   — lo que ENTRA: recaudo, cartera, cobranza.
-        //   · propietarios — lo que SALE: liquidaciones, dispersiones.
-        // La raíz sigue siendo la Sala del agente de Pagos (F9), que no es de
-        // ninguna de las dos caras: mira las dos.
+        //   · inquilinos   — lo que ENTRA: la deuda del mes (la raíz),
+        //                    recaudo, cartera y cobranza.
+        //   · propietarios — lo que SALE: liquidaciones y dispersiones.
+        //
+        // 🔴 La raíz ES de la cara inquilinos (Nico, 2026-09-16). Era la Sala
+        // del agente de Pagos y por eso no tenía cara: aparecía como primera
+        // card en las DOS. Pero lo que pinta hoy es `DeudaDelMesPanel` —las
+        // cuotas que deben los inquilinos este mes—, así que elegir
+        // «Propietarios» y encontrarse esa pantalla era el mismo defecto que
+        // Nico venía señalando, un piso más abajo. El agente se fue con su
+        // renglón de pestañas (NOTA al pie de `agentWorkspaceNav.ts`).
         //
         // 🔴 PERMISOS — lo que NO cambió, y por qué nadie gana ni pierde:
         // cada pantalla conserva EXACTAMENTE el `module`/`roles` que tenía
@@ -344,16 +371,18 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         // `SeccionesDelModulo` con el mismo `pasaGateDeFila`, y cada página
         // tiene además su `PageGuard`.
         //
-        // 🔴 SIN `ia: true`, y es la ÚNICA pantalla con `agente` que no la
-        // lleva (Nico, 2026-09-16: «no debe llamarse Pagos IA»). La píldora
-        // anuncia «acá hay un agente trabajando», y este módulo es LA PLATA de
-        // la inmobiliaria: la deuda de cada contrato, lo que entra de los
-        // inquilinos y lo que sale a los propietarios. El agente de pagos
-        // sigue existiendo —sus pantallas son las pestañas de la Sala
-        // (`agentWorkspaceNav.ts`: cola, fallidos, recordatorios…)— pero es
-        // una parte del módulo, no su naturaleza. Cobranza IA, acá abajo, SÍ
-        // conserva la suya: ahí el agente es la pantalla.
-        key: 'pagos', labelKey: 'inmobiliaria.ai.nav.pagos', href: r('/pagos'), icon: CurrencyDollar, module: null, roles: CONTADOR_ROLES, scope: 'finanzas', agente: 'pagos', dataTourTarget: 'sidebar-pagos',
+        // 🔴 SIN `ia: true` y SIN `agente` (Nico, 2026-09-16: «no debe
+        // llamarse Pagos IA»). Primero se le quitó la píldora —anuncia «acá
+        // hay un agente trabajando», y este módulo es LA PLATA de la
+        // inmobiliaria: la deuda de cada contrato, lo que entra de los
+        // inquilinos y lo que sale a los propietarios—. Al día siguiente se
+        // fue también el `agente`, porque mientras estuviera la raíz seguía
+        // siendo una Sala y seguía dibujando el tercer renglón de pestañas que
+        // contradecía a las caras. Las nueve pantallas de esa Sala están
+        // repartidas o retiradas, una por una, en la NOTA al pie de
+        // `agentWorkspaceNav.ts`. Cobranza IA, acá abajo, SÍ conserva las dos
+        // cosas: ahí el agente es la pantalla.
+        key: 'pagos', labelKey: 'inmobiliaria.ai.nav.pagos', href: r('/pagos'), icon: CurrencyDollar, module: null, roles: CONTADOR_ROLES, scope: 'finanzas', cara: 'inquilinos', dataTourTarget: 'sidebar-pagos',
         pantallas: [
           // Lo que ENTRA (cara inquilinos).
           { labelKey: 'inmobiliaria.nav.recaudo', href: r('/pagos/recaudo'), icon: Coins, module: 'cobros', cara: 'inquilinos' },
@@ -416,11 +445,30 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
 /**
  * Rutas del panel que existen pero NO cuelgan de ninguna fila del sidebar.
  *
- * Hoy es una sola: Configuración, que se abre desde el menú del perfil. Está
- * acá —y no suelta en un test— porque las tablas de redirecciones necesitan
- * saber que su destino es legítimo aunque no esté en el árbol de arriba.
+ * Están acá —y no sueltas en un test— porque las tablas de redirecciones
+ * necesitan saber que su destino es legítimo aunque no esté en el árbol.
+ *
+ *   · **Configuración** — se abre desde el menú del perfil (Nico, 2026-09-03:
+ *     «de la sidebar deberíamos quitar eso de Configuración»).
+ *   · **Estado de cuenta** — 🔴 no puede ser una fila porque NO es una
+ *     pantalla, es un DOCUMENTO de un cliente: su ruta pide un id
+ *     (`/estado-de-cuenta/inquilino/<ref>`, `/estado-de-cuenta/propietario/<id>`)
+ *     y no existe «el estado de cuenta» sin decir de quién. Se entra desde
+ *     donde está el cliente: la fila de la deuda del mes en `/pagos`, las dos
+ *     lecturas de Cartera que listan clientes, la ficha del inquilino, la del
+ *     propietario y la del contrato.
+ *
+ *     Está declarada acá porque hasta el 2026-09-16 era CASI huérfana: su
+ *     única puerta era la tarjeta resumida de las fichas (`ResumenEnLaFicha`,
+ *     que además se calla si el resumen no carga) y ninguna pantalla del
+ *     módulo de la plata llevaba a ella. Ésa es exactamente la clase de hueco
+ *     que este archivo tiene que delatar. Nico, repetido: «todo funciona
+ *     alrededor del estado de cuenta del contrato».
  */
-export const RUTAS_FUERA_DEL_SIDEBAR: readonly string[] = [`${PANEL}/configuracion`];
+export const RUTAS_FUERA_DEL_SIDEBAR: readonly string[] = [
+  `${PANEL}/configuracion`,
+  `${PANEL}/estado-de-cuenta`,
+];
 
 /** Todos los módulos, en orden de sidebar. */
 export function modulosDelPanel(): ModuloDelPanel[] {
@@ -432,9 +480,14 @@ export function modulosDelPanel(): ModuloDelPanel[] {
  *
  * La raíz es EXACTA (en `/contratos/7` ninguna pestaña está activa y la barra
  * no se dibuja: la ficha ya trae su cabecera) salvo cuando la raíz es la Sala
- * de un agente (Pagos, Conciliación): ahí todo lo que cuelga del agente
- * —`/pagos/cola`, `/pagos/<caso>`— la deja activa, y las hermanas
- * (`/pagos/dispersiones`, `/pagos/cartera`) ganan por ser más largas.
+ * de un agente —hoy sólo Conciliación—: ahí todo lo que cuelga del agente la
+ * deja activa. Pagos dejó de serlo el 2026-09-16, así que su raíz volvió a ser
+ * exacta y su ficha de caso (`/pagos/<id>`) no marca ninguna pestaña, como
+ * cualquier otra ficha del panel.
+ *
+ * 🔴 La `cara` viaja con la raíz. Sin esto, la raíz de un módulo con dos caras
+ * no sería de ninguna y se dibujaría en las dos — que es exactamente lo que
+ * hacía `/pagos`, siendo la deuda de los inquilinos.
  *
  * Nota: una ficha que cuelga de una HERMANA sí deja esa hermana marcada —la
  * cuenta de cobro (`/pagos/cartera/cobros/7/cuenta-de-cobro`) deja «Cartera»
@@ -451,6 +504,7 @@ export function pestanasDelModulo(m: ModuloDelPanel): PantallaDelPanel[] {
     scope: m.scope,
     ia: m.ia,
     agente: m.agente,
+    cara: m.cara,
     hintKey: m.hintKey,
     dataTourTarget: m.dataTourTarget,
     exact: m.agente ? false : true,

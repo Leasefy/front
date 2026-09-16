@@ -22,6 +22,36 @@
  *
  * Follows the NEXT_PUBLIC_AGENT_URL + agentAuthHeaders + 404→notAvailable
  * pattern of `agent-workspace.ts`.
+ *
+ * ── 🔴 SIN CONSUMIDOR HOY, Y A PROPÓSITO NO SE BORRA (2026-09-16) ──────────
+ *
+ * Este módulo, `pagos-home.service.ts`, `pagos-home.types.ts` y los widgets
+ * `PagosHomeMetricsStrip` / `PagosHomeAttentionList` no los monta ninguna
+ * pantalla. No es olvido: es el PUENTE con un backend que está escrito y no
+ * está desplegado, y tirarlo obligaría a reescribir el contrato cuando llegue.
+ *
+ * Dónde está ese backend (verificado con `git ls-tree origin/develop`): en el
+ * repo del micro (`~/rent/agent`), rama **`develop`**, bajo
+ * `src/mastra/agents/pagos/` — Laura (generación de cobros), Nicolás (links y
+ * envío), Valentina (pagos fallidos), Samuel (liquidación a propietarios),
+ * Sofía (reportes y notificaciones) —, con su orquestadora Gabriela y la ruta
+ * `src/server/routes/pagos-dispatch.ts`. Nada de eso está en las ramas con las
+ * que trabajamos (`cambios-nico-6/7` del micro no tienen `agents/pagos`), y
+ * además va detrás de `PAGOS_ENABLED`.
+ *
+ * DÓNDE SE ENCHUFA CUANDO LLEGUE. No en una «Sala de Pagos» en la raíz del
+ * módulo: ese renglón se retiró el 2026-09-16 porque contradecía la separación
+ * inquilinos/propietarios y porque arranca en «generar el cobro», cuando la
+ * deuda ya nació con el contrato (el porqué completo, con el mapeo agente ↔
+ * pantalla, está en la NOTA al pie de `src/lib/nav/agentWorkspaceNav.ts`).
+ * Cada especialista entra DENTRO de la pantalla cuyo trabajo automatiza:
+ *
+ *   Valentina → `/pagos/cobranza/fallidos`
+ *   Sofía     → `/pagos/cobranza/recordatorios`
+ *   Samuel    → `/pagos/liquidaciones`
+ *   Laura     → `/pagos/cartera/cobros`, que es donde el CEO puso la decisión
+ *               de cobrar («que la persona de finanzas decida cuándo cobrar
+ *               basado en la cartera»), leyendo las CUOTAS del contrato.
  */
 
 import { agentAuthHeaders } from './agent-auth'

@@ -166,9 +166,29 @@ describe('<CarteraTable>', () => {
 
   it('🔴 sin cobro emitido el enlace va al CONTRATO, no a un cobro que no existe', () => {
     montar([deuda({ cobroId: null })])
-    const link = filas()[0].querySelector('a[href^="/panel"]')
+    // Por `data-testid` y no por `a[href^="/panel"]`: desde el 2026-09-16 la
+    // fila tiene DOS enlaces al panel —el nombre del inquilino abre su estado
+    // de cuenta— y el primero del DOM ya no es el de la acción.
+    const link = filas()[0].querySelector('[data-testid="cartera-abrir-deuda"]')
     expect(link?.getAttribute('href')).toBe('/panel/inmobiliaria/contratos/ct-1')
     expect(filas()[0].textContent).toContain('cartera.tabla.verContrato')
+  })
+
+  describe('🔴 la puerta al estado de cuenta (Nico, 2026-09-16)', () => {
+    it('el nombre del inquilino abre SU estado de cuenta, con el regreso puesto', () => {
+      montar([deuda()])
+      const link = filas()[0].querySelector('[data-testid="cartera-estado-de-cuenta"]')
+      expect(link?.getAttribute('href')).toBe(
+        '/panel/inmobiliaria/estado-de-cuenta/inquilino/1020?volver=%2Fpanel%2Finmobiliaria%2Fpagos%2Fcartera',
+      )
+      expect(link?.textContent).toContain('Esteban López Quintero')
+    })
+
+    it('sin documento el nombre va en texto plano: no se ofrece una puerta que da 404', () => {
+      montar([deuda({ tenantDocument: null })])
+      expect(filas()[0].querySelector('[data-testid="cartera-estado-de-cuenta"]')).toBeNull()
+      expect(filas()[0].textContent).toContain('Esteban López Quintero')
+    })
   })
 
   it('sin abono no inventa una línea de abono en $0', () => {

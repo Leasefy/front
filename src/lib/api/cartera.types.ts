@@ -179,10 +179,24 @@ export interface FilaDeLaCuotaDelMes {
   contrato: string | null;
   contratoDeLeasefy: string | null;
   inquilino: string | null;
+  /**
+   * 🔴 Contra quién se emite el recibo de caja Y con qué se abre el estado de
+   * cuenta del cliente. `null` = el inquilino no tiene cuenta en el portal, que
+   * es lo normal en lo migrado: ahí el que identifica es el `documento`, y el
+   * back acepta los dos (`GET /estado-de-cuenta/inquilino/:tenantRef`).
+   */
+  tenantId: string | null;
   documento: string | null;
   telefono: string | null;
   inmueble: string;
-  month: string;
+  /**
+   * `YYYY-MM`, el período de la cuota.
+   *
+   * 🔴 Se llamaba `month` en este espejo y el back siempre mandó `mes`: la
+   * columna «Período» de la tabla del mes venía leyendo `undefined` y salía en
+   * blanco. Los nombres de este archivo son los del back, no los del front.
+   */
+  mes: string;
   /** `YYYY-MM-DD`, el día de cartera del período. De acá arranca el plazo. */
   vence: string;
   estado: EstadoDeCuota;

@@ -80,15 +80,25 @@ const NAV_CATALOG: NavEntry[] = [
   // pantallas viven bajo `/pagos`. El `context` dice de qué cara es cada una
   // —«Pagos · inquilinos» / «Pagos · propietarios»— porque el buscador muestra
   // el contexto al lado del título y «Cobros» ya no nombra nada.
-  { kind: 'page', title: 'Pagos', context: 'Dinero', href: `${P}/pagos`, keywords: 'agente ia pagos por aprobar facturas proveedores recaudos transacciones plata dinero cobros' },
+  // 🔴 «estado de cuenta» es lo que la gente escribe cuando quiere ver cuánto
+  // debe un cliente, y ese documento no tiene URL propia sin un id: se abre
+  // desde la fila del cliente. Por eso la palabra vive en las keywords de las
+  // cuatro pantallas que sí lo ofrecen, y no como una entrada suelta que
+  // llevaría a un 404. Ver `RUTAS_FUERA_DEL_SIDEBAR`.
+  { kind: 'page', title: 'Pagos', context: 'Dinero', href: `${P}/pagos`, keywords: 'agente ia pagos por aprobar facturas proveedores recaudos transacciones plata dinero cobros deuda del mes cuotas estado de cuenta' },
   { kind: 'page', title: 'Recaudo', context: 'Pagos · inquilinos', href: `${P}/pagos/recaudo`, keywords: 'recaudo cuanto llego disponible mensual recibos', permission: { module: 'cobros', action: 'view' } },
-  { kind: 'page', title: 'Cartera', context: 'Pagos · inquilinos', href: `${P}/pagos/cartera`, keywords: 'cartera mora edades deuda vencido', permission: { module: 'cobros', action: 'view' } },
+  { kind: 'page', title: 'Cartera', context: 'Pagos · inquilinos', href: `${P}/pagos/cartera`, keywords: 'cartera mora edades deuda vencido estado de cuenta', permission: { module: 'cobros', action: 'view' } },
   // Sigue buscándose por «cobros»: era el nombre de un módulo y la gente lo
   // escribe. Lleva a la lista de documentos emitidos, que es lo que buscaba.
   { kind: 'page', title: 'Cobros emitidos', context: 'Cartera', href: `${P}/pagos/cartera/cobros`, keywords: 'cobros recibir recibo de caja abono cuenta de cobro documento factura del mes', permission: { module: 'cobros', action: 'view' } },
   { kind: 'page', title: 'Cobranza', context: 'Pagos · inquilinos', href: `${P}/pagos/cobranza`, keywords: 'deudores cartera mora agente ia llamadas acuerdos', permission: { module: 'cobranza', action: 'view' } },
-  { kind: 'page', title: 'Reglas de mora', context: 'Cartera', href: `${P}/pagos/cartera/reglas-de-mora`, keywords: 'mora interes gasto administrativo plazo reglas cobro', permission: { module: 'cobros', action: 'view' } },
-  { kind: 'page', title: 'Liquidaciones', context: 'Pagos · propietarios', href: `${P}/pagos/liquidaciones`, keywords: 'tesoreria caja bancos saldos egresos neto propietarios' },
+  { kind: 'page', title: 'Pagos fallidos', context: 'Cobranza', href: `${P}/pagos/cobranza/fallidos`, keywords: 'fallidos link vencido banco rechazo pasarela intento fallido reintentar', permission: { module: 'cobranza', action: 'view' } },
+  { kind: 'page', title: 'Recordatorios', context: 'Cobranza', href: `${P}/pagos/cobranza/recordatorios`, keywords: 'recordatorios secuencia avisos mensajes antes de vencer', permission: { module: 'cobranza', action: 'view' } },
+  { kind: 'page', title: 'Reglas de mora', context: 'Cartera', href: `${P}/pagos/cartera/reglas-de-mora`, keywords: 'mora interes gasto administrativo plazo reglas cobro reglas de pagos', permission: { module: 'cobros', action: 'view' } },
+  { kind: 'page', title: 'Liquidaciones', context: 'Pagos · propietarios', href: `${P}/pagos/liquidaciones`, keywords: 'tesoreria caja bancos saldos egresos neto propietarios pagos a propietarios' },
+  // Las tres que bajaron del tercer renglón de Pagos el 2026-09-16 (NOTA al pie
+  // de `agentWorkspaceNav.ts`). Se buscan por el nombre que tenían allá.
+  { kind: 'page', title: 'Por aprobar', context: 'Liquidaciones', href: `${P}/pagos/liquidaciones/por-aprobar`, keywords: 'cola aprobaciones facturas de proveedor cuentas por pagar ap firmar' },
   { kind: 'page', title: 'Dispersiones', context: 'Pagos · propietarios', href: `${P}/pagos/dispersiones`, keywords: 'giros transferencias propietarios', permission: { module: 'dispersiones', action: 'view' } },
   { kind: 'page', title: 'Lotes al banco', context: 'Dispersiones', href: `${P}/pagos/dispersiones/lotes`, keywords: 'lote archivo plano bancolombia pab codigo aprobacion pagos masivos', permission: { module: 'dispersiones', action: 'view' } },
   { kind: 'page', title: 'Facturación', context: 'Dinero', href: `${P}/facturacion`, keywords: 'facturas cobrar dian' },
@@ -100,8 +110,8 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'action', title: 'Migrar registros contables', context: 'Contabilidad', href: `${P}/migracion/contables`, keywords: 'importar asientos apertura saldos contabilidad excel', permission: { module: 'configuracion', action: 'view' } },
 
   // ── Directorio ────────────────────────────────────────────────────────────
-  { kind: 'page', title: 'Propietarios', context: 'Directorio', href: `${P}/propietarios`, keywords: 'dueños landlords', permission: { module: 'propietarios', action: 'view' } },
-  { kind: 'page', title: 'Inquilinos', context: 'Directorio', href: `${P}/inquilinos`, keywords: 'arrendatarios tenants quien vive', permission: { module: 'contratos', action: 'view' } },
+  { kind: 'page', title: 'Propietarios', context: 'Directorio', href: `${P}/propietarios`, keywords: 'dueños landlords estado de cuenta extracto', permission: { module: 'propietarios', action: 'view' } },
+  { kind: 'page', title: 'Inquilinos', context: 'Directorio', href: `${P}/inquilinos`, keywords: 'arrendatarios tenants quien vive estado de cuenta', permission: { module: 'contratos', action: 'view' } },
   { kind: 'action', title: 'Migrar propietarios e inquilinos', context: 'Directorio', href: `${P}/migracion/terceros`, keywords: 'importar traer terceros propietarios inquilinos excel', permission: { module: 'configuracion', action: 'view' } },
   { kind: 'page', title: 'Documentos', context: 'Directorio', href: `${P}/documentos`, keywords: 'archivos adjuntos actas plantillas', permission: { module: 'documentos', action: 'view' } },
 

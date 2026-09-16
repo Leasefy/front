@@ -37,6 +37,14 @@
  * lectura: `consignacionId`, `propietarioId`, `agenteId`/`agenteName` y
  * `status`, redundante con la mora en una pantalla de deuda.
  *
+ * ── 🔴 De la fila se sale al ESTADO DE CUENTA (Nico, 2026-09-16) ───────────
+ * «Todo funciona alrededor del estado de cuenta del contrato», y a esa pantalla
+ * sólo se llegaba desde las fichas (contrato, propietario, inquilino), nunca
+ * desde la cartera, que es donde se mira la deuda. El nombre del inquilino es el enlace
+ * cuando se le puede identificar (acá, por su DOCUMENTO: `CarteraItem` no trae
+ * la cuenta del portal). El `stopPropagation` es el mismo que ya llevan el
+ * teléfono y el WhatsApp: la fila entera es clickeable y navega a otro lado.
+ *
  * ── Y lo que se niega a hacer ──────────────────────────────────────────────
  * Un dato que el back no mandó se DICE. `remindersSent: 0` es un cero de
  * verdad («no le hemos escrito») y se escribe con palabras; un `tenantPhone`
@@ -66,7 +74,12 @@ import {
 import { useI18n } from '@/lib/i18n'
 import { nombreDelMes } from '@/lib/utils/mes'
 import { GRAVEDAD, gravedadDe } from '@/lib/cartera/edades'
+import { refDelInquilino } from '@/lib/estado-de-cuenta/con-quien-se-abre'
+import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import type { CarteraItem } from '@/lib/types/inmobiliaria'
+
+/** A dónde vuelve el estado de cuenta que se abra desde esta tabla. */
+const VOLVER_A = '/panel/inmobiliaria/pagos/cartera'
 
 export type CampoDeOrdenDeCartera = 'inquilino' | 'mes' | 'debe' | 'estado'
 type Sentido = 'asc' | 'desc'
@@ -249,7 +262,19 @@ function FilaDeCartera({
       <TableCell className="align-middle">
         <div className="min-w-0 max-w-[12rem]">
           {item.tenantName ? (
-            <p className="truncate font-medium text-fg">{item.tenantName}</p>
+            refDelInquilino({ documento: item.tenantDocument }) ? (
+              <Link
+                href={`${rutaDelEstadoDeCuenta('inquilino', refDelInquilino({ documento: item.tenantDocument })!)}?volver=${encodeURIComponent(VOLVER_A)}`}
+                onClick={(e) => e.stopPropagation()}
+                data-testid="cartera-estado-de-cuenta"
+                title={`Ver el estado de cuenta de ${item.tenantName}`}
+                className="block truncate font-medium text-fg underline-offset-4 hover:text-primary hover:underline"
+              >
+                {item.tenantName}
+              </Link>
+            ) : (
+              <p className="truncate font-medium text-fg">{item.tenantName}</p>
+            )
           ) : (
             /* Un cobro sin inquilino es un cobro que nadie puede reclamar.
                «Sin nombre» sonaba a detalle estético; esto pide arreglarlo. */
@@ -403,7 +428,11 @@ function FilaDeCartera({
             CONTRATO, que es de donde nace la deuda. Un `?cobro=null` era una
             pestaña en blanco. */}
         <Button asChild variant="ghost" size="sm" hideArrow>
-          <Link href={aDondeLleva(item)} onClick={(e) => e.stopPropagation()}>
+          <Link
+            href={aDondeLleva(item)}
+            onClick={(e) => e.stopPropagation()}
+            data-testid="cartera-abrir-deuda"
+          >
             <ArrowSquareOut className="h-4 w-4" aria-hidden="true" />
             <span className="sr-only">
               {item.cobroId ? t('cartera.tabla.verCobro') : t('cartera.tabla.verContrato')}

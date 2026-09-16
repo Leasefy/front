@@ -21,11 +21,36 @@
  * agregados: no hay una lista recibo por recibo ni giro por giro del mes.
  * Esa lista vive en `/cobros` (recibos) y en `/pagos/dispersiones` (giros).
  *
+ * ── 🔴 Lo que cambió el 2026-09-16: la deuda ya no sale de los cobros ──────
+ *
+ * «Pendiente» decía *«Saldo de los N cobros del mes sin pagar»*. El back dejó
+ * de contar cobros y pasó a contar CUOTAS del contrato, así que ese rótulo se
+ * volvió una mentira aritmética: con 0 cobros emitidos habría dicho
+ * **«0 cobros: $1.251 millones»**. La deuda nace con el contrato; el cobro es
+ * el documento con el que finanzas reclama una parte de ella, y puede no
+ * existir —en la inmobiliaria migrada no existe para ninguna de sus 30.951
+ * cuotas—.
+ *
+ * De ahí tres cosas en esta pantalla:
+ *
+ *   1. «Se debe» reemplaza a «Facturado» como la cifra de referencia, y es el
+ *      denominador de «% recaudado»: qué parte de lo que el mes hizo deber
+ *      llegó. Sobre lo facturado, el porcentaje hablaba de los documentos
+ *      emitidos, no del negocio.
+ *   2. «Pendiente» y «En mora» se cuentan en CUOTAS (`cuotasPendientes`,
+ *      `cuotasEnCartera`), no en cobros.
+ *   3. Los cobros no desaparecen: siguen en su propia línea, rotulados como lo
+ *      que son —documentos emitidos— y con el `0` dicho con palabras, porque
+ *      «no hay documento» no significa «no se debe nada».
+ *
  * Lo que la pantalla se niega a hacer:
  *   - Mostrar un mes futuro. No hay nada que ver ahí.
  *   - Confundir «no llegó nada» con «no pudimos preguntar».
  *   - Recortar un «disponible» negativo: si se giró plata que nunca pasó
  *     por un recibo, el número lo dice.
+ *   - 🔴 Decir «nada que contar» sobre un mes que SÍ hace deber plata. Un mes
+ *     sin cobros, sin recibos y sin giros pero con cuotas es un mes normal de
+ *     la inmobiliaria migrada, no un mes vacío.
  */
 
 import { useMemo, useState } from 'react';
@@ -52,6 +77,18 @@ import { esFuturo, mesActual, nombreDelMes, sumarMeses } from '@/lib/recaudo/mes
 import { cn } from '@/lib/utils';
 import { GraficoDeRecaudo } from './GraficoDeRecaudo';
 
+const formateadorDeNumero = new Intl.NumberFormat('es-CO');
+
+/** Un conteo con separador de miles: «30.951». */
+function numero(n: number): string {
+  return formateadorDeNumero.format(n);
+}
+
+/** El singular o el plural según el conteo. Una «1 cuotas» delata la plantilla. */
+function plural(n: number, uno: string, varios: string): string {
+  return n === 1 ? uno : varios;
+}
+
 /** «septiembre de 2026» → «Septiembre de 2026». `capitalize` de CSS ponía «De» en mayúscula. */
 function conMayusculaInicial(texto: string): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
@@ -73,9 +110,19 @@ function nombreDelMedio(medio: string): string {
   return NOMBRE_DEL_MEDIO[medio] ?? medio;
 }
 
-/** «No hay nada que contar» sólo cuando de verdad no hubo nada en el mes. */
+/**
+ * «No hay nada que contar» sólo cuando de verdad no hubo nada en el mes.
+ *
+ * 🔴 `deudaDelMesCop` y `cuotasDelMes` entraron el 2026-09-16 y son lo que
+ * evita el error caro: un mes con 30.951 cuotas y $1.251 millones de deuda
+ * pero sin un solo cobro emitido cumplía las cuatro condiciones viejas y se
+ * anunciaba como «nada que contar». Es el mes típico de la inmobiliaria
+ * migrada.
+ */
 export function mesSinMovimiento(r: ResumenDeRecaudo): boolean {
   return (
+    r.deudaDelMesCop === 0 &&
+    r.cuotasDelMes === 0 &&
     r.facturadoCop === 0 &&
     r.recaudadoCop === 0 &&
     r.dispersadoCop === 0 &&
@@ -84,12 +131,19 @@ export function mesSinMovimiento(r: ResumenDeRecaudo): boolean {
 }
 
 /**
- * Qué parte de lo facturado llegó, en entero. `null` cuando no se facturó
- * nada: un 0 % sobre $0 afirma que no se cobró, y no había nada que cobrar.
+ * Qué parte de lo que el mes HACE DEBER llegó, en entero.
+ *
+ * 🔴 El denominador era `facturadoCop` —los cobros emitidos—, y con 0 cobros
+ * daba «Sin facturar» sobre meses con miles de millones de deuda: el
+ * porcentaje hablaba del papeleo, no del negocio. Ahora es `deudaDelMesCop`,
+ * que existe desde que se firma cada contrato.
+ *
+ * `null` cuando el mes no hace deber nada: un 0 % sobre $0 afirma que no se
+ * recaudó, y no había nada que recaudar.
  */
-export function porcentajeRecaudado(p: Pick<PuntoDeLaSerie, 'facturadoCop' | 'recaudadoCop'>): number | null {
-  if (p.facturadoCop <= 0) return null;
-  return Math.round((p.recaudadoCop / p.facturadoCop) * 100);
+export function porcentajeRecaudado(p: Pick<PuntoDeLaSerie, 'deudaDelMesCop' | 'recaudadoCop'>): number | null {
+  if (p.deudaDelMesCop <= 0) return null;
+  return Math.round((p.recaudadoCop / p.deudaDelMesCop) * 100);
 }
 
 /** La serie para la tabla: el mes más reciente arriba, que es el que se mira. */
@@ -184,15 +238,25 @@ export function Recaudo() {
                 data-testid="mes-sin-movimiento"
               >
                 <span>
-                  Nada que contar en {nombreDelMes(month)}: no hubo cobros, recibos ni giros con fecha
-                  en este mes. Si la plata entró, se registra con un recibo de caja desde Cobros.
+                  Nada que contar en {nombreDelMes(month)}: ningún contrato tiene cuota de este
+                  mes, y no hubo cobros, recibos ni giros con fecha en él. Si la plata entró, se
+                  registra con un recibo de caja.
                 </span>
-                <Link href="/panel/inmobiliaria/pagos/cartera/cobros" className="font-medium text-primary underline-offset-2 hover:underline">
-                  Ir a cobros
+                <Link href="/panel/inmobiliaria/pagos" className="font-medium text-primary underline-offset-2 hover:underline">
+                  Ir a la deuda del mes
                 </Link>
               </p>
             )}
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" data-testid="cifras">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" data-testid="cifras">
+              {/* 🔴 Primero lo que el mes HACE DEBER. Es la cifra de la que
+                  cuelgan las demás, y la que existe desde que se firma cada
+                  contrato: no hay que emitir nada para que haya deuda. */}
+              <Cifra
+                id="se-debe"
+                etiqueta="Se debe"
+                valor={resumen.deudaDelMesCop}
+                definicion={`Lo pactado en las ${numero(resumen.cuotasDelMes)} ${plural(resumen.cuotasDelMes, 'cuota', 'cuotas')} de ${nombreDelMes(month)}, pagadas o no. Nace con el contrato; nadie tiene que generarlo.`}
+              />
               <Cifra
                 id="llego"
                 etiqueta="Llegó"
@@ -204,7 +268,12 @@ export function Recaudo() {
                 etiqueta="Pendiente"
                 valor={resumen.pendienteCop}
                 tono={resumen.pendienteCop > 0 ? 'warning' : undefined}
-                definicion={`Saldo de los ${resumen.cobrosPendientes + resumen.cobrosEnMora} cobros del mes sin pagar. En mora acumulada, con meses anteriores: ${formatCurrency(resumen.enMoraCop)}.`}
+                /* 🔴 CUOTAS, no cobros. Con 0 cobros emitidos esta línea decía
+                   «Saldo de los 0 cobros del mes sin pagar» encima de $1.251
+                   millones. Y la cartera se cuenta aparte porque no es lo
+                   mismo: lo vencido dentro del plazo del contrato es deuda,
+                   no cartera. */
+                definicion={`Saldo de ${numero(resumen.cuotasPendientes)} ${plural(resumen.cuotasPendientes, 'cuota', 'cuotas')} de ${nombreDelMes(month)} sin pagar del todo. En cartera acumulada, con meses anteriores: ${formatCurrency(resumen.enMoraCop)} en ${numero(resumen.cuotasEnCartera)} ${plural(resumen.cuotasEnCartera, 'cuota', 'cuotas')}.`}
               />
               <Cifra
                 id="dispersado"
@@ -225,9 +294,25 @@ export function Recaudo() {
               />
             </div>
 
-            <p className="font-mono text-xs text-fg-muted" data-testid="facturado">
-              Facturado {formatCurrency(resumen.facturadoCop)} · {resumen.cobrosPagados} pagados ·{' '}
-              {resumen.cobrosPendientes} pendientes · {resumen.cobrosEnMora} en mora
+            {/* 🔴 Los cobros EMITIDOS, aparte y rotulados como lo que son: el
+                documento con el que finanzas reclama parte de la deuda. Cero
+                cobros no es cero deuda, y por eso se dice con palabras en vez
+                de dejar un «Facturado $0» al lado de la deuda del mes. */}
+            <p className="text-xs text-fg-muted" data-testid="facturado">
+              {resumen.cobrosEmitidos === 0 ? (
+                <>
+                  Nadie emitió un cobro de {nombreDelMes(month)}. No hace falta: el inquilino
+                  puede pagar su cuota sin que exista el documento.
+                </>
+              ) : (
+                <span className="font-mono">
+                  Cobros emitidos {formatCurrency(resumen.facturadoCop)} en{' '}
+                  {numero(resumen.cobrosEmitidos)}{' '}
+                  {plural(resumen.cobrosEmitidos, 'documento', 'documentos')} ·{' '}
+                  {resumen.cobrosPagados} pagados · {resumen.cobrosPendientes} pendientes ·{' '}
+                  {resumen.cobrosEnMora} en mora
+                </span>
+              )}
             </p>
 
             {/* El gráfico sí lleva su nombre: es un gráfico, no una tabla. */}
@@ -258,7 +343,9 @@ export function Recaudo() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="whitespace-nowrap">Mes</TableHead>
-                    <TableHead className="whitespace-nowrap text-right">Facturado</TableHead>
+                    {/* La columna era «Facturado» (cobros emitidos) y quedaba
+                        en $0 en toda la serie de la inmobiliaria migrada. */}
+                    <TableHead className="whitespace-nowrap text-right">Se debe</TableHead>
                     <TableHead className="whitespace-nowrap text-right">Recaudado</TableHead>
                     <TableHead className="whitespace-nowrap text-right">% recaudado</TableHead>
                     <TableHead className="whitespace-nowrap text-right">Dispersado</TableHead>
@@ -293,14 +380,14 @@ export function Recaudo() {
                             {conMayusculaInicial(nombreDelMes(p.month))}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
-                            {formatCurrency(p.facturadoCop)}
+                            {formatCurrency(p.deudaDelMesCop)}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg">
                             {formatCurrency(p.recaudadoCop)}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
-                            {/* Sin facturar no hay porcentaje: un «0 %» diría que no se cobró. */}
-                            {pct === null ? 'Sin facturar' : `${pct} %`}
+                            {/* Sin deuda no hay porcentaje: un «0 %» diría que no se recaudó. */}
+                            {pct === null ? 'Sin deuda' : `${pct} %`}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
                             {formatCurrency(p.dispersadoCop)}

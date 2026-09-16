@@ -121,15 +121,16 @@ describe('AgentHeaderBreadcrumb — la ficha tiene cómo volver', () => {
     expect(items.map((e) => e.texto)).toEqual(['pagos', 'cobranza', 'cobranzaCasos', 'detalle'])
   })
 
-  it('cuando el agente ES la raíz del módulo (Pagos) no repite el nombre', () => {
-    render('/panel/inmobiliaria/pagos/cola')
-
-    const items = escalones().filter((e) => e.texto !== '')
-    expect(items[0].texto).toBe('pagos')
-    expect(items.filter((e) => e.texto === 'pagos')).toHaveLength(1)
+  it('🔴 Pagos ya NO es la Sala de un agente: en su raíz no se renderiza nada', () => {
+    // La Sala del agente de Pagos se fue el 2026-09-16 con su renglón de
+    // pestañas (NOTA al pie de `agentWorkspaceNav.ts`). El breadcrumb de
+    // agentes sólo existe dentro de un workspace, así que acá se calla: la
+    // navegación del módulo la lleva el riel de secciones, un nivel arriba.
+    render('/panel/inmobiliaria/pagos')
+    expect(container.textContent).toBe('')
   })
 
-  it('en Pagos, las pantallas hermanas (Dispersiones) no son del agente: no se renderiza', () => {
+  it('en Pagos, las pantallas hermanas (Dispersiones) tampoco: no hay agente', () => {
     render('/panel/inmobiliaria/pagos/dispersiones/lotes/1')
     expect(container.textContent).toBe('')
   })

@@ -34,7 +34,6 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { Button, Card, EmptyState } from '@/components/ui'
 import {
   PagoFallidoTabla,
@@ -193,7 +192,16 @@ function PagosFallidos() {
 
 export default function PagosFallidosPage() {
   return (
-    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+    /*
+     * 🔴 El gate cambió con la mudanza (2026-09-16). Estando suelta en la raíz
+     * de Pagos se abría por ROL (ADMIN|CONTADOR); ahora vive dentro de
+     * Cobranza, cuyo `layout.tsx` ya exige el módulo `cobranza`, y su pestaña
+     * se ofrece con ese mismo módulo. Dejar el gate por rol haría que un
+     * gestor de cobranza viera la pestaña y lo devolvieran sin decirle nada
+     * —el defecto MSJ-6—, y pedir las dos cosas le quitaría la pantalla a
+     * quien la usa. La pantalla se gatea con lo mismo que la ofrece.
+     */
+    <PageGuard module="cobranza" action="view">
       <PagosFallidos />
     </PageGuard>
   )

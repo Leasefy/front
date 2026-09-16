@@ -1,13 +1,23 @@
 'use client'
 
 /**
- * /ai/pagos/cola — F9: the Pagos (AP) human queue.
+ * Liquidaciones → Por aprobar: las facturas de proveedor esperando firma.
  *
- * Moved here from the F4 /ai/pagos page (which is now the Sala): the unified
- * WorkItem endpoint (?agente=pagos) feeds <ColaHumana> with vendor bills
- * pending approval. Owned by the contador role. Approve/reject post to the
- * EXISTING AP triple-gate endpoints (tier matrix + SoD enforced server-side);
- * each card also opens the case detail at ./[id].
+ * El endpoint unificado de WorkItems (`?agente=pagos`) alimenta `<ColaHumana>`;
+ * aprobar y rechazar postean a los endpoints de AP que ya existían (matriz de
+ * tiers + segregación de funciones, los dos del lado del servidor). Cada
+ * tarjeta abre la ficha del caso en `/pagos/<id>`.
+ *
+ * ── Por qué está acá y no en la raíz del módulo (Nico, 2026-09-16) ──────────
+ *
+ * Vivía en `/pagos/cola`, como pestaña del TERCER renglón del encabezado de
+ * Pagos —la Sala del agente—. Ese renglón no le obedecía a nadie: ofrecía
+ * «Pagos a propietarios» con la cara «Inquilinos» elegida arriba, y por eso
+ * «no se entendía». Se fue entero (NOTA al pie de `agentWorkspaceNav.ts`).
+ *
+ * Ésta bajó a Liquidaciones porque es plata que SALE —lo mismo que el neto del
+ * mes— y la firma la misma persona: el contador. La URL vieja redirige acá
+ * (`la-sala-de-pagos-se-fue.data.mjs`).
  */
 
 import { useRouter } from 'next/navigation'
@@ -16,6 +26,8 @@ import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
+import { PestanasDeLiquidaciones } from '@/components/liquidaciones/PestanasDeLiquidaciones'
+import { SectionLabel } from '@/components/ui/section-label'
 import { useI18n } from '@/lib/i18n'
 
 function PagosCola() {
@@ -27,7 +39,10 @@ function PagosCola() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-2">
+        <div className="space-y-1.5">
+          {/* La cara del módulo, en el título: lo que se aprueba acá es plata
+              que sale hacia el propietario o su proveedor. */}
+          <SectionLabel>Pagos · propietarios</SectionLabel>
           <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.workspace.pages.pagos.colaTitle')}</h1>
           <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
             {t('inmobiliaria.ai.workspace.pages.pagos.colaDesc')}
@@ -44,6 +59,8 @@ function PagosCola() {
           </p>
         </div>
       </header>
+
+      <PestanasDeLiquidaciones />
 
       {/* Cola humana (transversal component) — opens the case detail.
           agente habilita el override de estados por agente (estadoLabel). */}

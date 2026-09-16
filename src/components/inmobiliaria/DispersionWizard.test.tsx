@@ -176,7 +176,7 @@ describe('D7 — la vista previa muestra el motivo del back', () => {
   it('participaciones ≠ 100: dice cuál inmueble, enlaza a su ficha y no ofrece reintentar', async () => {
     preview.mockRejectedValue(errorDeParticipaciones());
     await montar();
-    await siguiente(); // paso 2, «Cobros»
+    await siguiente(); // paso 2, «Cuotas»
 
     const aviso = q('liquidacion-frenada');
     expect(aviso).not.toBeNull();
@@ -226,6 +226,57 @@ describe('D7 — la vista previa muestra el motivo del back', () => {
     expect(preview).toHaveBeenCalledTimes(2);
     expect(q('fallo-de-carga')).toBeNull();
     expect(host.textContent).toContain('Jorge Restrepo');
+  });
+});
+
+/*
+ * 🔴 El vacío del paso 2 decía «Sin cobros pagados — esperá a que se registren
+ * pagos». Desde el 16-09 el giro sale de la cuota del propietario y se gira
+ * aunque el inquilino no haya pagado: esa causa ya no existe. En la
+ * inmobiliaria migrada (0 cobros) explicaba TODOS los meses vacíos con ella.
+ */
+describe('un mes sin nada que girar dice la razón que contó el back', () => {
+  function previaVacia(vacio: Record<string, number> | undefined) {
+    return {
+      month: '2026-08',
+      totalPropietarios: 0,
+      yaGenerados: 0,
+      totalAGirar: 0,
+      totalComisiones: 0,
+      propietarios: [],
+      ...(vacio ? { vacio } : {}),
+    };
+  }
+
+  it('agosto con sus cuotas del sistema anterior: lo dice, y ni una palabra de cobros pagados', async () => {
+    preview.mockResolvedValue(
+      previaVacia({
+        cuotasDelMes: 761,
+        enUnaDispersion: 0,
+        porGirar: 0,
+        delSistemaAnterior: 761,
+        contratosVigentes: 739,
+      }),
+    );
+    await montar();
+    await siguiente();
+
+    const vacio = q('asistente-mes-vacio');
+    expect(vacio?.textContent).toContain('Agosto de 2026 lo gestionó tu sistema anterior');
+    expect(vacio?.textContent).toContain('761 cuotas de propietario');
+    expect(host.textContent).not.toContain('cobros pagados');
+    expect(host.textContent).not.toContain('Sin cobros pagados');
+    // Y el paso ya no se llama «Cobros».
+    expect(host.textContent).toContain('Cuotas del propietario');
+  });
+
+  it('con un back que todavía no cuenta, la frase general tampoco habla de cobros', async () => {
+    preview.mockResolvedValue(previaVacia(undefined));
+    await montar();
+    await siguiente();
+
+    expect(q('asistente-mes-vacio')?.textContent).toContain('Nada por girar');
+    expect(host.textContent).not.toContain('cobros pagados');
   });
 });
 

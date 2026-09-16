@@ -1,7 +1,7 @@
 /**
  * De un pendiente a un mensaje escrito.
  *
- * Elegir «el cobro de septiembre» tiene que dejar en el campo una frase que un
+ * Elegir «la cuota de septiembre» tiene que dejar en el campo una frase que un
  * humano pueda mandar tal cual —o editar—, no un volcado de campos. Todo lo de
  * acá es puro y sin React a propósito: son las reglas de formato que se pueden
  * probar sin montar nada.
@@ -20,9 +20,9 @@
  */
 
 import type {
-  CobroPendienteDelHilo,
-  DispersionPendienteDelHilo,
+  CuotaPendienteDelHilo,
   DocumentoDelHilo,
+  GiroPendienteDelHilo,
 } from '@/lib/api/messages.types';
 
 const MESES = [
@@ -62,30 +62,41 @@ export function mesEnCurso(hoy: Date = new Date()): string {
 }
 
 /**
- * El cobro.
+ * La cuota del contrato.
+ *
+ * 🔴 Es la CUOTA, no el cobro: la deuda nace con el contrato y el cobro es sólo
+ * el documento con que se reclama (puede no existir). Hasta el 2026-09-16 esto
+ * era `mensajeDeCobro`.
  *
  * Se dice el saldo PENDIENTE, no el total: si ya abonó, recordarle el total es
- * pedirle plata que no debe. La mora se menciona sólo cuando existe, y se
- * cuenta como un dato («lleva N días de mora»), sin adjetivos ni presión —
- * Ley 2300 art. 7: no se le exige explicación por un atraso.
+ * pedirle plata que no debe. El verbo sigue al cajón —«vence» si todavía no
+ * venció, «venció» si ya—, y la mora se menciona SÓLO en cartera, contada desde
+ * que se acabó el plazo del contrato: decirle «lleva 3 días de mora» a quien
+ * está dentro del plazo que le dio la inmobiliaria es falso. Como un dato, sin
+ * adjetivos ni presión — Ley 2300 art. 7: no se le exige explicación por un
+ * atraso.
  */
-export function mensajeDeCobro(cobro: CobroPendienteDelHilo, nombre: string): string {
+export function mensajeDeCuota(cuota: CuotaPendienteDelHilo, nombre: string): string {
   const partes: string[] = [];
   partes.push(
-    `Hola ${nombre}, te escribo por el cobro de ${mesEnPalabras(cobro.mes)}` +
-      (cobro.inmueble ? ` de ${cobro.inmueble}` : '') +
-      `: quedan ${formatearPesos(cobro.pendienteCop)} por pagar` +
-      (cobro.pendienteCop !== cobro.totalCop
-        ? ` de ${formatearPesos(cobro.totalCop)}`
+    `Hola ${nombre}, te escribo por la cuota de ${mesEnPalabras(cuota.mes)}` +
+      (cuota.inmueble ? ` de ${cuota.inmueble}` : '') +
+      `: quedan ${formatearPesos(cuota.pendienteCop)} por pagar` +
+      (cuota.pendienteCop !== cuota.totalCop
+        ? ` de ${formatearPesos(cuota.totalCop)}`
         : '') +
       '.',
   );
-  partes.push(`Venció el ${formatearFecha(cobro.vencimiento)}.`);
-  if (cobro.diasDeMora > 0) {
+  partes.push(
+    cuota.cajon === 'POR_VENCER'
+      ? `Vence el ${formatearFecha(cuota.vencimiento)}.`
+      : `Venció el ${formatearFecha(cuota.vencimiento)}.`,
+  );
+  if (cuota.cajon === 'CARTERA' && cuota.diasDeMora > 0) {
     partes.push(
-      cobro.diasDeMora === 1
+      cuota.diasDeMora === 1
         ? 'Lleva 1 día de mora.'
-        : `Lleva ${cobro.diasDeMora} días de mora.`,
+        : `Lleva ${cuota.diasDeMora} días de mora.`,
     );
   }
   partes.push('Cualquier cosa me cuentas.');
@@ -93,18 +104,17 @@ export function mensajeDeCobro(cobro: CobroPendienteDelHilo, nombre: string): st
 }
 
 /**
- * La dispersión: plata que la inmobiliaria le DEBE al propietario. El tono se
- * invierte —acá el que debe somos nosotros— y por eso no se habla de mora ni
- * de vencimiento, que en esta dirección no existen en el dato.
+ * El giro: plata que la inmobiliaria le DEBE al propietario, de la cuota del
+ * propietario de su contrato (su parte, si hay varios dueños). El tono se
+ * invierte —acá el que debe somos nosotros— y por eso no se habla de mora.
+ * Hasta el 2026-09-16 esto era `mensajeDeDispersion` y salía de la dispersión
+ * generada, que puede no existir todavía.
  */
-export function mensajeDeDispersion(
-  dispersion: DispersionPendienteDelHilo,
-  nombre: string,
-): string {
+export function mensajeDeGiro(giro: GiroPendienteDelHilo, nombre: string): string {
   return (
-    `Hola ${nombre}, te confirmo el giro de ${mesEnPalabras(dispersion.mes)}` +
-    (dispersion.inmueble ? ` por ${dispersion.inmueble}` : '') +
-    `: ${formatearPesos(dispersion.netoCop)} netos. ` +
+    `Hola ${nombre}, te confirmo el giro de ${mesEnPalabras(giro.mes)}` +
+    (giro.inmueble ? ` por ${giro.inmueble}` : '') +
+    `: ${formatearPesos(giro.pendienteCop)} netos. ` +
     'Te aviso apenas salga.'
   );
 }

@@ -299,7 +299,7 @@ beforeEach(() => {
   searchParamsState.applicationId = null;
   rutaActual.valor = '/panel/inmobiliaria/mensajes';
   pushMock.mockReset();
-  pendientesMock.mockReset().mockResolvedValue({ cobros: [], dispersiones: [], documentos: [] });
+  pendientesMock.mockReset().mockResolvedValue(sinPendientes());
   listarPlantillasMock.mockReset().mockResolvedValue({ plantillas: [] });
   instalarSugeridasMock.mockReset().mockResolvedValue({ creadas: 0, plantillas: [] });
   conversationsState = [];
@@ -769,8 +769,18 @@ describe('<MessagesWidget> — plantillas (pedido 4)', () => {
   });
 });
 
+/** La respuesta de `GET /conversations/:id/pendientes` sin nada. */
+function sinPendientes() {
+  return {
+    cuotas: [],
+    giros: [],
+    documentos: [],
+    totales: { debeCop: 0, vencidoCop: 0, enCarteraCop: 0, porGirarCop: 0 },
+  };
+}
+
 describe('<MessagesWidget> — pendientes de la persona (pedido 5)', () => {
-  it('un cobro se convierte en un mensaje con plata, fecha y mora', async () => {
+  it('una cuota en cartera se convierte en un mensaje con plata, fecha y mora', async () => {
     const enviar = vi.fn();
     useChatMock.mockReturnValue({
       messages: [],
@@ -781,28 +791,30 @@ describe('<MessagesWidget> — pendientes de la persona (pedido 5)', () => {
       limpiarError: vi.fn(),
     });
     pendientesMock.mockResolvedValue({
-      cobros: [
+      ...sinPendientes(),
+      cuotas: [
         {
-          id: 'c-1',
+          id: 'cu-1',
           mes: '2026-08',
           totalCop: 2_400_000,
           pendienteCop: 2_400_000,
           vencimiento: '2026-08-05',
+          cajon: 'CARTERA',
           diasDeMora: 12,
-          estado: 'OVERDUE',
+          diasDePlazo: 5,
           contractId: 'ct-1',
           inmueble: 'Depto Chicó',
+          cobroId: null,
         },
       ],
-      dispersiones: [],
-      documentos: [],
+      totales: { debeCop: 2_400_000, vencidoCop: 2_400_000, enCarteraCop: 2_400_000, porGirarCop: 0 },
     });
     conversationsState = [makeConversation({ name: 'Ana' })];
     render('landlord');
 
     clic(container.querySelector('[data-testid="abrir-pendientes"]'));
     await esperar();
-    clic(container.querySelector('[data-testid="pendiente-cobro"]'));
+    clic(container.querySelector('[data-testid="pendiente-cuota"]'));
 
     const texto = campoDeMensaje().value;
     expect(texto).toContain('Hola Ana');
@@ -816,8 +828,7 @@ describe('<MessagesWidget> — pendientes de la persona (pedido 5)', () => {
 
   it('un documento se convierte en un mensaje con su enlace', async () => {
     pendientesMock.mockResolvedValue({
-      cobros: [],
-      dispersiones: [],
+      ...sinPendientes(),
       documentos: [
         { id: 'd-1', tipo: 'CONTRATO', nombre: 'Contrato 2026', url: 'https://x.test/c.pdf' },
       ],
@@ -850,6 +861,53 @@ describe('<MessagesWidget> — pendientes de la persona (pedido 5)', () => {
 
     expect(container.querySelector('[data-testid="pendientes-no-disponible"]')).toBeTruthy();
     expect(container.querySelector('[data-testid="pendientes-vacio"]')).toBeNull();
+  });
+
+  it('🔴 con CERO cobros y cuotas pendientes, la deuda se ve: no dice «no tiene pendientes»', async () => {
+    pendientesMock.mockResolvedValue({
+      ...sinPendientes(),
+      cuotas: [
+        {
+          id: 'cu-9',
+          mes: '2026-09',
+          totalCop: 3_000_000,
+          pendienteCop: 3_000_000,
+          vencimiento: '2026-09-13',
+          cajon: 'VENCIDA_EN_PLAZO',
+          diasDeMora: 0,
+          diasDePlazo: 10,
+          contractId: 'ct-9',
+          inmueble: 'Casa 8',
+          cobroId: null,
+        },
+      ],
+      totales: { debeCop: 36_000_000, vencidoCop: 3_000_000, enCarteraCop: 0, porGirarCop: 0 },
+    });
+    conversationsState = [makeConversation({ name: 'Ana' })];
+    render('landlord');
+
+    clic(container.querySelector('[data-testid="abrir-pendientes"]'));
+    await esperar();
+
+    expect(container.querySelector('[data-testid="pendientes-vacio"]')).toBeNull();
+    const panel = container.querySelector('[data-testid="panel-pendientes"]')?.textContent ?? '';
+    expect(panel).toContain('Debe $36.000.000 en total');
+    expect(panel).toContain('$3.000.000 vencido');
+    // Vencida dentro del plazo: se dice, y no se llama mora.
+    expect(panel).toContain('dentro del plazo');
+    expect(panel).not.toContain('de mora');
+  });
+
+  it('🔴 un back que todavía manda { cobros } no se lee como «no debe nada»', async () => {
+    pendientesMock.mockResolvedValue({ cobros: [], dispersiones: [], documentos: [] });
+    conversationsState = [makeConversation()];
+    render('landlord');
+
+    clic(container.querySelector('[data-testid="abrir-pendientes"]'));
+    await esperar();
+
+    expect(container.querySelector('[data-testid="pendientes-vacio"]')).toBeNull();
+    expect(container.querySelector('[data-testid="pendientes-no-disponible"]')).toBeTruthy();
   });
 });
 

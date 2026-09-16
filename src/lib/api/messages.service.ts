@@ -87,13 +87,14 @@ export const messagesApi = {
   /**
    * GET /conversations/:id/pendientes — qué le puedo mandar a esta persona.
    *
-   * Sale de la relación real que ya tiene con la inmobiliaria: sus cobros sin
-   * pagar, las dispersiones que se le deben y los documentos de sus contratos.
-   * Las tres claves viajan SIEMPRE, aunque vengan vacías: ausente y vacío son
-   * contratos distintos, y el compositor recorre las tres sin ramificar.
+   * Sale de la relación real que ya tiene con la inmobiliaria: las cuotas que
+   * debe de sus contratos, lo que se le debe girar como propietario y los
+   * documentos que se le pueden mandar. La plata sale de las CUOTAS, no de los
+   * cobros: la deuda nace con el contrato. Las cuatro claves viajan SIEMPRE:
+   * ausente y vacío son contratos distintos.
    *
-   * En un hilo que no es directo devuelve las tres vacías: la pregunta «qué le
-   * debe esta persona» no tiene sentido sobre una consulta de un aviso.
+   * En un hilo que no es directo devuelve todo vacío y en cero: la pregunta
+   * «qué le debe esta persona» no tiene sentido sobre una consulta de un aviso.
    */
   getPendientes(conversationId: string) {
     return apiClient.get<PendientesDeLaConversacion>(

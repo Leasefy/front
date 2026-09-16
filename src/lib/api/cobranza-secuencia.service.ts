@@ -95,12 +95,22 @@ export const cobranzaSecuenciaApi = {
     mes: string;
     paso?: number;
     canal?: CanalDeCobranza;
-    soloEstosCobros?: string[];
+    /**
+     * 🔴 Los `cuotaId` de la vista previa, NO los `cobroId`.
+     *
+     * El back renombró este filtro el 2026-09-15. Sigue aceptando el nombre
+     * viejo (`soloEstosCobros`) para no dar 400 con `forbidNonWhitelisted`,
+     * pero lee sus valores como `cuotaId`: un front que mande ids de cobro no
+     * coincide con ninguna cuota, la selección queda vacía y NO SALE NADA. Es
+     * un fallo silencioso hacia «no mandé», que es el lado seguro, pero es un
+     * fallo igual — por eso acá viaja con el nombre nuevo.
+     */
+    soloEstasCuotas?: string[];
   }): Promise<ResultadoDelEnvio> {
     const cuerpo: Record<string, unknown> = { mes: args.mes };
     if (args.paso !== undefined) cuerpo.paso = args.paso;
     if (args.canal !== undefined) cuerpo.canal = args.canal;
-    if (args.soloEstosCobros !== undefined) cuerpo.soloEstosCobros = args.soloEstosCobros;
+    if (args.soloEstasCuotas !== undefined) cuerpo.soloEstasCuotas = args.soloEstasCuotas;
     return apiClient.post<ResultadoDelEnvio>(`${BASE}/enviar`, cuerpo);
   },
 };

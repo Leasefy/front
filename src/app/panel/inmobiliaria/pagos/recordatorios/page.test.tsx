@@ -40,27 +40,38 @@ const CALENDARIO = {
   ],
 }
 
+const SIN_EXCLUIR = {
+  YA_PAGO: 0,
+  AUN_NO_VENCE: 0,
+  DENTRO_DEL_PLAZO: 0,
+  CUBIERTO_POR_ANTICIPO: 0,
+  YA_SE_LE_ENVIO: 0,
+  SIN_DATOS_DE_CONTACTO: 0,
+  SIN_CORREO: 0,
+  SIN_WHATSAPP: 0,
+  LEY_2300: 0,
+}
+
 const PREVIA = {
   mes: '2026-10',
   canal: 'CORREO' as const,
   paso: 0,
+  // El paso 0 es el recordatorio: basta con deber, no hace falta ser cartera.
+  exigeCartera: false,
   revisados: 3,
   lesLlega: 1,
-  excluidos: {
-    YA_PAGO: 1,
-    CUBIERTO_POR_ANTICIPO: 1,
-    YA_SE_LE_ENVIO: 0,
-    SIN_DATOS_DE_CONTACTO: 0,
-    SIN_CORREO: 0,
-    SIN_WHATSAPP: 0,
-    LEY_2300: 0,
-  },
+  excluidos: { ...SIN_EXCLUIR, YA_PAGO: 1, CUBIERTO_POR_ANTICIPO: 1 },
   destinatarios: [
     {
-      cobroId: 'c1',
+      cuotaId: 'q1',
+      // 🔴 Sin cobro emitido: el caso normal desde que la deuda nace con el
+      // contrato. Si la fila se llaveara por acá, las tres colisionarían.
+      cobroId: null,
       nombre: 'Juan Pérez',
       inmueble: 'Apartamento en Laureles',
       pendienteCop: 2_400_000,
+      diasDeMora: 12,
+      esCartera: true,
       personaClave: 'doc:1017',
       canal: 'CORREO' as const,
       destino: 'juan@ejemplo.co',
@@ -69,10 +80,13 @@ const PREVIA = {
       explicacion: null,
     },
     {
-      cobroId: 'c2',
+      cuotaId: 'q2',
+      cobroId: null,
       nombre: 'Ana Gómez',
       inmueble: 'Casa en Envigado',
       pendienteCop: 0,
+      diasDeMora: 0,
+      esCartera: false,
       personaClave: 'doc:2028',
       canal: 'CORREO' as const,
       destino: 'ana@ejemplo.co',
@@ -81,10 +95,13 @@ const PREVIA = {
       explicacion: 'Ya pagó este mes: no tiene saldo pendiente.',
     },
     {
-      cobroId: 'c3',
+      cuotaId: 'q3',
+      cobroId: null,
       nombre: 'Luis Díaz',
       inmueble: 'Local en el Poblado',
       pendienteCop: 1_200_000,
+      diasDeMora: 0,
+      esCartera: false,
       personaClave: 'doc:3039',
       canal: 'CORREO' as const,
       destino: 'luis@ejemplo.co',
@@ -95,6 +112,35 @@ const PREVIA = {
   ],
   disponible: true,
   motivo: null,
+}
+
+/**
+ * El paso 1 (aviso CON INTERÉS) sobre la misma gente: los dos que están dentro
+ * del plazo o cuya cuota no venció salen de la lista, y la única que llega es
+ * la que ya es cartera. Es el caso que los motivos nuevos explican.
+ */
+const PREVIA_CON_INTERES = {
+  ...PREVIA,
+  paso: 1,
+  exigeCartera: true,
+  revisados: 3,
+  lesLlega: 1,
+  excluidos: { ...SIN_EXCLUIR, AUN_NO_VENCE: 1, DENTRO_DEL_PLAZO: 1 },
+  destinatarios: [
+    PREVIA.destinatarios[0]!,
+    {
+      ...PREVIA.destinatarios[1]!,
+      motivo: 'AUN_NO_VENCE' as const,
+      explicacion:
+        'Debe este mes, pero la cuota todavía no vence: es deuda, no cartera. El aviso con interés no aplica.',
+    },
+    {
+      ...PREVIA.destinatarios[2]!,
+      motivo: 'DENTRO_DEL_PLAZO' as const,
+      explicacion:
+        'La cuota venció, pero todavía está dentro de los días de plazo del contrato: es deuda, no cartera.',
+    },
+  ],
 }
 
 const { obtenerMock, calendarioMock, destinatariosMock, enviarMock, guardarMock } = vi.hoisted(
@@ -204,7 +250,102 @@ describe('🔴 no se envía sin haber visto la lista', () => {
     await act(async () => {
       botonQueDice(/Enviar a/)?.click()
     })
-    expect(enviarMock).toHaveBeenCalledWith({ mes: '2026-10', paso: 0, canal: 'CORREO' })
+    /*
+     * 🔴 La selección viaja SIEMPRE y como `soloEstasCuotas`, con los `cuotaId`.
+     * Con el nombre viejo (`soloEstosCobros`) el back lee esos valores como
+     * `cuotaId`, no coincide ninguno, y el envío sale vacío sin decir nada.
+     */
+    expect(enviarMock).toHaveBeenCalledWith({
+      mes: '2026-10',
+      paso: 0,
+      canal: 'CORREO',
+      soloEstasCuotas: ['q1'],
+    })
+  })
+
+  it('destildar a alguien lo saca del envío y del número del botón', async () => {
+    await montar()
+    await act(async () => {
+      botonQueDice(/Ver a quién le llega/)?.click()
+    })
+    expect(botonQueDice(/Enviar a/)?.textContent).toContain('Enviar a 1')
+
+    await act(async () => {
+      contenedor.querySelector<HTMLInputElement>('[data-testid="elegir-q1"]')!.click()
+    })
+    // Sin nadie elegido no se puede mandar: el botón queda muerto.
+    const enviar = botonQueDice(/Enviar a/)
+    expect(enviar?.textContent).toContain('Enviar a 0')
+    expect(enviar?.disabled).toBe(true)
+    await act(async () => {
+      enviar?.click()
+    })
+    expect(enviarMock).not.toHaveBeenCalled()
+  })
+
+  it('a quien NO recibe no se le ofrece una casilla que no haría nada', async () => {
+    await montar()
+    await act(async () => {
+      botonQueDice(/Ver a quién le llega/)?.click()
+    })
+    expect(contenedor.querySelector('[data-testid="elegir-q1"]')).toBeTruthy()
+    expect(contenedor.querySelector('[data-testid="elegir-q2"]')).toBeNull()
+    expect(contenedor.querySelector('[data-testid="elegir-q3"]')).toBeNull()
+  })
+
+  it('🔴 la lista se llavea por cuotaId: las tres filas salen aunque ninguna tenga cobro', async () => {
+    await montar()
+    await act(async () => {
+      botonQueDice(/Ver a quién le llega/)?.click()
+    })
+    const filas = contenedor.querySelectorAll('[data-testid="fila-destinatario"]')
+    expect(filas).toHaveLength(3)
+    expect(new Set([...filas].map((f) => f.textContent)).size).toBe(3)
+  })
+})
+
+describe('🔴 deuda no es cartera: los motivos nuevos se ven', () => {
+  /*
+   * Sin `AUN_NO_VENCE` y `DENTRO_DEL_PLAZO` en el catálogo del front, esa gente
+   * desaparecía del resumen: la lista pasaba de 3 a 1 y no había manera de
+   * saber por qué. Es el mismo defecto que hace desconfiar de la pantalla.
+   */
+  it('cuenta a los excluidos por no ser cartera todavía, con sus palabras', async () => {
+    destinatariosMock.mockResolvedValue(PREVIA_CON_INTERES)
+    await montar()
+    await act(async () => {
+      botonQueDice(/Ver a quién le llega/)?.click()
+    })
+
+    expect(contenedor.querySelector('[data-testid="excluidos-AUN_NO_VENCE"]')?.textContent).toContain(
+      'Todavía no les vence',
+    )
+    expect(
+      contenedor.querySelector('[data-testid="excluidos-DENTRO_DEL_PLAZO"]')?.textContent,
+    ).toContain('Dentro del plazo del contrato')
+    // Y la explicación por fila, tal cual la manda el back.
+    expect(contenedor.textContent).toContain('es deuda, no cartera')
+  })
+
+  it('explica por qué la lista se encoge al pasar al aviso con interés', async () => {
+    destinatariosMock.mockResolvedValue(PREVIA_CON_INTERES)
+    await montar()
+    await act(async () => {
+      botonQueDice(/Ver a quién le llega/)?.click()
+    })
+    expect(contenedor.querySelector('[data-testid="exige-cartera"]')?.textContent).toContain(
+      'sólo entra quien ya pasó los días de plazo',
+    )
+  })
+
+  it('en el recordatorio dice lo contrario: entra quien deba, aunque esté en plazo', async () => {
+    await montar()
+    await act(async () => {
+      botonQueDice(/Ver a quién le llega/)?.click()
+    })
+    expect(contenedor.querySelector('[data-testid="exige-cartera"]')?.textContent).toContain(
+      'aunque todavía esté dentro de su plazo',
+    )
   })
 })
 

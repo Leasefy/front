@@ -9,8 +9,20 @@
 export const CANALES_DE_COBRANZA = ['CORREO', 'WHATSAPP'] as const;
 export type CanalDeCobranza = (typeof CANALES_DE_COBRANZA)[number];
 
+/**
+ * 🔴 La lista tiene que estar COMPLETA: la pantalla recorre esta constante para
+ * armar el resumen de exclusiones, así que un motivo que falte no sale como
+ * «otros» — la gente excluida por ese motivo simplemente DESAPARECE del conteo
+ * y nadie se entera de por qué la lista se encogió.
+ *
+ * `AUN_NO_VENCE` y `DENTRO_DEL_PLAZO` nacieron el 2026-09-15 con la separación
+ * entre deuda y cartera: del paso 1 en adelante el aviso lleva interés, y eso
+ * sólo se le manda a quien ya es cartera.
+ */
 export const MOTIVOS_DE_EXCLUSION = [
   'YA_PAGO',
+  'AUN_NO_VENCE',
+  'DENTRO_DEL_PLAZO',
   'CUBIERTO_POR_ANTICIPO',
   'YA_SE_LE_ENVIO',
   'SIN_DATOS_DE_CONTACTO',
@@ -73,10 +85,21 @@ export interface CalendarioDeLaSecuencia {
 
 /** Una fila de la vista previa. Las que NO reciben traen su motivo. */
 export interface Destinatario {
-  cobroId: string;
+  /**
+   * 🔴 La CUOTA: la llave de la fila y lo que viaja en `soloEstasCuotas`. Antes
+   * esto era `cobroId`, que hoy puede venir en `null`; mandar ids de cobro deja
+   * la selección vacía y no sale nada.
+   */
+  cuotaId: string;
+  /** El cobro, cuando existe. `null` en toda cuota que finanzas no reclamó. */
+  cobroId: string | null;
   nombre: string;
   inmueble: string;
   pendienteCop: number;
+  /** Días desde que se acabó el plazo. `0` en el recordatorio. */
+  diasDeMora: number;
+  /** `true` = esta cuota ya es cartera (vencida más allá del plazo). */
+  esCartera: boolean;
   personaClave: string | null;
   canal: CanalDeCobranza;
   destino: string | null;
@@ -91,6 +114,12 @@ export interface VistaPreviaDeCobranza {
   mes: string;
   canal: CanalDeCobranza;
   paso: number;
+  /**
+   * `false` en el paso 0 (el recordatorio: basta con deber) y `true` de ahí en
+   * adelante (aviso CON INTERÉS: hace falta estar en cartera). Es lo que
+   * explica por qué la lista se encoge al pasar de paso.
+   */
+  exigeCartera: boolean;
   revisados: number;
   lesLlega: number;
   excluidos: Record<MotivoDeExclusion, number>;
@@ -107,12 +136,21 @@ export interface ResultadoDelEnvio {
   enviados: number;
   omitidos: number;
   fallidos: number;
-  detalle: Array<{ cobroId: string; nombre: string; estado: string; motivo: string | null }>;
+  detalle: Array<{
+    /** La cuota. 🔴 Antes esta clave era `cobroId`. */
+    cuotaId: string;
+    cobroId: string | null;
+    nombre: string;
+    estado: string;
+    motivo: string | null;
+  }>;
 }
 
 /** Cómo se lee cada motivo de exclusión en el resumen de la pantalla. */
 export const ETIQUETA_DEL_MOTIVO: Record<MotivoDeExclusion, string> = {
   YA_PAGO: 'Ya pagaron',
+  AUN_NO_VENCE: 'Todavía no les vence',
+  DENTRO_DEL_PLAZO: 'Dentro del plazo del contrato',
   CUBIERTO_POR_ANTICIPO: 'Pagaron por adelantado',
   YA_SE_LE_ENVIO: 'Ya se les envió',
   SIN_DATOS_DE_CONTACTO: 'Sin datos de contacto',

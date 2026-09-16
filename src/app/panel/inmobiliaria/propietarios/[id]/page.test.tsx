@@ -189,6 +189,11 @@ vi.mock('@/components/inmobiliaria', () => ({
   PropietarioForm: ({ onSubmit, serverError }: { onSubmit: (d: unknown) => void; serverError?: { field: string; message: string } | null }) =>
     React.createElement('button', { 'data-testid': 'form-guardar', 'data-error-campo': serverError?.field ?? '', 'data-error-mensaje': serverError?.message ?? '', onClick: () => onSubmit({ name: 'Nuevo nombre', email: 'x@y.z', phone: '1', documentType: 'CC', documentNumber: '9', bankCode: '', accountType: '', accountNumber: '', accountHolder: '' }) }, 'guardar'),
 }));
+// La sección tiene sus propias pruebas; acá sólo importa qué recibe.
+vi.mock('@/components/inmobiliaria/deducciones/DeduccionesDelPropietario', () => ({
+  DeduccionesDelPropietario: ({ propietarioId, inmuebles }: { propietarioId: string; inmuebles: { consignacionId: string; titulo: string }[] }) =>
+    React.createElement('div', { 'data-testid': 'seccion-deducciones', 'data-propietario': propietarioId }, inmuebles.map((i) => `${i.consignacionId}:${i.titulo}`).join('|')),
+}));
 vi.mock('@/components/inmobiliaria/ExtractoDelPropietarioDialog', () => ({
   ExtractoDelPropietarioDialog: ({ abierto, propietarioId }: { abierto: boolean; propietarioId: string }) =>
     abierto ? React.createElement('div', { 'data-testid': 'extracto-dialog' }, propietarioId) : null,
@@ -315,6 +320,21 @@ describe('Nueva consignación', () => {
       '/panel/inmobiliaria/inmuebles/nuevo?propietarioId=p1&volver=%2Fpanel%2Finmobiliaria%2Fpropietarios%2Fp1',
     );
     expect(toast.info).not.toHaveBeenCalled();
+  });
+});
+
+describe('Deducciones — en la ficha del propietario', () => {
+  it('la pestaña abre sus deducciones con los inmuebles que tiene consignados', async () => {
+    datos.consignaciones = [
+      { id: 'c1', propertyTitle: 'Apto 402 Laureles' },
+      { id: 'c2', propertyTitle: 'Local 3 Centro' },
+    ];
+    await render();
+    expect(container.querySelector('[data-testid="seccion-deducciones"]')).toBeNull();
+    await click('tab-deducciones');
+    const seccion = container.querySelector<HTMLElement>('[data-testid="seccion-deducciones"]')!;
+    expect(seccion.dataset.propietario).toBe('p1');
+    expect(seccion.textContent).toBe('c1:Apto 402 Laureles|c2:Local 3 Centro');
   });
 });
 

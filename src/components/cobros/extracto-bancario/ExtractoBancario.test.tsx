@@ -69,23 +69,31 @@ function movimiento(sobre: Partial<MovimientoBancario> = {}): MovimientoBancario
     createdAt: '2026-09-07T00:00:00.000Z',
     candidatos: [
       {
-        cobroId: 'c-1',
+        contractId: 'ct-1',
+        tenantId: 'u-laura',
         tenantName: 'Laura Pérez Gómez',
         propertyTitle: 'Apto 301',
-        month: '2026-09',
-        saldoCop: 1800000,
+        meses: ['2026-09'],
+        pendienteCop: 1800000,
+        cuotaIds: ['q-1'],
+        cobroId: null,
+        adelanto: false,
         puntaje: 100,
-        porQue: ['El valor es igual al saldo del cobro.', '«perez» aparece en la descripción.'],
+        porQue: ['El valor es igual a lo pendiente de la cuota.', '«perez» aparece en la descripción.'],
         seguro: true,
       },
       {
-        cobroId: 'c-2',
+        contractId: 'ct-2',
+        tenantId: 'u-carlos',
         tenantName: 'Carlos Ramírez',
         propertyTitle: 'Casa 12',
-        month: '2026-09',
-        saldoCop: 1800000,
+        meses: ['2026-09'],
+        pendienteCop: 1800000,
+        cuotaIds: ['q-2'],
+        cobroId: null,
+        adelanto: false,
         puntaje: 70,
-        porQue: ['El valor es igual al saldo del cobro.'],
+        porQue: ['El valor es igual a lo pendiente de la cuota.'],
         seguro: false,
       },
     ],
@@ -188,19 +196,19 @@ describe('ExtractoBancario — pendientes', () => {
     const fila = $('[data-testid="movimiento-m-1"]');
     expect(fila.textContent).toContain('TRANSFERENCIA PEREZ GOMEZ');
     expect(fila.textContent).toContain('$ 1.800.000');
-    const seguro = $('[data-testid="candidato-m-1-c-1"]');
+    const seguro = $('[data-testid="candidato-m-1-ct-1"]');
     expect(seguro.getAttribute('data-seguro')).toBe('true');
     expect(seguro.textContent).toContain('Seguro');
     expect(seguro.textContent).toContain('«perez» aparece en la descripción.');
-    expect($('[data-testid="candidato-m-1-c-2"]').getAttribute('data-seguro')).toBe('false');
+    expect($('[data-testid="candidato-m-1-ct-2"]').getAttribute('data-seguro')).toBe('false');
     expect($('[data-testid="conciliar-seguros"]').textContent).toContain('(1)');
   });
 
   it('«Conciliar» manda el movimiento y el cobro, avisa con el número del recibo y recarga', async () => {
     api.conciliar.mockResolvedValue({ recibo: { id: 'r-1', numero: 41 }, movimiento: {}, cobro: {} });
     await montar();
-    await clic(botonConTexto('Conciliar', $('[data-testid="candidato-m-1-c-1"]')));
-    expect(api.conciliar).toHaveBeenCalledWith('m-1', { cobroId: 'c-1' });
+    await clic(botonConTexto('Conciliar', $('[data-testid="candidato-m-1-ct-1"]')));
+    expect(api.conciliar).toHaveBeenCalledWith('m-1', { tenantId: 'u-laura' });
     expect(toastMock.success).toHaveBeenCalledWith('Recibo N.º 41 emitido a Laura Pérez Gómez.');
     expect(api.listar).toHaveBeenCalledTimes(2);
   });
@@ -280,7 +288,7 @@ describe('ExtractoBancario — pendientes', () => {
   it('el error del back sale en palabras por toast y la fila sigue', async () => {
     api.conciliar.mockRejectedValue(new Error('El movimiento ($ 1.800.000) supera lo que falta por pagar.'));
     await montar();
-    await clic(botonConTexto('Conciliar', $('[data-testid="candidato-m-1-c-1"]')));
+    await clic(botonConTexto('Conciliar', $('[data-testid="candidato-m-1-ct-1"]')));
     expect(toastMock.error).toHaveBeenCalledWith('El movimiento ($ 1.800.000) supera lo que falta por pagar.');
     expect(document.querySelector('[data-testid="movimiento-m-1"]')).not.toBeNull();
   });
@@ -330,7 +338,7 @@ describe('ExtractoBancario — pendientes', () => {
     permisos.canAccess.mockImplementation((_m: string, a: string) => a === 'view');
     await montar();
     expect(document.querySelector('[data-testid="cargar-extracto"]')).toBeNull();
-    expect(botonConTexto('Conciliar', $('[data-testid="candidato-m-1-c-1"]')).disabled).toBe(true);
+    expect(botonConTexto('Conciliar', $('[data-testid="candidato-m-1-ct-1"]')).disabled).toBe(true);
     expect(botonConTexto('Ignorar', $('[data-testid="movimiento-m-1"]')).disabled).toBe(true);
   });
 });

@@ -183,10 +183,25 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
       return n;
     });
 
+  /**
+   * 🔴 Se concilia contra el CLIENTE, no contra el documento del mes: la deuda
+   * vive en las cuotas del contrato y el back reparte la plata sobre la más
+   * vieja. Sólo cuando el contrato no llega a una cuenta de inquilino queda el
+   * atajo por cobro, y si tampoco hay cobro no hay contra quién emitir: se cae
+   * al selector de cliente, que es el camino completo.
+   */
   const conciliar = async (m: MovimientoBancario, c: CandidatoDeConciliacion) => {
+    if (!c.tenantId && !c.cobroId) {
+      setConCliente(m);
+      setClienteElegido(null);
+      return;
+    }
     marcar(m.id, true);
     try {
-      const r = await conciliacionBancariaApi.conciliar(m.id, { cobroId: c.cobroId });
+      const r = await conciliacionBancariaApi.conciliar(
+        m.id,
+        c.tenantId ? { tenantId: c.tenantId } : { cobroId: c.cobroId as string },
+      );
       const quien = c.tenantName ?? c.propertyTitle;
       toast.success(
         r.recibo ? `Recibo N.º ${r.recibo.numero} emitido a ${quien}.` : `Movimiento conciliado con ${quien}.`,
@@ -200,10 +215,10 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
   };
 
   /**
-   * La plata va contra la CARTERA del cliente, no contra un cobro elegido: el
-   * back la reparte del período más viejo al más nuevo, crea el cobro del mes
-   * en curso si falta y deja lo que sobre a favor de la persona. Nadie elige el
-   * mes — ésa fue una regla explícita de Nico.
+   * La plata va contra la DEUDA del cliente, no contra un cobro elegido: la
+   * deuda nace con el contrato, así que el back la reparte de la cuota más
+   * vieja a la más nueva y lo que sobre abona a los meses que siguen del mismo
+   * contrato. Nadie elige el mes — ésa fue una regla explícita de Nico.
    */
   const conciliarConCliente = async () => {
     const m = conCliente;

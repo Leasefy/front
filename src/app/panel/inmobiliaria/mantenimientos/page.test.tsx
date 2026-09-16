@@ -157,11 +157,49 @@ describe('M3 — aprobar una cotización', () => {
     await act(async () => {
       await aprobar('sol-1', 'q-1')
     })
+    // Aprobar pregunta primero a cargo de quién queda: no se aprueba sin decirlo.
+    expect(h.api.approveQuote).not.toHaveBeenCalled()
+    await act(async () => {
+      document.body.querySelector<HTMLElement>('[data-testid="a-cargo-de-PROPIETARIO"]')!.click()
+    })
+    await act(async () => {
+      document.body.querySelector<HTMLElement>('[data-testid="a-cargo-de-confirmar"]')!.click()
+    })
 
-    expect(h.api.approveQuote).toHaveBeenCalledWith('sol-1', 'q-1')
+    expect(h.api.approveQuote).toHaveBeenCalledWith('sol-1', 'q-1', 'PROPIETARIO')
     expect(h.toast.error).toHaveBeenCalledWith('No se pudo aprobar la cotización', {
       description: 'La cotización ya no está vigente',
     })
+    // Rechazada, el diálogo sigue abierto para reintentar.
+    expect(document.body.querySelector('[data-testid="a-cargo-de"]')).not.toBeNull()
+  })
+
+  it('a cargo del inquilino: el aviso dice que el cobro no es automático', async () => {
+    h.api.approveQuote.mockResolvedValue({
+      id: 'sol-1',
+      cargo: {
+        aCargoDe: 'INQUILINO',
+        deduccionIds: [],
+        avisos: ['El cobro todavía no entra solo al estado de cuenta del inquilino.'],
+      },
+    })
+    await render()
+    const aprobar = h.ultimoViewer!.onApproveQuote as (s: string, q: string) => Promise<void>
+    await act(async () => {
+      await aprobar('sol-1', 'q-1')
+    })
+    await act(async () => {
+      document.body.querySelector<HTMLElement>('[data-testid="a-cargo-de-INQUILINO"]')!.click()
+    })
+    await act(async () => {
+      document.body.querySelector<HTMLElement>('[data-testid="a-cargo-de-confirmar"]')!.click()
+    })
+
+    expect(h.api.approveQuote).toHaveBeenCalledWith('sol-1', 'q-1', 'INQUILINO')
+    expect(h.toast.success).toHaveBeenCalledWith(
+      'inmobiliaria.deducciones.aCargoDe.aprobadaInquilino',
+      { description: 'El cobro todavía no entra solo al estado de cuenta del inquilino.' },
+    )
   })
 })
 

@@ -27,12 +27,28 @@ export interface ResultadoDeCarga {
   seguras: number;
 }
 
+/**
+ * Un cruce propuesto para una línea del banco.
+ *
+ * 🔴 Desde el 15-09 el cruce es contra las CUOTAS del contrato, no contra un
+ * cobro: la deuda nace con el contrato, y en la inmobiliaria migrada no hay un
+ * solo cobro emitido contra 30.951 cuotas pendientes. Por eso lo que identifica
+ * al candidato es el contrato (y a quién cobrarle), no el documento del mes.
+ */
 export interface CandidatoDeConciliacion {
-  cobroId: string;
+  contractId: string;
+  /** Contra quién se emite el recibo. `null` = el contrato no llega a una cuenta. */
+  tenantId: string | null;
   tenantName: string | null;
   propertyTitle: string;
-  month: string;
-  saldoCop: number;
+  /** Los meses que cubre el movimiento, en orden. Un pago puede cubrir varios. */
+  meses: string[];
+  pendienteCop: number;
+  cuotaIds: string[];
+  /** El cobro que ya documentaba esas cuotas, si alguien lo emitió. Casi siempre `null`. */
+  cobroId: string | null;
+  /** El tramo propuesto todavía no vence: es un adelanto, no una deuda atrasada. */
+  adelanto: boolean;
   puntaje: number;
   porQue: string[];
   seguro: boolean;

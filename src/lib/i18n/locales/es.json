@@ -1278,7 +1278,11 @@
         "pendingMaintenance": "{{count}} solicitudes de mantenimiento sin cerrar",
         "latePaymentsDetalle": "Canon vencido que todavía no entró. Desde Cobros se registra el pago o se manda el recordatorio.",
         "pendingMaintenanceDetalle": "Solicitudes abiertas o en curso. Asigna quién las atiende y cerralas cuando estén resueltas.",
-        "viewRequests": "Ver solicitudes"
+        "viewRequests": "Ver solicitudes",
+        "carteraDelMes": "{{count}} cuotas del mes en cartera por {{amount}}",
+        "carteraDelMesDetalle": "Canon que pasó el plazo del contrato y todavía no entró. Desde Cartera se registra el pago o se manda el recordatorio.",
+        "verCartera": "Ver cartera",
+        "verRecaudo": "Ver recaudo"
       },
       "financial": {
         "title": "Resumen Financiero",

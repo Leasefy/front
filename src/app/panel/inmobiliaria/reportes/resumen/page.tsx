@@ -372,6 +372,9 @@ function ResumenDelNegocio() {
     (m) => m.status !== 'completed' && m.status !== 'cancelled'
   );
   const cobrosEnMora = pendingCobros.filter((c) => c.status === 'late');
+  // La deuda del contrato, cuando el back la manda (ver la alerta de cartera).
+  const carteraDelMes = kpisData?.deuda?.delMes;
+  const avisosDeLaDeuda = kpisData?.deuda?.avisos ?? [];
 
   // First load: distinguish "loading" from "empty agency" so the panel never
   // renders silent zeros while the KPIs are still in flight.
@@ -601,8 +604,28 @@ function ResumenDelNegocio() {
         </div>
       </div>
 
-      {/* Alertas: una por asunto, cada una con el número, qué hacer y el botón. */}
-      {cobrosEnMora.length > 0 && (
+      {/* Alertas: una por asunto, cada una con el número, qué hacer y el botón.
+
+          🔴 La cartera sale de las CUOTAS del contrato, no de los cobros. Visto
+          en vivo el 16-09 en la agencia de QA: la alerta decía «5 cobros en mora
+          por $11.705.223» con 97 cuotas del mes en cartera por $321.945.650 —el
+          número estaba en `kpis.deuda` y nadie lo leía—. Los cobros quedan sólo
+          para un back que todavía no manda `deuda`. */}
+      {carteraDelMes ? (
+        carteraDelMes.cuotasEnCartera > 0 && (
+          <AlertaAccionable
+            severidad="warning"
+            titulo={t('inmobiliaria.dashboard.alerts.carteraDelMes', {
+              count: carteraDelMes.cuotasEnCartera,
+              amount: formatCurrency(carteraDelMes.carteraCop),
+            })}
+            accion={{ label: t('inmobiliaria.dashboard.alerts.verCartera'), href: '/panel/inmobiliaria/pagos/cartera' }}
+            data-testid="alerta-cartera-del-mes"
+          >
+            {t('inmobiliaria.dashboard.alerts.carteraDelMesDetalle')}
+          </AlertaAccionable>
+        )
+      ) : cobrosEnMora.length > 0 && (
         <AlertaAccionable
           severidad="warning"
           titulo={t('inmobiliaria.dashboard.alerts.latePayments', {
@@ -615,6 +638,19 @@ function ResumenDelNegocio() {
           {t('inmobiliaria.dashboard.alerts.latePaymentsDetalle')}
         </AlertaAccionable>
       )}
+      {/* Lo que el back vio raro en la plata y ya viene dicho en palabras. El
+          caso que lo pidió: «Recaudo del mes $0» con $8.200.000 en recibos de
+          caja que no bajaron ninguna cuota; sin el aviso el cero era
+          inexplicable. */}
+      {avisosDeLaDeuda.map((aviso) => (
+        <AlertaAccionable
+          key={aviso}
+          severidad="info"
+          titulo={aviso}
+          accion={{ label: t('inmobiliaria.dashboard.alerts.verRecaudo'), href: '/panel/inmobiliaria/pagos/recaudo' }}
+          data-testid="aviso-de-la-deuda"
+        />
+      ))}
       {pendingMaintenance.length > 0 && (
         <AlertaAccionable
           severidad="info"

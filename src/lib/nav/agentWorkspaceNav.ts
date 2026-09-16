@@ -44,11 +44,14 @@ import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
  * render the agent's functions as a row of tabs UNDER the cards (both mounted
  * once in the panel layout; the cards stay put while you are inside the agent).
  *
- * ── Dónde vive cada agente (septiembre 2026) ───────────────────────────────
- * La IA es un modo, no un lugar: el namespace `/ai/*` desapareció y cada
- * workspace vive dentro del módulo dueño del proceso que automatiza —
- * `arquitectura-del-panel.ts` es quien lo declara (`agente: '<slug>'`) y un
- * test cuida que el `basePath` de acá y la ruta de allá coincidan.
+ * ── Dónde vive cada agente ─────────────────────────────────────────────────
+ * El namespace `/ai/*` desapareció en septiembre de 2026 y cada workspace
+ * quedó con la URL del módulo cuyo proceso automatiza (`/pagos/cobranza`,
+ * `/postulaciones/matching`…). Desde el 2026-09-16 (Nico) el MENÚ los junta en
+ * su propia sección, «Agentes IA», arriba de todo, sin mover esas URLs:
+ * `arquitectura-del-panel.ts` declara cada sala como un módulo de esa sección
+ * (`agente: '<slug>'`) y un test cuida que el `basePath` de acá y la ruta de
+ * allá coincidan.
  *
  * `labelKey` is an i18n key resolved by the consumer via `t()`. `module`/`roles`
  * gating mirrors the sidebar's filter so a user never sees a tab they can't open.
@@ -548,13 +551,18 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
  *   sofia.ts      reportes y notificaciones     ↔ pestaña «Recordatorios»
  *
  * más su orquestadora Gabriela (fase 47 del micro) y la ruta
- * `src/server/routes/pagos-dispatch.ts` (`POST /pagos/dispatch`). NADA de eso
- * está en las ramas con las que trabajamos: `cambios-nico-6/7` del micro no
- * tienen ni un archivo de `agents/pagos`. El cliente del front ya lo dice —ver
- * la nota de `src/lib/api/pagos-home.ts`—: el backend está detrás de la
- * bandera `PAGOS_ENABLED`, responde 503 mientras está apagada y sus rutas no
- * están mezcladas ni desplegadas, por eso 404 y 503 se tratan como «no
- * disponible» y no como error.
+ * `src/server/routes/pagos-dispatch.ts` (`POST /pagos/dispatch`).
+ *
+ * ACTUALIZADO el 2026-09-16: hoy SÍ está en nuestra rama del micro
+ * (`cambios-nico-6`, verificado con `git ls-tree 6ddd953b`): `agents/pagos/`
+ * con `payu.ts` (el conductor; «Gabriela» es su persona pública, ver
+ * `naming-registry.ts` del micro) y los cinco especialistas, registrados en
+ * `src/mastra/index.ts`. Lo que corre es un solo camino: `POST /pagos/dispatch`
+ * → `payment-orchestration-workflow` → Payu, y ese workflow sólo se registra
+ * con `PAGOS_ENABLED`. Las rutas del tablero (`/pagos/home/*`) siguen sin
+ * existir; por eso `src/lib/api/pagos-home.ts` trata 404 y 503 como «no
+ * disponible» y no como error. El equipo tiene su fila en «Agentes IA»
+ * («Agente de pagos», `/pagos/agente`), que dice eso mismo con palabras.
  *
  * Se retira igual, por dos razones que no se cancelan con eso:
  *

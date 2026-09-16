@@ -109,16 +109,27 @@ describe('AgentHeaderBreadcrumb — la ficha tiene cómo volver', () => {
     expect(escalones().some((e) => e.texto.includes('detalle'))).toBe(false)
   })
 
-  it('arranca en el MÓDULO dueño, no en «Agentes IA»: Pagos › Cobranza › Casos › Detalle', () => {
-    // El dueño de Cobranza era «Cobros»; desde el 2026-09-15 «Cobros» dejó de
-    // ser un módulo y la plata entera vive en Pagos, así que el primer escalón
-    // es Pagos y lleva a su Sala.
+  it('🔴 arranca en «Agentes IA», no en Pagos: Agentes IA › Cobranza › Casos › Detalle', () => {
+    // Hasta el 2026-09-16 arrancaba en el módulo que hospedaba al agente
+    // («Pagos › Cobranza › …»), y eso decía que la sala vivía en Pagos. Ese
+    // día los agentes tuvieron su sección (Nico) sin mover sus URLs: el primer
+    // escalón es el GRUPO, y no navega porque un grupo no tiene ruta.
     render('/panel/inmobiliaria/pagos/cobranza/deudores/abc-123')
 
     const items = escalones().filter((e) => e.texto !== '') // sin el icono de casa
-    expect(items[0].texto).toBe('pagos')
-    expect(items[0].href).toBe('/panel/inmobiliaria/pagos')
-    expect(items.map((e) => e.texto)).toEqual(['pagos', 'cobranza', 'cobranzaCasos', 'detalle'])
+    expect(items.map((e) => e.texto)).toEqual(['secAgentes', 'cobranza', 'cobranzaCasos', 'detalle'])
+    expect(items[0].href).toBeNull()
+    expect(items.some((e) => e.texto === 'pagos')).toBe(false)
+  })
+
+  it.each([
+    ['/panel/inmobiliaria/postulaciones/matching/cola', 'matching'],
+    ['/panel/inmobiliaria/postulaciones/asegurabilidad/cola', 'cotizador'],
+    ['/panel/inmobiliaria/inmuebles/avaluos/cola', 'avaluos'],
+  ])('%s se lee dentro de Agentes IA, no de su módulo viejo', (ruta, agente) => {
+    render(ruta)
+    const items = escalones().filter((e) => e.texto !== '')
+    expect(items.slice(0, 2).map((e) => e.texto)).toEqual(['secAgentes', agente])
   })
 
   it('🔴 Pagos ya NO es la Sala de un agente: en su raíz no se renderiza nada', () => {
@@ -139,8 +150,9 @@ describe('AgentHeaderBreadcrumb — la ficha tiene cómo volver', () => {
     render('/panel/inmobiliaria/conciliacion/caso-9')
 
     const items = escalones().filter((e) => e.texto !== '')
-    expect(items[0].texto).toBe('conciliacion')
-    expect(items[0].href).toBe('/panel/inmobiliaria/conciliacion')
+    expect(items[0].texto).toBe('secAgentes')
+    expect(items[1].texto).toBe('conciliacion')
+    expect(items[1].href).toBe('/panel/inmobiliaria/conciliacion')
     expect(items[items.length - 1].texto).toContain('detalle')
   })
 

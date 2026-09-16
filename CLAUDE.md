@@ -39,7 +39,7 @@ activity feed, execution panel).
 
 ## Estructura
 
-- Rutas: `/panel/inmobiliaria/*` (panel agencia; la IA vive dentro de cada módulo, p.ej. `/pagos/cobranza` y `/postulaciones/asegurabilidad` — ver `src/lib/nav/arquitectura-del-panel.ts`),
+- Rutas: `/panel/inmobiliaria/*` (panel agencia; los agentes de IA tienen su propia sección del menú, «Agentes IA», arriba de todo, pero conservan la URL del módulo cuyo proceso automatizan, p.ej. `/pagos/cobranza` y `/postulaciones/asegurabilidad` — ver `src/lib/nav/arquitectura-del-panel.ts`),
   `/panel/(landlord)`, `/inquilino`, `/propiedades`, `/onboarding`, `/aplicar`, `/auth`, `/avaluo`.
 - **Backoffice admin** (`/admin/*`, `src/app/admin/`): panel interno de Leasefy/Portofino
   (operación cross-tenant). Auth propia (`/admin/login`, allowlist `ADMIN_EMAILS`), sidebar

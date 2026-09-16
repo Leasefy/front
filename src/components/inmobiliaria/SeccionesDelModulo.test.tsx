@@ -5,9 +5,16 @@
  * dos pestañas, «Inmuebles · Avalúos»; al entrar en Avalúos desaparecían y en
  * su mismo sitio aparecían OTRAS pestañas, las del agente (Resumen · Mis
  * solicitudes · Configuración). Dos niveles distintos con la misma cara,
- * turnándose el lugar. La regla nueva: las secciones son cards que no se van
- * mientras estés en cualquiera de ellas —también dentro de un agente—, y la
- * profundidad de cada sección va DEBAJO, con otra cara (`WorkspaceNav`).
+ * turnándose el lugar. La regla: las secciones son cards que no se van
+ * mientras estés en cualquiera de ellas, y la profundidad de cada sección va
+ * DEBAJO, con otra cara.
+ *
+ * Desde el 2026-09-16 ningún agente es una sección (Nico: «una sección sólo de
+ * agentes»): Avalúos, Matching, Asegurabilidad, Cobranza, Conciliación y
+ * Desempeño IA son filas de «Agentes IA» con su URL de siempre. Los casos que
+ * usaban Avalúos ahora usan Reportes, que conserva tres secciones; y hay un
+ * bloque que cuida que dentro de una sala no aparezca el riel del módulo que
+ * antes la hospedaba.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -18,7 +25,7 @@ import { act } from 'react'
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const ruta = { actual: '/panel/inmobiliaria/inmuebles' }
+const ruta = { actual: '/panel/inmobiliaria/reportes' }
 
 vi.mock('next/navigation', () => ({
   usePathname: () => ruta.actual,
@@ -88,35 +95,26 @@ afterEach(() => {
 
 describe('SeccionesDelModulo — las cards no se van al entrar en una sección', () => {
   it('en la raíz del módulo muestra sus secciones como cards, con la raíz marcada', () => {
-    render('/panel/inmobiliaria/inmuebles')
+    render('/panel/inmobiliaria/reportes')
     expect(cards()).toEqual([
-      { href: '/panel/inmobiliaria/inmuebles', label: 'inmuebles', activa: true, actual: true },
-      { href: '/panel/inmobiliaria/inmuebles/avaluos', label: 'avaluos', activa: false, actual: false },
+      { href: '/panel/inmobiliaria/reportes', label: 'reportes', activa: true, actual: true },
+      { href: '/panel/inmobiliaria/reportes/resumen', label: 'resumenDelNegocio', activa: false, actual: false },
+      { href: '/panel/inmobiliaria/reportes/rentabilidad', label: 'rentabilidad', activa: false, actual: false },
     ])
   })
 
-  it('DENTRO del agente (Avalúos) las mismas cards siguen ahí y Avalúos queda marcada', () => {
-    render('/panel/inmobiliaria/inmuebles/avaluos')
-    const [inmuebles, avaluos] = cards()
-    expect(inmuebles).toMatchObject({ activa: false, actual: false })
-    expect(avaluos).toMatchObject({ href: '/panel/inmobiliaria/inmuebles/avaluos', activa: true, actual: true })
+  it('DENTRO de una sección las mismas cards siguen ahí y la sección queda marcada', () => {
+    render('/panel/inmobiliaria/reportes/rentabilidad')
+    const [reportes, , rentabilidad] = cards()
+    expect(reportes).toMatchObject({ activa: false, actual: false })
+    expect(rentabilidad).toMatchObject({ href: '/panel/inmobiliaria/reportes/rentabilidad', activa: true, actual: true })
   })
 
-  it('más adentro del agente (una pestaña suya) las cards siguen, marcada pero sin aria-current', () => {
-    render('/panel/inmobiliaria/inmuebles/avaluos/cola')
-    const avaluos = cards().find((c) => c.href.endsWith('/avaluos'))
-    expect(avaluos).toMatchObject({ activa: true, actual: false })
+  it('más adentro de la sección las cards siguen, marcada pero sin aria-current', () => {
+    render('/panel/inmobiliaria/contratos/renovaciones/7')
+    const renovaciones = cards().find((c) => c.href.endsWith('/renovaciones'))
+    expect(renovaciones).toMatchObject({ activa: true, actual: false })
     expect(cards()).toHaveLength(2)
-  })
-
-  it('en la ficha de un caso de Cobranza se ven las secciones de SU cara, con Cobranza marcada', () => {
-    // Cobranza es de la cara «inquilinos», así que abajo van la Sala y las
-    // tres de esa cara. Liquidaciones y Dispersiones están a un clic, en la
-    // otra cara del selector — no mezcladas en el mismo riel.
-    render('/panel/inmobiliaria/pagos/cobranza/deudores/abc-123')
-    const lista = cards()
-    expect(lista.map((c) => c.label)).toEqual(['pagos', 'recaudo', 'cartera', 'cobranza'])
-    expect(lista.filter((c) => c.activa).map((c) => c.label)).toEqual(['cobranza'])
   })
 
   it('🔴 en la cara propietarios la raíz de Pagos NO aparece: es la deuda de los INQUILINOS', () => {
@@ -134,31 +132,36 @@ describe('SeccionesDelModulo — las cards no se van al entrar en una sección',
     expect(cards().filter((c) => c.activa).map((c) => c.label)).toEqual(['cartera'])
   })
 
-  it('se dibuja como SECCIONES (cards en un riel), nunca como las pestañas del agente', () => {
-    render('/panel/inmobiliaria/inmuebles/avaluos')
+  it('se dibuja como SECCIONES (cards en un riel), nunca como las pestañas de un agente', () => {
+    render('/panel/inmobiliaria/reportes/resumen')
     const franja = contenedor.querySelector('[data-nivel]')
     expect(franja?.getAttribute('data-nivel')).toBe('secciones')
     // El riel: un contenedor único con las cards adentro.
     const nav = contenedor.querySelector('nav')
-    expect(nav?.getAttribute('aria-label')).toBe('Secciones de inmuebles')
+    expect(nav?.getAttribute('aria-label')).toBe('Secciones de reportes')
     expect(nav?.children).toHaveLength(1)
-    expect(nav?.children[0].querySelectorAll('a')).toHaveLength(2)
+    expect(nav?.children[0].querySelectorAll('a')).toHaveLength(3)
   })
 
   it('no sale en la impresión', () => {
-    render('/panel/inmobiliaria/inmuebles')
+    render('/panel/inmobiliaria/reportes')
     expect(contenedor.querySelector('[data-nivel]')?.className).toContain('print:hidden')
   })
 })
 
 describe('SeccionesDelModulo — cuándo NO se dibuja', () => {
   it('en una ficha del listado (la raíz es exacta): la ficha trae su propia cabecera', () => {
-    render('/panel/inmobiliaria/inmuebles/123')
+    render('/panel/inmobiliaria/contratos/123')
     expect(contenedor.querySelector('nav')).toBeNull()
   })
 
   it('en un módulo de una sola sección (Conciliación), aunque sea un agente', () => {
     render('/panel/inmobiliaria/conciliacion/cola')
+    expect(contenedor.querySelector('nav')).toBeNull()
+  })
+
+  it('en Inmuebles: sin Avalúos le queda una sola sección y el riel no se dibuja', () => {
+    render('/panel/inmobiliaria/inmuebles')
     expect(contenedor.querySelector('nav')).toBeNull()
   })
 
@@ -178,14 +181,43 @@ describe('SeccionesDelModulo — cuándo NO se dibuja', () => {
   it('el AGENTE comercial sí ve las secciones de Postulaciones, sin las que no puede abrir', () => {
     permisos.isAdmin = false
     permisos.agencyRole = 'AGENTE'
-    // Tiene permiso de `estudio`, pero Evaluación de candidatos está oculta
-    // (Nico, 2026-09-08): con permiso y todo, la card no aparece.
+    // Tiene permiso de `estudio` y de `matching`, pero ninguna de las dos es
+    // una card de acá: Evaluación de candidatos está oculta (Nico, 2026-09-08)
+    // y Matching vive en «Agentes IA» (2026-09-16).
     // `portafolio`: Postulaciones lo pide (S3) y el AGENTE lo tiene por defecto.
-    permisos.modulos = ['portafolio', 'matching', 'estudio']
-    render('/panel/inmobiliaria/postulaciones/matching')
+    permisos.modulos = ['portafolio', 'documentos', 'matching', 'estudio']
+    render('/panel/inmobiliaria/postulaciones/soportes')
     const lista = cards()
-    expect(lista.map((c) => c.label)).toEqual(['postulaciones', 'matching'])
-    expect(lista.filter((c) => c.activa).map((c) => c.label)).toEqual(['matching'])
+    expect(lista.map((c) => c.label)).toEqual(['postulaciones', 'soportesCorto'])
+    expect(lista.filter((c) => c.activa).map((c) => c.label)).toEqual(['soportesCorto'])
+  })
+})
+
+describe('🔴 SeccionesDelModulo — dentro de una sala de «Agentes IA» no aparece el riel de su anfitrión viejo', () => {
+  /**
+   * Las salas conservan su URL (`/pagos/cobranza`, `/postulaciones/matching`,
+   * `/inmuebles/avaluos`, `/reportes/ia`), así que su ruta sigue colgando de un
+   * módulo con secciones. Si el riel de ese módulo apareciera, la sala se
+   * vería dentro de Pagos, de Postulaciones, de Inmuebles o de Reportes — que
+   * es justo lo que la sección de Agentes vino a terminar.
+   */
+  it.each([
+    '/panel/inmobiliaria/pagos/cobranza',
+    '/panel/inmobiliaria/pagos/cobranza/deudores/abc-123',
+    '/panel/inmobiliaria/pagos/agente',
+    '/panel/inmobiliaria/postulaciones/matching/cola',
+    '/panel/inmobiliaria/postulaciones/asegurabilidad',
+    '/panel/inmobiliaria/inmuebles/avaluos/cola',
+    '/panel/inmobiliaria/reportes/ia',
+  ])('%s: sin riel', (pathname) => {
+    render(pathname)
+    expect(contenedor.querySelector('nav')).toBeNull()
+    expect(contenedor.querySelector('[data-testid="selector-de-caras"]')).toBeNull()
+  })
+
+  it('y en Pagos, Cobranza ya no es una card de la cara de los inquilinos', () => {
+    render('/panel/inmobiliaria/pagos/cartera')
+    expect(cards().map((c) => c.label)).not.toContain('cobranza')
   })
 })
 
@@ -239,7 +271,7 @@ describe('SeccionesDelModulo — las dos caras de la plata (Nico, 2026-09-16)', 
   it('en la Sala entra Inquilinos, que es donde se opera todos los días', () => {
     render('/panel/inmobiliaria/pagos')
     expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['inquilinos'])
-    expect(cards().map((c) => c.label)).toEqual(['pagos', 'recaudo', 'cartera', 'cobranza'])
+    expect(cards().map((c) => c.label)).toEqual(['pagos', 'recaudo', 'cartera'])
   })
 
   it('🔴 la cara se deduce de la RUTA: en Dispersiones estás en Propietarios', () => {
@@ -267,7 +299,6 @@ describe('SeccionesDelModulo — las dos caras de la plata (Nico, 2026-09-16)', 
       '/panel/inmobiliaria/pagos',
       '/panel/inmobiliaria/pagos/recaudo',
       '/panel/inmobiliaria/pagos/cartera',
-      '/panel/inmobiliaria/pagos/cobranza',
     ])
   })
 
@@ -297,14 +328,14 @@ describe('SeccionesDelModulo — las dos caras de la plata (Nico, 2026-09-16)', 
     permisos.modulos = null
     render('/panel/inmobiliaria/pagos')
     expect(caras()).toHaveLength(2)
-    expect(cards().map((c) => c.label)).toEqual(['pagos', 'recaudo', 'cartera', 'cobranza'])
+    expect(cards().map((c) => c.label)).toEqual(['pagos', 'recaudo', 'cartera'])
     render('/panel/inmobiliaria/pagos/liquidaciones')
     expect(cards().map((c) => c.label)).toEqual(['liquidaciones', 'dispersiones'])
   })
 
-  it('un módulo sin caras (Inmuebles) no dibuja selector alguno', () => {
-    render('/panel/inmobiliaria/inmuebles')
+  it('un módulo sin caras (Reportes) no dibuja selector alguno', () => {
+    render('/panel/inmobiliaria/reportes')
     expect(contenedor.querySelector('[data-testid="selector-de-caras"]')).toBeNull()
-    expect(cards()).toHaveLength(2)
+    expect(cards()).toHaveLength(3)
   })
 })

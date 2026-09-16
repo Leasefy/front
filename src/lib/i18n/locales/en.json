@@ -938,6 +938,7 @@
       "resumenDelNegocio": "Business overview",
       "rentabilidad": "Profitability",
       "desempenoIa": "AI performance",
+      "agenteDePagos": "Payments agent",
       "agentesIa": "AI agents",
       "automatizacionIa": "AI automation",
       "riesgo": "Risk",
@@ -9659,11 +9660,11 @@
         "inmuebles": {
           "titulo": "Properties is your portfolio",
           "cuerpo": "Each property with its record, photos, owner and history. Listings and viewings come out of here.",
-          "dato": "Appraisals lives inside, to request a market value for one."
+          "dato": "A property's market value comes from the Appraisals agent, up top under «AI Agents»."
         },
         "postulaciones": {
           "titulo": "Who wants to rent",
-          "cuerpo": "Incoming applications, with matching against your inventory, the candidate's documents and the insurability request to the carriers.",
+          "cuerpo": "Incoming applications and each candidate's documents. Matching against your inventory and insurability are handled by their agents, up top under «AI Agents».",
           "dato": "The number next to the name says how many are waiting on you."
         },
         "contratos": {
@@ -9673,12 +9674,12 @@
         },
         "pagos": {
           "titulo": "The money, from both sides",
-          "cuerpo": "One stop with both sides: on the tenant side you have Receipts (what already came in), Receivables (what is missing, and the charges you issued) and Collections; on the owner side, Settlements and Disbursements.",
+          "cuerpo": "One stop with both sides: on the tenant side you have Receipts (what already came in) and Receivables (what is missing, and the charges you issued); on the owner side, Settlements and Disbursements. Collections, which chases receivables, is an agent: it lives under «AI Agents».",
           "dato": "Debt is born with the contract: the monthly charge is the document you claim it with, and you decide when to issue it by looking at receivables."
         },
         "reportes": {
           "titulo": "How the business is doing",
-          "cuerpo": "The month's summary, profitability per property and how the AI agents performed.",
+          "cuerpo": "The month's summary and profitability per property. How the agents perform lives in «AI performance», under «AI Agents».",
           "dato": "Every table in the panel exports to Excel or PDF."
         },
         "piloto": {

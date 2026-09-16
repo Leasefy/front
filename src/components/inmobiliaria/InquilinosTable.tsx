@@ -110,6 +110,19 @@ export function arriendoPrincipal(persona: Inquilino): ArriendoDeInquilino | und
   return arriendosVigentes(persona)[0] ?? persona.arriendos[0];
 }
 
+/**
+ * El DÍA de una vigencia, listo para `formatDate`.
+ *
+ * `desde` y `hasta` son días (`@db.Date`), pero `/inmobiliaria/inquilinos` los
+ * manda a medianoche UTC (`2026-06-05T00:00:00.000Z`). `formatDate` sólo arma
+ * en el calendario local un `YYYY-MM-DD` suelto; con hora lo toma por instante,
+ * y en Bogotá eso es el 4 a las 19:00. La lista y el cajón decían «4 de jun» de
+ * un arriendo que la ficha del contrato —bien— dice que empieza el 5.
+ */
+export function diaDeVigencia(fecha: string): string {
+  return fecha.slice(0, 10);
+}
+
 /** Ordena sin mutar. El nombre con `localeCompare` es-CO: «Ñ» va donde debe. */
 export function ordenarInquilinos(
   inquilinos: readonly Inquilino[],
@@ -439,8 +452,8 @@ function FilaDeInquilino({
                2027» son ~230 px y empujaban la última columna fuera de la
                pantalla. */
             <div className="whitespace-nowrap font-mono text-xs tabular-nums text-fg-muted">
-              <div>{formatDate(principal.desde)}</div>
-              <div className="text-fg-subtle">→ {formatDate(principal.hasta)}</div>
+              <div>{formatDate(diaDeVigencia(principal.desde))}</div>
+              <div className="text-fg-subtle">→ {formatDate(diaDeVigencia(principal.hasta))}</div>
             </div>
           )}
         </TableCell>
@@ -493,7 +506,7 @@ export function RenglonDeArriendo({ arriendo }: { arriendo: ArriendoDeInquilino 
         {formatCurrency(arriendo.canonCop)}
       </span>
       <span className="font-mono text-xs tabular-nums text-fg-muted">
-        {formatDate(arriendo.desde)} — {formatDate(arriendo.hasta)}
+        {formatDate(diaDeVigencia(arriendo.desde))} — {formatDate(diaDeVigencia(arriendo.hasta))}
       </span>
     </div>
   );

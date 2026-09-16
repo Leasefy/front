@@ -811,6 +811,14 @@ describe('NuevaFactura', () => {
       expect(total?.textContent).toContain('1 factura');
     });
 
+    it('el total se rotula «Recargos», no «Interés»: suma también el gasto administrativo', async () => {
+      porGenerarMock.mockResolvedValue(respuesta({ inquilinos: [conMora()] }));
+      await montar();
+      const total = q('[data-testid="facturacion-inquilinos-mora"]');
+      expect(total?.textContent).toContain('Recargos de mora');
+      expect(total?.textContent).not.toContain('Interés de mora');
+    });
+
     it('sin mora no se pinta la línea ni el total', async () => {
       await montar();
       expect(q('[data-testid="mora-ct-1|2026-09|INQUILINO"]')).toBeNull();

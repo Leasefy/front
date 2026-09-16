@@ -1238,7 +1238,11 @@
         "pendingMaintenance": "{{count}} maintenance requests still open",
         "latePaymentsDetalle": "Overdue rent that has not come in yet. From Collections you record the payment or send the reminder.",
         "pendingMaintenanceDetalle": "Open or in-progress requests. Assign who handles them and close them once resolved.",
-        "viewRequests": "View requests"
+        "viewRequests": "View requests",
+        "carteraDelMes": "{{count}} installments this month past the grace period, for {{amount}}",
+        "carteraDelMesDetalle": "Rent past the contract's grace period that has not come in yet. From the Portfolio you record the payment or send the reminder.",
+        "verCartera": "View portfolio",
+        "verRecaudo": "View collections"
       },
       "financial": {
         "title": "Financial Summary",

@@ -243,11 +243,17 @@ function TablaDeFacturas({
             {sinConfirmar > 0 && ` · ${sinConfirmar} sin confirmar`}
           </p>
           {conMora.length > 0 && (
+            /* «Recargos», no «interés»: `recargosCop` suma el interés de mora
+               Y el gasto administrativo. En la agencia de QA (16-09) eran
+               $34.150.917: $1.360.917 de interés y $32.790.000 del gasto del
+               10 % sobre el canon. Rotulado «Interés de mora», el número era
+               25 veces el interés de verdad. */
             <p
               className="whitespace-nowrap"
               data-testid={`facturacion-${testid}-mora`}
+              title="Interés de mora y gasto administrativo, según las reglas de mora de la inmobiliaria."
             >
-              Interés de mora {formatCurrency(moraCop)} en {conMora.length}{' '}
+              Recargos de mora {formatCurrency(moraCop)} en {conMora.length}{' '}
               {conMora.length === 1 ? 'factura' : 'facturas'}
             </p>
           )}

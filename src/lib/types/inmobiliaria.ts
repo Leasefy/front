@@ -1501,6 +1501,43 @@ export interface InmobiliariaDashboardKPIs {
   // Owners
   totalPropietarios: number;
   pendingDispersions: number;
+
+  /**
+   * La deuda del contrato, leída de las cuotas (back `dashboard/plata-del-mes.ts`).
+   * Opcional: una respuesta de un back anterior al 16-09 no la trae.
+   */
+  deuda?: DeudaDelTablero;
+}
+
+/** Los tres cajones de una deuda: por vencer, vencida en plazo y cartera. */
+export interface CajonesDeLaDeuda {
+  totalCop: number;
+  porVencerCop: number;
+  vencidaEnPlazoCop: number;
+  carteraCop: number;
+  cuotas: number;
+  cuotasPorVencer: number;
+  cuotasVencidasEnPlazo: number;
+  cuotasEnCartera: number;
+}
+
+/** `deuda` de `GET /inmobiliaria/analytics/kpis`. */
+export interface DeudaDelTablero {
+  month: string;
+  hoy: string;
+  /** Toda la deuda viva de la inmobiliaria. */
+  total: CajonesDeLaDeuda;
+  /** Sólo las cuotas del mes consultado. */
+  delMes: CajonesDeLaDeuda;
+  causadoDelMesCop: number;
+  abonadoDelMesCop: number;
+  /** Recibos de caja con fecha en el mes, estén o no imputados a una cuota. */
+  recaudadoEnCajaCop: number;
+  porGirarAPropietariosCop: number;
+  cuotasDeInquilino: number;
+  contratosSinCuotas: number;
+  /** Lo que el back vio raro y hay que decir (p. ej. plata en caja sin imputar). */
+  avisos: string[];
 }
 
 // ============================================================================

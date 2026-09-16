@@ -47,7 +47,9 @@ import { NuevaFactura } from './NuevaFactura';
 function factura(over: Partial<FacturaDelMes> = {}): FacturaDelMes {
   return {
     clave: 'ct-1|2026-09|INQUILINO',
+    cuotaId: 'cu-i-2026-09',
     contractId: 'ct-1',
+    mes: '2026-09',
     codigo: 1839,
     numeroExterno: '1686',
     inmueble: 'Cra 76 #45-12 apto 302',
@@ -78,6 +80,10 @@ function factura(over: Partial<FacturaDelMes> = {}): FacturaDelMes {
     diasFacturados: 30,
     diasDelMes: 30,
     deduccionAlEgresoCop: 0,
+    // Septiembre es el mes en curso de estas pruebas: se puede emitir.
+    emitible: true,
+    motivoNoEmitible: null,
+    avisos: [],
     ...over,
   };
 }
@@ -134,15 +140,39 @@ function respuesta(over: Partial<FacturasPorGenerar> = {}): FacturasPorGenerar {
       netoCop: 180_000,
     }),
   ];
+  const totalesInquilinos = lado({
+    porEmitir: inquilinos.length,
+    totalCop: 1_800_000,
+  });
+  const totalesPropietarios = lado({
+    porEmitir: propietarios.length,
+    totalCop: 180_000,
+  });
   return {
+    desde: '2026-09',
+    hasta: '2026-09',
     mes: '2026-09',
     inquilinos,
     propietarios,
     omitidos: over.omitidos ?? [],
+    meses: over.meses ?? [
+      {
+        mes: '2026-09',
+        nombre: 'Septiembre de 2026',
+        emitible: true,
+        motivoNoEmitible: null,
+        inquilinos: totalesInquilinos,
+        propietarios: totalesPropietarios,
+      },
+    ],
+    porContrato: over.porContrato ?? [],
     totales: {
-      contratosDelMes: 1,
-      inquilinos: lado({ porEmitir: inquilinos.length, totalCop: 1_800_000 }),
-      propietarios: lado({ porEmitir: propietarios.length, totalCop: 180_000 }),
+      contratos: 1,
+      meses: 1,
+      emitiblesHoy: inquilinos.length + propietarios.length,
+      totalEmitibleHoyCop: 1_980_000,
+      inquilinos: totalesInquilinos,
+      propietarios: totalesPropietarios,
     },
     resolucion: resolucionVigente(),
     ...over,
@@ -275,8 +305,12 @@ describe('NuevaFactura', () => {
       respuesta({
         inquilinos: [],
         propietarios: [],
+        meses: [],
         totales: {
-          contratosDelMes: 0,
+          contratos: 0,
+          meses: 0,
+          emitiblesHoy: 0,
+          totalEmitibleHoyCop: 0,
           inquilinos: lado(),
           propietarios: lado(),
         },
@@ -301,6 +335,7 @@ describe('NuevaFactura', () => {
             codigo: 1839,
             numeroExterno: '1686',
             inmueble: 'Cra 76 #45-12 apto 302',
+            mes: '2026-09',
             destinatario: 'INQUILINO',
             motivo: 'No hay nada que cobrarle al inquilino este mes.',
           },
@@ -320,6 +355,7 @@ describe('NuevaFactura', () => {
             contractId: 'ct-2',
             codigo: 94,
             inmueble: 'Casa en Laureles',
+            mes: '2026-09',
             destinatario: 'PROPIETARIO',
             motivo: 'El mandato no pactó comisión de administración.',
           },
@@ -328,7 +364,7 @@ describe('NuevaFactura', () => {
     );
     await montar();
     const bloque = q('[data-testid="facturacion-omitidos"]')!;
-    expect(bloque.textContent).toContain('1 contratos del mes no generan factura');
+    expect(bloque.textContent).toContain('1 cuota no genera factura');
     expect(bloque.textContent).toContain('El mandato no pactó comisión de administración.');
   });
 
@@ -574,6 +610,156 @@ describe('NuevaFactura', () => {
         cerrar.click();
       });
       expect(q('[data-testid="facturacion-informe"]')).toBeNull();
+    });
+  });
+  /**
+   * 🔴 «Hasta el 31 de diciembre», y la línea que no se cruza.
+   *
+   * CEO (2026-09-13): «Si quiero mirar qué facturas tengo por generar hasta el
+   * 31 de diciembre… Lo que NO se puede es enviarlas [antes de tiempo].» Lo que
+   * se protege: que mirar más lejos no vuelva emitible un mes que no empezó, y
+   * que la razón se diga.
+   */
+  describe('el rango y la línea entre mirar y emitir', () => {
+    /** La misma respuesta, con diciembre pegado y todavía sin empezar. */
+    const conDiciembre = () => {
+      const diciembre = factura({
+        clave: 'ct-1|2026-12|INQUILINO',
+        cuotaId: 'cu-i-2026-12',
+        mes: '2026-12',
+        emitible: false,
+        motivoNoEmitible:
+          'Diciembre de 2026 todavía no empieza: faltan 3 meses. Se puede ver la prefactura, no emitirla.',
+      });
+      const base = respuesta();
+      return respuesta({
+        desde: '2026-09',
+        hasta: '2026-12',
+        inquilinos: [...base.inquilinos, diciembre],
+        meses: [
+          ...base.meses,
+          {
+            mes: '2026-12',
+            nombre: 'Diciembre de 2026',
+            emitible: false,
+            motivoNoEmitible:
+              'Diciembre de 2026 todavía no empieza: faltan 3 meses. Se puede ver la prefactura, no emitirla.',
+            inquilinos: lado({ porEmitir: 1, totalCop: 1_800_000 }),
+            propietarios: lado(),
+          },
+        ],
+        porContrato: [
+          {
+            contractId: 'ct-1',
+            destinatario: 'INQUILINO',
+            codigo: 1839,
+            numeroExterno: '1686',
+            inmueble: 'Cra 76 #45-12 apto 302',
+            terceroNombre: 'Nubia Amparo David',
+            cantidad: 10,
+            totalCop: 18_000_000,
+            valorTipicoCop: 1_800_000,
+            valorParejo: true,
+            primerMes: '2026-09',
+            ultimoMes: '2027-06',
+            terminaEnElRango: false,
+            terminaEl: null,
+          },
+        ],
+        totales: {
+          contratos: 1,
+          meses: 2,
+          emitiblesHoy: 2,
+          totalEmitibleHoyCop: 1_980_000,
+          inquilinos: lado({ porEmitir: 2, totalCop: 3_600_000 }),
+          propietarios: lado({ porEmitir: 1, totalCop: 180_000 }),
+        },
+      });
+    };
+
+    it('con un solo mes NO aparece el bloque del rango: la pantalla de siempre', async () => {
+      await montar();
+      expect(q('[data-testid="prefacturas-del-rango"]')).toBeNull();
+    });
+
+    it('«Hasta diciembre» estira la consulta hasta el 31 de diciembre', async () => {
+      await montar();
+      await act(async () => {
+        (
+          q('[data-testid="facturacion-hasta-fin-de-anio"]') as HTMLButtonElement
+        ).click();
+      });
+      const ultima = porGenerarMock.mock.calls.at(-1)?.[0] as {
+        desde: string;
+        hasta: string;
+      };
+      expect(ultima.hasta).toMatch(/^\d{4}-12$/);
+      expect(ultima.desde).toBe(ultima.hasta.slice(0, 4) + '-09');
+    });
+
+    it('🔴 la factura de un mes que no empezó NO entra a la selección', async () => {
+      porGenerarMock.mockResolvedValue(conDiciembre());
+      await montar();
+      // Diciembre existe en la respuesta y NO suma al botón: siguen siendo las
+      // dos de septiembre.
+      const boton = q('[data-testid="facturacion-generar"]')!;
+      expect(boton.textContent).toContain('Generar 2 facturas');
+    });
+
+    it('🔴 y el mes dice POR QUÉ todavía no se emite, con las palabras del back', async () => {
+      porGenerarMock.mockResolvedValue(conDiciembre());
+      await montar();
+      const motivo = q('[data-testid="rango-motivo-2026-12"]');
+      expect(motivo?.textContent).toContain('todavía no empieza');
+      expect(q('[data-testid="rango-no-emitible-2026-12"]')).not.toBeNull();
+      expect(q('[data-testid="rango-emitible-2026-09"]')).not.toBeNull();
+    });
+
+    it('🔴 «10 facturas de un millón»: el agrupado por contrato se ve', async () => {
+      porGenerarMock.mockResolvedValue(conDiciembre());
+      await montar();
+      const grupo = q('[data-testid="rango-contrato-ct-1-INQUILINO"]')!;
+      expect(grupo.textContent).toContain('10');
+      expect(grupo.textContent).toContain('1.800.000');
+    });
+
+    it('la tabla del mes elegido NO trae las filas de los otros meses', async () => {
+      porGenerarMock.mockResolvedValue(conDiciembre());
+      await montar();
+      const tabla = q('[data-testid="facturacion-inquilinos"]')!;
+      expect(tabla.querySelector('[data-testid="factura-ct-1|2026-09|INQUILINO"]')).not.toBeNull();
+      expect(tabla.querySelector('[data-testid="factura-ct-1|2026-12|INQUILINO"]')).toBeNull();
+    });
+  });
+
+  /**
+   * 🔴 La plata que la factura NO lleva, dicha en voz alta.
+   *
+   * El interés de mora no está en la cuota: lo liquida el motor sobre el cobro.
+   * Cuando la cuota ya es cartera y no hay cobro, el back manda un `aviso` en vez
+   * de inventar el número — y la pantalla tiene que mostrarlo.
+   */
+  describe('los avisos de la fila', () => {
+    it('una cuota en mora sin cobro reclama sus intereses en la fila', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({
+          inquilinos: [
+            factura({
+              avisos: [
+                'Esta cuota está en mora hace 42 días y la factura NO lleva intereses: el interés lo liquida el motor de mora sobre el cobro del mes, y este contrato no tiene cobro de 2026-09.',
+              ],
+            }),
+          ],
+        }),
+      );
+      await montar();
+      const aviso = q('[data-testid="aviso-ct-1|2026-09|INQUILINO"]');
+      expect(aviso?.textContent).toContain('NO lleva intereses');
+    });
+
+    it('sin avisos no se pinta ninguna advertencia', async () => {
+      await montar();
+      expect(q('[data-testid="aviso-ct-1|2026-09|INQUILINO"]')).toBeNull();
     });
   });
 });

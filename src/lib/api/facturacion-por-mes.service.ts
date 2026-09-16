@@ -1,12 +1,23 @@
 /**
- * Facturación por mes — el listado de lo que hay que facturar y la emisión.
+ * Facturación — las prefacturas que hay por generar, y la emisión.
  *
  * ── Qué hay del otro lado ───────────────────────────────────────────────────
  *
  * `back-erp/src/inmobiliaria/facturacion/`. Dos rutas:
  *
  *   GET  /inmobiliaria/facturacion/por-generar?mes=2026-09
+ *   GET  /inmobiliaria/facturacion/por-generar?desde=2026-09&hasta=2026-12-31
  *   POST /inmobiliaria/facturacion/generar   { mes, claves? }
+ *
+ * 🔴 Cada prefactura SALE de la cuota del contrato (`contrato_cuotas`, la tabla
+ * de amortización), no de un recálculo del mes: es la misma plata que el cliente
+ * ve en su estado de cuenta. Por eso acá no hay ni una cuenta de canon, IVA ni
+ * retención — el front pinta lo que el back leyó.
+ *
+ * 🔴 Y MOSTRAR NO ES EMITIR. El CEO (2026-09-13): «Si quiero mirar qué facturas
+ * tengo por generar hasta el 31 de diciembre… Lo que NO se puede es enviarlas
+ * [antes de tiempo].» Cada fila trae `emitible` y su `motivoNoEmitible`; el mes
+ * que no empezó se ve y no se emite, y el back devuelve 400 si se intenta.
  *
  * La agencia sale del JWT (`AgencyMemberGuard`); no se manda. Leer pide
  * `cobros:view`; EMITIR pide además rol ADMIN o CONTADOR
@@ -36,7 +47,7 @@ const BASE = '/inmobiliaria/facturacion'
 /** `DestinatarioDeFactura` en `schema.prisma`. */
 export type DestinatarioDeFactura = 'INQUILINO' | 'PROPIETARIO'
 
-/** `TipoDeLinea` en `facturas-del-mes.ts`. */
+/** `TipoDeLinea` en `prefacturas-de-las-cuotas.ts`. */
 export type TipoDeLineaDeFactura =
   | 'CANON'
   | 'ADMINISTRACION'
@@ -45,6 +56,7 @@ export type TipoDeLineaDeFactura =
   | 'COMISION'
   | 'INTERES_DE_MORA'
   | 'GASTO_ADMINISTRATIVO'
+  | 'AJUSTE_MANUAL'
 
 export interface LineaDeFactura {
   tipo: TipoDeLineaDeFactura
@@ -54,9 +66,14 @@ export interface LineaDeFactura {
   resta: boolean
 }
 
-/** Un impuesto ya liquidado sobre la factura (`impuestos-de-la-factura.ts`). */
+/**
+ * Un impuesto ya liquidado sobre la factura.
+ *
+ * 🔴 El VALOR sale de la cuota; el `porcentaje` va DEDUCIDO de su base, no leído
+ * de la tarifa de hoy: la cuota se escribió con las tarifas de su día.
+ */
 export interface ImpuestoDeLaFactura {
-  tipo: 'IVA' | 'RETEFUENTE' | 'RETEIVA'
+  tipo: 'IVA' | 'RETEFUENTE' | 'RETEIVA' | 'RETEICA'
   sobre: 'ARRENDAMIENTO' | 'COMISION' | 'IVA_DEL_CANON'
   nombre: string
   porcentaje: number
@@ -70,14 +87,22 @@ export interface ImpuestoDeLaFactura {
 }
 
 export interface FacturaDelMes {
-  /** `contractId|mes|destinatario`. Es lo que se manda para emitir. */
+  /**
+   * `contractId|mes|destinatario`. Es lo que se manda para emitir, y es la MISMA
+   * terna que identifica la cuota: por eso emitir dos veces no puede facturar
+   * dos veces el mismo mes.
+   */
   clave: string
+  /** La cuota del estado de cuenta de la que sale esta factura. */
+  cuotaId: string
   contractId: string
   /** Nuestro consecutivo de contrato. */
   codigo: number | null
   /** El número que la inmobiliaria conoce (el Nui). */
   numeroExterno: string | null
   inmueble: string
+  /** `YYYY-MM` del período. En un rango, cada fila dice de qué mes es. */
+  mes: string
   destinatario: DestinatarioDeFactura
   terceroId: string | null
   terceroNombre: string
@@ -115,6 +140,19 @@ export interface FacturaDelMes {
   diasDelMes: number
   /** Lo que el propietario paga y NO se factura: va a deducción del egreso. */
   deduccionAlEgresoCop: number
+  /**
+   * 🔴 `false` en un mes que todavía no empieza: la prefactura se ve, no se
+   * emite. La casilla se apaga y el motivo se muestra.
+   */
+  emitible: boolean
+  /** Por qué no se puede emitir hoy. `null` cuando sí se puede. */
+  motivoNoEmitible: string | null
+  /**
+   * Lo que esta fila tiene que decir y no cabe en un número: una cuota en mora
+   * cuyo interés todavía no liquidó ningún cobro, un desglose que hubo que
+   * cuadrar contra el estado de cuenta.
+   */
+  avisos: string[]
 }
 
 export interface ContratoOmitido {
@@ -123,8 +161,47 @@ export interface ContratoOmitido {
   /** El número que la inmobiliaria conoce (el Nui). Ausente con un back anterior. */
   numeroExterno?: string | null
   inmueble: string
+  /** `YYYY-MM` del período que no genera factura. */
+  mes: string
   destinatario: DestinatarioDeFactura
   motivo: string
+}
+
+/** Un mes del rango, con su carga y si hoy se puede emitir. */
+export interface MesDelRango {
+  mes: string
+  /** `Diciembre de 2026`, ya en palabras. */
+  nombre: string
+  emitible: boolean
+  motivoNoEmitible: string | null
+  inquilinos: ResumenDeLado
+  propietarios: ResumenDeLado
+}
+
+/**
+ * Un contrato del rango, agrupado. Es la frase del CEO escrita: «ya tengo
+ * prefacturado **10 facturas de un millón**» — `cantidad` son las diez,
+ * `valorTipicoCop` es el millón.
+ */
+export interface ContratoDelRango {
+  contractId: string
+  destinatario: DestinatarioDeFactura
+  codigo: number | null
+  numeroExterno: string | null
+  inmueble: string
+  terceroNombre: string
+  cantidad: number
+  totalCop: number
+  /** El total que MÁS se repite entre sus meses, no un promedio. */
+  valorTipicoCop: number
+  /** `true` si todos sus meses valen lo mismo. */
+  valorParejo: boolean
+  primerMes: string
+  ultimoMes: string
+  /** 🔴 El contrato se acaba dentro del rango: deja de prefacturarse. */
+  terminaEnElRango: boolean
+  /** `YYYY-MM-DD` del fin del contrato, cuando lo tiene. */
+  terminaEl: string | null
 }
 
 export interface ResumenDeLado {
@@ -164,17 +241,40 @@ export interface EstadoDeLaResolucion {
 }
 
 export interface FacturasPorGenerar {
+  /** El primer mes mirado, `YYYY-MM`. */
+  desde: string
+  /** El último mes mirado, `YYYY-MM`. */
+  hasta: string
+  /** El primer mes del rango: es el que se emite. */
   mes: string
   inquilinos: FacturaDelMes[]
   propietarios: FacturaDelMes[]
   omitidos: ContratoOmitido[]
+  /** Mes por mes: cuánto pesa cada uno y si hoy se puede emitir. */
+  meses: MesDelRango[]
+  /** Contrato por contrato: «10 facturas de un millón». */
+  porContrato: ContratoDelRango[]
   totales: {
-    contratosDelMes: number
+    /** Cuántos contratos distintos aparecen en el rango. */
+    contratos: number
+    /** Cuántos meses trae el rango. */
+    meses: number
+    /** Las que hoy se pueden emitir, y lo que suman. */
+    emitiblesHoy: number
+    totalEmitibleHoyCop: number
     inquilinos: ResumenDeLado
     propietarios: ResumenDeLado
   }
   /** Sin resolución vigente el back NO emite: el botón tiene que decirlo. */
   resolucion: EstadoDeLaResolucion
+}
+
+/** Hasta dónde mirar. Sin nada, el mes en curso. */
+export interface RangoDePrefacturas {
+  /** `YYYY-MM`. */
+  desde?: string
+  /** `YYYY-MM` o `YYYY-MM-DD`: la persona piensa «hasta el 31 de diciembre». */
+  hasta?: string
 }
 
 export interface ResultadoDeGeneracion {
@@ -312,11 +412,21 @@ export interface FacturasEmitidasDelMes {
 }
 
 export const facturacionPorMesService = {
-  /** El listado COMPLETO del mes, separado en inquilinos y propietarios. */
-  porGenerar: (mes: string) =>
-    apiClient.get<FacturasPorGenerar>(
-      `${BASE}/por-generar?mes=${encodeURIComponent(mes)}`,
-    ),
+  /**
+   * Las prefacturas del rango, separadas en inquilinos y propietarios.
+   *
+   * Con un solo mes (`{ desde: m, hasta: m }`) responde ese mes, que es lo que
+   * respondía `?mes=`. Sin nada, el mes en curso.
+   */
+  porGenerar: (rango: RangoDePrefacturas = {}) => {
+    const query = new URLSearchParams()
+    if (rango.desde) query.set('desde', rango.desde)
+    if (rango.hasta) query.set('hasta', rango.hasta)
+    const cola = query.toString()
+    return apiClient.get<FacturasPorGenerar>(
+      cola ? `${BASE}/por-generar?${cola}` : `${BASE}/por-generar`,
+    )
+  },
 
   /**
    * Emite las elegidas. Sin `claves` —o con la lista vacía— el back emite

@@ -32,7 +32,6 @@ import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
 import { EstadoDeCuentaDocumento } from './EstadoDeCuentaDocumento';
 import { FiltrosDelEstado } from './FiltrosDelEstado';
 import {
-  aplicarFiltros,
   comoSeLlamaElRol,
   cuantasFilasDelDocumento,
   hayFiltros,
@@ -59,14 +58,27 @@ function sinContratos(error: unknown): boolean {
 }
 
 export interface PantallaProps {
-  /** Cómo se pide el documento. Cambia entre el panel, el enlace y los portales. */
-  cargar: () => Promise<EstadoDeCuenta>;
+  /**
+   * Cómo se pide el documento. Cambia entre el panel, el enlace y los portales.
+   *
+   * 🔴 Recibe el FILTRO porque el recorte lo hace el back (auditoría 13-09,
+   * E4): esta pantalla ya no corta filas. Pide el documento con el filtro
+   * puesto y pinta lo que vuelve, que es exactamente lo mismo que va a ver
+   * quien abra el enlace compartido — con la regla duplicada acá, el día que
+   * una de las dos cambiara, pantalla y enlace dirían cosas distintas.
+   */
+  cargar: (filtro?: FiltrosDelEstadoDeCuenta | null) => Promise<EstadoDeCuenta>;
   /**
    * Lo que se puede hacer con el documento, ya montado: «Compartir» en el
-   * panel, «Descargar PDF» en el enlace público. Recibe el documento FILTRADO
-   * y la nota, porque lo que se comparte es lo que se está viendo.
+   * panel, «Descargar PDF» en el enlace público. Recibe el documento tal como
+   * el back lo devolvió (recortado, si hay filtro), la nota, y el filtro
+   * puesto — porque lo que se comparte es lo que se está viendo.
    */
-  acciones?: (doc: EstadoDeCuenta, nota?: string) => React.ReactNode;
+  acciones?: (
+    doc: EstadoDeCuenta,
+    nota?: string,
+    filtros?: FiltrosDelEstadoDeCuenta,
+  ) => React.ReactNode;
   /**
    * A dónde vuelve el enlace de regreso. Sin `label`, la etiqueta se lee de la
    * ruta («Volver al contrato», «Volver al propietario»…).
@@ -90,9 +102,23 @@ export function PantallaDelEstadoDeCuenta({
   const t = useTextoDelEstado();
   const hoy = hoyProp ?? hoyLocal();
 
-  const [doc, setDoc] = React.useState<EstadoDeCuenta | null>(null);
+  /*
+   * DOS documentos, a propósito:
+   *
+   *  · `entero` es el que vino sin filtro. Se pide UNA vez y se queda: de ahí
+   *    salen la lista de contratos del desplegable y el «N de M» — con sólo el
+   *    recortado, el desplegable perdería las opciones que uno acaba de filtrar
+   *    y el «de M» diría el total de lo que ya está filtrado, que no es un
+   *    total de nada.
+   *  · `vista` es lo que se pinta: el recortado que devolvió el back, o el
+   *    entero cuando no hay filtro.
+   */
+  const [entero, setEntero] = React.useState<EstadoDeCuenta | null>(null);
+  const [vista, setVista] = React.useState<EstadoDeCuenta | null>(null);
   const [error, setError] = React.useState<unknown>(null);
   const [cargando, setCargando] = React.useState(true);
+  /** Hay un filtro en camino. La tabla anterior se queda: no se parpadea. */
+  const [recargando, setRecargando] = React.useState(false);
   const [filtros, setFiltros] = React.useState<FiltrosDelEstadoDeCuenta>(SIN_FILTROS);
   /**
    * Al imprimir se apaga la paginación de las tablas. Sin esto la hoja sale con
@@ -101,11 +127,15 @@ export function PantallaDelEstadoDeCuenta({
    */
   const [imprimiendo, setImprimiendo] = React.useState(false);
 
+  /** El documento entero. Es lo primero que se pide, y lo que reintenta el fallo. */
   const pedir = React.useCallback(async () => {
     setCargando(true);
     setError(null);
     try {
-      setDoc(await cargar());
+      const d = await cargar();
+      setEntero(d);
+      setVista(d);
+      setFiltros(SIN_FILTROS);
     } catch (e) {
       setError(e);
     } finally {
@@ -117,12 +147,50 @@ export function PantallaDelEstadoDeCuenta({
     void pedir();
   }, [pedir]);
 
-  const filtrado = React.useMemo(
-    () => (doc ? aplicarFiltros(doc, filtros) : null),
-    [doc, filtros],
-  );
   const conFiltros = hayFiltros(filtros);
-  const nota = conFiltros ? t('estadoDeCuenta.filtrado') : undefined;
+
+  /*
+   * El recorte se le PIDE al back. Con una espera corta: cambiar el período y
+   * después el contrato son dos toques seguidos, y no hacen falta dos viajes.
+   * `vivo` descarta la respuesta de un filtro que ya se cambió — sin eso, la
+   * respuesta lenta del filtro viejo pisa a la del nuevo y la tabla termina
+   * mostrando algo que nadie pidió.
+   */
+  React.useEffect(() => {
+    if (!entero) return;
+    if (!conFiltros) {
+      setVista(entero);
+      setRecargando(false);
+      return;
+    }
+    let vivo = true;
+    const espera = setTimeout(() => {
+      setRecargando(true);
+      cargar(filtros)
+        .then((d) => {
+          if (vivo) setVista(d);
+        })
+        .catch((e: unknown) => {
+          if (vivo) setError(e);
+        })
+        .finally(() => {
+          if (vivo) setRecargando(false);
+        });
+    }, 250);
+    return () => {
+      vivo = false;
+      clearTimeout(espera);
+    };
+  }, [cargar, entero, filtros, conFiltros]);
+
+  /*
+   * 🔴 La nota sale de lo que el BACK dice que recortó (`vista.filtro`), no de
+   * lo que hay en los controles. Es lo que hace que la pantalla, el PDF y el
+   * enlace público digan exactamente lo mismo: en el enlace no hay controles y
+   * el documento igual llega recortado, y en el panel un filtro que todavía no
+   * viajó no puede anunciarse como aplicado.
+   */
+  const nota = vista?.filtro ? t('estadoDeCuenta.filtrado') : undefined;
 
   const imprimir = React.useCallback(() => {
     setImprimiendo(true);
@@ -144,11 +212,13 @@ export function PantallaDelEstadoDeCuenta({
       }
     : undefined;
 
-  const lineaDelCliente = doc
+  const lineaDelCliente = entero
     ? [
-        doc.cliente.nombre,
-        comoSeLlamaElRol(doc.cliente.tipo),
-        doc.contratos.length === 1 ? '1 contrato' : `${doc.contratos.length} contratos`,
+        entero.cliente.nombre,
+        comoSeLlamaElRol(entero.cliente.tipo),
+        entero.contratos.length === 1
+          ? '1 contrato'
+          : `${entero.contratos.length} contratos`,
       ].join(' · ')
     : null;
 
@@ -186,13 +256,13 @@ export function PantallaDelEstadoDeCuenta({
               variant="secondary"
               hideArrow
               onClick={imprimir}
-              disabled={!filtrado}
+              disabled={!vista}
               data-testid="imprimir-estado"
             >
               <Printer className="h-4 w-4" aria-hidden="true" />
               {t('estadoDeCuenta.imprimir')}
             </Button>
-            {filtrado && acciones ? acciones(filtrado, nota) : null}
+            {vista && acciones ? acciones(vista, nota, filtros) : null}
           </div>
         </div>
       </div>
@@ -227,7 +297,7 @@ export function PantallaDelEstadoDeCuenta({
           onReintentar={pedir}
           volverA={regreso}
         />
-      ) : doc && filtrado ? (
+      ) : entero && vista ? (
         /* La misma tarjeta que las demás tablas del panel: la barra de filtros
            arriba, con su borde, y el contenido debajo. El documento pierde su
            propio marco para no quedar como una tarjeta dentro de otra. */
@@ -235,18 +305,20 @@ export function PantallaDelEstadoDeCuenta({
           data-estado-marco
           className="overflow-hidden rounded-lg border border-border bg-surface shadow-sm"
         >
-          {!sinFiltros && doc.contratos.length > 0 && (
+          {!sinFiltros && entero.contratos.length > 0 && (
             <FiltrosDelEstado
               filtros={filtros}
               onCambiar={setFiltros}
-              contratos={doc.contratos.map((c) => c.numero)}
+              /* Del documento ENTERO: filtrar por un contrato no puede hacer
+                 desaparecer del desplegable a los demás. */
+              contratos={entero.contratos.map((c) => c.numero)}
               hoy={hoy}
-              visibles={cuantasFilasDelDocumento(filtrado)}
-              total={cuantasFilasDelDocumento(doc)}
+              visibles={cuantasFilasDelDocumento(vista)}
+              total={cuantasFilasDelDocumento(entero)}
             />
           )}
 
-          {filtrado.contratos.length === 0 && conFiltros ? (
+          {vista.contratos.length === 0 && conFiltros ? (
             /* Filtrado a cero NO es «este cliente no tiene contratos»: decirlo
                así sería afirmar algo falso sobre el cliente. */
             <div data-testid="estado-sin-resultados" className="px-6 py-16 text-center">
@@ -267,11 +339,17 @@ export function PantallaDelEstadoDeCuenta({
             </div>
           ) : (
             <EstadoDeCuentaDocumento
-              doc={filtrado}
+              doc={vista}
               hoy={hoy}
               sinPaginar={imprimiendo}
               nota={nota}
-              className="rounded-none border-0 shadow-none"
+              className={cn(
+                'rounded-none border-0 shadow-none',
+                // El recorte lo trae el back: mientras viaja, la tabla anterior
+                // se queda pero se atenúa. Vaciarla haría parpadear el
+                // documento en cada toque del filtro.
+                recargando && 'opacity-60 transition-opacity',
+              )}
             />
           )}
         </section>

@@ -12,8 +12,15 @@
  * inmobiliaria arriba. Que el cliente vea otra cosa que su gestor es como se
  * empiezan las discusiones por plata.
  *
- * Sin filtros: los filtros son la herramienta de quien revisa la cartera. El
- * cliente recibe su estado de cuenta completo, que es lo que pidió.
+ * Sin barra de filtros: filtrar es la herramienta de quien revisa la cartera.
+ * Lo que el cliente ve es lo que la inmobiliaria decidió mostrarle.
+ *
+ * 🔴 Y eso puede ser una vista RECORTADA (auditoría 13-09, E4): si al compartir
+ * había un filtro puesto —sólo pendientes, un rango, un contrato—, el recorte
+ * quedó guardado con el enlace y el back ya lo aplicó. El documento llega
+ * diciendo con qué recorte se armó (`doc.filtro`), y de ahí sale la nota que
+ * ponen la pantalla y el PDF: los dos tienen que decir lo mismo, porque son el
+ * mismo documento y el cliente los va a comparar.
  */
 
 import { useCallback } from 'react';
@@ -32,7 +39,9 @@ export default function EstadoDeCuentaPublicoPage() {
       <PantallaDelEstadoDeCuenta
         cargar={cargar}
         sinFiltros
-        acciones={(doc) => <BotonDescargarPDF doc={doc} hoy={doc.fecha} />}
+        acciones={(doc, nota) => (
+          <BotonDescargarPDF doc={doc} hoy={doc.fecha} nota={nota} />
+        )}
       />
     </main>
   );

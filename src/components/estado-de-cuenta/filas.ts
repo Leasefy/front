@@ -12,10 +12,13 @@ import type {
   EstadoDeCuenta,
   EstadoDeFila,
   FilaDelEstadoDeCuenta,
+  FiltrosDelEstadoDeCuenta,
   PuntoDeQuiebre,
   RolEnElContrato,
   TotalesDelEstadoDeCuenta,
 } from '@/lib/types/estado-de-cuenta';
+
+export type { FiltrosDelEstadoDeCuenta };
 
 const MESES = [
   'ene',
@@ -244,16 +247,25 @@ export function intercalarCortes(
 
 // ══ Filtros ═════════════════════════════════════════════════════════════════
 
-export interface FiltrosDelEstadoDeCuenta {
-  /** Deja sólo lo que todavía se debe (`PENDIENTE`). */
-  soloPendientes: boolean;
-  /** `YYYY-MM-DD` o cadena vacía. Se compara contra `fechaVencimiento`. */
-  desde: string;
-  hasta: string;
-  /** El número del contrato, o `''` para todos. */
-  contrato: string;
-}
-
+/**
+ * 🔴 EL FILTRO YA NO SE APLICA ACÁ (auditoría 13-09, E4).
+ *
+ * Hasta el 15-09 este archivo tenía `aplicarFiltros`, y era la ÚNICA copia de
+ * la regla: la inmobiliaria filtraba en pantalla, compartía el enlace, y el
+ * enlace entregaba el documento ENTERO porque el filtro nunca salía del
+ * navegador. Se avisaba en el menú de compartir; avisar no es filtrar.
+ *
+ * La regla se mudó al back (`filtrar-el-estado-de-cuenta.ts`): es el único
+ * lugar por el que pasan tanto el panel como quien abre un enlace, y por lo
+ * tanto el único donde puede ser una garantía. Acá quedan el ESTADO del filtro
+ * —que es de la pantalla— y los atajos del período; el recorte se pide y el
+ * back lo devuelve hecho. Con una copia de la regla de cada lado, el día que
+ * una de las dos cambiara el enlace mostraría una cosa y la pantalla otra, que
+ * es el mismo defecto con otra cara.
+ *
+ * El TIPO vive en `@/lib/types/estado-de-cuenta` porque es contrato con el
+ * back; se reexporta acá para no tocar a quien ya lo importaba.
+ */
 export const SIN_FILTROS: FiltrosDelEstadoDeCuenta = {
   soloPendientes: false,
   desde: '',
@@ -311,79 +323,6 @@ export function rangoPreestablecido(
 /** Cuántas filas tiene el documento entero. Para decir «viendo 20 de 26». */
 export function cuantasFilasDelDocumento(doc: EstadoDeCuenta): number {
   return doc.contratos.reduce((s, c) => s + cuantasFilas(c), 0);
-}
-
-/**
- * Lo que todavía se debe. `ANULADA` y `ANTERIOR` no: la primera es una cuota
- * que se deshizo, la segunda la gestionó el sistema viejo.
- */
-const SE_DEBE: EstadoDeFila[] = ['PENDIENTE'];
-
-function pasaLaFila(
-  fila: FilaDelEstadoDeCuenta,
-  f: FiltrosDelEstadoDeCuenta,
-): boolean {
-  if (f.soloPendientes && !SE_DEBE.includes(fila.estado)) return false;
-  const vence = fila.fechaVencimiento.slice(0, 10);
-  if (f.desde && vence < f.desde) return false;
-  if (f.hasta && vence > f.hasta) return false;
-  return true;
-}
-
-/**
- * Aplica los filtros y devuelve el documento como se va a ver —y como se va a
- * exportar—. Un contrato que se queda sin filas desaparece: una sección vacía
- * bajo un filtro se lee «este contrato no tiene nada», que es mentira.
- *
- * 🔴 Los totales se RECALCULAN sobre lo que queda. Mostrar el total del back
- * encima de una tabla filtrada es el error clásico: el número no cuadra con
- * las filas que uno está mirando y el documento pierde credibilidad entero.
- * Sin filtros, se usan los del back tal cual.
- */
-export function aplicarFiltros(
-  doc: EstadoDeCuenta,
-  f: FiltrosDelEstadoDeCuenta,
-): EstadoDeCuenta {
-  if (!hayFiltros(f)) return doc;
-
-  const contratos = doc.contratos
-    .filter((c) => (f.contrato ? c.numero === f.contrato : true))
-    .map((c) => {
-      const arriendos = c.secciones.arriendos.filter((x) => pasaLaFila(x, f));
-      const otrosConceptos = c.secciones.otrosConceptos.filter((x) => pasaLaFila(x, f));
-      return {
-        ...c,
-        secciones: { arriendos, otrosConceptos },
-        totales: totalesDeFilas([...arriendos, ...otrosConceptos]),
-      };
-    })
-    .filter((c) => c.secciones.arriendos.length + c.secciones.otrosConceptos.length > 0);
-
-  return {
-    ...doc,
-    contratos,
-    totales: sumarTotales(contratos.map((c) => c.totales)),
-  };
-}
-
-/**
- * Los totales de un puñado de filas.
- *
- * `ANULADA` y `ANTERIOR` no suman a ningún lado: la primera es una cuota que se
- * deshizo, la segunda es de antes de la fecha de corte de la agencia y su saldo
- * no está en nuestra cartera. Contarlas infla la deuda con plata que nadie va a
- * cobrar.
- */
-export function totalesDeFilas(
-  filas: readonly FilaDelEstadoDeCuenta[],
-): TotalesDelEstadoDeCuenta {
-  let cancelado = 0;
-  let pendiente = 0;
-  for (const f of filas) {
-    if (f.estado === 'CANCELADA') cancelado += f.valorNeto;
-    else if (f.estado === 'PENDIENTE') pendiente += f.valorNeto;
-  }
-  return { cancelado, pendiente, restaPorPagar: pendiente };
 }
 
 export function sumarTotales(

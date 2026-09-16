@@ -170,6 +170,37 @@ export interface EstadoDeCuenta {
   fecha: string;
   contratos: ContratoDelEstadoDeCuenta[];
   totales: TotalesDelEstadoDeCuenta;
+  /**
+   * Con qué recorte lo armó el back, cuando lo armó con uno. Ausente o `null`
+   * es el documento entero.
+   *
+   * 🔴 Lo DICE el back porque es el back quien recorta (auditoría 13-09, E4):
+   * ni la pantalla ni el PDF tienen que adivinarlo, y en el enlace público es
+   * la única forma de que quien lo abre sepa que está viendo una vista parcial
+   * y no su cuenta entera.
+   */
+  filtro?: FiltrosDelEstadoDeCuenta | null;
+}
+
+/**
+ * EL FILTRO del estado de cuenta, y es parte del CONTRATO con el back: viaja
+ * por query en las lecturas del panel y en el cuerpo al compartir, y queda
+ * guardado con el enlace.
+ *
+ * 🔴 Vive acá y no en `filas.ts` porque la REGLA —qué fila pasa, qué contrato
+ * desaparece, cómo se recalculan los totales— ya no vive en el front: la aplica
+ * el back (`filtrar-el-estado-de-cuenta.ts`), que es el único lugar donde puede
+ * ser una garantía para quien abre un enlace y no un recorte de píxeles. Acá
+ * queda sólo la FORMA.
+ */
+export interface FiltrosDelEstadoDeCuenta {
+  /** Deja sólo lo que todavía se debe (`PENDIENTE`). */
+  soloPendientes: boolean;
+  /** `YYYY-MM-DD` o cadena vacía. Se compara contra `fechaVencimiento`. */
+  desde: string;
+  hasta: string;
+  /** El número del contrato, o `''` para todos. */
+  contrato: string;
 }
 
 // ══ Compartir ═══════════════════════════════════════════════════════════════
@@ -192,6 +223,15 @@ export interface EnlaceCompartido {
   venceEl: string;
   /** Para poder revocarlo después. */
   id?: string;
+  /**
+   * El recorte que quedó GUARDADO con el enlace y que ve quien lo abra. `null`
+   * es el documento entero.
+   *
+   * 🔴 Se lee de acá y no se asume: puede NO haberse guardado (la migración
+   * del back todavía sin aplicar), y entonces el enlace sale entero. Prometer
+   * en pantalla un filtro que no viajó es justo el defecto E4 al revés.
+   */
+  filtro?: FiltrosDelEstadoDeCuenta | null;
 }
 
 /** Lo que devuelve un envío por correo o por WhatsApp. */

@@ -28,9 +28,12 @@ function Contenido() {
 
   return (
     <PantallaDelEstadoDeCuenta
-      cargar={() => estadoDeCuentaApi.inquilino(id)}
+      /* El recorte lo hace el BACK (auditoría 13-09, E4): la pantalla manda
+         el filtro y pinta lo que vuelve, que es exactamente lo mismo que ve
+         quien abre el enlace compartido. */
+      cargar={(filtro) => estadoDeCuentaApi.inquilino(id, filtro)}
       volverA={{ href: volver }}
-      acciones={(doc, nota) => (
+      acciones={(doc, nota, filtros) => (
         <CompartirEstadoDeCuenta
           doc={doc}
           hoy={doc.fecha}
@@ -41,6 +44,8 @@ function Contenido() {
              no la tiene, el back responde `SIN_CUENTA` y el ítem lo cuenta. */
           personaId={id}
           nota={nota}
+          /* Viaja con el enlace: el cliente ve la misma vista filtrada. */
+          filtros={filtros}
         />
       )}
     />

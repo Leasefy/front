@@ -645,6 +645,37 @@ describe('<RegistrarPagoModal> la llave del recibo (R1)', () => {
   });
 });
 
+describe('<RegistrarPagoModal> la fecha del recibo (R4)', () => {
+  /*
+   * 🔴 R4 (auditoría 13-09): el campo tenía techo (`hoy`) pero no PISO, y un
+   * dedo de más escribía un recibo fechado en 2016 — un arqueo que nunca
+   * cuadra y que nadie va a encontrar. El piso es el período más viejo que la
+   * persona debe: no tiene sentido fechar el pago antes de que existiera la
+   * deuda que paga.
+   */
+  it('no deja fechar el recibo antes del período más viejo que se debe', async () => {
+    carteraPorCobro.mockResolvedValue(debeTresMeses());
+    await abrir({});
+
+    const campo = document.body.querySelector<HTMLInputElement>('#fecha-recibo');
+    expect(campo).toBeTruthy();
+    // `debeTresMeses` arranca en 2026-06.
+    expect(campo!.getAttribute('min')).toBe('2026-06-01');
+    expect(campo!.getAttribute('max')).toBeTruthy();
+  });
+
+  it('sin cartera el piso es el 1.º de enero del año en curso, no el año cero', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({ total: 0, cobros: [], anticipoDisponible: true }),
+    );
+    await abrir({});
+
+    const campo = document.body.querySelector<HTMLInputElement>('#fecha-recibo');
+    const anio = new Date().getFullYear();
+    expect(campo!.getAttribute('min')).toBe(`${anio}-01-01`);
+  });
+});
+
 describe('<RegistrarPagoModal> un cliente sin cuotas pendientes (R2)', () => {
   /*
    * 🔴 Sin la migración del saldo a favor (`anticipoDisponible: false`) esto

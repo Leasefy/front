@@ -20,7 +20,13 @@ vi.mock('@/components/ui/button', () => ({
 
 import { ApiError } from '@/lib/api/client';
 import type { Cobro, CobroSummary } from '@/lib/types/inmobiliaria';
-import { conteosDePestanas, contarPorEstado, FranjaDelResumen } from './estado-de-cobros';
+import {
+  conteosDePestanas,
+  contarPorEstado,
+  FranjaDelResumen,
+  hayFiltrosDeCobros,
+  puedeAvanzarAlMesSiguiente,
+} from './estado-de-cobros';
 
 const cobro = (status: Cobro['status']) => ({ status }) as Cobro;
 const RESUMEN: CobroSummary = {
@@ -199,5 +205,42 @@ describe('la página de Cobros usa lo de arriba', () => {
     expect(bloque.indexOf('await cobrosApi.sendReminder')).toBeLessThan(
       bloque.indexOf('remindersSent: c.remindersSent + 1'),
     );
+  });
+});
+
+describe('puedeAvanzarAlMesSiguiente (C7)', () => {
+  /*
+   * 🔴 Sin tope se llegaba a 2031 y la tabla salía vacía, indistinguible de
+   * «no hay cobros». Un botón apagado dice la verdad; un vacío convincente no.
+   */
+  it('no deja pasar del mes corriente', () => {
+    expect(puedeAvanzarAlMesSiguiente('2026-09', '2026-09')).toBe(false);
+    expect(puedeAvanzarAlMesSiguiente('2026-10', '2026-09')).toBe(false);
+  });
+
+  it('los meses pasados siguen abiertos: ahí está la cartera vieja', () => {
+    expect(puedeAvanzarAlMesSiguiente('2026-08', '2026-09')).toBe(true);
+    expect(puedeAvanzarAlMesSiguiente('2025-12', '2026-01')).toBe(true);
+  });
+});
+
+describe('hayFiltrosDeCobros (C4)', () => {
+  /*
+   * 🔴 El MES no cuenta. Siempre hay uno puesto, así que contarlo haría que el
+   * vacío dijera «quita los filtros» hasta en una inmobiliaria recién creada
+   * que nunca generó un cobro — justo el caso donde el otro mensaje, el que
+   * lleva a la migración, es el correcto.
+   */
+  it('sin filtros reales devuelve false aunque el mes esté puesto', () => {
+    expect(hayFiltrosDeCobros({ status: 'all' })).toBe(false);
+    expect(hayFiltrosDeCobros({})).toBe(false);
+    expect(hayFiltrosDeCobros({ status: 'all', search: '   ' })).toBe(false);
+  });
+
+  it('cualquier filtro de verdad lo enciende', () => {
+    expect(hayFiltrosDeCobros({ status: 'late' })).toBe(true);
+    expect(hayFiltrosDeCobros({ status: 'all', search: 'perez' })).toBe(true);
+    expect(hayFiltrosDeCobros({ status: 'all', consignacionId: 'c1' })).toBe(true);
+    expect(hayFiltrosDeCobros({ status: 'all', propietarioId: 'p1' })).toBe(true);
   });
 });

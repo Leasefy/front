@@ -200,15 +200,26 @@ describe('<ElegirCliente>', () => {
     expect(document.body.querySelector('[data-testid="sin-clientes"]')).toBeTruthy();
   });
 
-  it('si la lista falla muestra el mensaje del back y deja reintentar', async () => {
+  /*
+   * R3 (auditoría 13-09): el fallo se CLASIFICA, no se escupe crudo. Antes
+   * este test exigía ver «se cayó la red» —el texto literal del back, que en
+   * producción llega en inglés y a veces con un stack— en mitad del diálogo
+   * del recibo. Ahora lo pinta `FalloDeCarga`, que dice qué pasó en palabras
+   * del producto y guarda el detalle técnico en un `sr-only`.
+   */
+  it('si la lista falla lo dice clasificado, guarda el detalle y deja reintentar', async () => {
     listar.mockRejectedValue(new Error('se cayó la red'));
     await montar();
-    expect(document.body.textContent).toContain('se cayó la red');
+
+    const fallo = document.body.querySelector('[data-testid="fallo-de-carga"]');
+    expect(fallo).toBeTruthy();
+    // El mensaje crudo NO se le muestra a la persona; queda para soporte.
+    expect(document.body.querySelector('[data-testid="fallo-detalle-tecnico"]')?.textContent).toContain(
+      'se cayó la red',
+    );
 
     listar.mockResolvedValue([inquilino('a', 'Ana')]);
-    const reintentar = Array.from(document.body.querySelectorAll('button')).find((b) =>
-      (b.textContent ?? '').includes('recibos.form.cliente.reintentar'),
-    );
+    const reintentar = document.body.querySelector<HTMLButtonElement>('[data-testid="reintentar"]');
     expect(reintentar).toBeTruthy();
     await act(async () => reintentar!.click());
     expect(document.body.querySelector('[data-testid="cliente-recibo"]')).toBeTruthy();

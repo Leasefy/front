@@ -20,13 +20,17 @@ import { useI18n } from '@/lib/i18n';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
-import { Button, Spinner } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import {
   FranjaDelResumen,
   contarPorEstado,
   conteosDePestanas,
   type ConteosPorEstado,
+  hayFiltrosDeCobros,
+  puedeAvanzarAlMesSiguiente,
 } from './estado-de-cobros';
 import {
   MOTIVO_SIN_PERMISO_DE_RECIBO,
@@ -425,17 +429,56 @@ function CobrosContent() {
   }, []);
 
 
-  // Step the selected month backward/forward (handles year rollover).
-  const shiftMonth = useCallback((delta: number) => {
-    setFilters((prev) => {
-      const [y, m] = prev.month.split('-').map(Number);
-      const d = new Date(y, m - 1 + delta, 1);
-      return {
-        ...prev,
-        month: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
-      };
-    });
+  /*
+   * C7 (auditoría 13-09) — el mes no avanza más allá del corriente.
+   *
+   * La flecha «siguiente» no tenía tope: se podía llegar a noviembre de 2031 y
+   * la pantalla mostraba una tabla vacía perfectamente convincente, sin decir
+   * que ese mes simplemente no existe todavía. Un vacío que se ve igual que
+   * «no hay cobros» es peor que un botón apagado.
+   *
+   * El techo es el mes corriente en Bogotá —no el del servidor ni el del
+   * navegador— porque es el mes que la inmobiliaria está facturando. Los meses
+   * pasados siguen abiertos: ahí sí hay cartera vieja que mirar.
+   */
+  const mesTope = useMemo(() => getCurrentMonth(), []);
+  const puedeAvanzarDeMes = puedeAvanzarAlMesSiguiente(filters.month, mesTope);
+
+  /**
+   * C4 — ¿la persona está filtrando? Es lo que separa «no hay cobros» de «tus
+   * filtros no dan nada».
+   *
+   * El MES no cuenta como filtro: siempre hay uno puesto, así que contarlo
+   * haría que el vacío dijera «quita los filtros» todas las veces, incluso en
+   * una inmobiliaria recién creada que nunca generó un cobro.
+   */
+  const hayFiltrosPuestos = hayFiltrosDeCobros(filters);
+
+  const limpiarFiltros = useCallback(() => {
+    setFilters((prev) => ({
+      ...prev,
+      status: 'all',
+      search: '',
+      consignacionId: undefined,
+      propietarioId: undefined,
+    }));
   }, []);
+
+  // Step the selected month backward/forward (handles year rollover).
+  const shiftMonth = useCallback(
+    (delta: number) => {
+      setFilters((prev) => {
+        const [y, m] = prev.month.split('-').map(Number);
+        const d = new Date(y, m - 1 + delta, 1);
+        const siguiente = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        // El guard va acá y no sólo en el botón: el teclado y cualquier otro
+        // camino a esta función tienen que toparse con el mismo techo.
+        if (!puedeAvanzarAlMesSiguiente(prev.month, mesTope)) return prev;
+        return { ...prev, month: siguiente };
+      });
+    },
+    [mesTope],
+  );
 
   // Format month for display. Build the Date in LOCAL time (Y, M-1, 1) — parsing
   // `'YYYY-MM-01'` as a string is treated as UTC and shifts to the previous month
@@ -569,6 +612,8 @@ function CobrosContent() {
                 variant="ghost"
                 icon={<CaretRight className="w-4 h-4" />}
                 aria-label="Mes siguiente"
+                disabled={!puedeAvanzarDeMes}
+                title={puedeAvanzarDeMes ? undefined : 'Es el mes corriente: todavía no hay meses después de este.'}
                 onClick={() => shiftMonth(1)}
               />
             </div>
@@ -590,10 +635,14 @@ function CobrosContent() {
         {/* Content */}
         <div>
           {cobrosLoading ? (
-            <div className="p-12 text-center">
-              <Spinner size="lg" className="mb-4" />
-              <p className="text-sm text-fg-muted">Cargando cobros...</p>
-            </div>
+            /*
+             * C5 (auditoría 13-09) — era un spinner centrado con «Cargando
+             * cobros...»: la tabla desaparecía entera y volvía, así que cada
+             * recarga era un salto de layout y, por un instante, la pantalla
+             * decía menos de lo que ya sabía. El esqueleto conserva la forma
+             * de lo que va a llegar.
+             */
+            <EsqueletoTabla filas={8} columnas={6} />
           ) : cobrosError ? (
             /* Mostraba `description={cobrosError}`: el mensaje crudo del
                backend, en inglés, dentro de la tarjeta de la tabla. */
@@ -623,6 +672,19 @@ function CobrosContent() {
                 ))}
               </div>
             )
+          ) : hayFiltrosPuestos ? (
+            /*
+             * C4 (auditoría 13-09) — «no hay cobros» y «tus filtros no dan
+             * nada» eran el mismo cartel, así que buscar mal se leía como
+             * cartera vacía. Son hechos distintos y la salida también: acá la
+             * salida es quitar los filtros, no ir a la migración.
+             */
+            <SinDatos
+              queSon="cobros"
+              icono={CurrencyCircleDollar}
+              hayFiltros
+              onLimpiarFiltros={limpiarFiltros}
+            />
           ) : (
             <div className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
@@ -649,14 +711,6 @@ function CobrosContent() {
               {copyDeMigracion && (
                 <Button asChild hideArrow>
                   <Link href={RUTA_DE_LA_MIGRACION}>{copyDeMigracion.accion}</Link>
-                </Button>
-              )}
-              {filters.status !== 'all' && (
-                <Button
-                  variant="link"
-                  onClick={() => setFilters((prev) => ({ ...prev, status: 'all' }))}
-                >
-                  {t('inmobiliaria.cobros.filters.all')}
                 </Button>
               )}
             </div>

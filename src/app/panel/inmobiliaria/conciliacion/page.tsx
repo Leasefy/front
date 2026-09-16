@@ -42,6 +42,11 @@
  *     (leyendo o falló), y el `title` dice por qué.
  *   · K3 — El sondeo de la corrida corta al primer fallo de lectura y lo avisa
  *     UNA vez, en vez de seguir girando en silencio.
+ *   · K4 — «sigue procesando» ya no se confunde con «falló»: la corrida
+ *     tiene cuatro estados (`corriendo`, `lista`, `sinCambios`, `sinLectura`)
+ *     y cada uno dice lo que se sabe. No se declara fracaso de la corrida
+ *     porque el resumen no se haya movido en 30 s, ni porque no se pudiera
+ *     leer: son hechos distintos y ninguno significa que falló.
  *
  * Sigue siendo fail-soft para la ruta NO desplegada (404): eso no es un fallo
  * de hoy sino una función que todavía no existe en ese entorno.

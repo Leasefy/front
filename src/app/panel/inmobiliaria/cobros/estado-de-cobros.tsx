@@ -123,3 +123,52 @@ export function FranjaDelResumen({
 
   return null;
 }
+
+// ── C4 y C7: dos preguntas que la página hacía en línea ─────────────────────
+
+/**
+ * C7 — ¿se puede avanzar al mes siguiente?
+ *
+ * La flecha «siguiente» no tenía tope: se llegaba a noviembre de 2031 y la
+ * pantalla mostraba una tabla vacía perfectamente convincente, sin decir que
+ * ese mes todavía no existe. Un vacío que se ve igual que «no hay cobros» es
+ * peor que un botón apagado.
+ *
+ * Los meses PASADOS siguen abiertos: ahí sí hay cartera vieja que mirar.
+ * Comparar `'YYYY-MM'` como texto es correcto — ese formato ordena bien.
+ */
+export function puedeAvanzarAlMesSiguiente(
+  mesActual: string,
+  mesTope: string,
+): boolean {
+  return mesActual < mesTope;
+}
+
+/** Lo que la pantalla de cobros puede tener filtrado, sin contar el mes. */
+export interface FiltrosDeCobrosPuestos {
+  status?: string;
+  search?: string;
+  consignacionId?: string;
+  propietarioId?: string;
+}
+
+/**
+ * C4 — ¿la persona está filtrando?
+ *
+ * Es lo que separa «no hay cobros» de «tus filtros no dan nada»: eran el mismo
+ * cartel, así que buscar mal se leía como cartera vacía y la salida ofrecida
+ * (ir a la migración) no servía para nada.
+ *
+ * 🔴 El MES no cuenta como filtro. Siempre hay uno puesto, así que contarlo
+ * haría que el vacío dijera «quita los filtros» todas las veces — también en
+ * una inmobiliaria recién creada que nunca generó un cobro, que es justo el
+ * caso donde el otro mensaje es el correcto.
+ */
+export function hayFiltrosDeCobros(filtros: FiltrosDeCobrosPuestos): boolean {
+  return (
+    (filtros.status !== undefined && filtros.status !== 'all') ||
+    Boolean(filtros.search?.trim()) ||
+    Boolean(filtros.consignacionId) ||
+    Boolean(filtros.propietarioId)
+  );
+}

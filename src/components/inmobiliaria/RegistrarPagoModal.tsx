@@ -77,6 +77,7 @@ import { Banner, Chip, CurrencyInput } from '@leasefy/cadence';
 import { ApiError } from '@/lib/api/client';
 import { generarIdempotencyKey } from '@/lib/contratos/idempotencia';
 import { SinDatos } from '@/components/estado/SinDatos';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import type { Cobro } from '@/lib/types/inmobiliaria';
 import type {
   ConciliacionDePagoAnterior,
@@ -270,6 +271,21 @@ export function RegistrarPagoModal({
           ? t('recibos.form.montoExcede', { monto: formatCurrency(maximo) })
           : null;
 
+  /**
+   * R4 — el piso del campo de fecha: el primer día del período MÁS VIEJO que
+   * la persona debe.
+   *
+   * La cartera ya viene ordenada del más viejo al más nuevo, así que es el
+   * primero. Sin cartera (un pago por adelantado) se cae al 1.º de enero del
+   * año en curso: un arqueo no mira más atrás, y dejar el campo sin piso es
+   * cómo un dedo de más escribe un recibo fechado en 2016.
+   */
+  const pisoDeLaFecha = React.useMemo(() => {
+    const masViejo = cartera?.cobros[0]?.month;
+    if (masViejo) return `${masViejo}-01`;
+    return `${hoy.slice(0, 4)}-01-01`;
+  }, [cartera, hoy]);
+
   const puedeEnviar =
     cartera !== null &&
     // Sin deuda se puede recibir plata SÓLO si hay dónde guardarla a favor.
@@ -452,13 +468,19 @@ export function RegistrarPagoModal({
             </div>
           )}
 
+          {/*
+            R3 (auditoría 13-09): el mensaje crudo del back —en inglés, a veces
+            un stack— se pintaba tal cual. `FalloDeCarga` lo clasifica y decide
+            si reintentar tiene sentido; sin marco, porque esto vive dentro del
+            diálogo y un borde dentro de otro borde parece un error del error.
+          */}
           {conciliando === null && !cargando && error !== null && (
-            <div className="space-y-2 rounded-lg border border-border p-4 text-sm">
-              <p className="text-destructive">{error || t('recibos.form.cartera.fallo')}</p>
-              <Button variant="secondary" size="sm" hideArrow onClick={() => void recargar()}>
-                {t('recibos.form.cartera.reintentar')}
-              </Button>
-            </div>
+            <FalloDeCarga
+              error={error || t('recibos.form.cartera.fallo')}
+              queEs="la cartera del cliente"
+              onReintentar={() => recargar()}
+              enmarcado={false}
+            />
           )}
 
           {/*
@@ -604,6 +626,16 @@ export function RegistrarPagoModal({
                 <Input
                   id="fecha-recibo"
                   type="date"
+                  /*
+                   * R4 (auditoría 13-09): tenía techo (`hoy`) pero no PISO, y
+                   * un dedo de más escribía un recibo fechado en 2016. El
+                   * piso es el corte de cartera: el período más viejo que la
+                   * persona debe — no tiene sentido fechar el recibo antes de
+                   * que existiera la deuda que paga. Sin cartera (pago por
+                   * adelantado) el piso es el primer día del año en curso,
+                   * que es hasta dónde llega un arqueo razonable.
+                   */
+                  min={pisoDeLaFecha}
                   max={hoy}
                   value={fecha}
                   onChange={(e) => setFecha(e.target.value)}

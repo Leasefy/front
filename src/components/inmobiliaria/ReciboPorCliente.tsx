@@ -44,6 +44,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { inquilinosApi, type Inquilino } from '@/lib/api/inquilinos.service';
 import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
 import type { CarteraDelCliente, CobroEnCartera } from '@/lib/api/recibos-de-caja.types';
@@ -165,12 +166,20 @@ export function ElegirCliente({ value, onChange }: ElegirClienteProps) {
           {t(k('cargando'))}
         </div>
       ) : error !== null ? (
-        <div className="space-y-2 rounded-lg border border-border p-4 text-sm">
-          <p className="text-destructive">{error || t(k('fallo'))}</p>
-          <Button variant="secondary" size="sm" hideArrow onClick={() => void cargar()}>
-            {t(k('reintentar'))}
-          </Button>
-        </div>
+        /*
+         * R3 (auditoría 13-09): esto era `<p className="text-destructive">` con
+         * el mensaje crudo del back —en inglés, a veces un stack— dentro de un
+         * marco propio. `FalloDeCarga` lo CLASIFICA (sin red, sin permiso,
+         * servidor caído) y decide si tiene sentido reintentar; `enmarcado`
+         * va en false porque esto vive adentro del diálogo del recibo y un
+         * borde dentro de otro borde se lee como un error del error.
+         */
+        <FalloDeCarga
+          error={error || t(k('fallo'))}
+          queEs="los clientes"
+          onReintentar={() => cargar()}
+          enmarcado={false}
+        />
       ) : opciones.length === 0 ? (
         <div
           className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-fg-muted"

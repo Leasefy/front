@@ -29,6 +29,25 @@ export const NOMBRE_DEL_CONCEPTO: Record<TipoDeConcepto, string> = {
   AJUSTE_MANUAL: 'Ajustes',
 };
 
+/**
+ * « · contrato 1686 · Leasefy #1839» en un migrado, « · contrato #94» en un
+ * nativo: el número que la inmobiliaria conoce primero, y el nuestro rotulado
+ * para que se sepa cuál es cuál (Nico se asustó con un «#1839» pelado).
+ *
+ * Vive acá y no dentro de una pantalla porque lo usan las dos lecturas de la
+ * misma plata —la cartera por concepto y las cuotas del mes en Pagos—, y dos
+ * copias es cómo el mismo contrato termina citado de dos formas distintas.
+ */
+export function rotuloDelContrato(c: {
+  contrato: string | null;
+  contratoDeLeasefy?: string | null;
+}): string {
+  if (!c.contrato) return '';
+  return c.contratoDeLeasefy
+    ? ` · contrato ${c.contrato} · ${c.contratoDeLeasefy}`
+    : ` · contrato ${c.contrato}`;
+}
+
 /** Qué le pasó al giro de un mes, dicho como lo diría la persona de tesorería. */
 export const NOMBRE_DEL_ESTADO_DEL_GIRO: Record<EstadoDelGiro, string> = {
   SIN_GENERAR: 'Sin generar la dispersión',

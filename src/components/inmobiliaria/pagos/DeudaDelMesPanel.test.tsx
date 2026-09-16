@@ -1,0 +1,395 @@
+/**
+ * La portada de Pagos, después de la corrección de Nico (2026-09-16).
+ *
+ * Lo que se protege acá, y por qué cada cosa:
+ *
+ *  1. 🔴 **La pantalla no gira alrededor de «generar los cobros».** La acción
+ *     principal es registrar un pago, y en ninguna parte se ofrece generar un
+ *     cobro ni se dice «todavía no hay cobros»: «el cobro ya está generado»
+ *     —la deuda nace con el contrato y se difiere por mes—, así que con
+ *     contratos vigentes SÍ hay deuda.
+ *  2. 🔴 **Los números salen de las CUOTAS**, que existen aunque no haya un
+ *     solo `Cobro` emitido. Es lo que hacía que la inmobiliaria migrada viera
+ *     0, $0, $0 y 0 sobre $8.446 millones.
+ *  3. 🔴 **Los tres cajones no se mezclan** y suman lo que falta: por vencer ·
+ *     vencido en plazo · cartera. Un solo «pendiente» manda a la cobranza a
+ *     perseguir plata que nadie debe todavía, con la Ley 2300 de por medio.
+ *  4. La franja habla del MES entero aunque haya filtro puesto, y lo dice.
+ *  5. Un fallo del back no se pinta como un mes en cero.
+ *  6. Sin `cobros:create` el botón queda a la vista y deshabilitado, con el
+ *     porqué: esconderlo se lee como «falta la función».
+ */
+import * as React from 'react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { createRoot, type Root } from 'react-dom/client'
+import { act } from 'react'
+
+import type { CarteraDelMes, FilaDeLaCuotaDelMes } from '@/lib/api/cartera.types'
+
+void React
+;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+
+const carteraMock = vi.fn()
+const permisoMock = vi.fn(() => true)
+
+vi.mock('@/lib/hooks/use-cartera', () => ({
+  useCarteraDelMes: (mes: string) => carteraMock(mes),
+}))
+vi.mock('@/lib/i18n', () => ({
+  useI18n: () => ({
+    t: (k: string) => k,
+    locale: 'es',
+    formatCurrency: (n: number) => `$${n.toLocaleString('es-CO')}`,
+    formatDate: (d: string) => d,
+  }),
+}))
+vi.mock('@/components/inmobiliaria/permiso-de-recibo', () => ({
+  MOTIVO_SIN_PERMISO_DE_RECIBO: 'Necesitas permiso para crear cobros.',
+  usePuedeHacerRecibo: () => permisoMock(),
+}))
+vi.mock('@/lib/api/recibos-de-caja.service', () => ({
+  recibosDeCajaApi: { crearPorCliente: vi.fn() },
+}))
+vi.mock('@/components/estado/FalloDeCarga', () => ({
+  FalloDeCarga: ({ error, queEs }: { error: unknown; queEs?: string }) =>
+    React.createElement(
+      'div',
+      { 'data-testid': 'fallo-de-carga' },
+      `${queEs}: ${error instanceof Error ? error.message : String(error)}`,
+    ),
+}))
+// El recibo de caja es un overlay enorme: acá sólo interesa si está abierto.
+vi.mock('@/components/inmobiliaria/RegistrarPagoModal', () => ({
+  RegistrarPagoModal: ({ isOpen }: { isOpen: boolean }) =>
+    isOpen ? React.createElement('div', { 'data-testid': 'recibo-de-caja' }) : null,
+}))
+// El Select del DS monta un portal de Radix: se reduce a un <select> nativo.
+vi.mock('@/components/ui/select', () => ({
+  Select: ({
+    value,
+    onValueChange,
+    children,
+  }: {
+    value: string
+    onValueChange: (v: string) => void
+    children?: React.ReactNode
+  }) =>
+    React.createElement(
+      'select',
+      {
+        value,
+        onChange: (e: { target: { value: string } }) => onValueChange(e.target.value),
+        'data-testid': 'select-mes',
+      },
+      children,
+    ),
+  SelectTrigger: () => null,
+  SelectValue: () => null,
+  SelectContent: ({ children }: { children?: React.ReactNode }) => children,
+  SelectItem: ({ value, children }: { value: string; children?: React.ReactNode }) =>
+    React.createElement('option', { value }, children),
+}))
+
+import { DeudaDelMesPanel, filtrarCuotas, mesActual, mesesRecientes } from './DeudaDelMesPanel'
+
+function fila(p: Partial<FilaDeLaCuotaDelMes> = {}): FilaDeLaCuotaDelMes {
+  return {
+    cuotaId: 'q1',
+    // 🔴 Sin cobro: es el estado de TODAS las 30.951 cuotas de la migrada.
+    cobroId: null,
+    contractId: 'ct1',
+    contrato: '1686',
+    contratoDeLeasefy: 'Leasefy #1839',
+    inquilino: 'Nicolás Rojas',
+    documento: '70814637',
+    telefono: null,
+    inmueble: 'Apartamento 302',
+    month: '2026-09',
+    vence: '2026-09-05',
+    estado: 'PENDIENTE',
+    cajon: 'CARTERA',
+    diasDeMora: 5,
+    diasDePlazo: 5,
+    esVencida: true,
+    enMora: true,
+    enSiniestro: false,
+    totalCop: 2_000_000,
+    pagadoCop: 0,
+    pendienteCop: 2_000_000,
+    ...p,
+  }
+}
+
+const EN_CARTERA = fila()
+const EN_PLAZO = fila({
+  cuotaId: 'q2',
+  contractId: 'ct2',
+  contrato: '#94',
+  contratoDeLeasefy: null,
+  inquilino: 'Marta Gómez',
+  documento: '43111222',
+  inmueble: 'Casa en Laureles',
+  vence: '2026-09-12',
+  cajon: 'VENCIDA_EN_PLAZO',
+  diasDeMora: 0,
+  esVencida: true,
+  enMora: false,
+  totalCop: 1_000_000,
+  pendienteCop: 1_000_000,
+})
+const POR_VENCER = fila({
+  cuotaId: 'q3',
+  contractId: 'ct3',
+  contrato: '#95',
+  contratoDeLeasefy: null,
+  inquilino: 'Ana Ruiz',
+  documento: '52000111',
+  inmueble: 'Local 7',
+  vence: '2026-09-28',
+  cajon: 'POR_VENCER',
+  diasDeMora: 0,
+  esVencida: false,
+  enMora: false,
+  totalCop: 3_000_000,
+  pendienteCop: 3_000_000,
+})
+const PAGADA = fila({
+  cuotaId: 'q4',
+  contractId: 'ct4',
+  contrato: '#96',
+  contratoDeLeasefy: null,
+  inquilino: 'Luis Pérez',
+  documento: '11222333',
+  inmueble: 'Apartamento 101',
+  estado: 'CANCELADA',
+  cajon: 'SIN_DEUDA',
+  diasDeMora: 0,
+  esVencida: true,
+  enMora: false,
+  totalCop: 1_500_000,
+  pagadoCop: 1_500_000,
+  pendienteCop: 0,
+})
+
+const FILAS = [EN_CARTERA, EN_PLAZO, POR_VENCER, PAGADA]
+
+function mes(p: Partial<CarteraDelMes> = {}): CarteraDelMes {
+  return {
+    generadoEn: '2026-09-15T17:00:00.000Z',
+    hoy: '2026-09-15',
+    mes: '2026-09',
+    totales: {
+      cuotas: 4,
+      contratos: 4,
+      inquilinos: 4,
+      totalCop: 7_500_000,
+      pagadoCop: 1_500_000,
+      pendienteCop: 6_000_000,
+      porVencerCop: 3_000_000,
+      vencidaEnPlazoCop: 1_000_000,
+      carteraCop: 2_000_000,
+      cuotasEnCartera: 1,
+      enSiniestroCop: 0,
+      sinCuadrarCop: 0,
+    },
+    filas: FILAS,
+    contratosSinCuotas: 0,
+    excluidas: [],
+    avisos: [],
+    ...p,
+  }
+}
+
+function conMes(datos: CarteraDelMes | null, extra: Record<string, unknown> = {}) {
+  carteraMock.mockReturnValue({
+    datos,
+    cargando: false,
+    error: null,
+    recargar: vi.fn(),
+    ...extra,
+  })
+}
+
+let host: HTMLDivElement
+let root: Root
+
+function montar() {
+  host = document.createElement('div')
+  document.body.appendChild(host)
+  root = createRoot(host)
+  act(() => {
+    root.render(<DeudaDelMesPanel mesInicial="2026-09" />)
+  })
+}
+
+const $ = (sel: string) => host.querySelector(sel) as HTMLElement
+const todos = (sel: string) => [...host.querySelectorAll(sel)] as HTMLElement[]
+const pesos = (sel: string) => Number(($(sel).textContent ?? '').replace(/\D/g, ''))
+const clic = (el: Element) =>
+  act(() => {
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  })
+
+beforeEach(() => {
+  carteraMock.mockReset()
+  permisoMock.mockReturnValue(true)
+  conMes(mes())
+})
+
+afterEach(() => {
+  act(() => root?.unmount())
+  host?.remove()
+})
+
+describe('filtrarCuotas', () => {
+  it('🔴 «Sólo cartera» filtra por el CAJÓN: lo vencido en plazo NO es cartera', () => {
+    expect(filtrarCuotas(FILAS, '', true).map((f) => f.cuotaId)).toEqual(['q1'])
+  })
+
+  it('busca por inquilino, documento, contrato e inmueble, sin tildes', () => {
+    expect(filtrarCuotas(FILAS, 'nicolas', false).map((f) => f.cuotaId)).toEqual(['q1'])
+    expect(filtrarCuotas(FILAS, '43111222', false).map((f) => f.cuotaId)).toEqual(['q2'])
+    expect(filtrarCuotas(FILAS, '1686', false).map((f) => f.cuotaId)).toEqual(['q1'])
+    expect(filtrarCuotas(FILAS, 'laureles', false).map((f) => f.cuotaId)).toEqual(['q2'])
+  })
+
+  it('sin búsqueda ni interruptor devuelve todo', () => {
+    expect(filtrarCuotas(FILAS, '  ', false)).toHaveLength(4)
+  })
+})
+
+describe('el mes', () => {
+  it('mesActual usa la hora LOCAL (no corre el mes por el huso)', () => {
+    expect(mesActual(new Date(2026, 0, 1, 0, 30))).toBe('2026-01')
+  })
+
+  it('mesesRecientes va del más nuevo al más viejo y cruza el año', () => {
+    expect(mesesRecientes(3, new Date(2026, 1, 15))).toEqual(['2026-02', '2026-01', '2025-12'])
+  })
+})
+
+describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
+  it('🔴 la acción principal es registrar un pago, no generar cobros', () => {
+    montar()
+    const boton = $('[data-testid="abrir-recibo-de-caja"]')
+    expect(boton.textContent).toContain('Registrar un pago')
+    expect(host.textContent).not.toContain('Generar los cobros')
+    // Y abre el recibo de caja, que se le hace a un CLIENTE.
+    expect(host.querySelector('[data-testid="recibo-de-caja"]')).toBeNull()
+    clic(boton)
+    expect(host.querySelector('[data-testid="recibo-de-caja"]')).not.toBeNull()
+  })
+
+  it('🔴 dice lo que se debe, lo pagado y lo que falta, con cero cobros emitidos', () => {
+    montar()
+    expect(FILAS.every((f) => f.cobroId === null)).toBe(true)
+    expect(pesos('[data-testid="mes-se-debe"]')).toBe(7_500_000)
+    expect(pesos('[data-testid="mes-pagado"]')).toBe(1_500_000)
+    expect(pesos('[data-testid="mes-falta"]')).toBe(6_000_000)
+  })
+
+  it('🔴 los tres cajones van por separado y suman lo que falta', () => {
+    montar()
+    const porVencer = pesos('[data-testid="mes-por-vencer"]')
+    const enPlazo = pesos('[data-testid="mes-vencido-en-plazo"]')
+    const cartera = pesos('[data-testid="mes-cartera"]')
+    expect([porVencer, enPlazo, cartera]).toEqual([3_000_000, 1_000_000, 2_000_000])
+    expect(porVencer + enPlazo + cartera).toBe(pesos('[data-testid="mes-falta"]'))
+  })
+
+  it('usa las MISMAS palabras que la cartera por concepto', () => {
+    montar()
+    const franja = $('[data-testid="cajones-del-mes"]').textContent ?? ''
+    expect(franja).toContain('Por vencer')
+    expect(franja).toContain('Todavía no vence. Es deuda, no cartera.')
+    expect(franja).toContain('Vencido, en plazo')
+    expect(franja).toContain('Venció, pero el plazo del contrato sigue corriendo.')
+    expect(franja).toContain('Cartera')
+    expect(franja).toContain('es lo único que la cobranza persigue')
+  })
+
+  it('la tabla es de CUOTAS del mes, con su cajón dicho', () => {
+    montar()
+    const filas = todos('[data-testid="cuota-fila"]')
+    expect(filas).toHaveLength(4)
+    expect(filas[0]!.textContent).toContain('Nicolás Rojas')
+    expect(filas[0]!.textContent).toContain('Cartera')
+    expect(filas[0]!.textContent).toContain('5 días de mora')
+    expect(filas[1]!.textContent).toContain('Vencido, en plazo')
+    expect(filas[2]!.textContent).toContain('Por vencer')
+    expect(filas[3]!.textContent).toContain('Pagada')
+  })
+
+  it('🔴 el vacío NO dice «todavía no hay cobros»: si no hay cuota, nadie la generó', () => {
+    conMes(
+      mes({
+        filas: [],
+        totales: {
+          cuotas: 0,
+          contratos: 0,
+          inquilinos: 0,
+          totalCop: 0,
+          pagadoCop: 0,
+          pendienteCop: 0,
+          porVencerCop: 0,
+          vencidaEnPlazoCop: 0,
+          carteraCop: 0,
+          cuotasEnCartera: 0,
+          enSiniestroCop: 0,
+          sinCuadrarCop: 0,
+        },
+      }),
+    )
+    montar()
+    const vacio = $('[data-testid="pagos-cuotas-tabla"]').textContent ?? ''
+    expect(vacio).toContain('Ningún contrato tiene cuota de este mes')
+    expect(vacio).toContain('La deuda nace con el contrato')
+    expect(vacio).not.toContain('cobro')
+  })
+
+  it('🔴 «Sólo cartera» deja sólo la cartera, y la franja sigue hablando del MES', () => {
+    montar()
+    clic($('[data-testid="solo-cartera"]'))
+    expect(todos('[data-testid="cuota-fila"]')).toHaveLength(1)
+    // La franja NO se mueve: es del mes completo, y se dice cuántas se ven.
+    expect(pesos('[data-testid="mes-falta"]')).toBe(6_000_000)
+    expect($('[data-testid="alcance-de-la-tabla"]').textContent).toContain('1 de 4 cuotas')
+  })
+
+  it('🔴 dice lo que estos números NO cuentan', () => {
+    conMes(
+      mes({
+        contratosSinCuotas: 195,
+        avisos: ['195 contrato(s) vigente(s) todavía no tienen tabla de amortización.'],
+      }),
+    )
+    montar()
+    expect($('[data-testid="avisos-del-mes"]').textContent).toContain('195')
+  })
+
+  it('cambiar el mes vuelve a preguntar por ese mes', () => {
+    montar()
+    expect(carteraMock).toHaveBeenLastCalledWith('2026-09')
+    act(() => {
+      const select = $('[data-testid="select-mes"]') as HTMLSelectElement
+      select.value = '2026-08'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(carteraMock).toHaveBeenLastCalledWith('2026-08')
+  })
+
+  it('un fallo del back no se pinta como un mes en cero', () => {
+    conMes(null, { error: new Error('502 Bad Gateway') })
+    montar()
+    expect($('[data-testid="fallo-de-carga"]').textContent).toContain('502 Bad Gateway')
+    expect(host.querySelector('[data-testid="resumen-del-mes"]')).toBeNull()
+  })
+
+  it('sin permiso de recibo el botón queda a la vista, deshabilitado y con el porqué', () => {
+    permisoMock.mockReturnValue(false)
+    montar()
+    const boton = $('[data-testid="abrir-recibo-de-caja"]') as HTMLButtonElement
+    expect(boton.disabled).toBe(true)
+    expect(boton.parentElement?.getAttribute('title')).toContain('permiso')
+  })
+})

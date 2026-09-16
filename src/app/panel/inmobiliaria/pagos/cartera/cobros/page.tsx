@@ -64,6 +64,7 @@ import {
 } from '@/components/inmobiliaria';
 import { CobroCard } from '@/components/inmobiliaria/CobroCard';
 import { PestanasDeCartera } from '@/components/cartera/PestanasDeCartera';
+import { GenerarCobrosDialog } from '@/components/inmobiliaria/pagos/GenerarCobrosDialog';
 import { type RecordatorioConfigData } from '@/components/inmobiliaria/RecordatorioConfig';
 import {
   RUTA_DE_LA_MIGRACION,
@@ -145,6 +146,18 @@ function CobrosContent() {
   const [paymentCobro, setPaymentCobro] = useState<Cobro | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  /*
+   * 🔴 «Generar los cobros» vive ACÁ desde el 2026-09-16, y es una acción
+   * SECUNDARIA. Era el CTA principal de la portada de Pagos, y el CEO no
+   * entendía qué significaba: «el cobro ya está generado» — la deuda nace con
+   * el contrato y se difiere por mes, así que nadie necesita emitir nada para
+   * poder cobrar. El cobro es el DOCUMENTO con el que finanzas reclama una
+   * parte de esa deuda, y el CEO fue explícito sobre dónde se decide: «el
+   * cobro… por lo general es la cartera… ni siquiera debería generarse de
+   * forma automática: que la persona de finanzas decida cuándo cobrar basado
+   * en la cartera». Esta pantalla ES la lista de esos documentos.
+   */
+  const [isGenerarOpen, setIsGenerarOpen] = useState(false);
 
   // State for reminder config (initialized from API config)
   const [reminderConfig, setReminderConfig] = useState<RecordatorioConfigData>({
@@ -519,6 +532,19 @@ function CobrosContent() {
               <span className="hidden sm:inline">Reglas de mora</span>
             </Link>
           </Button>
+          {/* Emitir el documento de cobro del mes que se está viendo. Es
+              secundario a propósito: lo principal de esta plata es el recibo
+              de caja, que no necesita ningún cobro para recibir. */}
+          <Button
+            variant="secondary"
+            hideArrow
+            onClick={() => setIsGenerarOpen(true)}
+            data-testid="abrir-generar-cobros"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Generar los cobros de {monthDisplay}</span>
+            <span className="sm:hidden">Generar cobros</span>
+          </Button>
           {/* Sin `cobros:create` queda a la vista y deshabilitado, con el
               porqué (C6): esconderlo se lee como «falta la función». */}
           <span
@@ -757,6 +783,19 @@ function CobrosContent() {
         cobro={paymentCobro}
         onSubmit={emitirRecibo}
         onConciliar={conciliarPagoAnterior}
+      />
+
+      {/* Generar los cobros del mes que se está viendo. `yaGenerados` es la
+          cuenta REAL de la tabla de al lado, no un número traído de otro lado. */}
+      <GenerarCobrosDialog
+        open={isGenerarOpen}
+        onOpenChange={setIsGenerarOpen}
+        mes={filters.month}
+        yaGenerados={apiCobros?.length ?? 0}
+        onGenerado={() => {
+          refetchCobros();
+          refetchSummary();
+        }}
       />
 
       {/* Reminder Configuration Sheet */}

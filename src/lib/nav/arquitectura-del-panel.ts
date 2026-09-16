@@ -30,6 +30,8 @@ import {
   SquaresFour,
   ChartLineUp,
   TrendUp,
+  ArrowLineDown,
+  ArrowLineUp,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import type { BusinessModule } from './agency-module-scope';
@@ -94,21 +96,53 @@ const GESTION_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.A
  * Las dos caras de la plata dentro del módulo Pagos.
  *
  * No son grupos ni submódulos: son la MISMA plata mirada desde los dos lados
- * del contrato, y por eso viven en la misma fila del sidebar y en el mismo
- * riel de secciones, separadas apenas por su rótulo.
+ * del contrato.
  *
  *   · `inquilinos`   — lo que ENTRA: recaudo, cartera, cobranza.
  *   · `propietarios` — lo que SALE: liquidaciones, dispersiones.
  *
- * Una pantalla SIN `cara` (la Sala del agente de Pagos) mira las dos y va
- * primera, suelta, antes de los dos rótulos.
+ * Una pantalla SIN `cara` (la Sala de Pagos) mira las dos y va primera, suelta.
+ *
+ * ── 🔴 Cómo se dibujan, y por qué cambió (Nico, 2026-09-16) ─────────────────
+ *
+ * Primero fueron dos rótulos en versalitas metidos ENTRE las cards, en el
+ * mismo riel: `[Pagos] │ INQUILINOS [Recaudo] [Cartera] [Cobranza] │
+ * PROPIETARIOS [Liquidaciones] [Dispersiones]`. Nico: «eso de arriba de
+ * inquilinos y propietarios no se entiende, esa separación de las tabs de
+ * arriba». Y tenía razón: eran dos niveles distintos —de qué lado del contrato
+ * estoy, y qué pantalla abro— peleando por el mismo renglón, con la misma
+ * cara.
+ *
+ * Ahora son un SELECTOR explícito arriba y, debajo, sólo las pantallas de la
+ * cara elegida (`SeccionesDelModulo` + `BarraDePestanas`). La cara se deduce de
+ * la ruta —estás en Dispersiones ⇒ estás en Propietarios— y por defecto entra
+ * Inquilinos, que es donde se opera todos los días.
+ *
+ * El `detalleKey` NO es decoración: es lo que hace que la separación se lea de
+ * un vistazo («lo que entra» / «lo que sale») sin tener que abrir nada.
  */
 export type CaraDeLaPlata = 'inquilinos' | 'propietarios';
 
-/** El rótulo i18n de cada cara, en el orden en que se leen. */
-export const CARAS_DE_LA_PLATA: readonly { cara: CaraDeLaPlata; labelKey: string }[] = [
-  { cara: 'inquilinos', labelKey: 'inmobiliaria.nav.caraInquilinos' },
-  { cara: 'propietarios', labelKey: 'inmobiliaria.nav.caraPropietarios' },
+/** Rótulo, matiz e icono de cada cara, en el orden en que se leen. */
+export const CARAS_DE_LA_PLATA: readonly {
+  cara: CaraDeLaPlata;
+  labelKey: string;
+  /** El matiz que explica la cara sin abrir nada: «lo que entra» / «lo que sale». */
+  detalleKey: string;
+  icon: Icon;
+}[] = [
+  {
+    cara: 'inquilinos',
+    labelKey: 'inmobiliaria.nav.caraInquilinos',
+    detalleKey: 'inmobiliaria.nav.caraInquilinosDetalle',
+    icon: ArrowLineDown,
+  },
+  {
+    cara: 'propietarios',
+    labelKey: 'inmobiliaria.nav.caraPropietarios',
+    detalleKey: 'inmobiliaria.nav.caraPropietariosDetalle',
+    icon: ArrowLineUp,
+  },
 ];
 
 export interface PantallaDelPanel {
@@ -309,7 +343,17 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
         // dispersión: la card de Liquidaciones y la de Dispersiones las filtra
         // `SeccionesDelModulo` con el mismo `pasaGateDeFila`, y cada página
         // tiene además su `PageGuard`.
-        key: 'pagos', labelKey: 'inmobiliaria.ai.nav.pagos', href: r('/pagos'), icon: CurrencyDollar, module: null, roles: CONTADOR_ROLES, scope: 'finanzas', ia: true, agente: 'pagos', dataTourTarget: 'sidebar-pagos',
+        //
+        // 🔴 SIN `ia: true`, y es la ÚNICA pantalla con `agente` que no la
+        // lleva (Nico, 2026-09-16: «no debe llamarse Pagos IA»). La píldora
+        // anuncia «acá hay un agente trabajando», y este módulo es LA PLATA de
+        // la inmobiliaria: la deuda de cada contrato, lo que entra de los
+        // inquilinos y lo que sale a los propietarios. El agente de pagos
+        // sigue existiendo —sus pantallas son las pestañas de la Sala
+        // (`agentWorkspaceNav.ts`: cola, fallidos, recordatorios…)— pero es
+        // una parte del módulo, no su naturaleza. Cobranza IA, acá abajo, SÍ
+        // conserva la suya: ahí el agente es la pantalla.
+        key: 'pagos', labelKey: 'inmobiliaria.ai.nav.pagos', href: r('/pagos'), icon: CurrencyDollar, module: null, roles: CONTADOR_ROLES, scope: 'finanzas', agente: 'pagos', dataTourTarget: 'sidebar-pagos',
         pantallas: [
           // Lo que ENTRA (cara inquilinos).
           { labelKey: 'inmobiliaria.nav.recaudo', href: r('/pagos/recaudo'), icon: Coins, module: 'cobros', cara: 'inquilinos' },

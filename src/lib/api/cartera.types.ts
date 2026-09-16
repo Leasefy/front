@@ -163,6 +163,77 @@ export interface CarteraDeInquilinos {
   avisos?: string[];
 }
 
+/**
+ * Una cuota del mes, tal como la devuelve `GET /inmobiliaria/cartera/mes`.
+ *
+ * Espejo de `back-erp/src/inmobiliaria/cartera/cartera-del-mes.ts`. Es la
+ * misma fuente que la cartera por concepto —las cuotas del contrato— con otro
+ * alcance: un mes, y también las cuotas ya saldadas.
+ */
+export interface FilaDeLaCuotaDelMes {
+  /** 🔴 La llave de la fila. Nunca `cobroId`: viene `null` en toda cuota migrada. */
+  cuotaId: string;
+  /** El `Cobro` que MATERIALIZÓ esta cuota, si finanzas ya lo emitió. */
+  cobroId: string | null;
+  contractId: string;
+  contrato: string | null;
+  contratoDeLeasefy: string | null;
+  inquilino: string | null;
+  documento: string | null;
+  telefono: string | null;
+  inmueble: string;
+  month: string;
+  /** `YYYY-MM-DD`, el día de cartera del período. De acá arranca el plazo. */
+  vence: string;
+  estado: EstadoDeCuota;
+  cajon: CajonDeLaCuota;
+  diasDeMora: number;
+  diasDePlazo: number;
+  esVencida: boolean;
+  /** 🔴 ES CARTERA: pasó el vencimiento MÁS los días de plazo del contrato. */
+  enMora: boolean;
+  enSiniestro: boolean;
+  /** Lo que el período le cuesta al inquilino (lo pactado). */
+  totalCop: number;
+  pagadoCop: number;
+  pendienteCop: number;
+}
+
+export interface TotalesDelMes {
+  cuotas: number;
+  contratos: number;
+  inquilinos: number;
+  /** 🔴 LO QUE SE DEBE EN EL MES. Existe desde que se firmó el contrato. */
+  totalCop: number;
+  pagadoCop: number;
+  /** Lo que falta. `porVencer + vencidaEnPlazo + cartera` lo reconstruye. */
+  pendienteCop: number;
+  porVencerCop: number;
+  vencidaEnPlazoCop: number;
+  /** 🔴 LA CARTERA: lo único que la cobranza persigue. */
+  carteraCop: number;
+  cuotasEnCartera: number;
+  enSiniestroCop: number;
+  /** `totalCop − (pagadoCop + pendienteCop)`. Cero cuando las cuotas cuadran. */
+  sinCuadrarCop: number;
+}
+
+export interface CarteraDelMes {
+  generadoEn: string;
+  /** `YYYY-MM-DD` en Bogotá: contra qué día se leyó «vence». */
+  hoy: string;
+  mes: string;
+  totales: TotalesDelMes;
+  /** Cartera primero, después lo vencido en plazo, lo futuro y lo saldado. */
+  filas: FilaDeLaCuotaDelMes[];
+  /** Contratos vigentes SIN tabla de amortización: su deuda no está acá. */
+  contratosSinCuotas: number;
+  /** Cuotas del mes que el contrato ya no cubre, con su motivo. */
+  excluidas: { estado: 'ANULADA' | 'ANTERIOR'; cuotas: number; motivo: string }[];
+  /** Lo que estos números NO incluyen, escrito para que lo lea una persona. */
+  avisos: string[];
+}
+
 export type EstadoDelGiro =
   | 'SIN_GENERAR'
   | 'DISP_PENDING'

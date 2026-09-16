@@ -925,7 +925,9 @@
       "secOperacionDelContrato": "Operación",
       "secDinero": "Dinero",
       "caraInquilinos": "Inquilinos",
+      "caraInquilinosDetalle": "lo que entra",
       "caraPropietarios": "Propietarios",
+      "caraPropietariosDetalle": "lo que sale",
       "secDirectorio": "Directorio",
       "pipelineCorto": "Pipeline",
       "mantenimientos": "Mantenimientos",
@@ -5268,7 +5270,7 @@
         "estudioReglas": "Reglas",
         "cotizadorEjecucion": "Ejecución",
         "cotizadorIntegraciones": "Integraciones",
-        "pagosHome": "Pagos IA",
+        "pagosHome": "Pagos",
         "mantenimiento": "Mantenimiento",
         "mantenimientoTickets": "Tickets",
         "mantenimientoResumen": "Resumen"
@@ -8864,8 +8866,8 @@
         }
       },
       "pagos_home": {
-        "title": "Pagos IA",
-        "subtitle": "Cobros, pagos recibidos y liquidaciones a propietarios, orquestados por el agente.",
+        "title": "Pagos",
+        "subtitle": "La deuda de cada contrato, mes a mes: lo que entra de los inquilinos y lo que sale hacia los propietarios.",
         "resumen": {
           "nuevaFactura": "Nueva factura",
           "atencion": {
@@ -8873,22 +8875,6 @@
             "titulo": "Qué necesita tu atención",
             "verCola": "Ver la cola completa",
             "fallo": "No pudimos cargar la bandeja. Intenta de nuevo en unos minutos."
-          },
-          "cobros": {
-            "aria": "Cobros del mes",
-            "titulo": "Cobros de",
-            "mesAria": "Mes de los cobros",
-            "queEs": "los cobros del mes",
-            "queSon": "cobros",
-            "generarCta": "Generar los cobros de {{mes}}",
-            "vacioTitulo": "Todavía no hay cobros de {{mes}}",
-            "vacioDescripcion": "Generá los cobros de {{mes}} para los contratos activos y aparecen acá."
-          },
-          "kpi": {
-            "cobrosDelMes": "Cobros del mes",
-            "recaudado": "Recaudado",
-            "pendiente": "Pendiente por cobrar",
-            "enMora": "En mora"
           },
           "generar": {
             "titulo": "Generar los cobros de {{mes}}",
@@ -8900,16 +8886,6 @@
             "avisoLimpio": "Todavía no hay ningún cobro de {{mes}}.",
             "confirmar": "Generar los cobros de {{mes}}",
             "enviando": "Generando…"
-          },
-          "accesos": {
-            "aria": "Accesos a las operaciones detalladas",
-            "titulo": "Operaciones detalladas",
-            "cobros": "Cobros a inquilinos",
-            "cobrosDetalle": "Facturas, cartera y conciliación",
-            "propietarios": "Pagos a propietarios",
-            "propietariosDetalle": "Giros a propietarios y lotes al banco",
-            "tesoreria": "Liquidaciones",
-            "tesoreriaDetalle": "Saldos, movimientos y aprobaciones"
           },
           "actividad": {
             "aria": "Actividad reciente",

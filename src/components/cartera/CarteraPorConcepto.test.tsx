@@ -57,7 +57,8 @@ vi.mock('@/components/estado/FalloDeCarga', () => ({
     ),
 }))
 
-import { CarteraPorConcepto, rotuloDelContrato } from './CarteraPorConcepto'
+import { rotuloDelContrato } from '@/lib/cartera/conceptos'
+import { CarteraPorConcepto } from './CarteraPorConcepto'
 
 function fila(p: Partial<FilaDeCarteraDelInquilino> = {}): FilaDeCarteraDelInquilino {
   const base: FilaDeCarteraDelInquilino = {

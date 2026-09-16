@@ -97,6 +97,7 @@ import {
   NOMBRE_DEL_CONCEPTO,
   cuadra,
   filtrarInquilinos,
+  rotuloDelContrato,
   saldoDe,
   sumarTotales,
 } from '@/lib/cartera/conceptos'
@@ -476,21 +477,6 @@ function FilasDelInquilino({
         : null}
     </>
   )
-}
-
-/**
- * « · contrato 1686 · Leasefy #1839» en un migrado, « · contrato #94» en un
- * nativo: el número que la inmobiliaria conoce primero, y el nuestro rotulado
- * para que se sepa cuál es cuál (Nico se asustó con un «#1839» pelado).
- */
-export function rotuloDelContrato(c: {
-  contrato: string | null
-  contratoDeLeasefy?: string | null
-}): string {
-  if (!c.contrato) return ''
-  return c.contratoDeLeasefy
-    ? ` · contrato ${c.contrato} · ${c.contratoDeLeasefy}`
-    : ` · contrato ${c.contrato}`
 }
 
 function FilaDelMes({

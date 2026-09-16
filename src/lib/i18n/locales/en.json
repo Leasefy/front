@@ -11172,10 +11172,19 @@
         "cargando": "Looking up what they owe…",
         "fallo": "We could not load their balance.",
         "reintentar": "Retry",
-        "sinDeuda": "{{nombre}} owes nothing right now: there is nothing to receive money against.",
+        "sinDeuda": "{{nombre}} has no outstanding instalments.",
         "total": "Owes in total",
         "masVieja": "Oldest",
-        "variosInmuebles": "{{count}} properties"
+        "variosInmuebles": "{{count}} properties",
+        "vencidoLabel": "Past due",
+        "futuroLabel": "Not due yet",
+        "grupoVencido": "Past due",
+        "grupoFuturo": "Not due yet",
+        "vencida": "Past due",
+        "conMora": "{{dias}} days late",
+        "noVenceAun": "Due on {{fecha}}",
+        "abonado": "paid {{monto}}",
+        "soloAdelanto": "{{nombre}} has nothing past due, but the contract does carry debt ahead. Anything you receive today is an advance: it pays down instalments that have not fallen due yet."
       },
       "plan": {
         "titulo": "Where this money goes",
@@ -11183,8 +11192,14 @@
         "intereses": "Late interest {{intereses}} · principal {{capital}}",
         "queda": "{{monto}} of this month remains outstanding.",
         "despues": "After this payment they still owe",
-        "sinConciliar": "One of these months already has money recorded that no receipt backs. It has to be reconciled before receiving."
-      }
+        "sinConciliar": "One of these months already has money recorded that no receipt backs. It has to be reconciled before receiving.",
+        "adelanto": "Advance",
+        "hayAdelanto": "The months marked as an advance have not fallen due yet: paying them now reduces the contract debt."
+      },
+      "descripcionAdelanto": "Nothing is past due. Anything that comes in today is an advance: it pays down the contract instalments that have not fallen due yet, starting with the closest one.",
+      "pagaLoVencido": "Pay what is due",
+      "adelantoDesde": "Past due today: {{vencido}}. Above that figure you are paying ahead against {{futuro}} that has not fallen due yet.",
+      "sinMandato": "The property has no mandate"
     },
     "historial": {
       "titulo": "Cash receipts",

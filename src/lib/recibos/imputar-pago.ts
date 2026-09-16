@@ -31,7 +31,7 @@
  * se imputará primeramente a los intereses». No es una opción de pantalla.
  */
 
-import type { CobroEnCartera } from '@/lib/api/recibos-de-caja.types';
+import type { PeriodoEnDeuda } from '@/lib/api/recibos-de-caja.types';
 
 /** Orden de imputación dentro de UN período (Código Civil, art. 1653). */
 export const ORDEN_DENTRO_DEL_PERIODO = ['INTERESES', 'CAPITAL'] as const;
@@ -147,9 +147,16 @@ export function imputarPago(
   };
 }
 
-/** La cartera del back, traducida a lo que `imputarPago` necesita. */
-export function deudasDeLaCartera(cobros: readonly CobroEnCartera[]): DeudaImputable[] {
-  return cobros.map((c) => ({
+/**
+ * La cartera del back, traducida a lo que `imputarPago` necesita.
+ *
+ * 🔴 Entran TAMBIÉN las cuotas que todavía no vencen. Ese es el cambio del
+ * 2026-09-15: adelantar es abonar a cuotas futuras del mismo contrato, que ya
+ * son deuda. El orden por período las deja de últimas solas, así que la regla
+ * —la plata va a lo más viejo primero— no necesita ninguna excepción.
+ */
+export function deudasDeLaCartera(cuotas: readonly PeriodoEnDeuda[]): DeudaImputable[] {
+  return cuotas.map((c) => ({
     id: c.id,
     month: c.month,
     dueDate: c.dueDate,

@@ -28,6 +28,20 @@
  *
  * 🔴 El botón de enviar NUNCA está habilitado sin vista previa: la persona
  * tiene que haber visto a cuántos le va a llegar.
+ *
+ * ── Deuda ≠ cartera (2026-09-15) ────────────────────────────────────────────
+ * «Otra cosa es que se tarde en pagar sobre los días máximos de mora, y ahí ya
+ * es CARTERA como tal, y entra el agente de cobranza.» Por eso del paso 1 en
+ * adelante —los avisos CON INTERÉS— la lista se encoge: sólo entra quien ya
+ * pasó el plazo de su contrato. Los dos motivos nuevos (`AUN_NO_VENCE` y
+ * `DENTRO_DEL_PLAZO`) tienen que RENDERIZARSE: sin ellos en el catálogo del
+ * front, esa gente desaparecía del conteo y nadie sabía por qué la lista se
+ * había encogido.
+ *
+ * 🔴 La selección viaja como `soloEstasCuotas`, con los `cuotaId` de la vista
+ * previa. El filtro viejo (`soloEstosCobros`) sigue aceptándose pero sus
+ * valores se leen como `cuotaId`: mandar ids de cobro deja la selección vacía
+ * y no sale nada, en silencio.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -43,7 +57,17 @@ import {
 } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { Button, Card, CardContent, Input, Label, Switch, Textarea, toast } from '@/components/ui'
+import {
+  Button,
+  Card,
+  CardContent,
+  Checkbox,
+  Input,
+  Label,
+  Switch,
+  Textarea,
+  toast,
+} from '@/components/ui'
 import { Eyebrow, SegmentedControl } from '@leasefy/cadence'
 
 import {
@@ -112,6 +136,14 @@ function PagosRecordatorios() {
   const [mes, setMes] = useState(() => mesDeHoy())
   const [paso, setPaso] = useState<number | null>(null)
   const [canal, setCanal] = useState<CanalDeCobranza | null>(null)
+  /**
+   * A quién se le manda de la lista, por `cuotaId`. `null` = «todos los que la
+   * vista previa marcó», que es el default; en cuanto alguien destilda a uno
+   * pasa a ser un conjunto concreto. Lo que viaja SIEMPRE es la lista
+   * explícita: nadie puede quedar contactado sin haber estado en la lista que
+   * la persona aprobó.
+   */
+  const [seleccion, setSeleccion] = useState<ReadonlySet<string> | null>(null)
 
   const [cargando, setCargando] = useState(true)
   const [guardando, setGuardando] = useState(false)
@@ -188,6 +220,7 @@ function PagosRecordatorios() {
       setBorrador({})
       // El reglaje cambió: lo que la vista previa decía ya no vale.
       setPrevia(null)
+      setSeleccion(null)
       toast.success('Se guardaron las condiciones de cobro.')
     } catch (err) {
       toast.error(mensajeDeError(err))
@@ -199,6 +232,7 @@ function PagosRecordatorios() {
   const consultar = async () => {
     setConsultando(true)
     setPrevia(null)
+    setSeleccion(null)
     try {
       const vista = await cobranzaSecuenciaApi.destinatarios({
         mes,
@@ -214,13 +248,20 @@ function PagosRecordatorios() {
   }
 
   const enviar = async () => {
-    if (!previa || previa.lesLlega === 0) return
+    if (!previa || elegidas.size === 0) return
     setEnviando(true)
     try {
       const resultado = await cobranzaSecuenciaApi.enviar({
         mes,
         paso: previa.paso,
         canal: previa.canal,
+        /*
+         * 🔴 Siempre explícito, aunque no se haya destildado a nadie: así lo
+         * que sale es exactamente la lista que la persona vio y aprobó, y no
+         * lo que el back vuelva a calcular en el segundo que pasó. Son
+         * `cuotaId` — con ids de cobro la selección queda vacía y no sale nada.
+         */
+        soloEstasCuotas: [...elegidas],
       })
       toast.success(
         `Salieron ${resultado.enviados} avisos. ` +
@@ -244,14 +285,33 @@ function PagosRecordatorios() {
   const excluidos = useMemo(
     () =>
       previa
-        ? MOTIVOS_DE_EXCLUSION.filter((m) => previa.excluidos[m] > 0).map((m) => ({
+        ? MOTIVOS_DE_EXCLUSION.filter((m) => (previa.excluidos[m] ?? 0) > 0).map((m) => ({
             motivo: m,
             etiqueta: ETIQUETA_DEL_MOTIVO[m],
-            cuantos: previa.excluidos[m],
+            cuantos: previa.excluidos[m] ?? 0,
           }))
         : [],
     [previa],
   )
+
+  /** Las cuotas a las que el back dice que SÍ les llega. */
+  const elegibles = useMemo(
+    () => (previa?.destinatarios ?? []).filter((d) => d.leLlega).map((d) => d.cuotaId),
+    [previa],
+  )
+  /** Y a cuáles de ésas se les va a mandar de verdad. */
+  const elegidas = useMemo(
+    () => seleccion ?? new Set(elegibles),
+    [seleccion, elegibles],
+  )
+
+  const alternarDestinatario = (cuotaId: string) =>
+    setSeleccion((previos) => {
+      const siguiente = new Set(previos ?? elegibles)
+      if (siguiente.has(cuotaId)) siguiente.delete(cuotaId)
+      else siguiente.add(cuotaId)
+      return siguiente
+    })
 
   if (cargando) {
     return <div className="p-6 text-sm text-fg-muted lg:p-8">Cargando las condiciones de cobro…</div>
@@ -445,6 +505,7 @@ function PagosRecordatorios() {
                 onChange={(e) => {
                   setMes(e.target.value)
                   setPrevia(null)
+                  setSeleccion(null)
                   setPaso(null)
                 }}
                 className="w-44"
@@ -500,7 +561,8 @@ function PagosRecordatorios() {
               A quién le va a llegar el aviso de {mes}
             </h2>
             <p className="max-w-2xl text-sm text-fg-muted">
-              Sólo a quienes deban ese mes. Quien ya pagó —o pagó por adelantado— no recibe nada.
+              Sólo a quienes deban ese mes. Quien ya pagó —o adelantó la cuota— no recibe nada, y en
+              los avisos con interés tampoco entra quien todavía está dentro de su plazo.
             </p>
           </div>
 
@@ -513,6 +575,7 @@ function PagosRecordatorios() {
                 onChange={(e) => {
                   setPaso(e.target.value === '' ? null : Number(e.target.value))
                   setPrevia(null)
+                  setSeleccion(null)
                 }}
                 className="h-10 rounded-md border border-border bg-card px-3 text-sm text-fg"
               >
@@ -532,6 +595,7 @@ function PagosRecordatorios() {
                 onChange={(v) => {
                   setCanal(v as CanalDeCobranza)
                   setPrevia(null)
+                  setSeleccion(null)
                 }}
                 aria-label="Canal del disparo"
               />
@@ -550,14 +614,26 @@ function PagosRecordatorios() {
             <div className="space-y-4">
               <div className="rounded-lg border border-border bg-surface-muted px-4 py-3">
                 <p className="text-sm text-fg">
-                  De <strong>{previa.revisados}</strong> cobros de {previa.mes}, le va a llegar a{' '}
+                  De <strong>{previa.revisados}</strong> cuotas de {previa.mes}, le va a llegar a{' '}
                   <strong className="text-primary">{previa.lesLlega}</strong> por{' '}
                   {previa.canal === 'CORREO' ? 'correo' : 'WhatsApp'}.
+                </p>
+                {/*
+                  🔴 Por qué la lista se encoge al cambiar de paso. El paso 0 es
+                  el recordatorio y basta con deber; de 1 en adelante el aviso
+                  lleva el interés generado, y eso sólo se le manda a quien ya
+                  es CARTERA. Sin esta línea, quien ve pasar la lista de 40 a 6
+                  concluye que el sistema está roto.
+                */}
+                <p className="mt-1 text-xs text-fg-muted" data-testid="exige-cartera">
+                  {previa.exigeCartera
+                    ? 'Este paso lleva el interés generado: sólo entra quien ya pasó los días de plazo de su contrato. Deber y estar en cartera no son lo mismo.'
+                    : 'Este paso es el recordatorio: entra quien deba el mes, aunque todavía esté dentro de su plazo. Todavía no hay interés que cobrar.'}
                 </p>
                 {excluidos.length > 0 && (
                   <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-muted">
                     {excluidos.map((e) => (
-                      <li key={e.motivo}>
+                      <li key={e.motivo} data-testid={`excluidos-${e.motivo}`}>
                         {e.etiqueta}: <strong className="text-fg">{e.cuantos}</strong>
                       </li>
                     ))}
@@ -571,6 +647,9 @@ function PagosRecordatorios() {
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-surface-muted text-left text-xs uppercase tracking-wide text-fg-muted">
                     <tr>
+                      <th className="w-10 px-3 py-2 font-medium">
+                        <span className="sr-only">Enviar</span>
+                      </th>
                       <th className="px-3 py-2 font-medium">Inquilino</th>
                       <th className="px-3 py-2 font-medium">Inmueble</th>
                       <th className="px-3 py-2 text-right font-medium">Debe</th>
@@ -578,9 +657,36 @@ function PagosRecordatorios() {
                     </tr>
                   </thead>
                   <tbody>
+                    {/*
+                      🔴 `key={d.cuotaId}`: `cobroId` ahora puede ser `null` y
+                      lo es en toda cuota que finanzas no reclamó. Como llave de
+                      React eso son claves duplicadas.
+                    */}
                     {previa.destinatarios.map((d) => (
-                      <tr key={d.cobroId} className="border-t border-border">
-                        <td className="px-3 py-2 text-fg">{d.nombre}</td>
+                      <tr key={d.cuotaId} className="border-t border-border" data-testid="fila-destinatario">
+                        <td className="px-3 py-2">
+                          {/* Sólo se puede destildar a quien de verdad recibiría:
+                              tildar a un excluido no lo desbloquea, y ofrecerlo
+                              sería prometer un envío que el back va a omitir. */}
+                          {d.leLlega && (
+                            <Checkbox
+                              checked={elegidas.has(d.cuotaId)}
+                              onCheckedChange={() => alternarDestinatario(d.cuotaId)}
+                              aria-label={`Enviarle a ${d.nombre}`}
+                              data-testid={`elegir-${d.cuotaId}`}
+                            />
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-fg">
+                          {d.nombre}
+                          {/* Deuda y cartera se distinguen en la fila, no sólo
+                              en el conteo de arriba. */}
+                          <span className="ml-2 text-xs text-fg-muted">
+                            {d.esCartera
+                              ? `cartera · ${d.diasDeMora} ${d.diasDeMora === 1 ? 'día' : 'días'} de mora`
+                              : 'deuda · dentro del plazo'}
+                          </span>
+                        </td>
                         <td className="px-3 py-2 text-fg-muted">{d.inmueble}</td>
                         <td className="px-3 py-2 text-right tabular-nums text-fg">
                           {pesos(d.pendienteCop)}
@@ -613,11 +719,12 @@ function PagosRecordatorios() {
                 <Button
                   hideArrow
                   onClick={() => void enviar()}
-                  disabled={enviando || previa.lesLlega === 0 || !previa.disponible}
+                  disabled={enviando || elegidas.size === 0 || !previa.disponible}
                   className="shrink-0"
+                  data-testid="enviar-cobranza"
                 >
                   <PaperPlaneTilt className="mr-2 h-4 w-4" weight="duotone" aria-hidden="true" />
-                  {enviando ? 'Enviando…' : `Enviar a ${previa.lesLlega}`}
+                  {enviando ? 'Enviando…' : `Enviar a ${elegidas.size}`}
                 </Button>
               </div>
             </div>

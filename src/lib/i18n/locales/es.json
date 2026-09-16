@@ -11212,10 +11212,19 @@
         "cargando": "Buscando lo que debe…",
         "fallo": "No pudimos traer su cartera.",
         "reintentar": "Reintentar",
-        "sinDeuda": "{{nombre}} no debe nada en este momento: no hay contra qué recibir plata.",
+        "sinDeuda": "{{nombre}} no tiene ninguna cuota pendiente.",
         "total": "Debe en total",
         "masVieja": "La más vieja",
-        "variosInmuebles": "{{count}} inmuebles"
+        "variosInmuebles": "{{count}} inmuebles",
+        "vencidoLabel": "Vencido",
+        "futuroLabel": "Todavía no vence",
+        "grupoVencido": "Vencido",
+        "grupoFuturo": "Todavía no vence",
+        "vencida": "Vencida",
+        "conMora": "{{dias}} días de mora",
+        "noVenceAun": "Vence el {{fecha}}",
+        "abonado": "abonó {{monto}}",
+        "soloAdelanto": "{{nombre}} no tiene nada vencido, pero su contrato sí tiene deuda por delante. Lo que recibas hoy es un adelanto: baja las cuotas que todavía no vencen."
       },
       "plan": {
         "titulo": "A dónde va esta plata",
@@ -11223,8 +11232,14 @@
         "intereses": "Intereses de mora {{intereses}} · capital {{capital}}",
         "queda": "Queda pendiente {{monto}} de este mes.",
         "despues": "Después de este pago sigue debiendo",
-        "sinConciliar": "Uno de estos meses ya tiene plata registrada que ningún recibo respalda. Hay que conciliarla antes de recibir."
-      }
+        "sinConciliar": "Uno de estos meses ya tiene plata registrada que ningún recibo respalda. Hay que conciliarla antes de recibir.",
+        "adelanto": "Adelanto",
+        "hayAdelanto": "Los meses marcados como adelanto todavía no vencen: pagarlos ahora baja la deuda del contrato."
+      },
+      "descripcionAdelanto": "No tiene nada vencido. Lo que entre hoy es un adelanto: baja las cuotas de su contrato que todavía no vencen, de la más próxima en adelante.",
+      "pagaLoVencido": "Paga lo vencido",
+      "adelantoDesde": "Vencido hoy: {{vencido}}. Por encima de esa cifra estás adelantando contra {{futuro}} que todavía no vencen.",
+      "sinMandato": "Falta el mandato del inmueble"
     },
     "historial": {
       "titulo": "Recibos de caja",

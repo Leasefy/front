@@ -98,12 +98,19 @@ describe('enviar — lo único que le escribe a un inquilino', () => {
     expect(postMock).toHaveBeenCalledWith(`${BASE}/enviar`, { mes: '2026-10', paso: 0 });
   });
 
-  it('una selección manda sólo esos cobros', async () => {
-    await cobranzaSecuenciaApi.enviar({ mes: '2026-10', soloEstosCobros: ['a', 'b'] });
+  /*
+   * 🔴 La selección viaja como `soloEstasCuotas`, con los `cuotaId` de la vista
+   * previa. El back sigue aceptando el nombre viejo `soloEstosCobros` —para no
+   * dar 400— pero lee sus valores como `cuotaId`: un front sin actualizar manda
+   * ids de cobro, no coincide ninguno, y el envío sale VACÍO sin decir nada.
+   */
+  it('una selección manda sólo esas CUOTAS, con el nombre nuevo del filtro', async () => {
+    await cobranzaSecuenciaApi.enviar({ mes: '2026-10', soloEstasCuotas: ['a', 'b'] });
     expect(postMock).toHaveBeenCalledWith(`${BASE}/enviar`, {
       mes: '2026-10',
-      soloEstosCobros: ['a', 'b'],
+      soloEstasCuotas: ['a', 'b'],
     });
+    expect(postMock.mock.calls[0][1]).not.toHaveProperty('soloEstosCobros');
   });
 
   it('no cuela ninguna clave que el back no conozca', async () => {

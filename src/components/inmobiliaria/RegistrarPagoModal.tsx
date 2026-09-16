@@ -22,6 +22,23 @@
  * para poder recibir contra él. Las tres cosas se fueron: elegir el mes es
  * exactamente lo que la regla de imputación no permite.
  *
+ * ── La corrección del 2026-09-15 ────────────────────────────────────────────
+ * Este diálogo decía «no debe nada» con el contrato vigente y no ofrecía forma
+ * de adelantar. Nico:
+ *
+ *   «¿Por qué sigue apareciendo acá que no debe? Desde que él comience el
+ *    contrato ya debe. No tienes que esperar que se cumpla la fecha.»
+ *   «El puede hasta adelantar dinero sobre el contrato que tiene y pagar dos
+ *    meses o lo que sea, para bajarle a lo adeudado.»
+ *
+ * Tres consecuencias acá adentro:
+ *   · la deuda se muestra PARTIDA (vencido / todavía no vence) y el monto se
+ *     prellena con lo VENCIDO, no con la deuda entera del contrato — que puede
+ *     ser un año de canon y nadie lo recibe de una;
+ *   · se puede emitir aunque no haya nada vencido: eso es ADELANTAR, y hay un
+ *     atajo para pagar toda la deuda cuando se quiere;
+ *   · «no debe nada» sólo aparece cuando no queda ninguna cuota pendiente.
+ *
  * Cuatro cosas que este formulario tiene que hacer bien o no sirve:
  *
  * 1. 🔴 La CARTERA a la vista apenas se elige al cliente. Sin ella, quien
@@ -93,6 +110,7 @@ import {
   ElegirCliente,
   PlanDeImputacion,
   periodosSinConciliar,
+  soloSePuedeAdelantar,
   useCarteraDelCliente,
   usePlanDeImputacion,
 } from './ReciboPorCliente';
@@ -204,6 +222,8 @@ export function RegistrarPagoModal({
   const [saludos, setSaludos] = React.useState('');
   const [enviando, setEnviando] = React.useState(false);
   const [errorDelBack, setErrorDelBack] = React.useState<string | null>(null);
+  /** El rótulo del banner de error: los 409 de configuración no son «no se emitió». */
+  const [tituloDelError, setTituloDelError] = React.useState<string | null>(null);
   const [tocado, setTocado] = React.useState(false);
 
   /*
@@ -246,7 +266,16 @@ export function RegistrarPagoModal({
     [cartera, plan],
   );
 
+  /**
+   * El tope es TODA la deuda del contrato: lo vencido más lo que no vence.
+   * Adelantar es abonar a esas cuotas futuras, así que toparlo en lo vencido
+   * sería prohibir justo lo que el CEO pidió habilitar.
+   */
   const maximo = cartera?.total ?? 0;
+  /** Lo que la inmobiliaria reclama HOY. Es el default del campo. */
+  const vencido = cartera?.vencidoCop ?? 0;
+  const futuro = cartera?.futuroCop ?? 0;
+  const sePuedeAdelantar = soloSePuedeAdelantar(cartera);
   const montoValido = Number.isFinite(monto) && monto > 0;
   /*
    * 🔴 Pagar de MÁS dejó de ser un error (CEO, 2026-09-15): «yo le pude haber
@@ -272,18 +301,26 @@ export function RegistrarPagoModal({
           : null;
 
   /**
-   * R4 — el piso del campo de fecha: el primer día del período MÁS VIEJO que
-   * la persona debe.
+   * R4 — el piso del campo de fecha: el primer día del período VENCIDO más
+   * viejo que la persona debe.
    *
-   * La cartera ya viene ordenada del más viejo al más nuevo, así que es el
-   * primero. Sin cartera (un pago por adelantado) se cae al 1.º de enero del
-   * año en curso: un arqueo no mira más atrás, y dejar el campo sin piso es
-   * cómo un dedo de más escribe un recibo fechado en 2016.
+   * 🔴 Sólo cuentan las VENCIDAS. Desde que la cartera trae las cuotas futuras,
+   * tomar la primera de la lista deja un piso EN EL FUTURO cuando lo único que
+   * hay es deuda por vencer (`min` 2026-11-01 con `max` hoy): el campo queda
+   * imposible de satisfacer y el valor prellenado, fuera de rango. Por si
+   * acaso, el piso además se topa en hoy — un piso posterior al techo no es un
+   * piso, es un campo roto.
+   *
+   * Sin nada vencido (un adelanto) se cae al 1.º de enero del año en curso: un
+   * arqueo no mira más atrás, y dejar el campo sin piso es cómo un dedo de más
+   * escribe un recibo fechado en 2016.
    */
   const pisoDeLaFecha = React.useMemo(() => {
-    const masViejo = cartera?.cobros[0]?.month;
-    if (masViejo) return `${masViejo}-01`;
-    return `${hoy.slice(0, 4)}-01-01`;
+    const masViejoVencido = cartera?.cuotas.find((c) => c.vencida)?.month;
+    const piso = masViejoVencido
+      ? `${masViejoVencido}-01`
+      : `${hoy.slice(0, 4)}-01-01`;
+    return piso > hoy ? `${hoy.slice(0, 4)}-01-01` : piso;
   }, [cartera, hoy]);
 
   const puedeEnviar =
@@ -296,22 +333,31 @@ export function RegistrarPagoModal({
     fecha !== '';
 
   /**
-   * Al cambiar de cliente, el formulario arranca de cero con su deuda entera.
-   * Es el default correcto: lo normal es recibir el pago completo, y el que
-   * abona parcial escribe menos.
+   * Al cambiar de cliente, el formulario arranca con lo VENCIDO.
+   *
+   * 🔴 Antes arrancaba con `cartera.total`, y eso servía mientras la cartera
+   * eran sólo los cobros emitidos. Desde que la deuda se lee del contrato, el
+   * total puede ser un año entero de canon: prellenarlo es ofrecerle a la
+   * persona de caja un recibo por $24 M que nadie va a pagar de una. Lo que se
+   * recibe normalmente es lo vencido; adelantar es una decisión explícita y
+   * tiene su propio atajo («Paga toda la deuda»).
+   *
+   * Sin nada vencido el campo queda VACÍO: el monto de un adelanto no lo
+   * adivina la pantalla, lo dice quien trae la plata.
    */
   React.useEffect(() => {
     if (!cartera) return;
-    setMonto(cartera.total > 0 ? cartera.total : NaN);
+    setMonto((cartera.vencidoCop ?? 0) > 0 ? cartera.vencidoCop : NaN);
     setMedio('');
     setFecha(hoy);
     setSaludos('');
     setErrorDelBack(null);
+    setTituloDelError(null);
     setTocado(false);
     setConciliando(null);
     setOrigen('');
     setErrorDeConciliacion(null);
-  }, [cartera?.tenantId, cartera?.total, hoy]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cartera?.tenantId, cartera?.total, cartera?.vencidoCop, hoy]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cerrar = React.useCallback(() => {
     llaveDelRecibo.current = null;
@@ -320,6 +366,7 @@ export function RegistrarPagoModal({
     setMedio('');
     setSaludos('');
     setErrorDelBack(null);
+    setTituloDelError(null);
     setTocado(false);
     setConciliando(null);
     setOrigen('');
@@ -333,6 +380,7 @@ export function RegistrarPagoModal({
 
     setEnviando(true);
     setErrorDelBack(null);
+    setTituloDelError(null);
     try {
       /*
        * De quién es el pago: el cobro de entrada si vino de una fila, si no la
@@ -370,21 +418,42 @@ export function RegistrarPagoModal({
       cerrar();
     } catch (e) {
       /*
-       * 🔴 409 = un período tiene plata registrada que nunca pasó por un
-       * recibo. Le pasa a TODO cobro anterior al recibo de caja y a los de
-       * PSE, así que sin esta rama el módulo no sirve sobre la cartera viva.
-       * El back manda el `cobroId` del período trabado en el cuerpo.
+       * 🔴 `PLATA_SIN_RECIBO` (409): un período tiene plata registrada que
+       * nunca pasó por un recibo. Le pasa a TODO cobro anterior al recibo de
+       * caja y a los de PSE, así que sin esta rama el módulo no sirve sobre la
+       * cartera viva. El back manda el `cobroId` del período trabado.
+       *
+       * 🔴 Se exige el CÓDIGO y no sólo el 409: desde el 2026-09-15 hay tres
+       * conflictos distintos en este endpoint (`PLATA_SIN_RECIBO`,
+       * `DEUDA_MAS_VIEJA` y `CONTRATO_SIN_MANDATO`), y el atajo viejo
+       * —«409 y algún período sin conciliar a mano»— mandaba los otros dos al
+       * panel de conciliación, que no arregla ninguno de los dos. Un back
+       * anterior que no manda `code` sigue entrando por el `cobroId` del
+       * cuerpo, que sólo `PLATA_SIN_RECIBO` trae.
        */
       if (e instanceof ApiError && e.status === 409) {
+        const esPlataSinRecibo =
+          e.code === 'PLATA_SIN_RECIBO' || (!e.code && typeof e.detalle?.cobroId === 'string');
         const trabado =
           typeof e.detalle?.cobroId === 'string' ? e.detalle.cobroId : sinConciliar[0]?.id;
-        if (trabado) {
+        if (esPlataSinRecibo && trabado) {
           setConciliando({ cobroId: trabado, mensaje: e.message });
           setErrorDelBack(null);
           return;
         }
       }
-      // El 400 del sobrepago trae el máximo: se muestra tal cual.
+      /*
+       * El resto se muestra TAL CUAL, con su título propio:
+       *   · 400 del sobrepago → trae el máximo abonable;
+       *   · 409 `DEUDA_MAS_VIEJA` → dice cuánto y de qué inmueble es la deuda
+       *     que va primero;
+       *   · 409 `CONTRATO_SIN_MANDATO` → el inmueble no tiene mandato y el
+       *     recibo necesita uno para poder emitir el documento. Es un problema
+       *     de configuración, no del pago, y por eso se rotula distinto: quien
+       *     está en caja tiene que saber que la salida es asignar el mandato.
+       */
+      const sinMandato = e instanceof ApiError && e.code === 'CONTRATO_SIN_MANDATO';
+      setTituloDelError(sinMandato ? t('recibos.form.sinMandato') : null);
       setErrorDelBack(e instanceof Error ? e.message : t('recibos.form.fallo'));
     } finally {
       setEnviando(false);
@@ -434,9 +503,13 @@ export function RegistrarPagoModal({
   }, [conciliando, onConciliar, origen, recargar, t]);
 
   /*
-   * Con qué se dibuja el formulario. Antes era «tiene deuda»; ahora también
-   * cuando NO debe nada pero la inmobiliaria puede guardarle saldo a favor,
-   * que es el pago por adelantado que pidió el CEO.
+   * Con qué se dibuja el formulario.
+   *
+   * `cartera.total` ya incluye las cuotas que todavía no vencen, así que un
+   * contrato vigente SIEMPRE llega acá con deuda y el formulario se dibuja:
+   * adelantar es abonarle a esas cuotas, no un saldo a favor. El
+   * `anticipoDisponible` quedó para el único caso que sobrevive —plata que no
+   * calza con ningún contrato— y es lo que deja recibir con la deuda en cero.
    */
   const hayCartera =
     cartera !== null && (cartera.total > 0 || cartera.anticipoDisponible === true);
@@ -450,7 +523,13 @@ export function RegistrarPagoModal({
             {t('recibos.form.titulo')}
           </DialogTitle>
           <DialogDescription>
-            {cartera ? t('recibos.form.descripcion') : t('recibos.form.elegirClienteAyuda')}
+            {/* Sin nada vencido el encabezado deja de prometer un cobro y
+                nombra lo que de verdad se puede hacer: adelantar. */}
+            {!cartera
+              ? t('recibos.form.elegirClienteAyuda')
+              : sePuedeAdelantar
+                ? t('recibos.form.descripcionAdelanto')
+                : t('recibos.form.descripcion')}
           </DialogDescription>
         </DialogHeader>
 
@@ -484,10 +563,11 @@ export function RegistrarPagoModal({
           )}
 
           {/*
-            R2: el cliente no debe nada. Se dice con las mismas palabras del
-            servidor y, como no existe el saldo a favor, no se promete un
-            anticipo. El pie se dibuja igual, con «Cerrar»: antes el modal
-            quedaba sin botones.
+            🔴 «No debe nada» sólo puede aparecer cuando de verdad NO queda
+            ninguna cuota pendiente — ni vencida ni futura. Antes salía con el
+            contrato vigente porque la deuda se leía de los cobros emitidos, y
+            ése fue el defecto que originó todo este cambio. El pie se dibuja
+            igual, con «Cerrar»: sin eso el modal quedaba sin botones.
           */}
           {conciliando === null && !cargando && cartera !== null && !hayCartera && (
             <div data-testid="cliente-sin-deuda">
@@ -495,7 +575,7 @@ export function RegistrarPagoModal({
                 queSon="cuotas pendientes"
                 icono={Receipt}
                 titulo={t('recibos.form.cartera.sinDeuda', { nombre: cartera.nombre })}
-                descripcion="Cuando tenga una cuota por cobrar vas a poder hacerle el recibo. Recibir plata por adelantado necesita la migración del saldo a favor, que todavía no está aplicada en esta base."
+                descripcion="No le queda ninguna cuota pendiente: ni vencida ni por vencer. Cuando su contrato genere la siguiente vas a poder recibírsela, incluso antes de que venza."
               />
             </div>
           )}
@@ -546,20 +626,38 @@ export function RegistrarPagoModal({
 
               {/* Cuánto va a pagar */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <label htmlFor="monto-recibo" className="text-sm font-medium text-foreground">
                     {t('recibos.form.montoLabel')}
                   </label>
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    hideArrow
-                    className="h-auto p-0 text-xs"
-                    onClick={() => setMonto(maximo)}
-                  >
-                    {t('recibos.form.abonarTodo')}
-                  </Button>
+                  {/* Dos atajos, no uno: recibir lo vencido es la operación
+                      normal; pagar toda la deuda es adelantar, y se elige. */}
+                  <div className="flex items-center gap-3">
+                    {vencido > 0 && vencido !== maximo && (
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        hideArrow
+                        className="h-auto p-0 text-xs"
+                        onClick={() => setMonto(vencido)}
+                        data-testid="atajo-vencido"
+                      >
+                        {t('recibos.form.pagaLoVencido')}
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      hideArrow
+                      className="h-auto p-0 text-xs"
+                      onClick={() => setMonto(maximo)}
+                      data-testid="atajo-todo"
+                    >
+                      {t('recibos.form.abonarTodo')}
+                    </Button>
+                  </div>
                 </div>
                 <CurrencyInput
                   id="monto-recibo"
@@ -574,12 +672,24 @@ export function RegistrarPagoModal({
                 <p className="text-xs text-fg-muted">
                   {t('recibos.form.maximo', { monto: formatCurrency(maximo) })}
                 </p>
+                {/* Por encima de lo vencido la plata baja cuotas que todavía no
+                    vencen. Es legítimo y es lo que el CEO pidió, pero tiene que
+                    estar dicho ANTES de emitir, no descubrirse en el recibo. */}
+                {vencido > 0 && futuro > 0 && (
+                  <p className="text-xs text-fg-muted" data-testid="aviso-adelanto-monto">
+                    {t('recibos.form.adelantoDesde', {
+                      vencido: formatCurrency(vencido),
+                      futuro: formatCurrency(futuro),
+                    })}
+                  </p>
+                )}
                 {/* Decir a dónde va el excedente ANTES de emitir: si no, la
                     plata «desaparece» de la cartera y nadie sabe dónde quedó. */}
                 {excedente > 0 && puedeGuardarAFavor && (
                   <p className="text-xs text-fg-muted" data-testid="aviso-a-favor">
-                    {formatCurrency(excedente)} quedan a favor de {cartera?.nombre ?? 'el cliente'}:
-                    se aplican solos a los cobros que vayan apareciendo, del más viejo al más nuevo.
+                    {formatCurrency(excedente)} superan TODA la deuda de {cartera?.nombre ?? 'el cliente'}
+                    {' '}—vencida y futura— y quedan a su favor: se aplican solos a las cuotas que
+                    vayan apareciendo, de la más vieja a la más nueva.
                   </p>
                 )}
                 {errorDeMonto && <p className="text-xs text-destructive">{errorDeMonto}</p>}
@@ -671,7 +781,11 @@ export function RegistrarPagoModal({
 
               {/* El rechazo del back, tal cual */}
               {errorDelBack && (
-                <Banner variant="danger" title={t('recibos.form.fallo')}>
+                <Banner
+                  variant="danger"
+                  title={tituloDelError ?? t('recibos.form.fallo')}
+                  data-testid="error-del-back"
+                >
                   {errorDelBack}
                 </Banner>
               )}

@@ -3775,6 +3775,23 @@
           "addPhotos": "Agregar fotos",
           "saveDraft": "Dejar en borrador",
           "publishAnyway": "Publicar sin fotos"
+        },
+        "borrador": {
+          "titulo": "Dejaste un inmueble a medio cargar",
+          "detalle": "Lo guardamos solo el {{fecha}}, en el paso {{paso}} de {{total}}.",
+          "conFotos": "Incluye {{fotos}} foto(s) que ya habías elegido.",
+          "fotosNoGuardadas": "Las fotos no se pudieron guardar en este navegador: hay que volver a elegirlas.",
+          "continuar": "Continuar donde quedé",
+          "descartar": "Descartar borrador",
+          "guardado": "Borrador guardado {{hora}}",
+          "propietarioPerdidoTitle": "El propietario del borrador ya no está",
+          "propietarioPerdidoDesc": "Lo borraron mientras el borrador esperaba. Recuperamos todo lo demás: elige de nuevo a quién pertenece el inmueble.",
+          "dialogo": {
+            "titulo": "¿Descartar el borrador?",
+            "descripcion": "Se borra lo que llevabas cargado en este inmueble, fotos incluidas. No se puede deshacer.",
+            "conservar": "Conservarlo",
+            "descartar": "Sí, descartar"
+          }
         }
       }
     },

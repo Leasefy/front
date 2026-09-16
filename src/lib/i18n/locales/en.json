@@ -3735,6 +3735,23 @@
           "addPhotos": "Add photos",
           "saveDraft": "Keep as draft",
           "publishAnyway": "Publish without photos"
+        },
+        "borrador": {
+          "titulo": "You left a property half-filled",
+          "detalle": "We saved it for you on {{fecha}}, at step {{paso}} of {{total}}.",
+          "conFotos": "It includes {{fotos}} photo(s) you had already picked.",
+          "fotosNoGuardadas": "This browser could not store the photos: you'll need to pick them again.",
+          "continuar": "Continue where I left off",
+          "descartar": "Discard draft",
+          "guardado": "Draft saved {{hora}}",
+          "propietarioPerdidoTitle": "The draft's owner is gone",
+          "propietarioPerdidoDesc": "It was deleted while the draft was waiting. Everything else is back: pick who this property belongs to.",
+          "dialogo": {
+            "titulo": "Discard the draft?",
+            "descripcion": "This erases what you had filled in for this property, photos included. It can't be undone.",
+            "conservar": "Keep it",
+            "descartar": "Yes, discard"
+          }
         }
       }
     },

@@ -31,6 +31,7 @@ import type {
   DispersionStatus,
   PropietarioBankAccount,
 } from '@/lib/types/inmobiliaria';
+import { baseDeLaDispersion } from '@/lib/propietarios/base-del-canon';
 
 /** Lo que manda el back, tal cual. */
 export interface DispersionDelBack {
@@ -40,6 +41,13 @@ export interface DispersionDelBack {
   propietarioBankName: string | null;
   propietarioBankAccount: string | null;
   month: string;
+  /**
+   * Con qué base salió el canon. La manda `GET /inmobiliaria/dispersiones` (y
+   * `/:id`) desde el 2026-09-16; aprobar y girar no la traen.
+   */
+  baseDelCanon?: 'CAUSADO' | 'RECAUDADO' | null;
+  /** La columna cruda, cuando la base la tiene y la fila la escribió. */
+  baseDeCalculo?: string | null;
   totalCollected: number;
   totalCommission: number;
   totalConceptosAFavor?: number;
@@ -129,6 +137,8 @@ export function adaptarDispersion(d: DispersionDelBack): Dispersion {
       conceptosACargo: i.conceptosACargo ?? 0,
       deTerceros: i.deTerceros ?? 0,
     })),
+    // 🔴 Sin esto la pantalla decía «Recaudado» sobre el canon causado.
+    baseDelCanon: baseDeLaDispersion(d),
     totalCollected: d.totalCollected,
     totalCommission: d.totalCommission,
     totalConceptosAFavor: d.totalConceptosAFavor ?? 0,

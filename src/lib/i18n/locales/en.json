@@ -1825,7 +1825,7 @@
       "totalOwners": "Total owners",
       "activeOwners": "Active owners",
       "totalProperties": "Total properties",
-      "monthlyRevenue": "Monthly collection",
+      "monthlyRevenue": "Monthly rent",
       "upToDate": "Up to date",
       "withBalance": "{{count}} with balance",
       "noPending": "No pending",
@@ -2326,7 +2326,9 @@
         "savings": "Savings",
         "checking": "Checking",
         "summaryTitle": "Summary",
-        "collected": "Collected",
+        "canonCausado": "Accrued rent",
+        "canonRecaudado": "Collected rent",
+        "queEsCanonCausado": "Accrued rent: what the contract charges that month, even if the tenant has not paid.",
         "commission": "Commission",
         "net": "Net",
         "propertyBreakdown": "Property Breakdown",
@@ -2398,7 +2400,11 @@
         "propietario": "Owner",
         "month": "Month",
         "properties": "Properties",
-        "collected": "Collected",
+        "canonCausado": "Accrued rent",
+        "canonRecaudado": "Collected rent",
+        "canon": "Rent",
+        "filaCausado": "accrued",
+        "filaRecaudado": "collected",
         "commission": "Commission",
         "net": "Net",
         "status": "Status",
@@ -4906,12 +4912,12 @@
       "alertas": {
         "sinCuenta": {
           "titulo": "No bank account: payouts cannot be made",
-          "detalle": "{{n}} rented unit(s) and the collected rent has nowhere to go. Add bank, type, number and holder.",
+          "detalle": "{{n}} rented unit(s) and the payouts have nowhere to go. Add bank, type, number and holder.",
           "accion": "Add bank account"
         },
         "pendienteDeGiro": {
           "titulo": "{{monto}} pending payout",
-          "detalle": "Rent already collected that has not been paid out yet. Pay it from Disbursements, with the month's statement.",
+          "detalle": "Disbursements already generated that have not been paid out yet. Pay them from Disbursements, with the month's statement.",
           "accion": "Go to disbursements"
         },
         "sinArrendar": {
@@ -5058,7 +5064,8 @@
         "property": "property",
         "properties": "properties",
         "propertyHeader": "Property",
-        "collected": "Collected",
+        "canonCausado": "Accrued rent",
+        "canonRecaudado": "Collected rent",
         "commAmount": "Commission",
         "total": "Total",
         "inCommissions": "in commissions"

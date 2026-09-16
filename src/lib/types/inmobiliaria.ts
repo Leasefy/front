@@ -699,8 +699,17 @@ export interface Dispersion {
   month: string; // '2026-02'
   items: DispersionItem[];
 
+  /**
+   * Con qué base salió el canon (`totalCollected` y el `rentCollected` de cada
+   * línea): `CAUSADO` —lo que el contrato cobra ese mes, haya pagado o no el
+   * inquilino; el default— o `RECAUDADO` —lo que el inquilino pagó—. Rotula el
+   * canon, no cambia ningún número. La resuelve `adaptarDispersion` con
+   * `lib/propietarios/base-del-canon.ts::baseDeLaDispersion`.
+   */
+  baseDelCanon: 'CAUSADO' | 'RECAUDADO';
+
   // Totals
-  /** Canon liquidado del mes, sin administración (causado o recaudado según la base). */
+  /** Canon liquidado del mes, sin administración (causado o recaudado según `baseDelCanon`). */
   totalCollected: number;
   totalCommission: number;
   totalConceptosAFavor: number;

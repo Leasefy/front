@@ -26,9 +26,16 @@ import {
 import { Badge } from '@/components/ui/badge';
 import type { DispersionItem, Consignacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { baseDeLaDispersion, type BaseDelCanon } from '@/lib/propietarios/base-del-canon';
 
 interface ComisionDesgloseProps {
   items: DispersionItem[];
+  /**
+   * Con qué base salió el canon de estas líneas. Quien la conoce la pasa (la
+   * dispersión, o la vista previa del mes); sin ella se deduce de las líneas
+   * igual que el back: cobro sin cuota es RECAUDADO, todo lo demás CAUSADO.
+   */
+  baseDelCanon?: BaseDelCanon;
   variant?: 'full' | 'compact';
   showPercentages?: boolean;
   className?: string;
@@ -131,6 +138,7 @@ function CommissionRatioBar({
  */
 export function ComisionDesglose({
   items,
+  baseDelCanon,
   variant = 'full',
   showPercentages = true,
   className,
@@ -138,6 +146,11 @@ export function ComisionDesglose({
   const { t } = useI18n();
   const [isExpanded, setIsExpanded] = React.useState(variant === 'full');
   const totals = React.useMemo(() => calculateTotals(items), [items]);
+  /*
+   * 🔴 La columna decía «Recaudado» siempre, y la dispersión gira por defecto
+   * con base CAUSADO: el canon del mes, haya pagado el inquilino o no.
+   */
+  const base = baseDelCanon ?? baseDeLaDispersion({ items });
 
   // Compact variant - just show summary with expand option
   if (variant === 'compact' && !isExpanded) {
@@ -199,7 +212,13 @@ export function ComisionDesglose({
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className="w-[40%]">{t('inmobiliaria.finance.commBreakdown.propertyHeader')}</TableHead>
-              <TableHead className="text-right">{t('inmobiliaria.finance.commBreakdown.collected')}</TableHead>
+              <TableHead className="text-right" data-testid="desglose-columna-canon">
+                {t(
+                  base === 'RECAUDADO'
+                    ? 'inmobiliaria.finance.commBreakdown.canonRecaudado'
+                    : 'inmobiliaria.finance.commBreakdown.canonCausado',
+                )}
+              </TableHead>
               {showPercentages && <TableHead className="text-center">{t('inmobiliaria.finance.commBreakdown.commission')}</TableHead>}
               <TableHead className="text-right">{t('inmobiliaria.finance.commBreakdown.commAmount')}</TableHead>
               <TableHead className="text-right">{t('inmobiliaria.finance.commBreakdown.net')}</TableHead>

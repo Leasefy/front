@@ -8,7 +8,15 @@
 
 import { describe, it, expect } from 'vitest';
 
-import { baseDeLaLinea, baseDeLaLiquidacion, baseDelExtracto } from './base-del-canon';
+import {
+  QUE_ES_EL_CANON_CAUSADO,
+  ROTULO_DEL_CANON,
+  baseDeLaDispersion,
+  baseDeLaLinea,
+  baseDeLaLiquidacion,
+  baseDeLasDispersiones,
+  baseDelExtracto,
+} from './base-del-canon';
 
 describe('baseDeLaLinea', () => {
   it('si el back la manda, ésa', () => {
@@ -48,5 +56,49 @@ describe('baseDeLaLiquidacion', () => {
     expect(baseDeLaLiquidacion({ base: 'CAUSADO' })).toBe('CAUSADO');
     expect(baseDeLaLiquidacion({})).toBe('CAUSADO');
     expect(baseDeLaLiquidacion(null)).toBe('CAUSADO');
+  });
+});
+
+describe('baseDeLaDispersion', () => {
+  const cuota = { cuotaId: 'q-1', cobroId: null };
+  const cobro = { cuotaId: null, cobroId: 'c-1' };
+
+  it('la del back gana; si no, la columna `baseDeCalculo`', () => {
+    expect(baseDeLaDispersion({ baseDelCanon: 'RECAUDADO', items: [cuota] })).toBe('RECAUDADO');
+    expect(baseDeLaDispersion({ baseDeCalculo: 'CAUSADO', items: [cobro] })).toBe('CAUSADO');
+    expect(baseDeLaDispersion({ baseDelCanon: null, baseDeCalculo: 'RECAUDADO', items: [] })).toBe('RECAUDADO');
+  });
+
+  it('🔴 sin nada escrito, la que sale de las cuotas es CAUSADO — también sin líneas', () => {
+    expect(baseDeLaDispersion({ items: [cuota] })).toBe('CAUSADO');
+    expect(baseDeLaDispersion({ baseDeCalculo: null, items: [] })).toBe('CAUSADO');
+    expect(baseDeLaDispersion({})).toBe('CAUSADO');
+    // Una palabra rara en la columna no se lee como RECAUDADO.
+    expect(baseDeLaDispersion({ baseDeCalculo: 'OTRA', items: [] })).toBe('CAUSADO');
+  });
+
+  it('la vieja por cobros (todas sus líneas con cobro y sin cuota) es RECAUDADO', () => {
+    expect(baseDeLaDispersion({ baseDeCalculo: null, items: [cobro, cobro] })).toBe('RECAUDADO');
+  });
+});
+
+describe('baseDeLasDispersiones', () => {
+  it('todas iguales → ésa; mezcladas → MIXTA; ninguna → CAUSADO', () => {
+    expect(baseDeLasDispersiones([{ baseDelCanon: 'CAUSADO' }, { baseDelCanon: 'CAUSADO' }])).toBe('CAUSADO');
+    expect(baseDeLasDispersiones([{ baseDelCanon: 'RECAUDADO' }])).toBe('RECAUDADO');
+    expect(baseDeLasDispersiones([{ baseDelCanon: 'CAUSADO' }, { baseDelCanon: 'RECAUDADO' }])).toBe('MIXTA');
+    expect(baseDeLasDispersiones([])).toBe('CAUSADO');
+  });
+});
+
+describe('los rótulos en español', () => {
+  it('son los mismos del back, y el causado no dice «recaudado» ni «recibido»', () => {
+    expect(ROTULO_DEL_CANON).toEqual({
+      CAUSADO: 'Canon causado',
+      RECAUDADO: 'Canon recaudado',
+      MIXTA: 'Canon causado y recaudado',
+    });
+    expect(ROTULO_DEL_CANON.CAUSADO).not.toMatch(/recaud|recibid/i);
+    expect(QUE_ES_EL_CANON_CAUSADO).not.toMatch(/recaud|recibid/i);
   });
 });

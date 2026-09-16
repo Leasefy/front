@@ -62,6 +62,73 @@ export function baseDelExtracto(extracto: {
 }
 
 /**
+ * Los rótulos en español, iguales a los del back (`ROTULO_DEL_CANON` y
+ * `QUE_ES_EL_CANON_*` en `propietarios/base-del-canon.ts`). Son para lo que no
+ * pasa por i18n: el Excel del propietario y las pantallas del asistente de
+ * dispersión y la tarjeta, que están escritas en español. Una pantalla con
+ * `t()` usa sus claves.
+ */
+export const ROTULO_DEL_CANON: Readonly<Record<BaseDelCanonDelExtracto, string>> = Object.freeze({
+  CAUSADO: 'Canon causado',
+  RECAUDADO: 'Canon recaudado',
+  MIXTA: 'Canon causado y recaudado',
+});
+
+/** Lo que significa «causado», en palabras de quien lo lee. */
+export const QUE_ES_EL_CANON_CAUSADO =
+  'lo que el contrato cobra ese mes, aunque el inquilino no haya pagado';
+
+/** Lo que significa «recaudado». */
+export const QUE_ES_EL_CANON_RECAUDADO = 'lo que el inquilino efectivamente pagó de ese mes';
+
+/** Lo que una dispersión trae para decidir su base. */
+export interface DispersionConBase {
+  /** La manda el back desde el 2026-09-16 (`GET /inmobiliaria/dispersiones`). */
+  baseDelCanon?: BaseDelCanon | null;
+  /** La columna `Dispersion.baseDeCalculo`, cuando existe y está escrita. */
+  baseDeCalculo?: string | null;
+  items?: readonly LineaConBase[];
+}
+
+/**
+ * La base de UNA dispersión. Si el back la manda, ésa. Si no (un back anterior
+ * al 2026-09-16, o la respuesta de aprobar/girar, que no la trae), la columna
+ * `baseDeCalculo`; y sin ella se deduce igual que el back
+ * (`dispersiones/base-de-la-dispersion.ts`): una dispersión vieja por cobros
+ * —líneas con cobro y sin cuota— es RECAUDADO; la que sale de las cuotas del
+ * propietario, CAUSADO, que es la base por defecto.
+ */
+export function baseDeLaDispersion(dispersion: DispersionConBase): BaseDelCanon {
+  if (dispersion.baseDelCanon === 'CAUSADO' || dispersion.baseDelCanon === 'RECAUDADO') {
+    return dispersion.baseDelCanon;
+  }
+  if (dispersion.baseDeCalculo === 'CAUSADO' || dispersion.baseDeCalculo === 'RECAUDADO') {
+    return dispersion.baseDeCalculo;
+  }
+  const items = dispersion.items ?? [];
+  return items.length > 0 && items.every((i) => baseDeLaLinea(i) === 'RECAUDADO')
+    ? 'RECAUDADO'
+    : 'CAUSADO';
+}
+
+/**
+ * La base de varias dispersiones juntas (una tabla, un Excel): `MIXTA` cuando
+ * conviven. Sin ninguna es CAUSADO, la base por defecto.
+ */
+export function baseDeLasDispersiones(
+  dispersiones: readonly { baseDelCanon: BaseDelCanon }[],
+): BaseDelCanonDelExtracto {
+  let causado = false;
+  let recaudado = false;
+  for (const d of dispersiones) {
+    if (d.baseDelCanon === 'RECAUDADO') recaudado = true;
+    else causado = true;
+  }
+  if (causado && recaudado) return 'MIXTA';
+  return recaudado ? 'RECAUDADO' : 'CAUSADO';
+}
+
+/**
  * La base de la vista previa de la liquidación del mes
  * (`GET /inmobiliaria/dispersiones/preview`). El back la devuelve en `base`; el
  * front no manda `?base=`, así que si faltara es el default del endpoint:

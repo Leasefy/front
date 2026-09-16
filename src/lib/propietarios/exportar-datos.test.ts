@@ -52,6 +52,7 @@ const dispersion = {
   propietarioName: 'Nicolás García',
   propietarioBankAccount: null,
   month: '2026-08',
+  baseDelCanon: 'CAUSADO',
   items: [
     {
       cobroId: 'co1',
@@ -95,7 +96,38 @@ describe('armarHojasDelPropietario', () => {
     ]);
 
     const [, giro] = hojas[2].filas;
-    expect(giro).toEqual(['agosto de 2026', 'Apto 501', 2_000_000, 10, 200_000, 0, 0, 1_800_000, 'Girado', 'TRX-1']);
+    expect(giro).toEqual(['agosto de 2026', 'Apto 501', 2_000_000, 'Causado', 10, 200_000, 0, 0, 1_800_000, 'Girado', 'TRX-1']);
+  });
+
+  /*
+   * 🔴 La hoja de giros decía «Canon recaudado» sobre todo giro, y la
+   * dispersión gira por defecto con base CAUSADO: el canon del mes, pagado o no.
+   */
+  describe('el canon de los giros dice su base', () => {
+    const giros = (ds: Dispersion[]) => armarHojasDelPropietario(propietario, [], ds)[2].filas;
+
+    it('🔴 con base CAUSADO la hoja no dice «recaudado» ni «recibido» en ninguna celda', () => {
+      const filas = giros([dispersion]);
+      expect(filas[0][2]).toBe('Canon causado');
+      expect(filas[0][3]).toBe('Base del canon');
+      expect(JSON.stringify(filas)).not.toMatch(/recaud|recibid/i);
+    });
+
+    it('con base RECAUDADO sí dice «Canon recaudado»', () => {
+      const [encabezado, fila] = giros([{ ...dispersion, baseDelCanon: 'RECAUDADO' }]);
+      expect(encabezado[2]).toBe('Canon recaudado');
+      expect(fila[3]).toBe('Recaudado');
+    });
+
+    it('con las dos bases, el encabezado dice las dos y cada fila la suya; ningún número cambia', () => {
+      const [encabezado, causado, recaudado] = giros([
+        dispersion,
+        { ...dispersion, id: 'd2', month: '2026-07', baseDelCanon: 'RECAUDADO' },
+      ]);
+      expect(encabezado[2]).toBe('Canon causado y recaudado');
+      expect([causado[2], causado[3]]).toEqual([2_000_000, 'Causado']);
+      expect([recaudado[2], recaudado[3]]).toEqual([2_000_000, 'Recaudado']);
+    });
   });
 
   it('sin cuenta bancaria deja las celdas del banco vacías, y sin inmuebles ni giros quedan sólo los encabezados', () => {

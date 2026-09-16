@@ -36,6 +36,11 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { AvisoLiquidacionFrenada } from './AvisoLiquidacionFrenada';
 import { leerLiquidacionFrenada, motivoLegible } from '@/lib/api/dispersiones-errores';
 import { motivoDelMesVacio } from './dispersion-mes-vacio';
+import {
+  ROTULO_DEL_CANON,
+  baseDeLaLiquidacion,
+  type BaseDelCanon,
+} from '@/lib/propietarios/base-del-canon';
 
 /**
  * Lo que el asistente dice cuando el back no liquidó, en tres escalones:
@@ -240,6 +245,12 @@ export function DispersionWizard({
   const [yaGenerados, setYaGenerados] = useState(0);
   /** Por qué el mes vino vacío, contado por el back en las cuotas. */
   const [vacio, setVacio] = useState<PorQueElMesVieneVacio | null>(null);
+  /**
+   * Con qué base liquidó el back la vista previa. Rotula el canon —«Canon
+   * causado» o «Canon recaudado»— y no toca un número. El asistente no manda
+   * `?base=`, así que es la del back por defecto: CAUSADO.
+   */
+  const [base, setBase] = useState<BaseDelCanon>('CAUSADO');
 
   useEffect(() => {
     let cancelado = false;
@@ -252,6 +263,7 @@ export function DispersionWizard({
         if (cancelado) return;
         setYaGenerados(previa.yaGenerados);
         setVacio(previa.vacio ?? null);
+        setBase(baseDeLaLiquidacion(previa));
         const borradores = previa.propietarios
           .filter((p) => !p.yaExiste)
           .map((p) => ({
@@ -562,7 +574,10 @@ export function DispersionWizard({
               </h3>
               <p className="text-sm text-muted-foreground">
                 Lo que le toca a cada propietario en {formatMonth(state.month)}, leído de la
-                cuota de su contrato. No depende de que el inquilino haya pagado.
+                cuota de su contrato.{' '}
+                {base === 'RECAUDADO'
+                  ? 'Sólo entran las cuotas del mes que el inquilino ya pagó completas.'
+                  : 'No depende de que el inquilino haya pagado.'}
               </p>
             </div>
 
@@ -704,6 +719,7 @@ export function DispersionWizard({
                   </div>
                   {/* Expandable Detail */}
                   <ComisionDesglose
+                    baseDelCanon={base}
                     items={draft.items.map((i) => ({
                       cobroId: i.cobroId,
                       cuotaId: i.cuotaId,
@@ -776,7 +792,11 @@ export function DispersionWizard({
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Recaudado</span>
+                      {/* 🔴 Decía «Recaudado» sobre el canon de la cuota del
+                          mes, que con base CAUSADO no se ha pagado todavía. */}
+                      <span className="text-muted-foreground" data-testid="asistente-rotulo-canon">
+                        {ROTULO_DEL_CANON[base]}
+                      </span>
                       <span className="font-medium text-foreground">
                         {formatCurrency(draft.totalCollected)}
                       </span>

@@ -103,6 +103,7 @@ const BASE_DISPERSION: Dispersion = {
   propietarioBankAccount: null,
   month: '2026-07',
   items: [],
+  baseDelCanon: 'CAUSADO',
   totalCollected: 1_000_000,
   totalCommission: 100_000,
   totalConceptosAFavor: 0,

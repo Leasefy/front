@@ -114,6 +114,21 @@ describe('adaptarDispersion', () => {
       expect(d.totalDeTerceros).toBe(0)
     })
 
+    it('🔴 la base del canon: la del back, o deducida — nunca «recaudado» por defecto', () => {
+      // Lo que manda `GET /inmobiliaria/dispersiones` desde el 16-09.
+      expect(adaptarDispersion({ ...DEL_BACK, baseDelCanon: 'CAUSADO' }).baseDelCanon).toBe('CAUSADO')
+      // Aprobar y girar no la mandan: la columna cruda, si viene.
+      expect(adaptarDispersion({ ...DEL_BACK, baseDeCalculo: 'CAUSADO' }).baseDelCanon).toBe('CAUSADO')
+      // Una de las cuotas, sin nada escrito: CAUSADO.
+      const deCuotas = {
+        ...DEL_BACK,
+        items: DEL_BACK.items!.map((i) => ({ ...i, cobroId: null, cuotaId: 'cuota-1' })),
+      }
+      expect(adaptarDispersion(deCuotas).baseDelCanon).toBe('CAUSADO')
+      // La vieja por cobros, sin nada escrito: RECAUDADO, que ahí es verdad.
+      expect(adaptarDispersion(DEL_BACK).baseDelCanon).toBe('RECAUDADO')
+    })
+
     it('sin items no explota', () => {
       const sinItems = { ...DEL_BACK }
       delete sinItems.items

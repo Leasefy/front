@@ -245,9 +245,9 @@ describe('CarteraCompleta', () => {
     conReporte(reporte())
     montar()
 
-    // La deuda entera: lo que el contrato dice que se debe.
+    // La deuda entera: lo que el contrato dice que se debe, siniestro incluido.
     expect($('[data-testid="resumen-deuda-total"]').textContent).toContain(
-      formatCurrency(8_000_000),
+      formatCurrency(8_900_000),
     )
     const porVencer = $('[data-testid="resumen-por_vencer"]').textContent ?? ''
     expect(porVencer).toContain(formatCurrency(2_000_000))
@@ -255,10 +255,58 @@ describe('CarteraCompleta', () => {
     const enPlazo = $('[data-testid="resumen-vencida_en_plazo"]').textContent ?? ''
     expect(enPlazo).toContain(formatCurrency(750_000))
     expect(enPlazo).toContain('el plazo del contrato sigue corriendo')
-    // 🔴 La cartera es SÓLO lo que pasó el plazo: no los 8 millones.
+    // 🔴 La cartera es SÓLO lo que pasó el plazo: no los 8,9 millones. Y el
+    // siniestro va ADENTRO, dicho aparte (bug A).
     const cartera = $('[data-testid="resumen-cartera"]').textContent ?? ''
-    expect(cartera).toContain(formatCurrency(5_250_000))
+    expect(cartera).toContain(formatCurrency(6_150_000))
     expect(cartera).toContain('Es lo único que la cobranza persigue')
+    expect($('[data-testid="resumen-cartera-en-siniestro"]').textContent).toBe(
+      `cartera.porEdad.deLaCualEnSiniestro:${formatCurrency(900_000)}`,
+    )
+  })
+
+  /*
+   * 🔴 Bug A de la prueba en navegador (16-09): «Por edad» decía deuda total
+   * $2.687 M y cartera $364,8 M donde «Por concepto» decía $5.326 M y
+   * $3.003,9 M. La diferencia era el siniestro, restado en silencio. Estas son
+   * las cifras del `summary` del back, que son las de «Por concepto» (lo fija
+   * `el-interes-es-uno-solo.spec.ts` del lado del back).
+   */
+  it('🔴 «Deuda total» y «Cartera» son las del back —siniestro incluido—, y los cinco tramos suman la cartera', () => {
+    const r = reporte({
+      summary: {
+        ...reporte().summary,
+        deudaTotalCop: 8_900_000,
+        porVencerCop: 2_000_000,
+        vencidaEnPlazoCop: 750_000,
+        carteraCop: 6_150_000,
+        carteraVivaCop: 5_250_000,
+        enSiniestroCop: 900_000,
+      },
+    })
+    conReporte(r)
+    montar()
+
+    expect($('[data-testid="resumen-deuda-total"]').textContent).toContain(
+      formatCurrency(r.summary.deudaTotalCop),
+    )
+    expect($('[data-testid="resumen-cartera"]').textContent).toContain(
+      formatCurrency(r.summary.carteraCop),
+    )
+    const montoDe = (sel: string) =>
+      Number(($(sel).querySelector('.font-mono')?.textContent ?? '').replace(/[^0-9]/g, ''))
+    const tramos =
+      montoDe('[data-testid="tramo-0-30"]') +
+      montoDe('[data-testid="tramo-31-60"]') +
+      montoDe('[data-testid="tramo-61-90"]') +
+      montoDe('[data-testid="tramo-90+"]') +
+      montoDe('[data-testid="tramo-siniestro"]')
+    expect(tramos).toBe(r.summary.carteraCop)
+    expect(montoDe('[data-testid="tramo-siniestro"]')).toBe(r.summary.enSiniestroCop)
+
+    // El tramo de siniestro abre su segmento.
+    clic($('[data-testid="tramo-siniestro"]'))
+    expect(todos('[data-testid="siniestro-fila"]')).toHaveLength(1)
   })
 
   it('las fichas son la edad DE LA CARTERA, medida sobre la mora real', () => {
@@ -277,11 +325,11 @@ describe('CarteraCompleta', () => {
     expect(enFichas).not.toContain(formatCurrency(750_000))
   })
 
-  it('LA tabla trae una fila por cuota, de los tres cajones', () => {
+  it('LA tabla trae una fila por cuota, de los tres cajones y los casos en siniestro', () => {
     conReporte(reporte())
     montar()
 
-    expect(todos('[data-testid="cartera-fila"]')).toHaveLength(5)
+    expect(todos('[data-testid="cartera-fila"]')).toHaveLength(6)
     expect(host.querySelector('[data-testid="sin-datos"]')).toBeNull()
   })
 
@@ -295,14 +343,15 @@ describe('CarteraCompleta', () => {
     expect(filas[0].getAttribute('data-cajon')).toBe('POR_VENCER')
     expect($('[data-testid="que-significa"]').textContent).toContain('no cartera')
 
+    // La cifra de cartera incluye el siniestro, y sus filas también.
     clic($('[data-testid="resumen-cartera"]'))
     filas = todos('[data-testid="cartera-fila"]')
-    expect(filas).toHaveLength(3)
+    expect(filas).toHaveLength(4)
     expect(filas.every((f) => f.getAttribute('data-cajon') === 'CARTERA')).toBe(true)
 
     // «Deuda total» quita los filtros: es «ver todo».
     clic($('[data-testid="resumen-deuda-total"]'))
-    expect(todos('[data-testid="cartera-fila"]')).toHaveLength(5)
+    expect(todos('[data-testid="cartera-fila"]')).toHaveLength(6)
   })
 
   it('«Por propietario» agrupa en la misma tarjeta, y tocar uno abre sus deudas con el filtro a la vista', () => {
@@ -312,20 +361,21 @@ describe('CarteraCompleta', () => {
     clic(boton('Por propietario'))
     const filas = todos('[data-testid="propietario-fila"]')
     expect(filas).toHaveLength(3)
-    // El que más debe arriba, con deudas e inmuebles contados aparte.
+    // El que más debe arriba, con deudas e inmuebles contados aparte. Su caso
+    // en siniestro es suyo: suma y es lo peor que tiene.
     expect(filas[0].textContent).toContain('Marta Cifuentes')
-    expect(filas[0].textContent).toContain(formatCurrency(4_750_000))
-    expect(filas[0].textContent).toContain('Más de 90 días')
+    expect(filas[0].textContent).toContain(formatCurrency(5_650_000))
+    expect(filas[0].textContent).toContain('En siniestro')
     // Jorge no tiene cartera: lo peor que tiene es una cuota vencida en plazo.
     expect(filas[1].textContent).toContain('Vencido, en plazo')
     expect(filas[2].textContent).toContain('Sin propietario registrado')
 
     clic(filas[0])
-    expect(todos('[data-testid="cartera-fila"]')).toHaveLength(2)
+    expect(todos('[data-testid="cartera-fila"]')).toHaveLength(3)
     expect($('[data-testid="chip-propietario"]').textContent).toContain('Marta Cifuentes')
 
     clic($('[data-testid="chip-propietario"]'))
-    expect(todos('[data-testid="cartera-fila"]')).toHaveLength(5)
+    expect(todos('[data-testid="cartera-fila"]')).toHaveLength(6)
     expect(host.querySelector('[data-testid="chip-propietario"]')).toBeNull()
   })
 
@@ -369,7 +419,7 @@ describe('CarteraCompleta', () => {
     expect($('[data-testid="que-significa"]').textContent).toContain('jurídico')
 
     clic($('[data-testid="tramo-90+"]'))
-    expect(todos('[data-testid="cartera-fila"]')).toHaveLength(5)
+    expect(todos('[data-testid="cartera-fila"]')).toHaveLength(6)
     expect(host.querySelector('[data-testid="que-significa"]')).toBeNull()
   })
 
@@ -416,15 +466,36 @@ describe('CarteraCompleta', () => {
       montar()
 
       const cartera = $('[data-testid="resumen-cartera"]').textContent ?? ''
-      expect(cartera).toContain(formatCurrency(3_750_000 + 1_000_000 + 500_000))
+      expect(cartera).toContain(formatCurrency(3_750_000 + 1_000_000 + 500_000 + 900_000))
       expect($('[data-testid="resumen-intereses-cartera"]').textContent).toContain(
         formatCurrency(300_367),
       )
       expect($('[data-testid="resumen-deuda-con-intereses"]').textContent).toContain(
-        formatCurrency(3_750_000 + 1_000_000 + 2_000_000 + 500_000 + 750_000 + 300_367),
+        formatCurrency(3_750_000 + 1_000_000 + 2_000_000 + 500_000 + 750_000 + 900_000 + 300_367),
       )
-      // Y la columna está en la tabla.
-      expect(todos('[data-testid="cartera-intereses"]').length).toBe(items.length)
+      // Y la columna está en la tabla (con la fila del caso en siniestro).
+      expect(todos('[data-testid="cartera-intereses"]').length).toBe(items.length + 1)
+    })
+
+    it('🔴 «Por propietario» trae el interés aparte del capital, y el total con los dos', () => {
+      const items = ITEMS.map((i) =>
+        i.cuotaId === 'q1' ? conInteres(i, 288_367) : i.cuotaId === 'q2' ? conInteres(i, 12_000) : i,
+      )
+      conReporte(reporte({ items }))
+      montar()
+
+      clic(boton('Por propietario'))
+      const marta = todos('[data-testid="propietario-fila"]')[0]
+      expect(marta.textContent).toContain('Marta Cifuentes')
+      expect(marta.querySelector('[data-testid="propietario-intereses"]')?.textContent).toBe(
+        formatCurrency(300_367),
+      )
+      expect(marta.querySelector('[data-testid="propietario-total"]')?.textContent).toBe(
+        formatCurrency(5_650_000 + 300_367),
+      )
+      // Sin interés, un guion: no un $0 que se lea «no debe mora».
+      const jorge = todos('[data-testid="propietario-fila"]')[1]
+      expect(jorge.querySelector('[data-testid="propietario-intereses"]')?.textContent).toBe('—')
     })
 
     it('🔴 sin reglas de mora el aviso lleva a configurarlas', () => {
@@ -470,7 +541,7 @@ describe('CarteraCompleta', () => {
     expect($('[data-testid="sin-datos"]').getAttribute('data-caso')).toBe('filtros')
 
     clic($('[data-testid="limpiar-filtros"]'))
-    expect(todos('[data-testid="cartera-fila"]')).toHaveLength(5)
+    expect(todos('[data-testid="cartera-fila"]')).toHaveLength(6)
     expect(input.value).toBe('')
   })
 
@@ -504,7 +575,12 @@ describe('CarteraCompleta', () => {
   })
 
   it('con cobro emitido, la fila lleva al cobro', () => {
-    conReporte(reporte({ items: [deuda({ cobroId: 'cob-9' })] }))
+    conReporte(
+      reporte({
+        items: [deuda({ cobroId: 'cob-9' })],
+        siniestros: { cantidad: 0, totalCop: 0, diasParaSiniestro: 45, items: [] },
+      }),
+    )
     montar()
 
     clic(todos('[data-testid="cartera-fila"]')[0])

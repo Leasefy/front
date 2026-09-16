@@ -4,6 +4,8 @@
  * su definición allá, al lado de la consulta que lo produce.
  */
 
+import type { InteresDeMora } from '@/lib/types/inmobiliaria';
+
 export type TipoDeConcepto =
   | 'CANON'
   | 'ADMINISTRACION'
@@ -88,7 +90,12 @@ export interface FilaDeCarteraDelInquilino {
   /** `saldoCop` − Σ `saldoPorConcepto`; cero cuando el desglose cierra. */
   sinDesgloseCop: number;
   abonadoCop: number;
+  /** 🔴 EL CAPITAL que falta. Nunca incluye el interés. */
   saldoCop: number;
+  /** El interés de mora de la cuota, liquidado hoy. Aparte del capital. */
+  interes?: InteresDeMora;
+  /** `saldoCop + interes.pendienteCop`. */
+  totalConInteresCop?: number;
 }
 
 export interface TotalesDeCartera {
@@ -116,6 +123,12 @@ export interface TotalesDeCartera {
    */
   porVencerCop: number;
   enSiniestroCop: number;
+  /** 🔴 El interés de mora que falta, sumado. Va aparte del capital. */
+  interesCop?: number;
+  /** `saldoCop + interesCop`. */
+  totalConInteresCop?: number;
+  /** Cuotas ya pagadas que siguen debiendo el interés de su mora. */
+  cuotasPagadasEnMora?: number;
   /** Cuántas cuotas. */
   cuotas: number;
   /** @deprecated Alias de `cuotas`. La unidad ya no es el cobro. */
@@ -161,6 +174,8 @@ export interface CarteraDeInquilinos {
   contratosSinCuotas?: number;
   /** Lo que estos números NO incluyen, escrito para que lo lea una persona. */
   avisos?: string[];
+  /** La agencia no tiene reglas de mora activas y hay cartera: el 0 no es «sin mora». */
+  sinReglasDeMora?: boolean;
 }
 
 /**
@@ -210,7 +225,16 @@ export interface FilaDeLaCuotaDelMes {
   /** Lo que el período le cuesta al inquilino (lo pactado). */
   totalCop: number;
   pagadoCop: number;
+  /** 🔴 El CAPITAL que falta. Nunca incluye el interés. */
   pendienteCop: number;
+  /**
+   * El interés de mora de la cuota, con la MISMA lectura que la cartera por
+   * concepto y el estado de cuenta. Una cuota ya pagada que todavía lo debe
+   * llega en `CARTERA` con `pendienteCop` en cero.
+   */
+  interes?: InteresDeMora;
+  /** `pendienteCop + interes.pendienteCop`. */
+  totalConInteresCop?: number;
 }
 
 export interface TotalesDelMes {
@@ -228,6 +252,12 @@ export interface TotalesDelMes {
   carteraCop: number;
   cuotasEnCartera: number;
   enSiniestroCop: number;
+  /** 🔴 El interés de mora que falta en el mes. Aparte del capital. */
+  interesCop?: number;
+  /** `pendienteCop + interesCop`. */
+  totalConInteresCop?: number;
+  /** Cuotas ya pagadas que siguen debiendo el interés de su mora. */
+  cuotasPagadasEnMora?: number;
   /** `totalCop − (pagadoCop + pendienteCop)`. Cero cuando las cuotas cuadran. */
   sinCuadrarCop: number;
 }
@@ -246,6 +276,8 @@ export interface CarteraDelMes {
   excluidas: { estado: 'ANULADA' | 'ANTERIOR'; cuotas: number; motivo: string }[];
   /** Lo que estos números NO incluyen, escrito para que lo lea una persona. */
   avisos: string[];
+  /** La agencia no tiene reglas de mora activas y el mes tiene cartera. */
+  sinReglasDeMora?: boolean;
 }
 
 export type EstadoDelGiro =

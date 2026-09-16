@@ -399,6 +399,48 @@ describe('<RegistrarPagoModal> a dónde va la plata', () => {
     expect(parte?.textContent).toContain('Canon');
   });
 
+  /*
+   * 🔴 La prueba del recibo con interés (2026-09-16), con el caso real de QA:
+   * contrato #69, enero de 2026, sin cobro emitido. Caja ve capital e interés
+   * por separado, el máximo ya los trae, y pagar exacto los dos no deja nada.
+   */
+  it('🔴 capital + interés de una cuota sin cobro: se ven aparte y pagarlos exacto no deja saldo', async () => {
+    carteraPorCobro.mockResolvedValue(
+      debeTresMeses({
+        total: 1_962_429,
+        vencidoCop: 1_962_429,
+        futuroCop: 0,
+        interesCop: 412_429,
+        cuotas: [
+          periodo('q-ene', '2026-01', 1_962_429, {
+            capitalPendienteCop: 1_550_000,
+            interesPendienteCop: 412_429,
+          }),
+        ],
+      }),
+    );
+    const onSubmit = await abrir();
+
+    expect(
+      document.body.querySelector('[data-testid="periodo-capital-e-interes-2026-01"]'),
+    ).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="cartera-intereses"]')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="maximo-con-intereses"]')).toBeTruthy();
+
+    escribir('#monto-recibo', '1962429');
+    const parte = document.body.querySelector('[data-testid="plan-parte-2026-01"]');
+    expect(parte?.textContent).toContain('recibos.form.plan.intereses');
+    expect(document.body.querySelector('[data-testid="plan-queda-2026-01"]')).toBeNull();
+    expect(document.body.querySelector('[data-testid="plan-interes-primero"]')).toBeTruthy();
+    expect(document.body.querySelector('[data-testid="plan-deuda-restante"]')?.textContent).toContain(
+      '0',
+    );
+
+    elegirMedio('efectivo');
+    await enviar();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ valorCop: 1_962_429 });
+  });
+
   it('avisa cuando un período tiene plata que ningún recibo respalda', async () => {
     carteraPorCobro.mockResolvedValue(
       debeTresMeses({

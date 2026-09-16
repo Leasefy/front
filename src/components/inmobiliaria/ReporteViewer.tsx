@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/sheet';
 import { CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Button } from '@/components/ui/button';
-import type { ReportDefinition, ReportCategory } from '@/lib/types/inmobiliaria';
+import type { CarteraReport, ReportDefinition, ReportCategory } from '@/lib/types/inmobiliaria';
 import {
   getReportCategoryColor,
   formatCurrency,
@@ -417,9 +417,41 @@ function FlujoCajaPreview({ t, fmtDate }: { t: (key: string, params?: Record<str
 }
 
 /**
+ * Los tramos del informe «Cartera por Edades», con el siniestro como el quinto.
+ *
+ * 🔴 Bug B de la prueba en navegador (16-09): el total decía $3.003.910.850
+ * (la cartera, siniestro incluido) y los cuatro tramos sumaban $364.795.650
+ * (sólo la cartera viva). Con el siniestro a los 30 días, los tramos de más de
+ * 30 daban siempre $0 y nadie sabía dónde estaba el resto. El back ya separa
+ * la cobranza viva (`bucket*`) del siniestro (`enSiniestroCop`); acá se
+ * muestran los cinco, y los cinco suman `carteraCop`. Pura para fijarla con
+ * una prueba.
+ */
+export function tramosDelInformeDeEdades(summary: CarteraReport['summary']): {
+  clave: 'days0to30' | 'days31to60' | 'days61to90' | 'days90plus' | 'claimsBucket';
+  monto: number;
+}[] {
+  return [
+    { clave: 'days0to30', monto: summary.bucket0to30 },
+    { clave: 'days31to60', monto: summary.bucket31to60 },
+    { clave: 'days61to90', monto: summary.bucket61to90 },
+    { clave: 'days90plus', monto: summary.bucket90plus },
+    { clave: 'claimsBucket', monto: summary.enSiniestroCop },
+  ];
+}
+
+const TONO_DEL_TRAMO: Record<ReturnType<typeof tramosDelInformeDeEdades>[number]['clave'], string> = {
+  days0to30: 'bg-success-soft text-success',
+  days31to60: 'bg-warning-soft text-warning',
+  days61to90: 'bg-warning-soft text-warning',
+  days90plus: 'bg-danger-soft text-danger',
+  claimsBucket: 'bg-danger-soft text-danger',
+};
+
+/**
  * Cartera Edades Preview
  */
-function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
+export function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, string | number>) => string }) {
   const { report: data } = useCarteraReport();
   if (!data) return null;
 
@@ -434,36 +466,28 @@ function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, 
       <div className="p-4 rounded-lg bg-danger-soft text-fg">
         <p className="text-sm font-medium text-danger">{t('inmobiliaria.reporte.totalOverduePortfolio')}</p>
         <p className="text-2xl font-bold">{formatCurrency(data.summary.carteraCop)}</p>
-        <p className="text-xs text-danger mt-1">{t('inmobiliaria.reporte.pendingCharges', { count: data.summary.cuotasEnCartera })}</p>
+        {/* La unidad es la CUOTA, no el cobro: el informe sale de las cuotas
+            del contrato y la mayoría no tiene cobro emitido. */}
+        <p className="text-xs text-danger mt-1" data-testid="edades-cuotas">
+          {t('inmobiliaria.reporte.cuotasEnCartera', { count: data.summary.cuotasEnCartera })}
+        </p>
       </div>
 
-      {/* Bucket Summary */}
-      <div className="grid grid-cols-4 gap-2">
-        <div className="p-3 rounded-md bg-success-soft text-center">
-          <p className="text-lg font-bold text-success">
-            {formatCurrency(data.summary.bucket0to30)}
-          </p>
-          <p className="text-xs text-success">{t('inmobiliaria.reporte.days0to30')}</p>
-        </div>
-        <div className="p-3 rounded-md bg-warning-soft text-center">
-          <p className="text-lg font-bold text-warning">
-            {formatCurrency(data.summary.bucket31to60)}
-          </p>
-          <p className="text-xs text-warning">{t('inmobiliaria.reporte.days31to60')}</p>
-        </div>
-        <div className="p-3 rounded-md bg-warning-soft text-center">
-          <p className="text-lg font-bold text-warning">
-            {formatCurrency(data.summary.bucket61to90)}
-          </p>
-          <p className="text-xs text-warning">{t('inmobiliaria.reporte.days61to90')}</p>
-        </div>
-        <div className="p-3 rounded-md bg-danger-soft text-center">
-          <p className="text-lg font-bold text-danger">
-            {formatCurrency(data.summary.bucket90plus)}
-          </p>
-          <p className="text-xs text-danger">{t('inmobiliaria.reporte.days90plus')}</p>
-        </div>
+      {/* Los cinco tramos: la cobranza viva por días de mora y el siniestro.
+          Suman la cifra de arriba. */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5" data-testid="edades-tramos">
+        {tramosDelInformeDeEdades(data.summary).map((tramo) => (
+          <div
+            key={tramo.clave}
+            className={cn('p-3 rounded-md text-center', TONO_DEL_TRAMO[tramo.clave])}
+            data-testid={`edades-tramo-${tramo.clave}`}
+          >
+            <p className="text-lg font-bold">{formatCurrency(tramo.monto)}</p>
+            <p className="text-xs">{t(`inmobiliaria.reporte.${tramo.clave}`)}</p>
+          </div>
+        ))}
       </div>
+      <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.bucketsAddUp')}</p>
 
       {/* Top Deudores */}
       <div className="space-y-2">

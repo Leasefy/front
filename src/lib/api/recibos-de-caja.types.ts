@@ -13,7 +13,7 @@
  * servicio y `recibos-de-caja.service.test.ts` fija el juego exacto de claves.
  */
 
-import type { Cobro } from '@/lib/types/inmobiliaria';
+import type { Cobro, InteresDeMora } from '@/lib/types/inmobiliaria';
 
 /**
  * Los tipos de línea del desglose, tal como los enumera el back.
@@ -152,8 +152,30 @@ export interface PeriodoEnDeuda {
   /** El estado del COBRO. `null` mientras nadie lo haya reclamado. */
   status: string | null;
   daysLate: number;
-  /** Intereses de mora acumulados del período. Se cobran ANTES que el capital. */
+  /** `Cobro.lateFee`: la mora que el COBRO tiene escrita. Sin cobro, 0. */
   lateFee: number;
+  /**
+   * 🔴 De `pendingAmount`, lo que es CAPITAL. Opcional: un back anterior no lo
+   * manda, y ahí todo lo pendiente se lee como antes.
+   */
+  capitalPendienteCop?: number;
+  /**
+   * 🔴 De `pendingAmount`, lo que es INTERÉS DE MORA hoy, con la MISMA regla
+   * que la cartera, la prefactura y el estado de cuenta. Ya está sumado en
+   * `pendingAmount`; es lo que el recibo cobra primero (art. 1653).
+   */
+  interesPendienteCop?: number;
+  /** El interés de la cuota como lo leen las pantallas. `null` en un cobro viejo sin cuota. */
+  interes?: InteresDeMora | null;
+  /**
+   * El interés que ningún documento registra todavía. El back lo escribe en el
+   * cobro del período al recibir la plata; acá sólo se muestra.
+   */
+  interesPorLiquidar?: {
+    totalCop: number;
+    diasDeMora: number;
+    recargos: { tipo: string; nombre: string; valorCop: number }[];
+  } | null;
   /**
    * 🔴 `false` = todavía NO vence. Sigue siendo deuda del contrato, y es
    * exactamente contra lo que se ADELANTA: «puede pagar dos meses o lo que sea
@@ -204,6 +226,11 @@ export interface CarteraDelCliente {
   vencidoCop: number;
   /** La parte que todavía no vence. Es contra lo que se adelanta. */
   futuroCop: number;
+  /**
+   * 🔴 De `total`, lo que es INTERÉS DE MORA. Ya está adentro de `total` y de
+   * `vencidoCop`. Opcional: un back anterior no lo manda.
+   */
+  interesCop?: number;
   /** Los períodos con saldo, del más viejo al más nuevo. Antes se llamaba `cobros`. */
   cuotas: PeriodoEnDeuda[];
   /**

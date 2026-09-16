@@ -28,10 +28,21 @@
  * Y la EDAD se mide sobre `diasDeMora`, que son los días DESPUÉS del plazo.
  * Una deuda que ayer decía «30 días» hoy puede decir 27: es la primera vez que
  * el tramo respeta el plazo del contrato.
+ *
+ * ── 🔴 El siniestro es PARTE de la cartera (bug A, prueba en navegador 16-09) ─
+ *
+ * «Por edad» decía deuda total $2.687 M y cartera $364,8 M; «Por concepto»,
+ * $5.326 M y $3.003,9 M. Mismas etiquetas, números distintos, y la diferencia
+ * era lo que está en siniestro: el informe lo manda en su propia sección y acá
+ * se sumaba sólo `items`. Ahora «Deuda total» y «Cartera» significan lo mismo
+ * en las dos pestañas —siniestro incluido— y el siniestro se muestra APARTE
+ * como la parte de la cartera que ya no es cobranza: su propia cifra y su
+ * propio tramo, que con los cuatro de edad suma la cartera.
  */
 
 import type { CajonDeLaCuota } from '@/lib/api/cartera.types'
-import type { CarteraItem } from '@/lib/types/inmobiliaria'
+import type { CarteraItem, CarteraSiniestro } from '@/lib/types/inmobiliaria'
+import { interesPendiente, totalConInteres } from '@/components/cartera/interes-de-mora'
 
 /** Los tres cajones que una deuda puede ocupar. `SIN_DEUDA` no llega al informe. */
 export type Cajon = Exclude<CajonDeLaCuota, 'SIN_DEUDA'>
@@ -74,13 +85,18 @@ export const QUE_SIGNIFICA: Record<Edad, string> = {
   '90+': 'Deja de ser cobranza. Es jurídico y reclamación a la aseguradora.',
 }
 
+/** ¿Esta deuda es un caso en siniestro? Son las filas de `siniestros.items`. */
+export function esSiniestro(item: CarteraItem): item is CarteraSiniestro {
+  return 'siniestroDesde' in item
+}
+
 /**
  * En qué tramo cae. `null` mientras no sea cartera: una deuda que todavía no
  * pasó el plazo NO tiene edad de mora, y ponerle «0-30» la metería en la lista
- * de a quién llamar.
+ * de a quién llamar. Tampoco el siniestro: tiene su propio tramo.
  */
 export function edadDe(item: CarteraItem): Edad | null {
-  if (item.cajon !== 'CARTERA') return null
+  if (item.cajon !== 'CARTERA' || esSiniestro(item)) return null
   if (item.diasDeMora <= 30) return '0-30'
   if (item.diasDeMora <= 60) return '31-60'
   if (item.diasDeMora <= 90) return '61-90'
@@ -102,6 +118,7 @@ export const GRAVEDAD = [
   '31-60',
   '61-90',
   '90+',
+  'SINIESTRO',
 ] as const
 export type Gravedad = (typeof GRAVEDAD)[number]
 
@@ -112,9 +129,11 @@ export const NOMBRE_DE_GRAVEDAD: Record<Gravedad, string> = {
   '31-60': NOMBRE_DE_EDAD['31-60'],
   '61-90': NOMBRE_DE_EDAD['61-90'],
   '90+': NOMBRE_DE_EDAD['90+'],
+  SINIESTRO: 'En siniestro',
 }
 
 export function gravedadDe(item: CarteraItem): Gravedad {
+  if (esSiniestro(item)) return 'SINIESTRO'
   return edadDe(item) ?? (item.cajon as Exclude<Cajon, 'CARTERA'>)
 }
 
@@ -131,11 +150,17 @@ export interface MontoDelCajon {
 }
 
 export interface CarteraDiscriminada {
-  /** Los tres cajones, siempre los tres, aunque alguno vaya en cero. */
+  /**
+   * Los tres cajones, siempre los tres, aunque alguno vaya en cero. 🔴 El de
+   * CARTERA incluye los casos en siniestro (filas y monto): es la MISMA
+   * «Cartera» de «Por concepto».
+   */
   cajones: MontoDelCajon[]
-  /** Los cuatro tramos de la CARTERA, siempre los cuatro. */
+  /** Los cuatro tramos de la cartera VIVA, siempre los cuatro. */
   tramos: TramoDeCartera[]
-  /** Toda la deuda: la suma de los tres cajones. */
+  /** El quinto tramo: la parte de la cartera que ya es reclamación. */
+  enSiniestro: { items: CarteraItem[]; monto: number }
+  /** Toda la deuda: la suma de los tres cajones, siniestro incluido. */
   deudaTotal: number
 }
 
@@ -144,14 +169,28 @@ export interface CarteraDiscriminada {
  *
  * 🔴 Los montos salen de las MISMAS filas que la lista, no del `summary`: así
  * la cifra de una ficha y las filas que se ven al tocarla no pueden discrepar.
- * El `summary` del back cuenta exactamente estas filas (los siniestros van en
- * su propia sección, fuera de `items`), así que cuadran.
+ * Con los siniestros adentro suman lo mismo que el `summary` del back
+ * (`deudaTotalCop`, `carteraCop`) y que «Por concepto».
  */
-export function discriminar(items: readonly CarteraItem[]): CarteraDiscriminada {
+export function discriminar(
+  items: readonly CarteraItem[],
+  siniestros: readonly CarteraItem[] = [],
+): CarteraDiscriminada {
   const porCajon = new Map<Cajon, CarteraItem[]>(CAJONES.map((c) => [c, []]))
   const porEdad = new Map<Edad, CarteraItem[]>(EDADES.map((e) => [e, []]))
+  const enSiniestro: CarteraItem[] = []
 
+  // Los casos en siniestro vienen en su propia lista: son cartera, con su tramo.
+  for (const caso of siniestros) {
+    enSiniestro.push(caso)
+    porCajon.get('CARTERA')!.push(caso)
+  }
   for (const item of items) {
+    if (esSiniestro(item)) {
+      enSiniestro.push(item)
+      porCajon.get('CARTERA')!.push(item)
+      continue
+    }
     porCajon.get(item.cajon as Cajon)?.push(item)
     const edad = edadDe(item)
     if (edad) porEdad.get(edad)!.push(item)
@@ -171,6 +210,7 @@ export function discriminar(items: readonly CarteraItem[]): CarteraDiscriminada 
       const suyos = porEdad.get(edad)!
       return { edad, items: suyos, monto: sumar(suyos) }
     }),
+    enSiniestro: { items: enSiniestro, monto: sumar(enSiniestro) },
     deudaTotal: cajones.reduce((s, c) => s + c.monto, 0),
   }
 }
@@ -185,7 +225,12 @@ export function discriminar(items: readonly CarteraItem[]): CarteraDiscriminada 
 export interface DeudaDePropietario {
   propietarioId: string | null
   propietarioName: string
+  /** El CAPITAL que se le debe al propietario por sus inmuebles. */
   monto: number
+  /** 🔴 El interés de mora de esas deudas, aparte, con la lectura del back. */
+  interes: number
+  /** `monto + interes`: lo que hoy hay que cobrarle a sus inquilinos. */
+  totalConInteres: number
   deudas: number
   /** Cuántos inmuebles DISTINTOS deben: cuatro cuotas de un mismo apto son uno. */
   inmuebles: number
@@ -208,12 +253,16 @@ export function porPropietario(items: readonly CarteraItem[]): DeudaDePropietari
       propietarioId: item.propietarioId,
       propietarioName: item.propietarioName ?? SIN_PROPIETARIO,
       monto: 0,
+      interes: 0,
+      totalConInteres: 0,
       deudas: 0,
       inmuebles: 0,
       peor: 'POR_VENCER' as Gravedad,
       inmueblesVistos: new Set<string>(),
     }
     actual.monto += item.pendingAmount
+    actual.interes += interesPendiente(item)
+    actual.totalConInteres += totalConInteres(item, item.pendingAmount)
     actual.deudas += 1
     /*
      * El inmueble se cuenta por `propertyId`; un contrato migrado sin inmueble
@@ -229,7 +278,7 @@ export function porPropietario(items: readonly CarteraItem[]): DeudaDePropietari
   }
   return [...mapa.values()]
     .map(({ inmueblesVistos: _i, ...p }) => p)
-    .sort((a, b) => b.monto - a.monto)
+    .sort((a, b) => b.totalConInteres - a.totalConInteres || b.monto - a.monto)
 }
 
 // ── Filtros ────────────────────────────────────────────────────────────────

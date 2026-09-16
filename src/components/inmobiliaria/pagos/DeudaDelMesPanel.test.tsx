@@ -40,7 +40,7 @@ vi.mock('@/lib/hooks/use-cartera', () => ({
 }))
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({
-    t: (k: string) => k,
+    t: (k: string, p?: Record<string, unknown>) => (p ? `${k}:${Object.values(p).join(',')}` : k),
     locale: 'es',
     formatCurrency: (n: number) => `$${n.toLocaleString('es-CO')}`,
     formatDate: (d: string) => d,
@@ -430,6 +430,75 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
       montar()
       expect(host.textContent).toContain('estado de cuenta')
     })
+  })
+
+  /*
+   * 🔴 El interés del mes (2026-09-16), con la MISMA lectura del back que la
+   * cartera por concepto: «Falta por pagar» y los cajones siguen siendo
+   * capital, y el interés va debajo. Una cuota ya pagada que lo sigue debiendo
+   * tiene «falta $0» y su interés dicho.
+   */
+  it('🔴 el interés del mes va aparte del capital, también el de una cuota ya pagada', () => {
+    const interes = (pendienteCop: number) => ({
+      liquidadoCop: pendienteCop,
+      abonadoCop: 0,
+      pendienteCop,
+      origen: 'CUOTA' as const,
+      pagadaEnMora: false,
+      diasDeMora: 20,
+      motivo: null,
+      sinReglas: false,
+    })
+    const filas = FILAS.map((f) =>
+      f === EN_CARTERA
+        ? { ...f, interes: interes(40_000), totalConInteresCop: f.pendienteCop + 40_000 }
+        : f === PAGADA
+          ? { ...f, cajon: 'CARTERA' as const, enMora: true, interes: interes(12_000) }
+          : f,
+    )
+    conMes(
+      mes({
+        filas,
+        totales: {
+          ...mes().totales,
+          interesCop: 52_000,
+          totalConInteresCop: 6_052_000,
+          cuotasPagadasEnMora: 1,
+        },
+      }),
+    )
+    montar()
+
+    // Las cifras grandes no cambian: siguen siendo capital.
+    expect($('[data-testid="mes-falta"]').textContent).toBe('$6.000.000')
+    expect($('[data-testid="mes-cartera"]').textContent).toBe('$2.000.000')
+    expect($('[data-testid="mes-intereses"]').textContent).toBe(
+      'cartera.interes.masIntereses:$52.000',
+    )
+    expect($('[data-testid="mes-falta-con-intereses"]').textContent).toBe(
+      'cartera.interes.conIntereses:$6.052.000',
+    )
+    expect(todos('[data-testid="cuota-intereses"]').map((e) => e.textContent)).toEqual(
+      expect.arrayContaining([
+        'cartera.interes.masIntereses:$40.000',
+        'cartera.interes.masIntereses:$12.000',
+      ]),
+    )
+  })
+
+  it('sin interés no hay líneas en cero; sin reglas de mora el aviso lleva a configurarlas', () => {
+    conMes(
+      mes({
+        sinReglasDeMora: true,
+        avisos: ['La inmobiliaria no tiene reglas de mora activas: la cartera se muestra SIN intereses.'],
+      }),
+    )
+    montar()
+    expect(host.querySelector('[data-testid="mes-intereses"]')).toBeNull()
+    expect(host.querySelector('[data-testid="cuota-intereses"]')).toBeNull()
+    expect($('[data-testid="mes-configurar-reglas"]').getAttribute('href')).toBe(
+      '/panel/inmobiliaria/pagos/cartera/reglas-de-mora',
+    )
   })
 
   it('sin permiso de recibo el botón queda a la vista, deshabilitado y con el porqué', () => {

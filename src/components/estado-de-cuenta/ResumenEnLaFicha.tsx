@@ -47,6 +47,8 @@ export interface NumerosDeLaFicha {
   proxima: { fecha: string; monto: number } | null;
   enMora: boolean;
   diasDeMora: number;
+  /** Vencido, pero dentro del plazo del contrato: todavía no es mora. */
+  enPlazo?: boolean;
   /**
    * El interés de mora que falta, APARTE de `restaPorPagar` (que es capital).
    * Ausente = el back no lo mandó; no se inventa un cero.
@@ -79,6 +81,7 @@ export function numerosDelDocumento(
     proxima: r.proxima ? { fecha: r.proxima.fecha, monto: r.proxima.valor } : null,
     enMora: r.enMora,
     diasDeMora: r.diasDeMora,
+    enPlazo: r.enPlazo,
     interesDeMora,
     hayAlgo: contratos.length > 0,
   };
@@ -130,6 +133,8 @@ export function ResumenEnLaFicha({
             proxima: r.proximaCuota,
             enMora: r.enMora !== null,
             diasDeMora: r.enMora?.dias ?? 0,
+            // `pendiente` es lo vencido, en plazo o no; `enMora`, sólo lo que pasó el plazo.
+            enPlazo: r.enMora === null && r.pendiente > 0,
             interesDeMora: (r as { interesDeMora?: number }).interesDeMora,
             hayAlgo: r.contratos > 0,
           }))
@@ -237,12 +242,16 @@ export function ResumenEnLaFicha({
                   'inline-block rounded-full px-2.5 py-0.5 text-body-sm',
                   numeros.enMora
                     ? 'bg-danger-soft text-danger'
-                    : 'bg-success-soft text-success',
+                    : numeros.enPlazo
+                      ? 'bg-warning-soft text-warning'
+                      : 'bg-success-soft text-success',
                 )}
               >
                 {numeros.enMora
                   ? t('estadoDeCuenta.enMoraDias', { dias: numeros.diasDeMora })
-                  : t('estadoDeCuenta.alDia')}
+                  : numeros.enPlazo
+                    ? t('estadoDeCuenta.vencidoEnPlazo')
+                    : t('estadoDeCuenta.alDia')}
               </span>
             </p>
           </div>

@@ -16,6 +16,9 @@ import type { CarteraSiniestro, CarteraSiniestros } from '@/lib/types/inmobiliar
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
+// Las palabras del interés salen de `cartera.interes` con `t()`: acá se leen
+// las del diccionario real en castellano.
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'))
 vi.mock('next/link', () => ({
   default: ({ href, children }: { href: string; children?: React.ReactNode }) =>
     React.createElement('a', { href }, children),

@@ -11,8 +11,8 @@ import {
   interesPendiente,
   sumarIntereses,
   totalConInteres,
-  type InteresDeMora,
 } from './interes-de-mora'
+import type { InteresDeMora } from '@/lib/types/inmobiliaria'
 
 const interes = (p: Partial<InteresDeMora> = {}): InteresDeMora => ({
   liquidadoCop: 0,

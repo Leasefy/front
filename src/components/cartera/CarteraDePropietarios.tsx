@@ -11,8 +11,9 @@
  * ── De dónde sale el número ─────────────────────────────────────────────────
  *
  * Del MISMO cálculo que hace la dispersión (`preview`/`generate` en el back):
- * canon recaudado a su nombre + conceptos a su favor − comisión − conceptos a
- * su cargo. No se rehace acá: tres cuentas distintas para la misma plata fue
+ * canon CAUSADO a su nombre (sin dispersión generada el back liquida con esa
+ * base: lo que el contrato causa en el mes, pagado o no) + conceptos a su
+ * favor − comisión − conceptos a su cargo. No se rehace acá: tres cuentas distintas para la misma plata fue
  * exactamente lo que hubo que arreglar entre el extracto y la dispersión.
  *
  * Un mes que ya tiene dispersión generada muestra ESA, con su estado; un mes
@@ -70,6 +71,7 @@ import { mesEnTitulo } from '@/lib/utils/mes'
 import type { MesDelPropietario, PropietarioEnCartera } from '@/lib/api/cartera.types'
 import { NOMBRE_DEL_ESTADO_DEL_GIRO, filtrarPropietarios } from '@/lib/cartera/conceptos'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 
 /** Columnas fijas: propietario · meses · neto · girado · pendiente. */
 const COLUMNAS = 5
@@ -88,6 +90,7 @@ function Peso({ valor, className }: { valor: number; className?: string }) {
 }
 
 export function CarteraDePropietarios() {
+  const { t } = useI18n()
   const { datos, cargando, error, recargar } = useCarteraConPropietarios()
   const [busqueda, setBusqueda] = useState('')
   const [abiertos, setAbiertos] = useState<ReadonlySet<string>>(new Set())
@@ -221,7 +224,7 @@ export function CarteraDePropietarios() {
                       queSon="propietarios por pagar"
                       icono={Users}
                       titulo="No le debes nada a nadie"
-                      descripcion="Todavía no hay canon recaudado que repartir, o ya se giró todo."
+                      descripcion={t('cartera.porPagar.nadaQueRepartir')}
                       onLimpiarFiltros={hayFiltros ? () => setBusqueda('') : undefined}
                     />
                   </TableCell>
@@ -272,10 +275,17 @@ export function CarteraDePropietarios() {
           )}
         </section>
 
-        <p className="text-xs text-fg-muted">
-          El neto es el mismo que calcula la dispersión: canon recaudado más lo que está a favor
-          del propietario, menos la comisión y lo que se le cobra a él. Sólo se le debe lo que el
-          inquilino efectivamente pagó.
+        {/*
+          🔴 El pie tiene que decir la base que de verdad se usa. Sin dispersión
+          generada, el back liquida con base CAUSADO (`liquidacionDelMes`): lo
+          que el contrato causa en el mes, lo haya pagado el inquilino o no. Decía
+          «sólo se le debe lo que el inquilino efectivamente pagó», que es la base
+          RECAUDADO. La base no se cambia acá —la decide Nico—; se dice la verdad.
+          Convención compartida: «Canon causado» con CAUSADO, «Canon recaudado»
+          sólo con RECAUDADO.
+        */}
+        <p className="text-xs text-fg-muted" data-testid="pie-de-la-base">
+          {t('cartera.porPagar.pieCausado')}
         </p>
       </div>
     </EstadoDeDatos>
@@ -352,12 +362,13 @@ function FilasDelPropietario({
  * lo que se busca— quedaría empujado fuera de la pantalla.
  */
 function DetalleDeMeses({ meses }: { meses: readonly MesDelPropietario[] }) {
+  const { t } = useI18n()
   return (
     <Table data-testid="detalle-de-meses">
       <TableHeader>
         <TableRow>
           <TableHead className="whitespace-nowrap">Mes</TableHead>
-          <TableHead className="whitespace-nowrap text-right">Recaudado</TableHead>
+          <TableHead className="whitespace-nowrap text-right">{t('cartera.porPagar.canonCausado')}</TableHead>
           <TableHead className="whitespace-nowrap text-right">Comisión</TableHead>
           <TableHead className="whitespace-nowrap text-right">A su favor</TableHead>
           <TableHead className="whitespace-nowrap text-right">A su cargo</TableHead>

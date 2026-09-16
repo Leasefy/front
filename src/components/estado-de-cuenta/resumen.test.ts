@@ -98,6 +98,65 @@ describe('resumirElCliente', () => {
     expect(r.diasDeMora).toBe(0);
   });
 
+  /*
+   * 🔴 Bug C de la prueba en navegador (16-09): el contrato #77 decía 100 días
+   * de mora en la ficha y en el cajón, y 105 acá. El back manda en cada fila el
+   * cajón y los días con el plazo del contrato; el resumen los LEE y no vuelve
+   * a restar fechas. Si alguien vuelve a contar desde el vencimiento, esto da
+   * 105 y se pone rojo.
+   */
+  it('🔴 los días de mora son los del back, con el plazo: 100, no los 105 desde el vencimiento', () => {
+    const c = contrato({
+      secciones: {
+        arriendos: [
+          fila({
+            estado: 'PENDIENTE',
+            fechaVencimiento: '2026-06-01',
+            cajon: 'CARTERA',
+            diasDeMora: 100,
+          }),
+        ],
+        otrosConceptos: [],
+      },
+    });
+    const r = resumirElCliente(estadoDeCuenta({ contratos: [c] }), '2026-09-14');
+    expect(diasEntre('2026-06-01', '2026-09-14')).toBe(105);
+    expect(r).toMatchObject({ enMora: true, diasDeMora: 100, enPlazo: false, cuotasVencidas: 1 });
+  });
+
+  it('🔴 lo vencido DENTRO del plazo no es mora: se dice «Vencido, en plazo»', () => {
+    const c = contrato({
+      secciones: {
+        arriendos: [
+          fila({
+            estado: 'PENDIENTE',
+            fechaVencimiento: '2026-09-10',
+            cajon: 'VENCIDA_EN_PLAZO',
+            diasDeMora: 0,
+            valorNeto: 700,
+          }),
+          fila({
+            estado: 'PENDIENTE',
+            fechaVencimiento: '2026-10-05',
+            cajon: 'POR_VENCER',
+            diasDeMora: 0,
+          }),
+        ],
+        otrosConceptos: [],
+      },
+    });
+    const r = resumirElCliente(estadoDeCuenta({ contratos: [c] }), HOY);
+    expect(r).toMatchObject({
+      enMora: false,
+      diasDeMora: 0,
+      enPlazo: true,
+      cuotasEnPlazo: 1,
+      cuotasVencidas: 1,
+      vencidoCop: 700,
+    });
+    expect(r.proxima?.fecha).toBe('2026-10-05');
+  });
+
   it('una cuota ANTERIOR no pone a nadie en mora: la gestionó el sistema viejo', () => {
     const c = contrato({
       secciones: {

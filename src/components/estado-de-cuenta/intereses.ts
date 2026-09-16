@@ -12,66 +12,16 @@
  * siendo lo pactado—, liquidado con la MISMA regla que la prefactura y la
  * cartera. Acá no se calcula un peso: se pinta.
  *
- * ── Por qué los tipos viven acá y no en `@/lib/types/estado-de-cuenta` ──────
- *
- * Son OPCIONALES a propósito: el documento del propietario no los trae (su
- * cuota es un giro, no una deuda que se le cobre tarde), y un back anterior
- * tampoco. Ausente no es «cero intereses»: es «no hay nada que decir de mora».
+ * Los tipos viven en `@/lib/types/estado-de-cuenta`, al lado del documento
+ * que los trae; acá quedan las preguntas que la pantalla les hace.
  */
 
 import type {
   ContratoDelEstadoDeCuenta,
   EstadoDeCuenta,
+  InteresesDelContrato,
+  TotalesDeInteres,
 } from '@/lib/types/estado-de-cuenta';
-
-/** Un renglón de interés: el de UNA cuota. */
-export interface FilaDeInteres {
-  cuotaId: string;
-  /** `YYYY-MM`. */
-  mes: string;
-  /** «Intereses de mora sobre Canon de arrendamiento. De … hasta …». */
-  concepto: string;
-  /** `YYYY-MM-DD`: el vencimiento de la cuota. */
-  fechaVencimiento: string;
-  /** Hasta hoy, o hasta el último abono si la cuota ya se pagó. */
-  diasDeMora: number;
-  liquidado: number;
-  /** Lo ya abonado a intereses (la ley los pone antes que el capital). */
-  abonado: number;
-  /** 🔴 Lo que falta. */
-  pendiente: number;
-  /** `COBRO` = ya liquidado y escrito; `CUOTA` = calculado hoy, crece mañana. */
-  origen: 'COBRO' | 'CUOTA' | null;
-  /** La cuota ya se pagó, pero se pagó cuando ya estaba en mora. */
-  pagadaEnMora: boolean;
-}
-
-export interface InteresesDelContrato {
-  filas: FilaDeInteres[];
-  liquidado: number;
-  abonado: number;
-  /** 🔴 El interés que falta hoy. */
-  pendiente: number;
-  /** Lo vencido del contrato, con su mora. */
-  pendienteConIntereses: number;
-  /** Todo lo que falta del contrato, con la mora. */
-  restaPorPagarConIntereses: number;
-  /**
-   * Cuotas en mora que NO llevan interés, y por qué. `null` cuando no hay
-   * ninguna. Un cero sin esto se leería «no hay mora».
-   */
-  sinInteres: { cuotas: number; motivo: string; sinReglas: boolean } | null;
-}
-
-export interface TotalesDeInteres {
-  liquidado: number;
-  abonado: number;
-  pendiente: number;
-  pendienteConIntereses: number;
-  restaPorPagarConIntereses: number;
-  /** Algún contrato tiene mora sin interés porque la agencia no tiene reglas. */
-  sinReglas: boolean;
-}
 
 /** A dónde se configuran las reglas de mora. Sólo tiene sentido en el panel. */
 export const RUTA_DE_REGLAS_DE_MORA =
@@ -81,19 +31,12 @@ export const RUTA_DE_REGLAS_DE_MORA =
 export function interesesDelContrato(
   contrato: ContratoDelEstadoDeCuenta,
 ): InteresesDelContrato | null {
-  return (
-    (contrato as ContratoDelEstadoDeCuenta & {
-      intereses?: InteresesDelContrato | null;
-    }).intereses ?? null
-  );
+  return contrato.intereses ?? null;
 }
 
 /** Los intereses de todo el documento, o `null` si no hay nada de mora. */
 export function interesesDelEstado(doc: EstadoDeCuenta): TotalesDeInteres | null {
-  return (
-    (doc as EstadoDeCuenta & { intereses?: TotalesDeInteres | null })
-      .intereses ?? null
-  );
+  return doc.intereses ?? null;
 }
 
 /**

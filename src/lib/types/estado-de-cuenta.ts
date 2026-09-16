@@ -87,6 +87,17 @@ export interface FilaDelEstadoDeCuenta {
    */
   periodoDesde?: string | null;
   periodoHasta?: string | null;
+  /**
+   * 🔴 Dónde está la fila HOY, con la regla única del back (`cuotaEsCartera`:
+   * vencimiento MÁS los días de plazo del contrato). `VENCIDA_EN_PLAZO` se lee
+   * «Vencido, en plazo» y NO es mora; `CARTERA` sí. Es lo que la ficha y la
+   * cartera dicen de la misma cuota: el front no vuelve a contar días.
+   *
+   * Opcional sólo porque un back anterior no lo manda.
+   */
+  cajon?: 'POR_VENCER' | 'VENCIDA_EN_PLAZO' | 'CARTERA' | 'SIN_DEUDA';
+  /** Días de mora DESPUÉS del plazo. `0` mientras el plazo corre. */
+  diasDeMora?: number;
 }
 
 /**
@@ -144,7 +155,69 @@ export interface ContratoDelEstadoDeCuenta {
     otrosConceptos: FilaDelEstadoDeCuenta[];
   };
   totales: TotalesDelEstadoDeCuenta;
+  /**
+   * El interés de mora del contrato, APARTE del capital. Sólo del lado
+   * INQUILINO; ausente o `null` en el del propietario y con un back anterior.
+   */
+  intereses?: InteresesDelContrato | null;
   cortes: PuntoDeQuiebre[];
+}
+
+// ══ Intereses de mora ═══════════════════════════════════════════════════════
+//
+// La prefactura le cobraba al inquilino un interés que ni la cartera ni el
+// estado de cuenta mostraban. El back manda, por contrato, un bloque
+// `intereses` liquidado con la MISMA regla que la prefactura y la cartera.
+// Arriendos y Otros conceptos no cambian: siguen siendo lo pactado. Ausente no
+// es «cero intereses»: es «no hay nada que decir de mora».
+
+/** Un renglón de interés: el de UNA cuota. */
+export interface FilaDeInteres {
+  cuotaId: string;
+  /** `YYYY-MM`. */
+  mes: string;
+  /** «Intereses de mora sobre Canon de arrendamiento. De … hasta …». */
+  concepto: string;
+  /** `YYYY-MM-DD`: el vencimiento de la cuota. */
+  fechaVencimiento: string;
+  /** Hasta hoy, o hasta el último abono si la cuota ya se pagó. */
+  diasDeMora: number;
+  liquidado: number;
+  /** Lo ya abonado a intereses (la ley los pone antes que el capital). */
+  abonado: number;
+  /** 🔴 Lo que falta. */
+  pendiente: number;
+  /** `COBRO` = ya liquidado y escrito; `CUOTA` = calculado hoy, crece mañana. */
+  origen: 'COBRO' | 'CUOTA' | null;
+  /** La cuota ya se pagó, pero se pagó cuando ya estaba en mora. */
+  pagadaEnMora: boolean;
+}
+
+export interface InteresesDelContrato {
+  filas: FilaDeInteres[];
+  liquidado: number;
+  abonado: number;
+  /** 🔴 El interés que falta hoy. */
+  pendiente: number;
+  /** Lo vencido del contrato, con su mora. */
+  pendienteConIntereses: number;
+  /** Todo lo que falta del contrato, con la mora. */
+  restaPorPagarConIntereses: number;
+  /**
+   * Cuotas en mora que NO llevan interés, y por qué. `null` cuando no hay
+   * ninguna. Un cero sin esto se leería «no hay mora».
+   */
+  sinInteres: { cuotas: number; motivo: string; sinReglas: boolean } | null;
+}
+
+export interface TotalesDeInteres {
+  liquidado: number;
+  abonado: number;
+  pendiente: number;
+  pendienteConIntereses: number;
+  restaPorPagarConIntereses: number;
+  /** Algún contrato tiene mora sin interés porque la agencia no tiene reglas. */
+  sinReglas: boolean;
 }
 
 export interface ClienteDelEstadoDeCuenta {
@@ -180,6 +253,8 @@ export interface EstadoDeCuenta {
    * y no su cuenta entera.
    */
   filtro?: FiltrosDelEstadoDeCuenta | null;
+  /** Los intereses de todo el documento. `null`/ausente si no hay nada de mora. */
+  intereses?: TotalesDeInteres | null;
 }
 
 /**

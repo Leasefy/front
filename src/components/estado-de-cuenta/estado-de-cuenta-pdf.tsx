@@ -92,6 +92,8 @@ const COLOR = {
   verdeSuave: '#E8F4EA',
   rojo: '#C0392B',
   rojoSuave: '#FBE9E6',
+  ambar: '#8A5A00',
+  ambarSuave: '#FBF1DC',
 } as const;
 
 const SANS = 'Helvetica';
@@ -625,13 +627,22 @@ function Portada({ doc, hoy, nota }: EstadoDeCuentaPDFProps) {
               estilos.chip,
               resumen.enMora
                 ? { color: COLOR.rojo, backgroundColor: COLOR.rojoSuave }
-                : { color: COLOR.verde, backgroundColor: COLOR.verdeSuave },
+                : resumen.enPlazo
+                  ? { color: COLOR.ambar, backgroundColor: COLOR.ambarSuave }
+                  : { color: COLOR.verde, backgroundColor: COLOR.verdeSuave },
             ]}
           >
             {resumen.enMora
               ? frase('estadoDeCuenta.enMoraDias', { dias: resumen.diasDeMora })
-              : frase('estadoDeCuenta.alDia')}
+              : resumen.enPlazo
+                ? frase('estadoDeCuenta.vencidoEnPlazo')
+                : frase('estadoDeCuenta.alDia')}
           </Text>
+          {resumen.enPlazo ? (
+            <Text style={estilos.heroePie}>
+              {frase('estadoDeCuenta.vencidoEnPlazoDetalle', { n: resumen.cuotasEnPlazo })}
+            </Text>
+          ) : null}
           {resumen.enMora ? (
             <Text style={estilos.heroePie}>
               {/* «1 cuotas vencidas» en la portada del documento insignia, no. */}

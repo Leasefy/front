@@ -27,7 +27,7 @@ vi.mock('next/link', () => ({
 
 import { EstadoDeCuentaDocumento } from './EstadoDeCuentaDocumento';
 import { contrato, estadoDeCuenta } from './ejemplo-de-prueba';
-import type { InteresesDelContrato, TotalesDeInteres } from './intereses';
+import type { InteresesDelContrato, TotalesDeInteres } from '@/lib/types/estado-de-cuenta';
 import { RUTA_DE_REGLAS_DE_MORA } from './intereses';
 import { formatCurrency } from '@/lib/format';
 

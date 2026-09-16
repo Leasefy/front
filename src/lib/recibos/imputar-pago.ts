@@ -43,7 +43,11 @@ export interface DeudaImputable {
   dueDate?: string | null;
   createdAt?: string | null;
   pendiente: number;
-  /** `Cobro.lateFee` y `Cobro.paidAmount`: con los dos se sabe cuánto de lo pendiente es interés. */
+  /**
+   * El interés de mora del período y lo ya abonado a él: con los dos se sabe
+   * cuánto de lo pendiente es interés. Con el back que manda
+   * `interesPendienteCop` viaja ya neto (`yaAbonado` en 0).
+   */
   interesesDeMora?: number;
   yaAbonado?: number;
 }
@@ -150,6 +154,13 @@ export function imputarPago(
 /**
  * La cartera del back, traducida a lo que `imputarPago` necesita.
  *
+ * 🔴 El interés es el que el back dice que falta HOY (`interesPendienteCop`),
+ * con la misma regla de la cartera y la prefactura: incluye el que liquida la
+ * regla sobre una cuota que todavía no tiene cobro. Antes se leía `lateFee` y
+ * `paidAmount`, que sólo sabía de la mora escrita en un cobro, y a una cuota
+ * sin cobro se le mostraba todo como capital. Con un back anterior que no
+ * manda el campo, se vuelve a esa lectura.
+ *
  * 🔴 Entran TAMBIÉN las cuotas que todavía no vencen. Ese es el cambio del
  * 2026-09-15: adelantar es abonar a cuotas futuras del mismo contrato, que ya
  * son deuda. El orden por período las deja de últimas solas, así que la regla
@@ -162,7 +173,8 @@ export function deudasDeLaCartera(cuotas: readonly PeriodoEnDeuda[]): DeudaImput
     dueDate: c.dueDate,
     createdAt: c.createdAt,
     pendiente: c.pendingAmount,
-    interesesDeMora: c.lateFee,
-    yaAbonado: c.paidAmount,
+    ...(c.interesPendienteCop !== undefined
+      ? { interesesDeMora: c.interesPendienteCop, yaAbonado: 0 }
+      : { interesesDeMora: c.lateFee, yaAbonado: c.paidAmount }),
   }));
 }

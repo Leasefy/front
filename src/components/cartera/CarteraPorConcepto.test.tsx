@@ -42,7 +42,7 @@ vi.mock('@/lib/hooks/use-cartera', () => ({
 }))
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({
-    t: (k: string) => k,
+    t: (k: string, p?: Record<string, unknown>) => (p ? `${k}:${Object.values(p).join(',')}` : k),
     locale: 'es',
     formatCurrency: (n: number) => `$${n.toLocaleString('es-CO')}`,
     formatDate: (d: string) => d,
@@ -678,7 +678,10 @@ describe('rotuloDelContrato — de quién es cada número', () => {
       expect(
         filaDeNicolas.querySelector('[data-testid="intereses-del-inquilino"]')?.textContent,
       ).toContain(formatCurrency(60_000))
-      expect(filaDeNicolas.textContent).toContain(`${formatCurrency(6_778_200 + 60_000)} con intereses`)
+      // La palabra sale del diccionario (`cartera.interes.conIntereses`).
+      expect(filaDeNicolas.textContent).toContain(
+        `cartera.interes.conIntereses:${formatCurrency(6_778_200 + 60_000)}`,
+      )
       expect($('[data-testid="intereses-en-pie"]').textContent).toContain(formatCurrency(60_000))
       expect($('[data-testid="total-intereses"]').textContent).toContain(formatCurrency(60_000))
     })
@@ -702,7 +705,7 @@ describe('rotuloDelContrato — de quién es cada número', () => {
         todos('[data-testid="fila-inquilino"]')[0]!.querySelector(
           '[data-testid="intereses-del-inquilino"]',
         )?.textContent,
-      ).toContain('Sin reglas de mora')
+      ).toContain('cartera.interes.sinReglas')
       expect($('[data-testid="por-concepto-configurar-reglas"]').getAttribute('href')).toBe(
         '/panel/inmobiliaria/pagos/cartera/reglas-de-mora',
       )

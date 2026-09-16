@@ -14,65 +14,37 @@
  * Capital e interés van SIEMPRE por separado. Los cajones (por vencer, vencido
  * en plazo, cartera) y los tramos por edad siguen midiendo capital.
  *
- * ── Por qué los tipos viven acá ─────────────────────────────────────────────
- *
- * Son opcionales a propósito: un back anterior no los manda, y «no vino el
- * interés» no es «el interés es cero». Donde no vienen, la celda dice un guion,
- * nunca un $0.
+ * Los tipos viven en `@/lib/types/inmobiliaria` (`InteresDeMora`,
+ * `ConInteres`), al lado de las filas que los traen, y las palabras en
+ * `locales/*.json` bajo `cartera.interes` (guardia: `claves-cartera.test.ts`).
+ * Acá quedan las preguntas que las pantallas le hacen a una fila.
  */
 
-/** El interés de una fila, tal como lo manda el back (`InteresEnPantalla`). */
-export interface InteresDeMora {
-  /** Lo liquidado: interés diario y gasto administrativo de cobranza. */
-  liquidadoCop: number;
-  /** Lo ya abonado a intereses (la ley los pone antes que el capital). */
-  abonadoCop: number;
-  /** 🔴 Lo que falta de interés hoy. */
-  pendienteCop: number;
-  /** `COBRO` = ya liquidado y escrito; `CUOTA` = calculado hoy, crece mañana. */
-  origen: 'COBRO' | 'CUOTA' | null;
-  /** El capital ya se pagó, pero se pagó cuando la cuota ya era cartera. */
-  pagadaEnMora: boolean;
-  diasDeMora: number;
-  /** Por qué está en mora y no lleva interés. `null` si lleva o no es cartera. */
-  motivo: string | null;
-  /** El motivo es que la inmobiliaria no tiene reglas de mora activas. */
-  sinReglas: boolean;
-}
-
-/** Una fila cualquiera de cartera, con lo que el back le agregó de mora. */
-export type ConInteres<T> = T & {
-  interes?: InteresDeMora;
-  totalConInteresCop?: number;
-};
+import type { ConInteres, InteresDeMora } from '@/lib/types/inmobiliaria';
 
 /** A dónde se configuran las reglas de mora. */
 export const RUTA_DE_REGLAS_DE_MORA =
   '/panel/inmobiliaria/pagos/cartera/reglas-de-mora';
 
-/** Las palabras. En castellano de Colombia, con tuteo. */
-export const TEXTO_DE_MORA = {
-  columnaIntereses: 'Intereses',
-  /**
-   * En «Cartera por concepto» ya puede haber columnas «Intereses de mora» y
-   * «Gasto administrativo»: las de un cobro que los dejó escritos en sus
-   * líneas. La columna nueva es otra cosa —lo que la regla liquida hoy— y se
-   * llama distinto para que nadie las sume dos veces.
-   */
-  columnaMoraLiquidadaHoy: 'Mora liquidada hoy',
-  columnaTotal: 'Total',
-  sinDato: 'El servidor no mandó el interés de esta cuota',
-  pagadaEnMora: 'Se pagó en mora',
-  abonado: (monto: string) => `abonó ${monto}`,
-  sinReglas: 'Sin reglas de mora',
-  configurar: 'Configúralas',
-  sinInteres: 'Sin interés',
-  intereses: 'Intereses de mora',
-  masIntereses: (monto: string) => `+ ${monto} de intereses`,
-  conIntereses: (monto: string) => `${monto} con intereses`,
-  configurarReglas: 'Configurar las reglas de mora',
-  explicacion:
-    'Van aparte del capital. Incluyen el interés diario y el gasto administrativo de cobranza que fijan tus reglas de mora, y crecen cada día mientras la cuota siga en mora.',
+/**
+ * Las claves de las palabras, en `cartera.interes`. Con `t()`: la cartera vive
+ * dentro del panel y tiene proveedor de idioma.
+ */
+export const CLAVE_DE_MORA = {
+  columnaIntereses: 'cartera.interes.columnaIntereses',
+  columnaMoraLiquidadaHoy: 'cartera.interes.columnaMoraLiquidadaHoy',
+  columnaTotal: 'cartera.interes.columnaTotal',
+  sinDato: 'cartera.interes.sinDato',
+  pagadaEnMora: 'cartera.interes.pagadaEnMora',
+  abonado: 'cartera.interes.abonado',
+  sinReglas: 'cartera.interes.sinReglas',
+  configurar: 'cartera.interes.configurar',
+  sinInteres: 'cartera.interes.sinInteres',
+  intereses: 'cartera.interes.intereses',
+  masIntereses: 'cartera.interes.masIntereses',
+  conIntereses: 'cartera.interes.conIntereses',
+  configurarReglas: 'cartera.interes.configurarReglas',
+  explicacion: 'cartera.interes.explicacion',
 } as const;
 
 /** El interés de la fila, si el back lo mandó. */

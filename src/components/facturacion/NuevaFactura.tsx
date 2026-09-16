@@ -1,21 +1,34 @@
 'use client'
 
 /**
- * «Nueva factura» — el mes, y todo lo que hay que facturar ese mes.
+ * «Nueva factura» — el mes que se emite, y hasta dónde se puede mirar.
  *
  * Nico (2026-09-12): «Facturar y que me arroje el listado completo de las
- * facturas que hay por generar, NO QUE ME PONGA A ESCOGER UNA. En el módulo de
- * facturación debe tener la pestaña de nueva factura y permitir seleccionar
- * por mes de facturación. Una vez seleccione el mes, debe separar por facturas
- * de propietarios y facturas de inquilinos pero debe arrojar el listado
- * completo de las facturas que puedo generar para ese mes… El sistema ya debe
- * saber automáticamente si en septiembre tengo que facturar 800 contratos y
- * cuáles.»
+ * facturas que hay por generar, NO QUE ME PONGA A ESCOGER UNA… Una vez
+ * seleccione el mes, debe separar por facturas de propietarios y facturas de
+ * inquilinos pero debe arrojar el listado completo de las facturas que puedo
+ * generar para ese mes.»
  *
  * Por eso acá no hay ningún buscador de contrato ni ningún «elegir uno»: se
  * elige el MES y el back responde las dos listas completas
  * (`GET /inmobiliaria/facturacion/por-generar`). Lo único que la persona hace
  * es desmarcar lo que no quiere y apretar «Generar N facturas».
+ *
+ * ── 🔴 Cada fila SALE de la cuota del contrato ──────────────────────────────
+ *
+ * La deuda nace con el contrato y vive en `contrato_cuotas`, diferida por mes:
+ * esa fila ES la factura de ese mes, con su canon, su prorrateo, su IVA y sus
+ * retenciones ya calculados el día que se firmó. La pantalla no recalcula nada
+ * y el back tampoco — es la misma plata que el cliente ve en su estado de
+ * cuenta, que es lo único que hace defendible una factura frente a un reclamo.
+ *
+ * ── Mirar hasta diciembre, emitir mes a mes ─────────────────────────────────
+ *
+ * El CEO (2026-09-13): «Si quiero mirar qué facturas tengo por generar hasta el
+ * 31 de diciembre… Lo que NO se puede es enviarlas [antes de tiempo].» El
+ * selector «Ver hasta» estira la consulta; las casillas y el botón siguen siendo
+ * SÓLO del mes elegido, y una fila de un mes que no empezó viene con
+ * `emitible: false` y su motivo — el back devuelve 400 si se intenta igual.
  *
  * ── Lo que la pantalla dice en voz alta ─────────────────────────────────────
  *
@@ -23,12 +36,12 @@
  * lista que sólo trae lo pendiente no deja verificar que el mes esté completo,
  * que es justamente lo que la persona de facturación necesita saber.
  *
- * Y lo tributario, que es el pedido del 12 a las 22:50: cada fila muestra su
- * BASE, su IVA, lo que el cliente RETIENE y el TOTAL. 🔴 La retención no baja
- * el total: baja el neto, porque la practica quien recibe la factura al pagar.
- * Una fila cuyo escenario está deducido o sin definir sale sin impuestos y se
- * marca «impuestos sin confirmar» — una factura sin IVA y una a la que se le
- * olvidó el IVA se ven exactamente igual sin esa marca.
+ * Cada fila muestra su BASE, su IVA, lo que el cliente RETIENE y el TOTAL.
+ * 🔴 La retención no baja el total: baja el neto, porque la practica quien
+ * recibe la factura al pagar. Una fila cuya cuota se generó sin escenario
+ * confirmado sale sin impuestos y se marca «sin confirmar». Y los `avisos` de la
+ * fila —una cuota en mora cuyo interés ningún cobro liquidó— se muestran: la
+ * plata que no se puede facturar se dice, no se pierde en silencio.
  *
  * Y el número: sale de la RESOLUCIÓN de la DIAN. Sin resolución vigente el back
  * no emite, así que el botón se apaga y la pantalla dice por qué y a dónde ir.
@@ -46,6 +59,7 @@ import { InformeDeFacturacion, mensajeDelFalloDeEmision } from './InformeDeFactu
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import {
   Select,
@@ -80,7 +94,7 @@ import {
   type FacturaDelMes,
   type FacturasPorGenerar,
 } from '@/lib/api/facturacion-por-mes.service'
-import { PorGenerarHasta } from './PorGenerarHasta'
+import { PrefacturasDelRango, finDeAnio } from './PrefacturasDelRango'
 
 /** Lo que se lee de un renglón cuando la fila resume sus conceptos. */
 function conceptosLegibles(factura: FacturaDelMes): string {
@@ -138,8 +152,16 @@ function TablaDeFacturas({
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(filas, { resetKey: testid + filas.length })
 
+  /*
+   * 🔴 Sólo lo que HOY se puede emitir entra a la selección. Una fila de un mes
+   * que todavía no empieza se ve y no se marca: el back la rechazaría con un
+   * 400, y una casilla que produce un error no es una opción, es una trampa.
+   */
   const porEmitir = useMemo(
-    () => filas.filter((f) => f.estado === 'POR_EMITIR').map((f) => f.clave),
+    () =>
+      filas
+        .filter((f) => f.estado === 'POR_EMITIR' && f.emitible)
+        .map((f) => f.clave),
     [filas],
   )
   const sinConfirmar = filas.filter((f) => f.impuestosSinConfirmar).length
@@ -213,21 +235,27 @@ function TablaDeFacturas({
             ) : (
               pageItems.map((factura) => {
                 const emitida = factura.estado === 'EMITIDA'
+                const bloqueada = !emitida && !factura.emitible
                 return (
                   <TableRow
                     key={factura.clave}
                     data-testid={`factura-${factura.clave}`}
-                    className={emitida ? 'opacity-70' : undefined}
+                    className={emitida || bloqueada ? 'opacity-70' : undefined}
                   >
                     <TableCell className="w-10">
                       <Checkbox
-                        checked={!emitida && seleccion.has(factura.clave)}
-                        disabled={emitida || ocupado}
+                        checked={
+                          !emitida && factura.emitible && seleccion.has(factura.clave)
+                        }
+                        disabled={emitida || bloqueada || ocupado}
                         onCheckedChange={() => onAlternarUna(factura.clave)}
                         aria-label={
                           emitida
                             ? 'Ya emitida'
-                            : `Seleccionar la factura de ${factura.terceroNombre}`
+                            : bloqueada
+                              ? (factura.motivoNoEmitible ??
+                                'Todavía no se puede emitir')
+                              : `Seleccionar la factura de ${factura.terceroNombre}`
                         }
                       />
                     </TableCell>
@@ -266,6 +294,26 @@ function TablaDeFacturas({
                         <p className="truncate text-caption text-fg-muted">
                           {formatCurrency(factura.deduccionAlEgresoCop)} van a
                           deducción del egreso, no a la factura
+                        </p>
+                      )}
+                      {/* 🔴 Lo que esta factura NO lleva y alguien tiene que
+                          saber: el interés de una cuota en mora que ningún cobro
+                          liquidó, o un desglose que hubo que cuadrar contra el
+                          estado de cuenta. Se dice acá porque perder plata en
+                          silencio es peor que una línea de más. */}
+                      {factura.avisos.length > 0 && (
+                        <p
+                          className="flex items-start gap-1 text-caption text-warning"
+                          title={factura.avisos.join(' ')}
+                          data-testid={`aviso-${factura.clave}`}
+                        >
+                          <Warning
+                            className="mt-0.5 h-3 w-3 flex-shrink-0"
+                            weight="fill"
+                          />
+                          <span className="line-clamp-2">
+                            {factura.avisos.join(' ')}
+                          </span>
                         </p>
                       )}
                     </TableCell>
@@ -318,6 +366,18 @@ function TablaDeFacturas({
                             </span>
                           )}
                         </span>
+                      ) : bloqueada ? (
+                        /* 🔴 MOSTRAR NO ES EMITIR. El motivo va en el `title` con
+                           las palabras del back: «Diciembre de 2026 todavía no
+                           empieza…». Una casilla apagada sin explicación es cómo
+                           alguien concluye que el sistema está roto. */
+                        <span
+                          className="text-caption text-fg-subtle"
+                          title={factura.motivoNoEmitible ?? undefined}
+                          data-testid={`todavia-no-${factura.clave}`}
+                        >
+                          Todavía no
+                        </span>
                       ) : (
                         <span className="text-caption text-primary">Por emitir</span>
                       )}
@@ -348,6 +408,13 @@ function TablaDeFacturas({
 
 export function NuevaFactura() {
   const [mes, setMes] = useState(() => mesActual())
+  /**
+   * Hasta dónde MIRAR. Arranca en el mes elegido —que es el trabajo diario— y
+   * el botón de al lado lo estira al 31 de diciembre, que es la pregunta del
+   * CEO. Arrancar en diciembre le cobraría a todos los días una consulta que se
+   * usa de vez en cuando.
+   */
+  const [hasta, setHasta] = useState(() => mesActual())
   const [datos, setDatos] = useState<FacturasPorGenerar | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<unknown>(null)
@@ -356,36 +423,43 @@ export function NuevaFactura() {
 
   const meses = useMemo(() => mesesParaElegir(), [])
 
-  const cargar = useCallback(
-    async (elMes: string) => {
-      setCargando(true)
-      setError(null)
-      try {
-        const r = await facturacionPorMesService.porGenerar(elMes)
-        setDatos(r)
-        // Todo lo que está por emitir arranca seleccionado: el pedido es
-        // facturar el mes, no ir marcando 800 casillas. Desmarcar lo que
-        // sobra es mucho menos trabajo que marcar lo que falta.
-        setSeleccion(
-          new Set(
-            [...r.inquilinos, ...r.propietarios]
-              .filter((f) => f.estado === 'POR_EMITIR')
-              .map((f) => f.clave),
-          ),
-        )
-      } catch (e) {
-        setError(e)
-        setDatos(null)
-      } finally {
-        setCargando(false)
-      }
-    },
-    [],
-  )
+  const cargar = useCallback(async (elMes: string, elTope: string) => {
+    setCargando(true)
+    setError(null)
+    try {
+      const r = await facturacionPorMesService.porGenerar({
+        desde: elMes,
+        // Un tope anterior al mes elegido sería un rango al revés (400 del
+        // back): se pide el mes solo, que es lo que la persona quiso decir.
+        hasta: elTope && elTope >= elMes ? elTope : elMes,
+      })
+      setDatos(r)
+      /*
+       * Arranca seleccionado todo lo que se puede emitir HOY y es DEL MES
+       * elegido: el pedido es facturar el mes, no ir marcando 800 casillas.
+       * Los meses de más adelante se miran, no se marcan.
+       */
+      setSeleccion(
+        new Set(
+          [...r.inquilinos, ...r.propietarios]
+            .filter(
+              (f) =>
+                f.mes === elMes && f.estado === 'POR_EMITIR' && f.emitible,
+            )
+            .map((f) => f.clave),
+        ),
+      )
+    } catch (e) {
+      setError(e)
+      setDatos(null)
+    } finally {
+      setCargando(false)
+    }
+  }, [])
 
   useEffect(() => {
-    void cargar(mes)
-  }, [cargar, mes])
+    void cargar(mes, hasta)
+  }, [cargar, mes, hasta])
 
   const alternarUna = (clave: string) => {
     setSeleccion((previa) => {
@@ -408,11 +482,25 @@ export function NuevaFactura() {
     })
   }
 
+  /**
+   * Las filas DEL MES elegido: son las que llevan casilla y las que se emiten.
+   * Los meses de más adelante viven en `PrefacturasDelRango`, sin casillas.
+   */
+  const delMes = useMemo(() => {
+    if (!datos) return { inquilinos: [], propietarios: [] }
+    return {
+      inquilinos: datos.inquilinos.filter((f) => f.mes === mes),
+      propietarios: datos.propietarios.filter((f) => f.mes === mes),
+    }
+  }, [datos, mes])
+
   const elegidas = useMemo(() => [...seleccion], [seleccion])
   const totalElegido = useMemo(() => {
     if (!datos) return 0
     return [...datos.inquilinos, ...datos.propietarios]
-      .filter((f) => seleccion.has(f.clave) && f.estado === 'POR_EMITIR')
+      .filter(
+        (f) => seleccion.has(f.clave) && f.estado === 'POR_EMITIR' && f.emitible,
+      )
       .reduce((s, f) => s + f.totalCop, 0)
   }, [datos, seleccion])
 
@@ -467,7 +555,7 @@ export function NuevaFactura() {
 
       // Lo que salió tiene que verse como emitido, también después de un
       // corte: y lo que quedó por emitir vuelve seleccionado para reintentar.
-      await cargar(mes)
+      await cargar(mes, hasta)
     } finally {
       setGenerando(false)
       setProgreso(null)
@@ -482,8 +570,8 @@ export function NuevaFactura() {
 
   const vacio =
     datos !== null &&
-    datos.inquilinos.length === 0 &&
-    datos.propietarios.length === 0
+    delMes.inquilinos.length === 0 &&
+    delMes.propietarios.length === 0
 
   return (
     <div className="space-y-4">
@@ -512,48 +600,94 @@ export function NuevaFactura() {
       <div className="rounded-lg bg-surface-muted border border-border p-3 flex items-start gap-2.5">
         <Info className="w-5 h-5 text-fg-muted flex-shrink-0 mt-0.5" weight="fill" />
         <p className="text-caption text-fg-muted">
-          Los montos salen del contrato y los impuestos del escenario tributario
-          de cada uno. Un contrato cuyo escenario está deducido o sin confirmar
-          se factura SIN impuestos y se marca «sin confirmar»: nunca se factura
-          un impuesto que nadie confirmó. La factura se numera con la resolución
+          Cada factura sale de la cuota del contrato: el mismo canon, el mismo
+          prorrateo y los mismos impuestos que el cliente ve en su estado de
+          cuenta. Una cuota que se generó sin escenario tributario confirmado se
+          factura SIN impuestos y se marca «sin confirmar»: nunca se factura un
+          impuesto que nadie confirmó. La factura se numera con la resolución
           vigente de la DIAN, pero todavía no se transmite electrónicamente (sin
           CUFE ni validación): eso necesita el proveedor tecnológico de la
           inmobiliaria.
         </p>
       </div>
 
-      <div className="rounded-lg border border-border bg-surface p-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="facturacion-mes"
-            className="text-caption font-medium text-fg"
-          >
-            Mes de facturación
-          </label>
-          <Select value={mes} onValueChange={setMes}>
-            <SelectTrigger
-              id="facturacion-mes"
-              className="w-56"
-              data-testid="facturacion-selector-mes"
+      <div className="rounded-lg border border-border bg-surface p-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="facturacion-mes"
+              className="text-caption font-medium text-fg"
             >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {meses.map((m) => (
-                <SelectItem key={m} value={m}>
-                  {mesLegible(m)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              Mes de facturación
+            </label>
+            <Select
+              value={mes}
+              onValueChange={(m) => {
+                setMes(m)
+                // El tope nunca puede quedar antes del mes elegido: sería un
+                // rango al revés y el back lo rechaza.
+                setHasta((h) => (h && h >= m ? h : m))
+              }}
+            >
+              <SelectTrigger
+                id="facturacion-mes"
+                className="w-56"
+                data-testid="facturacion-selector-mes"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {meses.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {mesLegible(m)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 🔴 «Ver hasta» es MIRAR, no emitir. El CEO (13-09): «Si quiero
+              mirar qué facturas tengo por generar hasta el 31 de diciembre…
+              Lo que NO se puede es enviarlas [antes de tiempo].» Por eso
+              estira la consulta y no toca ni las casillas ni el botón. */}
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="facturacion-hasta"
+              className="text-caption font-medium text-fg"
+            >
+              Ver hasta
+            </label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="facturacion-hasta"
+                type="month"
+                className="w-40 tabular-nums"
+                min={mes}
+                value={hasta}
+                onChange={(e) => setHasta(e.target.value || mes)}
+                data-testid="facturacion-hasta"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                hideArrow
+                onClick={() => setHasta(finDeAnio().slice(0, 7))}
+                data-testid="facturacion-hasta-fin-de-anio"
+              >
+                Hasta diciembre
+              </Button>
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-col items-start gap-1.5 sm:items-end">
+        <div className="flex flex-col items-start gap-1.5 lg:items-end">
           {datos && (
             <p className="text-caption text-fg-muted tabular-nums">
-              {datos.totales.contratosDelMes}{' '}
-              {datos.totales.contratosDelMes === 1 ? 'contrato toca' : 'contratos tocan'}{' '}
-              {mesLegible(mes)}
+              {datos.totales.contratos}{' '}
+              {datos.totales.contratos === 1 ? 'contrato' : 'contratos'} ·{' '}
+              {datos.totales.meses === 1
+                ? mesLegible(mes)
+                : `${datos.totales.meses} meses hasta ${mesLegible(datos.hasta)}`}
               {elegidas.length > 0 && ` · ${formatCurrency(totalElegido)} seleccionados`}
             </p>
           )}
@@ -625,19 +759,20 @@ export function NuevaFactura() {
         />
       )}
 
-      {/* 🔴 «Ver por generar hasta <fecha>» va acá, pegado al selector de mes,
-          porque es la MISMA pregunta mirada más lejos — pero es una consulta,
-          no una emisión. CEO (2026-09-13): «Lo que NO se puede es enviarlas
-          todas en un solo mes.» Por eso el botón «Generar» de arriba sigue
-          siendo por mes y este bloque no tiene ninguno. */}
-      <PorGenerarHasta />
+      {/* 🔴 El rango sólo aparece cuando la persona lo pidió: con «Ver hasta»
+          en el mismo mes, esta pantalla se ve exactamente como antes. Es la
+          MISMA consulta mirada más lejos —la misma cuota, los mismos números—,
+          pero sin casillas: emitir sigue siendo del mes de arriba. */}
+      {datos && datos.meses.length > 1 && (
+        <PrefacturasDelRango datos={datos} />
+      )}
 
       <EstadoDeDatos
         cargando={cargando}
         error={error}
         vacio={vacio}
         queEs="las facturas del mes"
-        onReintentar={() => void cargar(mes)}
+        onReintentar={() => void cargar(mes, hasta)}
         cuandoVacio={
           <SinDatos
             queSon={`facturas por generar en ${mesLegible(mes)}`}
@@ -651,7 +786,7 @@ export function NuevaFactura() {
             <TablaDeFacturas
               titulo="Inquilinos"
               descripcion="El canon del período y los conceptos que se le facturan al inquilino."
-              filas={datos.inquilinos}
+              filas={delMes.inquilinos}
               seleccion={seleccion}
               onAlternarUna={alternarUna}
               onAlternarTodas={alternarTodas}
@@ -661,7 +796,7 @@ export function NuevaFactura() {
             <TablaDeFacturas
               titulo="Propietarios"
               descripcion="La comisión de administración del mes. Lo que el propietario paga y no se factura va a deducción del egreso."
-              filas={datos.propietarios}
+              filas={delMes.propietarios}
               seleccion={seleccion}
               onAlternarUna={alternarUna}
               onAlternarTodas={alternarTodas}
@@ -679,12 +814,15 @@ export function NuevaFactura() {
               >
                 <summary className="cursor-pointer text-body-sm text-fg flex items-center gap-2">
                   <Warning className="h-4 w-4 text-fg-muted" weight="fill" />
-                  {datos.omitidos.length} contratos del mes no generan factura
+                  {datos.omitidos.length}{' '}
+                  {datos.omitidos.length === 1
+                    ? 'cuota no genera factura'
+                    : 'cuotas no generan factura'}
                 </summary>
                 <ul className="mt-3 space-y-1.5">
                   {datos.omitidos.slice(0, 50).map((o) => (
                     <li
-                      key={`${o.contractId}-${o.destinatario}`}
+                      key={`${o.contractId}-${o.mes}-${o.destinatario}`}
                       className="text-caption text-fg-muted"
                     >
                       {/* El número que la inmobiliaria conoce, y el nuestro rotulado. */}
@@ -692,7 +830,7 @@ export function NuevaFactura() {
                         {o.numeroExterno ?? `#${o.codigo ?? '—'}`}
                         {o.numeroExterno && o.codigo !== null && ` · Leasefy #${o.codigo}`}
                       </span>{' '}
-                      · {o.inmueble} ·{' '}
+                      · {o.inmueble} · {mesLegible(o.mes)} ·{' '}
                       {o.destinatario === 'INQUILINO' ? 'inquilino' : 'propietario'}:{' '}
                       {o.motivo}
                     </li>

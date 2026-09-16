@@ -227,12 +227,12 @@ export function mapBackendContract(bc: BackendContract): Contract {
  * los 1.836 de Nico—. No tener documento es el estado NORMAL de esos
  * contratos, y se cuenta en tono neutro.
  *
- * 🔴 Se decide por el TEXTO porque el back tira un `BadRequestException`
- * pelado, sin `code`. Conviene que mande uno (p. ej. `CONTRATO_SIN_DOCUMENTO`)
- * y que esto pase a leer sólo `err.code`: el texto es inglés de adentro del
- * back y cualquiera lo reescribe sin saber que una pantalla depende de él. Si
- * el 400 YA trae un `code`, se respeta: un código distinto es otro motivo, y
- * ése sí es un error.
+ * 🔴 Desde el 2026-09-16 el back ya NO responde 400 para ese caso: devuelve
+ * 200 `{ origin: 'SIN_DOCUMENTO' }` y `useContractPreview` lo lee de ahí. Esto
+ * queda para un back sin desplegar, que todavía manda el 400 pelado y sólo se
+ * reconoce por el TEXTO. El back nuevo le pone `code` a lo que sí es un fallo
+ * (`DOCUMENTO_NO_GENERADO`): un 400 con código distinto es otro motivo, y ése
+ * sí es un error.
  */
 export function esContratoSinDocumento(error: unknown): boolean {
   if (!(error instanceof ApiError) || error.status !== 400) return false;

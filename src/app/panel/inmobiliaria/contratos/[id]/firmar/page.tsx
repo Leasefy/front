@@ -236,6 +236,10 @@ function FirmarContratoContent() {
               className="prose prose-sm max-w-none dark:prose-invert"
               {...sanitizeContractHtml(preview.html)}
             />
+          ) : preview?.origin === 'SIN_DOCUMENTO' ? (
+            <p className="text-sm text-muted-foreground py-2" data-testid="contrato-sin-documento">
+              Este contrato se cargó desde tu sistema anterior y no tiene documento generado en Leasefy.
+            </p>
           ) : (
             <EmptyState
               icon={FileText}

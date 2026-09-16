@@ -141,13 +141,18 @@ describe('<CobrosDelContrato>', () => {
     )
   })
 
-  it('con inmueble y sin cobros, dice que todavía no se generó ninguno', async () => {
+  it('con inmueble y sin cobros, dice que todavía no se emitió ninguno y que se emite desde Pagos → Cartera', async () => {
     cobrosMock.mockResolvedValue([])
     await render(contrato())
 
-    expect(container.querySelector('[data-testid="cobros-vacio"]')?.textContent).toContain(
-      'Todavía no se generó ningún cobro',
-    )
+    const vacio = container.querySelector('[data-testid="cobros-vacio"]')
+    expect(vacio?.textContent).toContain('Todavía no se emitió ningún cobro')
+    expect(vacio?.textContent).toContain('Pagos → Cartera')
+    // 🔴 «Cobros» ya no es un módulo: ni el texto ni el enlace lo nombran.
+    expect(vacio?.textContent).not.toMatch(/desde Cobros/)
+    expect(vacio?.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/cartera/cobros')
+    expect(container.querySelector('[data-testid="ir-a-cartera"]')?.textContent).toContain('Ver en Cartera')
+    expect(container.textContent).not.toContain('Ir a Cobros')
   })
 
   it('un fallo NO se pinta como «sin cobros»: se dice y se puede reintentar', async () => {

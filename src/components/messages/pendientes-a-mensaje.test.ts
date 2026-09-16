@@ -11,9 +11,9 @@ import { describe, it, expect } from 'vitest';
 import {
   formatearFecha,
   formatearPesos,
-  mensajeDeCobro,
-  mensajeDeDispersion,
+  mensajeDeCuota,
   mensajeDeDocumento,
+  mensajeDeGiro,
   mesEnCurso,
   mesEnPalabras,
 } from './pendientes-a-mensaje';
@@ -65,54 +65,78 @@ describe('mesEnCurso', () => {
   });
 });
 
-const COBRO = {
-  id: 'c-1',
+const CUOTA = {
+  id: 'cu-1',
   mes: '2026-08',
   totalCop: 2_400_000,
   pendienteCop: 2_400_000,
   vencimiento: '2026-08-05',
+  cajon: 'CARTERA' as const,
   diasDeMora: 12,
-  estado: 'OVERDUE',
+  diasDePlazo: 5,
   contractId: 'ct-1',
   inmueble: 'Apto 301',
+  cobroId: null,
 };
 
-describe('mensajeDeCobro', () => {
-  it('nombra a la persona, el mes, el inmueble, la plata y la fecha', () => {
-    const texto = mensajeDeCobro(COBRO, 'Ana');
+describe('mensajeDeCuota', () => {
+  it('nombra a la persona, la cuota del mes, el inmueble, la plata y la fecha', () => {
+    const texto = mensajeDeCuota(CUOTA, 'Ana');
     expect(texto).toContain('Hola Ana');
-    expect(texto).toContain('agosto de 2026');
+    expect(texto).toContain('la cuota de agosto de 2026');
     expect(texto).toContain('Apto 301');
     expect(texto).toContain('$2.400.000');
-    expect(texto).toContain('05/08/2026');
+    expect(texto).toContain('Venció el 05/08/2026');
+    // Es la cuota del contrato: no habla de un cobro que puede no existir.
+    expect(texto).not.toContain('cobro');
   });
 
-  it('dice los días de mora cuando los hay, y en singular cuando es uno', () => {
-    expect(mensajeDeCobro(COBRO, 'Ana')).toContain('12 días de mora');
-    expect(mensajeDeCobro({ ...COBRO, diasDeMora: 1 }, 'Ana')).toContain('1 día de mora');
+  it('en cartera dice los días de mora, y en singular cuando es uno', () => {
+    expect(mensajeDeCuota(CUOTA, 'Ana')).toContain('12 días de mora');
+    expect(mensajeDeCuota({ ...CUOTA, diasDeMora: 1 }, 'Ana')).toContain('1 día de mora');
   });
 
-  it('sin mora no la menciona: no se inventa un atraso', () => {
-    expect(mensajeDeCobro({ ...COBRO, diasDeMora: 0 }, 'Ana')).not.toContain('mora');
+  it('🔴 vencida dentro del plazo NO habla de mora: el plazo se lo dio la inmobiliaria', () => {
+    const texto = mensajeDeCuota({ ...CUOTA, cajon: 'VENCIDA_EN_PLAZO', diasDeMora: 0 }, 'Ana');
+    expect(texto).toContain('Venció el 05/08/2026');
+    expect(texto).not.toContain('mora');
+  });
+
+  it('una cuota por vencer dice «vence», no «venció»', () => {
+    const texto = mensajeDeCuota(
+      { ...CUOTA, cajon: 'POR_VENCER', diasDeMora: 0, vencimiento: '2026-10-05' },
+      'Ana',
+    );
+    expect(texto).toContain('Vence el 05/10/2026');
+    expect(texto).not.toContain('Venció');
+    expect(texto).not.toContain('mora');
   });
 
   it('🔴 con un abono, habla del SALDO y aclara sobre qué total', () => {
-    const texto = mensajeDeCobro({ ...COBRO, pendienteCop: 900_000 }, 'Ana');
+    const texto = mensajeDeCuota({ ...CUOTA, pendienteCop: 900_000 }, 'Ana');
     expect(texto).toContain('quedan $900.000');
     expect(texto).toContain('de $2.400.000');
   });
 
   it('sin inmueble no deja el hueco de un «de undefined»', () => {
-    const texto = mensajeDeCobro({ ...COBRO, inmueble: null }, 'Ana');
+    const texto = mensajeDeCuota({ ...CUOTA, inmueble: null }, 'Ana');
     expect(texto).not.toContain('undefined');
     expect(texto).not.toContain('null');
   });
 });
 
-describe('mensajeDeDispersion', () => {
+describe('mensajeDeGiro', () => {
   it('el tono se invierte: acá el que debe es la inmobiliaria', () => {
-    const texto = mensajeDeDispersion(
-      { id: 'd-1', mes: '2026-09', netoCop: 3_600_000, estado: 'PENDING', inmueble: 'Casa 12' },
+    const texto = mensajeDeGiro(
+      {
+        id: 'cp-1',
+        mes: '2026-09',
+        pendienteCop: 3_600_000,
+        vencimiento: '2026-09-05',
+        contractId: 'ct-9',
+        inmueble: 'Casa 12',
+        dispersionId: null,
+      },
       'Ana',
     );
     expect(texto).toContain('Hola Ana');

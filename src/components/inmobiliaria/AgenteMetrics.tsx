@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { AgenteMetrics as AgenteMetricsType } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { textoDeTasa } from '@/lib/tasas';
 import {
   AvisoDeComisionesSinAtribuir,
   porQueLaComisionNoEsUnHecho,
@@ -107,9 +108,11 @@ export function AgenteMetrics({
   // Determine performance levels
   // Above average: conversionRate > 60%, avgDaysToClose < 25
   // Below average: conversionRate < 30%
-  const conversionPerformance = metrics.conversionRate >= 0.6
+  // `conversionRate` ya es un porcentaje (0–100): compararlo con 0.6 dejaba a
+  // todo el que tuviera un solo cierre «por encima del promedio».
+  const conversionPerformance = metrics.conversionRate >= 60
     ? 'above'
-    : metrics.conversionRate < 0.3
+    : metrics.conversionRate < 30
     ? 'below'
     : 'average';
 
@@ -184,7 +187,7 @@ export function AgenteMetrics({
         />
         <MetricCard
           label={t('inmobiliaria.agente.conversionRate')}
-          value={`${Math.round(metrics.conversionRate * 100)}%`}
+          value={textoDeTasa(metrics.conversionRate, 0)}
           icon={<ChartLineUp className="w-5 h-5 text-danger" />}
           iconBg="bg-danger-soft"
           performance={conversionPerformance}

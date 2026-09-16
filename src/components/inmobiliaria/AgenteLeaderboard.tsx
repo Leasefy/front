@@ -16,6 +16,7 @@ import { useI18n } from '@/lib/i18n';
 import { SegmentedControl } from '@leasefy/cadence';
 import type { Agente } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { textoDeTasa } from '@/lib/tasas';
 import {
   AvisoDeComisionesSinAtribuir,
   porQueLaComisionNoEsUnHecho,
@@ -309,13 +310,14 @@ export function AgenteLeaderboard({
                   <div className="col-span-1 flex items-center justify-center">
                     <span className={cn(
                       'text-sm font-medium',
-                      agente.metrics.conversionRate >= 0.6
+                      // `conversionRate` ya es un porcentaje (0–100).
+                      agente.metrics.conversionRate >= 60
                         ? 'text-success'
-                        : agente.metrics.conversionRate >= 0.4
+                        : agente.metrics.conversionRate >= 40
                           ? 'text-warning'
                           : 'text-fg-muted dark:text-fg-subtle'
                     )}>
-                      {Math.round(agente.metrics.conversionRate * 100)}%
+                      {textoDeTasa(agente.metrics.conversionRate, 0)}
                     </span>
                   </div>
 
@@ -396,11 +398,11 @@ export function AgenteLeaderboard({
               {t('inmobiliaria.agente.avgConversion')}
             </p>
             <p className="text-2xl font-bold text-fg dark:text-white">
-              {Math.round(
-                (rankedAgentes.reduce((sum, a) => sum + a.metrics.conversionRate, 0) /
-                  rankedAgentes.length) *
-                  100
-              )}%
+              {textoDeTasa(
+                rankedAgentes.reduce((sum, a) => sum + a.metrics.conversionRate, 0) /
+                  rankedAgentes.length,
+                0,
+              )}
             </p>
           </div>
         </div>

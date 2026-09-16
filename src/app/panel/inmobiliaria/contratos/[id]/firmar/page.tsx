@@ -23,7 +23,7 @@ function FirmarContratoContent() {
   const router = useRouter();
   const id = params.id;
 
-  const { contract, isLoading, error, setContract } = useContract(id);
+  const { contract, isLoading, error, setContract, refetch } = useContract(id);
   const { preview, isLoading: isLoadingPreview } = useContractPreview(id);
   const actions = useContractActions();
 
@@ -88,9 +88,16 @@ function FirmarContratoContent() {
   if (error) {
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
+        {/*
+          🔴 C27 (auditoría 2026-09-13): sin `onReintentar`, un corte de red
+          dejaba «Volver» como única salida — se perdía el camino y había que
+          entrar de nuevo por el listado. `refetch` vuelve a pedir el contrato
+          sin moverse de la pantalla.
+        */}
         <FalloDeCarga
           error={error}
           queEs="este contrato"
+          onReintentar={refetch}
           volverA={{ label: 'Contratos', href: '/panel/inmobiliaria/contratos' }}
         />
       </div>

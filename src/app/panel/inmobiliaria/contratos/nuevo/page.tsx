@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   CaretLeft,
@@ -21,6 +21,15 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { MoneyInput } from '@/components/ui/money-input';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import {
+  ANIOS_HACIA_ADELANTE,
+  ANIOS_HACIA_ATRAS,
+  CANON_MAXIMO_COP,
+  dentroDe,
+  hace,
+  oneYearAheadISO,
+  todayISO,
+} from './fechas-y-topes';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Select,
@@ -93,14 +102,6 @@ interface FormState {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-function oneYearAheadISO(from: string): string {
-  const d = new Date(from);
-  d.setFullYear(d.getFullYear() + 1);
-  return d.toISOString().slice(0, 10);
-}
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
@@ -145,6 +146,8 @@ function NuevoContratoContent() {
    */
   const [loadErrorCrudo, setLoadErrorCrudo] = useState<unknown>(null);
   const [intento, setIntento] = useState(0);
+  /** El PDF que ya viajó al bucket, para que un reintento no suba otro (C19). */
+  const pdfYaSubido = useRef<{ huella: string; path: string } | null>(null);
 
   const [form, setForm] = useState<FormState>(() => {
     const start = todayISO();
@@ -338,8 +341,34 @@ function NuevoContratoContent() {
     if (form.startDate && form.endDate && form.endDate <= form.startDate) {
       errors.endDate = 'La fecha fin debe ser posterior a la de inicio';
     }
+    /*
+     * 🔴 C22 (auditoría 2026-09-13): había piso y no había techo. Un canon de
+     * 1e15 pasaba la validación y llegaba al back, donde `monthly_rent` es un
+     * `int4` que topa en 2.147.483.647: reventaba como un 500 ilegible, o —
+     * peor— entraba truncado y facturaba ese número todos los meses. El tope
+     * está por debajo del límite de la columna a propósito: mil millones de
+     * canon mensual no existe en Colombia, y un número así siempre es un dedo.
+     */
     const rent = Number(form.monthlyRent);
     if (!rent || rent < 100_000) errors.monthlyRent = 'Mínimo 100.000 COP';
+    else if (rent > CANON_MAXIMO_COP) {
+      errors.monthlyRent = 'Ese canon es demasiado alto: revisa los ceros.';
+    }
+
+    /*
+     * Y no había ningún tope de AÑO. Un «2016» o un «2036» tecleados por error
+     * creaban un contrato con diez años de cartera vencida o diez años sin
+     * cobrar, y nadie se enteraba hasta la primera corrida del mes. Retrofechar
+     * sigue siendo legítimo —un contrato que empezó el mes pasado se carga
+     * hoy—: lo que se bloquea es el año equivocado, no el pasado.
+     */
+    if (form.startDate) {
+      if (form.startDate < hace(ANIOS_HACIA_ATRAS)) {
+        errors.startDate = `No puede empezar hace más de ${ANIOS_HACIA_ATRAS} año(s). Revisa el año.`;
+      } else if (form.startDate > dentroDe(ANIOS_HACIA_ADELANTE)) {
+        errors.startDate = `No puede empezar dentro de más de ${ANIOS_HACIA_ADELANTE} año(s). Revisa el año.`;
+      }
+    }
     const dep = Number(form.deposit);
     if (isNaN(dep) || dep < 0) errors.deposit = 'Ingresa un valor válido';
     const day = Number(form.paymentDay);
@@ -382,12 +411,28 @@ function NuevoContratoContent() {
       let contractOrigin: ContractOrigin | undefined;
 
       if (form.mode === 'upload' && form.pdfFile) {
-        const uploaded = await actions.uploadPdf(form.pdfFile);
-        if (!uploaded) {
-          setSubmitError('No se pudo subir el PDF. Intenta de nuevo.');
-          return;
+        /*
+         * 🔴 C19 (auditoría 2026-09-13): subir el PDF y crear el contrato son
+         * dos llamadas. Si la segunda falla —un 400 de canon, un corte— el
+         * blob YA está en el bucket, y el reintento subía OTRO: un archivo
+         * huérfano en Supabase por cada intento, ninguno referenciado por
+         * nada. Se recuerda el que ya subió ESTE archivo (por nombre y tamaño,
+         * que es lo que distingue un PDF de otro en un formulario) y se reusa.
+         * Cambiar de archivo invalida el recuerdo y vuelve a subir, que es lo
+         * correcto: es otro documento.
+         */
+        const huella = `${form.pdfFile.name}:${form.pdfFile.size}`;
+        if (pdfYaSubido.current?.huella === huella) {
+          uploadedPdfPath = pdfYaSubido.current.path;
+        } else {
+          const uploaded = await actions.uploadPdf(form.pdfFile);
+          if (!uploaded) {
+            setSubmitError('No se pudo subir el PDF. Intenta de nuevo.');
+            return;
+          }
+          uploadedPdfPath = uploaded.uploadedPdfPath;
+          pdfYaSubido.current = { huella, path: uploaded.uploadedPdfPath };
         }
-        uploadedPdfPath = uploaded.uploadedPdfPath;
         contractOrigin = 'UPLOADED_PDF';
       }
 

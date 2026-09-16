@@ -271,7 +271,7 @@ describe('🔴 no se envía sin haber visto la lista', () => {
     expect(botonQueDice(/Enviar a/)?.textContent).toContain('Enviar a 1')
 
     await act(async () => {
-      contenedor.querySelector<HTMLInputElement>('[data-testid="elegir-q1"]')!.click()
+      contenedor.querySelector<HTMLButtonElement>('[data-testid="elegir-q1"]')!.click()
     })
     // Sin nadie elegido no se puede mandar: el botón queda muerto.
     const enviar = botonQueDice(/Enviar a/)

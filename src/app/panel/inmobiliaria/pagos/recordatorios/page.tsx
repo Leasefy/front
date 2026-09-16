@@ -57,7 +57,17 @@ import {
 } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { Button, Card, CardContent, Input, Label, Switch, Textarea, toast } from '@/components/ui'
+import {
+  Button,
+  Card,
+  CardContent,
+  Checkbox,
+  Input,
+  Label,
+  Switch,
+  Textarea,
+  toast,
+} from '@/components/ui'
 import { Eyebrow, SegmentedControl } from '@leasefy/cadence'
 
 import {
@@ -659,13 +669,11 @@ function PagosRecordatorios() {
                               tildar a un excluido no lo desbloquea, y ofrecerlo
                               sería prometer un envío que el back va a omitir. */}
                           {d.leLlega && (
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               checked={elegidas.has(d.cuotaId)}
-                              onChange={() => alternarDestinatario(d.cuotaId)}
+                              onCheckedChange={() => alternarDestinatario(d.cuotaId)}
                               aria-label={`Enviarle a ${d.nombre}`}
                               data-testid={`elegir-${d.cuotaId}`}
-                              className="h-4 w-4 accent-[hsl(var(--primary))]"
                             />
                           )}
                         </td>

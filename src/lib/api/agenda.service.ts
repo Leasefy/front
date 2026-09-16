@@ -3,7 +3,7 @@ import type { AgendaListResponse,
   CrearTareaInput,
   ActualizarTareaInput,
 } from './agenda.types';
-import { RESUMEN_AGENDA_VACIO } from './agenda.types';
+import { EVENTOS_POR_PAGINA, RESUMEN_AGENDA_VACIO } from './agenda.types';
 import { ApiError } from './client';
 
 /** Payload to schedule an agency visit ("pedir cita"). */
@@ -39,10 +39,30 @@ export interface DisponibilidadDeVisitas {
   visitTypes: TipoDeVisita[];
 }
 
+/** Qué página del feed se quiere. Sin esto el back devolvía el feed entero. */
+export interface PaginaDeAgendaPedida {
+  page?: number;
+  pageSize?: number;
+  /** Sólo los eventos de este inmueble. Lo filtra la BASE, no esta pantalla. */
+  propertyId?: string;
+}
+
 export const agendaApi = {
-  async getAgenda(): Promise<AgendaListResponse> {
+  /**
+   * GET una PÁGINA de la agenda. La paginación la resuelve la base
+   * (caso A8): pedir la página 2 es una consulta más barata, no un corte en
+   * memoria sobre un feed que ya vino entero.
+   */
+  async getAgenda(pedido: PaginaDeAgendaPedida = {}): Promise<AgendaListResponse> {
+    const page = pedido.page ?? 1;
+    const pageSize = pedido.pageSize ?? EVENTOS_POR_PAGINA;
     try {
-      return await apiClient.get<AgendaListResponse>('/inmobiliaria/agenda');
+      const deUnInmueble = pedido.propertyId
+        ? `&propertyId=${encodeURIComponent(pedido.propertyId)}`
+        : '';
+      return await apiClient.get<AgendaListResponse>(
+        `/inmobiliaria/agenda?page=${page}&pageSize=${pageSize}${deUnInmueble}`,
+      );
     } catch (err) {
       // Sin contexto de agencia (404) la agenda vacía ES la verdad.
       //
@@ -52,7 +72,7 @@ export const agendaApi = {
       // que la pantalla afirmara que la agencia no tiene nada agendado —
       // pudiendo estar llena.
       if (err instanceof ApiError && err.status === 404) {
-        return { resumen: RESUMEN_AGENDA_VACIO, eventos: [], total: 0 };
+        return { resumen: RESUMEN_AGENDA_VACIO, eventos: [], total: 0, page, pageSize };
       }
       throw err;
     }

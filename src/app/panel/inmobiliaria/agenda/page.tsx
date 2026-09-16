@@ -11,14 +11,14 @@ import { SinDatos } from '@/components/estado/SinDatos';
 import { Spinner } from '@/components/ui/spinner';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
-import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
+import { PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { PermissionGate } from '@/components/auth/PermissionGate';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { KpiValor } from '@/components/estado/KpiValor';
 import { ApiError } from '@/lib/api/client';
-import { RESUMEN_AGENDA_VACIO } from '@/lib/api/agenda.types';
+import { EVENTOS_POR_PAGINA, RESUMEN_AGENDA_VACIO } from '@/lib/api/agenda.types';
 import { rotuloDeLaPersona } from '@/lib/agenda/rotulo-de-la-persona';
 import type { AgendaListResponse, EventoAgenda, EventoTipo, EventoEstado } from '@/lib/api/agenda.types';
 import { agendaApi } from '@/lib/api/agenda.service';
@@ -77,6 +77,16 @@ function AgendaContent() {
 
   const [data, setData] = useState<AgendaListResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  /**
+   * La página la resuelve el BACK, no esta pantalla (caso A8 de la auditoría
+   * del 13-09). Antes `agendaApi.getAgenda()` traía el feed entero —con la
+   * inmobiliaria migrada, el portafolio completo a la RAM del back en cada
+   * carga— y `useTablePagination` cortaba de a diez acá. Ahora cambiar de
+   * página es una consulta nueva: por eso son estado, y por eso `load`
+   * depende de ellos.
+   */
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(EVENTOS_POR_PAGINA);
   // El error entero, no un booleano: `FalloDeCarga` lo clasifica para saber si
   // reintentar puede dar otro resultado. Con un `true` pelado, una sesión
   // vencida y un 500 se veían igual, y los dos ofrecían un "Reintentar" que
@@ -91,10 +101,16 @@ function AgendaContent() {
     setIsLoading(true);
     setError(null);
     agendaApi
-      .getAgenda()
+      .getAgenda({ page, pageSize })
       .then(setData)
       .catch(setError)
       .finally(() => setIsLoading(false));
+  }, [page, pageSize]);
+
+  /** Cambiar cuántas filas se ven vuelve a la primera página. */
+  const cambiarTamano = useCallback((tamano: number) => {
+    setPageSize(tamano);
+    setPage(1);
   }, []);
 
   /**
@@ -144,21 +160,27 @@ function AgendaContent() {
 
   const resumen = data?.resumen ?? RESUMEN_AGENDA_VACIO;
   const eventos = data?.eventos ?? [];
+  /**
+   * `total` es el feed ENTERO; `eventos` es sólo esta página. Si una respuesta
+   * no lo trajera, vale más lo que SÍ tenemos en la mano que un cero: un cero
+   * pintaría «no hay nada agendado» encima de filas que están ahí.
+   */
+  const total = data?.total ?? eventos.length;
+  const ultimaPagina = Math.max(1, Math.ceil(total / pageSize));
+  // El pie se monta siempre que haya filas, aunque sean una página (Nico,
+  // 2026-09-02): es lo que hace que una tabla se lea como tabla.
+  const shouldPaginate = total > 0;
 
   /**
-   * Paginado de presentación: `agendaApi.getAgenda()` trae el feed completo de
-   * eventos y crece con cada visita, firma y vencimiento. Sin filtros en esta
-   * pantalla ⇒ sin `resetKey`.
+   * Si la página actual se quedó sin datos —completaste la última tarea de la
+   * página 4— la base no tiene nada que devolver y la tabla quedaría vacía
+   * sobre un feed que sí tiene filas. Se reencuadra a la última con datos, que
+   * dispara una carga más. Es un viaje de ida, no un ciclo: `ultimaPagina`
+   * sólo baja.
    */
-  const {
-    pageItems,
-    total,
-    page,
-    pageSize,
-    setPage,
-    setPageSize,
-    shouldPaginate,
-  } = useTablePagination(eventos);
+  useEffect(() => {
+    if (!isLoading && data && page > ultimaPagina) setPage(ultimaPagina);
+  }, [isLoading, data, page, ultimaPagina]);
 
   /**
    * El día se lee del CALENDARIO, no del instante: `new Date('2026-10-01…Z')`
@@ -228,8 +250,12 @@ function AgendaContent() {
 
         {/* El vacío NO va acá: vive dentro del <TableBody> para que se sigan
             viendo los encabezados de columna. Acá sólo carga y fallo. */}
+        {/* El esqueleto sólo mientras no hay NADA que mostrar. Cambiar de
+            página es una consulta nueva: reemplazar la tabla por un spinner en
+            cada clic hacía saltar la pantalla entera. El fallo sí se muestra
+            siempre, como antes. */}
         <EstadoDeDatos
-          cargando={isLoading}
+          cargando={isLoading && data === null}
           error={error}
           queEs="la agenda"
           onReintentar={load}
@@ -250,7 +276,7 @@ function AgendaContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {eventos.length === 0 ? (
+              {total === 0 ? (
                 <TableRow>
                   <TableCell colSpan={COLUMNS.length} className="p-0">
                     {/* Sin filtros en esta pantalla: un vacío acá es «no hay
@@ -270,7 +296,7 @@ function AgendaContent() {
                   </TableCell>
                 </TableRow>
               ) : (
-                pageItems.map((e: EventoAgenda) => (
+                eventos.map((e: EventoAgenda) => (
                   <TableRow
                     key={e.id}
                     onClick={() => setSeleccionado(e)}
@@ -372,7 +398,7 @@ function AgendaContent() {
                 pageSize={pageSize}
                 pageSizeOptions={PAGE_SIZE_OPTIONS}
                 onPageChange={setPage}
-                onPageSizeChange={setPageSize}
+                onPageSizeChange={cambiarTamano}
               />
             </div>
           )}

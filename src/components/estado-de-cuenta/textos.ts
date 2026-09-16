@@ -131,6 +131,27 @@ export const TEXTO: Record<string, string> = {
   'estadoDeCuenta.totalDelContrato': 'Total del contrato',
   'estadoDeCuenta.vencido': 'Vencido',
 
+  // Intereses de mora (2026-09-16): van APARTE del capital.
+  'estadoDeCuenta.intereses': 'Intereses de mora',
+  'estadoDeCuenta.interesesExplicacion':
+    'Van aparte del capital. Se liquidan con las reglas de mora de la inmobiliaria y crecen cada día mientras la cuota siga en mora.',
+  'estadoDeCuenta.colDiasDeMora': 'Días de mora',
+  'estadoDeCuenta.colLiquidado': 'Liquidado',
+  'estadoDeCuenta.colAbonado': 'Abonado',
+  'estadoDeCuenta.colFalta': 'Falta',
+  'estadoDeCuenta.pagadaEnMora': 'La cuota se pagó en mora',
+  'estadoDeCuenta.unDia': '1 día',
+  'estadoDeCuenta.nDias': '{{n}} días',
+  'estadoDeCuenta.unaCuota': '1 cuota',
+  'estadoDeCuenta.nCuotas': '{{n}} cuotas',
+  'estadoDeCuenta.interesesDeMora': 'Intereses de mora',
+  'estadoDeCuenta.conIntereses': 'Total con intereses',
+  'estadoDeCuenta.masIntereses': '+ {{monto}} de intereses de mora',
+  'estadoDeCuenta.sinReglasDeMora':
+    'La inmobiliaria no tiene reglas de mora activas: {{cuotas}} en mora sin intereses.',
+  'estadoDeCuenta.sinInteresPorOtroMotivo': '{{cuotas}} en mora sin intereses. {{motivo}}',
+  'estadoDeCuenta.configurarReglas': 'Configurar las reglas de mora',
+
   'estadoDeCuenta.descargarPDF': 'Descargar PDF',
   'estadoDeCuenta.imprimir': 'Imprimir',
   'estadoDeCuenta.generando': 'Armando el PDF…',

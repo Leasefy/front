@@ -31,6 +31,12 @@
  *
  * En móvil la tabla se vuelve tarjetas. Once columnas en 390 px no son una
  * tabla, son un scroll horizontal que nadie recorre.
+ *
+ * ── Los intereses de mora (2026-09-16) ──────────────────────────────────────
+ * 8. Van en su PROPIA sección, después de Otros conceptos, y en el pie del
+ *    contrato suman aparte: «Resta por pagar» sigue siendo capital, y al lado
+ *    van «Intereses de mora» y «Total con intereses». El número sale del back,
+ *    con la misma regla que la prefactura y la cartera.
  */
 
 import * as React from 'react';
@@ -69,6 +75,8 @@ import {
 } from './filas';
 import { AmortizacionDelContrato } from './ResumenDelEstado';
 import { useTextoDelEstado } from './textos';
+import { InteresesDelContratoSeccion } from './InteresesDelContrato';
+import { hayQueContarIntereses, interesesDelContrato } from './intereses';
 
 /** Más de esto y la sección se pagina. Debajo, el contrato se lee de corrido. */
 export const FILAS_SIN_PAGINAR = 15;
@@ -86,11 +94,24 @@ interface Props {
    * con lo impreso.
    */
   sinPaginar?: boolean;
+  /**
+   * A dónde se configuran las reglas de mora. Sólo el panel lo pasa: el
+   * motivo de «cuotas en mora sin intereses» habla de la configuración de la
+   * inmobiliaria y no se le muestra al cliente.
+   */
+  reglasDeMoraHref?: string;
 }
 
-export function ContratoDelEstado({ contrato, hoy, sinPaginar = false }: Props) {
+export function ContratoDelEstado({
+  contrato,
+  hoy,
+  sinPaginar = false,
+  reglasDeMoraHref,
+}: Props) {
   const t = useTextoDelEstado();
   const esPropietario = contrato.rol === 'PROPIETARIO';
+  const intereses = interesesDelContrato(contrato);
+  const conIntereses = Boolean(intereses && intereses.filas.length > 0);
 
   const columnas = React.useMemo(
     () =>
@@ -190,6 +211,14 @@ export function ContratoDelEstado({ contrato, hoy, sinPaginar = false }: Props) 
         </p>
       )}
 
+      {hayQueContarIntereses(intereses) && (
+        <InteresesDelContratoSeccion
+          intereses={intereses}
+          numero={contrato.numero}
+          reglasDeMoraHref={reglasDeMoraHref}
+        />
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 rounded-md bg-surface-muted px-4 py-3">
         <p className="text-label uppercase tracking-wide text-fg-subtle">
           {t('estadoDeCuenta.totalDelContrato')}
@@ -203,9 +232,30 @@ export function ContratoDelEstado({ contrato, hoy, sinPaginar = false }: Props) 
           <Cifra
             etiqueta={t('estadoDeCuenta.restaPorPagar')}
             valor={contrato.totales.restaPorPagar}
-            tono={contrato.totales.restaPorPagar > 0 ? 'fuerte' : 'apagado'}
+            tono={
+              contrato.totales.restaPorPagar > 0 && !conIntereses
+                ? 'fuerte'
+                : 'apagado'
+            }
             testid={`total-contrato-${contrato.numero}`}
           />
+          {/* Capital e interés por separado, y el total que suma los dos. */}
+          {conIntereses && intereses && (
+            <>
+              <Cifra
+                etiqueta={t('estadoDeCuenta.interesesDeMora')}
+                valor={intereses.pendiente}
+                tono="apagado"
+                testid={`intereses-contrato-${contrato.numero}`}
+              />
+              <Cifra
+                etiqueta={t('estadoDeCuenta.conIntereses')}
+                valor={intereses.restaPorPagarConIntereses}
+                tono="fuerte"
+                testid={`total-con-intereses-${contrato.numero}`}
+              />
+            </>
+          )}
         </div>
       </div>
     </section>

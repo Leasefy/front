@@ -30,6 +30,7 @@ import {
   type ResumenDelCliente,
 } from './resumen';
 import { useTextoDelEstado } from './textos';
+import { interesesDelEstado } from './intereses';
 
 export function ResumenDelEstado({
   doc,
@@ -42,6 +43,7 @@ export function ResumenDelEstado({
 }) {
   const t = useTextoDelEstado();
   const r = React.useMemo(() => resumirElCliente(doc, hoy), [doc, hoy]);
+  const intereses = interesesDelEstado(doc);
 
   return (
     <section
@@ -95,6 +97,23 @@ export function ResumenDelEstado({
               </>
             )}
           </p>
+          {/* El número grande es CAPITAL. El interés de mora va debajo, aparte,
+              con su propio total: sumarlo arriba lo volvería imposible de
+              cruzar con la factura del mes. */}
+          {intereses && intereses.pendiente > 0 && (
+            <p data-testid="intereses-del-cliente" className="mt-1 text-caption text-fg-muted">
+              <span className="text-danger">
+                {t('estadoDeCuenta.masIntereses', {
+                  monto: formatCurrency(intereses.pendiente),
+                })}
+              </span>
+              {' · '}
+              {t('estadoDeCuenta.conIntereses')}{' '}
+              <span className="font-mono tabular-nums text-fg">
+                {formatCurrency(intereses.restaPorPagarConIntereses)}
+              </span>
+            </p>
+          )}
         </div>
 
         <div className="sm:px-6">

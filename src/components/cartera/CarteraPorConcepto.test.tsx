@@ -291,8 +291,9 @@ describe('CarteraPorConcepto', () => {
     expect(filas[0]!.textContent).toContain('contrato 1686 · Leasefy #1839')
     expect(filas[1]!.textContent).toContain('contrato #94')
 
-    // Canon · intereses · gasto administrativo · debe (con el abono debajo).
-    expect(pesosDe(filas[0]!)).toEqual([6_300_000, 105_000, 373_200, 6_778_200])
+    // Canon · intereses · gasto administrativo · mora liquidada hoy (este
+    // fixture no la trae: guion) · debe (con el abono debajo).
+    expect(pesosDe(filas[0]!)).toEqual([6_300_000, 105_000, 373_200, 0, 6_778_200])
     expect(filas[0]!.textContent).toContain('abonó')
   })
 
@@ -301,7 +302,7 @@ describe('CarteraPorConcepto', () => {
     montar()
 
     const filaDeNicolas = todos('[data-testid="fila-inquilino"]')[0]!
-    const [canon, intereses, gasto, debe] = pesosDe(filaDeNicolas)
+    const [canon, intereses, gasto, , debe] = pesosDe(filaDeNicolas)
     expect(canon! + intereses! + gasto!).toBe(debe)
 
     clic(filaDeNicolas.querySelector('button')!)
@@ -332,7 +333,7 @@ describe('CarteraPorConcepto', () => {
 
     const agosto = todos('[data-testid="fila-mes"]')[1]!
     expect(agosto.textContent).toContain('Agosto de 2026')
-    expect(pesosDe(agosto)).toEqual([2_100_000, 0, 163_200, 2_263_200])
+    expect(pesosDe(agosto)).toEqual([2_100_000, 0, 163_200, 0, 2_263_200])
     expect(agosto.textContent).toContain('abonó')
   })
 
@@ -639,5 +640,72 @@ describe('rotuloDelContrato — de quién es cada número', () => {
   })
   it('sin contrato: nada', () => {
     expect(rotuloDelContrato({ contrato: null })).toBe('')
+  })
+
+  describe('🔴 la mora liquidada hoy (2026-09-16)', () => {
+    /** La fila del mes con el interés que manda el back. */
+    const conMora = (f: FilaDeCarteraDelInquilino, pendienteCop: number, extra = {}) =>
+      ({
+        ...f,
+        interes: {
+          liquidadoCop: pendienteCop,
+          abonadoCop: 0,
+          pendienteCop,
+          origen: 'CUOTA',
+          pagadaEnMora: false,
+          diasDeMora: f.diasDeMora,
+          motivo: null,
+          sinReglas: false,
+          ...extra,
+        },
+        totalConInteresCop: f.saldoCop + pendienteCop,
+      }) as FilaDeCarteraDelInquilino
+
+    it('va en su columna, suma por inquilino y en el pie, y «Debe» dice cuánto es con intereses', () => {
+      const nicolas: InquilinoEnCartera = {
+        ...NICOLAS,
+        filas: NICOLAS.filas.map((f, i) => conMora(f, [40_000, 20_000, 0][i]!)),
+      }
+      conCartera(
+        cartera({
+          inquilinos: [nicolas, MARTA],
+          totales: { ...cartera().totales, interesCop: 60_000 } as CarteraDeInquilinos['totales'],
+        }),
+      )
+      montar()
+
+      const filaDeNicolas = todos('[data-testid="fila-inquilino"]')[0]!
+      expect(
+        filaDeNicolas.querySelector('[data-testid="intereses-del-inquilino"]')?.textContent,
+      ).toContain(formatCurrency(60_000))
+      expect(filaDeNicolas.textContent).toContain(`${formatCurrency(6_778_200 + 60_000)} con intereses`)
+      expect($('[data-testid="intereses-en-pie"]').textContent).toContain(formatCurrency(60_000))
+      expect($('[data-testid="total-intereses"]').textContent).toContain(formatCurrency(60_000))
+    })
+
+    it('🔴 sin reglas de mora la celda lo dice y el aviso lleva a configurarlas', () => {
+      const nicolas: InquilinoEnCartera = {
+        ...NICOLAS,
+        filas: NICOLAS.filas.map((f) =>
+          conMora(f, 0, { liquidadoCop: 0, motivo: 'Sin reglas.', sinReglas: true }),
+        ),
+      }
+      conCartera(
+        cartera({
+          inquilinos: [nicolas, MARTA],
+          avisos: ['La inmobiliaria no tiene reglas de mora activas: la cartera se muestra SIN intereses.'],
+        }),
+      )
+      montar()
+
+      expect(
+        todos('[data-testid="fila-inquilino"]')[0]!.querySelector(
+          '[data-testid="intereses-del-inquilino"]',
+        )?.textContent,
+      ).toContain('Sin reglas de mora')
+      expect($('[data-testid="por-concepto-configurar-reglas"]').getAttribute('href')).toBe(
+        '/panel/inmobiliaria/pagos/cartera/reglas-de-mora',
+      )
+    })
   })
 })

@@ -43,6 +43,7 @@ import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { aDondeLleva } from '@/components/cartera/CarteraTable'
 import type { CarteraSiniestro, CarteraSiniestros } from '@/lib/types/inmobiliaria'
 import { nombreDelMes } from '@/lib/utils/mes'
+import { TEXTO_DE_MORA, interesPendiente } from '@/components/cartera/interes-de-mora'
 
 /**
  * 🔴 `timeZone: 'UTC'` no es un detalle: `siniestroDesde` viaja como
@@ -143,6 +144,15 @@ export function TablaDeSiniestros({
                 </TableCell>
                 <TableCell className="whitespace-nowrap text-right font-mono font-medium tabular-nums text-fg">
                   {formatCurrency(i.pendingAmount)}
+                  {/* El interés de la reclamación, aparte del capital. */}
+                  {interesPendiente(i) > 0 ? (
+                    <div
+                      className="text-xs font-normal text-danger"
+                      data-testid="siniestro-intereses"
+                    >
+                      {TEXTO_DE_MORA.masIntereses(formatCurrency(interesPendiente(i)))}
+                    </div>
+                  ) : null}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button asChild variant="ghost" size="sm" hideArrow>

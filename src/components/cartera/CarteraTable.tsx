@@ -45,6 +45,13 @@
  * la cuenta del portal). El `stopPropagation` es el mismo que ya llevan el
  * teléfono y el WhatsApp: la fila entera es clickeable y navega a otro lado.
  *
+ * ── 🔴 Capital e interés, por separado (2026-09-16) ─────────────────────────
+ * «Debe» es CAPITAL. Al lado van «Intereses» —el interés de mora que el back
+ * liquida con la misma regla que la prefactura— y «Total», que suma los dos.
+ * Una cuota pagada en mora sale con capital $0 y el interés que todavía debe.
+ * Si la inmobiliaria no tiene reglas de mora, la celda no dice $0: dice «Sin
+ * reglas de mora» y lleva a configurarlas.
+ *
  * ── Y lo que se niega a hacer ──────────────────────────────────────────────
  * Un dato que el back no mandó se DICE. `remindersSent: 0` es un cero de
  * verdad («no le hemos escrito») y se escribe con palabras; un `tenantPhone`
@@ -77,15 +84,21 @@ import { GRAVEDAD, gravedadDe } from '@/lib/cartera/edades'
 import { refDelInquilino } from '@/lib/estado-de-cuenta/con-quien-se-abre'
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import type { CarteraItem } from '@/lib/types/inmobiliaria'
+import {
+  RUTA_DE_REGLAS_DE_MORA,
+  TEXTO_DE_MORA,
+  interesDe,
+  totalConInteres,
+} from './interes-de-mora'
 
 /** A dónde vuelve el estado de cuenta que se abra desde esta tabla. */
 const VOLVER_A = '/panel/inmobiliaria/pagos/cartera'
 
-export type CampoDeOrdenDeCartera = 'inquilino' | 'mes' | 'debe' | 'estado'
+export type CampoDeOrdenDeCartera = 'inquilino' | 'mes' | 'debe' | 'total' | 'estado'
 type Sentido = 'asc' | 'desc'
 
 /** Cuántas columnas tiene la tabla: el vacío las abarca todas. */
-export const COLUMNAS_DE_CARTERA = 7
+export const COLUMNAS_DE_CARTERA = 9
 
 /**
  * Qué tan grave está una fila, como UN número comparable.
@@ -121,6 +134,10 @@ export function ordenarCartera(
         return a.vence.localeCompare(b.vence) * signo
       case 'debe':
         return (a.pendingAmount - b.pendingAmount) * signo
+      case 'total':
+        return (
+          (totalConInteres(a, a.pendingAmount) - totalConInteres(b, b.pendingAmount)) * signo
+        )
       default:
         return (peso(a) - peso(b)) * signo
     }
@@ -201,7 +218,7 @@ export function CarteraTable({ items, onVerCobro, vacio }: CarteraTableProps) {
   }
 
   return (
-    <Table className="min-w-[1040px]" data-testid="cartera-tabla">
+    <Table className="min-w-[1220px]" data-testid="cartera-tabla">
       <TableHeader>
         <TableRow>
           <Ordenable campo="inquilino">{t('cartera.tabla.inquilino')}</Ordenable>
@@ -211,6 +228,12 @@ export function CarteraTable({ items, onVerCobro, vacio }: CarteraTableProps) {
           <Ordenable campo="estado">{t('cartera.tabla.mora')}</Ordenable>
           <Ordenable campo="debe" alineado="right">
             {t('cartera.tabla.debe')}
+          </Ordenable>
+          <TableHead className="whitespace-nowrap text-right" title={TEXTO_DE_MORA.explicacion}>
+            {TEXTO_DE_MORA.columnaIntereses}
+          </TableHead>
+          <Ordenable campo="total" alineado="right">
+            {TEXTO_DE_MORA.columnaTotal}
           </Ordenable>
           <TableHead className="w-16" />
         </TableRow>
@@ -421,6 +444,20 @@ function FilaDeCartera({
         </div>
       </TableCell>
 
+      {/* Intereses: aparte del capital. Nunca un $0 mudo. */}
+      <TableCell className="align-middle text-right" data-testid="cartera-intereses">
+        <InteresDeLaFila item={item} />
+      </TableCell>
+
+      {/* Total: capital + interés, lo que hay que pagar hoy por esta cuota. */}
+      <TableCell className="align-middle text-right" data-testid="cartera-total">
+        <div className="whitespace-nowrap font-mono font-medium tabular-nums text-fg">
+          {interesDe(item)
+            ? formatCurrency(totalConInteres(item, item.pendingAmount))
+            : formatCurrency(item.pendingAmount)}
+        </div>
+      </TableCell>
+
       <TableCell className="align-middle text-right">
         {/* Enlace de verdad, no un onClick: se puede abrir en otra pestaña.
 
@@ -442,4 +479,78 @@ function FilaDeCartera({
       </TableCell>
     </TableRow>
   )
+}
+
+/**
+ * El interés de una fila.
+ *
+ *  · Con interés: el monto, y debajo si ya se abonó algo o si la cuota se pagó
+ *    en mora (su capital está en $0 y aun así debe esto).
+ *  · En mora sin reglas: «Sin reglas de mora» con el enlace a configurarlas.
+ *    Un $0 ahí se leería «no hay mora», que es exactamente lo contrario.
+ *  · En mora por otro motivo: «Sin interés», con el motivo del back en el
+ *    `title`.
+ *  · Sin mora: un guion. No hay nada que liquidar.
+ *  · El back no lo mandó: un guion con el porqué en el `title`, nunca $0.
+ */
+function InteresDeLaFila({ item }: { item: CarteraItem }) {
+  const { formatCurrency } = useI18n()
+  const interes = interesDe(item)
+
+  if (!interes) {
+    return (
+      <span className="text-fg-subtle" title={TEXTO_DE_MORA.sinDato}>
+        —
+      </span>
+    )
+  }
+
+  if (interes.liquidadoCop > 0) {
+    return (
+      <div className="whitespace-nowrap">
+        <div
+          className={`font-mono tabular-nums ${
+            interes.pendienteCop > 0 ? 'text-danger' : 'text-fg-subtle'
+          }`}
+        >
+          {formatCurrency(interes.pendienteCop)}
+        </div>
+        {interes.abonadoCop > 0 && (
+          <div className="font-mono text-xs tabular-nums text-fg-subtle">
+            {TEXTO_DE_MORA.abonado(formatCurrency(interes.abonadoCop))}
+          </div>
+        )}
+        {interes.pagadaEnMora && (
+          <div className="text-xs text-fg-subtle">{TEXTO_DE_MORA.pagadaEnMora}</div>
+        )}
+      </div>
+    )
+  }
+
+  if (interes.motivo && interes.sinReglas) {
+    return (
+      <div className="whitespace-nowrap text-xs" title={interes.motivo}>
+        <div className="text-warning" data-testid="cartera-sin-reglas">
+          {TEXTO_DE_MORA.sinReglas}
+        </div>
+        <Link
+          href={RUTA_DE_REGLAS_DE_MORA}
+          onClick={(e) => e.stopPropagation()}
+          className="text-fg-muted underline underline-offset-4 hover:text-fg"
+        >
+          {TEXTO_DE_MORA.configurar}
+        </Link>
+      </div>
+    )
+  }
+
+  if (interes.motivo) {
+    return (
+      <span className="whitespace-nowrap text-xs text-fg-muted" title={interes.motivo}>
+        {TEXTO_DE_MORA.sinInteres}
+      </span>
+    )
+  }
+
+  return <span className="text-fg-subtle">—</span>
 }

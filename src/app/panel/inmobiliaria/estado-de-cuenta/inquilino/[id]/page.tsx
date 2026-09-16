@@ -16,6 +16,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CompartirEstadoDeCuenta } from '@/components/estado-de-cuenta/CompartirEstadoDeCuenta';
 import { PantallaDelEstadoDeCuenta } from '@/components/estado-de-cuenta/PantallaDelEstadoDeCuenta';
+import { RUTA_DE_REGLAS_DE_MORA } from '@/components/estado-de-cuenta/intereses';
 import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
 import { rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 
@@ -33,6 +34,9 @@ function Contenido() {
          quien abre el enlace compartido. */
       cargar={(filtro) => estadoDeCuentaApi.inquilino(id, filtro)}
       volverA={{ href: volver }}
+      /* Es el panel: las cuotas en mora sin intereses dicen por qué y llevan
+         a configurar las reglas. El portal y el enlace no lo pasan. */
+      reglasDeMoraHref={RUTA_DE_REGLAS_DE_MORA}
       acciones={(doc, nota, filtros) => (
         <CompartirEstadoDeCuenta
           doc={doc}

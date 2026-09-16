@@ -374,7 +374,7 @@ function ModoIndividual() {
               El envío de links de pago aún no está disponible desde esta vista. La generación de cobros
               está habilitada en{' '}
               <Link
-                href="/panel/inmobiliaria/cobros"
+                href="/panel/inmobiliaria/pagos/cartera/cobros"
                 className="text-primary underline-offset-4 hover:underline font-medium"
               >
                 Cobros
@@ -458,7 +458,7 @@ function ModoMasivo() {
             abajo son un ejemplo de cómo se vería el resultado de una corrida. Para generar cobros sobre
             la cartera real, usa{' '}
             <Link
-              href="/panel/inmobiliaria/cobros"
+              href="/panel/inmobiliaria/pagos/cartera/cobros"
               className="text-primary underline-offset-4 hover:underline font-medium"
             >
               Cobros

@@ -178,7 +178,7 @@ describe('<ReglasDeMoraDelContrato>', () => {
     const vacio = container.querySelector('[data-testid="reglas-vacio"]')!
     expect(vacio.textContent).toContain('todavía no tiene reglas de mora')
     expect(vacio.querySelector('a')?.getAttribute('href')).toBe(
-      '/panel/inmobiliaria/cobros/reglas-de-mora?volver=%2Fpanel%2Finmobiliaria%2Fcontratos%2Fc-1',
+      '/panel/inmobiliaria/pagos/cartera/reglas-de-mora?volver=%2Fpanel%2Finmobiliaria%2Fcontratos%2Fc-1',
     )
   })
 
@@ -190,7 +190,7 @@ describe('<ReglasDeMoraDelContrato>', () => {
       a.textContent?.includes('Ver las de la inmobiliaria'),
     )
     expect(enlace?.getAttribute('href')).toBe(
-      '/panel/inmobiliaria/cobros/reglas-de-mora?volver=%2Fpanel%2Finmobiliaria%2Fcontratos%2Fc-1',
+      '/panel/inmobiliaria/pagos/cartera/reglas-de-mora?volver=%2Fpanel%2Finmobiliaria%2Fcontratos%2Fc-1',
     )
   })
 

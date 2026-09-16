@@ -30,10 +30,10 @@ describe('backendAgentToFrontType', () => {
 
 describe('targetToHref', () => {
   it('routes known targets and falls back to the hub for the rest', () => {
-    expect(targetToHref('cobranza')).toBe('/panel/inmobiliaria/cobros/cobranza');
+    expect(targetToHref('cobranza')).toBe('/panel/inmobiliaria/pagos/cobranza');
     expect(targetToHref('cotizador')).toBe('/panel/inmobiliaria/postulaciones/asegurabilidad');
     expect(targetToHref('pagos')).toBe('/panel/inmobiliaria/pagos');
-    expect(targetToHref('cartera')).toBe('/panel/inmobiliaria/cobros/cobranza');
+    expect(targetToHref('cartera')).toBe('/panel/inmobiliaria/pagos/cobranza');
     // Evaluación de candidatos está oculta (Nico, 2026-09-08): sin workspace,
     // el target cae al Piloto como cualquier meta sin pantalla.
     expect(targetToHref('estudio')).toBe('/panel/inmobiliaria/piloto');
@@ -49,7 +49,7 @@ describe('suggestedActionToResponseAction', () => {
     );
     expect(first).toMatchObject({
       label: 'Ver cobranza',
-      href: '/panel/inmobiliaria/cobros/cobranza',
+      href: '/panel/inmobiliaria/pagos/cobranza',
       variant: 'primary',
     });
     expect(first.icon.length).toBeGreaterThan(0);

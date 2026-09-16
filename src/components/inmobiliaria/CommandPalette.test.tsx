@@ -243,7 +243,7 @@ describe('estado vacío — el pie no miente', () => {
     expect(opciones()[1]?.getAttribute('aria-selected')).toBe('true')
 
     tecla('Enter')
-    expect(push).toHaveBeenCalledWith('/panel/inmobiliaria/cobros/cobranza')
+    expect(push).toHaveBeenCalledWith('/panel/inmobiliaria/pagos/cobranza')
     expect(cerrar).toHaveBeenCalled()
   })
 
@@ -294,7 +294,7 @@ describe('con búsqueda', () => {
               title: 'Cobranza',
               subtitle: 'Cobros',
               badges: [],
-              href: '/panel/inmobiliaria/cobros/cobranza',
+              href: '/panel/inmobiliaria/pagos/cobranza',
               preview: {},
             },
             {

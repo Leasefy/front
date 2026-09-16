@@ -57,8 +57,10 @@ describe('pasosVisibles', () => {
     expect(antes('nuevo', 'inmuebles')).toBe(true)
     expect(antes('inmuebles', 'postulaciones')).toBe(true)
     expect(antes('postulaciones', 'contratos')).toBe(true)
-    expect(antes('contratos', 'cobros')).toBe(true)
-    expect(antes('cobros', 'pagos')).toBe(true)
+    // «Cobros» y «Pagos» eran dos paradas porque eran dos filas del sidebar.
+    // Desde el 2026-09-15 son un solo módulo con dos caras y una sola parada.
+    expect(ids).not.toContain('cobros')
+    expect(antes('contratos', 'pagos')).toBe(true)
   })
 
   it('cada paso tiene su selector y sus claves de texto', () => {

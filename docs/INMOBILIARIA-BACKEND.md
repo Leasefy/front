@@ -48,7 +48,7 @@ All routes are protected with `allowedRoles={['agency']}`:
 /panel/inmobiliaria/inmuebles   → Consignaciones
 /panel/inmobiliaria/pipeline     → Candidate Pipeline
 /panel/inmobiliaria/configuracion/equipo      → Agents
-/panel/inmobiliaria/cobros       → Collections
+/panel/inmobiliaria/pagos/cartera/cobros → Collections
 /panel/inmobiliaria/pagos/dispersiones → Disbursements
 /panel/inmobiliaria/mantenimientos  → Maintenance & Renewals
 /panel/inmobiliaria/documentos   → Documents

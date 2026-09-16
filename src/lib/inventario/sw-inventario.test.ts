@@ -178,7 +178,7 @@ describe('qué rutas se guardan', () => {
   });
 
   it('nada más del panel: cobros y el resto', () => {
-    expect(sw.esRutaGuardable(new URL(ORIGEN + '/panel/inmobiliaria/cobros'))).toBe(false);
+    expect(sw.esRutaGuardable(new URL(ORIGEN + '/panel/inmobiliaria/pagos/cartera/cobros'))).toBe(false);
     expect(sw.esRutaGuardable(new URL(ORIGEN + '/panel/inmobiliaria'))).toBe(false);
   });
 

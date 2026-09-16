@@ -116,7 +116,7 @@ describe('EnSiniestro', () => {
     expect(filas[1].textContent).toContain('Sin consignar')
     // Cada fila lleva al cobro.
     expect(filas[0].querySelector('a')?.getAttribute('href')).toBe(
-      '/panel/inmobiliaria/cobros?cobro=c-1',
+      '/panel/inmobiliaria/pagos/cartera/cobros?cobro=c-1',
     )
   })
 })

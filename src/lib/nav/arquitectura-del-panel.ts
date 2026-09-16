@@ -8,7 +8,6 @@ import {
   Lifebuoy,
   Chat,
   CalendarBlank,
-  HandCoins,
   CurrencyDollar,
   Receipt,
   Bank,
@@ -91,6 +90,27 @@ const CONTADOR_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.
  */
 const GESTION_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.AGENTE];
 
+/**
+ * Las dos caras de la plata dentro del módulo Pagos.
+ *
+ * No son grupos ni submódulos: son la MISMA plata mirada desde los dos lados
+ * del contrato, y por eso viven en la misma fila del sidebar y en el mismo
+ * riel de secciones, separadas apenas por su rótulo.
+ *
+ *   · `inquilinos`   — lo que ENTRA: recaudo, cartera, cobranza.
+ *   · `propietarios` — lo que SALE: liquidaciones, dispersiones.
+ *
+ * Una pantalla SIN `cara` (la Sala del agente de Pagos) mira las dos y va
+ * primera, suelta, antes de los dos rótulos.
+ */
+export type CaraDeLaPlata = 'inquilinos' | 'propietarios';
+
+/** El rótulo i18n de cada cara, en el orden en que se leen. */
+export const CARAS_DE_LA_PLATA: readonly { cara: CaraDeLaPlata; labelKey: string }[] = [
+  { cara: 'inquilinos', labelKey: 'inmobiliaria.nav.caraInquilinos' },
+  { cara: 'propietarios', labelKey: 'inmobiliaria.nav.caraPropietarios' },
+];
+
 export interface PantallaDelPanel {
   /** Clave i18n de la etiqueta. */
   labelKey: string;
@@ -118,6 +138,12 @@ export interface PantallaDelPanel {
   ia?: boolean;
   /** Slug del workspace en `agentWorkspaceNav.ts` — es un agente completo. */
   agente?: string;
+  /**
+   * De qué lado del contrato está esta pantalla, cuando el módulo tiene dos
+   * caras (hoy sólo Pagos). Sin `cara` la pantalla no es de ninguna: mira las
+   * dos. Ver `CaraDeLaPlata`.
+   */
+  cara?: CaraDeLaPlata;
   /** Pista pegada a la etiqueta («Solicitudes · PQRS»). */
   hintKey?: string;
   /** data-tour-target (PanelTour). */
@@ -243,24 +269,57 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
     labelKey: 'inmobiliaria.nav.secDinero',
     modulos: [
       {
-        key: 'cobros', labelKey: 'inmobiliaria.nav.cobros', href: r('/cobros'), icon: HandCoins, module: 'cobros', scope: 'finanzas', dataTourTarget: 'sidebar-cobros',
-        // Las tres son pantallas completas, hermanas del listado de cobros:
-        // Recaudo (lo que entró) · Cartera (lo que queda) · Cobranza (el agente).
-        pantallas: [
-          { labelKey: 'inmobiliaria.nav.recaudo', href: r('/cobros/recaudo'), icon: Coins, module: 'cobros' },
-          { labelKey: 'inmobiliaria.nav.cartera', href: r('/cobros/cartera'), icon: CurrencyCircleDollar, module: 'cobros' },
-          { labelKey: 'inmobiliaria.ai.nav.cobranza', href: r('/cobros/cobranza'), icon: ChatCircleText, module: 'cobranza', ia: true, agente: 'cobranza', dataTourTarget: 'sidebar-cobranza' },
-        ],
-      },
-      {
-        // Pagos = lo que SALE. La raíz es la Sala del agente (F9); Liquidaciones
-        // es la Tesorería de hoy (el neto por propietario) y Dispersiones la
-        // ejecución bancaria. Las facturas de proveedor (CxP) cuelgan de
-        // Liquidaciones: hoy no tienen listado propio, y no se inventa uno.
+        // ── UN SOLO MÓDULO DE PLATA (Nico + CEO, 2026-09-15) ──────────────
+        //
+        // Había DOS filas para lo mismo: «Cobros» (Recaudo · Cartera ·
+        // Cobranza) y «Pagos» (Liquidaciones · Dispersiones), más una pestaña
+        // «Cobros a inquilinos» DENTRO de Pagos que no era más que una maqueta
+        // con un enlace a la tabla de Cobros. Nico, mirando el sidebar: «hay
+        // dos cosas de lo mismo, que son Cobros y uno en Pagos y el otro en
+        // Cobros […] creo que dijo que se fuera lo de Cobros, porque todo
+        // funciona alrededor del estado de cuenta del contrato».
+        //
+        // Y el CEO: «yo le pondría de una vez lo que es inquilinos —recibos de
+        // caja, facturación general— y dispersión a propietarios, todo en un
+        // solo módulo».
+        //
+        // El porqué de fondo: la deuda NACE CON EL CONTRATO y vive en su
+        // estado de cuenta (`back-erp/docs/pagos-conciliacion-dispersion-plan.md`).
+        // El cobro del mes no crea la deuda: es el DOCUMENTO con el que
+        // finanzas reclama una parte de ella, y lo decide una persona mirando
+        // la cartera. Un documento no es un módulo del sidebar: la lista de
+        // cobros emitidos es hoy una pestaña de Cartera
+        // (`/pagos/cartera/cobros`, `components/cartera/PestanasDeCartera.tsx`).
+        //
+        // Queda UN módulo con DOS CARAS de la misma plata:
+        //   · inquilinos   — lo que ENTRA: recaudo, cartera, cobranza.
+        //   · propietarios — lo que SALE: liquidaciones, dispersiones.
+        // La raíz sigue siendo la Sala del agente de Pagos (F9), que no es de
+        // ninguna de las dos caras: mira las dos.
+        //
+        // 🔴 PERMISOS — lo que NO cambió, y por qué nadie gana ni pierde:
+        // cada pantalla conserva EXACTAMENTE el `module`/`roles` que tenía
+        // como fila propia. Recaudo y Cartera siguen pidiendo `cobros`,
+        // Cobranza `cobranza`, Dispersiones `dispersiones`, y la raíz y
+        // Liquidaciones siguen siendo sólo ADMIN y CONTADOR. Quien tenía
+        // `cobros` pero no es contador NO pierde su trabajo: la raíz no le
+        // pasa el gate, pero `resolverEntradaDeModulo` (sidebar-del-panel.ts)
+        // baja por las pestañas y le abre la fila en la primera que sí le
+        // pasa —Recaudo—, heredando su gate y su encuadre. Y no gana
+        // dispersión: la card de Liquidaciones y la de Dispersiones las filtra
+        // `SeccionesDelModulo` con el mismo `pasaGateDeFila`, y cada página
+        // tiene además su `PageGuard`.
         key: 'pagos', labelKey: 'inmobiliaria.ai.nav.pagos', href: r('/pagos'), icon: CurrencyDollar, module: null, roles: CONTADOR_ROLES, scope: 'finanzas', ia: true, agente: 'pagos', dataTourTarget: 'sidebar-pagos',
         pantallas: [
-          { labelKey: 'inmobiliaria.nav.liquidaciones', href: r('/pagos/liquidaciones'), icon: Wallet, module: null, roles: CONTADOR_ROLES },
-          { labelKey: 'inmobiliaria.nav.dispersiones', href: r('/pagos/dispersiones'), icon: PaperPlaneTilt, module: 'dispersiones' },
+          // Lo que ENTRA (cara inquilinos).
+          { labelKey: 'inmobiliaria.nav.recaudo', href: r('/pagos/recaudo'), icon: Coins, module: 'cobros', cara: 'inquilinos' },
+          { labelKey: 'inmobiliaria.nav.cartera', href: r('/pagos/cartera'), icon: CurrencyCircleDollar, module: 'cobros', cara: 'inquilinos' },
+          { labelKey: 'inmobiliaria.ai.nav.cobranza', href: r('/pagos/cobranza'), icon: ChatCircleText, module: 'cobranza', ia: true, agente: 'cobranza', dataTourTarget: 'sidebar-cobranza', cara: 'inquilinos' },
+          // Lo que SALE (cara propietarios). Las facturas de proveedor (CxP)
+          // cuelgan de Liquidaciones: hoy no tienen listado propio, y no se
+          // inventa uno.
+          { labelKey: 'inmobiliaria.nav.liquidaciones', href: r('/pagos/liquidaciones'), icon: Wallet, module: null, roles: CONTADOR_ROLES, cara: 'propietarios' },
+          { labelKey: 'inmobiliaria.nav.dispersiones', href: r('/pagos/dispersiones'), icon: PaperPlaneTilt, module: 'dispersiones', cara: 'propietarios' },
         ],
       },
       { key: 'facturacion', labelKey: 'inmobiliaria.nav.facturacion', href: r('/facturacion'), icon: Receipt, module: null, roles: CONTADOR_ROLES, scope: 'finanzas' },
@@ -327,11 +386,16 @@ export function modulosDelPanel(): ModuloDelPanel[] {
 /**
  * Las pestañas de un módulo: su raíz primero, luego sus pantallas.
  *
- * La raíz es EXACTA (en `/cobros/7/cuenta-de-cobro` ninguna pestaña está
- * activa y la barra no se dibuja: la ficha ya trae su cabecera) salvo cuando
- * la raíz es la Sala de un agente (Pagos, Conciliación): ahí todo lo que cuelga
- * del agente —`/pagos/cola`, `/pagos/<caso>`— la deja activa, y las hermanas
- * (`/pagos/dispersiones`) ganan por ser más largas.
+ * La raíz es EXACTA (en `/contratos/7` ninguna pestaña está activa y la barra
+ * no se dibuja: la ficha ya trae su cabecera) salvo cuando la raíz es la Sala
+ * de un agente (Pagos, Conciliación): ahí todo lo que cuelga del agente
+ * —`/pagos/cola`, `/pagos/<caso>`— la deja activa, y las hermanas
+ * (`/pagos/dispersiones`, `/pagos/cartera`) ganan por ser más largas.
+ *
+ * Nota: una ficha que cuelga de una HERMANA sí deja esa hermana marcada —la
+ * cuenta de cobro (`/pagos/cartera/cobros/7/cuenta-de-cobro`) deja «Cartera»
+ * activa—. Es correcto: la ficha vive dentro de esa sección, y la franja
+ * igual no se imprime (`print:hidden` en `BarraDePestanas`).
  */
 export function pestanasDelModulo(m: ModuloDelPanel): PantallaDelPanel[] {
   const raiz: PantallaDelPanel = {

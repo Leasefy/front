@@ -44,7 +44,7 @@ import {
 } from '@/lib/cobranza/acuerdo-general-vocab'
 import type { AcuerdoGeneralNuevo } from '@/lib/hooks/cobranza/use-acuerdos-generales'
 
-const VOLVER = '/panel/inmobiliaria/cobros/cobranza/acuerdos'
+const VOLVER = '/panel/inmobiliaria/pagos/cobranza/acuerdos'
 
 export interface Borrador {
   name: string

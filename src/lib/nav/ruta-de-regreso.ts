@@ -42,14 +42,13 @@ export type LugarDeRegreso =
 
 /**
  * Segundos tramos que NO son una ficha sino una pantalla hermana del listado
- * (pestañas del módulo, flujos, ajustes). `/cobros/cartera` no es «un cobro»,
- * `/contratos/renovaciones` no es «un contrato», `/inmuebles/nuevo` no es «un
- * inmueble». Espeja `arquitectura-del-panel.ts` más los flujos de cada módulo.
+ * (pestañas del módulo, flujos, ajustes). `/contratos/renovaciones` no es «un
+ * contrato», `/inmuebles/nuevo` no es «un inmueble». Espeja
+ * `arquitectura-del-panel.ts` más los flujos de cada módulo.
  */
 const NO_ES_FICHA: Record<string, ReadonlySet<string>> = {
   contratos: new Set(['renovaciones', 'retencion', 'riesgo', 'aprobar', 'nuevo', 'migrar', 'conceptos']),
   inmuebles: new Set(['avaluos', 'nuevo', 'importar', 'captura']),
-  cobros: new Set(['recaudo', 'cartera', 'cobranza', 'reglas-de-mora']),
   propietarios: new Set([]),
 };
 
@@ -64,13 +63,19 @@ export function lugarDeRegreso(ruta: string): LugarDeRegreso {
       return esFicha ? 'contrato' : 'lista';
     case 'inmuebles':
       return esFicha ? 'inmueble' : 'lista';
-    case 'cobros':
-      return esFicha ? 'cobro' : 'lista';
     case 'propietarios':
       return esFicha ? 'propietario' : 'lista';
     case 'pagos':
-      // Dispersiones vive dentro de Pagos (`/pagos/dispersiones/...`).
-      return segundo === 'dispersiones' ? 'dispersiones' : 'otro';
+      // Desde el 2026-09-15 Pagos es el ÚNICO módulo de plata, así que acá
+      // cuelgan cosas muy distintas y el segundo tramo ya no alcanza para
+      // nombrarlas: se mira el tercero. Una cuenta de cobro vive en
+      // `/pagos/cartera/cobros/<id>/cuenta-de-cobro` y sigue siendo «un cobro».
+      if (segundo === 'dispersiones') return 'dispersiones';
+      if (segundo === 'cartera' && tramos[2] === 'cobros') {
+        // `/pagos/cartera/cobros` es la LISTA; con un id más abajo es la ficha.
+        return tramos.length > 3 ? 'cobro' : 'lista';
+      }
+      return 'otro';
     default:
       return 'otro';
   }

@@ -90,7 +90,7 @@ const ACCESOS: { claveLabel: string; claveDetalle: string; href: string; icon: I
   {
     claveLabel: 'inmobiliaria.ai.pagos_home.resumen.accesos.cobros',
     claveDetalle: 'inmobiliaria.ai.pagos_home.resumen.accesos.cobrosDetalle',
-    href: '/panel/inmobiliaria/cobros',
+    href: '/panel/inmobiliaria/pagos/cartera/cobros',
     icon: Receipt,
   },
   {

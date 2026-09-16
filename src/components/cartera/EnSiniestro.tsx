@@ -127,7 +127,7 @@ export function TablaDeSiniestros({
                 </TableCell>
                 <TableCell className="text-right">
                   <Button asChild variant="ghost" size="sm" hideArrow>
-                    <Link href={`/panel/inmobiliaria/cobros?cobro=${i.cobroId}`}>
+                    <Link href={`/panel/inmobiliaria/pagos/cartera/cobros?cobro=${i.cobroId}`}>
                       <ArrowSquareOut className="h-4 w-4" />
                       <span className="sr-only">Ver el cobro</span>
                     </Link>

@@ -14,7 +14,7 @@
  *
  *  - /panel/inmobiliaria/*               → ⌘K opens palette      ✅
  *  - /panel/inmobiliaria/beta/*          → ⌘K = new conversation  ✅
- *  - /panel/inmobiliaria/cobros/cobranza/*   → ⌘K opens palette      ✅
+ *  - /panel/inmobiliaria/pagos/cobranza/*   → ⌘K opens palette      ✅
  *
  * The check is done inside InmobiliariaLayoutInner (layout.tsx) using
  * `usePathname()` before deciding to call `open()`.

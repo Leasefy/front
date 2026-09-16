@@ -22,7 +22,7 @@ import { CabeceraDelAgente } from './CabeceraDelAgente'
 // react-dom/client needs this flag to recognize our act() wrapping.
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-let pathname = '/panel/inmobiliaria/cobros/cobranza'
+let pathname = '/panel/inmobiliaria/pagos/cobranza'
 let tourDismissed: boolean | null = false
 
 vi.mock('next/navigation', () => ({
@@ -56,7 +56,7 @@ beforeEach(() => {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
-  pathname = '/panel/inmobiliaria/cobros/cobranza'
+  pathname = '/panel/inmobiliaria/pagos/cobranza'
   tourDismissed = false
 })
 
@@ -89,13 +89,13 @@ describe('CabeceraDelAgente — novedades', () => {
 
   it('presenta el agente en el que estás, con las novedades activas', () => {
     render()
-    expect(intro()?.getAttribute('data-path')).toBe('/panel/inmobiliaria/cobros/cobranza')
+    expect(intro()?.getAttribute('data-path')).toBe('/panel/inmobiliaria/pagos/cobranza')
   })
 
   it('sigue valiendo en una subruta profunda del agente', () => {
-    pathname = '/panel/inmobiliaria/cobros/cobranza/casos/abc-123'
+    pathname = '/panel/inmobiliaria/pagos/cobranza/casos/abc-123'
     render()
-    expect(intro()?.getAttribute('data-path')).toBe('/panel/inmobiliaria/cobros/cobranza/casos/abc-123')
+    expect(intro()?.getAttribute('data-path')).toBe('/panel/inmobiliaria/pagos/cobranza/casos/abc-123')
     expect(tour()).toBeNull()
   })
 

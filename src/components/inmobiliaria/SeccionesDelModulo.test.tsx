@@ -109,18 +109,30 @@ describe('SeccionesDelModulo — las cards no se van al entrar en una sección',
     expect(cards()).toHaveLength(2)
   })
 
-  it('en la ficha de un caso de Cobranza se ven las cuatro secciones de Cobros, con Cobranza marcada', () => {
-    render('/panel/inmobiliaria/cobros/cobranza/deudores/abc-123')
+  it('en la ficha de un caso de Cobranza se ven las seis secciones de Pagos, con Cobranza marcada', () => {
+    render('/panel/inmobiliaria/pagos/cobranza/deudores/abc-123')
     const lista = cards()
-    expect(lista.map((c) => c.label)).toEqual(['cobros', 'recaudo', 'cartera', 'cobranza'])
+    expect(lista.map((c) => c.label)).toEqual([
+      'pagos',
+      'recaudo',
+      'cartera',
+      'cobranza',
+      'liquidaciones',
+      'dispersiones',
+    ])
     expect(lista.filter((c) => c.activa).map((c) => c.label)).toEqual(['cobranza'])
   })
 
   it('en Pagos, la sección hermana (Liquidaciones) marca su card y la Sala no', () => {
     render('/panel/inmobiliaria/pagos/liquidaciones')
     const lista = cards()
-    expect(lista.map((c) => c.label)).toEqual(['pagos', 'liquidaciones', 'dispersiones'])
     expect(lista.filter((c) => c.activa).map((c) => c.label)).toEqual(['liquidaciones'])
+    expect(lista.find((c) => c.label === 'pagos')?.activa).toBe(false)
+  })
+
+  it('la lista de cobros emitidos deja marcada a Cartera: es una lectura suya, no un módulo', () => {
+    render('/panel/inmobiliaria/pagos/cartera/cobros')
+    expect(cards().filter((c) => c.activa).map((c) => c.label)).toEqual(['cartera'])
   })
 
   it('se dibuja como SECCIONES (cards en un riel), nunca como las pestañas del agente', () => {
@@ -175,5 +187,68 @@ describe('SeccionesDelModulo — cuándo NO se dibuja', () => {
     const lista = cards()
     expect(lista.map((c) => c.label)).toEqual(['postulaciones', 'matching'])
     expect(lista.filter((c) => c.activa).map((c) => c.label)).toEqual(['matching'])
+  })
+})
+
+
+describe('SeccionesDelModulo — las dos caras de la plata (Nico + CEO, 2026-09-15)', () => {
+  /** Los rótulos de cara (`role="group"`) del riel, en orden. */
+  function rotulos(): string[] {
+    return [...contenedor.querySelectorAll('nav [role="group"]')].map(
+      (g) => g.getAttribute('aria-label') ?? '',
+    )
+  }
+
+  /** Las cards de cada grupo rotulado. */
+  function porCara(): Record<string, string[]> {
+    const salida: Record<string, string[]> = {}
+    for (const g of contenedor.querySelectorAll('nav [role="group"]')) {
+      salida[g.getAttribute('aria-label') ?? ''] = [...g.querySelectorAll('a')].map((a) =>
+        (a.textContent ?? '').replace(/IA$/, '').trim(),
+      )
+    }
+    return salida
+  }
+
+  it('un solo riel con dos tandas rotuladas: lo que ENTRA y lo que SALE', () => {
+    render('/panel/inmobiliaria/pagos')
+    // UN contenedor, no dos: son dos caras de lo mismo, no dos módulos.
+    const nav = contenedor.querySelector('nav')
+    expect(nav?.children).toHaveLength(1)
+    expect(rotulos()).toEqual(['caraInquilinos', 'caraPropietarios'])
+    expect(porCara()).toEqual({
+      caraInquilinos: ['recaudo', 'cartera', 'cobranza'],
+      caraPropietarios: ['liquidaciones', 'dispersiones'],
+    })
+  })
+
+  it('la Sala del agente no es de ninguna cara: va suelta y primera', () => {
+    render('/panel/inmobiliaria/pagos')
+    expect(cards()[0]?.href).toBe('/panel/inmobiliaria/pagos')
+    const dentroDeUnGrupo = [...contenedor.querySelectorAll('nav [role="group"] a')].map((a) =>
+      a.getAttribute('href'),
+    )
+    expect(dentroDeUnGrupo).not.toContain('/panel/inmobiliaria/pagos')
+  })
+
+  it('🔴 quien sólo tiene `cobros` ve su cara y NO la de propietarios', () => {
+    // El caso que hace peligrosa la unificación: nadie puede ganar acceso a la
+    // dispersión por haber quedado en la misma fila que su cartera.
+    permisos.isAdmin = false
+    permisos.agencyRole = 'VIEWER'
+    permisos.modulos = ['cobros']
+    render('/panel/inmobiliaria/pagos/cartera')
+    expect(cards().map((c) => c.label)).toEqual(['recaudo', 'cartera'])
+    // Y el rótulo de la cara vacía no se dibuja: no se anuncia una cara que no está.
+    expect(rotulos()).toEqual(['caraInquilinos'])
+  })
+
+  it('🔴 el contador ve las dos caras completas', () => {
+    permisos.isAdmin = false
+    permisos.agencyRole = 'CONTADOR'
+    permisos.modulos = null
+    render('/panel/inmobiliaria/pagos')
+    expect(rotulos()).toEqual(['caraInquilinos', 'caraPropietarios'])
+    expect(cards()).toHaveLength(6)
   })
 })

@@ -44,7 +44,7 @@ interface Props {
   puedeEditar: boolean
 }
 
-const PANTALLA_DE_REGLAS = '/panel/inmobiliaria/cobros/reglas-de-mora'
+const PANTALLA_DE_REGLAS = '/panel/inmobiliaria/pagos/cartera/reglas-de-mora'
 
 export function ReglasDeMoraDelContrato({ contract, puedeEditar }: Props) {
   const [reglas, setReglas] = useState<ReglaDeMoraDelContrato[] | null>(null)

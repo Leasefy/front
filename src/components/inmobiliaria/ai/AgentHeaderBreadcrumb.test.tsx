@@ -18,7 +18,7 @@ import { act } from 'react'
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const ruta = { actual: '/panel/inmobiliaria/cobros/cobranza' }
+const ruta = { actual: '/panel/inmobiliaria/pagos/cobranza' }
 
 vi.mock('next/navigation', () => ({
   usePathname: () => ruta.actual,
@@ -72,7 +72,7 @@ afterEach(() => {
 
 describe('AgentHeaderBreadcrumb — la ficha tiene cómo volver', () => {
   it('en la TABLA, la pestaña es la página actual y no lleva enlace', () => {
-    render('/panel/inmobiliaria/cobros/cobranza/deudores')
+    render('/panel/inmobiliaria/pagos/cobranza/deudores')
 
     const casos = escalones().find((e) => e.texto === 'cobranzaCasos')
     expect(casos, 'debería estar el escalón de la pestaña').toBeTruthy()
@@ -80,14 +80,14 @@ describe('AgentHeaderBreadcrumb — la ficha tiene cómo volver', () => {
   })
 
   it('en la FICHA, la pestaña SÍ lleva enlace de vuelta a la tabla', () => {
-    render('/panel/inmobiliaria/cobros/cobranza/deudores/abc-123')
+    render('/panel/inmobiliaria/pagos/cobranza/deudores/abc-123')
 
     const casos = escalones().find((e) => e.texto === 'cobranzaCasos')
-    expect(casos?.href).toBe('/panel/inmobiliaria/cobros/cobranza/deudores')
+    expect(casos?.href).toBe('/panel/inmobiliaria/pagos/cobranza/deudores')
   })
 
   it('la ficha agrega su propio escalón, para no terminar en un enlace', () => {
-    render('/panel/inmobiliaria/cobros/cobranza/deudores/abc-123')
+    render('/panel/inmobiliaria/pagos/cobranza/deudores/abc-123')
 
     const items = escalones()
     expect(items[items.length - 1].texto).toContain('detalle')
@@ -98,24 +98,27 @@ describe('AgentHeaderBreadcrumb — la ficha tiene cómo volver', () => {
   })
 
   it('«Cobranza» sigue llevando a su resumen desde la ficha', () => {
-    render('/panel/inmobiliaria/cobros/cobranza/deudores/abc-123')
+    render('/panel/inmobiliaria/pagos/cobranza/deudores/abc-123')
 
     const cobranza = escalones().find((e) => e.texto === 'cobranza')
-    expect(cobranza?.href).toBe('/panel/inmobiliaria/cobros/cobranza')
+    expect(cobranza?.href).toBe('/panel/inmobiliaria/pagos/cobranza')
   })
 
   it('en el resumen del agente no se inventa un escalón de más', () => {
-    render('/panel/inmobiliaria/cobros/cobranza')
+    render('/panel/inmobiliaria/pagos/cobranza')
     expect(escalones().some((e) => e.texto.includes('detalle'))).toBe(false)
   })
 
-  it('arranca en el MÓDULO dueño, no en «Agentes IA»: Cobros › Cobranza › Casos › Detalle', () => {
-    render('/panel/inmobiliaria/cobros/cobranza/deudores/abc-123')
+  it('arranca en el MÓDULO dueño, no en «Agentes IA»: Pagos › Cobranza › Casos › Detalle', () => {
+    // El dueño de Cobranza era «Cobros»; desde el 2026-09-15 «Cobros» dejó de
+    // ser un módulo y la plata entera vive en Pagos, así que el primer escalón
+    // es Pagos y lleva a su Sala.
+    render('/panel/inmobiliaria/pagos/cobranza/deudores/abc-123')
 
     const items = escalones().filter((e) => e.texto !== '') // sin el icono de casa
-    expect(items[0].texto).toBe('cobros')
-    expect(items[0].href).toBe('/panel/inmobiliaria/cobros')
-    expect(items.map((e) => e.texto)).toEqual(['cobros', 'cobranza', 'cobranzaCasos', 'detalle'])
+    expect(items[0].texto).toBe('pagos')
+    expect(items[0].href).toBe('/panel/inmobiliaria/pagos')
+    expect(items.map((e) => e.texto)).toEqual(['pagos', 'cobranza', 'cobranzaCasos', 'detalle'])
   })
 
   it('cuando el agente ES la raíz del módulo (Pagos) no repite el nombre', () => {

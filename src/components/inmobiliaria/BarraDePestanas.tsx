@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type { Icon } from '@phosphor-icons/react';
 import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -48,6 +48,14 @@ export interface PestanaDeBarra {
   current: boolean;
   /** Píldora «IA»: la pantalla es (o está asistida por) un agente. */
   ia?: boolean;
+  /**
+   * Rótulo de la cara a la que pertenece la card, cuando el módulo tiene dos
+   * (hoy sólo Pagos: «Inquilinos» / «Propietarios»). Las cards con el mismo
+   * rótulo se agrupan y el rótulo se dibuja una vez, delante de su tanda.
+   * Sin rótulo la card va suelta al principio. Ver `CaraDeLaPlata` en
+   * `arquitectura-del-panel.ts`.
+   */
+  grupo?: string;
   dataTourTarget?: string;
 }
 
@@ -123,6 +131,23 @@ function PestanaDeProfundidad({ item }: { item: PestanaDeBarra }) {
       />
     </Link>
   );
+}
+
+/**
+ * Las cards en tandas consecutivas por `grupo`, conservando el orden dado.
+ *
+ * Las sueltas (sin `grupo`) van como una tanda sin rótulo. No reordena nada:
+ * el orden lo decide `arquitectura-del-panel.ts`, y una barra que se reordena
+ * sola deja de ser un mapa.
+ */
+function tandas(items: PestanaDeBarra[]): { grupo?: string; items: PestanaDeBarra[] }[] {
+  const salida: { grupo?: string; items: PestanaDeBarra[] }[] = [];
+  for (const item of items) {
+    const ultima = salida[salida.length - 1];
+    if (ultima && ultima.grupo === item.grupo) ultima.items.push(item);
+    else salida.push({ grupo: item.grupo, items: [item] });
+  }
+  return salida;
 }
 
 export function BarraDePestanas({ items, ariaLabel, cssVar, topClass, nivel, pathname }: BarraDePestanasProps) {
@@ -286,11 +311,28 @@ export function BarraDePestanas({ items, ariaLabel, cssVar, topClass, nivel, pat
           )}
         >
           {esSecciones ? (
-            // El rectángulo: un riel hundido con las cards adentro.
+            // El rectángulo: UN riel hundido con las cards adentro. Cuando el
+            // módulo tiene dos caras, las tandas van en el MISMO riel con su
+            // rótulo delante: dos caras de lo mismo, no dos módulos.
             <div className="inline-flex shrink-0 items-center gap-0.5 rounded-[12px] bg-surface-muted p-1">
-              {items.map((item) => (
-                <CardDeSeccion key={item.href} item={item} />
-              ))}
+              {tandas(items).map((tanda, i) => {
+                const cards = tanda.items.map((item) => <CardDeSeccion key={item.href} item={item} />);
+                if (!tanda.grupo) return <Fragment key={`suelta-${i}`}>{cards}</Fragment>;
+                return (
+                  <Fragment key={tanda.grupo}>
+                    <span aria-hidden="true" className="mx-1 h-4 w-px shrink-0 bg-border" />
+                    <span
+                      aria-hidden="true"
+                      className="shrink-0 pl-1 pr-1.5 text-[10px] font-medium uppercase tracking-wide text-fg-subtle"
+                    >
+                      {tanda.grupo}
+                    </span>
+                    <span role="group" aria-label={tanda.grupo} className="flex items-center gap-0.5">
+                      {cards}
+                    </span>
+                  </Fragment>
+                );
+              })}
             </div>
           ) : (
             items.map((item) => <PestanaDeProfundidad key={item.href} item={item} />)

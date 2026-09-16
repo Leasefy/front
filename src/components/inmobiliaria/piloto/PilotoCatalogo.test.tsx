@@ -116,7 +116,7 @@ const DATA: PilotoCatalogoResponse = {
       ultima: { at: '2026-09-04T05:08:07.000-05:00', que: '38 cobros generados' },
       sinDato: null,
       fuente: 'public.cobros',
-      enlace: { label: 'Ver los cobros', href: '/panel/inmobiliaria/cobros' },
+      enlace: { label: 'Ver los cobros', href: '/panel/inmobiliaria/pagos/cartera/cobros' },
     }),
     proceso({
       clave: 'cobranza.preparar',
@@ -215,7 +215,7 @@ describe('la tabla no inventa', () => {
   it('el enlace apunta a la pantalla real del proceso', () => {
     render()
     const fila = filas().find((f) => f.getAttribute('data-clave') === 'cobros.generacion')
-    expect(fila?.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/cobros')
+    expect(fila?.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/cartera/cobros')
   })
 })
 

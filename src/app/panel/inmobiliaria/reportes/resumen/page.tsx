@@ -428,7 +428,7 @@ function ResumenDelNegocio() {
               : undefined
           }
           icon={CurrencyDollar}
-          href="/panel/inmobiliaria/cobros"
+          href="/panel/inmobiliaria/pagos/cartera/cobros"
           brandHero
         />
         <KPICard
@@ -589,7 +589,7 @@ function ResumenDelNegocio() {
           <QuickAction
             title={t('recibos.hacer')}
             description={t('recibos.queEs')}
-            href="/panel/inmobiliaria/cobros?status=pending"
+            href="/panel/inmobiliaria/pagos/cartera/cobros?status=pending"
             icon={CurrencyDollar}
           />
           <QuickAction
@@ -609,7 +609,7 @@ function ResumenDelNegocio() {
             count: cobrosEnMora.length,
             amount: formatCurrency(cobrosEnMora.reduce((sum, c) => sum + c.pendingAmount, 0)),
           })}
-          accion={{ label: t('inmobiliaria.dashboard.alerts.viewPayments'), href: '/panel/inmobiliaria/cobros?status=late' }}
+          accion={{ label: t('inmobiliaria.dashboard.alerts.viewPayments'), href: '/panel/inmobiliaria/pagos/cartera/cobros?status=late' }}
           data-testid="alerta-cobros-en-mora"
         >
           {t('inmobiliaria.dashboard.alerts.latePaymentsDetalle')}

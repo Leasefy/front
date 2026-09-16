@@ -924,6 +924,8 @@
       "secCaptacion": "Captación y arriendo",
       "secOperacionDelContrato": "Operación",
       "secDinero": "Dinero",
+      "caraInquilinos": "Inquilinos",
+      "caraPropietarios": "Propietarios",
       "secDirectorio": "Directorio",
       "pipelineCorto": "Pipeline",
       "mantenimientos": "Mantenimientos",
@@ -9703,7 +9705,7 @@
       "cierre": {
         "titulo": "Eso es todo",
         "punto1": "Empiezas por «Nueva consignación» y sigues el inmueble hasta el contrato.",
-        "punto2": "Cobros y Pagos son las dos caras de la plata: lo que entra y lo que sale.",
+        "punto2": "Pagos reúne las dos caras de la plata: lo que entra de los inquilinos y lo que sale hacia los propietarios.",
         "punto3": "El buscador y el chat te llevan a cualquier parte sin recorrer el menú.",
         "volver": "Puedes volver a verlo desde Configuración → Preferencias."
       },
@@ -9733,15 +9735,10 @@
           "cuerpo": "Canon, conceptos, garantía y firma. De cada contrato salen los cobros del mes, y ahí mismo se ve cómo va pagando.",
           "dato": "Renovaciones vive adentro: los que vencen y la propuesta al inquilino."
         },
-        "cobros": {
-          "titulo": "La plata que entra",
-          "cuerpo": "Recaudo es lo que ya entró, Cartera lo que falta, y Cobranza el agente que persigue la mora dentro de lo que permite la ley.",
-          "dato": "La conciliación del extracto del banco cruza los pagos con estos cobros."
-        },
         "pagos": {
-          "titulo": "La plata que sale",
-          "cuerpo": "Liquidaciones arma el neto de cada propietario —canon menos comisión y descuentos— y Dispersiones lo ejecuta contra el banco.",
-          "dato": "Las facturas de proveedores se descuentan en la liquidación del inmueble."
+          "titulo": "La plata, de los dos lados",
+          "cuerpo": "Una sola parada con las dos caras: del lado de los inquilinos están Recaudo (lo que ya entró), Cartera (lo que falta y los cobros emitidos) y Cobranza; del lado de los propietarios, Liquidaciones y Dispersiones.",
+          "dato": "La deuda nace con el contrato: el cobro del mes es el documento con el que la reclamas, y lo decides tú mirando la cartera."
         },
         "reportes": {
           "titulo": "Cómo va el negocio",
@@ -11380,6 +11377,13 @@
       "sinTelefono": "Sin teléfono",
       "sinDireccion": "Sin dirección",
       "sinPropietario": "Sin consignar"
+    },
+    "pestanas": {
+      "ariaLabel": "Cómo mirar la cartera",
+      "porEdad": "Por edad",
+      "porConcepto": "Por concepto",
+      "porPagar": "Por pagar a propietarios",
+      "cobrosEmitidos": "Cobros emitidos"
     }
   },
   "migracion": {

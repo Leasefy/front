@@ -104,7 +104,7 @@ describe('EmptyState', () => {
           icon: FakeIcon,
           title: 'No hay pagos',
           description: 'Los pagos aparecerán acá.',
-          primaryCta: { label: 'Ver deudores', href: '/panel/inmobiliaria/cobros/cobranza/deudores' },
+          primaryCta: { label: 'Ver deudores', href: '/panel/inmobiliaria/pagos/cobranza/deudores' },
         }),
       )
     })
@@ -118,8 +118,8 @@ describe('EmptyState', () => {
           icon: FakeIcon,
           title: 'No hay pagos',
           description: 'Los pagos aparecerán acá.',
-          primaryCta: { label: 'Ver deudores', href: '/panel/inmobiliaria/cobros/cobranza/deudores' },
-          secondaryCta: { label: 'Ver historial', href: '/panel/inmobiliaria/cobros/cobranza/pagos?view=history' },
+          primaryCta: { label: 'Ver deudores', href: '/panel/inmobiliaria/pagos/cobranza/deudores' },
+          secondaryCta: { label: 'Ver historial', href: '/panel/inmobiliaria/pagos/cobranza/pagos?view=history' },
         }),
       )
     })

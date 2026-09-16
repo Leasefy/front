@@ -76,14 +76,20 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'page', title: 'Mensajes', context: 'Operación', href: `${P}/mensajes`, keywords: 'chat conversaciones inbox' },
 
   // ── Dinero ────────────────────────────────────────────────────────────────
-  { kind: 'page', title: 'Cobros', context: 'Dinero', href: `${P}/cobros`, keywords: 'recaudo pagos recibir recibo de caja abono', permission: { module: 'cobros', action: 'view' } },
-  { kind: 'page', title: 'Recaudo', context: 'Cobros', href: `${P}/cobros/recaudo`, keywords: 'recaudo cuanto llego disponible mensual recibos', permission: { module: 'cobros', action: 'view' } },
-  { kind: 'page', title: 'Cartera', context: 'Cobros', href: `${P}/cobros/cartera`, keywords: 'cartera mora edades deuda vencido', permission: { module: 'cobros', action: 'view' } },
-  { kind: 'page', title: 'Cobranza', context: 'Cobros', href: `${P}/cobros/cobranza`, keywords: 'deudores cartera mora agente ia llamadas acuerdos', permission: { module: 'cobranza', action: 'view' } },
-  { kind: 'page', title: 'Reglas de mora', context: 'Cobros', href: `${P}/cobros/reglas-de-mora`, keywords: 'mora interes gasto administrativo plazo reglas cobro', permission: { module: 'cobros', action: 'view' } },
-  { kind: 'page', title: 'Pagos', context: 'Dinero', href: `${P}/pagos`, keywords: 'agente ia pagos por aprobar facturas proveedores recaudos transacciones' },
-  { kind: 'page', title: 'Liquidaciones', context: 'Pagos', href: `${P}/pagos/liquidaciones`, keywords: 'tesoreria caja bancos saldos egresos neto propietarios' },
-  { kind: 'page', title: 'Dispersiones', context: 'Pagos', href: `${P}/pagos/dispersiones`, keywords: 'giros transferencias propietarios', permission: { module: 'dispersiones', action: 'view' } },
+  // Un solo módulo de plata (2026-09-15): «Cobros» dejó de ser una fila y sus
+  // pantallas viven bajo `/pagos`. El `context` dice de qué cara es cada una
+  // —«Pagos · inquilinos» / «Pagos · propietarios»— porque el buscador muestra
+  // el contexto al lado del título y «Cobros» ya no nombra nada.
+  { kind: 'page', title: 'Pagos', context: 'Dinero', href: `${P}/pagos`, keywords: 'agente ia pagos por aprobar facturas proveedores recaudos transacciones plata dinero cobros' },
+  { kind: 'page', title: 'Recaudo', context: 'Pagos · inquilinos', href: `${P}/pagos/recaudo`, keywords: 'recaudo cuanto llego disponible mensual recibos', permission: { module: 'cobros', action: 'view' } },
+  { kind: 'page', title: 'Cartera', context: 'Pagos · inquilinos', href: `${P}/pagos/cartera`, keywords: 'cartera mora edades deuda vencido', permission: { module: 'cobros', action: 'view' } },
+  // Sigue buscándose por «cobros»: era el nombre de un módulo y la gente lo
+  // escribe. Lleva a la lista de documentos emitidos, que es lo que buscaba.
+  { kind: 'page', title: 'Cobros emitidos', context: 'Cartera', href: `${P}/pagos/cartera/cobros`, keywords: 'cobros recibir recibo de caja abono cuenta de cobro documento factura del mes', permission: { module: 'cobros', action: 'view' } },
+  { kind: 'page', title: 'Cobranza', context: 'Pagos · inquilinos', href: `${P}/pagos/cobranza`, keywords: 'deudores cartera mora agente ia llamadas acuerdos', permission: { module: 'cobranza', action: 'view' } },
+  { kind: 'page', title: 'Reglas de mora', context: 'Cartera', href: `${P}/pagos/cartera/reglas-de-mora`, keywords: 'mora interes gasto administrativo plazo reglas cobro', permission: { module: 'cobros', action: 'view' } },
+  { kind: 'page', title: 'Liquidaciones', context: 'Pagos · propietarios', href: `${P}/pagos/liquidaciones`, keywords: 'tesoreria caja bancos saldos egresos neto propietarios' },
+  { kind: 'page', title: 'Dispersiones', context: 'Pagos · propietarios', href: `${P}/pagos/dispersiones`, keywords: 'giros transferencias propietarios', permission: { module: 'dispersiones', action: 'view' } },
   { kind: 'page', title: 'Lotes al banco', context: 'Dispersiones', href: `${P}/pagos/dispersiones/lotes`, keywords: 'lote archivo plano bancolombia pab codigo aprobacion pagos masivos', permission: { module: 'dispersiones', action: 'view' } },
   { kind: 'page', title: 'Facturación', context: 'Dinero', href: `${P}/facturacion`, keywords: 'facturas cobrar dian' },
   { kind: 'page', title: 'Conciliación', context: 'Dinero', href: `${P}/conciliacion`, keywords: 'conciliacion bancos extractos pagos ia' },

@@ -924,6 +924,8 @@
       "secCaptacion": "Acquisition & leasing",
       "secOperacionDelContrato": "Operations",
       "secDinero": "Money",
+      "caraInquilinos": "Tenants",
+      "caraPropietarios": "Owners",
       "secDirectorio": "Directory",
       "pipelineCorto": "Pipeline",
       "mantenimientos": "Maintenance",
@@ -9663,7 +9665,7 @@
       "cierre": {
         "titulo": "That's it",
         "punto1": "You start at «New listing» and follow the property through to the contract.",
-        "punto2": "Collections and Payouts are the two sides of the money: what comes in and what goes out.",
+        "punto2": "Payments holds both sides of the money: what comes in from tenants and what goes out to owners.",
         "punto3": "Search and chat take you anywhere without walking the menu.",
         "volver": "You can see it again from Settings → Preferences."
       },
@@ -9693,15 +9695,10 @@
           "cuerpo": "Rent, line items, guarantee and signature. Each contract produces the month's charges, and shows how they are being paid.",
           "dato": "Renewals lives inside: what expires and the proposal to the tenant."
         },
-        "cobros": {
-          "titulo": "The money coming in",
-          "cuerpo": "Receipts is what already arrived, Receivables what is missing, and Collections the agent that chases arrears within what the law allows.",
-          "dato": "Bank statement reconciliation matches payments against these charges."
-        },
         "pagos": {
-          "titulo": "The money going out",
-          "cuerpo": "Settlements build each owner's net — rent minus commission and deductions — and Disbursements execute it against the bank.",
-          "dato": "Supplier invoices are deducted in the property's settlement."
+          "titulo": "The money, from both sides",
+          "cuerpo": "One stop with both sides: on the tenant side you have Receipts (what already came in), Receivables (what is missing, and the charges you issued) and Collections; on the owner side, Settlements and Disbursements.",
+          "dato": "Debt is born with the contract: the monthly charge is the document you claim it with, and you decide when to issue it by looking at receivables."
         },
         "reportes": {
           "titulo": "How the business is doing",
@@ -11340,6 +11337,13 @@
       "sinTelefono": "No phone number",
       "sinDireccion": "No address",
       "sinPropietario": "Owner not on file"
+    },
+    "pestanas": {
+      "ariaLabel": "How to read receivables",
+      "porEdad": "By age",
+      "porConcepto": "By item",
+      "porPagar": "Owed to owners",
+      "cobrosEmitidos": "Issued charges"
     }
   },
   "migracion": {

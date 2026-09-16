@@ -130,8 +130,8 @@ describe('<CarteraTable>', () => {
     expect(texto).toContain('cartera.tabla.recordatorios:2')
 
     // Y el enlace al cobro, con el id de ESTA fila.
-    const link = filas()[0].querySelector('a[href^="/panel/inmobiliaria/cobros"]')
-    expect(link?.getAttribute('href')).toBe('/panel/inmobiliaria/cobros?cobro=c1')
+    const link = filas()[0].querySelector('a[href^="/panel/inmobiliaria/pagos/cartera/cobros"]')
+    expect(link?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/cartera/cobros?cobro=c1')
   })
 
   it('sin abono no inventa una línea de abono en $0', () => {

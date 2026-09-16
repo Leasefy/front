@@ -178,7 +178,7 @@ function PagosReglas() {
         <p className="text-xs text-fg-muted">
           La gestión activa de mora se trabaja en el{' '}
           <Link
-            href="/panel/inmobiliaria/cobros/cobranza"
+            href="/panel/inmobiliaria/pagos/cobranza"
             className="text-primary underline-offset-4 hover:underline font-medium"
           >
             agente de cobranza

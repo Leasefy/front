@@ -48,9 +48,14 @@ const CLAVES_EN_USO = [
   'tabla.whatsapp',
   'tabla.vence',
   'tabla.abonado',
-  'tabla.alDia',
+  'tabla.porVencer',
+  'tabla.vencidoEnPlazo',
+  'tabla.unDiaDePlazo',
+  'tabla.diasDePlazo',
   'tabla.unDiaDeMora',
   'tabla.diasDeMora',
+  'tabla.sinCobroEmitido',
+  'tabla.verContrato',
   'tabla.unRecordatorio',
   'tabla.recordatorios',
   'tabla.sinRecordatorios',
@@ -65,6 +70,7 @@ const CON_PARAMETROS: Record<string, string[]> = {
   'tabla.vence': ['fecha'],
   'tabla.abonado': ['monto'],
   'tabla.diasDeMora': ['n'],
+  'tabla.diasDePlazo': ['n'],
   'tabla.recordatorios': ['n'],
 };
 

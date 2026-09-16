@@ -11377,12 +11377,11 @@
       "propietario": "Propietario",
       "mes": "Mes",
       "debe": "Debe",
-      "mora": "Mora",
+      "mora": "Estado",
       "verCobro": "Ver el cobro",
       "whatsapp": "Escribir por WhatsApp",
       "vence": "vence {{fecha}}",
       "abonado": "abonó {{monto}}",
-      "alDia": "Al día",
       "unDiaDeMora": "1 día",
       "diasDeMora": "{{n}} días",
       "unRecordatorio": "1 recordatorio",
@@ -11391,7 +11390,13 @@
       "sinInquilino": "Sin inquilino registrado",
       "sinTelefono": "Sin teléfono",
       "sinDireccion": "Sin dirección",
-      "sinPropietario": "Sin consignar"
+      "sinPropietario": "Sin consignar",
+      "porVencer": "Por vencer",
+      "vencidoEnPlazo": "Vencido, en plazo",
+      "diasDePlazo": "{{n}} días de plazo",
+      "unDiaDePlazo": "1 día de plazo",
+      "sinCobroEmitido": "Sin cobro emitido",
+      "verContrato": "Ver el contrato"
     },
     "pestanas": {
       "ariaLabel": "Cómo mirar la cartera",

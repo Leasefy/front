@@ -542,8 +542,21 @@ export function useInmobiliariaDashboard(options?: { skip?: boolean; pollMs?: nu
 // Reportes
 // ============================================================================
 
+/**
+ * El informe de cartera por edades.
+ *
+ * 🔴 Desde el 2026-09-16 la deuda sale de `contrato_cuotas`, no de `Cobro`, y
+ * por eso el refresco ya no puede escuchar sólo a `cobros`: lo que mueve una
+ * cuota es un recibo de caja (la imputa) o un contrato (la crea al firmarse o
+ * la anula al terminarse). Con la lista vieja, registrar un recibo dejaba esta
+ * pantalla mostrando el saldo de antes hasta que alguien recargara.
+ */
 export function useCarteraReport() {
-  const { data, ...rest } = useApiData(() => reportesApi.getCartera(), [], false, 0, ['cobros']);
+  const { data, ...rest } = useApiData(() => reportesApi.getCartera(), [], false, 0, [
+    'cobros',
+    'recibos-de-caja',
+    'contracts',
+  ]);
   return { report: data, ...rest };
 }
 

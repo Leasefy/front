@@ -26,9 +26,11 @@ export default function CarteraPage() {
           <h1 className="text-h2 text-fg">
             Cartera
           </h1>
+          {/* 🔴 Las mismas palabras que la franja y que «Cartera por
+              concepto»: deuda no es cartera, y vencer no es estar en mora. */}
           <p className="max-w-2xl text-sm text-muted-foreground line-clamp-2">
-            Todo lo pendiente y lo vencido, por edad de la deuda. Lo que todavía
-            no vence va aparte: no es mora.
+            La deuda del contrato, partida en tres: lo que todavía no vence, lo
+            vencido dentro del plazo y la cartera. Sólo la cartera se persigue.
           </p>
         </header>
 

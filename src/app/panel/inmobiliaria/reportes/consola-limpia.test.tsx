@@ -64,21 +64,39 @@ vi.mock('@/lib/hooks/useInmobiliaria', () => {
     ],
     monthlyTrend: [ { month: '2026-08', rate: 80 }, { month: '2026-09', rate: 83.3 } ],
   }
-  const item = (n: number, dias: number) => ({
-    cobroId: 'k' + n, consignacionId: 'c' + n, propertyTitle: 'Apto ' + n, propertyAddress: 'Cra 1',
-    tenantName: 'Inq ' + n, tenantPhone: '3000', propietarioId: 'p', propietarioName: 'Pro',
-    agenteId: 'a', agenteName: 'Ana', month: '2026-09', dueDate: '2026-09-05',
-    totalAmount: 1000000, paidAmount: 0, pendingAmount: 1000000 - n, daysLate: dias,
-    status: 'PENDING', remindersSent: 2, lastReminderDate: null,
+  // Una CUOTA del contrato: la unidad del informe desde el 16-09. `cajon`
+  // dice de qué lado de la frontera está y `diasDeMora` son los días DESPUÉS
+  // del plazo del contrato.
+  const item = (n: number, dias: number, cajon = 'CARTERA') => ({
+    cuotaId: 'q' + n, cobroId: null, contractId: 'ct' + n, contrato: '#' + n,
+    contratoDeLeasefy: null, propertyId: 'i' + n, consignacionId: 'c' + n,
+    propertyTitle: 'Apto ' + n, propertyAddress: 'Cra 1',
+    tenantName: 'Inq ' + n, tenantPhone: '3000', tenantDocument: '10' + n,
+    propietarioId: 'p', propietarioName: 'Pro',
+    agenteId: 'a', agenteName: 'Ana', month: '2026-09', vence: '2026-09-05',
+    estado: 'PENDIENTE', cajon, diasDeMora: dias, diasDePlazo: 3, esVencida: cajon !== 'POR_VENCER',
+    totalAmount: 1000000, paidAmount: 0, pendingAmount: 1000000 - n,
+    remindersSent: 2, lastReminderDate: null,
   })
   const CARTERA = {
-    generatedAt: '2026-09-05T00:00:00.000Z',
-    items: [item(1, 12), item(2, 40), item(3, 0)],
-    summary: { totalPending: 3000000, bucket0to30: 1000000, bucket31to60: 1000000, bucket61to90: 0, bucket90plus: 0 },
+    generadoEn: '2026-09-05T00:00:00.000Z',
+    hoy: '2026-09-05',
+    items: [item(1, 12), item(2, 40), item(3, 0, 'POR_VENCER')],
+    summary: {
+      deudaTotalCop: 2999994, porVencerCop: 999997, vencidaEnPlazoCop: 0,
+      carteraCop: 1999997, carteraVivaCop: 1999997, enSiniestroCop: 0,
+      bucket0to30: 999999, bucket31to60: 999998, bucket61to90: 0, bucket90plus: 0,
+      cuotas: 3, cuotasPorVencer: 1, cuotasVencidasEnPlazo: 0, cuotasEnCartera: 2,
+      cuotasEnSiniestro: 0,
+    },
     byMonth: [
-      { month: '2026-08', total: 5000000, collected: 4000000, overdue: 1000000, collectionRate: 80 },
-      { month: '2026-09', total: 5000000, collected: 2000000, overdue: 3000000, collectionRate: 40 },
+      { month: '2026-08', total: 5000000, collected: 4000000, overdue: 1000000, cuotas: 5, collectionRate: 80 },
+      { month: '2026-09', total: 5000000, collected: 2000000, overdue: 3000000, cuotas: 5, collectionRate: 40 },
     ],
+    siniestros: { cantidad: 0, totalCop: 0, diasParaSiniestro: 30, items: [] },
+    sinCamino: { sinInmueble: 0, sinMandato: 0, sinPropietario: 0, sinAgente: 0, sinDireccion: 0, sinTelefono: 0 },
+    contratosSinCuotas: 0,
+    avisos: [],
   }
   const COMISIONES = {
     generatedAt: '2026-09-05T00:00:00.000Z', period: '2026-09',

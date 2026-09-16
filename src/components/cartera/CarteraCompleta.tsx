@@ -109,7 +109,13 @@ import {
 } from '@/components/ui/table'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
-import { CarteraTable, aDondeLleva } from '@/components/cartera/CarteraTable'
+import {
+  CarteraTable,
+  ORDEN_POR_DEFECTO,
+  aDondeLleva,
+  ordenarCartera,
+  type OrdenDeCartera,
+} from '@/components/cartera/CarteraTable'
 import { TablaDeSiniestros } from '@/components/cartera/EnSiniestro'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useCarteraReport } from '@/lib/hooks/useInmobiliaria'
@@ -201,15 +207,28 @@ export function CarteraCompleta() {
   )
   const sinReglasDeMora = report?.sinReglasDeMora === true || faltanReglasDeMora(todas)
 
+  /*
+   * 🔴 El orden va ANTES del paginado (prueba en navegador, 16-09): la tabla
+   * ordenaba sólo las diez filas de su página y `todas` pone los siniestros al
+   * final, así que la página 1 decía «lo más vencido arriba» con cuotas de 27
+   * días mientras las de 253 quedaban en la página 74 —y una misma cuota de
+   * julio de un contrato caía en la página 2, detrás de su cuota por vencer de
+   * noviembre—.
+   */
+  const [orden, setOrden] = useState<OrdenDeCartera>(ORDEN_POR_DEFECTO)
   const deudas = useMemo(
     () =>
-      filtrarCartera(todas, {
-        cajon,
-        edad,
-        busqueda,
-        propietarioId: propietario ? propietario.id : undefined,
-      }),
-    [todas, cajon, edad, busqueda, propietario],
+      ordenarCartera(
+        filtrarCartera(todas, {
+          cajon,
+          edad,
+          busqueda,
+          propietarioId: propietario ? propietario.id : undefined,
+        }),
+        orden.campo,
+        orden.sentido,
+      ),
+    [todas, cajon, edad, busqueda, propietario, orden],
   )
   const propietarios = useMemo(
     () => filtrarPropietarios(porPropietario(filtrarCartera(todas, { cajon, edad })), busqueda),
@@ -227,7 +246,7 @@ export function CarteraCompleta() {
    * un tramo estando en la página 4 deja la tabla en blanco y se lee como
    * «no hay nada». Tres hooks porque son tres listas de forma distinta.
    */
-  const clave = `${vista}|${cajon ?? ''}|${edad ?? ''}|${busqueda}|${propietario ? (propietario.id ?? 'null') : ''}`
+  const clave = `${vista}|${cajon ?? ''}|${edad ?? ''}|${busqueda}|${propietario ? (propietario.id ?? 'null') : ''}|${orden.campo}|${orden.sentido}`
   const pagDeudas = useTablePagination(deudas, { resetKey: clave })
   const pagPropietarios = useTablePagination(propietarios, { resetKey: clave })
   const pagCasos = useTablePagination(casos, { resetKey: clave })
@@ -583,6 +602,8 @@ export function CarteraCompleta() {
           {vista === 'deudas' ? (
             <CarteraTable
               items={pagDeudas.pageItems}
+              orden={orden}
+              onOrdenar={setOrden}
               /* La fila lleva a donde lleva el botón: al cobro si existe, y si
                  no al contrato, que es de donde nace la deuda. */
               onVerCobro={(i) => router.push(aDondeLleva(i))}

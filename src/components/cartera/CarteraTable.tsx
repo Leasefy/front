@@ -97,6 +97,29 @@ const VOLVER_A = '/panel/inmobiliaria/pagos/cartera'
 export type CampoDeOrdenDeCartera = 'inquilino' | 'mes' | 'debe' | 'total' | 'estado'
 type Sentido = 'asc' | 'desc'
 
+/** Cómo está ordenada la tabla. Por defecto, lo más vencido arriba. */
+export interface OrdenDeCartera {
+  campo: CampoDeOrdenDeCartera
+  sentido: Sentido
+}
+
+export const ORDEN_POR_DEFECTO: OrdenDeCartera = { campo: 'estado', sentido: 'desc' }
+
+/**
+ * El orden que sigue al tocar un encabezado: el mismo campo invierte el
+ * sentido; uno nuevo arranca A→Z si es el nombre y de mayor a menor si no
+ * (más mora, más plata, más viejo primero).
+ */
+export function siguienteOrden(
+  actual: OrdenDeCartera,
+  campo: CampoDeOrdenDeCartera,
+): OrdenDeCartera {
+  if (campo === actual.campo) {
+    return { campo, sentido: actual.sentido === 'asc' ? 'desc' : 'asc' }
+  }
+  return { campo, sentido: campo === 'inquilino' ? 'asc' : 'desc' }
+}
+
 /** Cuántas columnas tiene la tabla: el vacío las abarca todas. */
 export const COLUMNAS_DE_CARTERA = 9
 
@@ -161,29 +184,35 @@ export interface CarteraTableProps {
   onVerCobro?: (item: CarteraItem) => void
   /** El vacío de esta pantalla (`<SinDatos>`), pintado dentro del cuerpo. */
   vacio?: React.ReactNode
+  /**
+   * El orden, cuando lo lleva quien pagina. 🔴 Con paginado, ordenar sólo las
+   * filas de la página es ordenar al azar: `items` llega ya recortado y lo más
+   * vencido puede estar en la página 80. Quien pagina ordena la lista ENTERA
+   * con `ordenarCartera` y le pasa acá el orden para que los encabezados lo
+   * muestren y lo cambien.
+   */
+  orden?: OrdenDeCartera
+  onOrdenar?: (orden: OrdenDeCartera) => void
 }
 
-export function CarteraTable({ items, onVerCobro, vacio }: CarteraTableProps) {
+export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar }: CarteraTableProps) {
   const { t } = useI18n()
   /*
    * Por defecto, lo más vencido arriba. Una pantalla de cartera se abre para
    * saber a quién hay que ir a buscar YA; el orden en que el back devolvió las
    * filas no contesta eso.
    */
-  const [campo, setCampo] = useState<CampoDeOrdenDeCartera>('estado')
-  const [sentido, setSentido] = useState<Sentido>('desc')
+  const [ordenPropio, setOrdenPropio] = useState<OrdenDeCartera>(ORDEN_POR_DEFECTO)
+  const { campo, sentido } = orden ?? ordenPropio
 
+  // Con el orden controlado las filas ya vienen ordenadas; reordenarlas con el
+  // mismo criterio (estable) no las mueve.
   const ordenados = useMemo(() => ordenarCartera(items, campo, sentido), [items, campo, sentido])
 
   const ordenarPor = (siguiente: CampoDeOrdenDeCartera) => {
-    if (siguiente === campo) {
-      setSentido((s) => (s === 'asc' ? 'desc' : 'asc'))
-      return
-    }
-    setCampo(siguiente)
-    // El nombre se lee A→Z; lo demás interesa de mayor a menor (más mora, más
-    // plata, más viejo primero).
-    setSentido(siguiente === 'inquilino' ? 'asc' : 'desc')
+    const nuevo = siguienteOrden({ campo, sentido }, siguiente)
+    if (onOrdenar) onOrdenar(nuevo)
+    if (!orden) setOrdenPropio(nuevo)
   }
 
   const Ordenable = ({

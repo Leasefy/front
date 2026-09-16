@@ -88,12 +88,8 @@ import {
   type AlertaDescrita,
   type MesAnterior,
 } from '@/lib/contabilidad/alertas';
-import {
-  LibroDemasiadoGrande,
-  csvDeAsientos,
-  nombreDelCsv,
-  todosLosAsientos,
-} from '@/lib/contabilidad/csv';
+// Sólo el nombre del archivo: armarlo ya no es tarea del navegador (CT3).
+import { nombreDelCsv } from '@/lib/contabilidad/csv';
 import {
   diaLegible,
   hoy,
@@ -447,15 +443,23 @@ function ParaElContador() {
   const descargar = async () => {
     setBajando(true);
     try {
-      const asientos = await todosLosAsientos(
-        (f) => contabilidadApi.asientos.listar(f),
-        { desde: rango.desde || undefined, hasta: rango.hasta || undefined },
-      );
-      if (asientos.length === 0) {
-        toast.warning('No hay asientos en ese rango: el archivo saldría vacío.');
-        return;
-      }
-      const blob = new Blob([csvDeAsientos(asientos)], { type: 'text/csv;charset=utf-8' });
+      /*
+       * 🔴 CT3 (auditoría 13-09): el libro lo arma el SERVIDOR y baja por
+       * partes. Acá se pedían todas las páginas de `GET /asientos`, se
+       * juntaban en memoria del navegador y se concatenaba un string; con un
+       * año de una inmobiliaria mediana son decenas de miles de movimientos, y
+       * había un tope que dejaba el libro INCOMPLETO justo cuando el rango es
+       * largo — que es cuando el contador lo pide.
+       *
+       * Lo que se pierde a cambio, y es a propósito: ya no se puede decir
+       * «1.240 asientos en el archivo» antes de bajarlo, porque contarlos
+       * obligaría a traerlos. Prometer un número que no se midió es peor que
+       * no darlo, así que el aviso dice lo que sí se sabe.
+       */
+      const blob = await contabilidadApi.reportes.libroCsv({
+        desde: rango.desde || undefined,
+        hasta: rango.hasta || undefined,
+      });
       const url = URL.createObjectURL(blob);
       const enlace = document.createElement('a');
       enlace.href = url;
@@ -464,17 +468,9 @@ function ParaElContador() {
       enlace.click();
       enlace.remove();
       URL.revokeObjectURL(url);
-      toast.success(
-        asientos.length === 1
-          ? '1 asiento en el archivo.'
-          : `${asientos.length.toLocaleString('es-CO')} asientos en el archivo.`,
-      );
+      toast.success('El libro del rango quedó descargado.');
     } catch (e) {
-      toast.error(
-        e instanceof LibroDemasiadoGrande
-          ? e.message
-          : mensajeDeContabilidad(e, 'No se pudo armar el archivo.'),
-      );
+      toast.error(mensajeDeContabilidad(e, 'No se pudo armar el archivo.'));
     } finally {
       setBajando(false);
     }

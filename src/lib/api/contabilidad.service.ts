@@ -997,6 +997,25 @@ export const contabilidadApi = {
   },
 
   reportes: {
+    /**
+     * El libro del rango en CSV, armado POR EL SERVIDOR (CT3).
+     *
+     * 🔴 Antes el archivo se armaba en el navegador: se pedían todas las
+     * páginas de `GET /asientos`, se juntaban en memoria y se concatenaba un
+     * string — con un tope que dejaba el libro incompleto justo cuando el
+     * rango era largo, que es cuando el contador lo necesita. Ahora la base
+     * ordena y pagina y el archivo baja por partes; acá sólo se recibe el
+     * blob ya hecho.
+     */
+    async libroCsv(filtros: { desde?: string; hasta?: string } = {}): Promise<Blob> {
+      return apiClient.getBlob(
+        conQuery(`${BASE}/reportes/libro.csv`, {
+          desde: filtros.desde,
+          hasta: filtros.hasta,
+        }),
+      );
+    },
+
     async balanceDePrueba(filtros: FiltrosDeBalance = {}): Promise<BalanceDePrueba> {
       return apiClient.get<BalanceDePrueba>(
         conQuery(`${BASE}/reportes/balance-de-prueba`, {

@@ -44,6 +44,10 @@ import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import {
+  erroresDeLaResolucion,
+  hayErrores,
+} from '@/lib/facturacion/errores-de-la-resolucion'
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -134,6 +138,14 @@ export function ResolucionDeFacturacion() {
    * pelado. `ultimoNumeroUsado` tampoco: sólo hace falta cuando la inmobiliaria
    * ya gastó parte del rango en otro sistema.
    */
+  /*
+   * 🔴 F5 (auditoría 13-09): lo que está mal se dice AL LADO DEL CAMPO, no en
+   * un toast que se va solo a los cinco segundos justo cuando la persona baja
+   * la vista al formulario. Son las mismas cuatro reglas del back, que las
+   * sigue aplicando: esto no lo reemplaza, lo adelanta.
+   */
+  const errores = erroresDeLaResolucion(form)
+
   const completo =
     form.numero.trim() !== '' &&
     form.fechaResolucion !== '' &&
@@ -143,7 +155,7 @@ export function ResolucionDeFacturacion() {
     form.vigenteHasta !== ''
 
   async function guardar() {
-    if (!completo) return
+    if (!completo || hayErrores(errores)) return
     setGuardando(true)
     try {
       await facturacionPorMesService.crearResolucion({
@@ -415,7 +427,19 @@ export function ResolucionDeFacturacion() {
               onChange={(e) => campo('desde')(e.target.value)}
               placeholder="1"
               data-testid="resolucion-campo-desde"
+              aria-invalid={errores.desde ? true : undefined}
+              aria-describedby={errores.desde ? 'resolucion-error-desde' : undefined}
             />
+            {errores.desde ? (
+              <p
+                id="resolucion-error-desde"
+                role="alert"
+                className="text-caption text-danger"
+                data-testid="resolucion-error-desde"
+              >
+                {errores.desde}
+              </p>
+            ) : null}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="resolucion-hasta">Rango hasta</Label>
@@ -426,7 +450,19 @@ export function ResolucionDeFacturacion() {
               onChange={(e) => campo('hasta')(e.target.value)}
               placeholder="5000"
               data-testid="resolucion-campo-hasta"
+              aria-invalid={errores.hasta ? true : undefined}
+              aria-describedby={errores.hasta ? 'resolucion-error-hasta' : undefined}
             />
+            {errores.hasta ? (
+              <p
+                id="resolucion-error-hasta"
+                role="alert"
+                className="text-caption text-danger"
+                data-testid="resolucion-error-hasta"
+              >
+                {errores.hasta}
+              </p>
+            ) : null}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="resolucion-vigente-desde">Vigente desde</Label>
@@ -436,7 +472,19 @@ export function ResolucionDeFacturacion() {
               value={form.vigenteDesde}
               onChange={(e) => campo('vigenteDesde')(e.target.value)}
               data-testid="resolucion-campo-vigente-desde"
+              aria-invalid={errores.vigenteDesde ? true : undefined}
+              aria-describedby={errores.vigenteDesde ? 'resolucion-error-vigente-desde' : undefined}
             />
+            {errores.vigenteDesde ? (
+              <p
+                id="resolucion-error-vigente-desde"
+                role="alert"
+                className="text-caption text-danger"
+                data-testid="resolucion-error-vigente-desde"
+              >
+                {errores.vigenteDesde}
+              </p>
+            ) : null}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="resolucion-vigente-hasta">Vigente hasta</Label>
@@ -446,14 +494,26 @@ export function ResolucionDeFacturacion() {
               value={form.vigenteHasta}
               onChange={(e) => campo('vigenteHasta')(e.target.value)}
               data-testid="resolucion-campo-vigente-hasta"
+              aria-invalid={errores.vigenteHasta ? true : undefined}
+              aria-describedby={errores.vigenteHasta ? 'resolucion-error-vigente-hasta' : undefined}
             />
+            {errores.vigenteHasta ? (
+              <p
+                id="resolucion-error-vigente-hasta"
+                role="alert"
+                className="text-caption text-danger"
+                data-testid="resolucion-error-vigente-hasta"
+              >
+                {errores.vigenteHasta}
+              </p>
+            ) : null}
           </div>
         </div>
 
         <div className="flex justify-end">
           <Button
             hideArrow
-            disabled={!completo || guardando}
+            disabled={!completo || guardando || hayErrores(errores)}
             onClick={() => void guardar()}
             data-testid="resolucion-guardar"
           >

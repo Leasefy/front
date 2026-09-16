@@ -343,3 +343,66 @@ describe('ResolucionDeFacturacion', () => {
     expect(toastOk).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * 🔴 F5 (auditoría 13-09): lo que está mal se dice AL LADO DEL CAMPO. El toast
+ * del back se iba solo a los cinco segundos, justo cuando la persona baja la
+ * vista al formulario para corregir, y nunca decía cuál de los seis campos era.
+ */
+describe('ResolucionDeFacturacion · lo que está mal, al lado del campo', () => {
+  async function llenar(over: Record<string, string> = {}) {
+    await montar();
+    const valores: Record<string, string> = {
+      'resolucion-campo-numero': '18764003394379',
+      'resolucion-campo-fecha': '2026-01-15',
+      'resolucion-campo-desde': '1',
+      'resolucion-campo-hasta': '5000',
+      'resolucion-campo-vigente-desde': '2026-01-15',
+      'resolucion-campo-vigente-hasta': '2028-01-15',
+      ...over,
+    };
+    for (const [testid, valor] of Object.entries(valores)) {
+      if (host.querySelector(`[data-testid="${testid}"]`)) {
+        await act(async () => escribir(testid, valor));
+      }
+    }
+  }
+
+  it('🔴 un rango que termina antes de empezar se dice en el campo y NO se manda', async () => {
+    await llenar({ 'resolucion-campo-desde': '5000', 'resolucion-campo-hasta': '10' });
+
+    const error = q('[data-testid="resolucion-error-hasta"]');
+    expect(error).not.toBeNull();
+    expect(error?.textContent).toContain('termina antes de empezar');
+    expect(error?.getAttribute('role')).toBe('alert');
+    expect(
+      (q('[data-testid="resolucion-guardar"]') as HTMLButtonElement | null)?.disabled,
+    ).toBe(true);
+
+    await act(async () => {
+      (q('[data-testid="resolucion-guardar"]') as HTMLButtonElement | null)?.click();
+    });
+    // No se gastó un viaje al back para recibir un aviso que se borra solo.
+    expect(crearMock).not.toHaveBeenCalled();
+  });
+
+  it('🔴 una vigencia que termina antes de empezar, igual', async () => {
+    await llenar({
+      'resolucion-campo-vigente-desde': '2028-01-15',
+      'resolucion-campo-vigente-hasta': '2026-01-15',
+    });
+    expect(q('[data-testid="resolucion-error-vigente-hasta"]')?.textContent).toContain(
+      'La vigencia termina antes de empezar',
+    );
+    expect(crearMock).not.toHaveBeenCalled();
+  });
+
+  it('bien escrita, no hay ningún aviso y el botón deja guardar', async () => {
+    await llenar();
+    expect(q('[data-testid="resolucion-error-hasta"]')).toBeNull();
+    expect(q('[data-testid="resolucion-error-vigente-hasta"]')).toBeNull();
+    expect(
+      (q('[data-testid="resolucion-guardar"]') as HTMLButtonElement | null)?.disabled,
+    ).toBe(false);
+  });
+});

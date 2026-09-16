@@ -717,11 +717,35 @@ export interface Dispersion {
  * Sale del MISMO cálculo que `generate`: lo que se muestra antes de apretar el
  * botón es lo que se va a guardar.
  */
+/**
+ * Por qué un mes no deja nada que girar, contado por el back en las cuotas del
+ * lado PROPIETARIO (`dispersiones.service.ts::porQueElMesVieneVacio`). La
+ * dispersión sale de esas cuotas —no de los cobros pagados— desde el 16-09.
+ */
+export interface PorQueElMesVieneVacio {
+  /** Cuotas de propietario de ese mes, en cualquier estado. */
+  cuotasDelMes: number;
+  /** De ésas, las que ya quedaron en una dispersión (generada o girada). */
+  enUnaDispersion: number;
+  /** Sin dispersión, vivas y con saldo: las que se girarían. */
+  porGirar: number;
+  /** Sin dispersión y del sistema del que se migró. */
+  delSistemaAnterior: number;
+  /** Contratos vigentes (ACTIVE o SIGNED) de la inmobiliaria. */
+  contratosVigentes: number;
+}
+
 export interface VistaPreviaDeDispersiones {
   month: string;
   totalPropietarios: number;
   /** Los que ya tienen dispersión de este mes: generar los saltaría. */
   yaGenerados: number;
+  /**
+   * Sin un solo borrador, la razón contada; con alguno, `null`. Opcional: un
+   * back anterior al 16-09 no lo manda, y entonces la pantalla dice la frase
+   * general.
+   */
+  vacio?: PorQueElMesVieneVacio | null;
   totalAGirar: number;
   totalComisiones: number;
   propietarios: {

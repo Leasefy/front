@@ -824,7 +824,7 @@ function DispersionesContent() {
                 queSon={hayFiltros ? 'resultados' : 'dispersiones'}
                 icono={PaperPlaneTilt}
                 titulo={`Todavía no hay dispersiones de ${monthDisplay}`}
-                descripcion="Se arman con los cobros pagados del mes. Genéralas desde el asistente cuando el mes tenga recaudo."
+                descripcion="Se arman con la cuota del propietario de cada contrato, haya pagado el inquilino o no. Genéralas desde el asistente."
                 crear={{
                   label: t('inmobiliaria.dispersiones.wizard.title'),
                   href: '/panel/inmobiliaria/pagos/dispersiones/generar',

@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
-import type { Dispersion } from '@/lib/types/inmobiliaria';
+import type { Dispersion, PorQueElMesVieneVacio } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { useDispersiones } from '@/lib/hooks/useInmobiliaria';
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
@@ -35,6 +35,7 @@ import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { AvisoLiquidacionFrenada } from './AvisoLiquidacionFrenada';
 import { leerLiquidacionFrenada, motivoLegible } from '@/lib/api/dispersiones-errores';
+import { motivoDelMesVacio } from './dispersion-mes-vacio';
 
 /**
  * Lo que el asistente dice cuando el back no liquidó, en tres escalones:
@@ -72,6 +73,20 @@ function FalloDelAsistente({
       onReintentar={onReintentar}
       enmarcado
     />
+  );
+}
+
+/** El vacío del paso 2, con la razón que contó el back. */
+function MesSinGiros({ motivo }: { motivo: { titulo: string; detalle: string } }) {
+  return (
+    <div
+      className="p-12 text-center rounded-lg border border-dashed border-border"
+      data-testid="asistente-mes-vacio"
+    >
+      <CurrencyCircleDollar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+      <h3 className="text-lg font-semibold text-foreground mb-2">{motivo.titulo}</h3>
+      <p className="text-muted-foreground">{motivo.detalle}</p>
+    </div>
   );
 }
 
@@ -123,7 +138,9 @@ interface DispersionDraft {
 
 const STEPS = [
   { id: 1, label: 'Mes', icon: Calendar },
-  { id: 2, label: 'Cobros', icon: CurrencyCircleDollar },
+  // «Cobros» nombraba una fuente que ya no es: el giro sale de la cuota del
+  // propietario de cada contrato (16-09), haya pagado el inquilino o no.
+  { id: 2, label: 'Cuotas', icon: CurrencyCircleDollar },
   { id: 3, label: 'Comisiones', icon: Percent },
   { id: 4, label: 'Netos', icon: Calculator },
   // «Aprobar» prometía una aprobación que no ocurría en ninguna parte: el paso
@@ -221,6 +238,8 @@ export function DispersionWizard({
   const [errorAlGenerar, setErrorAlGenerar] = useState<unknown>(null);
   /** Cuántas ya existen: sin esto, «no hay nada» tapa «ya se generaron». */
   const [yaGenerados, setYaGenerados] = useState(0);
+  /** Por qué el mes vino vacío, contado por el back en las cuotas. */
+  const [vacio, setVacio] = useState<PorQueElMesVieneVacio | null>(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -232,6 +251,7 @@ export function DispersionWizard({
       .then((previa) => {
         if (cancelado) return;
         setYaGenerados(previa.yaGenerados);
+        setVacio(previa.vacio ?? null);
         const borradores = previa.propietarios
           .filter((p) => !p.yaExiste)
           .map((p) => ({
@@ -408,7 +428,7 @@ export function DispersionWizard({
           description:
             resultado.skipped > 0
               ? `Ya existían las ${resultado.skipped} dispersiones de ${formatMonth(state.month)}.`
-              : `No hay cobros pagados en ${formatMonth(state.month)}.`,
+              : `No quedaba ninguna cuota de propietario por girar en ${formatMonth(state.month)}.`,
         });
       } else {
         toast.success('Dispersiones generadas correctamente', {
@@ -538,11 +558,11 @@ export function DispersionWizard({
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-foreground mb-2">
-                Cobros Recibidos
+                Cuotas del propietario
               </h3>
               <p className="text-sm text-muted-foreground">
-                Cobros pagados en {formatMonth(state.month)} que se incluiran en las
-                dispersiones
+                Lo que le toca a cada propietario en {formatMonth(state.month)}, leído de la
+                cuota de su contrato. No depende de que el inquilino haya pagado.
               </p>
             </div>
 
@@ -555,7 +575,7 @@ export function DispersionWizard({
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Total Recaudado</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Canon del mes</p>
                 <p className="text-xl font-semibold text-foreground tabular-nums">
                   {formatCurrency(totals.totalCollected)}
                 </p>
@@ -607,11 +627,13 @@ export function DispersionWizard({
               ))}
             </div>
 
-            {/* Empty state */}
             {/* Tres estados, no uno: cargando, error y vacío dicen cosas
-                distintas, y el vacío tiene DOS causas — o nadie pagó, o ya se
-                generaron todas. Meterlas en el mismo cartel manda a buscar el
-                problema donde no está. */}
+                distintas. Y el vacío dice su causa VERDADERA, contada por el
+                back en las cuotas del propietario (`motivoDelMesVacio`): sin
+                contratos vigentes, sin cuota ese mes, ya en una dispersión, del
+                sistema anterior… Hasta el 16-09 decía «Sin cobros pagados»,
+                una causa que dejó de existir cuando el giro pasó a salir de la
+                cuota, y mandaba a esperar un pago que no cambiaba nada. */}
             {cargandoPrevia ? (
               <div className="p-12 text-center rounded-lg border border-dashed border-border">
                 <p className="text-muted-foreground">Calculando…</p>
@@ -623,19 +645,9 @@ export function DispersionWizard({
                 onReintentar={() => setIntentoPrevia((n) => n + 1)}
               />
             ) : state.dispersionDrafts.length === 0 ? (
-              <div className="p-12 text-center rounded-lg border border-dashed border-border">
-                <CurrencyCircleDollar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  {yaGenerados > 0
-                    ? 'Ya están generadas'
-                    : 'Sin cobros pagados'}
-                </h3>
-                <p className="text-muted-foreground">
-                  {yaGenerados > 0
-                    ? `Las ${yaGenerados} dispersiones de ${formatMonth(state.month)} ya existen. Buscalas en la lista.`
-                    : `No hay cobros pagados en ${formatMonth(state.month)}. Elige otro mes o esperá a que se registren pagos.`}
-                </p>
-              </div>
+              <MesSinGiros
+                motivo={motivoDelMesVacio({ mes: state.month, yaGenerados, vacio })}
+              />
             ) : null}
           </div>
         );
@@ -655,7 +667,7 @@ export function DispersionWizard({
             {/* Summary Stats */}
             <div className="flex items-center gap-8 pb-4 border-b border-border">
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Recaudado</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Canon</p>
                 <p className="text-xl font-semibold text-foreground tabular-nums">
                   {formatCurrency(totals.totalCollected)}
                 </p>

@@ -31,8 +31,10 @@ vi.mock('next/link', () => ({
 import {
   BarraDeInquilinos,
   InquilinosTable,
+  RenglonDeArriendo,
   canonVigente,
   arriendoPrincipal,
+  diaDeVigencia,
   ordenarInquilinos,
 } from './InquilinosTable'
 
@@ -139,6 +141,30 @@ describe('<InquilinosTable>', () => {
     expect(texto).toContain('2025-09-04')
     // Con un solo arriendo no hay nada que desplegar.
     expect(filas()[0].querySelector('[data-testid="inquilino-desplegar"]')).toBeNull()
+  })
+
+  /*
+   * El back manda la vigencia a medianoche UTC (así serializa Prisma un
+   * `@db.Date`). Formateada como instante, en Bogotá salía el día anterior:
+   * «4 de jun» en la lista y en el cajón para un arriendo que empieza el 5.
+   * A `formatDate` tiene que llegarle sólo el día.
+   */
+  it('la vigencia llega a formatDate como DÍA, aunque el back la mande a medianoche UTC', () => {
+    expect(diaDeVigencia('2026-06-05T00:00:00.000Z')).toBe('2026-06-05')
+    expect(diaDeVigencia('2026-06-05')).toBe('2026-06-05')
+
+    montar([persona({ arriendos: [arriendo({ desde: '2026-06-05T00:00:00.000Z', hasta: '2027-06-05T00:00:00.000Z' })] })])
+    const fila = filas()[0].textContent ?? ''
+    expect(fila).toContain('2026-06-05')
+    expect(fila).toContain('2027-06-05')
+    expect(fila).not.toContain('T00:00')
+  })
+
+  it('el renglón del arriendo (el del cajón del inquilino) también pinta el día', () => {
+    montarEn(<RenglonDeArriendo arriendo={arriendo({ desde: '2026-05-20T00:00:00.000Z', hasta: '2027-05-20T00:00:00.000Z' })} />)
+    const texto = container!.textContent ?? ''
+    expect(texto).toContain('2026-05-20 — 2027-05-20')
+    expect(texto).not.toContain('T00:00')
   })
 
   it('con varios arriendos la fila resume y el despliegue los muestra TODOS', () => {

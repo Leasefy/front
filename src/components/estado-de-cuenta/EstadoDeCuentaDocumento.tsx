@@ -27,6 +27,7 @@ import { ContratoDelEstado } from './ContratoDelEstado';
 import { ResumenDelEstado } from './ResumenDelEstado';
 import { fechaLegible } from './filas';
 import { useTextoDelEstado } from './textos';
+import { interesesDelEstado } from './intereses';
 
 /**
  * Reglas de impresión. Selectores REALES del shell del panel
@@ -116,6 +117,11 @@ export interface EstadoDeCuentaDocumentoProps {
   sinPaginar?: boolean;
   /** Qué filtros hay puestos, en palabras. Sale bajo el título. */
   nota?: string;
+  /**
+   * A dónde se configuran las reglas de mora. Sólo el panel lo pasa: el
+   * cliente no ve el motivo interno de «cuotas en mora sin intereses».
+   */
+  reglasDeMoraHref?: string;
   className?: string;
 }
 
@@ -124,10 +130,13 @@ export function EstadoDeCuentaDocumento({
   hoy,
   sinPaginar = false,
   nota,
+  reglasDeMoraHref,
   className,
 }: EstadoDeCuentaDocumentoProps) {
   const t = useTextoDelEstado();
   const emisor = doc.inmobiliaria;
+  const intereses = interesesDelEstado(doc);
+  const conIntereses = Boolean(intereses && intereses.liquidado > 0);
 
   return (
     <article
@@ -217,6 +226,7 @@ export function EstadoDeCuentaDocumento({
               contrato={c}
               hoy={hoy}
               sinPaginar={sinPaginar}
+              reglasDeMoraHref={reglasDeMoraHref}
             />
           ))}
         </div>
@@ -244,11 +254,42 @@ export function EstadoDeCuentaDocumento({
               </p>
               <p
                 data-testid="total-general"
-                className="font-mono text-2xl font-medium tabular-nums text-fg"
+                className={cn(
+                  'font-mono tabular-nums',
+                  conIntereses
+                    ? 'text-body text-fg-muted'
+                    : 'text-2xl font-medium text-fg',
+                )}
               >
                 {formatCurrency(doc.totales.restaPorPagar)}
               </p>
             </div>
+            {conIntereses && intereses && (
+              <>
+                <div className="text-right">
+                  <p className="text-label uppercase tracking-wide text-fg-subtle">
+                    {t('estadoDeCuenta.interesesDeMora')}
+                  </p>
+                  <p
+                    data-testid="intereses-general"
+                    className="font-mono text-body tabular-nums text-fg-muted"
+                  >
+                    {formatCurrency(intereses.pendiente)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-label uppercase tracking-wide text-fg-subtle">
+                    {t('estadoDeCuenta.conIntereses')}
+                  </p>
+                  <p
+                    data-testid="total-general-con-intereses"
+                    className="font-mono text-2xl font-medium tabular-nums text-fg"
+                  >
+                    {formatCurrency(intereses.restaPorPagarConIntereses)}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

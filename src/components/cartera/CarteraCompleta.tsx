@@ -46,6 +46,15 @@
  *      (Por deuda · Por propietario · En siniestro) y la búsqueda. Tocar un
  *      propietario abre sus deudas; el filtro queda como chip.
  *
+ * ── 🔴 El interés de mora, aparte del capital (2026-09-16) ──────────────────
+ *
+ * La prefactura cobraba un interés que esta pantalla no mostraba. Ahora cada
+ * deuda trae su interés —liquidado por el back con la MISMA regla que la
+ * prefactura y el estado de cuenta— y la franja lo dice debajo de la cifra que
+ * corresponde: «+ $X de intereses». Las cifras grandes siguen siendo CAPITAL:
+ * los cajones y los tramos son una partición del capital y no se tocan. Medido
+ * en QA el 16-09: $3.003,9 M de cartera y $546,6 M de interés encima.
+ *
  * ── Lo que la pantalla se niega a hacer ─────────────────────────────────────
  *
  * 1. **Sumar en un solo número lo que no vence, lo vencido en plazo y la
@@ -64,6 +73,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   CurrencyCircleDollar,
@@ -111,6 +121,12 @@ import {
   type Gravedad,
 } from '@/lib/cartera/edades'
 import { cn } from '@/lib/utils'
+import {
+  RUTA_DE_REGLAS_DE_MORA,
+  TEXTO_DE_MORA,
+  faltanReglasDeMora,
+  sumarIntereses,
+} from '@/components/cartera/interes-de-mora'
 
 type Vista = 'deudas' | 'propietarios' | 'siniestros'
 
@@ -152,6 +168,22 @@ export function CarteraCompleta() {
   const cartera = useMemo(() => discriminar(items), [items])
   const montoDelCajon = (cual: Cajon) =>
     cartera.cajones.find((c) => c.cajon === cual)!
+  /*
+   * El interés, de las MISMAS filas que la franja, igual que los montos: así
+   * la cifra y las filas que se ven al tocarla no pueden discrepar.
+   */
+  const interesDeLaCartera = useMemo(
+    () => sumarIntereses(cartera.cajones.find((c) => c.cajon === 'CARTERA')?.items ?? []),
+    [cartera],
+  )
+  const interesTotal = useMemo(() => sumarIntereses(items), [items])
+  const interesEnSiniestro = useMemo(
+    () => sumarIntereses(siniestros?.items ?? []),
+    [siniestros],
+  )
+  const sinReglasDeMora =
+    (report as { sinReglasDeMora?: boolean } | undefined)?.sinReglasDeMora === true ||
+    faltanReglasDeMora([...items, ...(siniestros?.items ?? [])])
 
   const deudas = useMemo(
     () =>
@@ -280,6 +312,14 @@ export function CarteraCompleta() {
             <p className="mt-0.5 text-xs text-fg-muted">
               {items.length} {items.length === 1 ? 'cuota' : 'cuotas'} · nace con el contrato
             </p>
+            {interesTotal > 0 ? (
+              <p
+                className="mt-0.5 font-mono text-xs tabular-nums text-fg-muted"
+                data-testid="resumen-deuda-con-intereses"
+              >
+                {TEXTO_DE_MORA.conIntereses(formatCurrency(cartera.deudaTotal + interesTotal))}
+              </p>
+            ) : null}
           </button>
 
           {/*
@@ -313,6 +353,17 @@ export function CarteraCompleta() {
                   {formatCurrency(suyo.monto)}
                 </p>
                 <p className="mt-0.5 text-xs text-fg-muted">{QUE_SIGNIFICA_EL_CAJON[cual]}</p>
+                {/* El interés corre SÓLO sobre la cartera: los otros dos cajones
+                    no lo llevan, y un «+ $0» ahí sería ruido. */}
+                {cual === 'CARTERA' && interesDeLaCartera > 0 ? (
+                  <p
+                    className="mt-0.5 font-mono text-xs tabular-nums text-danger"
+                    data-testid="resumen-intereses-cartera"
+                    title={TEXTO_DE_MORA.explicacion}
+                  >
+                    {TEXTO_DE_MORA.masIntereses(formatCurrency(interesDeLaCartera))}
+                  </p>
+                ) : null}
               </button>
             )
           })}
@@ -338,6 +389,11 @@ export function CarteraCompleta() {
                   : `${siniestros.cantidad} ${siniestros.cantidad === 1 ? 'caso' : 'casos'}`}
                 {' · '}a los {siniestros.diasParaSiniestro} días de mora
               </p>
+              {interesEnSiniestro > 0 ? (
+                <p className="mt-0.5 font-mono text-xs tabular-nums text-danger">
+                  {TEXTO_DE_MORA.masIntereses(formatCurrency(interesEnSiniestro))}
+                </p>
+              ) : null}
             </button>
           ) : null}
         </div>
@@ -353,11 +409,24 @@ export function CarteraCompleta() {
             data-testid="avisos-de-la-cartera"
           >
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
-            <ul className="space-y-1">
-              {avisos.map((aviso) => (
-                <li key={aviso}>{aviso}</li>
-              ))}
-            </ul>
+            <div className="space-y-2">
+              <ul className="space-y-1">
+                {avisos.map((aviso) => (
+                  <li key={aviso}>{aviso}</li>
+                ))}
+              </ul>
+              {/* Sin reglas de mora el interés sale en cero y NO porque no haya
+                  mora: se lleva a donde se arregla. */}
+              {sinReglasDeMora ? (
+                <Link
+                  href={RUTA_DE_REGLAS_DE_MORA}
+                  className="inline-block font-medium underline underline-offset-4"
+                  data-testid="cartera-configurar-reglas"
+                >
+                  {TEXTO_DE_MORA.configurarReglas}
+                </Link>
+              ) : null}
+            </div>
           </div>
         )}
 

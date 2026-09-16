@@ -63,6 +63,15 @@
  *    amortización (195 en dev): su deuda no está en estas cifras, y un cero por
  *    omisión es exactamente el defecto que este cambio vino a arreglar.
  *
+ * ── 🔴 El interés de mora, en su columna (2026-09-16) ───────────────────────
+ *
+ * Los conceptos de la cuota son lo PACTADO: canon, administración, impuestos.
+ * El interés de mora no está en la cuota —es una lectura del día— y por eso no
+ * salía en ninguna columna, mientras la prefactura sí lo cobraba. Ahora va en
+ * «Intereses», liquidado por el back con la misma regla que la prefactura y el
+ * estado de cuenta, y «Debe» (capital) dice debajo cuánto es con intereses.
+ * Una cuota pagada en mora aparece con capital en cero y su interés.
+ *
  * ── 🔴 De cada fila se sale al ESTADO DE CUENTA (Nico, 2026-09-16) ──────────
  *
  * «Todo funciona alrededor del estado de cuenta del contrato.» La pantalla del
@@ -117,6 +126,13 @@ import {
   sumarTotales,
 } from '@/lib/cartera/conceptos'
 import { cn } from '@/lib/utils'
+import {
+  RUTA_DE_REGLAS_DE_MORA,
+  TEXTO_DE_MORA,
+  faltanReglasDeMora,
+  interesDe,
+  sumarIntereses,
+} from '@/components/cartera/interes-de-mora'
 
 /**
  * La columna del saldo queda PEGADA al borde derecho.
@@ -162,6 +178,44 @@ function Abono({ valor }: { valor: number }) {
   )
 }
 
+/** El interés de la fila o del total. Sin mora, un guion; sin reglas, se dice. */
+function Interes({ valor, sinReglas, pagadaEnMora }: {
+  valor: number
+  sinReglas?: boolean
+  pagadaEnMora?: boolean
+}) {
+  if (valor > 0) {
+    return (
+      <>
+        <span className="font-mono tabular-nums text-danger">{formatCurrency(valor)}</span>
+        {pagadaEnMora ? (
+          <span className="mt-0.5 block text-xs font-normal text-fg-muted">
+            {TEXTO_DE_MORA.pagadaEnMora}
+          </span>
+        ) : null}
+      </>
+    )
+  }
+  if (sinReglas) {
+    return <span className="whitespace-nowrap text-xs text-warning">{TEXTO_DE_MORA.sinReglas}</span>
+  }
+  return (
+    <span className="text-fg-subtle" aria-label="cero">
+      —
+    </span>
+  )
+}
+
+/** «$X con intereses», debajo del capital, sólo si hay intereses. */
+function ConIntereses({ capital, interes }: { capital: number; interes: number }) {
+  if (interes <= 0) return null
+  return (
+    <span className="mt-0.5 block text-xs font-normal text-fg-muted">
+      {TEXTO_DE_MORA.conIntereses(formatCurrency(capital + interes))}
+    </span>
+  )
+}
+
 export function CarteraPorConcepto() {
   const { datos, cargando, error, recargar } = useCarteraDeInquilinos()
   const [busqueda, setBusqueda] = useState('')
@@ -174,6 +228,15 @@ export function CarteraPorConcepto() {
     [datos, busqueda, soloEnMora],
   )
   const totalesDeLoVisible = useMemo(() => sumarTotales(inquilinos), [inquilinos])
+  /* El interés de lo visible, de las MISMAS filas que el pie. */
+  const interesDeLoVisible = useMemo(
+    () => sumarIntereses(inquilinos.flatMap((i) => i.filas)),
+    [inquilinos],
+  )
+  const interesTotal = (datos?.totales as { interesCop?: number } | undefined)?.interesCop ?? 0
+  const sinReglasDeMora =
+    (datos as { sinReglasDeMora?: boolean } | undefined)?.sinReglasDeMora === true ||
+    faltanReglasDeMora((datos?.inquilinos ?? []).flatMap((i) => i.filas))
 
   const hayFiltros = busqueda.trim().length > 0 || soloEnMora
   const paginado = useTablePagination(inquilinos, {
@@ -201,8 +264,8 @@ export function CarteraPorConcepto() {
     setSoloEnMora(false)
   }
 
-  /** Inquilino + conceptos + (sin desglose) + «Debe». */
-  const columnas = conceptos.length + (haySinDesglose ? 3 : 2)
+  /** Inquilino + conceptos + (sin desglose) + «Intereses» + «Debe». */
+  const columnas = conceptos.length + (haySinDesglose ? 4 : 3)
 
   return (
     <EstadoDeDatos
@@ -239,6 +302,11 @@ export function CarteraPorConcepto() {
               Abonado {formatCurrency(datos?.totales.abonadoCop ?? 0)} sobre{' '}
               {formatCurrency(datos?.totales.facturadoCop ?? 0)} pactados
             </p>
+            {interesTotal > 0 ? (
+              <p className="mt-0.5 font-mono text-xs tabular-nums text-fg-muted" data-testid="total-deuda-con-intereses">
+                {TEXTO_DE_MORA.conIntereses(formatCurrency((datos?.totales.saldoCop ?? 0) + interesTotal))}
+              </p>
+            ) : null}
           </div>
           {/*
             🔴 Los tres cajones, en el orden en que una deuda los recorre: nace
@@ -278,6 +346,15 @@ export function CarteraPorConcepto() {
             <p className="mt-0.5 text-xs text-fg-muted">
               Pasó el plazo. Es lo único que la cobranza persigue.
             </p>
+            {interesTotal > 0 ? (
+              <p
+                className="mt-0.5 font-mono text-xs tabular-nums text-danger"
+                data-testid="total-intereses"
+                title={TEXTO_DE_MORA.explicacion}
+              >
+                {TEXTO_DE_MORA.masIntereses(formatCurrency(interesTotal))}
+              </p>
+            ) : null}
           </div>
         </div>
 
@@ -292,11 +369,22 @@ export function CarteraPorConcepto() {
             data-testid="avisos-de-la-cartera"
           >
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
-            <ul className="space-y-1">
-              {avisos.map((aviso) => (
-                <li key={aviso}>{aviso}</li>
-              ))}
-            </ul>
+            <div className="space-y-2">
+              <ul className="space-y-1">
+                {avisos.map((aviso) => (
+                  <li key={aviso}>{aviso}</li>
+                ))}
+              </ul>
+              {sinReglasDeMora ? (
+                <Link
+                  href={RUTA_DE_REGLAS_DE_MORA}
+                  className="inline-block font-medium underline underline-offset-4"
+                  data-testid="por-concepto-configurar-reglas"
+                >
+                  {TEXTO_DE_MORA.configurarReglas}
+                </Link>
+              ) : null}
+            </div>
           </div>
         )}
 
@@ -339,6 +427,9 @@ export function CarteraPorConcepto() {
                 {haySinDesglose ? (
                   <TableHead className="whitespace-nowrap text-right">Sin desglose</TableHead>
                 ) : null}
+                <TableHead className="whitespace-nowrap text-right" title={TEXTO_DE_MORA.explicacion}>
+                  {TEXTO_DE_MORA.columnaMoraLiquidadaHoy}
+                </TableHead>
                 <TableHead className={cn('whitespace-nowrap text-right', FIJA, 'bg-bg dark:bg-surface-muted')}>
                   Debe
                 </TableHead>
@@ -375,6 +466,7 @@ export function CarteraPorConcepto() {
               <TableFooter>
                 <TotalesEnPie
                   totales={totalesDeLoVisible}
+                  interes={interesDeLoVisible}
                   conceptos={conceptos}
                   haySinDesglose={haySinDesglose}
                   etiqueta={hayFiltros ? 'Total de lo filtrado' : 'Total de la cartera'}
@@ -442,6 +534,7 @@ function FilasDelInquilino({
   onAlternar: () => void
 }) {
   const Caret = abierto ? CaretDown : CaretRight
+  const interesDelInquilino = sumarIntereses(inquilino.filas)
   return (
     <>
       {/* `group`: la celda fija tiene fondo propio y si no, no se entera del
@@ -484,6 +577,12 @@ function FilasDelInquilino({
             <Peso valor={inquilino.totales.sinDesgloseCop} />
           </TableCell>
         ) : null}
+        <TableCell className="text-right" data-testid="intereses-del-inquilino">
+          <Interes
+            valor={interesDelInquilino}
+            sinReglas={inquilino.filas.some((f) => interesDe(f)?.sinReglas)}
+          />
+        </TableCell>
         <TableCell
           className={cn(
             'bg-surface text-right font-medium text-fg group-hover:bg-surface-muted',
@@ -492,6 +591,7 @@ function FilasDelInquilino({
         >
           <Peso valor={inquilino.totales.saldoCop} />
           <Abono valor={inquilino.totales.abonadoCop} />
+          <ConIntereses capital={inquilino.totales.saldoCop} interes={interesDelInquilino} />
         </TableCell>
       </TableRow>
 
@@ -539,7 +639,12 @@ function FilaDelMes({
           usando el plazo que la inmobiliaria misma le dio.
         */}
         <span className="mt-0.5 block text-xs">
-          {fila.enSiniestro ? (
+          {interesDe(fila)?.pagadaEnMora ? (
+            <span className="text-danger">
+              {TEXTO_DE_MORA.pagadaEnMora} · {fila.diasDeMora}{' '}
+              {fila.diasDeMora === 1 ? 'día' : 'días'} de mora
+            </span>
+          ) : fila.enSiniestro ? (
             <span className="text-danger">En siniestro</span>
           ) : fila.enMora ? (
             <span className="text-danger">
@@ -567,9 +672,16 @@ function FilaDelMes({
           <Peso valor={fila.sinDesgloseCop} />
         </TableCell>
       ) : null}
+      <TableCell className="text-right" data-testid="intereses-del-mes" title={interesDe(fila)?.motivo ?? undefined}>
+        <Interes
+          valor={interesDe(fila)?.pendienteCop ?? 0}
+          sinReglas={interesDe(fila)?.sinReglas}
+        />
+      </TableCell>
       <TableCell className={cn('bg-surface-muted text-right text-fg', FIJA)}>
         <Peso valor={fila.saldoCop} />
         <Abono valor={fila.abonadoCop} />
+        <ConIntereses capital={fila.saldoCop} interes={interesDe(fila)?.pendienteCop ?? 0} />
       </TableCell>
     </TableRow>
   )
@@ -597,11 +709,13 @@ function CeldasDeConceptos({
 
 function TotalesEnPie({
   totales,
+  interes,
   conceptos,
   haySinDesglose,
   etiqueta,
 }: {
   totales: TotalesDeCartera
+  interes: number
   conceptos: readonly TipoDeConcepto[]
   haySinDesglose: boolean
   etiqueta: string
@@ -615,9 +729,13 @@ function TotalesEnPie({
           <Peso valor={totales.sinDesgloseCop} />
         </TableCell>
       ) : null}
+      <TableCell className="text-right font-semibold" data-testid="intereses-en-pie">
+        <Interes valor={interes} />
+      </TableCell>
       <TableCell className={cn('text-right font-semibold text-fg', FIJA, 'bg-bg dark:bg-surface-muted')}>
         <Peso valor={totales.saldoCop} />
         <Abono valor={totales.abonadoCop} />
+        <ConIntereses capital={totales.saldoCop} interes={interes} />
       </TableCell>
     </TableRow>
   )

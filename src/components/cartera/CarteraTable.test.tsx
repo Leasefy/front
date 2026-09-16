@@ -35,6 +35,7 @@ vi.mock('next/link', () => ({
 }))
 
 import { CarteraTable, ordenarCartera } from './CarteraTable'
+import type { InteresDeMora } from './interes-de-mora'
 
 function deuda(p: Partial<CarteraItem> = {}): CarteraItem {
   return {
@@ -314,5 +315,85 @@ describe('<CarteraTable>', () => {
       expect(texto).toContain('cartera.tabla.sinCobroEmitido')
       expect(texto).not.toContain('cartera.tabla.sinRecordatorios')
     })
+  })
+})
+
+/** El interés de mora de una fila, como lo manda el back desde el 2026-09-16. */
+function interes(p: Partial<InteresDeMora> = {}): InteresDeMora {
+  return {
+    liquidadoCop: 0,
+    abonadoCop: 0,
+    pendienteCop: 0,
+    origen: null,
+    pagadaEnMora: false,
+    diasDeMora: 0,
+    motivo: null,
+    sinReglas: false,
+    ...p,
+  }
+}
+
+const conInteres = (item: CarteraItem, i: InteresDeMora): CarteraItem =>
+  ({ ...item, interes: i, totalConInteresCop: item.pendingAmount + i.pendienteCop }) as CarteraItem
+
+describe('🔴 el interés de mora, aparte del capital (2026-09-16)', () => {
+  const celda = (id: string) =>
+    filas()[0]!.querySelector<HTMLElement>(`[data-testid="${id}"]`)?.textContent ?? ''
+
+  it('«Debe» sigue siendo capital; «Intereses» y «Total» van al lado', () => {
+    // Mayo del contrato #69 en QA: 129 días, $1.550.000 de capital y $288.367 de mora.
+    montar([
+      conInteres(
+        deuda({ pendingAmount: 1_550_000, diasDeMora: 129 }),
+        interes({ liquidadoCop: 288_367, pendienteCop: 288_367, origen: 'CUOTA', diasDeMora: 129 }),
+      ),
+    ])
+    expect(celda('cartera-intereses')).toContain('$288.367')
+    expect(celda('cartera-total')).toContain('$1.838.367')
+    // El capital no se toca.
+    expect(filas()[0]!.textContent).toContain('$1.550.000')
+  })
+
+  it('🔴 sin reglas de mora NO pinta $0: lo dice y lleva a configurarlas', () => {
+    montar([
+      conInteres(
+        deuda(),
+        interes({ motivo: 'La inmobiliaria no tiene reglas de mora activas.', sinReglas: true }),
+      ),
+    ])
+    expect(celda('cartera-intereses')).toContain('Sin reglas de mora')
+    expect(celda('cartera-intereses')).not.toContain('$0')
+    const link = filas()[0]!.querySelector('[data-testid="cartera-intereses"] a')
+    expect(link?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/cartera/reglas-de-mora')
+  })
+
+  it('una cuota pagada en mora sale con capital $0 y dice por qué debe', () => {
+    montar([
+      conInteres(
+        deuda({ estado: 'CANCELADA', pendingAmount: 0, paidAmount: 3_750_000, diasDeMora: 23 }),
+        interes({ liquidadoCop: 46_000, pendienteCop: 46_000, pagadaEnMora: true, diasDeMora: 23 }),
+      ),
+    ])
+    expect(celda('cartera-intereses')).toContain('$46.000')
+    expect(celda('cartera-intereses')).toContain('Se pagó en mora')
+    expect(celda('cartera-total')).toContain('$46.000')
+  })
+
+  it('si el back no mandó el interés, un guion: nunca un $0 inventado', () => {
+    montar([deuda()])
+    expect(celda('cartera-intereses').trim()).toBe('—')
+  })
+
+  it('se ordena por el total con intereses', () => {
+    const poca = conInteres(
+      deuda({ cuotaId: 'poca', pendingAmount: 1_000_000 }),
+      interes({ liquidadoCop: 10_000, pendienteCop: 10_000 }),
+    )
+    const mucha = conInteres(
+      deuda({ cuotaId: 'mucha', pendingAmount: 900_000 }),
+      interes({ liquidadoCop: 500_000, pendienteCop: 500_000 }),
+    )
+    expect(ordenarCartera([poca, mucha], 'debe', 'desc').map((i) => i.cuotaId)).toEqual(['poca', 'mucha'])
+    expect(ordenarCartera([poca, mucha], 'total', 'desc').map((i) => i.cuotaId)).toEqual(['mucha', 'poca'])
   })
 })

@@ -390,6 +390,65 @@ describe('CarteraCompleta', () => {
     expect(avisos).toContain('agente responsable')
   })
 
+  describe('🔴 el interés de mora (2026-09-16)', () => {
+    const conInteres = (item: CarteraItem, pendienteCop: number, extra = {}) =>
+      ({
+        ...item,
+        interes: {
+          liquidadoCop: pendienteCop,
+          abonadoCop: 0,
+          pendienteCop,
+          origen: 'CUOTA',
+          pagadaEnMora: false,
+          diasDeMora: item.diasDeMora,
+          motivo: null,
+          sinReglas: false,
+          ...extra,
+        },
+        totalConInteresCop: item.pendingAmount + pendienteCop,
+      }) as CarteraItem
+
+    it('la cifra de cartera sigue siendo capital, y el interés va debajo', () => {
+      const items = ITEMS.map((i) =>
+        i.cuotaId === 'q1' ? conInteres(i, 288_367) : i.cuotaId === 'q2' ? conInteres(i, 12_000) : i,
+      )
+      conReporte(reporte({ items }))
+      montar()
+
+      const cartera = $('[data-testid="resumen-cartera"]').textContent ?? ''
+      expect(cartera).toContain(formatCurrency(3_750_000 + 1_000_000 + 500_000))
+      expect($('[data-testid="resumen-intereses-cartera"]').textContent).toContain(
+        formatCurrency(300_367),
+      )
+      expect($('[data-testid="resumen-deuda-con-intereses"]').textContent).toContain(
+        formatCurrency(3_750_000 + 1_000_000 + 2_000_000 + 500_000 + 750_000 + 300_367),
+      )
+      // Y la columna está en la tabla.
+      expect(todos('[data-testid="cartera-intereses"]').length).toBe(items.length)
+    })
+
+    it('🔴 sin reglas de mora el aviso lleva a configurarlas', () => {
+      const items = ITEMS.map((i) =>
+        i.cajon === 'CARTERA'
+          ? conInteres(i, 0, { liquidadoCop: 0, motivo: 'Sin reglas.', sinReglas: true })
+          : i,
+      )
+      conReporte(
+        reporte({
+          items,
+          avisos: ['La inmobiliaria no tiene reglas de mora activas: la cartera se muestra SIN intereses.'],
+        }),
+      )
+      montar()
+
+      expect($('[data-testid="avisos-de-la-cartera"]').textContent).toContain('SIN intereses')
+      expect($('[data-testid="cartera-configurar-reglas"]').getAttribute('href')).toBe(
+        '/panel/inmobiliaria/pagos/cartera/reglas-de-mora',
+      )
+      expect(host.querySelector('[data-testid="resumen-intereses-cartera"]')).toBeNull()
+    })
+  })
+
   it('sin avisos no se pinta un recuadro vacío', () => {
     conReporte(reporte())
     montar()

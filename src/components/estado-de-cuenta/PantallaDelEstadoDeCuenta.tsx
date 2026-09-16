@@ -88,6 +88,12 @@ export interface PantallaProps {
   hoy?: string;
   /** Apaga la barra de filtros (el enlace público muestra el documento entero). */
   sinFiltros?: boolean;
+  /**
+   * A dónde se configuran las reglas de mora. Sólo el PANEL lo pasa: con él,
+   * las cuotas en mora sin intereses dicen por qué y llevan a configurarlas.
+   * El portal y el enlace público no lo pasan: ese motivo es interno.
+   */
+  reglasDeMoraHref?: string;
   className?: string;
 }
 
@@ -97,6 +103,7 @@ export function PantallaDelEstadoDeCuenta({
   volverA,
   hoy: hoyProp,
   sinFiltros = false,
+  reglasDeMoraHref,
   className,
 }: PantallaProps) {
   const t = useTextoDelEstado();
@@ -343,6 +350,7 @@ export function PantallaDelEstadoDeCuenta({
               hoy={hoy}
               sinPaginar={imprimiendo}
               nota={nota}
+              reglasDeMoraHref={reglasDeMoraHref}
               className={cn(
                 'rounded-none border-0 shadow-none',
                 // El recorte lo trae el back: mientras viaja, la tabla anterior

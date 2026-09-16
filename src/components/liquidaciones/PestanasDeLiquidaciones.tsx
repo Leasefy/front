@@ -3,8 +3,9 @@
 /**
  * Las dos lecturas de Liquidaciones, como pantallas hermanas.
  *
- *   · Liquidaciones — el neto por propietario del mes: canon recaudado,
- *     comisión, conceptos a favor y a cargo. Lo que se le VA a girar.
+ *   · Liquidaciones — el neto por propietario del mes: el canon (causado o
+ *     recaudado, según la base), comisión, conceptos a favor y a cargo. Lo que
+ *     se le VA a girar.
  *   · Por aprobar   — las facturas de proveedor esperando la firma del
  *     contador (triple-gate de AP). Lo que sale por fuera del giro.
  *

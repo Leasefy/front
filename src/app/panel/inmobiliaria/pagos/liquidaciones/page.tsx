@@ -8,9 +8,14 @@
  * constante con un badge «Ejemplo», y la tabla de egresos con un `EmptyState`
  * fijo — cero `fetch`. El back ya calculaba exactamente esto y nadie lo
  * llamaba: `GET /inmobiliaria/dispersiones/preview` devuelve, propietario por
- * propietario, canon recaudado, comisión, conceptos a favor y a cargo, y el
+ * propietario, el canon, la comisión, los conceptos a favor y a cargo, y el
  * neto a girar. Es la MISMA cuenta que `generate`, así que lo que se ve acá es
  * lo que se va a girar en Dispersiones — no una fórmula parecida.
+ *
+ * 🔴 El canon decía «Canon recibido», y con la base por defecto (CAUSADO) es lo
+ * que los contratos cobran en el mes, haya pagado el inquilino o no: se puede
+ * girar más de lo recaudado. El rótulo sigue a `vista.base` —«Canon causado» o
+ * «Canon recaudado»— y ningún número cambia (`lib/propietarios/base-del-canon`).
  *
  * El desglose de IVA no se muestra: el back lo devuelve dentro de los conceptos
  * y separarlo acá sería una cuenta distinta de la del giro. La columna «IVA
@@ -49,6 +54,7 @@ import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
 import { leerLiquidacionFrenada } from '@/lib/api/dispersiones-errores';
 import { mesEnTitulo } from '@/lib/utils/mes';
+import { baseDeLaLiquidacion } from '@/lib/propietarios/base-del-canon';
 
 const COLUMNS = [
   'colPropietario', 'colCanon', 'colComision', 'colAFavor', 'colDescuentos', 'colNeto', 'colCuenta', 'colEstado', 'colComprobante',
@@ -124,13 +130,20 @@ function TesoreriaContent() {
   const frenada = leerLiquidacionFrenada(error);
 
   const propietarios: Propietario[] = vista?.propietarios ?? [];
+  // Con qué regla liquidó el back: decide el rótulo del canon, nada más.
+  const base = baseDeLaLiquidacion(vista);
   const suma = (campo: keyof Propietario) =>
     propietarios.reduce((s, p) => s + (p[campo] as number), 0);
 
   // La fórmula, sobre la plata de VERDAD del mes. Las cuatro filas cierran
   // contra el neto por construcción: el back lo calcula igual.
   const resumen = [
-    { labelKey: 'fCanon', value: suma('totalCollected'), sign: '', tone: 'text-fg' },
+    {
+      labelKey: base === 'RECAUDADO' ? 'fCanonRecaudado' : 'fCanonCausado',
+      value: suma('totalCollected'),
+      sign: '',
+      tone: 'text-fg',
+    },
     { labelKey: 'fComision', value: suma('totalCommission'), sign: '−', tone: 'text-danger' },
     { labelKey: 'fAFavor', value: suma('totalConceptosAFavor'), sign: '+', tone: 'text-fg' },
     { labelKey: 'fACargo', value: suma('totalConceptosACargo'), sign: '−', tone: 'text-danger' },
@@ -138,7 +151,7 @@ function TesoreriaContent() {
   const neto = suma('netToPropietario');
   /*
    * El back reparte en negativo cuando lo que paga el propietario (predial,
-   * reparaciones) supera lo recaudado: el propietario queda DEBIENDO. Antes el
+   * reparaciones) supera su canon del mes: el propietario queda DEBIENDO. Antes el
    * neto se pintaba siempre en verde, y un «−$300.000» verde se lee como plata
    * a favor.
    */
@@ -213,7 +226,7 @@ function TesoreriaContent() {
                 queSon="liquidaciones"
                 icono={Wallet}
                 titulo={t(k('emptyTitle'))}
-                descripcion={t(k('emptyDesc'))}
+                descripcion={t(k(base === 'RECAUDADO' ? 'emptyDescRecaudado' : 'emptyDesc'))}
               />
             }
           >
@@ -225,12 +238,26 @@ function TesoreriaContent() {
                   <Badge variant="secondary">{mesEnTitulo(month)}</Badge>
                 </div>
                 <div className="space-y-2.5">
-                  {resumen.map((row) => (
-                    <div key={row.labelKey} className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">{t(k(row.labelKey))}</span>
-                      <span className={cn('font-mono tabular-nums', row.tone)}>
-                        {row.sign}{formatCurrency(row.value)}
-                      </span>
+                  {resumen.map((row, i) => (
+                    <div key={row.labelKey}>
+                      <div className="flex items-center justify-between text-sm">
+                        <span
+                          className="text-muted-foreground"
+                          data-testid={i === 0 ? 'tesoreria-rotulo-canon' : undefined}
+                        >
+                          {t(k(row.labelKey))}
+                        </span>
+                        <span className={cn('font-mono tabular-nums', row.tone)}>
+                          {row.sign}{formatCurrency(row.value)}
+                        </span>
+                      </div>
+                      {/* Qué es ese canon, en una línea: «causado» no se
+                          entiende solo, y es la diferencia con lo recaudado. */}
+                      {i === 0 && (
+                        <p className="mt-0.5 text-xs text-fg-muted" data-testid="tesoreria-que-es-el-canon">
+                          {t(k(base === 'RECAUDADO' ? 'fCanonQueEsRecaudado' : 'fCanonQueEsCausado'))}
+                        </p>
+                      )}
                     </div>
                   ))}
                   <div className="border-t border-border pt-2.5 flex items-center justify-between">
@@ -250,9 +277,11 @@ function TesoreriaContent() {
                   </div>
                   {quedanDebiendo > 0 && (
                     <p className="text-xs text-danger" data-testid="tesoreria-quedan-debiendo">
+                      {/* Con base CAUSADO no se compara contra lo recaudado:
+                          contra el canon del mes, pagado o no. */}
                       {quedanDebiendo === 1
-                        ? '1 propietario queda debiendo este mes: lo que paga supera lo recaudado.'
-                        : `${quedanDebiendo} propietarios quedan debiendo este mes: lo que pagan supera lo recaudado.`}
+                        ? `1 propietario queda debiendo este mes: lo que paga supera ${base === 'RECAUDADO' ? 'lo recaudado' : 'su canon causado'}.`
+                        : `${quedanDebiendo} propietarios quedan debiendo este mes: lo que pagan supera ${base === 'RECAUDADO' ? 'lo recaudado' : 'su canon causado'}.`}
                     </p>
                   )}
                 </div>

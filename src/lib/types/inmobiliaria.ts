@@ -668,7 +668,11 @@ export interface DispersionItem {
   /** La cuota del propietario que se gira. Es la identidad de la línea. */
   cuotaId: string | null;
   propertyTitle: string;
-  /** Canon recaudado, SIN la administración: ésa es de la copropiedad. */
+  /**
+   * El canon liquidado, SIN la administración: ésa es de la copropiedad. 🔴 Con
+   * la base CAUSADO (el default) es el canon del mes aunque el inquilino no haya
+   * pagado: no es necesariamente plata recaudada.
+   */
   rentCollected: number;
   commissionPercent: number;
   commissionAmount: number;
@@ -696,7 +700,7 @@ export interface Dispersion {
   items: DispersionItem[];
 
   // Totals
-  /** Canon recaudado del mes, sin administración. */
+  /** Canon liquidado del mes, sin administración (causado o recaudado según la base). */
   totalCollected: number;
   totalCommission: number;
   totalConceptosAFavor: number;
@@ -742,6 +746,13 @@ export interface PorQueElMesVieneVacio {
 
 export interface VistaPreviaDeDispersiones {
   month: string;
+  /**
+   * Con qué regla se liquidó: `CAUSADO` (el default del back: el canon del mes,
+   * haya pagado el inquilino o no) o `RECAUDADO` (sólo lo que el inquilino ya
+   * pagó). Rotula el canon —«Canon causado» / «Canon recaudado»— y no cambia
+   * ningún número. Ver `lib/propietarios/base-del-canon.ts`.
+   */
+  base?: 'CAUSADO' | 'RECAUDADO';
   totalPropietarios: number;
   /** Los que ya tienen dispersión de este mes: generar los saltaría. */
   yaGenerados: number;
@@ -984,8 +995,17 @@ export interface ExtractoPropietario {
     commissionAmount: number;
     /** Lo que se le gira al propietario por este inmueble. */
     netAmount: number;
-    /** Canon efectivamente recaudado, SIN la administración. */
+    /**
+     * El canon de la liquidación, SIN la administración. 🔴 Pese al nombre, no
+     * siempre es plata recaudada: lo dice `baseDelCanon`.
+     */
     rentCollected: number;
+    /**
+     * `CAUSADO` en una línea de cuota (el canon del mes, pagado o no);
+     * `RECAUDADO` en una línea vieja armada sobre un cobro. Opcional: un back
+     * anterior al 2026-09-16 no la manda (ver `baseDeLaLinea`).
+     */
+    baseDelCanon?: 'CAUSADO' | 'RECAUDADO';
     /** Conceptos que suman a su favor (devoluciones, reajustes). */
     conceptosAFavor: number;
     /** Conceptos que él paga (predial, reparaciones a su cargo). */
@@ -1015,6 +1035,12 @@ export interface ExtractoPropietario {
     codigo: 'SIN_INMUEBLES' | 'SIN_MOVIMIENTO_DEL_MES';
     mensaje: string;
   } | null;
+
+  /**
+   * La base del canon del extracto entero: `MIXTA` cuando conviven líneas de
+   * cuotas y de cobros viejos. Opcional por los back anteriores al 2026-09-16.
+   */
+  baseDelCanon?: 'CAUSADO' | 'RECAUDADO' | 'MIXTA';
 
   totals: {
     totalRent: number;

@@ -51,6 +51,10 @@ export function haySinDesglose(filas: readonly FilaDeCarteraDelInquilino[]): boo
 /**
  * Filtra inquilinos por lo que se escribió: nombre, documento, inmueble o
  * número de contrato. Sin texto, todos.
+ *
+ * `soloEnMora` mira `enMoraCop`, que desde el 2026-09-15 es LA CARTERA: lo
+ * vencido más allá de los días de plazo del contrato. Quien debe y está dentro
+ * de su plazo NO entra — es justo lo que la cobranza no puede perseguir.
  */
 export function filtrarInquilinos(
   inquilinos: readonly InquilinoEnCartera[],
@@ -88,8 +92,10 @@ export function sumarTotales(
     abonadoCop: 0,
     saldoCop: 0,
     enMoraCop: 0,
+    vencidaEnPlazoCop: 0,
     porVencerCop: 0,
     enSiniestroCop: 0,
+    cuotas: 0,
     cobros: 0,
   };
   for (const i of inquilinos) {
@@ -99,11 +105,21 @@ export function sumarTotales(
     total.sinDesgloseCop += i.totales.sinDesgloseCop;
     total.abonadoCop += i.totales.abonadoCop;
     total.saldoCop += i.totales.saldoCop;
+    /*
+     * 🔴 Los tres cajones se suman POR SEPARADO y nunca entre sí: cartera,
+     * vencido dentro del plazo y por vencer significan cosas distintas y
+     * `cartera + vencidaEnPlazo + porVencer = saldoCop` sólo cierra si cada uno
+     * conserva su propia cuenta.
+     */
     total.enMoraCop += i.totales.enMoraCop;
+    total.vencidaEnPlazoCop += i.totales.vencidaEnPlazoCop ?? 0;
     total.porVencerCop += i.totales.porVencerCop;
     total.enSiniestroCop += i.totales.enSiniestroCop;
-    total.cobros += i.totales.cobros;
+    total.cuotas += i.totales.cuotas ?? i.totales.cobros;
   }
+  // El alias deprecado sigue el mismo número, para que nada que todavía lea
+  // `cobros` muestre un cero mientras se termina de renombrar.
+  total.cobros = total.cuotas;
   return total;
 }
 

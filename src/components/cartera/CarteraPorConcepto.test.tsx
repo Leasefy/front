@@ -12,7 +12,13 @@
  *  - «Sin desglose» sólo existe cuando alguna fila no cuadra (el cobro de QA
  *    con la línea de interés escrita dos veces), y esa fila queda marcada;
  *  - el pie sigue a lo filtrado, no al total general;
- *  - un fallo del back no se pinta como una cartera en $0.
+ *  - un fallo del back no se pinta como una cartera en $0;
+ *  - 🔴 (2026-09-15) los TRES números —por vencer, vencido en plazo y cartera—
+ *    se muestran por separado y suman el total. Mezclarlos manda a la cobranza
+ *    a perseguir plata que nadie debe todavía;
+ *  - 🔴 la fila del mes se llavea por `cuotaId`: `cobroId` viene en `null` en
+ *    toda fila migrada, y como `key` de React eso son claves duplicadas;
+ *  - 🔴 lo que los números NO cuentan se dice (contratos vigentes sin cuotas).
  */
 import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -55,14 +61,20 @@ import { CarteraPorConcepto, rotuloDelContrato } from './CarteraPorConcepto'
 
 function fila(p: Partial<FilaDeCarteraDelInquilino> = {}): FilaDeCarteraDelInquilino {
   const base: FilaDeCarteraDelInquilino = {
-    cobroId: 'co1',
+    cuotaId: 'q1',
+    // 🔴 Sin cobro: es el estado de TODA fila migrada. Antes ésta era la llave
+    // de la fila, y con `null` React veía claves duplicadas.
+    cobroId: null,
     contractId: 'ct1',
     contrato: '1686',
     inmueble: 'Apartamento 302',
     month: '2026-07',
     vence: '2026-07-05',
-    status: 'LATE',
+    estado: 'PENDIENTE',
+    cajon: 'CARTERA',
     diasDeMora: 68,
+    diasDePlazo: 5,
+    esVencida: true,
     enMora: true,
     enSiniestro: false,
     porConcepto: { CANON: 2_100_000, INTERES_DE_MORA: 95_200, GASTO_ADMINISTRATIVO: 210_000 },
@@ -80,7 +92,7 @@ const NICOLAS: InquilinoEnCartera = (() => {
   const filas = [
     fila(),
     fila({
-      cobroId: 'co2',
+      cuotaId: 'q2',
       month: '2026-08',
       vence: '2026-08-05',
       diasDeMora: 38,
@@ -92,7 +104,7 @@ const NICOLAS: InquilinoEnCartera = (() => {
       saldoCop: 2_263_200,
     }),
     fila({
-      cobroId: 'co3',
+      cuotaId: 'q3',
       month: '2026-09',
       vence: '2026-09-05',
       diasDeMora: 7,
@@ -119,8 +131,10 @@ const NICOLAS: InquilinoEnCartera = (() => {
       abonadoCop: 100_000,
       saldoCop: 6_778_200,
       enMoraCop: 6_778_200,
+      vencidaEnPlazoCop: 0,
       porVencerCop: 0,
       enSiniestroCop: 0,
+      cuotas: 3,
       cobros: 3,
     },
   }
@@ -135,14 +149,16 @@ const MARTA: InquilinoEnCartera = {
   contratos: [{ contractId: 'ct2', contrato: '#94', inmueble: 'Casa en Laureles' }],
   filas: [
     fila({
-      cobroId: 'co4',
+      cuotaId: 'q4',
       contractId: 'ct2',
       contrato: '#94',
       inmueble: 'Casa en Laureles',
       month: '2026-10',
       vence: '2026-10-05',
-      status: 'COBRO_PENDING',
+      estado: 'PENDIENTE',
+      cajon: 'POR_VENCER',
       diasDeMora: 0,
+      esVencida: false,
       enMora: false,
       porConcepto: { CANON: 1_900_000 },
       saldoPorConcepto: { CANON: 1_900_000 },
@@ -158,8 +174,10 @@ const MARTA: InquilinoEnCartera = {
     abonadoCop: 0,
     saldoCop: 1_900_000,
     enMoraCop: 0,
+    vencidaEnPlazoCop: 0,
     porVencerCop: 1_900_000,
     enSiniestroCop: 0,
+    cuotas: 1,
     cobros: 1,
   },
 }
@@ -182,8 +200,10 @@ function cartera(over: Partial<CarteraDeInquilinos> = {}): CarteraDeInquilinos {
       abonadoCop: 100_000,
       saldoCop: 8_678_200,
       enMoraCop: 6_778_200,
+      vencidaEnPlazoCop: 0,
       porVencerCop: 1_900_000,
       enSiniestroCop: 0,
+      cuotas: 4,
       cobros: 4,
     },
     ...over,
@@ -260,7 +280,7 @@ describe('CarteraPorConcepto', () => {
     expect(resumen).toContain(formatCurrency(8_678_200))
     expect(resumen).toContain(formatCurrency(6_778_200))
     expect(resumen).toContain(formatCurrency(1_900_000))
-    expect(resumen).toContain('4 cobros')
+    expect(resumen).toContain('4 cuotas')
 
     const filas = todos('[data-testid="fila-inquilino"]')
     expect(filas).toHaveLength(2)
@@ -327,7 +347,7 @@ describe('CarteraPorConcepto', () => {
     // El caso real de QA: la línea de interés escrita dos veces (3.202+3.202
     // contra un `lateFee` de 3.202) deja −3.202 sin desglose.
     const torcida = fila({
-      cobroId: 'co9',
+      cuotaId: 'q9',
       month: '2026-09',
       porConcepto: { CANON: 2_400_000, INTERES_DE_MORA: 6_404 },
       saldoPorConcepto: { CANON: 2_400_000, INTERES_DE_MORA: 6_404 },
@@ -348,6 +368,7 @@ describe('CarteraPorConcepto', () => {
         sinDesgloseCop: -3_202,
         saldoCop: 2_403_202,
         enMoraCop: 2_403_202,
+        vencidaEnPlazoCop: 0,
         porVencerCop: 0,
       },
     }
@@ -407,8 +428,10 @@ describe('CarteraPorConcepto', () => {
           abonadoCop: 0,
           saldoCop: 0,
           enMoraCop: 0,
+          vencidaEnPlazoCop: 0,
           porVencerCop: 0,
           enSiniestroCop: 0,
+          cuotas: 0,
           cobros: 0,
         },
       }),
@@ -417,6 +440,160 @@ describe('CarteraPorConcepto', () => {
 
     expect($('[data-testid="tabla-por-concepto"]').textContent).toContain('Nadie te debe nada')
     expect(host.querySelector('[data-testid="totales-por-concepto"]')).toBeNull()
+  })
+})
+
+describe('CarteraPorConcepto — los tres números que no se pueden mezclar', () => {
+  /**
+   * Una cartera con los tres cajones ocupados, con las proporciones reales de
+   * dev (15-09): la mayoría por vencer, una franja chica vencida dentro del
+   * plazo y la cartera de verdad.
+   */
+  function conLosTresCajones() {
+    const porVencer = fila({
+      cuotaId: 'q-futura',
+      month: '2026-12',
+      vence: '2026-12-05',
+      cajon: 'POR_VENCER',
+      diasDeMora: 0,
+      esVencida: false,
+      enMora: false,
+      porConcepto: { CANON: 7_000_000 },
+      saldoPorConcepto: { CANON: 7_000_000 },
+      facturadoCop: 7_000_000,
+      saldoCop: 7_000_000,
+    })
+    const enPlazo = fila({
+      cuotaId: 'q-en-plazo',
+      month: '2026-09',
+      vence: '2026-09-05',
+      cajon: 'VENCIDA_EN_PLAZO',
+      diasDeMora: 0,
+      diasDePlazo: 5,
+      esVencida: true,
+      enMora: false,
+      porConcepto: { CANON: 90_000 },
+      saldoPorConcepto: { CANON: 90_000 },
+      facturadoCop: 90_000,
+      saldoCop: 90_000,
+    })
+    const enCartera = fila({
+      cuotaId: 'q-cartera',
+      month: '2026-07',
+      porConcepto: { CANON: 600_000 },
+      saldoPorConcepto: { CANON: 600_000 },
+      facturadoCop: 600_000,
+      saldoCop: 600_000,
+    })
+    const totales = {
+      porConcepto: { CANON: 7_690_000 },
+      saldoPorConcepto: { CANON: 7_690_000 },
+      facturadoCop: 7_690_000,
+      sinDesgloseCop: 0,
+      abonadoCop: 0,
+      saldoCop: 7_690_000,
+      enMoraCop: 600_000,
+      vencidaEnPlazoCop: 90_000,
+      porVencerCop: 7_000_000,
+      enSiniestroCop: 0,
+      cuotas: 3,
+      cobros: 3,
+    }
+    const uno: InquilinoEnCartera = {
+      ...MARTA,
+      clave: 'documento:1',
+      nombre: 'Jose Lopez',
+      filas: [enCartera, enPlazo, porVencer],
+      totales,
+    }
+    return cartera({ inquilinos: [uno], conceptos: ['CANON'], totales })
+  }
+
+  it('🔴 muestra por vencer, vencido en plazo y cartera en cifras distintas', () => {
+    conCartera(conLosTresCajones())
+    montar()
+
+    expect($('[data-testid="total-deuda"]').textContent).toBe(formatCurrency(7_690_000))
+    expect($('[data-testid="total-por-vencer"]').textContent).toBe(formatCurrency(7_000_000))
+    expect($('[data-testid="total-vencido-en-plazo"]').textContent).toBe(formatCurrency(90_000))
+    expect($('[data-testid="total-cartera"]').textContent).toBe(formatCurrency(600_000))
+  })
+
+  it('🔴 los tres cajones SUMAN la deuda total: son una partición', () => {
+    conCartera(conLosTresCajones())
+    montar()
+
+    const leer = (id: string) =>
+      Number(($(`[data-testid="${id}"]`).textContent ?? '').replace(/[^\d]/g, ''))
+    expect(leer('total-por-vencer') + leer('total-vencido-en-plazo') + leer('total-cartera')).toBe(
+      leer('total-deuda'),
+    )
+  })
+
+  it('🔴 «vencida dentro del plazo» NO se pinta como mora', () => {
+    conCartera(conLosTresCajones())
+    montar()
+    clic(todos('[data-testid="fila-inquilino"]')[0]!.querySelector('button')!)
+
+    const [enCartera, enPlazo, porVencer] = todos('[data-testid="fila-mes"]')
+    expect(enCartera!.textContent).toContain('Cartera · 68 días de mora')
+    expect(enPlazo!.textContent).toContain('dentro del plazo')
+    expect(enPlazo!.textContent).not.toContain('Cartera')
+    expect(porVencer!.textContent).toContain('Todavía no vence')
+  })
+
+  /*
+   * 🔴 `key={fila.cobroId}` con `cobroId: null` en todas las filas migradas son
+   * claves duplicadas: React reusa la fila equivocada al abrir y cerrar. Se
+   * mide contando filas distintas, que es lo que el defecto rompía.
+   */
+  it('🔴 abre las tres filas del mes aunque ninguna tenga cobro emitido', () => {
+    conCartera(conLosTresCajones())
+    montar()
+    clic(todos('[data-testid="fila-inquilino"]')[0]!.querySelector('button')!)
+
+    const meses = todos('[data-testid="fila-mes"]')
+    expect(meses).toHaveLength(3)
+    const textos = new Set(meses.map((m) => m.textContent))
+    expect(textos.size).toBe(3)
+  })
+
+  it('«sólo cartera» deja afuera a quien debe pero está dentro del plazo', () => {
+    const soloEnPlazo: InquilinoEnCartera = {
+      ...MARTA,
+      clave: 'documento:2',
+      nombre: 'Ana Ruiz',
+      totales: { ...MARTA.totales, enMoraCop: 0, vencidaEnPlazoCop: 1_900_000, porVencerCop: 0 },
+    }
+    conCartera(cartera({ inquilinos: [NICOLAS, soloEnPlazo] }))
+    montar()
+
+    clic($('[data-testid="solo-en-mora"]'))
+    const filas = todos('[data-testid="fila-inquilino"]')
+    expect(filas).toHaveLength(1)
+    expect(filas[0]!.textContent).toContain('Nicolás Rojas')
+  })
+
+  it('🔴 dice lo que el número NO cuenta: contratos vigentes sin cuotas', () => {
+    conCartera(
+      cartera({
+        contratosSinCuotas: 195,
+        avisos: [
+          '195 contrato(s) vigente(s) todavía no tienen tabla de amortización: su deuda no está en estos números.',
+        ],
+      }),
+    )
+    montar()
+
+    expect($('[data-testid="avisos-de-la-cartera"]').textContent).toContain(
+      'todavía no tienen tabla de amortización',
+    )
+  })
+
+  it('sin avisos no se pinta una franja vacía', () => {
+    conCartera(cartera())
+    montar()
+    expect(host.querySelector('[data-testid="avisos-de-la-cartera"]')).toBeNull()
   })
 })
 

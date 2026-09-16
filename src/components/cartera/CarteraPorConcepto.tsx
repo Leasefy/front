@@ -26,19 +26,42 @@
  * que aparecen en alguna fila. Una inmobiliaria sin gasto administrativo no ve
  * una columna vacía.
  *
+ * ── 🔴 Los TRES números que no se pueden mezclar (Nico, 2026-09-15) ─────────
+ *
+ * «Desde que él comience el contrato ya debe. Otra cosa es que se tarde en
+ * pagar sobre los días máximos de mora, y ahí ya es **cartera** como tal, y
+ * entra el agente de cobranza.»
+ *
+ * De ahí salen tres cifras distintas, que la franja muestra por separado y que
+ * NINGUNA pantalla puede volver a sumar en una sola:
+ *
+ *   · **Por vencer** — deuda del contrato que todavía no vence. Medido en dev
+ *     el 15-09: $7.739,6 M.
+ *   · **Vencido, en plazo** — venció, pero los días de plazo del contrato
+ *     siguen corriendo. Es deuda, NO es cartera: no le corre interés y la
+ *     cobranza no la toca. $92,1 M.
+ *   · **Cartera** — pasó el vencimiento MÁS el plazo. Es lo único que la
+ *     cobranza puede perseguir. $615,1 M.
+ *
+ * Un solo «total pendiente» de $8.447 M haría salir a la cobranza a perseguir
+ * plata que nadie debe todavía, con la Ley 2300 de por medio.
+ *
  * ── Lo que la pantalla se niega a hacer ─────────────────────────────────────
  *
  * 1. **Cuadrar a la fuerza.** Si las columnas no suman el saldo, la diferencia
  *    se muestra en «Sin desglose» y la fila se marca. En la agencia de QA hay
  *    un cobro con la línea de interés escrita dos veces (3.202 + 3.202 contra
  *    un `lateFee` de 3.202): la cartera tiene que delatarlo, no promediarlo.
- * 2. **Sumar lo que no vence a la mora.** Plata que va a entrar no es plata
+ * 2. **Sumar lo que no vence a la cartera.** Plata que va a entrar no es plata
  *    que hay que ir a buscar; van en cifras distintas de la franja.
  * 3. **Pintar un error como una cartera vacía.** «Nadie te debe nada» y «no
  *    pudimos preguntar» se ven idénticos si se muestra la misma pantalla.
  * 4. **Cambiar el pie cuando hay filtro.** El pie suma LO QUE SE VE; la franja
  *    de arriba habla de toda la cartera. Si el pie repitiera el total general
  *    dejaría de corresponder a las filas de encima.
+ * 5. **Callar lo que el número NO cuenta.** Hay contratos vigentes sin tabla de
+ *    amortización (195 en dev): su deuda no está en estas cifras, y un cero por
+ *    omisión es exactamente el defecto que este cambio vino a arreglar.
  */
 
 import { useMemo, useState } from 'react'
@@ -145,6 +168,10 @@ export function CarteraPorConcepto() {
   // cuadra, y en una cartera sana no hay ninguna.
   const haySinDesglose = (datos?.totales.sinDesgloseCop ?? 0) !== 0
 
+  /* `cobros` quedó como alias deprecado del back: la unidad es la CUOTA. */
+  const cuotas = datos?.totales.cuotas ?? datos?.totales.cobros ?? 0
+  const avisos = datos?.avisos ?? []
+
   const alternar = (clave: string) =>
     setAbiertos((previos) => {
       const siguiente = new Set(previos)
@@ -180,40 +207,82 @@ export function CarteraPorConcepto() {
           data-testid="resumen-por-concepto"
         >
           <div className="p-4">
-            <p className="text-xs text-fg-muted">Total pendiente</p>
-            <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg">
+            <p className="text-xs text-fg-muted">Deuda total</p>
+            <p
+              className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg"
+              data-testid="total-deuda"
+            >
               {formatCurrency(datos?.totales.saldoCop ?? 0)}
             </p>
             <p className="mt-0.5 text-xs text-fg-muted">
-              {datos?.totales.cobros ?? 0} {datos?.totales.cobros === 1 ? 'cobro' : 'cobros'} ·{' '}
+              {cuotas} {cuotas === 1 ? 'cuota' : 'cuotas'} ·{' '}
               {datos?.inquilinos.length ?? 0}{' '}
               {datos?.inquilinos.length === 1 ? 'inquilino' : 'inquilinos'}
             </p>
-          </div>
-          <div className="p-4">
-            <p className="text-xs text-fg-muted">En mora</p>
-            <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-danger">
-              {formatCurrency(datos?.totales.enMoraCop ?? 0)}
+            <p className="mt-0.5 text-xs text-fg-muted">
+              Abonado {formatCurrency(datos?.totales.abonadoCop ?? 0)} sobre{' '}
+              {formatCurrency(datos?.totales.facturadoCop ?? 0)} pactados
             </p>
-            <p className="mt-0.5 text-xs text-fg-muted">Pasado el plazo del contrato</p>
           </div>
+          {/*
+            🔴 Los tres cajones, en el orden en que una deuda los recorre: nace
+            futura, vence, y recién después es cartera. Cada uno con su propia
+            cifra: el que quiera el total lo tiene arriba, ya sumado.
+          */}
           <div className="p-4">
             <p className="text-xs text-fg-muted">Por vencer</p>
-            <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg-muted">
+            <p
+              className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg-muted"
+              data-testid="total-por-vencer"
+            >
               {formatCurrency(datos?.totales.porVencerCop ?? 0)}
             </p>
-            <p className="mt-0.5 text-xs text-fg-muted">Todavía no es mora</p>
+            <p className="mt-0.5 text-xs text-fg-muted">Todavía no vence. Es deuda, no cartera.</p>
           </div>
           <div className="p-4">
-            <p className="text-xs text-fg-muted">Abonado</p>
-            <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg">
-              {formatCurrency(datos?.totales.abonadoCop ?? 0)}
+            <p className="text-xs text-fg-muted">Vencido, en plazo</p>
+            <p
+              className="mt-1 font-mono text-2xl font-semibold tabular-nums text-warning"
+              data-testid="total-vencido-en-plazo"
+            >
+              {formatCurrency(datos?.totales.vencidaEnPlazoCop ?? 0)}
             </p>
             <p className="mt-0.5 text-xs text-fg-muted">
-              Sobre {formatCurrency(datos?.totales.facturadoCop ?? 0)} facturados
+              Venció, pero el plazo del contrato sigue corriendo.
+            </p>
+          </div>
+          <div className="p-4">
+            <p className="text-xs text-fg-muted">Cartera</p>
+            <p
+              className="mt-1 font-mono text-2xl font-semibold tabular-nums text-danger"
+              data-testid="total-cartera"
+            >
+              {formatCurrency(datos?.totales.enMoraCop ?? 0)}
+            </p>
+            <p className="mt-0.5 text-xs text-fg-muted">
+              Pasó el plazo. Es lo único que la cobranza persigue.
             </p>
           </div>
         </div>
+
+        {/*
+          🔴 Lo que estos números NO cuentan. Un contrato vigente sin tabla de
+          amortización no es un contrato sin deuda: es una deuda que todavía
+          nadie generó. Callarlo deja la franja mintiendo por omisión.
+        */}
+        {avisos.length > 0 && (
+          <div
+            className="flex gap-2 rounded-lg border border-warning/40 bg-warning-soft p-3 text-sm text-fg"
+            data-testid="avisos-de-la-cartera"
+          >
+            <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+            <ul className="space-y-1">
+              {avisos.map((aviso) => (
+                <li key={aviso}>{aviso}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <section className="overflow-hidden rounded-lg border border-border bg-surface">
           <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -221,10 +290,10 @@ export function CarteraPorConcepto() {
               <Switch
                 checked={soloEnMora}
                 onCheckedChange={setSoloEnMora}
-                aria-label="Ver sólo a quienes están en mora"
+                aria-label="Ver sólo a quienes ya están en cartera"
                 data-testid="solo-en-mora"
               />
-              Sólo en mora
+              Sólo cartera
             </label>
             <div className="relative w-full sm:w-72">
               <MagnifyingGlass
@@ -268,7 +337,7 @@ export function CarteraPorConcepto() {
                       queSon="inquilinos con deuda"
                       icono={CurrencyCircleDollar}
                       titulo="Nadie te debe nada"
-                      descripcion="No hay cobros pendientes ni vencidos en toda la cartera."
+                      descripcion="Ningún contrato tiene cuotas pendientes: ni vencidas, ni dentro del plazo, ni por vencer."
                       onLimpiarFiltros={hayFiltros ? limpiar : undefined}
                     />
                   </TableCell>
@@ -314,8 +383,9 @@ export function CarteraPorConcepto() {
 
         {datos ? (
           <p className="text-xs text-fg-muted">
-            Los conceptos salen de las líneas de cada cobro; lo que se abona se imputa primero a
-            los intereses y después al capital. Leído contra el {datos.hoy}.
+            La deuda sale de las cuotas del contrato, no de los cobros emitidos: existe desde que
+            se firma. Los conceptos salen de las líneas de cada cuota, y lo que se abona se imputa
+            primero a los intereses y después al capital. Leído contra el {datos.hoy}.
           </p>
         ) : null}
       </div>
@@ -388,10 +458,16 @@ function FilasDelInquilino({
         </TableCell>
       </TableRow>
 
+      {/*
+        🔴 `key={fila.cuotaId}`, NO `cobroId`. Desde que la cartera se lee de
+        `contrato_cuotas`, `cobroId` viene en `null` en TODA fila migrada: como
+        llave de React eso son claves duplicadas, y React reusa la fila
+        equivocada en silencio al abrir y cerrar inquilinos.
+      */}
       {abierto
         ? inquilino.filas.map((fila) => (
             <FilaDelMes
-              key={fila.cobroId}
+              key={fila.cuotaId}
               fila={fila}
               conceptos={conceptos}
               haySinDesglose={haySinDesglose}
@@ -434,15 +510,26 @@ function FilaDelMes({
           {fila.inmueble}
           {fila.contrato ? rotuloDelContrato(fila) : ''}
         </span>
+        {/*
+          🔴 Los tres cajones, dichos con palabras distintas. «Vencida dentro
+          del plazo» no es mora: no le corre interés y la cobranza no la toca.
+          Pintar las dos igual es cómo se termina llamando a alguien que está
+          usando el plazo que la inmobiliaria misma le dio.
+        */}
         <span className="mt-0.5 block text-xs">
           {fila.enSiniestro ? (
             <span className="text-danger">En siniestro</span>
           ) : fila.enMora ? (
             <span className="text-danger">
-              {fila.diasDeMora} {fila.diasDeMora === 1 ? 'día' : 'días'} de mora
+              Cartera · {fila.diasDeMora} {fila.diasDeMora === 1 ? 'día' : 'días'} de mora
+            </span>
+          ) : fila.esVencida ? (
+            <span className="text-warning">
+              Venció el {fila.vence} · dentro del plazo de {fila.diasDePlazo}{' '}
+              {fila.diasDePlazo === 1 ? 'día' : 'días'}
             </span>
           ) : (
-            <span className="text-fg-muted">Vence el {fila.vence}</span>
+            <span className="text-fg-muted">Todavía no vence · vence el {fila.vence}</span>
           )}
           {!cuadra(fila) ? (
             <span className="ml-2 inline-flex items-center gap-1 text-warning">

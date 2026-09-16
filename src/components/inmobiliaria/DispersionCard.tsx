@@ -24,6 +24,7 @@ import {
   getDispersionStatusColor,
   getDispersionStatusLabel,
 } from '@/lib/types/inmobiliaria';
+import { ROTULO_DEL_CANON } from '@/lib/propietarios/base-del-canon';
 
 interface DispersionCardProps {
   dispersion: Dispersion;
@@ -218,7 +219,9 @@ export function DispersionCard({
         {/* Breakdown */}
         <div className="space-y-1.5 text-sm">
           <div className="flex items-center justify-between text-fg-muted dark:text-fg-subtle">
-            <span>Total recaudado</span>
+            {/* 🔴 Decía «Total recaudado» siempre, y la dispersión gira por
+                defecto con base CAUSADO: el canon del mes, pagado o no. */}
+            <span data-testid="tarjeta-rotulo-canon">{ROTULO_DEL_CANON[dispersion.baseDelCanon ?? 'CAUSADO']}</span>
             <span className="font-mono tabular-nums">{formatCurrency(dispersion.totalCollected)}</span>
           </div>
           <div className="flex items-center justify-between text-warning">

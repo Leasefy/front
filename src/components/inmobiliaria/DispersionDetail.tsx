@@ -598,7 +598,16 @@ export function DispersionDetail({
           </h3>
           <div className="grid grid-cols-3 gap-3">
             <div className="p-4 rounded-lg bg-muted/50 text-center">
-              <p className="text-xs text-muted-foreground mb-1">{t('inmobiliaria.dispersiones.detailView.collected')}</p>
+              {/* 🔴 Decía «Recaudado» siempre, y la dispersión gira por defecto
+                  con base CAUSADO: el canon del mes, haya pagado el inquilino
+                  o no. El rótulo sigue a `baseDelCanon`; el número no cambia. */}
+              <p className="text-xs text-muted-foreground mb-1" data-testid="dispersion-rotulo-canon">
+                {t(
+                  dispersion.baseDelCanon === 'RECAUDADO'
+                    ? 'inmobiliaria.dispersiones.detailView.canonRecaudado'
+                    : 'inmobiliaria.dispersiones.detailView.canonCausado',
+                )}
+              </p>
               <p className="text-lg font-bold text-foreground">
                 {formatCurrency(dispersion.totalCollected)}
               </p>
@@ -616,6 +625,12 @@ export function DispersionDetail({
               </p>
             </div>
           </div>
+          {/* «Causado» no se entiende solo, y es la diferencia con lo recaudado. */}
+          {dispersion.baseDelCanon !== 'RECAUDADO' && (
+            <p className="text-xs text-muted-foreground" data-testid="dispersion-que-es-el-canon">
+              {t('inmobiliaria.dispersiones.detailView.queEsCanonCausado')}
+            </p>
+          )}
         </motion.section>
 
         {/* Commission Breakdown Section */}
@@ -631,6 +646,7 @@ export function DispersionDetail({
           </h3>
           <ComisionDesglose
             items={dispersion.items}
+            baseDelCanon={dispersion.baseDelCanon}
             variant="compact"
             showPercentages={true}
           />

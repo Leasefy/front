@@ -14,6 +14,7 @@
 import type { Consignacion, Dispersion, Propietario } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_BANKS } from '@/lib/types/payment-accounts';
 import { nombreDelMes } from '@/lib/utils/mes';
+import { ROTULO_DEL_CANON, baseDeLasDispersiones } from './base-del-canon';
 
 export type Celda = string | number;
 
@@ -108,11 +109,21 @@ export function armarHojasDelPropietario(
     ]),
   ];
 
+  /*
+   * 🔴 La columna decía «Canon recaudado» sobre todo giro, y la dispersión gira
+   * por defecto con base CAUSADO: el canon de la cuota del mes, haya pagado el
+   * inquilino o no. El encabezado sigue la convención de la ficha («Canon
+   * causado», «Canon recaudado» o las dos) y cada fila dice la suya en «Base
+   * del canon»: en una hoja de cálculo la columna no puede cambiar según qué
+   * meses se exportaron, y con giros de las dos bases es lo único que deja
+   * saber cuál se pagó. Ningún número cambia.
+   */
   const giros: Celda[][] = [
     [
       'Mes',
       'Inmueble',
-      'Canon recaudado',
+      ROTULO_DEL_CANON[baseDeLasDispersiones(dispersiones)],
+      'Base del canon',
       'Comisión %',
       'Comisión',
       'Conceptos a favor',
@@ -127,6 +138,7 @@ export function armarHojasDelPropietario(
         nombreDelMes(d.month),
         item?.propertyTitle ?? '',
         item?.rentCollected ?? d.totalCollected,
+        d.baseDelCanon === 'RECAUDADO' ? 'Recaudado' : 'Causado',
         item?.commissionPercent ?? '',
         item?.commissionAmount ?? d.totalCommission,
         item?.conceptosAFavor ?? d.totalConceptosAFavor,

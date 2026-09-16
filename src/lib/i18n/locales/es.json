@@ -1865,7 +1865,7 @@
       "totalOwners": "Total propietarios",
       "activeOwners": "Propietarios activos",
       "totalProperties": "Total propiedades",
-      "monthlyRevenue": "Recaudo mensual",
+      "monthlyRevenue": "Canon mensual",
       "upToDate": "Al día",
       "withBalance": "{{count}} con saldo",
       "noPending": "Sin pendientes",
@@ -2366,7 +2366,9 @@
         "savings": "Ahorros",
         "checking": "Corriente",
         "summaryTitle": "Resumen",
-        "collected": "Recaudado",
+        "canonCausado": "Canon causado",
+        "canonRecaudado": "Canon recaudado",
+        "queEsCanonCausado": "Canon causado: lo que el contrato cobra ese mes, aunque el inquilino no haya pagado.",
         "commission": "Comisión",
         "net": "Neto",
         "propertyBreakdown": "Desglose por Propiedad",
@@ -2438,7 +2440,11 @@
         "propietario": "Propietario",
         "month": "Mes",
         "properties": "Propiedades",
-        "collected": "Recaudado",
+        "canonCausado": "Canon causado",
+        "canonRecaudado": "Canon recaudado",
+        "canon": "Canon",
+        "filaCausado": "causado",
+        "filaRecaudado": "recaudado",
         "commission": "Comisión",
         "net": "Neto",
         "status": "Estado",
@@ -4946,12 +4952,12 @@
       "alertas": {
         "sinCuenta": {
           "titulo": "No tiene cuenta bancaria: no se le puede girar",
-          "detalle": "Tiene {{n}} inmueble(s) arrendado(s) y el canon recaudado no tiene a dónde ir. Carga banco, tipo, número y titular.",
+          "detalle": "Tiene {{n}} inmueble(s) arrendado(s) y lo que se le gira no tiene a dónde ir. Carga banco, tipo, número y titular.",
           "accion": "Cargar cuenta bancaria"
         },
         "pendienteDeGiro": {
           "titulo": "Hay {{monto}} pendientes de girarle",
-          "detalle": "Es canon ya recaudado que todavía no salió. Se gira desde Dispersiones, con el extracto del mes.",
+          "detalle": "Son dispersiones ya generadas que todavía no se giraron. Se giran desde Dispersiones, con el extracto del mes.",
           "accion": "Ir a dispersiones"
         },
         "sinArrendar": {
@@ -5098,7 +5104,8 @@
         "property": "propiedad",
         "properties": "propiedades",
         "propertyHeader": "Propiedad",
-        "collected": "Recaudado",
+        "canonCausado": "Canon causado",
+        "canonRecaudado": "Canon recaudado",
         "commAmount": "Comisión",
         "total": "Total",
         "inCommissions": "en comisiones"

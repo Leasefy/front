@@ -152,14 +152,23 @@ export function ResumenDelEstado({
                 'inline-block rounded-full px-3 py-1 text-body-sm font-medium',
                 r.enMora
                   ? 'bg-danger-soft text-danger'
-                  : 'bg-success-soft text-success',
+                  : r.enPlazo
+                    ? 'bg-warning-soft text-warning'
+                    : 'bg-success-soft text-success',
               )}
             >
               {r.enMora
                 ? t('estadoDeCuenta.enMoraDias', { dias: r.diasDeMora })
-                : t('estadoDeCuenta.alDia')}
+                : r.enPlazo
+                  ? t('estadoDeCuenta.vencidoEnPlazo')
+                  : t('estadoDeCuenta.alDia')}
             </span>
           </p>
+          {r.enPlazo && (
+            <p className="mt-2 text-caption text-fg-muted" data-testid="estado-en-plazo">
+              {t('estadoDeCuenta.vencidoEnPlazoDetalle', { n: r.cuotasEnPlazo })}
+            </p>
+          )}
           {r.enMora && (
             <p className="mt-2 text-caption text-fg-muted">
               {r.cuotasVencidas === 1

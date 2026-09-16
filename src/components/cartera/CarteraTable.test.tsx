@@ -35,7 +35,7 @@ vi.mock('next/link', () => ({
 }))
 
 import { CarteraTable, ordenarCartera } from './CarteraTable'
-import type { InteresDeMora } from './interes-de-mora'
+import type { InteresDeMora } from '@/lib/types/inmobiliaria'
 
 function deuda(p: Partial<CarteraItem> = {}): CarteraItem {
   return {
@@ -361,7 +361,7 @@ describe('🔴 el interés de mora, aparte del capital (2026-09-16)', () => {
         interes({ motivo: 'La inmobiliaria no tiene reglas de mora activas.', sinReglas: true }),
       ),
     ])
-    expect(celda('cartera-intereses')).toContain('Sin reglas de mora')
+    expect(celda('cartera-intereses')).toContain('cartera.interes.sinReglas')
     expect(celda('cartera-intereses')).not.toContain('$0')
     const link = filas()[0]!.querySelector('[data-testid="cartera-intereses"] a')
     expect(link?.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/cartera/reglas-de-mora')
@@ -375,7 +375,7 @@ describe('🔴 el interés de mora, aparte del capital (2026-09-16)', () => {
       ),
     ])
     expect(celda('cartera-intereses')).toContain('$46.000')
-    expect(celda('cartera-intereses')).toContain('Se pagó en mora')
+    expect(celda('cartera-intereses')).toContain('cartera.interes.pagadaEnMora')
     expect(celda('cartera-total')).toContain('$46.000')
   })
 

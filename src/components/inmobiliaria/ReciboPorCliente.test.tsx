@@ -35,6 +35,7 @@ vi.mock('@/lib/api/recibos-de-caja.service', () => ({
 
 import {
   ElegirCliente,
+  capitalEInteresDelPeriodo,
   clientesParaRecibo,
   conceptosDelPeriodo,
   diaDeVencimiento,
@@ -177,6 +178,24 @@ describe('soloSePuedeAdelantar', () => {
   it('sin ninguna cuota pendiente no hay nada que adelantar', () => {
     expect(soloSePuedeAdelantar(base)).toBe(false);
     expect(soloSePuedeAdelantar(null)).toBe(false);
+  });
+});
+
+describe('capitalEInteresDelPeriodo — lo que caja cobra, partido', () => {
+  it('lee capital e interés del back, sin recalcular nada', () => {
+    expect(
+      capitalEInteresDelPeriodo(
+        periodo('p1', {
+          pendingAmount: 1_962_429,
+          capitalPendienteCop: 1_550_000,
+          interesPendienteCop: 412_429,
+        }),
+      ),
+    ).toEqual({ capital: 1_550_000, interes: 412_429 });
+  });
+
+  it('con un back anterior que no manda los campos, todo lo pendiente es capital', () => {
+    expect(capitalEInteresDelPeriodo(periodo('p1'))).toEqual({ capital: 1_000_000, interes: 0 });
   });
 });
 

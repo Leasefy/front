@@ -32,7 +32,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { fechaLegible } from './filas';
-import type { FilaDeInteres, InteresesDelContrato } from './intereses';
+import type { FilaDeInteres, InteresesDelContrato } from '@/lib/types/estado-de-cuenta';
 import { useTextoDelEstado } from './textos';
 
 export interface InteresesDelContratoProps {

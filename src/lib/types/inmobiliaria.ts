@@ -1039,6 +1039,43 @@ export interface ExtractoPropietario {
 }
 
 /**
+ * El INTERÉS DE MORA de una cuota, tal como lo manda el back
+ * (`InteresEnPantalla`, en `back-erp/src/inmobiliaria/cartera/lo-que-liquida-el-interes.ts`).
+ *
+ * Es UNA lectura para todas las pantallas —la cartera por edad y por concepto,
+ * la cartera del mes, el informe, el estado de cuenta y el recibo de caja—,
+ * liquidada con la MISMA regla que la prefactura. El front no calcula un peso:
+ * pinta esto. Capital e interés viajan SIEMPRE por separado.
+ *
+ * Donde una fila lo trae es opcional a propósito: un back anterior no lo manda,
+ * y «no vino el interés» no es «el interés es cero».
+ */
+export interface InteresDeMora {
+  /** Lo liquidado: interés diario y gasto administrativo de cobranza. */
+  liquidadoCop: number;
+  /** Lo ya abonado a intereses (la ley los pone antes que el capital). */
+  abonadoCop: number;
+  /** 🔴 Lo que falta de interés hoy. */
+  pendienteCop: number;
+  /** `COBRO` = ya liquidado y escrito; `CUOTA` = calculado hoy, crece mañana. */
+  origen: 'COBRO' | 'CUOTA' | null;
+  /** El capital ya se pagó, pero se pagó cuando la cuota ya era cartera. */
+  pagadaEnMora: boolean;
+  diasDeMora: number;
+  /** Por qué está en mora y no lleva interés. `null` si lleva o no es cartera. */
+  motivo: string | null;
+  /** El motivo es que la inmobiliaria no tiene reglas de mora activas. */
+  sinReglas: boolean;
+}
+
+/** Una fila cualquiera de cartera, con lo que el back le agrega de mora. */
+export type ConInteres<T> = T & {
+  interes?: InteresDeMora;
+  /** Capital + interés pendiente de la fila. */
+  totalConInteresCop?: number;
+};
+
+/**
  * Una fila del informe de cartera: UNA CUOTA de un contrato.
  *
  * 🔴 Cambió la UNIDAD y cambió la MEDIDA (back, 2026-09-16):
@@ -1103,6 +1140,10 @@ export interface CarteraItem {
    */
   remindersSent: number | null;
   lastReminderDate: string | null;
+  /** El interés de mora de la cuota. Ver `InteresDeMora`. */
+  interes?: InteresDeMora;
+  /** `pendingAmount + interes.pendienteCop`. */
+  totalConInteresCop?: number;
 }
 
 /**
@@ -1135,6 +1176,16 @@ export interface CarteraSummary {
   cuotasVencidasEnPlazo: number;
   cuotasEnCartera: number;
   cuotasEnSiniestro: number;
+  /** 🔴 El interés de mora que falta, sumado. Va aparte del capital. */
+  interesCop?: number;
+  /** De ese interés, el de los casos en siniestro. */
+  interesEnSiniestroCop?: number;
+  /** `carteraCop + interesCop`. */
+  carteraConInteresCop?: number;
+  /** `deudaTotalCop + interesCop`. */
+  deudaTotalConInteresCop?: number;
+  /** Cuotas ya pagadas que siguen debiendo el interés de su mora. */
+  cuotasPagadasEnMora?: number;
 }
 
 /** Cuántas filas quedaron sin cada dato. Es el respaldo de `avisos`. */
@@ -1161,6 +1212,8 @@ export interface CarteraReport {
   contratosSinCuotas: number;
   /** Lo que estos números NO cuentan, escrito para que lo lea una persona. */
   avisos: string[];
+  /** La agencia no tiene reglas de mora activas y hay cartera: el 0 no es «sin mora». */
+  sinReglasDeMora?: boolean;
 }
 
 /** Un caso en siniestro, con desde cuándo lo es. */

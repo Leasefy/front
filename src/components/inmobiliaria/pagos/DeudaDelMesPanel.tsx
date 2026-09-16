@@ -73,7 +73,8 @@
  * un renglón del estado de cuenta de alguien.
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
+import Link from 'next/link'
 import {
   CurrencyCircleDollar,
   MagnifyingGlass,
@@ -104,6 +105,8 @@ import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service'
 import type { NuevoReciboPorCliente } from '@/lib/api/recibos-de-caja.types'
 import type { FilaDeLaCuotaDelMes } from '@/lib/api/cartera.types'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
+import { useI18n } from '@/lib/i18n'
+import { CLAVE_DE_MORA, RUTA_DE_REGLAS_DE_MORA } from '@/components/cartera/interes-de-mora'
 import { mesEnTitulo } from '@/lib/utils/mes'
 
 const numberFormatter = new Intl.NumberFormat('es-CO')
@@ -159,12 +162,15 @@ function Cifra({
   detalle,
   tono,
   testId,
+  extra,
 }: {
   label: string
   valor: string
   detalle: string
   tono?: 'danger' | 'warning' | 'muted' | 'success'
   testId: string
+  /** Una línea más debajo del detalle: el interés, cuando lo hay. */
+  extra?: ReactNode
 }) {
   const color =
     tono === 'danger'
@@ -186,6 +192,7 @@ function Cifra({
         {valor}
       </p>
       <p className="mt-0.5 text-xs text-fg-muted">{detalle}</p>
+      {extra}
     </div>
   )
 }
@@ -196,6 +203,7 @@ export interface DeudaDelMesPanelProps {
 }
 
 export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
+  const { t: traducir } = useI18n()
   const [mes, setMes] = useState(() => mesInicial ?? mesActual())
   const [busqueda, setBusqueda] = useState('')
   const [soloCartera, setSoloCartera] = useState(false)
@@ -220,6 +228,13 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
 
   const t = datos?.totales
   const avisos = datos?.avisos ?? []
+  /*
+   * 🔴 El interés del mes, con la MISMA lectura del back que la cartera por
+   * concepto y el estado de cuenta. Va APARTE: «Falta por pagar» y los cajones
+   * siguen siendo capital. Todo el interés es de cuotas en cartera (también las
+   * ya pagadas que lo siguen debiendo).
+   */
+  const interesDelMes = t?.interesCop ?? 0
 
   /**
    * Emite el recibo. El back reparte la plata por antigüedad sobre las cuotas
@@ -304,6 +319,18 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
             label="Falta por pagar"
             valor={formatCurrency(t?.pendienteCop ?? 0)}
             detalle="Se reparte en los tres cajones de abajo."
+            extra={
+              interesDelMes > 0 ? (
+                <p
+                  className="mt-0.5 font-mono text-xs tabular-nums text-fg-muted"
+                  data-testid="mes-falta-con-intereses"
+                >
+                  {traducir(CLAVE_DE_MORA.conIntereses, {
+                    monto: formatCurrency(t?.totalConInteresCop ?? (t?.pendienteCop ?? 0) + interesDelMes),
+                  })}
+                </p>
+              ) : null
+            }
           />
         </div>
 
@@ -336,6 +363,17 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
             detalle={`Pasó el plazo. ${numberFormatter.format(
               t?.cuotasEnCartera ?? 0,
             )} ${(t?.cuotasEnCartera ?? 0) === 1 ? 'cuota' : 'cuotas'}: es lo único que la cobranza persigue.`}
+            extra={
+              interesDelMes > 0 ? (
+                <p
+                  className="mt-0.5 font-mono text-xs tabular-nums text-danger"
+                  data-testid="mes-intereses"
+                  title={traducir(CLAVE_DE_MORA.explicacion)}
+                >
+                  {traducir(CLAVE_DE_MORA.masIntereses, { monto: formatCurrency(interesDelMes) })}
+                </p>
+              ) : null
+            }
           />
         </div>
 
@@ -348,11 +386,24 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
             data-testid="avisos-del-mes"
           >
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
-            <ul className="space-y-1">
-              {avisos.map((aviso) => (
-                <li key={aviso}>{aviso}</li>
-              ))}
-            </ul>
+            <div className="space-y-2">
+              <ul className="space-y-1">
+                {avisos.map((aviso) => (
+                  <li key={aviso}>{aviso}</li>
+                ))}
+              </ul>
+              {/* Sin reglas de mora el interés sale en cero y NO porque no haya
+                  mora: se lleva a donde se arregla. */}
+              {datos?.sinReglasDeMora ? (
+                <Link
+                  href={RUTA_DE_REGLAS_DE_MORA}
+                  className="inline-block font-medium underline underline-offset-4"
+                  data-testid="mes-configurar-reglas"
+                >
+                  {traducir(CLAVE_DE_MORA.configurarReglas)}
+                </Link>
+              ) : null}
+            </div>
           </div>
         )}
 

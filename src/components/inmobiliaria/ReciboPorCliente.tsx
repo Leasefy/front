@@ -49,6 +49,10 @@
  *      después, con el inmueble de cada deuda y los dos totales. Un cliente con
  *      varios inmuebles la ve JUNTA: es una sola cartera, y el pago se imputa
  *      por antigüedad sin importar de qué inmueble sea cada mes.
+ *      Cada período dice cuánto es CAPITAL y cuánto INTERÉS DE MORA (el back lo
+ *      liquida con la misma regla de la cartera y la prefactura, también para
+ *      la cuota que todavía no tiene cobro): pagar exacto los dos deja la cuota
+ *      y su interés en cero.
  *   3. `PlanDeImputacion` — a qué meses y conceptos va a ir el dinero, ANTES de
  *      emitir, con los renglones de adelanto marcados. Se calcula acá para no
  *      ir al servidor en cada tecla, con una copia de la regla
@@ -155,6 +159,19 @@ export function separarPorVencimiento(cuotas: readonly PeriodoEnDeuda[]): {
 export function soloSePuedeAdelantar(cartera: CarteraDelCliente | null): boolean {
   if (!cartera) return false;
   return (cartera.vencidoCop ?? 0) <= 0 && (cartera.futuroCop ?? 0) > 0;
+}
+
+/**
+ * Capital e interés de un período, por separado. Con un back que no manda los
+ * campos nuevos, todo lo pendiente es capital, que es lo que se veía antes.
+ */
+export function capitalEInteresDelPeriodo(periodo: PeriodoEnDeuda): {
+  capital: number;
+  interes: number;
+} {
+  const interes = Math.max(0, periodo.interesPendienteCop ?? 0);
+  const capital = periodo.capitalPendienteCop ?? Math.max(0, periodo.pendingAmount - interes);
+  return { capital, interes };
 }
 
 /** El día del vencimiento, tal cual: `dueDate` viaja como fecha ISO. */
@@ -264,6 +281,7 @@ function TarjetaDePeriodo({
   const idioma = locale === 'en' ? 'en' : 'es';
   const k = (x: string) => `recibos.form.cartera.${x}`;
   const conceptos = conceptosDelPeriodo(periodo);
+  const { capital, interes } = capitalEInteresDelPeriodo(periodo);
 
   return (
     <div
@@ -303,6 +321,18 @@ function TarjetaDePeriodo({
           >
             {formatCurrency(periodo.pendingAmount)}
           </p>
+          {/* 🔴 Capital e interés, por separado: es lo que caja está cobrando. */}
+          {interes > 0 && (
+            <span
+              className="text-xs text-fg-muted"
+              data-testid={`periodo-capital-e-interes-${periodo.month}`}
+            >
+              {t(k('capitalEInteres'), {
+                capital: formatCurrency(capital),
+                intereses: formatCurrency(interes),
+              })}
+            </span>
+          )}
           {/*
             🔴 La insignia dejó de decir el estado del COBRO y dice si la cuota
             venció. El cobro es un documento que puede no existir (`status:
@@ -341,6 +371,9 @@ export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps)
   );
   const vencidoCop = cartera.vencidoCop ?? 0;
   const futuroCop = cartera.futuroCop ?? 0;
+  const interesCop =
+    cartera.interesCop ??
+    cartera.cuotas.reduce((s, c) => s + capitalEInteresDelPeriodo(c).interes, 0);
   const masVieja = cartera.cuotas[0]?.id ?? null;
   const adelantoSolo = soloSePuedeAdelantar(cartera);
 
@@ -372,6 +405,12 @@ export function CarteraDelClientePanel({ cartera }: CarteraDelClientePanelProps)
           >
             {formatCurrency(vencidoCop)}
           </p>
+          {/* El interés sólo corre sobre lo vencido: se dice ahí. */}
+          {interesCop > 0 && (
+            <p className="text-xs text-fg-muted" data-testid="cartera-intereses">
+              {t(k('deLosCualesIntereses'), { monto: formatCurrency(interesCop) })}
+            </p>
+          )}
         </div>
         <div className="rounded-lg border border-border bg-surface px-3 py-2">
           <p className="text-xs text-fg-muted">{t(k('futuroLabel'))}</p>
@@ -456,6 +495,7 @@ export function PlanDeImputacion({ cartera, plan }: PlanDeImputacionProps) {
    * sea para bajarle a lo adeudado»), así que se nombra.
    */
   const hayAdelanto = plan.partes.some((parte) => porId.get(parte.id)?.vencida === false);
+  const aIntereses = plan.partes.reduce((s, parte) => s + parte.aIntereses, 0);
 
   return (
     <div className="space-y-2 rounded-lg border border-border bg-surface-muted p-3" data-testid="plan-de-imputacion">
@@ -510,6 +550,12 @@ export function PlanDeImputacion({ cartera, plan }: PlanDeImputacionProps) {
           );
         })}
       </ul>
+
+      {aIntereses > 0 && (
+        <p className="text-xs text-fg-muted" data-testid="plan-interes-primero">
+          {t('recibos.form.cartera.interesPrimero')}
+        </p>
+      )}
 
       {hayAdelanto && (
         <p className="text-xs text-fg-muted" data-testid="plan-hay-adelanto">

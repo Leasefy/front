@@ -55,13 +55,24 @@
  * los cajones y los tramos son una partición del capital y no se tocan. Medido
  * en QA el 16-09: $3.003,9 M de cartera y $546,6 M de interés encima.
  *
+ * ── 🔴 El siniestro es parte de la cartera (bug A, 16-09) ───────────────────
+ *
+ * «Por edad» decía deuda total $2.687 M y cartera $364,8 M; «Por concepto»,
+ * $5.326 M y $3.003,9 M: la diferencia era lo que está en siniestro, restado
+ * en silencio. Ahora «Deuda total» y «Cartera» son las MISMAS de «Por
+ * concepto» —siniestro incluido—, la cifra de cartera dice cuánto de ella está
+ * en siniestro, la edad tiene un quinto tramo «En siniestro» (los cinco suman
+ * la cartera), y las filas de «Por deuda» y «Por propietario» incluyen esos
+ * casos para que cada cifra se pueda rastrear hasta sus filas.
+ *
  * ── Lo que la pantalla se niega a hacer ─────────────────────────────────────
  *
  * 1. **Sumar en un solo número lo que no vence, lo vencido en plazo y la
  *    cartera.** Son tres cosas distintas y la Ley 2300 las trata distinto:
  *    perseguir las tres sería perseguir 12,9 veces lo perseguible.
- * 2. **Sumar los siniestros a la cartera viva.** Ya no son cobranza, son
- *    reclamación a la aseguradora; van en su propio segmento y su propia cifra.
+ * 2. **Mezclar los siniestros con la cartera viva.** Son cartera, pero ya no
+ *    son cobranza: van dentro de la cifra de cartera, dichos aparte, con su
+ *    propio tramo, su propio segmento y su propia cifra.
  * 3. **Pintar un error como una cartera vacía.** «Nadie te debe nada» y «no
  *    pudimos preguntar» se ven idénticos si se muestra la misma pantalla.
  * 4. **Decir «sin resultados» cuando lo que hay es un filtro puesto.** Son dos
@@ -121,9 +132,10 @@ import {
   type Gravedad,
 } from '@/lib/cartera/edades'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 import {
+  CLAVE_DE_MORA,
   RUTA_DE_REGLAS_DE_MORA,
-  TEXTO_DE_MORA,
   faltanReglasDeMora,
   sumarIntereses,
 } from '@/components/cartera/interes-de-mora'
@@ -141,9 +153,11 @@ const TONO: Record<Gravedad, string> = {
   '31-60': 'text-warning',
   '61-90': 'text-warning',
   '90+': 'text-danger',
+  SINIESTRO: 'text-danger',
 }
 
-const COLUMNAS_POR_PROPIETARIO = 5
+/** Propietario · deudas · inmuebles · lo peor · capital · intereses · total. */
+const COLUMNAS_POR_PROPIETARIO = 7
 
 interface PropietarioElegido {
   id: string | null
@@ -151,6 +165,7 @@ interface PropietarioElegido {
 }
 
 export function CarteraCompleta() {
+  const { t } = useI18n()
   const { report, isLoading, error, errorCrudo, refetch } = useCarteraReport()
   const [cajon, setCajon] = useState<Cajon | null>(null)
   const [edad, setEdad] = useState<Edad | null>(null)
@@ -161,11 +176,14 @@ export function CarteraCompleta() {
 
   const items = useMemo<CarteraItem[]>(() => report?.items ?? [], [report])
   const siniestros = report?.siniestros ?? null
+  const casosEnSiniestro = useMemo<CarteraItem[]>(() => siniestros?.items ?? [], [siniestros])
+  /** 🔴 TODA la deuda: los tres cajones y los casos en siniestro. */
+  const todas = useMemo(() => [...items, ...casosEnSiniestro], [items, casosEnSiniestro])
   const avisos = report?.avisos ?? []
 
   // Las fichas y la franja hablan de TODA la cartera, no de lo filtrado: si
   // se achicaran con el filtro, dejarían de servir para elegir el filtro.
-  const cartera = useMemo(() => discriminar(items), [items])
+  const cartera = useMemo(() => discriminar(items, casosEnSiniestro), [items, casosEnSiniestro])
   const montoDelCajon = (cual: Cajon) =>
     cartera.cajones.find((c) => c.cajon === cual)!
   /*
@@ -176,28 +194,26 @@ export function CarteraCompleta() {
     () => sumarIntereses(cartera.cajones.find((c) => c.cajon === 'CARTERA')?.items ?? []),
     [cartera],
   )
-  const interesTotal = useMemo(() => sumarIntereses(items), [items])
+  const interesTotal = useMemo(() => sumarIntereses(todas), [todas])
   const interesEnSiniestro = useMemo(
     () => sumarIntereses(siniestros?.items ?? []),
     [siniestros],
   )
-  const sinReglasDeMora =
-    (report as { sinReglasDeMora?: boolean } | undefined)?.sinReglasDeMora === true ||
-    faltanReglasDeMora([...items, ...(siniestros?.items ?? [])])
+  const sinReglasDeMora = report?.sinReglasDeMora === true || faltanReglasDeMora(todas)
 
   const deudas = useMemo(
     () =>
-      filtrarCartera(items, {
+      filtrarCartera(todas, {
         cajon,
         edad,
         busqueda,
         propietarioId: propietario ? propietario.id : undefined,
       }),
-    [items, cajon, edad, busqueda, propietario],
+    [todas, cajon, edad, busqueda, propietario],
   )
   const propietarios = useMemo(
-    () => filtrarPropietarios(porPropietario(filtrarCartera(items, { cajon, edad })), busqueda),
-    [items, cajon, edad, busqueda],
+    () => filtrarPropietarios(porPropietario(filtrarCartera(todas, { cajon, edad })), busqueda),
+    [todas, cajon, edad, busqueda],
   )
   const casos = useMemo(
     () => filtrarCartera(siniestros?.items ?? [], { busqueda }),
@@ -310,14 +326,16 @@ export function CarteraCompleta() {
               {formatCurrency(cartera.deudaTotal)}
             </p>
             <p className="mt-0.5 text-xs text-fg-muted">
-              {items.length} {items.length === 1 ? 'cuota' : 'cuotas'} · nace con el contrato
+              {todas.length} {todas.length === 1 ? 'cuota' : 'cuotas'} · nace con el contrato
             </p>
             {interesTotal > 0 ? (
               <p
                 className="mt-0.5 font-mono text-xs tabular-nums text-fg-muted"
                 data-testid="resumen-deuda-con-intereses"
               >
-                {TEXTO_DE_MORA.conIntereses(formatCurrency(cartera.deudaTotal + interesTotal))}
+                {t(CLAVE_DE_MORA.conIntereses, {
+                  monto: formatCurrency(cartera.deudaTotal + interesTotal),
+                })}
               </p>
             ) : null}
           </button>
@@ -353,15 +371,28 @@ export function CarteraCompleta() {
                   {formatCurrency(suyo.monto)}
                 </p>
                 <p className="mt-0.5 text-xs text-fg-muted">{QUE_SIGNIFICA_EL_CAJON[cual]}</p>
+                {/* 🔴 La cartera INCLUYE el siniestro, y lo dice: restarlo en
+                    silencio es lo que hacía que esta cifra no fuera la de «Por
+                    concepto». */}
+                {cual === 'CARTERA' && cartera.enSiniestro.monto > 0 ? (
+                  <p
+                    className="mt-0.5 font-mono text-xs tabular-nums text-fg-muted"
+                    data-testid="resumen-cartera-en-siniestro"
+                  >
+                    {t('cartera.porEdad.deLaCualEnSiniestro', {
+                      monto: formatCurrency(cartera.enSiniestro.monto),
+                    })}
+                  </p>
+                ) : null}
                 {/* El interés corre SÓLO sobre la cartera: los otros dos cajones
                     no lo llevan, y un «+ $0» ahí sería ruido. */}
                 {cual === 'CARTERA' && interesDeLaCartera > 0 ? (
                   <p
                     className="mt-0.5 font-mono text-xs tabular-nums text-danger"
                     data-testid="resumen-intereses-cartera"
-                    title={TEXTO_DE_MORA.explicacion}
+                    title={t(CLAVE_DE_MORA.explicacion)}
                   >
-                    {TEXTO_DE_MORA.masIntereses(formatCurrency(interesDeLaCartera))}
+                    {t(CLAVE_DE_MORA.masIntereses, { monto: formatCurrency(interesDeLaCartera) })}
                   </p>
                 ) : null}
               </button>
@@ -391,7 +422,7 @@ export function CarteraCompleta() {
               </p>
               {interesEnSiniestro > 0 ? (
                 <p className="mt-0.5 font-mono text-xs tabular-nums text-danger">
-                  {TEXTO_DE_MORA.masIntereses(formatCurrency(interesEnSiniestro))}
+                  {t(CLAVE_DE_MORA.masIntereses, { monto: formatCurrency(interesEnSiniestro) })}
                 </p>
               ) : null}
             </button>
@@ -423,7 +454,7 @@ export function CarteraCompleta() {
                   className="inline-block font-medium underline underline-offset-4"
                   data-testid="cartera-configurar-reglas"
                 >
-                  {TEXTO_DE_MORA.configurarReglas}
+                  {t(CLAVE_DE_MORA.configurarReglas)}
                 </Link>
               ) : null}
             </div>
@@ -432,23 +463,21 @@ export function CarteraCompleta() {
 
         {/* ── La edad DE LA CARTERA. Cada ficha es un filtro. ──────────── */}
         <div>
-          <p className="mb-2 text-xs text-fg-muted">
-            Edad de la cartera · días de mora contados DESPUÉS del plazo del contrato
-          </p>
+          <p className="mb-2 text-xs text-fg-muted">{t('cartera.porEdad.edadDeLaCartera')}</p>
           <div
-            className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+            className={cn('grid grid-cols-2 gap-3', siniestros ? 'lg:grid-cols-5' : 'lg:grid-cols-4')}
             role="group"
             aria-label="Edad de la cartera"
           >
-            {cartera.tramos.map((t) => {
-              const activa = edad === t.edad && vista !== 'siniestros'
+            {cartera.tramos.map((tramo) => {
+              const activa = edad === tramo.edad && vista !== 'siniestros'
               return (
                 <button
-                  key={t.edad}
+                  key={tramo.edad}
                   type="button"
-                  onClick={() => elegirTramo(t.edad)}
+                  onClick={() => elegirTramo(tramo.edad)}
                   aria-pressed={activa}
-                  data-testid={`tramo-${t.edad}`}
+                  data-testid={`tramo-${tramo.edad}`}
                   className={cn(
                     'rounded-lg border bg-surface p-3 text-left transition-colors',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
@@ -457,16 +486,41 @@ export function CarteraCompleta() {
                       : 'border-border hover:border-fg-subtle',
                   )}
                 >
-                  <p className="text-xs text-fg-muted">{NOMBRE_DE_EDAD[t.edad]}</p>
-                  <p className={cn('mt-1 font-mono text-lg font-semibold tabular-nums', TONO[t.edad])}>
-                    {formatCurrency(t.monto)}
+                  <p className="text-xs text-fg-muted">{NOMBRE_DE_EDAD[tramo.edad]}</p>
+                  <p className={cn('mt-1 font-mono text-lg font-semibold tabular-nums', TONO[tramo.edad])}>
+                    {formatCurrency(tramo.monto)}
                   </p>
                   <p className="mt-0.5 text-xs text-fg-muted">
-                    {t.items.length} {t.items.length === 1 ? 'deuda' : 'deudas'}
+                    {tramo.items.length} {tramo.items.length === 1 ? 'deuda' : 'deudas'}
                   </p>
                 </button>
               )
             })}
+            {/* 🔴 El quinto tramo: la cartera que ya es reclamación. Sin él,
+                los tramos no sumaban la cartera y nadie sabía por qué. */}
+            {siniestros ? (
+              <button
+                type="button"
+                onClick={() => setVista('siniestros')}
+                aria-pressed={vista === 'siniestros'}
+                data-testid="tramo-siniestro"
+                className={cn(
+                  'rounded-lg border bg-surface p-3 text-left transition-colors',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                  vista === 'siniestros'
+                    ? 'border-primary ring-1 ring-primary'
+                    : 'border-border hover:border-fg-subtle',
+                )}
+              >
+                <p className="text-xs text-fg-muted">{t('cartera.porEdad.tramoEnSiniestro')}</p>
+                <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-danger">
+                  {formatCurrency(cartera.enSiniestro.monto)}
+                </p>
+                <p className="mt-0.5 text-xs text-fg-muted">
+                  {t('cartera.porEdad.desdeLosDias', { dias: siniestros.diasParaSiniestro })}
+                </p>
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -607,15 +661,23 @@ function TablaPorPropietario({
   onAbrir: (p: DeudaDePropietario) => void
   vacio: React.ReactNode
 }) {
+  const { t } = useI18n()
+  const k = (x: string) => `cartera.porPropietario.${x}`
   return (
     <Table data-testid="propietarios-tabla">
       <TableHeader>
         <TableRow>
-          <TableHead className="whitespace-nowrap">Propietario</TableHead>
-          <TableHead className="whitespace-nowrap text-right">Deudas</TableHead>
-          <TableHead className="whitespace-nowrap text-right">Inmuebles</TableHead>
-          <TableHead className="whitespace-nowrap">Lo peor</TableHead>
-          <TableHead className="whitespace-nowrap text-right">Saldo total</TableHead>
+          <TableHead className="whitespace-nowrap">{t(k('propietario'))}</TableHead>
+          <TableHead className="whitespace-nowrap text-right">{t(k('deudas'))}</TableHead>
+          <TableHead className="whitespace-nowrap text-right">{t(k('inmuebles'))}</TableHead>
+          <TableHead className="whitespace-nowrap">{t(k('loPeor'))}</TableHead>
+          <TableHead className="whitespace-nowrap text-right">{t(k('capital'))}</TableHead>
+          {/* 🔴 El interés, APARTE del capital, con la misma lectura del back
+              que el resto de la cartera. */}
+          <TableHead className="whitespace-nowrap text-right" title={t(CLAVE_DE_MORA.explicacion)}>
+            {t(k('intereses'))}
+          </TableHead>
+          <TableHead className="whitespace-nowrap text-right">{t(k('total'))}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -643,8 +705,20 @@ function TablaPorPropietario({
                     sin eso, una deuda futura y una de 95 días se verían igual. */}
                 <span className={cn('text-sm', TONO[p.peor])}>{NOMBRE_DE_GRAVEDAD[p.peor]}</span>
               </TableCell>
-              <TableCell className="text-right font-mono font-medium tabular-nums text-fg">
+              <TableCell className="text-right font-mono tabular-nums text-fg">
                 {formatCurrency(p.monto)}
+              </TableCell>
+              <TableCell
+                className="text-right font-mono tabular-nums text-danger"
+                data-testid="propietario-intereses"
+              >
+                {p.interes > 0 ? formatCurrency(p.interes) : <span className="text-fg-subtle">—</span>}
+              </TableCell>
+              <TableCell
+                className="text-right font-mono font-medium tabular-nums text-fg"
+                data-testid="propietario-total"
+              >
+                {formatCurrency(p.totalConInteres)}
               </TableCell>
             </TableRow>
           ))

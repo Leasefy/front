@@ -43,7 +43,8 @@ import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { aDondeLleva } from '@/components/cartera/CarteraTable'
 import type { CarteraSiniestro, CarteraSiniestros } from '@/lib/types/inmobiliaria'
 import { nombreDelMes } from '@/lib/utils/mes'
-import { TEXTO_DE_MORA, interesPendiente } from '@/components/cartera/interes-de-mora'
+import { CLAVE_DE_MORA, interesPendiente } from '@/components/cartera/interes-de-mora'
+import { useI18n } from '@/lib/i18n'
 
 /**
  * 🔴 `timeZone: 'UTC'` no es un detalle: `siniestroDesde` viaja como
@@ -85,6 +86,7 @@ export function TablaDeSiniestros({
   hayFiltros = false,
   onLimpiarFiltros,
 }: TablaDeSiniestrosProps) {
+  const { t } = useI18n()
   return (
     <Table data-testid="siniestros-tabla">
       <TableHeader>
@@ -150,7 +152,7 @@ export function TablaDeSiniestros({
                       className="text-xs font-normal text-danger"
                       data-testid="siniestro-intereses"
                     >
-                      {TEXTO_DE_MORA.masIntereses(formatCurrency(interesPendiente(i)))}
+                      {t(CLAVE_DE_MORA.masIntereses, { monto: formatCurrency(interesPendiente(i)) })}
                     </div>
                   ) : null}
                 </TableCell>

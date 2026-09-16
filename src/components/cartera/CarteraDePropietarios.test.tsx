@@ -21,6 +21,7 @@ import { act } from 'react'
 
 import type { CarteraConPropietarios, MesDelPropietario } from '@/lib/api/cartera.types'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
+import es from '@/lib/i18n/locales/es.json'
 
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -286,5 +287,29 @@ describe('🔴 la puerta al estado de cuenta del PROPIETARIO (Nico, 2026-09-16)'
     conDatos(datosDe())
     montar()
     expect(host.querySelector('button [data-testid="propietario-estado-de-cuenta"]')).toBeNull()
+  })
+})
+
+/*
+ * 🔴 El pie decía «sólo se le debe lo que el inquilino efectivamente pagó»,
+ * que es la base RECAUDADO, y el número sale con base CAUSADO
+ * (`DispersionesService.liquidacionDelMes`, llamado sin base desde la cartera).
+ * La base no se cambia acá: se dice la verdad, con la convención compartida
+ * («Canon causado» con CAUSADO).
+ */
+describe('🔴 el pie dice la base con que se liquida', () => {
+  it('habla de canon CAUSADO, no de lo que el inquilino pagó', () => {
+    conDatos(datosDe())
+    montar()
+    expect($('[data-testid="pie-de-la-base"]').textContent).toBe('cartera.porPagar.pieCausado')
+    expect(host.textContent).not.toContain('efectivamente pagó')
+  })
+
+  it('el texto del diccionario dice «causado», pagado o no, y no promete sólo lo recaudado', () => {
+    const pie = (es as { cartera: { porPagar: { pieCausado: string; canonCausado: string } } })
+      .cartera.porPagar
+    expect(pie.pieCausado).toContain('canon causado')
+    expect(pie.pieCausado).toContain('lo haya pagado el inquilino o no')
+    expect(pie.canonCausado).toBe('Canon causado')
   })
 })

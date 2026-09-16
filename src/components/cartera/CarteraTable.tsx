@@ -86,7 +86,7 @@ import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import type { CarteraItem } from '@/lib/types/inmobiliaria'
 import {
   RUTA_DE_REGLAS_DE_MORA,
-  TEXTO_DE_MORA,
+  CLAVE_DE_MORA,
   interesDe,
   totalConInteres,
 } from './interes-de-mora'
@@ -229,11 +229,11 @@ export function CarteraTable({ items, onVerCobro, vacio }: CarteraTableProps) {
           <Ordenable campo="debe" alineado="right">
             {t('cartera.tabla.debe')}
           </Ordenable>
-          <TableHead className="whitespace-nowrap text-right" title={TEXTO_DE_MORA.explicacion}>
-            {TEXTO_DE_MORA.columnaIntereses}
+          <TableHead className="whitespace-nowrap text-right" title={t(CLAVE_DE_MORA.explicacion)}>
+            {t(CLAVE_DE_MORA.columnaIntereses)}
           </TableHead>
           <Ordenable campo="total" alineado="right">
-            {TEXTO_DE_MORA.columnaTotal}
+            {t(CLAVE_DE_MORA.columnaTotal)}
           </Ordenable>
           <TableHead className="w-16" />
         </TableRow>
@@ -494,12 +494,12 @@ function FilaDeCartera({
  *  · El back no lo mandó: un guion con el porqué en el `title`, nunca $0.
  */
 function InteresDeLaFila({ item }: { item: CarteraItem }) {
-  const { formatCurrency } = useI18n()
+  const { t, formatCurrency } = useI18n()
   const interes = interesDe(item)
 
   if (!interes) {
     return (
-      <span className="text-fg-subtle" title={TEXTO_DE_MORA.sinDato}>
+      <span className="text-fg-subtle" title={t(CLAVE_DE_MORA.sinDato)}>
         —
       </span>
     )
@@ -517,11 +517,11 @@ function InteresDeLaFila({ item }: { item: CarteraItem }) {
         </div>
         {interes.abonadoCop > 0 && (
           <div className="font-mono text-xs tabular-nums text-fg-subtle">
-            {TEXTO_DE_MORA.abonado(formatCurrency(interes.abonadoCop))}
+            {t(CLAVE_DE_MORA.abonado, { monto: formatCurrency(interes.abonadoCop) })}
           </div>
         )}
         {interes.pagadaEnMora && (
-          <div className="text-xs text-fg-subtle">{TEXTO_DE_MORA.pagadaEnMora}</div>
+          <div className="text-xs text-fg-subtle">{t(CLAVE_DE_MORA.pagadaEnMora)}</div>
         )}
       </div>
     )
@@ -531,14 +531,14 @@ function InteresDeLaFila({ item }: { item: CarteraItem }) {
     return (
       <div className="whitespace-nowrap text-xs" title={interes.motivo}>
         <div className="text-warning" data-testid="cartera-sin-reglas">
-          {TEXTO_DE_MORA.sinReglas}
+          {t(CLAVE_DE_MORA.sinReglas)}
         </div>
         <Link
           href={RUTA_DE_REGLAS_DE_MORA}
           onClick={(e) => e.stopPropagation()}
           className="text-fg-muted underline underline-offset-4 hover:text-fg"
         >
-          {TEXTO_DE_MORA.configurar}
+          {t(CLAVE_DE_MORA.configurar)}
         </Link>
       </div>
     )
@@ -547,7 +547,7 @@ function InteresDeLaFila({ item }: { item: CarteraItem }) {
   if (interes.motivo) {
     return (
       <span className="whitespace-nowrap text-xs text-fg-muted" title={interes.motivo}>
-        {TEXTO_DE_MORA.sinInteres}
+        {t(CLAVE_DE_MORA.sinInteres)}
       </span>
     )
   }

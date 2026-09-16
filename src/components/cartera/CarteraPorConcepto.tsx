@@ -126,9 +126,10 @@ import {
   sumarTotales,
 } from '@/lib/cartera/conceptos'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 import {
   RUTA_DE_REGLAS_DE_MORA,
-  TEXTO_DE_MORA,
+  CLAVE_DE_MORA,
   faltanReglasDeMora,
   interesDe,
   sumarIntereses,
@@ -184,20 +185,21 @@ function Interes({ valor, sinReglas, pagadaEnMora }: {
   sinReglas?: boolean
   pagadaEnMora?: boolean
 }) {
+  const { t } = useI18n()
   if (valor > 0) {
     return (
       <>
         <span className="font-mono tabular-nums text-danger">{formatCurrency(valor)}</span>
         {pagadaEnMora ? (
           <span className="mt-0.5 block text-xs font-normal text-fg-muted">
-            {TEXTO_DE_MORA.pagadaEnMora}
+            {t(CLAVE_DE_MORA.pagadaEnMora)}
           </span>
         ) : null}
       </>
     )
   }
   if (sinReglas) {
-    return <span className="whitespace-nowrap text-xs text-warning">{TEXTO_DE_MORA.sinReglas}</span>
+    return <span className="whitespace-nowrap text-xs text-warning">{t(CLAVE_DE_MORA.sinReglas)}</span>
   }
   return (
     <span className="text-fg-subtle" aria-label="cero">
@@ -208,15 +210,17 @@ function Interes({ valor, sinReglas, pagadaEnMora }: {
 
 /** «$X con intereses», debajo del capital, sólo si hay intereses. */
 function ConIntereses({ capital, interes }: { capital: number; interes: number }) {
+  const { t } = useI18n()
   if (interes <= 0) return null
   return (
     <span className="mt-0.5 block text-xs font-normal text-fg-muted">
-      {TEXTO_DE_MORA.conIntereses(formatCurrency(capital + interes))}
+      {t(CLAVE_DE_MORA.conIntereses, { monto: formatCurrency(capital + interes) })}
     </span>
   )
 }
 
 export function CarteraPorConcepto() {
+  const { t } = useI18n()
   const { datos, cargando, error, recargar } = useCarteraDeInquilinos()
   const [busqueda, setBusqueda] = useState('')
   const [soloEnMora, setSoloEnMora] = useState(false)
@@ -304,7 +308,7 @@ export function CarteraPorConcepto() {
             </p>
             {interesTotal > 0 ? (
               <p className="mt-0.5 font-mono text-xs tabular-nums text-fg-muted" data-testid="total-deuda-con-intereses">
-                {TEXTO_DE_MORA.conIntereses(formatCurrency((datos?.totales.saldoCop ?? 0) + interesTotal))}
+                {t(CLAVE_DE_MORA.conIntereses, { monto: formatCurrency((datos?.totales.saldoCop ?? 0) + interesTotal) })}
               </p>
             ) : null}
           </div>
@@ -350,9 +354,9 @@ export function CarteraPorConcepto() {
               <p
                 className="mt-0.5 font-mono text-xs tabular-nums text-danger"
                 data-testid="total-intereses"
-                title={TEXTO_DE_MORA.explicacion}
+                title={t(CLAVE_DE_MORA.explicacion)}
               >
-                {TEXTO_DE_MORA.masIntereses(formatCurrency(interesTotal))}
+                {t(CLAVE_DE_MORA.masIntereses, { monto: formatCurrency(interesTotal) })}
               </p>
             ) : null}
           </div>
@@ -381,7 +385,7 @@ export function CarteraPorConcepto() {
                   className="inline-block font-medium underline underline-offset-4"
                   data-testid="por-concepto-configurar-reglas"
                 >
-                  {TEXTO_DE_MORA.configurarReglas}
+                  {t(CLAVE_DE_MORA.configurarReglas)}
                 </Link>
               ) : null}
             </div>
@@ -427,8 +431,8 @@ export function CarteraPorConcepto() {
                 {haySinDesglose ? (
                   <TableHead className="whitespace-nowrap text-right">Sin desglose</TableHead>
                 ) : null}
-                <TableHead className="whitespace-nowrap text-right" title={TEXTO_DE_MORA.explicacion}>
-                  {TEXTO_DE_MORA.columnaMoraLiquidadaHoy}
+                <TableHead className="whitespace-nowrap text-right" title={t(CLAVE_DE_MORA.explicacion)}>
+                  {t(CLAVE_DE_MORA.columnaMoraLiquidadaHoy)}
                 </TableHead>
                 <TableHead className={cn('whitespace-nowrap text-right', FIJA, 'bg-bg dark:bg-surface-muted')}>
                   Debe
@@ -624,6 +628,7 @@ function FilaDelMes({
   conceptos: readonly TipoDeConcepto[]
   haySinDesglose: boolean
 }) {
+  const { t } = useI18n()
   return (
     <TableRow className="bg-surface-muted" data-testid="fila-mes">
       <TableCell className="pl-10">
@@ -641,7 +646,7 @@ function FilaDelMes({
         <span className="mt-0.5 block text-xs">
           {interesDe(fila)?.pagadaEnMora ? (
             <span className="text-danger">
-              {TEXTO_DE_MORA.pagadaEnMora} · {fila.diasDeMora}{' '}
+              {t(CLAVE_DE_MORA.pagadaEnMora)} · {fila.diasDeMora}{' '}
               {fila.diasDeMora === 1 ? 'día' : 'días'} de mora
             </span>
           ) : fila.enSiniestro ? (

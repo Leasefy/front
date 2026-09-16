@@ -686,6 +686,15 @@ export function RegistrarPagoModal({
                 />
                 <p className="text-xs text-fg-muted">
                   {t('recibos.form.maximo', { monto: formatCurrency(maximo) })}
+                  {/* El máximo ya trae la mora adentro: se dice cuánto es. */}
+                  {(cartera.interesCop ?? 0) > 0 && (
+                    <span data-testid="maximo-con-intereses">
+                      {' · '}
+                      {t('recibos.form.cartera.deLosCualesIntereses', {
+                        monto: formatCurrency(cartera.interesCop ?? 0),
+                      })}
+                    </span>
+                  )}
                 </p>
                 {/* Por encima de lo vencido la plata baja cuotas que todavía no
                     vencen. Es legítimo y es lo que el CEO pidió, pero tiene que

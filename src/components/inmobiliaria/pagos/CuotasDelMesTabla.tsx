@@ -56,6 +56,7 @@ import { nombreDelMes } from '@/lib/utils/mes'
 import { useI18n } from '@/lib/i18n'
 import type { CajonDeLaCuota, FilaDeLaCuotaDelMes } from '@/lib/api/cartera.types'
 import { cn } from '@/lib/utils'
+import { CLAVE_DE_MORA, interesPendiente } from '@/components/cartera/interes-de-mora'
 
 /**
  * Cómo se lee cada cajón. Las palabras son las de la pantalla de cartera, no
@@ -136,7 +137,7 @@ export function CuotasDelMesTabla({
   hayFiltros = false,
   onLimpiarFiltros,
 }: CuotasDelMesTablaProps) {
-  const { locale } = useI18n()
+  const { locale, t } = useI18n()
   const idioma = locale === 'es' ? 'es' : 'en'
 
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
@@ -217,6 +218,15 @@ export function CuotasDelMesTabla({
                   >
                     {formatCurrency(f.pendienteCop)}
                   </p>
+                  {/* 🔴 El interés, aparte del capital. Una cuota ya pagada que
+                      lo sigue debiendo tiene «falta $0» y esta línea. */}
+                  {interesPendiente(f) > 0 && (
+                    <p className="text-caption text-danger" data-testid="cuota-intereses">
+                      {t(CLAVE_DE_MORA.masIntereses, {
+                        monto: formatCurrency(interesPendiente(f)),
+                      })}
+                    </p>
+                  )}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   <span className="block tabular-nums text-fg-muted">

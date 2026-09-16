@@ -27,6 +27,10 @@ import {
   type ProgresoDeContratos,
 } from "./activarContratosCompleto";
 import { BarraDeTrabajo } from "@/components/migracion/BarraDeTrabajo";
+import {
+  VerificacionDeContratos,
+  deLaActivacion,
+} from "./VerificacionDeContratos";
 import { useDropzone } from "react-dropzone";
 import {
   ArrowRight,
@@ -2190,6 +2194,24 @@ function ListaDeTrabajo({
             </ul>
           ) : null}
         </Card>
+      ) : null}
+
+      {/* ── 🔴 LA SEGUNDA OPINIÓN, al lado del resultado del lote ────────
+       * Nico, 2026-09-15: «el contrato es supremamente importante porque todo
+       * queda asociado ahí». La activación ya trae su propio veredicto sobre
+       * lo que acaba de escribir; el botón de adentro lo extiende al lote
+       * completo, con cursor, para que el número no sea de una muestra.
+       *
+       * Va SIEMPRE que haya habido una activación, incluso cuando el back no
+       * mandó `verificacion`: en ese caso la tarjeta dice que no se verificó,
+       * que es información distinta de «todo bien».
+       */}
+      {activacion ? (
+        <VerificacionDeContratos
+          lote={lote}
+          deLaActivacion={deLaActivacion(activacion.verificacion)}
+          aviso={activacion.avisoDeVerificacion}
+        />
       ) : null}
 
       {/* ── Después de activar la lista se va ───────────────────────────

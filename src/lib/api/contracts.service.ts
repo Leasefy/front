@@ -574,6 +574,21 @@ export const contractsApi = {
         desdeFila,
       });
     },
+
+    /**
+     * La SEGUNDA opinión sobre los contratos ya migrados del lote.
+     *
+     * No cambia nada: contrasta lo que quedó guardado contra lo que el archivo
+     * dice, campo por campo. Cursor y presupuesto de reloj como `reconciliar`,
+     * para que el número sea del LOTE COMPLETO y no de una muestra: el cliente
+     * llama con `ultimaFila + 1` hasta que `terminado` sea true.
+     */
+    async verificar(lote?: string, desdeFila = 0): Promise<ResultadoDeVerificacion> {
+      return apiClient.post<ResultadoDeVerificacion>('/contracts/migrar/verificar', {
+        lote,
+        desdeFila,
+      });
+    },
   },
 
   async create(dto: CreateContractDto): Promise<Contract> {
@@ -1393,6 +1408,74 @@ export interface ResultadoDeFila {
   inquilinoDocumentoAjeno?: boolean;
 }
 
+/**
+ * ── LA SEGUNDA OPINIÓN sobre un contrato migrado ────────────────────────────
+ *
+ * Nico, 2026-09-15: «para que haya una doble verificación del trabajo, ya que
+ * el contrato es supremamente importante porque todo queda asociado ahí».
+ *
+ * El back lee lo que la migración dejó guardado, vuelve a leer la fila del
+ * archivo por su cuenta —sin usar ninguna función del asociador— y los
+ * contrasta campo por campo.
+ */
+
+/** Un campo que no cuadra, con las dos versiones y la frase lista para pintar. */
+export interface DiferenciaVerificada {
+  /** Llave estable para agrupar sin leer la frase (`inmueble`, `canon`…). */
+  campo: string
+  /** El nombre del campo en castellano. */
+  etiqueta: string
+  /** De dónde sale la verdad de este campo. Se muestra tal cual. */
+  fuente: string
+  diceElArchivo: string
+  quedoGuardado: string
+  /** «Inmueble: el contrato quedó con … y el archivo dice ….» */
+  frase: string
+}
+
+/** Un campo que NO se pudo cotejar, y por qué. 🔴 Nunca es una aprobación. */
+export interface CampoSinCotejar {
+  campo: string
+  etiqueta: string
+  motivo: string
+}
+
+export interface VeredictoDeFila {
+  fila: number
+  veredicto: 'coincide' | 'difiere' | 'no_verificable'
+  contratoId: string | null
+  diferencias: DiferenciaVerificada[]
+  sinCotejar: CampoSinCotejar[]
+  /** Los campos que SÍ se contrastaron y cuadraron: la evidencia de que se miró. */
+  cotejados: string[]
+  /** Con `no_verificable`, por qué no se pudo juzgar. */
+  motivo?: string
+}
+
+/** Lo que devuelve una llamada a `POST migrar/verificar` (una tanda). */
+export interface ResultadoDeVerificacion {
+  /** Filas miradas en ESTA llamada. */
+  verificadas: number
+  coinciden: number
+  difieren: number
+  /** 🔴 Estas NO son «bien»: son las que no se pudieron juzgar. */
+  noVerificables: number
+  /** El detalle, con lo que difiere primero. Topado en el back. */
+  veredictos: VeredictoDeFila[]
+  veredictosTruncados: boolean
+  /** Cursor para la siguiente llamada. `null` = no miró ninguna. */
+  ultimaFila: number | null
+  /** No queda nada por verificar en el alcance: la vuelta terminó. */
+  terminado: boolean
+  /** Cuántas filas del alcance faltan por mirar. */
+  restantes: number
+  /**
+   * Si el veredicto quedó guardado. `false` = la migración de base todavía no
+   * se aplicó: los números son ciertos, pero se pierden al recargar.
+   */
+  guardado: boolean
+}
+
 /** Lo que devuelve una llamada a `POST migrar/reconciliar` (una tanda). */
 export interface ResultadoReconciliacion {
   /** Filas miradas en ESTA llamada. */
@@ -1457,6 +1540,17 @@ export interface ResumenActivacion {
    * tienen cobros o facturas: hay que mirarlos a mano.
    */
   porRevisarAMano?: number;
+  /**
+   * 2026-09-15 — la SEGUNDA opinión sobre lo que ESTA corrida escribió.
+   *
+   * 🔴 Ausente NO significa «todo bien»: significa que no se verificó. La
+   * pantalla tiene que decir eso y no callarlo — un silencio acá se lee
+   * exactamente igual que una aprobación, que es lo contrario de lo que este
+   * campo existe para dar. `avisoDeVerificacion` explica por qué no se pudo.
+   */
+  verificacion?: ResultadoDeVerificacion;
+  /** Por qué no se verificó, cuando no se pudo. Viaja con `verificacion` ausente. */
+  avisoDeVerificacion?: string;
   resultados: ResultadoDeFila[];
 }
 

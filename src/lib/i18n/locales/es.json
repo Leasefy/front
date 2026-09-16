@@ -1245,7 +1245,10 @@
         "activeLeads": "Leads activos",
         "scheduledVisits": "Visitas programadas",
         "contractsInProgress": "Contratos en firma",
-        "pendingCollections": "Cobros pendientes"
+        "pendingCollections": "Cobros pendientes",
+        "cuotasPendientes": "Cuotas pendientes",
+        "cuotasPendientesDetalle": "Toda la deuda del contrato · {{enCartera}} en cartera",
+        "cuotasPendientesSinDato": "El servidor todavía no manda las cuotas del contrato"
       },
       "pipeline": {
         "title": "Pipeline Activo",

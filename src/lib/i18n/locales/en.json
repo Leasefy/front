@@ -1205,7 +1205,10 @@
         "activeLeads": "Active leads",
         "scheduledVisits": "Scheduled visits",
         "contractsInProgress": "Contracts in progress",
-        "pendingCollections": "Pending collections"
+        "pendingCollections": "Pending collections",
+        "cuotasPendientes": "Pending installments",
+        "cuotasPendientesDetalle": "All lease debt · {{enCartera}} past the grace period",
+        "cuotasPendientesSinDato": "The server does not send the lease installments yet"
       },
       "pipeline": {
         "title": "Active Pipeline",

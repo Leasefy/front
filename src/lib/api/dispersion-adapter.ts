@@ -55,7 +55,8 @@ export interface DispersionDelBack {
   createdAt: string;
   updatedAt: string;
   items?: Array<{
-    cobroId: string;
+    cobroId: string | null;
+    cuotaId?: string | null;
     propertyTitle: string;
     rentCollected: number;
     commissionPercent: number;
@@ -118,6 +119,7 @@ export function adaptarDispersion(d: DispersionDelBack): Dispersion {
     month: d.month,
     items: (d.items ?? []).map((i) => ({
       cobroId: i.cobroId,
+      cuotaId: i.cuotaId ?? null,
       propertyTitle: i.propertyTitle,
       rentCollected: i.rentCollected,
       commissionPercent: i.commissionPercent,

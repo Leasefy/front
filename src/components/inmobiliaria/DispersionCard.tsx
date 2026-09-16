@@ -268,7 +268,7 @@ export function DispersionCard({
               <div className="mt-3 space-y-2 border-t border-border dark:border-border-strong pt-3">
                 {dispersion.items.map((item) => (
                   <div
-                    key={item.cobroId}
+                    key={item.cuotaId ?? item.cobroId}
                     className="flex items-center justify-between text-sm"
                   >
                     <span className="text-fg-muted dark:text-fg-subtle truncate max-w-[180px]">

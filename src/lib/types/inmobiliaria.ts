@@ -653,7 +653,15 @@ export interface CobroSummary {
 export type DispersionStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
 export interface DispersionItem {
-  cobroId: string;
+  /**
+   * 🔴 El documento, cuando existe. Es `null` en toda dispersión generada desde
+   * el 16-09: la plata del propietario sale de su CUOTA, no de un cobro del
+   * inquilino, y la inmobiliaria migrada no tiene un solo cobro contra 33.640
+   * cuotas de propietario. Llavear una lista por esto colisiona todas las filas.
+   */
+  cobroId: string | null;
+  /** La cuota del propietario que se gira. Es la identidad de la línea. */
+  cuotaId: string | null;
   propertyTitle: string;
   /** Canon recaudado, SIN la administración: ésa es de la copropiedad. */
   rentCollected: number;
@@ -729,7 +737,8 @@ export interface VistaPreviaDeDispersiones {
     totalDeTerceros: number;
     netToPropietario: number;
     items: {
-      cobroId: string;
+      cobroId: string | null;
+      cuotaId: string | null;
       propertyTitle: string;
       rentCollected: number;
       commissionPercent: number;

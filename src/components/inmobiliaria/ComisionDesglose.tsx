@@ -211,7 +211,7 @@ export function ComisionDesglose({
                 const Icon = getPropertyTypeIcon(item.propertyTitle);
                 return (
                   <motion.tr
-                    key={item.cobroId}
+                    key={item.cuotaId ?? item.cobroId}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}

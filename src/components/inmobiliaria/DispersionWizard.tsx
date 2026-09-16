@@ -106,7 +106,10 @@ interface DispersionDraft {
   /** Lo que la inmobiliaria le abona: devoluciones, reajustes. */
   totalConceptosAFavor: number;
   items: {
-    cobroId: string;
+    /** El documento, si existe. Desde el 16-09 es `null`: la plata sale de la cuota. */
+    cobroId: string | null;
+    /** La cuota del propietario que se gira. Es la identidad de la línea. */
+    cuotaId: string | null;
     propertyTitle: string;
     rentCollected: number;
     commissionPercent: number;
@@ -587,7 +590,7 @@ export function DispersionWizard({
                   <div className="space-y-2 ml-13">
                     {draft.items.map((item) => (
                       <div
-                        key={item.cobroId}
+                        key={item.cuotaId ?? item.cobroId}
                         className="flex items-center justify-between text-sm"
                       >
                         <span className="flex items-center gap-2 text-muted-foreground">
@@ -691,6 +694,7 @@ export function DispersionWizard({
                   <ComisionDesglose
                     items={draft.items.map((i) => ({
                       cobroId: i.cobroId,
+                      cuotaId: i.cuotaId,
                       propertyTitle: i.propertyTitle,
                       rentCollected: i.rentCollected,
                       commissionPercent: i.commissionPercent,

@@ -22,6 +22,7 @@ import {
 // Components
 import { AgenteProfile } from '@/components/inmobiliaria/AgenteProfile';
 import { AgenteMetrics } from '@/components/inmobiliaria/AgenteMetrics';
+import { useResumenDeComisiones } from '@/components/inmobiliaria/ComisionesSinAtribuir';
 import { AgentePropertyList } from '@/components/inmobiliaria/AgentePropertyList';
 import { AgentePipeline } from '@/components/inmobiliaria/AgentePipeline';
 import { AgenteHorarioVisitas } from '@/components/inmobiliaria/AgenteHorarioVisitas';
@@ -39,6 +40,7 @@ function AgenteDetailContent() {
   const { agente } = useAgente(agenteId);
   const { consignaciones } = useAgenteConsignaciones(agenteId);
   const { pipelineItems } = useAgentePipeline(agenteId);
+  const { resumen: resumenDeComisiones } = useResumenDeComisiones();
 
   // Handlers
   const handleEdit = useCallback(() => {
@@ -124,7 +126,10 @@ function AgenteDetailContent() {
             transition={{ delay: 0.1 }}
             className="rounded-lg border border-border bg-card p-5"
           >
-            <AgenteMetrics metrics={agente.metrics} />
+            <AgenteMetrics
+              metrics={agente.metrics}
+              resumenDeComisiones={resumenDeComisiones}
+            />
           </motion.div>
 
           {/* Properties Section */}

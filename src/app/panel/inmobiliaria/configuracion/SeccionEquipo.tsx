@@ -29,6 +29,7 @@ import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ConfigUsuarios } from '@/components/inmobiliaria';
 import { AgenteLeaderboard } from '@/components/inmobiliaria/AgenteLeaderboard';
+import { useResumenDeComisiones } from '@/components/inmobiliaria/ComisionesSinAtribuir';
 import { AgenteWorkloadChart } from '@/components/inmobiliaria/AgenteWorkloadChart';
 import { useAgencyUsers, useAgentes, inmobiliariaConfigApi } from '@/lib/hooks/useInmobiliaria';
 import { agencyApi, permissionsApi } from '@/lib/api/inmobiliaria.service';
@@ -55,6 +56,8 @@ export function SeccionEquipo() {
     errorCrudo: agentesError,
     refetch: recargarAgentes,
   } = useAgentes({ skip: vista === 'miembros' });
+  // Lo que la comisión no atribuye: sólo lo mira el ranking.
+  const { resumen: resumenDeComisiones } = useResumenDeComisiones(vista !== 'ranking');
 
   /**
    * `?invitar=1` abre el formulario de una: es la puerta que ofrece el diálogo
@@ -290,7 +293,7 @@ export function SeccionEquipo() {
           esqueleto={<EsqueletoDeSeccion filas={3} />}
         >
           {vista === 'ranking' ? (
-            <AgenteLeaderboard agentes={agentes} />
+            <AgenteLeaderboard agentes={agentes} resumenDeComisiones={resumenDeComisiones} />
           ) : (
             <AgenteWorkloadChart agentes={agentes} />
           )}

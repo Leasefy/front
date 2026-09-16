@@ -147,6 +147,11 @@ export interface AgenteMetrics {
   totalCommissions: number;
   commissionsThisMonth: number;
   avgDaysToClose: number;
+  /**
+   * PORCENTAJE de 0 a 100 (dos decimales), como lo calcula el back
+   * (`agentes.service.ts`: `completados / leads * 100`). NO es una fracción:
+   * multiplicarlo por 100 pintaba «3333%».
+   */
   conversionRate: number;
 }
 

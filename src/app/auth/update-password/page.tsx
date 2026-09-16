@@ -14,6 +14,7 @@ import { getAccessToken } from '@/lib/api/client';
 import { sanitizeReturnUrl } from '@/lib/utils';
 import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena';
 import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
+import { useHidratado } from '@/lib/hooks/use-hidratado';
 
 /**
  * Llama al endpoint REST de Supabase Auth directo con fetch nativo, sin pasar
@@ -102,6 +103,13 @@ function UpdatePasswordContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  /*
+   * Los campos de acá no llevan `name`, así que un envío nativo antes de
+   * hidratar no mandaría la contraseña a ningún lado. Igual va la misma guarda
+   * que el login (`method="post"` y botón apagado hasta hidratar): que la
+   * seguridad del formulario no dependa de que nadie le agregue un `name`.
+   */
+  const hidratado = useHidratado();
 
   const passwordsMatch = password === confirm;
   // El mismo mínimo que el registro (medidor de contraseña, 2026-09-07).
@@ -110,7 +118,7 @@ function UpdatePasswordContent() {
   // el AuthProvider terminó su init (fetchUser + checkMfaLevel) y no
   // chocan los locks de @supabase/auth-js cuando llamamos updateUser.
   const canSubmit =
-    password && confirm && passwordsMatch && isStrong && !authLoading && !isSubmitting;
+    hidratado && password && confirm && passwordsMatch && isStrong && !authLoading && !isSubmitting;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,7 +195,7 @@ function UpdatePasswordContent() {
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form method="post" onSubmit={handleSubmit} className="space-y-4">
                 {/* Password */}
                 <div>
                   <label className="block text-sm font-medium text-fg mb-1.5">

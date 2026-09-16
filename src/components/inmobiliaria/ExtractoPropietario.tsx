@@ -41,6 +41,7 @@ import type { ExtractoPropietario as ExtractoPropietarioType, CobroStatus } from
 import { formatCurrency, getCobroStatusColor } from '@/lib/types/inmobiliaria';
 import { usePropietarios, useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { nombreDelMes } from '@/lib/utils/mes';
+import { baseDeLaLinea, baseDelExtracto, type BaseDelCanonDelExtracto } from '@/lib/propietarios/base-del-canon';
 
 interface ExtractoPropietarioProps {
   extracto: ExtractoPropietarioType;
@@ -167,6 +168,27 @@ function formatDateShort(dateStr: string | undefined, loc: string): string {
 }
 
 /**
+ * El rótulo del canon según su base (`lib/propietarios/base-del-canon.ts`).
+ *
+ * 🔴 Decía «Canon recaudado» siempre, y el extracto sale de las cuotas del mes:
+ * lo que el contrato CAUSA ese mes, haya pagado el inquilino o no. Este
+ * extracto se le manda por correo al propietario. «Canon causado» con base
+ * CAUSADO, «Canon recaudado» sólo con RECAUDADO; el número no cambia.
+ */
+const ROTULO_DEL_CANON: Record<BaseDelCanonDelExtracto, string> = {
+  CAUSADO: 'inmobiliaria.propietario.extracto.canonCausado',
+  RECAUDADO: 'inmobiliaria.propietario.extracto.canonRecaudado',
+  MIXTA: 'inmobiliaria.propietario.extracto.canonMixto',
+};
+
+/** La columna es angosta: el adjetivo solo, o «Canon» cuando conviven las dos bases. */
+const COLUMNA_DEL_CANON: Record<BaseDelCanonDelExtracto, string> = {
+  CAUSADO: 'inmobiliaria.propietario.extracto.thCanonCausado',
+  RECAUDADO: 'inmobiliaria.propietario.extracto.thCollected',
+  MIXTA: 'inmobiliaria.propietario.extracto.thCanon',
+};
+
+/**
  * ExtractoPropietario - Owner statement view with printable styling
  * Shows property breakdown, commissions, and net amounts
  */
@@ -183,6 +205,8 @@ export function ExtractoPropietario({
 
   // Get propietario details for bank info
   const { propietarios } = usePropietarios();
+  // Con qué regla sale el canon: rotula la columna, el resumen y la nota de terceros.
+  const base = baseDelExtracto(extracto);
   const { config } = useInmobiliariaConfig();
   // Real agency profile lives under the `agency` key of GET /inmobiliaria/config.
   const agencyConfig = config?.agency;
@@ -389,7 +413,7 @@ export function ExtractoPropietario({
                   <TableHead>{t('inmobiliaria.propietario.extracto.thTenant')}</TableHead>
                   <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thRent')}</TableHead>
                   <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thAdmin')}</TableHead>
-                  <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thCollected')}</TableHead>
+                  <TableHead className="text-right" data-testid="extracto-columna-canon">{t(COLUMNA_DEL_CANON[base])}</TableHead>
                   <TableHead className="text-center">{t('inmobiliaria.propietario.extracto.thStatus')}</TableHead>
                   <TableHead className="text-center">{t('inmobiliaria.propietario.extracto.thCommPct')}</TableHead>
                   <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thCommission')}</TableHead>
@@ -451,9 +475,19 @@ export function ExtractoPropietario({
                         {prop.adminAmount > 0 ? formatCurrency(prop.adminAmount) : '-'}
                       </TableCell>
                       <TableCell className="text-right text-sm font-medium">
-                        {/* El canon recaudado, NO todo lo que puso el inquilino:
-                            la administración es de la copropiedad. */}
+                        {/* El canon de la liquidación, NO todo lo que facturó o
+                            pagó el inquilino: la administración es de la
+                            copropiedad. Causado o recaudado según `base`. */}
                         {formatCurrency(prop.rentCollected)}
+                        {base === 'MIXTA' && (
+                          <span className="block text-[11px] font-normal text-muted-foreground" data-testid="extracto-base-de-la-fila">
+                            {t(
+                              baseDeLaLinea(prop) === 'RECAUDADO'
+                                ? 'inmobiliaria.propietario.extracto.filaRecaudado'
+                                : 'inmobiliaria.propietario.extracto.filaCausado',
+                            )}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="text-center">
                         <span className={cn(
@@ -546,13 +580,23 @@ export function ExtractoPropietario({
           <div className="p-6 rounded-lg bg-muted/50 border border-border">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Canon recaudado</span>
+                <span className="text-sm text-muted-foreground" data-testid="extracto-rotulo-canon">
+                  {t(ROTULO_DEL_CANON[base])}
+                </span>
                 <span className="text-sm font-medium text-foreground">
                   {formatCurrency(
                     extracto.lineItems.reduce((s, l) => s + l.rentCollected, 0),
                   )}
                 </span>
               </div>
+              {/* «Causado» no es una palabra que un propietario use todos los
+                  días: se dice qué es. Con las dos bases, las dos. */}
+              {base !== 'RECAUDADO' && (
+                <p className="-mt-1.5 text-xs text-muted-foreground" data-testid="extracto-que-es-el-canon">
+                  {t('inmobiliaria.propietario.extracto.queEsCanonCausado')}
+                  {base === 'MIXTA' && ` ${t('inmobiliaria.propietario.extracto.queEsCanonRecaudado')}`}
+                </p>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">{t('inmobiliaria.propietario.extracto.agencyCommissions')}</span>
                 <span className="text-sm font-medium text-primary">
@@ -587,8 +631,15 @@ export function ExtractoPropietario({
                 /* Nombrar lo que entró y no es suyo. Sin esto, un propietario
                    que sabe que su inquilino pagó $1.230.000 ve $900.000 y
                    asume que le están robando la diferencia. */
-                <p className="border-t border-border pt-3 text-xs text-muted-foreground">
-                  Además se recaudaron{' '}
+                /* Con base CAUSADO la administración tampoco se recaudó
+                   necesariamente: es lo que el contrato cobra. «Se recaudaron»
+                   sólo cuando la base es RECAUDADO. */
+                <p className="border-t border-border pt-3 text-xs text-muted-foreground" data-testid="extracto-de-terceros">
+                  {base === 'RECAUDADO'
+                    ? 'Además se recaudaron'
+                    : base === 'CAUSADO'
+                      ? 'Además del canon, el contrato cobra'
+                      : 'Además del canon hay'}{' '}
                   <strong className="text-foreground">
                     {formatCurrency(extracto.totals.totalDeTerceros)}
                   </strong>{' '}

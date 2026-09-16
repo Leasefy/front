@@ -152,17 +152,32 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
 
 /**
  * Secondary stat — neutral tile, Satoshi number, mono label (no rainbow).
+ * `detalle` es una línea opcional debajo del rótulo: para decir qué cuenta el
+ * número cuando el rótulo solo no alcanza.
  */
-function SecondaryStat({ icon: Icon, value, label }: { icon: React.ElementType; value: string | number; label: string }) {
+function SecondaryStat({
+  icon: Icon,
+  value,
+  label,
+  detalle,
+  testId,
+}: {
+  icon: React.ElementType;
+  value: string | number;
+  label: string;
+  detalle?: string;
+  testId?: string;
+}) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="rounded-lg border border-border bg-card p-4" data-testid={testId}>
       <div className="flex items-center gap-3">
         <div className="rounded-md p-2 bg-surface-muted text-fg-muted">
           <Icon weight="duotone" className="h-4 w-4" />
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="font-heading text-lg font-semibold text-fg tabular-nums leading-none">{value}</p>
           <MonoLabel className="mt-1 block">{label}</MonoLabel>
+          {detalle && <p className="mt-1 text-xs text-fg-muted">{detalle}</p>}
         </div>
       </div>
     </div>
@@ -409,6 +424,8 @@ function ResumenDelNegocio() {
   const cobrosEnMora = pendingCobros.filter((c) => c.status === 'late');
   // La deuda del contrato, cuando el back la manda (ver la alerta de cartera).
   const carteraDelMes = kpisData?.deuda?.delMes;
+  // Toda la deuda viva: el número de cuotas de la pantalla de Cartera.
+  const deudaTotal = kpisData?.deuda?.total;
   const avisosDeLaDeuda = kpisData?.deuda?.avisos ?? [];
 
   // First load: distinguish "loading" from "empty agency" so the panel never
@@ -515,7 +532,25 @@ function ResumenDelNegocio() {
         <SecondaryStat icon={Kanban} value={kpis.activeLeads} label={t('inmobiliaria.dashboard.kpi.activeLeads')} />
         <SecondaryStat icon={Clock} value={kpis.scheduledVisits} label={t('inmobiliaria.dashboard.kpi.scheduledVisits')} />
         <SecondaryStat icon={FileText} value={kpis.contractsInProgress} label={t('inmobiliaria.dashboard.kpi.contractsInProgress')} />
-        <SecondaryStat icon={Warning} value={pendingCobros.length} label={t('inmobiliaria.dashboard.kpi.pendingCollections')} />
+        {/*
+          🔴 Decía «34 cobros pendientes»: los cobros que alguien alcanzó a
+          emitir. Lo pendiente sale de las CUOTAS del contrato, y el número es
+          el de Cartera —todas las cuotas con saldo, venzan cuando venzan
+          (`deuda.total.cuotas`, mismo criterio que el informe de cartera)—,
+          con cuántas ya son cartera. Un back que no manda `deuda` no tiene ese
+          número: se dice, en vez de contar cobros con el rótulo de cuotas.
+        */}
+        <SecondaryStat
+          icon={Warning}
+          value={deudaTotal ? miles(deudaTotal.cuotas) : SIN_MEDIR}
+          label={t('inmobiliaria.dashboard.kpi.cuotasPendientes')}
+          detalle={
+            deudaTotal
+              ? t('inmobiliaria.dashboard.kpi.cuotasPendientesDetalle', { enCartera: miles(deudaTotal.cuotasEnCartera) })
+              : t('inmobiliaria.dashboard.kpi.cuotasPendientesSinDato')
+          }
+          testId="resumen-cuotas-pendientes"
+        />
       </div>
 
       {/* Main Content Grid */}

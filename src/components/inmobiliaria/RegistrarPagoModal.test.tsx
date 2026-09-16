@@ -709,6 +709,22 @@ describe('<RegistrarPagoModal> la fecha del recibo (R4)', () => {
     expect(campo!.getAttribute('max')).toBeTruthy();
   });
 
+  /*
+   * 🔴 Con deuda SÓLO futura, tomar el período más viejo de la lista dejaba el
+   * piso en el futuro (`min` 2026-11-01 contra un `max` de hoy): el campo
+   * quedaba imposible de satisfacer y el valor prellenado, fuera de rango.
+   */
+  it('con deuda sólo futura el piso NO se va al futuro', async () => {
+    carteraPorCobro.mockResolvedValue(soloDeudaFutura());
+    await abrir({});
+
+    const campo = document.body.querySelector<HTMLInputElement>('#fecha-recibo');
+    const min = campo!.getAttribute('min')!;
+    const max = campo!.getAttribute('max')!;
+    expect(min <= max).toBe(true);
+    expect(min).toBe(`${new Date().getFullYear()}-01-01`);
+  });
+
   it('sin cartera el piso es el 1.º de enero del año en curso, no el año cero', async () => {
     carteraPorCobro.mockResolvedValue(
       debeTresMeses({ total: 0, vencidoCop: 0, futuroCop: 0, cuotas: [], anticipoDisponible: true }),

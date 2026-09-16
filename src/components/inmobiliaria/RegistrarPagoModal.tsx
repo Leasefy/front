@@ -301,18 +301,26 @@ export function RegistrarPagoModal({
           : null;
 
   /**
-   * R4 — el piso del campo de fecha: el primer día del período MÁS VIEJO que
-   * la persona debe.
+   * R4 — el piso del campo de fecha: el primer día del período VENCIDO más
+   * viejo que la persona debe.
    *
-   * La cartera ya viene ordenada del más viejo al más nuevo, así que es el
-   * primero. Sin cartera (un pago por adelantado) se cae al 1.º de enero del
-   * año en curso: un arqueo no mira más atrás, y dejar el campo sin piso es
-   * cómo un dedo de más escribe un recibo fechado en 2016.
+   * 🔴 Sólo cuentan las VENCIDAS. Desde que la cartera trae las cuotas futuras,
+   * tomar la primera de la lista deja un piso EN EL FUTURO cuando lo único que
+   * hay es deuda por vencer (`min` 2026-11-01 con `max` hoy): el campo queda
+   * imposible de satisfacer y el valor prellenado, fuera de rango. Por si
+   * acaso, el piso además se topa en hoy — un piso posterior al techo no es un
+   * piso, es un campo roto.
+   *
+   * Sin nada vencido (un adelanto) se cae al 1.º de enero del año en curso: un
+   * arqueo no mira más atrás, y dejar el campo sin piso es cómo un dedo de más
+   * escribe un recibo fechado en 2016.
    */
   const pisoDeLaFecha = React.useMemo(() => {
-    const masViejo = cartera?.cuotas[0]?.month;
-    if (masViejo) return `${masViejo}-01`;
-    return `${hoy.slice(0, 4)}-01-01`;
+    const masViejoVencido = cartera?.cuotas.find((c) => c.vencida)?.month;
+    const piso = masViejoVencido
+      ? `${masViejoVencido}-01`
+      : `${hoy.slice(0, 4)}-01-01`;
+    return piso > hoy ? `${hoy.slice(0, 4)}-01-01` : piso;
   }, [cartera, hoy]);
 
   const puedeEnviar =

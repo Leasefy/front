@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Icon } from '@phosphor-icons/react';
 import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -26,6 +26,25 @@ import { cn } from '@/lib/utils';
  * lugar aparecía «Resumen · Mis solicitudes · Configuración». Dos niveles con
  * la misma cara (Nico, 2026-09-03). Ahora conviven, una encima de la otra.
  *
+ * ── Las CARAS (`caras`), sólo en el nivel «secciones» ───────────────────────
+ *
+ * Un módulo puede tener dos caras del mismo asunto —hoy sólo Pagos: la plata
+ * que ENTRA de los inquilinos y la que SALE hacia los propietarios—. Eso NO es
+ * una sección más: es de qué lado del contrato estás parado, y decide QUÉ
+ * secciones tiene sentido mostrar.
+ *
+ * Estuvo un tiempo resuelto como dos rótulos en versalitas metidos entre las
+ * cards del mismo riel. Nico (2026-09-16): «eso de arriba de inquilinos y
+ * propietarios no se entiende, esa separación de las tabs de arriba». Eran dos
+ * niveles distintos peleando por el mismo renglón, con la misma cara.
+ *
+ * Ahora la cara es un selector EXPLÍCITO en su propio renglón, arriba, y
+ * debajo van sólo las secciones de la cara elegida. Cada cara es un ENLACE a
+ * su primera sección visible —no un estado local—: así la cara viaja en la
+ * URL, se puede compartir y volver, y al entrar en Dispersiones la cara ya
+ * queda en «Propietarios» sin que nadie la toque. Mismo criterio que
+ * `PestanasDeCartera`.
+ *
  * Cada barra publica su alto en una variable CSS (`cssVar`) para que lo que
  * quiera quedar pegado DEBAJO sepa dónde termina: el header mide 64px
  * (`top-16`), las secciones `--secciones-h` y las pestañas `--workspace-nav-h`.
@@ -48,15 +67,24 @@ export interface PestanaDeBarra {
   current: boolean;
   /** Píldora «IA»: la pantalla es (o está asistida por) un agente. */
   ia?: boolean;
-  /**
-   * Rótulo de la cara a la que pertenece la card, cuando el módulo tiene dos
-   * (hoy sólo Pagos: «Inquilinos» / «Propietarios»). Las cards con el mismo
-   * rótulo se agrupan y el rótulo se dibuja una vez, delante de su tanda.
-   * Sin rótulo la card va suelta al principio. Ver `CaraDeLaPlata` en
-   * `arquitectura-del-panel.ts`.
-   */
-  grupo?: string;
   dataTourTarget?: string;
+}
+
+/**
+ * Una cara del módulo: de qué lado del contrato se está mirando la plata.
+ *
+ * `href` es la primera sección VISIBLE de esa cara (la decide quien arma los
+ * items, con los gates ya aplicados): una cara sin ninguna sección visible no
+ * se pasa, y por lo tanto no se anuncia.
+ */
+export interface CaraDeLaBarra {
+  clave: string;
+  label: string;
+  /** El matiz que la explica sin abrir nada: «lo que entra» / «lo que sale». */
+  detalle: string;
+  href: string;
+  icon: Icon;
+  activa: boolean;
 }
 
 export interface BarraDePestanasProps {
@@ -70,6 +98,14 @@ export interface BarraDePestanasProps {
   nivel: 'secciones' | 'pestanas';
   /** Se re-mide al cambiar (la ruta): las pestañas entran de a poco. */
   pathname: string;
+  /**
+   * Las caras del módulo, si tiene más de una. Se dibujan ARRIBA del riel y
+   * sólo en `nivel="secciones"`. Con menos de dos no se dibuja nada: no se
+   * anuncia una separación que no existe.
+   */
+  caras?: readonly CaraDeLaBarra[];
+  /** Cómo se llama el conjunto de caras para un lector de pantalla. */
+  carasAriaLabel?: string;
 }
 
 const PILDORA_IA = (
@@ -134,23 +170,72 @@ function PestanaDeProfundidad({ item }: { item: PestanaDeBarra }) {
 }
 
 /**
- * Las cards en tandas consecutivas por `grupo`, conservando el orden dado.
+ * El selector de caras: de qué lado del contrato se mira la plata.
  *
- * Las sueltas (sin `grupo`) van como una tanda sin rótulo. No reordena nada:
- * el orden lo decide `arquitectura-del-panel.ts`, y una barra que se reordena
- * sola deja de ser un mapa.
+ * Renglón propio, encima del riel, y con OTRA cara que las secciones —texto
+ * más grande, sin el rectángulo hundido, con el matiz al lado— para que no se
+ * confunda con ellas: ése fue exactamente el defecto que Nico reportó
+ * («esa separación de las tabs de arriba no se entiende»).
+ *
+ * Son enlaces, no botones de estado: la cara vive en la URL.
  */
-function tandas(items: PestanaDeBarra[]): { grupo?: string; items: PestanaDeBarra[] }[] {
-  const salida: { grupo?: string; items: PestanaDeBarra[] }[] = [];
-  for (const item of items) {
-    const ultima = salida[salida.length - 1];
-    if (ultima && ultima.grupo === item.grupo) ultima.items.push(item);
-    else salida.push({ grupo: item.grupo, items: [item] });
-  }
-  return salida;
+function SelectorDeCaras({
+  caras,
+  ariaLabel,
+}: {
+  caras: readonly CaraDeLaBarra[];
+  ariaLabel: string;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={ariaLabel}
+      data-testid="selector-de-caras"
+      // Lenis se come la rueda si no (mismo motivo que el riel de abajo).
+      data-lenis-prevent
+      className="flex items-center gap-1 overflow-x-auto px-4 pt-2 [scrollbar-width:none] md:px-6 [&::-webkit-scrollbar]:hidden"
+    >
+      {caras.map((cara) => {
+        const IconoDeLaCara = cara.icon;
+        return (
+          <Link
+            key={cara.clave}
+            href={cara.href}
+            data-cara={cara.clave}
+            data-activa={cara.activa ? 'true' : undefined}
+            aria-current={cara.activa ? 'true' : undefined}
+            className={cn(
+              'group flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1 text-[13px] transition-colors duration-150',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+              cara.activa
+                ? 'border-primary/30 bg-primary-soft font-medium text-fg'
+                : 'border-border text-fg-muted hover:bg-surface-muted hover:text-fg',
+            )}
+          >
+            <IconoDeLaCara
+              className={cn('h-4 w-4', cara.activa ? 'text-primary' : 'text-fg-subtle group-hover:text-fg')}
+              weight={cara.activa ? 'bold' : 'regular'}
+              aria-hidden="true"
+            />
+            {cara.label}
+            <span className="hidden text-fg-subtle sm:inline">· {cara.detalle}</span>
+          </Link>
+        );
+      })}
+    </div>
+  );
 }
 
-export function BarraDePestanas({ items, ariaLabel, cssVar, topClass, nivel, pathname }: BarraDePestanasProps) {
+export function BarraDePestanas({
+  items,
+  ariaLabel,
+  cssVar,
+  topClass,
+  nivel,
+  pathname,
+  caras,
+  carasAriaLabel,
+}: BarraDePestanasProps) {
   const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null);
   const barRef = useRef<HTMLDivElement | null>(null);
   const [overflow, setOverflow] = useState({ start: false, end: false });
@@ -263,6 +348,11 @@ export function BarraDePestanas({ items, ariaLabel, cssVar, topClass, nivel, pat
         esSecciones ? 'z-[21] bg-bg/95' : 'z-20 bg-surface-muted/40',
       )}
     >
+      {/* La cara PRIMERO: de qué lado del contrato estoy. Con menos de dos no
+          se dibuja nada — no se anuncia una separación que no existe. */}
+      {esSecciones && caras && caras.length > 1 ? (
+        <SelectorDeCaras caras={caras} ariaLabel={carasAriaLabel ?? 'Caras del módulo'} />
+      ) : null}
       <div className="relative">
         <div
           className={cn(
@@ -311,28 +401,13 @@ export function BarraDePestanas({ items, ariaLabel, cssVar, topClass, nivel, pat
           )}
         >
           {esSecciones ? (
-            // El rectángulo: UN riel hundido con las cards adentro. Cuando el
-            // módulo tiene dos caras, las tandas van en el MISMO riel con su
-            // rótulo delante: dos caras de lo mismo, no dos módulos.
+            // El rectángulo: UN riel hundido con las cards adentro. Con dos
+            // caras, acá abajo van SÓLO las de la cara elegida — la elección
+            // vive en el renglón de arriba, que es otro nivel.
             <div className="inline-flex shrink-0 items-center gap-0.5 rounded-[12px] bg-surface-muted p-1">
-              {tandas(items).map((tanda, i) => {
-                const cards = tanda.items.map((item) => <CardDeSeccion key={item.href} item={item} />);
-                if (!tanda.grupo) return <Fragment key={`suelta-${i}`}>{cards}</Fragment>;
-                return (
-                  <Fragment key={tanda.grupo}>
-                    <span aria-hidden="true" className="mx-1 h-4 w-px shrink-0 bg-border" />
-                    <span
-                      aria-hidden="true"
-                      className="shrink-0 pl-1 pr-1.5 text-[10px] font-medium uppercase tracking-wide text-fg-subtle"
-                    >
-                      {tanda.grupo}
-                    </span>
-                    <span role="group" aria-label={tanda.grupo} className="flex items-center gap-0.5">
-                      {cards}
-                    </span>
-                  </Fragment>
-                );
-              })}
+              {items.map((item) => (
+                <CardDeSeccion key={item.href} item={item} />
+              ))}
             </div>
           ) : (
             items.map((item) => <PestanaDeProfundidad key={item.href} item={item} />)

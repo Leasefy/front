@@ -109,17 +109,13 @@ describe('SeccionesDelModulo — las cards no se van al entrar en una sección',
     expect(cards()).toHaveLength(2)
   })
 
-  it('en la ficha de un caso de Cobranza se ven las seis secciones de Pagos, con Cobranza marcada', () => {
+  it('en la ficha de un caso de Cobranza se ven las secciones de SU cara, con Cobranza marcada', () => {
+    // Cobranza es de la cara «inquilinos», así que abajo van la Sala y las
+    // tres de esa cara. Liquidaciones y Dispersiones están a un clic, en la
+    // otra cara del selector — no mezcladas en el mismo riel.
     render('/panel/inmobiliaria/pagos/cobranza/deudores/abc-123')
     const lista = cards()
-    expect(lista.map((c) => c.label)).toEqual([
-      'pagos',
-      'recaudo',
-      'cartera',
-      'cobranza',
-      'liquidaciones',
-      'dispersiones',
-    ])
+    expect(lista.map((c) => c.label)).toEqual(['pagos', 'recaudo', 'cartera', 'cobranza'])
     expect(lista.filter((c) => c.activa).map((c) => c.label)).toEqual(['cobranza'])
   })
 
@@ -191,64 +187,100 @@ describe('SeccionesDelModulo — cuándo NO se dibuja', () => {
 })
 
 
-describe('SeccionesDelModulo — las dos caras de la plata (Nico + CEO, 2026-09-15)', () => {
-  /** Los rótulos de cara (`role="group"`) del riel, en orden. */
-  function rotulos(): string[] {
-    return [...contenedor.querySelectorAll('nav [role="group"]')].map(
-      (g) => g.getAttribute('aria-label') ?? '',
-    )
+describe('SeccionesDelModulo — las dos caras de la plata (Nico, 2026-09-16)', () => {
+  /**
+   * El defecto que este bloque fija: las dos caras eran dos rótulos en
+   * versalitas metidos ENTRE las cards del mismo riel, y Nico no los entendía
+   * («eso de arriba de inquilinos y propietarios no se entiende, esa
+   * separación de las tabs de arriba»). Ahora son un selector explícito
+   * ARRIBA, y debajo van sólo las secciones de la cara elegida.
+   */
+
+  /** Las caras del selector: clave, texto y si está elegida. */
+  function caras(): Array<{ clave: string; texto: string; activa: boolean; href: string }> {
+    const selector = contenedor.querySelector('[data-testid="selector-de-caras"]')
+    return [...(selector?.querySelectorAll('a') ?? [])].map((a) => ({
+      clave: a.getAttribute('data-cara') ?? '',
+      texto: (a.textContent ?? '').trim(),
+      activa: a.getAttribute('data-activa') === 'true',
+      href: a.getAttribute('href') ?? '',
+    }))
   }
 
-  /** Las cards de cada grupo rotulado. */
-  function porCara(): Record<string, string[]> {
-    const salida: Record<string, string[]> = {}
-    for (const g of contenedor.querySelectorAll('nav [role="group"]')) {
-      salida[g.getAttribute('aria-label') ?? ''] = [...g.querySelectorAll('a')].map((a) =>
-        (a.textContent ?? '').replace(/IA$/, '').trim(),
-      )
-    }
-    return salida
-  }
-
-  it('un solo riel con dos tandas rotuladas: lo que ENTRA y lo que SALE', () => {
+  it('la cara es un SELECTOR aparte, no un rótulo entre las cards', () => {
     render('/panel/inmobiliaria/pagos')
-    // UN contenedor, no dos: son dos caras de lo mismo, no dos módulos.
-    const nav = contenedor.querySelector('nav')
-    expect(nav?.children).toHaveLength(1)
-    expect(rotulos()).toEqual(['caraInquilinos', 'caraPropietarios'])
-    expect(porCara()).toEqual({
-      caraInquilinos: ['recaudo', 'cartera', 'cobranza'],
-      caraPropietarios: ['liquidaciones', 'dispersiones'],
-    })
+    expect(caras().map((c) => c.clave)).toEqual(['inquilinos', 'propietarios'])
+    // Y ya no queda ningún rótulo de cara dentro del riel de secciones.
+    expect(contenedor.querySelectorAll('nav [role="group"]')).toHaveLength(0)
   })
 
-  it('la Sala del agente no es de ninguna cara: va suelta y primera', () => {
+  it('cada cara dice de un vistazo lo que entra y lo que sale', () => {
     render('/panel/inmobiliaria/pagos')
+    const [inquilinos, propietarios] = caras()
+    expect(inquilinos?.texto).toContain('caraInquilinos')
+    expect(inquilinos?.texto).toContain('caraInquilinosDetalle')
+    expect(propietarios?.texto).toContain('caraPropietarios')
+    expect(propietarios?.texto).toContain('caraPropietariosDetalle')
+  })
+
+  it('cada cara es un ENLACE a su primera sección: la cara viaja en la URL', () => {
+    render('/panel/inmobiliaria/pagos')
+    expect(caras().map((c) => c.href)).toEqual([
+      '/panel/inmobiliaria/pagos/recaudo',
+      '/panel/inmobiliaria/pagos/liquidaciones',
+    ])
+  })
+
+  it('en la Sala entra Inquilinos, que es donde se opera todos los días', () => {
+    render('/panel/inmobiliaria/pagos')
+    expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['inquilinos'])
+    expect(cards().map((c) => c.label)).toEqual(['pagos', 'recaudo', 'cartera', 'cobranza'])
+  })
+
+  it('🔴 la cara se deduce de la RUTA: en Dispersiones estás en Propietarios', () => {
+    render('/panel/inmobiliaria/pagos/dispersiones')
+    expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['propietarios'])
+    expect(cards().map((c) => c.label)).toEqual(['pagos', 'liquidaciones', 'dispersiones'])
+    expect(cards().filter((c) => c.activa).map((c) => c.label)).toEqual(['dispersiones'])
+  })
+
+  it('y también en una ficha que cuelga de una sección de esa cara', () => {
+    render('/panel/inmobiliaria/pagos/dispersiones/lotes/2')
+    expect(caras().filter((c) => c.activa).map((c) => c.clave)).toEqual(['propietarios'])
+  })
+
+  it('la Sala no es de ninguna cara: va suelta y primera, en las dos', () => {
+    render('/panel/inmobiliaria/pagos/dispersiones')
     expect(cards()[0]?.href).toBe('/panel/inmobiliaria/pagos')
-    const dentroDeUnGrupo = [...contenedor.querySelectorAll('nav [role="group"] a')].map((a) =>
-      a.getAttribute('href'),
-    )
-    expect(dentroDeUnGrupo).not.toContain('/panel/inmobiliaria/pagos')
   })
 
   it('🔴 quien sólo tiene `cobros` ve su cara y NO la de propietarios', () => {
     // El caso que hace peligrosa la unificación: nadie puede ganar acceso a la
-    // dispersión por haber quedado en la misma fila que su cartera.
+    // dispersión por haber quedado en el mismo módulo que su cartera. Y con
+    // una sola cara presente NO se dibuja el selector: no se anuncia una
+    // separación que, para esta persona, no existe.
     permisos.isAdmin = false
     permisos.agencyRole = 'VIEWER'
     permisos.modulos = ['cobros']
     render('/panel/inmobiliaria/pagos/cartera')
     expect(cards().map((c) => c.label)).toEqual(['recaudo', 'cartera'])
-    // Y el rótulo de la cara vacía no se dibuja: no se anuncia una cara que no está.
-    expect(rotulos()).toEqual(['caraInquilinos'])
+    expect(contenedor.querySelector('[data-testid="selector-de-caras"]')).toBeNull()
   })
 
-  it('🔴 el contador ve las dos caras completas', () => {
+  it('🔴 el contador ve las dos caras, y cada una con sus secciones', () => {
     permisos.isAdmin = false
     permisos.agencyRole = 'CONTADOR'
     permisos.modulos = null
     render('/panel/inmobiliaria/pagos')
-    expect(rotulos()).toEqual(['caraInquilinos', 'caraPropietarios'])
-    expect(cards()).toHaveLength(6)
+    expect(caras()).toHaveLength(2)
+    expect(cards()).toHaveLength(4)
+    render('/panel/inmobiliaria/pagos/liquidaciones')
+    expect(cards().map((c) => c.label)).toEqual(['pagos', 'liquidaciones', 'dispersiones'])
+  })
+
+  it('un módulo sin caras (Inmuebles) no dibuja selector alguno', () => {
+    render('/panel/inmobiliaria/inmuebles')
+    expect(contenedor.querySelector('[data-testid="selector-de-caras"]')).toBeNull()
+    expect(cards()).toHaveLength(2)
   })
 })

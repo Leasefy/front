@@ -289,8 +289,36 @@ describe('arquitectura del panel — agentes', () => {
     }
   });
 
-  it('toda pantalla con `agente` lleva la marca IA', () => {
-    for (const p of pantallas.filter((x) => x.agente)) expect(p.ia, p.href).toBe(true);
+  /**
+   * 🔴 La píldora «IA» anuncia «acá hay un agente trabajando», así que toda
+   * pantalla que ES la sala de un agente la lleva… salvo UNA, y la excepción
+   * está acá escrita para que nadie la «arregle»:
+   *
+   * **Pagos** (Nico, 2026-09-16: «no debe llamarse Pagos IA»). Es el módulo de
+   * LA PLATA de la inmobiliaria —la deuda de cada contrato, lo que entra de
+   * los inquilinos, lo que sale a los propietarios—, y su raíz es además la
+   * puerta del agente de pagos. Que el agente exista no vuelve al módulo una
+   * sala de agente: sus pantallas son las pestañas de adentro
+   * (`agentWorkspaceNav.ts`), un piso más abajo. Cobranza IA, que sí es la
+   * sala de un agente, conserva la suya.
+   */
+  const SIN_PILDORA_IA = [`${PANEL}/pagos`];
+
+  it('toda pantalla con `agente` lleva la marca IA, salvo las declaradas', () => {
+    for (const p of pantallas.filter((x) => x.agente && !SIN_PILDORA_IA.includes(x.href))) {
+      expect(p.ia, p.href).toBe(true);
+    }
+  });
+
+  it('🔴 «Pagos» NO lleva píldora IA: el módulo es la plata, no la sala de un agente', () => {
+    const pagos = modulos.find((m) => m.key === 'pagos')!;
+    expect(pagos.ia).toBeFalsy();
+    // Pero el agente sigue existiendo, con su Sala y sus pestañas.
+    expect(pagos.agente).toBe('pagos');
+    expect(AGENT_WORKSPACES.find((w) => w.slug === 'pagos')).toBeTruthy();
+    // Y Cobranza, que sí es la sala de un agente, conserva la suya.
+    const cobranza = (pagos.pantallas ?? []).find((p) => p.href === `${PANEL}/pagos/cobranza`);
+    expect(cobranza?.ia).toBe(true);
   });
 
   it('Retención NO está en el catálogo: no va a producción todavía (Nico, 2026-09-03)', () => {

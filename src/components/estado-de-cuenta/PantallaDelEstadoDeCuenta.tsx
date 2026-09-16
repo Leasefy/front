@@ -42,6 +42,22 @@ import {
 } from './filas';
 import { useTextoDelEstado } from './textos';
 
+/**
+ * ¿El fallo es «este cliente todavía no tiene contratos»?
+ *
+ * Se lee el `code` del back (`SIN_CONTRATOS`), NUNCA el texto del mensaje:
+ * un `includes('no tiene contratos')` se rompe el día que alguien reescribe
+ * la frase, y se rompe en silencio — la pantalla volvería a decir «no existe»
+ * sin que ningún test lo note.
+ */
+function sinContratos(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { code?: unknown }).code === 'SIN_CONTRATOS'
+  );
+}
+
 export interface PantallaProps {
   /** Cómo se pide el documento. Cambia entre el panel, el enlace y los portales. */
   cargar: () => Promise<EstadoDeCuenta>;
@@ -186,6 +202,23 @@ export function PantallaDelEstadoDeCuenta({
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-14 w-1/2" />
           <Skeleton className="h-64 w-full" />
+        </div>
+      ) : sinContratos(error) ? (
+        /* 🔴 E6 — «no tiene contratos» NO se pinta como «no existe».
+           El back devuelve 404 porque al inquilino lo identifican sus
+           contratos y no una ficha propia, pero manda `code: SIN_CONTRATOS`.
+           Un «no existe» sobre un inquilino que la inmobiliaria acaba de
+           cargar la manda a buscar por qué se borró algo que nunca se borró.
+           Es un estado VACÍO, no un fallo: sin «Reintentar», que no arregla
+           nada, y con el camino de vuelta intacto. */
+        <div
+          data-testid="estado-sin-contratos-pantalla"
+          className="rounded-lg border border-border bg-surface p-10 text-center"
+        >
+          <p className="text-body text-fg">{t('estadoDeCuenta.sinContratos')}</p>
+          <p className="mt-1 text-body-sm text-fg-muted">
+            {t('estadoDeCuenta.sinContratosDetalle')}
+          </p>
         </div>
       ) : error ? (
         <FalloDeCarga

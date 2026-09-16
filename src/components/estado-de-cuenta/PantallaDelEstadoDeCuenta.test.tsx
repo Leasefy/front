@@ -109,6 +109,34 @@ describe('PantallaDelEstadoDeCuenta', () => {
     expect(host.textContent?.length).toBeGreaterThan(0);
   });
 
+  /**
+   * E6 — «todavía no tiene contratos» no puede leerse como «no existe».
+   *
+   * El back responde 404 (al inquilino lo identifican sus contratos, no una
+   * ficha propia) pero manda `code: SIN_CONTRATOS`. Es un vacío, no un fallo.
+   */
+  it('🔴 con SIN_CONTRATOS pinta el vacío, no «no existe» ni «Reintentar»', async () => {
+    const error = Object.assign(new Error('Ese inquilino todavía no tiene contratos'), {
+      status: 404,
+      code: 'SIN_CONTRATOS',
+    });
+    const cargar = vi.fn().mockRejectedValue(error);
+    await montar(<PantallaDelEstadoDeCuenta cargar={cargar} hoy={HOY} />);
+
+    expect(host.querySelector('[data-testid="estado-sin-contratos-pantalla"]')).not.toBeNull();
+    expect(host.textContent).toContain('no tiene contratos');
+    expect(host.textContent).not.toContain('Reintentar');
+    expect(host.textContent).not.toContain('no existe');
+  });
+
+  it('un 404 SIN código sigue siendo un fallo con reintento: no se traga cualquier 404', async () => {
+    const error = Object.assign(new Error('No encontrado'), { status: 404 });
+    const cargar = vi.fn().mockRejectedValue(error);
+    await montar(<PantallaDelEstadoDeCuenta cargar={cargar} hoy={HOY} />);
+
+    expect(host.querySelector('[data-testid="estado-sin-contratos-pantalla"]')).toBeNull();
+  });
+
   it('«sólo lo pendiente» recorta las filas y avisa que los totales son de lo visible', async () => {
     const cargar = vi.fn().mockResolvedValue(estadoDeCuenta({ contratos: [contrato()] }));
     await montar(<PantallaDelEstadoDeCuenta cargar={cargar} hoy={HOY} />);
